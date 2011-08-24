@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1HXVfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:35:04 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46726 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753791Ab1HXVfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:35:01 -0400
-X-Sasl-enc: qjqstfYyhLyhByQmkJpEY0pmsZafNmKT55rnFbthUcc5 1314221700
-Date: Wed, 24 Aug 2011 14:34:33 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Hans de Goede <hdegoede@redhat.com>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Add USBDEVFS_TRY_DISCONNECT ioctl
-Message-ID: <20110824213433.GA16970@kroah.com>
-References: <20110824204533.GA19618@kroah.com>
- <Pine.LNX.4.44L0.1108241707110.1643-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1108241707110.1643-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754033Ab1HXVfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:35:52 -0400
+Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:35077 "EHLO
+	homiemail-a5.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752116Ab1HXVfv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:35:51 -0400
+Subject: Re: [PATCH] UserModeLinux-HOWTO.txt: remove ^H characters
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Jonathan =?ISO-8859-1?Q?Neusch=E4fer?= <j.neuschaefer@gmx.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net
+In-Reply-To: <20110812190626.GK29043@debian.debian>
+References: <1313108903-7351-1-git-send-email-j.neuschaefer@gmx.net>
+	 <20110812101928.f34da400.rdunlap@xenotime.net>
+	 <20110812190626.GK29043@debian.debian>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Wed, 24 Aug 2011 18:35:43 -0300
+Message-ID: <1314221743.3109.1.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 05:18:57PM -0400, Alan Stern wrote:
-> On Wed, 24 Aug 2011, Greg KH wrote:
-> 
-> > On Wed, Aug 24, 2011 at 04:32:31PM -0400, Alan Stern wrote:
-> > > Okay, here's a sample patch.  Actually it's three patches, listed one 
-> > > after another, but people can apply it like a single patch.
+On Fri, 2011-08-12 at 21:06 +0200, Jonathan Neuschäfer wrote:
+> On Fri, Aug 12, 2011 at 10:19:28AM -0700, Randy Dunlap wrote:
+> > On Fri, 12 Aug 2011 02:28:23 +0200 Jonathan Neuschäfer wrote:
+> > 
+> > > If you can't read this patch, please run:
 > > > 
-> > >      1.	Introduce the USBDEVFS_TRY_DISCONNECT ioctl and the check_busy
-> > > 	callback it uses.  Implement the callback in the usbfs driver; 
-> > > 	this gives a way for programs to unbind kernel drivers without
-> > > 	unbinding other userspace drivers.
+> > > 	sed -i -e "s/[^\o10]\o10//g" \
+> > > 		Documentation/virtual/uml/UserModeLinux-HOWTO.txt
 > > > 
-> > >      2.	Implement device-file reference tracking in the SCSI layer,
-> > > 	and the device_open and device_close callbacks it uses.
+> > > Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
+> > > ---
+> > >  Documentation/virtual/uml/UserModeLinux-HOWTO.txt |  530 ++++++++++----------
+> > >  1 files changed, 265 insertions(+), 265 deletions(-)
 > > 
-> > Does this handle if the filesystem is being created or fscked, as it's
-> > not mounted at that time.
+> > I like the patch, although the text file seems to be quite old and it
+> > appears to be a generated file (from where?).
 > 
-> Yes, because the device file is held open by mkfs or fsck.  You can 
-> test this easily enough, in a nondestructive way, by using this little 
-> shell script:
+> Yes, looks old. There has been only one (real) change in content since
+> 2.6.12-rc2 (4ff4d8d3: um: add ucast ethernet transport).
+
+Glad I noticed this patch in time, just today I was doing the same. FYI
+I'm in the process of updating/splitting the document.
+
+Thanks,
+Davidlohr
+
 > 
-> 	echo -n 'Press RETURN to continue... '
-> 	read </dev/tty
+> Greetings,
+> 	Jonathan Neuschäfer
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> Stick that in a file, and run the file with input redirected to the 
-> appropriate /dev/sd? file.
 
-Ok, good, just wondering.
 
-> > > @@ -1647,9 +1653,16 @@ static int proc_ioctl(struct dev_state *
-> > >  	else switch (ctl->ioctl_code) {
-> > >  
-> > >  	/* disconnect kernel driver from interface */
-> > > +	case USBDEVFS_TRY_DISCONNECT:
-> > >  	case USBDEVFS_DISCONNECT:
-> > >  		if (intf->dev.driver) {
-> > >  			driver = to_usb_driver(intf->dev.driver);
-> > > +			if (ctl->ioctl_code == USBDEVFS_TRY_DISCONNECT &&
-> > > +					driver->check_busy) {
-> > > +				retval = driver->check_busy(intf);
-> > > +				if (retval)
-> > > +					break;
-> > > +			}
-> > 
-> > I don't like the fact that if a driver doesn't contain check_busy() then
-> > it will automatically fall back to looking like it was a DISCONNECT
-> > call, which could give userspace a false sense of "everything was fine"
-> > when trying this out.
-> > 
-> > Why not fail if that callback is not present?
-> 
-> It could be made to work that way.  I had to choose, so I chose to make
-> TRY_DISCONNECT work like DISCONNECT when the callback was missing.
-> Doing it as you suggest might be better though, because then the user
-> program could decide what to do if the kernel driver doesn't support
-> TRY_DISCONNECT.
-> 
-> What would be a good error code for that case?  -EOPNOTSUPP?  Or the 
-> traditional -ENOTTY?
-
--ENOTTY is the correct thing here.
-
-> > I can't comment on the scsi layer, but what about devices that don't use
-> > scsi?  Like "raw" block drivers?
-> 
-> You mean things like Pete Zaitcev's ub driver?  They would need an
-> equivalent change.
-
-Ok, and if we return the correct error code, as shown above, if the
-TRY_DISCONNECT was not there, then userspace could fall back on the
-"what do I do now?" logic.
-
-If you can get the scsi people to accept that part, I'll take the usb
-portion, nice job.
-
-greg k-h
