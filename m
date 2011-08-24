@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1HXFrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 01:47:52 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37967 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab1HXFru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 01:47:50 -0400
-Date: Wed, 24 Aug 2011 15:47:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "edwin_rong" <edwin_rong@realsil.com.cn>
-Subject: linux-next: build failure after merge of the final tree (staging
- tree related)
-Message-Id: <20110824154741.3cbe03b403b646e2a99d63a2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__24_Aug_2011_15_47_41_+1000_OHlwteB82DJedN+1"
+	id S1756332Ab1HXFtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 01:49:12 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:28179 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab1HXFtK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 01:49:10 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH v2 0/7] Input: elantech: add support for newer hardware
+In-Reply-To: <1314164303-30382-1-git-send-email-jj_ding@emc.com.tw>
+References: <1314164303-30382-1-git-send-email-jj_ding@emc.com.tw>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Wed, 24 Aug 2011 13:51:17 +0800
+Message-ID: <87wre31hnu.fsf@emc.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__24_Aug_2011_15_47_41_+1000_OHlwteB82DJedN+1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry.
+linux-kernel and linux-input complains patch #2's subject
+ETP_2FT_XXXX looks like spam.
+(5.1.0 - Unknown address error 550-'5.7.1 Content-Policy reject msg: The
+capital Triple-X in subject is way too often associated with junk email,
+please rephrase.  BF:<H 0>; S1752956Ab1HXFgV'
+)
+so patch #2 is blocked.
+Please ignore this series.
+I will rephase and resend.
 
-Hi ,
+Sorry for the noise.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+jj
 
-drivers/staging/rts5139/rts51x_scsi.c: In function 'inquiry':
-drivers/staging/rts5139/rts51x_scsi.c:498:2: error: implicit declaration of=
- function 'vmalloc'
-drivers/staging/rts5139/xd.c: In function 'xd_init_l2p_tbl':
-drivers/staging/rts5139/xd.c:745:2: error: implicit declaration of function=
- 'vmalloc'
-drivers/staging/rts5139/xd.c: In function 'free_zone':
-drivers/staging/rts5139/xd.c:771:3: error: implicit declaration of function=
- 'vfree'
-drivers/staging/rts5139/ms.c: In function 'ms_init_l2p_tbl':
-drivers/staging/rts5139/ms.c:2214:2: error: implicit declaration of functio=
-n 'vmalloc'
-drivers/staging/rts5139/ms.c:2257:3: error: implicit declaration of functio=
-n 'vfree'
-
-Caused by commit 1dac4186bcc6 ("Staging: add driver for Realtek RTS5139
-cardreader").
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__24_Aug_2011_15_47_41_+1000_OHlwteB82DJedN+1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOVJB9AAoJEDMEi1NhKgbsFVYH/0SplprbyMJklPRKg8kaodn2
-LmdQnKXbWQxfZliz+PSNccIPG7U4NkhSuag9+i3VVRgsaJNxTlVBrvB828gE719Z
-m7YAODPabXzoZR5Z9/+ADeTUfQ+vWSBvppEuzVa7yXg7UaVdRdJ9duFB19IlFZLC
-pUavE25NplV6kV1xd6sWUO9lguxP67Zl2YC+QfUrfNd/0eDJQxUf2F6xyu9C8fx4
-54surA3No0osZZBsjAa9+3snzUHpnd1gahkuJpWUHJXftW3EWAQr3XTgSEoWAYLX
-5UDJbSkN7B4XhlzPNotNjP1ddCcrBoWBtvX+nUiJacqUcexCH5o1/TonlefvP8I=
-=2hCj
------END PGP SIGNATURE-----
-
---Signature=_Wed__24_Aug_2011_15_47_41_+1000_OHlwteB82DJedN+1--
+On Wed, 24 Aug 2011 13:38:16 +0800, JJ Ding <jj_ding@emc.com.tw> wrote:
+> Hi Lists,
+> 
+> This is a series of patches to add support for newer generation of ELAN
+> touchpad.
+> 
+> Patches #1~#6 are essentially fixes and cleanups that pave the way for
+> patch #7, which really adds code for v3 hardware.
+> 
+> Any comments, suggestoins are welcome.
+> 
+> Thank you.
+> 
+> Changes since v1:
+> - drop EC workaround patch.
+> - add patch #2, make ST and MT have the same range, as Dmitry suggested.
+> - add patch #4, remove ETP_EDGE_FUZZ_V2, as Éric suggested.
+> - rename all packet checking functions so they are consistent.
+> - some code cleanup, and don't report ABS_[XY] when fingers == 0, as Seth suggested.
+> - add document for v3 debounce, and now check debounce in elantech_packet_check_v3.
+> 
+> JJ Ding (7):
+>   Input: elantech - correct x, y value range for v2 hardware
+>   Input: elantech - get rid of ETP_2FT_XXXX in elantech.h
+>   Input: elantech - use firmware provided x, y ranges
+>   Input: elantech - remove ETP_EDGE_FUZZ_V2
+>   Input: elantech - packet checking for v2 hardware
+>   Input: elantech - clean up elantech_init
+>   Input: elantech - add v3 hardware support
+> 
+>  Documentation/input/elantech.txt |  125 +++++++++++--
+>  drivers/input/mouse/elantech.c   |  387 +++++++++++++++++++++++++++++++-------
+>  drivers/input/mouse/elantech.h   |   35 ++--
+>  3 files changed, 444 insertions(+), 103 deletions(-)
+> 
+> -- 
+> 1.7.4.1
+> 
