@@ -1,129 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab1HXS30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:29:26 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7434 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab1HXS3W convert rfc822-to-8bit (ORCPT
+	id S1753721Ab1HXSah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:30:37 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:55436 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab1HXSaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:29:22 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 24 Aug 2011 11:29:19 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 24 Aug 2011 11:29:13 -0700
-Subject: RE: [PATCH 1/4 v4] drivers: create a pin control subsystem
-Thread-Topic: [PATCH 1/4 v4] drivers: create a pin control subsystem
-Thread-Index: AcxeVg0bIqzC5KhFQoCFOe66YeBe6gEMr7pA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A3BC0@HQMAIL01.nvidia.com>
-References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Aug 2011 14:30:35 -0400
+Date: Wed, 24 Aug 2011 14:30:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>, devel@driverdev.osuosl.org
+Subject: Re: [PATCH 68/75] hv: netvsc: convert to SKB paged frag API.
+Message-ID: <20110824183010.GG15675@dumpdata.com>
+References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
+ <1313760467-8598-68-git-send-email-ian.campbell@citrix.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313760467-8598-68-git-send-email-ian.campbell@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E554343.0050:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Friday, August 19, 2011 3:54 AM:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> This creates a subsystem for handling of pin control devices.
-> These are devices that control different aspects of package
-> pins.
+What is with the 'XXX' ?
 
-Sorry to keep harping on about this, but I'm still not convinced the data
-model is correct.
-
-Note: There are two places where a data model is relevant: (a) The API
-exposed to clients of the pinmux API (b) the API between the pinmux API
-core and the pinmux chip implementations. Your patches currently use the
-same data model for both. I believe we can use a different data model for
-the two interfaces. My discussion below talks solely about the interface
-at point (b); I can talk more about (a) later. I'm trying to talk about
-one thing at a time right now to avoid my previous overwhelming emails,
-and gain consensus on one point at a time.
-
-Here are the two possible models:
-
-Model 1 (as implemented in the pin control subsystem):
-
-* Each pinmux chip defines a number of functions.
-* Each function describes what functionality is mux'd onto the pins.
-* Each function describes which pins are affected by the function.
-
-Result:
-
-If there are a couple of controllers that can each be mux'd out two
-places, you get four functions:
-
-Function i2c0-0: Controller i2c0 is mux'd onto pins 0 and 1
-Function i2c0-1: Controller i2c0 is mux'd onto pins 2 and 3
-Function spi0-0: Controller spi0 is mux'd onto pins 0 and 1
-Function spi0-1: Controller spi0 is mux'd onto pins 4 and 5
-
-Model 2 (what I'd like to see)
-
-* Each pinmux chip defines a number of functions.
-* Each function describes the functionality that can be mux'd out.
-* Each pinmux chip defines a number of pins.
-* Each pinmux chip defines which functions are legal on which pins.
-
-Result:
-
-With the same controllers and pins above, you get:
-
-Function i2c0
-Function spi0
-Pins 0, 1, 2, 3, 4, 5
-Pins 0, 1 accept functions i2c0, spi0
-Pins 2, 3 accept functions i2c0
-Pins 4, 5 accept functions spi0
-
-We'd still have a single controller-wide namespace for functions, it's
-just that functions are something you mux onto pins, not the combination
-of mux'd functionality and the pins it's been mux'd onto.
-
-Advantages:
-
-* I believe this model is much more directly maps to the way most HW
-works; there's a register for each pin where you write a value to select
-which functionality to mux onto that pin. Assuming that's true, using
-this data model might lead to simpler pinmux chip implementations; they'd
-require fewer mapping tables.
-
-* Given that's the way Tegra HW works at least, the patches I recently
-posted to initialize the Tegra pinmux from device-tree define bindings
-that use this model. I think it's important that such bindings use the
-same data model as the pinmux chip data model. This keeps consistency
-between boot-time initialization and the pinmux chip portion of any
-run-time pinmux modifications.
-
-
-
-As an aside, I see your patches use the pinmux API at driver probe time
-to set up the pinmux, whereas my init-pinmux-driver-from-dt patches do
-a pinmux-controller-wide initialization at probe time. There was some
-discussion in response to earlier patches re: which way was better, and
-I got the impression that the pinmux API was mainly for runtime changes,
-rather than boot-time initial configuration. If that's not the case, then
-I guess we should drop my proposed init-pinmux-driver-from-dt patches and
-put all that code into your pinmux subsystem...
-
--- 
-nvpublic
-
+> diff --git a/drivers/net/cxgb4/sge.c b/drivers/net/cxgb4/sge.c
+> index f1813b5..3e7c4b3 100644
+> --- a/drivers/net/cxgb4/sge.c
+> +++ b/drivers/net/cxgb4/sge.c
+> @@ -1416,7 +1416,7 @@ static inline void copy_frags(struct sk_buff *skb,
+>  	unsigned int n;
+>  
+>  	/* usually there's just one frag */
+> -	skb_frag_set_page(skb, 0, gl->frags[0].page);
+> +	skb_frag_set_page(skb, 0, gl->frags[0].page.p);	/* XXX */
+>  	ssi->frags[0].page_offset = gl->frags[0].page_offset + offset;
+>  	ssi->frags[0].size = gl->frags[0].size - offset;
+>  	ssi->nr_frags = gl->nfrags;
+> @@ -1425,7 +1425,7 @@ static inline void copy_frags(struct sk_buff *skb,
+>  		memcpy(&ssi->frags[1], &gl->frags[1], n * sizeof(skb_frag_t));
+>  
+>  	/* get a reference to the last page, we don't own it */
+> -	get_page(gl->frags[n].page);
+> +	get_page(gl->frags[n].page.p);	/* XXX */
+>  }
+>  
+>  /**
+> @@ -1482,7 +1482,7 @@ static void t4_pktgl_free(const struct pkt_gl *gl)
+>  	const skb_frag_t *p;
+>  
+>  	for (p = gl->frags, n = gl->nfrags - 1; n--; p++)
+> -		put_page(p->page);
+> +		put_page(p->page.p); /* XXX */
+>  }
+>  
+>  /*
+> @@ -1635,7 +1635,7 @@ static void restore_rx_bufs(const struct pkt_gl *si, struct sge_fl *q,
+>  		else
+>  			q->cidx--;
+>  		d = &q->sdesc[q->cidx];
+> -		d->page = si->frags[frags].page;
+> +		d->page = si->frags[frags].page.p; /* XXX */
+>  		d->dma_addr |= RX_UNMAPPED_BUF;
+>  		q->avail++;
+>  	}
+> @@ -1717,7 +1717,7 @@ static int process_responses(struct sge_rspq *q, int budget)
+>  			for (frags = 0, fp = si.frags; ; frags++, fp++) {
+>  				rsd = &rxq->fl.sdesc[rxq->fl.cidx];
+>  				bufsz = get_buf_size(rsd);
+> -				fp->page = rsd->page;
+> +				fp->page.p = rsd->page; /* XXX */
+>  				fp->page_offset = q->offset;
+>  				fp->size = min(bufsz, len);
+>  				len -= fp->size;
+> @@ -1734,8 +1734,8 @@ static int process_responses(struct sge_rspq *q, int budget)
+>  						get_buf_addr(rsd),
+>  						fp->size, DMA_FROM_DEVICE);
+>  
+> -			si.va = page_address(si.frags[0].page) +
+> -				si.frags[0].page_offset;
+> +			si.va = page_address(si.frags[0].page.p) +
+> +				si.frags[0].page_offset; /* XXX */
+>  
+>  			prefetch(si.va);
+>  
+> diff --git a/drivers/net/cxgb4vf/sge.c b/drivers/net/cxgb4vf/sge.c
+> index 6d6060e..3688423 100644
+> --- a/drivers/net/cxgb4vf/sge.c
+> +++ b/drivers/net/cxgb4vf/sge.c
+> @@ -1397,7 +1397,7 @@ struct sk_buff *t4vf_pktgl_to_skb(const struct pkt_gl *gl,
+>  		skb_copy_to_linear_data(skb, gl->va, pull_len);
+>  
+>  		ssi = skb_shinfo(skb);
+> -		skb_frag_set_page(skb, 0, gl->frags[0].page);
+> +		skb_frag_set_page(skb, 0, gl->frags[0].page.p); /* XXX */
+>  		ssi->frags[0].page_offset = gl->frags[0].page_offset + pull_len;
+>  		ssi->frags[0].size = gl->frags[0].size - pull_len;
+>  		if (gl->nfrags > 1)
+> @@ -1410,7 +1410,7 @@ struct sk_buff *t4vf_pktgl_to_skb(const struct pkt_gl *gl,
+>  		skb->truesize += skb->data_len;
+>  
+>  		/* Get a reference for the last page, we don't own it */
+> -		get_page(gl->frags[gl->nfrags - 1].page);
+> +		get_page(gl->frags[gl->nfrags - 1].page.p); /* XXX */
+>  	}
+>  
+>  out:
+> @@ -1430,7 +1430,7 @@ void t4vf_pktgl_free(const struct pkt_gl *gl)
+>  
+>  	frag = gl->nfrags - 1;
+>  	while (frag--)
+> -		put_page(gl->frags[frag].page);
+> +		put_page(gl->frags[frag].page.p); /* XXX */
+>  }
+>  
+>  /**
+> @@ -1450,7 +1450,7 @@ static inline void copy_frags(struct sk_buff *skb,
+>  	unsigned int n;
+>  
+>  	/* usually there's just one frag */
+> -	skb_frag_set_page(skb, 0, gl->frags[0].page);
+> +	skb_frag_set_page(skb, 0, gl->frags[0].page.p);	/* XXX */
+>  	si->frags[0].page_offset = gl->frags[0].page_offset + offset;
+>  	si->frags[0].size = gl->frags[0].size - offset;
+>  	si->nr_frags = gl->nfrags;
+> @@ -1460,7 +1460,7 @@ static inline void copy_frags(struct sk_buff *skb,
+>  		memcpy(&si->frags[1], &gl->frags[1], n * sizeof(skb_frag_t));
+>  
+>  	/* get a reference to the last page, we don't own it */
+> -	get_page(gl->frags[n].page);
+> +	get_page(gl->frags[n].page.p); /* XXX */
+>  }
+>  
+>  /**
+> @@ -1613,7 +1613,7 @@ static void restore_rx_bufs(const struct pkt_gl *gl, struct sge_fl *fl,
+>  		else
+>  			fl->cidx--;
+>  		sdesc = &fl->sdesc[fl->cidx];
+> -		sdesc->page = gl->frags[frags].page;
+> +		sdesc->page = gl->frags[frags].page.p; /* XXX */
+>  		sdesc->dma_addr |= RX_UNMAPPED_BUF;
+>  		fl->avail++;
+>  	}
+> @@ -1701,7 +1701,7 @@ int process_responses(struct sge_rspq *rspq, int budget)
+>  				BUG_ON(rxq->fl.avail == 0);
+>  				sdesc = &rxq->fl.sdesc[rxq->fl.cidx];
+>  				bufsz = get_buf_size(sdesc);
+> -				fp->page = sdesc->page;
+> +				fp->page.p = sdesc->page; /* XXX */
+>  				fp->page_offset = rspq->offset;
+>  				fp->size = min(bufsz, len);
+>  				len -= fp->size;
+> @@ -1719,8 +1719,8 @@ int process_responses(struct sge_rspq *rspq, int budget)
+>  			dma_sync_single_for_cpu(rspq->adapter->pdev_dev,
+>  						get_buf_addr(sdesc),
+>  						fp->size, DMA_FROM_DEVICE);
+> -			gl.va = (page_address(gl.frags[0].page) +
+> -				 gl.frags[0].page_offset);
+> +			gl.va = (page_address(gl.frags[0].page.p) +
+> +				 gl.frags[0].page_offset); /* XXX */
+>  			prefetch(gl.va);
+>  
