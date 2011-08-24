@@ -1,95 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab1HXOgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:36:55 -0400
-Received: from mail-pz0-f70.google.com ([209.85.210.70]:41373 "EHLO
-	mail-pz0-f70.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab1HXOgv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:36:51 -0400
+	id S1752497Ab1HXOe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:34:59 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58842 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752385Ab1HXOey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 10:34:54 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        <rogerq@ti.com>
+Subject: [PATCH 3/5 v7] arm: omap: usb: register hwmods of usbhs
+Date: Wed, 24 Aug 2011 20:00:58 +0530
+Message-ID: <1314196260-9578-4-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1314196260-9578-3-git-send-email-keshava_mgowda@ti.com>
+References: <1314196260-9578-1-git-send-email-keshava_mgowda@ti.com>
+ <1314196260-9578-2-git-send-email-keshava_mgowda@ti.com>
+ <1314196260-9578-3-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1314167063-15785-3-git-send-email-dengcheng.zhu@gmail.com>
-References: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com> <1314167063-15785-3-git-send-email-dengcheng.zhu@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 24 Aug 2011 08:28:18 -0600
-Message-ID: <CAErSpo56V1eHaLTz72gLHcdONsNSUM01upKr4K+DtoU58ea5Ag@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] PCI: Pass available resources into pci_create_bus()
-To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
-        zenon@mips.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 12:24 AM, Deng-Cheng Zhu
-<dengcheng.zhu@gmail.com> wrote:
-> Currently, after pci_create_bus(), resources available on the bus could be
-> handled by pci_scan_child_bus(). The problem is that, in
-> pci_scan_child_bus(), before calling arch-dependent pcibios_fixup_bus(),
-> PCI quirks will probably conflict (while doing pci_claim_resource()) with
-> resources like system controller's I/O resource that have not yet been
-> added to the bus. So, add those resources right before returning the newly
-> created bus in pci_create_bus().
+The hwmod structure of uhh, ohci, ehci and tll are
+retrieved and registered with omap device
 
-I like this approach a lot.  Thanks for working it up.  It's a nice
-small change with very little impact to other architectures, and you
-have a nice clear changelog.  You might mention something about the
-fact that by default, the bus starts out with all of ioport_resource
-and iomem_resource -- that will mean something to people who know how
-host bridges work.
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+---
+ arch/arm/mach-omap2/usb-host.c |  114 +++++++++++++++++----------------------
+ 1 files changed, 50 insertions(+), 64 deletions(-)
 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 8473727..7735fe7 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1516,7 +1516,8 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
->  }
->
->  struct pci_bus * pci_create_bus(struct device *parent,
-> -               int bus, struct pci_ops *ops, void *sysdata)
-> +               int bus, struct pci_ops *ops, void *sysdata,
-> +               struct pci_bus_resource *bus_res)
->  {
->        int error;
->        struct pci_bus *b, *b2;
-> @@ -1570,8 +1571,14 @@ struct pci_bus * pci_create_bus(struct device *parent,
->        pci_create_legacy_files(b);
->
->        b->number = b->secondary = bus;
-> -       b->resource[0] = &ioport_resource;
-> -       b->resource[1] = &iomem_resource;
-> +
-> +       /* Add initial resources to the bus */
-> +       if (bus_res != NULL) {
-> +               list_add_tail(&b->resources, &bus_res->list);
-> +       } else {
-> +               pci_bus_add_resource(b, &ioport_resource, 0);
-> +               pci_bus_add_resource(b, &iomem_resource, 0);
-> +       }
+diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+index 89ae298..9c37db9 100644
+--- a/arch/arm/mach-omap2/usb-host.c
++++ b/arch/arm/mach-omap2/usb-host.c
+@@ -28,51 +28,30 @@
+ #include <mach/hardware.h>
+ #include <mach/irqs.h>
+ #include <plat/usb.h>
++#include <plat/omap_device.h>
+ 
+ #include "mux.h"
+ 
+ #ifdef CONFIG_MFD_OMAP_USB_HOST
+ 
+-#define OMAP_USBHS_DEVICE	"usbhs-omap"
+-
+-static struct resource usbhs_resources[] = {
+-	{
+-		.name	= "uhh",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "tll",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "ehci",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "ehci-irq",
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	{
+-		.name	= "ohci",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "ohci-irq",
+-		.flags	= IORESOURCE_IRQ,
+-	}
+-};
+-
+-static struct platform_device usbhs_device = {
+-	.name		= OMAP_USBHS_DEVICE,
+-	.id		= 0,
+-	.num_resources	= ARRAY_SIZE(usbhs_resources),
+-	.resource	= usbhs_resources,
+-};
++#define OMAP_USBHS_DEVICE	"usbhs_omap"
++#define	USBHS_UHH_HWMODNAME	"usbhs_uhh"
++#define	USBHS_OHCI_HWMODNAME	"usbhs_ohci"
++#define USBHS_EHCI_HWMODNAME	"usbhs_ehci"
++#define USBHS_TLL_HWMODNAME	"usbhs_tll"
+ 
+ static struct usbhs_omap_platform_data		usbhs_data;
+ static struct ehci_hcd_omap_platform_data	ehci_data;
+ static struct ohci_hcd_omap_platform_data	ohci_data;
+ 
++static struct omap_device_pm_latency omap_uhhtll_latency[] = {
++	  {
++		.deactivate_func = omap_device_idle_hwmods,
++		.activate_func	 = omap_device_enable_hwmods,
++		.flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
++	  },
++};
++
+ /* MUX settings for EHCI pins */
+ /*
+  * setup_ehci_io_mux - initialize IO pad mux for USBHOST
+@@ -508,7 +487,10 @@ static void setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
+ 
+ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ {
+-	int	i;
++	struct omap_hwmod	*oh[4];
++	struct omap_device	*od;
++	int			bus_id = -1;
++	int			i;
+ 
+ 	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
+ 		usbhs_data.port_mode[i] = pdata->port_mode[i];
+@@ -523,44 +505,48 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ 	usbhs_data.ohci_data = &ohci_data;
+ 
+ 	if (cpu_is_omap34xx()) {
+-		usbhs_resources[0].start = OMAP34XX_UHH_CONFIG_BASE;
+-		usbhs_resources[0].end = OMAP34XX_UHH_CONFIG_BASE + SZ_1K - 1;
+-		usbhs_resources[1].start = OMAP34XX_USBTLL_BASE;
+-		usbhs_resources[1].end = OMAP34XX_USBTLL_BASE + SZ_4K - 1;
+-		usbhs_resources[2].start	= OMAP34XX_EHCI_BASE;
+-		usbhs_resources[2].end	= OMAP34XX_EHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[3].start = INT_34XX_EHCI_IRQ;
+-		usbhs_resources[4].start	= OMAP34XX_OHCI_BASE;
+-		usbhs_resources[4].end	= OMAP34XX_OHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[5].start = INT_34XX_OHCI_IRQ;
+ 		setup_ehci_io_mux(pdata->port_mode);
+ 		setup_ohci_io_mux(pdata->port_mode);
+ 	} else if (cpu_is_omap44xx()) {
+-		usbhs_resources[0].start = OMAP44XX_UHH_CONFIG_BASE;
+-		usbhs_resources[0].end = OMAP44XX_UHH_CONFIG_BASE + SZ_1K - 1;
+-		usbhs_resources[1].start = OMAP44XX_USBTLL_BASE;
+-		usbhs_resources[1].end = OMAP44XX_USBTLL_BASE + SZ_4K - 1;
+-		usbhs_resources[2].start = OMAP44XX_HSUSB_EHCI_BASE;
+-		usbhs_resources[2].end = OMAP44XX_HSUSB_EHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[3].start = OMAP44XX_IRQ_EHCI;
+-		usbhs_resources[4].start = OMAP44XX_HSUSB_OHCI_BASE;
+-		usbhs_resources[4].end = OMAP44XX_HSUSB_OHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[5].start = OMAP44XX_IRQ_OHCI;
+ 		setup_4430ehci_io_mux(pdata->port_mode);
+ 		setup_4430ohci_io_mux(pdata->port_mode);
+ 	}
+ 
+-	if (platform_device_add_data(&usbhs_device,
+-				&usbhs_data, sizeof(usbhs_data)) < 0) {
+-		printk(KERN_ERR "USBHS platform_device_add_data failed\n");
+-		goto init_end;
++	oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
++	if (!oh[0]) {
++		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
++		return;
++	}
++
++	oh[1] = omap_hwmod_lookup(USBHS_OHCI_HWMODNAME);
++	if (!oh[1]) {
++		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
++		return;
+ 	}
+ 
+-	if (platform_device_register(&usbhs_device) < 0)
+-		printk(KERN_ERR "USBHS platform_device_register failed\n");
++	oh[2] = omap_hwmod_lookup(USBHS_EHCI_HWMODNAME);
++	if (!oh[2]) {
++		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
++		return;
++	}
+ 
+-init_end:
+-	return;
++	oh[3] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
++	if (!oh[3]) {
++		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
++		return;
++	}
++
++	od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 4,
++				(void *)&usbhs_data, sizeof(usbhs_data),
++				omap_uhhtll_latency,
++				ARRAY_SIZE(omap_uhhtll_latency), false);
++
++	if (IS_ERR(od)) {
++		pr_err("Could not build hwmod devices %s, %s, %s, %s\n",
++			USBHS_UHH_HWMODNAME, USBHS_OHCI_HWMODNAME,
++			USBHS_EHCI_HWMODNAME, USBHS_TLL_HWMODNAME);
++		return;
++	}
+ }
+ 
+ #else
+-- 
+1.6.0.4
 
-Using pci_bus_add_resource() here *seems* like it should be the right
-thing, but I don't think it will work correctly.
-
-The problem is that struct pci_bus has both a table of resources
-(bus->resource[]) *and* a list (bus->resources).
-pci_bus_add_resource() always puts the new resource on the list, but
-various arch code still references the table directly, e.g., sparc has
-"pbus->resource[0] = &pbm->io_space" in pcibios_fixup_bus().
-
-As written, I think this patch will break sparc because the host
-bridge will end up with both pbm->io_space (in the table) and
-ioport_resource (in the list).
-
-I think something like this would work, though:
-
-    if (bus_res)
-        list_add_tail(&b->resources, &bus_res->list);
-    else {
-        b->resource[0] = &ioport_resource;
-        b->resource[1] = &iomem_resource;
-    }
-
-Bjorn
