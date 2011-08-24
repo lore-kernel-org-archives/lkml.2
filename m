@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab1HXCCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 22:02:44 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:56618 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754434Ab1HXCCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 22:02:39 -0400
-Subject: Re: [PATCH v2 35/43] unicore32: Use set_current_blocked() and
- block_sigmask()
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Reply-To: gxt@mprc.pku.edu.cn
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <1314008796.19751.28.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-	 <1313772419-21951-36-git-send-email-matt@console-pimps.org>
-	 <1313979346.2905.27.camel@epip-laptop>
-	 <1314008796.19751.28.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: MPRC, PKU
-Date: Wed, 24 Aug 2011 10:03:21 +0800
-Message-ID: <1314151401.29738.35.camel@epip-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756029Ab1HXCGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 22:06:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40206 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab1HXCGj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 22:06:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+X1aCRSADrUB+YVJ9j5u+VgGn=8fKw7A1eVVzPtODg+hK-B-w@mail.gmail.com>
+References: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
+	<1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
+	<CANejiEWadFK9GdXSwKgzNoj1Da_4QTUidTp-6FGkBtZwhbKvfw@mail.gmail.com>
+	<CA+X1aCRSADrUB+YVJ9j5u+VgGn=8fKw7A1eVVzPtODg+hK-B-w@mail.gmail.com>
+Date: Wed, 24 Aug 2011 10:06:38 +0800
+X-Google-Sender-Auth: 49wpnM6bgsaBqTbhEbi2P1tB9HY
+Message-ID: <CANejiEX=S8tyPDhAjm84+9xBNt08Q0mjWHjqh-kFqL4H1ME-RA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] CFQ: fix handling 'deep' cfqq
+From: Shaohua Li <shli@kernel.org>
+To: Maxim Patlasov <maxim.patlasov@gmail.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Matt,
+2011/8/23 Maxim Patlasov <maxim.patlasov@gmail.com>:
+> Hi,
+>
+>>> An aproach suggested here avoids performance degradations mentioned above.
+>>> With this patch applied, the performance on slow hdd is the same as it used
+>>> to be before 8e1ac6655104bc6e1e79d67e2df88cc8fa9b6e07, and, on fast h/w-raids,
+>>> it's roughly the same as for noop scheduler or CFQ with slice_idle=0.
+>> idle is a usual cause of cfq performance issue. did you have test in
+>> disk without NCQ?
+>
+> Yes, on the node with "slow hdd" CFQ detected it as hw_tag=0. I
+> explained what I tested in cover message (subj: [PATCH 0/1] CFQ:
+> fixing performance issues).
+>
+>> And did you test if this will hurt the performance of Vivek's original problem?
+>
+> No. What's Vivek's original problem?
+>
+>> snip
+>>> +       if (cfq_cfqq_deep_early(cfqq) && cfqq->n_dispatched >= CFQQ_DEEP_THR) {
+>>> +               if (cfqq->first_dispatch == jiffies)
+>>> +                       cfqd->cfq_disk_looks_fast++;
+>>> +               else
+>>> +                       cfqd->cfq_disk_looks_slow++;
+>>> +
+>> jiffies is too coarse here. A disk with NCQ can dispatch several
+>> requests within one jiffy.
+>
+> If a disk with NCQ dispatches four requests in raw within one jiffy
+> regularly, the patch I suggested will claim it as "fast enough". It
+> should be beneficial to disable idling for deep&seeky cfqq in this
+> case, imho. Anyway, existing code:
+>
+>>       /*
+>>        * This is a deep seek queue, but the device is much faster than
+>>        * the queue can deliver, don't idle
+>>        **/
+>>       if (CFQQ_SEEKY(cfqq) && cfq_cfqq_idle_window(cfqq) &&
+>>           (cfq_cfqq_slice_new(cfqq) ||
+>>           (cfqq->slice_end - jiffies > jiffies - cfqq->slice_start))) {
+>>               cfq_clear_cfqq_deep(cfqq);
+>>               cfq_clear_cfqq_idle_window(cfqq);
+>>       }
+>>
+>
+> would surely disable idling in this case. So, the patch I suggested
+> doesn't make things worse (as compared with existing implementation).
+but the cfq_disk_looks_slow isn't updated if the queue doesn't have 4 requests
+or doesn't dispatch > 4 requests, so you always have CFQD_DISK_LOOKS_FAST()
+return true if the first slice gets it to true. And if the queue does
+dispatch > 4 requests in one jiffy, only cfq_disk_looks_fast is updated,
+CFQD_DISK_LOOKS_FAST returns true too. I don't understand when
+CFQD_DISK_LOOKS_FAST can be false.
 
-For unicore32 bit,
-
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-
-
-On Mon, 2011-08-22 at 11:26 +0100, Matt Fleming wrote:
-> On Mon, 2011-08-22 at 10:15 +0800, Guan Xuetao wrote:
-> > Hi, Matt
-> > Could you add me (and other relevant people) to the patch series, or at
-> > least the main patches in the series, since the separated patch is hard
-> > to understand, and can't be tested.
-> > 
-> > For signal patches, I can only test it by booting up the system, running
-> > some commands, and perhaps, running lmbench or ltp.
-> > Is there any testsuite specified to signal part?
-> > 
-> > 
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > Thanks Matt.
-> > Guan Xuetao
-> 
-> Hi Guan,
-> 
-> Unfortunately there are too many maintainers to add directly to the Cc
-> list. However, I did reply to the first patch in the series (the only
-> other one that matters for arch maintainers) and added yourself and
-> linux-arch, so hopefully the rest of the arch maintainers will find it
-> there. But just to be complete, the link to the patch is here,
-> 
-> 	https://lkml.org/lkml/2011/8/19/409
-> 
-> There isn't really a specific testsuite that I would recommend, though
-> I'm pretty sure that LTP has some signal-related test cases. Booting up
-> your system and running some commands (and perhaps interrupting them
-> with Ctrl-C) should be good enough.
-> 
-
-
+Thanks,
+Shaohua
