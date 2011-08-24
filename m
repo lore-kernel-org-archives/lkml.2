@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab1HXA41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:56:27 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16424 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755847Ab1HXA4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:56:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,272,1312182000"; 
-   d="scan'208";a="41723776"
-Subject: Re: [patch 2/2]slub: add a type for slab partial list position
-From: Shaohua Li <shaohua.li@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "Shi, Alex" <alex.shi@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <alpine.DEB.2.00.1108231023470.21267@router.home>
-References: <1314059823.29510.19.camel@sli10-conroe>
-	 <alpine.DEB.2.00.1108231023470.21267@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Aug 2011 08:57:52 +0800
-Message-ID: <1314147472.29510.25.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756188Ab1HXA6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 20:58:42 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:23302 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749Ab1HXA6h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 20:58:37 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
+ manage ref_cnt
+Thread-Topic: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
+ manage ref_cnt
+Thread-Index: AQHMQxTTgKIq9Plk/0mMzxNJa+Ov05UrwuAA//+oJ+A=
+Date: Wed, 24 Aug 2011 00:58:36 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B239E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-86-git-send-email-kys@microsoft.com>
+ <20110823231028.GO9641@kroah.com>
+In-Reply-To: <20110823231028.GO9641@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 23:25 +0800, Christoph Lameter wrote:
-> On Tue, 23 Aug 2011, Shaohua Li wrote:
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, August 23, 2011 7:10 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
+> manage ref_cnt
 > 
-> > Adding slab to partial list head/tail is sensentive to performance.
-> > So adding a type to document it to avoid we get it wrong.
+> On Fri, Jul 15, 2011 at 10:47:14AM -0700, K. Y. Srinivasan wrote:
+> > Now that we have a spin lock protecting access to the stor device pointer,
+> > use it manage the reference count as well.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  drivers/staging/hv/hyperv_storage.h |    8 ++++----
+> >  drivers/staging/hv/storvsc.c        |   10 +++++-----
+> >  2 files changed, 9 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/hyperv_storage.h
+> b/drivers/staging/hv/hyperv_storage.h
+> > index 53b65be..d946211 100644
+> > --- a/drivers/staging/hv/hyperv_storage.h
+> > +++ b/drivers/staging/hv/hyperv_storage.h
+> > @@ -265,7 +265,7 @@ struct storvsc_device {
+> >  	struct hv_device *device;
+> >
+> >  	/* 0 indicates the device is being destroyed */
+> > -	atomic_t ref_count;
+> > +	int	 ref_count;
 > 
-> I think that if you want to make it more descriptive then using the stats
-> values (DEACTIVATE_TO_TAIL/HEAD) would avoid having to introduce an
-> additional enum and it would also avoid the if statement in the stat call.
-ok, that's better.
+> Is this really needed?  Can't you rely on the reference count of the
+> hv_device itself?
 
-Subject: slub: explicitly document position of inserting slab to partial list
+We don't have a reference count on the hv_device and this count is taken
+to deal with racing unloads and incoming traffic on the channel from the 
+host. 
 
-Adding slab to partial list head/tail is sensitive to performance.
-So explicitly uses DEACTIVATE_TO_TAIL/DEACTIVATE_TO_HEAD to document
-it to avoid we get it wrong.
+Regards,
 
-Signed-off-by: Shaohua Li <shli@kernel.org>
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
----
- mm/slub.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-Index: linux/mm/slub.c
-===================================================================
---- linux.orig/mm/slub.c	2011-08-24 08:46:27.000000000 +0800
-+++ linux/mm/slub.c	2011-08-24 08:49:41.000000000 +0800
-@@ -1534,7 +1534,7 @@ static inline void add_partial(struct km
- 				struct page *page, int tail)
- {
- 	n->nr_partial++;
--	if (tail)
-+	if (tail == DEACTIVATE_TO_TAIL)
- 		list_add_tail(&page->lru, &n->partial);
- 	else
- 		list_add(&page->lru, &n->partial);
-@@ -1781,13 +1781,13 @@ static void deactivate_slab(struct kmem_
- 	enum slab_modes l = M_NONE, m = M_NONE;
- 	void *freelist;
- 	void *nextfree;
--	int tail = 0;
-+	int tail = DEACTIVATE_TO_HEAD;
- 	struct page new;
- 	struct page old;
- 
- 	if (page->freelist) {
- 		stat(s, DEACTIVATE_REMOTE_FREES);
--		tail = 1;
-+		tail = DEACTIVATE_TO_TAIL;
- 	}
- 
- 	c->tid = next_tid(c->tid);
-@@ -1893,7 +1893,7 @@ redo:
- 		if (m == M_PARTIAL) {
- 
- 			add_partial(n, page, tail);
--			stat(s, tail ? DEACTIVATE_TO_TAIL : DEACTIVATE_TO_HEAD);
-+			stat(s, tail);
- 
- 		} else if (m == M_FULL) {
- 
-@@ -2377,7 +2377,7 @@ static void __slab_free(struct kmem_cach
- 		 */
- 		if (unlikely(!prior)) {
- 			remove_full(s, page);
--			add_partial(n, page, 1);
-+			add_partial(n, page, DEACTIVATE_TO_TAIL);
- 			stat(s, FREE_ADD_PARTIAL);
- 		}
- 	}
-@@ -2695,7 +2695,7 @@ static void early_kmem_cache_node_alloc(
- 	init_kmem_cache_node(n, kmem_cache_node);
- 	inc_slabs_node(kmem_cache_node, node, page->objects);
- 
--	add_partial(n, page, 0);
-+	add_partial(n, page, DEACTIVATE_TO_HEAD);
- }
- 
- static void free_kmem_cache_nodes(struct kmem_cache *s)
-
+K. Y
 
