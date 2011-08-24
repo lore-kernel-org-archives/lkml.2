@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab1HXWBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 18:01:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43170 "EHLO mx2.suse.de"
+	id S1751797Ab1HXWCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 18:02:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38746 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803Ab1HXWBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 18:01:07 -0400
-Date: Wed, 24 Aug 2011 14:54:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Arnd Bergmann <arnd@arndb.de>, alan@linux.intel.com,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-m68k@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: patch "TTY: remove tty_locked" added to tty tree
-Message-ID: <20110824215438.GA1025@suse.de>
-References: <13141210141189@kroah.org>
- <201108241320.47635.arnd@arndb.de>
- <4E54E4D9.6070802@suse.cz>
- <201108241635.13502.arnd@arndb.de>
- <4E556CB7.2010102@suse.cz>
- <20110824214201.GB30829@suse.de>
- <4E5571A6.6050705@suse.cz>
+	id S1750924Ab1HXWCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 18:02:33 -0400
+Message-ID: <4E5574C3.6080104@zytor.com>
+Date: Wed, 24 Aug 2011 15:01:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5571A6.6050705@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 07/12] x86: use cmpxchg_flag() where applicable
+References: <e1c8d3bcee83cc5ad00bdf8900a99add7abb1cb9.1314221624.git.jeremy.fitzhardinge@citrix.com> <cover.1314207974.git.jeremy.fitzhardinge@citrix.com> <3d7aea62fac48dd6e2da236d86234113fcd78178.1314221624.git.jeremy.fitzhardinge@citrix.com> <CA+55aFwEH16JAynxQzNTff0ikGnON9jq1mJOx1doDASV2a2fpg@mail.gmail.com>
+In-Reply-To: <CA+55aFwEH16JAynxQzNTff0ikGnON9jq1mJOx1doDASV2a2fpg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 11:48:22PM +0200, Jiri Slaby wrote:
-> On 08/24/2011 11:42 PM, Greg KH wrote:
-> > So, is your original patch you sent in this thread still needed?
+On 08/24/2011 02:56 PM, Linus Torvalds wrote:
+> Ok, I see nothing horrible in this series.
 > 
-> If you mean "TTY: remove tty_locked", then yes, it's fine to see
-> tty_locked go.
+> The one reaction I have is that the cmpxchg_flag() thing returns an
+> 8-bit value, but then a lot of the users end up having to extend it to
+> a full "int" purely for calling convention reasons (eg I think
+> 'down_write_trylock()' will have 'sete + movzl' - not a new problem,
+> but since the whole point was to remove extraneous instructions and we
+> no longer have the silly 'testl', it now annoys me more).
+> 
+> So it seems a bit sad. But I guess it doesn't really matter.
+> 
 
-Good, that's already in my tree :)
+I think it is a net lose.  The most common case is probably going to be
+to use it immediately, in which case we have:
 
-> It looks like we won't need it to fix the stalls in the end. If you
-> mean TTY-fix-stalls-on-BTM-when-waiting-until-sent, that one will be
-> superseded by a new one.
+cmpxchg -> sete -> compare -> conditional
 
-Ok, I'll wait for that one then, thanks.
+versus
 
-greg k-h
+cmpxchg -> compare -> conditional
+
+For doubleword cmpxchg it's another matter entirely, because doubleword
+comparisons are significantly more expensive that sete + test.
+
+So unless there is actual data showing this is better, I would like to
+see this dropped for now.
+
+	-hpa
