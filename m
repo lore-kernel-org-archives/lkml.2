@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1HXElm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 00:41:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47123 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354Ab1HXElk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 00:41:40 -0400
-Date: Wed, 24 Aug 2011 14:41:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: linux-next: manual merge of the staging tree with the fbdev tree
-Message-Id: <20110824144134.00bd3a688fb39b5d5563ff13@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752395Ab1HXEoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 00:44:16 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:65263 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab1HXEoP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 00:44:15 -0400
+Date: Wed, 24 Aug 2011 06:44:13 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] memblock: add memblock_start_of_DRAM()
+Message-ID: <20110824044412.GA17879@merkur.ravnborg.org>
+References: <20110806185923.GA8494@merkur.ravnborg.org> <20110823140309.9a7b36dd.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110823140309.9a7b36dd.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Tue, Aug 23, 2011 at 02:03:09PM -0700, Andrew Morton wrote:
+> On Sat, 6 Aug 2011 20:59:23 +0200
+> Sam Ravnborg <sam@ravnborg.org> wrote:
+> 
+> > SPARC32 require access to the start address.
+> > Add a new helper memblock_start_of_DRAM() to give
+> > access to the address of the first memblock - which
+> > contains the lowest address.
+> > 
+> 
+> What is the status of the sparc32 patches which need this change?
+Not at all ready yet :-(
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/xgifb/XGI_main_26.c between commit c42a3d543d2b
-("staging: xgifb: use display information in info not in var for
-panning") from the fbdev tree and commit c39aada6926c ("staging: xgifb:
-eliminate #ifdef XGIFB_PAN") from the staging tree.
+> If they're in some other tree then I'd suggest that this patch (which
+> needed some small changes for current mainline) join them in that tree.
+> 
+> Or we could slip this change into mainline immediately if that makes
+> life easier.
+> 
+> Or we could just wait for 3.1.
+I expect this to either go in via Tejuns memblock patches
+or via the sparc32 patches.
+I made the patch public this early only in case other needed the same.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/staging/xgifb/XGI_main_26.c
-index f8b88ad,4415d4a..0000000
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@@ -1363,8 -1357,7 +1357,7 @@@ static int XGIfb_do_set_var(struct fb_v
-  	return 0;
-  }
-  
-- #ifdef XGIFB_PAN
- -static int XGIfb_pan_var(struct fb_var_screeninfo *var)
- +static int XGIfb_pan_var(struct fb_var_screeninfo *var, struct fb_info *info)
-  {
-  	unsigned int base;
-  
+	Sam
