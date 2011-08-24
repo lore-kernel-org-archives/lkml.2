@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768Ab1HXIJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 04:09:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52892 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab1HXIJa (ORCPT
+	id S1755367Ab1HXIRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 04:17:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50732 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab1HXIRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 04:09:30 -0400
-Date: Wed, 24 Aug 2011 12:09:24 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Cc: James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH resend] vfs: Add ->statfs callback for pipefs
-Message-ID: <20110824080924.GG29452@sun>
+	Wed, 24 Aug 2011 04:17:45 -0400
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] Fix non-LPAE boot regression.
+Date: Wed, 24 Aug 2011 11:16:25 +0300
+User-Agent: KMail/1.13.7 (Linux/3.0.1-gentoo-anarsoul; KDE/4.6.3; i686; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <201108131556.27301.anarsoul@gmail.com> <20110815120914.GB21596@e102109-lin.cambridge.arm.com> <201108151531.45469.anarsoul@gmail.com>
+In-Reply-To: <201108151531.45469.anarsoul@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108241116.26118.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Emelyanov <xemul@parallels.com>
+On Monday 15 August 2011 15:31:44 Vasily Khoruzhick wrote:
+> On Monday 15 August 2011 15:09:14 Catalin Marinas wrote:
+> > Hi Vasily,
+> > 
+> > On Sat, Aug 13, 2011 at 01:58:19PM +0100, Vasily Khoruzhick wrote:
+> > > It was introduced by  407f8b4cb07cbc5c1c7cc386f231224e2524ccea
+> > > ARM: LPAE: MMU setup for the 3-level page table format
+> > > 
+> > > Signed-off-by: Vasily Khoruzhick <anarsoul@gmail.com>
+> > > ---
+> > > 
+> > >  arch/arm/kernel/head.S |    4 ++--
+> > >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+> > > index 0bdafc4..5add5f5 100644
+> > > --- a/arch/arm/kernel/head.S
+> > > +++ b/arch/arm/kernel/head.S
+> > > 
+> > > @@ -206,7 +206,7 @@ __create_page_tables:
+> > >  1:	orr	r3, r7, r5, lsl #SECTION_SHIFT	@ flags + kernel base
+> > >  
+> > >  	str	r3, [r4, r5, lsl #PMD_ORDER]	@ identity mapping
+> > >  	cmp	r5, r6
+> > > 
+> > > -	addlo	r5, r5, #SECTION_SHIFT >> 20	@ next section
+> > > +	addlo	r5, r5, #1			@ next section
+> > > 
+> > >  	blo	1b
+> > 
+> > That's correct.
+> > 
+> > >  	/*
+> > > 
+> > > @@ -217,7 +217,7 @@ __create_page_tables:
+> > >  	mov	r3, r3, lsr #SECTION_SHIFT
+> > >  	orr	r3, r7, r3, lsl #SECTION_SHIFT
+> > >  	add	r0, r4,  #(KERNEL_START & 0xff000000) >> (SECTION_SHIFT -
+> > >  	PMD_ORDER)
+> > > 
+> > > -	str	r3, [r0, #(KERNEL_START & 0x00e00000) >> (SECTION_SHIFT -
+> > > PMD_ORDER)]! +	str	r3, [r0, #(KERNEL_START & 0x00f00000) >>
+> > > (SECTION_SHIFT - PMD_ORDER)]!
+> > 
+> > The reason for this was that the sections are 2MB with LPAE and a page
+> > table entry is 64-bit wide. We always shift that value by 18 but with
+> > LPAE we don't want to write in the middle of a page table entry if
+> > KERNEL_START is not 2MB aligned.
+> > 
+> > But if KERNEL_START is not 2MB aligned, I think we get the wrong
+> > physical address by 1MB (with the classic page table format).
+> 
+> Yep, for my case KERNEL_START is not 2MB aligned (TEXT_OFFSET is 0x00108000). 
+> (CONFIG_PM_H1940 is set)
+> 
+> > There are a few alternatives to fixing this:
+> > 
+> > 1. Different KERNEL_START masking for classic or LPAE page tables.
+> > 2. Always force 2MB section and the code above moving the phys addr into
+> >    r3 would need to take this into account.
+> > 
+> > I would go for 1 with some shifting like below:
+> > 
+> > +	str	r3, [r0, #((KERNEL_START & 0x00f00000) >> SECTION_SHIFT) <<
+> > PMD_ORDER]!
+> > 
+> > This should give us 0x00f00000 with classic page tables and 0x00e00000
+> > with LPAE.
+> > 
+> > Thanks.
+> 
+> Ok, I'll test this change when I get home.
 
-This is done to make it possible to distinguish pipes
-from fifos when opening one via /proc/<pid>/fd/ link.
+Works for me on s3c24xx. Sorry for a delay.
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- fs/pipe.c |    1 +
- 1 file changed, 1 insertion(+)
-
-Any objections to this one? It was a part of a patchset
-but can be treated independently so I'm re-sending it alone.
-
-Index: linux-2.6.git/fs/pipe.c
-===================================================================
---- linux-2.6.git.orig/fs/pipe.c
-+++ linux-2.6.git/fs/pipe.c
-@@ -1254,6 +1254,7 @@ out:
- 
- static const struct super_operations pipefs_ops = {
- 	.destroy_inode = free_inode_nonrcu,
-+	.statfs = simple_statfs,
- };
- 
- /*
+Regards
+Vasily
