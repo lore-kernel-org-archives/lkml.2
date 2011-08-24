@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab1HXWig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 18:38:36 -0400
-Received: from claw.goop.org ([74.207.240.146]:53846 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752342Ab1HXWie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 18:38:34 -0400
-Message-ID: <4E555AD0.3020101@goop.org>
-Date: Wed, 24 Aug 2011 13:10:56 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1752198Ab1HXWk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 18:40:28 -0400
+Received: from mail.cs.tu-berlin.de ([130.149.17.13]:43385 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1HXWk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 18:40:27 -0400
+Message-ID: <4E557DCC.5050308@cs.tu-berlin.de>
+Date: Thu, 25 Aug 2011 00:40:12 +0200
+From: =?ISO-8859-1?Q?=22Jan_H=2E_Sch=F6nherr=22?= 
+	<schnhrr@cs.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110508 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 00/18] x86: Ticket lock + cmpxchg cleanup
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com> <1314209019.6925.53.camel@twins> <CA+55aFwuz14ez9=2wiG-344ua0tAJNL8ZuCC41fm6aFgCp+Txw@mail.gmail.com>
-In-Reply-To: <CA+55aFwuz14ez9=2wiG-344ua0tAJNL8ZuCC41fm6aFgCp+Txw@mail.gmail.com>
-X-Enigmail-Version: 1.3.1
+To: Paul Turner <pjt@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] sched: Handle on_list ancestor in list_add_leaf_cfs_rq()
+References: <1313503666-13726-1-git-send-email-schnhrr@cs.tu-berlin.de> <1313503666-13726-3-git-send-email-schnhrr@cs.tu-berlin.de> <1314125615.8002.90.camel@twins> <4E556CB2.3060502@cs.tu-berlin.de> <CAPM31RK1xvA6pige9zrLce0JeBDpaPa_WfN-bsR9_ZJDRtn87g@mail.gmail.com>
+In-Reply-To: <CAPM31RK1xvA6pige9zrLce0JeBDpaPa_WfN-bsR9_ZJDRtn87g@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2011 11:24 AM, Linus Torvalds wrote:
-> On Wed, Aug 24, 2011 at 11:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> The patches look good to me, and 50 lines less is always nice too!
+Am 24.08.2011 23:32, schrieb Paul Turner:
+>>> Now I don't really like the above because its hard to make the code go
+>>> away in the !FAIR_GROUP case, but maybe we can come up with something
+>>> for that.
 >>
->> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> So I mostly agree, except for the abortion that is the
-> __ticket_spin_unlock changes. Please just kill that part.
+>> Hmmm... you might want to reconsider my original approach to solve this:
+>> http://lkml.org/lkml/2011/7/18/86
+>>
+>> That might have been the cleanest one in this respect.
+>>
+>> Paul Turner did not like the introduced in-order removal, but the
+>> out-of-order removal is causing most problems.
+>>
+> 
+> Sorry for the delayed reply -- I owe you some feedback on the updated
+> versions but have been buried with other work.
 
-Could we just kill SMP support for OOSTORE machines now?  That would be
-the cleanest possible fix...
+No problem.
 
-> So I'd much have preferred that the xadd helper go in first (07/18),
-> then the patch to make __ticket_spin_lock the same for 32/64 would go
-> in next (04/18) using that helper, and then they'd just have been
-> identical automatically.
->
-> Instead, there are a few patches that actually make the code uglier
-> temporarily, only to then be undone later. That seems bogus, when it
-> looks so simple to fix it.
+> What I didn't like about the original approach was specifically the
+> positional dependence on enqueue/dequeue. 
 
-Yep, OK.  The current series is a history of incremental development; I
-can easily clean it up into something that appeared perfectly formed.
+Maybe I misunderstood you, then.
 
-    J
+If we can guarantee in-order removal of leaf_cfs_rqs, then there is
+no positional dependency. Any SE can be enqueued and dequeued anytime.
+
+OTOH, the RCU splice variant has a positional dependence: calling
+enqueue_entity() outside of enqueue_task_fair() can go wrong easily as it
+depends on being called bottom-up and requires its caller to maintain state.
+
+This is also partly true for the leaf_insertion_point variant: if a caller
+maintains state, then the pair enqueue_entity/enqueue_leaf_cfs_rq() also
+depends on being called bottom up.
+
+
+> If we can't do the splicing
+> properly then I think we want something like:
+> https://lkml.org/lkml/2011/7/18/348 to avoid shooting ourselves in the
+> future later.
+> 
+> See: https://lkml.org/lkml/2011/7/19/178 for why this should be cheap.
+
+As far as I can tell, all three variants proposed so far work.
+
+It is probably a matter of taste in the end. I'll happily help with
+whatever version tastes best. :)
+
+Regards
+Jan
