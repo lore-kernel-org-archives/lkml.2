@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab1HXQnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 12:43:25 -0400
-Received: from eastrmfepo202.cox.net ([68.230.241.217]:51457 "EHLO
-	eastrmfepo202.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab1HXQnY (ORCPT
+	id S1752602Ab1HXQoG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 12:44:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62322 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab1HXQoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 12:43:24 -0400
-X-Greylist: delayed 711 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 12:43:24 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A02020A.4E55275E.0078,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=mwl0/2xM3ubHJTXa6l4kGPt5l4r2ytuQtfJUKIGJKFg=
- c=1 sm=1 a=Dyoqhi_TatcA:10 a=DvSzqBOGy98A:10 a=Cfj4BQAnxiAA:10
- a=cON0yyOmcrEHWemEhnyXug==:17 a=KQIhcPuWQPl-0tQ6hzoA:9 a=Ft8UYL4EG9YA:10
- a=cON0yyOmcrEHWemEhnyXug==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=bndlpt@cox.net
-Reply-To: <verificationwebservice@qatar.io>
-From: "WEB-SUPPORT" <wibjab@bellsouth.net>
-Subject: mailbox execeed limit
-Date: Wed, 24 Aug 2011 22:01:15 +0530
+	Wed, 24 Aug 2011 12:44:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110824-1, 08/24/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110824163126.OQAY3924.eastrmfepo103.cox.net@eastrmimpo03.cox.net>
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <CAJL_dMug+L0oQjeDs_3Xs2s2=-_3ci-Ab5-iDS8Up5u-xbaHiw@mail.gmail.com>
+References: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com>
+	<20110824001137.GA23979@somewhere>
+	<CAFWT=83FNbAHUtPiouD3R06LEze5w1Mv07EL-x9VxSs_EXuruA@mail.gmail.com>
+	<20110824135852.GE23979@somewhere>
+	<4E5513FA.6060904@linux.intel.com>
+	<CAJL_dMug+L0oQjeDs_3Xs2s2=-_3ci-Ab5-iDS8Up5u-xbaHiw@mail.gmail.com>
+Date: Wed, 24 Aug 2011 12:44:02 -0400
+Message-ID: <CAFWT=80YV-+-COSfGnuDTSxqy17kgXCQpCVJD1b2yif_nM=1Yg@mail.gmail.com>
+Subject: Re: Bug Report for Linux Kernel 3.x
+From: Steevven1 <steevven1@gmail.com>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Mailbox has exceeded the storage limit which is 20GB as set by your
- Administrator, you are currently running on 20GB, you may not be able to
- send or receive new mails until you re-validate your mailbox.
- 
- To re-validate your mailbox please
- Enter Username and Password in the column given below to Validate your
- Account
- 
- Username...............................
- Password.........................................
- Date of Birth................................................
- 
- submit to us
- 
- 
-Thanks,
- System Adminstrator
-CHELLO ADMIN
+On Wed, Aug 24, 2011 at 11:52 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+> Hi all,
+>
+>
+> Make sure you read this:
+>
+> Tweaks To Extend The Battery Life Of Intel Linux Notebooks
+> http://www.phoronix.com/scan.php?page=article&item=intel_i915_power&num=1
+>
+> Linux 3.1 Kernel Draws More Power With Another Regression
+> http://www.phoronix.com/scan.php?page=article&item=linux_31_power_regress&num=1
+>
+
+VERY interesting! The second link seems to imply that Phoronix has
+independently found this same bug that we've been talking about in my
+originally-linked ubuntuforums discussion. Specifically, the
+interesting quote is:
+
+"Besides the new Linux 3.1 kernel power regression, there's also a
+power regression introduced in the Linux 3.0 kernel that has
+previously not been talked about on Phoronix. The Linux 3.0 power draw
+is up by 24% over the Linux 2.6.39 kernel."
