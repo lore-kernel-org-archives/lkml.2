@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab1HXV3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:29:00 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10361 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab1HXV26 convert rfc822-to-8bit (ORCPT
+	id S1753885Ab1HXVbZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:31:25 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38258 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752042Ab1HXVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:28:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 24 Aug 2011 14:28:35 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Colin Cross <ccross@google.com>
-CC: Ben Dooks <ben-linux@fluff.org>, Dilan Lee <dilee@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 24 Aug 2011 14:28:29 -0700
-Subject: RE: [PATCH] i2c/tegra: I2C driver uses the
- suspend_noirq/resume_noirq
-Thread-Topic: [PATCH] i2c/tegra: I2C driver uses the
- suspend_noirq/resume_noirq
-Thread-Index: AcxYnfuj5C+yaSHaS6Ksok715bGXgAKBh9MQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
-References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
- <CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
- <20110806084805.GA18098@sirena.org.uk>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
- <CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
- <CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
- <1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
- <CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
- <20110812031433.GE10218@opensource.wolfsonmicro.com>
-In-Reply-To: <20110812031433.GE10218@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Aug 2011 17:31:24 -0400
+X-Sasl-enc: dDfHTVqpxIZFVDEI2SUbYQkWmTT8W2Chho2iCs72K9CJ 1314221483
+Date: Wed, 24 Aug 2011 14:30:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] Kernel config option for number of devices
+Message-ID: <20110824213018.GE9707@kroah.com>
+References: <1314149690-3177-1-git-send-email-ngupta@vflare.org>
+ <1314149690-3177-2-git-send-email-ngupta@vflare.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314149690-3177-2-git-send-email-ngupta@vflare.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote at Thursday, August 11, 2011 9:15 PM:
-> On Thu, Aug 11, 2011 at 07:59:27PM -0700, Colin Cross wrote:
-> > On Thu, Aug 11, 2011 at 5:45 PM, Mark Brown
+On Wed, Aug 24, 2011 at 08:34:47AM +0700, Nitin Gupta wrote:
+> Allows configuring default number of zram devices
+> as kernel config option. User can override this
+> value using 'num_devices' module parameter.
 > 
-> > > For example with ASoC we'd sort all the components before the ASoC card
-> > > without regard for their bus dependencies or any other dependencies they
-> > > have (eg, their regulators). Since the ASoC card is a platform device
-> > > it's likely to have registered early with no regard for where the buses
-> > > the card needs are registered. I'd expect there's a reasonable chance
-> > > it'll actually make things worse in the short term.
-> 
-> > You can't just move everything after the card, you have to move
-> > everything after the last device that was probed, and it only works if
-> > nothing depends on any of the devices that are moved.
-> 
-> Sorry, I said that the wrong way round due to trying to reply quickly -
-> the card would be the thing that moves since that's the thing that
-> actually does the suspend but we've *no* idea which device we need to
-> move it after.  Since all the function does is a direct move after or
-> before a single device all we can do is pick one and pray that it's the
-> right device.
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> ---
+>  drivers/staging/zram/Kconfig    |    9 +++++++++
+>  drivers/staging/zram/zram_drv.c |   13 ++++++++-----
+>  2 files changed, 17 insertions(+), 5 deletions(-)
 
-Colin, 
+This patch fails to apply to my staging-next branch:
 
-This thread seems to have died down; how should we make progress?
+	patching file drivers/staging/zram/Kconfig
+	patching file drivers/staging/zram/zram_drv.c
+	Hunk #1 FAILED at 780.
+	Hunk #2 FAILED at 794.
+	2 out of 2 hunks FAILED -- saving rejects to file drivers/staging/zram/zram_drv.c.rej
 
-It sounds like the suspend_irq solution is the current de-facto standard;
-not optimal, but all we really have right now and already in use. I could
-certainly see avoiding this solution if it was the first time it was
-employed, but re-using it seems reasonable to me?
+Care to refresh all 4 patches here against that branch and resend them
+to me so that I can apply them?
 
-Alternatively, are you attending either Linux Plumbers Conference or the
-Kernel Summit? Mark implied this topic might well come up for discussion
-there. Unfortunately, I won't be able to make LPC due to a conflict.
+thanks,
 
-(and you'd mentioned having the subsystem maintainers weigh in on this;
-which sub-system; IRQ, power, I2C, ...?)
-
-Thanks!
-
--- 
-nvpublic
-
+greg k-h
