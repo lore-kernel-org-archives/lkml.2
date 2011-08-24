@@ -1,50 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab1HXVnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:43:41 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60633 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab1HXVnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:43:40 -0400
-Date: Wed, 24 Aug 2011 23:43:35 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 06/18] x86/ticketlock: make __ticket_spin_trylock common
-Message-ID: <20110824214334.GS25996@one.firstfloor.org>
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com> <c67b46c486c2c2de76c41ba5a012c07fb7659d8e.1314207974.git.jeremy.fitzhardinge@citrix.com> <m2pqjud1fz.fsf@firstfloor.org> <CA+55aFwjJqH0nVDUJ55Eiybm3NTWgHH5pK+SLh=YBW7u0KGP=A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwjJqH0nVDUJ55Eiybm3NTWgHH5pK+SLh=YBW7u0KGP=A@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1751841Ab1HXVpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:45:44 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44191 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750775Ab1HXVpn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:45:43 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Haojian Zhuang <haojian.zhuang@gmail.com>
+Date: Wed, 24 Aug 2011 14:45:46 -0700
+Subject: [PATCH] power: max8925_power:  No temperature interrupts if
+  temperature not connected
+Thread-Topic: [PATCH] power: max8925_power:  No temperature interrupts if
+  temperature not connected
+Thread-Index: Acxipyn7O5yNPvamSce55OhSsiSY3A==
+Message-ID: <991AD77B-B073-4B05-8F23-5EF9A569483C@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 02:38:12PM -0700, Linus Torvalds wrote:
-> On Wed, Aug 24, 2011 at 1:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >
-> > Can't we just get rid of the small ticket size code path?
-> >
-> > I couldn't benchmark any difference between the two last time
-> > I tried.
-> 
-> The small locks aren't any faster. They are just smaller.
 
-Are you sure? 
+Brownstone does not have temperature reading circuit hooked up.
+This leads to spurious interrupts.
 
-AFAIK it's always
+Allow the platform layer to indicate no temperature circuit
+and do not activate interrupts if no temperature control is set
 
-typedef struct arch_spinlock {
-        unsigned int slock;
-} arch_spinlock_t;
+Signed-off-by: Philip Rakity <prakity@marvell.com>
+---
+ drivers/power/max8925_power.c |   12 ++++++++----
+ include/linux/mfd/max8925.h   |    1 +
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
--Andi
+diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+index a70e16d..dba07f3 100644
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@ -78,6 +78,7 @@ struct max8925_power_info {
+ 	unsigned		batt_detect:1;	/* detecing MB by ID pin */
+ 	unsigned		topoff_threshold:2;
+ 	unsigned		fast_charge:3;
++	unsigned		no_temp_support:1;
+ 
+ 	int (*set_charger) (int);
+ };
+@@ -116,7 +117,7 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
+ 	case MAX8925_IRQ_VCHG_DC_F:
+ 		info->ac_online = 0;
+ 		__set_charger(info, 0);
+-		dev_dbg(chip->dev, "Adapter is removal\n");
++		dev_dbg(chip->dev, "Adapter removed\n");
+ 		break;
+ 	case MAX8925_IRQ_VCHG_USB_R:
+ 		info->usb_online = 1;
+@@ -126,7 +127,7 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
+ 	case MAX8925_IRQ_VCHG_USB_F:
+ 		info->usb_online = 0;
+ 		__set_charger(info, 0);
+-		dev_dbg(chip->dev, "USB is removal\n");
++		dev_dbg(chip->dev, "USB removed\n");
+ 		break;
+ 	case MAX8925_IRQ_VCHG_THM_OK_F:
+ 		/* Battery is not ready yet */
+@@ -370,8 +371,10 @@ static __devinit int max8925_init_charger(struct max8925_chip *chip,
+ 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_OVP, "usb-ovp");
+ 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_F, "usb-remove");
+ 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_R, "usb-insert");
+-	REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
+-	REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
++	if (!info->no_temp_support) {
++		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
++		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
++	}
+ 	REQUEST_IRQ(MAX8925_IRQ_VCHG_SYSLOW_F, "vsys-high");
+ 	REQUEST_IRQ(MAX8925_IRQ_VCHG_SYSLOW_R, "vsys-low");
+ 	REQUEST_IRQ(MAX8925_IRQ_VCHG_RST, "charger-reset");
+@@ -478,6 +481,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+ 	info->topoff_threshold = pdata->topoff_threshold;
+ 	info->fast_charge = pdata->fast_charge;
+ 	info->set_charger = pdata->set_charger;
++	info->no_temp_support = pdata->no_temp_support;
+ 
+ 	max8925_init_charger(chip, info);
+ 	return 0;
+diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
+index 5259dfe..69ec8f0 100644
+--- a/include/linux/mfd/max8925.h
++++ b/include/linux/mfd/max8925.h
+@@ -223,6 +223,7 @@ struct max8925_power_pdata {
+ 	unsigned	batt_detect:1;
+ 	unsigned	topoff_threshold:2;
+ 	unsigned	fast_charge:3;	/* charge current */
++	unsigned	no_temp_support:1; /* set if no temperature detect */
+ };
+ 
+ /*
+-- 
+1.7.6
+
+
