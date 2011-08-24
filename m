@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab1HXMTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 08:19:18 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49282 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028Ab1HXMTQ convert rfc822-to-8bit (ORCPT
+	id S1754124Ab1HXM1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 08:27:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47923 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab1HXM1X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 08:19:16 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Ravi, Deepthy" <deepthy.ravi@ti.com>
-CC: "mchehab@infradead.org" <mchehab@infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Wed, 24 Aug 2011 17:49:01 +0530
-Subject: RE: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-Thread-Topic: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-Thread-Index: AcxiURp8WelsHo6gSf2/Q72TbsSBwAABSSBQ
-Message-ID: <19F8576C6E063C45BE387C64729E739404EC007BE3@dbde02.ent.ti.com>
-References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com>
- <201108241217.11430.laurent.pinchart@ideasonboard.com>
- <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D0907F6@dbde03.ent.ti.com>
- <201108241329.48147.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201108241329.48147.laurent.pinchart@ideasonboard.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 24 Aug 2011 08:27:23 -0400
+Subject: [ia64] Question on __ARCH_WANT_UNLOCKED_CTXSW
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ken Chen <kenchen@google.com>, "Luck,Tony" <tony.luck@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>
+Date: Wed, 24 Aug 2011 14:27:13 +0200
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314188833.6925.3.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ken, Tony,
 
-> -----Original Message-----
-> From: Laurent Pinchart [mailto:laurent.pinchart@ideasonboard.com]
-> Sent: Wednesday, August 24, 2011 5:00 PM
-> To: Ravi, Deepthy
-> Cc: mchehab@infradead.org; linux-media@vger.kernel.org; linux-
-> kernel@vger.kernel.org; linux-omap@vger.kernel.org; Hiremath, Vaibhav
-> Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-> 
-> Hi,
-> 
-> On Wednesday 24 August 2011 13:21:27 Ravi, Deepthy wrote:
-> > On Wed, Aug 24, 2011 at 4:47 PM, Laurent Pinchart wrote:
-> > > On Friday 19 August 2011 15:48:45 Deepthy Ravi wrote:
-> > >> From: Vaibhav Hiremath <hvaibhav@ti.com>
-> > >>
-> > >> Fix the build break caused when CONFIG_MEDIA_CONTROLLER
-> > >> option is disabled and if any sensor driver has to be used
-> > >> between MC and non MC framework compatible devices.
-> > >>
-> > >> For example,if tvp514x video decoder driver migrated to
-> > >> MC framework is being built without CONFIG_MEDIA_CONTROLLER
-> > >> option enabled, the following error messages will result.
-> > >> drivers/built-in.o: In function `tvp514x_remove':
-> > >> drivers/media/video/tvp514x.c:1285: undefined reference to
-> > >> `media_entity_cleanup'
-> > >> drivers/built-in.o: In function `tvp514x_probe':
-> > >> drivers/media/video/tvp514x.c:1237: undefined reference to
-> > >> `media_entity_init'
-> > >
-> > > If the tvp514x is migrated to the MC framework, its Kconfig option
-> should
-> > > depend on MEDIA_CONTROLLER.
-> >
-> > The same TVP514x driver is being used for both MC and non MC compatible
-> > devices, for example OMAP3 and AM35x. So if it is made dependent on
-> MEDIA
-> > CONTROLLER, we cannot enable the driver for MC independent devices.
-> 
-> Then you should use conditional compilation in the tvp514x driver itself.
-> Or
-[Hiremath, Vaibhav] No. I am not in favor of conditional compilation in driver code. 
+happen to remember what the perceived benefit of using
+__ARCH_WANT_UNLOCKED_CTXSW was about?
 
-> better, port the AM35x driver to the MC API.
-> 
-[Hiremath, Vaibhav] 
-Why should we use MC if I have very simple device (like AM35x) which only supports single path? I can very well use simple V4L2 sub-dev based approach (master - slave), isn't it?
+---
+commit f8efa27662532ad5adb2790bfc3f4c78e019cfad
+Author: Chen, Kenneth W <kenneth.w.chen@intel.com>
+Date:   Thu Jan 26 18:24:59 2006 -0800
 
-Thanks,
-Vaibhav
+    [IA64] remove staled comments in asm/system.h
+    
+    With the recent optimization made to wrap_mmu_context function,
+    we don't hold tasklist_lock anymore when wrapping context id.
+    The comments in asm/system.h must fall through the crack earlier.
+    Remove staled comments.
+    
+    I believe it is still beneficial to unlock the runqueue lock
+    across context switch. So leave __ARCH_WANT_UNLOCKED_CTXSW on.
+    
+    Signed-off-by: Ken Chen <kenneth.w.chen@intel.com>
+    Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-> --
-> Regards,
-> 
-> Laurent Pinchart
+diff --git a/include/asm-ia64/system.h b/include/asm-ia64/system.h
+index 80c5a23..0625387 100644
+--- a/include/asm-ia64/system.h
++++ b/include/asm-ia64/system.h
+@@ -249,32 +249,7 @@ extern void ia64_load_extra (struct task_struct *task);
+ # define switch_to(prev,next,last)	__switch_to(prev, next, last)
+ #endif
+ 
+-/*
+- * On IA-64, we don't want to hold the runqueue's lock during the low-level context-switch,
+- * because that could cause a deadlock.  Here is an example by Erich Focht:
+- *
+- * Example:
+- * CPU#0:
+- * schedule()
+- *    -> spin_lock_irq(&rq->lock)
+- *    -> context_switch()
+- *       -> wrap_mmu_context()
+- *          -> read_lock(&tasklist_lock)
+- *
+- * CPU#1:
+- * sys_wait4() or release_task() or forget_original_parent()
+- *    -> write_lock(&tasklist_lock)
+- *    -> do_notify_parent()
+- *       -> wake_up_parent()
+- *          -> try_to_wake_up()
+- *             -> spin_lock_irq(&parent_rq->lock)
+- *
+- * If the parent's rq happens to be on CPU#0, we'll wait for the rq->lock
+- * of that CPU which will not be released, because there we wait for the
+- * tasklist_lock to become available.
+- */
+ #define __ARCH_WANT_UNLOCKED_CTXSW
+-
+ #define ARCH_HAS_PREFETCH_SWITCH_STACK
+ #define ia64_platform_is(x) (strcmp(x, platform_name) == 0)
+ 
+
