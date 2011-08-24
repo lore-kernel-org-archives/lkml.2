@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1HXRxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:53:34 -0400
-Received: from claw.goop.org ([74.207.240.146]:52874 "EHLO claw.goop.org"
+	id S1753337Ab1HXRxb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:53:31 -0400
+Received: from claw.goop.org ([74.207.240.146]:52878 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753019Ab1HXRxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:53:23 -0400
+	id S1753232Ab1HXRxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:53:22 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 18/18] x86: use xadd helper more widely
-Date: Wed, 24 Aug 2011 10:53:12 -0700
-Message-Id: <33726adcab00ad21e4811c9e2ea53e7cd74bf40b.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 15/18] x86: use cmpxchg_flag() where applicable
+Date: Wed, 24 Aug 2011 10:53:09 -0700
+Message-Id: <9bc60b30fb677d95eb4fb9c58bdc1fa231991ccb.1314207974.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
@@ -28,76 +28,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-This covers the trivial cases.
-
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/atomic.h      |    4 +---
- arch/x86/include/asm/atomic64_64.h |    4 +---
- arch/x86/include/asm/rwsem.h       |    4 +---
- arch/x86/include/asm/uv/uv_bau.h   |    4 +---
- 4 files changed, 4 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/cacheflush.h |    2 +-
+ arch/x86/include/asm/rwsem.h      |    7 ++-----
+ arch/x86/kernel/acpi/boot.c       |   10 ++++------
+ arch/x86/kernel/cpu/mcheck/mce.c  |    2 +-
+ arch/x86/xen/p2m.c                |   10 +++++-----
+ 5 files changed, 13 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index 952a826..f201fab 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -180,9 +180,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
- #endif
- 	/* Modern 486+ processor */
- 	__i = i;
--	asm volatile(LOCK_PREFIX "xaddl %0, %1"
--		     : "+r" (i), "+m" (v->counter)
--		     : : "memory");
-+	xadd(&v->counter, i);
- 	return i + __i;
- 
- #ifdef CONFIG_M386
-diff --git a/arch/x86/include/asm/atomic64_64.h b/arch/x86/include/asm/atomic64_64.h
-index 49fd1ea..ab3b586 100644
---- a/arch/x86/include/asm/atomic64_64.h
-+++ b/arch/x86/include/asm/atomic64_64.h
-@@ -171,9 +171,7 @@ static inline int atomic64_add_negative(long i, atomic64_t *v)
- static inline long atomic64_add_return(long i, atomic64_t *v)
- {
- 	long __i = i;
--	asm volatile(LOCK_PREFIX "xaddq %0, %1;"
--		     : "+r" (i), "+m" (v->counter)
--		     : : "memory");
-+	xadd(&v->counter, i);
- 	return i + __i;
+diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
+index 4e12668..6ceae20 100644
+--- a/arch/x86/include/asm/cacheflush.h
++++ b/arch/x86/include/asm/cacheflush.h
+@@ -56,7 +56,7 @@ static inline void set_page_memtype(struct page *pg, unsigned long memtype)
+ 	do {
+ 		old_flags = pg->flags;
+ 		new_flags = (old_flags & _PGMT_CLEAR_MASK) | memtype_flags;
+-	} while (cmpxchg(&pg->flags, old_flags, new_flags) != old_flags);
++	} while (!cmpxchg_flag(&pg->flags, old_flags, new_flags));
  }
- 
+ #else
+ static inline unsigned long get_page_memtype(struct page *pg) { return -1; }
 diff --git a/arch/x86/include/asm/rwsem.h b/arch/x86/include/asm/rwsem.h
-index 5a35263..958841a 100644
+index df4cd32..5a35263 100644
 --- a/arch/x86/include/asm/rwsem.h
 +++ b/arch/x86/include/asm/rwsem.h
-@@ -203,9 +203,7 @@ static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
+@@ -126,11 +126,8 @@ static inline void __down_write(struct rw_semaphore *sem)
+  */
+ static inline int __down_write_trylock(struct rw_semaphore *sem)
  {
- 	long tmp = delta;
- 
--	asm volatile(LOCK_PREFIX "xadd %0,%1"
--		     : "+r" (tmp), "+m" (sem->count)
--		     : : "memory");
-+	xadd(&sem->count, tmp);
- 
- 	return tmp + delta;
- }
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index 130f1ee..3d36436 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -488,9 +488,7 @@ static inline int atomic_read_short(const struct atomic_short *v)
- static inline int atomic_add_short_return(short i, struct atomic_short *v)
- {
- 	short __i = i;
--	asm volatile(LOCK_PREFIX "xaddw %0, %1"
--			: "+r" (i), "+m" (v->counter)
--			: : "memory");
-+	xadd(&v->counter, i);
- 	return i + __i;
+-	long ret = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
+-			   RWSEM_ACTIVE_WRITE_BIAS);
+-	if (ret == RWSEM_UNLOCKED_VALUE)
+-		return 1;
+-	return 0;
++	return cmpxchg_flag(&sem->count, RWSEM_UNLOCKED_VALUE,
++			    RWSEM_ACTIVE_WRITE_BIAS);
  }
  
+ /*
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 9a966c5..6bf0bf8 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1669,22 +1669,20 @@ early_param("acpi_sci", setup_acpi_sci);
+ 
+ int __acpi_acquire_global_lock(unsigned int *lock)
+ {
+-	unsigned int old, new, val;
++	unsigned int old, new;
+ 	do {
+ 		old = *lock;
+ 		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
+-		val = cmpxchg(lock, old, new);
+-	} while (unlikely (val != old));
++	} while (unlikely (!cmpxchg_flag(lock, old, new)));
+ 	return (new < 3) ? -1 : 0;
+ }
+ 
+ int __acpi_release_global_lock(unsigned int *lock)
+ {
+-	unsigned int old, new, val;
++	unsigned int old, new;
+ 	do {
+ 		old = *lock;
+ 		new = old & ~0x3;
+-		val = cmpxchg(lock, old, new);
+-	} while (unlikely (val != old));
++	} while (unlikely (!cmpxchg_flag(lock, old, new)));
+ 	return old & 0x1;
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 3385ea2..99ae2d1 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -198,7 +198,7 @@ void mce_log(struct mce *mce)
+ 		}
+ 		smp_rmb();
+ 		next = entry + 1;
+-		if (cmpxchg(&mcelog.next, entry, next) == entry)
++		if (cmpxchg_flag(&mcelog.next, entry, next))
+ 			break;
+ 	}
+ 	memcpy(mcelog.entry + entry, mce, sizeof(struct mce));
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 141eb0d..5510082 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -448,7 +448,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 
+ 		p2m_mid_init(mid);
+ 
+-		if (cmpxchg(top_p, p2m_mid_missing, mid) != p2m_mid_missing)
++		if (!cmpxchg_flag(top_p, p2m_mid_missing, mid))
+ 			free_p2m_page(mid);
+ 	}
+ 
+@@ -470,7 +470,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 
+ 		missing_mfn = virt_to_mfn(p2m_mid_missing_mfn);
+ 		mid_mfn_mfn = virt_to_mfn(mid_mfn);
+-		if (cmpxchg(top_mfn_p, missing_mfn, mid_mfn_mfn) != missing_mfn)
++		if (!cmpxchg_flag(top_mfn_p, missing_mfn, mid_mfn_mfn))
+ 			free_p2m_page(mid_mfn);
+ 		else
+ 			p2m_top_mfn_p[topidx] = mid_mfn;
+@@ -488,7 +488,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 
+ 		p2m_init(p2m);
+ 
+-		if (cmpxchg(&mid[mididx], p2m_orig, p2m) != p2m_orig)
++		if (!cmpxchg_flag(&mid[mididx], p2m_orig, p2m))
+ 			free_p2m_page(p2m);
+ 		else
+ 			mid_mfn[mididx] = virt_to_mfn(p2m);
+@@ -600,8 +600,8 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ 
+ 		/* Swap over from MISSING to IDENTITY if needed. */
+ 		if (p2m_top[topidx][mididx] == p2m_missing) {
+-			WARN_ON(cmpxchg(&p2m_top[topidx][mididx], p2m_missing,
+-				p2m_identity) != p2m_missing);
++			WARN_ON(!cmpxchg_flag(&p2m_top[topidx][mididx], p2m_missing,
++					      p2m_identity));
+ 			return true;
+ 		}
+ 	}
 -- 
 1.7.6
 
