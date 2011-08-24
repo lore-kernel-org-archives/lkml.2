@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab1HXDQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 23:16:11 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13548 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959Ab1HXDQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 23:16:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,273,1312182000"; 
-   d="scan'208";a="41755527"
-Date: Wed, 24 Aug 2011 11:16:03 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110824031603.GA30873@localhost>
-References: <20110816022006.348714319@intel.com>
- <20110816022328.811348370@intel.com>
- <20110816194112.GA25517@quack.suse.cz>
- <20110817132347.GA6628@localhost>
- <20110817202414.GK9959@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110817202414.GK9959@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756144Ab1HXDUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 23:20:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59622 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab1HXDUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 23:20:36 -0400
+Date: Wed, 24 Aug 2011 11:20:23 +0800
+From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ruslan Pisarev <ruslan@rpisarev.org.ua>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, Ilya Gorskin <Revent82@gmail.com>,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] Staging: cx25821: fix style issues
+Message-ID: <20110824112023.5fda8fe9@inspire>
+In-Reply-To: <20110823214504.GG3679@kroah.com>
+References: <1313393478-7068-1-git-send-email-leonidsbox@gmail.com>
+	<20110823214504.GG3679@kroah.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > +	x_intercept = setpoint + 2 * span;
->    ^^ BTW, why do you have 2*span here? It can result in x_intercept being
-> ~3*bdi_thresh... So maybe you should use bdi_thresh/2 in the computation of
-> span?
+On Tue, 23 Aug 2011 14:45:04 -0700
+Greg KH <greg@kroah.com> wrote:
 
-OK, I'll follow your suggestion to use
+> On Mon, Aug 15, 2011 at 03:31:15PM +0800, Leonid V. Fedorenchik wrote:
+> > This patch series fixes various coding style issues in
+> > drivers/staging/cx25821
+> 
+> Same goes for these patches, care to break them up more into logical
+> pieces?
+> 
+> thanks,
+> 
+> greg k-h
 
-        span = 8 * write_bw, for single bdi case 
-        span = bdi_thresh, for JBOD case
-        x_intercept = setpoint + span;
+Yeah, sure. :)
 
-It does make sense to squeeze the bdi_dirty fluctuation range a bit by
-doubling span and making the control line more sharp.
-
-Thanks,
-Fengguang
+Leonid V. Fedorenchik
