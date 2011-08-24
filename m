@@ -1,49 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab1HXUCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 16:02:55 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:43485 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044Ab1HXUCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 16:02:54 -0400
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        devel <devel@driverdev.osuosl.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: tidspbridge: fix compilation on dsp clock functions
-Date: Wed, 24 Aug 2011 15:07:04 -0500
-Message-Id: <1314216424-28538-1-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1752874Ab1HXUGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 16:06:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11687 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752620Ab1HXUGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 16:06:03 -0400
+Date: Wed, 24 Aug 2011 17:05:40 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
+Message-ID: <20110824200540.GA19804@amt.cnet>
+References: <4E4A10E8.5090705@cn.fujitsu.com>
+ <4E4A1257.5080204@cn.fujitsu.com>
+ <20110823080024.GA2297@amt.cnet>
+ <4E53872B.3070407@cn.fujitsu.com>
+ <20110823123818.GB4261@amt.cnet>
+ <4E53D620.9030304@cn.fujitsu.com>
+ <20110823190939.GA10220@amt.cnet>
+ <4E540AB4.6060905@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E540AB4.6060905@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seen on v3.1-rc3, patch:
+On Wed, Aug 24, 2011 at 04:16:52AM +0800, Xiao Guangrong wrote:
+> On 08/24/2011 03:09 AM, Marcelo Tosatti wrote:
+> > On Wed, Aug 24, 2011 at 12:32:32AM +0800, Xiao Guangrong wrote:
+> >> On 08/23/2011 08:38 PM, Marcelo Tosatti wrote:
+> >>
+> >>>> And, i think there are not problems since: if the spte without accssed bit is
+> >>>> written frequently, it means the guest page table is accessed infrequently or
+> >>>> during the writing, the guest page table is not accessed, in this time, zapping
+> >>>> this shadow page is not bad.
+> >>>
+> >>> Think of the following scenario:
+> >>>
+> >>> 1) page fault, spte with accessed bit is created from gpte at gfnA+indexA.
+> >>> 2) write to gfnA+indexA, spte has accessed bit set, write_flooding_count
+> >>> is not increased.
+> >>> 3) repeat
+> >>>
+> >>
+> >> I think the result is just we hoped, we do not want to zap the shadow page
+> >> because the spte is currently used by the guest, it also will be used in the
+> >> next repetition. So do not increase 'write_flooding_count' is a good choice.
+> > 
+> > Its not used. Step 2) is write to write protected shadow page at
+> > gfnA.
+> > 
+> >> Let's consider what will happen if we increase 'write_flooding_count':
+> >> 1: after three repetitions, zap the shadow page
+> >> 2: in step 1, we will alloc a new shadow page for gpte at gfnA+indexA
+> >> 3: in step 2, the flooding count is creased, so after 3 repetitions, the
+> >>    shadow page can be zapped again, repeat 1 to 3.
+> > 
+> > The shadow page will not be zapped because the spte created from
+> > gfnA+indexA has the accessed bit set:
+> > 
+> >        if (spte && !(*spte & shadow_accessed_mask))
+> >                sp->write_flooding_count++;
+> >        else
+> >                sp->write_flooding_count = 0;
+> > 
+> 
+> Ah, i see, i thought it was "repeat"ed on the same spte, it was my wrong.
+> 
+> Yes, in this case, the sp is not zapped, but it is hardly to know the gfn
+> is not used as gpte just depends on writing, for example, the guest can
+> change the mapping address or the status bit, and so on...The sp can be
+> zapped if the guest write it again(on the same address), i think it is
+> acceptable, anymore, it is just the speculative way to zap the unused
+> shadow page...your opinion?
 
-omap: mcbsp: Drop in-driver transfer support
-bafe2721a0fbd1cc1af04384133684f660f3658e
+It could increase the flood count independently of the accessed bit of
+the spte being updated, zapping after 3 attempts as it is now.
 
-Removed code that now cause tidspbridge to break while compiling.
+But additionally reset the flood count if the gpte appears to be valid
+(points to an existant gfn if the present bit is set, or if its zeroed).
 
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
- drivers/staging/tidspbridge/core/dsp-clock.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> >> The result is the shadow page for gfnA is alloced and zapped again and again,
+> >> yes?
+> > 
+> > The point is you cannot rely on the accessed bit of sptes that have been
+> > instantiated with the accessed bit set to decide whether or not to zap.
+> > Because the accessed bit will only be cleared on host memory pressure.
+> > 
+> 
+> Yes, accessed bit is the cursory way to track gpte accessed, however,
+> at least, the accessed bit can indicate whether the gfn is accessed
+> for a period of time in the most case, for example, from it is
+> speculated to it is written, or from it is zapped to it is written,
+> i thinks it is not too bad.
+> 
+> Do you have ideas to improve this?
 
-diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
-index 589a055..3d1279c 100644
---- a/drivers/staging/tidspbridge/core/dsp-clock.c
-+++ b/drivers/staging/tidspbridge/core/dsp-clock.c
-@@ -209,7 +209,6 @@ int dsp_clk_enable(enum dsp_clk_id clk_id)
- 		break;
- #ifdef CONFIG_OMAP_MCBSP
- 	case MCBSP_CLK:
--		omap_mcbsp_set_io_type(MCBSP_ID(clk_id), OMAP_MCBSP_POLL_IO);
- 		omap_mcbsp_request(MCBSP_ID(clk_id));
- 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PAD_SRC);
- 		break;
--- 
-1.7.0.4
 
