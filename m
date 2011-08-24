@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab1HXVBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:01:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:35294 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab1HXVBc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:01:32 -0400
+	id S1753538Ab1HXVBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:01:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60429 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753435Ab1HXVBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:01:44 -0400
+Message-ID: <4E556743.4000106@redhat.com>
+Date: Wed, 24 Aug 2011 23:04:03 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Message-ID: <1b9107c1-20a3-4e2c-9d83-6449857fb514@default>
-Date: Wed, 24 Aug 2011 14:01:01 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com
-Subject: RE: [PATCH V7 0/4] mm: frontswap: overview (and proposal to merge at
- next window)
-References: <20110823145735.GA23160@ca-server1.us.oracle.com
- 20110824205355.GD27865@dumpdata.com>
-In-Reply-To: <20110824205355.GD27865@dumpdata.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4E55669C.0060,ss=1,re=0.000,fgs=0
+To: Greg KH <greg@kroah.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Add USBDEVFS_TRY_DISCONNECT ioctl
+References: <20110821164108.GC6229@kroah.com> <Pine.LNX.4.44L0.1108241612590.1643-200000@iolanthe.rowland.org> <20110824204533.GA19618@kroah.com>
+In-Reply-To: <20110824204533.GA19618@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Konrad Rzeszutek Wilk
-> Subject: Re: [PATCH V7 0/4] mm: frontswap: overview (and proposal to merge at next window)
-> 
-> On Tue, Aug 23, 2011 at 07:57:35AM -0700, Dan Magenheimer wrote:
-> > [PATCH V7 0/4] mm: frontswap: overview (and proposal to merge at next window)
-> 
-> Is there a git branch of these patches?
+Hi,
 
-I'll get V7 into linux-next in a day or two (assuming someone else
-doesn't find a glaring problem before then which would require a V8).
-Linux-next currently has V6.
- 
-> Also, on a unrelated note - your patches have 'Subject: Subject: [PATCH..'
-> - you might want to fix your fancy mail sending tools.
+First of all: A big thanks to Alan for working on this. From my POV
+the code looks good, but I'm only familiar with the usb parts
+and not with the scsi parts.
 
-Sigh, sorry.  It's an artifact of my use of "git am".  I thought I
-had fixed it in my scripts after a trial send to myself, but neglected
-to move the changed script to my external-email-sending machine.
+One generic concern is the use of scsi_lock(host) in the
+scsi_device_open / close callbacks. We need to be sure non
+of the callers of these can already be holding the lock.
 
-Dan
+On 08/24/2011 10:45 PM, Greg KH wrote:
+> On Wed, Aug 24, 2011 at 04:32:31PM -0400, Alan Stern wrote:
+>> Okay, here's a sample patch.  Actually it's three patches, listed one
+>> after another, but people can apply it like a single patch.
+>>
+>>       1.	Introduce the USBDEVFS_TRY_DISCONNECT ioctl and the check_busy
+>> 	callback it uses.  Implement the callback in the usbfs driver;
+>> 	this gives a way for programs to unbind kernel drivers without
+>> 	unbinding other userspace drivers.
+>>
+>>       2.	Implement device-file reference tracking in the SCSI layer,
+>> 	and the device_open and device_close callbacks it uses.
+>
+> Does this handle if the filesystem is being created or fscked, as it's
+> not mounted at that time.
+>
+>> @@ -1647,9 +1653,16 @@ static int proc_ioctl(struct dev_state *
+>>   	else switch (ctl->ioctl_code) {
+>>
+>>   	/* disconnect kernel driver from interface */
+>> +	case USBDEVFS_TRY_DISCONNECT:
+>>   	case USBDEVFS_DISCONNECT:
+>>   		if (intf->dev.driver) {
+>>   			driver = to_usb_driver(intf->dev.driver);
+>> +			if (ctl->ioctl_code == USBDEVFS_TRY_DISCONNECT&&
+>> +					driver->check_busy) {
+>> +				retval = driver->check_busy(intf);
+>> +				if (retval)
+>> +					break;
+>> +			}
+>
+> I don't like the fact that if a driver doesn't contain check_busy() then
+> it will automatically fall back to looking like it was a DISCONNECT
+> call, which could give userspace a false sense of "everything was fine"
+> when trying this out.
+
+I've to agree with Greg here, what to do in case of a driver not
+implementing check_busy and thus not really offering USBDEVFS_TRY_DISCONNECT
+is policy and thus should be left to userspace. I suggest we just return
+-ENOTTY in case of USBDEVFS_TRY_DISCONNECT and the bound driver does not
+have checkbusy, then userspace can decide wether to fallback to a regular
+disconnect, or to give up.
+
+Regards,
+
+Hans
