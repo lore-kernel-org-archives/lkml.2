@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab1HXVpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:45:44 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44191 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750775Ab1HXVpn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:45:43 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Haojian Zhuang <haojian.zhuang@gmail.com>
-Date: Wed, 24 Aug 2011 14:45:46 -0700
-Subject: [PATCH] power: max8925_power:  No temperature interrupts if
-  temperature not connected
-Thread-Topic: [PATCH] power: max8925_power:  No temperature interrupts if
-  temperature not connected
-Thread-Index: Acxipyn7O5yNPvamSce55OhSsiSY3A==
-Message-ID: <991AD77B-B073-4B05-8F23-5EF9A569483C@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751732Ab1HXVqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:46:31 -0400
+Received: from claw.goop.org ([74.207.240.146]:53628 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827Ab1HXVqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:46:30 -0400
+Message-ID: <4E557132.2020109@goop.org>
+Date: Wed, 24 Aug 2011 14:46:26 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 00/18] x86: Ticket lock + cmpxchg cleanup
+References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/24/2011 02:36 PM, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>
+> Hi all,
+>
+> Another spin of the cmpxchg/xadd/ticketlock cleanups.
+>
+> Changes from last post:
+>   - reorder all the cmpxchg/xadd patches first
+>   - change xadd to return prev rather than implicitly update arg
+>   - recast ticketlock cleanup in terms of xadd
+>   - drop conversion of unlock to C
+>
+> This is also available at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/ticketlock-cleanup
+>
+>  arch/x86/include/asm/atomic.h         |    8 +-
+>  arch/x86/include/asm/atomic64_64.h    |    6 +-
+>  arch/x86/include/asm/cacheflush.h     |    2 +-
+>  arch/x86/include/asm/cmpxchg.h        |  232 +++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/cmpxchg_32.h     |  128 ++----------------
+>  arch/x86/include/asm/cmpxchg_64.h     |  131 -------------------
+>  arch/x86/include/asm/rwsem.h          |   15 +--
+>  arch/x86/include/asm/spinlock.h       |  110 ++++------------
+>  arch/x86/include/asm/spinlock_types.h |   22 +++-
+>  arch/x86/include/asm/uv/uv_bau.h      |    6 +-
+>  arch/x86/kernel/acpi/boot.c           |   10 +-
+>  arch/x86/kernel/cpu/mcheck/mce.c      |    2 +-
+>  arch/x86/xen/p2m.c                    |   10 +-
+>  13 files changed, 311 insertions(+), 371 deletions(-)
+>
+> Thanks,
+> 	J
 
-Brownstone does not have temperature reading circuit hooked up.
-This leads to spurious interrupts.
+Uh, that's 00/12, and ignore the below; that's left over from the
+previous posting.
 
-Allow the platform layer to indicate no temperature circuit
-and do not activate interrupts if no temperature control is set
+    J
 
-Signed-off-by: Philip Rakity <prakity@marvell.com>
----
- drivers/power/max8925_power.c |   12 ++++++++----
- include/linux/mfd/max8925.h   |    1 +
- 2 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index a70e16d..dba07f3 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -78,6 +78,7 @@ struct max8925_power_info {
- 	unsigned		batt_detect:1;	/* detecing MB by ID pin */
- 	unsigned		topoff_threshold:2;
- 	unsigned		fast_charge:3;
-+	unsigned		no_temp_support:1;
- 
- 	int (*set_charger) (int);
- };
-@@ -116,7 +117,7 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
- 	case MAX8925_IRQ_VCHG_DC_F:
- 		info->ac_online = 0;
- 		__set_charger(info, 0);
--		dev_dbg(chip->dev, "Adapter is removal\n");
-+		dev_dbg(chip->dev, "Adapter removed\n");
- 		break;
- 	case MAX8925_IRQ_VCHG_USB_R:
- 		info->usb_online = 1;
-@@ -126,7 +127,7 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
- 	case MAX8925_IRQ_VCHG_USB_F:
- 		info->usb_online = 0;
- 		__set_charger(info, 0);
--		dev_dbg(chip->dev, "USB is removal\n");
-+		dev_dbg(chip->dev, "USB removed\n");
- 		break;
- 	case MAX8925_IRQ_VCHG_THM_OK_F:
- 		/* Battery is not ready yet */
-@@ -370,8 +371,10 @@ static __devinit int max8925_init_charger(struct max8925_chip *chip,
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_OVP, "usb-ovp");
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_F, "usb-remove");
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_R, "usb-insert");
--	REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
--	REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
-+	if (!info->no_temp_support) {
-+		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
-+		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
-+	}
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_SYSLOW_F, "vsys-high");
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_SYSLOW_R, "vsys-low");
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_RST, "charger-reset");
-@@ -478,6 +481,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
- 	info->topoff_threshold = pdata->topoff_threshold;
- 	info->fast_charge = pdata->fast_charge;
- 	info->set_charger = pdata->set_charger;
-+	info->no_temp_support = pdata->no_temp_support;
- 
- 	max8925_init_charger(chip, info);
- 	return 0;
-diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
-index 5259dfe..69ec8f0 100644
---- a/include/linux/mfd/max8925.h
-+++ b/include/linux/mfd/max8925.h
-@@ -223,6 +223,7 @@ struct max8925_power_pdata {
- 	unsigned	batt_detect:1;
- 	unsigned	topoff_threshold:2;
- 	unsigned	fast_charge:3;	/* charge current */
-+	unsigned	no_temp_support:1; /* set if no temperature detect */
- };
- 
- /*
--- 
-1.7.6
-
+>
+> Jeremy Fitzhardinge (18):
+>   x86/ticketlock: clean up types and accessors
+>   x86/ticketlock: convert spin loop to C
+>   x86/ticketlock: Use C for __ticket_spin_unlock
+>   x86/ticketlock: make large and small ticket versions of spin_lock the
+>     same
+>   x86/ticketlock: make __ticket_spin_lock common
+>   x86/ticketlock: make __ticket_spin_trylock common
+>   x86: add xadd helper macro
+>   x86/ticketlock: use xadd helper
+>   x86/cmpxchg: linux/alternative.h has LOCK_PREFIX
+>   x86/cmpxchg: move 32-bit __cmpxchg_wrong_size to match 64 bit.
+>   x86/cmpxchg: move 64-bit set64_bit() to match 32-bit
+>   x86/cmpxchg: unify cmpxchg into cmpxchg.h
+>   x86: add cmpxchg_flag() variant
+>   x86/ticketlocks: use cmpxchg_flag for trylock
+>   x86: use cmpxchg_flag() where applicable
+>   x86: report xchg/cmpxchg/xadd usage errors consistently
+>   x86: add local and sync variants of xadd
+>   x86: use xadd helper more widely
+>
+>  arch/x86/include/asm/atomic.h         |    4 +-
+>  arch/x86/include/asm/atomic64_64.h    |    4 +-
+>  arch/x86/include/asm/cacheflush.h     |    2 +-
+>  arch/x86/include/asm/cmpxchg.h        |  223 +++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/cmpxchg_32.h     |  128 ++-----------------
+>  arch/x86/include/asm/cmpxchg_64.h     |  131 -------------------
+>  arch/x86/include/asm/rwsem.h          |   11 +--
+>  arch/x86/include/asm/spinlock.h       |  140 +++++++--------------
+>  arch/x86/include/asm/spinlock_types.h |   22 +++-
+>  arch/x86/include/asm/uv/uv_bau.h      |    4 +-
+>  arch/x86/kernel/acpi/boot.c           |   10 +-
+>  arch/x86/kernel/cpu/mcheck/mce.c      |    2 +-
+>  arch/x86/xen/p2m.c                    |   10 +-
+>  13 files changed, 321 insertions(+), 370 deletions(-)
+>
 
