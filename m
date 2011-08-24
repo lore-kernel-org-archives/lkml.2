@@ -1,191 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab1HXGqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 02:46:25 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38135 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1HXGqX convert rfc822-to-8bit (ORCPT
+	id S1753358Ab1HXGw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 02:52:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60944 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1HXGw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 02:46:23 -0400
+	Wed, 24 Aug 2011 02:52:57 -0400
+Date: Tue, 23 Aug 2011 23:52:51 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.1-rc3
+Message-ID: <20110824065251.GB15604@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <1313747646-32294-1-git-send-email-linus.walleij@stericsson.com>
-References: <1313747646-32294-1-git-send-email-linus.walleij@stericsson.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 24 Aug 2011 14:46:02 +0800
-Message-ID: <CAGsJ_4zwDimvQYSq-6Xck8QvyJjnm=NhyK80tUVNC4ZuLw17+w@mail.gmail.com>
-Subject: Re: [PATCH 2/4 v4] pinmux: add a driver for the U300 pinmux
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/**
-> + * @dev: a pointer back to containing device
-> + * @virtbase: the offset to the controller in virtual memory
-> + */
-> +struct u300_pmx {
-> +       struct device *dev;
-> +       struct pinmux_dev *pmx;
+Hi Linus,
 
- pinctrl_dev?
+Please pull from:
 
-> +static int u300_pmx_enable(struct pinmux_dev *pmxdev, unsigned selector)
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
- pinctrl_dev?
+to receive updates for the input subsystem.
 
-> +{
-> +       struct u300_pmx *upmx;
-> +
-> +       if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-> +               return -EINVAL;
-> +       upmx = pmxdev_get_drvdata(pmxdev);
-> +       u300_pmx_endisable(upmx, selector, true);
-> +
-> +       return 0;
-> +}
-> +
-> +static void u300_pmx_disable(struct pinmux_dev *pmxdev, unsigned selector)
+Changelog:
+---------
 
- pinctrl_dev?
+Andrew Drake (1):
+      Input: bcm5974 - Add support for newer MacBookPro8,2
 
-> +{
-> +       struct u300_pmx *upmx;
-> +
-> +       if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-> +               return;
-> +       upmx = pmxdev_get_drvdata(pmxdev);
+Axel Lin (5):
+      Input: mma8450 - fix module device table type
+      Input: mpu3050 - correct call to input_free_device
+      Input: tegra-kbc - correct call to input_free_device
+      Input: tnetv107x-ts - add missing include of linux/module.h
+      Input: ep93xx_keypad - add missing include of linux/module.h
 
-pctrldev_get_drvdata?
+Deepak Saxena (1):
+      Input: remove CLOCK_TICK_RATE from analog joystick driver
 
-> +       u300_pmx_endisable(upmx, selector, false);
-> +}
-> +
-> +static int u300_pmx_list(struct pinmux_dev *pmxdev, unsigned selector)
+Dmitry Torokhov (1):
+      Input: ad714x - use DMA-safe buffers for spi_write()
 
- pinctrl_dev?
+Gerard Braad (1):
+      Input: wacom - add support for the Wacom Bamboo Pen (CTL-660/K)
 
-> +{
-> +       if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-> +               return -EINVAL;
-> +       return 0;
-> +}
-> +
-> +static const char *u300_pmx_get_fname(struct pinmux_dev *pmxdev,
-> +                                     unsigned selector)
+Jiejing Zhang (1):
+      Input: max11801_ts - correct license statement
 
- pinctrl_dev?
+Joshua V. Dillon (1):
+      Input: bcm5974 - add support for touchpads found in MacBookAir4,2
 
-> +{
-> +       if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-> +               return NULL;
-> +       return u300_pmx_funcs[selector].name;
-> +}
-> +
-> +static int u300_pmx_get_pins(struct pinmux_dev *pmxdev, unsigned selector,
-> +                            unsigned ** const pins, unsigned * const num_pins)
+Michael Hennerich (3):
+      Input: ad714xx-spi - force SPI bus into the default 8-bit mode
+      Input: ad714x - fix endianness issues
+      Input: ad714x - read the interrupt status registers in a row
 
- pinctrl_dev?
+Ping Cheng (2):
+      Input: wacom - add WAC_MSG_RETRIES define
+      Input: wacom - report id 3 returns 4 bytes of data
 
-> +{
-> +       if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-> +               return -EINVAL;
-> +       *pins = (unsigned *) u300_pmx_funcs[selector].pins;
-> +       *num_pins = u300_pmx_funcs[selector].num_pins;
-> +       return 0;
-> +}
-> +
-> +static void u300_dbg_show(struct pinmux_dev *pmxdev, struct seq_file *s,
+Yufeng Shen (1):
+      Input: atmel_mxt_ts - report pressure information from the driver
 
- pinctrl_dev?
 
-> +                  unsigned offset)
-> +{
-> +       seq_printf(s, " " DRIVER_NAME);
-> +}
-> +
-> +static struct pinmux_ops u300_pmx_ops = {
-> +       .list_functions = u300_pmx_list,
-> +       .get_function_name = u300_pmx_get_fname,
-> +       .get_function_pins = u300_pmx_get_pins,
-> +       .enable = u300_pmx_enable,
-> +       .disable = u300_pmx_disable,
-> +       .dbg_show = u300_dbg_show,
-> +};
-> +
-> +static struct pinmux_desc u300_pmx_desc = {
-> +       .name = DRIVER_NAME,
-> +       .pins = u300_pads,
-> +       .npins = ARRAY_SIZE(u300_pads),
-> +       .maxpin = U300_NUM_PADS-1,
-> +       .pmxops = &u300_pmx_ops,
-> +       .owner = THIS_MODULE,
-> +};
-> +
-> +static int __init u300_pmx_probe(struct platform_device *pdev)
-> +{
-> +       int ret;
-> +       struct u300_pmx *upmx;
-> +       struct resource *res;
-> +
-> +       /* Create state holders etc for this driver */
-> +       upmx = kzalloc(sizeof(struct u300_pmx), GFP_KERNEL);
-> +       if (!upmx)
-> +               return -ENOMEM;
-> +
-> +       upmx->dev = &pdev->dev;
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       if (!res) {
-> +               ret = -ENOENT;
-> +               goto out_no_resource;
-> +       }
-> +       upmx->phybase = res->start;
-> +       upmx->physize = resource_size(res);
-> +
-> +       if (request_mem_region(upmx->phybase, upmx->physize,
-> +                              DRIVER_NAME) == NULL) {
-> +               ret = -EBUSY;
-> +               goto out_no_memregion;
-> +       }
-> +
-> +       upmx->virtbase = ioremap(upmx->phybase, upmx->physize);
-> +       if (!upmx->virtbase) {
-> +               ret = -ENOMEM;
-> +               goto out_no_remap;
-> +       }
-> +
-> +       /* Now register the pin controller and all pins it handles */
-> +       upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
-> +       if (IS_ERR(upmx->pctl)) {
-> +               dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
-> +               ret = PTR_ERR(upmx->pmx);
-> +               goto out_no_pmx;
-> +       }
-> +       platform_set_drvdata(pdev, upmx);
-> +
-> +       dev_info(&pdev->dev, "initialized U300 pinmux driver\n");
-> +
-> +       return 0;
-> +
-> +out_no_pmx:
-> +       iounmap(upmx->virtbase);
-> +out_no_remap:
-> +       platform_set_drvdata(pdev, NULL);
+Diffstat:
+--------
 
-where have you set drv data to non-NULL?
+ drivers/input/joystick/analog.c          |    2 +-
+ drivers/input/keyboard/ep93xx_keypad.c   |    1 +
+ drivers/input/keyboard/tegra-kbc.c       |    2 +-
+ drivers/input/misc/ad714x-i2c.c          |   81 ++++++++++-----------
+ drivers/input/misc/ad714x-spi.c          |   68 ++++++++++++++----
+ drivers/input/misc/ad714x.c              |  116 +++++++++++------------------
+ drivers/input/misc/ad714x.h              |   35 ++++++++-
+ drivers/input/misc/mma8450.c             |    2 +-
+ drivers/input/misc/mpu3050.c             |    2 +-
+ drivers/input/mouse/bcm5974.c            |   40 ++++++++++
+ drivers/input/tablet/wacom_sys.c         |   17 +++--
+ drivers/input/tablet/wacom_wac.c         |    4 +
+ drivers/input/touchscreen/atmel_mxt_ts.c |   12 +++
+ drivers/input/touchscreen/max11801_ts.c  |    3 +-
+ drivers/input/touchscreen/tnetv107x-ts.c |    1 +
+ 15 files changed, 241 insertions(+), 145 deletions(-)
 
-> +out_no_memregion:
-> +       release_mem_region(upmx->phybase, upmx->physize);
-> +out_no_resource:
-> +       kfree(upmx);
-> +       return ret;
-> +}
-> +
+-- 
+Dmitry
 
--barry
