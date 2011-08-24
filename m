@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab1HXBaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 21:30:15 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:40204 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753515Ab1HXBaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 21:30:09 -0400
-Subject: Re: linux-next: manual merge of the net tree with the unicore32
- tree
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Reply-To: gxt@mprc.pku.edu.cn
-To: jeffrey.t.kirsher@intel.com
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhang Shu <davidshuzhang@gmail.com>,
-        Chu Xiaowei <chuxiaowei@mprc.pku.edu.cn>,
-        Su Yonggang <tonyhook.su@gmail.com>
-In-Reply-To: <1314090049.2128.224.camel@jtkirshe-mobl>
-References: <20110823130210.766d466d689d60536f59340a@canb.auug.org.au>
-	 <1314090049.2128.224.camel@jtkirshe-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Organization: MPRC, PKU
-Date: Wed, 24 Aug 2011 09:28:42 +0800
-Message-ID: <1314149322.29738.14.camel@epip-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1756083Ab1HXBa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 21:30:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55078 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755549Ab1HXBat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 21:30:49 -0400
+Message-ID: <4E545467.9070202@cn.fujitsu.com>
+Date: Wed, 24 Aug 2011 09:31:19 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        rjw@sisk.pl, paul@paulmenage.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Subject: Re: [PATCH 1/6] cgroup: subsys->attach_task() should be called after
+ migration
+References: <1314138000-2049-1-git-send-email-tj@kernel.org> <1314138000-2049-2-git-send-email-tj@kernel.org> <20110824003234.GB23979@somewhere>
+In-Reply-To: <20110824003234.GB23979@somewhere>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-24 09:29:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-24 09:29:45,
+	Serialize complete at 2011-08-24 09:29:45
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 02:00 -0700, Jeff Kirsher wrote:
-> On Mon, 2011-08-22 at 20:02 -0700, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Today's linux-next merge of the net tree got conflicts in
-> > drivers/net/Kconfig and drivers/net/Makefile between commit
-> > e8787de6fa83
-> > ("unicore32: add pkunity-v3 mac/net driver (umal)") from the unicore32
-> > tree and the network driver rearrangement from the net tree.
-> > 
-> > I just added the new driver from the unicore32 tree commit into each
-> > file
-> > (see below).
-> > -- 
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au 
+> There have been a patch posted recently:
 > 
-> Hmm, well with the latest series of patches I sent out, I am pretty sure
-> this patch would not apply.
-Ok, I see.
-Thanks Jeff, and thanks Stephen.
-
-Guan Xuetao
-
+>         "[PATCH][BUGFIX] cgroups: fix ordering of calls in cgroup_attach_proc"
 > 
-> Is it best that this patch not be sent to netdev for driver
-> inclusion? :)
+> that not only fixes that ordering but also only attach the task if the
+> migration happened correctly (task not exited).
+> 
+> Can somebody queue it for 3.2 ?
+> 
 
-
+cgroup patches normally go through -mm tree.
