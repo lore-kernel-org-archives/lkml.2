@@ -1,122 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab1HXWeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 18:34:19 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:60793 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab1HXWeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 18:34:18 -0400
-Date: Wed, 24 Aug 2011 15:34:12 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, oleg@redhat.com
-Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
-Message-ID: <20110824223412.GG28444@count0.beaverton.ibm.com>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org>
- <1313763382-12341-7-git-send-email-tj@kernel.org>
+	id S1752375Ab1HXWgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 18:36:24 -0400
+Received: from mail-qy0-f198.google.com ([209.85.216.198]:58862 "EHLO
+	mail-qy0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab1HXWgX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 18:36:23 -0400
+X-Greylist: delayed 3310 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 18:36:22 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313763382-12341-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
+References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
+	<CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
+	<20110806084805.GA18098@sirena.org.uk>
+	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
+	<CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
+	<CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
+	<1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
+	<CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
+	<20110812031433.GE10218@opensource.wolfsonmicro.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
+Date: Wed, 24 Aug 2011 14:33:59 -0700
+Message-ID: <CAMbhsRRRa_JV8_LHEvsM2h3e8Hbf1GAcpXz8gdU3wCc8Jgz5gw@mail.gmail.com>
+Subject: Re: [PATCH] i2c/tegra: I2C driver uses the suspend_noirq/resume_noirq
+From: Colin Cross <ccross@google.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ben Dooks <ben-linux@fluff.org>, Dilan Lee <dilee@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 04:16:12PM +0200, Tejun Heo wrote:
-> There's no point in freezing an exiting task.  The current code
-> seemingly tries that by calling clear_freeze_flag() from exit_mm() but
-> it's racy as freeze might happen afterwards.
-> 
-> This patch removes the racy clear_freeze_flag() makes do_exit() set
-> PF_NOFREEZE after PTRACE_EVENT_EXIT, after which freezing doesn't make
-> sense.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  kernel/exit.c          |    8 ++++++--
->  kernel/power/process.c |    3 +--
->  2 files changed, 7 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 2913b35..ac58259 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -679,8 +679,6 @@ static void exit_mm(struct task_struct * tsk)
->  	tsk->mm = NULL;
->  	up_read(&mm->mmap_sem);
->  	enter_lazy_tlb(mm, current);
-> -	/* We don't want this task to be frozen prematurely */
-> -	clear_freeze_flag(tsk);
+On Wed, Aug 24, 2011 at 2:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Mark Brown wrote at Thursday, August 11, 2011 9:15 PM:
+>> On Thu, Aug 11, 2011 at 07:59:27PM -0700, Colin Cross wrote:
+>> > On Thu, Aug 11, 2011 at 5:45 PM, Mark Brown
+>>
+>> > > For example with ASoC we'd sort all the components before the ASoC card
+>> > > without regard for their bus dependencies or any other dependencies they
+>> > > have (eg, their regulators). Since the ASoC card is a platform device
+>> > > it's likely to have registered early with no regard for where the buses
+>> > > the card needs are registered. I'd expect there's a reasonable chance
+>> > > it'll actually make things worse in the short term.
+>>
+>> > You can't just move everything after the card, you have to move
+>> > everything after the last device that was probed, and it only works if
+>> > nothing depends on any of the devices that are moved.
+>>
+>> Sorry, I said that the wrong way round due to trying to reply quickly -
+>> the card would be the thing that moves since that's the thing that
+>> actually does the suspend but we've *no* idea which device we need to
+>> move it after.  Since all the function does is a direct move after or
+>> before a single device all we can do is pick one and pray that it's the
+>> right device.
+>
+> Colin,
+>
+> This thread seems to have died down; how should we make progress?
+>
+> It sounds like the suspend_irq solution is the current de-facto standard;
+> not optimal, but all we really have right now and already in use. I could
+> certainly see avoiding this solution if it was the first time it was
+> employed, but re-using it seems reasonable to me?
+>
+> Alternatively, are you attending either Linux Plumbers Conference or the
+> Kernel Summit? Mark implied this topic might well come up for discussion
+> there. Unfortunately, I won't be able to make LPC due to a conflict.
+I don't think I'll be able to make it.
 
-This patch doesn't look quite right. Perhaps that's because I'm
-unclear why any of the freezer flags matter in the do_exit() path. How
-can the task enter the refrigerator in do_exit()? Isn't it true that
-we don't enter the syscall return path and thus can't freeze
-anyway (the last thing it should do is schedule())? Or is this another
-kthread quirk?
+> (and you'd mentioned having the subsystem maintainers weigh in on this;
+> which sub-system; IRQ, power, I2C, ...?)
 
-If we can't enter the refrigerator then why fiddle with these flags
-here at all? That might explain why this race never introduced
-problems.
-
->  	if (tsk->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
->  		atomic_dec(&mm->oom_disable_count);
->  	task_unlock(tsk);
-> @@ -915,6 +913,12 @@ NORET_TYPE void do_exit(long code)
-> 
->  	ptrace_event(PTRACE_EVENT_EXIT, code);
-> 
-> +	/*
-> +	 * With ptrace notification done, there's no point in freezing from
-> +	 * here on.  Disallow freezing.
-> +	 */
-> +	current->flags |= PF_NOFREEZE;
-> +
->  	validate_creds_for_do_exit(tsk);
-
-OK, now I'm assuming my reasoning above is wrong; that it's possible to
-enter the refrigerator in do_exit().
-
-Couldn't TIF_FREEZE already be set? Setting PF_NOFREEZE only ensures
-the flag won't get set "after" this point. To fix this I think we'd need
-something more like:
-
-	current->flags |= PF_NOFREEZE;
-	smp_wmb();
-	clear_freeze_flag(tsk);
-
-Otherwise TIF_FREEZE might not get cleared and, despite PF_NOFREEZE,
-we could somehow enter the refrigerator. Also, I'm not sure the
-smp_wmb() is sufficient since it will only affect the order the writes
-appear and does not affect whether other cpus will see PF_NOFREEZE
-before we clear the TIF_FREEZE flag. Perhaps we need task_lock() here.
-
-> 
->  	/*
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index bec09c3..ddfaba4 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -25,8 +25,7 @@
->  static inline int freezable(struct task_struct * p)
->  {
->  	if ((p == current) ||
-> -	    (p->flags & PF_NOFREEZE) ||
-> -	    (p->exit_state != 0))
-> +	    (p->flags & PF_NOFREEZE))
-
-This patch also fiddles with the timing of adjusting or checking three
-different pieces of task state:
-
-	exit_state
-	flags (PF_NOFREEZE)
-	thread flags (TIF_FREEZE)
-
-each of which get set/cleared at different times from the new
-line adding PF_NOFREEZE to the flags. So I'm a little nervous that
-we might be missing some important details.
-
-Cheers,
-	-Matt Helsley
+If Ben says its OK, its fine with me.  Or maybe Arnd wants to weigh in?
