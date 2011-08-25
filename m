@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab1HYQhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:37:40 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42801
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1754233Ab1HYQhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:37:38 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42794
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753508Ab1HYQ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753506Ab1HYQ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Aug 2011 12:28:56 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 32/59] Staging: hv: vmbus: Cleanup error values in ringbuffer.c
-Date: Thu, 25 Aug 2011 09:48:58 -0700
-Message-Id: <1314290965-2698-32-git-send-email-kys@microsoft.com>
+Subject: [PATCH 31/59] Staging: hv: vmbus: Change the variable name openInfo to open_info in channel.c
+Date: Thu, 25 Aug 2011 09:48:57 -0700
+Message-Id: <1314290965-2698-31-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314290965-2698-1-git-send-email-kys@microsoft.com>
 References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
@@ -23,88 +23,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use standard Linux errno values in ringbuffer.c and do the associated
-cleanup in the clients.
+Change the variable name openInfo to open_info in channel.c.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/blkvsc_drv.c  |    2 +-
- drivers/staging/hv/netvsc.c      |    2 +-
- drivers/staging/hv/ring_buffer.c |    6 +++---
- drivers/staging/hv/storvsc_drv.c |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/hv/channel.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index 9b99387..d3f4f1d 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -726,7 +726,7 @@ static int blkvsc_do_request(struct block_device_context *blkdev,
- 		} else {
- 			ret = blkvsc_submit_request(blkvsc_req,
- 						    blkvsc_request_completion);
--			if (ret == -1) {
-+			if (ret == -EAGAIN) {
- 				pending = 1;
- 				list_add_tail(&blkvsc_req->pend_entry,
- 					      &blkdev->pending_list);
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index cb02eed..d547ff6 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -565,7 +565,7 @@ retry_send_cmplt:
- 	if (ret == 0) {
- 		/* success */
- 		/* no-op */
--	} else if (ret == -1) {
-+	} else if (ret == -EAGAIN) {
- 		/* no more room...wait a bit and attempt to retry 3 times */
- 		retries++;
- 		dev_err(&device->device, "unable to send receive completion pkt"
-diff --git a/drivers/staging/hv/ring_buffer.c b/drivers/staging/hv/ring_buffer.c
-index 42f7672..9212699 100644
---- a/drivers/staging/hv/ring_buffer.c
-+++ b/drivers/staging/hv/ring_buffer.c
-@@ -390,7 +390,7 @@ int hv_ringbuffer_write(struct hv_ring_buffer_info *outring_info,
- 	/* is empty since the read index == write index */
- 	if (bytes_avail_towrite <= totalbytes_towrite) {
- 		spin_unlock_irqrestore(&outring_info->ring_lock, flags);
--		return -1;
-+		return -EAGAIN;
+diff --git a/drivers/staging/hv/channel.c b/drivers/staging/hv/channel.c
+index e02060e..9eb8def 100644
+--- a/drivers/staging/hv/channel.c
++++ b/drivers/staging/hv/channel.c
+@@ -119,7 +119,7 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+ 		     void (*onchannelcallback)(void *context), void *context)
+ {
+ 	struct vmbus_channel_open_channel *open_msg;
+-	struct vmbus_channel_msginfo *openInfo = NULL;
++	struct vmbus_channel_msginfo *open_info = NULL;
+ 	void *in, *out;
+ 	unsigned long flags;
+ 	int ret, t, err = 0;
+@@ -172,17 +172,17 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
  	}
  
- 	/* Write to the ring buffer */
-@@ -450,7 +450,7 @@ int hv_ringbuffer_peek(struct hv_ring_buffer_info *Inring_info,
- 
- 		spin_unlock_irqrestore(&Inring_info->ring_lock, flags);
- 
--		return -1;
-+		return -EAGAIN;
+ 	/* Create and init the channel open message */
+-	openInfo = kmalloc(sizeof(*openInfo) +
++	open_info = kmalloc(sizeof(*open_info) +
+ 			   sizeof(struct vmbus_channel_open_channel),
+ 			   GFP_KERNEL);
+-	if (!openInfo) {
++	if (!open_info) {
+ 		err = -ENOMEM;
+ 		goto errorout;
  	}
  
- 	/* Convert to byte offset */
-@@ -496,7 +496,7 @@ int hv_ringbuffer_read(struct hv_ring_buffer_info *inring_info, void *buffer,
- 	if (bytes_avail_toread < buflen) {
- 		spin_unlock_irqrestore(&inring_info->ring_lock, flags);
+-	init_completion(&openInfo->waitevent);
++	init_completion(&open_info->waitevent);
  
--		return -1;
-+		return -EAGAIN;
+-	open_msg = (struct vmbus_channel_open_channel *)openInfo->msg;
++	open_msg = (struct vmbus_channel_open_channel *)open_info->msg;
+ 	open_msg->header.msgtype = CHANNELMSG_OPENCHANNEL;
+ 	open_msg->openid = newchannel->offermsg.child_relid;
+ 	open_msg->child_relid = newchannel->offermsg.child_relid;
+@@ -200,7 +200,7 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+ 		memcpy(open_msg->userdata, userdata, userdatalen);
+ 
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+-	list_add_tail(&openInfo->msglistentry,
++	list_add_tail(&open_info->msglistentry,
+ 		      &vmbus_connection.chn_msg_list);
+ 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+ 
+@@ -210,22 +210,22 @@ int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+ 	if (ret != 0)
+ 		goto cleanup;
+ 
+-	t = wait_for_completion_timeout(&openInfo->waitevent, 5*HZ);
++	t = wait_for_completion_timeout(&open_info->waitevent, 5*HZ);
+ 	if (t == 0) {
+ 		err = -ETIMEDOUT;
+ 		goto errorout;
  	}
  
- 	next_read_location =
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 4dc6d2f..1e49879 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -580,7 +580,7 @@ retry_request:
- 	/* Invokes the vsc to start an IO */
- 	ret = storvsc_do_io(dev, &cmd_request->request);
  
--	if (ret == -1) {
-+	if (ret == -EAGAIN) {
- 		/* no more space */
+-	if (openInfo->response.open_result.status)
+-		err = openInfo->response.open_result.status;
++	if (open_info->response.open_result.status)
++		err = open_info->response.open_result.status;
  
- 		if (cmd_request->bounce_sgl_count) {
+ cleanup:
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+-	list_del(&openInfo->msglistentry);
++	list_del(&open_info->msglistentry);
+ 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+ 
+-	kfree(openInfo);
++	kfree(open_info);
+ 	return err;
+ 
+ errorout:
+@@ -233,7 +233,7 @@ errorout:
+ 	hv_ringbuffer_cleanup(&newchannel->inbound);
+ 	free_pages((unsigned long)out,
+ 		get_order(send_ringbuffer_size + recv_ringbuffer_size));
+-	kfree(openInfo);
++	kfree(open_info);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(vmbus_open);
 -- 
 1.7.4.1
 
