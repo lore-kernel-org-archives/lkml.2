@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab1HYTTc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:19:32 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:31662 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751833Ab1HYTTb (ORCPT
+	id S1751655Ab1HYTXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 15:23:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54967 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751120Ab1HYTXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:19:31 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: grWxXO0VM1lTuNO8xAnp4n1LqoBKkQS56KtnMvm.WiEVcX3
- 53AkrhIzdjOFYtkBldwXVcLzd0h9zVsJkoOyiZCs5gEG5s.bAtXLSSLJ858a
- .nquTy4qpirRIp8oskcxe.9OeZTnCk7l3HvZwM3LeIMInOmi3Ys7Zsb0lij3
- VciB5A_Zm_ZGcjWAi6P3EwqlJGWMB5GCuRepDNGBFJJkPFPmnWyPSR6pvk6T
- vgxLt6IDeBSp3rX2ngJZGhBtupaK98pxb2MIipd_F0rLqsISbqpe2oOAgLo0
- uBJN7tix_QDeiwK6sxzjXvfcTRxtQOOHAAwC.e9skVA.bReiz_yyja7IXw8X
- MdXOaGN3hnLzagqSyT_xLit7ZPSzRaRCgkxuWMr4ipikt5Q--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 25 Aug 2011 14:19:26 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: James Bottomley <James.bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
-In-Reply-To: <1314299115.26922.2.camel@twins>
-Message-ID: <alpine.DEB.2.00.1108251413130.27407@router.home>
-References: <1313650253-21794-1-git-send-email-gthelen@google.com>  <20110818144025.8e122a67.akpm@linux-foundation.org>  <1314284272.27911.32.camel@twins>  <alpine.DEB.2.00.1108251009120.27407@router.home>  <1314289208.3268.4.camel@mulgrave> 
- <alpine.DEB.2.00.1108251128460.27407@router.home>  <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>  <alpine.DEB.2.00.1108251206440.27407@router.home>  <1e295500-5d1f-45dd-aa5b-3d2da2cf1a62@email.android.com>  <alpine.DEB.2.00.1108251341230.27407@router.home>
- <1314299115.26922.2.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 25 Aug 2011 15:23:37 -0400
+Date: Thu, 25 Aug 2011 12:23:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2011-08-24-14-08 uploaded
+Message-Id: <20110825122307.face013a.akpm@linux-foundation.org>
+In-Reply-To: <20110825135103.GA6431@tiehlicka.suse.cz>
+References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
+	<20110825135103.GA6431@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011, Peter Zijlstra wrote:
+On Thu, 25 Aug 2011 15:51:03 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-> Also, I thought this_cpu thing's were at best locally atomic. If you
-> make them full blown atomic ops then even __this_cpu ops will have to be
-> full atomic ops, otherwise:
->
->
-> CPU0			CPU(1)
->
-> this_cpu_inc(&foo);	preempt_disable();
-> 			__this_cpu_inc(&foo);
-> 			preempt_enable();
->
-> might step on each other's toes.
+> On Wed 24-08-11 14:09:05, Andrew Morton wrote:
+> > The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> I have just downloaded your tree and cannot quilt it up.
 
-They would both have their own instance of "foo". per cpu atomicity is
-only one requirement of this_cpu_ops. The other is the ability to relocate
-accesses relative to the current per cpu area.
+Parenthetically, there's not much point in running -mm any more:
+everything which matters is copied into linux-next, so just run the
+following day's -next.
 
-Full blown atomicity is almost a superset of per cpu atomicity but its
-only usable if the full atomic instructions can also relocate accesses
-relative to some base.
+There are a few things in -mm which aren't transferrrred to -next.  Some
+akpm-specific pain reducers, a few patches which don't look like
+they'll ever get into mainline and a great shower of debugging patches
+which I accumulated over the ages.
 
