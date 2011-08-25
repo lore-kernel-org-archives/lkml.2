@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab1HYVji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:39:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46301 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab1HYVjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 17:39:36 -0400
-Date: Thu, 25 Aug 2011 23:39:31 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
-        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110825213931.GR2803@mtj.dyndns.org>
-References: <20110824085329.GL29452@sun>
- <20110824111806.GA7191@albatros>
- <20110825082944.GH10030@sun>
- <20110825170147.GM2803@mtj.dyndns.org>
- <20110825170705.GA6387@sun>
- <20110825205426.GO2803@mtj.dyndns.org>
- <20110825211213.GP2803@mtj.dyndns.org>
- <20110825213459.GA1929@sun>
+	id S1755511Ab1HYVkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 17:40:49 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:50805 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755436Ab1HYVks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 17:40:48 -0400
+Date: Thu, 25 Aug 2011 14:40:45 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Will Simoneau <simoneau@ele.uri.edu>
+Cc: linux-kernel@vger.kernel.org, dipankar@in.ibm.com
+Subject: Re: 2.6.39.4: Oops in rcu_read_unlock_special()/_raw_spin_lock()
+Message-ID: <20110825214045.GJ2369@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110824211907.GA4225@ele.uri.edu>
+ <20110824212744.GV2417@linux.vnet.ibm.com>
+ <20110825132051.GA9580@ele.uri.edu>
+ <20110825140722.GC2369@linux.vnet.ibm.com>
+ <20110825182819.GA6874@ele.uri.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110825213459.GA1929@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110825182819.GA6874@ele.uri.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Aug 26, 2011 at 01:34:59AM +0400, Cyrill Gorcunov wrote:
-> > Unfortunately, not quite as easy as I expected.  The information still
-> > seems redundant but it seems we'll need to change
-> > proc_inode->get_link() to take dentry instead of inode before doing
-> > away with proc_inode->fd, but, at any rate, I don't think this is a
-> > big deal one way or the other.
+On Thu, Aug 25, 2011 at 02:28:19PM -0400, Will Simoneau wrote:
+> On 07:07 Thu 25 Aug     , Paul E. McKenney wrote:
+> > On Thu, Aug 25, 2011 at 09:20:51AM -0400, Will Simoneau wrote:
+> > > On 14:27 Wed 24 Aug     , Paul E. McKenney wrote:
+> > > > On Wed, Aug 24, 2011 at 05:19:07PM -0400, Will Simoneau wrote:
+> > > > > The following commits from Linus' git seem vaguely related,
+> > > > > although I have no idea how relevant they are to 2.6.39.4:
+> > > > > 
+> > > > >    ec433f0c (softirq,rcu: Inform RCU of irq_exit() activity)
+> > > > >    10f39bb1 (rcu: protect __rcu_read_unlock() against scheduler-using
+> > > > >              irq handlers)
+> > > > 
+> > > > If this failure mechanism really is the culprit, you should be able
+> > > > to make failure happen much more frequently by inserting a delay in
+> > > > __rcu_read_unlock() just prior to the call to rcu_read_unlock_special().
+> > > > I would suggest starting with a few tens to hundreds of microseconds
+> > > > worth of delay.
+> > > > 
+> > > > If this does make the failure reproducible, then it would make sense
+> > > > to try applying the two patches you identified.
+> > > 
+> > > Hmm. I tried adding progressively larger delays in the spot you
+> > > indicated. I went from 100uS to an entire 1S (!) and got no crash or
+> > > deadlock. The target runs at 40MHz so the delays do need to be
+> > > relatively long compared to modern machines.
+> > > 
+> > > My hardware breakpoint as well as printk tests confirm that
+> > > rcu_read_unlock_special() really does get called multiple times per
+> > > second, and the 1S delay makes it painfully obvious as well. But, no
+> > > dice.
+> > 
+> > Well, you can always apply the two patches above anyway, but it is hard
+> > to prove what the underlying problem really is in your case.
 > 
-> Hohum... picking up an additional reference to dentry might be dangerous
-> I think. How exactly you imagine we would do that? (without this problem
-> I guess we indeed may drop or rather not change proc-inode).
+> I am still unable to reproduce the Oops so I have no way of knowing if
+> applying the patches has any effect. I did find and fix the issue with
+> booting post-2.6.39* kernels on my hardware, so I've moved on to
+> 3.1-rc3. I guess I will get back to you if it happens again :-)
 
-Why would you need an extra reference?  All these data structures are
-created dynamically on access and dentry is always available while any
-operation on the inode is in progress so it's guaranteed to be
-available and there's no reason to diddle with reference count.
-Anyways, we can deal with this optimization later, I think.
+Fair enough!  ;-)
 
-Thanks.
-
--- 
-tejun
+							Thanx, Paul
