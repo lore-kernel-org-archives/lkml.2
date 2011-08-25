@@ -1,130 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab1HYQon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:44:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44551 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab1HYQol (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:44:41 -0400
-MIME-Version: 1.0
-Date: Thu, 25 Aug 2011 09:44:41 -0700
-Message-ID: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
-Subject: 3.0.3 64-bit Crash running fscache/cachefilesd
-From: Mark Moseley <moseleymark@gmail.com>
-To: Linux filesystem caching discussion list 
-	<linux-cachefs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754348Ab1HYQqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:46:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20657 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754108Ab1HYQqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 12:46:18 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [V3][PATCH 1/6] x86, nmi: split out nmi from traps.c
+Date: Thu, 25 Aug 2011 12:45:43 -0400
+Message-Id: <1314290748-23569-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
+References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get this after a handful of hours. It's not terribly deterministic
-when it's going to melt down, but typically doesn't last more than a
-few hours before panicking.
+The nmi stuff is changing a lot and adding more functionality.  Split it
+out from the traps.c file so it doesn't continue to pollute that file.
 
-This is 3.0.3, 64-bit, running Debian Squeeze, running on a usually
-stable Dell PE 1950. I'm happy to run any sort of traces or send it
-whatever would be useful in debugging (.config, etc). Output is over
-IPMI, so it's a tad scrambled, but I didn't want to mess with it for
-fear of obscuring something important. Environment is heavy NFS-backed
-web hosting. Backing device that the fscache cache is on is an SSD,
-but I've seen the same thing on a regular drive. The filesystem for
-the fscache cache in the below example is EXT4, but I've seen the same
-thing on XFS.
+This makes it easier to find and expand all the future nmi related work.
 
-I should mention too that there's nothing special about the 3.0.3
-crash. I get similar crashes with 2.6.39.4 and any previous kernel
-I've tested. 3.0.3 is just the most recent one I've tested.
+No real functional changes here.
 
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/Makefile |    2 +-
+ arch/x86/kernel/nmi.c    |  178 ++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c  |  155 ----------------------------------------
+ 3 files changed, 179 insertions(+), 156 deletions(-)
+ create mode 100644 arch/x86/kernel/nmi.c
 
-[25625.932971] ------------[ cut here ]------------
-[25625.942202] kernel BUG at fs/cachefiles/namei.c:166!
-[25625.942874] invalid opcode: 0000 [#1] SMP
-[25625.942874] CPU 6
-[25625.942874] Modules linked in: xfs ioatdma dca loop joydev fan
-evdev i5000_edac edac_core psmouse i5k_amb dcdbas serio_raw shpchp
-pcspkr pci_hotplug ]
-[25625.942874]
-[25625.942874] Pid: 23795, comm: kworker/u:5 Not tainted 3.0.3 #1 Dell
-Inc. PowerEdge 1950/0DT097
-[25625.942874] RIP: 0010:[<ffffffff81299cf3>]  [<ffffffff81299cf3>]
-cachefiles_walk_to_object+0xcb3/0xdd0
-[25625.942874] RSP: 0018:ffff8801ab84dc60  EFLAGS: 00010282
-[25625.942874] RAX: ffff88003935e601 RBX: ffff8801d8cff330 RCX: 000000000047bea6
-[25625.942874] RDX: 000000000047bea5 RSI: 0000000000010200 RDI: ffff88022ec02780
-[25625.942874] RBP: ffff8801ab84dd50 R08: 000000000047bea5 R09: ffffea0000c83c20
-[25625.942874] R10: ffffffff812982aa R11: 0000000000000003 R12: ffff8801d8cff200
-[25625.942874] R13: ffff8801a4a06300 R14: ffff880224ffa780 R15: ffff8801c0dddf00
-[25625.942874] FS:  0000000000000000(0000) GS:ffff88022fd80000(0000)
-knlGS:0000000000000000
-[25625.942874] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[25625.942874] CR2: ffffffffff600400 CR3: 00000000016a2000 CR4: 00000000000006f0
-[25625.942874] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[25625.942874] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[25625.942874] Process kworker/u:5 (pid: 23795, threadinfo
-ffff880082bc6300, task ffff880082bc5e00)
-[25625.942874] Stack:
-[25625.942874]  0000000000000003 0000000000000000 ffff8801ab84dc90
-ffff880082bc5e00
-[25625.942874]  ffff880082bc6228 ffff880082bc6228 ffff880082bc6228
-ffff8801ab84dd08
-[25625.942874]  ffff880082bc5e00 ffff88022eee5310 ffff880104639400
-ffff8801f0e5f664
-[25625.942874] Call Trace:
-[25625.942874]  [<ffffffff81074010>] ? wake_up_bit+0x40/0x40
-[25625.942874]  [<ffffffff812973ab>] cachefiles_lookup_object+0x5b/0x170
-[25625.942874]  [<ffffffff811ad864>] fscache_lookup_object+0xd4/0x2b0
-[25625.942874]  [<ffffffff811ae789>] fscache_object_work_func+0x4f9/0xd60
-[25625.942874]  [<ffffffff8106c594>] process_one_work+0x164/0x450
-[25625.942874]  [<ffffffff811ae290>] ? fscache_enqueue_dependents+0x120/0x120
-[25625.942874]  [<ffffffff8106cc2b>] worker_thread+0x19b/0x430
-[25625.942874]  [<ffffffff8106ca90>] ? manage_workers+0x210/0x210
-[25625.942874]  [<ffffffff81073abe>] kthread+0x9e/0xb0
-[25625.942874]  [<ffffffff81671194>] kernel_thread_helper+0x4/0x10
-[25625.942874]  [<ffffffff8166866d>] ? retint_restore_args+0x13/0x13
-[25625.942874]  [<ffffffff81073a20>] ? kthread_worker_fn+0x1a0/0x1a0
-[25625.942874]  [<ffffffff81671190>] ? gs_change+0xb/0xb
-[25625.942874] Code: 00 48 c7 c7 78 6d 90 81 31 c0 e8 92 b0 3c 00 0f
-0b eb fe 48 c7 c7 78 7b 90 81 31 c0 e8 80 b0 3c 00 31 f6 4c 89 f7 e8
-3d e5 ff ff <0
-[25625.942874] RIP  [<ffffffff81299cf3>] cachefiles_walk_to_object+0xcb3/0xdd0
-[25625.942874]  RSP <ffff8801ab84dc60>
-2011 Aug 25 07:01:04 boscust2102[25626.490246] ---[ end trace
-abce6c7388af252a ]---
- [25625.932971] ------------[ cu[25626.505216] Kernel panic - not
-syncing: Fatal exception
-t here ]--------[25626.520310] Pid: 23795, comm: kworker/u:5 Tainted:
-G      D     3.0.3 #1
-----
-    2011 Aug 25[25626.534651] Call Trace:
- 07:01:04 boscus[25626.542237]  [<ffffffff81664c4e>] panic+0xbf/0x1da
-t2102 [25625.942[25626.554578]  [<ffffffff8104ef9f>] ? kmsg_dump+0x4f/0x100
-874] invalid opc[25626.567722]  [<ffffffff81669655>] oops_end+0xa5/0xf0
-ode: 0000 [#1] S[25626.580262]  [<ffffffff810058db>] die+0x5b/0x90
-MP
-   [25626.592190]  [<ffffffff81669170>] do_trap+0x190/0x1a0
-[25626.602854]  [<ffffffff8166bf2a>] ? atomic_notifier_call_chain+0x1a/0x20
-[25626.616517]  [<ffffffff810034f5>] do_invalid_op+0x95/0xb0
-[25626.627565]  [<ffffffff81299cf3>] ? cachefiles_walk_to_object+0xcb3/0xdd0
-[25626.641457]  [<ffffffff812febfa>] ? trace_hardirqs_off_thunk+0x3a/0x6c
-[25626.654860]  [<ffffffff812982aa>] ? cachefiles_printk_object+0x7a/0x90
-[25626.668259]  [<ffffffff8166869d>] ? restore_args+0x30/0x30
-[25626.679472]  [<ffffffff8167101a>] invalid_op+0x1a/0x20
-[25626.689963]  [<ffffffff812982aa>] ? cachefiles_printk_object+0x7a/0x90
-[25626.703239]  [<ffffffff81299cf3>] ? cachefiles_walk_to_object+0xcb3/0xdd0
-[25626.716973]  [<ffffffff81074010>] ? wake_up_bit+0x40/0x40
-[25626.727868]  [<ffffffff812973ab>] cachefiles_lookup_object+0x5b/0x170
-[25626.740810]  [<ffffffff811ad864>] fscache_lookup_object+0xd4/0x2b0
-[25626.753283]  [<ffffffff811ae789>] fscache_object_work_func+0x4f9/0xd60
-[25626.766459]  [<ffffffff8106c594>] process_one_work+0x164/0x450
-[25626.778255]  [<ffffffff811ae290>] ? fscache_enqueue_dependents+0x120/0x120
-[25626.792232]  [<ffffffff8106cc2b>] worker_thread+0x19b/0x430
-[25626.803638]  [<ffffffff8106ca90>] ? manage_workers+0x210/0x210
-[25626.815400]  [<ffffffff81073abe>] kthread+0x9e/0xb0
-[25626.825307]  [<ffffffff81671194>] kernel_thread_helper+0x4/0x10
-[25626.837233]  [<ffffffff8166866d>] ? retint_restore_args+0x13/0x13
-[25626.849515]  [<ffffffff81073a20>] ? kthread_worker_fn+0x1a0/0x1a0
-[25626.861838]  [<ffffffff81671190>] ? gs_change+0xb/0xb
-[25626.881978] Rebooting in 120 seconds..
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 82f2912..8baca3c 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -19,7 +19,7 @@ endif
+ 
+ obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+-obj-y			+= time.o ioport.o ldt.o dumpstack.o
++obj-y			+= time.o ioport.o ldt.o dumpstack.o nmi.o
+ obj-y			+= setup.o x86_init.o i8259.o irqinit.o jump_label.o
+ obj-$(CONFIG_IRQ_WORK)  += irq_work.o
+ obj-y			+= probe_roms.o
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+new file mode 100644
+index 0000000..68d758a
+--- /dev/null
++++ b/arch/x86/kernel/nmi.c
+@@ -0,0 +1,178 @@
++/*
++ *  Copyright (C) 1991, 1992  Linus Torvalds
++ *  Copyright (C) 2000, 2001, 2002 Andi Kleen, SuSE Labs
++ *
++ *  Pentium III FXSR, SSE support
++ *	Gareth Hughes <gareth@valinux.com>, May 2000
++ */
++
++/*
++ * Handle hardware traps and faults.
++ */
++#include <linux/spinlock.h>
++#include <linux/kprobes.h>
++#include <linux/kdebug.h>
++#include <linux/nmi.h>
++
++#if defined(CONFIG_EDAC)
++#include <linux/edac.h>
++#endif
++
++#include <linux/atomic.h>
++#include <asm/traps.h>
++#include <asm/mach_traps.h>
++
++static int ignore_nmis;
++
++int unknown_nmi_panic;
++/*
++ * Prevent NMI reason port (0x61) being accessed simultaneously, can
++ * only be used in NMI handler.
++ */
++static DEFINE_RAW_SPINLOCK(nmi_reason_lock);
++
++static int __init setup_unknown_nmi_panic(char *str)
++{
++	unknown_nmi_panic = 1;
++	return 1;
++}
++__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
++
++static notrace __kprobes void
++pci_serr_error(unsigned char reason, struct pt_regs *regs)
++{
++	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
++
++	/*
++	 * On some machines, PCI SERR line is used to report memory
++	 * errors. EDAC makes use of it.
++	 */
++#if defined(CONFIG_EDAC)
++	if (edac_handler_set()) {
++		edac_atomic_assert_error();
++		return;
++	}
++#endif
++
++	if (panic_on_unrecovered_nmi)
++		panic("NMI: Not continuing");
++
++	pr_emerg("Dazed and confused, but trying to continue\n");
++
++	/* Clear and disable the PCI SERR error line. */
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
++	outb(reason, NMI_REASON_PORT);
++}
++
++static notrace __kprobes void
++io_check_error(unsigned char reason, struct pt_regs *regs)
++{
++	unsigned long i;
++
++	pr_emerg(
++	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
++	show_registers(regs);
++
++	if (panic_on_io_nmi)
++		panic("NMI IOCK error: Not continuing");
++
++	/* Re-enable the IOCK line, wait for a few seconds */
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
++
++	i = 20000;
++	while (--i) {
++		touch_nmi_watchdog();
++		udelay(100);
++	}
++
++	reason &= ~NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
++}
++
++static notrace __kprobes void
++unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
++{
++	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
++			NOTIFY_STOP)
++		return;
++#ifdef CONFIG_MCA
++	/*
++	 * Might actually be able to figure out what the guilty party
++	 * is:
++	 */
++	if (MCA_bus) {
++		mca_handle_nmi();
++		return;
++	}
++#endif
++	pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
++
++	pr_emerg("Do you have a strange power saving mode enabled?\n");
++	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
++		panic("NMI: Not continuing");
++
++	pr_emerg("Dazed and confused, but trying to continue\n");
++}
++
++static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
++{
++	unsigned char reason = 0;
++
++	/*
++	 * CPU-specific NMI must be processed before non-CPU-specific
++	 * NMI, otherwise we may lose it, because the CPU-specific
++	 * NMI can not be detected/processed on other CPUs.
++	 */
++	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
++		return;
++
++	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
++	raw_spin_lock(&nmi_reason_lock);
++	reason = get_nmi_reason();
++
++	if (reason & NMI_REASON_MASK) {
++		if (reason & NMI_REASON_SERR)
++			pci_serr_error(reason, regs);
++		else if (reason & NMI_REASON_IOCHK)
++			io_check_error(reason, regs);
++#ifdef CONFIG_X86_32
++		/*
++		 * Reassert NMI in case it became active
++		 * meanwhile as it's edge-triggered:
++		 */
++		reassert_nmi();
++#endif
++		raw_spin_unlock(&nmi_reason_lock);
++		return;
++	}
++	raw_spin_unlock(&nmi_reason_lock);
++
++	unknown_nmi_error(reason, regs);
++}
++
++dotraplinkage notrace __kprobes void
++do_nmi(struct pt_regs *regs, long error_code)
++{
++	nmi_enter();
++
++	inc_irq_stat(__nmi_count);
++
++	if (!ignore_nmis)
++		default_do_nmi(regs);
++
++	nmi_exit();
++}
++
++void stop_nmi(void)
++{
++	ignore_nmis++;
++}
++
++void restart_nmi(void)
++{
++	ignore_nmis--;
++}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 6913369..a8e3eb8 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -81,15 +81,6 @@ gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
+ DECLARE_BITMAP(used_vectors, NR_VECTORS);
+ EXPORT_SYMBOL_GPL(used_vectors);
+ 
+-static int ignore_nmis;
+-
+-int unknown_nmi_panic;
+-/*
+- * Prevent NMI reason port (0x61) being accessed simultaneously, can
+- * only be used in NMI handler.
+- */
+-static DEFINE_RAW_SPINLOCK(nmi_reason_lock);
+-
+ static inline void conditional_sti(struct pt_regs *regs)
+ {
+ 	if (regs->flags & X86_EFLAGS_IF)
+@@ -307,152 +298,6 @@ gp_in_kernel:
+ 	die("general protection fault", regs, error_code);
+ }
+ 
+-static int __init setup_unknown_nmi_panic(char *str)
+-{
+-	unknown_nmi_panic = 1;
+-	return 1;
+-}
+-__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+-
+-static notrace __kprobes void
+-pci_serr_error(unsigned char reason, struct pt_regs *regs)
+-{
+-	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
+-		 reason, smp_processor_id());
+-
+-	/*
+-	 * On some machines, PCI SERR line is used to report memory
+-	 * errors. EDAC makes use of it.
+-	 */
+-#if defined(CONFIG_EDAC)
+-	if (edac_handler_set()) {
+-		edac_atomic_assert_error();
+-		return;
+-	}
+-#endif
+-
+-	if (panic_on_unrecovered_nmi)
+-		panic("NMI: Not continuing");
+-
+-	pr_emerg("Dazed and confused, but trying to continue\n");
+-
+-	/* Clear and disable the PCI SERR error line. */
+-	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
+-	outb(reason, NMI_REASON_PORT);
+-}
+-
+-static notrace __kprobes void
+-io_check_error(unsigned char reason, struct pt_regs *regs)
+-{
+-	unsigned long i;
+-
+-	pr_emerg(
+-	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
+-		 reason, smp_processor_id());
+-	show_registers(regs);
+-
+-	if (panic_on_io_nmi)
+-		panic("NMI IOCK error: Not continuing");
+-
+-	/* Re-enable the IOCK line, wait for a few seconds */
+-	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
+-	outb(reason, NMI_REASON_PORT);
+-
+-	i = 20000;
+-	while (--i) {
+-		touch_nmi_watchdog();
+-		udelay(100);
+-	}
+-
+-	reason &= ~NMI_REASON_CLEAR_IOCHK;
+-	outb(reason, NMI_REASON_PORT);
+-}
+-
+-static notrace __kprobes void
+-unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+-{
+-	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
+-			NOTIFY_STOP)
+-		return;
+-#ifdef CONFIG_MCA
+-	/*
+-	 * Might actually be able to figure out what the guilty party
+-	 * is:
+-	 */
+-	if (MCA_bus) {
+-		mca_handle_nmi();
+-		return;
+-	}
+-#endif
+-	pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-		 reason, smp_processor_id());
+-
+-	pr_emerg("Do you have a strange power saving mode enabled?\n");
+-	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
+-		panic("NMI: Not continuing");
+-
+-	pr_emerg("Dazed and confused, but trying to continue\n");
+-}
+-
+-static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+-{
+-	unsigned char reason = 0;
+-
+-	/*
+-	 * CPU-specific NMI must be processed before non-CPU-specific
+-	 * NMI, otherwise we may lose it, because the CPU-specific
+-	 * NMI can not be detected/processed on other CPUs.
+-	 */
+-	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+-		return;
+-
+-	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+-	raw_spin_lock(&nmi_reason_lock);
+-	reason = get_nmi_reason();
+-
+-	if (reason & NMI_REASON_MASK) {
+-		if (reason & NMI_REASON_SERR)
+-			pci_serr_error(reason, regs);
+-		else if (reason & NMI_REASON_IOCHK)
+-			io_check_error(reason, regs);
+-#ifdef CONFIG_X86_32
+-		/*
+-		 * Reassert NMI in case it became active
+-		 * meanwhile as it's edge-triggered:
+-		 */
+-		reassert_nmi();
+-#endif
+-		raw_spin_unlock(&nmi_reason_lock);
+-		return;
+-	}
+-	raw_spin_unlock(&nmi_reason_lock);
+-
+-	unknown_nmi_error(reason, regs);
+-}
+-
+-dotraplinkage notrace __kprobes void
+-do_nmi(struct pt_regs *regs, long error_code)
+-{
+-	nmi_enter();
+-
+-	inc_irq_stat(__nmi_count);
+-
+-	if (!ignore_nmis)
+-		default_do_nmi(regs);
+-
+-	nmi_exit();
+-}
+-
+-void stop_nmi(void)
+-{
+-	ignore_nmis++;
+-}
+-
+-void restart_nmi(void)
+-{
+-	ignore_nmis--;
+-}
+-
+ /* May run on IST stack. */
+ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+ {
+-- 
+1.7.6
+
