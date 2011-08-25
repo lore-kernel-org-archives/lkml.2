@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab1HYPVg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:21:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14957 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab1HYPVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:21:35 -0400
-Date: Thu, 25 Aug 2011 17:18:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] oom: skip frozen tasks
-Message-ID: <20110825151818.GA4003@redhat.com>
-References: <20110823073101.6426.77745.stgit@zurg> <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825091920.GA22564@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754399Ab1HYPVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:21:32 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:34368 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab1HYPJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 11:09:45 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 074/118] drbd: Moved SIGNAL_ASENDER to the per connection (tconn) flags
+Date: Thu, 25 Aug 2011 17:08:10 +0200
+Message-Id: <1314284934-17999-75-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25, Michal Hocko wrote:
->
-> On Wed 24-08-11 12:31:26, David Rientjes wrote:
-> >
-> > That's obviously false since we call oom_killer_disable() in 
-> > freeze_processes() to disable the oom killer from ever being called in the 
-> > first place, so this is something you need to resolve with Rafael before 
-> > you cause more machines to panic.
->
-> I didn't mean suspend/resume path (that is protected by oom_killer_disabled)
-> so the patch doesn't make any change.
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_int.h      |    5 ++---
+ drivers/block/drbd/drbd_receiver.c |    8 ++++----
+ 2 files changed, 6 insertions(+), 7 deletions(-)
 
-Confused... freeze_processes() does try_to_freeze_tasks() before
-oom_killer_disable() ?
-
-Oleg.
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index 9024bc6..1c43975 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -756,8 +756,6 @@ enum {
+ /* flag bits per mdev */
+ enum {
+ 	CREATE_BARRIER,		/* next P_DATA is preceded by a P_BARRIER */
+-	SIGNAL_ASENDER,		/* whether asender wants to be interrupted */
+-
+ 	UNPLUG_QUEUED,		/* only relevant with kernel 2.4 */
+ 	UNPLUG_REMOTE,		/* sending a "UnplugRemote" could help */
+ 	MD_DIRTY,		/* current uuids and flags not yet on disk */
+@@ -910,6 +908,7 @@ enum {
+ 	NET_CONGESTED,		/* The data socket is congested */
+ 	DISCARD_CONCURRENT,	/* Set on one node, cleared on the peer! */
+ 	SEND_PING,		/* whether asender should send a ping asap */
++	SIGNAL_ASENDER,		/* whether asender wants to be interrupted */
+ };
+ 
+ struct drbd_tconn {			/* is a resource from the config file */
+@@ -1860,7 +1859,7 @@ drbd_queue_work(struct drbd_work_queue *q, struct drbd_work *w)
+ 
+ static inline void wake_asender(struct drbd_conf *mdev)
+ {
+-	if (test_bit(SIGNAL_ASENDER, &mdev->flags))
++	if (test_bit(SIGNAL_ASENDER, &mdev->tconn->flags))
+ 		force_sig(DRBD_SIG, mdev->tconn->asender.task);
+ }
+ 
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 4b1d19d..5f44b43 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -4584,12 +4584,12 @@ int drbd_asender(struct drbd_thread *thi)
+ 			3 < atomic_read(&mdev->unacked_cnt))
+ 			drbd_tcp_cork(mdev->tconn->meta.socket);
+ 		while (1) {
+-			clear_bit(SIGNAL_ASENDER, &mdev->flags);
++			clear_bit(SIGNAL_ASENDER, &mdev->tconn->flags);
+ 			flush_signals(current);
+ 			if (!drbd_process_done_ee(mdev))
+ 				goto reconnect;
+ 			/* to avoid race with newly queued ACKs */
+-			set_bit(SIGNAL_ASENDER, &mdev->flags);
++			set_bit(SIGNAL_ASENDER, &mdev->tconn->flags);
+ 			spin_lock_irq(&mdev->tconn->req_lock);
+ 			empty = list_empty(&mdev->done_ee);
+ 			spin_unlock_irq(&mdev->tconn->req_lock);
+@@ -4609,7 +4609,7 @@ int drbd_asender(struct drbd_thread *thi)
+ 
+ 		rv = drbd_recv_short(mdev, mdev->tconn->meta.socket,
+ 				     buf, expect-received, 0);
+-		clear_bit(SIGNAL_ASENDER, &mdev->flags);
++		clear_bit(SIGNAL_ASENDER, &mdev->tconn->flags);
+ 
+ 		flush_signals(current);
+ 
+@@ -4692,7 +4692,7 @@ disconnect:
+ 		drbd_force_state(mdev, NS(conn, C_DISCONNECTING));
+ 		drbd_md_sync(mdev);
+ 	}
+-	clear_bit(SIGNAL_ASENDER, &mdev->flags);
++	clear_bit(SIGNAL_ASENDER, &mdev->tconn->flags);
+ 
+ 	D_ASSERT(mdev->state.conn < C_CONNECTED);
+ 	dev_info(DEV, "asender terminated\n");
+-- 
+1.7.4.1
 
