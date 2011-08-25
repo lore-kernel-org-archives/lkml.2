@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab1HYWwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:52:15 -0400
-Received: from gherkin.frus.com ([192.158.254.49]:34700 "EHLO gherkin.frus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab1HYWwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:52:14 -0400
-X-Greylist: delayed 2495 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 18:52:14 EDT
-Date: Thu, 25 Aug 2011 17:10:37 -0500
-From: Bob Tracy <rct@gherkin.frus.com>
-To: Anders Eriksson <aeriksson@fastmail.fm>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: mtrr failure, 3.1-rc1
-Message-ID: <20110825221037.GA6876@gherkin.frus.com>
-References: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
-User-Agent: Mutt/1.4.2.3i
+	id S1752553Ab1HYWzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:55:25 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48771 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab1HYWzY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 18:55:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110821011240.GG2203@ZenIV.linux.org.uk>
+References: <20110821005031.GB10377@gallifrey>
+	<20110821011240.GG2203@ZenIV.linux.org.uk>
+Date: Thu, 25 Aug 2011 15:55:23 -0700
+X-Google-Sender-Auth: 83FTwyGPqUSOEBTrNO4dQukcAlU
+Message-ID: <CAA9_cmfCWM1793stQE0Woa2Z0bEqk6j5=MSgEmV5A+=ipiFQow@mail.gmail.com>
+Subject: Re: [PATCH] Fix missing 'cnt' in ?: in dmatest
+From: Dan Williams <dan.j.williams@intel.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Dr. David Alan Gilbert" <linux@treblig.org>, linux-kernel@vger.kernel.org,
+        nicolas.ferre@atmel.com, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 09:03:35AM +0200, Anders Eriksson wrote:
-> (mtrr issues)
+On Sat, Aug 20, 2011 at 6:12 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Sun, Aug 21, 2011 at 01:50:31AM +0100, Dr. David Alan Gilbert wrote:
+>
+>> (WTH is x=y?:z legal C anyway?)
+>
+> gccism.  It's not legal C; it's a gcc extension, and not a pretty one at
+> that.  It's almost definitely a bug in this case - what used to be in the
+> tree is equivalent to cnt > 0 ? cnt > 0 : 0, i.e. cnt > 0 ? 1 : 0, i.e.
+> cnt > 0.  AFAICS, after your patch it does make sense.
+>
+>> Signed-off-by: Dr. David Alan Gilbert <linux@treblig.org>
 
-Similar MTRR issue here with a K6-III/450, which I noticed when the X11
-server was no longer able to allocate/configure a MTRR.  "cat /proc/mtrr"
-shows nothing configured regardless of whether the X11 server is running.
-I only see a diagnostic message to the effect of the MTRR not existing
-when X11 exits.
+Thanks, I'll take this through the async_tx.git tree.
 
-Possibly significant: prior 3.X kernel versions would cause the X11
-server to exit with a corrupted display after about 3-5 invocations.
-Machine was otherwise usable, but had to reboot remotely to recover the
-console display.  The "no MTRR" issue in 3.1-rc1 has thus far meant no
-display corruption on X11 server exit: have run "startx" at least 10
-times since booting 3.1-rc1.
-
--- 
-------------------------------------------------------------------------
-Bob Tracy          |  "Every normal man must be tempted at times to spit
-rct@frus.com       |   upon his hands, hoist the black flag, and begin
-                   |   slitting throats."	-- H.L. Mencken
-------------------------------------------------------------------------
+--
+Dan
