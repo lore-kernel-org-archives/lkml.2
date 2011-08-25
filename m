@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab1HYRH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:07:29 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29157 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754427Ab1HYRH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:07:26 -0400
-Message-ID: <4E5680D2.1030608@parallels.com>
-Date: Thu, 25 Aug 2011 21:05:22 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
+	id S1754835Ab1HYRHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:07:50 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:45368 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754593Ab1HYRHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 13:07:48 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: PB6XwaQVM1mn4K2ffgZ.coIDNbuJUOTyV1DgSvioJ2DOVzg
+ hHN89U_0ale5Yo0RB4kmR7kp4M4_dMIhR9ks23ExYrxDQlN98SqY50CEX6fF
+ 2MM_BjBWDF9gbR5Z6YcexcHzi8mgXyib3t9BnST_xwNbC5eQedOJTwQ0fxF3
+ sDIK.VspKYN7fTr2lIsDHpFdaUR1uBhuOrsleoge1ePxDJo4oJ2xTspVSLPI
+ DE4BI7mVzlFHPNvUje4emNBJRMaPa.63djqsLKCiiPNaXjFp8hjaHwPCdH4j
+ xGaxHF36NgcvCEhF8MAgSeC87T66QI0BYdj2_hQw8wFCE0VdtuZFB5pqsw3x
+ h.82xdaDxSpR5RK_lf13CGN1r73OD09z4BILqGaEHKq5MndkOgHJPhoLboMH
+ 8vdrAS88mVfZoP1Vbq_TvxQ--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 25 Aug 2011 12:07:44 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: James Bottomley <James.bottomley@HansenPartnership.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
- v2
-References: <20110824085329.GL29452@sun> <20110824111806.GA7191@albatros> <20110825082944.GH10030@sun> <20110825170147.GM2803@mtj.dyndns.org>
-In-Reply-To: <20110825170147.GM2803@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+In-Reply-To: <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>
+Message-ID: <alpine.DEB.2.00.1108251206440.27407@router.home>
+References: <1313650253-21794-1-git-send-email-gthelen@google.com> <20110818144025.8e122a67.akpm@linux-foundation.org> <1314284272.27911.32.camel@twins> <alpine.DEB.2.00.1108251009120.27407@router.home> <1314289208.3268.4.camel@mulgrave>
+ <alpine.DEB.2.00.1108251128460.27407@router.home> <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 09:01 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Aug 25, 2011 at 12:29:44PM +0400, Cyrill Gorcunov wrote:
->>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73a00000 -> /lib64/ld-2.5.so
->>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73c1b000 -> /lib64/ld-2.5.so
->>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73c1c000 -> /lib64/ld-2.5.so
->>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73e00000 -> /lib64/libc-2.5.so
->>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73f4e000 -> /lib64/libc-2.5.so
-> 
-> I would prefer if the filename included both start and end addresses
-> so that it matches the first column of /proc/PID/maps and ls'ing the
-> directory is more useful.  What do other people think?
+On Thu, 25 Aug 2011, James Bottomley wrote:
 
-Without 0x at the beginning this is not very convenient, but once we add them it no
-longer matches the contents of the /proc/pid/maps.
+> >ARM seems to have these LDREX/STREX instructions for that purpose which
+> >seem to be used for generating atomic instructions without lockes. I
+> >guess
+> >other RISC architectures have similar means of doing it?
+>
+> Arm isn't really risc.  Most don't.  However even with ldrex/strex you need two instructions for rmw.
 
-Just an opinion, do not mind adding <end> to the name.
-
->> +static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
->> +{
->> +	struct task_struct *task;
->> +	struct vm_area_struct *vma;
->> +	struct mm_struct *mm;
->> +	struct inode *inode;
->> +
->> +	if (nd && nd->flags & LOOKUP_RCU)
->> +		return -ECHILD;
->> +
->> +	inode = dentry->d_inode;
->> +	task = get_proc_task(inode);
->> +	if (!task)
->> +		goto out;
->> +
->> +	mm = get_task_mm(task);
->> +	put_task_struct(task);
->> +	if (!mm)
->> +		goto out;
->> +
->> +	down_read(&mm->mmap_sem);
->> +	vma = find_exact_vma(mm, PROC_I(inode)->vm_start);
->> +	up_read(&mm->mmap_sem);
->> +	mmput(mm);
->> +
->> +	if (vma)
->> +		return 1;
-> 
-> Hmm... don't we need the same credential update as
-> tid_fd_revalidate()?  If the task seteuid's, we want the permissions
-> to change accordingly, right?
-> 
-> Thanks.
-> 
+Well then what is "really risc"? RISC is an old beaten down marketing term
+AFAICT and ARM claims it too.
 
