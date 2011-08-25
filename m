@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086Ab1HYOEm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 10:04:42 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:33086 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab1HYOEk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 10:04:40 -0400
-Date: Thu, 25 Aug 2011 16:04:35 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Zan Lynx <zlynx@acm.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110825140434.GU25996@one.firstfloor.org>
-References: <20110824085329.GL29452@sun> <4E551331.1010709@acm.org> <4E551693.5030400@parallels.com> <m2wre2d83p.fsf@firstfloor.org> <4E55EEE4.4050902@parallels.com>
+	id S1751409Ab1HYOG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 10:06:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2988 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750934Ab1HYOG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 10:06:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="42173995"
+Subject: Re: [PATCH V3 00/20] dmaengine/amba-pl08x updates
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
+        rajeev-dlh.kumar@st.com, linux@arm.linux.org.uk, bhupesh.sharma@st.com,
+        armando.visconti@st.com, linux-kernel@vger.kernel.org,
+        vipin.kumar@st.com, shiraz.hashim@st.com, amit.virdi@st.com,
+        vipulkumar.samar@st.com, viresh.linux@gmail.com, deepak.sikri@st.com,
+        dan.j.williams@intel.com, alim.akhtar@gmail.com,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CACRpkdY6KW+tv7H==b15xJyeLp9HCqp9ROBhON0A8JnJDUn8Kg@mail.gmail.com>
+References: <cover.1312538034.git.viresh.kumar@st.com>
+	 <CACRpkdY6KW+tv7H==b15xJyeLp9HCqp9ROBhON0A8JnJDUn8Kg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Aug 2011 19:36:15 +0530
+Message-ID: <1314281175.1606.36.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E55EEE4.4050902@parallels.com>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 10:42:44AM +0400, Pavel Emelyanov wrote:
-> On 08/24/2011 09:36 PM, Andi Kleen wrote:
-> > Pavel Emelyanov <xemul@parallels.com> writes:
-> >>
-> >> No and this is the trick - when you readlink it - it give you trash, but
-> >> when you open one - you get exactly the same file as the map points to.
-> > 
-> > Isn't that a minor security hole?
-> > 
-> > For example if I pass a file descriptor into a chroot process for
-> > reading, and with this interface you can open it for writing too.
-> > I could see this causing problems.
+On Tue, 2011-08-23 at 10:17 +0200, Linus Walleij wrote:
+> On Fri, Aug 5, 2011 at 12:02 PM, Viresh Kumar <viresh.kumar@st.com> wrote:
 > 
-> How does it differ from the /proc/pid/fd links?
-
-Those cannot be opened I thought.
--Andi
+> > This patchset contains patches for ARM's pl08x DMA controller driver.
+> > Main changes introduced by this patchset are:
+> > - Formatting fixes
+> > - Logical Fixes
+> > - Support for Peripheral as flow controller
+> > - Support for sg_len to be greater than 1 for slave transfers
+> > - Schedule tasklet for error interrupts
+> > - remove pl08x_pre_boundary() routine
+> > - support for runtime PM
+> > - etc
+> 
+> I've now tested this patchset:
+> 
+> patch 3/20 fails to apply cleanly, need rebase on top of Russell's
+> fix for dma-mapping.h inclusion. It's a trivial fix.
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Vinod could you apply all patches except for 16/18 which has some
+> discussion going on, so we get some rotation in -next? The rest of
+> Viresh:s patches are really nice stuff to have.
+> 
+> I will test on the PB11MPcore in the next few days.
+> 
+Thanks, I have applied this patch series to 17/20
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+~Vinod
+
