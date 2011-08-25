@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab1HYPQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:16:41 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:35533 "EHLO
+	id S1754336Ab1HYPQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:16:42 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:35484 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab1HYPJ7 (ORCPT
+	with ESMTP id S1753936Ab1HYPJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:59 -0400
+	Thu, 25 Aug 2011 11:09:58 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 092/118] drbd: Converted drbd_calc_cpu_mask() and drbd_thread_current_set_cpu() from mdev to tconn
-Date: Thu, 25 Aug 2011 17:08:28 +0200
-Message-Id: <1314284934-17999-93-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 091/118] drbd: Converted drbd_connect() from mdev to tconn
+Date: Thu, 25 Aug 2011 17:08:27 +0200
+Message-Id: <1314284934-17999-92-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,189 +23,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h      |    8 ++++----
- drivers/block/drbd/drbd_main.c     |   26 ++++++++++++++++----------
- drivers/block/drbd/drbd_nl.c       |    6 +++---
- drivers/block/drbd/drbd_receiver.c |    4 ++--
- drivers/block/drbd/drbd_worker.c   |    2 +-
- 5 files changed, 26 insertions(+), 20 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |  102 +++++++++++++++++++-----------------
+ 1 files changed, 53 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 4ececc3..ae482ed 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -945,6 +945,7 @@ struct drbd_tconn {			/* is a resource from the config file */
- 	struct drbd_thread receiver;
- 	struct drbd_thread worker;
- 	struct drbd_thread asender;
-+	cpumask_var_t cpu_mask;
- };
- 
- struct drbd_conf {
-@@ -1074,7 +1075,6 @@ struct drbd_conf {
- 	spinlock_t peer_seq_lock;
- 	unsigned int minor;
- 	unsigned long comm_bm_set; /* communicated number of set bits. */
--	cpumask_var_t cpu_mask;
- 	struct bm_io_work bm_io_work;
- 	u64 ed_uuid; /* UUID of the exposed data */
- 	struct mutex state_mutex;
-@@ -1148,10 +1148,10 @@ extern int  drbd_thread_start(struct drbd_thread *thi);
- extern void _drbd_thread_stop(struct drbd_thread *thi, int restart, int wait);
- extern char *drbd_task_to_thread_name(struct drbd_conf *mdev, struct task_struct *task);
- #ifdef CONFIG_SMP
--extern void drbd_thread_current_set_cpu(struct drbd_conf *mdev, struct drbd_thread *thi);
--extern void drbd_calc_cpu_mask(struct drbd_conf *mdev);
-+extern void drbd_thread_current_set_cpu(struct drbd_thread *thi);
-+extern void drbd_calc_cpu_mask(struct drbd_tconn *tconn);
- #else
--#define drbd_thread_current_set_cpu(A, B) ({})
-+#define drbd_thread_current_set_cpu(A) ({})
- #define drbd_calc_cpu_mask(A) ({})
- #endif
- extern void drbd_free_resources(struct drbd_conf *mdev);
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index d7421b6..7612394 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -618,6 +618,12 @@ char *drbd_task_to_thread_name(struct drbd_conf *mdev, struct task_struct *task)
- }
- 
- #ifdef CONFIG_SMP
-+static int conn_lowest_minor(struct drbd_tconn *tconn)
-+{
-+	int minor = 0;
-+	idr_get_next(&tconn->volumes, &minor);
-+	return minor;
-+}
- /**
-  * drbd_calc_cpu_mask() - Generate CPU masks, spread over all CPUs
-  * @mdev:	DRBD device.
-@@ -625,23 +631,23 @@ char *drbd_task_to_thread_name(struct drbd_conf *mdev, struct task_struct *task)
-  * Forces all threads of a device onto the same CPU. This is beneficial for
-  * DRBD's performance. May be overwritten by user's configuration.
-  */
--void drbd_calc_cpu_mask(struct drbd_conf *mdev)
-+void drbd_calc_cpu_mask(struct drbd_tconn *tconn)
- {
- 	int ord, cpu;
- 
- 	/* user override. */
--	if (cpumask_weight(mdev->cpu_mask))
-+	if (cpumask_weight(tconn->cpu_mask))
- 		return;
- 
--	ord = mdev_to_minor(mdev) % cpumask_weight(cpu_online_mask);
-+	ord = conn_lowest_minor(tconn) % cpumask_weight(cpu_online_mask);
- 	for_each_online_cpu(cpu) {
- 		if (ord-- == 0) {
--			cpumask_set_cpu(cpu, mdev->cpu_mask);
-+			cpumask_set_cpu(cpu, tconn->cpu_mask);
- 			return;
- 		}
- 	}
- 	/* should not be reached */
--	cpumask_setall(mdev->cpu_mask);
-+	cpumask_setall(tconn->cpu_mask);
- }
- 
- /**
-@@ -652,14 +658,14 @@ void drbd_calc_cpu_mask(struct drbd_conf *mdev)
-  * call in the "main loop" of _all_ threads, no need for any mutex, current won't die
-  * prematurely.
-  */
--void drbd_thread_current_set_cpu(struct drbd_conf *mdev, struct drbd_thread *thi)
-+void drbd_thread_current_set_cpu(struct drbd_thread *thi)
- {
- 	struct task_struct *p = current;
- 
- 	if (!thi->reset_cpu_mask)
- 		return;
- 	thi->reset_cpu_mask = 0;
--	set_cpus_allowed_ptr(p, mdev->cpu_mask);
-+	set_cpus_allowed_ptr(p, thi->mdev->tconn->cpu_mask);
- }
- #endif
- 
-@@ -2248,7 +2254,7 @@ struct drbd_conf *drbd_new_device(unsigned int minor)
- 		dev_err(DEV, "vnr = %d\n", vnr);
- 		goto out_no_cpumask;
- 	}
--	if (!zalloc_cpumask_var(&mdev->cpu_mask, GFP_KERNEL))
-+	if (!zalloc_cpumask_var(&mdev->tconn->cpu_mask, GFP_KERNEL))
- 		goto out_no_cpumask;
- 
- 	mdev->tconn->volume0 = mdev;
-@@ -2325,7 +2331,7 @@ out_no_io_page:
- out_no_disk:
- 	blk_cleanup_queue(q);
- out_no_q:
--	free_cpumask_var(mdev->cpu_mask);
-+	free_cpumask_var(mdev->tconn->cpu_mask);
- out_no_cpumask:
- 	drbd_free_tconn(mdev->tconn);
- out_no_tconn:
-@@ -2344,7 +2350,7 @@ void drbd_free_mdev(struct drbd_conf *mdev)
- 	__free_page(mdev->md_io_page);
- 	put_disk(mdev->vdisk);
- 	blk_cleanup_queue(mdev->rq_queue);
--	free_cpumask_var(mdev->cpu_mask);
-+	free_cpumask_var(mdev->tconn->cpu_mask);
- 	kfree(mdev);
- }
- 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index df36a57..331495f 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1884,9 +1884,9 @@ static int drbd_nl_syncer_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *n
- 	if (mdev->state.conn >= C_CONNECTED)
- 		drbd_send_sync_param(mdev, &sc);
- 
--	if (!cpumask_equal(mdev->cpu_mask, new_cpu_mask)) {
--		cpumask_copy(mdev->cpu_mask, new_cpu_mask);
--		drbd_calc_cpu_mask(mdev);
-+	if (!cpumask_equal(mdev->tconn->cpu_mask, new_cpu_mask)) {
-+		cpumask_copy(mdev->tconn->cpu_mask, new_cpu_mask);
-+		drbd_calc_cpu_mask(mdev->tconn);
- 		mdev->tconn->receiver.reset_cpu_mask = 1;
- 		mdev->tconn->asender.reset_cpu_mask = 1;
- 		mdev->tconn->worker.reset_cpu_mask = 1;
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index b1eedd1..306532c 100644
+index 42a2b39..b1eedd1 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -3782,7 +3782,7 @@ static void drbdd(struct drbd_conf *mdev)
- 	int rv;
+@@ -746,6 +746,24 @@ static int drbd_socket_okay(struct socket **sock)
+ 	}
+ }
  
- 	while (get_t_state(&mdev->tconn->receiver) == RUNNING) {
--		drbd_thread_current_set_cpu(mdev, &mdev->tconn->receiver);
-+		drbd_thread_current_set_cpu(&mdev->tconn->receiver);
- 		if (!drbd_recv_header(mdev->tconn, &pi))
- 			goto err_out;
++static int drbd_connected(int vnr, void *p, void *data)
++{
++	struct drbd_conf *mdev = (struct drbd_conf *)p;
++	int ok = 1;
++
++	atomic_set(&mdev->packet_seq, 0);
++	mdev->peer_seq = 0;
++
++	ok &= drbd_send_sync_param(mdev, &mdev->sync_conf);
++	ok &= drbd_send_sizes(mdev, 0, 0);
++	ok &= drbd_send_uuids(mdev);
++	ok &= drbd_send_state(mdev);
++	clear_bit(USE_DEGR_WFC_T, &mdev->flags);
++	clear_bit(RESIZE_PENDING, &mdev->flags);
++
++	return !ok;
++}
++
+ /*
+  * return values:
+  *   1 yes, we have a valid connection
+@@ -754,18 +772,16 @@ static int drbd_socket_okay(struct socket **sock)
+  *     no point in trying again, please go standalone.
+  *  -2 We do not have a network config...
+  */
+-static int drbd_connect(struct drbd_conf *mdev)
++static int drbd_connect(struct drbd_tconn *tconn)
+ {
+ 	struct socket *s, *sock, *msock;
+ 	int try, h, ok;
  
-@@ -4571,7 +4571,7 @@ int drbd_asender(struct drbd_thread *thi)
- 	current->rt_priority = 2;    /* more important than all other tasks */
+-	D_ASSERT(!mdev->tconn->data.socket);
+-
+-	if (drbd_request_state(mdev, NS(conn, C_WF_CONNECTION)) < SS_SUCCESS)
++	if (drbd_request_state(tconn->volume0, NS(conn, C_WF_CONNECTION)) < SS_SUCCESS)
+ 		return -2;
  
- 	while (get_t_state(thi) == RUNNING) {
--		drbd_thread_current_set_cpu(mdev, thi);
-+		drbd_thread_current_set_cpu(thi);
- 		if (test_and_clear_bit(SEND_PING, &mdev->tconn->flags)) {
- 			if (!drbd_send_ping(mdev)) {
- 				dev_err(DEV, "drbd_send_ping has failed\n");
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index f5c27bb..16db1f4 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -1634,7 +1634,7 @@ int drbd_worker(struct drbd_thread *thi)
- 	sprintf(current->comm, "drbd%d_worker", mdev_to_minor(mdev));
+-	clear_bit(DISCARD_CONCURRENT, &mdev->tconn->flags);
+-	mdev->tconn->agreed_pro_version = 99;
++	clear_bit(DISCARD_CONCURRENT, &tconn->flags);
++	tconn->agreed_pro_version = 99;
+ 	/* agreed_pro_version must be smaller than 100 so we send the old
+ 	   header (h80) in the first packet and in the handshake packet. */
  
- 	while (get_t_state(thi) == RUNNING) {
--		drbd_thread_current_set_cpu(mdev, thi);
-+		drbd_thread_current_set_cpu(thi);
+@@ -775,7 +791,7 @@ static int drbd_connect(struct drbd_conf *mdev)
+ 	do {
+ 		for (try = 0;;) {
+ 			/* 3 tries, this should take less than a second! */
+-			s = drbd_try_connect(mdev->tconn);
++			s = drbd_try_connect(tconn);
+ 			if (s || ++try >= 3)
+ 				break;
+ 			/* give the other side time to call bind() & listen() */
+@@ -784,21 +800,21 @@ static int drbd_connect(struct drbd_conf *mdev)
  
- 		if (down_trylock(&mdev->tconn->data.work.s)) {
- 			mutex_lock(&mdev->tconn->data.mutex);
+ 		if (s) {
+ 			if (!sock) {
+-				drbd_send_fp(mdev->tconn, s, P_HAND_SHAKE_S);
++				drbd_send_fp(tconn, s, P_HAND_SHAKE_S);
+ 				sock = s;
+ 				s = NULL;
+ 			} else if (!msock) {
+-				drbd_send_fp(mdev->tconn, s, P_HAND_SHAKE_M);
++				drbd_send_fp(tconn, s, P_HAND_SHAKE_M);
+ 				msock = s;
+ 				s = NULL;
+ 			} else {
+-				dev_err(DEV, "Logic error in drbd_connect()\n");
++				conn_err(tconn, "Logic error in drbd_connect()\n");
+ 				goto out_release_sockets;
+ 			}
+ 		}
+ 
+ 		if (sock && msock) {
+-			schedule_timeout_interruptible(mdev->tconn->net_conf->ping_timeo*HZ/10);
++			schedule_timeout_interruptible(tconn->net_conf->ping_timeo*HZ/10);
+ 			ok = drbd_socket_okay(&sock);
+ 			ok = drbd_socket_okay(&msock) && ok;
+ 			if (ok)
+@@ -806,41 +822,41 @@ static int drbd_connect(struct drbd_conf *mdev)
+ 		}
+ 
+ retry:
+-		s = drbd_wait_for_connect(mdev->tconn);
++		s = drbd_wait_for_connect(tconn);
+ 		if (s) {
+-			try = drbd_recv_fp(mdev->tconn, s);
++			try = drbd_recv_fp(tconn, s);
+ 			drbd_socket_okay(&sock);
+ 			drbd_socket_okay(&msock);
+ 			switch (try) {
+ 			case P_HAND_SHAKE_S:
+ 				if (sock) {
+-					dev_warn(DEV, "initial packet S crossed\n");
++					conn_warn(tconn, "initial packet S crossed\n");
+ 					sock_release(sock);
+ 				}
+ 				sock = s;
+ 				break;
+ 			case P_HAND_SHAKE_M:
+ 				if (msock) {
+-					dev_warn(DEV, "initial packet M crossed\n");
++					conn_warn(tconn, "initial packet M crossed\n");
+ 					sock_release(msock);
+ 				}
+ 				msock = s;
+-				set_bit(DISCARD_CONCURRENT, &mdev->tconn->flags);
++				set_bit(DISCARD_CONCURRENT, &tconn->flags);
+ 				break;
+ 			default:
+-				dev_warn(DEV, "Error receiving initial packet\n");
++				conn_warn(tconn, "Error receiving initial packet\n");
+ 				sock_release(s);
+ 				if (random32() & 1)
+ 					goto retry;
+ 			}
+ 		}
+ 
+-		if (mdev->state.conn <= C_DISCONNECTING)
++		if (tconn->volume0->state.conn <= C_DISCONNECTING)
+ 			goto out_release_sockets;
+ 		if (signal_pending(current)) {
+ 			flush_signals(current);
+ 			smp_rmb();
+-			if (get_t_state(&mdev->tconn->receiver) == EXITING)
++			if (get_t_state(&tconn->receiver) == EXITING)
+ 				goto out_release_sockets;
+ 		}
+ 
+@@ -862,65 +878,53 @@ retry:
+ 	msock->sk->sk_priority = TC_PRIO_INTERACTIVE;
+ 
+ 	/* NOT YET ...
+-	 * sock->sk->sk_sndtimeo = mdev->tconn->net_conf->timeout*HZ/10;
++	 * sock->sk->sk_sndtimeo = tconn->net_conf->timeout*HZ/10;
+ 	 * sock->sk->sk_rcvtimeo = MAX_SCHEDULE_TIMEOUT;
+ 	 * first set it to the P_HAND_SHAKE timeout,
+ 	 * which we set to 4x the configured ping_timeout. */
+ 	sock->sk->sk_sndtimeo =
+-	sock->sk->sk_rcvtimeo = mdev->tconn->net_conf->ping_timeo*4*HZ/10;
++	sock->sk->sk_rcvtimeo = tconn->net_conf->ping_timeo*4*HZ/10;
+ 
+-	msock->sk->sk_sndtimeo = mdev->tconn->net_conf->timeout*HZ/10;
+-	msock->sk->sk_rcvtimeo = mdev->tconn->net_conf->ping_int*HZ;
++	msock->sk->sk_sndtimeo = tconn->net_conf->timeout*HZ/10;
++	msock->sk->sk_rcvtimeo = tconn->net_conf->ping_int*HZ;
+ 
+ 	/* we don't want delays.
+ 	 * we use TCP_CORK where appropriate, though */
+ 	drbd_tcp_nodelay(sock);
+ 	drbd_tcp_nodelay(msock);
+ 
+-	mdev->tconn->data.socket = sock;
+-	mdev->tconn->meta.socket = msock;
+-	mdev->tconn->last_received = jiffies;
+-
+-	D_ASSERT(mdev->tconn->asender.task == NULL);
++	tconn->data.socket = sock;
++	tconn->meta.socket = msock;
++	tconn->last_received = jiffies;
+ 
+-	h = drbd_do_handshake(mdev->tconn);
++	h = drbd_do_handshake(tconn);
+ 	if (h <= 0)
+ 		return h;
+ 
+-	if (mdev->tconn->cram_hmac_tfm) {
++	if (tconn->cram_hmac_tfm) {
+ 		/* drbd_request_state(mdev, NS(conn, WFAuth)); */
+-		switch (drbd_do_auth(mdev->tconn)) {
++		switch (drbd_do_auth(tconn)) {
+ 		case -1:
+-			dev_err(DEV, "Authentication of peer failed\n");
++			conn_err(tconn, "Authentication of peer failed\n");
+ 			return -1;
+ 		case 0:
+-			dev_err(DEV, "Authentication of peer failed, trying again.\n");
++			conn_err(tconn, "Authentication of peer failed, trying again.\n");
+ 			return 0;
+ 		}
+ 	}
+ 
+-	if (drbd_request_state(mdev, NS(conn, C_WF_REPORT_PARAMS)) < SS_SUCCESS)
++	if (drbd_request_state(tconn->volume0, NS(conn, C_WF_REPORT_PARAMS)) < SS_SUCCESS)
+ 		return 0;
+ 
+-	sock->sk->sk_sndtimeo = mdev->tconn->net_conf->timeout*HZ/10;
++	sock->sk->sk_sndtimeo = tconn->net_conf->timeout*HZ/10;
+ 	sock->sk->sk_rcvtimeo = MAX_SCHEDULE_TIMEOUT;
+ 
+-	atomic_set(&mdev->packet_seq, 0);
+-	mdev->peer_seq = 0;
+-
+-	drbd_thread_start(&mdev->tconn->asender);
++	drbd_thread_start(&tconn->asender);
+ 
+-	if (drbd_send_protocol(mdev->tconn) == -1)
++	if (drbd_send_protocol(tconn) == -1)
+ 		return -1;
+-	drbd_send_sync_param(mdev, &mdev->sync_conf);
+-	drbd_send_sizes(mdev, 0, 0);
+-	drbd_send_uuids(mdev);
+-	drbd_send_state(mdev);
+-	clear_bit(USE_DEGR_WFC_T, &mdev->flags);
+-	clear_bit(RESIZE_PENDING, &mdev->flags);
+-	mod_timer(&mdev->request_timer, jiffies + HZ); /* just start it here. */
+ 
+-	return 1;
++	return !idr_for_each(&tconn->volumes, drbd_connected, tconn);
+ 
+ out_release_sockets:
+ 	if (sock)
+@@ -4225,7 +4229,7 @@ int drbdd_init(struct drbd_thread *thi)
+ 	dev_info(DEV, "receiver (re)started\n");
+ 
+ 	do {
+-		h = drbd_connect(mdev);
++		h = drbd_connect(mdev->tconn);
+ 		if (h == 0) {
+ 			drbd_disconnect(mdev);
+ 			schedule_timeout_interruptible(HZ);
 -- 
 1.7.4.1
 
