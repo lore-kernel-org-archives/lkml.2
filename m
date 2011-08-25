@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1HYVyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:54:50 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63109 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650Ab1HYVyt (ORCPT
+	id S1755578Ab1HYWAC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:00:02 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44026 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754650Ab1HYWAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 17:54:49 -0400
-Date: Thu, 25 Aug 2011 23:54:44 +0200
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Oleg Nesterov <oleg@redhat.com>, menage@google.com,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
-Message-ID: <20110825215444.GT2803@mtj.dyndns.org>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org>
- <20110825155957.GJ2803@mtj.dyndns.org>
- <20110825165650.GA8006@redhat.com>
- <201108252301.41778.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108252301.41778.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Aug 2011 18:00:01 -0400
+Date: Thu, 25 Aug 2011 14:59:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ferenc Wagner <wferi@niif.hu>
+Cc: Kashyap@tac.ki.iif.hu, Desai <kashyap.desai@lsi.com>, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [SCSI] fusion: ensure NUL-termination of
+ MptCallbacksName elements
+Message-Id: <20110825145915.abde72e2.akpm@linux-foundation.org>
+In-Reply-To: <cd21dfb714e3a89aadd8eda1fda1748dec9ed7aa.1314276422.git.wferi@niif.hu>
+References: <cd21dfb714e3a89aadd8eda1fda1748dec9ed7aa.1314276422.git.wferi@niif.hu>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 25 Aug 2011 14:44:57 +0200
+Ferenc Wagner <wferi@niif.hu> wrote:
 
-On Thu, Aug 25, 2011 at 11:01:41PM +0200, Rafael J. Wysocki wrote:
-> > But still I can't understand why it is better to consider the exiting
-> > task as "frozen" from the very beginning, right after PTRACE_EVENT_EXIT.
-> > do_exit() does a lot of misc things, and this patch simply makes it
-> > "invisible" to the freezer. This looks "unsafe" even if this is fine
-> > for suspend/etc.
+> Signed-off-by: Ferenc Wagner <wferi@niif.hu>
+
+The lack of a changelog is a hint that the patch needed a changelog!
+
 > 
-> Suspend needs the freezer to ensure that processes (user space mostly)
-> won't interact with drivers in any way while devices are being suspended,
-> so if a process is in a state in which it won't talk to any driver
-> and make changes to filesystems any more, it's irrelevant from the
-> suspend's point of view.
+> diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
+> index 7956a10..eb906e2 100644
+> --- a/drivers/message/fusion/mptbase.c
+> +++ b/drivers/message/fusion/mptbase.c
+> @@ -113,7 +113,7 @@ module_param(mpt_fwfault_debug, int, 0600);
+>  MODULE_PARM_DESC(mpt_fwfault_debug,
+>  		 "Enable detection of Firmware fault and halt Firmware on fault - (default=0)");
+>  
+> -static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][50];
+> +static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][MPT_MAX_CALLBACKNAME_LEN+1];
+>  
+>  #ifdef MFCNT
+>  static int mfcounter = 0;
+> @@ -656,8 +656,7 @@ mpt_register(MPT_CALLBACK cbfunc, MPT_DRIVER_CLASS dclass, char *func_name)
+>  			MptDriverClass[cb_idx] = dclass;
+>  			MptEvHandlers[cb_idx] = NULL;
+>  			last_drv_idx = cb_idx;
+> -			memcpy(MptCallbacksName[cb_idx], func_name,
+> -			    strlen(func_name) > 50 ? 50 : strlen(func_name));
+> +			strlcpy(MptCallbacksName[cb_idx], func_name, MPT_MAX_CALLBACKNAME_LEN+1);
+>  			break;
+>  		}
+>  	}
+> diff --git a/drivers/message/fusion/mptbase.h b/drivers/message/fusion/mptbase.h
+> index fe90233..c10416d 100644
+> --- a/drivers/message/fusion/mptbase.h
+> +++ b/drivers/message/fusion/mptbase.h
+> @@ -89,6 +89,7 @@
+>   */
+>  #define MPT_MAX_ADAPTERS		18
+>  #define MPT_MAX_PROTOCOL_DRIVERS	16
+> +#define MPT_MAX_CALLBACKNAME_LEN	49
+>  #define MPT_MAX_BUS			1	/* Do not change */
+>  #define MPT_MAX_FC_DEVICES		255
+>  #define MPT_MAX_SCSI_DEVICES		16
 
-Hmm... but freezer can't really achieve that.  There are other sources
-of activities.  But anyways, yeah, I think Oleg is right here and we
-should be setting NOFREEZE on transition to EXIT_DEAD.
+Does the patch fix some real-world observed problem?  If so, please
+fully describe it.
 
-> > > Rafael, can you please enlighten us on the subject?
-> > 
-> > Please ;)
-> 
-> Is the above sufficient?
-
-One thing I'm curious about is how many drivers do we have left which
-depend on freezer as opposed to implementing proper quiescing
-mechanism using PM hooks?  Are there still a lot left?
-
-Thanks.
-
--- 
-tejun
