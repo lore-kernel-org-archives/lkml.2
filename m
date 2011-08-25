@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab1HYTzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:55:45 -0400
+	id S1753647Ab1HYTz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 15:55:56 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:63786 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab1HYTzo convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752816Ab1HYTzy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:55:44 -0400
+	Thu, 25 Aug 2011 15:55:54 -0400
 MIME-Version: 1.0
 In-Reply-To: <4E56A7DC.5090805@zytor.com>
-References: <20110722154219.GA25694@elte.hu> <CACqU3MUxUBzu9frjHLVoHUEKtaDEP+Gn7txm1wbxq=Qkv12ssw@mail.gmail.com>
- <CAObL_7HXMQxf+kYVMutdfAFNrSGYKJF2WPkSeWGK230r_zwskA@mail.gmail.com>
- <CACqU3MUbafosBVsycwFjH9sSq8GJumaeq+MKmeUPKD_zyHdGgw@mail.gmail.com>
- <CAObL_7Hi7du37D0PiRVFZZ5=yYGLm4oaGNYqQCeVoab5aJ_2NQ@mail.gmail.com>
- <CACqU3MXpihKOV_4whbi8_CSU4uFpFzbNFaXvSN75ChdYhZ0A5A@mail.gmail.com> <4E56A7DC.5090805@zytor.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 25 Aug 2011 15:55:22 -0400
-X-Google-Sender-Auth: 4Zel25tZZIRWbeFSyUSkDDTktps
-Message-ID: <CAObL_7HLpji6xDcBAmwUXBQuahLLVzQXAfYz_gXufUqj_cDzeQ@mail.gmail.com>
+References: <20110722154219.GA25694@elte.hu>
+	<CACqU3MUxUBzu9frjHLVoHUEKtaDEP+Gn7txm1wbxq=Qkv12ssw@mail.gmail.com>
+	<CAObL_7HXMQxf+kYVMutdfAFNrSGYKJF2WPkSeWGK230r_zwskA@mail.gmail.com>
+	<CACqU3MUbafosBVsycwFjH9sSq8GJumaeq+MKmeUPKD_zyHdGgw@mail.gmail.com>
+	<CAObL_7Hi7du37D0PiRVFZZ5=yYGLm4oaGNYqQCeVoab5aJ_2NQ@mail.gmail.com>
+	<CACqU3MXpihKOV_4whbi8_CSU4uFpFzbNFaXvSN75ChdYhZ0A5A@mail.gmail.com>
+	<4E56A7DC.5090805@zytor.com>
+Date: Thu, 25 Aug 2011 15:55:53 -0400
+Message-ID: <CACqU3MW3qkj1TN8O62mvQTTAwHuXGUdDxM=T0Ki4iwWagrJ8YQ@mail.gmail.com>
 Subject: Re: [GIT PULL] x86/vdso changes for v3.1
+From: Arnaud Lacombe <lacombar@gmail.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: Andrew Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -29,6 +30,8 @@ Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Hi,
 
 On Thu, Aug 25, 2011 at 3:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 > On 08/25/2011 12:47 PM, Arnaud Lacombe wrote:
@@ -42,15 +45,19 @@ On Thu, Aug 25, 2011 at 3:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
 > Since this is a QEMU setup, could you share enough of the setup to
 > reproduce?
+>
+pretty trivial:
 
-qemu-kvm -net none -kernel arch/x86/boot/bzImage -smp 2 -cpu host
--nographic -append console=ttyS0
+% qemu -nographic \
+   -kernel obj/next-bisect/arch/x86/boot/bzImage
+   -append 'root=/dev/sda2 rootfstype=ext4 rootwait console=ttyS0
+init=/etc/preinit loglevel=8'
+   -hda openwrt-x86-generic-combined-ext4.img
 
-With Arnaud's 'dot-config' on the v3.1-rc3 tag.  Triggers instantly.
-It's definitely dependent on the config.
+The root filesystem is openwrt snapshot from August 19th.
 
-Is there any binutils magic to find out which file a particular
-address in .altinstructions came from?  I don't think there are
-meaningful symbols near it.
+ - Arnaud
 
---Andy
+>        -hpa
+>
+>
