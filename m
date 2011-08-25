@@ -1,92 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1HYNCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:02:46 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33689 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab1HYNCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:02:45 -0400
-Message-ID: <4E5647DA.1060901@linux.vnet.ibm.com>
-Date: Thu, 25 Aug 2011 08:02:18 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1753445Ab1HYNET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:04:19 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59758 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab1HYNES (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 09:04:18 -0400
+Message-ID: <4E564845.3020209@gmail.com>
+Date: Thu, 25 Aug 2011 21:04:05 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: Broken pci_block_user_cfg_access interface
-References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com> <4E5613BA.5070101@siemens.com>
-In-Reply-To: <4E5613BA.5070101@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] virtio.h: correct comment for struct virtio_driver
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 04:19 AM, Jan Kiszka wrote:
-> On 2011-08-24 17:02, Brian King wrote:
->> On 08/24/2011 05:43 AM, Jan Kiszka wrote:
->>> Hi,
->>>
->>> trying to port the generic device interrupt masking pattern of
->>> uio_pci_generic to KVM's device assignment code, I stumbled over some
->>> fundamental problem with the current pci_block/unblock_user_cfg_access
->>> interface: it does not provide any synchronization between blocking
->>> sides. This allows user space to trigger a kernel BUG, just run two
->>>
->>> while true; do echo 1 > /sys/bus/pci/devices/<some-device>/reset; done
->>>
->>> loops in parallel and watch the kernel oops.
->>>
->>> Instead of some funky open-coded locking mechanism, we would rather need
->>> a plain mutex across both the user space access (via sysfs) and the
->>> sections guarded by pci_block/unblock_user_cfg_access so far. But I'm
->>> not sure which of them already allow sleeping, specifically if the IPR
->>> driver would be fine with such a change. Can someone in the CC list
->>> comment on this?
->>
->> The ipr driver calls pci_block/unblock_user_cfg_access from interrupt
->> context, so a mutex won't work.
-> 
-> Ugh. What precisely does it have to do with the config space while
-> running inside an IRQ handler (or holding a lock that synchronizes it
-> with such a handler)?
+The patch is against 3.0.
 
-The ipr driver can get an error interrupt which will trigger the driver
-to reset the adapter. While the adapter is going through reset we need
-to ensure user config accesses are blocked, since many ipr adapters
-won't respond on the PCI bus during this time.
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ include/linux/virtio.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-
->> API that works best for the ipr driver is to allow for many block calls,
->> but a single unblock call unblocks access. It seems like what might
->> work well in the case above is a block count. Each call to pci_block
->> increments a count. Each pci_unblock decrements the count and only
->> actually do the unblock if the count drops to zero. It should be reasonably
->> simple for ipr to use that sort of an API as well.
-> 
-> That will just paper over the underlying bug: multiple kernel users (!=
-> sysfs access) fiddle with the config space in an unsynchronized fashion.
-> Think of sysfs-triggered pci_reset_function while your ipr driver does
-> its accesses.
-
-I took a look at the sysfs triggered pci reset function and don't see any way
-that the controlling device driver ever gets to be involved in this reset.
-If code outside the ipr driver were to reset the adapter, the adapter firmware
-would be left in an uninitialized state and until scsi core starts timing
-out ops and driving EH, the card would be unusable. I can't imagine the
-ipr driver is unique in this.
-
--Brian
-
-
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 7108857..e0a1973 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -126,10 +126,10 @@ void unregister_virtio_device(struct virtio_device *dev);
+  * virtio_driver - operations for a virtio I/O driver
+  * @driver: underlying device driver (populate name and owner).
+  * @id_table: the ids serviced by this driver.
+- * @feature_table: an array of feature numbers supported by this device.
++ * @feature_table: an array of feature numbers supported by this driver.
+  * @feature_table_size: number of entries in the feature table array.
+  * @probe: the function to call when a device is found.  Returns 0 or -errno.
+- * @remove: the function when a device is removed.
++ * @remove: the function to call when a device is removed.
+  * @config_changed: optional function to call when the device configuration
+  *    changes; may be called in interrupt context.
+  */
 -- 
-Brian King
-Linux on Power Virtualization
-IBM Linux Technology Center
-
+1.7.1
 
