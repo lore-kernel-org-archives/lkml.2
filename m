@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab1HYRTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:19:18 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59224 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab1HYRTR (ORCPT
+	id S1754864Ab1HYRVX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:21:23 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58020 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab1HYRVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:19:17 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:date:message-id:subject:from:to:cc:
-	content-type:x-system-of-record;
-	b=XYDZItKBF066PwbZrln+1c04xWGz9p5alR/oHYENImVgINp3kDEEwo/E/mbnG8VK2
-	VeydkhDV2s5/KBvNGcxIw==
+	Thu, 25 Aug 2011 13:21:20 -0400
+Date: Thu, 25 Aug 2011 21:21:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110825172109.GC6387@sun>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
+ <4E5680D2.1030608@parallels.com>
 MIME-Version: 1.0
-Date: Thu, 25 Aug 2011 19:19:15 +0200
-Message-ID: <CABPqkBS_Og3Vbe90xwyzA8S5ftfF08gMtJdtpqQTHFOwm+CAkg@mail.gmail.com>
-Subject: [BUG] perf_event: semantic of PERF_SAMPLE_READ unclear
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        Robert Richter <robert.richter@amd.com>,
-        Vince Weaver <vweaver1@eecs.utk.edu>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5680D2.1030608@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Aug 25, 2011 at 09:05:22PM +0400, Pavel Emelyanov wrote:
+...
+> > 
+> > I would prefer if the filename included both start and end addresses
+> > so that it matches the first column of /proc/PID/maps and ls'ing the
+> > directory is more useful.  What do other people think?
+> 
+> Without 0x at the beginning this is not very convenient, but once we add them it no
+> longer matches the contents of the /proc/pid/maps.
+> 
+> Just an opinion, do not mind adding <end> to the name.
+> 
 
-I was looking at the kernel code dealing with PERF_SAMPLE_READ. You use
-this option if you want to capture the values of other events in your
-event group
-on overflow.
+So Pavel, we can make the names to look as say "3d73a00000-3d73a01000"
+leaving proc-inode structure unchanged, that's an idea, right?
 
-This is similar to what you can do with a read() on an event group
-leader. If you've
-setup PERF_FORMAT_READ, then you can read the values of the other events
-in your event group.
-
-The issue at stake here is what values for the other counters. In
-particular, how
-recent are those values? Ideally, you'd like those values to be as recent as the
-value of the main event.
-
-In the case of sampling, you'd like to capture the values of the other events at
-the time of the overflow or very close to it.
-
-In either case, you'd like to get a consistent view of the events,
-i.e., take their
-values as close as possible from each other.
-
-In the case of read(), the values are all retrieved from the actual counters if
-the event group is active. Thus, you get the most recent values
-possible. If it's not
-active, then it's been saved, and the SW counter represents the most recent
-values.
-
-In the case of sampling, however, it is not clear what you get.
-
-The perf_output_read() routine does not read the actual counters.
-Instead, it relies
-on the SW counter, event->count,  updated via x86_perf_event_update()
-who knows when.
-I think this could be a problem as the 'snapshot' you're getting is
-not really consistent.
-
-I think the perf_output_read() function must read the actual counters
-or force an update
-of the SW counters before saving the counts into the buffer. Because
-we are in the interrupt
-handler, we are guaranteed to have the events in the actual counters.
-But the difficulty is that
-we cannot grab any locks, not sure we need one given the call path.
+	Cyrill
