@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab1HYJjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 05:39:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab1HYJjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 05:39:51 -0400
-Date: Thu, 25 Aug 2011 12:40:31 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Brian King <brking@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: Broken pci_block_user_cfg_access interface
-Message-ID: <20110825094031.GA3727@redhat.com>
-References: <4E54D5D7.8050807@siemens.com>
- <4E551298.2000302@linux.vnet.ibm.com>
- <4E5613BA.5070101@siemens.com>
+	id S1752992Ab1HYJnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 05:43:10 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57959 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab1HYJnG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 05:43:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5613BA.5070101@siemens.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1314138000-2049-3-git-send-email-tj@kernel.org>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org> <1314138000-2049-3-git-send-email-tj@kernel.org>
+From: Paul Menage <paul@paulmenage.org>
+Date: Thu, 25 Aug 2011 02:42:46 -0700
+X-Google-Sender-Auth: L5RbwnQaKRJnuXlN-eqI4Sa2uRo
+Message-ID: <CALdu-PBr-tu1qzScvncr-N4EpPaQ7sTdHf28GhEv_MZLbo1eSg@mail.gmail.com>
+Subject: Re: [PATCH 2/6] cgroup: improve old cgroup handling in cgroup_attach_proc()
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, lizf@cn.fujitsu.com, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 11:19:54AM +0200, Jan Kiszka wrote:
-> On 2011-08-24 17:02, Brian King wrote:
-> > On 08/24/2011 05:43 AM, Jan Kiszka wrote:
-> >> Hi,
-> >>
-> >> trying to port the generic device interrupt masking pattern of
-> >> uio_pci_generic to KVM's device assignment code, I stumbled over some
-> >> fundamental problem with the current pci_block/unblock_user_cfg_access
-> >> interface: it does not provide any synchronization between blocking
-> >> sides. This allows user space to trigger a kernel BUG, just run two
-> >>
-> >> while true; do echo 1 > /sys/bus/pci/devices/<some-device>/reset; done
-> >>
-> >> loops in parallel and watch the kernel oops.
-> >>
-> >> Instead of some funky open-coded locking mechanism, we would rather need
-> >> a plain mutex across both the user space access (via sysfs) and the
-> >> sections guarded by pci_block/unblock_user_cfg_access so far. But I'm
-> >> not sure which of them already allow sleeping, specifically if the IPR
-> >> driver would be fine with such a change. Can someone in the CC list
-> >> comment on this?
-> > 
-> > The ipr driver calls pci_block/unblock_user_cfg_access from interrupt
-> > context, so a mutex won't work.
-> 
-> Ugh. What precisely does it have to do with the config space while
-> running inside an IRQ handler (or holding a lock that synchronizes it
-> with such a handler)?
-> 
-> > When the pci_block/unblock API was
-> > originally added, it did not have the checking it has today to detect
-> > if it is being called nested. This was added some time later. The
-> 
-> For a reason...
-> 
-> > API that works best for the ipr driver is to allow for many block calls,
-> > but a single unblock call unblocks access. It seems like what might
-> > work well in the case above is a block count. Each call to pci_block
-> > increments a count. Each pci_unblock decrements the count and only
-> > actually do the unblock if the count drops to zero. It should be reasonably
-> > simple for ipr to use that sort of an API as well.
-> 
-> That will just paper over the underlying bug: multiple kernel users (!=
-> sysfs access) fiddle with the config space in an unsynchronized fashion.
-> Think of sysfs-triggered pci_reset_function while your ipr driver does
-> its accesses.
+On Tue, Aug 23, 2011 at 3:19 PM, Tejun Heo <tj@kernel.org> wrote:
+> cgroup_attach_proc() behaves differently from cgroup_attach_task() in
+> the following aspects.
 >
-> So it's pointless to tweak the current pci_block semantics, we rather
-> need to establish a new mechanism that synchronizes *all* users of the
-> config space.
-> 
-> Jan
+> * All hooks are invoked even if no task is actually being moved.
+>
+> * ->can_attach_task() is called for all tasks in the group whether the
+>  new cgrp is different from the current cgrp or not; however,
+>  ->attach_task() is skipped if new equals new.  This makes the calls
+>  asymmetric.
+>
+> This patch improves old cgroup handling in cgroup_attach_proc() by
+> looking up the current cgroup at the head, recording it in the flex
+> array along with the task itself, and using it to remove the above two
+> differences.  This will also ease further changes.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-It does look like all of the problems are actually around reset.
-So maybe all we need to do is synchronize the sysfs-triggered
-pci_reset_function with pci_block/unblock_user_cfg_access?
+Acked-by: Paul Menage <paul@paulmenage.org>
 
-In other words, when reset is triggered from sysfs, it
-should obey pci_block/unblock_user_cfg_access
-restrictions?
+With the later cgroup_taskset changes making use of the same flex
+array, I guess I agree that leaving all the tasks in the array makes
+sense.
 
-It does not look like reset needs to sleep, so fixing
-that should not be hard, right?
+> +       int retval, i, group_size, nr_todo;
 
-> 
-> -- 
-> Siemens AG, Corporate Technology, CT T DE IT 1
-> Corporate Competence Center Embedded Linux
+I'd be inclined to call "nr_todo" something like "nr_migrating_tasks"
+for clarity.
