@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab1HYUyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 16:54:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35033 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387Ab1HYUye (ORCPT
+	id S1754755Ab1HYU5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 16:57:25 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:30553 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab1HYU5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 16:54:34 -0400
-Date: Thu, 25 Aug 2011 22:54:26 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
+	Thu, 25 Aug 2011 16:57:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=w/3xJ4dw9VGwtoUcdubyZxQbHx19HlyvkIk9Bsy5ygfFWEcFjHxHWPFKhLtP/ott1
+	BL367FFzYcZ0HHQJOOEQg==
+Date: Thu, 25 Aug 2011 13:57:16 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Cong Wang <amwang@redhat.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
-        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110825205426.GO2803@mtj.dyndns.org>
-References: <20110824085329.GL29452@sun>
- <20110824111806.GA7191@albatros>
- <20110825082944.GH10030@sun>
- <20110825170147.GM2803@mtj.dyndns.org>
- <20110825170705.GA6387@sun>
+        Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [Patch] numa: introduce CONFIG_NUMA_SYSFS for
+ drivers/base/node.c
+In-Reply-To: <4E562248.2090102@redhat.com>
+Message-ID: <alpine.DEB.2.00.1108251356220.18747@chino.kir.corp.google.com>
+References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au> <20110804152211.ea10e3e7.rdunlap@xenotime.net> <20110823143912.0691d442.akpm@linux-foundation.org> <4E547155.8090709@redhat.com> <20110824191430.8a908e70.rdunlap@xenotime.net>
+ <4E55C221.8080100@redhat.com> <20110824205044.7ff45b6c.rdunlap@xenotime.net> <alpine.DEB.2.00.1108242202050.576@chino.kir.corp.google.com> <4E562248.2090102@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825170705.GA6387@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 25 Aug 2011, Cong Wang wrote:
 
-On Thu, Aug 25, 2011 at 09:07:05PM +0400, Cyrill Gorcunov wrote:
-> This will force us to bloat proc_inode a bit more, since at moment we
-> have a union such as
+> > No, it doesn't work, CONFIG_HUGETLBFS can be enabled with CONFIG_NUMA=y
+> > and CONFIG_SYSFS=n and that uses data structures from drivers/base/node.c
+> > which doesn't get compiled with this patch.
 > 
-> struct proc_inode {
-> 	struct pid *pid;
-> 	union {
-> 		int fd;
-> 		unsigned long vm_start;
-> 	};
-> 	...
+> So, you mean with CONFIG_NUMA=y && CONFIG_SYSFS=n && CONFIG_HUGETLBFS=y
+> we still get compile error?
 > 
-> also it will require to make a buffer for names twice bigger as well.
-> If all this not a problem -- then sure we can do that ;)
+> Which data structures are used by hugetlbfs?
+> 
 
-I'm not too familiar with this area but I don't think bloating it a
-bit would be such a big problem.  proc_inode is generated on the fly
-as proc directories and files are accessed, so it's not like they'll
-linearly hog down more memory with increasing number of entries (sysfs
-had this sort of problem in the past).
-
-Another thing is, I don't really see why we need vm_start, or fd for
-that matter, in proc_inode at all.  proc_inode is created on the fly
-only as dentry gets instantiated on demand, which means we always have
-d_name on hand to tell what the file is supposed to point to.  In
-fact, the code already uses name_to_int() to extract fd from d_name.
-Hmmm... well yeah, it actually seems that proc_inode->fd is never used
-and we can simply remove it.
-
-So, we can do the same thing w/ these mapping files too.  We just need
-name_to_map_range() or something.  Also, for most address ranges, the
-name sould fit inside the inline name in dentry (32 bytes on 64bit),
-so it really isn't gonna bloat anything.
-
-Thanks.
-
--- 
-tejun
+node_states[], which is revealed at link time if you tried to compile your 
+patch.  It's obvious that we don't want to add per-node hugetlbfs 
+attributes to sysfs directories if sysfs is disabled, so you need to 
+modify the hugetlbfs code as well.
