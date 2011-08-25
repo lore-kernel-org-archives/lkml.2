@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1HYA0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 20:26:31 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11374 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab1HYA0G (ORCPT
+	id S1752791Ab1HYAqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 20:46:22 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41645 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1HYAqQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 20:26:06 -0400
-From: David Daney <david.daney@cavium.com>
-To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+	Wed, 24 Aug 2011 20:46:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110824122739.GB2320@linux.vnet.ibm.com>
+References: <20110824142337.78715e4d6f9db2de68d87fe4@canb.auug.org.au>
+	<20110824122739.GB2320@linux.vnet.ibm.com>
+Date: Wed, 24 Aug 2011 20:46:15 -0400
+Message-ID: <CACqU3MVZRjxo-C+z-WRKnMMFfkr35c4FDUpoY6Kbkh1y1J45kQ@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the rcu tree
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: David Daney <david.daney@cavium.com>
-Subject: [RFC PATCH 0/2] i2c/of: Populate multiplexed i2c busses from the device tree.
-Date: Wed, 24 Aug 2011 17:25:54 -0700
-Message-Id: <1314231956-21115-1-git-send-email-david.daney@cavium.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 25 Aug 2011 00:26:02.0738 (UTC) FILETIME=[9228A520:01CC62BD]
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to populate our I2C devices from the device tree, but some of
-our systems have multiplexers which currently break this process.
+Hi,
 
-The basic idea is to have the generic i2c-mux framework propagate the
-device_node for the child bus into the corresponding i2c_adapter, and
-then call of_i2c_register_devices().  This means that the device tree
-bindings for *all* i2c muxes must have some common properties.  I try
-to document these in mux.txt.
+On Wed, Aug 24, 2011 at 8:27 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Aug 24, 2011 at 02:23:37PM +1000, Stephen Rothwell wrote:
+>> Hi Paul,
+>>
+>> After merging the rcu tree, today's linux-next build (powerpc
+>> ppc64_defconfig) produced this warning:
+>>
+>> kernel/rtmutex.c: In function '__rt_mutex_slowlock':
+>> kernel/rtmutex.c:605:3: warning: suggest parentheses around assignment used as truth value
+>
+> There actually already are parentheses around it, and the first pass
+> through the loop it is uninitialized at that point.  But hey, that
+> is gcc for you!  Does the patch below cure it?
+>
+Yes.
 
-At this point it is an RFC because the patches are against an old
-kernel.  Once we agree on how this should look, I will test them
-against a current kernel.
+ - Arnaud
 
-Any feedback on the approach and/or specific bindings is most welcome.
-
-David Daney (2):
-  i2c: Add a struct device * parameter to i2c_add_mux_adapter()
-  i2c/of: Automatically populate i2c mux busses from device tree data.
-
- Documentation/devicetree/bindings/i2c/mux.txt |   54 +++++++++++++++++++++++++
- drivers/i2c/i2c-mux.c                         |   44 ++++++++++++++++----
- drivers/i2c/muxes/gpio-i2cmux.c               |    3 +-
- drivers/i2c/muxes/pca9541.c                   |    3 +-
- drivers/i2c/muxes/pca954x.c                   |    2 +-
- include/linux/i2c-mux.h                       |    3 +-
- 6 files changed, 96 insertions(+), 13 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/i2c/mux.txt
-
--- 
-1.7.2.3
-
+>> Introduced by commit 83841f021d4b ("rcu: Permit rt_mutex_unlock() with
+>> irqs disabled").
+>
+> If it does, then I will fold into that commit.
+>
+>                                                        Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+> diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+> index 0222e34..2548f44 100644
+> --- a/kernel/rtmutex.c
+> +++ b/kernel/rtmutex.c
+> @@ -602,7 +602,8 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+>
+>                raw_spin_unlock(&lock->wait_lock);
+>
+> -               if (was_disabled = irqs_disabled())
+> +               was_disabled = irqs_disabled();
+> +               if (was_disabled)
+>                        local_irq_enable();
+>
+>                debug_rt_mutex_print_deadlock(waiter);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
