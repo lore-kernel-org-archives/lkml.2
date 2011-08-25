@@ -1,103 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab1HYWVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:21:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755624Ab1HYWU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:20:58 -0400
-Date: Thu, 25 Aug 2011 18:20:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110825222001.GG27162@redhat.com>
-References: <1313154259.6576.42.camel@twins>
- <20110812142020.GB17781@localhost>
- <1314027488.24275.74.camel@twins>
- <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
- <20110823141504.GA15949@localhost>
- <20110823174757.GC15820@redhat.com>
- <20110824001257.GA6349@localhost>
- <20110824180058.GC22434@redhat.com>
- <20110825031934.GA9764@localhost>
+	id S1755670Ab1HYW1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:27:08 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:33358 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755499Ab1HYW1G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 18:27:06 -0400
+X-Sasl-enc: uWi6wxkachaS9rxvVDz2upCOVVLqF1OFN5L2wktQgDuS 1314311225
+Date: Thu, 25 Aug 2011 15:26:30 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 12/59] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Message-ID: <20110825222630.GA13563@kroah.com>
+References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-12-git-send-email-kys@microsoft.com>
+ <20110825205930.GA10883@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B356B@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110825031934.GA9764@localhost>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048081B356B@TK5EX14MBXC126.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 11:19:34AM +0800, Wu Fengguang wrote:
-
-[..]
-> > So you are trying to make one feedback loop aware of second loop so that
-> > if second loop is unbalanced, first loop reacts to that as well and not
-> > just look at dirty_rate and write_bw. So refining new balanced rate by
-> > pos_ratio helps.
-> > 						      write_bw	
-> > bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * --------- * pos_ratio
-> > 						      dirty_bw
+On Thu, Aug 25, 2011 at 10:14:05PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Thursday, August 25, 2011 5:00 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > Subject: Re: [PATCH 12/59] Staging: hv: vmbus: Cleanup vmbus_uevent() code
 > > 
-> > Now if global dirty pages are imbalanced, balanced rate will still go
-> > down despite the fact that dirty_bw == write_bw. This will lead to
-> > further reduction in task dirty rate. Which in turn will lead to reduced
-> > number of dirty rate and should eventually lead to pos_ratio=1.
+> > On Thu, Aug 25, 2011 at 09:48:38AM -0700, K. Y. Srinivasan wrote:
+> > > Now generate appropriate uevent based on the modalias string. As part of this,
+> > > cleanup the existing uevent code.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > ---
+> > >  drivers/staging/hv/vmbus_drv.c |   60 ++++++++--------------------------------
+> > >  1 files changed, 12 insertions(+), 48 deletions(-)
+> > >
+> > > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > > index b651968..a6e7dc5 100644
+> > > --- a/drivers/staging/hv/vmbus_drv.c
+> > > +++ b/drivers/staging/hv/vmbus_drv.c
+> > > @@ -237,58 +237,22 @@ static struct device_attribute vmbus_device_attrs[] =
+> > {
+> > >   * This routine is invoked when a device is added or removed on the vmbus to
+> > >   * generate a uevent to udev in the userspace. The udev will then look at its
+> > >   * rule and the uevent generated here to load the appropriate driver
+> > > + *
+> > > + * The alias string will be of the form vmbus:guid where guid is the string
+> > > + * representation of the device guid (each byte of the guid will be
+> > > + * represented with two hex characters.
+> > >   */
+> > >  static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
+> > >  {
+> > >  	struct hv_device *dev = device_to_hv_device(device);
+> > > -	int ret;
+> > > -
+> > > -	ret = add_uevent_var(env, "VMBUS_DEVICE_CLASS_GUID={"
+> > > -			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+> > > -			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+> > > -			     dev->dev_type.b[3],
+> > > -			     dev->dev_type.b[2],
+> > > -			     dev->dev_type.b[1],
+> > > -			     dev->dev_type.b[0],
+> > > -			     dev->dev_type.b[5],
+> > > -			     dev->dev_type.b[4],
+> > > -			     dev->dev_type.b[7],
+> > > -			     dev->dev_type.b[6],
+> > > -			     dev->dev_type.b[8],
+> > > -			     dev->dev_type.b[9],
+> > > -			     dev->dev_type.b[10],
+> > > -			     dev->dev_type.b[11],
+> > > -			     dev->dev_type.b[12],
+> > > -			     dev->dev_type.b[13],
+> > > -			     dev->dev_type.b[14],
+> > > -			     dev->dev_type.b[15]);
+> > > -
+> > > -	if (ret)
+> > > -		return ret;
+> > > +	int i, ret;
+> > > +	char alias_name[((sizeof(struct hv_vmbus_device_id) + 1)) * 2];
+> > >
+> > > -	ret = add_uevent_var(env, "VMBUS_DEVICE_DEVICE_GUID={"
+> > > -			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+> > > -			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+> > > -			     dev->dev_instance.b[3],
+> > > -			     dev->dev_instance.b[2],
+> > > -			     dev->dev_instance.b[1],
+> > > -			     dev->dev_instance.b[0],
+> > > -			     dev->dev_instance.b[5],
+> > > -			     dev->dev_instance.b[4],
+> > > -			     dev->dev_instance.b[7],
+> > > -			     dev->dev_instance.b[6],
+> > > -			     dev->dev_instance.b[8],
+> > > -			     dev->dev_instance.b[9],
+> > > -			     dev->dev_instance.b[10],
+> > > -			     dev->dev_instance.b[11],
+> > > -			     dev->dev_instance.b[12],
+> > > -			     dev->dev_instance.b[13],
+> > > -			     dev->dev_instance.b[14],
+> > > -			     dev->dev_instance.b[15]);
+> > > -	if (ret)
+> > > -		return ret;
+> > > +	for (i = 0; i < (sizeof(struct hv_vmbus_device_id) * 2); i += 2)
+> > > +		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
+> > 
+> > I have to edit this to get it to work properly with the fact that I
+> > added the driver_data field to hv_vmbus_device_id.
+> > 
+> > Arguably, one could say that this patch was always broken as you were
+> > assuming the size of an individual field was the same size as the whole
+> > structure, which I don't think is always the case, or at least it's not
+> > a safe thing to assume :)
 > 
-> Right, that's a good alternative viewpoint to the below one.
-> 
->   						  write_bw	
->   bdi->dirty_ratelimit_(i+1) = task_ratelimit_i * ---------
->   						  dirty_bw
-> 
-> (1) the periodic rate estimation uses that to refresh the balanced rate on every 200ms
-> (2) as long as the rate estimation is correct, pos_ratio is able to drive itself to 1.0
+> Perhaps I could have sized it based on guid size since that is what is going
+> to be the alias. 
 
-Personally I found it much easier to understand the other representation.
-Once you have come up with equation.
+That's what I ended up doing :)
 
-balance_rate_(i+1) = balance_rate(i) * write_bw/dirty_bw
-
-Can you please put few lines of comments to explain that why above
-alone is not sufficient and we need to take pos_ratio also in to
-account to keep number of dirty pages in check. And then go onto
-
-balance_rate_(i+1) = balance_rate(i) * write_bw/dirty_bw * pos_ratio
-
-This kind of maintains the continuity of explanation and explains
-that why are we deviating from the theory we discussed so far.
-
-> 
-> > A related question though I should have asked you this long back. How does
-> > throttling based on rate helps. Why we could not just work with two
-> > pos_ratios. One is gloabl postion ratio and other is bdi position ratio.
-> > And then throttle task gradually to achieve smooth throttling behavior.
-> > IOW, what property does rate provide which is not available just by
-> > looking at per bdi dirty pages. Can't we come up with bdi setpoint and
-> > limit the way you have done for gloabl setpoint and throttle tasks
-> > accordingly?
-> 
-> Good question. If we have no idea of the balanced rate at all, but
-> still want to limit dirty pages within the range [freerun, limit],
-> all we can do is to throttle the task at eg. 1TB/s at @freerun and
-> 0 at @limit. Then you get a really sharp control line which will make
-> task_ratelimit fluctuate like mad...
-> 
-> So the balanced rate estimation is the key to get smooth task_ratelimit,
-> while pos_ratio is the ultimate guarantee for the dirty pages range.
-
-Ok, that makes sense. By keeping an estimation of rate at which bdi
-can write, our range of throttling goes down. Say 0 to 300MB/s instead
-of 0 to 1TB/sec and that can lead to a more smooth behavior.
-
-Thanks
-Vivek
+greg k-h
