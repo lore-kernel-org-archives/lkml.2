@@ -1,123 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab1HYLZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 07:25:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14384 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752983Ab1HYLZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 07:25:42 -0400
-Date: Thu, 25 Aug 2011 07:25:33 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, davej@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] lockdep: Add helper function for dir vs file i_mutex
- annotation
-Message-ID: <20110825112533.GN2270@zod.bos.redhat.com>
-References: <20110825013746.GM2270@zod.bos.redhat.com>
- <1314262683.12180.1.camel@twins>
+	id S1753292Ab1HYL1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 07:27:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57549 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab1HYL1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 07:27:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH v3 4/4] ARM: msm: Describe MSM 8660 SURF FPGA registers in DT
+Date: Thu, 25 Aug 2011 13:27:12 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>
+References: <1313688345-17699-1-git-send-email-davidb@codeaurora.org> <1313688345-17699-5-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <1313688345-17699-5-git-send-email-davidb@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314262683.12180.1.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108251327.13146.arnd@arndb.de>
+X-Provags-ID: V02:K0:WFdrwx61OO2hQ06xTL9Zv0J4b9FrGr/c9PfAZzAhF3B
+ cC+lA0DYYd1yAyEJxr+fy3/+SWRqgedVmK0BUlvDqJ7zzBIIce
+ 6fOzG4o13JK9JVVkI76rVh71L2GJHT8biUXhh1YtRc9Rj9DRyW
+ R989ohYxaS9D1yRJEwQylhbkDpNC0BD77IqzsY3Mr66MbMWbl1
+ Y4iVe56VKOd35zeMrBxgzOdfiffl4o+au3QtdwqeiBAsfT/Xrc
+ vppX6DFypwGEeIh2H3Ak+8pVuHjBFXwBis6UseSu0TlInLPDbq
+ WgIPcyoHnFPWBPOGcQOYRYd8khjZ9dNVX+uGnY/gNu+xdGQaex
+ IwY5lhbvIgCcNnAyrXUs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 10:58:03AM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-08-24 at 21:37 -0400, Josh Boyer wrote:
-> 
-> > and make it work.  Given that the helper function calls
-> > lockdep_match_key and that isn't defined unless CONFIG_DEBUG_LOCK_ALLOC
-> > is set, I opted to make the caller require #ifdefing it still.  If that's
-> > too ugly, I could define it in both cases but then we'd have an exported
-> > symbol that did nothing when the config option is disabled.
-> 
-> 
-> > diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> > index 87b6e04..ab956c8 100644
-> > --- a/fs/hugetlbfs/inode.c
-> > +++ b/fs/hugetlbfs/inode.c
-> > @@ -491,6 +491,9 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb, uid_t uid,
-> >  			inode->i_op = &page_symlink_inode_operations;
-> >  			break;
-> >  		}
-> > +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> > +		lockdep_annotate_inode_mutex_key(inode);
-> > +#endif
-> >  	}
-> >  	return inode;
-> >  }
-> > diff --git a/fs/inode.c b/fs/inode.c
-> > index 73920d5..ec1c612 100644
-> > --- a/fs/inode.c
-> > +++ b/fs/inode.c
-> > @@ -848,16 +848,9 @@ struct inode *new_inode(struct super_block *sb)
-> >  }
-> >  EXPORT_SYMBOL(new_inode);
-> >  
-> > -/**
-> > - * unlock_new_inode - clear the I_NEW state and wake up any waiters
-> > - * @inode:	new inode to unlock
-> > - *
-> > - * Called when the inode is fully initialised to clear the new state of the
-> > - * inode and wake up anyone waiting for the inode to finish initialisation.
-> > - */
-> > -void unlock_new_inode(struct inode *inode)
-> > -{
-> >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> > +void lockdep_annotate_inode_mutex_key(struct inode *inode)
-> > +{
-> >  	if (S_ISDIR(inode->i_mode)) {
-> >  		struct file_system_type *type = inode->i_sb->s_type;
-> >  
-> > @@ -873,6 +866,21 @@ void unlock_new_inode(struct inode *inode)
-> >  					  &type->i_mutex_dir_key);
-> >  		}
-> >  	}
-> > +}
-> > +EXPORT_SYMBOL(lockdep_annotate_inode_mutex_key);
-> > +#endif
-> > +
-> > +/**
-> > + * unlock_new_inode - clear the I_NEW state and wake up any waiters
-> > + * @inode:	new inode to unlock
-> > + *
-> > + * Called when the inode is fully initialised to clear the new state of the
-> > + * inode and wake up anyone waiting for the inode to finish initialisation.
-> > + */
-> > +void unlock_new_inode(struct inode *inode)
-> > +{
-> 
-> > +	lockdep_annotate_inode_mutex_key(inode);
-> 
-> >  	spin_lock(&inode->i_lock);
-> >  	WARN_ON(!(inode->i_state & I_NEW));
-> > diff --git a/include/linux/fs.h b/include/linux/fs.h
-> > index 178cdb4..a29f9af 100644
-> > --- a/include/linux/fs.h
-> > +++ b/include/linux/fs.h
-> > @@ -2318,6 +2318,9 @@ extern struct inode * iget5_locked(struct super_block *, unsigned long, int (*te
-> >  extern struct inode * iget_locked(struct super_block *, unsigned long);
-> >  extern int insert_inode_locked4(struct inode *, unsigned long, int (*test)(struct inode *, void *), void *);
-> >  extern int insert_inode_locked(struct inode *);
-> > +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> > +extern void lockdep_annotate_inode_mutex_key(struct inode *inode);
-> 
-> #else
-> static inline void lockdep_annotate_inode_mutex_key(struct inode *inode) { };
-> 
-> > +#endif
-> >  extern void unlock_new_inode(struct inode *);
-> >  extern unsigned int get_next_ino(void);
-> 
-> 
-> Will avoid all the ifdeffery at usage sites nor need the pointless
-> export.
+On Thursday 18 August 2011, David Brown wrote:
+> +static void __init msm8660_surf_fpga_init(void __iomem *fpga_mem)
+> +{
+> +       /* Advanced mode */
+> +       writew(0xFFFF, fpga_mem + 0x15C);
+> +       /* FPGA_UART_SEL */
+> +       writew(0, fpga_mem + 0x172);
+> +       /* FPGA_GPIO_CONFIG_117 */
+> +       writew(1, fpga_mem + 0xEA);
+> +       /* FPGA_GPIO_CONFIG_118 */
+> +       writew(1, fpga_mem + 0xEC);
+> +       dmb();
+> +}
 
-Yep, I thought about that after I sent this last night.  I'll fix it and
-resend.
+Does the dmb() do the right thing here? It seems strange to combine a strictly
+ordered I/O instruction with another ordering instruction, and I think it would
+be better to use writew_relaxed for the first one, followed by a 'wmb()'.
 
-josh
+> +#ifdef CONFIG_OF
+> +static void __init msm8660_surf_fpga_init_dt(void)
+> +{
+> +       struct device_node *node;
+> +       void __iomem *fpga_mem;
+> +
+> +       node = of_find_compatible_node(NULL, NULL, "qcom,msm8660-surf-fpga");
+> +       if (!node)
+> +               return;
+> +
+> +       fpga_mem = of_iomap(node, 0);
+> +       of_node_put(node);
+> +       if (!fpga_mem) {
+> +               printk(KERN_ERR "%s: Can't map fpga registers\n", __func__);
+> +               return;
+> +       }
+> +
+> +       msm8660_surf_fpga_init(fpga_mem);
+> +       iounmap(fpga_mem);
+> +}
+> +#endif
+
+Is the serial port connected through the FPGA or just configured by it?
+
+In the former case, I think it would be better to make this a proper device driver that
+binds to the qcom,msm8660-surf-fpga device, configures it and then creates the
+platform_devices for the child nodes (the serial port, possibly others) by calling
+of_platform_bus_probe.
+
+	Arnd
