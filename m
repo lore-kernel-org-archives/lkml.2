@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab1HYOH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 10:07:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58029 "EHLO e8.ny.us.ibm.com"
+	id S1751584Ab1HYOHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 10:07:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55852 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab1HYOHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 10:07:54 -0400
-Date: Thu, 25 Aug 2011 07:07:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Will Simoneau <simoneau@ele.uri.edu>
-Cc: linux-kernel@vger.kernel.org, dipankar@in.ibm.com
-Subject: Re: 2.6.39.4: Oops in rcu_read_unlock_special()/_raw_spin_lock()
-Message-ID: <20110825140722.GC2369@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110824211907.GA4225@ele.uri.edu>
- <20110824212744.GV2417@linux.vnet.ibm.com>
- <20110825132051.GA9580@ele.uri.edu>
+	id S1751430Ab1HYOHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 10:07:03 -0400
+Date: Thu, 25 Aug 2011 16:07:01 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2011-08-24-14-08 uploaded
+Message-ID: <20110825140701.GA6838@tiehlicka.suse.cz>
+References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
+ <20110825135103.GA6431@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110825132051.GA9580@ele.uri.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110825135103.GA6431@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 09:20:51AM -0400, Will Simoneau wrote:
-> On 14:27 Wed 24 Aug     , Paul E. McKenney wrote:
-> > On Wed, Aug 24, 2011 at 05:19:07PM -0400, Will Simoneau wrote:
-> > > The below Oops/BUGs were captured on a serial console during a large
-> > > rsync job. I do not know of a way to reproduce the Oops, I've only seen
-> > > it once. Some recent changes have been made suspiciously close to the
-> > > exploding code, which makes me think that maybe 2.6.39-stable is lacking
-> > > some fixes? The following commits from Linus' git seem vaguely related,
-> > > although I have no idea how relevant they are to 2.6.39.4:
-> > > 
-> > >    ec433f0c (softirq,rcu: Inform RCU of irq_exit() activity)
-> > >    10f39bb1 (rcu: protect __rcu_read_unlock() against scheduler-using
-> > >              irq handlers)
-> > 
-> > If this failure mechanism really is the culprit, you should be able
-> > to make failure happen much more frequently by inserting a delay in
-> > __rcu_read_unlock() just prior to the call to rcu_read_unlock_special().
-> > I would suggest starting with a few tens to hundreds of microseconds
-> > worth of delay.
-> > 
-> > If this does make the failure reproducible, then it would make sense
-> > to try applying the two patches you identified.
+On Thu 25-08-11 15:51:03, Michal Hocko wrote:
+> Hi Andrew,
 > 
-> Hmm. I tried adding progressively larger delays in the spot you
-> indicated. I went from 100uS to an entire 1S (!) and got no crash or
-> deadlock. The target runs at 40MHz so the delays do need to be
-> relatively long compared to modern machines.
+> On Wed 24-08-11 14:09:05, Andrew Morton wrote:
+> > The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
 > 
-> My hardware breakpoint as well as printk tests confirm that
-> rcu_read_unlock_special() really does get called multiple times per
-> second, and the 1S delay makes it painfully obvious as well. But, no
-> dice.
+> I have just downloaded your tree and cannot quilt it up. I am getting:
+> [...]
+> patching file tools/power/cpupower/debug/x86_64/centrino-decode.c
+> Hunk #1 FAILED at 1.
+> File tools/power/cpupower/debug/x86_64/centrino-decode.c is not empty after patch, as expected
+> 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x86_64/centrino-decode.c
+> patching file tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
+> Hunk #1 FAILED at 1.
+> File tools/power/cpupower/debug/x86_64/powernow-k8-decode.c is not empty after patch, as expected
+> 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
+> [...]
+> patching file virt/kvm/iommu.c
+> Patch linux-next.patch does not apply (enforce with -f)
+> 
+> Is this a patch (I am using 2.6.1) issue? The failing hunk looks as
+> follows:
+> --- a/tools/power/cpupower/debug/x86_64/centrino-decode.c
+> +++ /dev/null
+> @@ -1 +0,0 @@
+> -../i386/centrino-decode.c
+> \ No newline at end of file
 
-Well, you can always apply the two patches above anyway, but it is hard
-to prove what the underlying problem really is in your case.
+Isn't this just a special form of git (clever) diff to spare some lines
+when the file deleted? Or is the patch simply corrupted?
+Anyway, my patch doesn't cope with that. Any hint what to do about it?
 
-							Thanx, Paul
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
