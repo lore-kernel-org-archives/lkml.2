@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab1HYJQS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 05:16:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46827 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab1HYJQN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 05:16:13 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-arm-kernel@lists.infradead.org,
+	id S1752684Ab1HYJTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 05:19:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40082 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab1HYJTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 05:19:23 -0400
+Date: Thu, 25 Aug 2011 11:19:20 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Date: Thu, 25 Aug 2011 11:16:01 +0200
-Message-Id: <1314263761-20213-2-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1314263761-20213-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1314263761-20213-1-git-send-email-u.kleine-koenig@pengutronix.de>
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] oom: skip frozen tasks
+Message-ID: <20110825091920.GA22564@tiehlicka.suse.cz>
+References: <20110823073101.6426.77745.stgit@zurg>
+ <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com>
+ <20110824101927.GB3505@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-Subject: [PATCH 2/2] ARM: mxc: convert device creation to use platform_device_register_full
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- arch/arm/plat-mxc/devices.c                     |   53 -----------------------
- arch/arm/plat-mxc/include/mach/devices-common.h |   16 ++++++-
- 2 files changed, 14 insertions(+), 55 deletions(-)
+On Wed 24-08-11 12:31:26, David Rientjes wrote:
+> On Wed, 24 Aug 2011, Michal Hocko wrote:
+> 
+> > When we are in the global OOM condition then you are right, we have a
+> > higher chance to panic. I still find the patch an improvement because
+> > encountering a frozen task and looping over it without any progress
+> > (even though there are other tasks that could be killed) is more
+> > probable than having no killable task at all.
+> > On non-NUMA machines there is even not a big chance that somebody would
+> > be able to thaw a task as the system is already on knees.
+> > 
+> 
+> That's obviously false since we call oom_killer_disable() in 
+> freeze_processes() to disable the oom killer from ever being called in the 
+> first place, so this is something you need to resolve with Rafael before 
+> you cause more machines to panic.
 
-diff --git a/arch/arm/plat-mxc/devices.c b/arch/arm/plat-mxc/devices.c
-index 0d6ed31..a34b2ae 100644
---- a/arch/arm/plat-mxc/devices.c
-+++ b/arch/arm/plat-mxc/devices.c
-@@ -37,59 +37,6 @@ int __init mxc_register_device(struct platform_device *pdev, void *data)
- 	return ret;
- }
- 
--struct platform_device *__init imx_add_platform_device_dmamask(
--		const char *name, int id,
--		const struct resource *res, unsigned int num_resources,
--		const void *data, size_t size_data, u64 dmamask)
--{
--	int ret = -ENOMEM;
--	struct platform_device *pdev;
--
--	pdev = platform_device_alloc(name, id);
--	if (!pdev)
--		goto err;
--
--	if (dmamask) {
--		/*
--		 * This memory isn't freed when the device is put,
--		 * I don't have a nice idea for that though.  Conceptually
--		 * dma_mask in struct device should not be a pointer.
--		 * See http://thread.gmane.org/gmane.linux.kernel.pci/9081
--		 */
--		pdev->dev.dma_mask =
--			kmalloc(sizeof(*pdev->dev.dma_mask), GFP_KERNEL);
--		if (!pdev->dev.dma_mask)
--			/* ret is still -ENOMEM; */
--			goto err;
--
--		*pdev->dev.dma_mask = dmamask;
--		pdev->dev.coherent_dma_mask = dmamask;
--	}
--
--	if (res) {
--		ret = platform_device_add_resources(pdev, res, num_resources);
--		if (ret)
--			goto err;
--	}
--
--	if (data) {
--		ret = platform_device_add_data(pdev, data, size_data);
--		if (ret)
--			goto err;
--	}
--
--	ret = platform_device_add(pdev);
--	if (ret) {
--err:
--		if (dmamask)
--			kfree(pdev->dev.dma_mask);
--		platform_device_put(pdev);
--		return ERR_PTR(ret);
--	}
--
--	return pdev;
--}
--
- struct device mxc_aips_bus = {
- 	.init_name	= "mxc_aips",
- 	.parent		= &platform_bus,
-diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-mxc/include/mach/devices-common.h
-index 524538a..543525d 100644
---- a/arch/arm/plat-mxc/include/mach/devices-common.h
-+++ b/arch/arm/plat-mxc/include/mach/devices-common.h
-@@ -14,10 +14,22 @@
- extern struct device mxc_aips_bus;
- extern struct device mxc_ahb_bus;
- 
--struct platform_device *imx_add_platform_device_dmamask(
-+static inline struct platform_device *imx_add_platform_device_dmamask(
- 		const char *name, int id,
- 		const struct resource *res, unsigned int num_resources,
--		const void *data, size_t size_data, u64 dmamask);
-+		const void *data, size_t size_data, u64 dmamask)
-+{
-+	struct platform_device_info pdevinfo = {
-+		.name = name,
-+		.id = id,
-+		.res = res,
-+		.num_res = num_resources,
-+		.data = data,
-+		.size_data = size_data,
-+		.dma_mask = dmamask,
-+	};
-+	return platform_device_register_full(&pdevinfo);
-+}
- 
- static inline struct platform_device *imx_add_platform_device(
- 		const char *name, int id,
+I didn't mean suspend/resume path (that is protected by oom_killer_disabled)
+so the patch doesn't make any change.
+
+Other than that you may end up with all tasks frozen by freezer cgroup
+(assuming that others, that are killable, would be already killed by
+OOM). But in that case who can thaw those processes when we are already
+in OOM? If there is no chance to move forward then panic is more
+suitable than a livelock IMO.
+OK, we might be in OOM on a nodemask (cpuset or mempol) on NUMA and an
+allocation on a different nodemask might still succeed and so we can
+thaw those processes. This should be addressed.
+What if we panicked only if constraint == CONSTRAINT_NONE?
+
+Or am I missing something?
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
