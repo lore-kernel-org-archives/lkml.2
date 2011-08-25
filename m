@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1HYKgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 06:36:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34631 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752615Ab1HYKgT (ORCPT
+	id S1753274Ab1HYKjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 06:39:36 -0400
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:52325 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752414Ab1HYKjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 06:36:19 -0400
-Date: Thu, 25 Aug 2011 11:36:17 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Colin Cross <ccross@google.com>, Ben Dooks <ben-linux@fluff.org>,
-        Dilan Lee <dilee@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c/tegra: I2C driver uses the suspend_noirq/resume_noirq
-Message-ID: <20110825103616.GC31154@opensource.wolfsonmicro.com>
-References: <CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
- <20110806084805.GA18098@sirena.org.uk>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
- <CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
- <CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
- <1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
- <CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
- <20110812031433.GE10218@opensource.wolfsonmicro.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
-X-Cookie: Never reveal your best argument.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Aug 2011 06:39:35 -0400
+Subject: 3.1-rc3 fails to boot on my pandaboard
+From: Luciano Coelho <coelho@ti.com>
+To: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Aug 2011 13:39:29 +0300
+Message-ID: <1314268769.2296.283.camel@cumari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 02:28:29PM -0700, Stephen Warren wrote:
+Hi,
 
-> (and you'd mentioned having the subsystem maintainers weigh in on this;
-> which sub-system; IRQ, power, I2C, ...?)
+There seems to be a problem with 3.1-rc3, which prevents it from booting
+on my PandaBoard (ARM OMAP4).
 
-I'm one of the regulator API subsystem maintainers FWIW.
+3.1-rc2 works fine, so I have bisected the problem and it turns out to
+be caused by this:
+
+commit f3637a5f2e2eb391ff5757bc83fb5de8f9726464
+Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date:   Thu Jul 7 22:32:17 2011 +0200
+
+    irq: Always set IRQF_ONESHOT if no primary handler is specified
+
+After reverting this commit, -rc3 boots fine.  I'm not sure where
+exactly the problem is.  Maybe it's something in the omap code which is
+broken and this patch causes the bug to show up?
+
+What happens is that the booting process hangs after printing out this:
+
+[...] 
+[    7.408477] EXT3-fs: barriers not enabled
+[    7.415008] kjournald starting.  Commit interval 5 seconds
+[    7.446228] EXT3-fs (mmcblk0p5): using internal journal
+[    7.452087] EXT3-fs (mmcblk0p5): mounted filesystem with ordered data mode
+[    7.459625] VFS: Mounted root (ext3 filesystem) on device 179:5.
+[    7.466094] Freeing init memory: 312K
+[    7.471710] Failed to execute /init.  Attempting defaults...
+[   10.254333] EXT3-fs (mmcblk0p5): using internal journal
+
+The full boot logs can be found here:
+
+http://pastebin.pandaboard.org/index.php/view/88995306
+
+Any ideas what may be going wrong?
+
+-- 
+Cheers,
+Luca.
+
