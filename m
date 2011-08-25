@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1HYCsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 22:48:11 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:35265 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752152Ab1HYCsK (ORCPT
+	id S1751458Ab1HYDHE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 23:07:04 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:52879 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750827Ab1HYDHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 22:48:10 -0400
-Date: Wed, 24 Aug 2011 22:48:08 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, dgoulet@ev0ke.net,
-        penguin-kernel@I-love.SAKURA.ne.jp, anton@samba.org, stable@kernel.org
-Subject: Re: [PATCH 3.1-rc3/3.0.3] sendmmsg/sendmsg: fix unsafe user
-	pointer access
-Message-ID: <20110825024808.GA23807@Krystal>
-References: <20110825023940.GA23683@Krystal> <20110824.194525.2193895272175663670.davem@davemloft.net> <20110824.194653.634810868160099262.davem@davemloft.net>
+	Wed, 24 Aug 2011 23:07:02 -0400
+X-Sasl-enc: Co0pOc6xieq718Esmb7JZI64cl3w1R1+jeurpwtpZngV 1314241621
+Date: Thu, 25 Aug 2011 00:06:54 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Kumar Appaiah <a.kumar@alumni.iitm.ac.in>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Matthew Garrett <mjg@redhat.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thinkpad-acpi: minor grammatical fixes to documentation
+Message-ID: <20110825030654.GA6074@khazad-dum.debian.net>
+References: <20110823151149.GA7495@bluemoon.ece.utexas.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110824.194653.634810868160099262.davem@davemloft.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 22:47:53 up 274 days,  7:50,  1 user,  load average: 0.04, 0.01,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110823151149.GA7495@bluemoon.ece.utexas.edu>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Miller (davem@davemloft.net) wrote:
+On Tue, 23 Aug 2011, Kumar Appaiah wrote:
+> This commit adds minor grammatical fixes to the description of the
+> keys in the thinkpad-acpi documentation.
 > 
-> BTW, please always post all networking patches to netdev@vger.kernel.org,
-> this way it gets better review and the patch will also be properly tracked
-> at:
-> 
-> 	http://patchwork.ozlabs.org/netdev/list/
-> 
-> Thanks.
+> Signed-off-by: Kumar Appaiah <a.kumar@alumni.iitm.ac.in>
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
 
-Will do, thanks !
-
-Mathieu
-
+> ---
+>  Documentation/laptops/thinkpad-acpi.txt |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> 
+> diff --git a/Documentation/laptops/thinkpad-acpi.txt b/Documentation/laptops/thinkpad-acpi.txt
+> index 6181548..b73dcea 100644
+> --- a/Documentation/laptops/thinkpad-acpi.txt
+> +++ b/Documentation/laptops/thinkpad-acpi.txt
+> @@ -411,9 +411,9 @@ event	code	Key		Notes
+>  
+>  0x1004	0x03	FN+F4		Sleep button (ACPI sleep button
+>  				semantics, i.e. sleep-to-RAM).
+> -				It is always generate some kind
+> +				It always generates some kind
+>  				of event, either the hot key
+> -				event or a ACPI sleep button
+> +				event or an ACPI sleep button
+>  				event. The firmware may
+>  				refuse to generate further FN+F4
+>  				key presses until a S3 or S4 ACPI
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
