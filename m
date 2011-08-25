@@ -1,116 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab1HYLYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 07:24:43 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:48805 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752204Ab1HYLYk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 07:24:40 -0400
-Subject: Re: 3.1-rc3 fails to boot on my pandaboard
-From: Luciano Coelho <coelho@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20110825110423.GA12911@linutronix.de>
-References: <1314268769.2296.283.camel@cumari>
-	 <20110825110423.GA12911@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Aug 2011 14:24:34 +0300
-Message-ID: <1314271474.2296.295.camel@cumari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753342Ab1HYLZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 07:25:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752983Ab1HYLZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 07:25:42 -0400
+Date: Thu, 25 Aug 2011 07:25:33 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, davej@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] lockdep: Add helper function for dir vs file i_mutex
+ annotation
+Message-ID: <20110825112533.GN2270@zod.bos.redhat.com>
+References: <20110825013746.GM2270@zod.bos.redhat.com>
+ <1314262683.12180.1.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314262683.12180.1.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 13:04 +0200, Sebastian Andrzej Siewior wrote: 
-> * Luciano Coelho | 2011-08-25 13:39:29 [+0300]:
-> >Any ideas what may be going wrong?
+On Thu, Aug 25, 2011 at 10:58:03AM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-08-24 at 21:37 -0400, Josh Boyer wrote:
 > 
-> I think my commit was identified as bogus and tglx is going to revert 
-> it. The problem is that I force ONESHOT mode for all threaded IRQs but
-> there are also others without the flag which is not allowed.
-> 
-> I was trying to check something but I don't get my board to boot. Could
-> you please try to boot with the patch reverted and paste me the
-> the output of 
->  cat /proc/interrupts | grep 74 ?
-
-Hmmm... There doesn't seem to be an irq 74.  The only thing I get is
-this:
-
-root@xiru:~# cat /proc/interrupts | grep 74
-IPI1:       2667       3743  Rescheduling interrupts
-
-Which is probably not what you wanted. ;)
-
-
-> I *think* that the flow handler is level (I can't find evidence of it
-> beeing edge, and omap_alloc_gc() is the place installing it).
-> 
-> So could you please gather additional debug info with this patch?
-> 
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 2e94258..eda25a0 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -1327,6 +1327,9 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
->  	if (!irq_settings_can_request(desc))
->  		return -EINVAL;
->  
-> +	if (irq == 74)
-> +		printk(KERN_ERR "%s() h %pS th %pS f %lx dev %s flow %pS\n", __func__,
-> +				handler, thread_fn, irqflags, devname, desc->handle_irq);
->  	if (!handler) {
->  		if (!thread_fn)
->  			return -EINVAL;
+> > and make it work.  Given that the helper function calls
+> > lockdep_match_key and that isn't defined unless CONFIG_DEBUG_LOCK_ALLOC
+> > is set, I opted to make the caller require #ifdefing it still.  If that's
+> > too ugly, I could define it in both cases but then we'd have an exported
+> > symbol that did nothing when the config option is disabled.
 > 
 > 
-> %pS should resolve the function names.
+> > diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> > index 87b6e04..ab956c8 100644
+> > --- a/fs/hugetlbfs/inode.c
+> > +++ b/fs/hugetlbfs/inode.c
+> > @@ -491,6 +491,9 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb, uid_t uid,
+> >  			inode->i_op = &page_symlink_inode_operations;
+> >  			break;
+> >  		}
+> > +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> > +		lockdep_annotate_inode_mutex_key(inode);
+> > +#endif
+> >  	}
+> >  	return inode;
+> >  }
+> > diff --git a/fs/inode.c b/fs/inode.c
+> > index 73920d5..ec1c612 100644
+> > --- a/fs/inode.c
+> > +++ b/fs/inode.c
+> > @@ -848,16 +848,9 @@ struct inode *new_inode(struct super_block *sb)
+> >  }
+> >  EXPORT_SYMBOL(new_inode);
+> >  
+> > -/**
+> > - * unlock_new_inode - clear the I_NEW state and wake up any waiters
+> > - * @inode:	new inode to unlock
+> > - *
+> > - * Called when the inode is fully initialised to clear the new state of the
+> > - * inode and wake up anyone waiting for the inode to finish initialisation.
+> > - */
+> > -void unlock_new_inode(struct inode *inode)
+> > -{
+> >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+> > +void lockdep_annotate_inode_mutex_key(struct inode *inode)
+> > +{
+> >  	if (S_ISDIR(inode->i_mode)) {
+> >  		struct file_system_type *type = inode->i_sb->s_type;
+> >  
+> > @@ -873,6 +866,21 @@ void unlock_new_inode(struct inode *inode)
+> >  					  &type->i_mutex_dir_key);
+> >  		}
+> >  	}
+> > +}
+> > +EXPORT_SYMBOL(lockdep_annotate_inode_mutex_key);
+> > +#endif
+> > +
+> > +/**
+> > + * unlock_new_inode - clear the I_NEW state and wake up any waiters
+> > + * @inode:	new inode to unlock
+> > + *
+> > + * Called when the inode is fully initialised to clear the new state of the
+> > + * inode and wake up anyone waiting for the inode to finish initialisation.
+> > + */
+> > +void unlock_new_inode(struct inode *inode)
+> > +{
+> 
+> > +	lockdep_annotate_inode_mutex_key(inode);
+> 
+> >  	spin_lock(&inode->i_lock);
+> >  	WARN_ON(!(inode->i_state & I_NEW));
+> > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > index 178cdb4..a29f9af 100644
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -2318,6 +2318,9 @@ extern struct inode * iget5_locked(struct super_block *, unsigned long, int (*te
+> >  extern struct inode * iget_locked(struct super_block *, unsigned long);
+> >  extern int insert_inode_locked4(struct inode *, unsigned long, int (*test)(struct inode *, void *), void *);
+> >  extern int insert_inode_locked(struct inode *);
+> > +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> > +extern void lockdep_annotate_inode_mutex_key(struct inode *inode);
+> 
+> #else
+> static inline void lockdep_annotate_inode_mutex_key(struct inode *inode) { };
+> 
+> > +#endif
+> >  extern void unlock_new_inode(struct inode *);
+> >  extern unsigned int get_next_ino(void);
+> 
+> 
+> Will avoid all the ifdeffery at usage sites nor need the pointless
+> export.
 
-As I mentioned above, there doesn't seem to be irq 74, so this code
-doesn't hit.
+Yep, I thought about that after I sent this last night.  I'll fix it and
+resend.
 
-These are the interrupts reported in /proc/interrupts on my board:
-
-root@xiru:~# cat /proc/interrupts
-           CPU0       CPU1       
-39:          0          0       GIC  TWL6030-PIH
-41:          0          0       GIC  l3-dbg-irq
-42:          0          0       GIC  l3-app-irq
-44:       5397          0       GIC  DMA
-52:          0          0       GIC  gpmc
-69:         16          0       GIC  gp timer
-88:        270          0       GIC  omap_i2c
-89:          0          0       GIC  omap_i2c
-91:        183          0       GIC  mmc1
-93:          0          0       GIC  omap_i2c
-94:          0          0       GIC  omap_i2c
-102:          0          0       GIC  serial idle
-104:          0          0       GIC  serial idle
-105:          0          0       GIC  serial idle
-106:        290          0       GIC  serial idle, OMAP UART2
-108:          1          0       GIC  ohci_hcd:usb3
-109:        493          0       GIC  ehci_hcd:usb1
-115:       6260          0       GIC  mmc0
-124:          1          0       GIC  musb-hdrc
-125:          0          0       GIC  musb-hdrc
-213:          0          0      GPIO  wl1271
-372:          0          0   twl6030  twl6030_usb
-378:          0          0   twl6030  twl6030_usb
-379:          0          0   twl6030  rtc0
-IPI0:          0          0  Timer broadcast interrupts
-IPI1:       2995       3606  Rescheduling interrupts
-IPI2:          0          0  Function call interrupts
-IPI3:         57         61  Single function call interrupts
-IPI4:          0          0  CPU stop interrupts
-LOC:       8879       5844  Local timer interrupts
-Err:          0
-
-
--- 
-Cheers,
-Luca.
-
+josh
