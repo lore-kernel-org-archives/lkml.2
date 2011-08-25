@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081Ab1HYJUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 05:20:10 -0400
-Received: from david.siemens.de ([192.35.17.14]:31550 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898Ab1HYJUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 05:20:08 -0400
-Message-ID: <4E5613BA.5070101@siemens.com>
-Date: Thu, 25 Aug 2011 11:19:54 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753193Ab1HYJUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 05:20:52 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44165 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab1HYJUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 05:20:50 -0400
+Date: Thu, 25 Aug 2011 11:20:45 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Paul Menage <paul@paulmenage.org>
+Cc: rjw@sisk.pl, lizf@cn.fujitsu.com, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH 3/6] cgroup: introduce cgroup_taskset and use it in
+ subsys->can_attach(), cancel_attach() and attach()
+Message-ID: <20110825092045.GG3286@htj.dyndns.org>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org>
+ <1314138000-2049-4-git-send-email-tj@kernel.org>
+ <CALdu-PDAgqeRJt5vqTB9wddwz70Yn+Jf-Pb0dDKDBD_q37tHQg@mail.gmail.com>
 MIME-Version: 1.0
-To: Brian King <brking@linux.vnet.ibm.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: Broken pci_block_user_cfg_access interface
-References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com>
-In-Reply-To: <4E551298.2000302@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALdu-PDAgqeRJt5vqTB9wddwz70Yn+Jf-Pb0dDKDBD_q37tHQg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-24 17:02, Brian King wrote:
-> On 08/24/2011 05:43 AM, Jan Kiszka wrote:
->> Hi,
->>
->> trying to port the generic device interrupt masking pattern of
->> uio_pci_generic to KVM's device assignment code, I stumbled over some
->> fundamental problem with the current pci_block/unblock_user_cfg_access
->> interface: it does not provide any synchronization between blocking
->> sides. This allows user space to trigger a kernel BUG, just run two
->>
->> while true; do echo 1 > /sys/bus/pci/devices/<some-device>/reset; done
->>
->> loops in parallel and watch the kernel oops.
->>
->> Instead of some funky open-coded locking mechanism, we would rather need
->> a plain mutex across both the user space access (via sysfs) and the
->> sections guarded by pci_block/unblock_user_cfg_access so far. But I'm
->> not sure which of them already allow sleeping, specifically if the IPR
->> driver would be fine with such a change. Can someone in the CC list
->> comment on this?
-> 
-> The ipr driver calls pci_block/unblock_user_cfg_access from interrupt
-> context, so a mutex won't work.
+Hello,
 
-Ugh. What precisely does it have to do with the config space while
-running inside an IRQ handler (or holding a lock that synchronizes it
-with such a handler)?
+On Thu, Aug 25, 2011 at 02:14:12AM -0700, Paul Menage wrote:
+> The general idea of passing consistent information to all *attach
+> methods seems good, but isn't it simpler to just fix up the various
+> method signatures?
 
-> When the pci_block/unblock API was
-> originally added, it did not have the checking it has today to detect
-> if it is being called nested. This was added some time later. The
+I think having separate ->attach() and ->attach_task() is inherently
+broken.  Look at the memcg discussion I had in this thread for
+reference and as soon as we need to do something across the tasks
+being migrated, iteration-by-callback becomes very painful.
+e.g. let's say memcg wants to find the mm->owner and wants to print
+warning or fail if that doesn't work out.  How would that be
+implemented if it's iterating by callback.
 
-For a reason...
+> The whole point of having *attach() and *attach_task() was to minimize
+> the amount of boilerplate (in this case, iterating across a new
+> cgroup_taskset abstraction) in the subsystems, leaving that to the
+> cgroups framework.
 
-> API that works best for the ipr driver is to allow for many block calls,
-> but a single unblock call unblocks access. It seems like what might
-> work well in the case above is a block count. Each call to pci_block
-> increments a count. Each pci_unblock decrements the count and only
-> actually do the unblock if the count drops to zero. It should be reasonably
-> simple for ipr to use that sort of an API as well.
+Yeah, I agree with making things easier for subsystems but I violently
+disagree that iteration-by-callback is helpful in any way.  If
+control-loop style iterator is at all possible, it's almost always
+better to go that way.
 
-That will just paper over the underlying bug: multiple kernel users (!=
-sysfs access) fiddle with the config space in an unsynchronized fashion.
-Think of sysfs-triggered pci_reset_function while your ipr driver does
-its accesses.
-
-So it's pointless to tweak the current pci_block semantics, we rather
-need to establish a new mechanism that synchronizes *all* users of the
-config space.
-
-Jan
+Thanks.
 
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+tejun
