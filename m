@@ -1,72 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1HYPMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:12:14 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:24221 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab1HYPML (ORCPT
+	id S1754115Ab1HYPKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:10:21 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:33221 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064Ab1HYPKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:12:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6448"; a="112892858"
-Date: Thu, 25 Aug 2011 08:12:10 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Linus Walleij <linus.walleij@linaro.org>, rvaswani@codeaurora.org,
-        gbean@codeaurora.org
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
-Message-ID: <20110825151210.GC31331@huya.qualcomm.com>
-References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04B24A3BC0@HQMAIL01.nvidia.com>
- <CACRpkdaZfG4hiGf8vug3EGMRMc0c92xbj=L_HAQcS27DAXYc4Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaZfG4hiGf8vug3EGMRMc0c92xbj=L_HAQcS27DAXYc4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Aug 2011 11:10:19 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 108/118] drbd: Removed the os parameter form sanitize_state()
+Date: Thu, 25 Aug 2011 17:08:44 +0200
+Message-Id: <1314284934-17999-109-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 12:12:59PM +0200, Linus Walleij wrote:
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_state.c |   39 +++++++++++++++++++--------------------
+ 1 files changed, 19 insertions(+), 20 deletions(-)
 
-> mach-msm:
-> ----------------
-> 
-> Hard to tell how this works and what's available, support
-> seems to be incomplete. Currently it seems to be wired
-> to do either a dedicated function (like some UART pin)
-> or GPIO, like each pin can be used for two specific
-> things, and not phone-exchange type.
-
-There are some pins on MSMs that can be connected to different hw
-blocks, we just haven't gotten the support into the kernel yet.
-
-There are some things where two devices share pins, and you have to
-choose one or the other.
-
-I believe there are also configurations where something such as the SD
-controller can either be configured in 8-bit data mode, or in 4-bit
-data mode, and those 4 pins connected to something else.
-
-Much of the current pin configuration in our product kernel seems to
-be about current and pull up/down configuration.
-
-I've added Rohit Vaswani, and Greg Bean to this thread who should have
-a bit better understanding of this.
-
-David
-
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index b381faa..02516ed 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -48,8 +48,8 @@ static void after_conn_state_ch(struct drbd_tconn *tconn, union drbd_state os,
+ static enum drbd_state_rv is_valid_state(struct drbd_conf *, union drbd_state);
+ static enum drbd_state_rv is_valid_soft_transition(union drbd_state, union drbd_state);
+ static enum drbd_state_rv is_valid_transition(union drbd_state os, union drbd_state ns);
+-static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state os,
+-				       union drbd_state ns, const char **warn_sync_abort);
++static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state ns,
++				       const char **warn_sync_abort);
+ 
+ /**
+  * cl_wide_st_chg() - true if the state change is a cluster wide one
+@@ -116,7 +116,7 @@ _req_st_cond(struct drbd_conf *mdev, union drbd_state mask,
+ 	spin_lock_irqsave(&mdev->tconn->req_lock, flags);
+ 	os = mdev->state;
+ 	ns.i = (os.i & ~mask.i) | val.i;
+-	ns = sanitize_state(mdev, os, ns, NULL);
++	ns = sanitize_state(mdev, ns, NULL);
+ 	rv = is_valid_transition(os, ns);
+ 	if (rv == SS_SUCCESS)
+ 		rv = SS_UNKNOWN_ERROR;  /* cont waiting, otherwise fail. */
+@@ -163,7 +163,7 @@ drbd_req_state(struct drbd_conf *mdev, union drbd_state mask,
+ 	spin_lock_irqsave(&mdev->tconn->req_lock, flags);
+ 	os = mdev->state;
+ 	ns.i = (os.i & ~mask.i) | val.i;
+-	ns = sanitize_state(mdev, os, ns, NULL);
++	ns = sanitize_state(mdev, ns, NULL);
+ 	rv = is_valid_transition(os, ns);
+ 	if (rv < SS_SUCCESS)
+ 		goto abort;
+@@ -436,6 +436,13 @@ is_valid_transition(union drbd_state os, union drbd_state ns)
+ 	if (ns.disk == D_FAILED && os.disk == D_DISKLESS)
+ 		rv = SS_IS_DISKLESS;
+ 
++	/* if we are only D_ATTACHING yet,
++	 * we can (and should) go directly to D_DISKLESS. */
++	if (ns.disk == D_FAILED && os.disk == D_ATTACHING) {
++		printk("TODO: FIX ME\n");
++		rv = SS_IS_DISKLESS;
++	}
++
+ 	return rv;
+ }
+ 
+@@ -449,8 +456,8 @@ is_valid_transition(union drbd_state os, union drbd_state ns)
+  * When we loose connection, we have to set the state of the peers disk (pdsk)
+  * to D_UNKNOWN. This rule and many more along those lines are in this function.
+  */
+-static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state os,
+-				       union drbd_state ns, const char **warn_sync_abort)
++static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state ns,
++				       const char **warn_sync_abort)
+ {
+ 	enum drbd_fencing_p fp;
+ 	enum drbd_disk_state disk_min, disk_max, pdsk_min, pdsk_max;
+@@ -461,11 +468,6 @@ static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state
+ 		put_ldev(mdev);
+ 	}
+ 
+-	/* if we are only D_ATTACHING yet,
+-	 * we can (and should) go directly to D_DISKLESS. */
+-	if (ns.disk == D_FAILED && os.disk == D_ATTACHING)
+-		ns.disk = D_DISKLESS;
+-
+ 	/* Implications from connection to peer and peer_isp */
+ 	if (ns.conn < C_CONNECTED) {
+ 		ns.peer_isp = 0;
+@@ -478,12 +480,12 @@ static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state
+ 	if (ns.conn == C_STANDALONE && ns.disk == D_DISKLESS && ns.role == R_SECONDARY)
+ 		ns.aftr_isp = 0;
+ 
++	/* An implication of the disk states onto the connection state */
+ 	/* Abort resync if a disk fails/detaches */
+-	if (os.conn > C_CONNECTED && ns.conn > C_CONNECTED &&
+-	    (ns.disk <= D_FAILED || ns.pdsk <= D_FAILED)) {
++	if (ns.conn > C_CONNECTED && (ns.disk <= D_FAILED || ns.pdsk <= D_FAILED)) {
+ 		if (warn_sync_abort)
+ 			*warn_sync_abort =
+-				os.conn == C_VERIFY_S || os.conn == C_VERIFY_T ?
++				ns.conn == C_VERIFY_S || ns.conn == C_VERIFY_T ?
+ 				"Online-verify" : "Resync";
+ 		ns.conn = C_CONNECTED;
+ 	}
+@@ -591,13 +593,11 @@ static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state
+ 	}
+ 
+ 	if (fp == FP_STONITH &&
+-	    (ns.role == R_PRIMARY && ns.conn < C_CONNECTED && ns.pdsk > D_OUTDATED) &&
+-	    !(os.role == R_PRIMARY && os.conn < C_CONNECTED && os.pdsk > D_OUTDATED))
++	    (ns.role == R_PRIMARY && ns.conn < C_CONNECTED && ns.pdsk > D_OUTDATED))
+ 		ns.susp_fen = 1; /* Suspend IO while fence-peer handler runs (peer lost) */
+ 
+ 	if (mdev->sync_conf.on_no_data == OND_SUSPEND_IO &&
+-	    (ns.role == R_PRIMARY && ns.disk < D_UP_TO_DATE && ns.pdsk < D_UP_TO_DATE) &&
+-	    !(os.role == R_PRIMARY && os.disk < D_UP_TO_DATE && os.pdsk < D_UP_TO_DATE))
++	    (ns.role == R_PRIMARY && ns.disk < D_UP_TO_DATE && ns.pdsk < D_UP_TO_DATE))
+ 		ns.susp_nod = 1; /* Suspend IO while no data available (no accessible data available) */
+ 
+ 	if (ns.aftr_isp || ns.peer_isp || ns.user_isp) {
+@@ -668,8 +668,7 @@ __drbd_set_state(struct drbd_conf *mdev, union drbd_state ns,
+ 
+ 	os = mdev->state;
+ 
+-	ns = sanitize_state(mdev, os, ns, &warn_sync_abort);
+-
++	ns = sanitize_state(mdev, ns, &warn_sync_abort);
+ 	if (ns.i == os.i)
+ 		return SS_NOTHING_TO_DO;
+ 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.4.1
+
