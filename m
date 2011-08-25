@@ -1,147 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1HYPjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:39:19 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:32913 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab1HYPI7 (ORCPT
+	id S1752401Ab1HYPlW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:41:22 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:40117 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750858Ab1HYPlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:08:59 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 004/118] drbd: Get rid of BE_DRBD_MAGIC and BE_DRBD_MAGIC_BIG
-Date: Thu, 25 Aug 2011 17:07:00 +0200
-Message-Id: <1314284934-17999-5-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
-References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+	Thu, 25 Aug 2011 11:41:20 -0400
+X-Sasl-enc: Cj8NkON2MVfDWJecOk8DGwghXJG0WOfnkd1yy7tMGJJq 1314286879
+Date: Thu, 25 Aug 2011 08:39:07 -0700
+From: Greg KH <greg@kroah.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wlanfae <wlanfae@realtek.com>,
+        Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the staging tree
+Message-ID: <20110825153907.GA31018@kroah.com>
+References: <20110825150209.5d159c549777290de4644bcf@canb.auug.org.au>
+ <4E55DA8C.10102@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E55DA8C.10102@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+On Thu, Aug 25, 2011 at 12:15:56AM -0500, Larry Finger wrote:
+> On 08/25/2011 12:02 AM, Stephen Rothwell wrote:
+> >Hi Greg,
+> >
+> >After merging the staging tree, today's linux-next build (x86_64
+> >allmodconfig) failed like this:
+> >
+> >drivers/staging/rtl8192e/rtl_core.c:2917:2: error: unknown field 'ndo_set_multicast_list' specified in initializer
+> >
+> >Caused by commit 94a799425eee ("From: wlanfae<wlanfae@realtek.com>" -
+> >really "[PATCH 1/8] rtl8192e: Import new version of driver from realtek"
+> >Larry, that patch was badly imported ...) interacting with commit
+> >b81693d9149c ("net: remove ndo_set_multicast_list callback") from the net
+> >tree.
+> >
+> >I applied the following patch (which seems to be what was done to the
+> >other drivers in the net tree - there is probably more required):
+> >
+> >From: Stephen Rothwell<sfr@canb.auug.org.au>
+> >Date: Thu, 25 Aug 2011 14:57:55 +1000
+> >Subject: [PATCH] rtl8192e: update for ndo_set_multicast_list removal.
+> >
+> >Signed-off-by: Stephen Rothwell<sfr@canb.auug.org.au>
+> >---
+> >  drivers/staging/rtl8192e/rtl_core.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> >diff --git a/drivers/staging/rtl8192e/rtl_core.c b/drivers/staging/rtl8192e/rtl_core.c
+> >index f8a13d9..b38f626 100644
+> >--- a/drivers/staging/rtl8192e/rtl_core.c
+> >+++ b/drivers/staging/rtl8192e/rtl_core.c
+> >@@ -2914,7 +2914,7 @@ static const struct net_device_ops rtl8192_netdev_ops = {
+> >  	.ndo_stop = rtl8192_close,
+> >  	.ndo_tx_timeout = rtl8192_tx_timeout,
+> >  	.ndo_do_ioctl = rtl8192_ioctl,
+> >-	.ndo_set_multicast_list = r8192_set_multicast,
+> >+	.ndo_set_rx_mode = r8192_set_multicast,
+> >  	.ndo_set_mac_address = r8192_set_mac_adr,
+> >  	.ndo_validate_addr = eth_validate_addr,
+> >  	.ndo_change_mtu = eth_change_mtu,
+> 
+> Stephan,
+> 
+> Thanks for the notice. It seems that commit b81693d9149c had not
+> made it into my copy of staging. I'll look into the issue.
 
-Converting the constants happens at compile time.
+It wouldn't ever make it there, as that's coming from the net-next tree,
+so this will have to wait until stuff merges together in Linus's tree.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_main.c     |   14 +++++++-------
- drivers/block/drbd/drbd_receiver.c |    8 ++++----
- include/linux/drbd.h               |    2 --
- 3 files changed, 11 insertions(+), 13 deletions(-)
+thanks,
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 0c16620..2cd132a 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -1841,7 +1841,7 @@ int _drbd_send_cmd(struct drbd_conf *mdev, struct socket *sock,
- 	ERR_IF(!h) return false;
- 	ERR_IF(!size) return false;
- 
--	h->magic   = BE_DRBD_MAGIC;
-+	h->magic   = cpu_to_be32(DRBD_MAGIC);
- 	h->command = cpu_to_be16(cmd);
- 	h->length  = cpu_to_be16(size-sizeof(struct p_header80));
- 
-@@ -1889,7 +1889,7 @@ int drbd_send_cmd2(struct drbd_conf *mdev, enum drbd_packets cmd, char *data,
- 	struct p_header80 h;
- 	int ok;
- 
--	h.magic   = BE_DRBD_MAGIC;
-+	h.magic   = cpu_to_be32(DRBD_MAGIC);
- 	h.command = cpu_to_be16(cmd);
- 	h.length  = cpu_to_be16(size);
- 
-@@ -2477,7 +2477,7 @@ int drbd_send_drequest_csum(struct drbd_conf *mdev,
- 	p.block_id = ID_SYNCER /* unused */;
- 	p.blksize  = cpu_to_be32(size);
- 
--	p.head.magic   = BE_DRBD_MAGIC;
-+	p.head.magic   = cpu_to_be32(DRBD_MAGIC);
- 	p.head.command = cpu_to_be16(cmd);
- 	p.head.length  = cpu_to_be16(sizeof(p) - sizeof(struct p_header80) + digest_size);
- 
-@@ -2682,12 +2682,12 @@ int drbd_send_dblock(struct drbd_conf *mdev, struct drbd_request *req)
- 		crypto_hash_digestsize(mdev->integrity_w_tfm) : 0;
- 
- 	if (req->size <= DRBD_MAX_SIZE_H80_PACKET) {
--		p.head.h80.magic   = BE_DRBD_MAGIC;
-+		p.head.h80.magic   = cpu_to_be32(DRBD_MAGIC);
- 		p.head.h80.command = cpu_to_be16(P_DATA);
- 		p.head.h80.length  =
- 			cpu_to_be16(sizeof(p) - sizeof(union p_header) + dgs + req->size);
- 	} else {
--		p.head.h95.magic   = BE_DRBD_MAGIC_BIG;
-+		p.head.h95.magic   = cpu_to_be16(DRBD_MAGIC_BIG);
- 		p.head.h95.command = cpu_to_be16(P_DATA);
- 		p.head.h95.length  =
- 			cpu_to_be32(sizeof(p) - sizeof(union p_header) + dgs + req->size);
-@@ -2767,12 +2767,12 @@ int drbd_send_block(struct drbd_conf *mdev, enum drbd_packets cmd,
- 		crypto_hash_digestsize(mdev->integrity_w_tfm) : 0;
- 
- 	if (e->size <= DRBD_MAX_SIZE_H80_PACKET) {
--		p.head.h80.magic   = BE_DRBD_MAGIC;
-+		p.head.h80.magic   = cpu_to_be32(DRBD_MAGIC);
- 		p.head.h80.command = cpu_to_be16(cmd);
- 		p.head.h80.length  =
- 			cpu_to_be16(sizeof(p) - sizeof(struct p_header80) + dgs + e->size);
- 	} else {
--		p.head.h95.magic   = BE_DRBD_MAGIC_BIG;
-+		p.head.h95.magic   = cpu_to_be16(DRBD_MAGIC_BIG);
- 		p.head.h95.command = cpu_to_be16(cmd);
- 		p.head.h95.length  =
- 			cpu_to_be32(sizeof(p) - sizeof(struct p_header80) + dgs + e->size);
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 5ed9619..69eec69 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -712,7 +712,7 @@ static enum drbd_packets drbd_recv_fp(struct drbd_conf *mdev, struct socket *soc
- 
- 	rr = drbd_recv_short(mdev, sock, h, sizeof(*h), 0);
- 
--	if (rr == sizeof(*h) && h->magic == BE_DRBD_MAGIC)
-+	if (rr == sizeof(*h) && h->magic == cpu_to_be32(DRBD_MAGIC))
- 		return be16_to_cpu(h->command);
- 
- 	return 0xffff;
-@@ -935,10 +935,10 @@ static int drbd_recv_header(struct drbd_conf *mdev, enum drbd_packets *cmd, unsi
- 		return false;
- 	}
- 
--	if (likely(h->h80.magic == BE_DRBD_MAGIC)) {
-+	if (likely(h->h80.magic == cpu_to_be32(DRBD_MAGIC))) {
- 		*cmd = be16_to_cpu(h->h80.command);
- 		*packet_size = be16_to_cpu(h->h80.length);
--	} else if (h->h95.magic == BE_DRBD_MAGIC_BIG) {
-+	} else if (h->h95.magic == cpu_to_be16(DRBD_MAGIC_BIG)) {
- 		*cmd = be16_to_cpu(h->h95.command);
- 		*packet_size = be32_to_cpu(h->h95.length);
- 	} else {
-@@ -4623,7 +4623,7 @@ int drbd_asender(struct drbd_thread *thi)
- 		}
- 
- 		if (received == expect && cmd == NULL) {
--			if (unlikely(h->magic != BE_DRBD_MAGIC)) {
-+			if (unlikely(h->magic != cpu_to_be32(DRBD_MAGIC))) {
- 				dev_err(DEV, "magic?? on meta m: 0x%08x c: %d l: %d\n",
- 				    be32_to_cpu(h->magic),
- 				    be16_to_cpu(h->command),
-diff --git a/include/linux/drbd.h b/include/linux/drbd.h
-index 9e5f560..d282028 100644
---- a/include/linux/drbd.h
-+++ b/include/linux/drbd.h
-@@ -334,9 +334,7 @@ enum drbd_timeout_flag {
- #define UUID_JUST_CREATED ((__u64)4)
- 
- #define DRBD_MAGIC 0x83740267
--#define BE_DRBD_MAGIC __constant_cpu_to_be32(DRBD_MAGIC)
- #define DRBD_MAGIC_BIG 0x835a
--#define BE_DRBD_MAGIC_BIG __constant_cpu_to_be16(DRBD_MAGIC_BIG)
- 
- /* these are of type "int" */
- #define DRBD_MD_INDEX_INTERNAL -1
--- 
-1.7.4.1
-
+greg k-h
