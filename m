@@ -1,92 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab1HYHGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 03:06:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60716 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab1HYHGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 03:06:49 -0400
-Date: Thu, 25 Aug 2011 00:06:42 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: JJ Ding <jj_ding@emc.com.tw>
-Cc: Seth Forshee <seth.forshee@canonical.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Huang <aaron_huang@emc.com.tw>,
-        Tom Lin <tom_lin@emc.com.tw>,
-        =?iso-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH v2 7/7] Input: elantech - add v3 hardware support
-Message-ID: <20110825070642.GB15655@core.coreip.homeip.net>
-References: <1314164686-866-1-git-send-email-jj_ding@emc.com.tw>
- <1314164686-866-8-git-send-email-jj_ding@emc.com.tw>
- <20110824143520.GB23868@thinkpad-t410>
- <87mxeynvpt.fsf@emc.com.tw>
+	id S1753342Ab1HYHGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:06:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46970 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753150Ab1HYHFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 03:05:34 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        <rogerq@ti.com>, "Keshava Munegowda" <Keshava_mgowda@ti.com>
+Subject: [PATCH 4/5 v8] arm: omap: usb: device name change for the clk names of usbhs
+Date: Thu, 25 Aug 2011 12:31:36 +0530
+Message-ID: <1314255697-15411-5-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1314255697-15411-4-git-send-email-keshava_mgowda@ti.com>
+References: <1314255697-15411-1-git-send-email-keshava_mgowda@ti.com>
+ <1314255697-15411-2-git-send-email-keshava_mgowda@ti.com>
+ <1314255697-15411-3-git-send-email-keshava_mgowda@ti.com>
+ <1314255697-15411-4-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mxeynvpt.fsf@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 09:09:02AM +0800, JJ Ding wrote:
-> Hi Seth,
-> 
-> Thank you. You are right.
-> I think I somehow tested the worng touchpad for this patch.
-> 
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-How about we change it thusly:
+device name usbhs clocks are changed from
+usbhs-omap.0 to usbhs_omap; this is because
+in the hwmod registration the device name is set
+as usbhs_omap; The redudant clock nodes are removed.
 
-Input: elamtech - fix V3 packet checking
-
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 ---
+ arch/arm/mach-omap2/clock3xxx_data.c |   26 ++++++++++++--------------
+ arch/arm/mach-omap2/clock44xx_data.c |   10 +++++-----
+ drivers/mfd/omap-usb-host.c          |    2 +-
+ 3 files changed, 18 insertions(+), 20 deletions(-)
 
- drivers/input/mouse/elantech.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
-
-
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 1e2b9da..d814bf74 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -508,24 +508,18 @@ static int elantech_packet_check_v2(struct psmouse *psmouse)
-  */
- static int elantech_packet_check_v3(struct psmouse *psmouse)
- {
-+	const u8 debounce_packet[] = { 0xc4, 0xff, 0xff, 0x02, 0xff, 0xff };
- 	unsigned char *packet = psmouse->packet;
+diff --git a/arch/arm/mach-omap2/clock3xxx_data.c b/arch/arm/mach-omap2/clock3xxx_data.c
+index ffd55b1..63a822f 100644
+--- a/arch/arm/mach-omap2/clock3xxx_data.c
++++ b/arch/arm/mach-omap2/clock3xxx_data.c
+@@ -3285,7 +3285,7 @@ static struct omap_clk omap3xxx_clks[] = {
+ 	CLK(NULL,	"cpefuse_fck",	&cpefuse_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"ts_fck",	&ts_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs-omap.0",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
++	CLK("usbhs_omap",	"usbtll_fck",	&usbtll_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK("omap-mcbsp.1",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
+ 	CLK("omap-mcbsp.5",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
+ 	CLK(NULL,	"core_96m_fck",	&core_96m_fck,	CK_3XXX),
+@@ -3321,7 +3321,7 @@ static struct omap_clk omap3xxx_clks[] = {
+ 	CLK(NULL,	"pka_ick",	&pka_ick,	CK_34XX | CK_36XX),
+ 	CLK(NULL,	"core_l4_ick",	&core_l4_ick,	CK_3XXX),
+ 	CLK(NULL,	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs-omap.0",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
++	CLK("usbhs_omap",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK("omap_hsmmc.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"icr_ick",	&icr_ick,	CK_34XX | CK_36XX),
+ 	CLK("omap-aes",	"ick",	&aes2_ick,	CK_34XX | CK_36XX),
+@@ -3367,20 +3367,18 @@ static struct omap_clk omap3xxx_clks[] = {
+ 	CLK(NULL,	"cam_ick",	&cam_ick,	CK_34XX | CK_36XX),
+ 	CLK(NULL,	"csi2_96m_fck",	&csi2_96m_fck,	CK_34XX | CK_36XX),
+ 	CLK(NULL,	"usbhost_120m_fck", &usbhost_120m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs-omap.0",	"hs_fck", &usbhost_120m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"usbhost_48m_fck", &usbhost_48m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs-omap.0",	"fs_fck", &usbhost_48m_fck, CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+ 	CLK(NULL,	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs-omap.0",	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+-	CLK("usbhs-omap.0",	"utmi_p1_gfclk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"utmi_p2_gfclk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"xclk60mhsp1_ck",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"xclk60mhsp2_ck",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"usb_host_hs_utmi_p1_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"usb_host_hs_utmi_p2_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"usb_tll_hs_usb_ch0_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"usb_tll_hs_usb_ch1_clk",	&dummy_ck,	CK_3XXX),
+-	CLK("usbhs-omap.0",	"init_60m_fclk",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"usbhost_ick",	&usbhost_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
++	CLK("usbhs_omap",	"utmi_p1_gfclk",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"utmi_p2_gfclk",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"xclk60mhsp1_ck",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"xclk60mhsp2_ck",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"usb_host_hs_utmi_p1_clk",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"usb_host_hs_utmi_p2_clk",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"usb_tll_hs_usb_ch0_clk",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"usb_tll_hs_usb_ch1_clk",	&dummy_ck,	CK_3XXX),
++	CLK("usbhs_omap",	"init_60m_fclk",	&dummy_ck,	CK_3XXX),
+ 	CLK(NULL,	"usim_fck",	&usim_fck,	CK_3430ES2PLUS | CK_36XX),
+ 	CLK(NULL,	"gpt1_fck",	&gpt1_fck,	CK_3XXX),
+ 	CLK(NULL,	"wkup_32k_fck",	&wkup_32k_fck,	CK_3XXX),
+diff --git a/arch/arm/mach-omap2/clock44xx_data.c b/arch/arm/mach-omap2/clock44xx_data.c
+index 2af0e3f..088977a 100644
+--- a/arch/arm/mach-omap2/clock44xx_data.c
++++ b/arch/arm/mach-omap2/clock44xx_data.c
+@@ -3281,7 +3281,7 @@ static struct omap_clk omap44xx_clks[] = {
+ 	CLK(NULL,	"uart2_fck",			&uart2_fck,	CK_443X),
+ 	CLK(NULL,	"uart3_fck",			&uart3_fck,	CK_443X),
+ 	CLK(NULL,	"uart4_fck",			&uart4_fck,	CK_443X),
+-	CLK("usbhs-omap.0",	"fs_fck",		&usb_host_fs_fck,	CK_443X),
++	CLK("usbhs_omap",	"fs_fck",		&usb_host_fs_fck,	CK_443X),
+ 	CLK(NULL,	"utmi_p1_gfclk",		&utmi_p1_gfclk,	CK_443X),
+ 	CLK(NULL,	"usb_host_hs_utmi_p1_clk",	&usb_host_hs_utmi_p1_clk,	CK_443X),
+ 	CLK(NULL,	"utmi_p2_gfclk",		&utmi_p2_gfclk,	CK_443X),
+@@ -3292,7 +3292,7 @@ static struct omap_clk omap44xx_clks[] = {
+ 	CLK(NULL,	"usb_host_hs_hsic60m_p2_clk",	&usb_host_hs_hsic60m_p2_clk,	CK_443X),
+ 	CLK(NULL,	"usb_host_hs_hsic480m_p2_clk",	&usb_host_hs_hsic480m_p2_clk,	CK_443X),
+ 	CLK(NULL,	"usb_host_hs_func48mclk",	&usb_host_hs_func48mclk,	CK_443X),
+-	CLK("usbhs-omap.0",	"hs_fck",		&usb_host_hs_fck,	CK_443X),
++	CLK("usbhs_omap",	"hs_fck",		&usb_host_hs_fck,	CK_443X),
+ 	CLK(NULL,	"otg_60m_gfclk",		&otg_60m_gfclk,	CK_443X),
+ 	CLK(NULL,	"usb_otg_hs_xclk",		&usb_otg_hs_xclk,	CK_443X),
+ 	CLK("musb-omap2430",	"ick",				&usb_otg_hs_ick,	CK_443X),
+@@ -3300,7 +3300,7 @@ static struct omap_clk omap44xx_clks[] = {
+ 	CLK(NULL,	"usb_tll_hs_usb_ch2_clk",	&usb_tll_hs_usb_ch2_clk,	CK_443X),
+ 	CLK(NULL,	"usb_tll_hs_usb_ch0_clk",	&usb_tll_hs_usb_ch0_clk,	CK_443X),
+ 	CLK(NULL,	"usb_tll_hs_usb_ch1_clk",	&usb_tll_hs_usb_ch1_clk,	CK_443X),
+-	CLK("usbhs-omap.0",	"usbtll_ick",		&usb_tll_hs_ick,	CK_443X),
++	CLK("usbhs_omap",	"usbtll_ick",		&usb_tll_hs_ick,	CK_443X),
+ 	CLK(NULL,	"usim_ck",			&usim_ck,	CK_443X),
+ 	CLK(NULL,	"usim_fclk",			&usim_fclk,	CK_443X),
+ 	CLK(NULL,	"usim_fck",			&usim_fck,	CK_443X),
+@@ -3360,8 +3360,8 @@ static struct omap_clk omap44xx_clks[] = {
+ 	CLK(NULL,	"uart2_ick",			&dummy_ck,	CK_443X),
+ 	CLK(NULL,	"uart3_ick",			&dummy_ck,	CK_443X),
+ 	CLK(NULL,	"uart4_ick",			&dummy_ck,	CK_443X),
+-	CLK("usbhs-omap.0",	"usbhost_ick",		&dummy_ck,		CK_443X),
+-	CLK("usbhs-omap.0",	"usbtll_fck",		&dummy_ck,	CK_443X),
++	CLK("usbhs_omap",	"usbhost_ick",		&dummy_ck,		CK_443X),
++	CLK("usbhs_omap",	"usbtll_fck",		&dummy_ck,	CK_443X),
+ 	CLK("omap_wdt",	"ick",				&dummy_ck,	CK_443X),
+ };
  
--	if ((packet[0] & 0x0c) == 0x04 &&
--	    (packet[3] & 0xcf) == 0x02)
-+	if (!memcmp(packet, debounce_packet, sizeof(debounce_packet)))
-+		return PACKET_DEBOUNCE;
-+
-+	if ((packet[0] & 0x0c) == 0x04 && (packet[3] & 0xcf) == 0x02)
- 		return PACKET_V3_HEAD;
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 8db205e..9c2da29 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -27,7 +27,7 @@
+ #include <linux/gpio.h>
+ #include <plat/usb.h>
  
--	if ((packet[0] & 0x0c) == 0x0c &&
--	    (packet[3] & 0xce) == 0x0c)
-+	if ((packet[0] & 0x0c) == 0x0c && (packet[3] & 0xce) == 0x0c)
- 		return PACKET_V3_TAIL;
+-#define USBHS_DRIVER_NAME	"usbhs-omap"
++#define USBHS_DRIVER_NAME	"usbhs_omap"
+ #define OMAP_EHCI_DEVICE	"ehci-omap"
+ #define OMAP_OHCI_DEVICE	"ohci-omap3"
  
--	if (packet[0] == 0xc4 &&
--	    packet[1] == 0xff &&
--	    packet[2] == 0xff &&
--	    packet[3] == 0x02 &&
--	    packet[4] == 0xff &&
--	    packet[5] == 0xff)
--		return PACKET_DEBOUNCE;
--
- 	return PACKET_UNKNOWN;
- }
- 
-Thanks.
-
 -- 
-Dmitry
+1.6.0.4
+
