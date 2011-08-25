@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1HYLqV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 07:46:21 -0400
-Received: from dns1.mips.com ([12.201.5.69]:48412 "EHLO dns1.mips.com"
+	id S1753407Ab1HYLsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 07:48:50 -0400
+Received: from mx.treblig.org ([80.68.94.177]:39062 "EHLO mx.treblig.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab1HYLqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 07:46:17 -0400
-X-Greylist: delayed 1642 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 07:46:16 EDT
-From: Deng-Cheng Zhu <dczhu@mips.com>
-To: <jbarnes@virtuousgeek.org>, <ralf@linux-mips.org>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <eyal@mips.com>, <zenon@mips.com>,
-        <dczhu@mips.com>, <dengcheng.zhu@gmail.com>
-Subject: [PATCH v2 0/2] Pass resources to pci_create_bus() and fix MIPS PCI resources
-Date: Thu, 25 Aug 2011 19:18:35 +0800
-Message-ID: <1314271117-32717-1-git-send-email-dczhu@mips.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752365Ab1HYLst convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 07:48:49 -0400
+Date: Thu, 25 Aug 2011 12:48:48 +0100
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.1-rc3
+Message-ID: <20110825114848.GA22287@gallifrey>
+References: <1314260662-20452-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EMS-Proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
-X-EMS-STAMP: lcGU0S/M7d66RmxT4QhkwQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1314260662-20452-1-git-send-email-geert@linux-m68k.org>
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
+X-Uptime: 12:46:26 up 188 days, 13:19,  1 user,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the pci_create_bus() interface to pass in available resources to get them
-settled down early. This is to avoid possible resource conflicts while doing
-pci_scan_slot() in pci_scan_child_bus(). Note that pcibios_fixup_bus() can get
-rid of such conflicts, but it's done AFTER scanning slots.
+* Geert Uytterhoeven (geert@linux-m68k.org) wrote:
+>   + src/mm/memcontrol.c: error: this is the insn::  => 4108
+>   + src/mm/memcontrol.c: error: unable to find a register to spill in class 'R0_REGS':  => 4108
 
-In addition, MIPS PCI resources are now fixed using this new interface.
+That looks like a gcc problem rather than the kernel, maybe:
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=38621
 
--- Changes --
-v2 - v1:
-o Merge [PATCH 1/3] to [PATCH 3/3], so now 2 patches in total.
-o Add more info to patch description.
-o Fix arch breaks in default resource setup discovered by Bjorn Helgaas.
+>From your detailed logs that's on the v3.1-rc3/sh4/se7206_defconfig config.
 
-Deng-Cheng Zhu (2):
-  PCI: Pass available resources into pci_create_bus()
-  MIPS: PCI: Pass controller's resources to pci_create_bus() in
-    pcibios_scanbus()
-
- arch/microblaze/pci/pci-common.c |    3 +-
- arch/mips/pci/pci.c              |   53 ++++++++++++++++++++++++++++++++++---
- arch/powerpc/kernel/pci-common.c |    3 +-
- arch/sparc/kernel/pci.c          |    3 +-
- arch/x86/pci/acpi.c              |    2 +-
- drivers/pci/probe.c              |   15 ++++++++---
- include/linux/pci.h              |    3 +-
- 7 files changed, 68 insertions(+), 14 deletions(-)
-
+Dave
+-- 
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
