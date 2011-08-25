@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab1HYEwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 00:52:15 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49516 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab1HYEwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 00:52:11 -0400
-Date: Thu, 25 Aug 2011 14:52:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: linux-next: manual merge of the usb tree with the usb.current tree
-Message-Id: <20110825145206.4888b9f62a9bcbeeaf8678b8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1752022Ab1HYFAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 01:00:34 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:34392 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab1HYFAd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 01:00:33 -0400
+Date: Wed, 24 Aug 2011 22:00:16 -0700 (PDT)
+Message-Id: <20110824.220016.781758659534965980.davem@davemloft.net>
+To: jun.kondo@ctc-g.co.jp
+Cc: linux-kernel@vger.kernel.org, omega-g1@ctc-g.co.jp, notsuki@redhat.com,
+        motokazu.kozaki@hp.com, htaira@redhat.com, netdev@vger.kernel.org,
+        tomohiko.takahashi@ctc-g.co.jp, kotaro.sakai@ctc-g.co.jp,
+        ken.sugawara@ctc-g.co.jp
+Subject: Re: [omega-g1:11110] Re: [PATCH] net: configurable sysctl
+ parameter "net.core.tcp_lowat" for sk_stream_min_wspace()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E55D3C2.40308@ctc-g.co.jp>
+References: <4E51A3F0.5010500@ctc-g.co.jp>
+	<20110822.113544.28950168095176936.davem@davemloft.net>
+	<4E55D3C2.40308@ctc-g.co.jp>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 24 Aug 2011 22:00:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: "Jun.Kondo" <jun.kondo@ctc-g.co.jp>
+Date: Thu, 25 Aug 2011 13:46:58 +0900
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/host/xhci-ring.c between commit 48df4a6fd8c4 ("xhci: Handle
-zero-length isochronous packets") from the usb.current tree and commit
-29cc88979a88 ("USB: use usb_endpoint_maxp() instead of le16_to_cpu()")
-from the usb tree.
+> Currently, once the transmission buffer becomes full, it is not
+> possible to write again unless there is one third of free space
+> in the transmission buffer.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-diff --cc drivers/usb/host/xhci-ring.c
-index 54139a2,bf0b52c..0000000
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@@ -3249,11 -3237,9 +3249,11 @@@ static int xhci_queue_isoc_tx(struct xh
-  		addr = start_addr + urb->iso_frame_desc[i].offset;
-  		td_len = urb->iso_frame_desc[i].length;
-  		td_remain_len = td_len;
- -		/* FIXME: Ignoring zero-length packets, can those happen? */
-  		total_packet_count = roundup(td_len,
-- 				le16_to_cpu(urb->ep->desc.wMaxPacketSize));
-+ 				usb_endpoint_maxp(&urb->ep->desc));
- +		/* A zero-length transfer still involves at least one packet. */
- +		if (total_packet_count == 0)
- +			total_packet_count++;
-  		burst_count = xhci_get_burst_count(xhci, urb->dev, urb,
-  				total_packet_count);
-  		residue = xhci_get_last_burst_packet_count(xhci,
+Then use a non-blocking socket if you don't want to block.
+
+We're talking in circles, and will walk down the same discussions
+again.  You have still not shown what real limitation is created
+by the way things work currently.
+
+I've said everything that I can, and I will thus recuse myself from
+the rest of this discussion since I really can't add anything more.
