@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab1HYDaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 23:30:23 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49391 "EHLO smtps.tip.net.au"
+	id S1751858Ab1HYDcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 23:32:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41399 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab1HYDaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 23:30:22 -0400
-Date: Thu, 25 Aug 2011 13:30:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jon Medhurst <tixy@yxit.co.uk>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the pm tree with the arm tree
-Message-Id: <20110825133014.4ca16d7b383f7582c7a52d46@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750795Ab1HYDcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 23:32:02 -0400
+Message-ID: <4E55C221.8080100@redhat.com>
+Date: Thu, 25 Aug 2011 11:31:45 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [Patch] numa: introduce CONFIG_NUMA_SYSFS for drivers/base/node.c
+References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au>	<20110804152211.ea10e3e7.rdunlap@xenotime.net>	<20110823143912.0691d442.akpm@linux-foundation.org>	<4E547155.8090709@redhat.com> <20110824191430.8a908e70.rdunlap@xenotime.net>
+In-Reply-To: <20110824191430.8a908e70.rdunlap@xenotime.net>
+Content-Type: multipart/mixed;
+ boundary="------------020109010904020706070702"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+This is a multi-part message in MIME format.
+--------------020109010904020706070702
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Today's linux-next merge of the pm tree got a conflict in
-arch/arm/mach-shmobile/board-ap4evb.c between commit 9b742024026c ("ARM:
-mach-shmobile: Setup consistent dma size at boot time") from the arm tree
-and commit 2f82df20d71c ("PM: Move clock-related definitions and headers
-to separate file") from the pm tree.
+于 2011年08月25日 10:14, Randy Dunlap 写道:
+> On Wed, 24 Aug 2011 11:34:45 +0800 Cong Wang wrote:
+>
+>> Hi, Andrew,
+>>
+>> Do you think my patch below is better?
+>
+> Hi,
+>
+> This causes build errors for me because node.o is not being built:
+>
+> arch/x86/built-in.o: In function `topology_init':
+> topology.c:(.init.text+0x3668): undefined reference to `register_one_node'
+> drivers/built-in.o: In function `unregister_cpu':
+> (.text+0x7aecc): undefined reference to `unregister_cpu_under_node'
+> drivers/built-in.o: In function `register_cpu':
+> (.cpuinit.text+0xc1): undefined reference to `register_cpu_under_node'
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ah, this is because I missed the part in include/linux/node.h. :)
 
-diff --cc arch/arm/mach-shmobile/board-ap4evb.c
-index ec8f9d9,4a21a50..0000000
---- a/arch/arm/mach-shmobile/board-ap4evb.c
-+++ b/arch/arm/mach-shmobile/board-ap4evb.c
-@@@ -42,7 -42,7 +42,8 @@@
-  #include <linux/leds.h>
-  #include <linux/input/sh_keysc.h>
-  #include <linux/usb/r8a66597.h>
- +#include <linux/dma-mapping.h>
-+ #include <linux/pm_clock.h>
-  
-  #include <media/sh_mobile_ceu.h>
-  #include <media/sh_mobile_csi2.h>
+Below is the updated version.
+
+Thanks for testing!
+
+--------------020109010904020706070702
+Content-Type: text/plain;
+ name="n.diff"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="n.diff"
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvYmFzZS9NYWtlZmlsZSBiL2RyaXZlcnMvYmFzZS9NYWtl
+ZmlsZQppbmRleCA5OWEzNzVhLi5lMzgyMzM4IDEwMDY0NAotLS0gYS9kcml2ZXJzL2Jhc2Uv
+TWFrZWZpbGUKKysrIGIvZHJpdmVycy9iYXNlL01ha2VmaWxlCkBAIC0xMCw3ICsxMCw3IEBA
+IG9iai0kKENPTkZJR19IQVNfRE1BKQkrPSBkbWEtbWFwcGluZy5vCiBvYmotJChDT05GSUdf
+SEFWRV9HRU5FUklDX0RNQV9DT0hFUkVOVCkgKz0gZG1hLWNvaGVyZW50Lm8KIG9iai0kKENP
+TkZJR19JU0EpCSs9IGlzYS5vCiBvYmotJChDT05GSUdfRldfTE9BREVSKQkrPSBmaXJtd2Fy
+ZV9jbGFzcy5vCi1vYmotJChDT05GSUdfTlVNQSkJKz0gbm9kZS5vCitvYmotJChDT05GSUdf
+TlVNQV9TWVNGUykJKz0gbm9kZS5vCiBvYmotJChDT05GSUdfTUVNT1JZX0hPVFBMVUdfU1BB
+UlNFKSArPSBtZW1vcnkubwogb2JqLSQoQ09ORklHX1NNUCkJKz0gdG9wb2xvZ3kubwogaWZl
+cSAoJChDT05GSUdfU1lTRlMpLHkpCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L25vZGUu
+aCBiL2luY2x1ZGUvbGludXgvbm9kZS5oCmluZGV4IDkyMzcwZTIuLmEwY2M1ZjkgMTAwNjQ0
+Ci0tLSBhL2luY2x1ZGUvbGludXgvbm9kZS5oCisrKyBiL2luY2x1ZGUvbGludXgvbm9kZS5o
+CkBAIC0zMiw3ICszMiw3IEBAIHR5cGVkZWYgIHZvaWQgKCpub2RlX3JlZ2lzdHJhdGlvbl9m
+dW5jX3QpKHN0cnVjdCBub2RlICopOwogCiBleHRlcm4gaW50IHJlZ2lzdGVyX25vZGUoc3Ry
+dWN0IG5vZGUgKiwgaW50LCBzdHJ1Y3Qgbm9kZSAqKTsKIGV4dGVybiB2b2lkIHVucmVnaXN0
+ZXJfbm9kZShzdHJ1Y3Qgbm9kZSAqbm9kZSk7Ci0jaWZkZWYgQ09ORklHX05VTUEKKyNpZmRl
+ZiBkZWZpbmVkKENPTkZJR19OVU1BKSAmJiBkZWZpbmVkKENPTkZJR19TWVNGUykKIGV4dGVy
+biBpbnQgcmVnaXN0ZXJfb25lX25vZGUoaW50IG5pZCk7CiBleHRlcm4gdm9pZCB1bnJlZ2lz
+dGVyX29uZV9ub2RlKGludCBuaWQpOwogZXh0ZXJuIGludCByZWdpc3Rlcl9jcHVfdW5kZXJf
+bm9kZSh1bnNpZ25lZCBpbnQgY3B1LCB1bnNpZ25lZCBpbnQgbmlkKTsKZGlmZiAtLWdpdCBh
+L21tL0tjb25maWcgYi9tbS9LY29uZmlnCmluZGV4IGYyZjFjYTEuLjc3MzQ1ZTcgMTAwNjQ0
+Ci0tLSBhL21tL0tjb25maWcKKysrIGIvbW0vS2NvbmZpZwpAQCAtMzQwLDYgKzM0MCwxNiBA
+QCBjaG9pY2UKIAkgIGJlbmVmaXQuCiBlbmRjaG9pY2UKIAorY29uZmlnIE5VTUFfU1lTRlMK
+Kwlib29sICJFbmFibGUgTlVNQSBzeXNmcyBpbnRlcmZhY2UgZm9yIHVzZXItc3BhY2UiCisJ
+ZGVwZW5kcyBvbiBOVU1BCisJZGVwZW5kcyBvbiBTWVNGUworCWRlZmF1bHQgeQorCWhlbHAK
+KwkgIFRoaXMgZW5hYmxlcyBOVU1BIHN5c2ZzIGludGVyZmFjZSwgL3N5cy9kZXZpY2VzL3N5
+c3RlbS9ub2RlLyoKKwkgIGZpbGVzLCBmb3IgdXNlci1zcGFjZSB0b29scywgbGlrZSBudW1h
+Y3RsLiBJZiB5b3UgaGF2ZSBlbmFibGVkCisJICBOVU1BLCBwcm9iYWJseSB5b3UgYWxzbyBu
+ZWVkIHRoaXMgb25lLgorCiAjCiAjIFVQIGFuZCBub21tdSBhcmNocyB1c2Uga20gYmFzZWQg
+cGVyY3B1IGFsbG9jYXRvcgogIwo=
+--------------020109010904020706070702--
