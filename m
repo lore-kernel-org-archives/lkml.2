@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab1HYVYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:24:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52439 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581Ab1HYVYM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 17:24:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=CpvaG8tk0U2nIWeatqQPef/kndumsN/YP16gl6my3zHJnVq6RqMNOomK5IgHI0akZ
-	/K/CLme4dwMV7X7idWlbQ==
-MIME-Version: 1.0
-In-Reply-To: <1314293560.27911.38.camel@twins>
-References: <CABPqkBS_Og3Vbe90xwyzA8S5ftfF08gMtJdtpqQTHFOwm+CAkg@mail.gmail.com>
-	<1314293560.27911.38.camel@twins>
-Date: Thu, 25 Aug 2011 23:24:10 +0200
-Message-ID: <CABPqkBTNx02J__sO89++u4B+zipi5hgCZviiz=drer9FpAMqGQ@mail.gmail.com>
-Subject: Re: [BUG] perf_event: semantic of PERF_SAMPLE_READ unclear
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        Robert Richter <robert.richter@amd.com>,
-        Vince Weaver <vweaver1@eecs.utk.edu>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1753627Ab1HYV00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 17:26:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:35008 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753581Ab1HYV0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 17:26:25 -0400
+Date: Fri, 26 Aug 2011 07:26:22 +1000
+From: Anton Blanchard <anton@samba.org>
+To: tytso@mit.edu, adilger.kernel@dilger.ca, eric.dumazet@gmail.com,
+        tj@kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ext4: EXT4_FREEBLOCKS_WATERMARK is overly pessimistic
+Message-ID: <20110826072622.406d3395@kryten>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 7:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2011-08-25 at 19:19 +0200, Stephane Eranian wrote:
->> But the difficulty is that
->> we cannot grab any locks, not sure we need one given the call path.
->
-> Nah we should be able to simply iterate all siblings and update them
-> in-place, since its group members they should all be co-scheduled. The
-> only difficulty is cross pmu group members..
->
-Yes, that's what I thought, we should be able to invoke an arch callback
-to update the SW counter then we proceed with perf_event_count().
+
+When testing on a 1024 thread ppc64 box I noticed a large amount of
+CPU time in ext4 code.
+
+ext4_has_free_blocks has a fast path to avoid summing every free and
+dirty block per cpu counter, but only if the global count shows more
+free blocks than the maximum amount that could be stored in all the
+per cpu counters.
+
+While we are summing 2 per cpu counters we set the breakpoint at 4
+times the maximum amount in the per cpu counter portion. Reduce that
+to 2.
+
+Since we fold the per cpu count of CPUs going offline into the global
+count, we can use num_online_cpus() instead of nr_cpu_ids here too.
+
+Both these changes match percpu_counter_compare() which is used to
+optimise a comparison against one per cpu counter.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+Index: linux-2.6-work/fs/ext4/ext4.h
+===================================================================
+--- linux-2.6-work.orig/fs/ext4/ext4.h	2011-08-25 11:44:02.978785464 +1000
++++ linux-2.6-work/fs/ext4/ext4.h	2011-08-25 14:17:37.461904013 +1000
+@@ -2051,10 +2051,11 @@ do {								\
+ 
+ #ifdef CONFIG_SMP
+ /* Each CPU can accumulate percpu_counter_batch blocks in their local
+- * counters. So we need to make sure we have free blocks more
+- * than percpu_counter_batch  * nr_cpu_ids. Also add a window of 4 times.
++ * counters. Since we sum two percpu counters (s_freeblocks_counter and
++ * s_dirtyblocks_counter), as a worst case we need to check for 2x this.
+  */
+-#define EXT4_FREEBLOCKS_WATERMARK (4 * (percpu_counter_batch * nr_cpu_ids))
++#define EXT4_FREEBLOCKS_WATERMARK \
++			(2 * (percpu_counter_batch * num_online_cpus()))
+ #else
+ #define EXT4_FREEBLOCKS_WATERMARK 0
+ #endif
