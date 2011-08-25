@@ -1,45 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1HYLsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 07:48:50 -0400
-Received: from mx.treblig.org ([80.68.94.177]:39062 "EHLO mx.treblig.org"
+	id S1753472Ab1HYLsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 07:48:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15377 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab1HYLst convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 07:48:49 -0400
-Date: Thu, 25 Aug 2011 12:48:48 +0100
-From: "Dr. David Alan Gilbert" <linux@treblig.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.1-rc3
-Message-ID: <20110825114848.GA22287@gallifrey>
-References: <1314260662-20452-1-git-send-email-geert@linux-m68k.org>
+	id S1753390Ab1HYLsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 07:48:50 -0400
+Date: Thu, 25 Aug 2011 07:48:12 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: davej@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] lockdep: Add helper function for dir vs file i_mutex
+ annotation
+Message-ID: <20110825114811.GO2270@zod.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1314260662-20452-1-git-send-email-geert@linux-m68k.org>
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
-X-Uptime: 12:46:26 up 188 days, 13:19,  1 user,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Geert Uytterhoeven (geert@linux-m68k.org) wrote:
->   + src/mm/memcontrol.c: error: this is the insn::  => 4108
->   + src/mm/memcontrol.c: error: unable to find a register to spill in class 'R0_REGS':  => 4108
+Purely in-memory filesystems do not use the inode hash as the dcache tells
+us if an entry already exists.  As a result, they do not call
+unlock_new_inode.  If CONFIG_DEBUG_LOCK_ALLOC is set, this can lead to
+false positives from lockdep like below:
 
-That looks like a gcc problem rather than the kernel, maybe:
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=38621
+| find/645 is trying to acquire lock:
+|  (&mm->mmap_sem){++++++}, at: [<ffffffff81109514>] might_fault+0x5c/0xac
+|
+| but task is already holding lock:
+|  (&sb->s_type->i_mutex_key#15){+.+.+.}, at: [<ffffffff81149f34>]
+| vfs_readdir+0x5b/0xb4
+|
+| which lock already depends on the new lock.
+|
+| the existing dependency chain (in reverse order) is:
+|
+| -> #1 (&sb->s_type->i_mutex_key#15){+.+.+.}:
+|       [<ffffffff8108ac26>] lock_acquire+0xbf/0x103
+|       [<ffffffff814db822>] __mutex_lock_common+0x4c/0x361
+|       [<ffffffff814dbc46>] mutex_lock_nested+0x40/0x45
+|       [<ffffffff811daa87>] hugetlbfs_file_mmap+0x82/0x110
+|       [<ffffffff81111557>] mmap_region+0x258/0x432
+|       [<ffffffff811119dd>] do_mmap_pgoff+0x2ac/0x306
+|       [<ffffffff81111b4f>] sys_mmap_pgoff+0x118/0x16a
+|       [<ffffffff8100c858>] sys_mmap+0x22/0x24
+|       [<ffffffff814e3ec2>] system_call_fastpath+0x16/0x1b
+|
+| -> #0 (&mm->mmap_sem){++++++}:
+|       [<ffffffff8108a4bc>] __lock_acquire+0xa1a/0xcf7
+|       [<ffffffff8108ac26>] lock_acquire+0xbf/0x103
+|       [<ffffffff81109541>] might_fault+0x89/0xac
+|       [<ffffffff81149cff>] filldir+0x6f/0xc7
+|       [<ffffffff811586ea>] dcache_readdir+0x67/0x205
+|       [<ffffffff81149f54>] vfs_readdir+0x7b/0xb4
+|       [<ffffffff8114a073>] sys_getdents+0x7e/0xd1
+|       [<ffffffff814e3ec2>] system_call_fastpath+0x16/0x1b
 
->From your detailed logs that's on the v3.1-rc3/sh4/se7206_defconfig config.
+This moves the directory vs file lockdep annotation into a helper function
+that can be called by in-memory filesystems and has hugetlbfs call it.
 
-Dave
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+---
+v2: Make the helper an empty inline in the non-debug case to cleanup some ifdefs
+
+ fs/hugetlbfs/inode.c |    1 +
+ fs/inode.c           |   24 +++++++++++++++---------
+ include/linux/fs.h   |    5 +++++
+ 3 files changed, 21 insertions(+), 9 deletions(-)
+
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 87b6e04..ec88953 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -491,6 +491,7 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb, uid_t uid,
+ 			inode->i_op = &page_symlink_inode_operations;
+ 			break;
+ 		}
++		lockdep_annotate_inode_mutex_key(inode);
+ 	}
+ 	return inode;
+ }
+diff --git a/fs/inode.c b/fs/inode.c
+index 73920d5..ec79246 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -848,16 +848,9 @@ struct inode *new_inode(struct super_block *sb)
+ }
+ EXPORT_SYMBOL(new_inode);
+ 
+-/**
+- * unlock_new_inode - clear the I_NEW state and wake up any waiters
+- * @inode:	new inode to unlock
+- *
+- * Called when the inode is fully initialised to clear the new state of the
+- * inode and wake up anyone waiting for the inode to finish initialisation.
+- */
+-void unlock_new_inode(struct inode *inode)
+-{
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
++void lockdep_annotate_inode_mutex_key(struct inode *inode)
++{
+ 	if (S_ISDIR(inode->i_mode)) {
+ 		struct file_system_type *type = inode->i_sb->s_type;
+ 
+@@ -873,7 +866,20 @@ void unlock_new_inode(struct inode *inode)
+ 					  &type->i_mutex_dir_key);
+ 		}
+ 	}
++}
++EXPORT_SYMBOL(lockdep_annotate_inode_mutex_key);
+ #endif
++
++/**
++ * unlock_new_inode - clear the I_NEW state and wake up any waiters
++ * @inode:	new inode to unlock
++ *
++ * Called when the inode is fully initialised to clear the new state of the
++ * inode and wake up anyone waiting for the inode to finish initialisation.
++ */
++void unlock_new_inode(struct inode *inode)
++{
++	lockdep_annotate_inode_mutex_key(inode);
+ 	spin_lock(&inode->i_lock);
+ 	WARN_ON(!(inode->i_state & I_NEW));
+ 	inode->i_state &= ~I_NEW;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 178cdb4..c2bd68f 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2318,6 +2318,11 @@ extern struct inode * iget5_locked(struct super_block *, unsigned long, int (*te
+ extern struct inode * iget_locked(struct super_block *, unsigned long);
+ extern int insert_inode_locked4(struct inode *, unsigned long, int (*test)(struct inode *, void *), void *);
+ extern int insert_inode_locked(struct inode *);
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++extern void lockdep_annotate_inode_mutex_key(struct inode *inode);
++#else
++static inline void lockdep_annotate_inode_mutex_key(struct inode *inode) { };
++#endif
+ extern void unlock_new_inode(struct inode *);
+ extern unsigned int get_next_ino(void);
+ 
 -- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+1.7.6
+
