@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab1HYDcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 23:32:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab1HYDcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 23:32:02 -0400
-Message-ID: <4E55C221.8080100@redhat.com>
-Date: Thu, 25 Aug 2011 11:31:45 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	id S1751948Ab1HYDdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 23:33:07 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38243 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab1HYDdF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 23:33:05 -0400
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [Patch] numa: introduce CONFIG_NUMA_SYSFS for drivers/base/node.c
-References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au>	<20110804152211.ea10e3e7.rdunlap@xenotime.net>	<20110823143912.0691d442.akpm@linux-foundation.org>	<4E547155.8090709@redhat.com> <20110824191430.8a908e70.rdunlap@xenotime.net>
-In-Reply-To: <20110824191430.8a908e70.rdunlap@xenotime.net>
-Content-Type: multipart/mixed;
- boundary="------------020109010904020706070702"
+In-Reply-To: <20110822.123326.1795268471389412471.davem@davemloft.net>
+References: <20110822190136.GJ2534@tuxdriver.com>
+	<20110822.123326.1795268471389412471.davem@davemloft.net>
+Date: Thu, 25 Aug 2011 11:33:05 +0800
+Message-ID: <CAAJw_ZtFw5FxPy+boe_99mKQi7yt3yfGE6FqWrzmUD3T-y1v8w@mail.gmail.com>
+Subject: Re: pull request: wireless 2011-08-22
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: David Miller <davem@davemloft.net>, IvDoorn@gmail.com
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020109010904020706070702
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-
-于 2011年08月25日 10:14, Randy Dunlap 写道:
-> On Wed, 24 Aug 2011 11:34:45 +0800 Cong Wang wrote:
+On Tue, Aug 23, 2011 at 3:33 AM, David Miller <davem@davemloft.net> wrote:
+> From: "John W. Linville" <linville@tuxdriver.com>
+> Date: Mon, 22 Aug 2011 15:01:37 -0400
 >
->> Hi, Andrew,
+>> This is a batch of fixes intended for 3.1. �Included is rewrite of an
+>> earlier iwlagn fix that was revealed to be flawed (bad pointer access
+>> during module unload), a fix for a memory leak, and a trio of rt2x00
+>> fixes with detailed changelogs. �These have all been in linux-next
+>> for the last week with no reported complaints.
 >>
->> Do you think my patch below is better?
+>> Please let me know if there are problems!
 >
-> Hi,
->
-> This causes build errors for me because node.o is not being built:
->
-> arch/x86/built-in.o: In function `topology_init':
-> topology.c:(.init.text+0x3668): undefined reference to `register_one_node'
-> drivers/built-in.o: In function `unregister_cpu':
-> (.text+0x7aecc): undefined reference to `unregister_cpu_under_node'
-> drivers/built-in.o: In function `register_cpu':
-> (.cpuinit.text+0xc1): undefined reference to `register_cpu_under_node'
+> Pulled, thanks John.
 
-Ah, this is because I missed the part in include/linux/node.h. :)
+I'm using the rt2800usb module for the Buffalo WLI-UC-GNM using ad-hoc mode.
 
-Below is the updated version.
+T:  Bus=01 Lev=02 Prnt=02 Port=01 Cnt=01 Dev#=  3 Spd=480  MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=0411 ProdID=01a2 Rev= 1.01
+S:  Manufacturer=Ralink
+S:  Product=802.11 n WLAN
 
-Thanks for testing!
+It works ok, but after idling for a while, it does not response, and
+module needs to unloaded and modprobe again to make it work.
 
---------------020109010904020706070702
-Content-Type: text/plain;
- name="n.diff"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="n.diff"
+The same mac80211 and cfg80211 works for iwlagn and no problem with
+idling timeout.
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvYmFzZS9NYWtlZmlsZSBiL2RyaXZlcnMvYmFzZS9NYWtl
-ZmlsZQppbmRleCA5OWEzNzVhLi5lMzgyMzM4IDEwMDY0NAotLS0gYS9kcml2ZXJzL2Jhc2Uv
-TWFrZWZpbGUKKysrIGIvZHJpdmVycy9iYXNlL01ha2VmaWxlCkBAIC0xMCw3ICsxMCw3IEBA
-IG9iai0kKENPTkZJR19IQVNfRE1BKQkrPSBkbWEtbWFwcGluZy5vCiBvYmotJChDT05GSUdf
-SEFWRV9HRU5FUklDX0RNQV9DT0hFUkVOVCkgKz0gZG1hLWNvaGVyZW50Lm8KIG9iai0kKENP
-TkZJR19JU0EpCSs9IGlzYS5vCiBvYmotJChDT05GSUdfRldfTE9BREVSKQkrPSBmaXJtd2Fy
-ZV9jbGFzcy5vCi1vYmotJChDT05GSUdfTlVNQSkJKz0gbm9kZS5vCitvYmotJChDT05GSUdf
-TlVNQV9TWVNGUykJKz0gbm9kZS5vCiBvYmotJChDT05GSUdfTUVNT1JZX0hPVFBMVUdfU1BB
-UlNFKSArPSBtZW1vcnkubwogb2JqLSQoQ09ORklHX1NNUCkJKz0gdG9wb2xvZ3kubwogaWZl
-cSAoJChDT05GSUdfU1lTRlMpLHkpCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L25vZGUu
-aCBiL2luY2x1ZGUvbGludXgvbm9kZS5oCmluZGV4IDkyMzcwZTIuLmEwY2M1ZjkgMTAwNjQ0
-Ci0tLSBhL2luY2x1ZGUvbGludXgvbm9kZS5oCisrKyBiL2luY2x1ZGUvbGludXgvbm9kZS5o
-CkBAIC0zMiw3ICszMiw3IEBAIHR5cGVkZWYgIHZvaWQgKCpub2RlX3JlZ2lzdHJhdGlvbl9m
-dW5jX3QpKHN0cnVjdCBub2RlICopOwogCiBleHRlcm4gaW50IHJlZ2lzdGVyX25vZGUoc3Ry
-dWN0IG5vZGUgKiwgaW50LCBzdHJ1Y3Qgbm9kZSAqKTsKIGV4dGVybiB2b2lkIHVucmVnaXN0
-ZXJfbm9kZShzdHJ1Y3Qgbm9kZSAqbm9kZSk7Ci0jaWZkZWYgQ09ORklHX05VTUEKKyNpZmRl
-ZiBkZWZpbmVkKENPTkZJR19OVU1BKSAmJiBkZWZpbmVkKENPTkZJR19TWVNGUykKIGV4dGVy
-biBpbnQgcmVnaXN0ZXJfb25lX25vZGUoaW50IG5pZCk7CiBleHRlcm4gdm9pZCB1bnJlZ2lz
-dGVyX29uZV9ub2RlKGludCBuaWQpOwogZXh0ZXJuIGludCByZWdpc3Rlcl9jcHVfdW5kZXJf
-bm9kZSh1bnNpZ25lZCBpbnQgY3B1LCB1bnNpZ25lZCBpbnQgbmlkKTsKZGlmZiAtLWdpdCBh
-L21tL0tjb25maWcgYi9tbS9LY29uZmlnCmluZGV4IGYyZjFjYTEuLjc3MzQ1ZTcgMTAwNjQ0
-Ci0tLSBhL21tL0tjb25maWcKKysrIGIvbW0vS2NvbmZpZwpAQCAtMzQwLDYgKzM0MCwxNiBA
-QCBjaG9pY2UKIAkgIGJlbmVmaXQuCiBlbmRjaG9pY2UKIAorY29uZmlnIE5VTUFfU1lTRlMK
-Kwlib29sICJFbmFibGUgTlVNQSBzeXNmcyBpbnRlcmZhY2UgZm9yIHVzZXItc3BhY2UiCisJ
-ZGVwZW5kcyBvbiBOVU1BCisJZGVwZW5kcyBvbiBTWVNGUworCWRlZmF1bHQgeQorCWhlbHAK
-KwkgIFRoaXMgZW5hYmxlcyBOVU1BIHN5c2ZzIGludGVyZmFjZSwgL3N5cy9kZXZpY2VzL3N5
-c3RlbS9ub2RlLyoKKwkgIGZpbGVzLCBmb3IgdXNlci1zcGFjZSB0b29scywgbGlrZSBudW1h
-Y3RsLiBJZiB5b3UgaGF2ZSBlbmFibGVkCisJICBOVU1BLCBwcm9iYWJseSB5b3UgYWxzbyBu
-ZWVkIHRoaXMgb25lLgorCiAjCiAjIFVQIGFuZCBub21tdSBhcmNocyB1c2Uga20gYmFzZWQg
-cGVyY3B1IGFsbG9jYXRvcgogIwo=
---------------020109010904020706070702--
+Is there any parameter to control the rt2800usb to make turn off power saving?
+
+I've tried "iwconfig lwan0 power timeout 0 power off" but no effect.
+
+Linux 3.1.0-rc3 with commit caca9510ff4e5d842c0589110243d60927836222.
+
+Thanks,
+Jeff.
