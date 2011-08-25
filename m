@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1HYPVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:21:08 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:34594 "EHLO
+	id S1753395Ab1HYPJp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:09:45 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:34508 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab1HYPJq (ORCPT
+	with ESMTP id S1753792Ab1HYPJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:46 -0400
+	Thu, 25 Aug 2011 11:09:43 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 075/118] drbd: Converted wake_asender() and request_ping() from mdev to tconn
-Date: Thu, 25 Aug 2011 17:08:11 +0200
-Message-Id: <1314284934-17999-76-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 068/118] drbd: conn_printk() a dev_printk() alike for drbd's connections
+Date: Thu, 25 Aug 2011 17:08:04 +0200
+Message-Id: <1314284934-17999-69-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,101 +23,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h      |   12 ++++++------
- drivers/block/drbd/drbd_main.c     |    2 +-
- drivers/block/drbd/drbd_nl.c       |    2 +-
- drivers/block/drbd/drbd_receiver.c |    2 +-
- drivers/block/drbd/drbd_worker.c   |    4 ++--
- 5 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/block/drbd/drbd_int.h  |    9 +++++++++
+ drivers/block/drbd/drbd_main.c |   16 +++++++++++++++-
+ 2 files changed, 24 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 1c43975..e8c2c2a 100644
+index df24541..1ecde6f 100644
 --- a/drivers/block/drbd/drbd_int.h
 +++ b/drivers/block/drbd/drbd_int.h
-@@ -1857,16 +1857,16 @@ drbd_queue_work(struct drbd_work_queue *q, struct drbd_work *w)
- 	spin_unlock_irqrestore(&q->q_lock, flags);
- }
+@@ -102,6 +102,15 @@ struct drbd_tconn;
+ /* to shorten dev_warn(DEV, "msg"); and relatives statements */
+ #define DEV (disk_to_dev(mdev->vdisk))
  
--static inline void wake_asender(struct drbd_conf *mdev)
-+static inline void wake_asender(struct drbd_tconn *tconn)
- {
--	if (test_bit(SIGNAL_ASENDER, &mdev->tconn->flags))
--		force_sig(DRBD_SIG, mdev->tconn->asender.task);
-+	if (test_bit(SIGNAL_ASENDER, &tconn->flags))
-+		force_sig(DRBD_SIG, tconn->asender.task);
- }
++extern void conn_printk(const char *level, struct drbd_tconn *tconn, const char *fmt, ...);
++#define conn_alert(TCONN, FMT, ARGS...)  conn_printk(KERN_ALERT, TCONN, FMT, ## ARGS)
++#define conn_crit(TCONN, FMT, ARGS...)   conn_printk(KERN_CRIT, TCONN, FMT, ## ARGS)
++#define conn_err(TCONN, FMT, ARGS...)    conn_printk(KERN_ERR, TCONN, FMT, ## ARGS)
++#define conn_warn(TCONN, FMT, ARGS...)   conn_printk(KERN_WARNING, TCONN, FMT, ## ARGS)
++#define conn_notice(TCONN, FMT, ARGS...) conn_printk(KERN_NOTICE, TCONN, FMT, ## ARGS)
++#define conn_info(TCONN, FMT, ARGS...)   conn_printk(KERN_INFO, TCONN, FMT, ## ARGS)
++#define conn_dbg(TCONN, FMT, ARGS...)    conn_printk(KERN_DEBUG, TCONN, FMT, ## ARGS)
++
+ #define D_ASSERT(exp)	if (!(exp)) \
+ 	 dev_err(DEV, "ASSERT( " #exp " ) in %s:%d\n", __FILE__, __LINE__)
  
--static inline void request_ping(struct drbd_conf *mdev)
-+static inline void request_ping(struct drbd_tconn *tconn)
- {
--	set_bit(SEND_PING, &mdev->tconn->flags);
--	wake_asender(mdev);
-+	set_bit(SEND_PING, &tconn->flags);
-+	wake_asender(tconn);
- }
- 
- static inline int drbd_send_short_cmd(struct drbd_conf *mdev,
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 45b8f67..4c31410 100644
+index dbd6d72..0e2969d 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -1360,7 +1360,7 @@ static int we_should_drop_the_connection(struct drbd_conf *mdev, struct socket *
- 	if (!drop_it) {
- 		dev_err(DEV, "[%s/%d] sock_sendmsg time expired, ko = %u\n",
- 		       current->comm, current->pid, mdev->tconn->ko_count);
--		request_ping(mdev);
-+		request_ping(mdev->tconn);
- 	}
+@@ -170,6 +170,18 @@ int _get_ldev_if_state(struct drbd_conf *mdev, enum drbd_disk_state mins)
  
- 	return drop_it; /* && (mdev->state == R_PRIMARY) */;
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index fda399a..df36a57 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -318,7 +318,7 @@ drbd_set_role(struct drbd_conf *mdev, enum drbd_role new_role, int force)
- 	enum drbd_disk_state nps;
+ #endif
  
- 	if (new_role == R_PRIMARY)
--		request_ping(mdev); /* Detect a dead peer ASAP */
-+		request_ping(mdev->tconn); /* Detect a dead peer ASAP */
++/* printk functions for connections
++ */
++void conn_printk(const char *level, struct drbd_tconn *tconn, const char *fmt, ...)
++{
++	va_list args;
++
++	printk("%sd-con %s: ", level, tconn->name);
++	va_start(args, fmt);
++	vprintk(fmt, args);
++	va_end(args);
++}
++
+ /**
+  * DOC: The transfer log
+  *
+@@ -2217,12 +2229,14 @@ struct drbd_conf *drbd_new_device(unsigned int minor)
+ 	struct drbd_conf *mdev;
+ 	struct gendisk *disk;
+ 	struct request_queue *q;
++	char conn_name[9]; /* drbd1234N */
  
- 	mutex_lock(&mdev->state_mutex);
+ 	/* GFP_KERNEL, we are outside of all write-out paths */
+ 	mdev = kzalloc(sizeof(struct drbd_conf), GFP_KERNEL);
+ 	if (!mdev)
+ 		return NULL;
+-	mdev->tconn = drbd_new_tconn("dummy");
++	sprintf(conn_name, "drbd%d", minor);
++	mdev->tconn = drbd_new_tconn(conn_name);
+ 	if (!mdev->tconn)
+ 		goto out_no_tconn;
  
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 5f44b43..409b8c8 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1868,7 +1868,7 @@ static int receive_Data(struct drbd_conf *mdev, enum drbd_packet cmd,
- 				 * but I don't like the receiver using the msock */
- 
- 				put_ldev(mdev);
--				wake_asender(mdev);
-+				wake_asender(mdev->tconn);
- 				finish_wait(&mdev->misc_wait, &wait);
- 				return true;
- 			}
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index a705979..5be179b 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -145,7 +145,7 @@ static void drbd_endio_write_sec_final(struct drbd_peer_request *peer_req) __rel
- 	if (do_al_complete_io)
- 		drbd_al_complete_io(mdev, e_sector);
- 
--	wake_asender(mdev);
-+	wake_asender(mdev->tconn);
- 	put_ldev(mdev);
- }
- 
-@@ -728,7 +728,7 @@ static int w_resync_finished(struct drbd_conf *mdev, struct drbd_work *w, int ca
- static void ping_peer(struct drbd_conf *mdev)
- {
- 	clear_bit(GOT_PING_ACK, &mdev->flags);
--	request_ping(mdev);
-+	request_ping(mdev->tconn);
- 	wait_event(mdev->misc_wait,
- 		   test_bit(GOT_PING_ACK, &mdev->flags) || mdev->state.conn < C_CONNECTED);
- }
 -- 
 1.7.4.1
 
