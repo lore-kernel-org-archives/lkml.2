@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab1HYXB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 19:01:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40889 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab1HYXB4 convert rfc822-to-8bit (ORCPT
+	id S1753280Ab1HYXF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 19:05:57 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:29009 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab1HYXFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 19:01:56 -0400
-Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
-From: Peter Zijlstra <peterz@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-arch@vger.kernel.org
-Date: Fri, 26 Aug 2011 01:01:37 +0200
-In-Reply-To: <1314300546.3268.8.camel@mulgrave>
-References: <1313650253-21794-1-git-send-email-gthelen@google.com>
-	 <20110818144025.8e122a67.akpm@linux-foundation.org>
-	 <1314284272.27911.32.camel@twins>
-	 <alpine.DEB.2.00.1108251009120.27407@router.home>
-	 <1314289208.3268.4.camel@mulgrave>
-	 <alpine.DEB.2.00.1108251128460.27407@router.home>
-	 <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>
-	 <alpine.DEB.2.00.1108251206440.27407@router.home>
-	 <1e295500-5d1f-45dd-aa5b-3d2da2cf1a62@email.android.com>
-	 <alpine.DEB.2.00.1108251341230.27407@router.home>
-	 <1314300546.3268.8.camel@mulgrave>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314313297.26922.17.camel@twins>
-Mime-Version: 1.0
+	Thu, 25 Aug 2011 19:05:55 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=JWm/w72vwaFnTPpH8MykfmbT5AE+7MW4aXBAOVq+vvXTMShJ3kalaU0Ci4Wn732n9
+	vnSocNpSJKLKnZN69YWag==
+Subject: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: RalfJungralfjung-e@gmx.de, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 25 Aug 2011 17:05:39 -0600
+Message-ID: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 12:29 -0700, James Bottomley wrote:
-> 
-> Therefore from the risc point of view, most of the this_cpu_xxx
-> operations are things that we don't really care about except that the
-> result would be easier to read in C. 
+Previously we reserved 1024 bytes, but that's more space than the IOAPIC
+consumes, and it can cause conflicts with nearby devices.  The known
+requirement is 68 bytes (sizeof(struct io_apic)), and rounding up to a
+power-of-2 gives us 128.
 
-Right, so the current fallback case is pretty much the optimal case for
-the RISC machines, which ends up with generic code being better off not
-using it much and instead preferring __this_cpu if there's more than
-one.
+The bug reported below is caused by the following assignments (the IOAPIC
+power-on default and the watchdog address recommended in the AMD SP5100
+BIOS Developer's Guide):
 
-I mean, its absolutely awesome these things are 1 instruction on x86,
-but if we pessimize all other 20-odd architectures its just not cool.
+  IOAPIC[0]        at [mem 0xfec00000-0xfec003ff]
+  SP5100 TCO timer at [mem 0xfec000f0-0xfec000f7]
+
+Reported-by: Ralf Jung ralfjung-e@gmx.de
+Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=638863
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ arch/x86/include/asm/apicdef.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index 34595d5..855a18a 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -12,10 +12,11 @@
+ #define	APIC_DEFAULT_PHYS_BASE		0xfee00000
+ 
+ /*
+- * This is the IO-APIC register space as specified
+- * by Intel docs:
++ * I/O APICs are accessed indirectly via an index/data pair and an EOI
++ * register.  For example, see sec 13.5.1, "APIC Register Map," in the
++ * Intel ICH10 datasheet and the struct io_apic definition.
+  */
+-#define IO_APIC_SLOT_SIZE		1024
++#define IO_APIC_SLOT_SIZE		128
+ 
+ #define	APIC_ID		0x20
+ 
 
