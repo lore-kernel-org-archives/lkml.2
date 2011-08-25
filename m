@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1HYGR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 02:17:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50817 "EHLO smtps.tip.net.au"
+	id S1752856Ab1HYGSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 02:18:48 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50622 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752704Ab1HYGR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 02:17:56 -0400
-Date: Thu, 25 Aug 2011 16:17:50 +1000
+	id S1752532Ab1HYGSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 02:18:46 -0400
+Date: Thu, 25 Aug 2011 16:18:43 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: linux-next: build failure after merge of the final tree (akpm and
- moduleh trees related)
-Message-Id: <20110825161750.45803be66cba17a6bd3906bc@canb.auug.org.au>
+        Timur Tabi <timur@freescale.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: build failure after merge of the final tree (tty tree
+ related)
+Message-Id: <20110825161843.daf46b6b4023926fcfeec387@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Thu__25_Aug_2011_16_17_50_+1000_489uwZDFlTGJ1lH/"
+ boundary="Signature=_Thu__25_Aug_2011_16_18_43_+1000_461x9SfRP_2g7gmf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__25_Aug_2011_16_17_50_+1000_489uwZDFlTGJ1lH/
+--Signature=_Thu__25_Aug_2011_16_18_43_+1000_461x9SfRP_2g7gmf
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-kernel/printk.c:536:35: error: expected ')' before string constant
-kernel/printk.c:1116:35: error: expected ')' before string constant
+drivers/tty/ehv_bytechan.c: In function 'udbg_init_ehv_bc':
+drivers/tty/ehv_bytechan.c:230:18: error: 'MSR_GS' undeclared (first use in=
+ this function)
+drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_write':
+drivers/tty/ehv_bytechan.c:289:24: warning: cast from pointer to integer of=
+ different size
+drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_init':
+drivers/tty/ehv_bytechan.c:355:24: warning: cast to pointer from integer of=
+ different size
 
-Caused by commits 8a04dedc045d ("We are enabling some power features on
-medfield.  To test suspend-2-RAM") and d09d67ec904c (same - the following
-commit) from the akpm tree interacting with commit a25ffe9fafa1 ("kernel:
-Map most files to use export.h instead of module.h") from the moduleh
-tree.  This file now needs module.h, not just export.h since
-MODULE_PARM_DESC if defined there.
+Caused by commit dcd83aaff1c8 ("tty/powerpc: introduce the ePAPR embedded
+hypervisor byte channel driver").
 
-I have applied a merge fixup patch to change export.h back to module.h.
+MSR_GS is defined in arch/powerpc/include/asm/reg_booke.h which is
+included by arch/powerpc/include/asm/reg.h but only when defined
+(CONFIG_BOOKE) || defined(CONFIG_40x).
 
-P.S. Andrew, these commits could do with better subject lines :-(
+I have reverted that commit for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__25_Aug_2011_16_17_50_+1000_489uwZDFlTGJ1lH/
+--Signature=_Thu__25_Aug_2011_16_18_43_+1000_461x9SfRP_2g7gmf
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOVekOAAoJEDMEi1NhKgbsTZwH/iKnBjRMO8Nf1R4VmxCwnsIe
-YjCI8ui48KNw/1eS4gEKGZLZda/ve+zKJ2WDSy0mTqOCSEKNl1tuVvLdLva0/ktW
-SdQVMegfBJnvHwHiP6yKGfIzzFBo/c6wHH4vuC0c6qF0kDTYJABAHIFrOImESv7B
-nSrtHN6TO1NGuD4j9Nx276Eirgmv9Lq1Vk5FU5CWzH7EyRwuSIg6xfdXFGcZznpL
-tAIS5wsnx+hB6PInx4pHQZoy4d9wldreaVh0IpIOFkYaa9iq9whYyKS22nEwDX0D
-8nl0Blx3j590m4qZrKCLrEyZc3xblT276uxEH0cjbDeSDACFYGHlY0TcXc2XaJY=
-=bnF1
+iQEcBAEBAgAGBQJOVelDAAoJEDMEi1NhKgbsuYQIAIFHOnADLgJPd58D0ZV+DHi8
+JNJ1kWsdrgp2AHNQwD7i2sRmrrlHYPeCVXZmKxfgHwek7uE4uFrgT8YkuHaRWL1+
+Tj0B2B+CJovyt5kXAvmzA1R2L+VUR6JlXgLO7nJ1nJGvEcB5tUa2ABA1a86tRNVO
+a0br8NYvZ+xShU/X1nFQ6MeAdK1T4nlY9FdudxdTKJoXUr4h0rNwEZOZZC90GdZG
+wPAqszMy0fZkgXwwwUAS+RgBsmRqgztbKvE95Z/7XZkCz0xC7HTOtslgoOP8P7nD
+7+inKEdc49Oh4FFnRCLq3YSc5HzQEsTToli3R6GbLEnoSLZaJUpqZBsCsEUkMvI=
+=0N4I
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__25_Aug_2011_16_17_50_+1000_489uwZDFlTGJ1lH/--
+--Signature=_Thu__25_Aug_2011_16_18_43_+1000_461x9SfRP_2g7gmf--
