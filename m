@@ -1,51 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab1HYGnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 02:43:42 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:44122 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336Ab1HYGnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 02:43:41 -0400
-Message-ID: <4E55EEE4.4050902@parallels.com>
-Date: Thu, 25 Aug 2011 10:42:44 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Zan Lynx <zlynx@acm.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
- v2
-References: <20110824085329.GL29452@sun> <4E551331.1010709@acm.org>	<4E551693.5030400@parallels.com> <m2wre2d83p.fsf@firstfloor.org>
-In-Reply-To: <m2wre2d83p.fsf@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753030Ab1HYGwA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 02:52:00 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:13027 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab1HYGv6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 02:51:58 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=blS1IfD9ATTwslHPX1wg2xrVchEzJECajZTP4gYUBpc= c=1 sm=1
+ a=gC2PzEiSFgkA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=7-415B0cAAAA:8 a=VwQbUJbxAAAA:8
+ a=oZhb_Zjvg5mqWrkgViQA:9 a=3JIEvoNuqrGVWEFy3wgA:7 a=CjuIK1q_8ugA:10
+ a=x8gzFH9gYPwA:10 a=FtYAf7_czLgA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20110825064039.GO3162@dastard>
+Date: Thu, 25 Aug 2011 00:51:56 -0600
+Cc: Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@ZenIV.linux.org.uk,
+        dchinner@redhat.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca>
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110825060632.GA9933@infradead.org> <20110825064039.GO3162@dastard>
+To: Dave Chinner <david@fromorbit.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2011 09:36 PM, Andi Kleen wrote:
-> Pavel Emelyanov <xemul@parallels.com> writes:
->>
->> No and this is the trick - when you readlink it - it give you trash, but
->> when you open one - you get exactly the same file as the map points to.
+On 2011-08-25, at 12:40 AM, Dave Chinner wrote:
+> On Thu, Aug 25, 2011 at 02:06:32AM -0400, Christoph Hellwig wrote:
+>> On Tue, Jun 28, 2011 at 11:33:19AM -0400, Josef Bacik wrote:
+>>> This is a test to make sure seek_data/seek_hole is acting like it does on
+>>> Solaris.  It will check to see if the fs supports finding a hole or not and will adjust as necessary.
+>> 
+>> Can you resend this with any updates that happened in the meantime?
+>> 
+>> Dave also still had some comments about semantics, so it might be worth
+>> to incorporate that as well.
 > 
-> Isn't that a minor security hole?
-> 
-> For example if I pass a file descriptor into a chroot process for
-> reading, and with this interface you can open it for writing too.
-> I could see this causing problems.
+> The main questions I had when looking at this was how we should
+> handle unwritten extents - the only answer I got was along the lines
+> of "we'll deal with that once filesystems have implemented
+> something". That's a bit of a chicken-and-egg situation, and doesn't
+> help me decide what is the best thing to do. I don't want to have to
+> re-implement this code when it's decided i did the wrong thing
+> initially.
 
-How does it differ from the /proc/pid/fd links?
+Let's first clarify what you mean by an unwritten extent?  Do you mean a
+preallocated extent that returns 0 when read, or do you mean a delayed
+allocation extent that was written by the application that is still in
+memory but not yet written to disk?
 
-> -Andi
+Unfortunately, ZFS has no concept of preallocated extents, so we can't
+look to it for precedent, but it definitely has delayed allocation.
+Possibly if UFS on Solaris has SEEK_HOLE and also preallocated extents
+(I have no idea) it could be tested?
+
+> The most basic question I really want answered is this:
 > 
+> 	- is preallocated space a HOLE, or is it DATA?
+> 
+> Whatever the answer, I think it should be consistently
+> presented by all filesystems that support preallocation, and it
+> should be encoded into the generic SEEK_HOLE/SEEK_DATA tests....
+
+My thought would be that a preallocated extent is still a HOLE, because
+it doesn't contain data that an application actually cares about.  On
+the other hand, a delalloc extent is DATA because it has something that
+an application cares about.
+
+The original reason SEEK_HOLE/SEEK_DATA were brought up over FIEMAP was
+"cp" being able to consistently access delalloc data that was only in
+the page cache, so if we don't get that right it will have been a pointless
+exercise.
+
+> Answering that question then helps answer the more complex questions
+> I had, like:
+> 
+> 	- what does SEEK_DATA return when you have a file layout
+> 	  like "hole-prealloc-data"?
+
+I would think only the "data" part, since that is what the definition
+of "SEEK_DATA" is IMHO.
+
+> Answers to that sort of question need to be known so we can write
+> corner-case tests to correctly verify the filesystem implementation.
+> 
+> I like to do better than present userspace with an interface that
+> behaves vastly different depending on the underlying filesystem, but
+> if the answer is "definition and implementation is entirely
+> filesystem specific" then I'll just go make something up....
+> 
+> Cheers,
+> 
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+Cheers, Andreas
+
+
+
+
 
