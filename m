@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab1HYQau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:30:50 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42925
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753579Ab1HYQ26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753654Ab1HYQ26 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 25 Aug 2011 12:28:58 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42703
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752188Ab1HYQ2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 12:28:55 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 57/59] Staging: hv: mouse: Get rid of  the unused  PCI signature
-Date: Thu, 25 Aug 2011 09:49:23 -0700
-Message-Id: <1314290965-2698-57-git-send-email-kys@microsoft.com>
+Subject: [PATCH 01/59] Staging: hv: vmbus: VMBUS is an ACPI enumerated device, get rid of the PCI signature
+Date: Thu, 25 Aug 2011 09:48:27 -0700
+Message-Id: <1314290965-2698-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314290965-2698-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1314290866-2644-1-git-send-email-kys@microsoft.com>
 References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
- <1314290965-2698-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of  the unused  PCI signature in the mouse driver.
+VMBUS is an ACPI enumerated device, get rid of the PCI signature.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hv_mouse.c |   22 ----------------------
- 1 files changed, 0 insertions(+), 22 deletions(-)
+ drivers/staging/hv/vmbus_drv.c |   13 -------------
+ 1 files changed, 0 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index cbb837b..a29a050 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -22,8 +22,6 @@
- #include <linux/input.h>
- #include <linux/hid.h>
- #include <linux/hiddev.h>
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index 67a4f33..8f1d6eb 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -28,7 +28,6 @@
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
+ #include <linux/sysctl.h>
 -#include <linux/pci.h>
--#include <linux/dmi.h>
+ #include <linux/dmi.h>
+ #include <linux/slab.h>
+ #include <linux/acpi.h>
+@@ -754,18 +753,6 @@ static struct acpi_driver vmbus_acpi_driver = {
+ 	},
+ };
  
- #include "hyperv.h"
- 
-@@ -956,26 +954,6 @@ static void __exit mousevsc_exit(void)
- 	mousevsc_drv_exit();
- }
- 
--/*
-- * We don't want to automatically load this driver just yet, it's quite
-- * broken.  It's safe if you want to load it yourself manually, but
-- * don't inflict it on unsuspecting users, that's just mean.
-- */
--#if 0
--
 -/*
 - * We use a PCI table to determine if we should autoload this driver  This is
 - * needed by distro tools to determine if the hyperv drivers should be
@@ -66,11 +57,10 @@ index cbb837b..a29a050 100644
 -	{ 0 }
 -};
 -MODULE_DEVICE_TABLE(pci, microsoft_hv_pci_table);
--#endif
 -
- MODULE_LICENSE("GPL");
- MODULE_VERSION(HV_DRV_VERSION);
- module_init(mousevsc_init);
+ static int __init hv_acpi_init(void)
+ {
+ 	int ret, t;
 -- 
 1.7.4.1
 
