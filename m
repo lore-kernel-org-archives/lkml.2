@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab1HYG4R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 02:56:17 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:49664 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab1HYG4Q (ORCPT
+	id S1753145Ab1HYHE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:04:56 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35299 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab1HYHEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 02:56:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo56V1eHaLTz72gLHcdONsNSUM01upKr4K+DtoU58ea5Ag@mail.gmail.com>
-References: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com>
-	<1314167063-15785-3-git-send-email-dengcheng.zhu@gmail.com>
-	<CAErSpo56V1eHaLTz72gLHcdONsNSUM01upKr4K+DtoU58ea5Ag@mail.gmail.com>
-Date: Thu, 25 Aug 2011 14:56:15 +0800
-Message-ID: <CAOfQC9_S9q9fE6VyDaLseUFZD_GxZcEOYw8YsvRWkr9-2S=RRQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] PCI: Pass available resources into pci_create_bus()
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
-        zenon@mips.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Aug 2011 03:04:54 -0400
+Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: david.wagner@free-electrons.com, linux-mtd <linux-mtd@lists.infradead.org>,
+        linux-embedded <linux-embedded@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Thu, 25 Aug 2011 10:06:44 +0300
+In-Reply-To: <201108241823.20904.arnd@arndb.de>
+References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
+	 <1313587042-30846-1-git-send-email-david.wagner@free-electrons.com>
+	 <1313998939.2644.52.camel@sauron> <201108241823.20904.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1314256010.18988.18.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/24 Bjorn Helgaas <bhelgaas@google.com>:
-> I like this approach a lot.  Thanks for working it up.  It's a nice
-> small change with very little impact to other architectures, and you
-> have a nice clear changelog.  You might mention something about the
-> fact that by default, the bus starts out with all of ioport_resource
-> and iomem_resource -- that will mean something to people who know how
-> host bridges work.
+Hi Arnd,
 
-Thanks! And I'll add this info to the patch description.
+On Wed, 2011-08-24 at 18:23 +0200, Arnd Bergmann wrote:
+> That should  be fine, yes. I would probably put them into the same
+> header file though if they are in the same number space even
+> when you use them on distinct devices.
+> 
+> It does feel a little clumsy to have yet another character device
+> to manage the block devices though. What do you think about one
+> of these alternative approaches:
+> 
+> * When the ubi block device driver gets loaded, create one block
+>   device per volume and let the user deal with permissions for
+>   the devices instead of having to first create them as well.
 
-> Using pci_bus_add_resource() here *seems* like it should be the right
-> thing, but I don't think it will work correctly.
->
-> The problem is that struct pci_bus has both a table of resources
-> (bus->resource[]) *and* a list (bus->resources).
-> pci_bus_add_resource() always puts the new resource on the list, but
-> various arch code still references the table directly, e.g., sparc has
-> "pbus->resource[0] = &pbm->io_space" in pcibios_fixup_bus().
->
-> As written, I think this patch will break sparc because the host
-> bridge will end up with both pbm->io_space (in the table) and
-> ioport_resource (in the list).
+I think this wasteful. Why should I have block devices which I do not
+need? If I have 4 UBI volumes, and need only one ubiblk, why should I
+waste my resources for 3 more of them (e.g., I do not want to waste
+memory for struct inode for each sysfs entry which these useless block
+devices will add). Also, will this mean 3 more block devices registered?
 
-Good catch! I overlooked this point.
+I think it is much uglier to have 3 "dummy" block devices and confuse
+users than have one nice control character device. For the sake of not
+having a separate control chardev?
 
-> I think something like this would work, though:
->
->    if (bus_res)
->        list_add_tail(&b->resources, &bus_res->list);
->    else {
->        b->resource[0] = &ioport_resource;
->        b->resource[1] = &iomem_resource;
->    }
+> * Use the existing UBI control device for the block devices as
+>   well and just add two more ioctls to create the devices.
+>   You can add a logical bus_type for this so that the ubi block
+>   driver gets automatically loaded matched with the device when
+>   one is created using the control device.
 
-Yes, it should work.
+This sounds  better IMHO, but I am still not sure that adding another
+dummy bus and exposing it in sysfs and more complexity in the ubiblk
+code is more elegant and less wasteful than just creating a separate
+chardev...
 
+-- 
+Best Regards,
+Artem Bityutskiy
 
-Thanks again for your time,
-
-Deng-Cheng
