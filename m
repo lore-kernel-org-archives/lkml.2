@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668Ab1HYDo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 23:44:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61875 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab1HYDoy convert rfc822-to-8bit (ORCPT
+	id S1751887Ab1HYDus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 23:50:48 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:56326 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751433Ab1HYDuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 23:44:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <282DEC42-93F6-411E-97C5-C49D258718C2@suse.de>
-References: <1314137806-5747-1-git-send-email-agraf@suse.de>
-	<CAOJsxLHzFnP0GuUWyg4U91_AkrK8q5=k1ZhN3JikUxqLQNK5tQ@mail.gmail.com>
-	<CAM_iQpWD_uYT18XUGg=1FZDsvZx2kSSUEW+EtSYxgg5+gfHR7Q@mail.gmail.com>
-	<282DEC42-93F6-411E-97C5-C49D258718C2@suse.de>
-Date: Thu, 25 Aug 2011 11:44:53 +0800
-Message-ID: <CAM_iQpVA--TR39AnrjQ6j14W7wYOLr62B52uVj5_RGAUMex8Sg@mail.gmail.com>
-Subject: Re: [PATCH] KVM: Add wrapper script around Qemu to test kernels
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Alexander Graf <agraf@suse.de>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>
+	Wed, 24 Aug 2011 23:50:46 -0400
+Date: Wed, 24 Aug 2011 20:50:44 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Cong Wang <amwang@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [Patch] numa: introduce CONFIG_NUMA_SYSFS for
+ drivers/base/node.c
+Message-Id: <20110824205044.7ff45b6c.rdunlap@xenotime.net>
+In-Reply-To: <4E55C221.8080100@redhat.com>
+References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au>
+	<20110804152211.ea10e3e7.rdunlap@xenotime.net>
+	<20110823143912.0691d442.akpm@linux-foundation.org>
+	<4E547155.8090709@redhat.com>
+	<20110824191430.8a908e70.rdunlap@xenotime.net>
+	<4E55C221.8080100@redhat.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 4:35 AM, Alexander Graf <agraf@suse.de> wrote:
->
-> On 24.08.2011, at 00:31, Américo Wang wrote:
->
->> On Wed, Aug 24, 2011 at 1:19 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>>
->>> It's nice to see such an honest attempt at improving QEMU usability, Alexander!
->>>
->>> One comment: in my experience, having shell scripts under
->>> Documentation reduces the likelihood that people actually discover
->>> them so you might want to consider putting it under scripts or tools.
->>>
->>
->> I was going to give the same suggestion, +1 for tools/ directory.
->
-> Well, scripts/ is a flat directory where I can just throw in the script. Tools however is split by tool and creating a full new directory for only a single script sounds a bit like overkill to me. I'll move it to scripts/ for now :)
+On Thu, 25 Aug 2011 11:31:45 +0800 Cong Wang wrote:
 
-How about the directory tools/testing/ ?
+> 于 2011年08月25日 10:14, Randy Dunlap 写道:
+> > On Wed, 24 Aug 2011 11:34:45 +0800 Cong Wang wrote:
+> >
+> >> Hi, Andrew,
+> >>
+> >> Do you think my patch below is better?
+> >
+> > Hi,
+> >
+> > This causes build errors for me because node.o is not being built:
+> >
+> > arch/x86/built-in.o: In function `topology_init':
+> > topology.c:(.init.text+0x3668): undefined reference to `register_one_node'
+> > drivers/built-in.o: In function `unregister_cpu':
+> > (.text+0x7aecc): undefined reference to `unregister_cpu_under_node'
+> > drivers/built-in.o: In function `register_cpu':
+> > (.cpuinit.text+0xc1): undefined reference to `register_cpu_under_node'
+> 
+> Ah, this is because I missed the part in include/linux/node.h. :)
+> 
+> Below is the updated version.
+> 
+> Thanks for testing!
 
-scripts/ is mainly for the tools/utilities we use to build kernel or
-do kernel dev,
-it is not so suitable for your script IMHO.
+Yes, that works after changing #ifdef defined(...)
+to #if defined(...)
 
-Thanks.
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
