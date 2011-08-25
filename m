@@ -1,157 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab1HYQqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:46:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58651 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab1HYQqX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:46:23 -0400
-Date: Thu, 25 Aug 2011 18:45:58 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Linux Media Mailing List <linux-media@vger.kernel.org>
-cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Pawel Osciak <pawel@osciak.com>,
-        Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: [PATCH 1/2] dmaengine: ipu-idmac: add support for the DMA_PAUSE
- control
-In-Reply-To: <Pine.LNX.4.64.1108251838090.17190@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1108251841300.17190@axis700.grange>
-References: <1314211292-10414-1-git-send-email-g.liakhovetski@gmx.de>
- <Pine.LNX.4.64.1108251838090.17190@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:qwE+TMyx37E41G/vU5j7cKyqiLCwJqxJX1ANfG4/L49
- cGCFn2dv+YKZu/fOblHGT6spjER0g/Qc+r2ES1xLUyMRerlXzc
- H6vba5O9kDRBfePd+Te9xKs9Kzkj6I3F0ZtLltThBNAOKFTEg8
- j8XU8yyyNTOX+U7av1l/NFBPueTXDEmWB0DiqY0YFqBI97BEQN
- kp+NWlosXrgjxxo77plhDu4J1D2Z5Ii0BrgWWsPTEVlIhhPihk
- 79plr+ii2deTZI9j16vdgBx97+BiYBK1URnKbwfE8YuPeqttNG
- hm6nK0Ca9EcNwC/mNIAjOqvutE7t3rET3Xr8LC9XE0M4hkYIOG
- ZZuj6ibH00f99k7HgnkRNI1c8fSn8bMDxc1BNtykuYfTFt+z1M
- qqtGzAwXVy3Tg==
+	id S1754800Ab1HYQsF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:48:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16762 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753680Ab1HYQqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 12:46:16 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [V3][PATCH 6/6] x86, nmi: print out NMI stats in /proc/interrupts
+Date: Thu, 25 Aug 2011 12:45:48 -0400
+Message-Id: <1314290748-23569-7-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
+References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support multi-size buffers in the mx3_camera V4L2 driver we have to be
-able to stop DMA on a channel without releasing descriptors and completely
-halting the hardware. Use the DMA_PAUSE control to implement this mode.
+This is a cheap hack to add the stats to the middle of /proc/interrupts.
+It is more of a conversation starter than anything as I am not sure
+the right letters and place to put this stuff.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+The benefit of these stats is a better breakdown of which list the NMIs
+get handled in either a normal handler, unknown, or external.  It also
+list the number of unknown NMIs swallowed to help check for false
+positives or not.  Another benefit is the ability to actually see which
+NMI handlers are currently registered in the system.
+
+The output of 'cat /proc/interrupts/ will look like this:
+
+<snip>
+ 58:        275          0        864          0   PCI-MSI-edge      eth0
+NMI:       4161       4155        158       4194   Non-maskable interrupts
+SWA:          0          0          0          0   Unknown NMIs swallowed
+  0:       4161       4155        158       4194   NMI  PMI, arch_bt
+UNK:          0          0          0          0   NMI
+EXT:          0          0          0          0   NMI
+LOC:      12653      13304      13974      12926   Local timer interrupts
+SPU:          0          0          0          0   Spurious interrupts
+PMI:          6          6          5          6   Performance monitoring interrupts
+IWI:          0          0          0          0   IRQ work interrupts
+RES:       1839       1897       1821       1854   Rescheduling interrupts
+CAL:        524       2714        392        331   Function call interrupts
+TLB:        217        146        593        576   TLB shootdowns
+TRM:          0          0          0          0   Thermal event interrupts
+THR:          0          0          0          0   Threshold APIC interrupts
+MCE:          0          0          0          0   Machine check exceptions
+MCP:          1          1          1          1   Machine check polls
+ERR:          0
+MIS:          0
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- drivers/dma/ipu/ipu_idmac.c |   65 +++++++++++++++++++++++++++---------------
- 1 files changed, 42 insertions(+), 23 deletions(-)
+ arch/x86/include/asm/nmi.h |    2 +
+ arch/x86/kernel/irq.c      |    2 +
+ arch/x86/kernel/nmi.c      |   47 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
-index c1a125e..42cdf1c 100644
---- a/drivers/dma/ipu/ipu_idmac.c
-+++ b/drivers/dma/ipu/ipu_idmac.c
-@@ -1306,6 +1306,7 @@ static irqreturn_t idmac_interrupt(int irq, void *dev_id)
- 	    ipu_submit_buffer(ichan, descnew, sgnew, ichan->active_buffer) < 0) {
- 		callback = descnew->txd.callback;
- 		callback_param = descnew->txd.callback_param;
-+		list_del_init(&descnew->list);
- 		spin_unlock(&ichan->lock);
- 		if (callback)
- 			callback(callback_param);
-@@ -1427,39 +1428,58 @@ static int __idmac_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index fc74547..a4f1945 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -24,6 +24,8 @@ void arch_trigger_all_cpu_backtrace(void);
+ 
+ #define NMI_FLAG_FIRST	1
+ 
++void arch_show_nmi(struct seq_file *p, int prec);
++
+ enum {
+ 	NMI_LOCAL=0,
+ 	NMI_UNKNOWN,
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..44d1cac 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -16,6 +16,7 @@
+ #include <asm/idle.h>
+ #include <asm/mce.h>
+ #include <asm/hw_irq.h>
++#include <asm/nmi.h>
+ 
+ atomic_t irq_err_count;
+ 
+@@ -55,6 +56,7 @@ int arch_show_interrupts(struct seq_file *p, int prec)
+ 	for_each_online_cpu(j)
+ 		seq_printf(p, "%10u ", irq_stats(j)->__nmi_count);
+ 	seq_printf(p, "  Non-maskable interrupts\n");
++	arch_show_nmi(p, prec);
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	seq_printf(p, "%*s: ", prec, "LOC");
+ 	for_each_online_cpu(j)
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 4b32216..a3f9d0b 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -373,3 +373,50 @@ void restart_nmi(void)
  {
- 	struct idmac_channel *ichan = to_idmac_chan(chan);
- 	struct idmac *idmac = to_idmac(chan->device);
-+	struct ipu *ipu = to_ipu(idmac);
-+	struct list_head *list, *tmp;
- 	unsigned long flags;
- 	int i;
- 
--	/* Only supports DMA_TERMINATE_ALL */
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
-+	switch (cmd) {
-+	case DMA_PAUSE:
-+		spin_lock_irqsave(&ipu->lock, flags);
-+		ipu_ic_disable_task(ipu, chan->chan_id);
- 
--	ipu_disable_channel(idmac, ichan,
--			    ichan->status >= IPU_CHANNEL_ENABLED);
-+		/* Return all descriptors into "prepared" state */
-+		list_for_each_safe(list, tmp, &ichan->queue)
-+			list_del_init(list);
- 
--	tasklet_disable(&to_ipu(idmac)->tasklet);
-+		ichan->sg[0] = NULL;
-+		ichan->sg[1] = NULL;
- 
--	/* ichan->queue is modified in ISR, have to spinlock */
--	spin_lock_irqsave(&ichan->lock, flags);
--	list_splice_init(&ichan->queue, &ichan->free_list);
-+		spin_unlock_irqrestore(&ipu->lock, flags);
- 
--	if (ichan->desc)
--		for (i = 0; i < ichan->n_tx_desc; i++) {
--			struct idmac_tx_desc *desc = ichan->desc + i;
--			if (list_empty(&desc->list))
--				/* Descriptor was prepared, but not submitted */
--				list_add(&desc->list, &ichan->free_list);
-+		ichan->status = IPU_CHANNEL_INITIALIZED;
-+		break;
-+	case DMA_TERMINATE_ALL:
-+		ipu_disable_channel(idmac, ichan,
-+				    ichan->status >= IPU_CHANNEL_ENABLED);
- 
--			async_tx_clear_ack(&desc->txd);
--		}
-+		tasklet_disable(&ipu->tasklet);
- 
--	ichan->sg[0] = NULL;
--	ichan->sg[1] = NULL;
--	spin_unlock_irqrestore(&ichan->lock, flags);
-+		/* ichan->queue is modified in ISR, have to spinlock */
-+		spin_lock_irqsave(&ichan->lock, flags);
-+		list_splice_init(&ichan->queue, &ichan->free_list);
- 
--	tasklet_enable(&to_ipu(idmac)->tasklet);
-+		if (ichan->desc)
-+			for (i = 0; i < ichan->n_tx_desc; i++) {
-+				struct idmac_tx_desc *desc = ichan->desc + i;
-+				if (list_empty(&desc->list))
-+					/* Descriptor was prepared, but not submitted */
-+					list_add(&desc->list, &ichan->free_list);
- 
--	ichan->status = IPU_CHANNEL_INITIALIZED;
-+				async_tx_clear_ack(&desc->txd);
-+			}
-+
-+		ichan->sg[0] = NULL;
-+		ichan->sg[1] = NULL;
-+		spin_unlock_irqrestore(&ichan->lock, flags);
-+
-+		tasklet_enable(&ipu->tasklet);
-+
-+		ichan->status = IPU_CHANNEL_INITIALIZED;
-+		break;
-+	default:
-+		return -ENOSYS;
-+	}
- 
- 	return 0;
+ 	ignore_nmis--;
  }
-@@ -1662,7 +1682,6 @@ static void __exit ipu_idmac_exit(struct ipu *ipu)
- 		struct idmac_channel *ichan = ipu->channel + i;
- 
- 		idmac_control(&ichan->dma_chan, DMA_TERMINATE_ALL, 0);
--		idmac_prep_slave_sg(&ichan->dma_chan, NULL, 0, DMA_NONE, 0);
- 	}
- 
- 	dma_async_device_unregister(&idmac->dma);
++
++void arch_show_nmi(struct seq_file *p, int prec)
++{
++	int j;
++	struct nmiaction *action;
++
++	seq_printf(p, "%*s: ", prec, "SWA");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.swallow, j));
++        seq_printf(p, "  Unknown NMIs swallowed\n");
++
++	seq_printf(p, "%*s: ", prec, "  0");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.normal, j));
++        seq_printf(p, "  NMI");
++	action = (nmi_to_desc(NMI_LOCAL))->head;
++	if (action) {
++		seq_printf(p, "\t%s", action->name);
++		while ((action = action->next) != NULL)
++			seq_printf(p, ", %s", action->name);
++	}
++	seq_putc(p, '\n');
++
++	seq_printf(p, "%*s: ", prec, "UNK");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.unknown, j));
++        seq_printf(p, "  NMI");
++	action = (nmi_to_desc(NMI_UNKNOWN))->head;
++	if (action) {
++		seq_printf(p, "\t%s", action->name);
++		while ((action = action->next) != NULL)
++			seq_printf(p, ", %s", action->name);
++	}
++	seq_putc(p, '\n');
++
++	seq_printf(p, "%*s: ", prec, "EXT");
++        for_each_online_cpu(j)
++                seq_printf(p, "%10u ", per_cpu(nmi_stats.external, j));
++        seq_printf(p, "  NMI");
++	action = (nmi_to_desc(NMI_EXTERNAL))->head;
++	if (action) {
++		seq_printf(p, "\t%s", action->name);
++		while ((action = action->next) != NULL)
++			seq_printf(p, ", %s", action->name);
++	}
++	seq_putc(p, '\n');
++}
 -- 
-1.7.2.5
+1.7.6
 
