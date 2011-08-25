@@ -1,78 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab1HYGkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 02:40:46 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:57913 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751474Ab1HYGko (ORCPT
+	id S1752356Ab1HYGl0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 02:41:26 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60179 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276Ab1HYGlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 02:40:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvQCADbtVU55LIxDgWdsb2JhbABDqAAVAQEWJiWBQAEBBTocIxAIAw4KLhQlAyETwj0Ohj0Em1aIUA
-Date: Thu, 25 Aug 2011 16:40:39 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk, dchinner@redhat.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-Message-ID: <20110825064039.GO3162@dastard>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>
- <1309275199-10801-5-git-send-email-josef@redhat.com>
- <20110825060632.GA9933@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825060632.GA9933@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Aug 2011 02:41:25 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Aug 2011 15:33:47 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
+        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
+        matthew@wil.cx, chris.mason@oracle.com, sjenning@linux.vnet.ibm.com,
+        jackdachef@gmail.com, cyclonusj@gmail.com
+Subject: Re: Subject: [PATCH V7 3/4] mm: frontswap: add swap hooks and
+ extend try_to_unuse
+Message-Id: <20110825153347.1e42a607.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110823145835.GA23222@ca-server1.us.oracle.com>
+References: <20110823145835.GA23222@ca-server1.us.oracle.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 02:06:32AM -0400, Christoph Hellwig wrote:
-> On Tue, Jun 28, 2011 at 11:33:19AM -0400, Josef Bacik wrote:
-> > This is a test to make sure seek_data/seek_hole is acting like it does on
-> > Solaris.  It will check to see if the fs supports finding a hole or not and will
-> > adjust as necessary.
+On Tue, 23 Aug 2011 07:58:35 -0700
+Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+
+> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Subject: [PATCH V7 3/4] mm: frontswap: add swap hooks and extend try_to_unuse
 > 
-> Can you resend this with any updates that happened in the meantime?
+> This third patch of four in the frontswap series adds hooks in the swap
+> subsystem and extends try_to_unuse so that frontswap_shrink can do a
+> "partial swapoff".  Also, declarations for the extern-ified swap variables
+> in the first patch are declared.
 > 
-> Dave also still had some comments about semantics, so it might be worth
-> to incorporate that as well.
+> Note that failed frontswap_map allocation is safe... failure is noted
+> by lack of "FS" in the subsequent printk.
+> 
+> [v7: rebase to 3.0-rc3]
+> [v7: JBeulich@novell.com: use new static inlines, no-ops if not config'd]
+> [v6: rebase to 3.1-rc1]
+> [v6: lliubbo@gmail.com: use vzalloc]
+> [v5: accidentally posted stale code for v4 that failed to compile :-(]
+> [v4: rebase to 2.6.39]
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
+> Acked-by: Jan Beulich <JBeulich@novell.com>
+> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Matthew Wilcox <matthew@wil.cx>
+> Cc: Chris Mason <chris.mason@oracle.com>
+> Cc: Rik Riel <riel@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> 
+> --- linux/mm/swapfile.c	2011-08-08 08:19:26.336684746 -0600
+> +++ frontswap/mm/swapfile.c	2011-08-23 08:21:15.301998803 -0600
+> @@ -32,6 +32,8 @@
+>  #include <linux/memcontrol.h>
+>  #include <linux/poll.h>
+>  #include <linux/oom.h>
+> +#include <linux/frontswap.h>
+> +#include <linux/swapfile.h>
+>  
+>  #include <asm/pgtable.h>
+>  #include <asm/tlbflush.h>
+> @@ -43,7 +45,7 @@ static bool swap_count_continued(struct 
+>  static void free_swap_count_continuations(struct swap_info_struct *);
+>  static sector_t map_swap_entry(swp_entry_t, struct block_device**);
+>  
+> -static DEFINE_SPINLOCK(swap_lock);
+> +DEFINE_SPINLOCK(swap_lock);
+>  static unsigned int nr_swapfiles;
+>  long nr_swap_pages;
+>  long total_swap_pages;
+> @@ -54,9 +56,9 @@ static const char Unused_file[] = "Unuse
+>  static const char Bad_offset[] = "Bad swap offset entry ";
+>  static const char Unused_offset[] = "Unused swap offset entry ";
+>  
+> -static struct swap_list_t swap_list = {-1, -1};
+> +struct swap_list_t swap_list = {-1, -1};
+>  
+> -static struct swap_info_struct *swap_info[MAX_SWAPFILES];
+> +struct swap_info_struct *swap_info[MAX_SWAPFILES];
+>  
+>  static DEFINE_MUTEX(swapon_mutex);
+>  
+> @@ -557,6 +559,7 @@ static unsigned char swap_entry_free(str
+>  			swap_list.next = p->type;
+>  		nr_swap_pages++;
+>  		p->inuse_pages--;
+> +		frontswap_flush_page(p->type, offset);
+>  		if ((p->flags & SWP_BLKDEV) &&
+>  				disk->fops->swap_slot_free_notify)
+>  			disk->fops->swap_slot_free_notify(p->bdev, offset);
+> @@ -1022,7 +1025,7 @@ static int unuse_mm(struct mm_struct *mm
+>   * Recycle to start on reaching the end, returning 0 when empty.
+>   */
+>  static unsigned int find_next_to_unuse(struct swap_info_struct *si,
+> -					unsigned int prev)
+> +					unsigned int prev, bool frontswap)
+>  {
+>  	unsigned int max = si->max;
+>  	unsigned int i = prev;
+> @@ -1048,6 +1051,12 @@ static unsigned int find_next_to_unuse(s
+>  			prev = 0;
+>  			i = 1;
+>  		}
 
-The main questions I had when looking at this was how we should
-handle unwritten extents - the only answer I got was along the lines
-of "we'll deal with that once filesystems have implemented
-something". That's a bit of a chicken-and-egg situation, and doesn't
-help me decide what is the best thing to do. I don't want to have to
-re-implement this code when it's decided i did the wrong thing
-initially.
+> +		if (frontswap) {
+> +			if (frontswap_test(si, i))
+> +				break;
+> +			else
+> +				continue;
+> +		}
 
-The most basic question I really want answered is this:
+Could you add comment ? If frontswap==true, only scan frontswap ?
 
-	- is preallocated space a HOLE, or is it DATA?
 
-Whatever the answer, I think it should be consistently
-presented by all filesystems that support preallocation, and it
-should be encoded into the generic SEEK_HOLE/SEEK_DATA tests....
 
-Answering that question then helps answer the more complex questions
-I had, like:
+>  		count = si->swap_map[i];
+>  		if (count && swap_count(count) != SWAP_MAP_BAD)
+>  			break;
+> @@ -1059,8 +1068,12 @@ static unsigned int find_next_to_unuse(s
+>   * We completely avoid races by reading each swap page in advance,
+>   * and then search for the process using it.  All the necessary
+>   * page table adjustments can then be made atomically.
+> + *
+> + * if the boolean frontswap is true, only unuse pages_to_unuse pages;
+> + * pages_to_unuse==0 means all pages; ignored if frontswap is false
+>   */
+> -static int try_to_unuse(unsigned int type)
+> +int try_to_unuse(unsigned int type, bool frontswap,
+> +		 unsigned long pages_to_unuse)
+>  {
+>  	struct swap_info_struct *si = swap_info[type];
+>  	struct mm_struct *start_mm;
+> @@ -1093,7 +1106,7 @@ static int try_to_unuse(unsigned int typ
+>  	 * one pass through swap_map is enough, but not necessarily:
+>  	 * there are races when an instance of an entry might be missed.
+>  	 */
+> -	while ((i = find_next_to_unuse(si, i)) != 0) {
+> +	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
+>  		if (signal_pending(current)) {
+>  			retval = -EINTR;
+>  			break;
+> @@ -1260,6 +1273,10 @@ static int try_to_unuse(unsigned int typ
+>  		 * interactive performance.
+>  		 */
+>  		cond_resched();
+> +		if (frontswap && pages_to_unuse > 0) {
+> +			if (!--pages_to_unuse)
+> +				break;
+> +		}
+>  	}
 
-	- what does SEEK_DATA return when you have a file layout
-	  like "hole-prealloc-data"?
+Is this a best-effort function and doesn't need to return condition 
+of pages_to_unuse ?
+Caller of try_to_unuse(si, true....) is frontswap_shrink(). Right ?
 
-Answers to that sort of question need to be known so we can write
-corner-case tests to correctly verify the filesystem implementation.
+Thanks,
+-Kame
 
-I like to do better than present userspace with an interface that
-behaves vastly different depending on the underlying filesystem, but
-if the answer is "definition and implementation is entirely
-filesystem specific" then I'll just go make something up....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
