@@ -1,67 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab1HYL6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 07:58:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39370 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1HYL6N convert rfc822-to-8bit (ORCPT
+	id S1753421Ab1HYL7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 07:59:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34978 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035Ab1HYL7F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 07:58:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110825110451.GU31404@pengutronix.de>
-References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B24A3BC0@HQMAIL01.nvidia.com>
-	<CACRpkdaZfG4hiGf8vug3EGMRMc0c92xbj=L_HAQcS27DAXYc4Q@mail.gmail.com>
-	<20110825110451.GU31404@pengutronix.de>
-Date: Thu, 25 Aug 2011 13:58:12 +0200
-Message-ID: <CACRpkdbV_Hgj=x5J3wYCtPcnZ++xMCqY91J2_i75c0G8OtYk5A@mail.gmail.com>
-Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        David Brown <davidb@codeaurora.org>,
-        Sascha Hauer <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Aug 2011 07:59:05 -0400
+Subject: Re: [PATCH v2] lockdep: Add helper function for dir vs file i_mutex
+ annotation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, davej@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 25 Aug 2011 13:58:48 +0200
+In-Reply-To: <20110825114811.GO2270@zod.bos.redhat.com>
+References: <20110825114811.GO2270@zod.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314273528.27911.7.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 1:04 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+On Thu, 2011-08-25 at 07:48 -0400, Josh Boyer wrote:
+> This moves the directory vs file lockdep annotation into a helper function
+> that can be called by in-memory filesystems and has hugetlbfs call it.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com> 
 
-> Not really. UART2_CTS can't be routed to arbitrary pads, but it can be
-> routed to more than one pad:
->
-> #define _MX51_PAD_EIM_D16__UART2_CTS            IOMUX_PAD(0x3f0, 0x5c, 3, 0x0000, 0, 0)
-> #define _MX51_PAD_EIM_D25__UART2_CTS            IOMUX_PAD(0x414, 0x80, 4, 0x0000, 0, 0)
-> #define _MX51_PAD_USBH1_DATA0__UART2_CTS        IOMUX_PAD(0x688, 0x288, 1, 0x0000, 0, 0)
-
-Aha!
-
-Is it typically a few pads like this, say 2,3,4 alternatives,
-sometimes just one?
-
-So the actual relation is not 1..1 nor 1...* but 1..<a few>?
-
-> This is why there can't be a setup_iomux(uart2) function without
-> being able to specify *which* pads in a board specific way.
-
-In the current design it is the pinmux driver that
-keeps track of that. Not the subsystem.
-
-I think the question then is how the pinctrl subsystem
-can help out in keeping that information together.
-
-I'll try to think of something ...
-
-Thanks,
-Linus Walleij
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
