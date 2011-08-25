@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab1HYEta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 00:49:30 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:30173 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab1HYEt1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 00:49:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=eN8t1009jD6PyMz7ByUsyLU50jCX6NXFWeqX5M2YndjrVqArWIqzXUmy/OThPdpMH
-	Af6/ovIPVoIjaYpMvGNFg==
-MIME-Version: 1.0
-In-Reply-To: <20110824045702.GA1674@kroah.com>
-References: <20110815041524.GA7578@kroah.com>
-	<CA+bK7J7_EKdQACnoJGWkd4asH+096SJ-gjEvsnjmRX6Dmc6dpA@mail.gmail.com>
-	<20110817045856.GB4936@kroah.com>
-	<20110817132114.GB10209@sirena.org.uk>
-	<CANqkERC2eyy3SQ6_vJncvuMdi=Yu=O8mZoXkggkX1q_4=d+q7g@mail.gmail.com>
-	<20110824045702.GA1674@kroah.com>
-Date: Wed, 24 Aug 2011 21:49:22 -0700
-Message-ID: <CANqkERC9evgXzOMMiqtyvu3RsoUQWdUAh47yRNz1JjmB4Vydbg@mail.gmail.com>
-Subject: Re: Future of the -longterm kernel releases (i.e. how we pick them).
-From: Brian Swetland <swetland@google.com>
+	id S1752598Ab1HYEwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 00:52:15 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49516 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751928Ab1HYEwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 00:52:11 -0400
+Date: Thu, 25 Aug 2011 14:52:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Tim Bird <tbird20d@gmail.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, stable-review@kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOl?= <arve@android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: linux-next: manual merge of the usb tree with the usb.current tree
+Message-Id: <20110825145206.4888b9f62a9bcbeeaf8678b8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 9:57 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, Aug 17, 2011 at 10:33:05AM -0700, Brian Swetland wrote:
->> As far as long-term kernels goes, from the Android perspective we
->> strongly prefer to snap up to the most recent released kernel on every
->> platform/device release.  I prefer to be as up to date on bugfixes and
->> features from mainline as possible and minimize the deltas on our
->> stack 'o patches as much as possible.
->
-> That's good to hear.
->
->> We've been getting more aggressive about merging in the -rc#s and then
->> rebasing on the final during development (before final stabilization
->> freeze for a release) in the last year or so, and it seems to work
->> pretty well.
->
-> Is your kernel git tree public during this merge cycle so that others
-> can track it?  I tried to dig through android.kernel.org but there are a
-> lot of different kernel trees there :(
+Hi Greg,
 
-We really need a "which branch is which" quick guide that's easily
-findable.  kernel/common is always where our generic patch stack
-lives, and it looks like android-3.0 is the most recent (which has
-3.0.1 merged in).
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/host/xhci-ring.c between commit 48df4a6fd8c4 ("xhci: Handle
+zero-length isochronous packets") from the usb.current tree and commit
+29cc88979a88 ("USB: use usb_endpoint_maxp() instead of le16_to_cpu()")
+from the usb tree.
 
-http://android.git.kernel.org/?p=kernel/common.git;a=summary
-
->> Not all OEMs or silicon vendors are as comfortable with this approach
->> and I expect some would welcome a long term tree they can count on to
->> get critical fixes for, though.  Device release teams (even our own,
->> for lead devices we work on) are notoriously risk-averse (often for
->> good reasons), and tend to get really nervous when they see the total
->> change count or diff stat for pulling up to a new kernel release close
->> to "final rom" for a product.
->
-> That's understandable.
->
-> So that kind of means they would like such a longterm tree, but they
-> have the problem that your patches move forward to a newer kernel, but
-> are not maintained for that longterm kernel.  Are they responsible for
-> maintaining this themselves then, or do you help with providing your
-> patchset on top of all of the different kernel versions that the OEMs
-> and others need?
-
-So far the silicon vendors have been doing more of the longer term
-kernel stuff, as it better matches their model of providing "boxed"
-stable BSPs of some sort.  It might make sense for us to ensure
-backports of fixes for core patches (our common tree) are available
-for the LT kernels, but we are unlikely to have the necessary staff to
-maintain LT trees for every SoC we interact with.
-
-Brian
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+diff --cc drivers/usb/host/xhci-ring.c
+index 54139a2,bf0b52c..0000000
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@@ -3249,11 -3237,9 +3249,11 @@@ static int xhci_queue_isoc_tx(struct xh
+  		addr = start_addr + urb->iso_frame_desc[i].offset;
+  		td_len = urb->iso_frame_desc[i].length;
+  		td_remain_len = td_len;
+ -		/* FIXME: Ignoring zero-length packets, can those happen? */
+  		total_packet_count = roundup(td_len,
+- 				le16_to_cpu(urb->ep->desc.wMaxPacketSize));
++ 				usb_endpoint_maxp(&urb->ep->desc));
+ +		/* A zero-length transfer still involves at least one packet. */
+ +		if (total_packet_count == 0)
+ +			total_packet_count++;
+  		burst_count = xhci_get_burst_count(xhci, urb->dev, urb,
+  				total_packet_count);
+  		residue = xhci_get_last_burst_packet_count(xhci,
