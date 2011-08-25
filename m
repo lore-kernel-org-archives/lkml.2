@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab1HYHaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 03:30:11 -0400
-Received: from ch-smtp04.sth.basefarm.net ([80.76.153.5]:37033 "EHLO
-	ch-smtp04.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750903Ab1HYHaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 03:30:08 -0400
-X-Mailer: exmh version 2.7.2 04/02/2003 (gentoo 2.7.2) with nmh-1.3-dev
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        aeriksson@fastmail.fm
-Subject: mtrr failure, 3.1-rc1
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Date: Thu, 25 Aug 2011 09:03:35 +0200
-From: Anders Eriksson <aeriksson@fastmail.fm>
-Message-Id: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
-X-Originating-IP: 83.252.233.92
-X-Scan-Result: No virus found in message 1QwUNs-0003sk-Fs.
-X-Scan-Signature: ch-smtp04.sth.basefarm.net 1QwUNs-0003sk-Fs 450afc85a2f2c0986adcc1b9e50e109f
+	id S1752493Ab1HYHiu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:38:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63171 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab1HYHit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 03:38:49 -0400
+Message-ID: <4E55FC88.4040300@cn.fujitsu.com>
+Date: Thu, 25 Aug 2011 15:40:56 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
+References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A1257.5080204@cn.fujitsu.com> <20110823080024.GA2297@amt.cnet> <4E53872B.3070407@cn.fujitsu.com> <20110823123818.GB4261@amt.cnet> <4E53D620.9030304@cn.fujitsu.com> <20110823190939.GA10220@amt.cnet> <4E540AB4.6060905@cn.fujitsu.com> <20110824200540.GA19804@amt.cnet> <20110825020424.GA2542@amt.cnet>
+In-Reply-To: <20110825020424.GA2542@amt.cnet>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-25 15:37:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-25 15:37:53,
+	Serialize complete at 2011-08-25 15:37:53
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/25/2011 10:04 AM, Marcelo Tosatti wrote:
 
+>>> Yes, in this case, the sp is not zapped, but it is hardly to know the gfn
+>>> is not used as gpte just depends on writing, for example, the guest can
+>>> change the mapping address or the status bit, and so on...The sp can be
+>>> zapped if the guest write it again(on the same address), i think it is
+>>> acceptable, anymore, it is just the speculative way to zap the unused
+>>> shadow page...your opinion?
+>>
+>> It could increase the flood count independently of the accessed bit of
+>> the spte being updated, zapping after 3 attempts as it is now.
+>>
+>> But additionally reset the flood count if the gpte appears to be valid
+>> (points to an existant gfn if the present bit is set, or if its zeroed).
+> 
+> Well not zero, as thats a common pattern for non ptes.
+> 
 
-My old P-II has 640MB ram, but the bios only sets up WC for the first 512, so i 
-add this early in the boot process:
-echo "base=0x20000000 size=0x8000000 type=write-back" > /proc/mtrr
+Hi Marcelo,
 
-For reasons I have forgot I also have to add 'disable_mtrr_check' to the 
-command line. Works great.
+Maybe it is not good i think, for some reasons:
+- checking gfn valid which it is pointed by gpte is high overload,
+  it needs to call gfn_to_hva to walk memslots, especially. kvm_mmu_pte_write
+  is called very frequently on shadow mmu.
 
-As of merge dc43d9fa73d82083656fb9c02f4823bcdcfb9f91 This no longer works.
-Adding that line to /proc/mtrr no longer has any effect (cat /proc/mtrr shows
-only the reg00 entry).
+- MMIO gfn is not an existent gfn, but it is valid pointed by gpte
 
-Reverting that merge on top of rc3 brings things back to normal and /proc/mtrr 
-shows:
-reg00: base=0x000000000 (    0MB), size=  512MB, count=1: write-back
-reg01: base=0x048000000 ( 1152MB), size=  128MB, count=1: write-combining
-reg02: base=0x020000000 (  512MB), size=  128MB, count=2: write-back
+- we can check the reserved bits in the gpte to check whether it is valid a
+  gpte, but for some paging modes, all bits are valid.(for example, non-PAE mode)
 
-Any ideas how to track this down futher? Would be good to get it fixed for 3.1
+- it can not work if the gfn has multiple shadow pages, for example:
+  if the gfn was used as PDE, later it is used as PTE, then we have two shadow
+  pages: sp1.level = 2, sp2.level = 1, sp1 can not be zapped even even though it
+  is not used anymore.
 
--Anders
-
-
+- sometime, we need to zap the shadow page even though the gpte is written validly:
+  if the gpte is written frequently but infrequently accessed, we do better zap the
+  shadow page to let it is writable(write it directly without #PF) and map it when it
+  is accessed, one example is from Avi, the guest OS may update many gptes at one time
+  after one page fault.
