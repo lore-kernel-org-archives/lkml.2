@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab1HYXNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 19:13:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54903 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898Ab1HYXNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 19:13:19 -0400
-Message-ID: <4E56D6E1.6030405@zytor.com>
-Date: Thu, 25 Aug 2011 16:12:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1752828Ab1HYXOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 19:14:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33075 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab1HYXOR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 19:14:17 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au> <4E5690C3.2050706@goop.org> <4E5693DD.2010307@zytor.com> <20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au>
-In-Reply-To: <20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au>
+In-Reply-To: <CAErSpo4zojYjYVd=6U72ToqiZOD-qL-saP8huwa6ShrNnaR3vA@mail.gmail.com>
+References: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com>
+	<1314167063-15785-2-git-send-email-dengcheng.zhu@gmail.com>
+	<CAErSpo4091J2pGvzZKPbKK68LWWkDyVApA7suZYn7miq=tXrQg@mail.gmail.com>
+	<CAOfQC98Nkr7Ek3uQfiD3OdW=YC76XGjfQ4WSfoLpsm2kvqKnog@mail.gmail.com>
+	<CAErSpo4zojYjYVd=6U72ToqiZOD-qL-saP8huwa6ShrNnaR3vA@mail.gmail.com>
+Date: Fri, 26 Aug 2011 07:14:16 +0800
+Message-ID: <CAOfQC9-kS_nVg-+2OZRGHP1X-E7B12uG63QGfB64hPAGecgFLw@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] MIPS: PCI: Use pci_bus_remove_resources()/pci_bus_add_resource()
+ to set up root resources
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
+        zenon@mips.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 04:06 PM, Stephen Rothwell wrote:
->>
->> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
->> should be dropped.
-> 
-> That's a bit tricky as I get a rolled up tip tree.  The best I could do
-> is revert the commit that merges the x86/spinlocks branch into
-> auto-latest ...  I'll do that for today (unless something happens to the
-> tip tree in the next hour).
-> 
+2011/8/25 Bjorn Helgaas <bhelgaas@google.com>:
+> No, I just mean that I don't see why you need this patch at all.  If
+> you pass the list of bus resources to pci_create_bus(), there's no
+> need to fix anything up later.  Or am I missing something?
 
-OK, let me bother Ingo about it.
+Well, doing the root resource fixups in here is a *paranoid* way. It's to
+deal with the 'unlikely' circumstance where controller_resources() returns
+the NULL pointer in pcibios_scanbus() due to memory allocation failure.
+Most of the time (always) it's nothing more than repeating the resource
+list setup. But maybe we can do something like this:
 
-	-hpa
+if (unlikely(!dev && list_empty(&bus->resources))
+        pcibios_setup_root_resources(bus, hose);
 
+
+What do you think?
+
+
+Deng-Cheng
