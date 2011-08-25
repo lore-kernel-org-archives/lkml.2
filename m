@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab1HYOpc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 10:45:32 -0400
-Received: from lunge.queued.net ([173.255.254.236]:39677 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab1HYOp3 (ORCPT
+	id S1752594Ab1HYOsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 10:48:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60931 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1HYOsA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 10:45:29 -0400
-Date: Thu, 25 Aug 2011 07:45:27 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Belisko <marek.belisko@open-nandra.com>,
-        Jean Delvare <khali@linux-fr.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/olpc_dcon: Remove obsolete cleanup for
- clientdata
-Message-ID: <20110825074527.59252f56@queued.net>
-In-Reply-To: <1314269628-18325-1-git-send-email-w.sang@pengutronix.de>
-References: <1314269628-18325-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Thu, 25 Aug 2011 10:48:00 -0400
+Subject: Re: perf: overflow signal survives an exec call starting in 3.0
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        acme@ghostprotocols.net, Stephane Eranian <eranian@gmail.com>,
+        krentel@cs.rice.edu
+Date: Thu, 25 Aug 2011 16:47:24 +0200
+References: <alpine.DEB.2.00.1108231127380.30837@cl320.eecs.utk.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314283644.27911.27.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!
-
-Acked-by: Andres Salomon <dilinger@queued.net>
-
-On Thu, 25 Aug 2011 12:53:30 +0200
-Wolfram Sang <w.sang@pengutronix.de> wrote:
-
-> A few new i2c-drivers came into the kernel which clear the
-> clientdata-pointer on exit or error. This is obsolete meanwhile, the
-> core will do it.
+On Thu, 2011-08-25 at 16:37 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-08-23 at 11:36 -0400, Vince Weaver wrote:
+> > I'm guessing this was an unintended change, although what to do in
+> > this situation is a bit vague.
 > 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Andres Salomon <dilinger@queued.net>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Marek Belisko <marek.belisko@open-nandra.com>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> ---
->  drivers/staging/olpc_dcon/olpc_dcon.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
+> > 
+> > commit f506b3dc0ec454a16d40cab9ee5d75435b39dc50
+> > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Date:   Thu May 26 17:02:53 2011 +0200
+> > 
+> >     perf: Fix SIGIO handling 
 > 
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c
-> b/drivers/staging/olpc_dcon/olpc_dcon.c index 750fe50..a235330 100644
-> --- a/drivers/staging/olpc_dcon/olpc_dcon.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-> @@ -712,7 +712,6 @@ static int dcon_probe(struct i2c_client *client,
-> const struct i2c_device_id *id) eirq:
->  	free_irq(DCON_IRQ, dcon);
->   einit:
-> -	i2c_set_clientdata(client, NULL);
->  	kfree(dcon);
->  	return rc;
->  }
-> @@ -721,8 +720,6 @@ static int dcon_remove(struct i2c_client *client)
->  {
->  	struct dcon_priv *dcon = i2c_get_clientdata(client);
->  
-> -	i2c_set_clientdata(client, NULL);
-> -
->  	fb_unregister_client(&dcon->fbevent_nb);
->  	unregister_reboot_notifier(&dcon->reboot_nb);
->  	atomic_notifier_chain_unregister(&panic_notifier_list,
-> &dcon_panic_nb);
+> Ah, quite... its a combination of way too many weird things.
+> 
+> So that change made it possible (as requested) to receive a signal
+> without having to mmap() the buffer, which seems like a perfectly sane
+> thing.
+> 
+> Now, looking at fs/exec.c:setup_new_exec() we see that we only call
+> perf_event_exit_task() when we cross a security domain. 
+> 
+> Previously the exec() would have wiped out the mmap, and hence the
+> counter would have stopped sending signals (but not stopped counting).
+> 
+> Now exec() doesn't normally close fds, so the counter stays around and
+> with the new scheme continues sending signals.
+> 
+> I think the message is, don't do that then.. and use fcntl(fd, F_SETFD,
+> FD_CLOEXEC) or so.
+
+That is, I suspect you can get into the same trouble by creating a pipe,
+setting F_SETOWN on the read side and then calling exec() while ensuring
+someone writes to the thing at the right moment.
+
+
