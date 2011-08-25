@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1HYIUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 04:20:24 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:23612 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab1HYIUV (ORCPT
+	id S1752340Ab1HYIUl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 04:20:41 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:45981 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab1HYIUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 04:20:21 -0400
-From: JJ Ding <jj_ding@emc.com.tw>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Huang <aaron_huang@emc.com.tw>,
-        Tom Lin <tom_lin@emc.com.tw>,
-        =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH v2 7/7] Input: elantech - add v3 hardware support
-In-Reply-To: <20110825070642.GB15655@core.coreip.homeip.net>
-References: <1314164686-866-1-git-send-email-jj_ding@emc.com.tw> <1314164686-866-8-git-send-email-jj_ding@emc.com.tw> <20110824143520.GB23868@thinkpad-t410> <87mxeynvpt.fsf@emc.com.tw> <20110825070642.GB15655@core.coreip.homeip.net>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Thu, 25 Aug 2011 16:22:14 +0800
-Message-ID: <8762llq4sp.fsf@emc.com.tw>
+	Thu, 25 Aug 2011 04:20:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:mime-version:
+	content-type:content-transfer-encoding;
+	b=wMljQZ+/kMPFNZCTLtkhkD+nFipEvzli0jJiwvY/VeU4AN9Uuv4oVrQHwlJSecAlJ
+	u5xF8VnWQJYf+PU5GBuDg==
+From: =?UTF-8?q?Ren=C3=A9=20Nussbaumer?= <rn@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Ren=C3=A9=20Nussbaumer?= <rn@google.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>, drbd-dev@lists.linbit.com
+Subject: [PATCH] DRBD: Fix /proc/drbd output
+Date: Thu, 25 Aug 2011 10:20:03 +0200
+Message-Id: <1314260403-5572-1-git-send-email-rn@google.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Patch 4b0715f096 introduced an inconsistency in the output of /proc/drbd
+while resyncing. Before that patch the "finish:"-line was places on a
+new line with one tab indent. This is still true if the unit is KB but
+not if it's MB.
 
-Much cleaner. Thank you.
-I will change it.
+This bug is not present in the upstream version of DRBD 8.3.11.
 
-jj
+Cc: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: Lars Ellenberg <lars.ellenberg@linbit.com>
+CC: drbd-dev@lists.linbit.com
+Signed-off-by: René Nussbaumer <rn@google.com>
+---
+ drivers/block/drbd/drbd_proc.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-On Thu, 25 Aug 2011 00:06:42 -0700, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> On Thu, Aug 25, 2011 at 09:09:02AM +0800, JJ Ding wrote:
-> > Hi Seth,
-> > 
-> > Thank you. You are right.
-> > I think I somehow tested the worng touchpad for this patch.
-> > 
-> 
-> How about we change it thusly:
-> 
-> Input: elamtech - fix V3 packet checking
-> 
-> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-> ---
-> 
->  drivers/input/mouse/elantech.c |   18 ++++++------------
->  1 files changed, 6 insertions(+), 12 deletions(-)
-> 
-> 
-> diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-> index 1e2b9da..d814bf74 100644
-> --- a/drivers/input/mouse/elantech.c
-> +++ b/drivers/input/mouse/elantech.c
-> @@ -508,24 +508,18 @@ static int elantech_packet_check_v2(struct psmouse *psmouse)
->   */
->  static int elantech_packet_check_v3(struct psmouse *psmouse)
->  {
-> +	const u8 debounce_packet[] = { 0xc4, 0xff, 0xff, 0x02, 0xff, 0xff };
->  	unsigned char *packet = psmouse->packet;
->  
-> -	if ((packet[0] & 0x0c) == 0x04 &&
-> -	    (packet[3] & 0xcf) == 0x02)
-> +	if (!memcmp(packet, debounce_packet, sizeof(debounce_packet)))
-> +		return PACKET_DEBOUNCE;
-> +
-> +	if ((packet[0] & 0x0c) == 0x04 && (packet[3] & 0xcf) == 0x02)
->  		return PACKET_V3_HEAD;
->  
-> -	if ((packet[0] & 0x0c) == 0x0c &&
-> -	    (packet[3] & 0xce) == 0x0c)
-> +	if ((packet[0] & 0x0c) == 0x0c && (packet[3] & 0xce) == 0x0c)
->  		return PACKET_V3_TAIL;
->  
-> -	if (packet[0] == 0xc4 &&
-> -	    packet[1] == 0xff &&
-> -	    packet[2] == 0xff &&
-> -	    packet[3] == 0x02 &&
-> -	    packet[4] == 0xff &&
-> -	    packet[5] == 0xff)
-> -		return PACKET_DEBOUNCE;
-> -
->  	return PACKET_UNKNOWN;
->  }
->  
-> Thanks.
-> 
-> -- 
-> Dmitry
+diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
+index 2959cdf..7340546 100644
+--- a/drivers/block/drbd/drbd_proc.c
++++ b/drivers/block/drbd/drbd_proc.c
+@@ -97,10 +97,12 @@ static void drbd_syncer_progress(struct drbd_conf *mdev, struct seq_file *seq)
+ 			    (unsigned long) Bit2KB(rs_left >> 10),
+ 			    (unsigned long) Bit2KB(mdev->rs_total >> 10));
+ 	else
+-		seq_printf(seq, "(%lu/%lu)K\n\t",
++		seq_printf(seq, "(%lu/%lu)K",
+ 			    (unsigned long) Bit2KB(rs_left),
+ 			    (unsigned long) Bit2KB(mdev->rs_total));
+ 
++	seq_printf(seq, "\n\t");
++
+ 	/* see drivers/md/md.c
+ 	 * We do not want to overflow, so the order of operands and
+ 	 * the * 100 / 100 trick are important. We do a +1 to be
+-- 
+1.7.3.1
+
