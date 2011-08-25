@@ -1,71 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab1HYVkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:40:49 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:50805 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755436Ab1HYVks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 17:40:48 -0400
-Date: Thu, 25 Aug 2011 14:40:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Will Simoneau <simoneau@ele.uri.edu>
-Cc: linux-kernel@vger.kernel.org, dipankar@in.ibm.com
-Subject: Re: 2.6.39.4: Oops in rcu_read_unlock_special()/_raw_spin_lock()
-Message-ID: <20110825214045.GJ2369@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110824211907.GA4225@ele.uri.edu>
- <20110824212744.GV2417@linux.vnet.ibm.com>
- <20110825132051.GA9580@ele.uri.edu>
- <20110825140722.GC2369@linux.vnet.ibm.com>
- <20110825182819.GA6874@ele.uri.edu>
+	id S1755515Ab1HYVlf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 17:41:35 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:21690 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab1HYVle (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 17:41:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6449"; a="113016225"
+Date: Thu, 25 Aug 2011 14:41:17 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Chris Ball <cjb@laptop.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: MSM sdcc pull requests?
+Message-ID: <20110825214117.GA12828@huya.qualcomm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110825182819.GA6874@ele.uri.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 02:28:19PM -0400, Will Simoneau wrote:
-> On 07:07 Thu 25 Aug     , Paul E. McKenney wrote:
-> > On Thu, Aug 25, 2011 at 09:20:51AM -0400, Will Simoneau wrote:
-> > > On 14:27 Wed 24 Aug     , Paul E. McKenney wrote:
-> > > > On Wed, Aug 24, 2011 at 05:19:07PM -0400, Will Simoneau wrote:
-> > > > > The following commits from Linus' git seem vaguely related,
-> > > > > although I have no idea how relevant they are to 2.6.39.4:
-> > > > > 
-> > > > >    ec433f0c (softirq,rcu: Inform RCU of irq_exit() activity)
-> > > > >    10f39bb1 (rcu: protect __rcu_read_unlock() against scheduler-using
-> > > > >              irq handlers)
-> > > > 
-> > > > If this failure mechanism really is the culprit, you should be able
-> > > > to make failure happen much more frequently by inserting a delay in
-> > > > __rcu_read_unlock() just prior to the call to rcu_read_unlock_special().
-> > > > I would suggest starting with a few tens to hundreds of microseconds
-> > > > worth of delay.
-> > > > 
-> > > > If this does make the failure reproducible, then it would make sense
-> > > > to try applying the two patches you identified.
-> > > 
-> > > Hmm. I tried adding progressively larger delays in the spot you
-> > > indicated. I went from 100uS to an entire 1S (!) and got no crash or
-> > > deadlock. The target runs at 40MHz so the delays do need to be
-> > > relatively long compared to modern machines.
-> > > 
-> > > My hardware breakpoint as well as printk tests confirm that
-> > > rcu_read_unlock_special() really does get called multiple times per
-> > > second, and the 1S delay makes it painfully obvious as well. But, no
-> > > dice.
-> > 
-> > Well, you can always apply the two patches above anyway, but it is hard
-> > to prove what the underlying problem really is in your case.
-> 
-> I am still unable to reproduce the Oops so I have no way of knowing if
-> applying the patches has any effect. I did find and fix the issue with
-> booting post-2.6.39* kernels on my hardware, so I've moved on to
-> 3.1-rc3. I guess I will get back to you if it happens again :-)
+I have a handfull of fixes collected for the MSM sdcc (mmc) driver.
+Do either of you have a preference to who I send a pull request to?
 
-Fair enough!  ;-)
+Thanks,
+David
 
-							Thanx, Paul
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
