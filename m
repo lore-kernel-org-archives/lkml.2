@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab1HYWne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:43:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57988 "EHLO
+	id S1755856Ab1HYWnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:43:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63455 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab1HYWnc (ORCPT
+	with ESMTP id S1755816Ab1HYWnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:43:32 -0400
+	Thu, 25 Aug 2011 18:43:37 -0400
 From: Tejun Heo <tj@kernel.org>
 To: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com
 Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org, fweisbec@gmail.com,
         matthltc@us.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/6] cgroup: subsys->attach_task() should be called after migration
-Date: Fri, 26 Aug 2011 00:43:07 +0200
-Message-Id: <1314312192-26885-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/6] cgroup, cpuset: don't use ss->pre_attach()
+Date: Fri, 26 Aug 2011 00:43:11 +0200
+Message-Id: <1314312192-26885-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1314312192-26885-1-git-send-email-tj@kernel.org>
 References: <1314312192-26885-1-git-send-email-tj@kernel.org>
@@ -23,43 +23,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_attach_task() calls subsys->attach_task() after
-cgroup_task_migrate(); however, cgroup_attach_proc() calls it before
-migration.  This actually affects some of the users.  Update
-cgroup_attach_proc() such that ->attach_task() is called after
-migration.
+->pre_attach() is supposed to be called before migration, which is
+observed during process migration but task migration does it the other
+way around.  The only ->pre_attach() user is cpuset which can do the
+same operaitons in ->can_attach().  Collapse cpuset_pre_attach() into
+cpuset_can_attach().
+
+-v2: Patch contamination from later patch removed.  Spotted by Paul
+     Menage.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Paul Menage <paul@paulmenage.org>
+Acked-by: Paul Menage <paul@paulmenage.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>
 ---
- kernel/cgroup.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ kernel/cpuset.c |   29 ++++++++++++-----------------
+ 1 files changed, 12 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1d2b6ce..a606fa2 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2135,14 +2135,16 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		oldcgrp = task_cgroup_from_root(tsk, root);
- 		if (cgrp == oldcgrp)
- 			continue;
-+
-+		/* if the thread is PF_EXITING, it can just get skipped. */
-+		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
-+		BUG_ON(retval != 0 && retval != -ESRCH);
-+
- 		/* attach each task to each subsystem */
- 		for_each_subsys(root, ss) {
- 			if (ss->attach_task)
- 				ss->attach_task(cgrp, tsk);
- 		}
--		/* if the thread is PF_EXITING, it can just get skipped. */
--		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
--		BUG_ON(retval != 0 && retval != -ESRCH);
- 	}
- 	/* nothing is sensitive to fork() after this point. */
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 472ddd6..f0b8df3 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1367,6 +1367,15 @@ static int fmeter_getrate(struct fmeter *fmp)
+ 	return val;
+ }
  
++/*
++ * Protected by cgroup_lock. The nodemasks must be stored globally because
++ * dynamically allocating them is not allowed in can_attach, and they must
++ * persist until attach.
++ */
++static cpumask_var_t cpus_attach;
++static nodemask_t cpuset_attach_nodemask_from;
++static nodemask_t cpuset_attach_nodemask_to;
++
+ /* Called by cgroups to determine if a cpuset is usable; cgroup_mutex held */
+ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+ 			     struct cgroup_taskset *tset)
+@@ -1393,29 +1402,16 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+ 		if ((ret = security_task_setscheduler(task)))
+ 			return ret;
+ 	}
+-	return 0;
+-}
+-
+-/*
+- * Protected by cgroup_lock. The nodemasks must be stored globally because
+- * dynamically allocating them is not allowed in pre_attach, and they must
+- * persist among pre_attach, and attach.
+- */
+-static cpumask_var_t cpus_attach;
+-static nodemask_t cpuset_attach_nodemask_from;
+-static nodemask_t cpuset_attach_nodemask_to;
+-
+-/* Set-up work for before attaching each task. */
+-static void cpuset_pre_attach(struct cgroup *cont)
+-{
+-	struct cpuset *cs = cgroup_cs(cont);
+ 
++	/* prepare for attach */
+ 	if (cs == &top_cpuset)
+ 		cpumask_copy(cpus_attach, cpu_possible_mask);
+ 	else
+ 		guarantee_online_cpus(cs, cpus_attach);
+ 
+ 	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
++
++	return 0;
+ }
+ 
+ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+@@ -1901,7 +1897,6 @@ struct cgroup_subsys cpuset_subsys = {
+ 	.create = cpuset_create,
+ 	.destroy = cpuset_destroy,
+ 	.can_attach = cpuset_can_attach,
+-	.pre_attach = cpuset_pre_attach,
+ 	.attach = cpuset_attach,
+ 	.populate = cpuset_populate,
+ 	.post_clone = cpuset_post_clone,
 -- 
 1.7.6
 
