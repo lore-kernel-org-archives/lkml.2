@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab1HYRxd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:53:33 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46683 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755066Ab1HYRxb convert rfc822-to-8bit (ORCPT
+	id S1755119Ab1HYRyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:54:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54139 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755082Ab1HYRyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:53:31 -0400
+	Thu, 25 Aug 2011 13:54:46 -0400
+Date: Thu, 25 Aug 2011 21:54:38 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
+ v2
+Message-ID: <20110825175438.GA3739@albatros>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825173642.GA3288@albatros>
+ <20110825173953.GE6387@sun>
 MIME-Version: 1.0
-Message-ID: <75ecaef7-054a-4acd-b1c5-8041ccde3501@default>
-Date: Thu, 25 Aug 2011 10:52:18 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        jackdachef@gmail.com, cyclonusj@gmail.com
-Subject: RE: Subject: [PATCH V7 2/4] mm: frontswap: core code
-References: <20110823145815.GA23190@ca-server1.us.oracle.com>
- <20110825150532.a4d282b1.kamezawa.hiroyu@jp.fujitsu.com
- 4E564E4D.4030302@linux.vnet.ibm.com>
-In-Reply-To: <4E564E4D.4030302@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090205.4E568C07.0066,ss=1,re=0.000,fgs=0
+Content-Disposition: inline
+In-Reply-To: <20110825173953.GE6387@sun>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> To: KAMEZAWA Hiroyuki
+On Thu, Aug 25, 2011 at 21:39 +0400, Cyrill Gorcunov wrote:
+> On Thu, Aug 25, 2011 at 09:36:42PM +0400, Vasiliy Kulikov wrote:
+> ...
+> > > +
+> > > +	result = ERR_PTR(-EPERM);
+> > > +	if (!ptrace_may_access(task, PTRACE_MODE_READ));
+> > > +		goto out_no_mm;
+> > 
+> > Probably
+> > 
+> >     result = ERR_PTR(-ENOENT);
+> > 
+> > belongs here?
+> > 
 > 
-> On 08/25/2011 01:05 AM, KAMEZAWA Hiroyuki wrote:
-> <cut>
-> >
-> >
-> > I'm sorry if I miss codes but.... is an implementation of frontswap.ops included
-> > in this patch set ? Or how to test the work ?
-> 
-> The zcache driver (in drivers/staging/zcache) is the one that registers frontswap ops.
-> 
-> You can test frontswap by enabling CONFIG_FRONTSWAP and CONFIG_ZCACHE, and putting
-> "zcache" in the kernel boot parameters.
+> Don't think so, it should point that permission failed
+> rather no such entry. Or this might break some tools?
 
-Also see Xen tmem (in drivers/xen).  I am also working on a related project
-called RAMster that uses frontswap.  And someone has started code for KVM
-to work with transcendent memory (including frontswap).  But for now zcache
-is the only non-virtualization in-kernel user for frontswap.
+I mean the place exactly where I've put it to indicate simple_strtoul(),
+get_task_mm(), or find_exact_vma() error.  EPERM for ptrace_may_access()
+is OK.
 
-Dan
+Thanks,
 
-P.S. A recent build fix for zcache is necessary for it to work without
-manual modification to the zcache Makefile.
-See 8c70aac04e01a08b7eca204312946206d1c1baac in Linus's tree.
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
