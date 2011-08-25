@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab1HYOmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 10:42:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55149 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab1HYOmS convert rfc822-to-8bit (ORCPT
+	id S1752467Ab1HYOpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 10:45:32 -0400
+Received: from lunge.queued.net ([173.255.254.236]:39677 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab1HYOp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 10:42:18 -0400
-Subject: Re: [PATCH] perf_event: fix slow and broken cgroup context switch
- code
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ming.m.lin@intel.com,
-        Oleg Nesterov <oleg@redhat.com>, Jiri Olsa <jolsa@redhat.com>
-Date: Thu, 25 Aug 2011 16:42:01 +0200
-In-Reply-To: <CABPqkBTnrQRNnAz6Z0Nk+oBczDD4+-NLDtb_o3aMfc11SMe7nw@mail.gmail.com>
-References: <20110825135803.GA4697@quad> <1314282021.27911.12.camel@twins>
-	 <CABPqkBTnrQRNnAz6Z0Nk+oBczDD4+-NLDtb_o3aMfc11SMe7nw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314283321.27911.25.camel@twins>
+	Thu, 25 Aug 2011 10:45:29 -0400
+Date: Thu, 25 Aug 2011 07:45:27 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Belisko <marek.belisko@open-nandra.com>,
+        Jean Delvare <khali@linux-fr.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging/olpc_dcon: Remove obsolete cleanup for
+ clientdata
+Message-ID: <20110825074527.59252f56@queued.net>
+In-Reply-To: <1314269628-18325-1-git-send-email-w.sang@pengutronix.de>
+References: <1314269628-18325-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 16:36 +0200, Stephane Eranian wrote:
-> On Thu, Aug 25, 2011 at 4:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Thu, 2011-08-25 at 15:58 +0200, Stephane Eranian wrote:
-> >> +static inline void perf_event_task_sched_out(struct task_struct
-> >> *prev,
-> >> +                                            struct task_struct *next)
-> >>  {
-> >>         perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, NULL, 0);
-> >>
-> >> -       __perf_event_task_sched_out(task, next);
-> >> +       if (static_branch(&perf_sched_events))
-> >> +               __perf_event_task_sched_out(prev, next);
-> >>  }
-> >
-> > Right, so the reason we removed the static branch from there is
-> >
-> >  lkml.kernel.org/r/20110324164436.GC1930@jolsa.brq.redhat.com
-> >
-> > now I think the series 075e0b0085 to 64ce312618e should have cured that
-> > problem, and adding the static_branch() is now safe again. But there's
-> > no mention of any of this in the Changelog.
-> >
-> I realized I did not talk about the static_branch() change after I had
-> clicked on
-> Send. But to me, this looks natural to have the static branch in the ctxsw out
-> routine. This has to be symmetrical with ctxsw in . The static branch is about
-> avoiding perf ctxsw when there is no need for it, i.e., no per-thread
-> nor per-cgroup
-> events.
+Thanks!
 
-Yeah, that argument is what got us into trouble initially :) But I think
-its ok now, we'll see if stuff explodes or not..
+Acked-by: Andres Salomon <dilinger@queued.net>
+
+On Thu, 25 Aug 2011 12:53:30 +0200
+Wolfram Sang <w.sang@pengutronix.de> wrote:
+
+> A few new i2c-drivers came into the kernel which clear the
+> clientdata-pointer on exit or error. This is obsolete meanwhile, the
+> core will do it.
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Andres Salomon <dilinger@queued.net>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Marek Belisko <marek.belisko@open-nandra.com>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> ---
+>  drivers/staging/olpc_dcon/olpc_dcon.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c
+> b/drivers/staging/olpc_dcon/olpc_dcon.c index 750fe50..a235330 100644
+> --- a/drivers/staging/olpc_dcon/olpc_dcon.c
+> +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+> @@ -712,7 +712,6 @@ static int dcon_probe(struct i2c_client *client,
+> const struct i2c_device_id *id) eirq:
+>  	free_irq(DCON_IRQ, dcon);
+>   einit:
+> -	i2c_set_clientdata(client, NULL);
+>  	kfree(dcon);
+>  	return rc;
+>  }
+> @@ -721,8 +720,6 @@ static int dcon_remove(struct i2c_client *client)
+>  {
+>  	struct dcon_priv *dcon = i2c_get_clientdata(client);
+>  
+> -	i2c_set_clientdata(client, NULL);
+> -
+>  	fb_unregister_client(&dcon->fbevent_nb);
+>  	unregister_reboot_notifier(&dcon->reboot_nb);
+>  	atomic_notifier_chain_unregister(&panic_notifier_list,
+> &dcon_panic_nb);
