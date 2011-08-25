@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab1HYHiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 03:38:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63171 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898Ab1HYHit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 03:38:49 -0400
-Message-ID: <4E55FC88.4040300@cn.fujitsu.com>
-Date: Thu, 25 Aug 2011 15:40:56 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1752747Ab1HYHjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:39:47 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45883 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1HYHjp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 03:39:45 -0400
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
-References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A1257.5080204@cn.fujitsu.com> <20110823080024.GA2297@amt.cnet> <4E53872B.3070407@cn.fujitsu.com> <20110823123818.GB4261@amt.cnet> <4E53D620.9030304@cn.fujitsu.com> <20110823190939.GA10220@amt.cnet> <4E540AB4.6060905@cn.fujitsu.com> <20110824200540.GA19804@amt.cnet> <20110825020424.GA2542@amt.cnet>
-In-Reply-To: <20110825020424.GA2542@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-25 15:37:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-25 15:37:53,
-	Serialize complete at 2011-08-25 15:37:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CADpTngV3rR0A1RN+WP=eBJXQBEj9aZx5SXUiLFgG3wWtH1h4yA@mail.gmail.com>
+References: <CADpTngV3rR0A1RN+WP=eBJXQBEj9aZx5SXUiLFgG3wWtH1h4yA@mail.gmail.com>
+Date: Thu, 25 Aug 2011 09:39:44 +0200
+Message-ID: <CADpTngXhc9RCHvQLUpF5YiiifHj+hV5y7uUBYs1SzsJzSAMdwQ@mail.gmail.com>
+Subject: Re: 3.0.3 [BUG] unable to handle kernel NULL pointer dereference
+From: Fabio Coatti <fabio.coatti@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 10:04 AM, Marcelo Tosatti wrote:
+added bugzilla report: https://bugzilla.kernel.org/show_bug.cgi?id=41702
 
->>> Yes, in this case, the sp is not zapped, but it is hardly to know the gfn
->>> is not used as gpte just depends on writing, for example, the guest can
->>> change the mapping address or the status bit, and so on...The sp can be
->>> zapped if the guest write it again(on the same address), i think it is
->>> acceptable, anymore, it is just the speculative way to zap the unused
->>> shadow page...your opinion?
->>
->> It could increase the flood count independently of the accessed bit of
->> the spte being updated, zapping after 3 attempts as it is now.
->>
->> But additionally reset the flood count if the gpte appears to be valid
->> (points to an existant gfn if the present bit is set, or if its zeroed).
-> 
-> Well not zero, as thats a common pattern for non ptes.
-> 
+2011/8/24 Fabio Coatti <fabio.coatti@gmail.com>:
+> HI all, I'm getting several BUG: messages in a dmesg of a BL465c 2CPU
+> / 8 cores each, all the same of the attached examples along with my
+> config.gz from /proc/config.gz;
+>
+> (DMI: HP ProLiant BL465c G7, BIOS A19 09/30/2010)
+>
+> I've just spotted it and reported here, if more data is needed just
+> let me know (right now I'm not subcribed to the list, so please keep
+> me CC'ed, thanks)
+>
+>
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+> IP: [<ffffffff8166e792>] mutex_unlock+0x1/0x18
+> PGD 3e59dd067 PUD 3065e2067 PMD 0
+> Oops: 0002 [#3] SMP
+> CPU 2
+> Pid: 26637, comm: php Tainted: G      D     3.0.3 #3 HP ProLiant BL465c G7
+> RIP: 0010:[<ffffffff8166e792>]  [<ffffffff8166e792>] mutex_unlock+0x1/0x18
+> RSP: 0000:ffff880006c37e58  EFLAGS: 00010202
+> RAX: 00000000fffffffe RBX: ffff88018639c780 RCX: ffff88018639c7dc
+> RDX: 0000000000000001 RSI: ffff88018639c780 RDI: 0000000000000038
+> RBP: ffff880006c37e88 R08: ffff8800474a12c0 R09: ffffffff81186349
+> R10: ffff880006c37e28 R11: ffff88012a9f05d8 R12: ffff88012a9f05d8
+> R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> FS:  00007f696bfab700(0000) GS:ffff88023f900000(0000) knlGS:00000000f75496c0
+> CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> CR2: 0000000000000050 CR3: 0000000419ecf000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process php (pid: 26637, threadinfo ffff880006c36000, task ffff88009caa34e0)
+> Stack:
+>  ffff880006c37e88 ffffffff810b209f 000041ed00000063 00000000fffffffe
+>  ffff880006c37e98 ffff88018639c780 ffff880006c37f68 ffffffff810b3f99
+>  ffff880233737d00 ffff88015d4d4cc0 000000030022a749 ffff880219ae4016
+> Call Trace:
+>  [<ffffffff810b209f>] ? vfs_rmdir+0xac/0xc5
+>  [<ffffffff810b3f99>] do_rmdir+0xdf/0x137
+>  [<ffffffff810b4028>] sys_rmdir+0x11/0x13
+>  [<ffffffff81671243>] ia32_do_call+0x13/0x13
+> Code: 5d c9 c3 55 48 89 e5 53 48 89 fb 48 83 ec 08 f0 ff 0f 79 05 e8
+> 00 02 00 00 65 48 8b 04 25 c0 b5 00 00 48 89 43 18 58 5b c9 c3 55
+>  c7 47 18 00 00 00 00 48 89 e5 f0 ff 07 7f 05 e8 02 00 00 00
+> RIP  [<ffffffff8166e792>] mutex_unlock+0x1/0x18
+>  RSP <ffff880006c37e58>
+> CR2: 0000000000000050
+> ---[ end trace af3863e4c2a03b55 ]---
+>
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+> IP: [<ffffffff8166e792>] mutex_unlock+0x1/0x18
+> PGD 362bc7067 PUD 42417d067 PMD 0
+> Oops: 0002 [#1] SMP
+> CPU 4
+> Pid: 16630, comm: php Not tainted 3.0.3 #3 HP ProLiant BL465c G7
+> RIP: 0010:[<ffffffff8166e792>]  [<ffffffff8166e792>] mutex_unlock+0x1/0x18
+> RSP: 0000:ffff88037e4fde58  EFLAGS: 00010202
+> RAX: 00000000fffffffe RBX: ffff8801931ffe00 RCX: ffff8801931ffe5c
+> RDX: 0000000000000001 RSI: ffff8801931ffe00 RDI: 0000000000000038
+> RBP: ffff88037e4fde88 R08: ffff8803f2d17b00 R09: ffffffff81186349
+> R10: ffff88037e4fde28 R11: ffff8803b21b3aa8 R12: ffff8803b21b3aa8
+> R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> FS:  00007f65d10c5700(0000) GS:ffff88023fa00000(0000) knlGS:00000000f75b7940
+> CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+> CR2: 0000000000000050 CR3: 00000003066cc000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process php (pid: 16630, threadinfo ffff88037e4fc000, task ffff8801d91c0bc0)
+> Stack:
+>  ffff88037e4fde88 ffffffff810b209f 000041ed00000063 00000000fffffffe
+>  ffff88037e4fde98 ffff8801931ffe00 ffff88037e4fdf68 ffffffff810b3f99
+>  ffff880233737300 ffff8800b96b8900 0000000300132a21 ffff8802026f2018
+> Call Trace:
+>  [<ffffffff810b209f>] ? vfs_rmdir+0xac/0xc5
+>  [<ffffffff810b3f99>] do_rmdir+0xdf/0x137
+>  [<ffffffff810b4028>] sys_rmdir+0x11/0x13
+>  [<ffffffff81671243>] ia32_do_call+0x13/0x13
+> Code: 5d c9 c3 55 48 89 e5 53 48 89 fb 48 83 ec 08 f0 ff 0f 79 05 e8
+> 00 02 00 00 65 48 8b 04 25 c0 b5 00 00 48 89 43 18 58 5b c9 c3 55
+>  c7 47 18 00 00 00 00 48 89 e5 f0 ff 07 7f 05 e8 02 00 00 00
+> RIP  [<ffffffff8166e792>] mutex_unlock+0x1/0x18
+>  RSP <ffff88037e4fde58>
+> CR2: 0000000000000050
+> ---[ end trace af3863e4c2a03b53 ]---
+>
+>
+> Thanks in advance for any answer.
+>
+> --
+> Fabio
+>
 
-Hi Marcelo,
 
-Maybe it is not good i think, for some reasons:
-- checking gfn valid which it is pointed by gpte is high overload,
-  it needs to call gfn_to_hva to walk memslots, especially. kvm_mmu_pte_write
-  is called very frequently on shadow mmu.
 
-- MMIO gfn is not an existent gfn, but it is valid pointed by gpte
-
-- we can check the reserved bits in the gpte to check whether it is valid a
-  gpte, but for some paging modes, all bits are valid.(for example, non-PAE mode)
-
-- it can not work if the gfn has multiple shadow pages, for example:
-  if the gfn was used as PDE, later it is used as PTE, then we have two shadow
-  pages: sp1.level = 2, sp2.level = 1, sp1 can not be zapped even even though it
-  is not used anymore.
-
-- sometime, we need to zap the shadow page even though the gpte is written validly:
-  if the gpte is written frequently but infrequently accessed, we do better zap the
-  shadow page to let it is writable(write it directly without #PF) and map it when it
-  is accessed, one example is from Avi, the guest OS may update many gptes at one time
-  after one page fault.
+-- 
+Fabio
