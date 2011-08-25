@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab1HYPQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:16:42 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:35484 "EHLO
+	id S1754308Ab1HYPQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:16:40 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:35578 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab1HYPJ6 (ORCPT
+	with ESMTP id S1753938Ab1HYPKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:58 -0400
+	Thu, 25 Aug 2011 11:10:00 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 091/118] drbd: Converted drbd_connect() from mdev to tconn
-Date: Thu, 25 Aug 2011 17:08:27 +0200
-Message-Id: <1314284934-17999-92-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 093/118] drbd: Converted drbdd() from mdev to tconn
+Date: Thu, 25 Aug 2011 17:08:29 +0200
+Message-Id: <1314284934-17999-94-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,241 +20,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The drbd_md_sync(mdev) happens in the after state change anyways...
+
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |  102 +++++++++++++++++++-----------------
- 1 files changed, 53 insertions(+), 49 deletions(-)
+ drivers/block/drbd/drbd_int.h      |    5 +++++
+ drivers/block/drbd/drbd_receiver.c |   30 ++++++++++++++----------------
+ 2 files changed, 19 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 42a2b39..b1eedd1 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -746,6 +746,24 @@ static int drbd_socket_okay(struct socket **sock)
- 	}
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index ae482ed..70509c5 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1107,6 +1107,11 @@ static inline unsigned int mdev_to_minor(struct drbd_conf *mdev)
+ 	return mdev->minor;
  }
  
-+static int drbd_connected(int vnr, void *p, void *data)
++static inline struct drbd_conf *vnr_to_mdev(struct drbd_tconn *tconn, int vnr)
 +{
-+	struct drbd_conf *mdev = (struct drbd_conf *)p;
-+	int ok = 1;
-+
-+	atomic_set(&mdev->packet_seq, 0);
-+	mdev->peer_seq = 0;
-+
-+	ok &= drbd_send_sync_param(mdev, &mdev->sync_conf);
-+	ok &= drbd_send_sizes(mdev, 0, 0);
-+	ok &= drbd_send_uuids(mdev);
-+	ok &= drbd_send_state(mdev);
-+	clear_bit(USE_DEGR_WFC_T, &mdev->flags);
-+	clear_bit(RESIZE_PENDING, &mdev->flags);
-+
-+	return !ok;
++	return (struct drbd_conf *)idr_find(&tconn->volumes, vnr);
 +}
 +
- /*
-  * return values:
-  *   1 yes, we have a valid connection
-@@ -754,18 +772,16 @@ static int drbd_socket_okay(struct socket **sock)
-  *     no point in trying again, please go standalone.
-  *  -2 We do not have a network config...
+ /* returns 1 if it was successful,
+  * returns 0 if there was no data socket.
+  * so wherever you are going to use the data.socket, e.g. do
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 306532c..1d6df7a 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -941,6 +941,7 @@ static bool decode_header(struct drbd_tconn *tconn, struct p_header *h, struct p
+ 	if (h->h80.magic == cpu_to_be32(DRBD_MAGIC)) {
+ 		pi->cmd = be16_to_cpu(h->h80.command);
+ 		pi->size = be16_to_cpu(h->h80.length);
++		pi->vnr = 0;
+ 	} else if (h->h95.magic == cpu_to_be16(DRBD_MAGIC_BIG)) {
+ 		pi->cmd = be16_to_cpu(h->h95.command);
+ 		vol_n_len = be32_to_cpu(h->h95.vol_n_len);
+@@ -3774,42 +3775,42 @@ static struct data_cmd drbd_cmd_handler[] = {
+    p_header, but they may not rely on that. Since there is also p_header95 !
   */
--static int drbd_connect(struct drbd_conf *mdev)
-+static int drbd_connect(struct drbd_tconn *tconn)
+ 
+-static void drbdd(struct drbd_conf *mdev)
++static void drbdd(struct drbd_tconn *tconn)
  {
- 	struct socket *s, *sock, *msock;
- 	int try, h, ok;
+-	struct p_header *header = &mdev->tconn->data.rbuf.header;
++	struct p_header *header = &tconn->data.rbuf.header;
+ 	struct packet_info pi;
+ 	size_t shs; /* sub header size */
+ 	int rv;
  
--	D_ASSERT(!mdev->tconn->data.socket);
--
--	if (drbd_request_state(mdev, NS(conn, C_WF_CONNECTION)) < SS_SUCCESS)
-+	if (drbd_request_state(tconn->volume0, NS(conn, C_WF_CONNECTION)) < SS_SUCCESS)
- 		return -2;
+-	while (get_t_state(&mdev->tconn->receiver) == RUNNING) {
+-		drbd_thread_current_set_cpu(&mdev->tconn->receiver);
+-		if (!drbd_recv_header(mdev->tconn, &pi))
++	while (get_t_state(&tconn->receiver) == RUNNING) {
++		drbd_thread_current_set_cpu(&tconn->receiver);
++		if (!drbd_recv_header(tconn, &pi))
+ 			goto err_out;
  
--	clear_bit(DISCARD_CONCURRENT, &mdev->tconn->flags);
--	mdev->tconn->agreed_pro_version = 99;
-+	clear_bit(DISCARD_CONCURRENT, &tconn->flags);
-+	tconn->agreed_pro_version = 99;
- 	/* agreed_pro_version must be smaller than 100 so we send the old
- 	   header (h80) in the first packet and in the handshake packet. */
+ 		if (unlikely(pi.cmd >= P_MAX_CMD || !drbd_cmd_handler[pi.cmd].function)) {
+-			dev_err(DEV, "unknown packet type %d, l: %d!\n", pi.cmd, pi.size);
++			conn_err(tconn, "unknown packet type %d, l: %d!\n", pi.cmd, pi.size);
+ 			goto err_out;
+ 		}
  
-@@ -775,7 +791,7 @@ static int drbd_connect(struct drbd_conf *mdev)
- 	do {
- 		for (try = 0;;) {
- 			/* 3 tries, this should take less than a second! */
--			s = drbd_try_connect(mdev->tconn);
-+			s = drbd_try_connect(tconn);
- 			if (s || ++try >= 3)
- 				break;
- 			/* give the other side time to call bind() & listen() */
-@@ -784,21 +800,21 @@ static int drbd_connect(struct drbd_conf *mdev)
+ 		shs = drbd_cmd_handler[pi.cmd].pkt_size - sizeof(struct p_header);
+ 		if (pi.size - shs > 0 && !drbd_cmd_handler[pi.cmd].expect_payload) {
+-			dev_err(DEV, "No payload expected %s l:%d\n", cmdname(pi.cmd), pi.size);
++			conn_err(tconn, "No payload expected %s l:%d\n", cmdname(pi.cmd), pi.size);
+ 			goto err_out;
+ 		}
  
- 		if (s) {
- 			if (!sock) {
--				drbd_send_fp(mdev->tconn, s, P_HAND_SHAKE_S);
-+				drbd_send_fp(tconn, s, P_HAND_SHAKE_S);
- 				sock = s;
- 				s = NULL;
- 			} else if (!msock) {
--				drbd_send_fp(mdev->tconn, s, P_HAND_SHAKE_M);
-+				drbd_send_fp(tconn, s, P_HAND_SHAKE_M);
- 				msock = s;
- 				s = NULL;
- 			} else {
--				dev_err(DEV, "Logic error in drbd_connect()\n");
-+				conn_err(tconn, "Logic error in drbd_connect()\n");
- 				goto out_release_sockets;
+ 		if (shs) {
+-			rv = drbd_recv(mdev->tconn, &header->payload, shs);
++			rv = drbd_recv(tconn, &header->payload, shs);
+ 			if (unlikely(rv != shs)) {
+ 				if (!signal_pending(current))
+-					dev_warn(DEV, "short read while reading sub header: rv=%d\n", rv);
++					conn_warn(tconn, "short read while reading sub header: rv=%d\n", rv);
+ 				goto err_out;
  			}
  		}
  
- 		if (sock && msock) {
--			schedule_timeout_interruptible(mdev->tconn->net_conf->ping_timeo*HZ/10);
-+			schedule_timeout_interruptible(tconn->net_conf->ping_timeo*HZ/10);
- 			ok = drbd_socket_okay(&sock);
- 			ok = drbd_socket_okay(&msock) && ok;
- 			if (ok)
-@@ -806,41 +822,41 @@ static int drbd_connect(struct drbd_conf *mdev)
+-		rv = drbd_cmd_handler[pi.cmd].function(mdev, pi.cmd, pi.size - shs);
++		rv = drbd_cmd_handler[pi.cmd].function(vnr_to_mdev(tconn, pi.vnr), pi.cmd, pi.size - shs);
+ 
+ 		if (unlikely(!rv)) {
+-			dev_err(DEV, "error receiving %s, l: %d!\n",
++			conn_err(tconn, "error receiving %s, l: %d!\n",
+ 			    cmdname(pi.cmd), pi.size);
+ 			goto err_out;
  		}
+@@ -3817,11 +3818,8 @@ static void drbdd(struct drbd_conf *mdev)
  
- retry:
--		s = drbd_wait_for_connect(mdev->tconn);
-+		s = drbd_wait_for_connect(tconn);
- 		if (s) {
--			try = drbd_recv_fp(mdev->tconn, s);
-+			try = drbd_recv_fp(tconn, s);
- 			drbd_socket_okay(&sock);
- 			drbd_socket_okay(&msock);
- 			switch (try) {
- 			case P_HAND_SHAKE_S:
- 				if (sock) {
--					dev_warn(DEV, "initial packet S crossed\n");
-+					conn_warn(tconn, "initial packet S crossed\n");
- 					sock_release(sock);
- 				}
- 				sock = s;
- 				break;
- 			case P_HAND_SHAKE_M:
- 				if (msock) {
--					dev_warn(DEV, "initial packet M crossed\n");
-+					conn_warn(tconn, "initial packet M crossed\n");
- 					sock_release(msock);
- 				}
- 				msock = s;
--				set_bit(DISCARD_CONCURRENT, &mdev->tconn->flags);
-+				set_bit(DISCARD_CONCURRENT, &tconn->flags);
- 				break;
- 			default:
--				dev_warn(DEV, "Error receiving initial packet\n");
-+				conn_warn(tconn, "Error receiving initial packet\n");
- 				sock_release(s);
- 				if (random32() & 1)
- 					goto retry;
- 			}
- 		}
+ 	if (0) {
+ 	err_out:
+-		drbd_force_state(mdev, NS(conn, C_PROTOCOL_ERROR));
++		drbd_force_state(tconn->volume0, NS(conn, C_PROTOCOL_ERROR));
+ 	}
+-	/* If we leave here, we probably want to update at least the
+-	 * "Connected" indicator on stable storage. Do so explicitly here. */
+-	drbd_md_sync(mdev);
+ }
  
--		if (mdev->state.conn <= C_DISCONNECTING)
-+		if (tconn->volume0->state.conn <= C_DISCONNECTING)
- 			goto out_release_sockets;
- 		if (signal_pending(current)) {
- 			flush_signals(current);
- 			smp_rmb();
--			if (get_t_state(&mdev->tconn->receiver) == EXITING)
-+			if (get_t_state(&tconn->receiver) == EXITING)
- 				goto out_release_sockets;
- 		}
+ void drbd_flush_workqueue(struct drbd_tconn *tconn)
+@@ -4242,7 +4240,7 @@ int drbdd_init(struct drbd_thread *thi)
  
-@@ -862,65 +878,53 @@ retry:
- 	msock->sk->sk_priority = TC_PRIO_INTERACTIVE;
- 
- 	/* NOT YET ...
--	 * sock->sk->sk_sndtimeo = mdev->tconn->net_conf->timeout*HZ/10;
-+	 * sock->sk->sk_sndtimeo = tconn->net_conf->timeout*HZ/10;
- 	 * sock->sk->sk_rcvtimeo = MAX_SCHEDULE_TIMEOUT;
- 	 * first set it to the P_HAND_SHAKE timeout,
- 	 * which we set to 4x the configured ping_timeout. */
- 	sock->sk->sk_sndtimeo =
--	sock->sk->sk_rcvtimeo = mdev->tconn->net_conf->ping_timeo*4*HZ/10;
-+	sock->sk->sk_rcvtimeo = tconn->net_conf->ping_timeo*4*HZ/10;
- 
--	msock->sk->sk_sndtimeo = mdev->tconn->net_conf->timeout*HZ/10;
--	msock->sk->sk_rcvtimeo = mdev->tconn->net_conf->ping_int*HZ;
-+	msock->sk->sk_sndtimeo = tconn->net_conf->timeout*HZ/10;
-+	msock->sk->sk_rcvtimeo = tconn->net_conf->ping_int*HZ;
- 
- 	/* we don't want delays.
- 	 * we use TCP_CORK where appropriate, though */
- 	drbd_tcp_nodelay(sock);
- 	drbd_tcp_nodelay(msock);
- 
--	mdev->tconn->data.socket = sock;
--	mdev->tconn->meta.socket = msock;
--	mdev->tconn->last_received = jiffies;
--
--	D_ASSERT(mdev->tconn->asender.task == NULL);
-+	tconn->data.socket = sock;
-+	tconn->meta.socket = msock;
-+	tconn->last_received = jiffies;
- 
--	h = drbd_do_handshake(mdev->tconn);
-+	h = drbd_do_handshake(tconn);
- 	if (h <= 0)
- 		return h;
- 
--	if (mdev->tconn->cram_hmac_tfm) {
-+	if (tconn->cram_hmac_tfm) {
- 		/* drbd_request_state(mdev, NS(conn, WFAuth)); */
--		switch (drbd_do_auth(mdev->tconn)) {
-+		switch (drbd_do_auth(tconn)) {
- 		case -1:
--			dev_err(DEV, "Authentication of peer failed\n");
-+			conn_err(tconn, "Authentication of peer failed\n");
- 			return -1;
- 		case 0:
--			dev_err(DEV, "Authentication of peer failed, trying again.\n");
-+			conn_err(tconn, "Authentication of peer failed, trying again.\n");
- 			return 0;
+ 	if (h > 0) {
+ 		if (get_net_conf(mdev->tconn)) {
+-			drbdd(mdev);
++			drbdd(mdev->tconn);
+ 			put_net_conf(mdev->tconn);
  		}
  	}
- 
--	if (drbd_request_state(mdev, NS(conn, C_WF_REPORT_PARAMS)) < SS_SUCCESS)
-+	if (drbd_request_state(tconn->volume0, NS(conn, C_WF_REPORT_PARAMS)) < SS_SUCCESS)
- 		return 0;
- 
--	sock->sk->sk_sndtimeo = mdev->tconn->net_conf->timeout*HZ/10;
-+	sock->sk->sk_sndtimeo = tconn->net_conf->timeout*HZ/10;
- 	sock->sk->sk_rcvtimeo = MAX_SCHEDULE_TIMEOUT;
- 
--	atomic_set(&mdev->packet_seq, 0);
--	mdev->peer_seq = 0;
--
--	drbd_thread_start(&mdev->tconn->asender);
-+	drbd_thread_start(&tconn->asender);
- 
--	if (drbd_send_protocol(mdev->tconn) == -1)
-+	if (drbd_send_protocol(tconn) == -1)
- 		return -1;
--	drbd_send_sync_param(mdev, &mdev->sync_conf);
--	drbd_send_sizes(mdev, 0, 0);
--	drbd_send_uuids(mdev);
--	drbd_send_state(mdev);
--	clear_bit(USE_DEGR_WFC_T, &mdev->flags);
--	clear_bit(RESIZE_PENDING, &mdev->flags);
--	mod_timer(&mdev->request_timer, jiffies + HZ); /* just start it here. */
- 
--	return 1;
-+	return !idr_for_each(&tconn->volumes, drbd_connected, tconn);
- 
- out_release_sockets:
- 	if (sock)
-@@ -4225,7 +4229,7 @@ int drbdd_init(struct drbd_thread *thi)
- 	dev_info(DEV, "receiver (re)started\n");
- 
- 	do {
--		h = drbd_connect(mdev);
-+		h = drbd_connect(mdev->tconn);
- 		if (h == 0) {
- 			drbd_disconnect(mdev);
- 			schedule_timeout_interruptible(HZ);
 -- 
 1.7.4.1
 
