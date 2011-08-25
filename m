@@ -1,50 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab1HYFRx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 01:17:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53066 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab1HYFRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 01:17:52 -0400
-Date: Thu, 25 Aug 2011 15:17:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jon Medhurst <tixy@yxit.co.uk>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the moduleh tree with the arm tree
-Message-Id: <20110825151748.8e41e0ded739187a1432cf0b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751973Ab1HYFTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 01:19:32 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49409
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750846Ab1HYFTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 01:19:31 -0400
+Date: Thu, 25 Aug 2011 01:19:24 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, davej@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] lockdep: Add helper function for dir vs file i_mutex
+ annotation
+Message-ID: <20110825051924.GA5617@infradead.org>
+References: <20110825013746.GM2270@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110825013746.GM2270@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Looks reasonable to me.
 
-Today's linux-next merge of the moduleh tree got a conflict in
-arch/arm/mach-bcmring/mm.c between commit 2d5e975b2194 ("ARM:
-mach-bcmring: Setup consistent dma size at boot time") from the arm tree
-and commit 9bc7d81e271e ("arm: fix implicit use of page.h in
-mach-bcmring/mach-jornada") from the moduleh tree.
-
-Jst context changes I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-bcmring/mm.c
-index 8616876,293b6d3..0000000
---- a/arch/arm/mach-bcmring/mm.c
-+++ b/arch/arm/mach-bcmring/mm.c
-@@@ -13,7 -13,7 +13,8 @@@
-  *****************************************************************************/
-  
-  #include <linux/platform_device.h>
- +#include <linux/dma-mapping.h>
-+ #include <asm/page.h>
-  #include <asm/mach/map.h>
-  
-  #include <mach/hardware.h>
