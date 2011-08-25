@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab1HYTYW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:24:22 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:32913
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751427Ab1HYTYV (ORCPT
+	id S1752653Ab1HYT0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 15:26:13 -0400
+Received: from fmmailgate01.web.de ([217.72.192.221]:42138 "EHLO
+	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab1HYT0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:24:21 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4E56A15D.8070406@freescale.com>
-Date: Thu, 25 Aug 2011 14:24:13 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	Thu, 25 Aug 2011 15:26:09 -0400
+Message-ID: <4E56A1CF.5050008@web.de>
+Date: Thu, 25 Aug 2011 21:26:07 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xics/icp_natives: add __init to marker icp_native_init()
-References: <1314288433-26322-1-git-send-email-lacombar@gmail.com>
-In-Reply-To: <1314288433-26322-1-git-send-email-lacombar@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Brian King <brking@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: Broken pci_block_user_cfg_access interface
+References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com> <4E5613BA.5070101@siemens.com> <4E5647DA.1060901@linux.vnet.ibm.com> <4E5648B9.7050106@siemens.com> <20110825181912.GB27183@redhat.com> <4E5699D8.3070505@web.de> <20110825190748.GA30587@redhat.com>
+In-Reply-To: <20110825190748.GA30587@redhat.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig0C8617C4E00E75C7A1B96656"
+X-Provags-ID: V01U2FsdGVkX1/Ldi/7rtsjeLHfAjl/ApvT7/GLSa/a7nsZ6VmN
+	ZoqYZxIGYA3gUqTedsQl+vXZ4hGs/3/d2l/S7BCuVGyIkTrDOh
+	GZHBPU6yE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaud Lacombe wrote:
-> This should fix the following warning:
-> 
->  LD      arch/powerpc/sysdev/xics/built-in.o
-> WARNING: arch/powerpc/sysdev/xics/built-in.o(.text+0x1310): Section mismatch in
-> reference from the function .icp_native_init() to the function
-> .init.text:.icp_native_init_one_node()
-> The function .icp_native_init() references
-> the function __init .icp_native_init_one_node().
-> This is often because .icp_native_init lacks a __init
-> annotation or the annotation of .icp_native_init_one_node is wrong.
-> 
-> icp_native_init() is only referenced in `arch/powerpc/sysdev/xics/xics-common.c'
-> by xics_init() which is itself marked with __init.
-> 
-> = not built-tested =
-> 
-> Reported-by: Timur Tabi <timur@freescale.com>
-> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig0C8617C4E00E75C7A1B96656
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Timur Tabi <timur@freescale.com>
+On 2011-08-25 21:07, Michael S. Tsirkin wrote:
+> On Thu, Aug 25, 2011 at 08:52:08PM +0200, Jan Kiszka wrote:
+>> On 2011-08-25 20:19, Michael S. Tsirkin wrote:
+>>> On Thu, Aug 25, 2011 at 03:06:01PM +0200, Jan Kiszka wrote:
+>>>>> I took a look at the sysfs triggered pci reset function and don't s=
+ee any way
+>>>>> that the controlling device driver ever gets to be involved in this=
+ reset.
+>>>>> If code outside the ipr driver were to reset the adapter, the adapt=
+er firmware
+>>>>> would be left in an uninitialized state and until scsi core starts =
+timing
+>>>>> out ops and driving EH, the card would be unusable. I can't imagine=
+ the
+>>>>> ipr driver is unique in this.
+>>>>
+>>>> Right, that's why a PCI core service is needed for coordination.
+>>>>
+>>>> Jan
+>>>
+>>> But why do we want to trigger reset through sysfs while the
+>>> driver runs?
+>>
+>> A perfectly valid race conditions are created by KVM and VFIO: shared
+>> IRQ handler is triggered while the user space part wants to reset the
+>> assigned device.
+>=20
+> OK, that would be solved by blocking sysfs reset while
+> config access is blocked, right?
 
-This warning still appears, though:
+=2E..and VFIO's reset IOCTL. And any other potential pci_reset_function
+caller. And you still need to synchronize those config space accesses
+that don't wait for the block_ucfg_access while some reset is being
+performed. This really screams for a redesign of config space locking.
 
-WARNING: arch/powerpc/sysdev/built-in.o(.text+0xf6b8): Section mismatch in
-reference from the function .ics_rtas_init() to the function
-.init.text:.xics_register_ics()
-The function .ics_rtas_init() references
-the function __init .xics_register_ics().
-This is often because .ics_rtas_init lacks a __init
-annotation or the annotation of .xics_register_ics is wrong.
-
-To fix this warning, you'll also need:
-
-diff --git a/arch/powerpc/sysdev/xics/ics-rtas.c b/arch/powerpc/sysdev/xics/ics-
-index c782f85..a125721 100644
---- a/arch/powerpc/sysdev/xics/ics-rtas.c
-+++ b/arch/powerpc/sysdev/xics/ics-rtas.c
-@@ -213,7 +213,7 @@ static int ics_rtas_host_match(struct ics *ics, struct devic
-        return !of_device_is_compatible(node, "chrp,iic");
- }
-
--int ics_rtas_init(void)
-+int __init ics_rtas_init(void)
- {
-        ibm_get_xive = rtas_token("ibm,get-xive");
-        ibm_set_xive = rtas_token("ibm,set-xive");
+Jan
 
 
-However, now we get another similar warning:
+--------------enig0C8617C4E00E75C7A1B96656
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-WARNING: drivers/built-in.o(.text+0x259c484): Section mismatch in reference from
-the function .tc3589x_keypad_open() to the function
-.devinit.text:.tc3589x_keypad_init_key_hardware()
-The function .tc3589x_keypad_open() references
-the function __devinit .tc3589x_keypad_init_key_hardware().
-This is often because .tc3589x_keypad_open lacks a __devinit
-annotation or the annotation of .tc3589x_keypad_init_key_hardware is wrong.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-I'm not sure what to do at this point, because I have a suspicion that adding
-__devinit to tc3589x_keypad_open() is wrong.
+iEYEARECAAYFAk5Woc8ACgkQitSsb3rl5xTxLACdGd4FoH8a04bfkB1y9kD4jE5D
+1zAAoMvmPEonflpSMkbMK0EXJ+/micrN
+=9ozw
+-----END PGP SIGNATURE-----
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+--------------enig0C8617C4E00E75C7A1B96656--
