@@ -1,159 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab1HYRiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:38:04 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50464 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab1HYRiC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:38:02 -0400
-MIME-Version: 1.0
-Message-ID: <d0b4c414-e90f-4ae0-9b70-fd5b54d2b011@default>
-Date: Thu, 25 Aug 2011 10:37:05 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com
-Subject: RE: Subject: [PATCH V7 2/4] mm: frontswap: core code
-References: <20110823145815.GA23190@ca-server1.us.oracle.com
- 20110825150532.a4d282b1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110825150532.a4d282b1.kamezawa.hiroyu@jp.fujitsu.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4E56885B.0017:SCFMA922111,ss=1,re=-4.000,fgs=0
+	id S1754971Ab1HYRjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:39:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60828 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753349Ab1HYRjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 13:39:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,281,1312182000"; 
+   d="scan'208";a="42428653"
+Subject: Re: mtrr failure, 3.1-rc1
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Anders Eriksson <aeriksson@fastmail.fm>, Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 25 Aug 2011 10:43:01 -0700
+In-Reply-To: <20110825164649.GL2803@mtj.dyndns.org>
+References: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
+	 <CA+55aFzndqkSC1z3==HqUGC8hP=pw62ro3CWYtovk95_cYAKsA@mail.gmail.com>
+	 <20110825164649.GL2803@mtj.dyndns.org>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1314294182.16133.19.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
-> Subject: Re: Subject: [PATCH V7 2/4] mm: frontswap: core code
+On Thu, 2011-08-25 at 09:46 -0700, Tejun Heo wrote:
+> Hello,
 > 
-> > From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Subject: [PATCH V7 2/4] mm: frontswap: core code
-> >
-> > This second patch of four in this frontswap series provides the core code
+> On Thu, Aug 25, 2011 at 08:55:12AM -0700, Linus Torvalds wrote:
+> > Hmm. Some of those commits are marked for stable too.
+> > 
+> > I'm adding appropriate parties to the discussion (authors and
+> > sign-offs from the five commits that that merge brings in), but it
+> > would also be great if you could bisect exactly which commit broke for
+> > you. You can make it quick by just doing
+> > 
+> >   git bisect start
+> >   git bisect bad dc43d9fa73d82083656fb9c02f4823bcdcfb9f91
+> >   git bisect good dc43d9fa73d82083656fb9c02f4823bcdcfb9f91^
+> > 
+> > and it should take just a couple of tests. I *assume* it's the
+> > stop_machine changes by Tejun &co, but who knows..
+> > 
+> > Anders, is this a single-CPU system?
 > 
-> I think you should add diffstat...
+> Indeed, while removing custom rendezvous code and switching to
+> stop_machine, commit 192d8857427d "x86, mtrr: use stop_machine APIs
+> for doing MTRR rendezvous" completely dropped mtrr setting code on
+> !CONFIG_SMP.
 
-The diffstat is in [PATCH V7 0/4] for the whole patchset.  I didn't
-think a separate diffstat for each patch in the patchset was necessary?
+oops. My bad. Linus, Bad commit is not marked for stable.
 
-> and add include changes to Makefile in the same patch.
+I was able to reproduce the issue and tested the below patch. It looks
+good.
 
-The Makefile change must be in a patch after the patch that
-creates frontswap.o or the build will fail.
+Thanks.
 
-> I have small questions.
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+
 > 
-> > +/*
-> > + * frontswap_ops is set by frontswap_register_ops to contain the pointers
-> > + * to the frontswap "backend" implementation functions.
-> > + */
-> > +static struct frontswap_ops frontswap_ops;
-> > +
+> Anders, if your kernel didn't have SMP turned on, can you please
+> verify the following patch fixes the problem?
 > 
-> Hmm, only one frontswap_ops can be registered to the system ?
-> Then...why it required to be registered ? This just comes from problem in
-> coding ?
-
-Yes, currently only one frontswap_ops can be registered.  However there
-are different users (zcache and Xen tmem) that will register different
-callbacks for the frontswap_ops.  A future enhancement may allow "chaining"
-(see https://lkml.org/lkml/2011/6/3/202 which describes chaining for
-cleancache).
-
-> BTW, Do I have a chance to implement frontswap accounting per cgroup
-> (under memcg) ? Or Do I need to enable/disale switch for frontswap per memcg ?
-> Do you think it is worth to do ?
-
-I'm not very familiar with cgroups or memcg but I think it may be possible
-to implement transcendent memory with cgroup as the "guest" and the default
-cgroup as the "host" to allow for more memory elasticity for cgroups.
-(See http://lwn.net/Articles/454795/ for a good overview of all of
-transcendent memory.)
-
-> > +/*
-> > + * This global enablement flag reduces overhead on systems where frontswap_ops
-> > + * has not been registered, so is preferred to the slower alternative: a
-> > + * function call that checks a non-global.
-> > + */
-> > +int frontswap_enabled;
-> > +EXPORT_SYMBOL(frontswap_enabled);
-> > +
-> > +/* useful stats available in /sys/kernel/mm/frontswap */
-> > +static unsigned long frontswap_gets;
-> > +static unsigned long frontswap_succ_puts;
-> > +static unsigned long frontswap_failed_puts;
-> > +static unsigned long frontswap_flushes;
-> > +
+> Thanks.
 > 
-> What lock guard these ? swap_lock ?
+> diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+> index 08119a3..6b96110 100644
+> --- a/arch/x86/kernel/cpu/mtrr/main.c
+> +++ b/arch/x86/kernel/cpu/mtrr/main.c
+> @@ -149,7 +149,6 @@ struct set_mtrr_data {
+>   */
+>  static int mtrr_rendezvous_handler(void *info)
+>  {
+> -#ifdef CONFIG_SMP
+>  	struct set_mtrr_data *data = info;
+>  
+>  	/*
+> @@ -171,7 +170,6 @@ static int mtrr_rendezvous_handler(void *info)
+>  	} else if (mtrr_aps_delayed_init || !cpu_online(smp_processor_id())) {
+>  		mtrr_if->set_all();
+>  	}
+> -#endif
+>  	return 0;
+>  }
+>  
 
-These are informational statistics so do not need to be protected
-by a lock or an atomic-type.  If an increment is lost due to a cpu
-race, it is not a problem.
 
-> > +/*
-> > + * register operations for frontswap, returning previous thus allowing
-> > + * detection of multiple backends and possible nesting
-> > + */
-> > +struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
-> > +{
-> > +	struct frontswap_ops old = frontswap_ops;
-> > +
-> > +	frontswap_ops = *ops;
-> > +	frontswap_enabled = 1;
-> > +	return old;
-> > +}
-> > +EXPORT_SYMBOL(frontswap_register_ops);
-> > +
-> 
-> No lock ? and there is no unregister_ops() ?
-
-Right now only one "backend" can register with frontswap.  Existing
-backends (zcache and Xen tmem) only register when enabled via a
-kernel parameter.  In the future, there will need to be better
-ways to do this, but I think this is sufficient for now.
-
-So since only one backend can register, no lock is needed and
-no unregister is needed yet.
-
-> > +/* Called when a swap device is swapon'd */
-> > +void __frontswap_init(unsigned type)
-> > +{
-> > +	struct swap_info_struct *sis = swap_info[type];
-> > +
-> > +	BUG_ON(sis == NULL);
-> > +	if (sis->frontswap_map == NULL)
-> > +		return;
-> > +	if (frontswap_enabled)
-> > +		(*frontswap_ops.init)(type);
-> > +}
-> > +EXPORT_SYMBOL(__frontswap_init);
-> > +
-> > +/*
-> > + * "Put" data from a page to frontswap and associate it with the page's
-> > + * swaptype and offset.  Page must be locked and in the swap cache.
-> > + * If frontswap already contains a page with matching swaptype and
-> > + * offset, the frontswap implmentation may either overwrite the data
-> > + * and return success or flush the page from frontswap and return failure
-> > + */
-> 
-> What lock should be held to guard global variables ? swap_lock ?
-
-Which global variables do you mean and in what routines?  I think the
-page lock is required for put/get (as documented in the comments)
-but not the swap_lock.
-
-Thanks,
-Dan
