@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab1HYTDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:03:55 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:49450 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755273Ab1HYTDx (ORCPT
+	id S1755341Ab1HYTFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 15:05:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46464 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755297Ab1HYTFf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:03:53 -0400
-X-Sasl-enc: au6aO+yEun14Iew+jZlHTh8DQpkCcsBzX2VRcHmTPoOZ 1314299032
-Date: Thu, 25 Aug 2011 12:03:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Timur Tabi <timur@freescale.com>
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH] tty/powerpc: fix build break with ehv_bytechan.c on
- allyesconfig
-Message-ID: <20110825190330.GA2383@kroah.com>
-References: <1314289245-14946-1-git-send-email-timur@freescale.com>
- <20110825163234.GA31629@kroah.com>
- <4E568E19.405@freescale.com>
- <20110825184655.GB1891@kroah.com>
- <4E5699A8.1070708@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5699A8.1070708@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Aug 2011 15:05:35 -0400
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: James Bottomley <James.bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-arch@vger.kernel.org
+Date: Thu, 25 Aug 2011 21:05:15 +0200
+In-Reply-To: <alpine.DEB.2.00.1108251341230.27407@router.home>
+References: <1313650253-21794-1-git-send-email-gthelen@google.com>
+	 <20110818144025.8e122a67.akpm@linux-foundation.org>
+	 <1314284272.27911.32.camel@twins>
+	 <alpine.DEB.2.00.1108251009120.27407@router.home>
+	 <1314289208.3268.4.camel@mulgrave>
+	 <alpine.DEB.2.00.1108251128460.27407@router.home>
+	 <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>
+	 <alpine.DEB.2.00.1108251206440.27407@router.home>
+	 <1e295500-5d1f-45dd-aa5b-3d2da2cf1a62@email.android.com>
+	 <alpine.DEB.2.00.1108251341230.27407@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314299115.26922.2.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 01:51:20PM -0500, Timur Tabi wrote:
-> Greg KH wrote:
-> > But don't you really want this type of check at runtime?  What happens
-> > if you load this driver on a machine that is not a guest?  Will things
-> > break?  Shouldn't you still refuse to load somehow?
+On Thu, 2011-08-25 at 13:46 -0500, Christoph Lameter wrote:
 > 
-> This is in the udbg code, which falls under the category of, "turn this on only
-> if you know what you're doing."
-> 
-> The udbg code runs very early, before the device tree is available.  There's no
-> way of knowing at this point whether or not we're running under a hypervisor.
-> If you turn on udbg support, then it means that you're trying to do some very
-> specific debugging on a specific platform.
-> 
-> So I'm not removing this code just to fix the build break.  It really should
-> never have been there in the first place.
+> RISC cpus have instruction to construct complex atomic actions by the cpu
+> as I have shown before for ARM. 
 
-Ok, thanks for the details, I'll queue up the patch in a bit.
+Also, I thought this_cpu thing's were at best locally atomic. If you
+make them full blown atomic ops then even __this_cpu ops will have to be
+full atomic ops, otherwise:
 
-greg k-h
+
+CPU0			CPU(1)
+
+this_cpu_inc(&foo);	preempt_disable();
+			__this_cpu_inc(&foo);
+			preempt_enable();
+
+might step on each other's toes.
