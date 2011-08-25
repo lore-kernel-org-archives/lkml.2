@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab1HYQUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:20:13 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36942 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751129Ab1HYQUL (ORCPT
+	id S1753396Ab1HYQUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:20:50 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:26452 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab1HYQUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:20:11 -0400
-Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-arch@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1108251009120.27407@router.home>
-References: <1313650253-21794-1-git-send-email-gthelen@google.com>
-	 <20110818144025.8e122a67.akpm@linux-foundation.org>
-	 <1314284272.27911.32.camel@twins>
-	 <alpine.DEB.2.00.1108251009120.27407@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Aug 2011 09:20:08 -0700
-Message-ID: <1314289208.3268.4.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1+jejb.1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Aug 2011 12:20:49 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Timur Tabi <timur@freescale.com>
+To: <greg@kroah.com>, <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@ozlabs.org>
+Subject: [PATCH] tty/powerpc: fix build break with ehv_bytechan.c on allyesconfig
+Date: Thu, 25 Aug 2011 11:20:45 -0500
+Message-ID: <1314289245-14946-1-git-send-email-timur@freescale.com>
+X-Mailer: git-send-email 1.7.3.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 10:11 -0500, Christoph Lameter wrote:
-> On Thu, 25 Aug 2011, Peter Zijlstra wrote:
-> 
-> > On Thu, 2011-08-18 at 14:40 -0700, Andrew Morton wrote:
-> > >
-> > > I think I'll apply it, as the call frequency is low (correct?) and the
-> > > problem will correct itself as other architectures implement their
-> > > atomic this_cpu_foo() operations.
-> >
-> > Which leads me to wonder, can anything but x86 implement that this_cpu_*
-> > muck? I doubt any of the risk chips can actually do all this.
-> > Maybe Itanic, but then that seems to be dying fast.
-> 
-> The cpu needs to have an RMW instruction that does something to a
-> variable relative to a register that points to the per cpu base.
-> 
-> Thats generally possible. The problem is how expensive the RMW is going to
-> be.
+The Kconfig for the ePAPR hypervisor byte channel driver has a "depends on PPC",
+which means it would compile on all PowerPC platforms, even though it's
+only been tested on Freescale platforms.  Change the Kconfig to depend on
+FSL_SOC instead.
 
-Risc systems generally don't have a single instruction for this, that's
-correct.  Obviously we can do it as a non atomic sequence: read
-variable, compute relative, read, modify, write ... but there's
-absolutely no point hand crafting that in asm since the compiler can
-usually work it out nicely.  And, of course, to have this atomic, we
-have to use locks, which ends up being very expensive.
+Signed-off-by: Timur Tabi <timur@freescale.com>
+---
+ drivers/tty/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-James
+diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+index f1ea59b..535af0a 100644
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -353,7 +353,7 @@ config TRACE_SINK
+ 
+ config PPC_EPAPR_HV_BYTECHAN
+ 	tristate "ePAPR hypervisor byte channel driver"
+-	depends on PPC
++	depends on FSL_SOC
+ 	help
+ 	  This driver creates /dev entries for each ePAPR hypervisor byte
+ 	  channel, thereby allowing applications to communicate with byte
+-- 
+1.7.3.4
 
 
