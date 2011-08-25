@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221Ab1HYHL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 03:11:57 -0400
-Received: from smtp3.epfl.ch ([128.178.224.226]:43772 "HELO smtp3.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753022Ab1HYHL4 convert rfc822-to-8bit (ORCPT
+	id S1752568Ab1HYHUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:20:36 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39212 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922Ab1HYHUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 03:11:56 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 03:11:55 EDT
-From: Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
-Organization: EPFL - STI - LSRO1
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/6] mc13783 cleanup
-Date: Thu, 25 Aug 2011 09:05:12 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.40.3-0.fc15.x86_64; KDE/4.6.5; x86_64; ; )
-Cc: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>, David Jander <david@protonic.nl>,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        kernel@pengutronix.de, linux-input@vger.kernel.org
-References: <20110824132740.GA28197@pengutronix.de>
-In-Reply-To: <20110824132740.GA28197@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201108250905.13168.philippe.retornaz@epfl.ch>
+	Thu, 25 Aug 2011 03:20:34 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Aug 2011 16:13:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2011-08-24-14-08 uploaded
+Message-Id: <20110825161307.7c921e46.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
+References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 24 août 2011 15:27:40, Uwe Kleine-König a écrit :
-> Hello,
+On Wed, 24 Aug 2011 14:09:05 -0700
+akpm@linux-foundation.org wrote:
+
+> The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
 > 
-> this series removes the long obsolte mc13783 API after fixing all
-> remaining users.
+>    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> It contains the following patches against 3.1-rc3:
+> (patches marked "*" will be included in linux-next)
+> 
 
-I posted a patch last month which was touching this MFD too.
-We will need to synchronize both patch. 
+just reporting.
 
-BTW, Sascha, could you give your ack/nack on my patch (mc13783: add pwr button 
-support) ? it has been a month without any news from your side. Thanks ! 
+A compile error from linux-next.patch.
 
-Regards,
+drivers/built-in.o: In function `dwc3_testmode_open':
+/home/kamezawa/Kernel/mmotm-Aug24/drivers/usb/dwc3/debugfs.c:481: undefined reference to `dwc3_send_gadget_ep_cmd'
+/home/kamezawa/Kernel/mmotm-Aug24/drivers/usb/dwc3/debugfs.c:482: undefined reference to `dwc3_send_gadget_ep_cmd'
+make: *** [.tmp_vmlinux1] Error 
 
-Philippe
+Thanks,
+-Kame
 
