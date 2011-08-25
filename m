@@ -1,119 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab1HYPq2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:46:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab1HYPq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:46:27 -0400
-Date: Thu, 25 Aug 2011 17:45:38 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2011-08-24-14-08 uploaded
-Message-ID: <20110825154538.GA5860@redhat.com>
-References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
- <20110825135103.GA6431@tiehlicka.suse.cz>
- <20110825140701.GA6838@tiehlicka.suse.cz>
- <20110826010938.5795e43137d58c9f42d44458@canb.auug.org.au>
+	id S1753164Ab1HYPrQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:47:16 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:48358 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752318Ab1HYPrP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 11:47:15 -0400
+X-Sasl-enc: 1W0vAkEErbQ29tYFdwenUO4qrSn7EF0OvcSEFnbpd6Jn 1314287234
+Date: Thu, 25 Aug 2011 08:47:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: Henry Ptasinski <henryp@broadcom.com>, linux-kernel@vger.kernel.org,
+        Brett Rudley <brudley@broadcom.com>,
+        Arend Van Spriel <arend@broadcom.com>,
+        Roland Vossen <rvossen@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        devel@linuxdriverproject.org, Greg KH <gregkh@suse.de>,
+        Kan Yan <kanyan@broadcom.com>, linux-wireless@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: brcmfmac: Consolidate debugging macros
+Message-ID: <20110825154705.GA6567@kroah.com>
+References: <927eab8b5c950c13991911cd4c16457a5d618bc7.1314252671.git.joe@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110826010938.5795e43137d58c9f42d44458@canb.auug.org.au>
+In-Reply-To: <927eab8b5c950c13991911cd4c16457a5d618bc7.1314252671.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 01:09:38AM +1000, Stephen Rothwell wrote:
-> Hi,
+On Wed, Aug 24, 2011 at 11:16:48PM -0700, Joe Perches wrote:
+> Convert multiple BRCMF_<debug_level> macros to a single
+> brcmf_dbg(level, fmt, ...) macro.
 > 
-> On Thu, 25 Aug 2011 16:07:01 +0200 Michal Hocko <mhocko@suse.cz> wrote:
-> >
-> > On Thu 25-08-11 15:51:03, Michal Hocko wrote:
-> > > 
-> > > On Wed 24-08-11 14:09:05, Andrew Morton wrote:
-> > > > The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
-> > > > 
-> > > >    http://userweb.kernel.org/~akpm/mmotm/
-> > > 
-> > > I have just downloaded your tree and cannot quilt it up. I am getting:
-> > > [...]
-> > > patching file tools/power/cpupower/debug/x86_64/centrino-decode.c
-> > > Hunk #1 FAILED at 1.
-> > > File tools/power/cpupower/debug/x86_64/centrino-decode.c is not empty after patch, as expected
-> > > 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x86_64/centrino-decode.c
-> > > patching file tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
-> > > Hunk #1 FAILED at 1.
-> > > File tools/power/cpupower/debug/x86_64/powernow-k8-decode.c is not empty after patch, as expected
-> > > 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
-> > > [...]
-> > > patching file virt/kvm/iommu.c
-> > > Patch linux-next.patch does not apply (enforce with -f)
-> > > 
-> > > Is this a patch (I am using 2.6.1) issue? The failing hunk looks as
-> > > follows:
-> > > --- a/tools/power/cpupower/debug/x86_64/centrino-decode.c
-> > > +++ /dev/null
-> > > @@ -1 +0,0 @@
-> > > -../i386/centrino-decode.c
-> > > \ No newline at end of file
-> > 
-> > Isn't this just a special form of git (clever) diff to spare some lines
-> > when the file deleted? Or is the patch simply corrupted?
-> > Anyway, my patch doesn't cope with that. Any hint what to do about it?
+> Remove the now unnecessary double parentheses in the uses
+> of the old macros when converting to brcmf_dbg.
 > 
-> Those files were symlinks and were removed by a commit in linux-next.
-> diff/patch does not cope with that.
+> Delete all uses of "%s: [fmt]", __func__, args... and move
+> the "%s: ", __func__ to the macro for consistency.
+> 
+> Coalesce long formats.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-You can probably replace `patch' in your $PATH by a wrapper that uses
-git-apply, which can deal with them.
+Applied, thanks.
 
-Or you could use git-quiltimport, which uses git-apply, to prepare the
--mmotm base tree in git, on top of which you can continue to work with
-quilt.
-
-I do this with a cron-job automatically, you can find the result here:
-
-    http://git.kernel.org/?p=linux/kernel/git/hannes/linux-mmotm.git;a=summary
-
-If you want to do it manually, there is sometimes confusing binary
-file patch sections in -mmotm, which in turn git-apply can not deal
-with, so I use the following uncrapdiff.awk filter on the patches
-before import.
-
----
-
-# Filter out sections that feature an index line but
-# no real diff part that would start with '--- file'
-
-{
-	if (HEADER ~ /^diff --git /) {
-		if ($0 ~ /^index /) {
-			INDEX=$0
-		} else if ($0 ~ /^diff --git /) {
-			print(HEADER)
-			HEADER=$0
-		} else if (INDEX ~ /^index /) {
-			if ($0 ~ /^--- /) {
-				print(HEADER)
-				print(INDEX)
-				print($0)
-			}
-			HEADER=""
-			INDEX=""
-		} else {
-			HEADER=HEADER "\n" $0
-		}
-	} else if ($0 ~ /^diff --git /) {
-		HEADER=$0
-	} else {
-		print($0)
-	}
-}
-
----
-
-HTH
+greg k-h
