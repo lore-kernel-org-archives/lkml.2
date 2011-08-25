@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553Ab1HYWzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:55:25 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48771 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1HYWzY convert rfc822-to-8bit (ORCPT
+	id S1752207Ab1HYW4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:56:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38989 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab1HYW4x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:55:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110821011240.GG2203@ZenIV.linux.org.uk>
-References: <20110821005031.GB10377@gallifrey>
-	<20110821011240.GG2203@ZenIV.linux.org.uk>
-Date: Thu, 25 Aug 2011 15:55:23 -0700
-X-Google-Sender-Auth: 83FTwyGPqUSOEBTrNO4dQukcAlU
-Message-ID: <CAA9_cmfCWM1793stQE0Woa2Z0bEqk6j5=MSgEmV5A+=ipiFQow@mail.gmail.com>
-Subject: Re: [PATCH] Fix missing 'cnt' in ?: in dmatest
-From: Dan Williams <dan.j.williams@intel.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Dr. David Alan Gilbert" <linux@treblig.org>, linux-kernel@vger.kernel.org,
-        nicolas.ferre@atmel.com, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Aug 2011 18:56:53 -0400
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: James Bottomley <James.bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-arch@vger.kernel.org
+Date: Fri, 26 Aug 2011 00:56:27 +0200
+In-Reply-To: <alpine.DEB.2.00.1108251413130.27407@router.home>
+References: <1313650253-21794-1-git-send-email-gthelen@google.com>
+	  <20110818144025.8e122a67.akpm@linux-foundation.org>
+	  <1314284272.27911.32.camel@twins>
+	  <alpine.DEB.2.00.1108251009120.27407@router.home>
+	  <1314289208.3268.4.camel@mulgrave>
+	  <alpine.DEB.2.00.1108251128460.27407@router.home>
+	  <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>
+	  <alpine.DEB.2.00.1108251206440.27407@router.home>
+	  <1e295500-5d1f-45dd-aa5b-3d2da2cf1a62@email.android.com>
+	  <alpine.DEB.2.00.1108251341230.27407@router.home>
+	 <1314299115.26922.2.camel@twins>
+	 <alpine.DEB.2.00.1108251413130.27407@router.home>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314312987.26922.13.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 20, 2011 at 6:12 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sun, Aug 21, 2011 at 01:50:31AM +0100, Dr. David Alan Gilbert wrote:
->
->> (WTH is x=y?:z legal C anyway?)
->
-> gccism.  It's not legal C; it's a gcc extension, and not a pretty one at
-> that.  It's almost definitely a bug in this case - what used to be in the
-> tree is equivalent to cnt > 0 ? cnt > 0 : 0, i.e. cnt > 0 ? 1 : 0, i.e.
-> cnt > 0.  AFAICS, after your patch it does make sense.
->
->> Signed-off-by: Dr. David Alan Gilbert <linux@treblig.org>
+On Thu, 2011-08-25 at 14:19 -0500, Christoph Lameter wrote:
+> On Thu, 25 Aug 2011, Peter Zijlstra wrote:
+> 
+> > Also, I thought this_cpu thing's were at best locally atomic. If you
+> > make them full blown atomic ops then even __this_cpu ops will have to be
+> > full atomic ops, otherwise:
+> >
+> >
+> > CPU0			CPU(1)
+> >
+> > this_cpu_inc(&foo);	preempt_disable();
+> > 			__this_cpu_inc(&foo);
+> > 			preempt_enable();
+> >
+> > might step on each other's toes.
+> 
+> They would both have their own instance of "foo". per cpu atomicity is
+> only one requirement of this_cpu_ops. The other is the ability to relocate
+> accesses relative to the current per cpu area.
 
-Thanks, I'll take this through the async_tx.git tree.
+Ah, but not if the this_cpu_inc() thing ends up being more than a single
+instruction, then you have preemption/migration windows. Only when LL/SC
+can deal with SC having a different EA from the LL and supports a big
+enough offset could this possibly work.
 
---
-Dan
