@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1HYReR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:34:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29064 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753697Ab1HYReQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:34:16 -0400
-Date: Thu, 25 Aug 2011 13:34:10 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: gregkh@suse.de
-Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org
-Message-Id: <268bd0822736c924e45d966aa0ca3d60637ccc2b.1314291910.git.jbaron@redhat.com>
-In-Reply-To: <cover.1314291909.git.jbaron@redhat.com>
-References: <cover.1314291909.git.jbaron@redhat.com>
-Subject: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug descriptor definitions
+	id S1754960Ab1HYReZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:34:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65391 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab1HYReW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 13:34:22 -0400
+Date: Thu, 25 Aug 2011 21:34:16 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110825173416.GD6387@sun>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
+ <4E5680D2.1030608@parallels.com>
+ <20110825172109.GC6387@sun>
+ <4E568583.40206@parallels.com>
+ <CAOS58YOSLrfFaUgaDEZyjAPuEHrB9PmVi9TTz=HROtYuwRQuRA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOS58YOSLrfFaUgaDEZyjAPuEHrB9PmVi9TTz=HROtYuwRQuRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the repetitive  struct _ddebug descriptor definitions with
-a new DECLARE_DYNAMIC_DEBUG_META_DATA(name, fmt) macro.
+On Thu, Aug 25, 2011 at 07:27:34PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Aug 25, 2011 at 7:25 PM, Pavel Emelyanov <xemul@parallels.com> wrote:
+> > Not exactly - as I said if we leave the name without 0x (3d000000 instead of 0x3d000000)
+> > this makes it hard to use strtol() on these strings to convert names to addresses.
+> 
+> But strtol() has @base.
+> 
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- include/linux/dynamic_debug.h |   64 ++++++++++++++++++++++------------------
- 1 files changed, 35 insertions(+), 29 deletions(-)
+That's ok. Tejun, i'll think a bit more (probably tomorrow already, since I'll
+be reworking it and adding a check for permissions nit you've pointed) and will
+check if there is a nice way to make the names longer ;)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index feaac1e..699f533 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -54,35 +54,41 @@ extern int __dynamic_netdev_dbg(struct _ddebug *descriptor,
- 			     const char *fmt, ...)
- 	__attribute__ ((format (printf, 3, 4)));
- 
--#define dynamic_pr_debug(fmt, ...) do {					\
--	static struct _ddebug descriptor				\
--	__used								\
--	__attribute__((section("__verbose"), aligned(8))) =		\
--	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
--		_DPRINTK_FLAGS_DEFAULT };				\
--	if (unlikely(descriptor.enabled))				\
--		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
--	} while (0)
--
--#define dynamic_dev_dbg(dev, fmt, ...) do {				\
--	static struct _ddebug descriptor				\
--	__used								\
--	__attribute__((section("__verbose"), aligned(8))) =		\
--	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
--		_DPRINTK_FLAGS_DEFAULT };				\
--	if (unlikely(descriptor.enabled))				\
--		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
--	} while (0)
--
--#define dynamic_netdev_dbg(dev, fmt, ...) do {				\
--	static struct _ddebug descriptor				\
--	__used								\
--	__attribute__((section("__verbose"), aligned(8))) =		\
--	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
--		_DPRINTK_FLAGS_DEFAULT };				\
--	if (unlikely(descriptor.enabled))				\
--		__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
--	} while (0)
-+#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
-+	static struct _ddebug __used __aligned(8)		\
-+	__attribute__((section("__verbose"))) name = {		\
-+		.modname = KBUILD_MODNAME,			\
-+		.function = __func__,				\
-+		.filename = __FILE__,				\
-+		.format = fmt,					\
-+		.lineno = __LINE__,				\
-+		.flags =  _DPRINTK_FLAGS_DEFAULT,		\
-+		.enabled = false,				\
-+	}
-+
-+#define dynamic_pr_debug(fmt, ...)				\
-+do {								\
-+	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
-+	if (unlikely(descriptor.enabled))			\
-+		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),	\
-+				   ##__VA_ARGS__);		\
-+} while (0)
-+
-+#define dynamic_dev_dbg(dev, fmt, ...)				\
-+do {								\
-+	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
-+	if (unlikely(descriptor.enabled))			\
-+		__dynamic_dev_dbg(&descriptor, dev, fmt,	\
-+				  ##__VA_ARGS__);		\
-+} while (0)
-+
-+#define dynamic_netdev_dbg(dev, fmt, ...)			\
-+do {								\
-+	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
-+	if (unlikely(descriptor.enabled))			\
-+		__dynamic_netdev_dbg(&descriptor, dev, fmt,	\
-+				     ##__VA_ARGS__);		\
-+} while (0)
- 
- #else
- 
--- 
-1.7.5.4
-
+	Cyrill
