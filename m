@@ -1,181 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab1HYADQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 20:03:16 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:44614 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750915Ab1HYADP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 20:03:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuUCADmPVU55LIxDgWdsb2JhbABCqAAVAQEWJiWBQAEBBAEnCwEjIwULCAMYLhQlAyETG4dWBLl7DoY7BKQm
-Date: Thu, 25 Aug 2011 10:03:11 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Josh Boyer <jwboyer@gmail.com>, Miles Lane <miles.lane@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.1.0-rc3 -- INFO: possible circular locking dependency detected
-Message-ID: <20110825000310.GI3162@dastard>
-References: <CAHFgRy_7XQkoU3uY72Eve_X-FfXOuUm2Ydhyheo4bf53P3K=zQ@mail.gmail.com>
- <CA+5PVA47Pa14Sk5-VZuQhXk1db6KK13_3uSk1QMKVwsZyPmj_A@mail.gmail.com>
- <20110823114931.GC3162@dastard>
- <CA+5PVA4bLOSOQ=Pvt25xY=8L_b07XnM-8UetHOxnbtgtY0o4_Q@mail.gmail.com>
- <20110823130451.GD3162@dastard>
- <CA+5PVA7fHAsSGFo4hcTtegT8a4K3xk=XTNYC7GzSYDbgRKc1ug@mail.gmail.com>
- <alpine.LSU.2.00.1108241452120.2091@sister.anvils>
+	id S1752615Ab1HYAFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 20:05:54 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:50775 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915Ab1HYAFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 20:05:53 -0400
+Message-ID: <4E5591D3.1080005@nod.at>
+Date: Thu, 25 Aug 2011 02:05:39 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LSU.2.00.1108241452120.2091@sister.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@amd64.org>, Andrew Lutomirski <luto@mit.edu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+References: <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk> <20110823021717.GA2203@ZenIV.linux.org.uk> <20110823061531.GC2203@ZenIV.linux.org.uk> <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com> <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com> <20110823162251.GC13138@aftab> <CA+55aFxJF88EJ=WhPq08j4+REBgpvVHVwbg5BR05DD+exRyp8A@mail.gmail.com> <20110823165320.GG2203@ZenIV.linux.org.uk> <4E53DC2A.3020004@nod.at> <20110823170740.GH2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110823170740.GH2203@ZenIV.linux.org.uk>
+Content-Type: multipart/mixed;
+ boundary="------------050009070708000503050107"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 03:31:14PM -0700, Hugh Dickins wrote:
-> On Tue, 23 Aug 2011, Josh Boyer wrote:
-> > On Tue, Aug 23, 2011 at 9:04 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > > On Tue, Aug 23, 2011 at 07:59:20AM -0400, Josh Boyer wrote:
-> > >> On Tue, Aug 23, 2011 at 7:49 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > >> >> >  Possible unsafe locking scenario:
-> > >> >> >
-> > >> >> >       CPU0                    CPU1
-> > >> >> >       ----                    ----
-> > >> >> >  lock(&mm->mmap_sem);
-> > >> >> >                               lock(&sb->s_type->i_mutex_key);
-> > >> >> >                               lock(&mm->mmap_sem);
-> > >> >> >  lock(&sb->s_type->i_mutex_key);
-> > >> >> >
-> > >> >> >  *** DEADLOCK ***
-> > >> >>
-> > >> >> This one was reported yesterday: https://lkml.org/lkml/2011/8/21/163
-> > >> >> and we're hoping Ted (or someone else from the ext4 camp) can comment
-> > >> >> on why ext4_evict_inode is holding i_mutex.
-> > >> >
-> > >> > Actually, the problem has nothing to do with ext4. the problem is
-> > >> > that remove_vma() is holding the mmap_sem while calling fput(). The
-> > >> > correct locking order is i_mutex->mmap_sem, as documented in
-> > >> > mm/filemap.c:
-> > >> >
-> > >> >  *  ->i_mutex                   (generic_file_buffered_write)
-> > >> >  *    ->mmap_sem                (fault_in_pages_readable->do_page_fault)
-> > >> >
-> > >> >
-> > >> > The way remove_vma() calls fput() also triggers lockdep reports in
-> > >> > XFS and it will do so with any filesystem that takes an inode
-> > >> > specific lock in it's evict() processing. IOWs, remove_vma() needs
-> > >> > fixing, not ext4....
-> > >>
-> > >> Er... ok.  So the remove_vma code hasn't changed since 2008.  We're
-> > >> only seeing this issue now because the debugging code has improved,
-> > >> or?
-> > >
-> > > The problem has been there since at least 2008.  Here's an early
-> > > XFS report from 2.6.24:
-> > >
-> > > http://oss.sgi.com/archives/xfs/2008-02/msg00931.html
-> > >
-> > > Here's an XFS report
-> > > to match the ext4 one in this thread from 2009:
-> > >
-> > > http://oss.sgi.com/archives/xfs/2009-03/msg00149.html
-> > >
-> > > You won't find reports much older than this - it only started to be
-> > > reported when lockdep support in XFS matured and it started to be
-> > > widely used....
-> > >
-> > >> At any rate, the proposed solution is to make remove_vma drop mmap_sem
-> > >> before calling fput, or make it not call fput, or?
-> > >
-> > > Ask the VM folk - this is the only response I can remember from them
-> > > is this:
-> > >
-> > > http://oss.sgi.com/archives/xfs/2009-03/msg00224.html
-> > >
-> > > Maybe now that ext4 is hitting the problem something will be done
-> > > about it...
-> > 
-> > OK.  I've CC'd Andrew and Hugh, so maybe we can get a discussion going.
-> 
-> My first reaction would be that this is quite simply a filesystem bug.
-> Apparently a long-standing bug in the XFS case, but one in which ext4
-> has just now (3.1-rc) joined it.
-> 
-> The mm/fs locking hierarchy has been that way forever:
+This is a multi-part message in MIME format.
+--------------050009070708000503050107
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-That doesn't make it right - the XFS people have been complaining
-about this mmap_sem/fput problem for as long as I can remember.
+Am 23.08.2011 19:07, schrieb Al Viro:
+> On Tue, Aug 23, 2011 at 06:58:18PM +0200, Richard Weinberger wrote:
+>
+>> What about this hack/solution?
+>> While booting UML can check whether the host's vDSO contains
+>> a SYSCALL instruction.
+>> If so, UML will not make the host's vDSO available to it's
+>> processes...
+>
+> Note that this is *only* for 32bit side of things.  64bit one works fine...
+>
+> I wouldn't search for SYSCALL in vdso, BTW - not when we have a good way
+> to trigger that crap and recognize it.
+>
+> At boot time, fork a child.  Have it traced with PTRACE_SYSCALL.  Let it
+> put recognizable values in registers and call __kernel_vsyscall().  Then
+> let the parent do one more PTRACE_SYSCALL, then PTRACE_POKEUSER and set ebp
+> to 0x69696969.  PTRACE_CONT the sucker and let it report what it sees in ecx.
+> If it's what we'd put there - fine, it looks safe.  If it's 0x69696969 -
+> we have a problem, no vdso for us.
 
-> mm does not assume
-> that the fs will not take any inode-specific lock in its fput(), but yes,
-> it does expect fput() not to take the i_mutex.
+BTW: IMHO we can completely disable the vDSO for 32bit guests.
+I did some benchmarks, there is no performance gain at all
+within UML.
 
-I think that is a broken assumption. Looking at teh documentation
-for the file operations, Documentation/filesystems/vfs.txt has this
-comment:
+The attached program runs some syscalls for 10 seconds and prints
+the number of iterations.
 
-	Again, all methods are called without any locks being held, unless
-	otherwise noted.
+Some results (5 runs on my Intel Core2):
+vdso: 360099 362057 365982 367132 368907
+none: 344195 355759 358974 366630 420027
 
-And from Documentation/filesystems/Locking:
+Thanks,
+//richard
 
-	locking rules:
-		All may block except for ->setlease.
-		No VFS locks held on entry except for ->setlease.
 
-So given that fput() can call both f_ops->async and f_ops->release,
-which according to the above documentation should be called without
-any locks held and. That implies that fput() should not be called
-with locks held.
+--------------050009070708000503050107
+Content-Type: text/x-csrc;
+ name="sysbench.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="sysbench.c"
 
-There is nothing to say any of the file operations methods cannot
-take i_mutex or other inode locks. The implication that they are
-called without locks held is clear - it is supposed to be safe for
-filesystems to take locks in these file operation methods.
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-And from mm/filemap.c where lock orders are defined:
+static unsigned long long iter;
 
- *  ->i_mutex                   (generic_file_buffered_write)
- *    ->mmap_sem                (fault_in_pages_readable->do_page_fault)
+static void done(int sig)
+{
+	printf("%llu\n", iter);
+	exit(0);
+}
 
-It's pretty clear that calling fput() with the mmap_sem held
-violates this order....
+int main()
+{
+	signal(SIGALRM, done);
+	alarm(10);
 
-Similarly, fput() calls dput(), which is how we're ending up in
-.evict
+	for(;;){
+		close(dup(0));
+		getpid();
+		getuid();
+		umask(022);
+		iter++;
+	}
+	return 0;
+}
 
-> 
-> In this new ext4 case, it appears to be just an issue on final eviction
-> of the inode, which I think makes actual deadlock (when writing to file
-> needs to fault in a page from mm) impossible - we wouldn't be evicting
-> it if there were still references.  Just needs some lockdep notation?
-
-For evict, that's necessary for the shrinkers not to throw lockdep
-woarnings.
-
-But that's not the only case that the mmap_sem/fput inversion can
-trigger: .release is another. We've had to place try lock semantics
-in the XFS code to avoid deadlocks there because inodes are not
-being reclaimed when .release is called....
-
-> Dropping mmap_sem while doing fput() in munmap() doesn't sound appealing
-> to me: although we have converted a number of paths to drop mmap_sem in
-> strategic places, getting back to the (possibly changed) vma sequence
-> afterwards is tiresome (when the munmap covers multiple vmas), and
-> instinct says that munmap() might be a more difficult case to get
-> right than most.  Leave the fput()s to a workqueue instead?
-
-Some kind of deferred processing is needed, I guess. I don't know
-what is the best way to do it. perhaps an operation that will drop
-all but the last filp reference in line, but push the last one to a
-workqueue. eg. fput_background()?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--------------050009070708000503050107--
