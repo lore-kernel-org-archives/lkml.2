@@ -1,97 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab1HYPSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:18:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59942 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753900Ab1HYPJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:53 -0400
-Date: Fri, 26 Aug 2011 01:09:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2011-08-24-14-08 uploaded
-Message-Id: <20110826010938.5795e43137d58c9f42d44458@canb.auug.org.au>
-In-Reply-To: <20110825140701.GA6838@tiehlicka.suse.cz>
-References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
-	<20110825135103.GA6431@tiehlicka.suse.cz>
-	<20110825140701.GA6838@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__26_Aug_2011_01_09_38_+1000_ujMjDg7mnHSDn1op"
+	id S1753892Ab1HYPJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:09:52 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:34634 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab1HYPJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 11:09:46 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 076/118] drbd: Converted helper functions for drbd_send() to tconn
+Date: Thu, 25 Aug 2011 17:08:12 +0200
+Message-Id: <1314284934-17999-77-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Aug_2011_01_09_38_+1000_ujMjDg7mnHSDn1op
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* drbd_update_congested()
+* we_should_drop_the_connection()
 
-Hi,
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_main.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
 
-On Thu, 25 Aug 2011 16:07:01 +0200 Michal Hocko <mhocko@suse.cz> wrote:
->
-> On Thu 25-08-11 15:51:03, Michal Hocko wrote:
-> >=20
-> > On Wed 24-08-11 14:09:05, Andrew Morton wrote:
-> > > The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
-> > >=20
-> > >    http://userweb.kernel.org/~akpm/mmotm/
-> >=20
-> > I have just downloaded your tree and cannot quilt it up. I am getting:
-> > [...]
-> > patching file tools/power/cpupower/debug/x86_64/centrino-decode.c
-> > Hunk #1 FAILED at 1.
-> > File tools/power/cpupower/debug/x86_64/centrino-decode.c is not empty a=
-fter patch, as expected
-> > 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x8=
-6_64/centrino-decode.c
-> > patching file tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
-> > Hunk #1 FAILED at 1.
-> > File tools/power/cpupower/debug/x86_64/powernow-k8-decode.c is not empt=
-y after patch, as expected
-> > 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x8=
-6_64/powernow-k8-decode.c
-> > [...]
-> > patching file virt/kvm/iommu.c
-> > Patch linux-next.patch does not apply (enforce with -f)
-> >=20
-> > Is this a patch (I am using 2.6.1) issue? The failing hunk looks as
-> > follows:
-> > --- a/tools/power/cpupower/debug/x86_64/centrino-decode.c
-> > +++ /dev/null
-> > @@ -1 +0,0 @@
-> > -../i386/centrino-decode.c
-> > \ No newline at end of file
->=20
-> Isn't this just a special form of git (clever) diff to spare some lines
-> when the file deleted? Or is the patch simply corrupted?
-> Anyway, my patch doesn't cope with that. Any hint what to do about it?
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 4c31410..1f9eac0 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -1343,34 +1343,34 @@ int drbd_send_ov_request(struct drbd_conf *mdev, sector_t sector, int size)
+  * returns false if we should retry,
+  * true if we think connection is dead
+  */
+-static int we_should_drop_the_connection(struct drbd_conf *mdev, struct socket *sock)
++static int we_should_drop_the_connection(struct drbd_tconn *tconn, struct socket *sock)
+ {
+ 	int drop_it;
+ 	/* long elapsed = (long)(jiffies - mdev->last_received); */
+ 
+-	drop_it =   mdev->tconn->meta.socket == sock
+-		|| !mdev->tconn->asender.task
+-		|| get_t_state(&mdev->tconn->asender) != RUNNING
+-		|| mdev->state.conn < C_CONNECTED;
++	drop_it =   tconn->meta.socket == sock
++		|| !tconn->asender.task
++		|| get_t_state(&tconn->asender) != RUNNING
++		|| tconn->volume0->state.conn < C_CONNECTED;
+ 
+ 	if (drop_it)
+ 		return true;
+ 
+-	drop_it = !--mdev->tconn->ko_count;
++	drop_it = !--tconn->ko_count;
+ 	if (!drop_it) {
+-		dev_err(DEV, "[%s/%d] sock_sendmsg time expired, ko = %u\n",
+-		       current->comm, current->pid, mdev->tconn->ko_count);
+-		request_ping(mdev->tconn);
++		conn_err(tconn, "[%s/%d] sock_sendmsg time expired, ko = %u\n",
++			 current->comm, current->pid, tconn->ko_count);
++		request_ping(tconn);
+ 	}
+ 
+ 	return drop_it; /* && (mdev->state == R_PRIMARY) */;
+ }
+ 
+-static void drbd_update_congested(struct drbd_conf *mdev)
++static void drbd_update_congested(struct drbd_tconn *tconn)
+ {
+-	struct sock *sk = mdev->tconn->data.socket->sk;
++	struct sock *sk = tconn->data.socket->sk;
+ 	if (sk->sk_wmem_queued > sk->sk_sndbuf * 4 / 5)
+-		set_bit(NET_CONGESTED, &mdev->tconn->flags);
++		set_bit(NET_CONGESTED, &tconn->flags);
+ }
+ 
+ /* The idea of sendpage seems to be to put some kind of reference
+@@ -1421,14 +1421,14 @@ static int _drbd_send_page(struct drbd_conf *mdev, struct page *page,
+ 		return _drbd_no_send_page(mdev, page, offset, size, msg_flags);
+ 
+ 	msg_flags |= MSG_NOSIGNAL;
+-	drbd_update_congested(mdev);
++	drbd_update_congested(mdev->tconn);
+ 	set_fs(KERNEL_DS);
+ 	do {
+ 		sent = mdev->tconn->data.socket->ops->sendpage(mdev->tconn->data.socket, page,
+ 							offset, len,
+ 							msg_flags);
+ 		if (sent == -EAGAIN) {
+-			if (we_should_drop_the_connection(mdev,
++			if (we_should_drop_the_connection(mdev->tconn,
+ 							  mdev->tconn->data.socket))
+ 				break;
+ 			else
+@@ -1674,7 +1674,7 @@ int drbd_send(struct drbd_conf *mdev, struct socket *sock,
+ 
+ 	if (sock == mdev->tconn->data.socket) {
+ 		mdev->tconn->ko_count = mdev->tconn->net_conf->ko_count;
+-		drbd_update_congested(mdev);
++		drbd_update_congested(mdev->tconn);
+ 	}
+ 	do {
+ 		/* STRANGE
+@@ -1688,7 +1688,7 @@ int drbd_send(struct drbd_conf *mdev, struct socket *sock,
+  */
+ 		rv = kernel_sendmsg(sock, &msg, &iov, 1, size);
+ 		if (rv == -EAGAIN) {
+-			if (we_should_drop_the_connection(mdev, sock))
++			if (we_should_drop_the_connection(mdev->tconn, sock))
+ 				break;
+ 			else
+ 				continue;
+-- 
+1.7.4.1
 
-Those files were symlinks and were removed by a commit in linux-next.
-diff/patch does not cope with that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__26_Aug_2011_01_09_38_+1000_ujMjDg7mnHSDn1op
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOVmWyAAoJEDMEi1NhKgbs75AH/A3x9LCzxwTMuras0QnnmMVe
-Q/sLpor2/5ArNwhR4S2+Ohc/36c/6twzE3h4QCO0+2M8BUCAC2pcN9H9/0seb6UX
-qdYYROV10Y8O3yF15iSYQzP+iaky5bcpGUG29rHecb6DkUnKfzl8RKF73kJP0H4p
-wfXR7uljsZYj5M++mKY+ma3LVD/cwBe0Ycpv5aYDYs2dFE+LP2n6p3BYTW7tBWkC
-gEb1k7YR7YCIPraLd8X9T5+jdl3NyUZOs+B+viCwnFms4RCcM9mS1dlxVnUH0+56
-3z+OlrOHLZrq0ohKrpeAjj3acTPxEAPA5GU0fiHBYHUDCYMLavC8n64vOBm0R2Q=
-=g9BK
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Aug_2011_01_09_38_+1000_ujMjDg7mnHSDn1op--
