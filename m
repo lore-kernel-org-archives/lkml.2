@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab1HYGkT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 02:40:19 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:36094 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751087Ab1HYGkP (ORCPT
+	id S1752675Ab1HYGkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 02:40:46 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:57913 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751474Ab1HYGko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 02:40:15 -0400
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH] block: Warn if tag is greater than real_max_depth.
-Date: Thu, 25 Aug 2011 14:40:03 +0800
-Message-Id: <1314254403-4137-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Thu, 25 Aug 2011 02:40:44 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQCADbtVU55LIxDgWdsb2JhbABDqAAVAQEWJiWBQAEBBTocIxAIAw4KLhQlAyETwj0Ohj0Em1aIUA
+Date: Thu, 25 Aug 2011 16:40:39 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk, dchinner@redhat.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+Message-ID: <20110825064039.GO3162@dastard>
+References: <1309275199-10801-1-git-send-email-josef@redhat.com>
+ <1309275199-10801-5-git-send-email-josef@redhat.com>
+ <20110825060632.GA9933@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110825060632.GA9933@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Thu, Aug 25, 2011 at 02:06:32AM -0400, Christoph Hellwig wrote:
+> On Tue, Jun 28, 2011 at 11:33:19AM -0400, Josef Bacik wrote:
+> > This is a test to make sure seek_data/seek_hole is acting like it does on
+> > Solaris.  It will check to see if the fs supports finding a hole or not and will
+> > adjust as necessary.
+> 
+> Can you resend this with any updates that happened in the meantime?
+> 
+> Dave also still had some comments about semantics, so it might be worth
+> to incorporate that as well.
 
-In case tag depth is reduced, it is max_depth not real_max_depth.
-So we should allow a request with tag >= max_depth, but for a
-tag >= real_max_depth, there really should be some problem.
+The main questions I had when looking at this was how we should
+handle unwritten extents - the only answer I got was along the lines
+of "we'll deal with that once filesystems have implemented
+something". That's a bit of a chicken-and-egg situation, and doesn't
+help me decide what is the best thing to do. I don't want to have to
+re-implement this code when it's decided i did the wrong thing
+initially.
 
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- block/blk-tag.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+The most basic question I really want answered is this:
 
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index ece65fc..e74d6d1 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -286,12 +286,14 @@ void blk_queue_end_tag(struct request_queue *q, struct request *rq)
- 
- 	BUG_ON(tag == -1);
- 
--	if (unlikely(tag >= bqt->real_max_depth))
-+	if (unlikely(tag >= bqt->max_depth)) {
- 		/*
- 		 * This can happen after tag depth has been reduced.
--		 * FIXME: how about a warning or info message here?
-+		 * But tag shouldn't be larger than real_max_depth.
- 		 */
-+		WARN_ON(tag >= bqt->real_max_depth);
- 		return;
-+	}
- 
- 	list_del_init(&rq->queuelist);
- 	rq->cmd_flags &= ~REQ_QUEUED;
+	- is preallocated space a HOLE, or is it DATA?
+
+Whatever the answer, I think it should be consistently
+presented by all filesystems that support preallocation, and it
+should be encoded into the generic SEEK_HOLE/SEEK_DATA tests....
+
+Answering that question then helps answer the more complex questions
+I had, like:
+
+	- what does SEEK_DATA return when you have a file layout
+	  like "hole-prealloc-data"?
+
+Answers to that sort of question need to be known so we can write
+corner-case tests to correctly verify the filesystem implementation.
+
+I like to do better than present userspace with an interface that
+behaves vastly different depending on the underlying filesystem, but
+if the answer is "definition and implementation is entirely
+filesystem specific" then I'll just go make something up....
+
+Cheers,
+
+Dave.
 -- 
-1.7.1
-
+Dave Chinner
+david@fromorbit.com
