@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab1HYQmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:42:32 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:60059
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1754168Ab1HYQmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:42:31 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42730
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753341Ab1HYQ2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753352Ab1HYQ2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Aug 2011 12:28:55 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 13/59] Staging: hv: vmbus: Support the notion of id tables in vmbus_match()
-Date: Thu, 25 Aug 2011 09:48:39 -0700
-Message-Id: <1314290965-2698-13-git-send-email-kys@microsoft.com>
+Subject: [PATCH 18/59] Staging: hv: util: Get rid of the DMI signature in hv_util.c
+Date: Thu, 25 Aug 2011 09:48:44 -0700
+Message-Id: <1314290965-2698-18-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314290965-2698-1-git-send-email-kys@microsoft.com>
 References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
@@ -23,57 +23,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce code to handle driver specific id tables to the vmbus core
-(vmbus_match). This would allow us to handle more than one device type
-with a given driver.
+Now that we have implemented a vmbus specific mechanism for auto-loading,
+get rid of the DMI signature.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/vmbus_drv.c |   20 +++++++++++++++-----
- 1 files changed, 15 insertions(+), 5 deletions(-)
+ drivers/staging/hv/hv_util.c |   20 --------------------
+ 1 files changed, 0 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index a6e7dc5..abcd592 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -255,21 +255,31 @@ static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
- 	return ret;
- }
+diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
+index a620f4d..aed9187 100644
+--- a/drivers/staging/hv/hv_util.c
++++ b/drivers/staging/hv/hv_util.c
+@@ -26,7 +26,6 @@
+ #include <linux/slab.h>
+ #include <linux/sysctl.h>
+ #include <linux/reboot.h>
+-#include <linux/dmi.h>
+ #include <linux/pci.h>
  
-+static uuid_le null_guid;
-+
-+static inline  bool is_null_guid(const __u8 *guid)
-+{
-+	if (memcmp(guid, &null_guid, sizeof(uuid_le)))
-+		return false;
-+	return true;
-+}
-+
+ #include "hyperv.h"
+@@ -276,22 +275,6 @@ hv_utils_pci_table[] __maybe_unused = {
+ };
+ MODULE_DEVICE_TABLE(pci, hv_utils_pci_table);
  
- /*
-  * vmbus_match - Attempt to match the specified device to the specified driver
-  */
- static int vmbus_match(struct device *device, struct device_driver *driver)
+-
+-static const struct dmi_system_id __initconst
+-hv_utils_dmi_table[] __maybe_unused  = {
+-	{
+-		.ident = "Hyper-V",
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
+-			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
+-		},
+-	},
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(dmi, hv_utils_dmi_table);
+-
+-
+ static int __init init_hyperv_utils(void)
  {
--	int match = 0;
- 	struct hv_driver *drv = drv_to_hv_drv(driver);
- 	struct hv_device *hv_dev = device_to_hv_device(device);
-+	const struct hv_vmbus_device_id *id_array = drv->id_table;
+ 	pr_info("Registering HyperV Utility Driver\n");
+@@ -300,9 +283,6 @@ static int __init init_hyperv_utils(void)
+ 		return -ENODEV;
  
--	/* We found our driver ? */
--	if (!uuid_le_cmp(hv_dev->dev_type, drv->dev_type))
--		match = 1;
-+	for (; !is_null_guid(id_array->guid); id_array++)
-+		if (!memcmp(&id_array->guid, &hv_dev->dev_type.b,
-+				sizeof(struct hv_vmbus_device_id)))
-+			return 1;
  
--	return match;
-+	return 0;
- }
- 
- /*
+-	if (!dmi_check_system(hv_utils_dmi_table))
+-		return -ENODEV;
+-
+ 	shut_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	time_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	hbeat_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
 -- 
 1.7.4.1
 
