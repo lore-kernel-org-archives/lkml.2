@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab1HYTsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:48:15 -0400
-Received: from ch-smtp05.sth.basefarm.net ([80.76.153.6]:38232 "EHLO
-	ch-smtp05.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752831Ab1HYTsO (ORCPT
+	id S1753241Ab1HYTti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 15:49:38 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56362 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752543Ab1HYTtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:48:14 -0400
-Message-ID: <4E56A6D7.2060603@fastmail.fm>
-Date: Thu, 25 Aug 2011 21:47:35 +0200
-From: anders eriksson <aeriksson@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110813 Thunderbird/5.0
+	Thu, 25 Aug 2011 15:49:36 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: mtrr failure, 3.1-rc1
-References: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org> <CA+55aFzndqkSC1z3==HqUGC8hP=pw62ro3CWYtovk95_cYAKsA@mail.gmail.com> <20110825164649.GL2803@mtj.dyndns.org>
-In-Reply-To: <20110825164649.GL2803@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.252.233.92
-X-Scan-Result: No virus found in message 1Qwfu3-0007r5-IP.
-X-Scan-Signature: ch-smtp05.sth.basefarm.net 1Qwfu3-0007r5-IP 2afb67a05b9e102a53bbdc1ea0a70958
+In-Reply-To: <CACqU3MXpihKOV_4whbi8_CSU4uFpFzbNFaXvSN75ChdYhZ0A5A@mail.gmail.com>
+References: <20110722154219.GA25694@elte.hu> <CACqU3MUxUBzu9frjHLVoHUEKtaDEP+Gn7txm1wbxq=Qkv12ssw@mail.gmail.com>
+ <CAObL_7HXMQxf+kYVMutdfAFNrSGYKJF2WPkSeWGK230r_zwskA@mail.gmail.com>
+ <CACqU3MUbafosBVsycwFjH9sSq8GJumaeq+MKmeUPKD_zyHdGgw@mail.gmail.com>
+ <CAObL_7Hi7du37D0PiRVFZZ5=yYGLm4oaGNYqQCeVoab5aJ_2NQ@mail.gmail.com> <CACqU3MXpihKOV_4whbi8_CSU4uFpFzbNFaXvSN75ChdYhZ0A5A@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 25 Aug 2011 15:49:12 -0400
+X-Google-Sender-Auth: IgXEnRcW7VSm_tNvkhiMkTp85DI
+Message-ID: <CAObL_7FYEYRExGrYKaQtPucCw6PcmUoz0JN-hyCchf01kvaRHA@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/vdso changes for v3.1
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-25 18:46, Tejun Heo wrote:
-> Anders, if your kernel didn't have SMP turned on, can you please
-> verify the following patch fixes the problem?
->
-> Thanks.
->
-> diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-> index 08119a3..6b96110 100644
-> --- a/arch/x86/kernel/cpu/mtrr/main.c
-> +++ b/arch/x86/kernel/cpu/mtrr/main.c
-> @@ -149,7 +149,6 @@ struct set_mtrr_data {
->    */
->   static int mtrr_rendezvous_handler(void *info)
->   {
-> -#ifdef CONFIG_SMP
->   	struct set_mtrr_data *data = info;
->
->   	/*
-> @@ -171,7 +170,6 @@ static int mtrr_rendezvous_handler(void *info)
->   	} else if (mtrr_aps_delayed_init || !cpu_online(smp_processor_id())) {
->   		mtrr_if->set_all();
->   	}
-> -#endif
->   	return 0;
->   }
->
-Tested. Works as expected. Thanks!
+On Thu, Aug 25, 2011 at 3:47 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
 
--A
+> start=c13bee88 a=10 instr_offset=-1054249774 instr=0x82655bd2
+> repl_offset=-1053034552 repl=0x8277e6cc instrlen=5 repllen=5
+> BUG: unable to handle kernel paging request at 8277e6cc
+
+This is pretty clearly bogus.  I'll play around with your config.
+
+--Andy
