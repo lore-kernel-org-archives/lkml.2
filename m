@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1HYREf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:04:35 -0400
-Received: from 227.84-43-196.Admin.upanga.ttcldata.net ([196.43.84.227]:64334
-	"EHLO mail.rita.go.tz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720Ab1HYREe (ORCPT
+	id S1754776Ab1HYRHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:07:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56269 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab1HYRHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:04:34 -0400
-X-Greylist: delayed 9485 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 13:04:34 EDT
-Message-ID: <5b05f7ea5d84b2015c31c626131336a4.squirrel@mail.rita.go.tz>
-Date: Thu, 25 Aug 2011 14:32:27 +0300 (EAT)
-Subject: G-20
-From: "Mr.Garry Moore" <mooregarry78@yahoo.com>
-Reply-To: westeruniondepartment@discuz.org
-User-Agent: SquirrelMail/1.4.15
+	Thu, 25 Aug 2011 13:07:11 -0400
+Date: Thu, 25 Aug 2011 21:07:05 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110825170705.GA6387@sun>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110825170147.GM2803@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- My associate has helped me to send your first payment
- of $7,500 USD to you as instructed by the Malaysian
- Government and Mr. David Cameron the United Kingdom
- prime minister after the last G20 meeting that was
- held in Malaysia, making you one of the beneficiaries.
- Here is the information below.
+On Thu, Aug 25, 2011 at 07:01:47PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Aug 25, 2011 at 12:29:44PM +0400, Cyrill Gorcunov wrote:
+> >  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73a00000 -> /lib64/ld-2.5.so
+> >  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73c1b000 -> /lib64/ld-2.5.so
+> >  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73c1c000 -> /lib64/ld-2.5.so
+> >  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73e00000 -> /lib64/libc-2.5.so
+> >  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73f4e000 -> /lib64/libc-2.5.so
+> 
+> I would prefer if the filename included both start and end addresses
+> so that it matches the first column of /proc/PID/maps and ls'ing the
+> directory is more useful.  What do other people think?
+> 
 
- MTCN Numbers: 6076147516
- Sender Name Is = Patrick Lee Chun
+This will force us to bloat proc_inode a bit more, since at moment we
+have a union such as
 
- I told him to keep sending you $7,500 USD twice a week
- until the FULL payment of ($820000.00 United State Dollars)
- is completed.
+struct proc_inode {
+	struct pid *pid;
+	union {
+		int fd;
+		unsigned long vm_start;
+	};
+	...
 
- A certificate will be made to change the Receivers Name
- to your name as stated by the Malaysian Government, send
- your Full Names and address via Email to: Mr Garry Moore
- to proceed.
+also it will require to make a buffer for names twice bigger as well.
+If all this not a problem -- then sure we can do that ;)
 
-  Note:
-
- You cannot pickup the money until the certificate is
- obtained by you.
-
- Regards
- Mr. Garry Moore.
-E-mail:westeruniondepartment@discuz.org
-
- For more info: www.g20.org
+	Cyrill
