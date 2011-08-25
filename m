@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab1HYQaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:30:52 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42932
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753571Ab1HYQ26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:28:58 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 59/59] Staging: hv: netvsc: Change the jump label Exit to exit
-Date: Thu, 25 Aug 2011 09:49:25 -0700
-Message-Id: <1314290965-2698-59-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314290965-2698-1-git-send-email-kys@microsoft.com>
-References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
- <1314290965-2698-1-git-send-email-kys@microsoft.com>
+	id S1753876Ab1HYQcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:32:41 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54176 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752188Ab1HYQcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 12:32:39 -0400
+X-Sasl-enc: rmljk8QZNrzHswBOYbmNO2U7nL90Meu2HmaBbeMZj/JY 1314289958
+Date: Thu, 25 Aug 2011 09:32:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Timur Tabi <timur@freescale.com>
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] tty/powerpc: fix build break with ehv_bytechan.c on
+ allyesconfig
+Message-ID: <20110825163234.GA31629@kroah.com>
+References: <1314289245-14946-1-git-send-email-timur@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314289245-14946-1-git-send-email-timur@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the jump lable "Exit" to "exit".
+On Thu, Aug 25, 2011 at 11:20:45AM -0500, Timur Tabi wrote:
+> The Kconfig for the ePAPR hypervisor byte channel driver has a "depends on PPC",
+> which means it would compile on all PowerPC platforms, even though it's
+> only been tested on Freescale platforms.  Change the Kconfig to depend on
+> FSL_SOC instead.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/rndis_filter.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+tested doesn't mean that it shouldn't still build properly for other
+platforms, right?
 
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index 79dfe78..6db48b9 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -537,7 +537,7 @@ static int rndis_filter_set_packet_filter(struct rndis_device *dev,
- 		 * We can't deallocate the request since we may still receive a
- 		 * send completion for it.
- 		 */
--		goto Exit;
-+		goto exit;
- 	} else {
- 		set_complete = &request->response_msg.msg.set_complete;
- 		status = set_complete->status;
-@@ -546,7 +546,7 @@ static int rndis_filter_set_packet_filter(struct rndis_device *dev,
- cleanup:
- 	if (request)
- 		put_rndis_request(dev, request);
--Exit:
-+exit:
- 	return ret;
- }
- 
--- 
-1.7.4.1
+What is keeping the driver from building on all PPC, or even all arches
+today?
 
+greg k-h
