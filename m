@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab1HYV00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:26:26 -0400
-Received: from ozlabs.org ([203.10.76.45]:35008 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753581Ab1HYV0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 17:26:25 -0400
-Date: Fri, 26 Aug 2011 07:26:22 +1000
-From: Anton Blanchard <anton@samba.org>
-To: tytso@mit.edu, adilger.kernel@dilger.ca, eric.dumazet@gmail.com,
-        tj@kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ext4: EXT4_FREEBLOCKS_WATERMARK is overly pessimistic
-Message-ID: <20110826072622.406d3395@kryten>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755461Ab1HYV21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 17:28:27 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56191 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753964Ab1HYV20 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 17:28:26 -0400
+X-Sasl-enc: 8OZvzovO83ZVbKYCmLvzknYzMvdpmdzazUcWZfIjvS8C 1314307705
+Date: Thu, 25 Aug 2011 14:24:28 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 22/59] Staging: hv: vmbus: Get rid of the unused name
+ field in struct hv_driver
+Message-ID: <20110825212428.GA1617@kroah.com>
+References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-22-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314290965-2698-22-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 25, 2011 at 09:48:48AM -0700, K. Y. Srinivasan wrote:
+> Get rid of the unused "name" field in struct hv_driver.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/staging/hv/hyperv.h |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/hyperv.h b/drivers/staging/hv/hyperv.h
+> index b8199f4..60ead66 100644
+> --- a/drivers/staging/hv/hyperv.h
+> +++ b/drivers/staging/hv/hyperv.h
+> @@ -802,8 +802,6 @@ struct hv_device_info {
+>  
+>  /* Base driver object */
+>  struct hv_driver {
+> -	const char *name;
 
-When testing on a 1024 thread ppc64 box I noticed a large amount of
-CPU time in ext4 code.
+Wait, why is this unused?  What are you going to use as your name for
+the driver in sysfs then?  The module name?
 
-ext4_has_free_blocks has a fast path to avoid summing every free and
-dirty block per cpu counter, but only if the global count shows more
-free blocks than the maximum amount that could be stored in all the
-per cpu counters.
+As much as I love seeing things deleted, I really think you need this
+field.
 
-While we are summing 2 per cpu counters we set the breakpoint at 4
-times the maximum amount in the per cpu counter portion. Reduce that
-to 2.
+Ah, yeah, I see why you think it's unneeded, crud like this in the
+drivers:
 
-Since we fold the per cpu count of CPUs going offline into the global
-count, we can use num_online_cpus() instead of nr_cpu_ids here too.
+	drv->driver.name = driver_name;
 
-Both these changes match percpu_counter_compare() which is used to
-optimise a comparison against one per cpu counter.
+No vmbus driver should ever have to touch the base struct driver on it's
+own at all.  Your vmbus core should properly handle telling the driver
+core what the name of the driver is.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
+As an example, see the __pci_register_driver() function, the first thing
+that code does is set the name based on the name of the larger
+pci_driver structure passed to it.
 
-Index: linux-2.6-work/fs/ext4/ext4.h
-===================================================================
---- linux-2.6-work.orig/fs/ext4/ext4.h	2011-08-25 11:44:02.978785464 +1000
-+++ linux-2.6-work/fs/ext4/ext4.h	2011-08-25 14:17:37.461904013 +1000
-@@ -2051,10 +2051,11 @@ do {								\
- 
- #ifdef CONFIG_SMP
- /* Each CPU can accumulate percpu_counter_batch blocks in their local
-- * counters. So we need to make sure we have free blocks more
-- * than percpu_counter_batch  * nr_cpu_ids. Also add a window of 4 times.
-+ * counters. Since we sum two percpu counters (s_freeblocks_counter and
-+ * s_dirtyblocks_counter), as a worst case we need to check for 2x this.
-  */
--#define EXT4_FREEBLOCKS_WATERMARK (4 * (percpu_counter_batch * nr_cpu_ids))
-+#define EXT4_FREEBLOCKS_WATERMARK \
-+			(2 * (percpu_counter_batch * num_online_cpus()))
- #else
- #define EXT4_FREEBLOCKS_WATERMARK 0
- #endif
+Man, if you want something done right, you have to do it yourself, let
+me go make these changes so you don't have to do any new work at this
+point in time, hopefully your other patches will apply...
+
+greg k-h
