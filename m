@@ -1,116 +1,518 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1HYNQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:16:23 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:23535 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753358Ab1HYNQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:16:21 -0400
-Message-ID: <4E564B1D.2090201@siemens.com>
-Date: Thu, 25 Aug 2011 15:16:13 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753481Ab1HYNT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:19:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44633 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1HYNT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 09:19:56 -0400
+Date: Thu, 25 Aug 2011 15:19:29 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tonda <as@strmilov.cz>
+Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: TCP port firewall controlled by UDP packets
+Message-ID: <20110825131929.GA1739@ucw.cz>
+References: <1313106172-18455-1-git-send-email-as@strmilov.cz>
 MIME-Version: 1.0
-To: Brian King <brking@linux.vnet.ibm.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: Broken pci_block_user_cfg_access interface
-References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com> <4E5613BA.5070101@siemens.com> <20110825094031.GA3727@redhat.com> <4E5648EB.5030302@linux.vnet.ibm.com> <4E564A45.2040300@linux.vnet.ibm.com>
-In-Reply-To: <4E564A45.2040300@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313106172-18455-1-git-send-email-as@strmilov.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-25 15:12, Brian King wrote:
-> On 08/25/2011 08:06 AM, Brian King wrote:
->> On 08/25/2011 04:40 AM, Michael S. Tsirkin wrote:
->>> On Thu, Aug 25, 2011 at 11:19:54AM +0200, Jan Kiszka wrote:
->>>> On 2011-08-24 17:02, Brian King wrote:
->>>>> On 08/24/2011 05:43 AM, Jan Kiszka wrote:
->>>>>> Hi,
->>>>>>
->>>>>> trying to port the generic device interrupt masking pattern of
->>>>>> uio_pci_generic to KVM's device assignment code, I stumbled over some
->>>>>> fundamental problem with the current pci_block/unblock_user_cfg_access
->>>>>> interface: it does not provide any synchronization between blocking
->>>>>> sides. This allows user space to trigger a kernel BUG, just run two
->>>>>>
->>>>>> while true; do echo 1 > /sys/bus/pci/devices/<some-device>/reset; done
->>>>>>
->>>>>> loops in parallel and watch the kernel oops.
->>>>>>
->>>>>> Instead of some funky open-coded locking mechanism, we would rather need
->>>>>> a plain mutex across both the user space access (via sysfs) and the
->>>>>> sections guarded by pci_block/unblock_user_cfg_access so far. But I'm
->>>>>> not sure which of them already allow sleeping, specifically if the IPR
->>>>>> driver would be fine with such a change. Can someone in the CC list
->>>>>> comment on this?
->>>>>
->>>>> The ipr driver calls pci_block/unblock_user_cfg_access from interrupt
->>>>> context, so a mutex won't work.
->>>>
->>>> Ugh. What precisely does it have to do with the config space while
->>>> running inside an IRQ handler (or holding a lock that synchronizes it
->>>> with such a handler)?
->>>>
->>>>> When the pci_block/unblock API was
->>>>> originally added, it did not have the checking it has today to detect
->>>>> if it is being called nested. This was added some time later. The
->>>>
->>>> For a reason...
->>>>
->>>>> API that works best for the ipr driver is to allow for many block calls,
->>>>> but a single unblock call unblocks access. It seems like what might
->>>>> work well in the case above is a block count. Each call to pci_block
->>>>> increments a count. Each pci_unblock decrements the count and only
->>>>> actually do the unblock if the count drops to zero. It should be reasonably
->>>>> simple for ipr to use that sort of an API as well.
->>>>
->>>> That will just paper over the underlying bug: multiple kernel users (!=
->>>> sysfs access) fiddle with the config space in an unsynchronized fashion.
->>>> Think of sysfs-triggered pci_reset_function while your ipr driver does
->>>> its accesses.
->>>>
->>>> So it's pointless to tweak the current pci_block semantics, we rather
->>>> need to establish a new mechanism that synchronizes *all* users of the
->>>> config space.
->>>>
->>>> Jan
->>>
->>> It does look like all of the problems are actually around reset.
->>> So maybe all we need to do is synchronize the sysfs-triggered
->>> pci_reset_function with pci_block/unblock_user_cfg_access?
->>>
->>> In other words, when reset is triggered from sysfs, it
->>> should obey pci_block/unblock_user_cfg_access
->>> restrictions?
->>>
->>> It does not look like reset needs to sleep, so fixing
->>> that should not be hard, right?
->>
->> This sounds reasonable to me. Although I think we still have the driver issue
->> I described in my previous mail. Perhaps the best way to resolve that would
->> be to allow the adapter driver to register a reset function so that the
->> driver could be the one driving the reset, allowing the driver to synchronize
->> the reset with whatever else might be going on and also then reinitialize
->> the adapter firmware, etc. If no driver was loaded or no driver specific
->> reset function registered, the current reset mechanism would be invoked.
-> 
-> This would also allow the driver to do unique types of resets for different
-> adapter types. Some of the adapters the ipr driver supports need to get
-> reset via BIST, others via PCIe warm reset, etc. 
+No comments, variables named in czech.
 
-Is this broken ATM? I thought the PCI core would simply try all methods
-+ has a quirks section for completely funky devices.
+Ok for me but...
 
-Jan
+But first thing would be description what it is good for...?
+
+							Pavel
+
+On Fri 2011-08-12 01:42:52, Tonda wrote:
+>  	  If unsure, say N.
+> +
+> +config TCPFIREWALL
+> +	tristate "TCP Firewall controlled by UDP queries"
+> +	depends on m
+> diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
+> --- a/net/ipv4/Makefile
+> +++ b/net/ipv4/Makefile
+> @@ -51,3 +51,4 @@
+>  
+>  obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
+>  		      xfrm4_output.o
+> +obj-$(CONFIG_TCPFIREWALL) += tcpfirewall/
+> diff --git a/net/ipv4/tcpfirewall/Makefile b/net/ipv4/tcpfirewall/Makefile
+> --- a/net/ipv4/tcpfirewall/Makefile
+> +++ b/net/ipv4/tcpfirewall/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_TCPFIREWALL) += tcpfirewall.o
+> diff --git a/net/ipv4/tcpfirewall/tcpfirewall.c b/net/ipv4/tcpfirewall/tcpfirewall.c
+> --- a/net/ipv4/tcpfirewall/tcpfirewall.c
+> +++ b/net/ipv4/tcpfirewall/tcpfirewall.c
+> @@ -0,0 +1,451 @@
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/skbuff.h>
+> +#include <linux/in.h>
+> +#include <linux/if_packet.h>
+> +#include <linux/tcp.h>
+> +#include <linux/udp.h>
+> +#include <net/tcp.h>
+> +#include <net/udp.h>
+> +
+> +struct net_protocol {
+> +	int (*handler)(struct sk_buff *skb);
+> +	void (*err_handler)(struct sk_buff *skb, u32 info);
+> +	int (*gso_send_check)(struct sk_buff *skb);
+> +	struct sk_buff *(*gso_segment)(struct sk_buff *skb,
+> +		u32 features);
+> +	struct sk_buff **(*gro_receive)(struct sk_buff **head,
+> +		struct sk_buff *skb);
+> +	int (*gro_complete)(struct sk_buff *skb);
+> +	unsigned int no_policy:1,
+> +		netns_ok:1;
+> +};
+> +
+> +MODULE_LICENSE("GPL");
+> +
+> +static unsigned long inet_protos = 0x01234567;
+> +
+> +struct net_protocol **_inet_protos;
+> +
+> +module_param(inet_protos, ulong, 0);
+> +
+> +static int *otviraky;
+> +static int *zaviraky;
+> +
+> +static int pocetotviraku;
+> +static int pocetzaviraku;
+> +static int stav;
+> +static int packetcounter;
+> +static int tcpport;
+> +static int open;
+> +static int firewall;
+> +
+> +int (*tcpv4recv) (struct sk_buff *skb);
+> +int (*udprecv) (struct sk_buff *skb);
+> +
+> +int udpcontroller(struct sk_buff *skb)
+> +{
+> +	const struct udphdr *uh;
+> +
+> +	if (skb->pkt_type != PACKET_HOST) {
+> +		kfree_skb(skb);
+> +		return 0;
+> +	}
+> +
+> +	if (!pskb_may_pull(skb, sizeof(struct tcphdr))) {
+> +		kfree_skb(skb);
+> +		return 0;
+> +	}
+> +
+> +	uh = udp_hdr(skb);
+> +
+> +	if (pocetotviraku == 0)
+> +		return udprecv(skb);
+> +
+> +	if (!open) {
+> +		if (uh->dest == otviraky[stav]) {
+> +			++stav;
+> +			packetcounter = 0;
+> +
+> +			if (stav == pocetotviraku) {
+> +				open = 1;
+> +				stav = 0;
+> +			}
+> +		} else {
+> +			if (packetcounter <= 16) {
+> +				++packetcounter;
+> +				if (packetcounter > 16)
+> +					stav = 0;
+> +			}
+> +		}
+> +	} else {
+> +		if (uh->dest == zaviraky[stav]) {
+> +			++stav;
+> +			packetcounter = 0;
+> +
+> +			if (stav == pocetzaviraku) {
+> +				open = 0;
+> +				stav = 0;
+> +			}
+> +		} else {
+> +			if (packetcounter <= 16) {
+> +				++packetcounter;
+> +				if (packetcounter > 16)
+> +					stav = 0;
+> +			}
+> +		}
+> +	}
+> +
+> +
+> +	return udprecv(skb);
+> +}
+> +
+> +int tcpfirewall(struct sk_buff *skb)
+> +{
+> +	const struct tcphdr *th;
+> +
+> +	if (skb->pkt_type != PACKET_HOST) {
+> +		kfree_skb(skb);
+> +		return 0;
+> +	}
+> +
+> +	if (!pskb_may_pull(skb, sizeof(struct tcphdr))) {
+> +		kfree_skb(skb);
+> +		return 0;
+> +	}
+> +
+> +	th = tcp_hdr(skb);
+> +
+> +	if (th->dest == tcpport) {
+> +		if (firewall == 1 && !open) {
+> +			/*tcpv4sendreset(NULL, skb);*/
+> +			kfree_skb(skb);
+> +			return 0;
+> +		}
+> +	}
+> +
+> +	return tcpv4recv(skb);
+> +}
+> +
+> +static struct net_protocol *zalohatcp;
+> +static struct net_protocol *zalohaudp;
+> +static struct net_protocol mytcp;
+> +static struct net_protocol myudp;
+> +
+> +static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buffer)
+> +{
+> +	if (!strcmp(attr->name, "firewall")) {
+> +		if (firewall)
+> +			buffer[0] = '1';
+> +		else
+> +			buffer[0] = '0';
+> +
+> +		buffer[1] = '\n';
+> +		return 2;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "tcpport")) {
+> +		sprintf(buffer, "%d\n", ntohs(tcpport));
+> +		return strlen(buffer)+1;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "openers")) {
+> +		int i;
+> +		char *znak;
+> +		if (pocetotviraku == 0)
+> +			return 0;
+> +		buffer[0] = '\0';
+> +		znak = kmalloc(10, GFP_KERNEL);
+> +		for (i = 0; i < pocetotviraku; ++i) {
+> +			sprintf(znak, "%d ", ntohs(otviraky[i]));
+> +			strcat(buffer, znak);
+> +		}
+> +		kfree(znak);
+> +		buffer[strlen(buffer)-1] = '\n';
+> +		return strlen(buffer);
+> +	}
+> +
+> +	if (!strcmp(attr->name, "closers")) {
+> +		int i;
+> +		char *znak;
+> +		if (pocetzaviraku == 0)
+> +			return 0;
+> +		buffer[0] = '\0';
+> +		znak = kmalloc(10, GFP_KERNEL);
+> +		for (i = 0; i < pocetzaviraku; ++i) {
+> +			sprintf(znak, "%d ", ntohs(zaviraky[i]));
+> +			strcat(buffer, znak);
+> +		}
+> +		kfree(znak);
+> +		buffer[strlen(buffer)-1] = '\n';
+> +		return strlen(buffer);
+> +	}
+> +
+> +	if (!strcmp(attr->name, "open")) {
+> +		if (open)
+> +			buffer[0] = '1';
+> +		else
+> +			buffer[0] = '0';
+> +
+> +		buffer[1] = '\n';
+> +		return 2;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "state")) {
+> +		sprintf(buffer, "%d\n", stav);
+> +		return strlen(buffer)+1;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "counter")) {
+> +		sprintf(buffer, "%d\n", packetcounter);
+> +		return strlen(buffer)+1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static ssize_t store(struct kobject *kobj, struct attribute *attr,
+> +	const char *buffer, size_t size)
+> +{
+> +	int i;
+> +	char *cislo;
+> +	if (!strcmp(attr->name, "firewall")) {
+> +		if (size > 0 && buffer[0] == '1')
+> +			firewall = 1;
+> +		else
+> +			firewall = 0;
+> +		stav = 0;
+> +		return size;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "tcpport")) {
+> +		cislo = kmalloc(size+1, GFP_KERNEL);
+> +		for (i = 0; i < size; ++i)
+> +			cislo[i] = buffer[i];
+> +		cislo[size] = '\0';
+> +		if (kstrtoint(cislo, 10, &i) < 0)
+> +			i = -1;
+> +		if (i > 0 && i < 65536)
+> +			tcpport = htons(i);
+> +		kfree(cislo);
+> +		stav = 0;
+> +		return size;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "openers")) {
+> +		int udpport, i;
+> +		int *noveotviraky;
+> +		int *stareotviraky;
+> +		cislo = kmalloc(size+1, GFP_KERNEL);
+> +		for (i = 0; i < size; ++i)
+> +			cislo[i] = buffer[i];
+> +		cislo[size] = '\0';
+> +
+> +		if (!strcmp(cislo, "reset") || !strcmp(cislo, "reset\n")) {
+> +			if (pocetotviraku)
+> +				kfree(otviraky);
+> +			pocetotviraku = 0;
+> +		}
+> +
+> +		if (kstrtoint(cislo, 10, &i) < 0)
+> +			i = -1;
+> +		kfree(cislo);
+> +
+> +		if (i > 0 && i < 65536 && (pocetotviraku == 0 ||
+> +			otviraky[pocetotviraku-1] != i))
+> +				udpport = htons(i);
+> +		else
+> +			return size;
+> +
+> +		if (pocetotviraku < 10) {
+> +			noveotviraky = kmalloc((pocetotviraku+1)*sizeof(int),
+> +				GFP_KERNEL);
+> +
+> +			for (i = 0; i < pocetotviraku; ++i)
+> +				noveotviraky[i] = otviraky[i];
+> +
+> +			noveotviraky[pocetotviraku] = udpport;
+> +			stareotviraky = otviraky;
+> +			otviraky = noveotviraky;
+> +			if (pocetotviraku)
+> +				kfree(stareotviraky);
+> +
+> +			++pocetotviraku;
+> +		}
+> +		stav = 0;
+> +		return size;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "closers")) {
+> +		int udpport, i;
+> +		int *novezaviraky;
+> +		int *starezaviraky;
+> +		cislo = kmalloc(size+1, GFP_KERNEL);
+> +		for (i = 0; i < size; ++i)
+> +			cislo[i] = buffer[i];
+> +		cislo[size] = '\0';
+> +
+> +		if (!strcmp(cislo, "reset") || !strcmp(cislo, "reset\n")) {
+> +			if (pocetzaviraku)
+> +				kfree(zaviraky);
+> +			pocetzaviraku = 0;
+> +		}
+> +
+> +		if (kstrtoint(cislo, 10, &i) < 0)
+> +			i = -1;
+> +		kfree(cislo);
+> +
+> +		if (i > 0 && i < 65536 && (pocetzaviraku == 0 ||
+> +			zaviraky[pocetzaviraku-1] != i))
+> +				udpport = htons(i);
+> +		else
+> +			return size;
+> +
+> +		if (pocetzaviraku < 10) {
+> +			novezaviraky = kmalloc((pocetzaviraku+1)*sizeof(int),
+> +				GFP_KERNEL);
+> +
+> +			for (i = 0; i < pocetzaviraku; ++i)
+> +				novezaviraky[i] = zaviraky[i];
+> +
+> +			novezaviraky[pocetzaviraku] = udpport;
+> +			starezaviraky = zaviraky;
+> +			zaviraky = novezaviraky;
+> +			if (pocetzaviraku)
+> +				kfree(starezaviraky);
+> +
+> +			++pocetzaviraku;
+> +		}
+> +		stav = 0;
+> +		return size;
+> +	}
+> +
+> +	if (!strcmp(attr->name, "open")) {
+> +		if (size > 0 && buffer[0] == '1')
+> +			open = 1;
+> +		else
+> +			open = 0;
+> +
+> +		stav = 0;
+> +		return size;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct sysfs_ops so = {
+> +	.show = show,
+> +	.store = store,
+> +};
+> +
+> +static struct kobj_type khid = {
+> +	.sysfs_ops = &so,
+> +};
+> +
+> +static struct kobject kobj;
+> +
+> +static const struct attribute fw = {
+> +	.name = "firewall",
+> +	.mode = S_IRWXU,
+> +};
+> +
+> +static const struct attribute opn = {
+> +	.name = "open",
+> +	.mode = S_IRWXU,
+> +};
+> +
+> +static const struct attribute tcpp = {
+> +	.name = "tcpport",
+> +	.mode = S_IRWXU,
+> +};
+> +
+> +static const struct attribute openers = {
+> +	.name = "openers",
+> +	.mode = S_IRWXU,
+> +};
+> +
+> +static const struct attribute closers = {
+> +	.name = "closers",
+> +	.mode = S_IRWXU,
+> +};
+> +
+> +static const struct attribute stat = {
+> +	.name = "state",
+> +	.mode = S_IRUSR,
+> +};
+> +
+> +static const struct attribute counte = {
+> +	.name = "counter",
+> +	.mode = S_IRUSR,
+> +};
+> +
+> +static int __init start(void)
+> +{
+> +	if (inet_protos == 0x01234567) {
+> +		printk(KERN_WARNING "inet_protos parameter was not");
+> +		printk(KERN_WARNING " specified!\nread its value from");
+> +		printk(KERN_WARNING " System_map file file, and insert");
+> +		printk(KERN_WARNING " the module again!\n");
+> +		return -1;
+> +	}
+> +
+> +	pocetotviraku = 0;
+> +	pocetzaviraku = 0;
+> +	stav = -1;
+> +	packetcounter = 0;
+> +	tcpport = 0;
+> +	open = 1;
+> +	firewall = 0;
+> +
+> +	memset(&kobj, 0, sizeof(struct kobject));
+> +
+> +	_inet_protos = (struct net_protocol **)inet_protos;
+> +
+> +	kobject_init(&kobj, &khid);
+> +	if (kobject_add(&kobj, NULL, "tcpfirewall") < 0)
+> +		printk(KERN_ERR "kobject_add failed");
+> +
+> +	if (sysfs_create_file(&kobj, &fw) < 0)
+> +		printk(KERN_ERR "sysfs_create_file failed");
+> +	if (sysfs_create_file(&kobj, &opn) < 0)
+> +		printk(KERN_ERR "sysfs_create_file failed");
+> +	if (sysfs_create_file(&kobj, &tcpp) < 0)
+> +		printk(KERN_ERR "sysfs_create_file failed");
+> +	if (sysfs_create_file(&kobj, &openers) < 0)
+> +		printk(KERN_ERR "sysfs_create_file failed");
+> +	if (sysfs_create_file(&kobj, &closers) < 0)
+> +		printk(KERN_ERR "sysfs_create_file failed");
+> +	if (sysfs_create_file(&kobj, &stat) < 0)
+> +		printk(KERN_ERR "sysfs_create_file failed");
+> +	if (sysfs_create_file(&kobj, &counte) < 0)
+> +		printk(KERN_ERR "sysfs_create_file failed");
+> +
+> +	zalohatcp = _inet_protos[IPPROTO_TCP];
+> +	zalohaudp = _inet_protos[IPPROTO_UDP];
+> +	mytcp = *zalohatcp;
+> +	myudp = *zalohaudp;
+> +	tcpv4recv = mytcp.handler;
+> +	udprecv = myudp.handler;
+> +	mytcp.handler = tcpfirewall;
+> +	myudp.handler = udpcontroller;
+> +	_inet_protos[IPPROTO_TCP] = &mytcp;
+> +	_inet_protos[IPPROTO_UDP] = &myudp;
+> +	return 0;
+> +}
+> +
+> +static void konec(void)
+> +{
+> +	_inet_protos[IPPROTO_TCP] = zalohatcp;
+> +	_inet_protos[IPPROTO_UDP] = zalohaudp;
+> +
+> +	if (pocetotviraku)
+> +		kfree(otviraky);
+> +	if (pocetzaviraku)
+> +		kfree(zaviraky);
+> +
+> +	kobject_del(&kobj);
+> +}
+> +
+> +module_init(start);
+> +module_exit(konec);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
