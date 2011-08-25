@@ -1,131 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1HYHYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 03:24:38 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37040 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab1HYHYe (ORCPT
+	id S1752594Ab1HYHZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:25:12 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:35300 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab1HYHZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 03:24:34 -0400
-Date: Thu, 25 Aug 2011 00:24:29 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linux Input <linux-input@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFT] Input: i8042 - also perform controller reset when suspending
-Message-ID: <20110825072429.GA24739@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Aug 2011 03:25:09 -0400
+Date: Thu, 25 Aug 2011 09:22:18 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 8/8] ARM: S5PV210: example of CMA private area for FIMC
+ device on Goni board
+In-reply-to: <CAKnK67RcMAt6j3CEi2Z7QTN42v07LDCfa_T38F9-5b97TJ0-hA@mail.gmail.com>
+To: "'Aguirre, Sergio'" <saaguirre@ti.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Message-id: <01d801cc62f7$b9041b40$2b0c51c0$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcxidFKxNC7dihlnRFyrEkY0L/YltQAgullw
+References: <CAKnK67RcMAt6j3CEi2Z7QTN42v07LDCfa_T38F9-5b97TJ0-hA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to some laptops needing i8042 reset after resuming from S2R to
-get their touchpads working there is another class of laptops - ones that
-need i8042 reset before going to S2R, otherwise they will simply reboot
-instead of resuming.
+Hello,
 
-See https://bugzilla.kernel.org/show_bug.cgi?id=15612
+On Wednesday, August 24, 2011 5:41 PM Aguirre, Sergio wrote:
 
-This change forces reset of i8042 before doing S2R.
+> On Fri, Aug 19, 2011 at 04:27:44PM +0200, Marek Szyprowski wrote:
+> > This patch is an example how device private CMA area can be activated.
+> > It creates one CMA region and assigns it to the first s5p-fimc device on
+> > Samsung Goni S5PC110 board.
+> >
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> >  arch/arm/mach-s5pv210/mach-goni.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-
+> goni.c
+> > index 14578f5..f766c45 100644
+> > --- a/arch/arm/mach-s5pv210/mach-goni.c
+> > +++ b/arch/arm/mach-s5pv210/mach-goni.c
+> > @@ -26,6 +26,7 @@
+> >  #include <linux/input.h>
+> >  #include <linux/gpio.h>
+> >  #include <linux/interrupt.h>
+> > +#include <linux/dma-contiguous.h>
+> >
+> >  #include <asm/mach/arch.h>
+> >  #include <asm/mach/map.h>
+> > @@ -857,6 +858,9 @@ static void __init goni_map_io(void)
+> >  static void __init goni_reserve(void)
+> >  {
+> >  	s5p_mfc_reserve_mem(0x43000000, 8 << 20, 0x51000000, 8 << 20);
+> > +
+> > +	/* Create private 16MiB contiguous memory area for s5p-fimc.0 device */
+> > +	dma_declare_contiguous(&s5p_device_fimc0.dev, 16*SZ_1M, 0);
+> 
+> This is broken, since according to patch #0006, dma_declare_contiguous
+requires
+> a 4th param (limit) which you're not providing here.
 
-Reported-by: Stefan Koch <stefan_koch@gmx.net>
-Tested-by: Alexander van Loon <a.vanloon@alexandervanloon.nl>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
-
-Would appreciate more testing since this may affect more boxes.
-
-Thanks!
-
-
- drivers/input/serio/i8042.c |   23 +++++++++++++++--------
- 1 files changed, 15 insertions(+), 8 deletions(-)
-
-
-diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-index d37a48e..8656441 100644
---- a/drivers/input/serio/i8042.c
-+++ b/drivers/input/serio/i8042.c
-@@ -991,7 +991,7 @@ static int i8042_controller_init(void)
-  * Reset the controller and reset CRT to the original value set by BIOS.
-  */
+You are definitely right, there should be one more parameter. This patch was
+just
+cherry-picked from older version just before posting to mailing lists. I'm
+really
+sorry for this trivial bug.
  
--static void i8042_controller_reset(void)
-+static void i8042_controller_reset(bool force_reset)
- {
- 	i8042_flush();
- 
-@@ -1016,7 +1016,7 @@ static void i8042_controller_reset(void)
-  * Reset the controller if requested.
-  */
- 
--	if (i8042_reset)
-+	if (i8042_reset || force_reset)
- 		i8042_controller_selftest();
- 
- /*
-@@ -1139,9 +1139,9 @@ static int i8042_controller_resume(bool force_reset)
-  * upsetting it.
-  */
- 
--static int i8042_pm_reset(struct device *dev)
-+static int i8042_pm_suspend(struct device *dev)
- {
--	i8042_controller_reset();
-+	i8042_controller_reset(true);
- 
- 	return 0;
- }
-@@ -1163,13 +1163,20 @@ static int i8042_pm_thaw(struct device *dev)
- 	return 0;
- }
- 
-+static int i8042_pm_reset(struct device *dev)
-+{
-+	i8042_controller_reset(false);
-+
-+	return 0;
-+}
-+
- static int i8042_pm_restore(struct device *dev)
- {
- 	return i8042_controller_resume(false);
- }
- 
- static const struct dev_pm_ops i8042_pm_ops = {
--	.suspend	= i8042_pm_reset,
-+	.suspend	= i8042_pm_suspend,
- 	.resume		= i8042_pm_resume,
- 	.thaw		= i8042_pm_thaw,
- 	.poweroff	= i8042_pm_reset,
-@@ -1185,7 +1192,7 @@ static const struct dev_pm_ops i8042_pm_ops = {
- 
- static void i8042_shutdown(struct platform_device *dev)
- {
--	i8042_controller_reset();
-+	i8042_controller_reset(false);
- }
- 
- static int __init i8042_create_kbd_port(void)
-@@ -1424,7 +1431,7 @@ static int __init i8042_probe(struct platform_device *dev)
-  out_fail:
- 	i8042_free_aux_ports();	/* in case KBD failed but AUX not */
- 	i8042_free_irqs();
--	i8042_controller_reset();
-+	i8042_controller_reset(false);
- 	i8042_platform_device = NULL;
- 
- 	return error;
-@@ -1434,7 +1441,7 @@ static int __devexit i8042_remove(struct platform_device *dev)
- {
- 	i8042_unregister_ports();
- 	i8042_free_irqs();
--	i8042_controller_reset();
-+	i8042_controller_reset(false);
- 	i8042_platform_device = NULL;
- 
- 	return 0;
+Best regards
 -- 
-Dmitry
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+
