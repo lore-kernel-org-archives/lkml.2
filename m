@@ -1,39 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab1HYL2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 07:28:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54281 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab1HYL2l (ORCPT
+	id S1753337Ab1HYLfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 07:35:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48227 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab1HYLfb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 07:28:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH v3 3/4] ARM: msm: Add devicetree support for msm8660-surf
-Date: Thu, 25 Aug 2011 13:28:34 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1313688345-17699-1-git-send-email-davidb@codeaurora.org> <1313688345-17699-4-git-send-email-davidb@codeaurora.org>
-In-Reply-To: <1313688345-17699-4-git-send-email-davidb@codeaurora.org>
+	Thu, 25 Aug 2011 07:35:31 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108251328.35038.arnd@arndb.de>
-X-Provags-ID: V02:K0:ha4Dlr3wlFlVr9lJwZC9RO0UP9pq7lcxC8LL6AR/MCm
- zhZPSqA6mxu09tIatOTj7iC2lf983dRLtDdbnOQ0OzT4ekbKON
- WRpXeeALkyY9SqHO0x+qT3XeIsh585G6wDTG/FyslfOPG/g8B1
- nvy4FNr5+090cw1pu5cUPpv/Mwh9Hz/7f5cYM3g2nv1nrRsCrr
- Bzi6Bog6UKLPhH3cvyzgw==
+In-Reply-To: <1314268769.2296.283.camel@cumari>
+References: <1314268769.2296.283.camel@cumari>
+From: Govindraj <govindraj.ti@gmail.com>
+Date: Thu, 25 Aug 2011 17:05:10 +0530
+Message-ID: <CAAL8m4whQJSXQw+E52qF2vLSBrt=RsA-r-B2q2gaW3XGiR4tYg@mail.gmail.com>
+Subject: Re: 3.1-rc3 fails to boot on my pandaboard
+To: Luciano Coelho <coelho@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 August 2011, David Brown wrote:
-> Adds support for booting via device tree with a simple serial console.
-> 
-> Signed-off-by: David Brown <davidb@codeaurora.org>
+On Thu, Aug 25, 2011 at 4:09 PM, Luciano Coelho <coelho@ti.com> wrote:
+> Hi,
+>
+> There seems to be a problem with 3.1-rc3, which prevents it from booting
+> on my PandaBoard (ARM OMAP4).
+>
+> 3.1-rc2 works fine, so I have bisected the problem and it turns out to
+> be caused by this:
+>
+> commit f3637a5f2e2eb391ff5757bc83fb5de8f9726464
+> Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Date:   Thu Jul 7 22:32:17 2011 +0200
+>
+>    irq: Always set IRQF_ONESHOT if no primary handler is specified
+>
+> After reverting this commit, -rc3 boots fine.  I'm not sure where
+> exactly the problem is.  Maybe it's something in the omap code which is
+> broken and this patch causes the bug to show up?
+>
+> What happens is that the booting process hangs after printing out this:
+>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+fyi,
+
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=69dd3d8e29e294caaf63eb5e8a72d250279f9e5f;hp=fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c
+
+--
+Thanks,
+Govindraj.R
+
+
+> [...]
+> [    7.408477] EXT3-fs: barriers not enabled
+> [    7.415008] kjournald starting.  Commit interval 5 seconds
+> [    7.446228] EXT3-fs (mmcblk0p5): using internal journal
+> [    7.452087] EXT3-fs (mmcblk0p5): mounted filesystem with ordered data mode
+> [    7.459625] VFS: Mounted root (ext3 filesystem) on device 179:5.
+> [    7.466094] Freeing init memory: 312K
+> [    7.471710] Failed to execute /init.  Attempting defaults...
+> [   10.254333] EXT3-fs (mmcblk0p5): using internal journal
+>
+> The full boot logs can be found here:
+>
+> http://pastebin.pandaboard.org/index.php/view/88995306
+>
+> Any ideas what may be going wrong?
+>
+> --
+> Cheers,
+> Luca.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
