@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab1HYV3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:29:31 -0400
-Received: from ozlabs.org ([203.10.76.45]:34975 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753964Ab1HYV3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 17:29:30 -0400
-Date: Fri, 26 Aug 2011 07:29:27 +1000
-From: Anton Blanchard <anton@samba.org>
-To: tytso@mit.edu, adilger.kernel@dilger.ca, eric.dumazet@gmail.com,
-        tj@kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] percpu_counter: Put a reasonable upper bound on
- percpu_counter_batch
-Message-ID: <20110826072927.5b4781f9@kryten>
-In-Reply-To: <20110826072622.406d3395@kryten>
-References: <20110826072622.406d3395@kryten>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755474Ab1HYVfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 17:35:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43768 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab1HYVfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 17:35:05 -0400
+Date: Fri, 26 Aug 2011 01:34:59 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110825213459.GA1929@sun>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
+ <20110825170705.GA6387@sun>
+ <20110825205426.GO2803@mtj.dyndns.org>
+ <20110825211213.GP2803@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110825211213.GP2803@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 25, 2011 at 11:12:13PM +0200, Tejun Heo wrote:
+> Hello, again.
+> 
+> On Thu, Aug 25, 2011 at 10:54:26PM +0200, Tejun Heo wrote:
+> > Another thing is, I don't really see why we need vm_start, or fd for
+> > that matter, in proc_inode at all.  proc_inode is created on the fly
+> > only as dentry gets instantiated on demand, which means we always have
+> > d_name on hand to tell what the file is supposed to point to.  In
+> > fact, the code already uses name_to_int() to extract fd from d_name.
+> > Hmmm... well yeah, it actually seems that proc_inode->fd is never used
+> > and we can simply remove it.
+> 
+> Unfortunately, not quite as easy as I expected.  The information still
+> seems redundant but it seems we'll need to change
+> proc_inode->get_link() to take dentry instead of inode before doing
+> away with proc_inode->fd, but, at any rate, I don't think this is a
+> big deal one way or the other.
+> 
 
-When testing on a 1024 thread ppc64 box I noticed a large amount of
-CPU time in ext4 code.
+Hohum... picking up an additional reference to dentry might be dangerous
+I think. How exactly you imagine we would do that? (without this problem
+I guess we indeed may drop or rather not change proc-inode).
 
-ext4_has_free_blocks has a fast path to avoid summing every free and
-dirty block per cpu counter, but only if the global count shows more
-free blocks than the maximum amount that could be stored in all the
-per cpu counters.
-
-Since percpu_counter_batch scales with num_online_cpus() and the maximum
-amount in all per cpu counters is percpu_counter_batch * num_online_cpus(),
-this breakpoint grows at O(n^2).
-
-This issue will also hit with users of percpu_counter_compare which
-does a similar thing for one percpu counter.
-
-I chose to cap percpu_counter_batch at 1024 as a conservative first
-step, but we may want to reduce it further based on further benchmarking.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
-
-Index: linux-2.6-work/lib/percpu_counter.c
-===================================================================
---- linux-2.6-work.orig/lib/percpu_counter.c	2011-07-31 20:37:12.580765739 +1000
-+++ linux-2.6-work/lib/percpu_counter.c	2011-08-25 11:43:57.828695957 +1000
-@@ -149,11 +149,15 @@ EXPORT_SYMBOL(percpu_counter_destroy);
- int percpu_counter_batch __read_mostly = 32;
- EXPORT_SYMBOL(percpu_counter_batch);
- 
-+/*
-+ * We set the batch at 2 * num_online_cpus(), with a minimum of 32 and
-+ * a maximum of 1024.
-+ */
- static void compute_batch_value(void)
- {
- 	int nr = num_online_cpus();
- 
--	percpu_counter_batch = max(32, nr*2);
-+	percpu_counter_batch = min(1024, max(32, nr*2));
- }
- 
- static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
+	Cyrill
