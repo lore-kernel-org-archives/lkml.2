@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1HYR0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:26:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7628 "EHLO mga02.intel.com"
+	id S1754876Ab1HYR1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:27:14 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:44958 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754032Ab1HYR0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:26:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="42241531"
-Subject: Re: [PATCH] dma: shdma: transfer based runtime PM
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
-References: <Pine.LNX.4.64.1108181650530.5245@axis700.grange>
-	 <1314282386.1606.42.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108251636190.17190@axis700.grange>
-	 <1314283286.1606.52.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Aug 2011 22:50:50 +0530
-Message-ID: <1314292850.1606.88.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754032Ab1HYR1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 13:27:12 -0400
+Message-ID: <4E568583.40206@parallels.com>
+Date: Thu, 25 Aug 2011 21:25:23 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
+ v2
+References: <20110824085329.GL29452@sun> <20110824111806.GA7191@albatros> <20110825082944.GH10030@sun> <20110825170147.GM2803@mtj.dyndns.org> <4E5680D2.1030608@parallels.com> <20110825172109.GC6387@sun>
+In-Reply-To: <20110825172109.GC6387@sun>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 16:55 +0200, Guennadi Liakhovetski wrote:
-> On Thu, 25 Aug 2011, Koul, Vinod wrote:
+On 08/25/2011 09:21 PM, Cyrill Gorcunov wrote:
+> On Thu, Aug 25, 2011 at 09:05:22PM +0400, Pavel Emelyanov wrote:
+> ...
+>>>
+>>> I would prefer if the filename included both start and end addresses
+>>> so that it matches the first column of /proc/PID/maps and ls'ing the
+>>> directory is more useful.  What do other people think?
+>>
+>> Without 0x at the beginning this is not very convenient, but once we add them it no
+>> longer matches the contents of the /proc/pid/maps.
+>>
+>> Just an opinion, do not mind adding <end> to the name.
+>>
 > 
-> > On Thu, 2011-08-25 at 16:37 +0200, Guennadi Liakhovetski wrote:
-> > > On Thu, 25 Aug 2011, Koul, Vinod wrote:
-> > > 
-> > > > On Thu, 2011-08-18 at 16:55 +0200, Guennadi Liakhovetski wrote:
-> > > > > Currently the shdma dmaengine driver uses runtime PM to save power, when
-> > > > > no channel on the specific controller is requested by a user. This patch
-> > > > > switches the driver to count individual DMA transfers. That way the
-> > > > > controller can be powered down between transfers, even if some of its
-> > > > > channels are in use.
-> > > > No, I don't agree with the approach here, you don't need to count the
-> > > > transfers, the runtime_pm framework does that very well for you.
-> > > > 
-> > > > What you need to do is to call pm_runtime_get() in your .issue_pending
-> > > > callback (NOT in tx_submit anyway, this needs to be fixed in driver, see
-> > > > the Documentation/dmaengine.txt
-> > > > And once the transfer has completed you need to call pm_rumtime_put()
-> > > 
-> > > This has been discussed before:
-> > > 
-> > > http://marc.info/?l=linux-sh&m=131004613801231&w=2
-> > uh, yes but at least the runtime_xxx needs to get fixed.
+> So Pavel, we can make the names to look as say "3d73a00000-3d73a01000"
+> leaving proc-inode structure unchanged, that's an idea, right?
+
+Not exactly - as I said if we leave the name without 0x (3d000000 instead of 0x3d000000)
+this makes it hard to use strtol() on these strings to convert names to addresses.
+
+Not big deal, just my 5 cents on the "leaving links' names as is" side.
+
+> 	Cyrill
+> .
 > 
-> This isn't so easy either. In principle, yes, I know, that pm_runtime_* 
-> calls count depth. But I don't think the DMA case is simple enough for 
-> that. It's not necessarily one in - one out. Think about terminating 
-> transfers, timing out, closing the channel, etc. In those cases you'd have 
-> to count pending transfers and pm_runtime_put() for each of them. This is 
-> even less trivial on shdma, where DMA transfers get split into sg-lists, 
-> which are then all queued on a single queue. So, you'd have to scan that 
-> queue and check for transfer borders... That's why I decided that doing 
-> just one get() on the first descriptor and one put() on the last one would 
-> be easier and more robust.
-Wont it be easy to to do:
-- pm_runtime_get() in each submit
-- pm_runtime_put() in each callback
-Normal case above would work just fine
-- In terminate case, count the number of issued transactions, and call
-pm_runtime_put() for each canceled transaction
-(i am assuming that for each timeout error, the client will call
-terminate)
-
-Let me know if there is a case for you which doesn't fit in above
-
--- 
-~Vinod
 
