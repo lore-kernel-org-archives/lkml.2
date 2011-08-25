@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022Ab1HYQBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:01:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34727 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409Ab1HYQB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:01:29 -0400
-Date: Thu, 25 Aug 2011 17:57:35 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Jovi Zhang <bookjovi@gmail.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigbrady.com>,
-        dhowells@redhat.com, roland@redhat.com, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
-Message-ID: <20110825155735.GA5380@redhat.com>
-References: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com> <4E527684.3020206@draigBrady.com> <20110822161914.GA9399@redhat.com> <CACV3sbJjDhzKq8YQEnrTQPVVw7YsZjLe45G5sWaMRBk3+Vxkcg@mail.gmail.com> <20110824110134.GA17362@hmsreliant.think-freely.org>
+	id S1752627Ab1HYQGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:06:23 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:6185 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab1HYQGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 12:06:21 -0400
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4E567251.3020509@freescale.com>
+Date: Thu, 25 Aug 2011 11:03:29 -0500
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110824110134.GA17362@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@ozlabs.org>
+Subject: Re: [PATCH] [v4] tty/powerpc: introduce the ePAPR embedded hypervisor
+ byte channel driver
+References: <1314286345-27056-1-git-send-email-timur@freescale.com> <20110825155050.GA10084@kroah.com>
+In-Reply-To: <20110825155050.GA10084@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24, Neil Horman wrote:
->
-> The long and the short of it is, making RLIMIT_CORE == 0 for the ispipe case
-> skip the core dump, breaks lots of user space expectations
+Greg KH wrote:
+> No, this doesn't work, I need just a fix, as I took your previous patch
+> already.
 
-Not sure this really makes sense, but perhaps ispipe can skip the dump
-if RLIMIT_CORE == 0 _and_ the signal was sent from the user-space.
+Sorry, coming right up.
 
-Oleg.
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
