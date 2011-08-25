@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab1HYNJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:09:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49841 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab1HYNJL (ORCPT
+	id S1753480Ab1HYNKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:10:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40284 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab1HYNKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:09:11 -0400
-Date: Thu, 25 Aug 2011 15:09:07 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-Message-ID: <20110825130907.GO3286@htj.dyndns.org>
-References: <CAOS58YNUSn2eVLDLzqKmrtL7M5tSetkhZ1ODecLK54NSDnZVAA@mail.gmail.com>
- <20110823220056.GK3895@n2100.arm.linux.org.uk>
- <CAOS58YNuCbaOsWBfmjSUsXsArZ5ng6c0B30yswFbRAWkho6L6Q@mail.gmail.com>
- <20110823221314.GL3895@n2100.arm.linux.org.uk>
- <CAOS58YNtQEuke=Ko9J2oNGMECjabzxj=Nrg1o64X1JC3YRmJuw@mail.gmail.com>
- <20110825121416.GB8883@n2100.arm.linux.org.uk>
- <20110825121710.GK3286@htj.dyndns.org>
- <20110825122543.GC8883@n2100.arm.linux.org.uk>
- <20110825123542.GM3286@htj.dyndns.org>
- <20110825130414.GE8883@n2100.arm.linux.org.uk>
+	Thu, 25 Aug 2011 09:10:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825130414.GE8883@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E4968F0.9050108@panasas.com>
+References: <20110811142749.GA26109@maxin>
+	<CAMhs6Yy_O33jZ5N7E5UuAtjoRyyEcUG8s4-PQwooX-TJ3Wh=2A@mail.gmail.com>
+	<4E4968F0.9050108@panasas.com>
+Date: Thu, 25 Aug 2011 16:10:38 +0300
+Message-ID: <CAMhs6YyBj-AsjChnHhqbx1L58Wq0MCM3GN1iPn9QO+f=FHHtFw@mail.gmail.com>
+Subject: Re: [PATCH] SCSI: OSD: Kconfig: Select SHA1 and HMAC for OSD
+ Initiator library
+From: Maxin B John <maxin.john@gmail.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: rdunlap@xenotime.net, Benny Halevy <bhalevy@panasas.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Russell.
+Hi,
 
-If you can fix it properly without going through temporary step,
-that's awesome.  Let's put the arguments behind, okay?
+On Mon, Aug 15, 2011 at 9:44 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+> On 08/14/2011 04:18 PM, Maxin B John wrote:
+>> On Thu, Aug 11, 2011 at 5:27 PM, Maxin B. John <maxin.john@gmail.com> wrote:
+>>> SCSI_OSD_INITIATOR should select CRYPTO_SHA1 and CRYPTO_HMAC. Express this
+>>> in Kconfig so that the requirements are met automatically.
+>>>
+>>> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+>
+> OK So actually current osd_initiator code does not use these libraries.
+> It should, and I have very old code that started on that (hence the comment),
+> but it was never submitted to Kernel. The OSD protocol calls for all kind of
+> security levels that use these, but the current code only supports NO_SEC.
+>
+> I will keep your patch for when security code goes in. Meanwhile I should
+> at least remove the stale comment.
 
-Thanks.
+Sorry for the delay in reply. Yes, this makes perfect sense to me.
 
--- 
-tejun
+Cheers,
+Maxin
