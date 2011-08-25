@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab1HYWtG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:49:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41089 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1HYWtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:49:04 -0400
-Date: Fri, 26 Aug 2011 00:48:59 +0200
-From: Tejun Heo <tj@kernel.org>
-To: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCHSET] cgroup: introduce cgroup_taskset and consolidate
- subsys methods, take#2
-Message-ID: <20110825224859.GU2803@mtj.dyndns.org>
-References: <1314312192-26885-1-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
+	id S1752278Ab1HYWwP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:52:15 -0400
+Received: from gherkin.frus.com ([192.158.254.49]:34700 "EHLO gherkin.frus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab1HYWwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 18:52:14 -0400
+X-Greylist: delayed 2495 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 18:52:14 EDT
+Date: Thu, 25 Aug 2011 17:10:37 -0500
+From: Bob Tracy <rct@gherkin.frus.com>
+To: Anders Eriksson <aeriksson@fastmail.fm>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: mtrr failure, 3.1-rc1
+Message-ID: <20110825221037.GA6876@gherkin.frus.com>
+References: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314312192-26885-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 12:43:06AM +0200, Tejun Heo wrote:
-> and is based on the current linux-pm/pm-freezer (7b5b95b3f5 "freezer:
-> remove should_send_signal() and update frozen()"), and available in
-> the following git tree.
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git freezer
+On Thu, Aug 25, 2011 at 09:03:35AM +0200, Anders Eriksson wrote:
+> (mtrr issues)
 
-Oops, that should have been
+Similar MTRR issue here with a K6-III/450, which I noticed when the X11
+server was no longer able to allocate/configure a MTRR.  "cat /proc/mtrr"
+shows nothing configured regardless of whether the X11 server is running.
+I only see a diagnostic message to the effect of the MTRR not existing
+when X11 exits.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup_taskset
-
-The above hasn't been properly mirrored yet (it should soon).  The
-commit ID should be 53fd922e120c4ba0b65e388c2cda3c858f92db7c.
-master.korg contains the master copy.
-
- ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup_taskset
-
-Thanks.
+Possibly significant: prior 3.X kernel versions would cause the X11
+server to exit with a corrupted display after about 3-5 invocations.
+Machine was otherwise usable, but had to reboot remotely to recover the
+console display.  The "no MTRR" issue in 3.1-rc1 has thus far meant no
+display corruption on X11 server exit: have run "startx" at least 10
+times since booting 3.1-rc1.
 
 -- 
-tejun
+------------------------------------------------------------------------
+Bob Tracy          |  "Every normal man must be tempted at times to spit
+rct@frus.com       |   upon his hands, hoist the black flag, and begin
+                   |   slitting throats."	-- H.L. Mencken
+------------------------------------------------------------------------
