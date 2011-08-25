@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab1HYPUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:20:50 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:34374 "EHLO
+	id S1754462Ab1HYPVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:21:08 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:34594 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab1HYPJr (ORCPT
+	with ESMTP id S1753834Ab1HYPJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:47 -0400
+	Thu, 25 Aug 2011 11:09:46 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 077/118] drbd: Converted drbd_send() from mdev to tconn
-Date: Thu, 25 Aug 2011 17:08:13 +0200
-Message-Id: <1314284934-17999-78-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 075/118] drbd: Converted wake_asender() and request_ping() from mdev to tconn
+Date: Thu, 25 Aug 2011 17:08:11 +0200
+Message-Id: <1314284934-17999-76-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,159 +23,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h  |    4 +-
- drivers/block/drbd/drbd_main.c |   45 +++++++++++++++++++--------------------
- 2 files changed, 24 insertions(+), 25 deletions(-)
+ drivers/block/drbd/drbd_int.h      |   12 ++++++------
+ drivers/block/drbd/drbd_main.c     |    2 +-
+ drivers/block/drbd/drbd_nl.c       |    2 +-
+ drivers/block/drbd/drbd_receiver.c |    2 +-
+ drivers/block/drbd/drbd_worker.c   |    4 ++--
+ 5 files changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index e8c2c2a..1f590b9 100644
+index 1c43975..e8c2c2a 100644
 --- a/drivers/block/drbd/drbd_int.h
 +++ b/drivers/block/drbd/drbd_int.h
-@@ -1158,8 +1158,8 @@ extern void tl_release(struct drbd_conf *mdev, unsigned int barrier_nr,
- extern void tl_clear(struct drbd_conf *mdev);
- extern void _tl_add_barrier(struct drbd_conf *, struct drbd_tl_epoch *);
- extern void drbd_free_sock(struct drbd_conf *mdev);
--extern int drbd_send(struct drbd_conf *mdev, struct socket *sock,
--			void *buf, size_t size, unsigned msg_flags);
-+extern int drbd_send(struct drbd_tconn *tconn, struct socket *sock,
-+		     void *buf, size_t size, unsigned msg_flags);
- extern int drbd_send_protocol(struct drbd_conf *mdev);
- extern int drbd_send_uuids(struct drbd_conf *mdev);
- extern int drbd_send_uuids_skip_initial_sync(struct drbd_conf *mdev);
+@@ -1857,16 +1857,16 @@ drbd_queue_work(struct drbd_work_queue *q, struct drbd_work *w)
+ 	spin_unlock_irqrestore(&q->q_lock, flags);
+ }
+ 
+-static inline void wake_asender(struct drbd_conf *mdev)
++static inline void wake_asender(struct drbd_tconn *tconn)
+ {
+-	if (test_bit(SIGNAL_ASENDER, &mdev->tconn->flags))
+-		force_sig(DRBD_SIG, mdev->tconn->asender.task);
++	if (test_bit(SIGNAL_ASENDER, &tconn->flags))
++		force_sig(DRBD_SIG, tconn->asender.task);
+ }
+ 
+-static inline void request_ping(struct drbd_conf *mdev)
++static inline void request_ping(struct drbd_tconn *tconn)
+ {
+-	set_bit(SEND_PING, &mdev->tconn->flags);
+-	wake_asender(mdev);
++	set_bit(SEND_PING, &tconn->flags);
++	wake_asender(tconn);
+ }
+ 
+ static inline int drbd_send_short_cmd(struct drbd_conf *mdev,
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 1f9eac0..357397e 100644
+index 45b8f67..4c31410 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -702,7 +702,7 @@ int _drbd_send_cmd(struct drbd_conf *mdev, struct socket *sock,
+@@ -1360,7 +1360,7 @@ static int we_should_drop_the_connection(struct drbd_conf *mdev, struct socket *
+ 	if (!drop_it) {
+ 		dev_err(DEV, "[%s/%d] sock_sendmsg time expired, ko = %u\n",
+ 		       current->comm, current->pid, mdev->tconn->ko_count);
+-		request_ping(mdev);
++		request_ping(mdev->tconn);
+ 	}
  
- 	prepare_header(mdev, h, cmd, size - sizeof(struct p_header));
+ 	return drop_it; /* && (mdev->state == R_PRIMARY) */;
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index fda399a..df36a57 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -318,7 +318,7 @@ drbd_set_role(struct drbd_conf *mdev, enum drbd_role new_role, int force)
+ 	enum drbd_disk_state nps;
  
--	sent = drbd_send(mdev, sock, h, size, msg_flags);
-+	sent = drbd_send(mdev->tconn, sock, h, size, msg_flags);
+ 	if (new_role == R_PRIMARY)
+-		request_ping(mdev); /* Detect a dead peer ASAP */
++		request_ping(mdev->tconn); /* Detect a dead peer ASAP */
  
- 	ok = (sent == size);
- 	if (!ok && !signal_pending(current))
-@@ -752,9 +752,9 @@ int drbd_send_cmd2(struct drbd_conf *mdev, enum drbd_packet cmd, char *data,
- 		return 0;
+ 	mutex_lock(&mdev->state_mutex);
  
- 	ok = (sizeof(h) ==
--		drbd_send(mdev, mdev->tconn->data.socket, &h, sizeof(h), 0));
-+		drbd_send(mdev->tconn, mdev->tconn->data.socket, &h, sizeof(h), 0));
- 	ok = ok && (size ==
--		drbd_send(mdev, mdev->tconn->data.socket, data, size, 0));
-+		drbd_send(mdev->tconn, mdev->tconn->data.socket, data, size, 0));
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 5f44b43..409b8c8 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -1868,7 +1868,7 @@ static int receive_Data(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 				 * but I don't like the receiver using the msock */
  
- 	drbd_put_data_sock(mdev);
+ 				put_ldev(mdev);
+-				wake_asender(mdev);
++				wake_asender(mdev->tconn);
+ 				finish_wait(&mdev->misc_wait, &wait);
+ 				return true;
+ 			}
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index a705979..5be179b 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -145,7 +145,7 @@ static void drbd_endio_write_sec_final(struct drbd_peer_request *peer_req) __rel
+ 	if (do_al_complete_io)
+ 		drbd_al_complete_io(mdev, e_sector);
  
-@@ -1318,8 +1318,8 @@ int drbd_send_drequest_csum(struct drbd_conf *mdev, sector_t sector, int size,
+-	wake_asender(mdev);
++	wake_asender(mdev->tconn);
+ 	put_ldev(mdev);
+ }
  
- 	mutex_lock(&mdev->tconn->data.mutex);
- 
--	ok = (sizeof(p) == drbd_send(mdev, mdev->tconn->data.socket, &p, sizeof(p), 0));
--	ok = ok && (digest_size == drbd_send(mdev, mdev->tconn->data.socket, digest, digest_size, 0));
-+	ok = (sizeof(p) == drbd_send(mdev->tconn, mdev->tconn->data.socket, &p, sizeof(p), 0));
-+	ok = ok && (digest_size == drbd_send(mdev->tconn, mdev->tconn->data.socket, digest, digest_size, 0));
- 
- 	mutex_unlock(&mdev->tconn->data.mutex);
- 
-@@ -1397,7 +1397,7 @@ static void drbd_update_congested(struct drbd_tconn *tconn)
- static int _drbd_no_send_page(struct drbd_conf *mdev, struct page *page,
- 		   int offset, size_t size, unsigned msg_flags)
+@@ -728,7 +728,7 @@ static int w_resync_finished(struct drbd_conf *mdev, struct drbd_work *w, int ca
+ static void ping_peer(struct drbd_conf *mdev)
  {
--	int sent = drbd_send(mdev, mdev->tconn->data.socket, kmap(page) + offset, size, msg_flags);
-+	int sent = drbd_send(mdev->tconn, mdev->tconn->data.socket, kmap(page) + offset, size, msg_flags);
- 	kunmap(page);
- 	if (sent == size)
- 		mdev->send_cnt += size>>9;
-@@ -1538,11 +1538,11 @@ int drbd_send_dblock(struct drbd_conf *mdev, struct drbd_request *req)
- 	p.dp_flags = cpu_to_be32(dp_flags);
- 	set_bit(UNPLUG_REMOTE, &mdev->flags);
- 	ok = (sizeof(p) ==
--		drbd_send(mdev, mdev->tconn->data.socket, &p, sizeof(p), dgs ? MSG_MORE : 0));
-+		drbd_send(mdev->tconn, mdev->tconn->data.socket, &p, sizeof(p), dgs ? MSG_MORE : 0));
- 	if (ok && dgs) {
- 		dgb = mdev->tconn->int_dig_out;
- 		drbd_csum_bio(mdev, mdev->tconn->integrity_w_tfm, req->master_bio, dgb);
--		ok = dgs == drbd_send(mdev, mdev->tconn->data.socket, dgb, dgs, 0);
-+		ok = dgs == drbd_send(mdev->tconn, mdev->tconn->data.socket, dgb, dgs, 0);
- 	}
- 	if (ok) {
- 		/* For protocol A, we have to memcpy the payload into
-@@ -1611,11 +1611,11 @@ int drbd_send_block(struct drbd_conf *mdev, enum drbd_packet cmd,
- 	if (!drbd_get_data_sock(mdev))
- 		return 0;
- 
--	ok = sizeof(p) == drbd_send(mdev, mdev->tconn->data.socket, &p, sizeof(p), dgs ? MSG_MORE : 0);
-+	ok = sizeof(p) == drbd_send(mdev->tconn, mdev->tconn->data.socket, &p, sizeof(p), dgs ? MSG_MORE : 0);
- 	if (ok && dgs) {
- 		dgb = mdev->tconn->int_dig_out;
- 		drbd_csum_ee(mdev, mdev->tconn->integrity_w_tfm, peer_req, dgb);
--		ok = dgs == drbd_send(mdev, mdev->tconn->data.socket, dgb, dgs, 0);
-+		ok = dgs == drbd_send(mdev->tconn, mdev->tconn->data.socket, dgb, dgs, 0);
- 	}
- 	if (ok)
- 		ok = _drbd_send_zc_ee(mdev, peer_req);
-@@ -1651,7 +1651,7 @@ int drbd_send_oos(struct drbd_conf *mdev, struct drbd_request *req)
- /*
-  * you must have down()ed the appropriate [m]sock_mutex elsewhere!
-  */
--int drbd_send(struct drbd_conf *mdev, struct socket *sock,
-+int drbd_send(struct drbd_tconn *tconn, struct socket *sock,
- 	      void *buf, size_t size, unsigned msg_flags)
- {
- 	struct kvec iov;
-@@ -1672,9 +1672,9 @@ int drbd_send(struct drbd_conf *mdev, struct socket *sock,
- 	msg.msg_controllen = 0;
- 	msg.msg_flags      = msg_flags | MSG_NOSIGNAL;
- 
--	if (sock == mdev->tconn->data.socket) {
--		mdev->tconn->ko_count = mdev->tconn->net_conf->ko_count;
--		drbd_update_congested(mdev->tconn);
-+	if (sock == tconn->data.socket) {
-+		tconn->ko_count = tconn->net_conf->ko_count;
-+		drbd_update_congested(tconn);
- 	}
- 	do {
- 		/* STRANGE
-@@ -1688,12 +1688,11 @@ int drbd_send(struct drbd_conf *mdev, struct socket *sock,
-  */
- 		rv = kernel_sendmsg(sock, &msg, &iov, 1, size);
- 		if (rv == -EAGAIN) {
--			if (we_should_drop_the_connection(mdev->tconn, sock))
-+			if (we_should_drop_the_connection(tconn, sock))
- 				break;
- 			else
- 				continue;
- 		}
--		D_ASSERT(rv != 0);
- 		if (rv == -EINTR) {
- 			flush_signals(current);
- 			rv = 0;
-@@ -1705,17 +1704,17 @@ int drbd_send(struct drbd_conf *mdev, struct socket *sock,
- 		iov.iov_len  -= rv;
- 	} while (sent < size);
- 
--	if (sock == mdev->tconn->data.socket)
--		clear_bit(NET_CONGESTED, &mdev->tconn->flags);
-+	if (sock == tconn->data.socket)
-+		clear_bit(NET_CONGESTED, &tconn->flags);
- 
- 	if (rv <= 0) {
- 		if (rv != -EAGAIN) {
--			dev_err(DEV, "%s_sendmsg returned %d\n",
--			    sock == mdev->tconn->meta.socket ? "msock" : "sock",
--			    rv);
--			drbd_force_state(mdev, NS(conn, C_BROKEN_PIPE));
-+			conn_err(tconn, "%s_sendmsg returned %d\n",
-+				 sock == tconn->meta.socket ? "msock" : "sock",
-+				 rv);
-+			drbd_force_state(tconn->volume0, NS(conn, C_BROKEN_PIPE));
- 		} else
--			drbd_force_state(mdev, NS(conn, C_TIMEOUT));
-+			drbd_force_state(tconn->volume0, NS(conn, C_TIMEOUT));
- 	}
- 
- 	return sent;
+ 	clear_bit(GOT_PING_ACK, &mdev->flags);
+-	request_ping(mdev);
++	request_ping(mdev->tconn);
+ 	wait_event(mdev->misc_wait,
+ 		   test_bit(GOT_PING_ACK, &mdev->flags) || mdev->state.conn < C_CONNECTED);
+ }
 -- 
 1.7.4.1
 
