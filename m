@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab1HYP4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:56:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40304 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751018Ab1HYP4F convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:56:05 -0400
+	id S1751693Ab1HYQAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:00:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56895 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab1HYQAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 12:00:03 -0400
+Date: Thu, 25 Aug 2011 17:59:57 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
+Message-ID: <20110825155957.GJ2803@mtj.dyndns.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+ <1313763382-12341-7-git-send-email-tj@kernel.org>
+ <20110823155221.GB25808@redhat.com>
+ <20110823194451.GH2803@mtj.dyndns.org>
+ <20110824141431.GA8562@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
-References: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 25 Aug 2011 08:55:12 -0700
-Message-ID: <CA+55aFzndqkSC1z3==HqUGC8hP=pw62ro3CWYtovk95_cYAKsA@mail.gmail.com>
-Subject: Re: mtrr failure, 3.1-rc1
-To: Anders Eriksson <aeriksson@fastmail.fm>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110824141431.GA8562@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. Some of those commits are marked for stable too.
+Hello, Oleg.
 
-I'm adding appropriate parties to the discussion (authors and
-sign-offs from the five commits that that merge brings in), but it
-would also be great if you could bisect exactly which commit broke for
-you. You can make it quick by just doing
+On Wed, Aug 24, 2011 at 04:14:31PM +0200, Oleg Nesterov wrote:
+> > Hmmm... can it cause disk IOs after that point?  I skimmed through and
+> > couldn't spot one
+> 
+> I am not sure. But, say, exit_files(). We can't know what f_op->flush()
+> f_op->release() can do in general. Even without i/o the exiting task can
+> do a lot of different things.
 
-  git bisect start
-  git bisect bad dc43d9fa73d82083656fb9c02f4823bcdcfb9f91
-  git bisect good dc43d9fa73d82083656fb9c02f4823bcdcfb9f91^
+Yeah, what 'freeze' should do is a bit vague on the edges, I think.
+The freezer can't really halt the whole system operation including
+IOs.  Tasks aren't the only source which can kick those off.  There
+are other asynchronous sources, timers, IRQs and bottom halves.  For
+actual disk IOs to at least SCSI/IDE devices, freezing isn't even
+necessary.  Queue processing is suspended via device suspend
+mechanism.  There were several drivers which didn't have proper device
+suspend mechanism implemented (maybe we should implement generic queue
+quiescing in block layer) but I don't know whether they are still like
+that.
 
-and it should take just a couple of tests. I *assume* it's the
-stop_machine changes by Tejun &co, but who knows..
+Anyways, freezing has never been a full solution to quiescing the
+system prior to entering hibernation.  It does make sense for userland
+processes but depending on it for quiescing kernel activities
+including IO can't be reliable.  It should really be achieved by
+device suspend (and maybe some midlayer suspending too) and I think
+we're already pretty close to that.  Rafael, can you please enlighten
+us on the subject?
 
-Anders, is this a single-CPU system?
+Another freezer user is the cgroup, for this, allowing killing to
+finish is quite useful as it can be used for runaway cgroup control.
 
-                            Linus
+Thanks.
 
-On Thu, Aug 25, 2011 at 12:03 AM, Anders Eriksson <aeriksson@fastmail.fm> wrote:
->
-> My old P-II has 640MB ram, but the bios only sets up WC for the first 512, so i
-> add this early in the boot process:
-> echo "base=0x20000000 size=0x8000000 type=write-back" > /proc/mtrr
->
-> For reasons I have forgot I also have to add 'disable_mtrr_check' to the
-> command line. Works great.
->
-> As of merge dc43d9fa73d82083656fb9c02f4823bcdcfb9f91 This no longer works.
-> Adding that line to /proc/mtrr no longer has any effect (cat /proc/mtrr shows
-> only the reg00 entry).
->
-> Reverting that merge on top of rc3 brings things back to normal and /proc/mtrr
-> shows:
-> reg00: base=0x000000000 (    0MB), size=  512MB, count=1: write-back
-> reg01: base=0x048000000 ( 1152MB), size=  128MB, count=1: write-combining
-> reg02: base=0x020000000 (  512MB), size=  128MB, count=2: write-back
->
-> Any ideas how to track this down futher? Would be good to get it fixed for 3.1
->
-> -Anders
->
->
->
+-- 
+tejun
