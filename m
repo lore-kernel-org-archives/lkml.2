@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab1HYSqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 14:46:33 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:30263 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753872Ab1HYSqb (ORCPT
+	id S1755277Ab1HYSs3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 14:48:29 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:33029 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754273Ab1HYSs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 14:46:31 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: I2LhVUYVM1kaaNV8H7sQJh3MPgOgpe_CRqBm.cGiaigPFzZ
- QA.Zr6nPZ3ofH55TBCOLs.1lvCz6Ju2eIM3MnwTrj0vZZvW.6qQsEe04gg4Z
- Q7sd43_1AXfL.G5JHkjtYAsEvlkVuNlZKXM_TFYkUw6YHtODn_13.pRiexNG
- EmWilg6bIqgP0Qtj7__cyS9IF439NZMnu8sRrUMJZfO4boQUMduGPP9QiIup
- vgXbNbjiO0fAei8RaykQsFn9dL2gKU6PzS_5PcEsxLl.6t3UECZ2v5pDLaST
- G6JUQfupypiOwuhoVKacQAbwkZTpVLaQDufkSsg3kgPc.UHA9fnzDTVoRel2
- hyC9ESgDPewfpo4KV7IfQqQSedSK9yYTHuxBFZR50yBxeZ7Mg83gID1dy55o
- lrjS43PLkgby5ErBlPcls1w--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 25 Aug 2011 13:46:27 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: James Bottomley <James.bottomley@HansenPartnership.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
-In-Reply-To: <1e295500-5d1f-45dd-aa5b-3d2da2cf1a62@email.android.com>
-Message-ID: <alpine.DEB.2.00.1108251341230.27407@router.home>
-References: <1313650253-21794-1-git-send-email-gthelen@google.com> <20110818144025.8e122a67.akpm@linux-foundation.org> <1314284272.27911.32.camel@twins> <alpine.DEB.2.00.1108251009120.27407@router.home> <1314289208.3268.4.camel@mulgrave>
- <alpine.DEB.2.00.1108251128460.27407@router.home> <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com> <alpine.DEB.2.00.1108251206440.27407@router.home> <1e295500-5d1f-45dd-aa5b-3d2da2cf1a62@email.android.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 25 Aug 2011 14:48:28 -0400
+X-Sasl-enc: cjNphzRaLcmK+Dt6W0xso28OODPuxKS/T+eBeTh7llvH 1314298107
+Date: Thu, 25 Aug 2011 11:46:12 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 06/59] Staging: hv: blkvsc: Use the newly introduced
+ vmbus ID in the blockvsc driver
+Message-ID: <20110825184612.GA1891@kroah.com>
+References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-6-git-send-email-kys@microsoft.com>
+ <20110825173624.GA21334@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B339F@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048081B339F@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011, James Bottomley wrote:
+On Thu, Aug 25, 2011 at 05:52:10PM +0000, KY Srinivasan wrote:
+> > No need to set the field name to nothing.
+> > 
+> > Hm, this could all be made even smaller with something like the
+> > USB_DEVICE() macro.  How about this instead:
+> > 
+> > /* IDE guid */
+> > static const struct hv_vmbus_device_id id_table[] = {
+> > 	{ VMBUS_DEVICE(0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
+> > 		       0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5) },
+> > 	{ },
+> > };
+> > 
+> > That would be easier to read and understand, right?  Half the number of
+> > lines as well, which is always nice.
+> > 
+> > If so, I'll go make that change here so you don't have to respin these.
+> 
+> Looks great Greg. So you are going to add the VMBUS_DEVICE() macro?
 
-> >Well then what is "really risc"? RISC is an old beaten down marketing
-> >term
-> >AFAICT and ARM claims it too.
->
-> Reduced Instruction Set Computer.  This is why we're unlikely to have
-> complex atomic instructions: the principle of risc is that you build
-> them up from basic ones.
+Yes, I've now done so and pushed out the changes, which you have been
+copied on, including a bug fix that I needed to make when I added the
+driver_data field to the hv_vmbus_device_id structure.
 
-RISC cpus have instruction to construct complex atomic actions by the cpu
-as I have shown before for ARM.
+I'll review the rest of the series after lunch.
 
-Principles always have exceptions to them.
+thanks,
 
-(That statement in itself is a principle that should have an exception I
-guess. But then language often only makes sense when it contains
-contradictions.)
-
+greg k-h
