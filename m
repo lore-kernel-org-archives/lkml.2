@@ -1,123 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1HYTGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:06:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59701 "EHLO mga03.intel.com"
+	id S1755392Ab1HYTG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 15:06:58 -0400
+Received: from mail.noc.grnet.gr ([83.212.9.5]:37129 "EHLO mail.noc.grnet.gr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755345Ab1HYTFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:05:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,282,1312182000"; 
-   d="scan'208";a="42458343"
-Message-Id: <20110825190657.210286410@sbsiddha-desk.sc.intel.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 25 Aug 2011 12:01:12 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        trenn@suse.de, suresh.b.siddha@intel.com, rjw@novell.com,
-        macro@linux-mips.org, lchiquitto@novell.com, jbeulich@novell.com,
-        yinghai@kernel.org
-Subject: [patch v2 2/3] x86, ioapic: restore the mask bit correctly in eoi_ioapic_irq()
-References: <20110825190110.255432370@sbsiddha-desk.sc.intel.com>
-Content-Disposition: inline; filename=fix_eoi_ioapic_irq_mask_unmask.patch
+	id S1755306Ab1HYTG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 15:06:57 -0400
+X-Greylist: delayed 635 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 15:06:56 EDT
+Date: Thu, 25 Aug 2011 21:56:16 +0300
+From: Faidon Liambotis <paravoid@debian.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        john stultz <johnstul@us.ibm.com>, Willy Tarreau <w@1wt.eu>,
+        MINOURA Makoto <minoura@valinux.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        stable@kernel.org, seto.hidetoshi@jp.fujitsu.com,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        Rand@jasper.es
+Subject: Re: 2.6.32.21 - uptime related crashes?
+Message-ID: <20110825185616.GA17078@faidon.noc.grnet.gr>
+References: <1310434819.30337.21.camel@work-vm>
+ <20110712041938.GO27254@1wt.eu>
+ <1310690138.3367.61.camel@work-vm>
+ <1310724097.2586.296.camel@twins>
+ <1310752795.2945.4.camel@work-vm>
+ <20110721072256.GE9216@elte.hu>
+ <1311251098.29152.130.camel@twins>
+ <20110721125008.GF11246@pcnci.linuxbox.cz>
+ <1311252799.29152.147.camel@twins>
+ <20110721184524.GB381@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721184524.GB381@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For older io-apic's, we were clearing the remote IRR by changing the RTE
-trigger mode to edge and then back to level. We wanted to mask the RTE during
-this process, so we were essentially doing mask+edge and then to unmask+level.
+On Thu, Jul 21, 2011 at 08:45:25PM +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Thu, 2011-07-21 at 14:50 +0200, Nikola Ciprich wrote:
+> > > thanks for the patch! I'll put this on our testing boxes...
+> > 
+> > With a patch that frobs the starting value close to overflowing I hope,
+> > otherwise we'll not hear from you in like 7 months ;-)
+> > 
+> > > Are You going to push this upstream so we can ask Greg to push this to
+> > > -stable? 
+> > 
+> > Yeah, I think we want to commit this with a -stable tag, Ingo?
+> 
+> yeah - and we also want a Reported-by tag and an explanation of how 
+> it can crash and why it matters in practice. I can then stick it into 
+> the urgent branch for Linus. (probably will only hit upstream in the 
+> merge window though.)
 
-As part of the commit ca64c47cecd0321b2e0dcbd7aaff44b68ce20654, we
-moved this EOI process earlier where the IO-APIC RTE is masked. So we were
-wrongly unmasking it in the eoi_ioapic_irq().
+Has this been pushed or has the problem been solved somehow? Time is
+against us on this bug as more boxes will crash as they reach 200 days
+of uptime...
 
-So change the remoteIRR clear sequence in eoi_ioapic_irq() to mask + edge and
-then restore the previous RTE entry which will restore the mask status aswell
-as the level trigger.
+In any case, feel free to use me as a Reported-by, my full report of the
+problem being <20110430173905.GA25641@tty.gr>.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Maciej W. Rozycki <macro@linux-mips.org>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Rafael Wysocki <rjw@novell.com>
----
- arch/x86/kernel/apic/io_apic.c |   43 +++++++++++++++++++++++++----------------
- 1 file changed, 27 insertions(+), 16 deletions(-)
+FWIW and if I understand correctly, my symptoms were caused by *two*
+different bugs:
+a) the 54 bits wraparound at 208 days that Peter fixed above,
+b) a kernel crash at ~215 days related to RT tasks, fixed by
+305e6835e05513406fa12820e40e4a8ecb63743c (already in -stable).
 
-Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -394,13 +394,21 @@ union entry_union {
- 	struct IO_APIC_route_entry entry;
- };
- 
-+static struct IO_APIC_route_entry __ioapic_read_entry(int apic, int pin)
-+{
-+	union entry_union eu;
-+
-+	eu.w1 = io_apic_read(apic, 0x10 + 2 * pin);
-+	eu.w2 = io_apic_read(apic, 0x11 + 2 * pin);
-+	return eu.entry;
-+}
-+
- static struct IO_APIC_route_entry ioapic_read_entry(int apic, int pin)
- {
- 	union entry_union eu;
- 	unsigned long flags;
- 	raw_spin_lock_irqsave(&ioapic_lock, flags);
--	eu.w1 = io_apic_read(apic, 0x10 + 2 * pin);
--	eu.w2 = io_apic_read(apic, 0x11 + 2 * pin);
-+	eu.entry = __ioapic_read_entry(apic, pin);
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 	return eu.entry;
- }
-@@ -529,18 +537,6 @@ static void io_apic_modify_irq(struct ir
- 		__io_apic_modify_irq(entry, mask_and, mask_or, final);
- }
- 
--static void __mask_and_edge_IO_APIC_irq(struct irq_pin_list *entry)
--{
--	__io_apic_modify_irq(entry, ~IO_APIC_REDIR_LEVEL_TRIGGER,
--			     IO_APIC_REDIR_MASKED, NULL);
--}
--
--static void __unmask_and_level_IO_APIC_irq(struct irq_pin_list *entry)
--{
--	__io_apic_modify_irq(entry, ~IO_APIC_REDIR_MASKED,
--			     IO_APIC_REDIR_LEVEL_TRIGGER, NULL);
--}
--
- static void io_apic_sync(struct irq_pin_list *entry)
- {
- 	/*
-@@ -2488,8 +2484,23 @@ static void eoi_ioapic_irq(unsigned int 
- 			else
- 				io_apic_eoi(entry->apic, cfg->vector);
- 		} else {
--			__mask_and_edge_IO_APIC_irq(entry);
--			__unmask_and_level_IO_APIC_irq(entry);
-+			struct IO_APIC_route_entry rte, rte1;
-+
-+			rte = rte1 =
-+				__ioapic_read_entry(entry->apic, entry->pin);
-+
-+			/*
-+			 * Mask the entry and change the trigger mode to edge.
-+			 */
-+			rte1.mask = 1;
-+			rte1.trigger = IOAPIC_EDGE;
-+
-+			__ioapic_write_entry(apic, pin, rte1);
-+
-+			/*
-+			 * Restore the previous level triggered entry.
-+			 */
-+			__ioapic_write_entry(apic, pin, rte);
- 		}
- 	}
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-
-
+Regards,
+Faidon
