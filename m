@@ -1,71 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab1HYHE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 03:04:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35299 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab1HYHEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 03:04:54 -0400
-Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: david.wagner@free-electrons.com, linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Thu, 25 Aug 2011 10:06:44 +0300
-In-Reply-To: <201108241823.20904.arnd@arndb.de>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
-	 <1313587042-30846-1-git-send-email-david.wagner@free-electrons.com>
-	 <1313998939.2644.52.camel@sauron> <201108241823.20904.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1314256010.18988.18.camel@sauron>
-Mime-Version: 1.0
+	id S1753337Ab1HYHFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:05:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46983 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753131Ab1HYHFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 03:05:48 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        <rogerq@ti.com>
+Subject: [PATCH 3/5 v8] arm: omap: usb: register hwmods of usbhs
+Date: Thu, 25 Aug 2011 12:31:35 +0530
+Message-ID: <1314255697-15411-4-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1314255697-15411-3-git-send-email-keshava_mgowda@ti.com>
+References: <1314255697-15411-1-git-send-email-keshava_mgowda@ti.com>
+ <1314255697-15411-2-git-send-email-keshava_mgowda@ti.com>
+ <1314255697-15411-3-git-send-email-keshava_mgowda@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+The hwmod structure of uhh, ohci, ehci and tll are
+retrieved and registered with omap device
 
-On Wed, 2011-08-24 at 18:23 +0200, Arnd Bergmann wrote:
-> That should  be fine, yes. I would probably put them into the same
-> header file though if they are in the same number space even
-> when you use them on distinct devices.
-> 
-> It does feel a little clumsy to have yet another character device
-> to manage the block devices though. What do you think about one
-> of these alternative approaches:
-> 
-> * When the ubi block device driver gets loaded, create one block
->   device per volume and let the user deal with permissions for
->   the devices instead of having to first create them as well.
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+---
+ arch/arm/mach-omap2/usb-host.c |  114 +++++++++++++++++----------------------
+ 1 files changed, 50 insertions(+), 64 deletions(-)
 
-I think this wasteful. Why should I have block devices which I do not
-need? If I have 4 UBI volumes, and need only one ubiblk, why should I
-waste my resources for 3 more of them (e.g., I do not want to waste
-memory for struct inode for each sysfs entry which these useless block
-devices will add). Also, will this mean 3 more block devices registered?
-
-I think it is much uglier to have 3 "dummy" block devices and confuse
-users than have one nice control character device. For the sake of not
-having a separate control chardev?
-
-> * Use the existing UBI control device for the block devices as
->   well and just add two more ioctls to create the devices.
->   You can add a logical bus_type for this so that the ubi block
->   driver gets automatically loaded matched with the device when
->   one is created using the control device.
-
-This sounds  better IMHO, but I am still not sure that adding another
-dummy bus and exposing it in sysfs and more complexity in the ubiblk
-code is more elegant and less wasteful than just creating a separate
-chardev...
-
+diff --git a/arch/arm/mach-omap2/usb-host.c b/arch/arm/mach-omap2/usb-host.c
+index 89ae298..9c37db9 100644
+--- a/arch/arm/mach-omap2/usb-host.c
++++ b/arch/arm/mach-omap2/usb-host.c
+@@ -28,51 +28,30 @@
+ #include <mach/hardware.h>
+ #include <mach/irqs.h>
+ #include <plat/usb.h>
++#include <plat/omap_device.h>
+ 
+ #include "mux.h"
+ 
+ #ifdef CONFIG_MFD_OMAP_USB_HOST
+ 
+-#define OMAP_USBHS_DEVICE	"usbhs-omap"
+-
+-static struct resource usbhs_resources[] = {
+-	{
+-		.name	= "uhh",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "tll",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "ehci",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "ehci-irq",
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	{
+-		.name	= "ohci",
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{
+-		.name	= "ohci-irq",
+-		.flags	= IORESOURCE_IRQ,
+-	}
+-};
+-
+-static struct platform_device usbhs_device = {
+-	.name		= OMAP_USBHS_DEVICE,
+-	.id		= 0,
+-	.num_resources	= ARRAY_SIZE(usbhs_resources),
+-	.resource	= usbhs_resources,
+-};
++#define OMAP_USBHS_DEVICE	"usbhs_omap"
++#define	USBHS_UHH_HWMODNAME	"usbhs_uhh"
++#define	USBHS_OHCI_HWMODNAME	"usbhs_ohci"
++#define USBHS_EHCI_HWMODNAME	"usbhs_ehci"
++#define USBHS_TLL_HWMODNAME	"usbhs_tll"
+ 
+ static struct usbhs_omap_platform_data		usbhs_data;
+ static struct ehci_hcd_omap_platform_data	ehci_data;
+ static struct ohci_hcd_omap_platform_data	ohci_data;
+ 
++static struct omap_device_pm_latency omap_uhhtll_latency[] = {
++	  {
++		.deactivate_func = omap_device_idle_hwmods,
++		.activate_func	 = omap_device_enable_hwmods,
++		.flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
++	  },
++};
++
+ /* MUX settings for EHCI pins */
+ /*
+  * setup_ehci_io_mux - initialize IO pad mux for USBHOST
+@@ -508,7 +487,10 @@ static void setup_4430ohci_io_mux(const enum usbhs_omap_port_mode *port_mode)
+ 
+ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ {
+-	int	i;
++	struct omap_hwmod	*oh[4];
++	struct omap_device	*od;
++	int			bus_id = -1;
++	int			i;
+ 
+ 	for (i = 0; i < OMAP3_HS_USB_PORTS; i++) {
+ 		usbhs_data.port_mode[i] = pdata->port_mode[i];
+@@ -523,44 +505,48 @@ void __init usbhs_init(const struct usbhs_omap_board_data *pdata)
+ 	usbhs_data.ohci_data = &ohci_data;
+ 
+ 	if (cpu_is_omap34xx()) {
+-		usbhs_resources[0].start = OMAP34XX_UHH_CONFIG_BASE;
+-		usbhs_resources[0].end = OMAP34XX_UHH_CONFIG_BASE + SZ_1K - 1;
+-		usbhs_resources[1].start = OMAP34XX_USBTLL_BASE;
+-		usbhs_resources[1].end = OMAP34XX_USBTLL_BASE + SZ_4K - 1;
+-		usbhs_resources[2].start	= OMAP34XX_EHCI_BASE;
+-		usbhs_resources[2].end	= OMAP34XX_EHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[3].start = INT_34XX_EHCI_IRQ;
+-		usbhs_resources[4].start	= OMAP34XX_OHCI_BASE;
+-		usbhs_resources[4].end	= OMAP34XX_OHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[5].start = INT_34XX_OHCI_IRQ;
+ 		setup_ehci_io_mux(pdata->port_mode);
+ 		setup_ohci_io_mux(pdata->port_mode);
+ 	} else if (cpu_is_omap44xx()) {
+-		usbhs_resources[0].start = OMAP44XX_UHH_CONFIG_BASE;
+-		usbhs_resources[0].end = OMAP44XX_UHH_CONFIG_BASE + SZ_1K - 1;
+-		usbhs_resources[1].start = OMAP44XX_USBTLL_BASE;
+-		usbhs_resources[1].end = OMAP44XX_USBTLL_BASE + SZ_4K - 1;
+-		usbhs_resources[2].start = OMAP44XX_HSUSB_EHCI_BASE;
+-		usbhs_resources[2].end = OMAP44XX_HSUSB_EHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[3].start = OMAP44XX_IRQ_EHCI;
+-		usbhs_resources[4].start = OMAP44XX_HSUSB_OHCI_BASE;
+-		usbhs_resources[4].end = OMAP44XX_HSUSB_OHCI_BASE + SZ_1K - 1;
+-		usbhs_resources[5].start = OMAP44XX_IRQ_OHCI;
+ 		setup_4430ehci_io_mux(pdata->port_mode);
+ 		setup_4430ohci_io_mux(pdata->port_mode);
+ 	}
+ 
+-	if (platform_device_add_data(&usbhs_device,
+-				&usbhs_data, sizeof(usbhs_data)) < 0) {
+-		printk(KERN_ERR "USBHS platform_device_add_data failed\n");
+-		goto init_end;
++	oh[0] = omap_hwmod_lookup(USBHS_UHH_HWMODNAME);
++	if (!oh[0]) {
++		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
++		return;
++	}
++
++	oh[1] = omap_hwmod_lookup(USBHS_OHCI_HWMODNAME);
++	if (!oh[1]) {
++		pr_err("Could not look up %s\n", USBHS_UHH_HWMODNAME);
++		return;
+ 	}
+ 
+-	if (platform_device_register(&usbhs_device) < 0)
+-		printk(KERN_ERR "USBHS platform_device_register failed\n");
++	oh[2] = omap_hwmod_lookup(USBHS_EHCI_HWMODNAME);
++	if (!oh[2]) {
++		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
++		return;
++	}
+ 
+-init_end:
+-	return;
++	oh[3] = omap_hwmod_lookup(USBHS_TLL_HWMODNAME);
++	if (!oh[3]) {
++		pr_err("Could not look up %s\n", USBHS_TLL_HWMODNAME);
++		return;
++	}
++
++	od = omap_device_build_ss(OMAP_USBHS_DEVICE, bus_id, oh, 4,
++				(void *)&usbhs_data, sizeof(usbhs_data),
++				omap_uhhtll_latency,
++				ARRAY_SIZE(omap_uhhtll_latency), false);
++
++	if (IS_ERR(od)) {
++		pr_err("Could not build hwmod devices %s, %s, %s, %s\n",
++			USBHS_UHH_HWMODNAME, USBHS_OHCI_HWMODNAME,
++			USBHS_EHCI_HWMODNAME, USBHS_TLL_HWMODNAME);
++		return;
++	}
+ }
+ 
+ #else
 -- 
-Best Regards,
-Artem Bityutskiy
+1.6.0.4
 
