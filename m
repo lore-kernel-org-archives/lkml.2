@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab1HYXXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 19:23:50 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:25169 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab1HYXXs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 19:23:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=g/MNkgNxB/nNi7VosRg8ycttONqb7/ZK8k1pT3Ix1s02TosTdxVuPWC1lqpPpc10b
-	OZWNR02txr44Sh2cgLBOg==
-MIME-Version: 1.0
-In-Reply-To: <CAOfQC9-kS_nVg-+2OZRGHP1X-E7B12uG63QGfB64hPAGecgFLw@mail.gmail.com>
-References: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com>
- <1314167063-15785-2-git-send-email-dengcheng.zhu@gmail.com>
- <CAErSpo4091J2pGvzZKPbKK68LWWkDyVApA7suZYn7miq=tXrQg@mail.gmail.com>
- <CAOfQC98Nkr7Ek3uQfiD3OdW=YC76XGjfQ4WSfoLpsm2kvqKnog@mail.gmail.com>
- <CAErSpo4zojYjYVd=6U72ToqiZOD-qL-saP8huwa6ShrNnaR3vA@mail.gmail.com> <CAOfQC9-kS_nVg-+2OZRGHP1X-E7B12uG63QGfB64hPAGecgFLw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 25 Aug 2011 17:23:24 -0600
-Message-ID: <CAErSpo4U6orULckFofbJON+x70m1G4w76rK4Y1Besh_K-m612g@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] MIPS: PCI: Use pci_bus_remove_resources()/pci_bus_add_resource()
- to set up root resources
-To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
-        zenon@mips.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1752955Ab1HYXag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 19:30:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60588 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752107Ab1HYXaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 19:30:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,282,1312182000"; 
+   d="scan'208";a="45163086"
+Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "RalfJungralfjung-e@gmx.de" <RalfJungralfjung-e@gmx.de>,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 25 Aug 2011 16:33:44 -0700
+In-Reply-To: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
+References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1314315225.16133.30.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 5:14 PM, Deng-Cheng Zhu <dengcheng.zhu@gmail.com> wrote:
-> 2011/8/25 Bjorn Helgaas <bhelgaas@google.com>:
->> No, I just mean that I don't see why you need this patch at all.  If
->> you pass the list of bus resources to pci_create_bus(), there's no
->> need to fix anything up later.  Or am I missing something?
->
-> Well, doing the root resource fixups in here is a *paranoid* way. It's to
-> deal with the 'unlikely' circumstance where controller_resources() returns
-> the NULL pointer in pcibios_scanbus() due to memory allocation failure.
-> Most of the time (always) it's nothing more than repeating the resource
-> list setup. But maybe we can do something like this:
->
-> if (unlikely(!dev && list_empty(&bus->resources))
->        pcibios_setup_root_resources(bus, hose);
->
->
-> What do you think?
+On Thu, 2011-08-25 at 16:05 -0700, Bjorn Helgaas wrote:
+> Previously we reserved 1024 bytes, but that's more space than the IOAPIC
+> consumes, and it can cause conflicts with nearby devices.  The known
+> requirement is 68 bytes (sizeof(struct io_apic)), and rounding up to a
+> power-of-2 gives us 128.
+> 
 
-I don't think it's worth it.  Just check for failure of
-controller_resources(), and if it fails, skip the pci_create_bus()
-call.  You've already printed a message (you might add the PCI
-domain/bus number).
+Bjorn, Given the info from Intel that most of its io-apic
+implementations has registers up to 0xff offset (reserved), does
+reserving just the 128 bytes for the io-apic cause any address conflicts
+if the next 128 bytes are allocated (by the OS) for any other device.
 
-Bjorn
+Or OS doesn't allocate this range to any other device and its only the
+bios which allocates the addresses in this range and OS just ensures
+that there are no conflicts?
+
+thanks,
+suresh
+
+> The bug reported below is caused by the following assignments (the IOAPIC
+> power-on default and the watchdog address recommended in the AMD SP5100
+> BIOS Developer's Guide):
+> 
+>   IOAPIC[0]        at [mem 0xfec00000-0xfec003ff]
+>   SP5100 TCO timer at [mem 0xfec000f0-0xfec000f7]
+> 
+> Reported-by: Ralf Jung ralfjung-e@gmx.de
+> Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=638863
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  arch/x86/include/asm/apicdef.h |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+> index 34595d5..855a18a 100644
+> --- a/arch/x86/include/asm/apicdef.h
+> +++ b/arch/x86/include/asm/apicdef.h
+> @@ -12,10 +12,11 @@
+>  #define	APIC_DEFAULT_PHYS_BASE		0xfee00000
+>  
+>  /*
+> - * This is the IO-APIC register space as specified
+> - * by Intel docs:
+> + * I/O APICs are accessed indirectly via an index/data pair and an EOI
+> + * register.  For example, see sec 13.5.1, "APIC Register Map," in the
+> + * Intel ICH10 datasheet and the struct io_apic definition.
+>   */
+> -#define IO_APIC_SLOT_SIZE		1024
+> +#define IO_APIC_SLOT_SIZE		128
+>  
+>  #define	APIC_ID		0x20
+>  
+> 
+
+
