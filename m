@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab1HYN3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:29:11 -0400
-Received: from tac.ki.iif.hu ([193.6.222.43]:35033 "EHLO tac.ki.iif.hu"
+	id S1753517Ab1HYN37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:29:59 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:50389 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab1HYN3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:29:08 -0400
-X-Greylist: delayed 2133 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 09:29:08 EDT
-From: Ferenc Wagner <wferi@niif.hu>
-To: Kashyap@tac.ki.iif.hu, Desai <kashyap.desai@lsi.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [SCSI] fusion: ensure NUL-termination of MptCallbacksName elements
-Date: Thu, 25 Aug 2011 14:44:57 +0200
-Message-Id: <cd21dfb714e3a89aadd8eda1fda1748dec9ed7aa.1314276422.git.wferi@niif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751407Ab1HYN36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 09:29:58 -0400
+Message-ID: <4E564E4D.4030302@linux.vnet.ibm.com>
+Date: Thu, 25 Aug 2011 08:29:49 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, jeremy@goop.org, hughd@google.com,
+        ngupta@vflare.org, konrad.wilk@oracle.com, JBeulich@novell.com,
+        kurt.hackel@oracle.com, npiggin@kernel.dk, akpm@linux-foundation.org,
+        riel@redhat.com, hannes@cmpxchg.org, matthew@wil.cx,
+        chris.mason@oracle.com, jackdachef@gmail.com, cyclonusj@gmail.com
+Subject: Re: Subject: [PATCH V7 2/4] mm: frontswap: core code
+References: <20110823145815.GA23190@ca-server1.us.oracle.com> <20110825150532.a4d282b1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110825150532.a4d282b1.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ferenc Wagner <wferi@niif.hu>
----
- drivers/message/fusion/mptbase.c |    5 ++---
- drivers/message/fusion/mptbase.h |    1 +
- 2 files changed, 3 insertions(+), 3 deletions(-)
+On 08/25/2011 01:05 AM, KAMEZAWA Hiroyuki wrote:
+> On Tue, 23 Aug 2011 07:58:15 -0700
+> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> 
+>> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+>> Subject: [PATCH V7 2/4] mm: frontswap: core code
+>>
+>> This second patch of four in this frontswap series provides the core code
+>> for frontswap that interfaces between the hooks in the swap subsystem and
+>> a frontswap backend via frontswap_ops.
+>>
+>> Two new files are added: mm/frontswap.c and include/linux/frontswap.h
+>>
+>> Credits: Frontswap_ops design derived from Jeremy Fitzhardinge
+>> design for tmem; sysfs code modelled after mm/ksm.c
+>>
+>> [v7: rebase to 3.0-rc3]
+>> [v7: JBeulich@novell.com: new static inlines resolve to no-ops if not config'd]
+>> [v7: JBeulich@novell.com: avoid redundant shifts/divides for *_bit lib calls]
+>> [v6: rebase to 3.1-rc1]
+>> [v6: lliubbo@gmail.com: fix null pointer deref if vzalloc fails]
+>> [v6: konrad.wilk@oracl.com: various checks and code clarifications/comments]
+>> [v5: no change from v4]
+>> [v4: rebase to 2.6.39]
+>> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+>> Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
+>> Acked-by: Jan Beulich <JBeulich@novell.com>
+>> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+>> Cc: Hugh Dickins <hughd@google.com>
+>> Cc: Johannes Weiner <hannes@cmpxchg.org>
+>> Cc: Nitin Gupta <ngupta@vflare.org>
+>> Cc: Matthew Wilcox <matthew@wil.cx>
+>> Cc: Chris Mason <chris.mason@oracle.com>
+>> Cc: Rik Riel <riel@redhat.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>
+<cut>
+> 
+> 
+> I'm sorry if I miss codes but.... is an implementation of frontswap.ops included
+> in this patch set ? Or how to test the work ?
 
-diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-index 7956a10..eb906e2 100644
---- a/drivers/message/fusion/mptbase.c
-+++ b/drivers/message/fusion/mptbase.c
-@@ -113,7 +113,7 @@ module_param(mpt_fwfault_debug, int, 0600);
- MODULE_PARM_DESC(mpt_fwfault_debug,
- 		 "Enable detection of Firmware fault and halt Firmware on fault - (default=0)");
- 
--static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][50];
-+static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][MPT_MAX_CALLBACKNAME_LEN+1];
- 
- #ifdef MFCNT
- static int mfcounter = 0;
-@@ -656,8 +656,7 @@ mpt_register(MPT_CALLBACK cbfunc, MPT_DRIVER_CLASS dclass, char *func_name)
- 			MptDriverClass[cb_idx] = dclass;
- 			MptEvHandlers[cb_idx] = NULL;
- 			last_drv_idx = cb_idx;
--			memcpy(MptCallbacksName[cb_idx], func_name,
--			    strlen(func_name) > 50 ? 50 : strlen(func_name));
-+			strlcpy(MptCallbacksName[cb_idx], func_name, MPT_MAX_CALLBACKNAME_LEN+1);
- 			break;
- 		}
- 	}
-diff --git a/drivers/message/fusion/mptbase.h b/drivers/message/fusion/mptbase.h
-index fe90233..c10416d 100644
---- a/drivers/message/fusion/mptbase.h
-+++ b/drivers/message/fusion/mptbase.h
-@@ -89,6 +89,7 @@
-  */
- #define MPT_MAX_ADAPTERS		18
- #define MPT_MAX_PROTOCOL_DRIVERS	16
-+#define MPT_MAX_CALLBACKNAME_LEN	49
- #define MPT_MAX_BUS			1	/* Do not change */
- #define MPT_MAX_FC_DEVICES		255
- #define MPT_MAX_SCSI_DEVICES		16
--- 
-1.6.5
+The zcache driver (in drivers/staging/zcache) is the one that registers frontswap ops.
+
+You can test frontswap by enabling CONFIG_FRONTSWAP and CONFIG_ZCACHE, and putting 
+"zcache" in the kernel boot parameters.
+
+> 
+> Thanks,
+> -Kame
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
