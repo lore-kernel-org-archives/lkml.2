@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1HYOHq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 10:07:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11080 "EHLO mx1.redhat.com"
+	id S1752188Ab1HYOH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 10:07:58 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:58029 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab1HYOHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 10:07:42 -0400
-Message-ID: <4E5656E6.1090204@redhat.com>
-Date: Thu, 25 Aug 2011 17:06:30 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1751806Ab1HYOHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 10:07:54 -0400
+Date: Thu, 25 Aug 2011 07:07:22 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Will Simoneau <simoneau@ele.uri.edu>
+Cc: linux-kernel@vger.kernel.org, dipankar@in.ibm.com
+Subject: Re: 2.6.39.4: Oops in rcu_read_unlock_special()/_raw_spin_lock()
+Message-ID: <20110825140722.GC2369@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110824211907.GA4225@ele.uri.edu>
+ <20110824212744.GV2417@linux.vnet.ibm.com>
+ <20110825132051.GA9580@ele.uri.edu>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
-References: <4E4A1257.5080204@cn.fujitsu.com> <20110823080024.GA2297@amt.cnet> <4E53872B.3070407@cn.fujitsu.com> <20110823123818.GB4261@amt.cnet> <4E53D620.9030304@cn.fujitsu.com> <20110823190939.GA10220@amt.cnet> <4E540AB4.6060905@cn.fujitsu.com> <20110824200540.GA19804@amt.cnet> <20110825020424.GA2542@amt.cnet> <4E55D2A2.7050808@redhat.com> <20110825132110.GA4384@amt.cnet>
-In-Reply-To: <20110825132110.GA4384@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110825132051.GA9580@ele.uri.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 04:21 PM, Marcelo Tosatti wrote:
-> On Thu, Aug 25, 2011 at 07:42:10AM +0300, Avi Kivity wrote:
-> >  On 08/25/2011 05:04 AM, Marcelo Tosatti wrote:
-> >  >>
-> >  >>   It could increase the flood count independently of the accessed bit of
-> >  >>   the spte being updated, zapping after 3 attempts as it is now.
-> >  >>
-> >  >>   But additionally reset the flood count if the gpte appears to be valid
-> >  >>   (points to an existant gfn if the present bit is set, or if its zeroed).
-> >  >
-> >  >Well not zero, as thats a common pattern for non ptes.
-> >  >
-> >
-> >  On 32-bit with 4GB RAM, practically anything is a valid gpte.
->
-> The following could be required to consider a valid gpte, for write
-> flood detection purposes:
->
-> - Must be present.
-> - PageCacheDisable must be unset.
-> - PageWriteThrough must be unset.
->
+On Thu, Aug 25, 2011 at 09:20:51AM -0400, Will Simoneau wrote:
+> On 14:27 Wed 24 Aug     , Paul E. McKenney wrote:
+> > On Wed, Aug 24, 2011 at 05:19:07PM -0400, Will Simoneau wrote:
+> > > The below Oops/BUGs were captured on a serial console during a large
+> > > rsync job. I do not know of a way to reproduce the Oops, I've only seen
+> > > it once. Some recent changes have been made suspiciously close to the
+> > > exploding code, which makes me think that maybe 2.6.39-stable is lacking
+> > > some fixes? The following commits from Linus' git seem vaguely related,
+> > > although I have no idea how relevant they are to 2.6.39.4:
+> > > 
+> > >    ec433f0c (softirq,rcu: Inform RCU of irq_exit() activity)
+> > >    10f39bb1 (rcu: protect __rcu_read_unlock() against scheduler-using
+> > >              irq handlers)
+> > 
+> > If this failure mechanism really is the culprit, you should be able
+> > to make failure happen much more frequently by inserting a delay in
+> > __rcu_read_unlock() just prior to the call to rcu_read_unlock_special().
+> > I would suggest starting with a few tens to hundreds of microseconds
+> > worth of delay.
+> > 
+> > If this does make the failure reproducible, then it would make sense
+> > to try applying the two patches you identified.
+> 
+> Hmm. I tried adding progressively larger delays in the spot you
+> indicated. I went from 100uS to an entire 1S (!) and got no crash or
+> deadlock. The target runs at 40MHz so the delays do need to be
+> relatively long compared to modern machines.
+> 
+> My hardware breakpoint as well as printk tests confirm that
+> rcu_read_unlock_special() really does get called multiple times per
+> second, and the 1S delay makes it painfully obvious as well. But, no
+> dice.
 
-Unless the guest is using PAT.
+Well, you can always apply the two patches above anyway, but it is hard
+to prove what the underlying problem really is in your case.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+							Thanx, Paul
