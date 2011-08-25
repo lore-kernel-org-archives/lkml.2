@@ -1,186 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1HYRrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:47:37 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:62946 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072Ab1HYRrg convert rfc822-to-8bit (ORCPT
+	id S1755064Ab1HYRwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:52:14 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:41490 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121Ab1HYRwN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:47:36 -0400
-MIME-Version: 1.0
-Message-ID: <46a0d040-bae2-4a6b-a896-bc3dadce3cd0@default>
-Date: Thu, 25 Aug 2011 10:46:52 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com
-Subject: RE: Subject: [PATCH V7 3/4] mm: frontswap: add swap hooks and extend
- try_to_unuse
-References: <20110823145835.GA23222@ca-server1.us.oracle.com
- 20110825153347.1e42a607.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110825153347.1e42a607.kamezawa.hiroyu@jp.fujitsu.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
+	Thu, 25 Aug 2011 13:52:13 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 06/59] Staging: hv: blkvsc: Use the newly introduced
+ vmbus ID in the blockvsc driver
+Thread-Topic: [PATCH 06/59] Staging: hv: blkvsc: Use the newly introduced
+ vmbus ID in the blockvsc driver
+Thread-Index: AQHMY0RPhcQQ8+NwTU64LG+F0dvlDZUuSdUA//+OjgA=
+Date: Thu, 25 Aug 2011 17:52:10 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B339F@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-6-git-send-email-kys@microsoft.com>
+ <20110825173624.GA21334@kroah.com>
+In-Reply-To: <20110825173624.GA21334@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.79]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090205.4E568AA1.0185,ss=1,re=0.000,fgs=0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
-> Subject: Re: Subject: [PATCH V7 3/4] mm: frontswap: add swap hooks and extend try_to_unuse
 
-Thanks again for the great review!  I think the only change required
-for V8 is the addition of a comment in find_next_to_unuse (see below).
-After reading all of my replies, please let me know if you disagree.
 
-Dan
-
-> > From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> >
-> > This third patch of four in the frontswap series adds hooks in the swap
-> > subsystem and extends try_to_unuse so that frontswap_shrink can do a
-> > "partial swapoff".  Also, declarations for the extern-ified swap variables
-> > in the first patch are declared.
-> >
-> > Note that failed frontswap_map allocation is safe... failure is noted
-> > by lack of "FS" in the subsequent printk.
-> >
-> > [v7: rebase to 3.0-rc3]
-> > [v7: JBeulich@novell.com: use new static inlines, no-ops if not config'd]
-> > [v6: rebase to 3.1-rc1]
-> > [v6: lliubbo@gmail.com: use vzalloc]
-> > [v5: accidentally posted stale code for v4 that failed to compile :-(]
-> > [v4: rebase to 2.6.39]
-> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
-> > Acked-by: Jan Beulich <JBeulich@novell.com>
-> > Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> > Cc: Hugh Dickins <hughd@google.com>
-> > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Nitin Gupta <ngupta@vflare.org>
-> > Cc: Matthew Wilcox <matthew@wil.cx>
-> > Cc: Chris Mason <chris.mason@oracle.com>
-> > Cc: Rik Riel <riel@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> >
-> > --- linux/mm/swapfile.c	2011-08-08 08:19:26.336684746 -0600
-> > +++ frontswap/mm/swapfile.c	2011-08-23 08:21:15.301998803 -0600
-> > @@ -32,6 +32,8 @@
-> >  #include <linux/memcontrol.h>
-> >  #include <linux/poll.h>
-> >  #include <linux/oom.h>
-> > +#include <linux/frontswap.h>
-> > +#include <linux/swapfile.h>
-> >
-> >  #include <asm/pgtable.h>
-> >  #include <asm/tlbflush.h>
-> > @@ -43,7 +45,7 @@ static bool swap_count_continued(struct
-> >  static void free_swap_count_continuations(struct swap_info_struct *);
-> >  static sector_t map_swap_entry(swp_entry_t, struct block_device**);
-> >
-> > -static DEFINE_SPINLOCK(swap_lock);
-> > +DEFINE_SPINLOCK(swap_lock);
-> >  static unsigned int nr_swapfiles;
-> >  long nr_swap_pages;
-> >  long total_swap_pages;
-> > @@ -54,9 +56,9 @@ static const char Unused_file[] = "Unuse
-> >  static const char Bad_offset[] = "Bad swap offset entry ";
-> >  static const char Unused_offset[] = "Unused swap offset entry ";
-> >
-> > -static struct swap_list_t swap_list = {-1, -1};
-> > +struct swap_list_t swap_list = {-1, -1};
-> >
-> > -static struct swap_info_struct *swap_info[MAX_SWAPFILES];
-> > +struct swap_info_struct *swap_info[MAX_SWAPFILES];
-> >
-> >  static DEFINE_MUTEX(swapon_mutex);
-> >
-> > @@ -557,6 +559,7 @@ static unsigned char swap_entry_free(str
-> >  			swap_list.next = p->type;
-> >  		nr_swap_pages++;
-> >  		p->inuse_pages--;
-> > +		frontswap_flush_page(p->type, offset);
-> >  		if ((p->flags & SWP_BLKDEV) &&
-> >  				disk->fops->swap_slot_free_notify)
-> >  			disk->fops->swap_slot_free_notify(p->bdev, offset);
-> > @@ -1022,7 +1025,7 @@ static int unuse_mm(struct mm_struct *mm
-> >   * Recycle to start on reaching the end, returning 0 when empty.
-> >   */
-> >  static unsigned int find_next_to_unuse(struct swap_info_struct *si,
-> > -					unsigned int prev)
-> > +					unsigned int prev, bool frontswap)
-> >  {
-> >  	unsigned int max = si->max;
-> >  	unsigned int i = prev;
-> > @@ -1048,6 +1051,12 @@ static unsigned int find_next_to_unuse(s
-> >  			prev = 0;
-> >  			i = 1;
-> >  		}
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Thursday, August 25, 2011 1:36 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 06/59] Staging: hv: blkvsc: Use the newly introduced vmbus
+> ID in the blockvsc driver
 > 
-> > +		if (frontswap) {
-> > +			if (frontswap_test(si, i))
-> > +				break;
-> > +			else
-> > +				continue;
-> > +		}
-> 
-> Could you add comment ? If frontswap==true, only scan frontswap ?
-
-Yes, thank you, this is a good comment to add.
-
-> > @@ -1059,8 +1068,12 @@ static unsigned int find_next_to_unuse(s
-> >   * We completely avoid races by reading each swap page in advance,
-> >   * and then search for the process using it.  All the necessary
-> >   * page table adjustments can then be made atomically.
-> > + *
-> > + * if the boolean frontswap is true, only unuse pages_to_unuse pages;
-> > + * pages_to_unuse==0 means all pages; ignored if frontswap is false
-> >   */
-> > -static int try_to_unuse(unsigned int type)
-> > +int try_to_unuse(unsigned int type, bool frontswap,
-> > +		 unsigned long pages_to_unuse)
-> >  {
-> >  	struct swap_info_struct *si = swap_info[type];
-> >  	struct mm_struct *start_mm;
-> > @@ -1093,7 +1106,7 @@ static int try_to_unuse(unsigned int typ
-> >  	 * one pass through swap_map is enough, but not necessarily:
-> >  	 * there are races when an instance of an entry might be missed.
-> >  	 */
-> > -	while ((i = find_next_to_unuse(si, i)) != 0) {
-> > +	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
-> >  		if (signal_pending(current)) {
-> >  			retval = -EINTR;
-> >  			break;
-> > @@ -1260,6 +1273,10 @@ static int try_to_unuse(unsigned int typ
-> >  		 * interactive performance.
-> >  		 */
-> >  		cond_resched();
-> > +		if (frontswap && pages_to_unuse > 0) {
-> > +			if (!--pages_to_unuse)
-> > +				break;
-> > +		}
+> On Thu, Aug 25, 2011 at 09:48:32AM -0700, K. Y. Srinivasan wrote:
+> > Use the newly introduced vmbus ID in the blockvsc driver. Also, do
+> > the associated cleanup.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  drivers/staging/hv/blkvsc_drv.c |   23 ++++++++++++++---------
+> >  1 files changed, 14 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+> > index 018b293..9b99387 100644
+> > --- a/drivers/staging/hv/blkvsc_drv.c
+> > +++ b/drivers/staging/hv/blkvsc_drv.c
+> > @@ -111,14 +111,6 @@ struct block_device_context {
+> >
+> >  static const char *drv_name = "blkvsc";
+> >
+> > -/* {32412632-86cb-44a2-9b5c-50d1417354f5} */
+> > -static const uuid_le dev_type = {
+> > -	.b = {
+> > -		0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
+> > -		0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
+> > -	}
+> > -};
+> > -
+> >  /*
+> >   * There is a circular dependency involving blkvsc_request_completion()
+> >   * and blkvsc_do_request().
+> > @@ -802,10 +794,24 @@ static void blkvsc_request(struct request_queue
+> *queue)
 > >  	}
+> >  }
+> >
+> > +static const struct hv_vmbus_device_id id_table[] = {
+> > +	{
+> > +		/* IDE guid */
+> > +		.guid = {
+> > +			0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
+> > +			0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
+> > +		}
+> > +	},
+> > +	{
+> > +		.guid = { }
+> > +	},
+> > +};
 > 
-> Is this a best-effort function and doesn't need to return condition
-> of pages_to_unuse ?
-> Caller of try_to_unuse(si, true....) is frontswap_shrink(). Right ?
+> Ah, so close, and yet, not quite :(
+> 
+> This should look like:
+> 
+> static const struct hv_vmbus_device_id id_table[] = {
+> 	{
+> 		/* IDE guid */
+> 		.guid = {
+> 			0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
+> 			0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
+> 		}
+> 	},
+> 	{ },
+> };
+> 
+> No need to set the field name to nothing.
+> 
+> Hm, this could all be made even smaller with something like the
+> USB_DEVICE() macro.  How about this instead:
+> 
+> /* IDE guid */
+> static const struct hv_vmbus_device_id id_table[] = {
+> 	{ VMBUS_DEVICE(0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
+> 		       0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5) },
+> 	{ },
+> };
+> 
+> That would be easier to read and understand, right?  Half the number of
+> lines as well, which is always nice.
+> 
+> If so, I'll go make that change here so you don't have to respin these.
 
-Right.  This function is best-effort with frontswap or without frontswap.
-In a non-frontswap system, a swapoff command may fail because try_to_unuse
-wasn't able to swap in all pages.  The same is true of a "partial swapoff"
-when frontswap_shrink() is called.  Since this behavior didn't change,
-I didn't add a comment for that.  A return condition isn't needed because
-frontswap_curr_pages can be queried.
+Looks great Greg. So you are going to add the VMBUS_DEVICE() macro?
+Thanks for doing this.
 
-Thanks!
-Dan
+Regards,
+
+K. Y
+
