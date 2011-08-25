@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab1HYQbB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:31:01 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42907
+	id S1754030Ab1HYQa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:30:58 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42869
 	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753560Ab1HYQ26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753565Ab1HYQ26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Aug 2011 12:28:58 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 54/59] Staging: hv: netvsc: Cleanup error returns in rndis_filter_init_device()
-Date: Thu, 25 Aug 2011 09:49:20 -0700
-Message-Id: <1314290965-2698-54-git-send-email-kys@microsoft.com>
+Subject: [PATCH 46/59] Staging: hv: netvsc: Cleanup error return codes in netvsc_destroy_recv_buf()
+Date: Thu, 25 Aug 2011 09:49:12 -0700
+Message-Id: <1314290965-2698-46-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314290965-2698-1-git-send-email-kys@microsoft.com>
 References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
@@ -23,36 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use standard Linux error codes.
+Cleanup error return codes in netvsc_destroy_recv_buf().
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/rndis_filter.c |    4 ++--
+ drivers/staging/hv/netvsc.c |    4 ++--
  1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index f5f3052..a71f29d 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -562,7 +562,7 @@ static int rndis_filter_init_device(struct rndis_device *dev)
- 	request = get_rndis_request(dev, REMOTE_NDIS_INITIALIZE_MSG,
- 			RNDIS_MESSAGE_SIZE(struct rndis_initialize_request));
- 	if (!request) {
--		ret = -1;
-+		ret = -ENOMEM;
- 		goto Cleanup;
+diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+index b89ac7e..baa0c8d 100644
+--- a/drivers/staging/hv/netvsc.c
++++ b/drivers/staging/hv/netvsc.c
+@@ -160,7 +160,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
+ 		if (ret != 0) {
+ 			dev_err(&net_device->dev->device, "unable to send "
+ 				"revoke receive buffer to netvsp");
+-			return -1;
++			return ret;
+ 		}
  	}
  
-@@ -596,7 +596,7 @@ static int rndis_filter_init_device(struct rndis_device *dev)
- 		ret = 0;
- 	} else {
- 		dev->state = RNDIS_DEV_UNINITIALIZED;
--		ret = -1;
-+		ret = -EINVAL;
+@@ -175,7 +175,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
+ 		if (ret != 0) {
+ 			dev_err(&net_device->dev->device,
+ 				   "unable to teardown receive buffer's gpadl");
+-			return -1;
++			return -ret;
+ 		}
+ 		net_device->recv_buf_gpadl_handle = 0;
  	}
- 
- Cleanup:
 -- 
 1.7.4.1
 
