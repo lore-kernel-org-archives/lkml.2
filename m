@@ -1,219 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab1HYPe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:34:58 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:32953 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab1HYPJF (ORCPT
+	id S1753482Ab1HYPfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:35:10 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61162 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754739Ab1HYPfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:05 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 019/118] drbd: Use interval tree for overlapping epoch entry detection
-Date: Thu, 25 Aug 2011 17:07:15 +0200
-Message-Id: <1314284934-17999-20-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
-References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+	Thu, 25 Aug 2011 11:35:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=vP86hFcIutjfhTxkJLXi21/bL8WoCLHjmn11KCq+NS29GuN1mrnnlY61GKP0xL6y9
+	pmaQhLidx80KaJ8pOXXHg==
+MIME-Version: 1.0
+In-Reply-To: <CAOfQC98Nkr7Ek3uQfiD3OdW=YC76XGjfQ4WSfoLpsm2kvqKnog@mail.gmail.com>
+References: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com>
+ <1314167063-15785-2-git-send-email-dengcheng.zhu@gmail.com>
+ <CAErSpo4091J2pGvzZKPbKK68LWWkDyVApA7suZYn7miq=tXrQg@mail.gmail.com> <CAOfQC98Nkr7Ek3uQfiD3OdW=YC76XGjfQ4WSfoLpsm2kvqKnog@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 25 Aug 2011 09:34:43 -0600
+Message-ID: <CAErSpo4zojYjYVd=6U72ToqiZOD-qL-saP8huwa6ShrNnaR3vA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] MIPS: PCI: Use pci_bus_remove_resources()/pci_bus_add_resource()
+ to set up root resources
+To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
+        zenon@mips.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+On Thu, Aug 25, 2011 at 12:41 AM, Deng-Cheng Zhu
+<dengcheng.zhu@gmail.com> wrote:
+> 2011/8/24 Bjorn Helgaas <bhelgaas@google.com>:
+>> Wouldn't it be enough to have [PATCH 2/3], which adds the
+>> pci_create_bus() argument with nobody using it yet, then [PATCH 3/3],
+>> which makes mips supply the new argument, and add a hunk to [PATCH
+>> 3/3] that completely removes the bus->resource fixups in
+>> pcibios_fixup_bus() at the same time?
+>>
+>> Bjorn
+>>
+>
+> Do you mean to merge this patch to [PATCH 3/3]? OK, that's good!
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_int.h      |    3 ++
- drivers/block/drbd/drbd_main.c     |    1 +
- drivers/block/drbd/drbd_receiver.c |   15 ++++++++++++
- drivers/block/drbd/drbd_req.c      |   44 +++++++++++++----------------------
- 4 files changed, 35 insertions(+), 28 deletions(-)
+No, I just mean that I don't see why you need this patch at all.  If
+you pass the list of bus resources to pci_create_bus(), there's no
+need to fix anything up later.  Or am I missing something?
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 94b4f6e..535339b 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1080,6 +1080,9 @@ struct drbd_conf {
- 	struct hlist_head *ee_hash; /* is proteced by req_lock! */
- 	unsigned int ee_hash_s;
- 
-+	/* Interval tree of pending remote write requests (struct drbd_epoch_entry) */
-+	struct rb_root epoch_entries;
-+
- 	/* this one is protected by ee_lock, single thread */
- 	struct drbd_epoch_entry *last_write_w_barrier;
- 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 0033137..18f27af 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -3475,6 +3475,7 @@ struct drbd_conf *drbd_new_device(unsigned int minor)
- 		goto out_no_tl;
- 	mdev->read_requests = RB_ROOT;
- 	mdev->write_requests = RB_ROOT;
-+	mdev->epoch_entries = RB_ROOT;
- 
- 	mdev->app_reads_hash = kzalloc(APP_R_HSIZE*sizeof(void *), GFP_KERNEL);
- 	if (!mdev->app_reads_hash)
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 42c0ffa..a0fbbfc 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -334,6 +334,7 @@ struct drbd_epoch_entry *drbd_alloc_ee(struct drbd_conf *mdev,
- 		goto fail;
- 
- 	INIT_HLIST_NODE(&e->collision);
-+	drbd_clear_interval(&e->i);
- 	e->epoch = NULL;
- 	e->mdev = mdev;
- 	e->pages = page;
-@@ -361,6 +362,7 @@ void drbd_free_some_ee(struct drbd_conf *mdev, struct drbd_epoch_entry *e, int i
- 	drbd_pp_free(mdev, e->pages, is_net);
- 	D_ASSERT(atomic_read(&e->pending_bios) == 0);
- 	D_ASSERT(hlist_unhashed(&e->collision));
-+	D_ASSERT(drbd_interval_empty(&e->i));
- 	mempool_free(e, drbd_ee_mempool);
- }
- 
-@@ -1418,6 +1420,7 @@ static int e_end_resync_block(struct drbd_conf *mdev, struct drbd_work *w, int u
- 	int ok;
- 
- 	D_ASSERT(hlist_unhashed(&e->collision));
-+	D_ASSERT(drbd_interval_empty(&e->i));
- 
- 	if (likely((e->flags & EE_WAS_ERROR) == 0)) {
- 		drbd_set_in_sync(mdev, sector, e->i.size);
-@@ -1574,9 +1577,13 @@ static int e_end_block(struct drbd_conf *mdev, struct drbd_work *w, int cancel)
- 		spin_lock_irq(&mdev->req_lock);
- 		D_ASSERT(!hlist_unhashed(&e->collision));
- 		hlist_del_init(&e->collision);
-+		D_ASSERT(!drbd_interval_empty(&e->i));
-+		drbd_remove_interval(&mdev->epoch_entries, &e->i);
-+		drbd_clear_interval(&e->i);
- 		spin_unlock_irq(&mdev->req_lock);
- 	} else {
- 		D_ASSERT(hlist_unhashed(&e->collision));
-+		D_ASSERT(drbd_interval_empty(&e->i));
- 	}
- 
- 	drbd_may_finish_epoch(mdev, e->epoch, EV_PUT + (cancel ? EV_CLEANUP : 0));
-@@ -1595,6 +1602,9 @@ static int e_send_discard_ack(struct drbd_conf *mdev, struct drbd_work *w, int u
- 	spin_lock_irq(&mdev->req_lock);
- 	D_ASSERT(!hlist_unhashed(&e->collision));
- 	hlist_del_init(&e->collision);
-+	D_ASSERT(!drbd_interval_empty(&e->i));
-+	drbd_remove_interval(&mdev->epoch_entries, &e->i);
-+	drbd_clear_interval(&e->i);
- 	spin_unlock_irq(&mdev->req_lock);
- 
- 	dec_unacked(mdev);
-@@ -1767,6 +1777,7 @@ static int receive_Data(struct drbd_conf *mdev, enum drbd_packets cmd, unsigned
- 		spin_lock_irq(&mdev->req_lock);
- 
- 		hlist_add_head(&e->collision, ee_hash_slot(mdev, sector));
-+		drbd_insert_interval(&mdev->epoch_entries, &e->i);
- 
- 		first = 1;
- 		for (;;) {
-@@ -1817,6 +1828,8 @@ static int receive_Data(struct drbd_conf *mdev, enum drbd_packets cmd, unsigned
- 
- 			if (signal_pending(current)) {
- 				hlist_del_init(&e->collision);
-+				drbd_remove_interval(&mdev->epoch_entries, &e->i);
-+				drbd_clear_interval(&e->i);
- 
- 				spin_unlock_irq(&mdev->req_lock);
- 
-@@ -1875,6 +1888,8 @@ static int receive_Data(struct drbd_conf *mdev, enum drbd_packets cmd, unsigned
- 	spin_lock_irq(&mdev->req_lock);
- 	list_del(&e->w.list);
- 	hlist_del_init(&e->collision);
-+	drbd_remove_interval(&mdev->epoch_entries, &e->i);
-+	drbd_clear_interval(&e->i);
- 	spin_unlock_irq(&mdev->req_lock);
- 	if (e->flags & EE_CALL_AL_COMPLETE_IO)
- 		drbd_al_complete_io(mdev, e->i.sector);
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 5bf93a7..b81ce82 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -135,9 +135,6 @@ static void _about_to_complete_local_write(struct drbd_conf *mdev,
- 	struct drbd_request *req)
- {
- 	const unsigned long s = req->rq_state;
--	struct drbd_epoch_entry *e;
--	struct hlist_node *n;
--	struct hlist_head *slot;
- 
- 	/* Before we can signal completion to the upper layers,
- 	 * we may need to close the current epoch.
-@@ -185,16 +182,10 @@ static void _about_to_complete_local_write(struct drbd_conf *mdev,
- 		 *
- 		 * anyways, if we found one,
- 		 * we just have to do a wake_up.  */
--#define OVERLAPS overlaps(sector, size, e->i.sector, e->i.size)
--		slot = ee_hash_slot(mdev, req->i.sector);
--		hlist_for_each_entry(e, n, slot, collision) {
--			if (OVERLAPS) {
--				wake_up(&mdev->misc_wait);
--				break;
--			}
--		}
-+		i = drbd_find_overlap(&mdev->epoch_entries, sector, size);
-+		if (i)
-+			wake_up(&mdev->misc_wait);
- 	}
--#undef OVERLAPS
- }
- 
- void complete_master_bio(struct drbd_conf *mdev,
-@@ -332,9 +323,6 @@ static int _req_conflicts(struct drbd_request *req)
- 	const sector_t sector = req->i.sector;
- 	const int size = req->i.size;
- 	struct drbd_interval *i;
--	struct drbd_epoch_entry *e;
--	struct hlist_node *n;
--	struct hlist_head *slot;
- 
- 	D_ASSERT(hlist_unhashed(&req->collision));
- 	D_ASSERT(drbd_interval_empty(&req->i));
-@@ -364,21 +352,21 @@ static int _req_conflicts(struct drbd_request *req)
- 	if (mdev->ee_hash_s) {
- 		/* now, check for overlapping requests with remote origin */
- 		BUG_ON(mdev->ee_hash == NULL);
--#define OVERLAPS overlaps(e->i.sector, e->i.size, sector, size)
--		slot = ee_hash_slot(mdev, sector);
--		hlist_for_each_entry(e, n, slot, collision) {
--			if (OVERLAPS) {
--				dev_alert(DEV, "%s[%u] Concurrent remote write detected!"
--				      " [DISCARD L] new: %llus +%u; "
--				      "pending: %llus +%u\n",
--				      current->comm, current->pid,
--				      (unsigned long long)sector, size,
--				      (unsigned long long)e->i.sector, e->i.size);
--				goto out_conflict;
--			}
-+
-+		i = drbd_find_overlap(&mdev->epoch_entries, sector, size);
-+		if (i) {
-+			struct drbd_epoch_entry *e =
-+				container_of(i, struct drbd_epoch_entry, i);
-+
-+			dev_alert(DEV, "%s[%u] Concurrent remote write detected!"
-+			      " [DISCARD L] new: %llus +%u; "
-+			      "pending: %llus +%u\n",
-+			      current->comm, current->pid,
-+			      (unsigned long long)sector, size,
-+			      (unsigned long long)e->i.sector, e->i.size);
-+			goto out_conflict;
- 		}
- 	}
--#undef OVERLAPS
- 
- out_no_conflict:
- 	/* this is like it should be, and what we expected.
--- 
-1.7.4.1
-
+Bjorn
