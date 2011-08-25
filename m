@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab1HYSCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 14:02:10 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:17460 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755125Ab1HYSCG (ORCPT
+	id S1755161Ab1HYSDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 14:03:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41923 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755111Ab1HYSDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 14:02:06 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4E568E19.405@freescale.com>
-Date: Thu, 25 Aug 2011 13:02:01 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	Thu, 25 Aug 2011 14:03:23 -0400
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@ozlabs.org>
-Subject: Re: [PATCH] tty/powerpc: fix build break with ehv_bytechan.c on allyesconfig
-References: <1314289245-14946-1-git-send-email-timur@freescale.com> <20110825163234.GA31629@kroah.com>
-In-Reply-To: <20110825163234.GA31629@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4E568DD1.5010501@zytor.com>
+References: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
+ <CA+55aFzndqkSC1z3==HqUGC8hP=pw62ro3CWYtovk95_cYAKsA@mail.gmail.com>
+ <20110825164649.GL2803@mtj.dyndns.org> <1314294182.16133.19.camel@sbsiddha-desk.sc.intel.com>
+ <CA+55aFwaxzFJCjJc1=6utMq0WQmrP4COGEOQirqBLcmdTf=+rQ@mail.gmail.com>
+ <20110825174656.GN2803@mtj.dyndns.org> <4E568DD1.5010501@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 25 Aug 2011 11:03:00 -0700
+Message-ID: <CA+55aFzbzAvKxZSBxRgyF7BF9WSj7eXtd5VDD=R+FTmRwi3p4w@mail.gmail.com>
+Subject: Re: [PATCH] mtrr: fix UP breakage caused during switch to stop_machine
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tejun Heo <tj@kernel.org>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Anders Eriksson <aeriksson@fastmail.fm>, Ingo Molnar <mingo@elte.hu>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> tested doesn't mean that it shouldn't still build properly for other
-> platforms, right?
+On Thu, Aug 25, 2011 at 11:00 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Linus, are you picking this up from email or should I put it in x86/urgent?
 
-The problem is the dependency on MSR_GS, which is defined only for Book-E
-PowerPC chips, not all PowerPC.
+I took it directly,
 
-So I gave it some more thought, and technically ePAPR extends beyond Book-E, so
-it's wrong for the driver to depend on anything specific to Book-E.  I've
-removed the code that breaks:
-
-	/* Check if we're running as a guest of a hypervisor */
-	if (!(mfmsr() & MSR_GS))
-		return;
-
-> What is keeping the driver from building on all PPC, or even all arches
-> today?
-
-I've made a few changes, and it builds on all PPC now.  I'll post a new patch.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+                    Linus
