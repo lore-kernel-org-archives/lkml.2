@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab1HYQ7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:59:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171Ab1HYQ7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:59:52 -0400
-Date: Thu, 25 Aug 2011 18:56:50 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
-Message-ID: <20110825165650.GA8006@redhat.com>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-7-git-send-email-tj@kernel.org> <20110823155221.GB25808@redhat.com> <20110823194451.GH2803@mtj.dyndns.org> <20110824141431.GA8562@redhat.com> <20110825155957.GJ2803@mtj.dyndns.org>
+	id S1754742Ab1HYRA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:00:29 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20833 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab1HYRA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 13:00:28 -0400
+X-IronPort-AV: E=Sophos;i="4.68,281,1312156800"; 
+   d="scan'208";a="7449887"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825155957.GJ2803@mtj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <20054.29964.556177.999449@mariner.uk.xensource.com>
+Date: Thu, 25 Aug 2011 17:15:08 +0100
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Greg Marsden <greg.marsden@oracle.com>, Joe Jin <joe.jin@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>
+Subject: Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend
+	disconnected
+Newsgroups: chiark.mail.xen.devel
+In-Reply-To: <m2n.s.1QsyrJ-132485@chiark.greenend.org.uk>
+References: <4E48A6A6.4040706@oracle.com>
+	<20110815144610.GA3707@infradead.org>
+	<m2n.s.1QsyrJ-132485@chiark.greenend.org.uk>
+X-Mailer: VM 8.0.9 under Emacs 21.4.1 (i486-pc-linux-gnu)
+From: Ian Jackson <Ian.Jackson@eu.citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25, Tejun Heo wrote:
->
-> Yeah, what 'freeze' should do is a bit vague on the edges, I think.
-> The freezer can't really halt the whole system operation including
-> IOs.  Tasks aren't the only source which can kick those off.  There
-> are other asynchronous sources,
+Konrad Rzeszutek Wilk writes ("Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend disconnected"):
+> And the guest would normally issues a FLUSH when unmounting the
+> disk. Hm, I wonder what the conditions are when we forcibly kill the
+> guest - there might be outstanding I/Os in the disk's cache -
+> at which point we should probably sync the write cache, no?
 
-Of course.
+If we forcibly kill the guest we don't care about its IO in flight.
+After all we are throwing away everything that the guest has in its
+queue.
 
-But still I can't understand why it is better to consider the exiting
-task as "frozen" from the very beginning, right after PTRACE_EVENT_EXIT.
-do_exit() does a lot of misc things, and this patch simply makes it
-"invisible" to the freezer. This looks "unsafe" even if this is fine
-for suspend/etc.
+Bear in mind that the reason for forcibly killing (or perhaps forcibly
+detaching) might be that the underlying device has wedged somehow.  It
+would be annoying if that prevented even a force detach.
 
-To me, try_to_freeze_tasks() should succed when all threads either
-sleep in refrigerator(), or ->state = TASK_DEAD (the final schedule()
-was called). Until then try_to_freeze_tasks() should retry.
+Or to put it in other words: force detach and force kill should be
+lossy.  Their whole point is to be the lossy version.
 
-But since we can't see the threads after exit_notify (in general),
-the current ->exit_state check looks reasonable.
-
-But again, again, I won't argue.
-
-> Rafael, can you please enlighten
-> us on the subject?
-
-Please ;)
-
-> Another freezer user is the cgroup,
-
-Yes. And I don't understand this case too. I mean, the fact we ignore
-the exiting tasks.
-
-Oleg.
-
+Ian.
