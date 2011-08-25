@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1HYXLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 19:11:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49478 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab1HYXLS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 19:11:18 -0400
-Date: Fri, 26 Aug 2011 01:11:14 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Koul, Vinod" <vinod.koul@intel.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH] dma: shdma: transfer based runtime PM
-In-Reply-To: <1314292850.1606.88.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1108260107550.17190@axis700.grange>
-References: <Pine.LNX.4.64.1108181650530.5245@axis700.grange> 
- <1314282386.1606.42.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108251636190.17190@axis700.grange>
-  <1314283286.1606.52.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
- <1314292850.1606.88.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:KCjiKRzRSi6EP1glH7CflRmtkpqnhTBP/28Ra84XDCG
- V6tkGNmYMSMK7hDFTKVwPAWpu7sIvRyVFi61/gN/ddraPjIOMv
- FrHJsAmb50j94AD1VbsSY92+QeEJxpCHx16EHue0qanWOtVAmp
- f7Pw6nCFj7HpevMKuUT7JnHIkBekIYTTGhPHX/v8RQaB7eD0eV
- OkXIoWvkAo77q4MisyoKrZoGCGNUITyq92QLS6Qz1Y=
+	id S1753396Ab1HYXL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 19:11:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34658 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752042Ab1HYXL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 19:11:58 -0400
+Date: Fri, 26 Aug 2011 09:11:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Russell King <rmk@arm.linux.org.uk>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jon Medhurst <tixy@yxit.co.uk>
+Subject: Re: linux-next: manual merge of the moduleh tree with the arm tree
+Message-Id: <20110826091150.58697ca3adc9ba6dfcb357e0@canb.auug.org.au>
+In-Reply-To: <4E56CF76.70201@windriver.com>
+References: <20110825151748.8e41e0ded739187a1432cf0b@canb.auug.org.au>
+	<4E56796F.8090703@windriver.com>
+	<20110825163901.GA467@flint.arm.linux.org.uk>
+	<4E56CF76.70201@windriver.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__26_Aug_2011_09_11_50_+1000_ZZKR45edPESDTQIk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011, Koul, Vinod wrote:
+--Signature=_Fri__26_Aug_2011_09_11_50_+1000_ZZKR45edPESDTQIk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, 2011-08-25 at 16:55 +0200, Guennadi Liakhovetski wrote:
-> > On Thu, 25 Aug 2011, Koul, Vinod wrote:
-> > 
-> > > On Thu, 2011-08-25 at 16:37 +0200, Guennadi Liakhovetski wrote:
-> > > > On Thu, 25 Aug 2011, Koul, Vinod wrote:
-> > > > 
-> > > > > On Thu, 2011-08-18 at 16:55 +0200, Guennadi Liakhovetski wrote:
-> > > > > > Currently the shdma dmaengine driver uses runtime PM to save power, when
-> > > > > > no channel on the specific controller is requested by a user. This patch
-> > > > > > switches the driver to count individual DMA transfers. That way the
-> > > > > > controller can be powered down between transfers, even if some of its
-> > > > > > channels are in use.
-> > > > > No, I don't agree with the approach here, you don't need to count the
-> > > > > transfers, the runtime_pm framework does that very well for you.
-> > > > > 
-> > > > > What you need to do is to call pm_runtime_get() in your .issue_pending
-> > > > > callback (NOT in tx_submit anyway, this needs to be fixed in driver, see
-> > > > > the Documentation/dmaengine.txt
-> > > > > And once the transfer has completed you need to call pm_rumtime_put()
-> > > > 
-> > > > This has been discussed before:
-> > > > 
-> > > > http://marc.info/?l=linux-sh&m=131004613801231&w=2
-> > > uh, yes but at least the runtime_xxx needs to get fixed.
-> > 
-> > This isn't so easy either. In principle, yes, I know, that pm_runtime_* 
-> > calls count depth. But I don't think the DMA case is simple enough for 
-> > that. It's not necessarily one in - one out. Think about terminating 
-> > transfers, timing out, closing the channel, etc. In those cases you'd have 
-> > to count pending transfers and pm_runtime_put() for each of them. This is 
-> > even less trivial on shdma, where DMA transfers get split into sg-lists, 
-> > which are then all queued on a single queue. So, you'd have to scan that 
-> > queue and check for transfer borders... That's why I decided that doing 
-> > just one get() on the first descriptor and one put() on the last one would 
-> > be easier and more robust.
-> Wont it be easy to to do:
-> - pm_runtime_get() in each submit
-> - pm_runtime_put() in each callback
-> Normal case above would work just fine
-> - In terminate case, count the number of issued transactions, and call
-> pm_runtime_put() for each canceled transaction
-> (i am assuming that for each timeout error, the client will call
-> terminate)
+Hi Paul,
 
-As I said, this won't be very easy to do this in a robust way. You'd have 
-to scan your list of DMA blocks and see, which of them belong to one 
-descriptor, and once you reach the end of that descriptor, issue a put(). 
-Perhaps, this can be done, but my choice went to the currently presented 
-solution.
+On Thu, 25 Aug 2011 18:40:54 -0400 Paul Gortmaker <paul.gortmaker@windriver=
+.com> wrote:
+>
+> OK.  I was entertaining feeding some of the really obvious and simple
+> parts of the moduleh branch out to the various maintainers just to
+> reduce its overall size, but in the end I guess that just makes work
+> for me and them -- vs. a single pull request to Linus for addition to
+> v3.2-rc1.   I'll just stay the course and Stephen will have to rerere
+> the merge conflict resolution for a while -- something I'm certain
+> that he has automated long long ago.
 
-Thanks
-Guennadi
+Yeah, that's fine.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> Let me know if there is a case for you which doesn't fit in above
-> 
-> -- 
-> ~Vinod
+--Signature=_Fri__26_Aug_2011_09_11_50_+1000_ZZKR45edPESDTQIk
+Content-Type: application/pgp-signature
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOVta2AAoJEDMEi1NhKgbsVYAH/RRRLMOwFSzwPkqY7KY11buv
+asUwuXcVzotascmDNtj1ZCD6mo6NBDvBMIaxyF7QRy9py95+O0JkadgI6vO8VFko
+lzRCWeuvjIuwaIEUEtbSzSNibyr8WWrj8f3cIcxYQT63qPBAmQk6id512AL1pY3W
+EaC7hEhiM9qtWSAiyXLWkudYSZFdTeXAGQDy6lh3P0qLoYpJQVskB4p1ns8aEEVf
+Z+ziHtKGrREPtVpz4hhg0HWb5/ikrh5XnKWU+kyjHjL9DLrgs9nCmQgVCd7hc5O/
+/N5CTJKK/EEy4hdxV0sjxRXJG2rqgWKkBHH+Cda8v7OCdMSmKCAeKQ2e9V8u+ZU=
+=qkQc
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Aug_2011_09_11_50_+1000_ZZKR45edPESDTQIk--
