@@ -1,153 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab1HYP2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:28:30 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:34080 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab1HYPJ1 (ORCPT
+	id S1754613Ab1HYP23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:28:29 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:60737 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754328Ab1HYP20 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:27 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 047/118] drbd: Move some functions to where they are used
-Date: Thu, 25 Aug 2011 17:07:43 +0200
-Message-Id: <1314284934-17999-48-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
-References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+	Thu, 25 Aug 2011 11:28:26 -0400
+Subject: Re: [RFC PATCH] TTM DMA pool v1
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Date: Thu, 25 Aug 2011 17:28:09 +0200
+In-Reply-To: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
+References: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA
+	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314286089.6679.3.camel@thor.local>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+On Mit, 2011-08-24 at 13:16 -0400, Konrad Rzeszutek Wilk wrote:
+> 
+> My PowerPC has issues with booting a virgin 3.0 kernel (something about
+> "ELF image not correct") so I don't have that yet covered.
 
-Move drbd_update_congested() to drbd_main.c, and drbd_req_new() and
-drbd_req_free() to drbd_req.c: those functions are not used anywhere
-else.
+I tested your patches on my PowerBook with a Radeon.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_int.h  |    7 -------
- drivers/block/drbd/drbd_main.c |    7 +++++++
- drivers/block/drbd/drbd_req.c  |   29 +++++++++++++++++++++++++++++
- drivers/block/drbd/drbd_req.h  |   26 --------------------------
- 4 files changed, 36 insertions(+), 33 deletions(-)
+Tested-by: Michel Dänzer <michel@daenzer.net>
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index fafadb6..e917859 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -2355,13 +2355,6 @@ static inline int drbd_set_ed_uuid(struct drbd_conf *mdev, u64 val)
- 	return changed;
- }
- 
--static inline void drbd_update_congested(struct drbd_conf *mdev)
--{
--	struct sock *sk = mdev->tconn->data.socket->sk;
--	if (sk->sk_wmem_queued > sk->sk_sndbuf * 4 / 5)
--		set_bit(NET_CONGESTED, &mdev->flags);
--}
--
- static inline int drbd_queue_order_type(struct drbd_conf *mdev)
- {
- 	/* sorry, we currently have no working implementation
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index fbd3f04..13aadca 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2528,6 +2528,13 @@ static int we_should_drop_the_connection(struct drbd_conf *mdev, struct socket *
- 	return drop_it; /* && (mdev->state == R_PRIMARY) */;
- }
- 
-+static void drbd_update_congested(struct drbd_conf *mdev)
-+{
-+	struct sock *sk = mdev->tconn->data.socket->sk;
-+	if (sk->sk_wmem_queued > sk->sk_sndbuf * 4 / 5)
-+		set_bit(NET_CONGESTED, &mdev->flags);
-+}
-+
- /* The idea of sendpage seems to be to put some kind of reference
-  * to the page into the skb, and to hand it over to the NIC. In
-  * this process get_page() gets called.
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 74179f7..25fa87c 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -56,6 +56,35 @@ static void _drbd_end_io_acct(struct drbd_conf *mdev, struct drbd_request *req)
- 	part_stat_unlock();
- }
- 
-+static struct drbd_request *drbd_req_new(struct drbd_conf *mdev,
-+					       struct bio *bio_src)
-+{
-+	struct drbd_request *req;
-+
-+	req = mempool_alloc(drbd_request_mempool, GFP_NOIO);
-+	if (!req)
-+		return NULL;
-+
-+	drbd_req_make_private_bio(req, bio_src);
-+	req->rq_state    = bio_data_dir(bio_src) == WRITE ? RQ_WRITE : 0;
-+	req->mdev        = mdev;
-+	req->master_bio  = bio_src;
-+	req->epoch       = 0;
-+	drbd_clear_interval(&req->i);
-+	req->i.sector     = bio_src->bi_sector;
-+	req->i.size      = bio_src->bi_size;
-+	INIT_LIST_HEAD(&req->tl_requests);
-+	INIT_LIST_HEAD(&req->w.list);
-+
-+	return req;
-+}
-+
-+static void drbd_req_free(struct drbd_request *req)
-+{
-+	mempool_free(req, drbd_request_mempool);
-+}
-+
-+/* rw is bio_data_dir(), only READ or WRITE */
- static void _req_is_done(struct drbd_conf *mdev, struct drbd_request *req, const int rw)
- {
- 	const unsigned long s = req->rq_state;
-diff --git a/drivers/block/drbd/drbd_req.h b/drivers/block/drbd/drbd_req.h
-index 4b0858b..431e3f9 100644
---- a/drivers/block/drbd/drbd_req.h
-+++ b/drivers/block/drbd/drbd_req.h
-@@ -234,32 +234,6 @@ static inline void drbd_req_make_private_bio(struct drbd_request *req, struct bi
- 	bio->bi_next     = NULL;
- }
- 
--static inline struct drbd_request *drbd_req_new(struct drbd_conf *mdev,
--	struct bio *bio_src)
--{
--	struct drbd_request *req =
--		mempool_alloc(drbd_request_mempool, GFP_NOIO);
--	if (likely(req)) {
--		drbd_req_make_private_bio(req, bio_src);
--
--		req->rq_state    = bio_data_dir(bio_src) == WRITE ? RQ_WRITE : 0;
--		req->mdev        = mdev;
--		req->master_bio  = bio_src;
--		req->epoch       = 0;
--		req->i.sector     = bio_src->bi_sector;
--		req->i.size      = bio_src->bi_size;
--		drbd_clear_interval(&req->i);
--		INIT_LIST_HEAD(&req->tl_requests);
--		INIT_LIST_HEAD(&req->w.list);
--	}
--	return req;
--}
--
--static inline void drbd_req_free(struct drbd_request *req)
--{
--	mempool_free(req, drbd_request_mempool);
--}
--
- /* Short lived temporary struct on the stack.
-  * We could squirrel the error to be returned into
-  * bio->bi_size, or similar. But that would be too ugly. */
+
 -- 
-1.7.4.1
-
+Earthling Michel Dänzer           |                   http://www.amd.com
+Libre software enthusiast         |          Debian, X and DRI developer
