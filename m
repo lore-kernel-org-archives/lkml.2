@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1HYUdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 16:33:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61998 "EHLO mx1.redhat.com"
+	id S1754341Ab1HYUgd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 16:36:33 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:51239 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111Ab1HYUda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 16:33:30 -0400
-Date: Thu, 25 Aug 2011 16:32:25 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Cc: Ryan Harper <ryanh@us.ibm.com>
-Subject: [PATCH] blk-throttle: Do not trim slices if there is remainder after
- division
-Message-ID: <20110825203225.GD27162@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753973Ab1HYUgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 16:36:32 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Kashyap Desai <kashyap.desai@lsi.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, DL-MPTFusionLinux@lsi.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@ispras.ru
+Subject: [PATCH] [SCSI] mpt2sas: Fix mismatch in mpt2sas_base_hard_reset_handler() mutex lock-unlock
+Date: Fri, 26 Aug 2011 00:36:23 +0400
+Message-Id: <1314304583-19856-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Throttling code divides a second into smaller slices of 100ms each and
-then decides how many IOPs are allowed in that 100ms. Once IO has been
-dispatched, these slices are reaped off from effective slice.
+If ioc->pci_error_recovery is set, goto out in mpt2sas_base_hard_reset_handler()
+leads to unlock unheld ioc->reset_in_progress_mutex.
 
-Division by a factor of 10, can lead to error if input IOPS rate is
-not a mulitple of 10. As remainder is discarded. So if input rate is
-69 IOPS, then we effectively get only 60 IOPS.
+The patch fixes the issue by jumping afer mutex_unlock() call.
 
-Hence do not trim slice at every 100ms period if input rate is not
-a multiple of 10. Instead wait for full second to complete and 
-then trim 10 slices at one go.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Reported-by: Ryan Harper <ryanh@us.ibm.com>
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- block/blk-throttle.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Index: linux-2.6/block/blk-throttle.c
-===================================================================
---- linux-2.6.orig/block/blk-throttle.c	2011-08-25 16:27:55.869757580 -0400
-+++ linux-2.6/block/blk-throttle.c	2011-08-25 16:28:34.866572646 -0400
-@@ -534,7 +534,7 @@ throtl_slice_used(struct throtl_data *td
- static inline void
- throtl_trim_slice(struct throtl_data *td, struct throtl_grp *tg, bool rw)
- {
--	unsigned long nr_slices, time_elapsed, io_trim;
-+	unsigned long nr_slices, time_elapsed, io_trim, io_remainder;
- 	u64 bytes_trim, tmp;
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 83035bd..906c63a 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -4130,7 +4130,7 @@ mpt2sas_base_hard_reset_handler(struct MPT2SAS_ADAPTER *ioc, int sleep_flag,
+ 		printk(MPT2SAS_ERR_FMT "%s: pci error recovery reset\n",
+ 		    ioc->name, __func__);
+ 		r = 0;
+-		goto out;
++		goto out_unlocked;
+ 	}
  
- 	BUG_ON(time_before(tg->slice_end[rw], tg->slice_start[rw]));
-@@ -569,6 +569,19 @@ throtl_trim_slice(struct throtl_data *td
+ 	if (mpt2sas_fwfault_debug)
+@@ -4186,6 +4186,7 @@ mpt2sas_base_hard_reset_handler(struct MPT2SAS_ADAPTER *ioc, int sleep_flag,
+ 	spin_unlock_irqrestore(&ioc->ioc_reset_in_progress_lock, flags);
+ 	mutex_unlock(&ioc->reset_in_progress_mutex);
  
- 	io_trim = (tg->iops[rw] * throtl_slice * nr_slices)/HZ;
- 
-+	/*
-+	 * Due to division operation of input rate, we can lose some accuracy
-+	 * as raminder is discarded. For example with iops=69, we will dispatch
-+	 * 6 ios but then trim slice after 100ms and never extend slice enough
-+	 * so that over a period of 1 second 69 IOs are dispatched. Instead we
-+	 * dispatch 6 IO at each slice interval and trim the slice. So go
-+	 * ahead with trim operation only when there is no remainder. That
-+	 */
-+	io_remainder = (tg->iops[rw] * throtl_slice * nr_slices)%HZ;
-+
-+	if (io_remainder)
-+		return;
-+
- 	if (!bytes_trim && !io_trim)
- 		return;
- 
++ out_unlocked:
+ 	dtmprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: exit\n", ioc->name,
+ 	    __func__));
+ 	return r;
+-- 
+1.7.4.1
+
