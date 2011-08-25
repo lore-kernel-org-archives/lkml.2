@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647Ab1HYTz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:55:56 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63786 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab1HYTzy convert rfc822-to-8bit (ORCPT
+	id S1753718Ab1HYUAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 16:00:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41421 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab1HYUAi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:55:54 -0400
+	Thu, 25 Aug 2011 16:00:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E56A7DC.5090805@zytor.com>
-References: <20110722154219.GA25694@elte.hu>
-	<CACqU3MUxUBzu9frjHLVoHUEKtaDEP+Gn7txm1wbxq=Qkv12ssw@mail.gmail.com>
-	<CAObL_7HXMQxf+kYVMutdfAFNrSGYKJF2WPkSeWGK230r_zwskA@mail.gmail.com>
-	<CACqU3MUbafosBVsycwFjH9sSq8GJumaeq+MKmeUPKD_zyHdGgw@mail.gmail.com>
-	<CAObL_7Hi7du37D0PiRVFZZ5=yYGLm4oaGNYqQCeVoab5aJ_2NQ@mail.gmail.com>
-	<CACqU3MXpihKOV_4whbi8_CSU4uFpFzbNFaXvSN75ChdYhZ0A5A@mail.gmail.com>
-	<4E56A7DC.5090805@zytor.com>
-Date: Thu, 25 Aug 2011 15:55:53 -0400
-Message-ID: <CACqU3MW3qkj1TN8O62mvQTTAwHuXGUdDxM=T0Ki4iwWagrJ8YQ@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/vdso changes for v3.1
+In-Reply-To: <4E56A15D.8070406@freescale.com>
+References: <1314288433-26322-1-git-send-email-lacombar@gmail.com>
+	<4E56A15D.8070406@freescale.com>
+Date: Thu, 25 Aug 2011 16:00:38 -0400
+Message-ID: <CACqU3MUWdadkJqii8j8htSbYXN+SaYC5uMSvm3t=2E=n4P1xcg@mail.gmail.com>
+Subject: Re: [PATCH] xics/icp_natives: add __init to marker icp_native_init()
 From: Arnaud Lacombe <lacombar@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Timur Tabi <timur@freescale.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,31 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Thu, Aug 25, 2011 at 3:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/25/2011 12:47 PM, Arnaud Lacombe wrote:
+On Thu, Aug 25, 2011 at 3:24 PM, Timur Tabi <timur@freescale.com> wrote:
+> Arnaud Lacombe wrote:
+>> This should fix the following warning:
 >>
->> CPU: Intel QEMU Virtual CPU version 0.14.50 stepping 03
->> About to apply_alternatives
->> start=c13bee88 a=0 instr_offset=-3922530 instr=cpu_idle+0x26/0x60
->> repl_offset=2336 repl=__alt_instructions_end+0x0/0x29f instrlen=5
->> repllen=3
->>   done
+>>  LD      arch/powerpc/sysdev/xics/built-in.o
+>> WARNING: arch/powerpc/sysdev/xics/built-in.o(.text+0x1310): Section mismatch in
+>> reference from the function .icp_native_init() to the function
+>> .init.text:.icp_native_init_one_node()
+>> The function .icp_native_init() references
+>> the function __init .icp_native_init_one_node().
+>> This is often because .icp_native_init lacks a __init
+>> annotation or the annotation of .icp_native_init_one_node is wrong.
+>>
+>> icp_native_init() is only referenced in `arch/powerpc/sysdev/xics/xics-common.c'
+>> by xics_init() which is itself marked with __init.
+>>
+>> = not built-tested =
+>>
+>> Reported-by: Timur Tabi <timur@freescale.com>
+>> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 >
-> Since this is a QEMU setup, could you share enough of the setup to
-> reproduce?
+> Acked-by: Timur Tabi <timur@freescale.com>
 >
-pretty trivial:
+> This warning still appears, though:
+>
+> WARNING: arch/powerpc/sysdev/built-in.o(.text+0xf6b8): Section mismatch in
+> reference from the function .ics_rtas_init() to the function
+> .init.text:.xics_register_ics()
+> The function .ics_rtas_init() references
+> the function __init .xics_register_ics().
+> This is often because .ics_rtas_init lacks a __init
+> annotation or the annotation of .xics_register_ics is wrong.
+>
+he, chain-reaction :)
 
-% qemu -nographic \
-   -kernel obj/next-bisect/arch/x86/boot/bzImage
-   -append 'root=/dev/sda2 rootfstype=ext4 rootwait console=ttyS0
-init=/etc/preinit loglevel=8'
-   -hda openwrt-x86-generic-combined-ext4.img
-
-The root filesystem is openwrt snapshot from August 19th.
+> To fix this warning, you'll also need:
+>
+> diff --git a/arch/powerpc/sysdev/xics/ics-rtas.c b/arch/powerpc/sysdev/xics/ics-
+> index c782f85..a125721 100644
+> --- a/arch/powerpc/sysdev/xics/ics-rtas.c
+> +++ b/arch/powerpc/sysdev/xics/ics-rtas.c
+> @@ -213,7 +213,7 @@ static int ics_rtas_host_match(struct ics *ics, struct devic
+>        return !of_device_is_compatible(node, "chrp,iic");
+>  }
+>
+> -int ics_rtas_init(void)
+> +int __init ics_rtas_init(void)
+>  {
+>        ibm_get_xive = rtas_token("ibm,get-xive");
+>        ibm_set_xive = rtas_token("ibm,set-xive");
+>
+>
+> However, now we get another similar warning:
+>
+> WARNING: drivers/built-in.o(.text+0x259c484): Section mismatch in reference from
+> the function .tc3589x_keypad_open() to the function
+> .devinit.text:.tc3589x_keypad_init_key_hardware()
+> The function .tc3589x_keypad_open() references
+> the function __devinit .tc3589x_keypad_init_key_hardware().
+> This is often because .tc3589x_keypad_open lacks a __devinit
+> annotation or the annotation of .tc3589x_keypad_init_key_hardware is wrong.
+>
+> I'm not sure what to do at this point, because I have a suspicion that adding
+> __devinit to tc3589x_keypad_open() is wrong.
+>
+tc3589x_keypad_init_key_hardware() annotation looks plain wrong.
 
  - Arnaud
 
->        -hpa
+> --
+> Timur Tabi
+> Linux kernel developer at Freescale
 >
 >
