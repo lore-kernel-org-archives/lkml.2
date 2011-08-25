@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab1HYT0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 15:26:13 -0400
-Received: from fmmailgate01.web.de ([217.72.192.221]:42138 "EHLO
-	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab1HYT0J (ORCPT
+	id S1751781Ab1HYT3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 15:29:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37444 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750703Ab1HYT3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 15:26:09 -0400
-Message-ID: <4E56A1CF.5050008@web.de>
-Date: Thu, 25 Aug 2011 21:26:07 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Brian King <brking@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: Re: Broken pci_block_user_cfg_access interface
-References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com> <4E5613BA.5070101@siemens.com> <4E5647DA.1060901@linux.vnet.ibm.com> <4E5648B9.7050106@siemens.com> <20110825181912.GB27183@redhat.com> <4E5699D8.3070505@web.de> <20110825190748.GA30587@redhat.com>
-In-Reply-To: <20110825190748.GA30587@redhat.com>
-X-Enigmail-Version: 1.3.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig0C8617C4E00E75C7A1B96656"
-X-Provags-ID: V01U2FsdGVkX1/Ldi/7rtsjeLHfAjl/ApvT7/GLSa/a7nsZ6VmN
-	ZoqYZxIGYA3gUqTedsQl+vXZ4hGs/3/d2l/S7BCuVGyIkTrDOh
-	GZHBPU6yE=
+	Thu, 25 Aug 2011 15:29:07 -0400
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-arch@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1108251341230.27407@router.home>
+References: <1313650253-21794-1-git-send-email-gthelen@google.com>
+	 <20110818144025.8e122a67.akpm@linux-foundation.org>
+	 <1314284272.27911.32.camel@twins>
+	 <alpine.DEB.2.00.1108251009120.27407@router.home>
+	 <1314289208.3268.4.camel@mulgrave>
+	 <alpine.DEB.2.00.1108251128460.27407@router.home>
+	 <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>
+	 <alpine.DEB.2.00.1108251206440.27407@router.home>
+	 <1e295500-5d1f-45dd-aa5b-3d2da2cf1a62@email.android.com>
+	 <alpine.DEB.2.00.1108251341230.27407@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Aug 2011 12:29:06 -0700
+Message-ID: <1314300546.3268.8.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1+jejb.1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig0C8617C4E00E75C7A1B96656
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-08-25 at 13:46 -0500, Christoph Lameter wrote:
+> On Thu, 25 Aug 2011, James Bottomley wrote:
+> 
+> > >Well then what is "really risc"? RISC is an old beaten down marketing
+> > >term
+> > >AFAICT and ARM claims it too.
+> >
+> > Reduced Instruction Set Computer.  This is why we're unlikely to have
+> > complex atomic instructions: the principle of risc is that you build
+> > them up from basic ones.
+> 
+> RISC cpus have instruction to construct complex atomic actions by the cpu
+> as I have shown before for ARM.
+> 
+> Principles always have exceptions to them.
+> 
+> (That statement in itself is a principle that should have an exception I
+> guess. But then language often only makes sense when it contains
+> contradictions.)
 
-On 2011-08-25 21:07, Michael S. Tsirkin wrote:
-> On Thu, Aug 25, 2011 at 08:52:08PM +0200, Jan Kiszka wrote:
->> On 2011-08-25 20:19, Michael S. Tsirkin wrote:
->>> On Thu, Aug 25, 2011 at 03:06:01PM +0200, Jan Kiszka wrote:
->>>>> I took a look at the sysfs triggered pci reset function and don't s=
-ee any way
->>>>> that the controlling device driver ever gets to be involved in this=
- reset.
->>>>> If code outside the ipr driver were to reset the adapter, the adapt=
-er firmware
->>>>> would be left in an uninitialized state and until scsi core starts =
-timing
->>>>> out ops and driving EH, the card would be unusable. I can't imagine=
- the
->>>>> ipr driver is unique in this.
->>>>
->>>> Right, that's why a PCI core service is needed for coordination.
->>>>
->>>> Jan
->>>
->>> But why do we want to trigger reset through sysfs while the
->>> driver runs?
->>
->> A perfectly valid race conditions are created by KVM and VFIO: shared
->> IRQ handler is triggered while the user space part wants to reset the
->> assigned device.
->=20
-> OK, that would be solved by blocking sysfs reset while
-> config access is blocked, right?
+We seem to be talking at cross purposes.  I'm not saying a risc system
+can't do this ... of course the risc primitives can build into whatever
+you want.  To make it atomic, you simply add locking.  What I'm saying
+is that open coding asm in a macro makes no sense because the compiler
+will do it better from C.  Plus, since the net purpose of this patch is
+to require us to lock around each op instead of doing a global lock (or
+in this case preempt disable) then you're making us less efficient at
+executing it.
 
-=2E..and VFIO's reset IOCTL. And any other potential pci_reset_function
-caller. And you still need to synchronize those config space accesses
-that don't wait for the block_ucfg_access while some reset is being
-performed. This really screams for a redesign of config space locking.
+Therefore from the risc point of view, most of the this_cpu_xxx
+operations are things that we don't really care about except that the
+result would be easier to read in C.
 
-Jan
+James
 
 
---------------enig0C8617C4E00E75C7A1B96656
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk5Woc8ACgkQitSsb3rl5xTxLACdGd4FoH8a04bfkB1y9kD4jE5D
-1zAAoMvmPEonflpSMkbMK0EXJ+/micrN
-=9ozw
------END PGP SIGNATURE-----
-
---------------enig0C8617C4E00E75C7A1B96656--
