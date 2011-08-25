@@ -1,34 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1HYNG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:06:28 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:28350 "EHLO thoth.sbs.de"
+	id S1753482Ab1HYNHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:07:55 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:60642 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab1HYNGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:06:25 -0400
-Message-ID: <4E5648B9.7050106@siemens.com>
-Date: Thu, 25 Aug 2011 15:06:01 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1750919Ab1HYNHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 09:07:52 -0400
+Message-ID: <4E5648EB.5030302@linux.vnet.ibm.com>
+Date: Thu, 25 Aug 2011 08:06:51 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Brian King <brking@linux.vnet.ibm.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Jan Kiszka <jan.kiszka@siemens.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
         Matthew Wilcox <matthew@wil.cx>
 Subject: Re: Broken pci_block_user_cfg_access interface
-References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com> <4E5613BA.5070101@siemens.com> <4E5647DA.1060901@linux.vnet.ibm.com>
-In-Reply-To: <4E5647DA.1060901@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
+References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com> <4E5613BA.5070101@siemens.com> <20110825094031.GA3727@redhat.com>
+In-Reply-To: <20110825094031.GA3727@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-25 15:02, Brian King wrote:
-> On 08/25/2011 04:19 AM, Jan Kiszka wrote:
+On 08/25/2011 04:40 AM, Michael S. Tsirkin wrote:
+> On Thu, Aug 25, 2011 at 11:19:54AM +0200, Jan Kiszka wrote:
 >> On 2011-08-24 17:02, Brian King wrote:
 >>> On 08/24/2011 05:43 AM, Jan Kiszka wrote:
 >>>> Hi,
@@ -56,16 +56,13 @@ On 2011-08-25 15:02, Brian King wrote:
 >> Ugh. What precisely does it have to do with the config space while
 >> running inside an IRQ handler (or holding a lock that synchronizes it
 >> with such a handler)?
-> 
-> The ipr driver can get an error interrupt which will trigger the driver
-> to reset the adapter. While the adapter is going through reset we need
-> to ensure user config accesses are blocked, since many ipr adapters
-> won't respond on the PCI bus during this time.
-
-What about offloading the reset to thread context (workqueue etc.)?
-
-> 
-> 
+>>
+>>> When the pci_block/unblock API was
+>>> originally added, it did not have the checking it has today to detect
+>>> if it is being called nested. This was added some time later. The
+>>
+>> For a reason...
+>>
 >>> API that works best for the ipr driver is to allow for many block calls,
 >>> but a single unblock call unblocks access. It seems like what might
 >>> work well in the case above is a block count. Each call to pci_block
@@ -77,18 +74,39 @@ What about offloading the reset to thread context (workqueue etc.)?
 >> sysfs access) fiddle with the config space in an unsynchronized fashion.
 >> Think of sysfs-triggered pci_reset_function while your ipr driver does
 >> its accesses.
+>>
+>> So it's pointless to tweak the current pci_block semantics, we rather
+>> need to establish a new mechanism that synchronizes *all* users of the
+>> config space.
+>>
+>> Jan
 > 
-> I took a look at the sysfs triggered pci reset function and don't see any way
-> that the controlling device driver ever gets to be involved in this reset.
-> If code outside the ipr driver were to reset the adapter, the adapter firmware
-> would be left in an uninitialized state and until scsi core starts timing
-> out ops and driving EH, the card would be unusable. I can't imagine the
-> ipr driver is unique in this.
+> It does look like all of the problems are actually around reset.
+> So maybe all we need to do is synchronize the sysfs-triggered
+> pci_reset_function with pci_block/unblock_user_cfg_access?
+> 
+> In other words, when reset is triggered from sysfs, it
+> should obey pci_block/unblock_user_cfg_access
+> restrictions?
+> 
+> It does not look like reset needs to sleep, so fixing
+> that should not be hard, right?
 
-Right, that's why a PCI core service is needed for coordination.
+This sounds reasonable to me. Although I think we still have the driver issue
+I described in my previous mail. Perhaps the best way to resolve that would
+be to allow the adapter driver to register a reset function so that the
+driver could be the one driving the reset, allowing the driver to synchronize
+the reset with whatever else might be going on and also then reinitialize
+the adapter firmware, etc. If no driver was loaded or no driver specific
+reset function registered, the current reset mechanism would be invoked.
 
-Jan
+Thanks,
+
+Brian
 
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
+
+
