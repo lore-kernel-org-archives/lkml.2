@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab1HYPR4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:17:56 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:34634 "EHLO
+	id S1754378Ab1HYPSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:18:13 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:34374 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab1HYPJy (ORCPT
+	with ESMTP id S1753893Ab1HYPJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:54 -0400
+	Thu, 25 Aug 2011 11:09:52 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 086/118] drbd: Converted drbd_do_handshake() from mdev to tconn
-Date: Thu, 25 Aug 2011 17:08:22 +0200
-Message-Id: <1314284934-17999-87-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 084/118] drbd: Converted decode_header() from mdev to tconn
+Date: Thu, 25 Aug 2011 17:08:20 +0200
+Message-Id: <1314284934-17999-85-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,100 +23,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |   30 +++++++++++++++---------------
- 1 files changed, 15 insertions(+), 15 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 4369651..7c6c385 100644
+index deb0837..66b35e9 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -60,7 +60,7 @@ enum finish_epoch {
- 	FE_RECYCLED,
- };
+@@ -930,7 +930,7 @@ out_release_sockets:
+ 	return -1;
+ }
  
--static int drbd_do_handshake(struct drbd_conf *mdev);
-+static int drbd_do_handshake(struct drbd_tconn *tconn);
- static int drbd_do_auth(struct drbd_conf *mdev);
- 
- static enum finish_epoch drbd_may_finish_epoch(struct drbd_conf *, struct drbd_epoch *, enum epoch_event);
-@@ -883,7 +883,7 @@ retry:
- 
- 	D_ASSERT(mdev->tconn->asender.task == NULL);
- 
--	h = drbd_do_handshake(mdev);
-+	h = drbd_do_handshake(mdev->tconn);
- 	if (h <= 0)
- 		return h;
- 
-@@ -3994,39 +3994,39 @@ static int drbd_send_handshake(struct drbd_tconn *tconn)
-  *  -1 peer talks different language,
-  *     no point in trying again, please go standalone.
-  */
--static int drbd_do_handshake(struct drbd_conf *mdev)
-+static int drbd_do_handshake(struct drbd_tconn *tconn)
+-static bool decode_header(struct drbd_conf *mdev, struct p_header *h, struct packet_info *pi)
++static bool decode_header(struct drbd_tconn *tconn, struct p_header *h, struct packet_info *pi)
  {
--	/* ASSERT current == mdev->tconn->receiver ... */
--	struct p_handshake *p = &mdev->tconn->data.rbuf.handshake;
-+	/* ASSERT current == tconn->receiver ... */
-+	struct p_handshake *p = &tconn->data.rbuf.handshake;
- 	const int expect = sizeof(struct p_handshake) - sizeof(struct p_header80);
- 	struct packet_info pi;
- 	int rv;
+ 	u32 vol_n_len;
  
--	rv = drbd_send_handshake(mdev->tconn);
-+	rv = drbd_send_handshake(tconn);
- 	if (!rv)
- 		return 0;
- 
--	rv = drbd_recv_header(mdev->tconn, &pi);
-+	rv = drbd_recv_header(tconn, &pi);
- 	if (!rv)
- 		return 0;
- 
- 	if (pi.cmd != P_HAND_SHAKE) {
--		dev_err(DEV, "expected HandShake packet, received: %s (0x%04x)\n",
-+		conn_err(tconn, "expected HandShake packet, received: %s (0x%04x)\n",
- 		     cmdname(pi.cmd), pi.cmd);
- 		return -1;
+@@ -943,7 +943,7 @@ static bool decode_header(struct drbd_conf *mdev, struct p_header *h, struct pac
+ 		pi->size = vol_n_len & 0x00ffffff;
+ 		pi->vnr  = vol_n_len >> 24;
+ 	} else {
+-		dev_err(DEV, "magic?? on data m: 0x%08x c: %d l: %d\n",
++		conn_err(tconn, "magic?? on data m: 0x%08x c: %d l: %d\n",
+ 		    be32_to_cpu(h->h80.magic),
+ 		    be16_to_cpu(h->h80.command),
+ 		    be16_to_cpu(h->h80.length));
+@@ -964,7 +964,7 @@ static int drbd_recv_header(struct drbd_conf *mdev, struct packet_info *pi)
+ 		return false;
  	}
  
- 	if (pi.size != expect) {
--		dev_err(DEV, "expected HandShake length: %u, received: %u\n",
-+		conn_err(tconn, "expected HandShake length: %u, received: %u\n",
- 		     expect, pi.size);
- 		return -1;
- 	}
+-	r = decode_header(mdev, h, pi);
++	r = decode_header(mdev->tconn, h, pi);
+ 	mdev->tconn->last_received = jiffies;
  
--	rv = drbd_recv(mdev->tconn, &p->head.payload, expect);
-+	rv = drbd_recv(tconn, &p->head.payload, expect);
+ 	return r;
+@@ -4648,7 +4648,7 @@ int drbd_asender(struct drbd_thread *thi)
+ 		}
  
- 	if (rv != expect) {
- 		if (!signal_pending(current))
--			dev_warn(DEV, "short read receiving handshake packet: l=%u\n", rv);
-+			conn_warn(tconn, "short read receiving handshake packet: l=%u\n", rv);
- 		return 0;
- 	}
- 
-@@ -4039,15 +4039,15 @@ static int drbd_do_handshake(struct drbd_conf *mdev)
- 	    PRO_VERSION_MIN > p->protocol_max)
- 		goto incompat;
- 
--	mdev->tconn->agreed_pro_version = min_t(int, PRO_VERSION_MAX, p->protocol_max);
-+	tconn->agreed_pro_version = min_t(int, PRO_VERSION_MAX, p->protocol_max);
- 
--	dev_info(DEV, "Handshake successful: "
--	     "Agreed network protocol version %d\n", mdev->tconn->agreed_pro_version);
-+	conn_info(tconn, "Handshake successful: "
-+	     "Agreed network protocol version %d\n", tconn->agreed_pro_version);
- 
- 	return 1;
- 
-  incompat:
--	dev_err(DEV, "incompatible DRBD dialects: "
-+	conn_err(tconn, "incompatible DRBD dialects: "
- 	    "I support %d-%d, peer supports %d-%d\n",
- 	    PRO_VERSION_MIN, PRO_VERSION_MAX,
- 	    p->protocol_min, p->protocol_max);
+ 		if (received == expect && cmd == NULL) {
+-			if (!decode_header(mdev, h, &pi))
++			if (!decode_header(mdev->tconn, h, &pi))
+ 				goto reconnect;
+ 			cmd = get_asender_cmd(pi.cmd);
+ 			if (unlikely(cmd == NULL)) {
 -- 
 1.7.4.1
 
