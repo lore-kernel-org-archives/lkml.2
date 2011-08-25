@@ -1,50 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab1HYVBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:01:32 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38768 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754577Ab1HYVBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 17:01:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] oom: skip frozen tasks
-Date: Thu, 25 Aug 2011 23:03:17 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110823073101.6426.77745.stgit@zurg> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com>
-In-Reply-To: <20110825151818.GA4003@redhat.com>
+	id S1755304Ab1HYVIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 17:08:51 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:55490 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753627Ab1HYVIu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 17:08:50 -0400
+X-Sasl-enc: OXpgYZLc8iEU3T8NLw/ydeXJdqkCZwmCAVQ9a8p7HRRZ 1314306528
+Date: Thu, 25 Aug 2011 13:59:30 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 12/59] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Message-ID: <20110825205930.GA10883@kroah.com>
+References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-1-git-send-email-kys@microsoft.com>
+ <1314290965-2698-12-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108252303.17446.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314290965-2698-12-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 25, 2011, Oleg Nesterov wrote:
-> On 08/25, Michal Hocko wrote:
-> >
-> > On Wed 24-08-11 12:31:26, David Rientjes wrote:
-> > >
-> > > That's obviously false since we call oom_killer_disable() in 
-> > > freeze_processes() to disable the oom killer from ever being called in the 
-> > > first place, so this is something you need to resolve with Rafael before 
-> > > you cause more machines to panic.
-> >
-> > I didn't mean suspend/resume path (that is protected by oom_killer_disabled)
-> > so the patch doesn't make any change.
+On Thu, Aug 25, 2011 at 09:48:38AM -0700, K. Y. Srinivasan wrote:
+> Now generate appropriate uevent based on the modalias string. As part of this,
+> cleanup the existing uevent code.
 > 
-> Confused... freeze_processes() does try_to_freeze_tasks() before
-> oom_killer_disable() ?
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/staging/hv/vmbus_drv.c |   60 ++++++++--------------------------------
+>  1 files changed, 12 insertions(+), 48 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> index b651968..a6e7dc5 100644
+> --- a/drivers/staging/hv/vmbus_drv.c
+> +++ b/drivers/staging/hv/vmbus_drv.c
+> @@ -237,58 +237,22 @@ static struct device_attribute vmbus_device_attrs[] = {
+>   * This routine is invoked when a device is added or removed on the vmbus to
+>   * generate a uevent to udev in the userspace. The udev will then look at its
+>   * rule and the uevent generated here to load the appropriate driver
+> + *
+> + * The alias string will be of the form vmbus:guid where guid is the string
+> + * representation of the device guid (each byte of the guid will be
+> + * represented with two hex characters.
+>   */
+>  static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
+>  {
+>  	struct hv_device *dev = device_to_hv_device(device);
+> -	int ret;
+> -
+> -	ret = add_uevent_var(env, "VMBUS_DEVICE_CLASS_GUID={"
+> -			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+> -			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+> -			     dev->dev_type.b[3],
+> -			     dev->dev_type.b[2],
+> -			     dev->dev_type.b[1],
+> -			     dev->dev_type.b[0],
+> -			     dev->dev_type.b[5],
+> -			     dev->dev_type.b[4],
+> -			     dev->dev_type.b[7],
+> -			     dev->dev_type.b[6],
+> -			     dev->dev_type.b[8],
+> -			     dev->dev_type.b[9],
+> -			     dev->dev_type.b[10],
+> -			     dev->dev_type.b[11],
+> -			     dev->dev_type.b[12],
+> -			     dev->dev_type.b[13],
+> -			     dev->dev_type.b[14],
+> -			     dev->dev_type.b[15]);
+> -
+> -	if (ret)
+> -		return ret;
+> +	int i, ret;
+> +	char alias_name[((sizeof(struct hv_vmbus_device_id) + 1)) * 2];
+>  
+> -	ret = add_uevent_var(env, "VMBUS_DEVICE_DEVICE_GUID={"
+> -			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+> -			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+> -			     dev->dev_instance.b[3],
+> -			     dev->dev_instance.b[2],
+> -			     dev->dev_instance.b[1],
+> -			     dev->dev_instance.b[0],
+> -			     dev->dev_instance.b[5],
+> -			     dev->dev_instance.b[4],
+> -			     dev->dev_instance.b[7],
+> -			     dev->dev_instance.b[6],
+> -			     dev->dev_instance.b[8],
+> -			     dev->dev_instance.b[9],
+> -			     dev->dev_instance.b[10],
+> -			     dev->dev_instance.b[11],
+> -			     dev->dev_instance.b[12],
+> -			     dev->dev_instance.b[13],
+> -			     dev->dev_instance.b[14],
+> -			     dev->dev_instance.b[15]);
+> -	if (ret)
+> -		return ret;
+> +	for (i = 0; i < (sizeof(struct hv_vmbus_device_id) * 2); i += 2)
+> +		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
 
-Yes, it does.
+I have to edit this to get it to work properly with the fact that I
+added the driver_data field to hv_vmbus_device_id.
 
-Thanks,
-Rafael
+Arguably, one could say that this patch was always broken as you were
+assuming the size of an individual field was the same size as the whole
+structure, which I don't think is always the case, or at least it's not
+a safe thing to assume :)
+
+thanks,
+
+greg k-h
