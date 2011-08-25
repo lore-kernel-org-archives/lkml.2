@@ -1,162 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab1HYRBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:01:23 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60475 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1HYRBV (ORCPT
+	id S1754772Ab1HYRBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:01:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49825 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab1HYRBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:01:21 -0400
-Date: Thu, 25 Aug 2011 10:01:12 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Dudley Du <dudl@cypress.com>,
-        "rubini@ipvvis.unipv.it" <rubini@cvml.unipv.it>,
-        "rydberg@euromail.se" <rydberg@euromail.se>,
-        "ccross@android.com" <ccross@android.com>,
-        "konkers@android.com" <konkers@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] input:cyapa: Add new I2C-based input touchpad driver for
- Cypress I2C touchpad devices
-Message-ID: <20110825170112.GA27146@core.coreip.homeip.net>
-References: <B27AC323FA92C946BA36D2913DDC8E370226D9457E6B@VMBX126.ihostexchange.net>
- <B27AC323FA92C946BA36D2913DDC8E370226D9457E7B@VMBX126.ihostexchange.net>
- <20110825150146.2e876af8@lxorguk.ukuu.org.uk>
+	Thu, 25 Aug 2011 13:01:53 -0400
+Date: Thu, 25 Aug 2011 19:01:47 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110825170147.GM2803@mtj.dyndns.org>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110825150146.2e876af8@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110825082944.GH10030@sun>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 03:01:46PM +0100, Alan Cox wrote:
-> > +
-> > +static void cyapa_disable_irq(struct cyapa_i2c *touch)
-> > +{
-> > +       unsigned long flags;
-> > +
-> > +       spin_lock_irqsave(&touch->miscdev_spinlock, flags);
-> > +       if (!touch->polling_mode_enabled &&
-> > +               touch->bl_irq_enable &&
-> > +               touch->irq_enabled) {
-> > +               touch->irq_enabled = false;
-> > +               disable_irq(touch->irq);
-> > +       }
-> > +       spin_unlock_irqrestore(&touch->miscdev_spinlock, flags);
-> 
-> This doesn't do what you think. disable_irq does not guarantee that the
-> IRQ is not executing on another CPU core. disable_irq_sync does but then
-> you will deadlock.
+Hello,
 
-Actually disable_irq() does guarantee that IRQ is not executing once the
-call completes. We have disable_irq_nosync() that does not wait.
+On Thu, Aug 25, 2011 at 12:29:44PM +0400, Cyrill Gorcunov wrote:
+>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73a00000 -> /lib64/ld-2.5.so
+>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73c1b000 -> /lib64/ld-2.5.so
+>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73c1c000 -> /lib64/ld-2.5.so
+>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73e00000 -> /lib64/libc-2.5.so
+>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73f4e000 -> /lib64/libc-2.5.so
 
+I would prefer if the filename included both start and end addresses
+so that it matches the first column of /proc/PID/maps and ls'ing the
+directory is more useful.  What do other people think?
+
+> +static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
+> +{
+> +	struct task_struct *task;
+> +	struct vm_area_struct *vma;
+> +	struct mm_struct *mm;
+> +	struct inode *inode;
 > +
-> > +static int cyapa_i2c_open(struct input_dev *input)
-> > +{
-> > +       struct cyapa_i2c *touch = input_get_drvdata(input);
-> > +       int ret;
-> > +       unsigned long flags;
-> > +
-> > +       spin_lock_irqsave(&touch->lock, flags);
-> > +       if (touch->open_count == 0) {
-> > +               ret = cyapa_i2c_reset_config(touch);
-> > +               if (ret < 0) {
-> > +                       pr_err("reset i2c trackpad error code, %d.\n", ret);
-> > +                       return ret;
-> > +               }
-> > +       }
-> > +       spin_unlock_irqrestore(&touch->lock, flags);
-> > +
-> > +       spin_lock_irqsave(&touch->lock, flags);
-> > +       touch->open_count++;
-> > +       spin_unlock_irqrestore(&touch->lock, flags);
-> 
-> You've dropped the lock and taken it and dropped it again in sequential
-> lines. That's nonsensical and also means you've added a race !
-> 
+> +	if (nd && nd->flags & LOOKUP_RCU)
+> +		return -ECHILD;
+> +
+> +	inode = dentry->d_inode;
+> +	task = get_proc_task(inode);
+> +	if (!task)
+> +		goto out;
+> +
+> +	mm = get_task_mm(task);
+> +	put_task_struct(task);
+> +	if (!mm)
+> +		goto out;
+> +
+> +	down_read(&mm->mmap_sem);
+> +	vma = find_exact_vma(mm, PROC_I(inode)->vm_start);
+> +	up_read(&mm->mmap_sem);
+> +	mmput(mm);
+> +
+> +	if (vma)
+> +		return 1;
 
-Also please note that input core ensures that open() and close() methods
-are called only when needed (first user opens the device or last user
-closes it), you do not need to count yourself.
-
-> 
-> > +static void cyapa_i2c_close(struct input_dev *input)
-> > +{
-> > +       unsigned long flags;
-> > +       struct cyapa_i2c *touch = input_get_drvdata(input);
-> > +
-> > +       spin_lock_irqsave(&touch->lock, flags);
-> > +
-> > +       if (touch->open_count == 0) {
-> 
-> Wouldn't this be an error ?
-> 
-> 
-> > +       ret = request_irq(touch->irq,
-> > +                       cyapa_i2c_irq,
-> > +                       IRQF_TRIGGER_FALLING,
-> > +                       CYAPA_I2C_NAME,
-> > +                       touch);
-> 
-> This IRQ can happen from the moment it is registered which means it can
-> occur before the variables you set up further down...
-> 
-> > +       if (ret) {
-> > +               pr_warning("IRQ request failed: %d, "
-> > +                       "falling back to polling mode.\n", ret);
-> > +
-> > +               spin_lock_irqsave(&touch->miscdev_spinlock, flags);
-> > +               touch->polling_mode_enabled = true;
-> > +               touch->bl_irq_enable = false;
-> > +               touch->irq_enabled = false;
-> > +               spin_unlock_irqrestore(&touch->miscdev_spinlock, flags);
-> > +       } else {
-> > +               spin_lock_irqsave(&touch->miscdev_spinlock, flags);
-> > +               touch->polling_mode_enabled = false;
-> > +               touch->bl_irq_enable = false;
-> > +               touch->irq_enabled = true;
-> > +               enable_irq_wake(touch->irq);
-> > +               spin_unlock_irqrestore(&touch->miscdev_spinlock, flags);
-> > +       }
-> > +
-> > +       /* create an input_dev instance for trackpad device. */
-> > +       ret = cyapa_create_input_dev(touch);
-> > +       if (ret) {
-> > +               free_irq(touch->irq, touch);
-> 
-> But what if it was polling ?
-> 
-> 
-> In general I think
-> 
-> - use the threaded_irq interfaces for your IRQ paths (if you look at the
->   current kernel you'll see a lot of drivers do this)
-> - use the polled input device interface for the no IRQ case, so it does
->   all the polling work for you
-
-Polling mode for a touchscreen is unusable in real product (unlike
-accelerometers/magnetometers/etc touchscreens need constant polling with
-relatively high rate) so I'd rather not have it at all.
-
-> - tidy up the locking (and the fact you've got locking in there is a lot
->   better than many first submissions we see)
-> 
-> I would think about how the various states and handlers work. Right now
-> the code is quite convoluted, and maybe a state machine of some kind would
-> clean it up ?
-> 
-
-Also the miscdevice inteface should go away and be replaced with
-sysfs/debugfs solution. For firmware update request_firmware() interface
-can be used (see atmel_mxt_ts driver).
+Hmm... don't we need the same credential update as
+tid_fd_revalidate()?  If the task seteuid's, we want the permissions
+to change accordingly, right?
 
 Thanks.
 
 -- 
-Dmitry
+tejun
