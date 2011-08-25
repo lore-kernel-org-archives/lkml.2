@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1HYPJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:09:48 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:34634 "EHLO
+	id S1753986Ab1HYPKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:10:06 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:35240 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753797Ab1HYPJn (ORCPT
+	with ESMTP id S1753915Ab1HYPJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:43 -0400
+	Thu, 25 Aug 2011 11:09:55 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 070/118] drbd: Converted drbd_wait_for_connect() from mdev to tconn
-Date: Thu, 25 Aug 2011 17:08:06 +0200
-Message-Id: <1314284934-17999-71-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 089/118] drbd: Converted drbd_send_protocol() from mdev to tconn
+Date: Thu, 25 Aug 2011 17:08:25 +0200
+Message-Id: <1314284934-17999-90-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -23,96 +23,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+ drivers/block/drbd/drbd_int.h      |    2 +-
+ drivers/block/drbd/drbd_main.c     |   30 +++++++++++++++---------------
+ drivers/block/drbd/drbd_receiver.c |    2 +-
+ 3 files changed, 17 insertions(+), 17 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index ddff35b..9bd156a 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1160,7 +1160,7 @@ extern void _tl_add_barrier(struct drbd_conf *, struct drbd_tl_epoch *);
+ extern void drbd_free_sock(struct drbd_conf *mdev);
+ extern int drbd_send(struct drbd_tconn *tconn, struct socket *sock,
+ 		     void *buf, size_t size, unsigned msg_flags);
+-extern int drbd_send_protocol(struct drbd_conf *mdev);
++extern int drbd_send_protocol(struct drbd_tconn *tconn);
+ extern int drbd_send_uuids(struct drbd_conf *mdev);
+ extern int drbd_send_uuids_skip_initial_sync(struct drbd_conf *mdev);
+ extern int drbd_gen_and_send_sync_uuid(struct drbd_conf *mdev);
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 14961d8..ca40f0a 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -808,15 +808,15 @@ int drbd_send_sync_param(struct drbd_conf *mdev, struct syncer_conf *sc)
+ 	return rv;
+ }
+ 
+-int drbd_send_protocol(struct drbd_conf *mdev)
++int drbd_send_protocol(struct drbd_tconn *tconn)
+ {
+ 	struct p_protocol *p;
+ 	int size, cf, rv;
+ 
+ 	size = sizeof(struct p_protocol);
+ 
+-	if (mdev->tconn->agreed_pro_version >= 87)
+-		size += strlen(mdev->tconn->net_conf->integrity_alg) + 1;
++	if (tconn->agreed_pro_version >= 87)
++		size += strlen(tconn->net_conf->integrity_alg) + 1;
+ 
+ 	/* we must not recurse into our own queue,
+ 	 * as that is blocked during handshake */
+@@ -824,30 +824,30 @@ int drbd_send_protocol(struct drbd_conf *mdev)
+ 	if (p == NULL)
+ 		return 0;
+ 
+-	p->protocol      = cpu_to_be32(mdev->tconn->net_conf->wire_protocol);
+-	p->after_sb_0p   = cpu_to_be32(mdev->tconn->net_conf->after_sb_0p);
+-	p->after_sb_1p   = cpu_to_be32(mdev->tconn->net_conf->after_sb_1p);
+-	p->after_sb_2p   = cpu_to_be32(mdev->tconn->net_conf->after_sb_2p);
+-	p->two_primaries = cpu_to_be32(mdev->tconn->net_conf->two_primaries);
++	p->protocol      = cpu_to_be32(tconn->net_conf->wire_protocol);
++	p->after_sb_0p   = cpu_to_be32(tconn->net_conf->after_sb_0p);
++	p->after_sb_1p   = cpu_to_be32(tconn->net_conf->after_sb_1p);
++	p->after_sb_2p   = cpu_to_be32(tconn->net_conf->after_sb_2p);
++	p->two_primaries = cpu_to_be32(tconn->net_conf->two_primaries);
+ 
+ 	cf = 0;
+-	if (mdev->tconn->net_conf->want_lose)
++	if (tconn->net_conf->want_lose)
+ 		cf |= CF_WANT_LOSE;
+-	if (mdev->tconn->net_conf->dry_run) {
+-		if (mdev->tconn->agreed_pro_version >= 92)
++	if (tconn->net_conf->dry_run) {
++		if (tconn->agreed_pro_version >= 92)
+ 			cf |= CF_DRY_RUN;
+ 		else {
+-			dev_err(DEV, "--dry-run is not supported by peer");
++			conn_err(tconn, "--dry-run is not supported by peer");
+ 			kfree(p);
+ 			return -1;
+ 		}
+ 	}
+ 	p->conn_flags    = cpu_to_be32(cf);
+ 
+-	if (mdev->tconn->agreed_pro_version >= 87)
+-		strcpy(p->integrity_alg, mdev->tconn->net_conf->integrity_alg);
++	if (tconn->agreed_pro_version >= 87)
++		strcpy(p->integrity_alg, tconn->net_conf->integrity_alg);
+ 
+-	rv = drbd_send_cmd(mdev, USE_DATA_SOCKET, P_PROTOCOL, &p->head, size);
++	rv = conn_send_cmd2(tconn, P_PROTOCOL, p->head.payload, size);
+ 	kfree(p);
+ 	return rv;
+ }
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index c59858a..83066a3 100644
+index 95b0d6c..42a2b39 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -447,8 +447,7 @@ void drbd_wait_ee_list_empty(struct drbd_conf *mdev, struct list_head *head)
+@@ -910,7 +910,7 @@ retry:
  
- /* see also kernel_accept; which is only present since 2.6.18.
-  * also we want to log which part of it failed, exactly */
--static int drbd_accept(struct drbd_conf *mdev, const char **what,
--		struct socket *sock, struct socket **newsock)
-+static int drbd_accept(const char **what, struct socket *sock, struct socket **newsock)
- {
- 	struct sock *sk = sock->sk;
- 	int err = 0;
-@@ -650,51 +649,51 @@ out:
- 	return sock;
- }
+ 	drbd_thread_start(&mdev->tconn->asender);
  
--static struct socket *drbd_wait_for_connect(struct drbd_conf *mdev)
-+static struct socket *drbd_wait_for_connect(struct drbd_tconn *tconn)
- {
- 	int timeo, err;
- 	struct socket *s_estab = NULL, *s_listen;
- 	const char *what;
- 
--	if (!get_net_conf(mdev->tconn))
-+	if (!get_net_conf(tconn))
- 		return NULL;
- 
- 	what = "sock_create_kern";
--	err = sock_create_kern(((struct sockaddr *)mdev->tconn->net_conf->my_addr)->sa_family,
-+	err = sock_create_kern(((struct sockaddr *)tconn->net_conf->my_addr)->sa_family,
- 		SOCK_STREAM, IPPROTO_TCP, &s_listen);
- 	if (err) {
- 		s_listen = NULL;
- 		goto out;
- 	}
- 
--	timeo = mdev->tconn->net_conf->try_connect_int * HZ;
-+	timeo = tconn->net_conf->try_connect_int * HZ;
- 	timeo += (random32() & 1) ? timeo / 7 : -timeo / 7; /* 28.5% random jitter */
- 
- 	s_listen->sk->sk_reuse    = 1; /* SO_REUSEADDR */
- 	s_listen->sk->sk_rcvtimeo = timeo;
- 	s_listen->sk->sk_sndtimeo = timeo;
--	drbd_setbufsize(s_listen, mdev->tconn->net_conf->sndbuf_size,
--			mdev->tconn->net_conf->rcvbuf_size);
-+	drbd_setbufsize(s_listen, tconn->net_conf->sndbuf_size,
-+			tconn->net_conf->rcvbuf_size);
- 
- 	what = "bind before listen";
- 	err = s_listen->ops->bind(s_listen,
--			      (struct sockaddr *) mdev->tconn->net_conf->my_addr,
--			      mdev->tconn->net_conf->my_addr_len);
-+			      (struct sockaddr *) tconn->net_conf->my_addr,
-+			      tconn->net_conf->my_addr_len);
- 	if (err < 0)
- 		goto out;
- 
--	err = drbd_accept(mdev, &what, s_listen, &s_estab);
-+	err = drbd_accept(&what, s_listen, &s_estab);
- 
- out:
- 	if (s_listen)
- 		sock_release(s_listen);
- 	if (err < 0) {
- 		if (err != -EAGAIN && err != -EINTR && err != -ERESTARTSYS) {
--			dev_err(DEV, "%s failed, err = %d\n", what, err);
--			drbd_force_state(mdev, NS(conn, C_DISCONNECTING));
-+			conn_err(tconn, "%s failed, err = %d\n", what, err);
-+			drbd_force_state(tconn->volume0, NS(conn, C_DISCONNECTING));
- 		}
- 	}
--	put_net_conf(mdev->tconn);
-+	put_net_conf(tconn);
- 
- 	return s_estab;
- }
-@@ -805,7 +804,7 @@ static int drbd_connect(struct drbd_conf *mdev)
- 		}
- 
- retry:
--		s = drbd_wait_for_connect(mdev);
-+		s = drbd_wait_for_connect(mdev->tconn);
- 		if (s) {
- 			try = drbd_recv_fp(mdev, s);
- 			drbd_socket_okay(mdev, &sock);
+-	if (drbd_send_protocol(mdev) == -1)
++	if (drbd_send_protocol(mdev->tconn) == -1)
+ 		return -1;
+ 	drbd_send_sync_param(mdev, &mdev->sync_conf);
+ 	drbd_send_sizes(mdev, 0, 0);
 -- 
 1.7.4.1
 
