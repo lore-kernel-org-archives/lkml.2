@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab1HYPlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:41:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4332 "EHLO mx1.redhat.com"
+	id S1752387Ab1HYPq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:46:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912Ab1HYPle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:41:34 -0400
-Date: Thu, 25 Aug 2011 17:37:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Greg Kurz <gkurz@fr.ibm.com>, containers@lists.linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
-	when reboot
-Message-ID: <20110825153732.GA4784@redhat.com>
-References: <20110819152416.GA17034@redhat.com> <4E524B73.3050704@free.fr> <20110822154448.GA8527@redhat.com> <20110822183134.10390b46@neptune.home> <20110822173949.GA13242@redhat.com> <20110822211716.7c141d5c@neptune.home> <20110823133302.GA19582@redhat.com> <1314108566.3465.29.camel@bahia.local> <20110823142914.GA22593@redhat.com> <20110824214418.474b24c6@neptune.home>
+	id S1751562Ab1HYPq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 11:46:27 -0400
+Date: Thu, 25 Aug 2011 17:45:38 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Michal Hocko <mhocko@suse.cz>, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2011-08-24-14-08 uploaded
+Message-ID: <20110825154538.GA5860@redhat.com>
+References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
+ <20110825135103.GA6431@tiehlicka.suse.cz>
+ <20110825140701.GA6838@tiehlicka.suse.cz>
+ <20110826010938.5795e43137d58c9f42d44458@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110824214418.474b24c6@neptune.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110826010938.5795e43137d58c9f42d44458@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24, Bruno Prémont wrote:
->
-> On Tue, 23 August 2011 Oleg Nesterov <oleg@redhat.com> wrote:
+On Fri, Aug 26, 2011 at 01:09:38AM +1000, Stephen Rothwell wrote:
+> Hi,
+> 
+> On Thu, 25 Aug 2011 16:07:01 +0200 Michal Hocko <mhocko@suse.cz> wrote:
 > >
-> > Just in case... instead of WIFSIGNALED/WTERMSIG we can also report
-> > the exit code in the upper bits. I mean,
-> >
-> > 	switch (reboot_cmd) {
-> > 	case LINUX_REBOOT_CMD_RESTART:
-> > 		code = 1 << 16;
-> > 		break;
-> > 	case LINUX_REBOOT_CMD_HALT:
-> > 		code = 2 << 16;
-> > 		break;
-> > 	}
->
-> That looks nice and simple!
+> > On Thu 25-08-11 15:51:03, Michal Hocko wrote:
+> > > 
+> > > On Wed 24-08-11 14:09:05, Andrew Morton wrote:
+> > > > The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
+> > > > 
+> > > >    http://userweb.kernel.org/~akpm/mmotm/
+> > > 
+> > > I have just downloaded your tree and cannot quilt it up. I am getting:
+> > > [...]
+> > > patching file tools/power/cpupower/debug/x86_64/centrino-decode.c
+> > > Hunk #1 FAILED at 1.
+> > > File tools/power/cpupower/debug/x86_64/centrino-decode.c is not empty after patch, as expected
+> > > 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x86_64/centrino-decode.c
+> > > patching file tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
+> > > Hunk #1 FAILED at 1.
+> > > File tools/power/cpupower/debug/x86_64/powernow-k8-decode.c is not empty after patch, as expected
+> > > 1 out of 1 hunk FAILED -- rejects in file tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
+> > > [...]
+> > > patching file virt/kvm/iommu.c
+> > > Patch linux-next.patch does not apply (enforce with -f)
+> > > 
+> > > Is this a patch (I am using 2.6.1) issue? The failing hunk looks as
+> > > follows:
+> > > --- a/tools/power/cpupower/debug/x86_64/centrino-decode.c
+> > > +++ /dev/null
+> > > @@ -1 +0,0 @@
+> > > -../i386/centrino-decode.c
+> > > \ No newline at end of file
+> > 
+> > Isn't this just a special form of git (clever) diff to spare some lines
+> > when the file deleted? Or is the patch simply corrupted?
+> > Anyway, my patch doesn't cope with that. Any hint what to do about it?
+> 
+> Those files were symlinks and were removed by a commit in linux-next.
+> diff/patch does not cope with that.
 
-Great. To me, WIFSIGNALED() looks better, but this is subjective and
-in any case this is up to you.
+You can probably replace `patch' in your $PATH by a wrapper that uses
+git-apply, which can deal with them.
 
-> > this can't be confused with the normal exit(code), just the parent
-> > should be careful, I am not sure this can't confuse WIFEXITED/WEXITSTATUS
-> > user-space macroses.
->
-> For recent glibc (2.12.2):
-> sys/wait.h and stdlib.h:
-> # define WIFEXITED(status) __WIFEXITED (__WAIT_INT (status))
-> # define WEXITSTATUS(status)       __WEXITSTATUS (__WAIT_INT (status))
-> bits/waitstatus.h:
-> #define     __WIFEXITED(status)     (__WTERMSIG(status) == 0)
-> #define     __WTERMSIG(status)      ((status) & 0x7f)
-> #define     __WEXITSTATUS(status)   (((status) & 0xff00) >> 8)
+Or you could use git-quiltimport, which uses git-apply, to prepare the
+-mmotm base tree in git, on top of which you can continue to work with
+quilt.
 
-... and note that __WEXITSTATUS() does "& 0xff00", it uses the
-lower 16 bits.
+I do this with a cron-job automatically, you can find the result here:
 
-So the parent should read status "by hand". Not a problem, I think.
-Say, a traced task reports the additional info this way.
+    http://git.kernel.org/?p=linux/kernel/git/hannes/linux-mmotm.git;a=summary
 
-Oleg.
+If you want to do it manually, there is sometimes confusing binary
+file patch sections in -mmotm, which in turn git-apply can not deal
+with, so I use the following uncrapdiff.awk filter on the patches
+before import.
 
+---
+
+# Filter out sections that feature an index line but
+# no real diff part that would start with '--- file'
+
+{
+	if (HEADER ~ /^diff --git /) {
+		if ($0 ~ /^index /) {
+			INDEX=$0
+		} else if ($0 ~ /^diff --git /) {
+			print(HEADER)
+			HEADER=$0
+		} else if (INDEX ~ /^index /) {
+			if ($0 ~ /^--- /) {
+				print(HEADER)
+				print(INDEX)
+				print($0)
+			}
+			HEADER=""
+			INDEX=""
+		} else {
+			HEADER=HEADER "\n" $0
+		}
+	} else if ($0 ~ /^diff --git /) {
+		HEADER=$0
+	} else {
+		print($0)
+	}
+}
+
+---
+
+HTH
