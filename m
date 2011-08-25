@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab1HYQSE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:18:04 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34321 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab1HYQSB (ORCPT
+	id S1753150Ab1HYQUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:20:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36942 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751129Ab1HYQUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:18:01 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
-        tglx@linutronix.de, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf record: create events initially disabled and enable after init
-Date: Thu, 25 Aug 2011 10:17:55 -0600
-Message-Id: <1314289075-14706-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Thu, 25 Aug 2011 12:20:11 -0400
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-arch@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1108251009120.27407@router.home>
+References: <1313650253-21794-1-git-send-email-gthelen@google.com>
+	 <20110818144025.8e122a67.akpm@linux-foundation.org>
+	 <1314284272.27911.32.camel@twins>
+	 <alpine.DEB.2.00.1108251009120.27407@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Aug 2011 09:20:08 -0700
+Message-ID: <1314289208.3268.4.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1+jejb.1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf-record currently creates events enabled. When doing a system wide
-collection (-a arg) this causes data collection for perf's initialization
-activities -- eg., perf_event__synthesize_threads(). For some events
-(e.g., context switch S/W event or tracepoints like syscalls) perf's
-initialization causes a lot of events to be captured frequently
-generating "Check IO/CPU overload!" warnings on larger systems
-(e.g., 2 socket, quad core, hyperthreading).
+On Thu, 2011-08-25 at 10:11 -0500, Christoph Lameter wrote:
+> On Thu, 25 Aug 2011, Peter Zijlstra wrote:
+> 
+> > On Thu, 2011-08-18 at 14:40 -0700, Andrew Morton wrote:
+> > >
+> > > I think I'll apply it, as the call frequency is low (correct?) and the
+> > > problem will correct itself as other architectures implement their
+> > > atomic this_cpu_foo() operations.
+> >
+> > Which leads me to wonder, can anything but x86 implement that this_cpu_*
+> > muck? I doubt any of the risk chips can actually do all this.
+> > Maybe Itanic, but then that seems to be dying fast.
+> 
+> The cpu needs to have an RMW instruction that does something to a
+> variable relative to a register that points to the per cpu base.
+> 
+> Thats generally possible. The problem is how expensive the RMW is going to
+> be.
 
-perf's initialization phase can be skipped by creating events
-disabled and then enabling them once the initialization is done.
+Risc systems generally don't have a single instruction for this, that's
+correct.  Obviously we can do it as a non atomic sequence: read
+variable, compute relative, read, modify, write ... but there's
+absolutely no point hand crafting that in asm since the compiler can
+usually work it out nicely.  And, of course, to have this atomic, we
+have to use locks, which ends up being very expensive.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-record.c |    3 +++
- tools/perf/util/evlist.c    |   13 +++++++++++++
- tools/perf/util/evlist.h    |    1 +
- 3 files changed, 17 insertions(+), 0 deletions(-)
+James
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 6b0519f..f4c3fbe 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -161,6 +161,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
- 	struct perf_event_attr *attr = &evsel->attr;
- 	int track = !evsel->idx; /* only the first counter needs these */
- 
-+	attr->disabled		= 1;
- 	attr->inherit		= !no_inherit;
- 	attr->read_format	= PERF_FORMAT_TOTAL_TIME_ENABLED |
- 				  PERF_FORMAT_TOTAL_TIME_RUNNING |
-@@ -671,6 +672,8 @@ static int __cmd_record(int argc, const char **argv)
- 		}
- 	}
- 
-+	perf_evlist__enable(evsel_list);
-+
- 	/*
- 	 * Let the child rip
- 	 */
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index c12bd47..72e9f48 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -113,6 +113,19 @@ void perf_evlist__disable(struct perf_evlist *evlist)
- 	}
- }
- 
-+void perf_evlist__enable(struct perf_evlist *evlist)
-+{
-+	int cpu, thread;
-+	struct perf_evsel *pos;
-+
-+	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
-+		list_for_each_entry(pos, &evlist->entries, node) {
-+			for (thread = 0; thread < evlist->threads->nr; thread++)
-+				ioctl(FD(pos, cpu, thread), PERF_EVENT_IOC_ENABLE);
-+		}
-+	}
-+}
-+
- int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
- {
- 	int nfds = evlist->cpus->nr * evlist->threads->nr * evlist->nr_entries;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index ce85ae9..f349150 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -54,6 +54,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite);
- void perf_evlist__munmap(struct perf_evlist *evlist);
- 
- void perf_evlist__disable(struct perf_evlist *evlist);
-+void perf_evlist__enable(struct perf_evlist *evlist);
- 
- static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
- 					 struct cpu_map *cpus,
--- 
-1.7.6
 
