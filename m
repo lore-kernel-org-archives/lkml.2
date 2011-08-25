@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab1HYXGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 19:06:13 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:19756 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab1HYXF4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 19:05:56 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=h0ihqKNn/aSROoFMjmnqFNUvdqNSBmLqGwhyxBvIfCc+hA7J9pXbhxNyBd2hGWCc0
-	WTqVzeOyK8NFyzwK2X1UQ==
-Subject: [PATCH 2/2] x86, ioapic: Announce resources reserved for IOAPICs
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org
-Date: Thu, 25 Aug 2011 17:05:45 -0600
-Message-ID: <20110825230545.5355.65085.stgit@bhelgaas.mtv.corp.google.com>
-In-Reply-To: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
-References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+	id S1753646Ab1HYXGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 19:06:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38162 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556Ab1HYXGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 19:06:45 -0400
+Date: Fri, 26 Aug 2011 09:06:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the xen tree with the tip tree
+Message-Id: <20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au>
+In-Reply-To: <4E5693DD.2010307@zytor.com>
+References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au>
+	<4E5690C3.2050706@goop.org>
+	<4E5693DD.2010307@zytor.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__26_Aug_2011_09_06_19_+1000_qvGPnk2ddaEkwfol"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delay the IOAPIC output a bit so we can print the actual resources we
-reserve.
+--Signature=_Fri__26_Aug_2011_09_06_19_+1000_qvGPnk2ddaEkwfol
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/x86/kernel/apic/io_apic.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+Hi,
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 8eb863e..914027e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3876,6 +3876,7 @@ void __init ioapic_and_gsi_init(void)
- {
- 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
- 	struct resource *ioapic_res;
-+	struct mp_ioapic_gsi *gsi_cfg;
- 	int i;
- 
- 	ioapic_res = ioapic_setup_resources(nr_ioapics);
-@@ -3908,6 +3909,13 @@ fake_ioapic_page:
- 
- 		ioapic_res->start = ioapic_phys;
- 		ioapic_res->end = ioapic_phys + IO_APIC_SLOT_SIZE - 1;
-+
-+		gsi_cfg = mp_ioapic_gsi_routing(i);
-+
-+		printk(KERN_INFO "IOAPIC[%d]: id %d v%d %pR GSI %d-%d\n",
-+		       i, mpc_ioapic_id(i), mpc_ioapic_ver(i), ioapic_res,
-+		       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
-+
- 		ioapic_res++;
- 	}
- 
-@@ -4016,11 +4024,6 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	if (gsi_cfg->gsi_end >= gsi_top)
- 		gsi_top = gsi_cfg->gsi_end + 1;
- 
--	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
--	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
--	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
--	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
--
- 	nr_ioapics++;
- }
- 
+On Thu, 25 Aug 2011 11:26:37 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+>
+> On 08/25/2011 11:13 AM, Jeremy Fitzhardinge wrote:
+> > On 08/24/2011 09:24 PM, Stephen Rothwell wrote:
+> >>
+> >> Today's linux-next merge of the xen tree got a conflict in
+> >> arch/x86/include/asm/spinlock.h between a series of commits from the t=
+ip
+> >> tree and a smaller series of similar commits from the xen tree.
+> >>
+> >> I see that Linus is commenting on these patches at the moment, and its
+> >> not easy to resolve the conflicts, so I will just use the xen tree from
+> >> next-20110824 for today.
+> >>
+> >=20
+> > Thanks Stephen; the xen tree ones are more current, and I want to make
+> > sure I didn't screw up any of the cmpxchg/xadd changes in a wider test =
+env.
+> >=20
+>=20
+> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
+> should be dropped.
 
+That's a bit tricky as I get a rolled up tip tree.  The best I could do
+is revert the commit that merges the x86/spinlocks branch into
+auto-latest ...  I'll do that for today (unless something happens to the
+tip tree in the next hour).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__26_Aug_2011_09_06_19_+1000_qvGPnk2ddaEkwfol
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOVtVrAAoJEDMEi1NhKgbsFOYH/jnZFur5cWbT1SKZp28CUBUj
+h2Nov7YNwhcDb5sY2VUd0N+lUuJjdwRwStz5PHjYaSMrnoSXHTn+ZsmMb+0mtsbr
+E2ekSsryPJL5q+qPVP9mXfLFMUCATi3j2BJV+ThobEZb2OSe0eg/LIg83CD+E66u
+1DekWbCI34KmBhLvzn5fmYFQYlwB+QFEphkJUrorjszK/LVok1RjUex00BG+U2mX
+2SXIFQOWQkx13ZUoXAw+mi3MBjC+jLjbReb5iECohRhA+v6bBQis+5VC3YItUpcL
+Z/GjVVJ8RuInaqDHNuXSSlLoQAfOiCbQVOMhHSi2ffYQ4eXZXq94Gfuq0E+J+1M=
+=j9m6
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Aug_2011_09_06_19_+1000_qvGPnk2ddaEkwfol--
