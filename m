@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab1HYWgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:36:14 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42229 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755698Ab1HYWgN (ORCPT
+	id S1755744Ab1HYWht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:37:49 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:50255 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755558Ab1HYWhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:36:13 -0400
-X-Sasl-enc: CrFLH39c56wCULICfYKqN7OsB8rRpbwDe/6SZM6VPBRA 1314311772
-Date: Thu, 25 Aug 2011 15:35:45 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 22/59] Staging: hv: vmbus: Get rid of the unused name
- field in struct hv_driver
-Message-ID: <20110825223545.GA6055@kroah.com>
-References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
- <1314290965-2698-1-git-send-email-kys@microsoft.com>
- <1314290965-2698-22-git-send-email-kys@microsoft.com>
- <20110825212428.GA1617@kroah.com>
- <20110825212820.GA6770@kroah.com>
- <6E21E5352C11B742B20C142EB499E048081B360E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	Thu, 25 Aug 2011 18:37:48 -0400
+Message-ID: <4E56CE8F.8080501@panasas.com>
+Date: Thu, 25 Aug 2011 15:37:03 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E048081B360E@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Git Mailing List <git@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] .gitattributes: Enable cpp diff parsing for .[ch] files
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 10:27:40PM +0000, KY Srinivasan wrote:
-> This was existing code and I realized it did not conform to the Linux
-> Driver Model. I fixed it in the patch set I had sent earlier (110/117).
-> Yesterday I only got up to 74 of the 117 patches that you commented on.
-> I was planning to send the rest today. If it is ok with you, please don't fix it here
-> As it would break everything else. This is existing code that I am fixing in the patch set
-> I will send you shortly.
 
-Oops, as you see, I applied it :)
+The Linux Kernel source tree is certainly a C language repository.
+As a maintainer and code reviewer I would like too, for example:
+See function names as hunk headers and not goto labels. And all
+the other goodies a language specific diff parser gives me.
 
-And I applied the rest of your series, so you might want to re-test and
-resync your next series of patches based on what I have in the
-staging-next tree now.
+Add a .gitattributes file to the Linux tree to enable cpp parsing
+of the source files.
 
-thanks,
+People are welcome to add other parsers for other type of files
+if needed. (Like Makefile or Kconfig ...)
 
-greg k-h
+CC: Jeff King <peff@peff.net>
+CC: Junio C Hamano <gitster@pobox.com>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ .gitattributes |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+ create mode 100644 .gitattributes
+
+diff --git a/.gitattributes b/.gitattributes
+new file mode 100644
+index 0000000..6d2b620
+--- /dev/null
++++ b/.gitattributes
+@@ -0,0 +1,2 @@
++*.h diff=cpp
++*.c diff=cpp
+-- 
+1.7.6
+
