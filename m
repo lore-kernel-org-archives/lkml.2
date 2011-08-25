@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1HYQso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:48:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16677 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753485Ab1HYQqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:46:16 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [V3][PATCH 5/6] x86, nmi: track NMI usage stats
-Date: Thu, 25 Aug 2011 12:45:47 -0400
-Message-Id: <1314290748-23569-6-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
-References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
+	id S1754311Ab1HYQwA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:52:00 -0400
+Received: from mo1.mail-out.ovh.net ([178.32.228.1]:56320 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab1HYQv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 12:51:58 -0400
+X-Greylist: delayed 1797 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Aug 2011 12:51:58 EDT
+Date: Thu, 25 Aug 2011 17:55:08 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nico Erfurth <ne@erfurth.eu>,
+        Gregory Hermant <gregory.hermant@calao-systems.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [PATCH v3] at91: merge board usb-a9260 and usb-a9263 together
+Message-ID: <20110825155508.GB2284@game.jcrosoft.org>
+References: <1314281314-28912-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314281314-28912-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 8433553253332527980
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -200
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfedvledrtdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the NMI handler are broken into lists, increment the appropriate
-stats for each list.  This allows us to see what is going on when they
-get printed out in the next patch.
+On 16:08 Thu 25 Aug     , Nicolas Ferre wrote:
+> From: Nico Erfurth <ne@erfurth.eu>
+> 
+> Merge boards together as they are barely the same.
+> 
+> Signed-off-by: Nico Erfurth <ne@erfurth.eu>
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> [nicolas.ferre@atmel.com: updated to new machine_desc structure]
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
+> ---
+> Hi,
+> 
+> I come back to this patch in the process of collecting things that has been
+> left on the mailing-list.
+> Gregory, can you have a loot at it?
+> 
+> v3: update the machine_desc structure to match latest improvements.
+> v2: update against new common init
+>     we must use it as we can detect the cpu type only after mapping
+>     the system controler.
+I've the hardware now
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/nmi.c |   20 +++++++++++++++++++-
- 1 files changed, 19 insertions(+), 1 deletions(-)
+I'll re test it myself
 
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index 435dc71..4b32216 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -48,6 +48,15 @@ static struct nmi_desc nmi_desc[NMI_MAX] =
- 
- };
- 
-+struct nmi_stats {
-+	unsigned int normal;
-+	unsigned int unknown;
-+	unsigned int external;
-+	unsigned int swallow;
-+};
-+
-+static DEFINE_PER_CPU(struct nmi_stats, nmi_stats);
-+
- static int ignore_nmis;
- 
- int unknown_nmi_panic;
-@@ -248,8 +257,13 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- 	int handled;
- 
- 	handled = nmi_handle(NMI_UNKNOWN, regs);
--	if (handled) 
-+	if (handled) {
-+		__this_cpu_add(nmi_stats.unknown, handled);
- 		return;
-+	}
-+
-+	__this_cpu_add(nmi_stats.unknown, 1);
-+
- #ifdef CONFIG_MCA
- 	/*
- 	 * Might actually be able to figure out what the guilty party
-@@ -283,6 +297,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	 * NMI can not be detected/processed on other CPUs.
- 	 */
- 	handled = nmi_handle(NMI_LOCAL, regs);
-+	__this_cpu_add(nmi_stats.normal, handled);
- 	if (handled) {
- 		/*
- 		 * When handling multiple NMI events, we are not
-@@ -322,6 +337,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 		 */
- 		reassert_nmi();
- #endif
-+		__this_cpu_add(nmi_stats.external, 1);
- 		raw_spin_unlock(&nmi_reason_lock);
- 		return;
- 	}
-@@ -329,6 +345,8 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 
- 	if (!__this_cpu_read(swallow_nmi))
- 		unknown_nmi_error(reason, regs);
-+	else
-+		__this_cpu_add(nmi_stats.swallow, 1);
- 
- 	__this_cpu_write(swallow_nmi, false);
- }
--- 
-1.7.6
+I'm adding the usb-a9g20 right now too in the same fime
 
+Best Regards,
+J.
