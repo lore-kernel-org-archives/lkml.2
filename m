@@ -1,651 +1,1065 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375Ab1HYGfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 02:35:32 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43760 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab1HYGf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 02:35:28 -0400
-Date: Thu, 25 Aug 2011 16:35:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Aug 25
-Message-Id: <20110825163515.0ed2cf354f61a3e9c53564b2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__25_Aug_2011_16_35_15_+1000_qgoM8TCedmsz9fFf"
+	id S1751614Ab1HYGie (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 02:38:34 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:39430 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751266Ab1HYGic convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 02:38:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E55ECC8.2030204@ti.com>
+References: <1314196260-9578-1-git-send-email-keshava_mgowda@ti.com>
+	<1314196260-9578-2-git-send-email-keshava_mgowda@ti.com>
+	<1314196260-9578-3-git-send-email-keshava_mgowda@ti.com>
+	<1314196260-9578-4-git-send-email-keshava_mgowda@ti.com>
+	<1314196260-9578-5-git-send-email-keshava_mgowda@ti.com>
+	<1314196260-9578-6-git-send-email-keshava_mgowda@ti.com>
+	<4E55ECC8.2030204@ti.com>
+Date: Thu, 25 Aug 2011 12:08:29 +0530
+Message-ID: <CAP05o4JLUBAsxYeDpxB4=ceoVAEGEzZHyWsSdJ-VwXMLnRO4dQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5 v7] mfd: omap: usb: Runtime PM support
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Shubhrajyoti <shubhrajyoti@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        khilman@ti.com, b-cousson@ti.com, paul@pwsan.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com, rogerq@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__25_Aug_2011_16_35_15_+1000_qgoM8TCedmsz9fFf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 25, 2011 at 12:03 PM, Shubhrajyoti <shubhrajyoti@ti.com> wrote:
+> Hi Keshav,
+> Some minor comments
+>
+> On Wednesday 24 August 2011 08:01 PM, Keshava Munegowda wrote:
+>>
+>> From: Keshava Munegowda<Keshava_mgowda@ti.com>
+>>
+>> The usbhs core driver does not enable/disable the interface and
+>> functional clocks; These clocks are handled by hwmod and runtime pm,
+>> hence instead of the clock enable/disable, the runtime pm APIS are
+>> used. however,the port clocks are handled by the usbhs core.
+>>
+>> Signed-off-by: Keshava Munegowda<keshava_mgowda@ti.com>
+>> ---
+>>  arch/arm/plat-omap/include/plat/usb.h |    3 -
+>>  drivers/mfd/omap-usb-host.c           |  731
+>> +++++++++++++--------------------
+>>  drivers/usb/host/ehci-omap.c          |   17 +-
+>>  drivers/usb/host/ohci-omap3.c         |   18 +-
+>>  4 files changed, 295 insertions(+), 474 deletions(-)
+>>
+>> diff --git a/arch/arm/plat-omap/include/plat/usb.h
+>> b/arch/arm/plat-omap/include/plat/usb.h
+>> index 17d3c93..2b66dc2 100644
+>> --- a/arch/arm/plat-omap/include/plat/usb.h
+>> +++ b/arch/arm/plat-omap/include/plat/usb.h
+>> @@ -100,9 +100,6 @@ extern void usb_musb_init(struct omap_musb_board_data
+>> *board_data);
+>>
+>>  extern void usbhs_init(const struct usbhs_omap_board_data *pdata);
+>>
+>> -extern int omap_usbhs_enable(struct device *dev);
+>> -extern void omap_usbhs_disable(struct device *dev);
+>> -
+>>  extern int omap4430_phy_power(struct device *dev, int ID, int on);
+>>  extern int omap4430_phy_set_clk(struct device *dev, int on);
+>>  extern int omap4430_phy_init(struct device *dev);
+>> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+>> index 9c2da29..e6f3b01 100644
+>> --- a/drivers/mfd/omap-usb-host.c
+>> +++ b/drivers/mfd/omap-usb-host.c
+>> @@ -26,6 +26,7 @@
+>>  #include<linux/spinlock.h>
+>>  #include<linux/gpio.h>
+>>  #include<plat/usb.h>
+>> +#include<linux/pm_runtime.h>
+>>
+>>  #define USBHS_DRIVER_NAME     "usbhs_omap"
+>>  #define OMAP_EHCI_DEVICE      "ehci-omap"
+>> @@ -146,9 +147,6 @@
+>>
+>>
+>>  struct usbhs_hcd_omap {
+>> -       struct clk                      *usbhost_ick;
+>> -       struct clk                      *usbhost_hs_fck;
+>> -       struct clk                      *usbhost_fs_fck;
+>>        struct clk                      *xclk60mhsp1_ck;
+>>        struct clk                      *xclk60mhsp2_ck;
+>>        struct clk                      *utmi_p1_fck;
+>> @@ -158,8 +156,6 @@ struct usbhs_hcd_omap {
+>>        struct clk                      *usbhost_p2_fck;
+>>        struct clk                      *usbtll_p2_fck;
+>>        struct clk                      *init_60m_fclk;
+>> -       struct clk                      *usbtll_fck;
+>> -       struct clk                      *usbtll_ick;
+>>
+>>        void __iomem                    *uhh_base;
+>>        void __iomem                    *tll_base;
+>> @@ -168,7 +164,6 @@ struct usbhs_hcd_omap {
+>>
+>>        u32                             usbhs_rev;
+>>        spinlock_t                      lock;
+>> -       int                             count;
+>>  };
+>>
+>>  /*-------------------------------------------------------------------------*/
+>>
+>> @@ -318,269 +313,6 @@ err_end:
+>>        return ret;
+>>  }
+>>
+>> -/**
+>> - * usbhs_omap_probe - initialize TI-based HCDs
+>> - *
+>> - * Allocates basic resources for this USB host controller.
+>> - */
+>> -static int __devinit usbhs_omap_probe(struct platform_device *pdev)
+>> -{
+>> -       struct device                   *dev =&pdev->dev;
+>> -       struct usbhs_omap_platform_data *pdata = dev->platform_data;
+>> -       struct usbhs_hcd_omap           *omap;
+>> -       struct resource                 *res;
+>> -       int                             ret = 0;
+>> -       int                             i;
+>> -
+>> -       if (!pdata) {
+>> -               dev_err(dev, "Missing platform data\n");
+>> -               ret = -ENOMEM;
+>> -               goto end_probe;
+>> -       }
+>> -
+>> -       omap = kzalloc(sizeof(*omap), GFP_KERNEL);
+>> -       if (!omap) {
+>> -               dev_err(dev, "Memory allocation failed\n");
+>> -               ret = -ENOMEM;
+>> -               goto end_probe;
+>> -       }
+>> -
+>> -       spin_lock_init(&omap->lock);
+>> -
+>> -       for (i = 0; i<  OMAP3_HS_USB_PORTS; i++)
+>> -               omap->platdata.port_mode[i] = pdata->port_mode[i];
+>> -
+>> -       omap->platdata.ehci_data = pdata->ehci_data;
+>> -       omap->platdata.ohci_data = pdata->ohci_data;
+>> -
+>> -       omap->usbhost_ick = clk_get(dev, "usbhost_ick");
+>> -       if (IS_ERR(omap->usbhost_ick)) {
+>> -               ret =  PTR_ERR(omap->usbhost_ick);
+>> -               dev_err(dev, "usbhost_ick failed error:%d\n", ret);
+>> -               goto err_end;
+>> -       }
+>> -
+>> -       omap->usbhost_hs_fck = clk_get(dev, "hs_fck");
+>> -       if (IS_ERR(omap->usbhost_hs_fck)) {
+>> -               ret = PTR_ERR(omap->usbhost_hs_fck);
+>> -               dev_err(dev, "usbhost_hs_fck failed error:%d\n", ret);
+>> -               goto err_usbhost_ick;
+>> -       }
+>> -
+>> -       omap->usbhost_fs_fck = clk_get(dev, "fs_fck");
+>> -       if (IS_ERR(omap->usbhost_fs_fck)) {
+>> -               ret = PTR_ERR(omap->usbhost_fs_fck);
+>> -               dev_err(dev, "usbhost_fs_fck failed error:%d\n", ret);
+>> -               goto err_usbhost_hs_fck;
+>> -       }
+>> -
+>> -       omap->usbtll_fck = clk_get(dev, "usbtll_fck");
+>> -       if (IS_ERR(omap->usbtll_fck)) {
+>> -               ret = PTR_ERR(omap->usbtll_fck);
+>> -               dev_err(dev, "usbtll_fck failed error:%d\n", ret);
+>> -               goto err_usbhost_fs_fck;
+>> -       }
+>> -
+>> -       omap->usbtll_ick = clk_get(dev, "usbtll_ick");
+>> -       if (IS_ERR(omap->usbtll_ick)) {
+>> -               ret = PTR_ERR(omap->usbtll_ick);
+>> -               dev_err(dev, "usbtll_ick failed error:%d\n", ret);
+>> -               goto err_usbtll_fck;
+>> -       }
+>> -
+>> -       omap->utmi_p1_fck = clk_get(dev, "utmi_p1_gfclk");
+>> -       if (IS_ERR(omap->utmi_p1_fck)) {
+>> -               ret = PTR_ERR(omap->utmi_p1_fck);
+>> -               dev_err(dev, "utmi_p1_gfclk failed error:%d\n", ret);
+>> -               goto err_usbtll_ick;
+>> -       }
+>> -
+>> -       omap->xclk60mhsp1_ck = clk_get(dev, "xclk60mhsp1_ck");
+>> -       if (IS_ERR(omap->xclk60mhsp1_ck)) {
+>> -               ret = PTR_ERR(omap->xclk60mhsp1_ck);
+>> -               dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
+>> -               goto err_utmi_p1_fck;
+>> -       }
+>> -
+>> -       omap->utmi_p2_fck = clk_get(dev, "utmi_p2_gfclk");
+>> -       if (IS_ERR(omap->utmi_p2_fck)) {
+>> -               ret = PTR_ERR(omap->utmi_p2_fck);
+>> -               dev_err(dev, "utmi_p2_gfclk failed error:%d\n", ret);
+>> -               goto err_xclk60mhsp1_ck;
+>> -       }
+>> -
+>> -       omap->xclk60mhsp2_ck = clk_get(dev, "xclk60mhsp2_ck");
+>> -       if (IS_ERR(omap->xclk60mhsp2_ck)) {
+>> -               ret = PTR_ERR(omap->xclk60mhsp2_ck);
+>> -               dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
+>> -               goto err_utmi_p2_fck;
+>> -       }
+>> -
+>> -       omap->usbhost_p1_fck = clk_get(dev, "usb_host_hs_utmi_p1_clk");
+>> -       if (IS_ERR(omap->usbhost_p1_fck)) {
+>> -               ret = PTR_ERR(omap->usbhost_p1_fck);
+>> -               dev_err(dev, "usbhost_p1_fck failed error:%d\n", ret);
+>> -               goto err_xclk60mhsp2_ck;
+>> -       }
+>> -
+>> -       omap->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+>> -       if (IS_ERR(omap->usbtll_p1_fck)) {
+>> -               ret = PTR_ERR(omap->usbtll_p1_fck);
+>> -               dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+>> -               goto err_usbhost_p1_fck;
+>> -       }
+>> -
+>> -       omap->usbhost_p2_fck = clk_get(dev, "usb_host_hs_utmi_p2_clk");
+>> -       if (IS_ERR(omap->usbhost_p2_fck)) {
+>> -               ret = PTR_ERR(omap->usbhost_p2_fck);
+>> -               dev_err(dev, "usbhost_p2_fck failed error:%d\n", ret);
+>> -               goto err_usbtll_p1_fck;
+>> -       }
+>> -
+>> -       omap->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+>> -       if (IS_ERR(omap->usbtll_p2_fck)) {
+>> -               ret = PTR_ERR(omap->usbtll_p2_fck);
+>> -               dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+>> -               goto err_usbhost_p2_fck;
+>> -       }
+>> -
+>> -       omap->init_60m_fclk = clk_get(dev, "init_60m_fclk");
+>> -       if (IS_ERR(omap->init_60m_fclk)) {
+>> -               ret = PTR_ERR(omap->init_60m_fclk);
+>> -               dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
+>> -               goto err_usbtll_p2_fck;
+>> -       }
+>> -
+>> -       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
+>> -       if (!res) {
+>> -               dev_err(dev, "UHH EHCI get resource failed\n");
+>> -               ret = -ENODEV;
+>> -               goto err_init_60m_fclk;
+>> -       }
+>> -
+>> -       omap->uhh_base = ioremap(res->start, resource_size(res));
+>> -       if (!omap->uhh_base) {
+>> -               dev_err(dev, "UHH ioremap failed\n");
+>> -               ret = -ENOMEM;
+>> -               goto err_init_60m_fclk;
+>> -       }
+>> -
+>> -       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "tll");
+>> -       if (!res) {
+>> -               dev_err(dev, "UHH EHCI get resource failed\n");
+>> -               ret = -ENODEV;
+>> -               goto err_tll;
+>> -       }
+>> -
+>> -       omap->tll_base = ioremap(res->start, resource_size(res));
+>> -       if (!omap->tll_base) {
+>> -               dev_err(dev, "TLL ioremap failed\n");
+>> -               ret = -ENOMEM;
+>> -               goto err_tll;
+>> -       }
+>> -
+>> -       platform_set_drvdata(pdev, omap);
+>> -
+>> -       ret = omap_usbhs_alloc_children(pdev);
+>> -       if (ret) {
+>> -               dev_err(dev, "omap_usbhs_alloc_children failed\n");
+>> -               goto err_alloc;
+>> -       }
+>> -
+>> -       goto end_probe;
+>> -
+>> -err_alloc:
+>> -       iounmap(omap->tll_base);
+>> -
+>> -err_tll:
+>> -       iounmap(omap->uhh_base);
+>> -
+>> -err_init_60m_fclk:
+>> -       clk_put(omap->init_60m_fclk);
+>> -
+>> -err_usbtll_p2_fck:
+>> -       clk_put(omap->usbtll_p2_fck);
+>> -
+>> -err_usbhost_p2_fck:
+>> -       clk_put(omap->usbhost_p2_fck);
+>> -
+>> -err_usbtll_p1_fck:
+>> -       clk_put(omap->usbtll_p1_fck);
+>> -
+>> -err_usbhost_p1_fck:
+>> -       clk_put(omap->usbhost_p1_fck);
+>> -
+>> -err_xclk60mhsp2_ck:
+>> -       clk_put(omap->xclk60mhsp2_ck);
+>> -
+>> -err_utmi_p2_fck:
+>> -       clk_put(omap->utmi_p2_fck);
+>> -
+>> -err_xclk60mhsp1_ck:
+>> -       clk_put(omap->xclk60mhsp1_ck);
+>> -
+>> -err_utmi_p1_fck:
+>> -       clk_put(omap->utmi_p1_fck);
+>> -
+>> -err_usbtll_ick:
+>> -       clk_put(omap->usbtll_ick);
+>> -
+>> -err_usbtll_fck:
+>> -       clk_put(omap->usbtll_fck);
+>> -
+>> -err_usbhost_fs_fck:
+>> -       clk_put(omap->usbhost_fs_fck);
+>> -
+>> -err_usbhost_hs_fck:
+>> -       clk_put(omap->usbhost_hs_fck);
+>> -
+>> -err_usbhost_ick:
+>> -       clk_put(omap->usbhost_ick);
+>> -
+>> -err_end:
+>> -       kfree(omap);
+>> -
+>> -end_probe:
+>> -       return ret;
+>> -}
+>> -
+>> -/**
+>> - * usbhs_omap_remove - shutdown processing for UHH&  TLL HCDs
+>> - * @pdev: USB Host Controller being removed
+>> - *
+>> - * Reverses the effect of usbhs_omap_probe().
+>> - */
+>> -static int __devexit usbhs_omap_remove(struct platform_device *pdev)
+>> -{
+>> -       struct usbhs_hcd_omap *omap = platform_get_drvdata(pdev);
+>> -
+>> -       if (omap->count != 0) {
+>> -               dev_err(&pdev->dev,
+>> -                       "Either EHCI or OHCI is still using usbhs
+>> core\n");
+>> -               return -EBUSY;
+>> -       }
+>> -
+>> -       iounmap(omap->tll_base);
+>> -       iounmap(omap->uhh_base);
+>> -       clk_put(omap->init_60m_fclk);
+>> -       clk_put(omap->usbtll_p2_fck);
+>> -       clk_put(omap->usbhost_p2_fck);
+>> -       clk_put(omap->usbtll_p1_fck);
+>> -       clk_put(omap->usbhost_p1_fck);
+>> -       clk_put(omap->xclk60mhsp2_ck);
+>> -       clk_put(omap->utmi_p2_fck);
+>> -       clk_put(omap->xclk60mhsp1_ck);
+>> -       clk_put(omap->utmi_p1_fck);
+>> -       clk_put(omap->usbtll_ick);
+>> -       clk_put(omap->usbtll_fck);
+>> -       clk_put(omap->usbhost_fs_fck);
+>> -       clk_put(omap->usbhost_hs_fck);
+>> -       clk_put(omap->usbhost_ick);
+>> -       kfree(omap);
+>> -
+>> -       return 0;
+>> -}
+>> -
+>>  static bool is_ohci_port(enum usbhs_omap_port_mode pmode)
+>>  {
+>>        switch (pmode) {
+>> @@ -687,30 +419,79 @@ static void usbhs_omap_tll_init(struct device *dev,
+>> u8 tll_channel_count)
+>>        }
+>>  }
+>>
+>> -static int usbhs_enable(struct device *dev)
+>> +static int usbhs_runtime_resume(struct device *dev)
+>>  {
+>>        struct usbhs_hcd_omap           *omap = dev_get_drvdata(dev);
+>>        struct usbhs_omap_platform_data *pdata =&omap->platdata;
+>> -       unsigned long                   flags = 0;
+>> -       int                             ret = 0;
+>> -       unsigned long                   timeout;
+>> -       unsigned                        reg;
+>> +       unsigned long                   flags;
+>> +
+>> +       dev_dbg(dev, "usbhs_runtime_resume\n");
+>> +
+>> +       if (!pdata) {
+>> +               dev_dbg(dev, "missing platform_data\n");
+>> +               return  -ENODEV;
+>> +       }
+>> +
+>> +       spin_lock_irqsave(&omap->lock, flags);
+>> +
+>> +       if (is_ehci_tll_mode(pdata->port_mode[0])) {
+>> +               clk_enable(omap->usbhost_p1_fck);
+>> +               clk_enable(omap->usbtll_p1_fck);
+>> +       }
+>> +       if (is_ehci_tll_mode(pdata->port_mode[1])) {
+>> +               clk_enable(omap->usbhost_p2_fck);
+>> +               clk_enable(omap->usbtll_p2_fck);
+>> +       }
+>> +       clk_enable(omap->utmi_p1_fck);
+>> +       clk_enable(omap->utmi_p2_fck);
+>> +
+>> +       spin_unlock_irqrestore(&omap->lock, flags);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int usbhs_runtime_suspend(struct device *dev)
+>> +{
+>> +       struct usbhs_hcd_omap           *omap = dev_get_drvdata(dev);
+>> +       struct usbhs_omap_platform_data *pdata =&omap->platdata;
+>> +       unsigned long                   flags;
+>> +
+>> +       dev_dbg(dev, "usbhs_runtime_suspend\n");
+>>
+>> -       dev_dbg(dev, "starting TI HSUSB Controller\n");
+>>        if (!pdata) {
+>>                dev_dbg(dev, "missing platform_data\n");
+>>                return  -ENODEV;
+>>        }
+>>
+>>        spin_lock_irqsave(&omap->lock, flags);
+>> -       if (omap->count>  0)
+>> -               goto end_count;
+>>
+>> -       clk_enable(omap->usbhost_ick);
+>> -       clk_enable(omap->usbhost_hs_fck);
+>> -       clk_enable(omap->usbhost_fs_fck);
+>> -       clk_enable(omap->usbtll_fck);
+>> -       clk_enable(omap->usbtll_ick);
+>> +       if (is_ehci_tll_mode(pdata->port_mode[0])) {
+>> +               clk_disable(omap->usbhost_p1_fck);
+>> +               clk_disable(omap->usbtll_p1_fck);
+>> +       }
+>> +       if (is_ehci_tll_mode(pdata->port_mode[1])) {
+>> +               clk_disable(omap->usbhost_p2_fck);
+>> +               clk_disable(omap->usbtll_p2_fck);
+>> +       }
+>> +       clk_disable(omap->utmi_p2_fck);
+>> +       clk_disable(omap->utmi_p1_fck);
+>> +
+>> +       spin_unlock_irqrestore(&omap->lock, flags);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static void omap_usbhs_init(struct device *dev)
+>
+> Since it is called only at init the it could be placed in init section.
+>>
+>> +{
+>> +       struct usbhs_hcd_omap           *omap = dev_get_drvdata(dev);
+>> +       struct usbhs_omap_platform_data *pdata =&omap->platdata;
+>> +       unsigned long                   flags;
+>> +       unsigned                        reg;
+>> +
+>> +       dev_dbg(dev, "starting TI HSUSB Controller\n");
+>> +
+>> +       pm_runtime_get_sync(dev);
+>> +       spin_lock_irqsave(&omap->lock, flags);
+>>
+>>        if (pdata->ehci_data->phy_reset) {
+>>                if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0])) {
+>> @@ -734,50 +515,6 @@ static int usbhs_enable(struct device *dev)
+>>        omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
+>>        dev_dbg(dev, "OMAP UHH_REVISION 0x%x\n", omap->usbhs_rev);
+>>
+>> -       /* perform TLL soft reset, and wait until reset is complete */
+>> -       usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
+>> -                       OMAP_USBTLL_SYSCONFIG_SOFTRESET);
+>> -
+>> -       /* Wait for TLL reset to complete */
+>> -       timeout = jiffies + msecs_to_jiffies(1000);
+>> -       while (!(usbhs_read(omap->tll_base, OMAP_USBTLL_SYSSTATUS)
+>> -                       &  OMAP_USBTLL_SYSSTATUS_RESETDONE)) {
+>> -               cpu_relax();
+>> -
+>> -               if (time_after(jiffies, timeout)) {
+>> -                       dev_dbg(dev, "operation timed out\n");
+>> -                       ret = -EINVAL;
+>> -                       goto err_tll;
+>> -               }
+>> -       }
+>> -
+>> -       dev_dbg(dev, "TLL RESET DONE\n");
+>> -
+>> -       /* (1<<3) = no idle mode only for initial debugging */
+>> -       usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
+>> -                       OMAP_USBTLL_SYSCONFIG_ENAWAKEUP |
+>> -                       OMAP_USBTLL_SYSCONFIG_SIDLEMODE |
+>> -                       OMAP_USBTLL_SYSCONFIG_AUTOIDLE);
+>> -
+>> -       /* Put UHH in NoIdle/NoStandby mode */
+>> -       reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
+>> -       if (is_omap_usbhs_rev1(omap)) {
+>> -               reg |= (OMAP_UHH_SYSCONFIG_ENAWAKEUP
+>> -                               | OMAP_UHH_SYSCONFIG_SIDLEMODE
+>> -                               | OMAP_UHH_SYSCONFIG_CACTIVITY
+>> -                               | OMAP_UHH_SYSCONFIG_MIDLEMODE);
+>> -               reg&= ~OMAP_UHH_SYSCONFIG_AUTOIDLE;
+>> -
+>> -
+>> -       } else if (is_omap_usbhs_rev2(omap)) {
+>> -               reg&= ~OMAP4_UHH_SYSCONFIG_IDLEMODE_CLEAR;
+>> -               reg |= OMAP4_UHH_SYSCONFIG_NOIDLE;
+>> -               reg&= ~OMAP4_UHH_SYSCONFIG_STDBYMODE_CLEAR;
+>> -               reg |= OMAP4_UHH_SYSCONFIG_NOSTDBY;
+>> -       }
+>> -
+>> -       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG, reg);
+>> -
+>>        reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+>>        /* setup ULPI bypass and burst configurations */
+>>        reg |= (OMAP_UHH_HOSTCONFIG_INCR4_BURST_EN
+>> @@ -823,49 +560,6 @@ static int usbhs_enable(struct device *dev)
+>>                reg&= ~OMAP4_P1_MODE_CLEAR;
+>>                reg&= ~OMAP4_P2_MODE_CLEAR;
+>>
+>> -               if (is_ehci_phy_mode(pdata->port_mode[0])) {
+>> -                       ret = clk_set_parent(omap->utmi_p1_fck,
+>> -                                               omap->xclk60mhsp1_ck);
+>> -                       if (ret != 0) {
+>> -                               dev_err(dev, "xclk60mhsp1_ck set parent"
+>> -                               "failed error:%d\n", ret);
+>> -                               goto err_tll;
+>> -                       }
+>> -               } else if (is_ehci_tll_mode(pdata->port_mode[0])) {
+>> -                       ret = clk_set_parent(omap->utmi_p1_fck,
+>> -                                               omap->init_60m_fclk);
+>> -                       if (ret != 0) {
+>> -                               dev_err(dev, "init_60m_fclk set parent"
+>> -                               "failed error:%d\n", ret);
+>> -                               goto err_tll;
+>> -                       }
+>> -                       clk_enable(omap->usbhost_p1_fck);
+>> -                       clk_enable(omap->usbtll_p1_fck);
+>> -               }
+>> -
+>> -               if (is_ehci_phy_mode(pdata->port_mode[1])) {
+>> -                       ret = clk_set_parent(omap->utmi_p2_fck,
+>> -                                               omap->xclk60mhsp2_ck);
+>> -                       if (ret != 0) {
+>> -                               dev_err(dev, "xclk60mhsp1_ck set parent"
+>> -                                       "failed error:%d\n", ret);
+>> -                               goto err_tll;
+>> -                       }
+>> -               } else if (is_ehci_tll_mode(pdata->port_mode[1])) {
+>> -                       ret = clk_set_parent(omap->utmi_p2_fck,
+>> -                                               omap->init_60m_fclk);
+>> -                       if (ret != 0) {
+>> -                               dev_err(dev, "init_60m_fclk set parent"
+>> -                               "failed error:%d\n", ret);
+>> -                               goto err_tll;
+>> -                       }
+>> -                       clk_enable(omap->usbhost_p2_fck);
+>> -                       clk_enable(omap->usbtll_p2_fck);
+>> -               }
+>> -
+>> -               clk_enable(omap->utmi_p1_fck);
+>> -               clk_enable(omap->utmi_p2_fck);
+>> -
+>>                if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+>>                        (is_ohci_port(pdata->port_mode[0])))
+>>                        reg |= OMAP4_P1_MODE_TLL;
+>> @@ -911,12 +605,15 @@ static int usbhs_enable(struct device *dev)
+>>                                (pdata->ehci_data->reset_gpio_port[1], 1);
+>>        }
+>>
+>> -end_count:
+>> -       omap->count++;
+>>        spin_unlock_irqrestore(&omap->lock, flags);
+>> -       return 0;
+>> +       pm_runtime_put_sync(dev);
+>> +}
+>> +
+>> +static void omap_usbhs_deinit(struct device *dev)
+>> +{
+>> +       struct usbhs_hcd_omap           *omap = dev_get_drvdata(dev);
+>> +       struct usbhs_omap_platform_data *pdata =&omap->platdata;
+>>
+>> -err_tll:
+>>        if (pdata->ehci_data->phy_reset) {
+>>                if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
+>>                        gpio_free(pdata->ehci_data->reset_gpio_port[0]);
+>> @@ -924,123 +621,257 @@ err_tll:
+>>                if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
+>>                        gpio_free(pdata->ehci_data->reset_gpio_port[1]);
+>>        }
+>> -
+>> -       clk_disable(omap->usbtll_ick);
+>> -       clk_disable(omap->usbtll_fck);
+>> -       clk_disable(omap->usbhost_fs_fck);
+>> -       clk_disable(omap->usbhost_hs_fck);
+>> -       clk_disable(omap->usbhost_ick);
+>> -       spin_unlock_irqrestore(&omap->lock, flags);
+>> -       return ret;
+>>  }
+>>
+>> -static void usbhs_disable(struct device *dev)
+>> +
+>> +/**
+>> + * usbhs_omap_probe - initialize TI-based HCDs
+>> + *
+>> + * Allocates basic resources for this USB host controller.
+>> + */
+>> +static int __devinit usbhs_omap_probe(struct platform_device *pdev)
+>>  {
+>> -       struct usbhs_hcd_omap           *omap = dev_get_drvdata(dev);
+>> -       struct usbhs_omap_platform_data *pdata =&omap->platdata;
+>> -       unsigned long                   flags = 0;
+>> -       unsigned long                   timeout;
+>> +       struct device                   *dev =&pdev->dev;
+>> +       struct usbhs_omap_platform_data *pdata = dev->platform_data;
+>> +       struct usbhs_hcd_omap           *omap;
+>> +       struct resource                 *res;
+>> +       int                             ret = 0;
+>> +       int                             i;
+>>
+>> -       dev_dbg(dev, "stopping TI HSUSB Controller\n");
+>> +       if (!pdata) {
+>> +               dev_err(dev, "Missing platform data\n");
+>> +               ret = -ENOMEM;
+>> +               goto end_probe;
+>> +       }
+>>
+>> -       spin_lock_irqsave(&omap->lock, flags);
+>> +       omap = kzalloc(sizeof(*omap), GFP_KERNEL);
+>> +       if (!omap) {
+>> +               dev_err(dev, "Memory allocation failed\n");
+>> +               ret = -ENOMEM;
+>> +               goto end_probe;
+>> +       }
+>>
+>> -       if (omap->count == 0)
+>> -               goto end_disble;
+>> +       spin_lock_init(&omap->lock);
+>>
+>> -       omap->count--;
+>> +       for (i = 0; i<  OMAP3_HS_USB_PORTS; i++)
+>> +               omap->platdata.port_mode[i] = pdata->port_mode[i];
+>>
+>> -       if (omap->count != 0)
+>> -               goto end_disble;
+>> +       omap->platdata.ehci_data = pdata->ehci_data;
+>> +       omap->platdata.ohci_data = pdata->ohci_data;
+>>
+>> -       /* Reset OMAP modules for insmod/rmmod to work */
+>> -       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG,
+>> -                       is_omap_usbhs_rev2(omap) ?
+>> -                       OMAP4_UHH_SYSCONFIG_SOFTRESET :
+>> -                       OMAP_UHH_SYSCONFIG_SOFTRESET);
+>> +       pm_runtime_enable(dev);
+>>
+>> -       timeout = jiffies + msecs_to_jiffies(100);
+>> -       while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
+>> -                               &  (1<<  0))) {
+>> -               cpu_relax();
+>> +       omap->utmi_p1_fck = clk_get(dev, "utmi_p1_gfclk");
+>> +       if (IS_ERR(omap->utmi_p1_fck)) {
+>> +               ret = PTR_ERR(omap->utmi_p1_fck);
+>> +               dev_err(dev, "utmi_p1_gfclk failed error:%d\n", ret);
+>> +               goto err_end;
+>> +       }
+>>
+>> -               if (time_after(jiffies, timeout))
+>> -                       dev_dbg(dev, "operation timed out\n");
+>> +       omap->xclk60mhsp1_ck = clk_get(dev, "xclk60mhsp1_ck");
+>> +       if (IS_ERR(omap->xclk60mhsp1_ck)) {
+>> +               ret = PTR_ERR(omap->xclk60mhsp1_ck);
+>> +               dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
+>> +               goto err_utmi_p1_fck;
+>> +       }
+>> +
+>> +       omap->utmi_p2_fck = clk_get(dev, "utmi_p2_gfclk");
+>> +       if (IS_ERR(omap->utmi_p2_fck)) {
+>> +               ret = PTR_ERR(omap->utmi_p2_fck);
+>> +               dev_err(dev, "utmi_p2_gfclk failed error:%d\n", ret);
+>> +               goto err_xclk60mhsp1_ck;
+>> +       }
+>> +
+>> +       omap->xclk60mhsp2_ck = clk_get(dev, "xclk60mhsp2_ck");
+>> +       if (IS_ERR(omap->xclk60mhsp2_ck)) {
+>> +               ret = PTR_ERR(omap->xclk60mhsp2_ck);
+>> +               dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
+>> +               goto err_utmi_p2_fck;
+>>        }
+>>
+>> -       while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
+>> -                               &  (1<<  1))) {
+>> -               cpu_relax();
+>> +       omap->usbhost_p1_fck = clk_get(dev, "usb_host_hs_utmi_p1_clk");
+>> +       if (IS_ERR(omap->usbhost_p1_fck)) {
+>> +               ret = PTR_ERR(omap->usbhost_p1_fck);
+>> +               dev_err(dev, "usbhost_p1_fck failed error:%d\n", ret);
+>> +               goto err_xclk60mhsp2_ck;
+>> +       }
+>>
+>> -               if (time_after(jiffies, timeout))
+>> -                       dev_dbg(dev, "operation timed out\n");
+>> +       omap->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+>> +       if (IS_ERR(omap->usbtll_p1_fck)) {
+>> +               ret = PTR_ERR(omap->usbtll_p1_fck);
+>> +               dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+>> +               goto err_usbhost_p1_fck;
+>> +       }
+>> +
+>> +       omap->usbhost_p2_fck = clk_get(dev, "usb_host_hs_utmi_p2_clk");
+>> +       if (IS_ERR(omap->usbhost_p2_fck)) {
+>> +               ret = PTR_ERR(omap->usbhost_p2_fck);
+>> +               dev_err(dev, "usbhost_p2_fck failed error:%d\n", ret);
+>> +               goto err_usbtll_p1_fck;
+>>        }
+>>
+>> -       while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
+>> -                               &  (1<<  2))) {
+>> -               cpu_relax();
+>> +       omap->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+>> +       if (IS_ERR(omap->usbtll_p2_fck)) {
+>> +               ret = PTR_ERR(omap->usbtll_p2_fck);
+>> +               dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+>> +               goto err_usbhost_p2_fck;
+>> +       }
+>>
+>> -               if (time_after(jiffies, timeout))
+>> -                       dev_dbg(dev, "operation timed out\n");
+>> +       omap->init_60m_fclk = clk_get(dev, "init_60m_fclk");
+>> +       if (IS_ERR(omap->init_60m_fclk)) {
+>> +               ret = PTR_ERR(omap->init_60m_fclk);
+>> +               dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
+>> +               goto err_usbtll_p2_fck;
+>>        }
+>>
+>> -       usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG, (1<<  1));
+>> +       if (is_ehci_phy_mode(pdata->port_mode[0])) {
+>> +               /* for OMAP3 , the clk set paretn fails */
+>> +               ret = clk_set_parent(omap->utmi_p1_fck,
+>> +                                       omap->xclk60mhsp1_ck);
+>> +               if (ret != 0)
+>> +                       dev_err(dev, "xclk60mhsp1_ck set parent"
+>> +                               "failed error:%d\n", ret);
+>> +       } else if (is_ehci_tll_mode(pdata->port_mode[0])) {
+>> +               ret = clk_set_parent(omap->utmi_p1_fck,
+>> +                                       omap->init_60m_fclk);
+>> +               if (ret != 0)
+>> +                       dev_err(dev, "init_60m_fclk set parent"
+>> +                               "failed error:%d\n", ret);
+>> +       }
+>>
+>> -       while (!(usbhs_read(omap->tll_base, OMAP_USBTLL_SYSSTATUS)
+>> -                               &  (1<<  0))) {
+>> -               cpu_relax();
+>> +       if (is_ehci_phy_mode(pdata->port_mode[1])) {
+>> +               ret = clk_set_parent(omap->utmi_p2_fck,
+>> +                                       omap->xclk60mhsp2_ck);
+>> +               if (ret != 0)
+>> +                       dev_err(dev, "xclk60mhsp2_ck set parent"
+>> +                                       "failed error:%d\n", ret);
+>> +       } else if (is_ehci_tll_mode(pdata->port_mode[1])) {
+>> +               ret = clk_set_parent(omap->utmi_p2_fck,
+>> +                                               omap->init_60m_fclk);
+>> +               if (ret != 0)
+>> +                       dev_err(dev, "init_60m_fclk set parent"
+>> +                               "failed error:%d\n", ret);
+>> +       }
+>>
+>> -               if (time_after(jiffies, timeout))
+>> -                       dev_dbg(dev, "operation timed out\n");
+>> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
+>> +       if (!res) {
+>> +               dev_err(dev, "UHH EHCI get resource failed\n");
+>> +               ret = -ENODEV;
+>> +               goto err_init_60m_fclk;
+>>        }
+>>
+>> -       if (is_omap_usbhs_rev2(omap)) {
+>> -               if (is_ehci_tll_mode(pdata->port_mode[0]))
+>> -                       clk_disable(omap->usbtll_p1_fck);
+>> -               if (is_ehci_tll_mode(pdata->port_mode[1]))
+>> -                       clk_disable(omap->usbtll_p2_fck);
+>> -               clk_disable(omap->utmi_p2_fck);
+>> -               clk_disable(omap->utmi_p1_fck);
+>> +       omap->uhh_base = ioremap(res->start, resource_size(res));
+>> +       if (!omap->uhh_base) {
+>> +               dev_err(dev, "UHH ioremap failed\n");
+>> +               ret = -ENOMEM;
+>> +               goto err_init_60m_fclk;
+>>        }
+>>
+>> -       clk_disable(omap->usbtll_ick);
+>> -       clk_disable(omap->usbtll_fck);
+>> -       clk_disable(omap->usbhost_fs_fck);
+>> -       clk_disable(omap->usbhost_hs_fck);
+>> -       clk_disable(omap->usbhost_ick);
+>> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "tll");
+>> +       if (!res) {
+>> +               dev_err(dev, "UHH EHCI get resource failed\n");
+>> +               ret = -ENODEV;
+>> +               goto err_tll;
+>> +       }
+>>
+>> -       /* The gpio_free migh sleep; so unlock the spinlock */
+>> -       spin_unlock_irqrestore(&omap->lock, flags);
+>> +       omap->tll_base = ioremap(res->start, resource_size(res));
+>> +       if (!omap->tll_base) {
+>> +               dev_err(dev, "TLL ioremap failed\n");
+>> +               ret = -ENOMEM;
+>> +               goto err_tll;
+>> +       }
+>>
+>> -       if (pdata->ehci_data->phy_reset) {
+>> -               if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
+>> -                       gpio_free(pdata->ehci_data->reset_gpio_port[0]);
+>> +       platform_set_drvdata(pdev, omap);
+>>
+>> -               if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
+>> -                       gpio_free(pdata->ehci_data->reset_gpio_port[1]);
+>> +       ret = omap_usbhs_alloc_children(pdev);
+>> +       if (ret) {
+>> +               dev_err(dev, "omap_usbhs_alloc_children failed\n");
+>> +               goto err_alloc;
+>>        }
+>> -       return;
+>>
+>> -end_disble:
+>> -       spin_unlock_irqrestore(&omap->lock, flags);
+>> -}
+>> +       omap_usbhs_init(dev);
+>>
+>> -int omap_usbhs_enable(struct device *dev)
+>> -{
+>> -       return  usbhs_enable(dev->parent);
+>> +       goto end_probe;
+>> +
+>> +err_alloc:
+>> +       iounmap(omap->tll_base);
+>> +
+>> +err_tll:
+>> +       iounmap(omap->uhh_base);
+>> +
+>> +err_init_60m_fclk:
+>> +       clk_put(omap->init_60m_fclk);
+>> +
+>> +err_usbtll_p2_fck:
+>> +       clk_put(omap->usbtll_p2_fck);
+>> +
+>> +err_usbhost_p2_fck:
+>> +       clk_put(omap->usbhost_p2_fck);
+>> +
+>> +err_usbtll_p1_fck:
+>> +       clk_put(omap->usbtll_p1_fck);
+>> +
+>> +err_usbhost_p1_fck:
+>> +       clk_put(omap->usbhost_p1_fck);
+>> +
+>> +err_xclk60mhsp2_ck:
+>> +       clk_put(omap->xclk60mhsp2_ck);
+>> +
+>> +err_utmi_p2_fck:
+>> +       clk_put(omap->utmi_p2_fck);
+>> +
+>> +err_xclk60mhsp1_ck:
+>> +       clk_put(omap->xclk60mhsp1_ck);
+>> +
+>> +err_utmi_p1_fck:
+>> +       clk_put(omap->utmi_p1_fck);
+>> +
+>> +err_end:
+>> +       pm_runtime_disable(dev);
+>> +       kfree(omap);
+>> +
+>> +end_probe:
+>> +       return ret;
+>>  }
+>> -EXPORT_SYMBOL_GPL(omap_usbhs_enable);
+>>
+>> -void omap_usbhs_disable(struct device *dev)
+>> +/**
+>> + * usbhs_omap_remove - shutdown processing for UHH&  TLL HCDs
+>> + * @pdev: USB Host Controller being removed
+>> + *
+>> + * Reverses the effect of usbhs_omap_probe().
+>> + */
+>> +static int __devexit usbhs_omap_remove(struct platform_device *pdev)
+>>  {
+>> -       usbhs_disable(dev->parent);
+>> +       struct usbhs_hcd_omap *omap = platform_get_drvdata(pdev);
+>> +
+>> +       omap_usbhs_deinit(&pdev->dev);
+>> +       iounmap(omap->tll_base);
+>> +       iounmap(omap->uhh_base);
+>> +       clk_put(omap->init_60m_fclk);
+>> +       clk_put(omap->usbtll_p2_fck);
+>> +       clk_put(omap->usbhost_p2_fck);
+>> +       clk_put(omap->usbtll_p1_fck);
+>> +       clk_put(omap->usbhost_p1_fck);
+>> +       clk_put(omap->xclk60mhsp2_ck);
+>> +       clk_put(omap->utmi_p2_fck);
+>> +       clk_put(omap->xclk60mhsp1_ck);
+>> +       clk_put(omap->utmi_p1_fck);
+>> +       pm_runtime_disable(&pdev->dev);
+>> +       kfree(omap);
+>> +
+>> +       return 0;
+>>  }
+>> -EXPORT_SYMBOL_GPL(omap_usbhs_disable);
+>> +
+>> +static const struct dev_pm_ops usbhsomap_dev_pm_ops = {
+>> +       .runtime_suspend        = usbhs_runtime_suspend,
+>> +       .runtime_resume         = usbhs_runtime_resume,
+>> +};
+>
+> Could these be placed under a PM flag.
 
-Hi all,
+No, you should not, these functions enable the port clocks for omap4 usbhs
+so, it should be default.
 
-The powerpc allyesconfig build still fails today.
 
-Changes since 20110824:
-
-The hid tree gained a conflict against Linus' tree.
-
-The pm tree gained a conflict against the arm tree.
-
-The ptrace tree lost its build failure but gained another so I used the
-version from next-20110824 and the revert.
-
-The xen tree gained a conflict against the tip tree that was a bit
-complex, so I used the version from next-20110824.
-
-The tty tree lost its build failure but gained another for which I
-reverted a commit.
-
-The usb tree gained a conflict against the usb.current tree.
-
-The staging tree lost its build failure but gained 2 more for which I
-applied patches.
-
-The moduleh tree gained conflicts against the arm and l2-mtd tree.
-
-The akpm tree gained a build failure (interaction withe the moduleh tree)
-for which I applied a patch.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 199 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging arm-lpae/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
-CONFLICT (content): Merge conflict in arch/arm/kernel/head.S
-CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
-CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
-Merging arm-soc/for-next
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/io.c
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging openrisc/for-upstream
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-CONFLICT (content): Merge conflict in drivers/hid/hid-core.c
-CONFLICT (content): Merge conflict in drivers/hid/hid-ids.h
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging iscsi-target/for-next
-Merging slave-dma/next
-Merging async_tx/next
-Merging net/master
-CONFLICT (delete/modify): arch/powerpc/configs/40x/hcu4_defconfig deleted i=
-n HEAD and modified in net/master. Version net/master of arch/powerpc/confi=
-gs/40x/hcu4_defconfig left in tree.
-CONFLICT (content): Merge conflict in drivers/net/Kconfig
-CONFLICT (content): Merge conflict in drivers/net/Makefile
-$ git rm -f arch/powerpc/configs/40x/hcu4_defconfig
-Applying: powerpc: update ppc64_defconfig for net device movement
-Applying: sparc: update sparc32_defconfig for net device movement
-Applying: sparc: update sparc64_defconfig for net device movement
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging l2-mtd/master
-CONFLICT (content): Merge conflict in drivers/mtd/maps/lantiq-flash.c
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security/next
-CONFLICT (content): Merge conflict in fs/ocfs2/xattr.c
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging pm/linux-next
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-ap4evb.c
-CONFLICT (content): Merge conflict in arch/s390/include/asm/thread_info.h
-CONFLICT (content): Merge conflict in drivers/mfd/twl4030-irq.c
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/mcheck/mce.c
-Merging devicetree/devicetree/next
-CONFLICT (content): Merge conflict in drivers/of/base.c
-Merging spi/spi/next
-Merging gpio/gpio/next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in arch/x86/mm/fault.c
-Merging rcu/rcu/next
-Merging kvm/linux-next
-Merging oprofile/for-next
-Merging ptrace/ptrace
-$ git reset --hard HEAD^
-Merging refs/next/20110824/ptrace
-[master 1e1a076] Revert "signal: Add block_sigmask() for adding sigmask to =
-current->blocked"
-Merging xen/upstream/xen
-CONFLICT (content): Merge conflict in arch/x86/include/asm/spinlock.h
-$ git reset --hard
-Merging "refs/next/20110824/xen"
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging regmap/for-next
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in drivers/usb/host/xhci-ring.c
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/xgifb/XGI_main_26.c
-Applying: rtl8192e: update for ndo_set_multicast_list removal.
-Merging bkl-config/config
-Merging tmem/linux-next
-Merging writeback/next
-Merging arm-dt/devicetree/arm-next
-Merging moduleh/module.h-split
-CONFLICT (content): Merge conflict in arch/arm/mach-bcmring/mm.c
-CONFLICT (content): Merge conflict in drivers/staging/iio/accel/adis16220_c=
-ore.c
-CONFLICT (content): Merge conflict in include/linux/dmaengine.h
-CONFLICT (content): Merge conflict in include/linux/mtd/mtd.h
-Applying: dm: use export.h instead of module.h where possible
-Applying: block: bsg-lib.c needs export.h not module.h
-Applying: PM: EXPORT_SYMBOL needs export.h
-Merging kvmtool/master
-CONFLICT (content): Merge conflict in include/net/9p/9p.h
-Merging scsi-post-merge/merge-base:master
-$ git checkout akpm
-Applying: Found on allmodconfig build (ARCH=3Dalpha)
-Applying: The bug was accidentally found by the following program:
-Applying: WARNING: line over 80 characters
-Applying: The for loop was looking for i <=3D 0 instead of i >=3D 0 so this=
- function
-Applying: Signed-off-by: Evgeniy Polyakov <zbr@ioremap.net>
-Applying: Commit d1a05b6 ("memcg do not try to drain per-cpu caches without=
- pages")
-Applying: Change to new git tree -
-Applying: The test for bad usage of min_t() and max_t() is missing the --ig=
-nore
-Applying: The various basic memory allocation function return NULL, not an =
-ERR_PTR.
-Applying: I get below warnning:
-Applying: Paul said: I left Google at the end of last week - if it's not bo=
-uncing
-Applying: It seems that 7bf693951a8e ("console: allow to retain boot consol=
-e via
-Applying: ZONE_CONGESTED is only cleared in kswapd, but pages can be freed =
-in any
-Applying: Replace/remove use of RIO v.1.2 registers/bits that are not
-Applying: ep93xx_bl.c uses interfaces from linux/module.h,
-Applying: Add missing include of linux/module.h for drivers that use interf=
-aces from
-Applying: Commit 79dfdac ("memcg: make oom_lock 0 and 1 based rather than c=
-ounter")
-Applying: We need a callback to do some things after pwm_enable, pwm_disable
-Applying: This is a i2c driver, not a platform driver, thus use "i2c" prefi=
-x for the
-Applying: Make sure we are passing the same cookie in all calls to
-Applying: Since 43cc71eed1250 ("platform: prefix MODALIAS with "platform:""=
-), the
-Applying: Fix the following build errors:
-Applying: bd2802_unregister_led_classdev() should unregister all registered
-Applying: Because of x86-implement-strict-user-copy-checks-for-x86_64.patch
-Applying: When no floppy is found the module code can be released while a t=
-imer
-Applying: Fix kconfig unmet dependency warning.  BACKLIGHT_CLASS_DEVICE dep=
-ends on
-Applying: Fix the following memory leak:
-Applying: The parameter's origin type is long.  On an i386 architecture, it=
- can
-Applying: Since the commit below which added O_PATH support to the *at() ca=
-lls, the
-Applying: Add support for Aspire 1410 BIOS v1.3314.  Fixes the following er=
-ror:
-Applying: This makes the iris driver use the platform API, so it is properl=
-y exposed
-Applying: On x86_32 casting the unsigned int result of get_random_int() to =
-long may
-Applying: This new driver replaces the old PCEngines Alix 2/3 LED driver wi=
-th a new
-Applying: Cc: Ed Wildgoose <git@wildgooses.com>
-Applying: Replace the bubble sort in sanitize_e820_map() with a call to the=
- generic
-Applying: The x86 timer interrupt handler is the only handler not traced in=
- the
-Applying: The current interrupt traces from irq_handler_entry and irq_handl=
-er_exit
-Applying: Don't allow everybody to use a modem.
-Applying: The address limit is already set in flush_old_exec() so this
-Applying: A call to va_copy() should always be followed by a call to va_end=
-() in the
-Applying: Don't dereference em if it's NULL or an error pointer.
-Applying: The RETE bit in IECSR is cleared by writing a 1 to it.
-Applying: Some messing with error codes to return 0 on out id's and match
-Applying: kbuf is a buffer that is local to this function, so all of the er=
-ror paths
-Applying: fb_set_suspend() must be called with the console semaphore held, =
-which
-Applying: hwmon was using an idr with a NULL pointer, so convert to an
-Applying: A straightforward looking use of idr for a device id.
-Applying: This patchset aims at addressing /proc/stat issue which has been
-Applying: update_ts_time_stat currently updates idle time even if we are in=
- iowait
-Applying: get_cpu_{idle,iowait}_time_us update idle/iowait counters uncondi=
-tionally
-Applying: show_stat handler of the /proc/stat file relies on kstat_cpu(cpu)
-Applying: The address limit is already set in flush_old_exec() so this
-Applying: The address limit is already set in flush_old_exec() so this
-Applying: Add new check (assert_init) to make sure objects are initialized =
-and
-Applying: del_timer_sync() calls debug_object_assert_init() to assert that =
-a timer
-Applying: ext4_{set,clear}_bit() is defined as __test_and_{set,clear}_bit_l=
-e() for
-Applying: The dqc_bitmap field of struct ocfs2_local_disk_chunk is 32-bit a=
-ligned,
-Applying: The address limit is already set in flush_old_exec() so those cal=
-ls to
-Applying: When do pci remove/rescan on system that have more iommus, got
-Applying: The current implementation of dmi_name_in_vendors() is an invitat=
-ion to
-Applying: kernel/rtmutex.c: In function '__rt_mutex_slowlock':
-Applying: For headers that get exported to userland and make use of u32 sty=
-le
-Applying: Fix sparse warnings of right shift bigger than source value size:
-Applying: We leak in drivers/scsi/aacraid/commctrl.c::aac_send_raw_srb() :
-Applying: Some mangling of errors was necessary to maintain current interfa=
-ce.
-Applying: This does involve additional use of the spin lock in idr.c.  Is t=
-his an
-Applying: Instead of open coding this function use kstrtoul_from_user() dir=
-ectly.
-Applying: brd_make_request() always returns 0, which doesn't make much sens=
-e.
-Applying: The address limit is already set in flush_old_exec() so this assi=
-gnment of
-Applying: Unbreak the alpha build.
-Applying: Unbreak alpha build.
-Applying: Unbreak alpha build.
-Applying: When we get corruption reports, it's useful to see if the kernel =
-was
-Applying: When we get corruption reports, it's useful to see if the kernel =
-was
-Applying: The basic idea behind cross memory attach is to allow MPI program=
-s doing
-Applying: - Add x86_64 specific wire up
-Applying: > You might get some speed benefit by optimising for the small co=
-pies
-Applying: acct_isolated of compaction uses page_lru_base_type which returns=
- only
-Applying: Change ISOLATE_XXX macro with bitwise isolate_mode_t type.  Norma=
-lly,
-Applying: In async mode, compaction doesn't migrate dirty or writeback page=
-s.  So,
-Applying: In __zone_reclaim case, we don't want to shrink mapped page.  Non=
-etheless,
-Applying: unmap_and_move() is one a big messy function.  Clean it up.
-Applying: radix_tree_tag_get()'s BUG (when it sees a tag after saw_unset_ta=
-g) was
-Applying: per-task block plug can reduce block queue lock contention and in=
-crease
-Applying: The tracing ring-buffer used this function briefly, but not anymo=
-re.
-Applying: After selecting a task to kill, the oom killer iterates all proce=
-sses and
-Applying: Add the leading word "tmpfs" to the Kconfig string to make it bli=
-ndingly
-Applying: When we get a bad_page bug report, it's useful to see what module=
-s the
-Applying: Without swap, anonymous pages are not scanned.  As such, they sho=
-uld not
-Applying: fix comment
-Applying: The nr_force_scan[] tuple holds the effective scan numbers for an=
-on and
-Applying: Some kernel components pin user space memory (infiniband and perf=
-) (by
-Applying: Add comments to explain the page statistics field in the mm_struc=
-t.
-Applying: add missing ;
-Applying: Testing from the XFS folk revealed that there is still too much I=
-/O from
-Applying: Lumpy reclaim worked with two passes - the first which queued pag=
-es for IO
-Applying: Direct reclaim should never writeback pages.  For now, handle the
-Applying: Direct reclaim should never writeback pages.  Warn if an attempt =
-is made.
-Applying: It is preferable that no dirty pages are dispatched for cleaning =
-from the
-Applying: Workloads that are allocating frequently and writing files place =
-a large
-Applying: When direct reclaim encounters a dirty page, it gets recycled aro=
-und the
-Applying: It's possible a zone watermark is ok when entering the balance_pg=
-dat()
-Applying: printk_ratelimit() should not be used, because it shares ratelimi=
-ting
-Applying: memchr_inv() is mainly used to check whether the whole buffer is =
-filled
-Applying: Use newly introduced memchr_inv() for page verification.
-Applying: A shrinker function can return -1, means that it cannot do anythi=
-ng
-Applying: Use atomic-long operations instead of looping around cmpxchg().
-Applying: massage atomic.h inclusions
-Applying: The /proc/vmallocinfo shows information about vmalloc allocations=
- in
-Applying: Commit 645747462435 ("vmscan: detect mapped file pages used only =
-once")
-Applying: Logic added in commit 8cab4754d24a0 ("vmscan: make mapped executa=
-ble pages
-Applying: SPARC32 require access to the start address.  Add a new helper
-Applying: With the NO_BOOTMEM symbol added architectures may now use the fo=
-llowing
-Applying: Using "- 1" relies on the old_end to be page aligned and PAGE_SIZ=
-E > 1,
-Applying: This replaces ptep_clear_flush() with ptep_get_and_clear() and a =
-single
-Applying: This adds THP support to mremap (decreases the number of split_hu=
-ge_page()
-Applying: coding-style nitpicking
-Applying: Cc: Andrea Arcangeli <aarcange@redhat.com>
-Applying: Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Applying: vmstat_text is only available when PROC_FS or SYSFS is enabled.  =
-This
-Applying: reduce ifdeffery
-Applying: Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Applying: Make the security_inode_init_security() initxattrs arg const, to =
-match the
-Applying: The current implementation of the /dev/hpet driver couples openin=
-g the
-Applying: smp_call_function() only lets all other CPUs execute a specific f=
-unction,
-Applying: auto_demotion_disable is called only for online CPUs.  For hotplu=
-gged
-Applying: Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following warni=
-ng:
-Applying: Strict user copy checks are only really supported on x86_32 even =
-though
-Applying: The help text for this config is duplicated across the x86, paris=
-c, and
-Applying: s/lib-/obj-/ for usercopy.o
-Applying: After an "unexpected" reboot, I found this Oops in my logs:
-Applying: In the move of the lis3 driver, the hp_accel.c file got dropped f=
-rom the
-Applying: Add axis correction for HP EliteBook 2730p.
-Applying: Add axis correction for HP EliteBook 8540w.
-Applying: Add axis correction for HP ProBook 6555b.
-Applying: Adapt the help text for CONFIG_HP_ACCEL to the move of
-Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-Applying: Change exported functions to use the device given as parameter
-Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-Applying: We are enabling some power features on medfield.  To test suspend=
--2-RAM
-Applying: We are enabling some power features on medfield.  To test suspend=
--2-RAM
-Applying: We are enabling some power features on medfield.  To test suspend=
--2-RAM
-Applying: Cc: Al Viro <viro@zeniv.linux.org.uk>
-Applying: Add V2 of the LED driver for a single timer channel for the TPU h=
-ardware
-Applying: include linux/module.h
-Applying: The memory for struct led_trigger should be kfreed in the
-Applying: Currently termination logic (\0 or \n\0) is hardcoded in _kstrtou=
-ll(),
-Applying: Add support for slice by 8 to existing crc32 algorithm.  Also mod=
-ify
-Applying: don't include asm/msr.h
-Applying: epoll can acquire recursively acquire ep->mtx on multiple "struct
-Applying: Currently in oprofilefs, files that use ulong_fops mis-handle wri=
-tes of
-Applying: This is the one use of an ida that doesn't retry on receiving -EA=
-GAIN.
-Applying: One can get this information from minix/inode.c, but adding the
-Applying: The memcg code sometimes uses "struct mem_cgroup *mem" and someti=
-mes uses
-Applying: Before calling schedule_timeout(), task state should be changed.
-Applying: Signed-off-by: Bob Liu <lliubbo@gmail.com>
-Applying: While back-porting Johannes Weiner's patch "mm: memcg-aware global
-Applying: If somebody is touching data too early, it might be easier to dia=
-gnose a
-Applying: Both mem_cgroup_charge_statistics() and mem_cgroup_move_account()=
- were
-Applying: On reading sysctl dirs we should return -EISDIR instead of -EINVA=
-L.
-Applying: Force this on for -next/mm testing purposes.
-Applying: Expand root=3DPARTUUID=3DUUID syntax to support selecting a root =
-partition by
-Applying: After merging the akpm tree, today's linux-next build (lost of th=
-em)
-Applying: The discovered bit in PGCCSR register indicates if the device has=
- been
-Applying: Add RapidIO mport driver for IDT TSI721 PCI Express-to-SRIO bridg=
-e device.
-Applying: When I tried to send a patch to remove it, Andi told me we still =
-need to
-Applying: Signed-off-by: WANG Cong <amwang@redhat.com>
-Applying: Signed-off-by: WANG Cong <amwang@redhat.com>
-Applying: Signed-off-by: WANG Cong <amwang@redhat.com>
-Applying: This is only an error, no need to use KERN_CRIT log level.
-Applying: Signed-off-by: WANG Cong <amwang@redhat.com>
-Applying: ERROR: code indent should use tabs where possible
-Applying: A default echo function has been provided so it is no longer an e=
-rror when
-Applying: This client driver allows you to use a GPIO pin as a source for P=
-PS
-Applying: remove unneeded cast of void*
-Applying: Straightforward.  As an aside, the ida_init calls are not needed =
-as far as
-Applying: Simply creates one point to call the w1 interface.
-Applying: Adds a nolock function to the w1 interface to avoid locking the
-Applying: Fixes the deadlock when inserting and removing the ds2780.
-Merging akpm
-Applying: printk.c now needs module.s not justy export.h
-[master 91f13d7] Revert "tty/powerpc: introduce the ePAPR embedded hypervis=
-or byte channel driver"
-Applying: staging/tl8192e: using vmalloc/vfree requires including vmalloc.h
-
---Signature=_Thu__25_Aug_2011_16_35_15_+1000_qgoM8TCedmsz9fFf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOVe0jAAoJEDMEi1NhKgbsuy4IAIgdMKuYHwtwmAsVyacYTgqx
-jnE+3o7SEEEUz8bDxT0YOpA8FCbgwqIvc0fyoWyRgffaZz9fD1+HxGcrvqx2GuXg
-C1woaIT77+NV7K16kZssWKP8guFGU0I90dTKxb2dnv8m0Dj1VD4NedJ7VnqvqTSS
-JWDrqhL2uGWrIxzrdFbaRdJDTk/iv8NljFN9O4GlaGjYecxyu72WTAQSip9nVqJt
-uwiB/da85aKnEqgecccvqtfEZ9cssByHirHnC0wQVs5hbWjCQH8YScmNGE4gEYym
-WOMFBmJFKxQgCMMRyP6f3nqKzXuKTBwvpDUAf2jJJMtymdrp59adYlqP89z423w=
-=oVBX
------END PGP SIGNATURE-----
-
---Signature=_Thu__25_Aug_2011_16_35_15_+1000_qgoM8TCedmsz9fFf--
+>
+>>
+>>  static struct platform_driver usbhs_omap_driver = {
+>>        .driver = {
+>>                .name           = (char *)usbhs_driver_name,
+>>                .owner          = THIS_MODULE,
+>> +               .pm             =&usbhsomap_dev_pm_ops,
+>>        },
+>>        .remove         = __exit_p(usbhs_omap_remove),
+>>  };
+>> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+>> index 4524032..82cd3ea 100644
+>> --- a/drivers/usb/host/ehci-omap.c
+>> +++ b/drivers/usb/host/ehci-omap.c
+>> @@ -41,6 +41,7 @@
+>>  #include<linux/usb/ulpi.h>
+>>  #include<plat/usb.h>
+>>  #include<linux/regulator/consumer.h>
+>> +#include<linux/pm_runtime.h>
+>>
+>>  /* EHCI Register Set */
+>>  #define EHCI_INSNREG04                                        (0xA0)
+>> @@ -190,11 +191,8 @@ static int ehci_hcd_omap_probe(struct platform_device
+>> *pdev)
+>>                }
+>>        }
+>>
+>> -       ret = omap_usbhs_enable(dev);
+>> -       if (ret) {
+>> -               dev_err(dev, "failed to start usbhs with err %d\n", ret);
+>> -               goto err_enable;
+>> -       }
+>> +       pm_runtime_enable(dev);
+>> +       pm_runtime_get_sync(dev);
+>>
+>>        /*
+>>         * An undocumented "feature" in the OMAP3 EHCI controller,
+>> @@ -240,11 +238,8 @@ static int ehci_hcd_omap_probe(struct platform_device
+>> *pdev)
+>>        return 0;
+>>
+>>  err_add_hcd:
+>> -       omap_usbhs_disable(dev);
+>> -
+>> -err_enable:
+>>        disable_put_regulator(pdata);
+>> -       usb_put_hcd(hcd);
+>> +       pm_runtime_put_sync(dev);
+>>
+>>  err_io:
+>>        iounmap(regs);
+>> @@ -266,10 +261,12 @@ static int ehci_hcd_omap_remove(struct
+>> platform_device *pdev)
+>>        struct usb_hcd *hcd     = dev_get_drvdata(dev);
+>>
+>>        usb_remove_hcd(hcd);
+>> -       omap_usbhs_disable(dev);
+>>        disable_put_regulator(dev->platform_data);
+>>        iounmap(hcd->regs);
+>>        usb_put_hcd(hcd);
+>> +       pm_runtime_put_sync(dev);
+>> +       pm_runtime_disable(dev);
+>> +
+>>        return 0;
+>>  }
+>>
+>> diff --git a/drivers/usb/host/ohci-omap3.c b/drivers/usb/host/ohci-omap3.c
+>> index 6048f2f..6cfedaf 100644
+>> --- a/drivers/usb/host/ohci-omap3.c
+>> +++ b/drivers/usb/host/ohci-omap3.c
+>> @@ -31,6 +31,7 @@
+>>
+>>  #include<linux/platform_device.h>
+>>  #include<plat/usb.h>
+>> +#include<linux/pm_runtime.h>
+>>
+>>
+>>  /*-------------------------------------------------------------------------*/
+>>
+>> @@ -134,7 +135,7 @@ static int __devinit ohci_hcd_omap3_probe(struct
+>> platform_device *pdev)
+>>        int                     irq;
+>>
+>>        if (usb_disabled())
+>> -               goto err_end;
+>> +               return -ENODEV;
+>>
+>>        if (!dev->parent) {
+>>                dev_err(dev, "Missing parent device\n");
+>> @@ -172,11 +173,8 @@ static int __devinit ohci_hcd_omap3_probe(struct
+>> platform_device *pdev)
+>>        hcd->rsrc_len = resource_size(res);
+>>        hcd->regs =  regs;
+>>
+>> -       ret = omap_usbhs_enable(dev);
+>> -       if (ret) {
+>> -               dev_dbg(dev, "failed to start ohci\n");
+>> -               goto err_end;
+>> -       }
+>> +       pm_runtime_enable(dev);
+>> +       pm_runtime_get_sync(dev);
+>>
+>>        ohci_hcd_init(hcd_to_ohci(hcd));
+>>
+>> @@ -189,9 +187,7 @@ static int __devinit ohci_hcd_omap3_probe(struct
+>> platform_device *pdev)
+>>        return 0;
+>>
+>>  err_add_hcd:
+>> -       omap_usbhs_disable(dev);
+>> -
+>> -err_end:
+>> +       pm_runtime_put_sync(dev);
+>>        usb_put_hcd(hcd);
+>>
+>>  err_io:
+>> @@ -220,9 +216,9 @@ static int __devexit ohci_hcd_omap3_remove(struct
+>> platform_device *pdev)
+>>
+>>        iounmap(hcd->regs);
+>>        usb_remove_hcd(hcd);
+>> -       omap_usbhs_disable(dev);
+>> +       pm_runtime_put_sync(dev);
+>> +       pm_runtime_disable(dev);
+>>        usb_put_hcd(hcd);
+>> -
+>>        return 0;
+>>  }
+>>
+>
+>
