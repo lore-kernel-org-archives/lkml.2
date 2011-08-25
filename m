@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1HYPL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:11:56 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:35645 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754098Ab1HYPLy (ORCPT
+	id S1754234Ab1HYPMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:12:14 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:24221 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab1HYPML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:11:54 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: QFpAs_8VM1lVtD8Fg7MHAAa07DBGKoGYkCenpWbTC7xbXDY
- Oyo.FDI9enAspC8MdicklQqHZsDWzHFc95GJA5ua_WjXxP9NLl4Arbs41Mr8
- ZealmLb.hFzs4ChxIuKTpz51uo8j2erkJrwPNpJ3Izhm7p_9xGsEvr.IzkVu
- NDEGAqkAO9JZfo9_hGyCs6Hs5TB_7bz0eY3F3ezyTXZSufRvZT0zWWDq2rwp
- h1wsLIMewRT3W2AB9_LuyNkvM4D2R1aMkvJWkRkGWqB2epAxDwIfe5DZPtsU
- CwmolYjyq3zp4pSdJT0Kg3mgnIvUtR9_t8Llstqp.ctShjdY1PdwnD2LywaB
- htnvoKCP8jd3GTHLt64zb.8POasmmIVrnuRzvyNMYldYrYudCSCs3uzj7F5e
- febTFjAgyy7nVBaFWAnrd_A--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 25 Aug 2011 10:11:50 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
-In-Reply-To: <1314284272.27911.32.camel@twins>
-Message-ID: <alpine.DEB.2.00.1108251009120.27407@router.home>
-References: <1313650253-21794-1-git-send-email-gthelen@google.com>  <20110818144025.8e122a67.akpm@linux-foundation.org> <1314284272.27911.32.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 25 Aug 2011 11:12:11 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6448"; a="112892858"
+Date: Thu, 25 Aug 2011 08:12:10 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>, rvaswani@codeaurora.org,
+        gbean@codeaurora.org
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        ext Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
+Message-ID: <20110825151210.GC31331@huya.qualcomm.com>
+References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF04B24A3BC0@HQMAIL01.nvidia.com>
+ <CACRpkdaZfG4hiGf8vug3EGMRMc0c92xbj=L_HAQcS27DAXYc4Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaZfG4hiGf8vug3EGMRMc0c92xbj=L_HAQcS27DAXYc4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011, Peter Zijlstra wrote:
+On Thu, Aug 25, 2011 at 12:12:59PM +0200, Linus Walleij wrote:
 
-> On Thu, 2011-08-18 at 14:40 -0700, Andrew Morton wrote:
-> >
-> > I think I'll apply it, as the call frequency is low (correct?) and the
-> > problem will correct itself as other architectures implement their
-> > atomic this_cpu_foo() operations.
->
-> Which leads me to wonder, can anything but x86 implement that this_cpu_*
-> muck? I doubt any of the risk chips can actually do all this.
-> Maybe Itanic, but then that seems to be dying fast.
+> mach-msm:
+> ----------------
+> 
+> Hard to tell how this works and what's available, support
+> seems to be incomplete. Currently it seems to be wired
+> to do either a dedicated function (like some UART pin)
+> or GPIO, like each pin can be used for two specific
+> things, and not phone-exchange type.
 
-The cpu needs to have an RMW instruction that does something to a
-variable relative to a register that points to the per cpu base.
+There are some pins on MSMs that can be connected to different hw
+blocks, we just haven't gotten the support into the kernel yet.
 
-Thats generally possible. The problem is how expensive the RMW is going to
-be.
+There are some things where two devices share pins, and you have to
+choose one or the other.
 
+I believe there are also configurations where something such as the SD
+controller can either be configured in 8-bit data mode, or in 4-bit
+data mode, and those 4 pins connected to something else.
+
+Much of the current pin configuration in our product kernel seems to
+be about current and pull up/down configuration.
+
+I've added Rohit Vaswani, and Greg Bean to this thread who should have
+a bit better understanding of this.
+
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
