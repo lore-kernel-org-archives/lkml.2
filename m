@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab1HYOYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 10:24:44 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38188 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750917Ab1HYOYn (ORCPT
+	id S1751430Ab1HYO02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 10:26:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49224 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab1HYO00 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 10:24:43 -0400
-X-Sasl-enc: j46SD4o1BUc/ucTHrz/LUfOKIT+5O/xSsUysAXe2Dvm9 1314282282
-Date: Thu, 25 Aug 2011 07:08:20 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Timur Tabi <timur@freescale.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: build failure after merge of the final tree (tty
- tree related)
-Message-ID: <20110825140820.GA9126@kroah.com>
-References: <20110825161843.daf46b6b4023926fcfeec387@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825161843.daf46b6b4023926fcfeec387@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Aug 2011 10:26:26 -0400
+Subject: Re: [PATCH] perf_event: fix slow and broken cgroup context switch
+ code
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ming.m.lin@intel.com
+Date: Thu, 25 Aug 2011 16:26:14 +0200
+In-Reply-To: <20110825135803.GA4697@quad>
+References: <20110825135803.GA4697@quad>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314282374.27911.14.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 04:18:43PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/tty/ehv_bytechan.c: In function 'udbg_init_ehv_bc':
-> drivers/tty/ehv_bytechan.c:230:18: error: 'MSR_GS' undeclared (first use in this function)
-> drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_write':
-> drivers/tty/ehv_bytechan.c:289:24: warning: cast from pointer to integer of different size
-> drivers/tty/ehv_bytechan.c: In function 'ehv_bc_console_init':
-> drivers/tty/ehv_bytechan.c:355:24: warning: cast to pointer from integer of different size
-> 
-> Caused by commit dcd83aaff1c8 ("tty/powerpc: introduce the ePAPR embedded
-> hypervisor byte channel driver").
-> 
-> MSR_GS is defined in arch/powerpc/include/asm/reg_booke.h which is
-> included by arch/powerpc/include/asm/reg.h but only when defined
-> (CONFIG_BOOKE) || defined(CONFIG_40x).
+On Thu, 2011-08-25 at 15:58 +0200, Stephane Eranian wrote:
+> +static inline void perf_cgroup_sched_out(struct task_struct *task,
+> +                                        struct task_struct *next)
+>  {
+> +       struct perf_cgroup *cgrp1;
+> +       struct perf_cgroup *cgrp2 = NULL;
+> +
+> +       /*
+> +        * we come here when we know perf_cgroup_events > 0
+> +        */
+> +       cgrp1 = perf_cgroup_from_task(task);
+> +
+> +       /*
+> +        * next is NULL when called from perf_event_enable_on_exec()
+> +        * that will systematically cause a cgroup_switch()
+> +        */
+> +       if (next)
+> +               cgrp2 = perf_cgroup_from_task(next);
+> +
+> +       /*
+> +        * only schedule out current cgroup events if we know
+> +        * that we are switching to a different cgroup. Otherwise,
+> +        * do no touch the cgroup events.
+> +        */
+> +       if (cgrp1 != cgrp2)
+> +               perf_cgroup_switch(task, PERF_CGROUP_SWOUT);
+>  }
+>  
+> +static inline void perf_cgroup_sched_in(struct task_struct *prev,
+> +                                       struct task_struct *task)
+>  {
+> +       struct perf_cgroup *cgrp1;
+> +       struct perf_cgroup *cgrp2 = NULL;
+> +
+> +       /*
+> +        * we come here when we know perf_cgroup_events > 0
+> +        */
+> +       cgrp1 = perf_cgroup_from_task(task);
+> +
+> +       /* prev can never be NULL */
+> +       cgrp2 = perf_cgroup_from_task(prev);
+> +
+> +       /*
+> +        * only need to schedule in cgroup events if we are changing
+> +        * cgroup during ctxsw. Cgroup events were not scheduled
+> +        * out of ctxsw out if that was not the case.
+> +        */
+> +       if (cgrp1 != cgrp2)
+> +               perf_cgroup_switch(task, PERF_CGROUP_SWIN);
+>  } 
 
-Thanks for the report.
-
-Timur, care to send a fixup patch for this so this gets resolved?
-
-greg k-h
+OK, looks sane enough, queued the patch, thanks!
