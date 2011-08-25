@@ -1,88 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1HYN37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:29:59 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50389 "EHLO e9.ny.us.ibm.com"
+	id S1751360Ab1HYNrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:47:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24927 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab1HYN36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:29:58 -0400
-Message-ID: <4E564E4D.4030302@linux.vnet.ibm.com>
-Date: Thu, 25 Aug 2011 08:29:49 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1750846Ab1HYNrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 09:47:35 -0400
+Date: Thu, 25 Aug 2011 10:47:12 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
+Message-ID: <20110825134712.GB4384@amt.cnet>
+References: <4E4A10E8.5090705@cn.fujitsu.com>
+ <4E4A1257.5080204@cn.fujitsu.com>
+ <20110823080024.GA2297@amt.cnet>
+ <4E53872B.3070407@cn.fujitsu.com>
+ <20110823123818.GB4261@amt.cnet>
+ <4E53D620.9030304@cn.fujitsu.com>
+ <20110823190939.GA10220@amt.cnet>
+ <4E560062.40805@cn.fujitsu.com>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jeremy@goop.org, hughd@google.com,
-        ngupta@vflare.org, konrad.wilk@oracle.com, JBeulich@novell.com,
-        kurt.hackel@oracle.com, npiggin@kernel.dk, akpm@linux-foundation.org,
-        riel@redhat.com, hannes@cmpxchg.org, matthew@wil.cx,
-        chris.mason@oracle.com, jackdachef@gmail.com, cyclonusj@gmail.com
-Subject: Re: Subject: [PATCH V7 2/4] mm: frontswap: core code
-References: <20110823145815.GA23190@ca-server1.us.oracle.com> <20110825150532.a4d282b1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110825150532.a4d282b1.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E560062.40805@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 01:05 AM, KAMEZAWA Hiroyuki wrote:
-> On Tue, 23 Aug 2011 07:58:15 -0700
-> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+On Thu, Aug 25, 2011 at 03:57:22PM +0800, Xiao Guangrong wrote:
+> On 08/24/2011 03:09 AM, Marcelo Tosatti wrote:
+> > On Wed, Aug 24, 2011 at 12:32:32AM +0800, Xiao Guangrong wrote:
+> >> On 08/23/2011 08:38 PM, Marcelo Tosatti wrote:
+> >>
+> >>>> And, i think there are not problems since: if the spte without accssed bit is
+> >>>> written frequently, it means the guest page table is accessed infrequently or
+> >>>> during the writing, the guest page table is not accessed, in this time, zapping
+> >>>> this shadow page is not bad.
+> >>>
+> >>> Think of the following scenario:
+> >>>
+> >>> 1) page fault, spte with accessed bit is created from gpte at gfnA+indexA.
+> >>> 2) write to gfnA+indexA, spte has accessed bit set, write_flooding_count
+> >>> is not increased.
+> >>> 3) repeat
+> >>>
+> >>
+> >> I think the result is just we hoped, we do not want to zap the shadow page
+> >> because the spte is currently used by the guest, it also will be used in the
+> >> next repetition. So do not increase 'write_flooding_count' is a good choice.
+> > 
+> > Its not used. Step 2) is write to write protected shadow page at
+> > gfnA.
+> > 
+> >> Let's consider what will happen if we increase 'write_flooding_count':
+> >> 1: after three repetitions, zap the shadow page
+> >> 2: in step 1, we will alloc a new shadow page for gpte at gfnA+indexA
+> >> 3: in step 2, the flooding count is creased, so after 3 repetitions, the
+> >>    shadow page can be zapped again, repeat 1 to 3.
+> > 
+> > The shadow page will not be zapped because the spte created from
+> > gfnA+indexA has the accessed bit set:
+> > 
+> >        if (spte && !(*spte & shadow_accessed_mask))
+> >                sp->write_flooding_count++;
+> >        else
+> >                sp->write_flooding_count = 0;
+> > 
 > 
->> From: Dan Magenheimer <dan.magenheimer@oracle.com>
->> Subject: [PATCH V7 2/4] mm: frontswap: core code
->>
->> This second patch of four in this frontswap series provides the core code
->> for frontswap that interfaces between the hooks in the swap subsystem and
->> a frontswap backend via frontswap_ops.
->>
->> Two new files are added: mm/frontswap.c and include/linux/frontswap.h
->>
->> Credits: Frontswap_ops design derived from Jeremy Fitzhardinge
->> design for tmem; sysfs code modelled after mm/ksm.c
->>
->> [v7: rebase to 3.0-rc3]
->> [v7: JBeulich@novell.com: new static inlines resolve to no-ops if not config'd]
->> [v7: JBeulich@novell.com: avoid redundant shifts/divides for *_bit lib calls]
->> [v6: rebase to 3.1-rc1]
->> [v6: lliubbo@gmail.com: fix null pointer deref if vzalloc fails]
->> [v6: konrad.wilk@oracl.com: various checks and code clarifications/comments]
->> [v5: no change from v4]
->> [v4: rebase to 2.6.39]
->> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
->> Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
->> Acked-by: Jan Beulich <JBeulich@novell.com>
->> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
->> Cc: Hugh Dickins <hughd@google.com>
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Nitin Gupta <ngupta@vflare.org>
->> Cc: Matthew Wilcox <matthew@wil.cx>
->> Cc: Chris Mason <chris.mason@oracle.com>
->> Cc: Rik Riel <riel@redhat.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->>
-<cut>
+> Marcelo, i am still confused with your example, in step 3), what is repeated?
+> it repeats step 2) or it repeats step 1) and 2)?
 > 
-> 
-> I'm sorry if I miss codes but.... is an implementation of frontswap.ops included
-> in this patch set ? Or how to test the work ?
+> Only step 2) is repeated i guess, right? if it is yes, it works well:
+> when the guest writes gpte, the spte of corresponding shadow page is zapped
+> (level > 1) or it is speculatively fetched(level == 1), the accessed bit is
+> cleared in both case.
 
-The zcache driver (in drivers/staging/zcache) is the one that registers frontswap ops.
+Right.
 
-You can test frontswap by enabling CONFIG_FRONTSWAP and CONFIG_ZCACHE, and putting 
-"zcache" in the kernel boot parameters.
+> the later write can detect that the accessed bit is not set, and write_flooding_count
+> is increased. finally, the shadow page is zapped, the gpte is written directly.
+> 
+> >> The result is the shadow page for gfnA is alloced and zapped again and again,
+> >> yes?
+> > 
+> > The point is you cannot rely on the accessed bit of sptes that have been
+> > instantiated with the accessed bit set to decide whether or not to zap.
+> > Because the accessed bit will only be cleared on host memory pressure.
+> > 
+> 
+> But the accessed bit is also cleared after spte is written.
 
-> 
-> Thanks,
-> -Kame
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Right. But only one of the 512 sptes. Worst case, a shadow that has 1
+spte with accessed bit at every 3 spte entries would not be zapped for a
+linear write of the entire guest pagetable. The current heuristic does 
+not suffer from this issue.
+
+I guess it is OK to be more trigger happy with zapping by ignoring
+the accessed bit, clearing the flood counter on page fault.
 
