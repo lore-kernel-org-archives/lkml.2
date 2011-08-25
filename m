@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab1HYPPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:15:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60189 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783Ab1HYPPh (ORCPT
+	id S1754295Ab1HYPPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:15:53 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:32931 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab1HYPKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:15:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 1/5] TTY: serial, use ASYNCB_CLOSING in uart_close
-Date: Thu, 25 Aug 2011 17:15:01 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@suse.de, alan@linux.intel.com, linux-serial@vger.kernel.org,
-        jirislaby@gmail.com, linux-kernel@vger.kernel.org
-References: <4E556CB7.2010102@suse.cz> <1314277928-13388-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1314277928-13388-1-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108251715.01443.arnd@arndb.de>
-X-Provags-ID: V02:K0:NVsXhli/uCdBjs5nOV+eQ+H+ZFfV7I9fJUXLK7Fui0R
- YvkhlT9VTnNAT31nxwsFfFYcGINKyWv7XNs+eszet+g9TJaawZ
- LtpXFHjxBPLpFZujBlTDs+1x/Uhr76ee9OTLka33cYS7XiCMeU
- SKZBzNTUsHHRPbDlvTdYrvwQoppnwPT9kRqBFcC0o/lzfsWXjQ
- x593WwgwrdKtN9EeyjjSw==
+	Thu, 25 Aug 2011 11:10:06 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 097/118] drbd: Converted drbdd_init() from mdev to tconn
+Date: Thu, 25 Aug 2011 17:08:33 +0200
+Message-Id: <1314284934-17999-98-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 August 2011, Jiri Slaby wrote:
-> 
-> We need to move port->mutex locking after wait_until_sent in
-> uart_close (for rationale see next patches). But if we did it now, we
-> would introduce a race between close and open. This is exactly why
-> port->mutex is locked at the top of uart_close.
-> 
-> To avoid the race, we add ASYNCB_CLOSING to uart_close. Like every
-> other sane TTY driver. Thanks to tty_port_block_til_ready used in
-> uart_open we will have this for free. Then we can move the port->mutex
-> lock.
-> 
-> Also note that this will make the conversion to tty_port helpers
-> easier. They are currently handling ASYNC_CLOSING flag correctly.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_receiver.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-The series looks good to me,
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 3fcc8dc..cc5e937 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -4229,33 +4229,33 @@ static int drbd_do_auth(struct drbd_tconn *tconn)
+ 
+ int drbdd_init(struct drbd_thread *thi)
+ {
+-	struct drbd_conf *mdev = thi->mdev;
++	struct drbd_tconn *tconn = thi->mdev->tconn;
+ 	int h;
+ 
+-	dev_info(DEV, "receiver (re)started\n");
++	conn_info(tconn, "receiver (re)started\n");
+ 
+ 	do {
+-		h = drbd_connect(mdev->tconn);
++		h = drbd_connect(tconn);
+ 		if (h == 0) {
+-			drbd_disconnect(mdev->tconn);
++			drbd_disconnect(tconn);
+ 			schedule_timeout_interruptible(HZ);
+ 		}
+ 		if (h == -1) {
+-			dev_warn(DEV, "Discarding network configuration.\n");
+-			drbd_force_state(mdev, NS(conn, C_DISCONNECTING));
++			conn_warn(tconn, "Discarding network configuration.\n");
++			drbd_force_state(tconn->volume0, NS(conn, C_DISCONNECTING));
+ 		}
+ 	} while (h == 0);
+ 
+ 	if (h > 0) {
+-		if (get_net_conf(mdev->tconn)) {
+-			drbdd(mdev->tconn);
+-			put_net_conf(mdev->tconn);
++		if (get_net_conf(tconn)) {
++			drbdd(tconn);
++			put_net_conf(tconn);
+ 		}
+ 	}
+ 
+-	drbd_disconnect(mdev->tconn);
++	drbd_disconnect(tconn);
+ 
+-	dev_info(DEV, "receiver terminated\n");
++	conn_info(tconn, "receiver terminated\n");
+ 	return 0;
+ }
+ 
+-- 
+1.7.4.1
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-The only thing left to note is probably that there are a bunch
-of drivers that implement their own *_wait_until_sent function
-and call that from their *_close function instead of calling
-tty_wait_until_sent. These drivers continue to suffer from the
-same stalls that you are fixing the other ones.
-
-	Arnd
