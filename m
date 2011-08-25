@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab1HYHZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 03:25:12 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:35300 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab1HYHZJ (ORCPT
+	id S1752340Ab1HYHaL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 03:30:11 -0400
+Received: from ch-smtp04.sth.basefarm.net ([80.76.153.5]:37033 "EHLO
+	ch-smtp04.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750903Ab1HYHaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 03:25:09 -0400
-Date: Thu, 25 Aug 2011 09:22:18 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 8/8] ARM: S5PV210: example of CMA private area for FIMC
- device on Goni board
-In-reply-to: <CAKnK67RcMAt6j3CEi2Z7QTN42v07LDCfa_T38F9-5b97TJ0-hA@mail.gmail.com>
-To: "'Aguirre, Sergio'" <saaguirre@ti.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Message-id: <01d801cc62f7$b9041b40$2b0c51c0$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: AcxidFKxNC7dihlnRFyrEkY0L/YltQAgullw
-References: <CAKnK67RcMAt6j3CEi2Z7QTN42v07LDCfa_T38F9-5b97TJ0-hA@mail.gmail.com>
+	Thu, 25 Aug 2011 03:30:08 -0400
+X-Mailer: exmh version 2.7.2 04/02/2003 (gentoo 2.7.2) with nmh-1.3-dev
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        aeriksson@fastmail.fm
+Subject: mtrr failure, 3.1-rc1
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Date: Thu, 25 Aug 2011 09:03:35 +0200
+From: Anders Eriksson <aeriksson@fastmail.fm>
+Message-Id: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org>
+X-Originating-IP: 83.252.233.92
+X-Scan-Result: No virus found in message 1QwUNs-0003sk-Fs.
+X-Scan-Signature: ch-smtp04.sth.basefarm.net 1QwUNs-0003sk-Fs 450afc85a2f2c0986adcc1b9e50e109f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Wednesday, August 24, 2011 5:41 PM Aguirre, Sergio wrote:
 
-> On Fri, Aug 19, 2011 at 04:27:44PM +0200, Marek Szyprowski wrote:
-> > This patch is an example how device private CMA area can be activated.
-> > It creates one CMA region and assigns it to the first s5p-fimc device on
-> > Samsung Goni S5PC110 board.
-> >
-> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > ---
-> >  arch/arm/mach-s5pv210/mach-goni.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-
-> goni.c
-> > index 14578f5..f766c45 100644
-> > --- a/arch/arm/mach-s5pv210/mach-goni.c
-> > +++ b/arch/arm/mach-s5pv210/mach-goni.c
-> > @@ -26,6 +26,7 @@
-> >  #include <linux/input.h>
-> >  #include <linux/gpio.h>
-> >  #include <linux/interrupt.h>
-> > +#include <linux/dma-contiguous.h>
-> >
-> >  #include <asm/mach/arch.h>
-> >  #include <asm/mach/map.h>
-> > @@ -857,6 +858,9 @@ static void __init goni_map_io(void)
-> >  static void __init goni_reserve(void)
-> >  {
-> >  	s5p_mfc_reserve_mem(0x43000000, 8 << 20, 0x51000000, 8 << 20);
-> > +
-> > +	/* Create private 16MiB contiguous memory area for s5p-fimc.0 device */
-> > +	dma_declare_contiguous(&s5p_device_fimc0.dev, 16*SZ_1M, 0);
-> 
-> This is broken, since according to patch #0006, dma_declare_contiguous
-requires
-> a 4th param (limit) which you're not providing here.
+My old P-II has 640MB ram, but the bios only sets up WC for the first 512, so i 
+add this early in the boot process:
+echo "base=0x20000000 size=0x8000000 type=write-back" > /proc/mtrr
 
-You are definitely right, there should be one more parameter. This patch was
-just
-cherry-picked from older version just before posting to mailing lists. I'm
-really
-sorry for this trivial bug.
- 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+For reasons I have forgot I also have to add 'disable_mtrr_check' to the 
+command line. Works great.
 
+As of merge dc43d9fa73d82083656fb9c02f4823bcdcfb9f91 This no longer works.
+Adding that line to /proc/mtrr no longer has any effect (cat /proc/mtrr shows
+only the reg00 entry).
+
+Reverting that merge on top of rc3 brings things back to normal and /proc/mtrr 
+shows:
+reg00: base=0x000000000 (    0MB), size=  512MB, count=1: write-back
+reg01: base=0x048000000 ( 1152MB), size=  128MB, count=1: write-combining
+reg02: base=0x020000000 (  512MB), size=  128MB, count=2: write-back
+
+Any ideas how to track this down futher? Would be good to get it fixed for 3.1
+
+-Anders
 
 
