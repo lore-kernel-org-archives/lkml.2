@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab1HYRIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:08:22 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:14522
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753938Ab1HYRIV (ORCPT
+	id S1754827Ab1HYRL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:11:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38467 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab1HYRLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:08:21 -0400
-X-SpamScore: -25
-X-BigFish: VPS-25(zz936eK1432N98dK4015Lzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQHU5V-01-0R9-02
-X-M-MSG: 
-Date: Thu, 25 Aug 2011 19:05:34 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 3/8] iommu: move IOMMU specific code to intel-iommu.c
-Message-ID: <20110825170534.GL1923@amd.com>
-References: <20110824000517.710353624@sbsiddha-desk.sc.intel.com>
- <20110824001456.282401285@sbsiddha-desk.sc.intel.com>
- <20110824092700.GF2079@amd.com>
- <1314210701.16133.13.camel@sbsiddha-desk.sc.intel.com>
+	Thu, 25 Aug 2011 13:11:55 -0400
+Date: Thu, 25 Aug 2011 21:11:50 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110825171150.GB6387@sun>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314210701.16133.13.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <20110825170147.GM2803@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 02:31:40PM -0400, Suresh Siddha wrote:
-> On Wed, 2011-08-24 at 02:27 -0700, Roedel, Joerg wrote:
-> > On Tue, Aug 23, 2011 at 08:05:20PM -0400, Suresh Siddha wrote:
-> > > +static void __init dmar_register_rmrr_unit(struct dmar_rmrr_unit *rmrr)
-> > > +int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
-> > > +int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr)
-> > > +int dmar_find_matched_atsr_unit(struct pci_dev *dev)
-> > > +int dmar_parse_rmrr_atsr_dev(void)
-> > 
-> > If these functions are not DMAR specific, how about replacing the dmar_
-> > prefix too while at it?
+On Thu, Aug 25, 2011 at 07:01:47PM +0200, Tejun Heo wrote:
+...
 > 
-> These parsing functions are APCI DMAR table specific and are used only
-> by intel-iommu routines. Because of this I didn't change their names but
-> just moved to intel-iommu.c to cleanup some of the ifdef's in the common
-> dmar.c code (specific to handling common ACPI DMAR tables etc) shared by
-> both DMA-remapping (iommu) and IRQ-remapping.
+> Hmm... don't we need the same credential update as
+> tid_fd_revalidate()?  If the task seteuid's, we want the permissions
+> to change accordingly, right?
+> 
+> Thanks.
+>
 
-Okay, should be fine then.
-
-Thanks,
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Exactly! Thanks Tejun. I'll be reworking it anyway (acoording to what
+we decide to do with start-end range in names).
+ 
+	Cyrill
