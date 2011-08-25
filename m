@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab1HYRyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:54:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54139 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755082Ab1HYRyq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:54:46 -0400
-Date: Thu, 25 Aug 2011 21:54:38 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
-        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
- v2
-Message-ID: <20110825175438.GA3739@albatros>
-References: <20110824085329.GL29452@sun>
- <20110824111806.GA7191@albatros>
- <20110825082944.GH10030@sun>
- <20110825173642.GA3288@albatros>
- <20110825173953.GE6387@sun>
+	id S1755130Ab1HYSBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 14:01:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50749 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755069Ab1HYSBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 14:01:20 -0400
+Message-ID: <4E568DD1.5010501@zytor.com>
+Date: Thu, 25 Aug 2011 11:00:49 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825173953.GE6387@sun>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Anders Eriksson <aeriksson@fastmail.fm>, Ingo Molnar <mingo@elte.hu>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtrr: fix UP breakage caused during switch to stop_machine
+References: <20110825070335.3095B3BC183@tippex.mynet.homeunix.org> <CA+55aFzndqkSC1z3==HqUGC8hP=pw62ro3CWYtovk95_cYAKsA@mail.gmail.com> <20110825164649.GL2803@mtj.dyndns.org> <1314294182.16133.19.camel@sbsiddha-desk.sc.intel.com> <CA+55aFwaxzFJCjJc1=6utMq0WQmrP4COGEOQirqBLcmdTf=+rQ@mail.gmail.com> <20110825174656.GN2803@mtj.dyndns.org>
+In-Reply-To: <20110825174656.GN2803@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 21:39 +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 25, 2011 at 09:36:42PM +0400, Vasiliy Kulikov wrote:
-> ...
-> > > +
-> > > +	result = ERR_PTR(-EPERM);
-> > > +	if (!ptrace_may_access(task, PTRACE_MODE_READ));
-> > > +		goto out_no_mm;
-> > 
-> > Probably
-> > 
-> >     result = ERR_PTR(-ENOENT);
-> > 
-> > belongs here?
-> > 
+On 08/25/2011 10:46 AM, Tejun Heo wrote:
+> While removing custom rendezvous code and switching to stop_machine,
+> commit 192d8857427d "x86, mtrr: use stop_machine APIs for doing MTRR
+> rendezvous" completely dropped mtrr setting code on !CONFIG_SMP
+> breaking MTRR settting on UP.  Fix it by removing the incorrect
+> CONFIG_SMP.
 > 
-> Don't think so, it should point that permission failed
-> rather no such entry. Or this might break some tools?
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Anders Eriksson <aeriksson@fastmail.fm>
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
 
-I mean the place exactly where I've put it to indicate simple_strtoul(),
-get_task_mm(), or find_exact_vma() error.  EPERM for ptrace_may_access()
-is OK.
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 
-Thanks,
+Linus, are you picking this up from email or should I put it in x86/urgent?
+
+	-hpa
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
