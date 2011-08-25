@@ -1,34 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab1HYRc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:32:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44975 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab1HYRcz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 13:32:55 -0400
-Subject: Re: [BUG] perf_event: semantic of PERF_SAMPLE_READ unclear
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        Robert Richter <robert.richter@amd.com>,
-        Vince Weaver <vweaver1@eecs.utk.edu>
-Date: Thu, 25 Aug 2011 19:32:40 +0200
-In-Reply-To: <CABPqkBS_Og3Vbe90xwyzA8S5ftfF08gMtJdtpqQTHFOwm+CAkg@mail.gmail.com>
-References: <CABPqkBS_Og3Vbe90xwyzA8S5ftfF08gMtJdtpqQTHFOwm+CAkg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314293560.27911.38.camel@twins>
-Mime-Version: 1.0
+	id S1754906Ab1HYReR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:34:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753697Ab1HYReQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 13:34:16 -0400
+Date: Thu, 25 Aug 2011 13:34:10 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: gregkh@suse.de
+Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <268bd0822736c924e45d966aa0ca3d60637ccc2b.1314291910.git.jbaron@redhat.com>
+In-Reply-To: <cover.1314291909.git.jbaron@redhat.com>
+References: <cover.1314291909.git.jbaron@redhat.com>
+Subject: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug descriptor definitions
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 19:19 +0200, Stephane Eranian wrote:
-> But the difficulty is that
-> we cannot grab any locks, not sure we need one given the call path. 
+Replace the repetitive  struct _ddebug descriptor definitions with
+a new DECLARE_DYNAMIC_DEBUG_META_DATA(name, fmt) macro.
 
-Nah we should be able to simply iterate all siblings and update them
-in-place, since its group members they should all be co-scheduled. The
-only difficulty is cross pmu group members.. 
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ include/linux/dynamic_debug.h |   64 ++++++++++++++++++++++------------------
+ 1 files changed, 35 insertions(+), 29 deletions(-)
+
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index feaac1e..699f533 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -54,35 +54,41 @@ extern int __dynamic_netdev_dbg(struct _ddebug *descriptor,
+ 			     const char *fmt, ...)
+ 	__attribute__ ((format (printf, 3, 4)));
+ 
+-#define dynamic_pr_debug(fmt, ...) do {					\
+-	static struct _ddebug descriptor				\
+-	__used								\
+-	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+-		_DPRINTK_FLAGS_DEFAULT };				\
+-	if (unlikely(descriptor.enabled))				\
+-		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
+-	} while (0)
+-
+-#define dynamic_dev_dbg(dev, fmt, ...) do {				\
+-	static struct _ddebug descriptor				\
+-	__used								\
+-	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+-		_DPRINTK_FLAGS_DEFAULT };				\
+-	if (unlikely(descriptor.enabled))				\
+-		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
+-	} while (0)
+-
+-#define dynamic_netdev_dbg(dev, fmt, ...) do {				\
+-	static struct _ddebug descriptor				\
+-	__used								\
+-	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+-		_DPRINTK_FLAGS_DEFAULT };				\
+-	if (unlikely(descriptor.enabled))				\
+-		__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
+-	} while (0)
++#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
++	static struct _ddebug __used __aligned(8)		\
++	__attribute__((section("__verbose"))) name = {		\
++		.modname = KBUILD_MODNAME,			\
++		.function = __func__,				\
++		.filename = __FILE__,				\
++		.format = fmt,					\
++		.lineno = __LINE__,				\
++		.flags =  _DPRINTK_FLAGS_DEFAULT,		\
++		.enabled = false,				\
++	}
++
++#define dynamic_pr_debug(fmt, ...)				\
++do {								\
++	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
++	if (unlikely(descriptor.enabled))			\
++		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),	\
++				   ##__VA_ARGS__);		\
++} while (0)
++
++#define dynamic_dev_dbg(dev, fmt, ...)				\
++do {								\
++	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
++	if (unlikely(descriptor.enabled))			\
++		__dynamic_dev_dbg(&descriptor, dev, fmt,	\
++				  ##__VA_ARGS__);		\
++} while (0)
++
++#define dynamic_netdev_dbg(dev, fmt, ...)			\
++do {								\
++	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
++	if (unlikely(descriptor.enabled))			\
++		__dynamic_netdev_dbg(&descriptor, dev, fmt,	\
++				     ##__VA_ARGS__);		\
++} while (0)
+ 
+ #else
+ 
+-- 
+1.7.5.4
+
