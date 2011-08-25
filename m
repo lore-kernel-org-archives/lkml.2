@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab1HYVAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 17:00:00 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38754 "EHLO ogre.sisk.pl"
+	id S1755406Ab1HYVBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 17:01:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38768 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754509Ab1HYU77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 16:59:59 -0400
+	id S1754577Ab1HYVBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 17:01:31 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
-Date: Thu, 25 Aug 2011 23:01:41 +0200
+Subject: Re: [PATCH] oom: skip frozen tasks
+Date: Thu, 25 Aug 2011 23:03:17 +0200
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, menage@google.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-References: <1313763382-12341-1-git-send-email-tj@kernel.org> <20110825155957.GJ2803@mtj.dyndns.org> <20110825165650.GA8006@redhat.com>
-In-Reply-To: <20110825165650.GA8006@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110823073101.6426.77745.stgit@zurg> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com>
+In-Reply-To: <20110825151818.GA4003@redhat.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108252301.41778.rjw@sisk.pl>
+Message-Id: <201108252303.17446.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thursday, August 25, 2011, Oleg Nesterov wrote:
-> On 08/25, Tejun Heo wrote:
+> On 08/25, Michal Hocko wrote:
 > >
-> > Yeah, what 'freeze' should do is a bit vague on the edges, I think.
-> > The freezer can't really halt the whole system operation including
-> > IOs.  Tasks aren't the only source which can kick those off.  There
-> > are other asynchronous sources,
+> > On Wed 24-08-11 12:31:26, David Rientjes wrote:
+> > >
+> > > That's obviously false since we call oom_killer_disable() in 
+> > > freeze_processes() to disable the oom killer from ever being called in the 
+> > > first place, so this is something you need to resolve with Rafael before 
+> > > you cause more machines to panic.
+> >
+> > I didn't mean suspend/resume path (that is protected by oom_killer_disabled)
+> > so the patch doesn't make any change.
 > 
-> Of course.
-> 
-> But still I can't understand why it is better to consider the exiting
-> task as "frozen" from the very beginning, right after PTRACE_EVENT_EXIT.
-> do_exit() does a lot of misc things, and this patch simply makes it
-> "invisible" to the freezer. This looks "unsafe" even if this is fine
-> for suspend/etc.
+> Confused... freeze_processes() does try_to_freeze_tasks() before
+> oom_killer_disable() ?
 
-Suspend needs the freezer to ensure that processes (user space mostly)
-won't interact with drivers in any way while devices are being suspended,
-so if a process is in a state in which it won't talk to any driver
-and make changes to filesystems any more, it's irrelevant from the
-suspend's point of view.
+Yes, it does.
 
-> To me, try_to_freeze_tasks() should succed when all threads either
-> sleep in refrigerator(), or ->state = TASK_DEAD (the final schedule()
-> was called). Until then try_to_freeze_tasks() should retry.
-> 
-> But since we can't see the threads after exit_notify (in general),
-> the current ->exit_state check looks reasonable.
-> 
-> But again, again, I won't argue.
-> 
-> > Rafael, can you please enlighten us on the subject?
-> 
-> Please ;)
-
-Is the above sufficient?
-
+Thanks,
 Rafael
