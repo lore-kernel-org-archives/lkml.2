@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1HYPld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:41:33 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36952 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751306Ab1HYPlV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:41:21 -0400
-X-Sasl-enc: L36dwfd4P47uXPoyZLn3bFEGhTrTNBEfedMaKlr7u3pX 1314286880
-Date: Thu, 25 Aug 2011 08:39:47 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: linux-next: manual merge of the usb tree with the usb.current
- tree
-Message-ID: <20110825153947.GB31018@kroah.com>
-References: <20110825145206.4888b9f62a9bcbeeaf8678b8@canb.auug.org.au>
+	id S1753135Ab1HYPlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:41:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4332 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752912Ab1HYPle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 11:41:34 -0400
+Date: Thu, 25 Aug 2011 17:37:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Greg Kurz <gkurz@fr.ibm.com>, containers@lists.linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
+	when reboot
+Message-ID: <20110825153732.GA4784@redhat.com>
+References: <20110819152416.GA17034@redhat.com> <4E524B73.3050704@free.fr> <20110822154448.GA8527@redhat.com> <20110822183134.10390b46@neptune.home> <20110822173949.GA13242@redhat.com> <20110822211716.7c141d5c@neptune.home> <20110823133302.GA19582@redhat.com> <1314108566.3465.29.camel@bahia.local> <20110823142914.GA22593@redhat.com> <20110824214418.474b24c6@neptune.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110825145206.4888b9f62a9bcbeeaf8678b8@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110824214418.474b24c6@neptune.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 02:52:06PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/host/xhci-ring.c between commit 48df4a6fd8c4 ("xhci: Handle
-> zero-length isochronous packets") from the usb.current tree and commit
-> 29cc88979a88 ("USB: use usb_endpoint_maxp() instead of le16_to_cpu()")
-> from the usb tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
+On 08/24, Bruno Prémont wrote:
+>
+> On Tue, 23 August 2011 Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Just in case... instead of WIFSIGNALED/WTERMSIG we can also report
+> > the exit code in the upper bits. I mean,
+> >
+> > 	switch (reboot_cmd) {
+> > 	case LINUX_REBOOT_CMD_RESTART:
+> > 		code = 1 << 16;
+> > 		break;
+> > 	case LINUX_REBOOT_CMD_HALT:
+> > 		code = 2 << 16;
+> > 		break;
+> > 	}
+>
+> That looks nice and simple!
 
-Thanks, when I get the usb.current tree merged with Linus, I'll handle
-this merge in the usb.next tree.
+Great. To me, WIFSIGNALED() looks better, but this is subjective and
+in any case this is up to you.
 
-greg k-h
+> > this can't be confused with the normal exit(code), just the parent
+> > should be careful, I am not sure this can't confuse WIFEXITED/WEXITSTATUS
+> > user-space macroses.
+>
+> For recent glibc (2.12.2):
+> sys/wait.h and stdlib.h:
+> # define WIFEXITED(status) __WIFEXITED (__WAIT_INT (status))
+> # define WEXITSTATUS(status)       __WEXITSTATUS (__WAIT_INT (status))
+> bits/waitstatus.h:
+> #define     __WIFEXITED(status)     (__WTERMSIG(status) == 0)
+> #define     __WTERMSIG(status)      ((status) & 0x7f)
+> #define     __WEXITSTATUS(status)   (((status) & 0xff00) >> 8)
+
+... and note that __WEXITSTATUS() does "& 0xff00", it uses the
+lower 16 bits.
+
+So the parent should read status "by hand". Not a problem, I think.
+Say, a traced task reports the additional info this way.
+
+Oleg.
+
