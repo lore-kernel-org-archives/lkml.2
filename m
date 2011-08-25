@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab1HYIUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 04:20:41 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45981 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab1HYIUa (ORCPT
+	id S1752553Ab1HYIVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 04:21:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49601 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab1HYIUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 04:20:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:mime-version:
-	content-type:content-transfer-encoding;
-	b=wMljQZ+/kMPFNZCTLtkhkD+nFipEvzli0jJiwvY/VeU4AN9Uuv4oVrQHwlJSecAlJ
-	u5xF8VnWQJYf+PU5GBuDg==
-From: =?UTF-8?q?Ren=C3=A9=20Nussbaumer?= <rn@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Ren=C3=A9=20Nussbaumer?= <rn@google.com>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>, drbd-dev@lists.linbit.com
-Subject: [PATCH] DRBD: Fix /proc/drbd output
-Date: Thu, 25 Aug 2011 10:20:03 +0200
-Message-Id: <1314260403-5572-1-git-send-email-rn@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 25 Aug 2011 04:20:55 -0400
+Date: Thu, 25 Aug 2011 10:20:49 +0200
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH 3/6] cgroup: introduce cgroup_taskset and use it in
+ subsys->can_attach(), cancel_attach() and attach()
+Message-ID: <20110825082049.GC3286@htj.dyndns.org>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org>
+ <1314138000-2049-4-git-send-email-tj@kernel.org>
+ <20110825093958.75b95bd8.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110825093958.75b95bd8.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 4b0715f096 introduced an inconsistency in the output of /proc/drbd
-while resyncing. Before that patch the "finish:"-line was places on a
-new line with one tab indent. This is still true if the unit is KB but
-not if it's MB.
+Hello, KAMEZAWA.
 
-This bug is not present in the upstream version of DRBD 8.3.11.
+On Thu, Aug 25, 2011 at 09:39:58AM +0900, KAMEZAWA Hiroyuki wrote:
+> > +Called prior to moving one or more tasks into a cgroup; if the
+> > +subsystem returns an error, this will abort the attach operation.
+> > +@tset contains the tasks to be attached and is guaranteed to have at
+> > +least one task in it. If there are multiple, it's guaranteed that all
+> > +are from the same thread group,
+> 
+> 
+> Do this, "If there are multiple, it's guaranteed that all
+> are from the same thread group ", means the 'tset' contains
+> only one mm_struct ?
 
-Cc: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: Lars Ellenberg <lars.ellenberg@linbit.com>
-CC: drbd-dev@lists.linbit.com
-Signed-off-by: René Nussbaumer <rn@google.com>
----
- drivers/block/drbd/drbd_proc.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Yes, CLONE_THREAD requires CLONE_SIGHAND which in turn requires
+CLONE_VM, so they'll all have the same mm.
 
-diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
-index 2959cdf..7340546 100644
---- a/drivers/block/drbd/drbd_proc.c
-+++ b/drivers/block/drbd/drbd_proc.c
-@@ -97,10 +97,12 @@ static void drbd_syncer_progress(struct drbd_conf *mdev, struct seq_file *seq)
- 			    (unsigned long) Bit2KB(rs_left >> 10),
- 			    (unsigned long) Bit2KB(mdev->rs_total >> 10));
- 	else
--		seq_printf(seq, "(%lu/%lu)K\n\t",
-+		seq_printf(seq, "(%lu/%lu)K",
- 			    (unsigned long) Bit2KB(rs_left),
- 			    (unsigned long) Bit2KB(mdev->rs_total));
- 
-+	seq_printf(seq, "\n\t");
-+
- 	/* see drivers/md/md.c
- 	 * We do not want to overflow, so the order of operands and
- 	 * the * 100 / 100 trick are important. We do a +1 to be
+> And is it guaranteed that any task in tset will not be freed while
+> subsystem routine runs ?
+
+Yeap, that one is guaranteed.  It might die but the the task_struct
+itself won't be released.  However, I think it might be bette to block
+task exits during migration too.
+
+> > @@ -5460,8 +5460,9 @@ static void mem_cgroup_clear_mc(void)
+> >  
+> >  static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
+> >  				struct cgroup *cgroup,
+> > -				struct task_struct *p)
+> > +				struct cgroup_taskset *tset)
+> >  {
+> > +	struct task_struct *p = cgroup_taskset_first(tset);
+> >  	int ret = 0;
+> >  	struct mem_cgroup *mem = mem_cgroup_from_cont(cgroup);
+> >  
+> 
+> Ah..hmm. I think this doesn't work as expected for memcg.
+> Maybe code like this will be required.
+
+Hmmm... the above is basically identity transformation of the existing
+code.  If the above is broken, the current code is broken too.  Is it?
+
+Thanks.
+
 -- 
-1.7.3.1
-
+tejun
