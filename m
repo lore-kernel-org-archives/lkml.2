@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab1HYWAC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:00:02 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44026 "EHLO
+	id S1755606Ab1HYWFD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:05:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60251 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754650Ab1HYWAB (ORCPT
+	by vger.kernel.org with ESMTP id S1755525Ab1HYWFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:00:01 -0400
-Date: Thu, 25 Aug 2011 14:59:15 -0700
+	Thu, 25 Aug 2011 18:05:01 -0400
+Date: Thu, 25 Aug 2011 15:04:56 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Ferenc Wagner <wferi@niif.hu>
-Cc: Kashyap@tac.ki.iif.hu, Desai <kashyap.desai@lsi.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [SCSI] fusion: ensure NUL-termination of
- MptCallbacksName elements
-Message-Id: <20110825145915.abde72e2.akpm@linux-foundation.org>
-In-Reply-To: <cd21dfb714e3a89aadd8eda1fda1748dec9ed7aa.1314276422.git.wferi@niif.hu>
-References: <cd21dfb714e3a89aadd8eda1fda1748dec9ed7aa.1314276422.git.wferi@niif.hu>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: RFC: Remove unnecessary / duplicate OOM printks
+Message-Id: <20110825150456.fc8720c4.akpm@linux-foundation.org>
+In-Reply-To: <1314305243.4637.10.camel@Joe-Laptop>
+References: <1314305243.4637.10.camel@Joe-Laptop>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,50 +24,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011 14:44:57 +0200
-Ferenc Wagner <wferi@niif.hu> wrote:
+On Thu, 25 Aug 2011 13:47:23 -0700
+Joe Perches <joe@perches.com> wrote:
 
-> Signed-off-by: Ferenc Wagner <wferi@niif.hu>
-
-The lack of a changelog is a hint that the patch needed a changelog!
-
+> There are many thousands of printks for OOM conditions
+> in kernel sources.
 > 
-> diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-> index 7956a10..eb906e2 100644
-> --- a/drivers/message/fusion/mptbase.c
-> +++ b/drivers/message/fusion/mptbase.c
-> @@ -113,7 +113,7 @@ module_param(mpt_fwfault_debug, int, 0600);
->  MODULE_PARM_DESC(mpt_fwfault_debug,
->  		 "Enable detection of Firmware fault and halt Firmware on fault - (default=0)");
->  
-> -static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][50];
-> +static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][MPT_MAX_CALLBACKNAME_LEN+1];
->  
->  #ifdef MFCNT
->  static int mfcounter = 0;
-> @@ -656,8 +656,7 @@ mpt_register(MPT_CALLBACK cbfunc, MPT_DRIVER_CLASS dclass, char *func_name)
->  			MptDriverClass[cb_idx] = dclass;
->  			MptEvHandlers[cb_idx] = NULL;
->  			last_drv_idx = cb_idx;
-> -			memcpy(MptCallbacksName[cb_idx], func_name,
-> -			    strlen(func_name) > 50 ? 50 : strlen(func_name));
-> +			strlcpy(MptCallbacksName[cb_idx], func_name, MPT_MAX_CALLBACKNAME_LEN+1);
->  			break;
->  		}
->  	}
-> diff --git a/drivers/message/fusion/mptbase.h b/drivers/message/fusion/mptbase.h
-> index fe90233..c10416d 100644
-> --- a/drivers/message/fusion/mptbase.h
-> +++ b/drivers/message/fusion/mptbase.h
-> @@ -89,6 +89,7 @@
->   */
->  #define MPT_MAX_ADAPTERS		18
->  #define MPT_MAX_PROTOCOL_DRIVERS	16
-> +#define MPT_MAX_CALLBACKNAME_LEN	49
->  #define MPT_MAX_BUS			1	/* Do not change */
->  #define MPT_MAX_FC_DEVICES		255
->  #define MPT_MAX_SCSI_DEVICES		16
+> These are almost always a duplication of a generic
+> OOM message from the mm subsystem.
+> 
+> The biggest difference between the generic OOM and
+> the specific OOM uses is that most of the specific
+> messages are emitted at KERN_ERR but the generic
+> message is at KERN_WARNING.
+> 
+> Many KB of code/text could be removed from the kernel.
+> 
+> Removal can be gradual and done by subsystem.
+> 
+> Some kmalloc's that are followed on failure by vmalloc
+> may need to add GFP_NOWARN.
+> 
+> Does anyone really believe the per site failure
+> messages are useful or really want them to keep them?
+> 
 
-Does the patch fix some real-world observed problem?  If so, please
-fully describe it.
-
+Kill 'em.
