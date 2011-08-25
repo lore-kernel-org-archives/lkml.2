@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab1HYGwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 02:52:00 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:13027 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab1HYGv6 convert rfc822-to-8bit (ORCPT
+	id S1753069Ab1HYG4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 02:56:17 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:49664 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab1HYG4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 02:51:58 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=blS1IfD9ATTwslHPX1wg2xrVchEzJECajZTP4gYUBpc= c=1 sm=1
- a=gC2PzEiSFgkA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=7-415B0cAAAA:8 a=VwQbUJbxAAAA:8
- a=oZhb_Zjvg5mqWrkgViQA:9 a=3JIEvoNuqrGVWEFy3wgA:7 a=CjuIK1q_8ugA:10
- a=x8gzFH9gYPwA:10 a=FtYAf7_czLgA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20110825064039.GO3162@dastard>
-Date: Thu, 25 Aug 2011 00:51:56 -0600
-Cc: Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@ZenIV.linux.org.uk,
-        dchinner@redhat.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110825060632.GA9933@infradead.org> <20110825064039.GO3162@dastard>
-To: Dave Chinner <david@fromorbit.com>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 25 Aug 2011 02:56:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo56V1eHaLTz72gLHcdONsNSUM01upKr4K+DtoU58ea5Ag@mail.gmail.com>
+References: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com>
+	<1314167063-15785-3-git-send-email-dengcheng.zhu@gmail.com>
+	<CAErSpo56V1eHaLTz72gLHcdONsNSUM01upKr4K+DtoU58ea5Ag@mail.gmail.com>
+Date: Thu, 25 Aug 2011 14:56:15 +0800
+Message-ID: <CAOfQC9_S9q9fE6VyDaLseUFZD_GxZcEOYw8YsvRWkr9-2S=RRQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/3] PCI: Pass available resources into pci_create_bus()
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
+        zenon@mips.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-25, at 12:40 AM, Dave Chinner wrote:
-> On Thu, Aug 25, 2011 at 02:06:32AM -0400, Christoph Hellwig wrote:
->> On Tue, Jun 28, 2011 at 11:33:19AM -0400, Josef Bacik wrote:
->>> This is a test to make sure seek_data/seek_hole is acting like it does on
->>> Solaris.  It will check to see if the fs supports finding a hole or not and will adjust as necessary.
->> 
->> Can you resend this with any updates that happened in the meantime?
->> 
->> Dave also still had some comments about semantics, so it might be worth
->> to incorporate that as well.
-> 
-> The main questions I had when looking at this was how we should
-> handle unwritten extents - the only answer I got was along the lines
-> of "we'll deal with that once filesystems have implemented
-> something". That's a bit of a chicken-and-egg situation, and doesn't
-> help me decide what is the best thing to do. I don't want to have to
-> re-implement this code when it's decided i did the wrong thing
-> initially.
+2011/8/24 Bjorn Helgaas <bhelgaas@google.com>:
+> I like this approach a lot.  Thanks for working it up.  It's a nice
+> small change with very little impact to other architectures, and you
+> have a nice clear changelog.  You might mention something about the
+> fact that by default, the bus starts out with all of ioport_resource
+> and iomem_resource -- that will mean something to people who know how
+> host bridges work.
 
-Let's first clarify what you mean by an unwritten extent?  Do you mean a
-preallocated extent that returns 0 when read, or do you mean a delayed
-allocation extent that was written by the application that is still in
-memory but not yet written to disk?
+Thanks! And I'll add this info to the patch description.
 
-Unfortunately, ZFS has no concept of preallocated extents, so we can't
-look to it for precedent, but it definitely has delayed allocation.
-Possibly if UFS on Solaris has SEEK_HOLE and also preallocated extents
-(I have no idea) it could be tested?
+> Using pci_bus_add_resource() here *seems* like it should be the right
+> thing, but I don't think it will work correctly.
+>
+> The problem is that struct pci_bus has both a table of resources
+> (bus->resource[]) *and* a list (bus->resources).
+> pci_bus_add_resource() always puts the new resource on the list, but
+> various arch code still references the table directly, e.g., sparc has
+> "pbus->resource[0] = &pbm->io_space" in pcibios_fixup_bus().
+>
+> As written, I think this patch will break sparc because the host
+> bridge will end up with both pbm->io_space (in the table) and
+> ioport_resource (in the list).
 
-> The most basic question I really want answered is this:
-> 
-> 	- is preallocated space a HOLE, or is it DATA?
-> 
-> Whatever the answer, I think it should be consistently
-> presented by all filesystems that support preallocation, and it
-> should be encoded into the generic SEEK_HOLE/SEEK_DATA tests....
+Good catch! I overlooked this point.
 
-My thought would be that a preallocated extent is still a HOLE, because
-it doesn't contain data that an application actually cares about.  On
-the other hand, a delalloc extent is DATA because it has something that
-an application cares about.
+> I think something like this would work, though:
+>
+>    if (bus_res)
+>        list_add_tail(&b->resources, &bus_res->list);
+>    else {
+>        b->resource[0] = &ioport_resource;
+>        b->resource[1] = &iomem_resource;
+>    }
 
-The original reason SEEK_HOLE/SEEK_DATA were brought up over FIEMAP was
-"cp" being able to consistently access delalloc data that was only in
-the page cache, so if we don't get that right it will have been a pointless
-exercise.
-
-> Answering that question then helps answer the more complex questions
-> I had, like:
-> 
-> 	- what does SEEK_DATA return when you have a file layout
-> 	  like "hole-prealloc-data"?
-
-I would think only the "data" part, since that is what the definition
-of "SEEK_DATA" is IMHO.
-
-> Answers to that sort of question need to be known so we can write
-> corner-case tests to correctly verify the filesystem implementation.
-> 
-> I like to do better than present userspace with an interface that
-> behaves vastly different depending on the underlying filesystem, but
-> if the answer is "definition and implementation is entirely
-> filesystem specific" then I'll just go make something up....
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Yes, it should work.
 
 
-Cheers, Andreas
+Thanks again for your time,
 
-
-
-
-
+Deng-Cheng
