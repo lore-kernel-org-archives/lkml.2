@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab1HYRDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 13:03:49 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:34454
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1754761Ab1HYRDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 13:03:47 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:34449
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754245Ab1HYRDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753645Ab1HYRDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Aug 2011 13:03:46 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 10/59] Staging: hv: util: Make hv_utils a vmbus device driver
-Date: Thu, 25 Aug 2011 09:48:36 -0700
-Message-Id: <1314290965-2698-10-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/59] Staging: hv: vmbus: Cleanup vmbus_match()
+Date: Thu, 25 Aug 2011 09:48:37 -0700
+Message-Id: <1314290965-2698-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314290965-2698-1-git-send-email-kys@microsoft.com>
 References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
@@ -23,111 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preperation for supporting auto-loading the util driver, make
-the util driver a vmbus driver.
+Use the preferred mechanism to compare guids in vmbus_match().
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hv_util.c |   64 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 63 insertions(+), 1 deletions(-)
+ drivers/staging/hv/vmbus_drv.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
-index c164b54..a620f4d 100644
---- a/drivers/staging/hv/hv_util.c
-+++ b/drivers/staging/hv/hv_util.c
-@@ -36,6 +36,8 @@ static u8 *shut_txf_buf;
- static u8 *time_txf_buf;
- static u8 *hbeat_txf_buf;
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index c88a183..b651968 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -302,8 +302,7 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
+ 	struct hv_device *hv_dev = device_to_hv_device(device);
  
-+static const char *driver_name = "hv_util";
-+
- static void shutdown_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
-@@ -210,6 +212,63 @@ static void heartbeat_onchannelcallback(void *context)
- 	}
- }
+ 	/* We found our driver ? */
+-	if (memcmp(&hv_dev->dev_type, &drv->dev_type,
+-		   sizeof(uuid_le)) == 0)
++	if (!uuid_le_cmp(hv_dev->dev_type, drv->dev_type))
+ 		match = 1;
  
-+/*
-+ * The devices managed by the util driver don't need any additional
-+ * setup.
-+ */
-+static int util_probe(struct hv_device *dev)
-+{
-+	return 0;
-+}
-+
-+static int util_remove(struct hv_device *dev)
-+{
-+	return 0;
-+}
-+
-+static const struct hv_vmbus_device_id id_table[] = {
-+	{
-+		/* Shutdown guid */
-+		.guid = {
-+			0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
-+			0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB
-+		}
-+	},
-+	{
-+		/* Time synch guid */
-+		.guid = {
-+			0x30, 0xe6, 0x27, 0x95, 0xae, 0xd0, 0x7b, 0x49,
-+			0xad, 0xce, 0xe8, 0x0a, 0xb0, 0x17, 0x5c, 0xaf
-+		}
-+	},
-+	{
-+		/* Heartbeat guid */
-+		.guid = {
-+			0x39, 0x4f, 0x16, 0x57, 0x15, 0x91, 0x78, 0x4e,
-+			0xab, 0x55, 0x38, 0x2f, 0x3b, 0xd5, 0x42, 0x2d
-+		}
-+	},
-+	{
-+		/* KVP guid */
-+		.guid = {
-+			0xe7, 0xf4, 0xa0, 0xa9, 0x45, 0x5a, 0x96, 0x4d,
-+			0xb8, 0x27, 0x8a, 0x84, 0x1e, 0x8c, 0x3,  0xe6
-+		}
-+	},
-+	{
-+		.guid = { }
-+	},
-+};
-+
-+MODULE_DEVICE_TABLE(vmbus, id_table);
-+
-+/* The one and only one */
-+static  struct hv_driver util_drv = {
-+	.id_table = id_table,
-+	.probe =  util_probe,
-+	.remove =  util_remove,
-+};
-+
- static const struct pci_device_id __initconst
- hv_utils_pci_table[] __maybe_unused = {
- 	{ PCI_DEVICE(0x1414, 0x5353) }, /* Hyper-V emulated VGA controller */
-@@ -264,7 +323,9 @@ static int __init init_hyperv_utils(void)
- 
- 	hv_cb_utils[HV_KVP_MSG].callback = &hv_kvp_onchannelcallback;
- 
--	return 0;
-+	util_drv.driver.name = driver_name;
-+
-+	return vmbus_child_driver_register(&util_drv.driver);
- }
- 
- static void exit_hyperv_utils(void)
-@@ -296,6 +357,7 @@ static void exit_hyperv_utils(void)
- 	kfree(shut_txf_buf);
- 	kfree(time_txf_buf);
- 	kfree(hbeat_txf_buf);
-+	vmbus_child_driver_unregister(&util_drv.driver);
- }
- 
- module_init(init_hyperv_utils);
+ 	return match;
 -- 
 1.7.4.1
 
