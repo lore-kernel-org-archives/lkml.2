@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab1HYS1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 14:27:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56125 "EHLO mail.zytor.com"
+	id S1755110Ab1HYS21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 14:28:27 -0400
+Received: from orca.ele.uri.edu ([131.128.51.63]:43062 "EHLO orca.ele.uri.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617Ab1HYS1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 14:27:08 -0400
-Message-ID: <4E5693DD.2010307@zytor.com>
-Date: Thu, 25 Aug 2011 11:26:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1753723Ab1HYS20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 14:28:26 -0400
+From: "Will Simoneau" <simoneau@ele.uri.edu>
+Date: Thu, 25 Aug 2011 14:28:19 -0400
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, dipankar@in.ibm.com
+Subject: Re: 2.6.39.4: Oops in rcu_read_unlock_special()/_raw_spin_lock()
+Message-ID: <20110825182819.GA6874@ele.uri.edu>
+References: <20110824211907.GA4225@ele.uri.edu>
+ <20110824212744.GV2417@linux.vnet.ibm.com>
+ <20110825132051.GA9580@ele.uri.edu>
+ <20110825140722.GC2369@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au> <4E5690C3.2050706@goop.org>
-In-Reply-To: <4E5690C3.2050706@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110825140722.GC2369@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 [Linux 2.6.38.4 x86_64]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 11:13 AM, Jeremy Fitzhardinge wrote:
-> On 08/24/2011 09:24 PM, Stephen Rothwell wrote:
->> Hi all,
->>
->> Today's linux-next merge of the xen tree got a conflict in
->> arch/x86/include/asm/spinlock.h between a series of commits from the tip
->> tree and a smaller series of similar commits from the xen tree.
->>
->> I see that Linus is commenting on these patches at the moment, and its
->> not easy to resolve the conflicts, so I will just use the xen tree from
->> next-20110824 for today.
->>
+On 07:07 Thu 25 Aug     , Paul E. McKenney wrote:
+> On Thu, Aug 25, 2011 at 09:20:51AM -0400, Will Simoneau wrote:
+> > On 14:27 Wed 24 Aug     , Paul E. McKenney wrote:
+> > > On Wed, Aug 24, 2011 at 05:19:07PM -0400, Will Simoneau wrote:
+> > > > The following commits from Linus' git seem vaguely related,
+> > > > although I have no idea how relevant they are to 2.6.39.4:
+> > > > 
+> > > >    ec433f0c (softirq,rcu: Inform RCU of irq_exit() activity)
+> > > >    10f39bb1 (rcu: protect __rcu_read_unlock() against scheduler-using
+> > > >              irq handlers)
+> > > 
+> > > If this failure mechanism really is the culprit, you should be able
+> > > to make failure happen much more frequently by inserting a delay in
+> > > __rcu_read_unlock() just prior to the call to rcu_read_unlock_special().
+> > > I would suggest starting with a few tens to hundreds of microseconds
+> > > worth of delay.
+> > > 
+> > > If this does make the failure reproducible, then it would make sense
+> > > to try applying the two patches you identified.
+> > 
+> > Hmm. I tried adding progressively larger delays in the spot you
+> > indicated. I went from 100uS to an entire 1S (!) and got no crash or
+> > deadlock. The target runs at 40MHz so the delays do need to be
+> > relatively long compared to modern machines.
+> > 
+> > My hardware breakpoint as well as printk tests confirm that
+> > rcu_read_unlock_special() really does get called multiple times per
+> > second, and the 1S delay makes it painfully obvious as well. But, no
+> > dice.
 > 
-> Thanks Stephen; the xen tree ones are more current, and I want to make
-> sure I didn't screw up any of the cmpxchg/xadd changes in a wider test env.
-> 
+> Well, you can always apply the two patches above anyway, but it is hard
+> to prove what the underlying problem really is in your case.
 
-Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
-should be dropped.
-
-	-hpa
-
+I am still unable to reproduce the Oops so I have no way of knowing if
+applying the patches has any effect. I did find and fix the issue with
+booting post-2.6.39* kernels on my hardware, so I've moved on to
+3.1-rc3. I guess I will get back to you if it happens again :-)
