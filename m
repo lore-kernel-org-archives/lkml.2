@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab1HYXF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 19:05:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29009 "EHLO
+	id S1753525Ab1HYXGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 19:06:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:19756 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab1HYXFz (ORCPT
+	with ESMTP id S1752955Ab1HYXF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 19:05:55 -0400
+	Thu, 25 Aug 2011 19:05:56 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=JWm/w72vwaFnTPpH8MykfmbT5AE+7MW4aXBAOVq+vvXTMShJ3kalaU0Ci4Wn732n9
-	vnSocNpSJKLKnZN69YWag==
-Subject: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
+	h=subject:to:from:cc:date:message-id:in-reply-to:references:
+	user-agent:mime-version:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=h0ihqKNn/aSROoFMjmnqFNUvdqNSBmLqGwhyxBvIfCc+hA7J9pXbhxNyBd2hGWCc0
+	WTqVzeOyK8NFyzwK2X1UQ==
+Subject: [PATCH 2/2] x86, ioapic: Announce resources reserved for IOAPICs
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: RalfJungralfjung-e@gmx.de, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 25 Aug 2011 17:05:39 -0600
-Message-ID: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org
+Date: Thu, 25 Aug 2011 17:05:45 -0600
+Message-ID: <20110825230545.5355.65085.stgit@bhelgaas.mtv.corp.google.com>
+In-Reply-To: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
+References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -31,44 +31,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously we reserved 1024 bytes, but that's more space than the IOAPIC
-consumes, and it can cause conflicts with nearby devices.  The known
-requirement is 68 bytes (sizeof(struct io_apic)), and rounding up to a
-power-of-2 gives us 128.
+Delay the IOAPIC output a bit so we can print the actual resources we
+reserve.
 
-The bug reported below is caused by the following assignments (the IOAPIC
-power-on default and the watchdog address recommended in the AMD SP5100
-BIOS Developer's Guide):
-
-  IOAPIC[0]        at [mem 0xfec00000-0xfec003ff]
-  SP5100 TCO timer at [mem 0xfec000f0-0xfec000f7]
-
-Reported-by: Ralf Jung ralfjung-e@gmx.de
-Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=638863
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/x86/include/asm/apicdef.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
-index 34595d5..855a18a 100644
---- a/arch/x86/include/asm/apicdef.h
-+++ b/arch/x86/include/asm/apicdef.h
-@@ -12,10 +12,11 @@
- #define	APIC_DEFAULT_PHYS_BASE		0xfee00000
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 8eb863e..914027e 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3876,6 +3876,7 @@ void __init ioapic_and_gsi_init(void)
+ {
+ 	unsigned long ioapic_phys, idx = FIX_IO_APIC_BASE_0;
+ 	struct resource *ioapic_res;
++	struct mp_ioapic_gsi *gsi_cfg;
+ 	int i;
  
- /*
-- * This is the IO-APIC register space as specified
-- * by Intel docs:
-+ * I/O APICs are accessed indirectly via an index/data pair and an EOI
-+ * register.  For example, see sec 13.5.1, "APIC Register Map," in the
-+ * Intel ICH10 datasheet and the struct io_apic definition.
-  */
--#define IO_APIC_SLOT_SIZE		1024
-+#define IO_APIC_SLOT_SIZE		128
+ 	ioapic_res = ioapic_setup_resources(nr_ioapics);
+@@ -3908,6 +3909,13 @@ fake_ioapic_page:
  
- #define	APIC_ID		0x20
+ 		ioapic_res->start = ioapic_phys;
+ 		ioapic_res->end = ioapic_phys + IO_APIC_SLOT_SIZE - 1;
++
++		gsi_cfg = mp_ioapic_gsi_routing(i);
++
++		printk(KERN_INFO "IOAPIC[%d]: id %d v%d %pR GSI %d-%d\n",
++		       i, mpc_ioapic_id(i), mpc_ioapic_ver(i), ioapic_res,
++		       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
++
+ 		ioapic_res++;
+ 	}
+ 
+@@ -4016,11 +4024,6 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	if (gsi_cfg->gsi_end >= gsi_top)
+ 		gsi_top = gsi_cfg->gsi_end + 1;
+ 
+-	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+-	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
+-	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
+-	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
+-
+ 	nr_ioapics++;
+ }
  
 
