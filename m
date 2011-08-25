@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab1HYQKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:10:13 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:24079 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1HYQKK convert rfc822-to-8bit (ORCPT
+	id S1752917Ab1HYQLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:11:35 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39447 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab1HYQLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:10:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=yaotez9k1m6Xi/Jj2McGi3OpAKe/bRmKv/BCU1JNTkPdvcgZqFc1XUF28rTsUP6Mt
-	oyngjAHy7Y84y6GHpYCzw==
+	Thu, 25 Aug 2011 12:11:33 -0400
+Date: Thu, 25 Aug 2011 18:11:19 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, oleg@redhat.com
+Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
+Message-ID: <20110825161119.GK2803@mtj.dyndns.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+ <1313763382-12341-7-git-send-email-tj@kernel.org>
+ <20110824223412.GG28444@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1314271117-32717-3-git-send-email-dczhu@mips.com>
-References: <1314271117-32717-1-git-send-email-dczhu@mips.com> <1314271117-32717-3-git-send-email-dczhu@mips.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 25 Aug 2011 10:09:48 -0600
-Message-ID: <CAErSpo5n-FJXwOd2h179tctw2LX0bZ7xcyxU5Mam+tmVoqgprw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] MIPS: PCI: Pass controller's resources to
- pci_create_bus() in pcibios_scanbus()
-To: Deng-Cheng Zhu <dczhu@mips.com>
-Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
-        zenon@mips.com, dengcheng.zhu@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110824223412.GG28444@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 5:18 AM, Deng-Cheng Zhu <dczhu@mips.com> wrote:
-> Use the new interface of pci_create_bus() so that system controller's
-> resources are added to the root bus upon bus creation, thereby avoiding
-> conflicts with PCI quirks before pcibios_fixup_bus() gets the chance to do
-> right things in pci_scan_child_bus(). Also, since we are passing resources
-> to pci_create_bus() and setting them up in the bus->resources list as
-> opposed to the bus->resource[] array, we have to adopt the list style while
-> doing bus fixups later on, or else, for example in this MIPS case, system
-> controller's resources will stay in both bus->resources and
-> bus->resource[].
+Hello, Matt.
 
-> +static void __devinit
-> +pcibios_setup_root_resources(struct pci_bus *bus, struct pci_controller *ctrl)
-> +{
-> +       pci_bus_remove_resources(bus);
-> +       pci_bus_add_resource(bus, ctrl->io_resource, 0);
-> +       pci_bus_add_resource(bus, ctrl->mem_resource, 0);
-> +}
-> +
->  void __devinit pcibios_fixup_bus(struct pci_bus *bus)
->  {
->        /* Propagate hose info into the subordinate devices.  */
-> @@ -269,10 +313,9 @@ void __devinit pcibios_fixup_bus(struct pci_bus *bus)
->        struct list_head *ln;
->        struct pci_dev *dev = bus->self;
->
-> -       if (!dev) {
-> -               bus->resource[0] = hose->io_resource;
-> -               bus->resource[1] = hose->mem_resource;
-> -       } else if (pci_probe_only &&
-> +       if (!dev)
-> +               pcibios_setup_root_resources(bus, hose);
+On Wed, Aug 24, 2011 at 03:34:12PM -0700, Matt Helsley wrote:
+> > -	/* We don't want this task to be frozen prematurely */
+> > -	clear_freeze_flag(tsk);
+> 
+> This patch doesn't look quite right. Perhaps that's because I'm
+> unclear why any of the freezer flags matter in the do_exit() path. How
+> can the task enter the refrigerator in do_exit()? Isn't it true that
+> we don't enter the syscall return path and thus can't freeze
+> anyway (the last thing it should do is schedule())? Or is this another
+> kthread quirk?
 
-As I mentioned in my other response, I think you can just drop this
-whole "if (!dev)" block since the root bus resources should already be
-correct.  There's no need to move them from the bus->resource[] array
-to the bus->resources list.
+There are paths where try_to_freeze() is called explicitly.  None of
+those is called from exit path AFAICT but it is a theoretical
+possibility and I think it isn't a terrible idea to explicitly declare
+an exiting task unfreezable.
 
-Someday, if all arches adopt your nice pci_create_bus() extension to
-make root bus resources correct from the beginning, there should be no
-arch references to the bus->resource[] array left, and then we can
-remove it altogether.  At least, that's what I was hoping when I added
-the list :)
+> Couldn't TIF_FREEZE already be set? Setting PF_NOFREEZE only ensures
+> the flag won't get set "after" this point. To fix this I think we'd need
+> something more like:
+> 
+> 	current->flags |= PF_NOFREEZE;
+> 	smp_wmb();
+> 	clear_freeze_flag(tsk);
 
-In any case, all the *readers* of bus resources already use the
-pci_bus_for_each_resource() interface, which knows how to look at both
-the array and the list.
+TIF_FREEZE being set doesn't matter all that much.  Ultimately,
+PF_NOFREEZE is observed by the task itself.  freezing() is false - it
+either doesn't enter refrigerator at all or exits immediately without
+scheduling out.
 
-Bjorn
+> This patch also fiddles with the timing of adjusting or checking three
+> different pieces of task state:
+> 
+> 	exit_state
+> 	flags (PF_NOFREEZE)
+> 	thread flags (TIF_FREEZE)
+> 
+> each of which get set/cleared at different times from the new
+> line adding PF_NOFREEZE to the flags. So I'm a little nervous that
+> we might be missing some important details.
+
+Sure, that's one of the problems I wanted to clarify with this patch
+series.  The rules are quite simple now.
+
+* Whether a task enters and stays inside freezer is determined by
+  freezing().
+
+* Related PF_ flags are manipulated only by the task itself and thus
+  the latest state is always visible when the task tests freezing().
+
+* Freezer trying to freeze or thaw a task updates states and
+  freezing() result reflects the change considering both the task's
+  freezing settings and the freezing conditions in effect.  Freezer is
+  responsible for ensuring the target task goes through at least one
+  freezing() test after the state is updated.
+
+So, no race condition.
+
+Thanks.
+
+-- 
+tejun
