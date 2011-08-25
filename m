@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab1HYQeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 12:34:10 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37129 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab1HYQeF (ORCPT
+	id S1754017Ab1HYQeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 12:34:25 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52574 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753579Ab1HYQeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 12:34:05 -0400
-Message-ID: <4E56796F.8090703@windriver.com>
-Date: Thu, 25 Aug 2011 12:33:51 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Thu, 25 Aug 2011 12:34:09 -0400
+References: <1313650253-21794-1-git-send-email-gthelen@google.com> <20110818144025.8e122a67.akpm@linux-foundation.org> <1314284272.27911.32.camel@twins> <alpine.DEB.2.00.1108251009120.27407@router.home> <1314289208.3268.4.camel@mulgrave> <alpine.DEB.2.00.1108251128460.27407@router.home>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <alpine.DEB.2.00.1108251128460.27407@router.home>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jon Medhurst <tixy@yxit.co.uk>, Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the moduleh tree with the arm tree
-References: <20110825151748.8e41e0ded739187a1432cf0b@canb.auug.org.au>
-In-Reply-To: <20110825151748.8e41e0ded739187a1432cf0b@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+From: James Bottomley <James.bottomley@HansenPartnership.com>
+Date: Thu, 25 Aug 2011 09:34:06 -0700
+To: Christoph Lameter <cl@linux.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-arch@vger.kernel.org
+Message-ID: <986ca4ed-6810-426f-b32f-5c8687e3a10b@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-08-25 01:17 AM, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Today's linux-next merge of the moduleh tree got a conflict in
-> arch/arm/mach-bcmring/mm.c between commit 2d5e975b2194 ("ARM:
-> mach-bcmring: Setup consistent dma size at boot time") from the arm tree
-> and commit 9bc7d81e271e ("arm: fix implicit use of page.h in
-> mach-bcmring/mach-jornada") from the moduleh tree.
 
-I can't really relocate the page.h inclusion in a trivial way to
-make this conflict go away.  But since the implicit header use fixes
-for arm are independent and don't actually depend on anything in the
-rest of the module.h tree, I can set about to giving these to Russell
-for his arm-next branch anytime.  I'll do that shortly.
 
-Thanks,
-Paul.
+Christoph Lameter <cl@linux.com> wrote:
 
-> 
-> Jst context changes I fixed it up (see below) and can carry the fix as
-> necessary.
+>On Thu, 25 Aug 2011, James Bottomley wrote:
+>
+>> On Thu, 2011-08-25 at 10:11 -0500, Christoph Lameter wrote:
+>> > On Thu, 25 Aug 2011, Peter Zijlstra wrote:
+>> >
+>> > > On Thu, 2011-08-18 at 14:40 -0700, Andrew Morton wrote:
+>> > > >
+>> > > > I think I'll apply it, as the call frequency is low (correct?)
+>and the
+>> > > > problem will correct itself as other architectures implement
+>their
+>> > > > atomic this_cpu_foo() operations.
+>> > >
+>> > > Which leads me to wonder, can anything but x86 implement that
+>this_cpu_*
+>> > > muck? I doubt any of the risk chips can actually do all this.
+>> > > Maybe Itanic, but then that seems to be dying fast.
+>> >
+>> > The cpu needs to have an RMW instruction that does something to a
+>> > variable relative to a register that points to the per cpu base.
+>> >
+>> > Thats generally possible. The problem is how expensive the RMW is
+>going to
+>> > be.
+>>
+>> Risc systems generally don't have a single instruction for this,
+>that's
+>> correct.  Obviously we can do it as a non atomic sequence: read
+>> variable, compute relative, read, modify, write ... but there's
+>> absolutely no point hand crafting that in asm since the compiler can
+>> usually work it out nicely.  And, of course, to have this atomic, we
+>> have to use locks, which ends up being very expensive.
+>
+>ARM seems to have these LDREX/STREX instructions for that purpose which
+>seem to be used for generating atomic instructions without lockes. I
+>guess
+>other RISC architectures have similar means of doing it?
+
+Arm isn't really risc.  Most don't.  However even with ldrex/strex you need two instructions for rmw.
+
+James
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity and top posting.
