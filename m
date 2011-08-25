@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab1HYPau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:30:50 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:32962 "EHLO
+	id S1753549Ab1HYPJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:09:18 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:32976 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab1HYPJT (ORCPT
+	with ESMTP id S1753523Ab1HYPJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:19 -0400
+	Thu, 25 Aug 2011 11:09:12 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 040/118] drbd: Implemented receiving of new style packets on meta socket
-Date: Thu, 25 Aug 2011 17:07:36 +0200
-Message-Id: <1314284934-17999-41-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 035/118] drbd: moved crypto transformations and friends from mdev to tconn
+Date: Thu, 25 Aug 2011 17:07:31 +0200
+Message-Id: <1314284934-17999-36-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,357 +20,292 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now drbd communication with protocol 100 actually works.
-Replaced the remaining p_header80 with p_header where we
-no longer know which header it is.
-
-In the places where p_header80 is still in use, it is on
-purpose, because we know that it is an old style header
-there.
+sed -i \
+       -e 's/mdev->cram_hmac_tfm/mdev->tconn->cram_hmac_tfm/g' \
+       -e 's/mdev->integrity_w_tfm/mdev->tconn->integrity_w_tfm/g' \
+       -e 's/mdev->integrity_r_tfm/mdev->tconn->integrity_r_tfm/g' \
+       -e 's/mdev->int_dig_out/mdev->tconn->int_dig_out/g' \
+       -e 's/mdev->int_dig_in/mdev->tconn->int_dig_in/g' \
+       -e 's/mdev->int_dig_vv/mdev->tconn->int_dig_vv/g' \
+       *.[ch]
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |  132 ++++++++++++++++++-----------------
- 1 files changed, 68 insertions(+), 64 deletions(-)
+ drivers/block/drbd/drbd_int.h      |   13 ++++++-----
+ drivers/block/drbd/drbd_main.c     |   42 ++++++++++++++++++------------------
+ drivers/block/drbd/drbd_nl.c       |   24 ++++++++++----------
+ drivers/block/drbd/drbd_receiver.c |   32 +++++++++++++-------------
+ 4 files changed, 56 insertions(+), 55 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index 0e9debe..65f0e78 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -982,6 +982,13 @@ struct drbd_tconn {			/* is a resource from the config file */
+ 	struct drbd_tl_epoch *oldest_tle;
+ 	struct list_head out_of_sequence_requests;
+ 
++	struct crypto_hash *cram_hmac_tfm;
++	struct crypto_hash *integrity_w_tfm; /* to be used by the worker thread */
++	struct crypto_hash *integrity_r_tfm; /* to be used by the receiver thread */
++	void *int_dig_out;
++	void *int_dig_in;
++	void *int_dig_vv;
++
+ 	struct drbd_thread receiver;
+ 	struct drbd_thread worker;
+ 	struct drbd_thread asender;
+@@ -1114,12 +1121,6 @@ struct drbd_conf {
+ 	unsigned int al_tr_number;
+ 	int al_tr_cycle;
+ 	int al_tr_pos;   /* position of the next transaction in the journal */
+-	struct crypto_hash *cram_hmac_tfm;
+-	struct crypto_hash *integrity_w_tfm; /* to be used by the worker thread */
+-	struct crypto_hash *integrity_r_tfm; /* to be used by the receiver thread */
+-	void *int_dig_out;
+-	void *int_dig_in;
+-	void *int_dig_vv;
+ 	wait_queue_head_t seq_wait;
+ 	atomic_t packet_seq;
+ 	unsigned int peer_seq;
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index c063cd5..699f639 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2404,8 +2404,8 @@ static int _drbd_send_ack(struct drbd_conf *mdev, enum drbd_packets cmd,
+ int drbd_send_ack_dp(struct drbd_conf *mdev, enum drbd_packets cmd,
+ 		     struct p_data *dp, int data_size)
+ {
+-	data_size -= (mdev->tconn->agreed_pro_version >= 87 && mdev->integrity_r_tfm) ?
+-		crypto_hash_digestsize(mdev->integrity_r_tfm) : 0;
++	data_size -= (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_r_tfm) ?
++		crypto_hash_digestsize(mdev->tconn->integrity_r_tfm) : 0;
+ 	return _drbd_send_ack(mdev, cmd, dp->sector, cpu_to_be32(data_size),
+ 			      dp->block_id);
+ }
+@@ -2670,8 +2670,8 @@ int drbd_send_dblock(struct drbd_conf *mdev, struct drbd_request *req)
+ 	if (!drbd_get_data_sock(mdev))
+ 		return 0;
+ 
+-	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->integrity_w_tfm) ?
+-		crypto_hash_digestsize(mdev->integrity_w_tfm) : 0;
++	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_w_tfm) ?
++		crypto_hash_digestsize(mdev->tconn->integrity_w_tfm) : 0;
+ 
+ 	if (req->i.size <= DRBD_MAX_SIZE_H80_PACKET) {
+ 		p.head.h80.magic   = cpu_to_be32(DRBD_MAGIC);
+@@ -2701,8 +2701,8 @@ int drbd_send_dblock(struct drbd_conf *mdev, struct drbd_request *req)
+ 	ok = (sizeof(p) ==
+ 		drbd_send(mdev, mdev->tconn->data.socket, &p, sizeof(p), dgs ? MSG_MORE : 0));
+ 	if (ok && dgs) {
+-		dgb = mdev->int_dig_out;
+-		drbd_csum_bio(mdev, mdev->integrity_w_tfm, req->master_bio, dgb);
++		dgb = mdev->tconn->int_dig_out;
++		drbd_csum_bio(mdev, mdev->tconn->integrity_w_tfm, req->master_bio, dgb);
+ 		ok = dgs == drbd_send(mdev, mdev->tconn->data.socket, dgb, dgs, 0);
+ 	}
+ 	if (ok) {
+@@ -2727,8 +2727,8 @@ int drbd_send_dblock(struct drbd_conf *mdev, struct drbd_request *req)
+ 			/* 64 byte, 512 bit, is the largest digest size
+ 			 * currently supported in kernel crypto. */
+ 			unsigned char digest[64];
+-			drbd_csum_bio(mdev, mdev->integrity_w_tfm, req->master_bio, digest);
+-			if (memcmp(mdev->int_dig_out, digest, dgs)) {
++			drbd_csum_bio(mdev, mdev->tconn->integrity_w_tfm, req->master_bio, digest);
++			if (memcmp(mdev->tconn->int_dig_out, digest, dgs)) {
+ 				dev_warn(DEV,
+ 					"Digest mismatch, buffer modified by upper layers during write: %llus +%u\n",
+ 					(unsigned long long)req->i.sector, req->i.size);
+@@ -2755,8 +2755,8 @@ int drbd_send_block(struct drbd_conf *mdev, enum drbd_packets cmd,
+ 	void *dgb;
+ 	int dgs;
+ 
+-	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->integrity_w_tfm) ?
+-		crypto_hash_digestsize(mdev->integrity_w_tfm) : 0;
++	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_w_tfm) ?
++		crypto_hash_digestsize(mdev->tconn->integrity_w_tfm) : 0;
+ 
+ 	if (e->i.size <= DRBD_MAX_SIZE_H80_PACKET) {
+ 		p.head.h80.magic   = cpu_to_be32(DRBD_MAGIC);
+@@ -2783,8 +2783,8 @@ int drbd_send_block(struct drbd_conf *mdev, enum drbd_packets cmd,
+ 
+ 	ok = sizeof(p) == drbd_send(mdev, mdev->tconn->data.socket, &p, sizeof(p), dgs ? MSG_MORE : 0);
+ 	if (ok && dgs) {
+-		dgb = mdev->int_dig_out;
+-		drbd_csum_ee(mdev, mdev->integrity_w_tfm, e, dgb);
++		dgb = mdev->tconn->int_dig_out;
++		drbd_csum_ee(mdev, mdev->tconn->integrity_w_tfm, e, dgb);
+ 		ok = dgs == drbd_send(mdev, mdev->tconn->data.socket, dgb, dgs, 0);
+ 	}
+ 	if (ok)
+@@ -3276,9 +3276,9 @@ static void drbd_delete_device(unsigned int minor)
+ 	kfree(mdev->p_uuid);
+ 	/* mdev->p_uuid = NULL; */
+ 
+-	kfree(mdev->int_dig_out);
+-	kfree(mdev->int_dig_in);
+-	kfree(mdev->int_dig_vv);
++	kfree(mdev->tconn->int_dig_out);
++	kfree(mdev->tconn->int_dig_in);
++	kfree(mdev->tconn->int_dig_vv);
+ 
+ 	/* cleanup the rest that has been
+ 	 * allocated from drbd_new_device
+@@ -3629,12 +3629,12 @@ void drbd_free_resources(struct drbd_conf *mdev)
+ 	mdev->csums_tfm = NULL;
+ 	crypto_free_hash(mdev->verify_tfm);
+ 	mdev->verify_tfm = NULL;
+-	crypto_free_hash(mdev->cram_hmac_tfm);
+-	mdev->cram_hmac_tfm = NULL;
+-	crypto_free_hash(mdev->integrity_w_tfm);
+-	mdev->integrity_w_tfm = NULL;
+-	crypto_free_hash(mdev->integrity_r_tfm);
+-	mdev->integrity_r_tfm = NULL;
++	crypto_free_hash(mdev->tconn->cram_hmac_tfm);
++	mdev->tconn->cram_hmac_tfm = NULL;
++	crypto_free_hash(mdev->tconn->integrity_w_tfm);
++	mdev->tconn->integrity_w_tfm = NULL;
++	crypto_free_hash(mdev->tconn->integrity_r_tfm);
++	mdev->tconn->integrity_r_tfm = NULL;
+ 
+ 	drbd_free_sock(mdev);
+ 
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 4eaf81a..0836808 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1532,21 +1532,21 @@ static int drbd_nl_net_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *nlp,
+ 	mdev->send_cnt = 0;
+ 	mdev->recv_cnt = 0;
+ 
+-	crypto_free_hash(mdev->cram_hmac_tfm);
+-	mdev->cram_hmac_tfm = tfm;
++	crypto_free_hash(mdev->tconn->cram_hmac_tfm);
++	mdev->tconn->cram_hmac_tfm = tfm;
+ 
+-	crypto_free_hash(mdev->integrity_w_tfm);
+-	mdev->integrity_w_tfm = integrity_w_tfm;
++	crypto_free_hash(mdev->tconn->integrity_w_tfm);
++	mdev->tconn->integrity_w_tfm = integrity_w_tfm;
+ 
+-	crypto_free_hash(mdev->integrity_r_tfm);
+-	mdev->integrity_r_tfm = integrity_r_tfm;
++	crypto_free_hash(mdev->tconn->integrity_r_tfm);
++	mdev->tconn->integrity_r_tfm = integrity_r_tfm;
+ 
+-	kfree(mdev->int_dig_out);
+-	kfree(mdev->int_dig_in);
+-	kfree(mdev->int_dig_vv);
+-	mdev->int_dig_out=int_dig_out;
+-	mdev->int_dig_in=int_dig_in;
+-	mdev->int_dig_vv=int_dig_vv;
++	kfree(mdev->tconn->int_dig_out);
++	kfree(mdev->tconn->int_dig_in);
++	kfree(mdev->tconn->int_dig_vv);
++	mdev->tconn->int_dig_out=int_dig_out;
++	mdev->tconn->int_dig_in=int_dig_in;
++	mdev->tconn->int_dig_vv=int_dig_vv;
+ 	retcode = _drbd_set_state(_NS(mdev, conn, C_UNCONNECTED), CS_VERBOSE, NULL);
+ 	spin_unlock_irq(&mdev->tconn->req_lock);
+ 
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index e45ed47..24c906f 100644
+index af968a0b..4b37010 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -926,18 +926,10 @@ out_release_sockets:
- 	return -1;
- }
+@@ -880,7 +880,7 @@ retry:
+ 	if (h <= 0)
+ 		return h;
  
--static int drbd_recv_header(struct drbd_conf *mdev, enum drbd_packets *cmd, unsigned int *packet_size)
-+static bool decode_header(struct drbd_conf *mdev, struct p_header *h, enum drbd_packets *cmd,
-+			  unsigned int *packet_size)
- {
--	struct p_header *h = &mdev->tconn->data.rbuf.header;
- 	u32 vol_n_len;
--	int r;
--
--	r = drbd_recv(mdev, h, sizeof(*h));
--	if (unlikely(r != sizeof(*h))) {
--		if (!signal_pending(current))
--			dev_warn(DEV, "short read expecting header on sock: r=%d\n", r);
--		return false;
--	}
+-	if (mdev->cram_hmac_tfm) {
++	if (mdev->tconn->cram_hmac_tfm) {
+ 		/* drbd_request_state(mdev, NS(conn, WFAuth)); */
+ 		switch (drbd_do_auth(mdev)) {
+ 		case -1:
+@@ -1240,12 +1240,12 @@ read_in_block(struct drbd_conf *mdev, u64 id, sector_t sector, int data_size) __
+ 	struct drbd_epoch_entry *e;
+ 	struct page *page;
+ 	int dgs, ds, rr;
+-	void *dig_in = mdev->int_dig_in;
+-	void *dig_vv = mdev->int_dig_vv;
++	void *dig_in = mdev->tconn->int_dig_in;
++	void *dig_vv = mdev->tconn->int_dig_vv;
+ 	unsigned long *data;
  
- 	if (h->h80.magic == cpu_to_be32(DRBD_MAGIC)) {
- 		*cmd = be16_to_cpu(h->h80.command);
-@@ -954,9 +946,25 @@ static int drbd_recv_header(struct drbd_conf *mdev, enum drbd_packets *cmd, unsi
- 		    be16_to_cpu(h->h80.length));
- 		return false;
- 	}
-+	return true;
-+}
-+
-+static int drbd_recv_header(struct drbd_conf *mdev, enum drbd_packets *cmd, unsigned int *packet_size)
-+{
-+	struct p_header *h = &mdev->tconn->data.rbuf.header;
-+	int r;
-+
-+	r = drbd_recv(mdev, h, sizeof(*h));
-+	if (unlikely(r != sizeof(*h))) {
-+		if (!signal_pending(current))
-+			dev_warn(DEV, "short read expecting header on sock: r=%d\n", r);
-+		return false;
-+	}
-+
-+	r = decode_header(mdev, h, cmd, packet_size);
- 	mdev->tconn->last_received = jiffies;
+-	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->integrity_r_tfm) ?
+-		crypto_hash_digestsize(mdev->integrity_r_tfm) : 0;
++	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_r_tfm) ?
++		crypto_hash_digestsize(mdev->tconn->integrity_r_tfm) : 0;
  
--	return true;
-+	return r;
- }
- 
- static void drbd_flush(struct drbd_conf *mdev)
-@@ -2810,14 +2818,14 @@ static int receive_SyncParam(struct drbd_conf *mdev, enum drbd_packets cmd, unsi
+ 	if (dgs) {
+ 		rr = drbd_recv(mdev, dig_in, dgs);
+@@ -1306,7 +1306,7 @@ read_in_block(struct drbd_conf *mdev, u64 id, sector_t sector, int data_size) __
  	}
  
- 	if (apv <= 88) {
--		header_size = sizeof(struct p_rs_param) - sizeof(struct p_header80);
-+		header_size = sizeof(struct p_rs_param) - sizeof(struct p_header);
- 		data_size   = packet_size  - header_size;
- 	} else if (apv <= 94) {
--		header_size = sizeof(struct p_rs_param_89) - sizeof(struct p_header80);
-+		header_size = sizeof(struct p_rs_param_89) - sizeof(struct p_header);
- 		data_size   = packet_size  - header_size;
- 		D_ASSERT(data_size == 0);
- 	} else {
--		header_size = sizeof(struct p_rs_param_95) - sizeof(struct p_header80);
-+		header_size = sizeof(struct p_rs_param_95) - sizeof(struct p_header);
- 		data_size   = packet_size  - header_size;
- 		D_ASSERT(data_size == 0);
+ 	if (dgs) {
+-		drbd_csum_ee(mdev, mdev->integrity_r_tfm, e, dig_vv);
++		drbd_csum_ee(mdev, mdev->tconn->integrity_r_tfm, e, dig_vv);
+ 		if (memcmp(dig_in, dig_vv, dgs)) {
+ 			dev_err(DEV, "Digest integrity check FAILED: %llus +%u\n",
+ 				(unsigned long long)sector, data_size);
+@@ -1358,11 +1358,11 @@ static int recv_dless_read(struct drbd_conf *mdev, struct drbd_request *req,
+ 	struct bio_vec *bvec;
+ 	struct bio *bio;
+ 	int dgs, rr, i, expect;
+-	void *dig_in = mdev->int_dig_in;
+-	void *dig_vv = mdev->int_dig_vv;
++	void *dig_in = mdev->tconn->int_dig_in;
++	void *dig_vv = mdev->tconn->int_dig_vv;
+ 
+-	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->integrity_r_tfm) ?
+-		crypto_hash_digestsize(mdev->integrity_r_tfm) : 0;
++	dgs = (mdev->tconn->agreed_pro_version >= 87 && mdev->tconn->integrity_r_tfm) ?
++		crypto_hash_digestsize(mdev->tconn->integrity_r_tfm) : 0;
+ 
+ 	if (dgs) {
+ 		rr = drbd_recv(mdev, dig_in, dgs);
+@@ -1401,7 +1401,7 @@ static int recv_dless_read(struct drbd_conf *mdev, struct drbd_request *req,
  	}
-@@ -3527,7 +3535,7 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packets cmd, unsigne
- 	void *buffer;
- 	int err;
- 	int ok = false;
--	struct p_header80 *h = &mdev->tconn->data.rbuf.header.h80;
-+	struct p_header *h = &mdev->tconn->data.rbuf.header;
  
- 	drbd_bm_lock(mdev, "receive bitmap", BM_LOCKED_SET_ALLOWED);
- 	/* you are supposed to send additional out-of-sync information
-@@ -3574,7 +3582,7 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packets cmd, unsigne
- 		}
+ 	if (dgs) {
+-		drbd_csum_bio(mdev, mdev->integrity_r_tfm, bio, dig_vv);
++		drbd_csum_bio(mdev, mdev->tconn->integrity_r_tfm, bio, dig_vv);
+ 		if (memcmp(dig_in, dig_vv, dgs)) {
+ 			dev_err(DEV, "Digest integrity check FAILED. Broken NICs?\n");
+ 			return 0;
+@@ -3841,8 +3841,8 @@ static void drbd_disconnect(struct drbd_conf *mdev)
+ 	if (os.conn == C_DISCONNECTING) {
+ 		wait_event(mdev->tconn->net_cnt_wait, atomic_read(&mdev->tconn->net_cnt) == 0);
  
- 		c.packets[cmd == P_BITMAP]++;
--		c.bytes[cmd == P_BITMAP] += sizeof(struct p_header80) + data_size;
-+		c.bytes[cmd == P_BITMAP] += sizeof(struct p_header) + data_size;
+-		crypto_free_hash(mdev->cram_hmac_tfm);
+-		mdev->cram_hmac_tfm = NULL;
++		crypto_free_hash(mdev->tconn->cram_hmac_tfm);
++		mdev->tconn->cram_hmac_tfm = NULL;
  
- 		if (err <= 0) {
- 			if (err < 0)
-@@ -3673,13 +3681,13 @@ static struct data_cmd drbd_cmd_handler[] = {
- 	[P_DATA_REPLY]	    = { 1, sizeof(struct p_data), receive_DataReply },
- 	[P_RS_DATA_REPLY]   = { 1, sizeof(struct p_data), receive_RSDataReply } ,
- 	[P_BARRIER]	    = { 0, sizeof(struct p_barrier), receive_Barrier } ,
--	[P_BITMAP]	    = { 1, sizeof(struct p_header80), receive_bitmap } ,
--	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header80), receive_bitmap } ,
--	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header80), receive_UnplugRemote },
-+	[P_BITMAP]	    = { 1, sizeof(struct p_header), receive_bitmap } ,
-+	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header), receive_bitmap } ,
-+	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header), receive_UnplugRemote },
- 	[P_DATA_REQUEST]    = { 0, sizeof(struct p_block_req), receive_DataRequest },
- 	[P_RS_DATA_REQUEST] = { 0, sizeof(struct p_block_req), receive_DataRequest },
--	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header80), receive_SyncParam },
--	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header80), receive_SyncParam },
-+	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header), receive_SyncParam },
-+	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header), receive_SyncParam },
- 	[P_PROTOCOL]        = { 1, sizeof(struct p_protocol), receive_protocol },
- 	[P_UUIDS]	    = { 0, sizeof(struct p_uuids), receive_uuids },
- 	[P_SIZES]	    = { 0, sizeof(struct p_sizes), receive_sizes },
-@@ -4187,9 +4195,9 @@ int drbdd_init(struct drbd_thread *thi)
+ 		kfree(mdev->tconn->net_conf);
+ 		mdev->tconn->net_conf = NULL;
+@@ -4012,10 +4012,10 @@ static int drbd_do_auth(struct drbd_conf *mdev)
+ 	unsigned int length;
+ 	int rv;
  
- /* ********* acknowledge sender ******** */
+-	desc.tfm = mdev->cram_hmac_tfm;
++	desc.tfm = mdev->tconn->cram_hmac_tfm;
+ 	desc.flags = 0;
  
--static int got_RqSReply(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_RqSReply(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
--	struct p_req_state_reply *p = (struct p_req_state_reply *)h;
-+	struct p_req_state_reply *p = &mdev->tconn->meta.rbuf.req_state_reply;
- 
- 	int retcode = be32_to_cpu(p->retcode);
- 
-@@ -4205,13 +4213,13 @@ static int got_RqSReply(struct drbd_conf *mdev, struct p_header80 *h)
- 	return true;
- }
- 
--static int got_Ping(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_Ping(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
- 	return drbd_send_ping_ack(mdev);
- 
- }
- 
--static int got_PingAck(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_PingAck(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
- 	/* restore idle timeout */
- 	mdev->tconn->meta.socket->sk->sk_rcvtimeo = mdev->tconn->net_conf->ping_int*HZ;
-@@ -4221,9 +4229,9 @@ static int got_PingAck(struct drbd_conf *mdev, struct p_header80 *h)
- 	return true;
- }
- 
--static int got_IsInSync(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_IsInSync(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
--	struct p_block_ack *p = (struct p_block_ack *)h;
-+	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
- 	sector_t sector = be64_to_cpu(p->sector);
- 	int blksize = be32_to_cpu(p->blksize);
- 
-@@ -4266,9 +4274,9 @@ validate_req_change_req_state(struct drbd_conf *mdev, u64 id, sector_t sector,
- 	return true;
- }
- 
--static int got_BlockAck(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_BlockAck(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
--	struct p_block_ack *p = (struct p_block_ack *)h;
-+	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
- 	sector_t sector = be64_to_cpu(p->sector);
- 	int blksize = be32_to_cpu(p->blksize);
- 	enum drbd_req_event what;
-@@ -4280,7 +4288,7 @@ static int got_BlockAck(struct drbd_conf *mdev, struct p_header80 *h)
- 		dec_rs_pending(mdev);
- 		return true;
+-	rv = crypto_hash_setkey(mdev->cram_hmac_tfm,
++	rv = crypto_hash_setkey(mdev->tconn->cram_hmac_tfm,
+ 				(u8 *)mdev->tconn->net_conf->shared_secret, key_len);
+ 	if (rv) {
+ 		dev_err(DEV, "crypto_hash_setkey() failed with %d\n", rv);
+@@ -4062,7 +4062,7 @@ static int drbd_do_auth(struct drbd_conf *mdev)
+ 		goto fail;
  	}
--	switch (be16_to_cpu(h->command)) {
-+	switch (cmd) {
- 	case P_RS_WRITE_ACK:
- 		D_ASSERT(mdev->tconn->net_conf->wire_protocol == DRBD_PROT_C);
- 		what = WRITE_ACKED_BY_PEER_AND_SIS;
-@@ -4307,9 +4315,9 @@ static int got_BlockAck(struct drbd_conf *mdev, struct p_header80 *h)
- 					     what, false);
- }
  
--static int got_NegAck(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_NegAck(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
--	struct p_block_ack *p = (struct p_block_ack *)h;
-+	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
- 	sector_t sector = be64_to_cpu(p->sector);
- 	int size = be32_to_cpu(p->blksize);
- 	bool missing_ok = mdev->tconn->net_conf->wire_protocol == DRBD_PROT_A ||
-@@ -4340,9 +4348,9 @@ static int got_NegAck(struct drbd_conf *mdev, struct p_header80 *h)
- 	return true;
- }
- 
--static int got_NegDReply(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_NegDReply(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
--	struct p_block_ack *p = (struct p_block_ack *)h;
-+	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
- 	sector_t sector = be64_to_cpu(p->sector);
- 
- 	update_peer_seq(mdev, be32_to_cpu(p->seq_num));
-@@ -4354,11 +4362,11 @@ static int got_NegDReply(struct drbd_conf *mdev, struct p_header80 *h)
- 					     NEG_ACKED, false);
- }
- 
--static int got_NegRSDReply(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_NegRSDReply(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
- 	sector_t sector;
- 	int size;
--	struct p_block_ack *p = (struct p_block_ack *)h;
-+	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
- 
- 	sector = be64_to_cpu(p->sector);
- 	size = be32_to_cpu(p->blksize);
-@@ -4369,7 +4377,7 @@ static int got_NegRSDReply(struct drbd_conf *mdev, struct p_header80 *h)
- 
- 	if (get_ldev_if_state(mdev, D_FAILED)) {
- 		drbd_rs_complete_io(mdev, sector);
--		switch (be16_to_cpu(h->command)) {
-+		switch (cmd) {
- 		case P_NEG_RS_DREPLY:
- 			drbd_rs_failed_io(mdev, sector, size);
- 		case P_RS_CANCEL:
-@@ -4385,9 +4393,9 @@ static int got_NegRSDReply(struct drbd_conf *mdev, struct p_header80 *h)
- 	return true;
- }
- 
--static int got_BarrierAck(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_BarrierAck(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
--	struct p_barrier_ack *p = (struct p_barrier_ack *)h;
-+	struct p_barrier_ack *p = &mdev->tconn->meta.rbuf.barrier_ack;
- 
- 	tl_release(mdev, p->barrier, be32_to_cpu(p->set_size));
- 
-@@ -4401,9 +4409,9 @@ static int got_BarrierAck(struct drbd_conf *mdev, struct p_header80 *h)
- 	return true;
- }
- 
--static int got_OVResult(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_OVResult(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
--	struct p_block_ack *p = (struct p_block_ack *)h;
-+	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
- 	struct drbd_work *w;
- 	sector_t sector;
- 	int size;
-@@ -4445,14 +4453,14 @@ static int got_OVResult(struct drbd_conf *mdev, struct p_header80 *h)
- 	return true;
- }
- 
--static int got_skip(struct drbd_conf *mdev, struct p_header80 *h)
-+static int got_skip(struct drbd_conf *mdev, enum drbd_packets cmd)
- {
- 	return true;
- }
- 
- struct asender_cmd {
- 	size_t pkt_size;
--	int (*process)(struct drbd_conf *mdev, struct p_header80 *h);
-+	int (*process)(struct drbd_conf *mdev, enum drbd_packets cmd);
- };
- 
- static struct asender_cmd *get_asender_cmd(int cmd)
-@@ -4461,8 +4469,8 @@ static struct asender_cmd *get_asender_cmd(int cmd)
- 		/* anything missing from this table is in
- 		 * the drbd_cmd_handler (drbd_default_handler) table,
- 		 * see the beginning of drbdd() */
--	[P_PING]	    = { sizeof(struct p_header80), got_Ping },
--	[P_PING_ACK]	    = { sizeof(struct p_header80), got_PingAck },
-+	[P_PING]	    = { sizeof(struct p_header), got_Ping },
-+	[P_PING_ACK]	    = { sizeof(struct p_header), got_PingAck },
- 	[P_RECV_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
- 	[P_WRITE_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
- 	[P_RS_WRITE_ACK]    = { sizeof(struct p_block_ack), got_BlockAck },
-@@ -4486,15 +4494,16 @@ static struct asender_cmd *get_asender_cmd(int cmd)
- int drbd_asender(struct drbd_thread *thi)
- {
- 	struct drbd_conf *mdev = thi->mdev;
--	struct p_header80 *h = &mdev->tconn->meta.rbuf.header.h80;
-+	struct p_header *h = &mdev->tconn->meta.rbuf.header;
- 	struct asender_cmd *cmd = NULL;
- 
--	int rv, len;
-+	int rv;
- 	void *buf    = h;
- 	int received = 0;
--	int expect   = sizeof(struct p_header80);
--	int empty;
-+	int expect   = sizeof(struct p_header);
- 	int ping_timeout_active = 0;
-+	int empty, pkt_size;
-+	enum drbd_packets cmd_nr;
- 
- 	sprintf(current->comm, "drbd%d_asender", mdev_to_minor(mdev));
- 
-@@ -4584,30 +4593,25 @@ int drbd_asender(struct drbd_thread *thi)
- 		}
- 
- 		if (received == expect && cmd == NULL) {
--			if (unlikely(h->magic != cpu_to_be32(DRBD_MAGIC))) {
--				dev_err(DEV, "magic?? on meta m: 0x%08x c: %d l: %d\n",
--				    be32_to_cpu(h->magic),
--				    be16_to_cpu(h->command),
--				    be16_to_cpu(h->length));
-+			if (!decode_header(mdev, h, &cmd_nr, &pkt_size))
- 				goto reconnect;
--			}
--			cmd = get_asender_cmd(be16_to_cpu(h->command));
--			len = be16_to_cpu(h->length);
-+			cmd = get_asender_cmd(cmd_nr);
- 			if (unlikely(cmd == NULL)) {
--				dev_err(DEV, "unknown command?? on meta m: 0x%08x c: %d l: %d\n",
--				    be32_to_cpu(h->magic),
--				    be16_to_cpu(h->command),
--				    be16_to_cpu(h->length));
-+				dev_err(DEV, "unknown command %d on meta (l: %d)\n",
-+					cmd_nr, pkt_size);
- 				goto disconnect;
- 			}
- 			expect = cmd->pkt_size;
--			if (!expect(len == expect - sizeof(struct p_header80)))
-+			if (pkt_size != expect - sizeof(struct p_header)) {
-+				dev_err(DEV, "Wrong packet size on meta (c: %d, l: %d)\n",
-+					cmd_nr, pkt_size);
- 				goto reconnect;
-+			}
- 		}
- 		if (received == expect) {
- 			mdev->tconn->last_received = jiffies;
- 			D_ASSERT(cmd != NULL);
--			if (!cmd->process(mdev, h))
-+			if (!cmd->process(mdev, cmd_nr))
- 				goto reconnect;
- 
- 			/* the idle_timeout (ping-int)
-@@ -4617,7 +4621,7 @@ int drbd_asender(struct drbd_thread *thi)
- 
- 			buf	 = h;
- 			received = 0;
--			expect	 = sizeof(struct p_header80);
-+			expect	 = sizeof(struct p_header);
- 			cmd	 = NULL;
- 		}
- 	}
+-	resp_size = crypto_hash_digestsize(mdev->cram_hmac_tfm);
++	resp_size = crypto_hash_digestsize(mdev->tconn->cram_hmac_tfm);
+ 	response = kmalloc(resp_size, GFP_NOIO);
+ 	if (response == NULL) {
+ 		dev_err(DEV, "kmalloc of response failed\n");
 -- 
 1.7.4.1
 
