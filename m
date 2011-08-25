@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750952Ab1HYEJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 00:09:36 -0400
-Received: from fep32.mx.upcmail.net ([62.179.121.50]:40696 "EHLO
-	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728Ab1HYEJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 00:09:34 -0400
-X-SourceIP: 14.96.222.233
-X-Authenticated-Sender: c.spaay1@upcmail.nl
-Reply-To: <claimsgroup222@qatar.io>
-From: "con@telus.net" <con@win.ch>
-Subject: 
-Date: Thu, 25 Aug 2011 09:38:10 +0530
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_00CA_01C2A9A6.3CFDE2FC"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110824-1, 08/24/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110825040821.WJDJ1500.viefep15-int.chello.at@edge01.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=tHhPqqLi6/fMUoPw+/UDa82ZZvBd3UEz7qBOQRmpXdk= c=1 sm=0 a=LGgl8L9ij00A:10 a=8EU9Q7FnrCoA:10 a=Jukidu4ea0IA:10 a=JMDVmo8hluMBBANcqqQA:9 a=Ft8UYL4EG9YA:10 a=Nen8o89ROyCquyiIyUEA:9 a=Unns-VVbg4HHDLI2:21 a=QE9d4NlV-OSnjER2:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+	id S1751291Ab1HYEMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 00:12:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47671 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab1HYEMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 00:12:21 -0400
+Date: Thu, 25 Aug 2011 14:12:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: linux-next: build failure after merge of the ptrace tree
+Message-Id: <20110825141212.4f82835beaad506553e291e8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__25_Aug_2011_14_12_12_+1000_yx2XhPLFQtT1siBY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+--Signature=_Thu__25_Aug_2011_14_12_12_+1000_yx2XhPLFQtT1siBY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------=_NextPart_000_00CA_01C2A9A6.3CFDE2FC
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+Hi all,
 
-PLEASE FIND ATTACHMENT
+After merging the ptrace tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-------=_NextPart_000_00CA_01C2A9A6.3CFDE2FC
-Content-Type: application/octet-stream;
-	name="NOTIFICATION BOARD.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="NOTIFICATION BOARD.txt"
+ERROR: ".set_current_blocked" [fs/autofs4/autofs4.ko] undefined!
 
-WW91IGhhdmUgYmVlbiBzZWxlY3RlZCBpbiB0aGUgb24tZ29pbmcgQ09DQSBD
-T0xBIGF3YXJkIGhlbGQgdGhpcyBBdWd1c3QNCjIwMTEuV2UgdGhlIFByb21v
-IEJvYXJkIGFyZSBwbGVhc2VkIHRvIGluZm9ybSB5b3UgdGhhdCB5b3UgYWxv
-bmdzaWRlIGZvdXIoNCkNCm90aGVybHVja3kgd2lubmVycyBoYXZlIGJlZW4g
-YXBwcm92ZWQgZm9yIGEgcGF5bWVudCBvZiAxLDAwMCAwMDBHQlAgKE9uZQ0K
-TWlsbGlvbiBQb3VuZHMgU3RlcmxpbmcpLg0KSWYgeW91IGRpZCByZWNlaXZl
-IHRoaXMgZW1haWwsIGl0IG1lYW5zIHlvdSBhcmUgb25lIG9mIHRoZSBmaXZl
-KDUpbHVja3kNCndpbm5lcnMuDQoNCipDTEFJTVMgUFJPQ0VTU0lORyBPRkZJ
-Q0VSOg0KKk5hbWU6TXIgVE9NTVkgUk9HRVINCkUubWFpbDogY2xhaW1zZ3Jv
-dXAyMjJAcWF0YXIuaW8NCg0KWW91IGFyZSBhbHNvIGFkdmlzZWQgdG8gcHJv
-dmlkZSBoaW0gd2l0aCB0aGUgdW5kZXIgbGlzdGVkIGluZm9ybWF0aW9uDQph
-cyBzb29uIGFzIHBvc3NpYmxlOg0KDQoqTkFNRSBJTiBGVUxMOg0KKkRFTElW
-RVJZIEFERFJFU1M6DQoqU0VYOg0KKkFHRToNCipDT1VOVFJZOg0KKk5BVElP
-TkFMSVRZOg0KKk9DQ1VQQVRJT046DQoqUEhPTkU6DQoNCldlIGFyZSBnbGFk
-IHRvIGhhdmUgeW91IGFzIG9uZSBvZiBvdXIgbHVja2x5IHdpbm5lcnMuDQo=
+Presumably set_current_blocked() needs to be EXPORTed.
 
-------=_NextPart_000_00CA_01C2A9A6.3CFDE2FC--
+I have used the ptrace tree from next-20110824 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__25_Aug_2011_14_12_12_+1000_yx2XhPLFQtT1siBY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOVcucAAoJEDMEi1NhKgbsXj4IAIbVVS9tFmuWZMaB0SmSbn4b
+5nqqC430w26pvidQ6Ejjcd7BO0ScTIQt0GyMIPhxmjUf1ppkvnqoqD9YN83Kz9Po
+C8R5A2kiIT6ZXbz1tz8Bl3rGGPwJnbcnUyvAJZeS0QsOuMqKqUbnnFP8bCntqAgE
+pw2lXH38+tVPX+7dF0Pu/6LUYeLCK9D4mcb7IslOs+0gAUYn6X5L21bNFL3AXlND
+LcIQ9hyGW6g6sYzY1qx0zDlfpojzpBKqeuNr3GhMxoL2j1pQ3omUNDzLe5leUlTn
+cOrlIyjIvreVLdcsW8YeQxlQuL7GvksT8p+TMqQt8UWW5R6L/KcI+3xfEPSF1sw=
+=BZiE
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__25_Aug_2011_14_12_12_+1000_yx2XhPLFQtT1siBY--
