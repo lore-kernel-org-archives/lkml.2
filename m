@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1HYNEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:04:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38858 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab1HYNE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:04:29 -0400
-Date: Thu, 25 Aug 2011 14:04:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-Message-ID: <20110825130414.GE8883@n2100.arm.linux.org.uk>
-References: <201108232351.55432.rjw@sisk.pl> <CAOS58YNUSn2eVLDLzqKmrtL7M5tSetkhZ1ODecLK54NSDnZVAA@mail.gmail.com> <20110823220056.GK3895@n2100.arm.linux.org.uk> <CAOS58YNuCbaOsWBfmjSUsXsArZ5ng6c0B30yswFbRAWkho6L6Q@mail.gmail.com> <20110823221314.GL3895@n2100.arm.linux.org.uk> <CAOS58YNtQEuke=Ko9J2oNGMECjabzxj=Nrg1o64X1JC3YRmJuw@mail.gmail.com> <20110825121416.GB8883@n2100.arm.linux.org.uk> <20110825121710.GK3286@htj.dyndns.org> <20110825122543.GC8883@n2100.arm.linux.org.uk> <20110825123542.GM3286@htj.dyndns.org>
+	id S1753407Ab1HYNG2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:06:28 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:28350 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919Ab1HYNGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 09:06:25 -0400
+Message-ID: <4E5648B9.7050106@siemens.com>
+Date: Thu, 25 Aug 2011 15:06:01 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825123542.GM3286@htj.dyndns.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Brian King <brking@linux.vnet.ibm.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: Broken pci_block_user_cfg_access interface
+References: <4E54D5D7.8050807@siemens.com> <4E551298.2000302@linux.vnet.ibm.com> <4E5613BA.5070101@siemens.com> <4E5647DA.1060901@linux.vnet.ibm.com>
+In-Reply-To: <4E5647DA.1060901@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 02:35:42PM +0200, Tejun Heo wrote:
-> Hello,
+On 2011-08-25 15:02, Brian King wrote:
+> On 08/25/2011 04:19 AM, Jan Kiszka wrote:
+>> On 2011-08-24 17:02, Brian King wrote:
+>>> On 08/24/2011 05:43 AM, Jan Kiszka wrote:
+>>>> Hi,
+>>>>
+>>>> trying to port the generic device interrupt masking pattern of
+>>>> uio_pci_generic to KVM's device assignment code, I stumbled over some
+>>>> fundamental problem with the current pci_block/unblock_user_cfg_access
+>>>> interface: it does not provide any synchronization between blocking
+>>>> sides. This allows user space to trigger a kernel BUG, just run two
+>>>>
+>>>> while true; do echo 1 > /sys/bus/pci/devices/<some-device>/reset; done
+>>>>
+>>>> loops in parallel and watch the kernel oops.
+>>>>
+>>>> Instead of some funky open-coded locking mechanism, we would rather need
+>>>> a plain mutex across both the user space access (via sysfs) and the
+>>>> sections guarded by pci_block/unblock_user_cfg_access so far. But I'm
+>>>> not sure which of them already allow sleeping, specifically if the IPR
+>>>> driver would be fine with such a change. Can someone in the CC list
+>>>> comment on this?
+>>>
+>>> The ipr driver calls pci_block/unblock_user_cfg_access from interrupt
+>>> context, so a mutex won't work.
+>>
+>> Ugh. What precisely does it have to do with the config space while
+>> running inside an IRQ handler (or holding a lock that synchronizes it
+>> with such a handler)?
 > 
-> On Thu, Aug 25, 2011 at 01:25:43PM +0100, Russell King - ARM Linux wrote:
-> > No.  Stop bodging and hiding problems.  Anywhere which does this:
-> > 
-> > 	local_irq_enable();
-> > 	do something
-> > 	local_irq_disable();
-> > 
-> > is a bug.  Things are called with IRQs disabled for a reason - randomly
-> > re-enabling IRQs does not "fix" stuff, it merely introduces subtle bugs
-> > while hiding warnings of those bugs.
-> > 
-> > Please go back and read my response to Mark at the beginning of this
-> > thread, where I describe why IRQs are disabled here.
-> > 
-> > The only solution here is to fix the problem properly, and I'm working
-> > on a patch to fix the problem I highlighted in my earlier response to
-> > Mark.  Once we have that problem fixed, we can then (more) safely call
-> > do_signal() with IRQs enabled.
+> The ipr driver can get an error interrupt which will trigger the driver
+> to reset the adapter. While the adapter is going through reset we need
+> to ensure user config accesses are blocked, since many ipr adapters
+> won't respond on the PCI bus during this time.
+
+What about offloading the reset to thread context (workqueue etc.)?
+
 > 
-> Arrrrrrrrgghhhhhhhhhhhh, why is communication so difficult with you?
-> When did I ever suggest that as a proper fix.
+> 
+>>> API that works best for the ipr driver is to allow for many block calls,
+>>> but a single unblock call unblocks access. It seems like what might
+>>> work well in the case above is a block count. Each call to pci_block
+>>> increments a count. Each pci_unblock decrements the count and only
+>>> actually do the unblock if the count drops to zero. It should be reasonably
+>>> simple for ipr to use that sort of an API as well.
+>>
+>> That will just paper over the underlying bug: multiple kernel users (!=
+>> sysfs access) fiddle with the config space in an unsynchronized fashion.
+>> Think of sysfs-triggered pci_reset_function while your ipr driver does
+>> its accesses.
+> 
+> I took a look at the sysfs triggered pci reset function and don't see any way
+> that the controlling device driver ever gets to be involved in this reset.
+> If code outside the ipr driver were to reset the adapter, the adapter firmware
+> would be left in an uninitialized state and until scsi core starts timing
+> out ops and driving EH, the card would be unusable. I can't imagine the
+> ipr driver is unique in this.
 
-I'm not the problem here - I'm pointing out that your suggestion is just
-going to make things worse not better.  But it seems you can't cope with
-people who criticise your solutions in any way.
+Right, that's why a PCI core service is needed for coordination.
 
-> ARM is frigging broken
-> in that path so don't push it over to PM and just deal with it inside
-> ARM arch code.
+Jan
 
-For fuck sake, who said anything about pushing it over to PM to deal
-with?
-
-I'm talking about not putting sticky plasters over the problem, but fixing
-the problem PROPERLY.  I'm sorry if doing a job properly offends you, but
-you have to live with that.
-
-I _HATE_ solutions which just paper over problems and make then disappear.
-I've always been firmly in the "if there's a problem, fix the problem
-properly" camp.  You seem to be firmly in the "lets paper over the problem
-and forget about it".
-
-> For now, we need to make the warning go away until it's properly fixed
-> so turn off and on IRQ around get_signal_to_deliver() and mark it with
-> giant FIXME comment.
-
-No.  This is where we disagree.  It doesn't warrant that because it is
-possible to fix the problem properly.  While _you_ may not be capable of
-doing that, that's no reason not to seek help to have it fixed.
-
-Given that I've posted a description of the problem, would it not be
-reasonable to assume that I'm working on fixing it?  Strangely enough
-before writing _any_ of the replies to this thread, I have a patch which
-does just that - I just haven't tested it yet apart from a compile test.
-
-> How many times did I write that?  I don't know how to make that any
-> clearer to you.  Gees...
-
-Hahaha.  Thanks for the laugh - because you never actually said that -
-and you're now blaming me for miscommunication?
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
