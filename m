@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1HYNKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 09:10:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40284 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab1HYNKl (ORCPT
+	id S1752963Ab1HYNMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 09:12:25 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:49564 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab1HYNMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 09:10:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E4968F0.9050108@panasas.com>
-References: <20110811142749.GA26109@maxin>
-	<CAMhs6Yy_O33jZ5N7E5UuAtjoRyyEcUG8s4-PQwooX-TJ3Wh=2A@mail.gmail.com>
-	<4E4968F0.9050108@panasas.com>
-Date: Thu, 25 Aug 2011 16:10:38 +0300
-Message-ID: <CAMhs6YyBj-AsjChnHhqbx1L58Wq0MCM3GN1iPn9QO+f=FHHtFw@mail.gmail.com>
-Subject: Re: [PATCH] SCSI: OSD: Kconfig: Select SHA1 and HMAC for OSD
- Initiator library
-From: Maxin B John <maxin.john@gmail.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: rdunlap@xenotime.net, Benny Halevy <bhalevy@panasas.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Aug 2011 09:12:17 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: Arnd Bergmann <arnd@arndb.de>, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 1/5] TTY: serial, use ASYNCB_CLOSING in uart_close
+Date: Thu, 25 Aug 2011 15:12:04 +0200
+Message-Id: <1314277928-13388-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <4E556CB7.2010102@suse.cz>
+References: <4E556CB7.2010102@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We need to move port->mutex locking after wait_until_sent in
+uart_close (for rationale see next patches). But if we did it now, we
+would introduce a race between close and open. This is exactly why
+port->mutex is locked at the top of uart_close.
 
-On Mon, Aug 15, 2011 at 9:44 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
-> On 08/14/2011 04:18 PM, Maxin B John wrote:
->> On Thu, Aug 11, 2011 at 5:27 PM, Maxin B. John <maxin.john@gmail.com> wrote:
->>> SCSI_OSD_INITIATOR should select CRYPTO_SHA1 and CRYPTO_HMAC. Express this
->>> in Kconfig so that the requirements are met automatically.
->>>
->>> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
->
-> OK So actually current osd_initiator code does not use these libraries.
-> It should, and I have very old code that started on that (hence the comment),
-> but it was never submitted to Kernel. The OSD protocol calls for all kind of
-> security levels that use these, but the current code only supports NO_SEC.
->
-> I will keep your patch for when security code goes in. Meanwhile I should
-> at least remove the stale comment.
+To avoid the race, we add ASYNCB_CLOSING to uart_close. Like every
+other sane TTY driver. Thanks to tty_port_block_til_ready used in
+uart_open we will have this for free. Then we can move the port->mutex
+lock.
 
-Sorry for the delay in reply. Yes, this makes perfect sense to me.
+Also note that this will make the conversion to tty_port helpers
+easier. They are currently handling ASYNC_CLOSING flag correctly.
 
-Cheers,
-Maxin
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/serial/serial_core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 781d566..cd7a0bb 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1293,6 +1293,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	 * the line discipline to only process XON/XOFF characters by
+ 	 * setting tty->closing.
+ 	 */
++	set_bit(ASYNCB_CLOSING, &port->flags);
+ 	tty->closing = 1;
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ 
+@@ -1340,8 +1341,10 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	 * Wake up anyone trying to open this port.
+ 	 */
+ 	clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
++	clear_bit(ASYNCB_CLOSING, &port->flags);
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ 	wake_up_interruptible(&port->open_wait);
++	wake_up_interruptible(&port->close_wait);
+ 
+ done:
+ 	mutex_unlock(&port->mutex);
+-- 
+1.7.6
+
+
