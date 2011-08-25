@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab1HYXrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 19:47:43 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4932 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab1HYXrl (ORCPT
+	id S1753720Ab1HYXuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 19:50:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53381 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753079Ab1HYXuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 19:47:41 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6449"; a="113043234"
-From: Laura Abbott <lauraa@codeaurora.org>
-To: linux@arm.linux.org.uk, nicolas.pitre@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, Laura Abbott <lauraa@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH] process: change from __backtrace to dump_stack in show_regs
-Date: Thu, 25 Aug 2011 16:47:37 -0700
-Message-Id: <1314316057-8282-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.3
+	Thu, 25 Aug 2011 19:50:10 -0400
+Date: Thu, 25 Aug 2011 16:50:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Neaten warn_alloc_failed
+Message-Id: <20110825165006.af771ef7.akpm@linux-foundation.org>
+In-Reply-To: <5a0bef0143ed2b3176917fdc0ddd6a47f4c79391.1314303846.git.joe@perches.com>
+References: <5a0bef0143ed2b3176917fdc0ddd6a47f4c79391.1314303846.git.joe@perches.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, show_regs calls __backtrace which does
-nothing if CONFIG_FRAME_POINTER is not set. Switch to
-dump_stack which handles both CONFIG_FRAME_POINTER and
-CONFIG_ARM_UNWIND correctly.
+On Thu, 25 Aug 2011 13:26:19 -0700
+Joe Perches <joe@perches.com> wrote:
 
-__backtrace is now superseded by dump_stack in general
-and show_regs was the last caller so remove __backtrace
-as well.
+> Add __attribute__((format (printf...) to the function
+> to validate format and arguments.  Use vsprintf extension
+> %pV to avoid any possible message interleaving. Coalesce
+> format string.  Convert printks/pr_warning to pr_warn.
+> 
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1334,7 +1334,8 @@ extern void si_meminfo(struct sysinfo * val);
+>  extern void si_meminfo_node(struct sysinfo *val, int nid);
+>  extern int after_bootmem;
+>  
+> -extern void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
+> +extern __attribute__((format (printf, 3, 4)))
+> +void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
+>  
+>  extern void setup_per_cpu_pageset(void);
+>  
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- arch/arm/include/asm/system.h |    1 -
- arch/arm/kernel/armksyms.c    |    3 ---
- arch/arm/kernel/process.c     |    2 +-
- arch/arm/lib/backtrace.S      |    6 ------
- 4 files changed, 1 insertions(+), 11 deletions(-)
+looky:
 
-diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
-index 832888d..4fc2edd 100644
---- a/arch/arm/include/asm/system.h
-+++ b/arch/arm/include/asm/system.h
-@@ -97,7 +97,6 @@ void hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int,
- #define xchg(ptr,x) \
- 	((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
+--- a/include/linux/mm.h~mm-neaten-warn_alloc_failed-fix
++++ a/include/linux/mm.h
+@@ -1335,7 +1335,7 @@ extern void si_meminfo(struct sysinfo * 
+ extern void si_meminfo_node(struct sysinfo *val, int nid);
+ extern int after_bootmem;
  
--extern asmlinkage void __backtrace(void);
- extern asmlinkage void c_backtrace(unsigned long fp, int pmode);
+-extern __attribute__((format (printf, 3, 4)))
++extern __printf(3, 4)
+ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
  
- struct mm_struct;
-diff --git a/arch/arm/kernel/armksyms.c b/arch/arm/kernel/armksyms.c
-index aeef960..8e3c6f1 100644
---- a/arch/arm/kernel/armksyms.c
-+++ b/arch/arm/kernel/armksyms.c
-@@ -49,9 +49,6 @@ extern void __aeabi_ulcmp(void);
- 
- extern void fpundefinstr(void);
- 
--
--EXPORT_SYMBOL(__backtrace);
--
- 	/* platform dependent support */
- EXPORT_SYMBOL(__udelay);
- EXPORT_SYMBOL(__const_udelay);
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 1a347f4..fd08140 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -319,7 +319,7 @@ void show_regs(struct pt_regs * regs)
- 	printk("\n");
- 	printk("Pid: %d, comm: %20s\n", task_pid_nr(current), current->comm);
- 	__show_regs(regs);
--	__backtrace();
-+	dump_stack();
- }
- 
- ATOMIC_NOTIFIER_HEAD(thread_notify_head);
-diff --git a/arch/arm/lib/backtrace.S b/arch/arm/lib/backtrace.S
-index a673297..cd07b58 100644
---- a/arch/arm/lib/backtrace.S
-+++ b/arch/arm/lib/backtrace.S
-@@ -22,15 +22,10 @@
- #define mask	r7
- #define offset	r8
- 
--ENTRY(__backtrace)
--		mov	r1, #0x10
--		mov	r0, fp
--
- ENTRY(c_backtrace)
- 
- #if !defined(CONFIG_FRAME_POINTER) || !defined(CONFIG_PRINTK)
- 		mov	pc, lr
--ENDPROC(__backtrace)
- ENDPROC(c_backtrace)
- #else
- 		stmfd	sp!, {r4 - r8, lr}	@ Save an extra register so we have a location...
-@@ -107,7 +102,6 @@ for_each_frame:	tst	frame, mask		@ Check for address exceptions
- 		mov	r1, frame
- 		bl	printk
- no_frame:	ldmfd	sp!, {r4 - r8, pc}
--ENDPROC(__backtrace)
- ENDPROC(c_backtrace)
- 		
- 		.pushsection __ex_table,"a"
--- 
-1.7.3.3
+ extern void setup_per_cpu_pageset(void);
+_
 
