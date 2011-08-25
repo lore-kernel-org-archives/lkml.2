@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1HYP00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 11:26:26 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:33986 "EHLO
+	id S1754373Ab1HYP0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 11:26:24 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:33981 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab1HYPJb (ORCPT
+	with ESMTP id S1753708Ab1HYPJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 11:09:31 -0400
+	Thu, 25 Aug 2011 11:09:33 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 055/118] drbd: Improve the drbd_find_overlap() documentation
-Date: Thu, 25 Aug 2011 17:07:51 +0200
-Message-Id: <1314284934-17999-56-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 056/118] drbd: Remove unused variable in struct drbd_conf
+Date: Thu, 25 Aug 2011 17:07:52 +0200
+Message-Id: <1314284934-17999-57-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,34 +22,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@linbit.com>
 
-Describe how to reach any further overlapping intervals from the first
-overlap found.
-
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_interval.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/block/drbd/drbd_int.h |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_interval.c b/drivers/block/drbd/drbd_interval.c
-index 0d17eaa..14dbe2d 100644
---- a/drivers/block/drbd/drbd_interval.c
-+++ b/drivers/block/drbd/drbd_interval.c
-@@ -122,9 +122,11 @@ drbd_remove_interval(struct rb_root *root, struct drbd_interval *this)
-  * @sector:	start sector
-  * @size:	size, aligned to 512 bytes
-  *
-- * Returns the interval overlapping with [sector, sector + size), or NULL.
-- * When there is more than one overlapping interval in the tree, the interval
-- * with the lowest start sector is returned.
-+ * Returns an interval overlapping with [sector, sector + size), or NULL if
-+ * there is none.  When there is more than one overlapping interval in the
-+ * tree, the interval with the lowest start sector is returned, and all other
-+ * overlapping intervals will be on the right side of the tree, reachable with
-+ * rb_next().
-  */
- struct drbd_interval *
- drbd_find_overlap(struct rb_root *root, sector_t sector, unsigned int size)
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index faa7cbd..c730f20 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1045,9 +1045,6 @@ struct drbd_conf {
+ 	struct list_head read_ee;   /* IO in progress (any read) */
+ 	struct list_head net_ee;    /* zero-copy network send in progress */
+ 
+-	/* this one is protected by ee_lock, single thread */
+-	struct drbd_epoch_entry *last_write_w_barrier;
+-
+ 	int next_barrier_nr;
+ 	struct list_head resync_reads;
+ 	atomic_t pp_in_use;		/* allocated from page pool */
 -- 
 1.7.4.1
 
