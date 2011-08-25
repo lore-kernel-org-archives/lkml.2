@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab1HYKQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 06:16:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36035 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab1HYKQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 06:16:07 -0400
-Date: Thu, 25 Aug 2011 12:16:02 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, James.Bottomley@HansenPartnership.com,
-        dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [-v3 PATCH 0/3] Persistent device name using alias
-Message-ID: <20110825101602.GI3286@htj.dyndns.org>
-References: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp>
+	id S1752465Ab1HYKSf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 06:18:35 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:8484 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab1HYKSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 06:18:33 -0400
+Message-ID: <4E562170.1090000@parallels.com>
+Date: Thu, 25 Aug 2011 14:18:24 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [PATCH 3/5] SUNRPC: make RPC service dependable on rpcbind clients
+ creation
+References: <20110824183304.4924.94670.stgit@localhost6.localdomain6> <20110824183359.4924.94364.stgit@localhost6.localdomain6>
+In-Reply-To: <20110824183359.4924.94364.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch has a flaw: rpcbind clients have to be put in case of error in __svc_create().
+So will be the second version.
 
-On Thu, Aug 25, 2011 at 06:03:59PM +0900, Nao Nishijima wrote:
-> This patch series provide an "alias" of the disk into kernel messages.
-> 
-> A raw device name of a disk does not always point a same disk at each boot-up
-> time. Therefore, users have to use persistent device names, which udev creates
-> to always access the same disk. However, kernel messages still display the raw
-> device names.
-> 
-> My proposal is that users can use and see persistent device names which were
-> assigned by themselves because users expect same name to point same disk
-> anytime.
-> 
-> Why need to modify kernel messages?
-> - We can see mapping of device names and persistent device names in udev log.
->   If those logs output to syslog, we can search persistent device name from
->   device name, but it can cause a large amount of syslog output.
-> 
-> - If we can use the persistent device names and can always see the same name on
->   the kernel log, we don't need to pay additional cost for searching and picking
->   a correct pair of device name and persistent device name from udev log.
-> 
-> - Kernel messages are output to serial console when kenel crashes, it's so hard
->   to convert a device name to the alias.
+24.08.2011 22:33, Stanislav Kinsbursky пишет:
+> We create or increase users counter of rcbind clients during RPC service
+> creation and decrease this counter (and possibly destroy those clients) on RPC
+> service destruction.
+>
+> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>
+> ---
+>   include/linux/sunrpc/clnt.h |    2 ++
+>   net/sunrpc/rpcb_clnt.c      |    2 +-
+>   net/sunrpc/svc.c            |    5 +++++
+>   3 files changed, 8 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
+> index db7bcaf..65a8115 100644
+> --- a/include/linux/sunrpc/clnt.h
+> +++ b/include/linux/sunrpc/clnt.h
+> @@ -135,10 +135,12 @@ void		rpc_shutdown_client(struct rpc_clnt *);
+>   void		rpc_release_client(struct rpc_clnt *);
+>   void		rpc_task_release_client(struct rpc_task *);
+>
+> +int		rpcb_create_local(void);
+>   int		rpcb_register(u32, u32, int, unsigned short);
+>   int		rpcb_v4_register(const u32 program, const u32 version,
+>   				 const struct sockaddr *address,
+>   				 const char *netid);
+> +void		rpcb_put_local(void);
+>   void		rpcb_getport_async(struct rpc_task *);
+>
+>   void		rpc_call_start(struct rpc_task *);
+> diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+> index b4cc0f1..437ec60 100644
+> --- a/net/sunrpc/rpcb_clnt.c
+> +++ b/net/sunrpc/rpcb_clnt.c
+> @@ -318,7 +318,7 @@ out:
+>    * Returns zero on success, otherwise a negative errno value
+>    * is returned.
+>    */
+> -static int rpcb_create_local(void)
+> +int rpcb_create_local(void)
+>   {
+>   	static DEFINE_MUTEX(rpcb_create_local_mutex);
+>   	int result = 0;
+> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+> index 6a69a11..0df8532 100644
+> --- a/net/sunrpc/svc.c
+> +++ b/net/sunrpc/svc.c
+> @@ -367,6 +367,9 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+>   	unsigned int xdrsize;
+>   	unsigned int i;
+>
+> +	if (rpcb_create_local()<  0)
+> +		return NULL;
+> +
+>   	if (!(serv = kzalloc(sizeof(*serv), GFP_KERNEL)))
+>   		return NULL;
+>   	serv->sv_name      = prog->pg_name;
+> @@ -491,6 +494,8 @@ svc_destroy(struct svc_serv *serv)
+>   	svc_unregister(serv);
+>   	kfree(serv->sv_pools);
+>   	kfree(serv);
+> +
+> +	rpcb_put_local();
+>   }
+>   EXPORT_SYMBOL_GPL(svc_destroy);
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Just some general comments.  This may already be a horse which is
-beaten to death but anyways...
-
-I'm not really convinced this is something we need.  What we're
-missing is structured error reporting which can be understood,
-processed, presented and reacted by programs implementing system
-management policies.  Such facility would be useful in general but for
-block devices I think it's a must that we're sorely missing.
-
-Free format kernel message is a very undiscoverable way of
-communicating these information.  For developing and debugging, it's
-fine.  It's easy, flexible and you don't really have to think too much
-about what should be presented how.  For anything else, it's basically
-horrible.
-
-I don't really see what the point of this feature is.  For developing
-and debugging, pretty names might be nice but almost completely
-unnecessary.  For anything else, this falls way too short and can be
-easily replaced by some smart scripting from userland.  After all,
-matching different device names is the least of the worries when
-trying to use kernel log for general management and post-processing w/
-good amount of heuristics is necessary to be useful anyway.
-
-So, FWIW, I object.
-
-Thank you.
 
 -- 
-tejun
+Best regards,
+Stanislav Kinsbursky
