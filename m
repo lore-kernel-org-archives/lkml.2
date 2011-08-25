@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab1HYKwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 06:52:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35790 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab1HYKwc (ORCPT
+	id S1753227Ab1HYKx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 06:53:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46160 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab1HYKx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 06:52:32 -0400
-Message-ID: <4E562947.3000304@ru.mvista.com>
-Date: Thu, 25 Aug 2011 14:51:51 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Adam Cozzette <acozzette@cs.hmc.edu>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
-        edwin_rong <edwin_rong@realsil.com.cn>,
-        wwang <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH] ums_realtek: do not use stack memory for DMA
-References: <20110824182237.GC5450@[192.168.0.12]>
-In-Reply-To: <20110824182237.GC5450@[192.168.0.12]>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Aug 2011 06:53:26 -0400
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] leds: Remove obsolete cleanup for clientdata
+Date: Thu, 25 Aug 2011 12:48:25 +0200
+Message-Id: <1314269314-16324-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.5.4
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+A few new i2c-drivers came into the kernel which clear the clientdata-pointer
+on exit or error. This is obsolete meanwhile, the core will do it.
 
-On 24-08-2011 22:22, Adam Cozzette wrote:
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/leds/leds-lm3530.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> This patch changes rts51x_read_mem, rts51x_write_mem, and rts51x_read_status to
-> allocate temporary buffers with kmalloc. This way stack addresses are not used
-> for DMA when these functions call rts51x_bulk_transport.
+diff --git a/drivers/leds/leds-lm3530.c b/drivers/leds/leds-lm3530.c
+index 3dd7090..d2d25e6 100644
+--- a/drivers/leds/leds-lm3530.c
++++ b/drivers/leds/leds-lm3530.c
+@@ -421,7 +421,6 @@ err_class_register:
+ err_reg_init:
+ 	regulator_put(drvdata->regulator);
+ err_regulator_get:
+-	i2c_set_clientdata(client, NULL);
+ 	kfree(drvdata);
+ err_out:
+ 	return err;
+-- 
+1.7.5.4
 
-> Signed-off-by: Adam Cozzette<acozzette@cs.hmc.edu>
-> ---
->   realtek_cr.c |   35 ++++++++++++++++++++++++++++++-----
->   1 file changed, 30 insertions(+), 5 deletions(-)
-
-> diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realtek_cr.c
-> index 34adc4b..232167a 100644
-> --- a/drivers/usb/storage/realtek_cr.c
-> +++ b/drivers/usb/storage/realtek_cr.c
-[...]
-> @@ -342,6 +351,12 @@ static int rts51x_write_mem(struct us_data *us, u16 addr, u8 *data, u16 len)
->   {
->   	int retval;
->   	u8 cmnd[12] = { 0 };
-> +	u8 *buf;
-> +
-> +	buf = kmalloc(len, GFP_NOIO);
-> +	if (buf == NULL)
-> +		return USB_STOR_TRANSPORT_ERROR;
-> +	memcpy(buf, data, len);
-
-    You could use kmemdup() instead of kmalloc()/memcpy()...
-
-WBR, Sergei
