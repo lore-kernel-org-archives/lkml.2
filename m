@@ -1,472 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab1HYWLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 18:11:41 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:52111 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755601Ab1HYWLj (ORCPT
+	id S1755653Ab1HYWOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 18:14:09 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:53809 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755603Ab1HYWOI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 18:11:39 -0400
-X-Sasl-enc: hlfg+IdYtLypP+c1r9ZcuoUlplI8s6BkNYThj80eKKp0 1314310298
-Date: Thu, 25 Aug 2011 15:11:32 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>, devel@linuxdriverproject.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, virtualization@lists.osdl.org
-Subject: Re: [PATCH 22/59] Staging: hv: vmbus: Get rid of the unused name
- field in struct hv_driver
-Message-ID: <20110825221132.GA17641@kroah.com>
+	Thu, 25 Aug 2011 18:14:08 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 12/59] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Thread-Topic: [PATCH 12/59] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Thread-Index: AQHMY0QsFBDYbTkATEaZVywXctrmNJUugpQA//+e4IA=
+Date: Thu, 25 Aug 2011 22:14:05 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B356B@TK5EX14MBXC126.redmond.corp.microsoft.com>
 References: <1314290866-2644-1-git-send-email-kys@microsoft.com>
  <1314290965-2698-1-git-send-email-kys@microsoft.com>
- <1314290965-2698-22-git-send-email-kys@microsoft.com>
- <20110825212428.GA1617@kroah.com>
- <20110825212820.GA6770@kroah.com>
+ <1314290965-2698-12-git-send-email-kys@microsoft.com>
+ <20110825205930.GA10883@kroah.com>
+In-Reply-To: <20110825205930.GA10883@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825212820.GA6770@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 02:28:20PM -0700, Greg KH wrote:
-> > Man, if you want something done right, you have to do it yourself, let
-> > me go make these changes so you don't have to do any new work at this
-> > point in time, hopefully your other patches will apply...
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Thursday, August 25, 2011 5:00 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 12/59] Staging: hv: vmbus: Cleanup vmbus_uevent() code
 > 
-> What, vmbus_child_driver_register() takes a struct driver *?
+> On Thu, Aug 25, 2011 at 09:48:38AM -0700, K. Y. Srinivasan wrote:
+> > Now generate appropriate uevent based on the modalias string. As part of this,
+> > cleanup the existing uevent code.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  drivers/staging/hv/vmbus_drv.c |   60 ++++++++--------------------------------
+> >  1 files changed, 12 insertions(+), 48 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> > index b651968..a6e7dc5 100644
+> > --- a/drivers/staging/hv/vmbus_drv.c
+> > +++ b/drivers/staging/hv/vmbus_drv.c
+> > @@ -237,58 +237,22 @@ static struct device_attribute vmbus_device_attrs[] =
+> {
+> >   * This routine is invoked when a device is added or removed on the vmbus to
+> >   * generate a uevent to udev in the userspace. The udev will then look at its
+> >   * rule and the uevent generated here to load the appropriate driver
+> > + *
+> > + * The alias string will be of the form vmbus:guid where guid is the string
+> > + * representation of the device guid (each byte of the guid will be
+> > + * represented with two hex characters.
+> >   */
+> >  static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
+> >  {
+> >  	struct hv_device *dev = device_to_hv_device(device);
+> > -	int ret;
+> > -
+> > -	ret = add_uevent_var(env, "VMBUS_DEVICE_CLASS_GUID={"
+> > -			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+> > -			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+> > -			     dev->dev_type.b[3],
+> > -			     dev->dev_type.b[2],
+> > -			     dev->dev_type.b[1],
+> > -			     dev->dev_type.b[0],
+> > -			     dev->dev_type.b[5],
+> > -			     dev->dev_type.b[4],
+> > -			     dev->dev_type.b[7],
+> > -			     dev->dev_type.b[6],
+> > -			     dev->dev_type.b[8],
+> > -			     dev->dev_type.b[9],
+> > -			     dev->dev_type.b[10],
+> > -			     dev->dev_type.b[11],
+> > -			     dev->dev_type.b[12],
+> > -			     dev->dev_type.b[13],
+> > -			     dev->dev_type.b[14],
+> > -			     dev->dev_type.b[15]);
+> > -
+> > -	if (ret)
+> > -		return ret;
+> > +	int i, ret;
+> > +	char alias_name[((sizeof(struct hv_vmbus_device_id) + 1)) * 2];
+> >
+> > -	ret = add_uevent_var(env, "VMBUS_DEVICE_DEVICE_GUID={"
+> > -			     "%02x%02x%02x%02x-%02x%02x-%02x%02x-"
+> > -			     "%02x%02x%02x%02x%02x%02x%02x%02x}",
+> > -			     dev->dev_instance.b[3],
+> > -			     dev->dev_instance.b[2],
+> > -			     dev->dev_instance.b[1],
+> > -			     dev->dev_instance.b[0],
+> > -			     dev->dev_instance.b[5],
+> > -			     dev->dev_instance.b[4],
+> > -			     dev->dev_instance.b[7],
+> > -			     dev->dev_instance.b[6],
+> > -			     dev->dev_instance.b[8],
+> > -			     dev->dev_instance.b[9],
+> > -			     dev->dev_instance.b[10],
+> > -			     dev->dev_instance.b[11],
+> > -			     dev->dev_instance.b[12],
+> > -			     dev->dev_instance.b[13],
+> > -			     dev->dev_instance.b[14],
+> > -			     dev->dev_instance.b[15]);
+> > -	if (ret)
+> > -		return ret;
+> > +	for (i = 0; i < (sizeof(struct hv_vmbus_device_id) * 2); i += 2)
+> > +		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
 > 
-> No wonder things are so messed up here, and why you got confused.  Let
-> me pound on this for a bit to see if I can get it cleaned up to be more
-> "sane"...
+> I have to edit this to get it to work properly with the fact that I
+> added the driver_data field to hv_vmbus_device_id.
+> 
+> Arguably, one could say that this patch was always broken as you were
+> assuming the size of an individual field was the same size as the whole
+> structure, which I don't think is always the case, or at least it's not
+> a safe thing to assume :)
 
-Ok, here's what I'm talking about.  It properly hooks up the module
-reference counting issues that you had yet to take care of as well (see,
-you got that for free just by getting the logic correct, and the code is
-even smaller than before overall, it's a win-win all around...)
+Perhaps I could have sized it based on guid size since that is what is going
+to be the alias. 
 
-The patch below works for me, I've committed it and will work out how to
-apply the rest of your patch series now.
+Regards,
 
------------------
-
-From: Greg Kroah-Hartman <gregkh@suse.de>
-Date: Thu, 25 Aug 2011 15:07:32 -0700
-Subject: Staging: hv: fix up driver registering mess
-
-Individual drivers should never be touching the 'struct device' field,
-so if that is a requirement to pass to the vmbus core, you know
-something is wrong.
-
-This patch fixes that all up, and resolves the problem where the module
-reference counting was not happening properly for the individual drivers
-as well.  Overall, it reduces the lines of code the individual drivers
-have to have, which tells you that this is the correct thing to do.
-
-Also, somehow the _GPL marking for the functions got removed on an older
-patch.  As the name of the function was changing, properly change the
-_GPL marking as well at the same time.
-
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/staging/hv/blkvsc_drv.c  |   17 ++------------
- drivers/staging/hv/hv_mouse.c    |   21 ++---------------
- drivers/staging/hv/hv_util.c     |    9 ++-----
- drivers/staging/hv/hyperv.h      |    8 +++++-
- drivers/staging/hv/hyperv_net.h  |    1 -
- drivers/staging/hv/netvsc.c      |   14 ------------
- drivers/staging/hv/netvsc_drv.c  |   19 ++--------------
- drivers/staging/hv/storvsc_drv.c |   24 ++++++---------------
- drivers/staging/hv/vmbus_drv.c   |   43 ++++++++++++++++++-------------------
- 9 files changed, 46 insertions(+), 110 deletions(-)
-
-diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-index d170f24..07dc9ed 100644
---- a/drivers/staging/hv/blkvsc_drv.c
-+++ b/drivers/staging/hv/blkvsc_drv.c
-@@ -109,7 +109,6 @@ struct block_device_context {
- 	int users;
- };
- 
--static const char *drv_name = "blkvsc";
- 
- /*
-  * There is a circular dependency involving blkvsc_request_completion()
-@@ -805,6 +804,7 @@ MODULE_DEVICE_TABLE(vmbus, id_table);
- 
- /* The one and only one */
- static  struct hv_driver blkvsc_drv = {
-+	.name = "blkvsc",
- 	.id_table = id_table,
- 	.probe =  blkvsc_probe,
- 	.remove =  blkvsc_remove,
-@@ -824,24 +824,13 @@ static const struct block_device_operations block_ops = {
-  */
- static int blkvsc_drv_init(void)
- {
--	struct hv_driver *drv = &blkvsc_drv;
--	int ret;
--
- 	BUILD_BUG_ON(sizeof(sector_t) != 8);
--
--	drv->driver.name = drv_name;
--
--	/* The driver belongs to vmbus */
--	ret = vmbus_child_driver_register(&drv->driver);
--
--	return ret;
-+	return vmbus_driver_register(&blkvsc_drv);
- }
- 
--
- static void blkvsc_drv_exit(void)
- {
--
--	vmbus_child_driver_unregister(&blkvsc_drv.driver);
-+	vmbus_driver_unregister(&blkvsc_drv);
- }
- 
- /*
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index ebd1715..5727173 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -176,8 +176,6 @@ struct mousevsc_dev {
- };
- 
- 
--static const char *driver_name = "mousevsc";
--
- static void deviceinfo_callback(struct hv_device *dev, struct hv_input_dev_info *info);
- static void inputreport_callback(struct hv_device *dev, void *packet, u32 len);
- static void reportdesc_callback(struct hv_device *dev, void *packet, u32 len);
-@@ -921,33 +919,20 @@ static const struct hv_vmbus_device_id id_table[] = {
- /* MODULE_DEVICE_TABLE(vmbus, id_table); */
- 
- static struct  hv_driver mousevsc_drv = {
-+	.name = "mousevsc",
- 	.id_table = id_table,
- 	.probe = mousevsc_probe,
- 	.remove = mousevsc_remove,
- };
- 
--static void mousevsc_drv_exit(void)
--{
--	vmbus_child_driver_unregister(&mousevsc_drv.driver);
--}
--
- static int __init mousevsc_init(void)
- {
--	struct hv_driver *drv = &mousevsc_drv;
--
--	DPRINT_INFO(INPUTVSC_DRV, "Hyper-V Mouse driver initializing.");
--
--	drv->driver.name = driver_name;
--
--	/* The driver belongs to vmbus */
--	vmbus_child_driver_register(&drv->driver);
--
--	return 0;
-+	return vmbus_driver_register(&mousevsc_drv);
- }
- 
- static void __exit mousevsc_exit(void)
- {
--	mousevsc_drv_exit();
-+	vmbus_driver_unregister(&mousevsc_drv);
- }
- 
- /*
-diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
-index b0d89de..f2f456f 100644
---- a/drivers/staging/hv/hv_util.c
-+++ b/drivers/staging/hv/hv_util.c
-@@ -34,8 +34,6 @@ static u8 *shut_txf_buf;
- static u8 *time_txf_buf;
- static u8 *hbeat_txf_buf;
- 
--static const char *driver_name = "hv_util";
--
- static void shutdown_onchannelcallback(void *context)
- {
- 	struct vmbus_channel *channel = context;
-@@ -244,6 +242,7 @@ MODULE_DEVICE_TABLE(vmbus, id_table);
- 
- /* The one and only one */
- static  struct hv_driver util_drv = {
-+	.name = "hv_util",
- 	.id_table = id_table,
- 	.probe =  util_probe,
- 	.remove =  util_remove,
-@@ -277,9 +276,7 @@ static int __init init_hyperv_utils(void)
- 
- 	hv_cb_utils[HV_KVP_MSG].callback = &hv_kvp_onchannelcallback;
- 
--	util_drv.driver.name = driver_name;
--
--	return vmbus_child_driver_register(&util_drv.driver);
-+	return vmbus_driver_register(&util_drv);
- }
- 
- static void exit_hyperv_utils(void)
-@@ -311,7 +308,7 @@ static void exit_hyperv_utils(void)
- 	kfree(shut_txf_buf);
- 	kfree(time_txf_buf);
- 	kfree(hbeat_txf_buf);
--	vmbus_child_driver_unregister(&util_drv.driver);
-+	vmbus_driver_unregister(&util_drv);
- }
- 
- module_init(init_hyperv_utils);
-diff --git a/drivers/staging/hv/hyperv.h b/drivers/staging/hv/hyperv.h
-index d96de66..c249811 100644
---- a/drivers/staging/hv/hyperv.h
-+++ b/drivers/staging/hv/hyperv.h
-@@ -845,8 +845,12 @@ static inline struct hv_driver *drv_to_hv_drv(struct device_driver *d)
- 
- 
- /* Vmbus interface */
--int vmbus_child_driver_register(struct device_driver *drv);
--void vmbus_child_driver_unregister(struct device_driver *drv);
-+#define vmbus_driver_register(driver)	\
-+	__vmbus_driver_register(driver, THIS_MODULE, KBUILD_MODNAME)
-+int __must_check __vmbus_driver_register(struct hv_driver *hv_driver,
-+					 struct module *owner,
-+					 const char *mod_name);
-+void vmbus_driver_unregister(struct hv_driver *hv_driver);
- 
- /**
-  * VMBUS_DEVICE - macro used to describe a specific hyperv vmbus device
-diff --git a/drivers/staging/hv/hyperv_net.h b/drivers/staging/hv/hyperv_net.h
-index 27f987b..5782fea 100644
---- a/drivers/staging/hv/hyperv_net.h
-+++ b/drivers/staging/hv/hyperv_net.h
-@@ -96,7 +96,6 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 				unsigned int status);
- int netvsc_recv_callback(struct hv_device *device_obj,
- 			struct hv_netvsc_packet *packet);
--int netvsc_initialize(struct hv_driver *drv);
- int rndis_filter_open(struct hv_device *dev);
- int rndis_filter_close(struct hv_device *dev);
- int rndis_filter_device_add(struct hv_device *dev,
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 6f4541b..cb02eed 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -32,9 +32,6 @@
- #include "hyperv_net.h"
- 
- 
--/* Globals */
--static const char *driver_name = "netvsc";
--
- static struct netvsc_device *alloc_net_device(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
-@@ -992,14 +989,3 @@ cleanup:
- 
- 	return ret;
- }
--
--/*
-- * netvsc_initialize - Main entry point
-- */
--int netvsc_initialize(struct hv_driver *drv)
--{
--
--	drv->name = driver_name;
--
--	return 0;
--}
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 2d2955c..ad1ef03 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -422,6 +422,7 @@ MODULE_DEVICE_TABLE(vmbus, id_table);
- 
- /* The one and only one */
- static struct  hv_driver netvsc_drv = {
-+	.name = "netvsc",
- 	.id_table = id_table,
- 	.probe = netvsc_probe,
- 	.remove = netvsc_remove,
-@@ -429,26 +430,12 @@ static struct  hv_driver netvsc_drv = {
- 
- static void __exit netvsc_drv_exit(void)
- {
--	vmbus_child_driver_unregister(&netvsc_drv.driver);
-+	vmbus_driver_unregister(&netvsc_drv);
- }
- 
--
- static int __init netvsc_drv_init(void)
- {
--	struct hv_driver *drv = &netvsc_drv;
--	int ret;
--
--	pr_info("initializing....");
--
--	/* Callback to client driver to complete the initialization */
--	netvsc_initialize(drv);
--
--	drv->driver.name = drv->name;
--
--	/* The driver belongs to vmbus */
--	ret = vmbus_child_driver_register(&drv->driver);
--
--	return ret;
-+	return vmbus_driver_register(&netvsc_drv);
- }
- 
- MODULE_LICENSE("GPL");
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 6f67e9b..0297418 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -41,8 +41,6 @@ static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
- module_param(storvsc_ringbuffer_size, int, S_IRUGO);
- MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
- 
--static const char *driver_name = "storvsc";
--
- struct hv_host_device {
- 	struct hv_device *dev;
- 	struct kmem_cache *request_pool;
-@@ -718,6 +716,7 @@ static int storvsc_probe(struct hv_device *device)
- /* The one and only one */
- 
- static struct hv_driver storvsc_drv = {
-+	.name = "storvsc",
- 	.id_table = id_table,
- 	.probe = storvsc_probe,
- 	.remove = storvsc_remove,
-@@ -725,8 +724,6 @@ static struct hv_driver storvsc_drv = {
- 
- static int __init storvsc_drv_init(void)
- {
--	int ret;
--	struct hv_driver *drv = &storvsc_drv;
- 	u32 max_outstanding_req_per_channel;
- 
- 	/*
-@@ -735,29 +732,22 @@ static int __init storvsc_drv_init(void)
- 	 * the ring buffer indices) by the max request size (which is
- 	 * vmbus_channel_packet_multipage_buffer + struct vstor_packet + u64)
- 	 */
--
- 	max_outstanding_req_per_channel =
--	((storvsc_ringbuffer_size - PAGE_SIZE) /
--	ALIGN(MAX_MULTIPAGE_BUFFER_PACKET +
--	sizeof(struct vstor_packet) + sizeof(u64),
--	sizeof(u64)));
-+		((storvsc_ringbuffer_size - PAGE_SIZE) /
-+		ALIGN(MAX_MULTIPAGE_BUFFER_PACKET +
-+		sizeof(struct vstor_packet) + sizeof(u64),
-+		sizeof(u64)));
- 
- 	if (max_outstanding_req_per_channel <
- 	    STORVSC_MAX_IO_REQUESTS)
- 		return -1;
- 
--	drv->driver.name = driver_name;
--
--
--	/* The driver belongs to vmbus */
--	ret = vmbus_child_driver_register(&drv->driver);
--
--	return ret;
-+	return vmbus_driver_register(&storvsc_drv);
- }
- 
- static void __exit storvsc_drv_exit(void)
- {
--	vmbus_child_driver_unregister(&storvsc_drv.driver);
-+	vmbus_driver_unregister(&storvsc_drv);
- }
- 
- MODULE_LICENSE("GPL");
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 0114b04..26f4901 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -552,51 +552,50 @@ static int vmbus_bus_init(int irq)
- }
- 
- /**
-- * vmbus_child_driver_register() - Register a vmbus's child driver
-- * @drv:        Pointer to driver structure you want to register
-- *
-+ * __vmbus_child_driver_register - Register a vmbus's driver
-+ * @drv: Pointer to driver structure you want to register
-+ * @owner: owner module of the drv
-+ * @mod_name: module name string
-  *
-  * Registers the given driver with Linux through the 'driver_register()' call
-- * And sets up the hyper-v vmbus handling for this driver.
-+ * and sets up the hyper-v vmbus handling for this driver.
-  * It will return the state of the 'driver_register()' call.
-  *
-- * Mainly used by Hyper-V drivers.
-  */
--int vmbus_child_driver_register(struct device_driver *drv)
-+int __vmbus_driver_register(struct hv_driver *hv_driver, struct module *owner, const char *mod_name)
- {
- 	int ret;
- 
--	pr_info("child driver registering - name %s\n", drv->name);
-+	pr_info("registering driver %s\n", hv_driver->name);
- 
--	/* The child driver on this vmbus */
--	drv->bus = &hv_bus;
-+	hv_driver->driver.name = hv_driver->name;
-+	hv_driver->driver.owner = owner;
-+	hv_driver->driver.mod_name = mod_name;
-+	hv_driver->driver.bus = &hv_bus;
- 
--	ret = driver_register(drv);
-+	ret = driver_register(&hv_driver->driver);
- 
- 	vmbus_request_offers();
- 
- 	return ret;
- }
--EXPORT_SYMBOL(vmbus_child_driver_register);
-+EXPORT_SYMBOL_GPL(__vmbus_driver_register);
- 
- /**
-- * vmbus_child_driver_unregister() - Unregister a vmbus's child driver
-- * @drv:        Pointer to driver structure you want to un-register
-- *
-- *
-- * Un-register the given driver with Linux through the 'driver_unregister()'
-- * call. And ungegisters the driver from the Hyper-V vmbus handler.
-+ * vmbus_driver_unregister() - Unregister a vmbus's driver
-+ * @drv: Pointer to driver structure you want to un-register
-  *
-- * Mainly used by Hyper-V drivers.
-+ * Un-register the given driver that was previous registered with a call to
-+ * vmbus_driver_register()
-  */
--void vmbus_child_driver_unregister(struct device_driver *drv)
-+void vmbus_driver_unregister(struct hv_driver *hv_driver)
- {
--	pr_info("child driver unregistering - name %s\n", drv->name);
-+	pr_info("unregistering driver %s\n", hv_driver->name);
- 
--	driver_unregister(drv);
-+	driver_unregister(&hv_driver->driver);
- 
- }
--EXPORT_SYMBOL(vmbus_child_driver_unregister);
-+EXPORT_SYMBOL_GPL(vmbus_driver_unregister);
- 
- /*
-  * vmbus_child_device_create - Creates and registers a new child device
--- 
-1.7.6
+K. Y
 
