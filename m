@@ -1,412 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab1HYJH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 05:07:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58869 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab1HYJH4 convert rfc822-to-8bit (ORCPT
+	id S1752857Ab1HYJKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 05:10:09 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56249 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215Ab1HYJKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 05:07:56 -0400
+	Thu, 25 Aug 2011 05:10:06 -0400
+X-AuditID: b753bd60-a0a78ba0000050a4-59-4e56116cef20
+X-AuditID: b753bd60-a0a78ba0000050a4-59-4e56116cef20
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Subject: [-v3 PATCH 0/3] Persistent device name using alias
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        James.Bottomley@HansenPartnership.com,
+        dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Thu, 25 Aug 2011 18:03:59 +0900
+Message-ID: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <1314138000-2049-5-git-send-email-tj@kernel.org>
-References: <1314138000-2049-1-git-send-email-tj@kernel.org> <1314138000-2049-5-git-send-email-tj@kernel.org>
-From: Paul Menage <paul@paulmenage.org>
-Date: Thu, 25 Aug 2011 02:07:35 -0700
-X-Google-Sender-Auth: lG31FxRGMlKAWygAPFEB5EyYIC0
-Message-ID: <CALdu-PCc2RzedXubReF9huamL6W+5qGCfXNNvqS2yUk3QTHRng@mail.gmail.com>
-Subject: Re: [PATCH 4/6] cgroup: don't use subsys->can_attach_task() or ->attach_task()
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, lizf@cn.fujitsu.com, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 3:19 PM, Tejun Heo <tj@kernel.org> wrote:
-> Now that subsys->can_attach() and attach() take @tset instead of
-> @task, they can handle per-task operations.  Convert
-> ->can_attach_task() and ->attach_task() users to use ->can_attach()
-> and attach() instead.  Most converions are straight-forward.
-> Noteworthy changes are,
->
-> * In cgroup_freezer, remove unnecessary NULL assignments to unused
->  methods.  It's useless and very prone to get out of sync, which
->  already happened.
->
-> * In cpuset, PF_THREAD_BOUND test is checked for each task.  This
->  doesn't make any practical difference but is conceptually cleaner.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> ---
->  block/blk-cgroup.c      |   45 +++++++++++++++++++-----------
->  kernel/cgroup_freezer.c |   14 +++-------
->  kernel/cpuset.c         |   70 +++++++++++++++++++++-------------------------
->  kernel/events/core.c    |   13 +++++---
->  kernel/sched.c          |   31 +++++++++++++--------
->  5 files changed, 91 insertions(+), 82 deletions(-)
->
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index bcaf16e..99e0bd4 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -30,8 +30,10 @@ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
->
->  static struct cgroup_subsys_state *blkiocg_create(struct cgroup_subsys *,
->                                                  struct cgroup *);
-> -static int blkiocg_can_attach_task(struct cgroup *, struct task_struct *);
-> -static void blkiocg_attach_task(struct cgroup *, struct task_struct *);
-> +static int blkiocg_can_attach(struct cgroup_subsys *, struct cgroup *,
-> +                             struct cgroup_taskset *);
-> +static void blkiocg_attach(struct cgroup_subsys *, struct cgroup *,
-> +                          struct cgroup_taskset *);
->  static void blkiocg_destroy(struct cgroup_subsys *, struct cgroup *);
->  static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
->
-> @@ -44,8 +46,8 @@ static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
->  struct cgroup_subsys blkio_subsys = {
->        .name = "blkio",
->        .create = blkiocg_create,
-> -       .can_attach_task = blkiocg_can_attach_task,
-> -       .attach_task = blkiocg_attach_task,
-> +       .can_attach = blkiocg_can_attach,
-> +       .attach = blkiocg_attach,
->        .destroy = blkiocg_destroy,
->        .populate = blkiocg_populate,
->  #ifdef CONFIG_BLK_CGROUP
-> @@ -1614,30 +1616,39 @@ done:
->  * of the main cic data structures.  For now we allow a task to change
->  * its cgroup only if it's the only owner of its ioc.
->  */
-> -static int blkiocg_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> +static int blkiocg_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> +                             struct cgroup_taskset *tset)
->  {
-> +       struct task_struct *task;
->        struct io_context *ioc;
->        int ret = 0;
->
->        /* task_lock() is needed to avoid races with exit_io_context() */
-> -       task_lock(tsk);
-> -       ioc = tsk->io_context;
-> -       if (ioc && atomic_read(&ioc->nr_tasks) > 1)
-> -               ret = -EINVAL;
-> -       task_unlock(tsk);
-> -
-> +       cgroup_taskset_for_each(task, cgrp, tset) {
-> +               task_lock(task);
-> +               ioc = task->io_context;
-> +               if (ioc && atomic_read(&ioc->nr_tasks) > 1)
-> +                       ret = -EINVAL;
-> +               task_unlock(task);
-> +               if (ret)
-> +                       break;
-> +       }
+Hi,
 
-Doesn't the other part of this patch set, that avoids calling the
-*attach() methods for tasks that aren't moving, eliminate the need for
-the usage of skip_cgrp here (and elsewhere)? When do we actually need
-to pass a non-NULL skip_cgrp to cgroup_taskset_for_each()?
+This patch series provide an "alias" of the disk into kernel messages.
 
-Paul
+A raw device name of a disk does not always point a same disk at each boot-up
+time. Therefore, users have to use persistent device names, which udev creates
+to always access the same disk. However, kernel messages still display the raw
+device names.
 
->        return ret;
->  }
->
-> -static void blkiocg_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> +static void blkiocg_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> +                          struct cgroup_taskset *tset)
->  {
-> +       struct task_struct *task;
->        struct io_context *ioc;
->
-> -       task_lock(tsk);
-> -       ioc = tsk->io_context;
-> -       if (ioc)
-> -               ioc->cgroup_changed = 1;
-> -       task_unlock(tsk);
-> +       cgroup_taskset_for_each(task, cgrp, tset) {
-> +               task_lock(task);
-> +               ioc = task->io_context;
-> +               if (ioc)
-> +                       ioc->cgroup_changed = 1;
-> +               task_unlock(task);
-> +       }
->  }
->
->  void blkio_policy_register(struct blkio_policy_type *blkiop)
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index a2b0082..2cb5e72 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -162,10 +162,14 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
->                              struct cgroup_taskset *tset)
->  {
->        struct freezer *freezer;
-> +       struct task_struct *task;
->
->        /*
->         * Anything frozen can't move or be moved to/from.
->         */
-> +       cgroup_taskset_for_each(task, new_cgroup, tset)
-> +               if (cgroup_freezing(task))
-> +                       return -EBUSY;
->
->        freezer = cgroup_freezer(new_cgroup);
->        if (freezer->state != CGROUP_THAWED)
-> @@ -174,11 +178,6 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
->        return 0;
->  }
->
-> -static int freezer_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> -{
-> -       return cgroup_freezing(tsk) ? -EBUSY : 0;
-> -}
-> -
->  static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
->  {
->        struct freezer *freezer;
-> @@ -374,10 +373,5 @@ struct cgroup_subsys freezer_subsys = {
->        .populate       = freezer_populate,
->        .subsys_id      = freezer_subsys_id,
->        .can_attach     = freezer_can_attach,
-> -       .can_attach_task = freezer_can_attach_task,
-> -       .pre_attach     = NULL,
-> -       .attach_task    = NULL,
-> -       .attach         = NULL,
->        .fork           = freezer_fork,
-> -       .exit           = NULL,
->  };
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 2e5825b..472ddd6 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -1372,33 +1372,34 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
->                             struct cgroup_taskset *tset)
->  {
->        struct cpuset *cs = cgroup_cs(cgrp);
-> +       struct task_struct *task;
-> +       int ret;
->
->        if (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed))
->                return -ENOSPC;
->
-> -       /*
-> -        * Kthreads bound to specific cpus cannot be moved to a new cpuset; we
-> -        * cannot change their cpu affinity and isolating such threads by their
-> -        * set of allowed nodes is unnecessary.  Thus, cpusets are not
-> -        * applicable for such threads.  This prevents checking for success of
-> -        * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
-> -        * be changed.
-> -        */
-> -       if (cgroup_taskset_first(tset)->flags & PF_THREAD_BOUND)
-> -               return -EINVAL;
-> -
-> +       cgroup_taskset_for_each(task, cgrp, tset) {
-> +               /*
-> +                * Kthreads bound to specific cpus cannot be moved to a new
-> +                * cpuset; we cannot change their cpu affinity and
-> +                * isolating such threads by their set of allowed nodes is
-> +                * unnecessary.  Thus, cpusets are not applicable for such
-> +                * threads.  This prevents checking for success of
-> +                * set_cpus_allowed_ptr() on all attached tasks before
-> +                * cpus_allowed may be changed.
-> +                */
-> +               if (task->flags & PF_THREAD_BOUND)
-> +                       return -EINVAL;
-> +               if ((ret = security_task_setscheduler(task)))
-> +                       return ret;
-> +       }
->        return 0;
->  }
->
-> -static int cpuset_can_attach_task(struct cgroup *cgrp, struct task_struct *task)
-> -{
-> -       return security_task_setscheduler(task);
-> -}
-> -
->  /*
->  * Protected by cgroup_lock. The nodemasks must be stored globally because
->  * dynamically allocating them is not allowed in pre_attach, and they must
-> - * persist among pre_attach, attach_task, and attach.
-> + * persist among pre_attach, and attach.
->  */
->  static cpumask_var_t cpus_attach;
->  static nodemask_t cpuset_attach_nodemask_from;
-> @@ -1417,39 +1418,34 @@ static void cpuset_pre_attach(struct cgroup *cont)
->        guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
->  }
->
-> -/* Per-thread attachment work. */
-> -static void cpuset_attach_task(struct cgroup *cont, struct task_struct *tsk)
-> -{
-> -       int err;
-> -       struct cpuset *cs = cgroup_cs(cont);
-> -
-> -       /*
-> -        * can_attach beforehand should guarantee that this doesn't fail.
-> -        * TODO: have a better way to handle failure here
-> -        */
-> -       err = set_cpus_allowed_ptr(tsk, cpus_attach);
-> -       WARN_ON_ONCE(err);
-> -
-> -       cpuset_change_task_nodemask(tsk, &cpuset_attach_nodemask_to);
-> -       cpuset_update_task_spread_flag(cs, tsk);
-> -}
-> -
->  static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
->                          struct cgroup_taskset *tset)
->  {
->        struct mm_struct *mm;
-> -       struct task_struct *tsk = cgroup_taskset_first(tset);
-> +       struct task_struct *task;
-> +       struct task_struct *leader = cgroup_taskset_first(tset);
->        struct cgroup *oldcgrp = cgroup_taskset_cur_cgroup(tset);
->        struct cpuset *cs = cgroup_cs(cgrp);
->        struct cpuset *oldcs = cgroup_cs(oldcgrp);
->
-> +       cgroup_taskset_for_each(task, cgrp, tset) {
-> +               /*
-> +                * can_attach beforehand should guarantee that this doesn't
-> +                * fail.  TODO: have a better way to handle failure here
-> +                */
-> +               WARN_ON_ONCE(set_cpus_allowed_ptr(task, cpus_attach));
-> +
-> +               cpuset_change_task_nodemask(task, &cpuset_attach_nodemask_to);
-> +               cpuset_update_task_spread_flag(cs, task);
-> +       }
-> +
->        /*
->         * Change mm, possibly for multiple threads in a threadgroup. This is
->         * expensive and may sleep.
->         */
->        cpuset_attach_nodemask_from = oldcs->mems_allowed;
->        cpuset_attach_nodemask_to = cs->mems_allowed;
-> -       mm = get_task_mm(tsk);
-> +       mm = get_task_mm(leader);
->        if (mm) {
->                mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
->                if (is_memory_migrate(cs))
-> @@ -1905,9 +1901,7 @@ struct cgroup_subsys cpuset_subsys = {
->        .create = cpuset_create,
->        .destroy = cpuset_destroy,
->        .can_attach = cpuset_can_attach,
-> -       .can_attach_task = cpuset_can_attach_task,
->        .pre_attach = cpuset_pre_attach,
-> -       .attach_task = cpuset_attach_task,
->        .attach = cpuset_attach,
->        .populate = cpuset_populate,
->        .post_clone = cpuset_post_clone,
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index b8785e2..95e189d 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -7000,10 +7000,13 @@ static int __perf_cgroup_move(void *info)
->        return 0;
->  }
->
-> -static void
-> -perf_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *task)
-> +static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> +                              struct cgroup_taskset *tset)
->  {
-> -       task_function_call(task, __perf_cgroup_move, task);
-> +       struct task_struct *task;
-> +
-> +       cgroup_taskset_for_each(task, cgrp, tset)
-> +               task_function_call(task, __perf_cgroup_move, task);
->  }
->
->  static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> @@ -7017,7 +7020,7 @@ static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
->        if (!(task->flags & PF_EXITING))
->                return;
->
-> -       perf_cgroup_attach_task(cgrp, task);
-> +       task_function_call(task, __perf_cgroup_move, task);
->  }
->
->  struct cgroup_subsys perf_subsys = {
-> @@ -7026,6 +7029,6 @@ struct cgroup_subsys perf_subsys = {
->        .create         = perf_cgroup_create,
->        .destroy        = perf_cgroup_destroy,
->        .exit           = perf_cgroup_exit,
-> -       .attach_task    = perf_cgroup_attach_task,
-> +       .attach         = perf_cgroup_attach,
->  };
->  #endif /* CONFIG_CGROUP_PERF */
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index ccacdbd..dd7e460 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -8966,24 +8966,31 @@ cpu_cgroup_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
->        sched_destroy_group(tg);
->  }
->
-> -static int
-> -cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> +static int cpu_cgroup_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> +                                struct cgroup_taskset *tset)
->  {
-> +       struct task_struct *task;
-> +
-> +       cgroup_taskset_for_each(task, cgrp, tset) {
->  #ifdef CONFIG_RT_GROUP_SCHED
-> -       if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
-> -               return -EINVAL;
-> +               if (!sched_rt_can_attach(cgroup_tg(cgrp), task))
-> +                       return -EINVAL;
->  #else
-> -       /* We don't support RT-tasks being in separate groups */
-> -       if (tsk->sched_class != &fair_sched_class)
-> -               return -EINVAL;
-> +               /* We don't support RT-tasks being in separate groups */
-> +               if (task->sched_class != &fair_sched_class)
-> +                       return -EINVAL;
->  #endif
-> +       }
->        return 0;
->  }
->
-> -static void
-> -cpu_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> +static void cpu_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-> +                             struct cgroup_taskset *tset)
->  {
-> -       sched_move_task(tsk);
-> +       struct task_struct *task;
-> +
-> +       cgroup_taskset_for_each(task, cgrp, tset)
-> +               sched_move_task(task);
->  }
->
->  static void
-> @@ -9071,8 +9078,8 @@ struct cgroup_subsys cpu_cgroup_subsys = {
->        .name           = "cpu",
->        .create         = cpu_cgroup_create,
->        .destroy        = cpu_cgroup_destroy,
-> -       .can_attach_task = cpu_cgroup_can_attach_task,
-> -       .attach_task    = cpu_cgroup_attach_task,
-> +       .can_attach     = cpu_cgroup_can_attach,
-> +       .attach         = cpu_cgroup_attach,
->        .exit           = cpu_cgroup_exit,
->        .populate       = cpu_cgroup_populate,
->        .subsys_id      = cpu_cgroup_subsys_id,
-> --
-> 1.7.6
->
->
+My proposal is that users can use and see persistent device names which were
+assigned by themselves because users expect same name to point same disk
+anytime.
+
+Why need to modify kernel messages?
+- We can see mapping of device names and persistent device names in udev log.
+  If those logs output to syslog, we can search persistent device name from
+  device name, but it can cause a large amount of syslog output.
+
+- If we can use the persistent device names and can always see the same name on
+  the kernel log, we don't need to pay additional cost for searching and picking
+  a correct pair of device name and persistent device name from udev log.
+
+- Kernel messages are output to serial console when kenel crashes, it's so hard
+  to convert a device name to the alias.
+
+Of course, I am going to modify the commands using device name so that users
+can use an alias of the disk.
+
+Changes in v3:
+- "alias_name" was changed to "alias"
+- The function to notify the partitions of uevent was deleted
+
+
+How to use:
+1. Build and install the kernel with this series, and reboot with the kernel.
+
+2. Check device names.
+
+[localhost]# cat /proc/partitions
+major minor  #blocks  name
+
+   8        0   12582912 sda
+   8        1   12582878 sda1
+   8        0    8388608 sdb
+   8        1     512000 sdb1
+   8        2    7875584 sdb2
+
+
+3. Make a script of get alias
+
+[localhost]# vi /lib/udev/get_alias
+#!/bin/sh -e
+DEVNAME=`echo $1 | sed -e 's/[0-9]//g'`
+echo "ALIAS=`cat /sys/block/$DEVNAME/alias`"
+exit 0
+
+And you should set an execute bit,
+[localhost]# chmod +x /lib/udev/get_alias
+
+4. Check disk's id
+Here is an example to get the serial id and the path of the device.
+Some devices have not the serial id. Therefore, to identify a device,
+users need to get the path of the device.
+
+[localhost]# udevadm info --query=property --path=/sys/block/sda \
+| grep ID_SERIAL=
+ID_SERIAL=0QEMU_QEMU_HARDDISK_drive-scsi0-0-1
+
+or you can also use the path of the device
+
+[localhost]# udevadm info --query=property --path=/sys/block/sr0 \
+| grep ID_PATH=
+ID_PATH=pci-0000:00:01.1-scsi-1:0:0:0
+
+
+5. Write udev rules as follows
+(The user assigns "foo" to sda and "bar" to sr0)
+We use ENV{ID_SERIAL} or ENV{ID_PATH} (get by 3) to identify a disk.
+And to assign automatically an "alias", we use ATTR key.
+If ENV{ALIAS} is empty, we use to get an "alias" by get_alias script.
+
+[localhost]# vi /etc/udev/rules.d/70-persistent-alias.rules
+SUBSYSTEM!="block", GOTO="end"
+ATTR{alias}!="", GOTO="symlink"
+
+# write alias for sdX
+KERNEL=="sd*[!0-9]", ACTION=="add", ATTR{alias}="foo", \
+ENV{ID_SERIAL}=="0QEMU_QEMU_HARDDISK_drive-scsi0-0-1"
+
+# write alias for srX
+KERNEL=="sr[0-9]", ACTION=="add", ATTR{alias}="bar", \
+ENV{ID_PATH}=="pci-0000:00:01.1-scsi-1:0:0:0"
+
+LABEL="symlink"
+
+# make symlink
+ENV{DEVTYPE}=="disk|partition", ENV{ALIAS}=="", \
+IMPORT{program}="/lib/udev/get_alias %k"
+ENV{DEVTYPE}=="disk", ENV{ALIAS}=="?*", SYMLINK+="disk/by-alias/$env{ALIAS}"
+ENV{DEVTYPE}=="partition", ENV{ALIAS}=="?*", \
+SYMLINK+="disk/by-alias/$env{ALIAS}%n"
+
+LABEL="end"
+
+
+6. reboot
+After reboot, we can see aliases in kernel messages.
+
+[localhost]# ls -l /dev/disk/by-alias/
+total 0
+lrwxrwxrwx. 1 root root  9 Jul  1 21:21 bar -> ../../sr0
+lrwxrwxrwx. 1 root root  9 Jul  1 21:21 foo -> ../../sda
+lrwxrwxrwx. 1 root root 10 Jul  1 21:21 foo1 -> ../../sda1
+
+[localhost]# dmesg
+...
+sd 2:0:1:0: [sda] Attached SCSI disk
+alias: assigned foo to sda
+sd 2:0:1:0: [foo] Send: 0xffff88007a82cd00
+sd 2:0:1:0: [foo] CDB: Write(10): 2a 00 01 58 0c 8a 00 00 08 00
+buffer = 0xffff88007a82c500, bufflen = 4096, queuecommand 0xffffffffa00277fd
+leaving scsi_dispatch_cmnd()
+sd 2:0:1:0: [foo] Done: 0xffff88007a82cd00 SUCCESS
+sd 2:0:1:0: [foo]  Result: hostbyte=DID_OK driverbyte=DRIVER_OK
+sd 2:0:1:0: [foo] CDB: Write(10): 2a 00 01 58 0c 8a 00 00 08 00
+...
+
+When a new device is added, the udev appends a new rule manually.
+In the future, it is appended automatically, as like NIC.
+
+Best Regards,
+
+---
+
+Joe Perches (1):
+      sd: modify printk for alias name
+
+Nao Nishijima (2):
+      sd: [cleanup] Use sd_printk() instead of printk()
+      block: add a new attribute "alias" in gendisk
+
+
+ Documentation/ABI/testing/sysfs-block |   13 ++++++
+ block/genhd.c                         |   71 +++++++++++++++++++++++++++++++++
+ drivers/scsi/scsi_lib.c               |   26 ++++++++++++
+ drivers/scsi/sd.c                     |   30 +++++++++++++-
+ drivers/scsi/sd.h                     |    8 +---
+ include/linux/genhd.h                 |    4 ++
+ include/scsi/scsi_device.h            |    8 +---
+ 7 files changed, 147 insertions(+), 13 deletions(-)
+
+
+--
+Nao Nishijima (nao.nishijima.xt@hitachi.com)
