@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1HYKoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 06:44:14 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:52361 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1HYKoK (ORCPT
+	id S1752992Ab1HYKwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 06:52:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35790 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab1HYKwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 06:44:10 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz936eK1432Nzz1202hzz8275bh8275dhz32i2a8h668h839h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Date: Thu, 25 Aug 2011 11:43:53 +0100
-Subject: RE: [PATCH] Input: adp5588-keys - remove incorrect modalias
-Thread-Topic: [PATCH] Input: adp5588-keys - remove incorrect modalias
-Thread-Index: AcxjEhEa4LFDLETEQBqOjQdxz35ujwAAcl6g
-Message-ID: <544AC56F16B56944AEC3BD4E3D59177146E6D0708C@LIMKCMBX1.ad.analog.com>
-References: <1314268238.2663.1.camel@phoenix>
-In-Reply-To: <1314268238.2663.1.camel@phoenix>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 25 Aug 2011 06:52:32 -0400
+Message-ID: <4E562947.3000304@ru.mvista.com>
+Date: Thu, 25 Aug 2011 14:51:51 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+To: Adam Cozzette <acozzette@cs.hmc.edu>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
+        edwin_rong <edwin_rong@realsil.com.cn>,
+        wwang <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH] ums_realtek: do not use stack memory for DMA
+References: <20110824182237.GC5450@[192.168.0.12]>
+In-Reply-To: <20110824182237.GC5450@[192.168.0.12]>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7PAiQQ1005930
 
-Axel Lin wrote on 2011-08-25:
-> From 2b642fd34e59291764f5149f083d84760d8b41b2 Mon Sep 17 00:00:00 2001
-> From: Axel Lin <axel.lin@gmail.com>
-> Date: Thu, 25 Aug 2011 18:26:56 +0800
-> Subject: [PATCH] Input: adp5588-keys - remove incorrect modalias
->
-> For i2c drivers, we should use "i2c:" prefix for modalias.
-> MODULE_DEVICE_TABLE will setup the modulalias for us,
-> thus adding a MODULE_ALIAS here seems redundant.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hello.
 
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+On 24-08-2011 22:22, Adam Cozzette wrote:
 
+> This patch changes rts51x_read_mem, rts51x_write_mem, and rts51x_read_status to
+> allocate temporary buffers with kmalloc. This way stack addresses are not used
+> for DMA when these functions call rts51x_bulk_transport.
+
+> Signed-off-by: Adam Cozzette<acozzette@cs.hmc.edu>
 > ---
->  drivers/input/keyboard/adp5588-keys.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> diff --git a/drivers/input/keyboard/adp5588-keys.c
-> b/drivers/input/keyboard/adp5588-keys.c index 7b404e54..e34eeb8 100644
-> --- a/drivers/input/keyboard/adp5588-keys.c +++
-> b/drivers/input/keyboard/adp5588-keys.c @@ -668,4 +668,3 @@
-> module_exit(adp5588_exit);
->  MODULE_LICENSE("GPL");
->  MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
->  MODULE_DESCRIPTION("ADP5588/87 Keypad driver");
-> -MODULE_ALIAS("platform:adp5588-keys");
+>   realtek_cr.c |   35 ++++++++++++++++++++++++++++++-----
+>   1 file changed, 30 insertions(+), 5 deletions(-)
 
-Greetings,
-Michael
+> diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realtek_cr.c
+> index 34adc4b..232167a 100644
+> --- a/drivers/usb/storage/realtek_cr.c
+> +++ b/drivers/usb/storage/realtek_cr.c
+[...]
+> @@ -342,6 +351,12 @@ static int rts51x_write_mem(struct us_data *us, u16 addr, u8 *data, u16 len)
+>   {
+>   	int retval;
+>   	u8 cmnd[12] = { 0 };
+> +	u8 *buf;
+> +
+> +	buf = kmalloc(len, GFP_NOIO);
+> +	if (buf == NULL)
+> +		return USB_STOR_TRANSPORT_ERROR;
+> +	memcpy(buf, data, len);
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
+    You could use kmemdup() instead of kmalloc()/memcpy()...
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+WBR, Sergei
