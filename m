@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab1HYSOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 14:14:11 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15637 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab1HYSOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 14:14:08 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6448"; a="112755613"
-Date: Thu, 25 Aug 2011 11:14:04 -0700
-From: Gregory Bean <gbean@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, rvaswani@codeaurora.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
-Message-ID: <20110825181404.GA19345@gbean-linux.qualcomm.com>
-Mail-Followup-To: Gregory Bean <gbean@codeaurora.org>,
-	David Brown <davidb@codeaurora.org>,
-	Linus Walleij <linus.walleij@linaro.org>, rvaswani@codeaurora.org,
-	Stephen Warren <swarren@nvidia.com>,
-	Linus Walleij <linus.walleij@stericsson.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	Grant Likely <grant.likely@secretlab.ca>,
-	Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	Linaro Dev <linaro-dev@lists.linaro.org>,
-	ext Tony Lindgren <tony@atomide.com>,
-	Sascha Hauer <kernel@pengutronix.de>
-References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04B24A3BC0@HQMAIL01.nvidia.com>
- <CACRpkdaZfG4hiGf8vug3EGMRMc0c92xbj=L_HAQcS27DAXYc4Q@mail.gmail.com>
- <20110825151210.GC31331@huya.qualcomm.com>
+	id S1755218Ab1HYSP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 14:15:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9557 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753716Ab1HYSP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 14:15:26 -0400
+Date: Thu, 25 Aug 2011 21:16:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Brian King <brking@linux.vnet.ibm.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: Re: Broken pci_block_user_cfg_access interface
+Message-ID: <20110825181613.GA27183@redhat.com>
+References: <4E54D5D7.8050807@siemens.com>
+ <4E551298.2000302@linux.vnet.ibm.com>
+ <4E5613BA.5070101@siemens.com>
+ <20110825094031.GA3727@redhat.com>
+ <4E5648EB.5030302@linux.vnet.ibm.com>
+ <4E564A45.2040300@linux.vnet.ibm.com>
+ <4E564B1D.2090201@siemens.com>
+ <4E564CF9.5070209@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110825151210.GC31331@huya.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E564CF9.5070209@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 08:12:10AM -0700, David Brown wrote:
-> On Thu, Aug 25, 2011 at 12:12:59PM +0200, Linus Walleij wrote:
+On Thu, Aug 25, 2011 at 08:24:09AM -0500, Brian King wrote:
+> > Is this broken ATM? I thought the PCI core would simply try all methods
+> > + has a quirks section for completely funky devices.
 > 
-> > mach-msm:
-> > ----------------
-> > 
-> > Hard to tell how this works and what's available, support
-> > seems to be incomplete. Currently it seems to be wired
-> > to do either a dedicated function (like some UART pin)
-> > or GPIO, like each pin can be used for two specific
-> > things, and not phone-exchange type.
+> Yes. Its certainly broken for ipr. If the ipr driver is loaded, it really needs
+> to be the one doing the reset. If its not loaded, I may need to add a few
+> quirks for these adapters to properly handle this function.
 > 
-> There are some pins on MSMs that can be connected to different hw
-> blocks, we just haven't gotten the support into the kernel yet.
-> 
-> There are some things where two devices share pins, and you have to
-> choose one or the other.
-> 
-> I believe there are also configurations where something such as the SD
-> controller can either be configured in 8-bit data mode, or in 4-bit
-> data mode, and those 4 pins connected to something else.
-> 
-> Much of the current pin configuration in our product kernel seems to
-> be about current and pull up/down configuration.
-> 
-> I've added Rohit Vaswani, and Greg Bean to this thread who should have
-> a bit better understanding of this.
+> -Brian
 
-The MSM pinmux system allows every pin to be independently controlled
-in the following ways:
+Driving reset through sysfs while another driver is bound
+is likely broken for many types of devices.
+But so it writing config space through sysfs,
+or accessing BARs by mmap while a kernel driver is bound
+with the exception of simple stub drivers such as uio and pci-stub.
+And no amount of locking can fix that I think.
 
-- function selection:  Every pin can be in GPIO mode, or connected to
-  a specific piece of hardware.  The number of choices varies by pin -
-  some pins have only two choices, some have eight.  When a pin is not in
-  GPIO mode, it loses some configurability - for instance, its direction
-  can no longer be set, as that's predetermined by the function selection.
-  Pins can belong to many groups which overlap in all kinds of interesting
-  ways - a pin may be part of this four-bit bus, or that eight-bit bus, or
-  might stand alone for two settings...
+Let's try to see whether there's an issue with
+existing applications, all of which IIUC
+have a single userspace driver accessing the device.
 
-- drive strength: Each pin can be set to have a different drive strength
-  between 2MA and 16MA, in 2MA steps.
-
-- pull settings: Each pin can be configured with a variety of pull
-  settings: up, down, keeper, no pull.
-
-Additionally, there are complexities involving delivering
-interrupts from GPIOs:
-
-- 'direct-connect' or 'summary' interrupts: pins which are being used as
-  interrupt inputs can be 'summarized' through a single interrupt
-  (requiring an additional pile of register reads to figure out which
-  gpio triggered the interrupt) or as a 'direct-connect' interrupt.
-  There are very few direct-connect lines available, so most gpio
-  interrupts are summarized.
-
-- processor interrupt assignment: Each pin can be assigned to deliver
-  interrupts to a different processor on the board.  This pin might be
-  assigned to the MSM, that pin might go to the DSP, the next might
-  go to the modem, and so on...
+Besides that, all we need to address, as I see it,
+is not making things worse: that is if device potentially
+gets broken by a sysfs access, we can't help this,
+but let's at least not trigger BUG errors.
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+MST
