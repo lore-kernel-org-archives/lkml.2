@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1HZPrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:47:46 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:56398 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466Ab1HZPrn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:47:43 -0400
+	id S1754613Ab1HZPxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:53:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39832 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754348Ab1HZPxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 11:53:19 -0400
+Date: Fri, 26 Aug 2011 17:50:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        bblum@andrew.cmu.edu, fweisbec@gmail.com, lizf@cn.fujitsu.com,
+        paul@paulmenage.org
+Subject: Re: + cgroups-fix-ordering-of-calls-in-cgroup_attach_proc.patch
+	added to -mm tree
+Message-ID: <20110826155011.GA18410@redhat.com>
+References: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org> <20110826151245.GA16243@redhat.com> <20110826152139.GH2632@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20110826103932.1626f1c5542b660bcd1b24aa@canb.auug.org.au>
-References: <20110825161843.daf46b6b4023926fcfeec387@canb.auug.org.au>
-	<20110825140820.GA9126@kroah.com>
-	<4E56689D.3080202@freescale.com>
-	<20110826015111.49af16f792d5554fd931d230@canb.auug.org.au>
-	<CACqU3MUs_97=MuuKAjr-LeUT7kSRxtzSntwUeKeeH4n8s7SSGg@mail.gmail.com>
-	<20110826103932.1626f1c5542b660bcd1b24aa@canb.auug.org.au>
-Date: Fri, 26 Aug 2011 11:47:40 -0400
-Message-ID: <CACqU3MVbKJw5VVqnz+gfLDnQEDu9Lv4xV+7RvdD4ZbetGu79WQ@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (tty tree related)
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826152139.GH2632@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Tejun,
 
-[Removed PPC folks from the CC list, the conversation drifted.]
+On 08/26, Tejun Heo wrote:
+>
+> Please take a look at the following series.
+>
+>   http://thread.gmane.org/gmane.linux.kernel/1184375
 
-On Thu, Aug 25, 2011 at 8:39 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Arnaud,
->
-> On Thu, 25 Aug 2011 12:09:20 -0400 Arnaud Lacombe <lacombar@gmail.com> wrote:
->>
->> If you could provide an exhaustive list of them, I'd be interested. Do
->> you account/reference them in the report you make on each new -next
->> tree ?
->
-> I don't refer to them at all :-(
->
-> If you are not just referring to powerpc ones, then an x86_64
-> allmodconfig is a good place to start, there are several in there.
->
-> Otherwise, I will send you the results of some of my builds this evening.
->
-Couldn't all the error log be public, rotated over a 7 iteration
-period ? That would be fair to everyone.
+OK, thanks... looks like 1/6 conflicts with this patch ;)
 
-Thanks,
- - Arnaud
+Tejun, I'll appreciate if you can send me this thread in mbox format
+privately. I don't think I can help, just I am curious.
+
+> attach racing against exit/exec is problematic and maybe we should
+> extend task->threadgroup_fork_lock protection to cover both exit and
+> exec.  I can't like it tho.
+
+Yes...
+
+Oleg.
+
