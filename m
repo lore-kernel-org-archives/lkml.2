@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1HZGkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 02:40:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64758 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab1HZGkQ (ORCPT
+	id S1751612Ab1HZGqn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 02:46:43 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:43528 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab1HZGqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 02:40:16 -0400
-Date: Fri, 26 Aug 2011 08:40:11 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 3/6] cgroup: introduce cgroup_taskset and use it in
- subsys->can_attach(), cancel_attach() and attach()
-Message-ID: <20110826064011.GA2632@htj.dyndns.org>
-References: <1314312192-26885-1-git-send-email-tj@kernel.org>
- <1314312192-26885-4-git-send-email-tj@kernel.org>
- <20110826023818.GC3457@count0.beaverton.ibm.com>
+	Fri, 26 Aug 2011 02:46:42 -0400
+Date: Fri, 26 Aug 2011 16:45:53 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?utf-8?Q?Micha=C5=82Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
+        Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH net-next ] Fix time-lag of IFF_RUNNING flag consistency
+	between vlan and real devices
+Message-ID: <20110826064553.GA5874@gondor.apana.org.au>
+References: <20110826060257.5304.62723.stgit@ltc219.sdl.hitachi.co.jp> <20110825230859.11b2b132@nehalam.ftrdhcpuser.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110826023818.GC3457@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110825230859.11b2b132@nehalam.ftrdhcpuser.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Matt.
+On Thu, Aug 25, 2011 at 11:08:59PM -0700, Stephen Hemminger wrote:
+>
+> Just doing this for ioctl is not enough, API's other than user space depend on this.
+> Also the user may have manually set different flags on vlan than on
+> the real device.
 
-On Thu, Aug 25, 2011 at 07:38:18PM -0700, Matt Helsley wrote:
-> On Fri, Aug 26, 2011 at 12:43:09AM +0200, Tejun Heo wrote:
-> > Currently, there's no way to pass multiple tasks to cgroup_subsys
-> > methods necessitating the need for separate per-process and per-task
-> > methods.  This patch introduces cgroup_taskset which can be used to
-> > pass multiple tasks and their associated cgroups to cgroup_subsys
-> > methods.
-> 
-> This will be the third iterator-ish pattern in the cgroup code.
-> It's not your fault but it does seem a bit much to have:
-...
-> Is there a sane way to merge all this?
+Right, anything that tests netif_carrier_ok directly on the VLAN
+device will still be delayed.
 
-If merging isn't complicated and simplifies the code and its users,
-definitely but I don't think that will be the case here.  If there are
-different targets to iterate, having matching iterators isn't a weird
-thing after all.  I personally am not too enthusiastic about mixing
-locking with iterator (the implied read_lock in the cgroup iterator)
-or iteration-by-callback but that's a different issue.
+Now I remember discussing this issue in Japan.  However, I can't
+recall the exact scenario in which the delay occured.
 
-> Perhaps we could drop the iterator interfaces in 1) and 2) and replace
-> it with:
-> 
-> 		tset cgroup_taskset_from_cgroup(cgroup)
-> 
-> which would grab the css set lock to construct the tset from the given
-> cgroup -- essentially inlining the current iterator code into a single
-> function.
+Is the issue with the link status going down on the real device,
+or the real device coming up?
 
-* It doesn't need to walk the whole cgroup.
+IIRC we already have mechanisms in place to ensure that down events
+are not delayed by linkwatch.  Of course it is possible that this
+isn't working for some reason, or some other part of the system is
+causing the delay.
 
-* It requires stable set of tasks (ie. atomicity w.r.t. the thread
-  group) with sleepable context which is currently achieved by a rwsem
-  in the task to protect against fork and getting an extra reference
-  to the tasks in the set.
+So please clarify the scenario for us Hayasaka-san.  Also please
+let us know how you measured the delay.
 
-I don't think widening the scope would achieve much (why do we want to
-pass in unrelated tasks to subsystems as a single bundle?) while
-introducing unnecessary scalability limitation (moving out a single
-process ends up being an operation on the whole cgroup).
-
-I don't see how it would be better but, if you do, please go ahead.
-Consolidating stuff is (almost) always a good idea. :)
-
-Thanks.
-
+Thanks,
 -- 
-tejun
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
