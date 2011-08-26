@@ -1,122 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab1HZSAF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:00:05 -0400
-Received: from mail.linode.com ([67.18.92.99]:58271 "EHLO www.linode.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753251Ab1HZSAB convert rfc822-to-8bit (ORCPT
+	id S1755415Ab1HZSDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:03:05 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:34972 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab1HZSDB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:00:01 -0400
-X-Greylist: delayed 1021 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 14:00:00 EDT
-From: Peter Sandin <psandin@linode.com>
-Content-Type: text/plain; charset=us-ascii
+	Fri, 26 Aug 2011 14:03:01 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=k5gaCzLjxknTWopmDjH6mFu3DBq8vt1N3gcrzo+lyvdqneczqr/o5tJN5j6Bc+sig
+	eJU9QnJJ333CejDH3MPOg==
+MIME-Version: 1.0
+In-Reply-To: <4E57CA80.4070509@gmail.com>
+References: <20110826152256.GA9421@quad>
+	<4E57CA80.4070509@gmail.com>
+Date: Fri, 26 Aug 2011 20:02:57 +0200
+Message-ID: <CABPqkBTDG_DcJTPpB-126HyuT8yR+w_JOssN=ix0rAP3tjzpuw@mail.gmail.com>
+Subject: Re: [PATCH] perf: collect multiplexing timing information in perf record
+From: Stephane Eranian <eranian@google.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, ming.m.lin@intel.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Subject: 3.0.0 Xen pv guest - BUG: Unable to handle kernel paging request in swap_count_continued
-Date: Fri, 26 Aug 2011 13:42:54 -0400
-Message-Id: <9CAEB881-07FE-437C-8A6B-DB7B690CEABE@linode.com>
-Cc: xen-devel@lists.xensource.com
-To: LKML <linux-kernel@vger.kernel.org>
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a number of virtualized Linux instances running under Xen that have been hitting a bug. This issue first cropped up in the 2.6.38 release and we're still seeing cases with the 3.0.0 kernel. On average we're receiving reports of about one instance per day crashing due to this issue. The affected 2.6.39 and 3.0.0 kernels are vanilla kernel.org kernels, the .config file and binary for the affected 3.0.0 kernel can be found at:
+On Fri, Aug 26, 2011 at 6:32 PM, David Ahern <dsahern@gmail.com> wrote:
+>
+>
+> On 08/26/2011 09:22 AM, Stephane Eranian wrote:
+>>
+>> This patch modifies perf record to collect multiplexing timing
+>> information (time_enabled, time_running) when the -R (raw) option
+>> is used.
+>>
+>> This allows you to compare events captured on a single run and
+>> compute multi-event metrics. Further it allows you to compare
+>> measurements between different runs where the number of collected
+>> events has changed and across different architectures where the
+>> event count will surely change.
+>>
+>> To normalize an event (assuming a fixed period), you do:
+>>  total_events = n_samples * period * time_enabled / time_running
+>>
+>> You need the timing information to compensate for multiplexing
+>> which may have happened.
+>>
+>> To add timing information in each sample, it is necessary to
+>> set PERF_SAMPLE_READ as per the kernel API. That has the side
+>> effect of also storing the value of the sampling event in each
+>> sample. This patch modifies perf report to correctly parse
+>> such samples.
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>>
+>> ---
+>> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+>> index 6b0519f..c54e580 100644
+>> --- a/tools/perf/builtin-record.c
+>> +++ b/tools/perf/builtin-record.c
+>> @@ -166,7 +166,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+>>                                 PERF_FORMAT_TOTAL_TIME_RUNNING |
+>>                                 PERF_FORMAT_ID;
+>>
+>> -     attr->sample_type       |= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+>> +     attr->sample_type |= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+>>
+>>       if (evlist->nr_entries > 1)
+>>               attr->sample_type |= PERF_SAMPLE_ID;
+>> @@ -211,6 +211,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+>>               attr->sample_type       |= PERF_SAMPLE_TIME;
+>>               attr->sample_type       |= PERF_SAMPLE_RAW;
+>>               attr->sample_type       |= PERF_SAMPLE_CPU;
+>> +             attr->sample_type       |= PERF_SAMPLE_ID | PERF_SAMPLE_READ;
+>>       }
+>>
+>>       if (nodelay) {
+>> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+>> index 55f4c76..997b7d7 100644
+>> --- a/tools/perf/builtin-test.c
+>> +++ b/tools/perf/builtin-test.c
+>> @@ -561,7 +561,7 @@ static int test__basic_mmap(void)
+>>               }
+>>
+>>               err = perf_event__parse_sample(event, attr.sample_type, sample_size,
+>> -                                            false, &sample);
+>> +                                            false, 0, &sample);
+>>               if (err) {
+>>                       pr_err("Can't parse sample, err = %d\n", err);
+>>                       goto out_munmap;
+>> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+>> index 1d7f664..ed193eb 100644
+>> --- a/tools/perf/util/event.h
+>> +++ b/tools/perf/util/event.h
+>> @@ -186,6 +186,6 @@ const char *perf_event__name(unsigned int id);
+>>
+>>  int perf_event__parse_sample(const union perf_event *event, u64 type,
+>>                            int sample_size, bool sample_id_all,
+>> -                          struct perf_sample *sample);
+>> +                          u64 read_format, struct perf_sample *sample);
+>>
+>>  #endif /* __PERF_RECORD_H */
+>> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+>> index c12bd47..be0e30c 100644
+>> --- a/tools/perf/util/evlist.c
+>> +++ b/tools/perf/util/evlist.c
+>> @@ -477,6 +477,14 @@ int perf_evlist__set_filters(struct perf_evlist *evlist)
+>>       return 0;
+>>  }
+>>
+>> +u64 perf_evlist__read_format(const struct perf_evlist *evlist)
+>> +{
+>> +     struct perf_evsel *first;
+>> +
+>> +     first = list_entry(evlist->entries.next, struct perf_evsel, node);
+>> +     return first->attr.read_format;
+>> +}
+>> +
+>>  bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist)
+>>  {
+>>       struct perf_evsel *pos, *first;
+>> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+>> index ce85ae9..0c0d0ff 100644
+>> --- a/tools/perf/util/evlist.h
+>> +++ b/tools/perf/util/evlist.h
+>> @@ -68,6 +68,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
+>>  void perf_evlist__delete_maps(struct perf_evlist *evlist);
+>>  int perf_evlist__set_filters(struct perf_evlist *evlist);
+>>
+>> +u64 perf_evlist__read_format(const struct perf_evlist *evlist);
+>>  u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
+>>  bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
+>>
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index a03a36b..630a7da 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -340,9 +340,32 @@ static bool sample_overlap(const union perf_event *event,
+>>       return false;
+>>  }
+>>
+>> +static int
+>> +sample_read2u64(const u64 *array, u64 fmt)
+>> +{
+>> +     u64 nr = 1;
+>> +     int ret = 1; /* nr or value */
+>> +
+>> +     if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED)
+>> +             ret++;
+>> +
+>> +     if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING)
+>> +             ret++;
+>> +
+>> +     if (fmt & PERF_FORMAT_GROUP) {
+>> +             nr = *(u64 *)array;
+>> +             ret += nr;
+>> +     }
+>> +
+>> +     if (fmt & PERF_FORMAT_ID)
+>> +             ret += nr;
+>
+> Why not add
+> struct read_format {
+>        u64     value;
+>        u64     time_enabled;
+>        u64     time_running;
+>        u64     id;
+> };
+>
+> to perf_sample and save the data there?
+>
+I am not following you here.
+Are you talking about the kernel API or perf tool internals?
 
-http://thesandins.net/xen/3.0.0/
+The only way to have timing saved in each sample is via
+PERF_SAMPLE_READ and a read_format which includes
+time_enabled + time_running.
 
-This issue has happened on multiple separate physical machine and different distributions, so it's not a hardware or distribution specific issue. The Apache httpd server seems to be the most likely process to trigger this issue. Someone else opened a bug with Apache about this issue, but that bug was closed as not being an Apache issue, that report can be found at:
-
-https://issues.apache.org/bugzilla/show_bug.cgi?id=51325
-
-We inquired about this issue with the Xen-devel list when we first ran in to it, that thread can be found at:
-
-http://lists.xensource.com/archives/html/xen-devel/2011-04/msg00230.html
-
-If anyone has any ideas on why this is happening and what we need to do to prevent it from happening in the future please let us know. The issue has only manifested in customer instances so we don't have access to other logs from these incidents, however if anyone has suggestions on tests or methods for replicating this issue I'd be glad to give those a try on a test instance. The console output from the error is included below:
-
-BUG: unable to handle kernel paging request at f57a63be
-IP: [<c01ab854>] swap_count_continued+0x104/0x180
-*pdpt = 0000000029d01027 *pde = 00000000008d4067 *pte = 0000000000000000 
-Oops: 0000 [#1] SMP 
-Modules linked in:
-
-Pid: 2206, comm: apache2 Not tainted 3.0.0-linode35 #1  
-EIP: 0061:[<c01ab854>] EFLAGS: 00010246 CPU: 1
-EIP is at swap_count_continued+0x104/0x180
-EAX: f57a63be EBX: eb9fc4e0 ECX: f57a6000 EDX: 000000be
-ESI: ed3d7cc0 EDI: 000000be EBP: 000003be ESP: ea3bddb0
- DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0069
-Process apache2 (pid: 2206, ti=ea3bc000 task=eaca6410 task.ti=ea3bc000)
-Stack:
- ea76dcc0 000013be 000000be ffffffea c01abe22 35a34067 c01040fb 0002a5cb
- 40f40067 000013be ea5cb2e0 000277c0 bfc5c000 c01abee4 00000000 c01a068b
- bfc40000 80000007 00000000 00000000 000013be 0000001c e7f402e0 00100173
-Call Trace:
- [<c01abe22>] ? __swap_duplicate+0xc2/0x160
- [<c01040fb>] ? pte_mfn_to_pfn+0x8b/0xe0
- [<c01abee4>] ? swap_duplicate+0x14/0x40
- [<c01a068b>] ? copy_pte_range+0x45b/0x500
- [<c01a08c5>] ? copy_page_range+0x195/0x200
- [<c0132756>] ? dup_mmap+0x1c6/0x2c0
- [<c0132b88>] ? dup_mm+0xa8/0x130
- [<c01335fa>] ? copy_process+0x98a/0xb30
- [<c01337ef>] ? do_fork+0x4f/0x280
- [<c010f780>] ? sys_clone+0x30/0x40
- [<c06c000d>] ? ptregs_clone+0x15/0x48
- [<c06bf6f1>] ? syscall_call+0x7/0xb
- [<c06b0000>] ? sctp_backlog_rcv+0xf0/0x100
-Code: de 75 dc b8 01 00 00 00 5b 5e 5f 5d c3 66 90 e8 d3 7c f7 ff 8b 5b 18 83 eb 18 39 de 0f 84 7f 00 00 00 89 d8 e8 fe 7e f7 ff 01 e8 <0f> b
-6 10 80 fa ff 74 dc 80 fa 7f 74 28 83 c2 01 88 10 eb 0c 89 
-EIP: [<c01ab854>] swap_count_continued+0x104/0x180 SS:ESP 0069:ea3bddb0
-CR2: 00000000f57a63be
----[ end trace aa46a9340a0a4bc6 ]---
-note: apache2[2206] exited with preempt_count 1
-BUG: scheduling while atomic: apache2/2206/0x00000001
-Modules linked in:
-Pid: 2206, comm: apache2 Tainted: G      D     3.0.0-linode35 #1
-Call Trace:
- [<c06bda6a>] ? schedule+0x60a/0x6f0
- [<c0106404>] ? check_events+0x8/0xc
- [<c01063fb>] ? xen_restore_fl_direct_reloc+0x4/0x4
- [<c01775fe>] ? rcu_enter_nohz+0x2e/0xb0
- [<c0139921>] ? irq_exit+0x31/0xa0
- [<c0477bed>] ? xen_evtchn_do_upcall+0x1d/0x30
- [<c0101227>] ? hypercall_page+0x227/0x1000
- [<c0105c27>] ? xen_force_evtchn_callback+0x17/0x30
- [<c0106404>] ? check_events+0x8/0xc
- [<c06bf28d>] ? rwsem_down_failed_common+0x9d/0x110
- [<c06bf353>] ? call_rwsem_down_read_failed+0x7/0xc
- [<c06bea6a>] ? down_read+0xa/0x10
- [<c01683f5>] ? acct_collect+0x35/0x160
- [<c0137fbd>] ? do_exit+0x27d/0x350
- [<c011f170>] ? mm_fault_error+0x130/0x130
- [<c010b7e1>] ? oops_end+0x71/0xa0
- [<c011ef8f>] ? bad_area_nosemaphore+0xf/0x20
- [<c011f3bf>] ? do_page_fault+0x24f/0x3a0
- [<c0105c27>] ? xen_force_evtchn_callback+0x17/0x30
- [<c0106404>] ? check_events+0x8/0xc
- [<c01063fb>] ? xen_restore_fl_direct_reloc+0x4/0x4
- [<c011f170>] ? mm_fault_error+0x130/0x130
- [<c06bfc66>] ? error_code+0x5a/0x60
- [<c012007b>] ? try_preserve_large_page+0x7b/0x340
- [<c011f170>] ? mm_fault_error+0x130/0x130
- [<c01ab854>] ? swap_count_continued+0x104/0x180
- [<c01abe22>] ? __swap_duplicate+0xc2/0x160
- [<c01040fb>] ? pte_mfn_to_pfn+0x8b/0xe0
- [<c01abee4>] ? swap_duplicate+0x14/0x40
- [<c01a068b>] ? copy_pte_range+0x45b/0x500
- [<c01a08c5>] ? copy_page_range+0x195/0x200
- [<c0132756>] ? dup_mmap+0x1c6/0x2c0
- [<c0132b88>] ? dup_mm+0xa8/0x130
- [<c01335fa>] ? copy_process+0x98a/0xb30
- [<c01337ef>] ? do_fork+0x4f/0x280
- [<c010f780>] ? sys_clone+0x30/0x40
- [<c06c000d>] ? ptregs_clone+0x15/0x48
- [<c06bf6f1>] ? syscall_call+0x7/0xb
- [<c06b0000>] ? sctp_backlog_rcv+0xf0/0x100
-INFO: rcu_sched_state detected stall on CPU 2 (t=60000 jiffies)
-
-Regards,
-Peter
+> David
+>
+>> +
+>> +     return ret;
+>> +}
+>> +
+>>  int perf_event__parse_sample(const union perf_event *event, u64 type,
+>>                            int sample_size, bool sample_id_all,
+>> -                          struct perf_sample *data)
+>> +                          u64 read_format,struct perf_sample *data)
+>>  {
+>>       const u64 *array;
+>>
+>> @@ -405,10 +428,8 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+>>               array++;
+>>       }
+>>
+>> -     if (type & PERF_SAMPLE_READ) {
+>> -             fprintf(stderr, "PERF_SAMPLE_READ is unsuported for now\n");
+>> -             return -1;
+>> -     }
+>> +     if (type & PERF_SAMPLE_READ)
+>> +             array += sample_read2u64(array, read_format);
+>>
+>>       if (type & PERF_SAMPLE_CALLCHAIN) {
+>>               if (sample_overlap(event, array, sizeof(data->callchain->nr)))
+>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+>> index 72458d9..25a4cf9 100644
+>> --- a/tools/perf/util/session.c
+>> +++ b/tools/perf/util/session.c
+>> @@ -108,6 +108,7 @@ out:
+>>  void perf_session__update_sample_type(struct perf_session *self)
+>>  {
+>>       self->sample_type = perf_evlist__sample_type(self->evlist);
+>> +     self->read_format = perf_evlist__read_format(self->evlist);
+>>       self->sample_size = __perf_evsel__sample_size(self->sample_type);
+>>       self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
+>>       perf_session__id_header_size(self);
+>> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+>> index 170601e..903fc1a 100644
+>> --- a/tools/perf/util/session.h
+>> +++ b/tools/perf/util/session.h
+>> @@ -42,7 +42,8 @@ struct perf_session {
+>>        *        perf.data file.
+>>        */
+>>       struct hists            hists;
+>> -     u64                     sample_type;
+>> +     u64                     sample_type; /* identical for all events */
+>> +     u64                     read_format; /* identical for all events */
+>>       int                     sample_size;
+>>       int                     fd;
+>>       bool                    fd_pipe;
+>> @@ -162,7 +163,9 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+>>  {
+>>       return perf_event__parse_sample(event, session->sample_type,
+>>                                       session->sample_size,
+>> -                                     session->sample_id_all, sample);
+>> +                                     session->sample_id_all,
+>> +                                     session->read_format,
+>> +                                     sample);
+>>  }
+>>
+>>  struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
