@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1HZBBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 21:01:53 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:45395 "EHLO
+	id S1754652Ab1HZBB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 21:01:58 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:27494 "EHLO
 	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab1HZBBv (ORCPT
+	with ESMTP id S1754474Ab1HZBB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 21:01:51 -0400
+	Thu, 25 Aug 2011 21:01:57 -0400
 From: JJ Ding <jj_ding@emc.com.tw>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Seth Forshee <seth.forshee@canonical.com>,
@@ -17,9 +17,9 @@ Cc: Seth Forshee <seth.forshee@canonical.com>,
         Chase Douglas <chase.douglas@canonical.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
-Subject: [PATCH v3 2/7] Input: elantech - get rid of ETP_2FT_* in elantech.h
-Date: Fri, 26 Aug 2011 09:03:06 +0800
-Message-Id: <1314320591-11551-3-git-send-email-jj_ding@emc.com.tw>
+Subject: [PATCH v3 5/7] Input: elantech - packet checking for v2 hardware
+Date: Fri, 26 Aug 2011 09:03:09 +0800
+Message-Id: <1314320591-11551-6-git-send-email-jj_ding@emc.com.tw>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314320591-11551-1-git-send-email-jj_ding@emc.com.tw>
 References: <1314320591-11551-1-git-send-email-jj_ding@emc.com.tw>
@@ -27,111 +27,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For two finger touches the coordinate of each finger gets reported
-separately but with reduced resolution.
+For v2 hardware, there is no real parity check, but we can still check
+some constant bits for data integrity.
 
-With this change, we now have the same range for ST and MT data and
-scale MT data because it has lower resolution to match ST.
+Also rename elantech_check_parity_v1 to elantech_packet_check_v1 to make
+these packet checking function names consistent.
 
-Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Acked-by: Daniel Kurtz <djkurtz@chromium.org>
 Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
 ---
- drivers/input/mouse/elantech.c |   28 +++++++++++++---------------
- drivers/input/mouse/elantech.h |   11 -----------
- 2 files changed, 13 insertions(+), 26 deletions(-)
+ drivers/input/mouse/elantech.c |   39 ++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 34 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index da161da..cd8e2e5 100644
+index 282b8b6..008e8c2 100644
 --- a/drivers/input/mouse/elantech.c
 +++ b/drivers/input/mouse/elantech.c
-@@ -273,11 +273,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+@@ -350,7 +350,7 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 	input_sync(dev);
+ }
+ 
+-static int elantech_check_parity_v1(struct psmouse *psmouse)
++static int elantech_packet_check_v1(struct psmouse *psmouse)
+ {
  	struct elantech_data *etd = psmouse->private;
- 	struct input_dev *dev = psmouse->dev;
  	unsigned char *packet = psmouse->packet;
--	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0, width = 0, pres = 0;
-+	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-+	unsigned int width = 0, pres = 0;
+@@ -374,6 +374,34 @@ static int elantech_check_parity_v1(struct psmouse *psmouse)
+ 	       etd->parity[packet[3]] == p3;
+ }
  
- 	/* byte 0: n1  n0   .   .   .   .   R   L */
- 	fingers = (packet[0] & 0xc0) >> 6;
--	input_report_key(dev, BTN_TOUCH, fingers != 0);
++static int elantech_packet_check_v2(struct psmouse *psmouse)
++{
++	struct elantech_data *etd = psmouse->private;
++	unsigned char *packet = psmouse->packet;
++
++	/*
++	 * V2 hardware has two flavors. Older ones that do not report pressure,
++	 * and newer ones that reports pressure and width. With newer ones, all
++	 * packets (1, 2, 3 finger touch) have the same constant bits. With
++	 * older ones, 1/3 finger touch packets and 2 finger touch packets
++	 * have different constant bits.
++	 * With all three cases, if the constant bits are not exactly what I
++	 * expected, I consider them invalid.
++	 */
++	if (etd->reports_pressure)
++		return (packet[0] & 0x0c) == 0x04 &&
++		       (packet[3] & 0x0f) == 0x02;
++
++	if ((packet[0] & 0xc0) == 0x80)
++		return (packet[0] & 0x0c) == 0x0c &&
++		       (packet[3] & 0x0e) == 0x08;
++
++	return (packet[0] & 0x3c) == 0x3c &&
++	       (packet[1] & 0xf0) == 0x00 &&
++	       (packet[3] & 0x3e) == 0x38 &&
++	       (packet[4] & 0xf0) == 0x00;
++}
++
+ /*
+  * Process byte stream from mouse and handle complete packets
+  */
+@@ -389,14 +417,16 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
  
- 	switch (fingers) {
- 	case 3:
-@@ -300,9 +300,6 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
- 		 */
- 		y1 = ETP_YMAX_V2 - (((packet[4] & 0x0f) << 8) | packet[5]);
+ 	switch (etd->hw_version) {
+ 	case 1:
+-		if (etd->paritycheck && !elantech_check_parity_v1(psmouse))
++		if (etd->paritycheck && !elantech_packet_check_v1(psmouse))
+ 			return PSMOUSE_BAD_DATA;
  
--		input_report_abs(dev, ABS_X, x1);
--		input_report_abs(dev, ABS_Y, y1);
--
- 		pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
- 		width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+ 		elantech_report_absolute_v1(psmouse);
  		break;
-@@ -314,22 +311,18 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
- 		 * byte 0:  .   .  ay8 ax8  .   .   .   .
- 		 * byte 1: ax7 ax6 ax5 ax4 ax3 ax2 ax1 ax0
- 		 */
--		x1 = ((packet[0] & 0x10) << 4) | packet[1];
-+		x1 = (((packet[0] & 0x10) << 4) | packet[1]) << 2;
- 		/* byte 2: ay7 ay6 ay5 ay4 ay3 ay2 ay1 ay0 */
--		y1 = ETP_2FT_YMAX - (((packet[0] & 0x20) << 3) | packet[2]);
-+		y1 = ETP_YMAX_V2 -
-+			((((packet[0] & 0x20) << 3) | packet[2]) << 2);
- 		/*
- 		 * byte 3:  .   .  by8 bx8  .   .   .   .
- 		 * byte 4: bx7 bx6 bx5 bx4 bx3 bx2 bx1 bx0
- 		 */
--		x2 = ((packet[3] & 0x10) << 4) | packet[4];
-+		x2 = (((packet[3] & 0x10) << 4) | packet[4]) << 2;
- 		/* byte 5: by7 by8 by5 by4 by3 by2 by1 by0 */
--		y2 = ETP_2FT_YMAX - (((packet[3] & 0x20) << 3) | packet[5]);
--		/*
--		 * For compatibility with the X Synaptics driver scale up
--		 * one coordinate and report as ordinary mouse movent
--		 */
--		input_report_abs(dev, ABS_X, x1 << 2);
--		input_report_abs(dev, ABS_Y, y1 << 2);
-+		y2 = ETP_YMAX_V2 -
-+			((((packet[3] & 0x20) << 3) | packet[5]) << 2);
  
- 		/* Unknown so just report sensible values */
- 		pres = 127;
-@@ -337,6 +330,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 	case 2:
+-		/* We don't know how to check parity in protocol v2 */
++		if (etd->paritycheck && !elantech_packet_check_v2(psmouse))
++			return PSMOUSE_BAD_DATA;
++
+ 		elantech_report_absolute_v2(psmouse);
  		break;
  	}
+@@ -795,8 +825,7 @@ int elantech_init(struct psmouse *psmouse)
+ 		etd->hw_version = 2;
+ 		/* For now show extra debug information */
+ 		etd->debug = 1;
+-		/* Don't know how to do parity checking for version 2 */
+-		etd->paritycheck = 0;
++		etd->paritycheck = 1;
  
-+	input_report_key(dev, BTN_TOUCH, fingers != 0);
-+	if (fingers != 0) {
-+		input_report_abs(dev, ABS_X, x1);
-+		input_report_abs(dev, ABS_Y, y1);
-+	}
- 	elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
- 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
-diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-index fabb2b9..1c5894e 100644
---- a/drivers/input/mouse/elantech.h
-+++ b/drivers/input/mouse/elantech.h
-@@ -82,17 +82,6 @@
- #define ETP_WMIN_V2			0
- #define ETP_WMAX_V2			15
- 
--/*
-- * For two finger touches the coordinate of each finger gets reported
-- * separately but with reduced resolution.
-- */
--#define ETP_2FT_FUZZ			4
--
--#define ETP_2FT_XMIN			(  0 + ETP_2FT_FUZZ)
--#define ETP_2FT_XMAX			(288 - ETP_2FT_FUZZ)
--#define ETP_2FT_YMIN			(  0 + ETP_2FT_FUZZ)
--#define ETP_2FT_YMAX			(192 - ETP_2FT_FUZZ)
--
- struct elantech_data {
- 	unsigned char reg_10;
- 	unsigned char reg_11;
+ 		if (etd->fw_version >= 0x020800)
+ 			etd->reports_pressure = true;
 -- 
 1.7.4.1
 
