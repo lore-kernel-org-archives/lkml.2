@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab1HZJNy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:13:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:52429 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab1HZJNx (ORCPT
+	id S1754389Ab1HZJPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:15:11 -0400
+Received: from mail2.vodafone.ie ([213.233.128.44]:61038 "EHLO
+	mail2.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154Ab1HZJPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:13:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=aMsqpmRjO/+8bLLfby0GEh6K6Vdfdzllus9Qr+TuYxRlEUhLFr+Dp7zEU5YptufTp
-	vYyVpLWZYznEIouHwGQ0g==
-Date: Fri, 26 Aug 2011 02:13:46 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Zhao Jin <cronozhj@gmail.com>
-cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slab: trivial: cleanup: remove unneeded return
-In-Reply-To: <4E573F68.1020603@gmail.com>
-Message-ID: <alpine.DEB.2.00.1108260211370.14732@chino.kir.corp.google.com>
-References: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com> <CADqbE97+FKz-7op-nmdOVmq3mrXadaxQrtk9Zud90E7iMMEUVQ@mail.gmail.com> <4E573F68.1020603@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 26 Aug 2011 05:15:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAMhiV05tTHi6/2dsb2JhbAAMNqpPAQEFMgFGEAsNAQoJFg8JAwIBAgFFBg0BBwEBh3K6bIZMBJhFi1Y
+Message-ID: <4E57641A.7090909@draigBrady.com>
+Date: Fri, 26 Aug 2011 10:15:06 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Jovi Zhang <bookjovi@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        dhowells@redhat.com, roland@redhat.com, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
+References: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com> <4E527684.3020206@draigBrady.com> <20110822161914.GA9399@redhat.com> <CACV3sbJjDhzKq8YQEnrTQPVVw7YsZjLe45G5sWaMRBk3+Vxkcg@mail.gmail.com> <20110824110134.GA17362@hmsreliant.think-freely.org> <4E561DF7.4020203@draigBrady.com> <20110825105547.GA23992@hmsreliant.think-freely.org>
+In-Reply-To: <20110825105547.GA23992@hmsreliant.think-freely.org>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Aug 2011, Zhao Jin wrote:
+On 08/25/2011 11:55 AM, Neil Horman wrote:
+> On Thu, Aug 25, 2011 at 11:03:35AM +0100, Pádraig Brady wrote:
+>>
+>> Drats I just noticed another problem with not being able to disable core dumps
+>> for a process. The `timeout` command from coreutils now tries to propagate
+>> the signal from the process it's monitoring up. But since core dumps
+>> can't be disabled, abrt will attribute any crashes to `timeout` rather
+>> than what it's monitoring. I'll guess we'll have to revert:
+>> http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5a647a0
+>>
+> That suggests to me that we need another flag that user space can control to
+> override this behavior.  It appears we may have one too - the PR_SET_DUMPABLE
+> flag in the prctl syscall.  Its not POSIX compliant so you'd have to ifdef it
+> into coreutils, but it exists, and sounds like exactly what you'd need in the
+> above case.  Looking at do_coredump, clearing the PR_SET_DUMPABLE flag with
+> prctl causes __get_dumpable to return 0, which skips all the code in do_coredump
+> entirely.  I think thats identical behavior to having a zero core limit skip the
+> dump.
 
-> Terribly sorry. It was gmail who wrapped the line.
-> Please see this following version. Thanks!
-> 
+This would be the first use of prctl in coreutils,
+but I think this should handle things.
 
-It's still whitespace damaged, please see Documentation/email-clients.txt.  
-If it doesn't help, please add to that document with whatever eventually 
-works for you, it will help many people in the future!
-
-This probably shouldn't be cc'd to trivial, it's a candidate to go through 
-Pekka's slab tree.  And once you get the email client sorted out or Pekka 
-decides to do it manually, feel free to add my
-
-	Acked-by: David Rientjes <rientjes@google.com>
-
-even though you forgot the changelog and your own signed-off-by line on 
-this one :)
-
-> ---
->  mm/slab.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 6d90a09..82e0a0e 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -3678,13 +3678,12 @@ static inline void __cache_free(struct kmem_cache
-> *cachep, void *objp,
-> 
->      if (likely(ac->avail < ac->limit)) {
->          STATS_INC_FREEHIT(cachep);
-> -        ac->entry[ac->avail++] = objp;
-> -        return;
->      } else {
->          STATS_INC_FREEMISS(cachep);
->          cache_flusharray(cachep, ac);
-> -        ac->entry[ac->avail++] = objp;
->      }
-> +
-> +    ac->entry[ac->avail++] = objp;
->  }
-> 
->  /**
+thanks for that!
+Pádraig.
