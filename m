@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab1HZQ2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:28:35 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:48424 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752179Ab1HZQ2c (ORCPT
+	id S1755283Ab1HZQ2m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:28:42 -0400
+Received: from nm18-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.23]:29481
+	"HELO nm18-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752179Ab1HZQ2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:28:32 -0400
-Message-ID: <4E57C9A3.8000208@ti.com>
-Date: Fri, 26 Aug 2011 21:58:19 +0530
-From: Santosh <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 26 Aug 2011 12:28:37 -0400
+X-Yahoo-Newman-Id: 743974.91193.bm@smtp102.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 6IVwtOMVM1naDoCChQUuuic6i23auH.e0whufLlq_qWV58d
+ cNfCKZgL944JRGIDzLA.cU8IwiH43fqAHSpa1v3ud3W6r_G.oSkoqZENe1ni
+ IPxy6gNlaYCpwTO.tYewjKBwLwSdwAG.6Jbrszcn_kCv2rvzIPP8N5V71NsC
+ X6FS1JjKfG6z6t3fsG6yfpdwXNtcg2O3au92JnWpJONvjPqLg8qHp1aRHc1l
+ 5LX2g4xwzqPsjPGjYPUn1i1zbg4A21jQld87cAYbdG0vTBR2jP8xE4HGafLY
+ RcXRMabjbCj3hlOiTVCrQE8bIQV8DznXczVL8UIaUoFUDzagCjZtspTdVg1N
+ phlVNXOCo047HbzhkBbyGLYr6OY6gvW3SxwSgZXJt0QrQ3qITBMA59pitUo0
+ aLr2eMw5dbE2CZrrI68FPIjP7sBe__5EBroWW8ugxSbTspitpyiJYG4vbHZe
+ AMdhSFc0PdWu47mDMoOmI9tnBMupyLSZTGETd2wb6FzJSozTvJxgjVzcTQyr
+ P00HELoSxeCEtwToKMpu6Nncwq7s-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <4E57C93C.3050602@schaufler-ca.com>
+Date: Fri, 26 Aug 2011 09:26:36 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Per Forlin <per.forlin@linaro.org>, linux-omap@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linaro-dev@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Balaji T Krishnamoorthy <balajitk@ti.com>
-Subject: Re: [PATCH v9 00/12] use nonblock mmc requests to minimize latency
-References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org> <20110826161951.GA26197@n2100.arm.linux.org.uk>
-In-Reply-To: <20110826161951.GA26197@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Eric Paris <eparis@parisplace.org>
+CC: Jarkko Sakkinen <jarkko.sakkinen@intel.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] Smack: SMACK_IOCLOADACCESS
+References: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com> <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
+In-Reply-To: <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Balaji,
+On 8/26/2011 5:50 AM, Eric Paris wrote:
+> On Fri, Aug 26, 2011 at 1:52 AM, Jarkko Sakkinen
+> <jarkko.sakkinen@intel.com> wrote:
+>> IOCTL call for /smack/load that takes access rule in
+>> the same format as they are written into /smack/load.
+>> Sets errno to zero if access is allowed and to EACCES
+>> if not.
+>>
+>> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+> [SELinux maintainer here, but Casey knew to already take what I say
+> with a grain of salt]
 
-On Friday 26 August 2011 09:49 PM, Russell King - ARM Linux wrote:
-> I'm not sure who's responsible for this, but the nonblocking MMC stuff is
-> broken on OMAPs HSMMC:
->
-> mmcblk0: error -84 transferring data, sector 149201, nr 64, cmd response 0x900, card status 0xb00
-> mmcblk0: retrying using single block read
-> ------------[ cut here ]------------
-> WARNING: at /home/rmk/git/linux-2.6-rmk/lib/dma-debug.c:811 check_unmap+0x1ac/0x764()
-> omap_hsmmc omap_hsmmc.0: DMA-API: device driver tries to free DMA memory it has not allocated [device address=0x0000000080933000] [size=20480 bytes]
-> Modules linked in:
-> Backtrace:
-> [<c0017874>] (dump_backtrace+0x0/0x10c) from [<c02ce8ac>] (dump_stack+0x18/0x1c)
->   r7:c1abfcb8 r6:c0186248 r5:c037de51 r4:0000032b
-> [<c02ce894>] (dump_stack+0x0/0x1c) from [<c0039ed4>] (warn_slowpath_common+0x58/0x70)
-> [<c0039e7c>] (warn_slowpath_common+0x0/0x70) from [<c0039f90>] (warn_slowpath_fmt+0x38/0x40)
->   r8:c1abfd50 r7:00000000 r6:00005000 r5:00000000 r4:80933000
-> [<c0039f58>] (warn_slowpath_fmt+0x0/0x40) from [<c0186248>] (check_unmap+0x1ac/0x764)
->   r3:c0367d55 r2:c037e24d
-> [<c018609c>] (check_unmap+0x0/0x764) from [<c0186978>] (debug_dma_unmap_sg+0x100/0x134)
-> [<c0186878>] (debug_dma_unmap_sg+0x0/0x134) from [<c0019770>] (dma_unmap_sg+0x24/0x7c)
-> [<c001974c>] (dma_unmap_sg+0x0/0x7c) from [<c0207220>] (omap_hsmmc_post_req+0x48/0x54)
-> [<c02071d8>] (omap_hsmmc_post_req+0x0/0x54) from [<c01fb644>] (mmc_start_req+0x9c/0x128)
->   r4:c1a76000
-> [<c01fb5a8>] (mmc_start_req+0x0/0x128) from [<c02049fc>] (mmc_blk_issue_rw_rq+0x80/0x460)
->   r8:c1ab5c00 r7:00000001 r6:c1ab5824 r5:c1ab5824 r4:c1ab5c00
-> [<c020497c>] (mmc_blk_issue_rw_rq+0x0/0x460) from [<c02050a8>] (mmc_blk_issue_rq+0x2cc/0x2fc)
-> [<c0204ddc>] (mmc_blk_issue_rq+0x0/0x2fc) from [<c02056c4>] (mmc_queue_thread+0xa0/0x104)
-> [<c0205624>] (mmc_queue_thread+0x0/0x104) from [<c0054f8c>] (kthread+0x88/0x90)
-> [<c0054f04>] (kthread+0x0/0x90) from [<c003d9a4>] (do_exit+0x0/0x618)
->   r7:00000013 r6:c003d9a4 r5:c0054f04 r4:c1a7bc7c
-> ---[ end trace 3314ad56daf5d14f ]---
->
-> Luckily thinks continue to work, but clearly releasing DMA mappings which
-> drivers don't own is bad news.  Unfortunately, I don't have the bandwidth
-> to be able to investigate this at present - well, I could do but then I'd
-> have to drop working on the OMAP4 vs generic suspend/resume code and learn
-> about something I've no current clue about.
->
-Please continue your help on generic suspend.
+Indeed.
 
-> Can someone please investigate and fix whatever is broken.
->
-Will find somebody to look at this issue.
+> I'm not telling you to do anything differently, just telling you what
+> SELinux does, and why we do it.  SELinux has a file in selinuxfs
+> called 'access.'  The file can be opened and one can write a rule into
+> the file.  One then calls read and gets back a structure which
+> contains all of the permissions information allowed for the
+> source/target/class.
 
-Regards
-Santosh
+Is that really how it works? The code reads as if the buffer
+passed by write gets modified in place and the writer is expected
+to use that. There is nothing in the code that looks like the
+response is getting set aside for a subsequent read. If it works
+the way you say it does it will be subject to races up the wazoo.
+If it works the way I think the code says it does it is abusive
+of the write interface.
+
+> In SELinux we calculate all of the permissions
+> for the tuple at once so providing all of the information at once can
+> make a lot of sense.  libselinux provides libraries that will cache
+> these decisions in the userspace program and quickly answer the same
+> (or similar) questions later.
+
+I have played with similar code for Smack and it works just fine
+if you're willing to ignore rule updates and schlep all the rule
+lists around in user space on the off chance someone will make an
+access check. Smack is intentionally kernel oriented (hence the
+"k" and the end of the name) and the ioctl requires much less
+user space support than the /selinux/accesss interface, should it
+be a write+read interface or an abused write.
+
+> http://userspace.selinuxproject.org/trac/browser/libselinux/src/compute_av.c
+>
+> Shows the userspace side of out "access" interface.  Your interface is
+> good in that it only takes 1 syscall and ours takes 2.  Your interface
+> is bad in that it is ioctl and we are told since birth that we must
+> hate them no matter what (not that read/write is really any
+> different).  It isn't the same method the only other LSM I know about
+> uses.  It can only every return one value (ok, I know ioctl can be
+> made to do anything at all)
+
+Much better to use an ioctl for a query interface than to jump
+through hoops with unnatural uses of other interfaces.
+
+And just as a note, I was working with UNIX when ioctl was
+introduced and I didn't like it then. I would not be considering
+an ioctl interface if it where not the correct way to solve the
+problem.
+
+
+> Anyway, just food for thought....
+>
+> -Eric
+>
+
