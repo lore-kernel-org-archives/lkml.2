@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab1HZNYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 09:24:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:2981 "EHLO mga03.intel.com"
+	id S1754992Ab1HZNZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 09:25:25 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38327 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442Ab1HZNYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 09:24:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,285,1312182000"; 
-   d="scan'208";a="42727962"
-Date: Fri, 26 Aug 2011 21:24:45 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110826132445.GA8219@localhost>
-References: <20110824001257.GA6349@localhost>
- <1314202378.6925.48.camel@twins>
- <20110826001846.GA6118@localhost>
- <1314349469.26922.24.camel@twins>
- <20110826100428.GA7996@localhost>
- <20110826112637.GA17785@localhost>
- <1314360710.11049.1.camel@twins>
- <20110826122057.GA32711@localhost>
- <20110826131341.GA7114@localhost>
- <1314364701.12445.0.camel@twins>
+	id S1754029Ab1HZNZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 09:25:24 -0400
+Message-ID: <4E579E9F.9090906@linux.vnet.ibm.com>
+Date: Fri, 26 Aug 2011 08:24:47 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314364701.12445.0.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Nebojsa Trpkovic <trx.lists@gmail.com>, linux-kernel@vger.kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: cleancache can lead to serious performance degradation
+References: <4E4C395E.20000@gmail.com 20110825041212.GA5014@dumpdata.com> <3aef71a8-d390-4a91-bfef-561c89edc040@default>
+In-Reply-To: <3aef71a8-d390-4a91-bfef-561c89edc040@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 09:18:21PM +0800, Peter Zijlstra wrote:
-> On Fri, 2011-08-26 at 21:13 +0800, Wu Fengguang wrote:
-> > We got similar result as in the read disturber case, even though one
-> > disturbs N and the other impacts writeout bandwith.  The original
-> > patchset is consistently performing much better :) 
+On 08/25/2011 11:56 AM, Dan Magenheimer wrote:
+
+> Third, zcache is relatively new and can certainly benefit from
+> the input of other developers.  The lzo1x compression in the kernel
+> is fairly slow; Seth Jennings (cc'ed) is looking into alternate
+> compression technologies.  Perhaps there is a better compression
+> choice more suitable for older-slower processors, probably with a
+> poorer compression ratio.  Further, zcache currently does compression
+> and decompression with interrupts disabled, which may be a
+> significant factor in the slowdowns you've observed.  This should
+> be fixable.
+
+This was something I've meaning to ask about.  Why are compression
+and decompression done with interrupts disabled?  What would need
+to change so that we don't have to disable interrupts?
+
+<cut>
+>>> I guess that possible workaround could be to implement some kind of
+>>> compression throttling valve for cleancache/zcache:
+>>>
+>>> - if there's available CPU time (idle cycles or so), then compress
+>>> (maybe even with low CPU scheduler priority);
 > 
-> It does indeed, and I figure on these timescales it makes sense to
-> assumes N is a constant. Fair enough, thanks!
+> Agreed, and this low-priority kernel thread ideally would also
+> solve the "compress while irqs disabled" problem!
 
-Thank you! Glad that we finally reaches some consensus :)
-
-Thanks,
-Fengguang
+--
+Seth
