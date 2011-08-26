@@ -1,42 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab1HZOC1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 10:02:27 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:57539 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975Ab1HZOCZ (ORCPT
+	id S1755211Ab1HZOG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 10:06:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43727 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755137Ab1HZOGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 10:02:25 -0400
-Subject: Re: [PATCH] slab: trivial: cleanup: remove unneeded return
-From: Zhao Jin <cronozhj@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        trivial@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110826073948.GA29130@zhy>
-References: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com>
-	 <CADqbE97+FKz-7op-nmdOVmq3mrXadaxQrtk9Zud90E7iMMEUVQ@mail.gmail.com>
-	 <4E573F68.1020603@gmail.com>  <20110826073948.GA29130@zhy>
-Content-Type: text/plain; charset="us-ascii"
-Date: Fri, 26 Aug 2011 22:02:14 +0800
-Message-ID: <1314367334.8991.10.camel@vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Aug 2011 10:06:25 -0400
+Date: Fri, 26 Aug 2011 16:06:20 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>, containers@lists.osdl.org,
+        Andi Kleen <andi@firstfloor.org>, Nathan Lynch <ntl@pobox.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110826140620.GE2632@htj.dyndns.org>
+References: <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
+ <20110825170705.GA6387@sun>
+ <20110825205426.GO2803@mtj.dyndns.org>
+ <20110825211213.GP2803@mtj.dyndns.org>
+ <20110825213459.GA1929@sun>
+ <20110825213931.GR2803@mtj.dyndns.org>
+ <20110826112943.GI3903@sun>
+ <20110826122851.GA25853@shutemov.name>
+ <20110826131620.GM3903@sun>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826131620.GM3903@sun>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 15:39 +0800, Yong Zhang wrote:
-> On Fri, Aug 26, 2011 at 02:38:32PM +0800, Zhao Jin wrote:
-> > Terribly sorry. It was gmail who wrapped the line.
-> > Please see this following version. Thanks!
-> 
-> You can use git send-email instead or mail client,
+Hello, Cyrill.
 
-Indeed. Thanks a lot for the tip! 
+On Fri, Aug 26, 2011 at 05:16:20PM +0400, Cyrill Gorcunov wrote:
+> Index: linux-2.6.git/fs/proc/base.c
+> ===================================================================
+> --- linux-2.6.git.orig/fs/proc/base.c
+> +++ linux-2.6.git/fs/proc/base.c
+> @@ -165,7 +165,7 @@ static int get_task_root(struct task_str
+>  	return result;
+>  }
+>  
+> -static int proc_cwd_link(struct inode *inode, struct path *path)
+> +static int proc_cwd_link(struct dentry *dentry, struct inode *inode, struct path *path)
 
-Regards,
-zj
+I don't think it's necessary to pass around both @dentry and @inode.
+@inode can always be dereferenced from @dentry.
 
+> +static int map_name_to_addr(const unsigned char *name, unsigned long *start, unsigned long *end)
+> +{
+> +	int ret = -1;
 
+Very minor but functions returning -1 for error bugs me a bit.  Maybe
+-EINVAL is better?  Not a big deal either way.
 
+> +static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
+> +{
+...
+> +	if (vma) {
+> +		if (task_dumpable(task)) {
+> +			rcu_read_lock();
+> +			cred = __task_cred(task);
+> +			inode->i_uid = cred->euid;
+> +			inode->i_gid = cred->egid;
+> +			rcu_read_unlock();
+> +		} else {
+> +			inode->i_uid = 0;
+> +			inode->i_gid = 0;
+> +		}
+> +		security_task_to_inode(task, inode);
+> +		return 1;
+
+Another minor point.  Maybe it would be nice to factor this into a
+function and share it w/ the fd one (and maybe sprinkle some comments
+while at it too :)
+
+> +struct map_files_info {
+> +	struct file	*file;
+> +	unsigned char	name[16+16+2]; /* max: %016lx-%016lx\0 */
+> +	unsigned long	len;
+> +};
+
+That's slightly above 50 bytes.
+
+> +static struct dentry *proc_map_files_lookup(struct inode *dir,
+> +		struct dentry *dentry, struct nameidata *nd)
+> +{
+> +	unsigned long vm_start, vm_end;
+> +	struct task_struct *task;
+> +	struct vm_area_struct *vma;
+> +	struct mm_struct *mm;
+> +	struct dentry *result;
+> +
+> +	result = ERR_PTR(-ENOENT);
+> +	task = get_proc_task(dir);
+> +	if (!task)
+> +		goto out_no_task;
+> +
+> +	result = ERR_PTR(-EPERM);
+> +	if (!ptrace_may_access(task, PTRACE_MODE_READ));
+> +		goto out_no_mm;
+> +
+> +	result = ERR_PTR(-ENOENT);
+> +	if (map_name_to_addr(dentry->d_name.name,
+> +			     &vm_start, &vm_end))
+> +		goto out_no_mm;
+
+Another nitpick: Maybe factor out the above three steps?
+
+> +static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
+> +{
+...
+> +		if (nr_files) {
+> +			info = kmalloc(nr_files * sizeof(*info), GFP_KERNEL);
+
+I think we can just put this on stack.
+
+All my comments are pretty cosmetic, so it generally looks good to me.
+Andrew, what do you think?
+
+Thanks.
+
+-- 
+tejun
