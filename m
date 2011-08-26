@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab1HZS5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:57:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8359 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab1HZS5G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:57:06 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:content-type:to:cc:subject:references:date:
-	mime-version:content-transfer-encoding:from:organization:message-id:
-	in-reply-to:user-agent:x-system-of-record;
-	b=xCm/B2fbl1XH886BYr8MkIiPkMrq7zSTmHrZTftxlSU4GvMK0vqNrWwNJjpMbMbJz
-	Sq8+dNaVtjlLDjKftzjHA==
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Greg KH" <greg@kroah.com>, "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Felipe Balbi" <balbi@ti.com>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 1/4] usb: Provide usb_speed_string() function
-References: <Pine.LNX.4.44L0.1108261437200.2275-100000@netrider.rowland.org>
-Date: Fri, 26 Aug 2011 20:57:01 +0200
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mnazarewicz@google.com>
-Organization: Google
-Message-ID: <op.v0t39bd1vgw7ix@mnazarewicz-glaptop>
-In-Reply-To: <Pine.LNX.4.44L0.1108261437200.2275-100000@netrider.rowland.org>
-User-Agent: Opera Mail/11.50 (Linux)
-X-System-Of-Record: true
+	id S1752862Ab1HZTAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 15:00:03 -0400
+Received: from gold.linx.net ([195.66.232.40]:34544 "EHLO gold.linx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973Ab1HZS77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 14:59:59 -0400
+Subject: Re: MTRR setup failure on Fujitsu Lifebook S761
+From: Tony Vroon <tony@linx.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        suresh.b.siddha@intel.com
+In-Reply-To: <4E57CBBB.3040806@zytor.com>
+References: <4E579397.6010009@linx.net>  <4E57CBBB.3040806@zytor.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-8SZjlmX8PJGyKXG6HgrY"
+Organization: London Internet Exchange (AS5459; LINX)
+Date: Fri, 26 Aug 2011 20:01:55 +0100
+Message-ID: <1314385315.8356.0.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Aug 2011 20:49:05 +0200, Alan Stern <stern@rowland.harvard.edu>  
-wrote:
-> I don't know.  Michal, can you look into this?  What we want is:
->
-> 	common.o gets included in the main kernel if either CONFIG_USB
-> 	or CONFIG_USB_GADGET is set to Y.
->
-> 	Otherwise, if either symbol is set to M then common.o gets
-> 	built into its own little module.  Perhaps some other stuff
-> 	could get put in there too, though at the moment I can't
-> 	think of anything.
 
-Wouldn't that be accomplished by a tristate Kconfig option selected by
-USB and USB_GADGET?  Or a tristate that defaults to “y” but depends on
-USB or USB_GADGET?
+--=-8SZjlmX8PJGyKXG6HgrY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+On Fri, 2011-08-26 at 09:37 -0700, H. Peter Anvin wrote:
+> Hm, I don't see any evidence of the MTRR sanitizer running at all...
+
+It is almost as if it failed to find an optimal configuration; does that
+error path not print anything?
+
+Regards,
+Tony V.
+
+--=-8SZjlmX8PJGyKXG6HgrY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEUEABECAAYFAk5X7aMACgkQp5vW4rUFj5oCpwCYgm6/q9PhjyOr9xwmdLP0XN+h
+oACgvxARDVW9iYRGashI/L0gbEPBfWM=
+=iaA5
+-----END PGP SIGNATURE-----
+
+--=-8SZjlmX8PJGyKXG6HgrY--
+
