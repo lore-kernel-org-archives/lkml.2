@@ -1,164 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937Ab1HZKuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 06:50:32 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:56357 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab1HZKub (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 06:50:31 -0400
-Date: Fri, 26 Aug 2011 12:50:28 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/8] x86, mce: stop calling del_timer_sync() from
- interrupt
-Message-ID: <20110826105028.GB9510@aftab>
-References: <4DFB1242.90404@jp.fujitsu.com>
- <4DFB1304.10604@jp.fujitsu.com>
+	id S1752114Ab1HZKwc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 06:52:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26452 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365Ab1HZKwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 06:52:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,284,1312182000"; 
+   d="scan'208";a="42691331"
+Date: Fri, 26 Aug 2011 18:52:26 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110826105226.GA16385@localhost>
+References: <20110823034042.GC7332@localhost>
+ <1314093660.8002.24.camel@twins>
+ <20110823141504.GA15949@localhost>
+ <20110823174757.GC15820@redhat.com>
+ <20110824001257.GA6349@localhost>
+ <1314202378.6925.48.camel@twins>
+ <20110826001846.GA6118@localhost>
+ <1314349469.26922.24.camel@twins>
+ <20110826100428.GA7996@localhost>
+ <1314355342.9377.5.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DFB1304.10604@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1314355342.9377.5.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 04:40:36AM -0400, Hidetoshi Seto wrote:
-> Function del_timer_sync() has WARN_ON(in_irq()) in it because
-> calling it from interrupt context can cause deadlock if it
-> interrupts the target timer running.
+On Fri, Aug 26, 2011 at 06:42:22PM +0800, Peter Zijlstra wrote:
+> On Fri, 2011-08-26 at 18:04 +0800, Wu Fengguang wrote:
+> > Sorry I'm now feeling lost...
 > 
-> In MCE code, del_timer_sync() is used with on_each_cpu() in
-> some parts for sysfs files:
->   bank*, check_interval, cmci_disabled and ignore_ce.
-> 
-> However use of on_each_cpu() results in calling the function
-> passed as the argument in the interrupt context.  It means you
-> can see a flood of warnings from del_timer_sync() by a simple
-> file access, for example:
-> 
->   echo 300 > /sys/devices/system/machinecheck/machinecheck0/check_interval
-> 
-> Fortunately these MCE specific files are rare-used and AFAIK
-> only few MCE geeks experience this warning on write.
-> 
-> To remove the warning (for my happy hacking), move timer deletion
-> outside of the interrupt context ;-)
+> hehe welcome to my world ;-)
 
-I'm hitting this warning too in my testing here so I'd like to expedite
-this patch going in. I'll send the version below upstream next week if
-there are no objections:
+Yeah, so sorry...
 
---
->From 0e4fe50cd4ed6f5990173f4587ad07dd4782fa30 Mon Sep 17 00:00:00 2001
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Date: Fri, 17 Jun 2011 04:40:36 -0400
-Subject: [PATCH] x86, mce: Do not call del_timer_sync() in IRQ context
+> Seriously though, I appreciate all the effort you put in trying to
+> explain things. I feel I do understand things now, although I might not
+> completely agree with them quite yet ;-)
 
-del_timer_sync() can cause a deadlock when called in interrupt context.
-It is used with on_each_cpu() in some parts for sysfs files like bank*,
-check_interval, cmci_disabled and ignore_ce.
+Thank you :)
 
-However, use of on_each_cpu() results in calling the function passed
-as the argument in interrupt context. This causes a flood of nested
-warnings from del_timer_sync() (it runs on each CPU) caused even by a
-simple file access like:
+> I'll go read the v9 patch-set you send out and look at some of the
+> details (such as pos_ratio being comprised of both global and bdi
+> limits, which so far has been somewhat glossed over).
 
-$ echo 300 > /sys/devices/system/machinecheck/machinecheck0/check_interval
+Hold on please! I'll immediately post a v10 with all the comment updates.
 
-Fortunately, these MCE-specific files are rarely used and AFAIK only few
-MCE geeks experience this warning.
+Thanks,
+Fengguang
 
-To remove the warning, move timer deletion outside of the interrupt
-context.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   20 ++++++++++++++------
- 1 files changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 08363b0..5b5ccee 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1140,6 +1140,15 @@ static void mce_start_timer(unsigned long data)
- 	add_timer_on(t, smp_processor_id());
- }
- 
-+/* Must not be called in IRQ context where del_timer_sync() can deadlock */
-+static void mce_timer_delete_all(void)
-+{
-+	int cpu;
-+
-+	for_each_online_cpu(cpu)
-+		del_timer_sync(&per_cpu(mce_timer, cpu));
-+}
-+
- static void mce_do_trigger(struct work_struct *work)
- {
- 	call_usermodehelper(mce_helper, mce_helper_argv, NULL, UMH_NO_WAIT);
-@@ -1750,7 +1759,6 @@ static struct syscore_ops mce_syscore_ops = {
- 
- static void mce_cpu_restart(void *data)
- {
--	del_timer_sync(&__get_cpu_var(mce_timer));
- 	if (!mce_available(__this_cpu_ptr(&cpu_info)))
- 		return;
- 	__mcheck_cpu_init_generic();
-@@ -1760,16 +1768,15 @@ static void mce_cpu_restart(void *data)
- /* Reinit MCEs after user configuration changes */
- static void mce_restart(void)
- {
-+	mce_timer_delete_all();
- 	on_each_cpu(mce_cpu_restart, NULL, 1);
- }
- 
- /* Toggle features for corrected errors */
--static void mce_disable_ce(void *all)
-+static void mce_disable_cmci(void *data)
- {
- 	if (!mce_available(__this_cpu_ptr(&cpu_info)))
- 		return;
--	if (all)
--		del_timer_sync(&__get_cpu_var(mce_timer));
- 	cmci_clear();
- }
- 
-@@ -1852,7 +1859,8 @@ static ssize_t set_ignore_ce(struct sys_device *s,
- 	if (mce_ignore_ce ^ !!new) {
- 		if (new) {
- 			/* disable ce features */
--			on_each_cpu(mce_disable_ce, (void *)1, 1);
-+			mce_timer_delete_all();
-+			on_each_cpu(mce_disable_cmci, NULL, 1);
- 			mce_ignore_ce = 1;
- 		} else {
- 			/* enable ce features */
-@@ -1875,7 +1883,7 @@ static ssize_t set_cmci_disabled(struct sys_device *s,
- 	if (mce_cmci_disabled ^ !!new) {
- 		if (new) {
- 			/* disable cmci */
--			on_each_cpu(mce_disable_ce, NULL, 1);
-+			on_each_cpu(mce_disable_cmci, NULL, 1);
- 			mce_cmci_disabled = 1;
- 		} else {
- 			/* enable cmci */
--- 
-1.7.4.rc2
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
