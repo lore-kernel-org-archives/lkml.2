@@ -1,127 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab1HZWVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 18:21:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53658 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750823Ab1HZWVj (ORCPT
+	id S1752320Ab1HZWW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 18:22:26 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:36827 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751213Ab1HZWWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 18:21:39 -0400
-Date: Fri, 26 Aug 2011 15:21:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: add free_hot_cold_page_list helper
-Message-Id: <20110826152101.b1b453c0.akpm@linux-foundation.org>
-In-Reply-To: <20110729075837.12274.58405.stgit@localhost6>
-References: <20110729075837.12274.58405.stgit@localhost6>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 26 Aug 2011 18:22:25 -0400
+Subject: Re: [PATCH 0/4] dynamic debug: cleanups + compile fix
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Jason Baron <jbaron@redhat.com>, Greg KH <greg@kroah.com>,
+        jim.cromie@gmail.com, bvanassche@acm.org, rdunlap@xenotime.net,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110826221845.GA18858@suse.de>
+References: <cover.1314291909.git.jbaron@redhat.com>
+	 <20110826182900.GA30226@kroah.com> <20110826184742.GA2469@redhat.com>
+	 <20110826190417.GA30356@suse.de> <1314396881.9624.8.camel@Joe-Laptop>
+	 <20110826221845.GA18858@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Aug 2011 15:22:23 -0700
+Message-ID: <1314397343.9624.9.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011 11:58:37 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+On Fri, 2011-08-26 at 15:18 -0700, Greg KH wrote:
+> On Fri, Aug 26, 2011 at 03:14:41PM -0700, Joe Perches wrote:
+> > On Fri, 2011-08-26 at 12:04 -0700, Greg KH wrote:
+> > > > > Care to redo this based on the comments received so far?
+> > > > I re-posted 3/4 based on the comments already. The comment on patch #1
+> > > > regarding adding macro parenthesis, I don't believe makes any functional
+> > > > change...do you still need a re-post the series?
+> > #define true 1
+> > gains nothing from parenthesis either.
+> I don't think that is the case here, right?
 
-> This patch adds helper free_hot_cold_page_list() to free list of 0-order pages.
-> It frees pages directly from list without temporary page-vector.
-> It also calls trace_mm_pagevec_free() to simulate pagevec_free() behaviour.
-> 
-> bloat-o-meter:
-> 
-> add/remove: 1/1 grow/shrink: 1/3 up/down: 267/-295 (-28)
-> function                                     old     new   delta
-> free_hot_cold_page_list                        -     264    +264
-> get_page_from_freelist                      2129    2132      +3
-> __pagevec_free                               243     239      -4
-> split_free_page                              380     373      -7
-> release_pages                                606     510     -96
-> free_page_list                               188       -    -188
-> 
+Nope.
 
-It saves a total of 150 bytes for me.
-
-> index cb40892..dd7b9cc 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -358,6 +358,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
->  extern void __free_pages(struct page *page, unsigned int order);
->  extern void free_pages(unsigned long addr, unsigned int order);
->  extern void free_hot_cold_page(struct page *page, int cold);
-> +extern void free_hot_cold_page_list(struct list_head *list, int cold);
->  
->  #define __free_page(page) __free_pages((page), 0)
->  #define free_page(addr) free_pages((addr), 0)
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 1dbcf88..af486e4 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1209,6 +1209,18 @@ out:
->  	local_irq_restore(flags);
->  }
->  
-> +void free_hot_cold_page_list(struct list_head *list, int cold)
-> +{
-> +	struct page *page, *next;
-> +
-> +	list_for_each_entry_safe(page, next, list, lru) {
-> +		trace_mm_pagevec_free(page, cold);
-> +		free_hot_cold_page(page, cold);
-> +	}
-> +
-> +	INIT_LIST_HEAD(list);
-> +}
-> +
->  /*
->   * split_page takes a non-compound higher-order page, and splits it into
->   * n (1<<order) sub-pages: page[0..n]
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 3a442f1..b9138c7 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -562,11 +562,10 @@ int lru_add_drain_all(void)
->  void release_pages(struct page **pages, int nr, int cold)
->  {
->  	int i;
-> -	struct pagevec pages_to_free;
-> +	LIST_HEAD(pages_to_free);
->  	struct zone *zone = NULL;
->  	unsigned long uninitialized_var(flags);
->  
-> -	pagevec_init(&pages_to_free, cold);
->  	for (i = 0; i < nr; i++) {
->  		struct page *page = pages[i];
->  
-> @@ -597,19 +596,12 @@ void release_pages(struct page **pages, int nr, int cold)
->  			del_page_from_lru(zone, page);
->  		}
->  
-> -		if (!pagevec_add(&pages_to_free, page)) {
-> -			if (zone) {
-> -				spin_unlock_irqrestore(&zone->lru_lock, flags);
-> -				zone = NULL;
-> -			}
-> -			__pagevec_free(&pages_to_free);
-> -			pagevec_reinit(&pages_to_free);
-> -  		}
-> +		list_add_tail(&page->lru, &pages_to_free);
-
-There's a potential problem here with cache longevity.  If
-release_pages() is called with a large number of pages then the current
-code's approach of freeing pages 16-at-a-time will hopefully cause
-those pageframes to still be in CPU cache when we get to actually
-freeing them.
-
-But after this change, we free all the pages in a single operation
-right at the end, which adds risk that we'll have to reload all their
-pageframes into CPU cache again.
-
-That'll only be a problem if release_pages() _is_ called with a large
-number of pages.  And manipulating large numbers of pages represents a
-lot of work, so the additional work from one cachemiss per page will
-presumably be tiny.
-
+It is the case, the parentheses are not necessary.
 
