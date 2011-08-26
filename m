@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab1HZOrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 10:47:14 -0400
-Received: from lulu.zabbo.net ([69.168.54.52]:44579 "EHLO lulu.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab1HZOrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 10:47:10 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 10:47:09 EDT
-Date: Fri, 26 Aug 2011 07:41:24 -0700
-From: Zach Brown <zab@zabbo.net>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@zeniv.linux.org.uk,
-        dchinner@redhat.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-Message-ID: <20110826144124.GA17519@lulu.zabbo.net>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>
- <1309275199-10801-5-git-send-email-josef@redhat.com>
- <20110825060632.GA9933@infradead.org>
- <20110825064039.GO3162@dastard>
- <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca>
- <20110826013528.GW3162@dastard>
- <CANGUGtC1qk2Tkv42fvibUKiEJz_MnNiV-nQ7T-_woppVhjQK-Q@mail.gmail.com>
+	id S1752262Ab1HZOsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 10:48:12 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20807 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1HZOsI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 10:48:08 -0400
+Date: Fri, 26 Aug 2011 10:46:53 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
+        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
+        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com
+Subject: Re: Subject: [PATCH V7 1/4] mm: frontswap: swap data structure
+ changes
+Message-ID: <20110826144653.GA889@dumpdata.com>
+References: <20110823145755.GA23174@ca-server1.us.oracle.com>
+ <20110825143312.a6fe93d5.kamezawa.hiroyu@jp.fujitsu.com>
+ <8a95a804-7ba3-416e-9ba5-8da7b9cabba5@default20110826090214.2f7f2cdc.kamezawa.hiroyu@jp.fujitsu.com>
+ <24f09c1f-3ff8-4677-a1f7-c3494ced04c1@default>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANGUGtC1qk2Tkv42fvibUKiEJz_MnNiV-nQ7T-_woppVhjQK-Q@mail.gmail.com>
+In-Reply-To: <24f09c1f-3ff8-4677-a1f7-c3494ced04c1@default>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090201.4E57B1EC.001C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Hole: a range of the file that contains no data or is made up
-> > entirely of  NULL (zero) data. Holes include preallocated ranges of
-> > files that have not had actual data written to them.
+On Fri, Aug 26, 2011 at 07:15:30AM -0700, Dan Magenheimer wrote:
+> > From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
+> > Subject: Re: Subject: [PATCH V7 1/4] mm: frontswap: swap data structure changes
+> > 
+> > > > From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
+> > > > Subject: Re: Subject: [PATCH V7 1/4] mm: frontswap: swap data structure changes
+> > >
+> > > Hi Kamezawa-san --
+> > >
+> > > Domo arigato for the review and feedback!
+> > >
+> > > > Hmm....could you modify mm/swapfile.c and remove 'static' in the same patch ?
+> > >
+> > > I separated out this header patch because I thought it would
+> > > make the key swap data structure changes more visible.  Are you
+> > > saying that it is more confusing?
+> > 
+> > Yes. I know you add a new header file which is not included but..
+> > 
+> > At reviewing patch, I check whether all required changes are done.
+> > In this case, you turned out the function to be externed but you
+> > leave the function definition as 'static'. This unbalance confues me.
+> > 
+> > I always read patches from 1 to END. When I found an incomplete change
+> > in patch 1, I remember it and need to find missng part from patch 2->End.
+> > This makes my review confused a little.
+> > 
+> > In another case, when a patch adds a new file, I check Makefile change.
+> > Considering dependency, the patch order should be
+> > 
+> > 	[patch 1] Documentaion/Config
+> > 	[patch 2] Makefile + add new file.
+> > 
+> > But plesse note: This is my thought. Other guys may have other idea.
+> 
+> I think that is probably a good approach.  I will try to use it
+> for future patches.  But since this frontswap patchset is already
+> on V7, I hope it is OK if I continue to organize it for V8 the same
+> as it has been, as it might be confusing to previous reviewers
+> to change the organization now.
 
-> No for me. A hole is made up of zero data? It's a strange definition
-> for me.
-
-It's a very natural definition for me.  It mirrors the behaviour of
-read() of sparse data inside i_size that file system authors already
-have to consider.
-
-It's also a reminder for people that this interface is about avoiding
-reading zeros.  Systems that track contents can do this for files that
-had tons of zeros written.  The data is there but the app is
-specifically asking us to skip it by using SEEK_DATA.
-
-- z
+Nah, that is what part of the review process is - keep us on our toes.
