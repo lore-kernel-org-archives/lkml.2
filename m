@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846Ab1HZOVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 10:21:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60785 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab1HZOVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 10:21:48 -0400
-Date: Fri, 26 Aug 2011 10:21:04 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
-Subject: Re: [V3][PATCH 2/6] x86, nmi: create new NMI handler routines
-Message-ID: <20110826142104.GW2067@redhat.com>
-References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
- <1314290748-23569-3-git-send-email-dzickus@redhat.com>
- <1314351852.9377.1.camel@twins>
+	id S1752753Ab1HZOWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 10:22:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53417 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab1HZOWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 10:22:21 -0400
+Message-ID: <4E57AC9B.7080209@cn.fujitsu.com>
+Date: Fri, 26 Aug 2011 22:24:27 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314351852.9377.1.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
+References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A1257.5080204@cn.fujitsu.com> <20110823080024.GA2297@amt.cnet> <4E53872B.3070407@cn.fujitsu.com> <20110823123818.GB4261@amt.cnet> <4E53D620.9030304@cn.fujitsu.com> <20110823190939.GA10220@amt.cnet> <4E560062.40805@cn.fujitsu.com> <20110825134712.GB4384@amt.cnet> <4E571069.2050701@cn.fujitsu.com> <20110826105328.GA12612@amt.cnet>
+In-Reply-To: <20110826105328.GA12612@amt.cnet>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-26 22:21:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-26 22:21:23,
+	Serialize complete at 2011-08-26 22:21:23
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 11:44:12AM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-08-25 at 12:45 -0400, Don Zickus wrote:
-> > +static int __setup_nmi(unsigned int type, struct nmiaction *action)
-> > +{
-> > +       struct nmi_desc *desc = nmi_to_desc(type);
-> > +       struct nmiaction **a = &(desc->head);
-> > +       unsigned long flags;
-> > +
-> > +       spin_lock_irqsave(&desc->lock, flags);
-> > +
-> > +       /*
-> > +        * some handlers need to be executed first otherwise a fake
-> > +        * event confuses some handlers (kdump uses this flag)
-> > +        */
-> > +       if (!(action->flags & NMI_FLAG_FIRST))
-> > +               while ((*a) != NULL)
-> > +                       a = &((*a)->next);
-> > +       
-> > +       action->next = *a;
-> > +       rcu_assign_pointer(*a, action);
-> > +
-> > +       spin_unlock_irqrestore(&desc->lock, flags);
-> > +       return 0;
-> > +}
-> > +
-> > +static struct nmiaction *__free_nmi(unsigned int type, const char *name)
-> > +{
-> > +       struct nmi_desc *desc = nmi_to_desc(type);
-> > +       struct nmiaction *n, **np = &(desc->head);
-> > +       unsigned long flags;
-> > +
-> > +       spin_lock_irqsave(&desc->lock, flags);
-> > +
-> > +       while ((*np) != NULL) {
-> > +               n = *np;
-> > +
-> > +               /*
-> > +                * the name passed in to describe the nmi handler
-> > +                * is used as the lookup key
-> > +                */
-> > +               if (!strcmp(n->name, name)) {
-> > +                       WARN(in_nmi(),
-> > +                               "Trying to free NMI (%s) from NMI context!\n", n->name);
-> > +                       rcu_assign_pointer(*np, n->next);
-> > +                       break;
-> > +               }
-> > +               np = &(n->next);
-> > +       }
-> > +
-> > +       spin_unlock_irqrestore(&desc->lock, flags);
-> > +       synchronize_rcu();
-> > +       return (*np);
-> > +} 
+On 08/26/2011 06:53 PM, Marcelo Tosatti wrote:
+> On Fri, Aug 26, 2011 at 11:18:01AM +0800, Xiao Guangrong wrote:
+>> On 08/25/2011 09:47 PM, Marcelo Tosatti wrote:
+>>
+>>> I guess it is OK to be more trigger happy with zapping by ignoring
+>>> the accessed bit, clearing the flood counter on page fault.
+>>>
+>>
+>> Yeah, i like this way, is this patch good for you?
 > 
-> Probably not worth fixing, but if someone was silly enough to register
-> with an already existing name we're up shit creek, right? :-)
+> Looks fine, can you rerun kernbench?
+> 
 
-Hmm, I thought I put a check in there during registration to prevent that.
-Guess not.  But yeah, I thought about doing that just to have one less
-thing bite me later.
+Sure, i tested the performance of this way, there is the result:
 
-Cheers,
-Don
+The origin way:
+2m56.561
+2m50.651
+2m51.220
+2m52.199
+2m48.066
+
+The way of using accessed bit:
+2m51.194
+2m55.980
+2m50.755
+2m47.396
+2m46.807
+
+The way of ignoring accessed bit:
+2m45.547
+2m44.551
+2m55.840
+2m56.333
+2m45.534
+
+I think the result is not bad.
+ 
