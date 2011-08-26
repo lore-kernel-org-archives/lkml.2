@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714Ab1HZOrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 10:47:11 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64798 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab1HZOrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 10:47:09 -0400
-Subject: Re: [PATCH] slab: avoid unnecessary touching of a partial slab
-From: Zhao Jin <cronozhj@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: penberg@kernel.org, mpm@selenic.com, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1108260841570.5818@router.home>
-References: <CADqbE97Vj0UV-2XvpkoELwdey_Xw7iCsF1AhQNFjwxY583SUwg@mail.gmail.com>
-	 <alpine.DEB.2.00.1108260841570.5818@router.home>
-Content-Type: text/plain; charset="us-ascii"
-Date: Fri, 26 Aug 2011 22:46:56 +0800
-Message-ID: <1314370016.8991.38.camel@vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752320Ab1HZOrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 10:47:14 -0400
+Received: from lulu.zabbo.net ([69.168.54.52]:44579 "EHLO lulu.zabbo.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab1HZOrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 10:47:10 -0400
+X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 10:47:09 EDT
+Date: Fri, 26 Aug 2011 07:41:24 -0700
+From: Zach Brown <zab@zabbo.net>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, Andreas Dilger <adilger@dilger.ca>,
+        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@zeniv.linux.org.uk,
+        dchinner@redhat.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+Message-ID: <20110826144124.GA17519@lulu.zabbo.net>
+References: <1309275199-10801-1-git-send-email-josef@redhat.com>
+ <1309275199-10801-5-git-send-email-josef@redhat.com>
+ <20110825060632.GA9933@infradead.org>
+ <20110825064039.GO3162@dastard>
+ <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca>
+ <20110826013528.GW3162@dastard>
+ <CANGUGtC1qk2Tkv42fvibUKiEJz_MnNiV-nQ7T-_woppVhjQK-Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANGUGtC1qk2Tkv42fvibUKiEJz_MnNiV-nQ7T-_woppVhjQK-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 09:08 -0500, Christoph Lameter wrote:
-> On Fri, 26 Aug 2011, Zhao Jin wrote:
-> 
-> > In cache_alloc_refill(), after refilling from a partial slab, if the
-> > slab remains partial, it would be deleted from and then added again to
-> > the partial list. As the slab is the first element in the list before
-> > deletion, such behavior has no effect. This patch avoids touching the
-> > slab in this case.
-> 
-> The list_del/list_add action is a list_move.
+> > Hole: a range of the file that contains no data or is made up
+> > entirely of  NULL (zero) data. Holes include preallocated ranges of
+> > files that have not had actual data written to them.
 
-But in cache_alloc_refill(), it is the first slab (that is: its list
-field is pointed by the l3->slabs_partial.next) that is picked from the
-partial list for refilling. Assume it remains partial after that. Since
-list_add inserts a new element after the head (l3->slabs_partial), the
-position of the slab in the partial list won't change after
-list_del/list_add: it will be still the first element. Therefore,
-list_del/list_add has done nothing actually in this case.
+> No for me. A hole is made up of zero data? It's a strange definition
+> for me.
 
-Regards,
-zhj
+It's a very natural definition for me.  It mirrors the behaviour of
+read() of sparse data inside i_size that file system authors already
+have to consider.
 
+It's also a reminder for people that this interface is about avoiding
+reading zeros.  Systems that track contents can do this for files that
+had tons of zeros written.  The data is there but the app is
+specifically asking us to skip it by using SEEK_DATA.
 
+- z
