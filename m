@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab1H0O7E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:59:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47013 "EHLO mx2.suse.de"
+	id S1754863Ab1H0O6W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:58:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46841 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679Ab1H0O7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:59:00 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:53 2011
-Message-Id: <20110826215053.302590478@clark.kroah.org>
+	id S1754835Ab1H0O6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:58:17 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:55 2011
+Message-Id: <20110826215054.936937469@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:21 -0700
+Date: Fri, 26 Aug 2011 14:49:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        PaX Team <pageexec@freemail.hu>
-Subject: [04/35] i7core_edac: fixed typo in error count calculation
+        Eric Sandeen <sandeen@redhat.com>, Tao Ma <boyu.mt@taobao.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [20/35] ext4: Resolve the hang of direct i/o read in handling EXT4_IO_END_UNWRITTEN.
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Tao Ma <boyu.mt@taobao.com>
 
-commit 8cf2d2399ab60842f55598bc1b00fd15503b9950 upstream.
+commit 32c80b32c053dc52712dedac5e4d0aa7c93fc353 upstream.
 
-Based on a patch from the PaX Team, found during a clang analysis pass.
+EXT4_IO_END_UNWRITTEN flag set and the increase of i_aiodio_unwritten
+should be done simultaneously since ext4_end_io_nolock always clear
+the flag and decrease the counter in the same time.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+We don't increase i_aiodio_unwritten when setting
+EXT4_IO_END_UNWRITTEN so it will go nagative and causes some process
+to wait forever.
+
+Part of the patch came from Eric in his e-mail, but it doesn't fix the
+problem met by Michael actually.
+
+http://marc.info/?l=linux-ext4&m=131316851417460&w=2
+
+Reported-and-Tested-by: Michael Tokarev<mjt@tls.msk.ru>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/i7core_edac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/inode.c   |    9 ++++++++-
+ fs/ext4/page-io.c |    6 ++++--
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1670,7 +1670,7 @@ static void i7core_mce_output_error(stru
- 	char *type, *optype, *err, *msg;
- 	unsigned long error = m->status & 0x1ff0000l;
- 	u32 optypenum = (m->status >> 4) & 0x07;
--	u32 core_err_cnt = (m->status >> 38) && 0x7fff;
-+	u32 core_err_cnt = (m->status >> 38) & 0x7fff;
- 	u32 dimm = (m->misc >> 16) & 0x3;
- 	u32 channel = (m->misc >> 18) & 0x3;
- 	u32 syndrome = m->misc >> 32;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3645,8 +3645,15 @@ static void ext4_end_io_buffer_write(str
+ 		goto out;
+ 	}
+ 
+-	io_end->flag = EXT4_IO_END_UNWRITTEN;
++	/*
++	 * It may be over-defensive here to check EXT4_IO_END_UNWRITTEN now,
++	 * but being more careful is always safe for the future change.
++	 */
+ 	inode = io_end->inode;
++	if (!(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
++		io_end->flag |= EXT4_IO_END_UNWRITTEN;
++		atomic_inc(&EXT4_I(inode)->i_aiodio_unwritten);
++	}
+ 
+ 	/* Add the io_end to per-inode completed io list*/
+ 	spin_lock_irqsave(&EXT4_I(inode)->i_completed_io_lock, flags);
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -338,8 +338,10 @@ submit_and_retry:
+ 	if ((io_end->num_io_pages >= MAX_IO_PAGES) &&
+ 	    (io_end->pages[io_end->num_io_pages-1] != io_page))
+ 		goto submit_and_retry;
+-	if (buffer_uninit(bh))
+-		io->io_end->flag |= EXT4_IO_END_UNWRITTEN;
++	if (buffer_uninit(bh) && !(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
++		io_end->flag |= EXT4_IO_END_UNWRITTEN;
++		atomic_inc(&EXT4_I(inode)->i_aiodio_unwritten);
++	}
+ 	io->io_end->size += bh->b_size;
+ 	io->io_next_block++;
+ 	ret = bio_add_page(io->io_bio, bh->b_page, bh->b_size, bh_offset(bh));
 
 
