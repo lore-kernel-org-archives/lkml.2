@@ -1,92 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab1HZQ7y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:59:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57219 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222Ab1HZQ7w convert rfc822-to-8bit (ORCPT
+	id S1755132Ab1HZRAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 13:00:17 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:47918 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753280Ab1HZRAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:59:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,286,1312182000"; 
-   d="scan'208";a="45097022"
-From: "Zou, Yi" <yi.zou@intel.com>
-To: Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Love, Robert W" <robert.w.love@intel.com>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>
-Date: Fri, 26 Aug 2011 09:59:50 -0700
-Subject: RE: linux-next: Tree for Aug 25
-Thread-Topic: linux-next: Tree for Aug 25
-Thread-Index: AcxkDyuGinASYdtMRbyqbcp3+GedVgAAaZYQ
-Message-ID: <5A9BD224CEA58D4CB62235967D650C160A01252B@orsmsx509.amr.corp.intel.com>
-References: <20110825163515.0ed2cf354f61a3e9c53564b2@canb.auug.org.au>
- <885a6d6210a7d4c56601380f146e7ba9.squirrel@xenotime.net>
- <4E57CCEC.9060000@broadcom.com>
-In-Reply-To: <4E57CCEC.9060000@broadcom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 26 Aug 2011 13:00:14 -0400
+Date: Fri, 26 Aug 2011 10:00:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+Message-Id: <20110826100011.9213d872.rdunlap@xenotime.net>
+In-Reply-To: <1314362342.3224.19.camel@localhost.localdomain>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	<20110822125355.bb01d76b.rdunlap@xenotime.net>
+	<CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+	<20110822174958.73dd96c7.rdunlap@xenotime.net>
+	<1314065358.3225.44.camel@localhost.localdomain>
+	<20110823164035.ca28fdc6.rdunlap@xenotime.net>
+	<CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
+	<1314362342.3224.19.camel@localhost.localdomain>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> On 8/26/2011 12:26 AM, Randy Dunlap wrote:
-> >
-> > On Wed, August 24, 2011 11:35 pm, Stephen Rothwell wrote:
-> >> Hi all,
-> >>
-> >> The powerpc allyesconfig build still fails today.
-> >
-> >
-> > CONFIG_FCOE is not enabled:
-> >
-> > drivers/scsi/bnx2fc/bnx2fc_fcoe.c: In function 'bnx2fc_net_config':
-> > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:765: error: 'NETDEV_FCOE_WWNN'
-> > undeclared (first use in this function)
-> > drivers/scsi/bnx2fc/bnx2fc_fcoe.c:771: error: 'NETDEV_FCOE_WWPN'
-> > undeclared (first use in this function)
-> >
-> >
-> > Maybe this driver should select FCOE?
-> bnx2fc does not depend on FCOE. Instead both fcoe and bnx2fc drivers
-> depend on LIBFCOE.  So, I'll modify to access
-> NETDEV_FCOE_WWNN/NETDEV_FCOE_WWPN when CONFIG_LIBFCOE  is enabled.
-> 
-Yes, both these two flags and ndo_fcoe_get_wwn() should be wrapped by
-CONFIG_LIBFCOE || CONFIG_LIBFCOE_MODULE as bnx2fc is also using the get_wwn
-hook I believe. Historically on fcoe module was using them.
+On Fri, 26 Aug 2011 08:39:02 -0400 Mimi Zohar wrote:
 
-> Patch will be submitted soon.
-Thanks,
-yi
+> On Tue, 2011-08-23 at 22:10 -0400, Arnaud Lacombe wrote:
+> > Hi,
+> > 
+> > On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > > I think that you are going to need to do something like Arnaud suggested
+> > > and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
+> > > unless you can convince someone that this is a kconfig bug.
+> > >
+> > dammit... I guess there is...
+> > 
+> > If you consider the following Kconfig:
+> > 
+> > config MOD
+> >         bool
+> >         default y
+> >         option modules
+> > 
+> > config EXPERIMENTAL
+> >         bool
+> >         default y
+> > 
+> > menuconfig A
+> >         tristate "A"
+> >         depends on EXPERIMENTAL
+> > 
+> > config B
+> >         bool "B"
+> > 
+> > config B0
+> >         bool
+> > 
+> > config C
+> >         tristate "C"
+> >         depends on B
+> > 
+> > config C0
+> >         tristate
+> > 
+> > config D
+> >         boolean "D"
+> >         depends on A && B
+> >         select C
+> >         select C0
+> > 
+> > config E
+> >         tristate "E"
+> > 
+> > config F
+> >         tristate "F"
+> >         select E
+> > 
+> > B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
+> > (TCG_TPM) allows to set D (EVM), which will select (C). Now,
+> > menuconfig highlight the problem very well. Proceeding as following
+> > A=m, B=y, C=m, E=y, F=y, we ends up having:
+> > 
+> >  <M> A  --->
+> >  [*] B
+> >  {M} C
+> >  [*] D
+> >  -*- E
+> >  <*> F
+> > 
+> > which translate in the following config:
+> > 
+> > CONFIG_MOD=y
+> > CONFIG_EXPERIMENTAL=y
+> > CONFIG_A=m
+> > CONFIG_B=y
+> > CONFIG_C=m
+> > CONFIG_C0=m
+> > CONFIG_D=y
+> > CONFIG_E=y
+> > CONFIG_F=y
+> > 
+> > I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
+> > If you remove D's dependency on 'A', everything works as expected. So
+> > it would seem direct dependency state influence the state of reverse
+> > dependencies...
+> > 
+> > Will have a look...
+> > 
+> >  - Arnaud
+> 
+> Thanks for looking into this!  Instead of changing 'TCG_TPM' to
+> 'TCG_TPM=y', the dependency should be on 'TRUSTED_KEYS=y'.  Then when
+> I've refactored ENCRYPTED_KEYS, removing the ENCRYPTED_KEYS dependency
+> on TRUSTED_KEYS, the EVM dependency would be '(TRUSTED_KEYS=y ||
+> TRUSTED_KEYS=n)'.  Do you want a temporary fix for now?
 
-> 
-> Thanks,
-> Bhanu
+Yes, linux-next (randconfig) builds are still failing, so we need something
+to prevent that.
 
-> >
-> > ~Randy
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-scsi"
-> in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
