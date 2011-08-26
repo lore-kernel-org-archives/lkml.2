@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab1H0O4U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:56:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46431 "EHLO mx2.suse.de"
+	id S1753542Ab1H0O4d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:56:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46479 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab1H0O4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:56:14 -0400
+	id S1752483Ab1H0O4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:56:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:01:20 2011
-Message-Id: <20110826220120.217204519@clark.kroah.org>
+Message-Id: <20110826220120.632723223@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:58:27 -0700
+Date: Fri, 26 Aug 2011 14:58:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [06/19] hwmon: (ibmaem) add missing kfree
+        Timo Warns <warns@pre-sense.de>, Matt Domsch <Matt_Domsch@dell.com>,
+        Eugene Teo <eugeneteo@kernel.sg>, Dave Jones <davej@codemonkey.org.uk>
+Subject: [10/19] fs/partitions/efi.c: corrupted GUID partition tables can cause kernel oops
 In-Reply-To: <20110826220137.GA14059@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Timo Warns <Warns@pre-sense.de>
 
-commit 66a89b2164e2d30661edbd1953eacf0594d8203a upstream.
+commit 3eb8e74ec72736b9b9d728bad30484ec89c91dde upstream.
 
-rs_resp is dynamically allocated in aem_read_sensor(), so it should be freed
-before exiting in every case.  This collects the kfree and the return at
-the end of the function.
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating GUID partitions (in fs/partitions/efi.c) contains
+a bug that causes a kernel oops on certain corrupted GUID partition
+tables.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+This bug has security impacts, because it allows, for example, to
+prepare a storage device that crashes a kernel subsystem upon connecting
+the device (e.g., a "USB Stick of (Partial) Death").
+
+	crc = efi_crc32((const unsigned char *) (*gpt), le32_to_cpu((*gpt)->header_size));
+
+computes a CRC32 checksum over gpt covering (*gpt)->header_size bytes.
+There is no validation of (*gpt)->header_size before the efi_crc32 call.
+
+A corrupted partition table may have large values for (*gpt)->header_size.
+ In this case, the CRC32 computation access memory beyond the memory
+allocated for gpt, which may cause a kernel heap overflow.
+
+Validate value of GUID partition table header size.
+
+[akpm@linux-foundation.org: fix layout and indenting]
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: Matt Domsch <Matt_Domsch@dell.com>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Dave Jones <davej@codemonkey.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/hwmon/ibmaem.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/hwmon/ibmaem.c
-+++ b/drivers/hwmon/ibmaem.c
-@@ -429,13 +429,15 @@ static int aem_read_sensor(struct aem_da
- 	aem_send_message(ipmi);
+---
+ fs/partitions/efi.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/fs/partitions/efi.c
++++ b/fs/partitions/efi.c
+@@ -311,6 +311,15 @@ is_gpt_valid(struct block_device *bdev,
+ 		goto fail;
+ 	}
  
- 	res = wait_for_completion_timeout(&ipmi->read_complete, IPMI_TIMEOUT);
--	if (!res)
--		return -ETIMEDOUT;
-+	if (!res) {
-+		res = -ETIMEDOUT;
-+		goto out;
++	/* Check the GUID Partition Table header size */
++	if (le32_to_cpu((*gpt)->header_size) >
++			bdev_logical_block_size(bdev)) {
++		pr_debug("GUID Partition Table Header size is wrong: %u > %u\n",
++			le32_to_cpu((*gpt)->header_size),
++			bdev_logical_block_size(bdev));
++		goto fail;
 +	}
- 
- 	if (ipmi->rx_result || ipmi->rx_msg_len != rs_size ||
- 	    memcmp(&rs_resp->id, &system_x_id, sizeof(system_x_id))) {
--		kfree(rs_resp);
--		return -ENOENT;
-+		res = -ENOENT;
-+		goto out;
- 	}
- 
- 	switch (size) {
-@@ -460,8 +462,11 @@ static int aem_read_sensor(struct aem_da
- 		break;
- 	}
- 	}
-+	res = 0;
- 
--	return 0;
-+out:
-+	kfree(rs_resp);
-+	return res;
- }
- 
- /* Update AEM energy registers */
++
+ 	/* Check the GUID Partition Table CRC */
+ 	origcrc = le32_to_cpu((*gpt)->header_crc32);
+ 	(*gpt)->header_crc32 = 0;
 
 
