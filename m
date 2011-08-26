@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab1HZQdy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:33:54 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:38017 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754804Ab1HZQdx (ORCPT
+	id S1755317Ab1HZQfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:35:10 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49189 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754826Ab1HZQfG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:33:53 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: cPMInggVM1n8788cRirMKTJMydSmi6YGqSVePYozKy8ZHfh
- j8uuUu6068.CKGl4hGkkfk.578W0NTMMarUb1Hd5maYPLgZT_oHl6mgm1UXD
- Ms3wefn6eBOmXNo3rxFJUW5hqhxbP0r23h_iATiEmSxkssjFjD1MWYGBYzy4
- nSMdFhFH3MCn2I6HWGnBUyq7uQK_20VfLf5QvkMPpM4LTGMufNbXSfvQNiLg
- .Xqe9gbYX8O_5SWwiqtbv8hnobvPKBQn6pVtlqTdWYr5lKlu1Bk3hVM21dC7
- QlaGBUKRFae5lVfVkjS3CfgP.UM8yJihB93gUu0cvlz5ePd2zf0Wr4qpuIF6
- hoLlWelF0IRqTh2.EKUigy3pmRBRMg8hNs0YZjWozTPdY
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 26 Aug 2011 11:33:49 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Zhao Jin <cronozhj@gmail.com>
-cc: penberg@kernel.org, mpm@selenic.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2][RESEND] slab, cleanup: remove unneeded return
-In-Reply-To: <1314375977-14927-1-git-send-email-cronozhj@gmail.com>
-Message-ID: <alpine.DEB.2.00.1108261133290.8296@router.home>
-References: <1314375977-14927-1-git-send-email-cronozhj@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 26 Aug 2011 12:35:06 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201106211534.10366.roucaries.bastien@gmail.com>
+References: <4DE6264A.2040901@gmail.com>
+	<20110601212432.2677b03a.rdunlap@xenotime.net>
+	<201106211534.10366.roucaries.bastien@gmail.com>
+Date: Fri, 26 Aug 2011 18:35:05 +0200
+Message-ID: <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+Subject: Re: Kerneloops.org defunct?
+From: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jirislaby@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Aug 2011, Zhao Jin wrote:
+Ping ?
 
-> The procedure ends right after the if-statement, so remove ``return''.
-> Also move the last common statement outside.
+Could we know what is the status for kerneloops ?
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Thanks
 
+On Tue, Jun 21, 2011 at 3:34 PM, Bastien ROUCARIES
+<roucaries.bastien@gmail.com> wrote:
+> Le jeudi 2 juin 2011 06:24:32, Randy Dunlap a écrit :
+>> On Wed, 01 Jun 2011 13:45:14 +0200 Jiri Slaby wrote:
+>> > Hi,
+>> >
+>> > does anybody have an idea what's with Kerneloops.org? Or at least some
+>> > contacts to admins? The databases seem to be inaccessible. For example
+>> > for 2.6.39 I get:
+>> > Backtraces reported for kernel 2.6.$version\n"; ?> Kernel Version
+>> > miss-match.
+>> >
+>> > The rest doesn't show the bugs from the database too.
+>> >
+>> > thanks,
+>>
+>> Arjan,
+>> Did you see this?  Can you answer?
+>
+> Still down now. Any news ?
+>
+> Bastien
+>
