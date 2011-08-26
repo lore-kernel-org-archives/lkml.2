@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab1HZLsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 07:48:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39650 "EHLO mga03.intel.com"
+	id S1753710Ab1HZLtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 07:49:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52630 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213Ab1HZLrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 07:47:53 -0400
+	id S1752262Ab1HZLr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 07:47:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,284,1312182000"; 
-   d="scan'208";a="42702467"
-Message-Id: <20110826114619.268843347@intel.com>
+   d="scan'208";a="42702490"
+Message-Id: <20110826114619.923651827@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 26 Aug 2011 19:38:18 +0800
+Date: Fri, 26 Aug 2011 19:38:23 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 to: <linux-fsdevel@vger.kernel.org>
 cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,228 +26,77 @@ CC: Vivek Goyal <vgoyal@redhat.com>
 CC: Andrea Righi <arighi@develer.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 05/10] writeback: per task dirty rate limit
+Subject: [PATCH 10/10] trace task_io
 References: <20110826113813.895522398@intel.com>
-Content-Disposition: inline; filename=per-task-ratelimit
+Content-Disposition: inline; filename=writeback-trace-task-total-dirtied.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add two fields to task_struct.
+The "write_bytes" curve over time is very handy for viewing the
+smoothness and fairness of page dirties for each task.
 
-1) account dirtied pages in the individual tasks, for accuracy
-2) per-task balance_dirty_pages() call intervals, for flexibility
+XXX: It looks not a good fit for writeback traces, shall we create a
+include/trace/events/vfs.h for this?
 
-The balance_dirty_pages() call interval (ie. nr_dirtied_pause) will
-scale near-sqrt to the safety gap between dirty pages and threshold.
+XXX: the other fields of struct task_io_accounting are not dumped.
 
-The main problem of per-task nr_dirtied is, if 1k+ tasks start dirtying
-pages at exactly the same time, each task will be assigned a large
-initial nr_dirtied_pause, so that the dirty threshold will be exceeded
-long before each task reached its nr_dirtied_pause and hence call
-balance_dirty_pages().
-
-The solution is to watch for the number of pages dirtied on each CPU in
-between the calls into balance_dirty_pages(). If it exceeds ratelimit_pages
-(3% dirty threshold), force call balance_dirty_pages() for a chance to
-set bdi->dirty_exceeded. In normal situations, this safeguarding
-condition is not expected to trigger at all.
-
-peter: keep the per-CPU ratelimit for safeguarding the 1k+ tasks case
-
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed-by: Andrea Righi <andrea@betterlinux.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/sched.h |    7 +++
- kernel/fork.c         |    3 +
- mm/page-writeback.c   |   89 ++++++++++++++++++++++------------------
- 3 files changed, 60 insertions(+), 39 deletions(-)
+ include/trace/events/writeback.h |   32 +++++++++++++++++++++++++++++
+ mm/page-writeback.c              |    1 
+ 2 files changed, 33 insertions(+)
 
---- linux-next.orig/include/linux/sched.h	2011-08-16 10:43:00.000000000 +0800
-+++ linux-next/include/linux/sched.h	2011-08-16 15:23:27.000000000 +0800
-@@ -1525,6 +1525,13 @@ struct task_struct {
- 	int make_it_fail;
- #endif
- 	struct prop_local_single dirties;
-+	/*
-+	 * when (nr_dirtied >= nr_dirtied_pause), it's time to call
-+	 * balance_dirty_pages() for some dirty throttling pause
-+	 */
-+	int nr_dirtied;
-+	int nr_dirtied_pause;
-+
- #ifdef CONFIG_LATENCYTOP
- 	int latency_record_count;
- 	struct latency_record latency_record[LT_SAVECOUNT];
---- linux-next.orig/mm/page-writeback.c	2011-08-16 10:54:05.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-08-16 15:23:54.000000000 +0800
-@@ -54,20 +54,6 @@
-  */
- static long ratelimit_pages = 32;
+--- linux-next.orig/include/trace/events/writeback.h	2011-08-22 11:58:21.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2011-08-22 12:22:38.000000000 +0800
+@@ -180,6 +180,38 @@ TRACE_EVENT(writeback_queue_io,
+ 		__entry->moved)
+ );
  
--/*
-- * When balance_dirty_pages decides that the caller needs to perform some
-- * non-background writeback, this is how many pages it will attempt to write.
-- * It should be somewhat larger than dirtied pages to ensure that reasonably
-- * large amounts of I/O are submitted.
-- */
--static inline long sync_writeback_pages(unsigned long dirtied)
--{
--	if (dirtied < ratelimit_pages)
--		dirtied = ratelimit_pages;
--
--	return dirtied + dirtied / 2;
--}
--
- /* The following parameters are exported via /proc/sys/vm */
- 
- /*
-@@ -169,6 +155,8 @@ static void update_completion_period(voi
- 	int shift = calc_period_shift();
- 	prop_change_shift(&vm_completions, shift);
- 	prop_change_shift(&vm_dirties, shift);
++TRACE_EVENT(task_io,
++	TP_PROTO(struct task_struct *task),
++	TP_ARGS(task),
 +
-+	writeback_set_ratelimit();
++	TP_STRUCT__entry(
++		__field(unsigned long long,	read_bytes)
++		__field(unsigned long long,	write_bytes)
++		__field(unsigned long long,	cancelled_write_bytes)
++	),
++
++	TP_fast_assign(
++		struct task_io_accounting *ioac = &task->ioac;
++
++#ifdef CONFIG_TASK_IO_ACCOUNTING
++		__entry->read_bytes		= ioac->read_bytes;
++		__entry->write_bytes		= ioac->write_bytes;
++		__entry->cancelled_write_bytes	= ioac->cancelled_write_bytes;
++#else
++		__entry->read_bytes		= 0;
++		__entry->write_bytes		= 0;
++		__entry->cancelled_write_bytes	= 0;
++#endif
++	),
++
++	TP_printk("read=%llu write=%llu cancelled_write=%llu",
++		  __entry->read_bytes,
++		  __entry->write_bytes,
++		  __entry->cancelled_write_bytes
++	)
++);
++
++
+ TRACE_EVENT(global_dirty_state,
+ 
+ 	TP_PROTO(unsigned long background_thresh,
+--- linux-next.orig/mm/page-writeback.c	2011-08-22 12:10:33.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-22 12:20:33.000000000 +0800
+@@ -407,6 +407,7 @@ void global_dirty_limits(unsigned long *
+ 	*pbackground = background;
+ 	*pdirty = dirty;
+ 	trace_global_dirty_state(background, dirty);
++	trace_task_io(current);
  }
- 
- int dirty_background_ratio_handler(struct ctl_table *table, int write,
-@@ -931,6 +919,23 @@ static void bdi_update_bandwidth(struct 
- }
- 
- /*
-+ * After a task dirtied this many pages, balance_dirty_pages_ratelimited_nr()
-+ * will look to see if it needs to start dirty throttling.
-+ *
-+ * If dirty_poll_interval is too low, big NUMA machines will call the expensive
-+ * global_page_state() too often. So scale it near-sqrt to the safety margin
-+ * (the number of pages we may dirty without exceeding the dirty limits).
-+ */
-+static unsigned long dirty_poll_interval(unsigned long dirty,
-+					 unsigned long thresh)
-+{
-+	if (thresh > dirty)
-+		return 1UL << (ilog2(thresh - dirty) >> 1);
-+
-+	return 1;
-+}
-+
-+/*
-  * balance_dirty_pages() must be called by processes which are generating dirty
-  * data.  It looks at the number of dirty pages in the machine and will force
-  * the caller to perform writeback if the system is over `vm_dirty_ratio'.
-@@ -1073,6 +1078,9 @@ static void balance_dirty_pages(struct a
- 	if (clear_dirty_exceeded && bdi->dirty_exceeded)
- 		bdi->dirty_exceeded = 0;
- 
-+	current->nr_dirtied = 0;
-+	current->nr_dirtied_pause = dirty_poll_interval(nr_dirty, dirty_thresh);
-+
- 	if (writeback_in_progress(bdi))
- 		return;
- 
-@@ -1099,7 +1107,7 @@ void set_page_dirty_balance(struct page 
- 	}
- }
- 
--static DEFINE_PER_CPU(unsigned long, bdp_ratelimits) = 0;
-+static DEFINE_PER_CPU(int, bdp_ratelimits);
  
  /**
-  * balance_dirty_pages_ratelimited_nr - balance dirty memory state
-@@ -1119,31 +1127,39 @@ void balance_dirty_pages_ratelimited_nr(
- 					unsigned long nr_pages_dirtied)
- {
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
--	unsigned long ratelimit;
--	unsigned long *p;
-+	int ratelimit;
-+	int *p;
- 
- 	if (!bdi_cap_account_dirty(bdi))
- 		return;
- 
--	ratelimit = ratelimit_pages;
--	if (mapping->backing_dev_info->dirty_exceeded)
--		ratelimit = 8;
-+	ratelimit = current->nr_dirtied_pause;
-+	if (bdi->dirty_exceeded)
-+		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
-+
-+	current->nr_dirtied += nr_pages_dirtied;
- 
-+	preempt_disable();
- 	/*
--	 * Check the rate limiting. Also, we do not want to throttle real-time
--	 * tasks in balance_dirty_pages(). Period.
-+	 * This prevents one CPU to accumulate too many dirtied pages without
-+	 * calling into balance_dirty_pages(), which can happen when there are
-+	 * 1000+ tasks, all of them start dirtying pages at exactly the same
-+	 * time, hence all honoured too large initial task->nr_dirtied_pause.
- 	 */
--	preempt_disable();
- 	p =  &__get_cpu_var(bdp_ratelimits);
--	*p += nr_pages_dirtied;
--	if (unlikely(*p >= ratelimit)) {
--		ratelimit = sync_writeback_pages(*p);
-+	if (unlikely(current->nr_dirtied >= ratelimit))
- 		*p = 0;
--		preempt_enable();
--		balance_dirty_pages(mapping, ratelimit);
--		return;
-+	else {
-+		*p += nr_pages_dirtied;
-+		if (unlikely(*p >= ratelimit_pages)) {
-+			*p = 0;
-+			ratelimit = 0;
-+		}
- 	}
- 	preempt_enable();
-+
-+	if (unlikely(current->nr_dirtied >= ratelimit))
-+		balance_dirty_pages(mapping, current->nr_dirtied);
- }
- EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
- 
-@@ -1238,22 +1254,17 @@ void laptop_sync_completion(void)
-  *
-  * Here we set ratelimit_pages to a level which ensures that when all CPUs are
-  * dirtying in parallel, we cannot go more than 3% (1/32) over the dirty memory
-- * thresholds before writeback cuts in.
-- *
-- * But the limit should not be set too high.  Because it also controls the
-- * amount of memory which the balance_dirty_pages() caller has to write back.
-- * If this is too large then the caller will block on the IO queue all the
-- * time.  So limit it to four megabytes - the balance_dirty_pages() caller
-- * will write six megabyte chunks, max.
-+ * thresholds.
-  */
- 
- void writeback_set_ratelimit(void)
- {
--	ratelimit_pages = vm_total_pages / (num_online_cpus() * 32);
-+	unsigned long background_thresh;
-+	unsigned long dirty_thresh;
-+	global_dirty_limits(&background_thresh, &dirty_thresh);
-+	ratelimit_pages = dirty_thresh / (num_online_cpus() * 32);
- 	if (ratelimit_pages < 16)
- 		ratelimit_pages = 16;
--	if (ratelimit_pages * PAGE_CACHE_SIZE > 4096 * 1024)
--		ratelimit_pages = (4096 * 1024) / PAGE_CACHE_SIZE;
- }
- 
- static int __cpuinit
---- linux-next.orig/kernel/fork.c	2011-08-16 10:42:59.000000000 +0800
-+++ linux-next/kernel/fork.c	2011-08-16 15:23:27.000000000 +0800
-@@ -1301,6 +1301,9 @@ static struct task_struct *copy_process(
- 	p->pdeath_signal = 0;
- 	p->exit_state = 0;
- 
-+	p->nr_dirtied = 0;
-+	p->nr_dirtied_pause = 128 >> (PAGE_SHIFT - 10);
-+
- 	/*
- 	 * Ok, make it visible to the rest of the system.
- 	 * We dont wake it up yet.
 
 
