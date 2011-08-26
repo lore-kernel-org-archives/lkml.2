@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab1HZUen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 16:34:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37058 "EHLO mx2.suse.de"
+	id S1754426Ab1HZUfE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 16:35:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37051 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211Ab1HZUej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 16:34:39 -0400
+	id S1754718Ab1HZUeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 16:34:36 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Pavan Savoy <pavan_savoy@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 13/13] drivers:misc: ti-st: fix unexpected UART close
-Date: Fri, 26 Aug 2011 13:33:54 -0700
-Message-Id: <1314390834-3411-13-git-send-email-gregkh@suse.de>
+Subject: [PATCH 12/13] drivers:misc: ti-st: free skb on firmware download
+Date: Fri, 26 Aug 2011 13:33:53 -0700
+Message-Id: <1314390834-3411-12-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1314390834-3411-1-git-send-email-gregkh@suse.de>
 References: <20110826191130.GA5557@kroah.com>
@@ -22,28 +22,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-If suppose the UIM were to die and hence UART were to close when the
-Bluetooth/FM or GPS is turned on, prep the ST for a state where-in if
-the UIM comes back up, Bluetooth/FM/GPS can be turned on.
+If during validation of the firmware download the data doesn't match what is
+expected out of the chip, this calls for a firmware download failure and a
+retry.
+Free the SKB which collects response during such scenarios.
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/misc/ti-st/st_core.c |    1 +
+ drivers/misc/ti-st/st_kim.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index 1f973ce..ba168a7 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -727,6 +727,7 @@ static void st_tty_close(struct tty_struct *tty)
- 		if (st_gdata->is_registered[i] == true)
- 			pr_err("%d not un-registered", i);
- 		st_gdata->list[i] = NULL;
-+		st_gdata->is_registered[i] = false;
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index d8ca406..3a35805 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -68,6 +68,7 @@ void validate_firmware_response(struct kim_data_s *kim_gdata)
+ 	if (unlikely(skb->data[5] != 0)) {
+ 		pr_err("no proper response during fw download");
+ 		pr_err("data6 %x", skb->data[5]);
++		kfree_skb(skb);
+ 		return;		/* keep waiting for the proper response */
  	}
- 	st_gdata->protos_registered = 0;
- 	spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 	/* becos of all the script being downloaded */
 -- 
 1.7.6.1
 
