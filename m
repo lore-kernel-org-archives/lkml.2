@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab1HZKnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 06:43:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58348 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1HZKnA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 06:43:00 -0400
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 26 Aug 2011 12:42:22 +0200
-In-Reply-To: <20110826100428.GA7996@localhost>
-References: <20110812142020.GB17781@localhost>
-	 <1314027488.24275.74.camel@twins> <20110823034042.GC7332@localhost>
-	 <1314093660.8002.24.camel@twins> <20110823141504.GA15949@localhost>
-	 <20110823174757.GC15820@redhat.com> <20110824001257.GA6349@localhost>
-	 <1314202378.6925.48.camel@twins> <20110826001846.GA6118@localhost>
-	 <1314349469.26922.24.camel@twins> <20110826100428.GA7996@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314355342.9377.5.camel@twins>
-Mime-Version: 1.0
+	id S1751562Ab1HZKnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 06:43:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40332 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab1HZKno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 06:43:44 -0400
+Date: Fri, 26 Aug 2011 11:43:37 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: dm-devel@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] dm-kcopyd: Correctly free requests
+Message-ID: <20110826104337.GN31980@agk-dp.fab.redhat.com>
+Mail-Followup-To: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+References: <20110826101542.GB20197@wavehammer.waldi.eu.org> <20110826103747.GA15125@agk-dp.fab.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826103747.GA15125@agk-dp.fab.redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 18:04 +0800, Wu Fengguang wrote:
-> Sorry I'm now feeling lost...
+On Fri, Aug 26, 2011 at 11:37:47AM +0100, Alasdair G Kergon wrote:
+> On Fri, Aug 26, 2011 at 12:15:42PM +0200, Bastian Blank wrote:
+> > kcopyd only frees the requests if the master job information is set up
+> > correctly, but it was not in the recently added path. This leads to many
+> > unfreed slabs during snapshot usage.
+> Referring to commit c6ea41fbbe08f270a8edef99dc369faf809d1bd6
+>   dm kcopyd: preallocate sub jobs to avoid deadlock
+> which added the master_job field.
+ 
+and commit a6e50b409d3f9e0833e69c3c9cca822e8fa4adbb
+    dm snapshot: skip reading origin when overwriting complete chunk
+which indeed forgets to set the new field.
 
-hehe welcome to my world ;-)
+I'll submit the patch shortly, together with some other minor fixes
+sitting in linux-next.
 
-Seriously though, I appreciate all the effort you put in trying to
-explain things. I feel I do understand things now, although I might not
-completely agree with them quite yet ;-)
-
-I'll go read the v9 patch-set you send out and look at some of the
-details (such as pos_ratio being comprised of both global and bdi
-limits, which so far has been somewhat glossed over).
-
+Alasdair
 
