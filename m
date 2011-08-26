@@ -1,261 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab1HZJHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:07:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33845 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab1HZJHa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:07:30 -0400
-From: Bryan Wu <bryan.wu@canonical.com>
-To: linux@arm.linux.org.uk, linus.walleij@linaro.org, rpurdie@rpsys.net,
-        tony@atomide.com, jochen@scram.de, linux@maxim.org.za,
-        nicolas.pitre@linaro.org, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, jamie@jamieiles.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 09/18] mach-integrator: retire custom LED code
-Date: Fri, 26 Aug 2011 17:03:26 +0800
-Message-Id: <1314349415-889-10-git-send-email-bryan.wu@canonical.com>
-X-Mailer: git-send-email 1.7.5
-In-Reply-To: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
-References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
+	id S1754177Ab1HZJHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:07:44 -0400
+Received: from dns1.mips.com ([12.201.5.69]:46674 "EHLO dns1.mips.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754138Ab1HZJHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 05:07:40 -0400
+From: Deng-Cheng Zhu <dczhu@mips.com>
+To: <jbarnes@virtuousgeek.org>, <ralf@linux-mips.org>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <eyal@mips.com>, <zenon@mips.com>,
+        <dczhu@mips.com>, <dengcheng.zhu@gmail.com>
+Subject: [PATCH v3 2/2] MIPS: PCI: Pass controller's resources to pci_create_bus() in pcibios_scanbus()
+Date: Fri, 26 Aug 2011 17:07:13 +0800
+Message-ID: <1314349633-13155-3-git-send-email-dczhu@mips.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1314349633-13155-1-git-send-email-dczhu@mips.com>
+References: <1314349633-13155-1-git-send-email-dczhu@mips.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EMS-Proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
+X-EMS-STAMP: NsMPYIaijFc9XSDCQrwc8g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the LED in core module for CPU activity and also enable 4
-debugging LEDs in baseboard.
+Use the new interface of pci_create_bus() so that system controller's
+resources are added to the root bus upon bus creation, thereby avoiding
+conflicts with PCI quirks before pcibios_fixup_bus() gets the chance to do
+right things in pci_scan_child_bus().
 
-The CPU activity LED is now handled by the trigger in the leds
-subsystem, retire this old CONFIG_LEDS-based code.
-
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+Signed-off-by: Deng-Cheng Zhu <dczhu@mips.com>
 ---
- arch/arm/mach-integrator/Makefile |    3 +-
- arch/arm/mach-integrator/core.c   |    1 -
- arch/arm/mach-integrator/leds.c   |  159 ++++++++++++++++++++++---------------
- 3 files changed, 96 insertions(+), 67 deletions(-)
+Changes (v3 - v2):
+o Do not do fixups for root buses in pcibios_fixup_bus().
+o Skip bus creation when bus resources cannot be allocated.
+o PCI domain/bus numbers added to the error info in controller_resources().
+o Patch description modified according to the changes above.
 
-diff --git a/arch/arm/mach-integrator/Makefile b/arch/arm/mach-integrator/Makefile
-index ebeef96..5521d18 100644
---- a/arch/arm/mach-integrator/Makefile
-+++ b/arch/arm/mach-integrator/Makefile
-@@ -4,11 +4,10 @@
- 
- # Object file lists.
- 
--obj-y					:= core.o lm.o
-+obj-y					:= core.o lm.o leds.o
- obj-$(CONFIG_ARCH_INTEGRATOR_AP)	+= integrator_ap.o
- obj-$(CONFIG_ARCH_INTEGRATOR_CP)	+= integrator_cp.o
- 
--obj-$(CONFIG_LEDS)			+= leds.o
- obj-$(CONFIG_PCI)			+= pci_v3.o pci.o
- obj-$(CONFIG_CPU_FREQ_INTEGRATOR)	+= cpu.o
- obj-$(CONFIG_INTEGRATOR_IMPD1)		+= impd1.o
-diff --git a/arch/arm/mach-integrator/core.c b/arch/arm/mach-integrator/core.c
-index 3267cdd..f9c638d 100644
---- a/arch/arm/mach-integrator/core.c
-+++ b/arch/arm/mach-integrator/core.c
-@@ -28,7 +28,6 @@
- #include <asm/irq.h>
- #include <mach/cm.h>
- #include <asm/system.h>
--#include <asm/leds.h>
- #include <asm/mach/time.h>
- #include <asm/pgtable.h>
- 
-diff --git a/arch/arm/mach-integrator/leds.c b/arch/arm/mach-integrator/leds.c
-index 28be186..dab912b 100644
---- a/arch/arm/mach-integrator/leds.c
-+++ b/arch/arm/mach-integrator/leds.c
-@@ -1,91 +1,122 @@
- /*
-- *  linux/arch/arm/mach-integrator/leds.c
-+ * Driver for the 4 user LEDs found on the Integrator AP/CP baseboard
-+ * Based on Versatile and RealView machine LED code
-  *
-- *  Integrator/AP and Integrator/CP LED control routines
-- *
-- *  Copyright (C) 1999 ARM Limited
-- *  Copyright (C) 2000 Deep Blue Solutions Ltd
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ * License terms: GNU General Public License (GPL) version 2
-+ * Author: Bryan Wu <bryan.wu@canonical.com>
-  */
- #include <linux/kernel.h>
- #include <linux/init.h>
--#include <linux/smp.h>
--#include <linux/spinlock.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/leds.h>
- 
-+#include <mach/cm.h>
- #include <mach/hardware.h>
- #include <mach/platform.h>
--#include <asm/leds.h>
--#include <asm/system.h>
--#include <asm/mach-types.h>
--#include <mach/cm.h>
- 
--static int saved_leds;
-+#define ALPHA_REG __io_address(INTEGRATOR_DBG_BASE)
-+#define LEDREG	(__io_address(INTEGRATOR_DBG_BASE) + INTEGRATOR_DBG_LEDS_OFFSET)
-+
-+struct integrator_led {
-+	struct led_classdev	cdev;
-+	u8			mask;
-+};
-+
-+/*
-+ * The triggers lines up below will only be used if the
-+ * LED triggers are compiled in.
-+ */
-+static const struct {
-+	const char *name;
-+	const char *trigger;
-+} integrator_leds[] = {
-+	{ "integrator:green0", "heartbeat", },
-+	{ "integrator:yellow", },
-+	{ "integrator:red", },
-+	{ "integrator:green1", },
-+	{ "integrator:core_module", "cpu0", },
-+};
- 
--static void integrator_leds_event(led_event_t ledevt)
-+static void integrator_led_set(struct led_classdev *cdev,
-+			      enum led_brightness b)
- {
--	unsigned long flags;
--	const unsigned int dbg_base = IO_ADDRESS(INTEGRATOR_DBG_BASE);
--	unsigned int update_alpha_leds;
-+	struct integrator_led *led = container_of(cdev,
-+						 struct integrator_led, cdev);
-+	u32 reg = __raw_readl(LEDREG);
- 
--	// yup, change the LEDs
--	local_irq_save(flags);
--	update_alpha_leds = 0;
-+	if (b != LED_OFF)
-+		reg |= led->mask;
-+	else
-+		reg &= ~led->mask;
- 
--	switch(ledevt) {
--	case led_idle_start:
--		cm_control(CM_CTRL_LED, 0);
--		break;
-+	while (__raw_readl(ALPHA_REG) & 1)
-+		cpu_relax();
- 
--	case led_idle_end:
--		cm_control(CM_CTRL_LED, CM_CTRL_LED);
--		break;
-+	__raw_writel(reg, LEDREG);
-+}
- 
--	case led_timer:
--		saved_leds ^= GREEN_LED;
--		update_alpha_leds = 1;
--		break;
-+static enum led_brightness integrator_led_get(struct led_classdev *cdev)
-+{
-+	struct integrator_led *led = container_of(cdev,
-+						 struct integrator_led, cdev);
-+	u32 reg = __raw_readl(LEDREG);
- 
--	case led_red_on:
--		saved_leds |= RED_LED;
--		update_alpha_leds = 1;
--		break;
-+	return (reg & led->mask) ? LED_FULL : LED_OFF;
-+}
- 
--	case led_red_off:
--		saved_leds &= ~RED_LED;
--		update_alpha_leds = 1;
--		break;
-+static void cm_led_set(struct led_classdev *cdev,
-+			      enum led_brightness b)
-+{
-+	if (b != LED_OFF)
-+		cm_control(CM_CTRL_LED, CM_CTRL_LED);
-+	else
-+		cm_control(CM_CTRL_LED, 0);
-+}
- 
--	default:
--		break;
--	}
-+static enum led_brightness cm_led_get(struct led_classdev *cdev)
-+{
-+	u32 reg = readl(CM_CTRL);
- 
--	if (update_alpha_leds) {
--		while (__raw_readl(dbg_base + INTEGRATOR_DBG_ALPHA_OFFSET) & 1);
--		__raw_writel(saved_leds, dbg_base + INTEGRATOR_DBG_LEDS_OFFSET);
--	}
--	local_irq_restore(flags);
-+	return (reg & CM_CTRL_LED) ? LED_FULL : LED_OFF;
+Changes (v2 - v1):
+o Merge [PATCH 1/3] to [PATCH 3/3] of v1.
+o Add more info to patch description.
+
+ arch/mips/pci/pci.c |   61 ++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 53 insertions(+), 8 deletions(-)
+
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 33bba7b..c76fb30 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -76,11 +76,42 @@ pcibios_align_resource(void *data, const struct resource *res,
+ 	return start;
  }
  
--static int __init leds_init(void)
-+static int __init integrator_leds_init(void)
++static struct pci_bus_resource *
++controller_resources(const struct pci_controller *ctrl, int domain, int busno)
++{
++	struct pci_bus_resource *mem_res, *io_res;
++
++	mem_res = kzalloc(sizeof(struct pci_bus_resource), GFP_KERNEL);
++	if (!mem_res)
++		goto err_out;
++
++	mem_res->res = ctrl->mem_resource;
++	mem_res->flags = 0;
++	INIT_LIST_HEAD(&mem_res->list);
++
++	io_res = kzalloc(sizeof(struct pci_bus_resource), GFP_KERNEL);
++	if (!io_res) {
++		kfree(mem_res);
++		goto err_out;
++	}
++
++	io_res->res = ctrl->io_resource;
++	io_res->flags = 0;
++	list_add(&io_res->list, &mem_res->list);
++
++	return mem_res;
++err_out:
++	printk(KERN_ERR "PCI bus %04x:%02x: Can't allocate bus resource.\n",
++		domain, busno);
++	return NULL;
++}
++
+ static void __devinit pcibios_scanbus(struct pci_controller *hose)
  {
--	if (machine_is_integrator() || machine_is_cintegrator())
--		leds_event = integrator_leds_event;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(integrator_leds); i++) {
-+		struct integrator_led *led;
-+
-+		led = kzalloc(sizeof(*led), GFP_KERNEL);
-+		if (!led)
-+			break;
-+
-+
-+		led->cdev.name = integrator_leds[i].name;
-+
-+		if (i == 4) { /* Setting for LED in core module */
-+			led->cdev.brightness_set = cm_led_set;
-+			led->cdev.brightness_get = cm_led_get;
+ 	static int next_busno;
+ 	static int need_domain_info;
+-	struct pci_bus *bus;
++	struct pci_bus *bus = NULL;
++	struct pci_bus_resource *bus_res;
+ 
+ 	if (!hose->iommu)
+ 		PCI_DMA_BUS_IS_PHYS = 1;
+@@ -88,7 +119,22 @@ static void __devinit pcibios_scanbus(struct pci_controller *hose)
+ 	if (hose->get_busno && pci_probe_only)
+ 		next_busno = (*hose->get_busno)();
+ 
+-	bus = pci_scan_bus(next_busno, hose->pci_ops, hose);
++	bus_res = controller_resources(hose, hose->index, next_busno);
++	if (bus_res) {
++		bus = pci_create_bus(NULL, next_busno, hose->pci_ops,
++				     hose, bus_res);
++		if (bus) {
++			bus->subordinate = pci_scan_child_bus(bus);
++			pci_bus_add_devices(bus);
 +		} else {
-+			led->cdev.brightness_set = integrator_led_set;
-+			led->cdev.brightness_get = integrator_led_get;
-+		}
-+
-+		led->cdev.default_trigger = integrator_leds[i].trigger;
-+		led->mask = BIT(i);
-+
-+		if (led_classdev_register(NULL, &led->cdev) < 0) {
-+			kfree(led);
-+			break;
++			/* io_resource */
++			kfree(list_first_entry(&bus_res->list,
++				struct pci_bus_resource, list));
++			/* mem_resource */
++			kfree(bus_res);
 +		}
 +	}
++
+ 	hose->bus = bus;
  
- 	return 0;
- }
+ 	need_domain_info = need_domain_info || hose->index;
+@@ -265,15 +311,14 @@ void __devinit pcibios_fixup_bus(struct pci_bus *bus)
+ {
+ 	/* Propagate hose info into the subordinate devices.  */
  
--core_initcall(leds_init);
-+/*
-+ * Since we may have triggers on any subsystem, defer registration
-+ * until after subsystem_init.
-+ */
-+fs_initcall(integrator_leds_init);
+-	struct pci_controller *hose = bus->sysdata;
+ 	struct list_head *ln;
+ 	struct pci_dev *dev = bus->self;
+ 
+-	if (!dev) {
+-		bus->resource[0] = hose->io_resource;
+-		bus->resource[1] = hose->mem_resource;
+-	} else if (pci_probe_only &&
+-		   (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI) {
++	/*
++	 * Root bus resources should already be set up correctly in
++	 * pci_create_bus(), so don't do fixups for it.
++	 */
++	if (pci_probe_only && (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI) {
+ 		pci_read_bridge_bases(bus);
+ 		pcibios_fixup_device_resources(dev, bus);
+ 	}
 -- 
-1.7.5
+1.7.1
 
