@@ -1,74 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab1HZHkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 03:40:06 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49217 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab1HZHkE (ORCPT
+	id S1752824Ab1HZHw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 03:52:57 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63026 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab1HZHw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 03:40:04 -0400
-Date: Fri, 26 Aug 2011 15:39:48 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Zhao Jin <cronozhj@gmail.com>
-Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slab: trivial: cleanup: remove unneeded return
-Message-ID: <20110826073948.GA29130@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com>
- <CADqbE97+FKz-7op-nmdOVmq3mrXadaxQrtk9Zud90E7iMMEUVQ@mail.gmail.com>
- <4E573F68.1020603@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4E573F68.1020603@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Aug 2011 03:52:56 -0400
+Subject: [RFC][PATCH] power_supply: collie_battery: convert to
+ gpio_request_array() / gpio_free_array()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Kunze <thommycheck@gmx.de>, Igor Grinberg <grinberg@compulab.co.il>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Aug 2011 15:52:48 +0800
+Message-ID: <1314345168.10901.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 02:38:32PM +0800, Zhao Jin wrote:
-> Terribly sorry. It was gmail who wrapped the line.
-> Please see this following version. Thanks!
+As suggested by Igor Grinberg, this change make the implementation looks simpler.
 
-You can use git send-email instead or mail client,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+hi,
+I don't have this hardware handy, I appreciate if someone can test this patch.
 
 Thanks,
-Yong
-> 
-> ---
->  mm/slab.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 6d90a09..82e0a0e 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -3678,13 +3678,12 @@ static inline void __cache_free(struct
-> kmem_cache *cachep, void *objp,
-> 
->      if (likely(ac->avail < ac->limit)) {
->          STATS_INC_FREEHIT(cachep);
-> -        ac->entry[ac->avail++] = objp;
-> -        return;
->      } else {
->          STATS_INC_FREEMISS(cachep);
->          cache_flusharray(cachep, ac);
-> -        ac->entry[ac->avail++] = objp;
->      }
-> +
-> +    ac->entry[ac->avail++] = objp;
->  }
-> 
->  /**
-> -- 
-> 1.7.4.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Axel
 
+ drivers/power/collie_battery.c |   53 ++++++++++------------------------------
+ 1 files changed, 13 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/power/collie_battery.c b/drivers/power/collie_battery.c
+index 548d263..1b4c17b 100644
+--- a/drivers/power/collie_battery.c
++++ b/drivers/power/collie_battery.c
+@@ -277,18 +277,13 @@ static struct collie_bat collie_bat_bu = {
+ 	.adc_temp_divider = -1,
+ };
+ 
+-static struct {
+-	int gpio;
+-	char *name;
+-	bool output;
+-	int value;
+-} gpios[] = {
+-	{ COLLIE_GPIO_CO,		"main battery full",	0, 0 },
+-	{ COLLIE_GPIO_MAIN_BAT_LOW,	"main battery low",	0, 0 },
+-	{ COLLIE_GPIO_CHARGE_ON,	"main charge on",	1, 0 },
+-	{ COLLIE_GPIO_MBAT_ON,		"main battery",		1, 0 },
+-	{ COLLIE_GPIO_TMP_ON,		"main battery temp",	1, 0 },
+-	{ COLLIE_GPIO_BBAT_ON,		"backup battery",	1, 0 },
++static struct gpio collie_batt_gpios[] = {
++	{ COLLIE_GPIO_CO,	    GPIOF_IN,		"main battery full" },
++	{ COLLIE_GPIO_MAIN_BAT_LOW, GPIOF_IN,		"main battery low" },
++	{ COLLIE_GPIO_CHARGE_ON,    GPIOF_OUT_INIT_LOW,	"main charge on" },
++	{ COLLIE_GPIO_MBAT_ON,	    GPIOF_OUT_INIT_LOW,	"main battery" },
++	{ COLLIE_GPIO_TMP_ON,	    GPIOF_OUT_INIT_LOW,	"main battery temp" },
++	{ COLLIE_GPIO_BBAT_ON,	    GPIOF_OUT_INIT_LOW,	"backup battery" },
+ };
+ 
+ #ifdef CONFIG_PM
+@@ -313,29 +308,16 @@ static int collie_bat_resume(struct ucb1x00_dev *dev)
+ static int __devinit collie_bat_probe(struct ucb1x00_dev *dev)
+ {
+ 	int ret;
+-	int i;
+ 
+ 	if (!machine_is_collie())
+ 		return -ENODEV;
+ 
+ 	ucb = dev->ucb;
+ 
+-	for (i = 0; i < ARRAY_SIZE(gpios); i++) {
+-		ret = gpio_request(gpios[i].gpio, gpios[i].name);
+-		if (ret) {
+-			i--;
+-			goto err_gpio;
+-		}
+-
+-		if (gpios[i].output)
+-			ret = gpio_direction_output(gpios[i].gpio,
+-					gpios[i].value);
+-		else
+-			ret = gpio_direction_input(gpios[i].gpio);
+-
+-		if (ret)
+-			goto err_gpio;
+-	}
++	ret = gpio_request_array(collie_batt_gpios,
++				 ARRAY_SIZE(collie_batt_gpios));
++	if (ret)
++		return ret;
+ 
+ 	mutex_init(&collie_bat_main.work_lock);
+ 
+@@ -363,19 +345,12 @@ err_psy_reg_main:
+ 
+ 	/* see comment in collie_bat_remove */
+ 	cancel_work_sync(&bat_work);
+-
+-	i--;
+-err_gpio:
+-	for (; i >= 0; i--)
+-		gpio_free(gpios[i].gpio);
+-
++	gpio_free_array(collie_batt_gpios, ARRAY_SIZE(collie_batt_gpios));
+ 	return ret;
+ }
+ 
+ static void __devexit collie_bat_remove(struct ucb1x00_dev *dev)
+ {
+-	int i;
+-
+ 	free_irq(gpio_to_irq(COLLIE_GPIO_CO), &collie_bat_main);
+ 
+ 	power_supply_unregister(&collie_bat_bu.psy);
+@@ -387,9 +362,7 @@ static void __devexit collie_bat_remove(struct ucb1x00_dev *dev)
+ 	 * unregistered now.
+ 	 */
+ 	cancel_work_sync(&bat_work);
+-
+-	for (i = ARRAY_SIZE(gpios) - 1; i >= 0; i--)
+-		gpio_free(gpios[i].gpio);
++	gpio_free_array(collie_batt_gpios, ARRAY_SIZE(collie_batt_gpios));
+ }
+ 
+ static struct ucb1x00_driver collie_bat_driver = {
 -- 
-Only stand for myself
+1.7.4.1
+
+
+
