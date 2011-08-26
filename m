@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab1HZDrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 23:47:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34821 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243Ab1HZDrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 23:47:14 -0400
-Date: Fri, 26 Aug 2011 13:47:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: linux-next: manual merge of the staging tree with the net tree
-Message-Id: <20110826134705.0d5b6767777f0af2f8667731@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa"
+	id S1752857Ab1HZD4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 23:56:32 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:62999 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab1HZD43 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 23:56:29 -0400
+MIME-Version: 1.0
+Date: Fri, 26 Aug 2011 11:56:28 +0800
+Message-ID: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com>
+Subject: [PATCH] slab: trivial: cleanup: remove unneeded return
+From: Zhao Jin <cronozhj@gmail.com>
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The procedure ends right after the if-statement, so remove ``return'';
+also move the last common statement outside.
 
-Hi Greg,
+Signed-off-by: Zhao Jin <cronozhj@gmail.com>
+---
+ mm/slab.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/rtl8192e/r8192E_core.c between commit afc4b13df143 ("net:
-remove use of ndo_set_multicast_list in drivers") from the net tree and
-commit 09505184ec3d ("staging: rtl8192e: Remove files that are not used")
-from the staging tree.
+diff --git a/mm/slab.c b/mm/slab.c
+index 6d90a09..82e0a0e 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3678,13 +3678,12 @@ static inline void __cache_free(struct
+kmem_cache *cachep, void *objp,
 
-The latter removed the file, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ 	if (likely(ac->avail < ac->limit)) {
+ 		STATS_INC_FREEHIT(cachep);
+-		ac->entry[ac->avail++] = objp;
+-		return;
+ 	} else {
+ 		STATS_INC_FREEMISS(cachep);
+ 		cache_flusharray(cachep, ac);
+-		ac->entry[ac->avail++] = objp;
+ 	}
++
++	ac->entry[ac->avail++] = objp;
+ }
 
---Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOVxc5AAoJEDMEi1NhKgbsAuwIAKLlOw9PbsFF+yT8i5EkmDGM
-fFuIsUUK24VcHtSL7s4tilFHS+W5I/S+hRM6IGo9PhABpsQUf0e3X6VBB5fO29rL
-p6H+0tLIremxIL5X8U7epBYnGr//1iFkiZzv/QNha+l/zgJ73U8LyLJYX+E2hLuq
-+JpSF+W3FINjlXqG13FBbDkaJXUibd4CxqVShgjp0gPb/zuSA/qcWMqlp1h2ht2M
-lH2ukc/MIoc8B/+a1ipMuzFYKyGrOJnnmQXHd+wAc1pKQZyJHNmporwsmy4hasdB
-SrDFU3o9oMi+jFB1apj7l9Ia6sqlgoPsUwgKUytYP9NTm/i7XxiNxErqjnKdwts=
-=XJ47
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa--
+ /**
+-- 
+1.7.4.1
