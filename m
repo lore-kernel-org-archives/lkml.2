@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab1HZQAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:00:15 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16777 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab1HZQAM convert rfc822-to-8bit (ORCPT
+	id S1754771Ab1HZQFb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:05:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38664 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754352Ab1HZQF3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:00:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 26 Aug 2011 08:59:46 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Jamie Iles <jamie@jamieiles.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Fri, 26 Aug 2011 08:59:44 -0700
-Subject: RE: [PATCH v3 11/13] of: add property iteration helpers
-Thread-Topic: [PATCH v3 11/13] of: add property iteration helpers
-Thread-Index: Acxj0kJB+Ap2QeauSLuCKjAfayWsGgANmBMA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A40C8@HQMAIL01.nvidia.com>
-References: <1314315824-9687-1-git-send-email-swarren@nvidia.com>
- <1314315824-9687-12-git-send-email-swarren@nvidia.com>
- <20110826092632.GB3926@pulham.picochip.com>
-In-Reply-To: <20110826092632.GB3926@pulham.picochip.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Aug 2011 12:05:29 -0400
 MIME-Version: 1.0
+In-Reply-To: <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
+References: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com>
+	<CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
+Date: Fri, 26 Aug 2011 19:05:27 +0300
+Message-ID: <CADjiTvBkwusfjdE=PQ5B=MPMxr1bewR6v9qoqq6yMNWjp-BeLQ@mail.gmail.com>
+Subject: Re: [PATCH] Smack: SMACK_IOCLOADACCESS
+From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jamie Iles wrote at Friday, August 26, 2011 3:27 AM:
-> On Thu, Aug 25, 2011 at 05:43:42PM -0600, Stephen Warren wrote:
-> > This patch adds macros for_each_u32_property_value and
-> > for_each_string_property_value, which iterate over an array of values
-> > within a device-tree property. Usage is for example:
-> >
-> > struct of_iter_string_prop iter;
-> > for_each_string_property_value(iter, np, "pins")
-> >         printk("Got value %s\n", iter.value);
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> 
-> Nicely implemented!
+On Fri, Aug 26, 2011 at 3:50 PM, Eric Paris <eparis@parisplace.org> wrote:
+> On Fri, Aug 26, 2011 at 1:52 AM, Jarkko Sakkinen
+> <jarkko.sakkinen@intel.com> wrote:
+>> IOCTL call for /smack/load that takes access rule in
+>> the same format as they are written into /smack/load.
+>> Sets errno to zero if access is allowed and to EACCES
+>> if not.
+>>
+>> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+>
+> [SELinux maintainer here, but Casey knew to already take what I say
+> with a grain of salt]
+>
+> I'm not telling you to do anything differently, just telling you what
+> SELinux does, and why we do it.  SELinux has a file in selinuxfs
+> called 'access.'  The file can be opened and one can write a rule into
+> the file.  One then calls read and gets back a structure which
+> contains all of the permissions information allowed for the
+> source/target/class.  In SELinux we calculate all of the permissions
+> for the tuple at once so providing all of the information at once can
+> make a lot of sense.  libselinux provides libraries that will cache
+> these decisions in the userspace program and quickly answer the same
+> (or similar) questions later.
+>
+> http://userspace.selinuxproject.org/trac/browser/libselinux/src/compute_av.c
 
-Thanks!
+Thank you for this information. One thing that concerns
+me in this approach is the scenario where things serialize
+to the following sequence:
 
-> For the !CONFIG_OF case, I *think* that
-> of_iter_u32_prop and of_iter_string_prop can be empty struct's, but I
-> wouldn't want to bet money on that!
+- Process A does open()
+- Process B does open()
+- Process A does write()
+- Process B does write()
+- Process A does read()
+- ... (sequence continues)
 
-Empty structs themselves certainly did compile OK, but the code that
-uses these macros references iter.value directly, and isn't under #ifdef
-CONFIG_OF, so that field has to exist.
+What's the end result?
 
-I suppose an alternative would be to add an accessor function:
+> Shows the userspace side of out "access" interface.  Your interface is
+> good in that it only takes 1 syscall and ours takes 2.  Your interface
+> is bad in that it is ioctl and we are told since birth that we must
+> hate them no matter what (not that read/write is really any
+> different).  It isn't the same method the only other LSM I know about
+> uses.  It can only every return one value (ok, I know ioctl can be
+> made to do anything at all)
 
-struct of_iter_string_prop iter;
-for_each_string_property_value(iter, np, "pins")
-        printk("Got value %s\n", of_iter_string_value(iter));
+I'm aware of the fact that IOCTLs should be avoided
+but on the other hand in this use case I see it as the
+cleanest possible API that enables clean and simple
+user space support for access control and has least
+risk for any side-effects.
 
-which would return NULL/"" when !CONFIG_OF, and hence allow iter.value
-to be removed too. Do you think that's a good approach? It'd be easy to
-implement.
+>
+> Anyway, just food for thought....
+>
+> -Eric
+>
 
--- 
-nvpublic
-
+/Jarkko
