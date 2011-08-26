@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1HZSpB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:45:01 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:27945 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab1HZSow (ORCPT
+	id S1752207Ab1HZSo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:44:58 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35625 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1HZSow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Aug 2011 14:44:52 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,97 +12,117 @@ To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         JBeulich@novell.com, jeremy@goop.org, ian.campbell@citrix.com,
         joe@perches.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 6/6] xen-swiotlb: When doing coherent alloc/dealloc check before swizzling the MFNs.
-Date: Fri, 26 Aug 2011 14:44:30 -0400
-Message-Id: <1314384270-19850-7-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/6] xen-swiotlb: Retry up three times to allocate Xen-SWIOTLB
+Date: Fri, 26 Aug 2011 14:44:26 -0400
+Message-Id: <1314384270-19850-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314384270-19850-1-git-send-email-konrad.wilk@oracle.com>
 References: <1314384270-19850-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020202.4E57E99D.015F:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-CT-RefId: str=0001.0A090207.4E57E99E.0099:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The process to swizzle a Machine Frame Number (MFN) is not always
-necessary. Especially if we know that we actually do not have to do it.
-In this patch we check the MFN against the device's coherent
-DMA mask and if the requested page(s) are contingous. If it all checks
-out we will just return the bus addr without doing the memory
-swizzle.
+We can fail seting up Xen-SWIOTLB if:
+ - The host does not have enough contiguous DMA32 memory available
+   (can happen on a machine that has fragmented memory from starting,
+   stopping many guests).
+ - Not enough low memory (almost never happens).
+
+We retry allocating and exchanging the swath of contiguous memory
+up to three times. Each time we decrease the amount we need  - the
+minimum being of 2MB.
+
+If we compleltly fail, we will print the reason for failure on the Xen
+console on top of doing it to earlyprintk=xen console.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/swiotlb-xen.c |   28 ++++++++++++++++++++++++----
- 1 files changed, 24 insertions(+), 4 deletions(-)
+ drivers/xen/swiotlb-xen.c |   35 +++++++++++++++++++++++++----------
+ 1 files changed, 25 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 0408f32..c984768 100644
+index 6e8c15a..d45cbac 100644
 --- a/drivers/xen/swiotlb-xen.c
 +++ b/drivers/xen/swiotlb-xen.c
-@@ -209,6 +209,8 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	int order = get_order(size);
- 	u64 dma_mask = DMA_BIT_MASK(32);
- 	unsigned long vstart;
-+	phys_addr_t phys;
-+	dma_addr_t dev_addr;
+@@ -38,6 +38,7 @@
+ #include <xen/swiotlb-xen.h>
+ #include <xen/page.h>
+ #include <xen/xen-ops.h>
++#include <xen/hvc-console.h>
+ /*
+  * Used to do a quick range check in swiotlb_tbl_unmap_single and
+  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+@@ -146,8 +147,10 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ void __init xen_swiotlb_init(int verbose)
+ {
+ 	unsigned long bytes;
+-	int rc;
++	int rc = -ENOMEM;
+ 	unsigned long nr_tbl;
++	char *m = NULL;
++	unsigned int repeat = 3;
+ 
+ 	nr_tbl = swioltb_nr_tbl();
+ 	if (nr_tbl)
+@@ -156,16 +159,17 @@ void __init xen_swiotlb_init(int verbose)
+ 		xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
+ 		xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
+ 	}
+-
++retry:
+ 	bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
  
  	/*
- 	* Ignore region specifiers - the kernel's ideas of
-@@ -224,18 +226,26 @@ xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	vstart = __get_free_pages(flags, order);
- 	ret = (void *)vstart;
+ 	 * Get IO TLB memory from any location.
+ 	 */
+ 	xen_io_tlb_start = alloc_bootmem(bytes);
+-	if (!xen_io_tlb_start)
+-		panic("Cannot allocate SWIOTLB buffer");
+-
++	if (!xen_io_tlb_start) {
++		m = "Cannot allocate Xen-SWIOTLB buffer!\n";
++		goto error;
++	}
+ 	xen_io_tlb_end = xen_io_tlb_start + bytes;
+ 	/*
+ 	 * And replace that memory with pages under 4GB.
+@@ -173,17 +177,28 @@ void __init xen_swiotlb_init(int verbose)
+ 	rc = xen_swiotlb_fixup(xen_io_tlb_start,
+ 			       bytes,
+ 			       xen_io_tlb_nslabs);
+-	if (rc)
++	if (rc) {
++		free_bootmem(__pa(xen_io_tlb_start), bytes);
++		m = "Failed to get contiguous memory for DMA from Xen!\n"\
++		    "You either: don't have the permissions, do not have"\
++		    " enough free memory under 4GB, or the hypervisor memory"\
++		    "is too fragmented!";
+ 		goto error;
+-
++	}
+ 	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
+ 	swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
  
-+	if (!ret)
-+		return ret;
-+
- 	if (hwdev && hwdev->coherent_dma_mask)
--		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
-+		dma_mask = hwdev->coherent_dma_mask;
- 
--	if (ret) {
-+	phys = virt_to_phys(ret);
-+	dev_addr = xen_phys_to_bus(phys);
-+	if (((dev_addr + size - 1 <= dma_mask)) &&
-+	    !range_straddles_page_boundary(phys, size))
-+		*dma_handle = dev_addr;
-+	else {
- 		if (xen_create_contiguous_region(vstart, order,
- 						 fls64(dma_mask)) != 0) {
- 			free_pages(vstart, order);
- 			return NULL;
- 		}
--		memset(ret, 0, size);
- 		*dma_handle = virt_to_machine(ret).maddr;
- 	}
-+	memset(ret, 0, size);
- 	return ret;
+ 	return;
+ error:
+-	panic("DMA(%d): Failed to exchange pages allocated for DMA with Xen! "\
+-	      "We either don't have the permission or you do not have enough"\
+-	      "free memory under 4GB!\n", rc);
++	if (repeat--) {
++		xen_io_tlb_nslabs = max(1024UL, /* Min is 2MB */
++					(xen_io_tlb_nslabs >> 1));
++		printk(KERN_INFO "Xen-SWIOTLB: Lowering to %luMB\n",
++		      (xen_io_tlb_nslabs << IO_TLB_SHIFT) >> 20);
++		goto retry;
++	}
++	xen_raw_printk("%s (rc:%d)", rc, m);
++	panic("%s (rc:%d)", rc, m);
  }
- EXPORT_SYMBOL_GPL(xen_swiotlb_alloc_coherent);
-@@ -245,11 +255,21 @@ xen_swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
- 			  dma_addr_t dev_addr)
- {
- 	int order = get_order(size);
-+	phys_addr_t phys;
-+	u64 dma_mask = DMA_BIT_MASK(32);
  
- 	if (dma_release_from_coherent(hwdev, order, vaddr))
- 		return;
- 
--	xen_destroy_contiguous_region((unsigned long)vaddr, order);
-+	if (hwdev && hwdev->coherent_dma_mask)
-+		dma_mask = hwdev->coherent_dma_mask;
-+
-+	phys = virt_to_phys(vaddr);
-+
-+	if (((dev_addr + size - 1 > dma_mask)) ||
-+	    range_straddles_page_boundary(phys, size))
-+		xen_destroy_contiguous_region((unsigned long)vaddr, order);
-+
- 	free_pages((unsigned long)vaddr, order);
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_free_coherent);
+ void *
 -- 
 1.7.4.1
 
