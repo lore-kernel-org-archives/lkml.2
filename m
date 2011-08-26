@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab1HZCyk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 22:54:40 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:43465 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750893Ab1HZCyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 22:54:37 -0400
-Message-ID: <4E570AEB.1040703@profihost.ag>
-Date: Fri, 26 Aug 2011 04:54:35 +0200
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Linux Netdev List <netdev@vger.kernel.org>
-Subject: Re: slow performance on disk/network i/o full speed after drop_caches
-References: <4E5494D4.1050605@profihost.ag> <CAOJsxLEFYW0eDbXQ0Uixf-FjsxHZ_1nmnovNx1CWj=m-c-_vJw@mail.gmail.com> <4E54BDCF.9020504@profihost.ag> <20110824093336.GB5214@localhost> <4E560F2A.1030801@profihost.ag> <20110826021648.GA19529@localhost>
-In-Reply-To: <20110826021648.GA19529@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by s.priebe@profihost.ag through 85.158.179.66
+	id S1751973Ab1HZCyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 22:54:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40411 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781Ab1HZCyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 22:54:51 -0400
+Date: Fri, 26 Aug 2011 12:54:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the xen tree with the tip tree
+Message-Id: <20110826125441.709aa423cdf072ce085fb91c@canb.auug.org.au>
+In-Reply-To: <4E56D6E1.6030405@zytor.com>
+References: <20110825142450.c84e02d8763cfd1a93411844@canb.auug.org.au>
+	<4E5690C3.2050706@goop.org>
+	<4E5693DD.2010307@zytor.com>
+	<20110826090619.7588d424798f53a6f3621eb2@canb.auug.org.au>
+	<4E56D6E1.6030405@zytor.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__26_Aug_2011_12_54_41_+1000_gxlZbU7HGmsiOdR7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wu,
+--Signature=_Fri__26_Aug_2011_12_54_41_+1000_gxlZbU7HGmsiOdR7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Ah you are running an older kernel that didn't show all the vmstat
-> numbers. But still it's revealing that node 0 is used heavily and node
-> 1 is almost idle. So I won't be surprised to see most free pages lie
-> in node 1.
-I'm running a 2.6.38 kernel.
-
-There is at least a numastat proc file.
-grep . /sys/devices/system/node/node*/numastat
-/sys/devices/system/node/node0/numastat:numa_hit 5958586
-/sys/devices/system/node/node0/numastat:numa_miss 0
-/sys/devices/system/node/node0/numastat:numa_foreign 0
-/sys/devices/system/node/node0/numastat:interleave_hit 4191
-/sys/devices/system/node/node0/numastat:local_node 5885189
-/sys/devices/system/node/node0/numastat:other_node 73397
-/sys/devices/system/node/node1/numastat:numa_hit 488922
-/sys/devices/system/node/node1/numastat:numa_miss 0
-/sys/devices/system/node/node1/numastat:numa_foreign 0
-/sys/devices/system/node/node1/numastat:interleave_hit 4187
-/sys/devices/system/node/node1/numastat:local_node 386741
-/sys/devices/system/node/node1/numastat:other_node 102181
-
->> modified it a little bit:
->> ~# while [ true ]; do ps -eo
->> user,pid,tid,class,rtprio,ni,pri,psr,pcpu,vsz,rss,pmem,stat,wchan:28,cmd
->> | grep scp | grep -v grep; sleep 1; done
->>
->> root     12409 12409 TS       -   0  19   0 59.8  42136  1724  0.0 Ss
->> poll_schedule_timeout        scp -t /tmp/
+On Thu, 25 Aug 2011 16:12:33 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
 >
-> It's mostly doing poll() waits. There must be some dependency on
-> something other to make progress. Would you post the full ps output
-> for all tasks, and even better, run
-complete ps output:
-http://pastebin.com/raw.php?i=b948svzN
+> On 08/25/2011 04:06 PM, Stephen Rothwell wrote:
+> >>
+> >> Stephen: the x86/spinlocks branch in the -tip tree is obsolete and
+> >> should be dropped.
+> >=20
+> > That's a bit tricky as I get a rolled up tip tree.  The best I could do
+> > is revert the commit that merges the x86/spinlocks branch into
+> > auto-latest ...  I'll do that for today (unless something happens to the
+> > tip tree in the next hour).
+> >=20
+>=20
+> OK, let me bother Ingo about it.
 
->          echo t>  /proc/sysrq-trigger
-sadly i wa sonly able to grab the output in this crazy format:
-http://pastebin.com/raw.php?i=MBXvvyH1
+For today, I have done "git revert -m 1 6f8fa39c81f1" after merging the
+tip tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Hope that still helps.
+--Signature=_Fri__26_Aug_2011_12_54_41_+1000_gxlZbU7HGmsiOdR7
+Content-Type: application/pgp-signature
 
-Thanks Stefan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOVwrxAAoJEDMEi1NhKgbs6AkH/i5uzk7RBPrZIoXF27pejwyV
+TcE7wtD9aHph9o9F7CCxAz/w6EIU8yt7UovP45yfAmvw9Cgm6efh+dJas0ald9nk
+6upkzZ1ewtzI8y0wLVVzowIlmUQnPrtDdcSym5cUnBB2SiMEu2ukvmz/lcJbpBPs
+cQvx9zoe1JeLVAiwYrX3/eCTHvfjkgBAxQ43G8Jf7fRLUe4S6zBLw1sO0/M1Qw3A
+j0SERu8kwGhLBagn9Z1ZqJAKHjzz6bQKrX9TfAir81H7vmVmtSoxdEw/I9ff+90K
+HE1RGLDMZwfG4sPxBVEEwa2r4Wh/hTGnljdOAsoyLZbQGrnDS177MVczUt3Sc5I=
+=66HE
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Aug_2011_12_54_41_+1000_gxlZbU7HGmsiOdR7--
