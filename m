@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab1H0O7k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:59:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47200 "EHLO mx2.suse.de"
+	id S932147Ab1H0O7h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:59:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47192 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932131Ab1H0O7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:59:34 -0400
+	id S932119Ab1H0O7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:59:31 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:56 2011
-Message-Id: <20110826215056.193751256@clark.kroah.org>
+Message-Id: <20110826215056.094514615@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:49 -0700
+Date: Fri, 26 Aug 2011 14:49:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [32/35] rt2x00: fix order of entry flags modification
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [31/35] fuse: check size of FUSE_NOTIFY_INVAL_ENTRY message
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit df71c9cfceea801e7e26e2c74241758ef9c042e5 upstream.
+commit c2183d1e9b3f313dd8ba2b1b0197c8d9fb86a7ae upstream.
 
-In rt2800usb_work_txdone we check flags in order:
+FUSE_NOTIFY_INVAL_ENTRY didn't check the length of the write so the
+message processing could overrun and result in a "kernel BUG at
+fs/fuse/dev.c:629!"
 
-- ENTRY_OWNER_DEVICE_DATA
-- ENTRY_DATA_STATUS_PENDING
-- ENTRY_DATA_IO_FAILED
-
-Modify flags in separate order in rt2x00usb_interrupt_txdone, to avoid
-processing entries in _txdone with wrong flags or skip processing
-ready entries.
-
-Reported-by: Justin Piszcz <jpiszcz@lucidpixels.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Han-Wen Nienhuys <hanwenn@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00usb.c |   17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+ fs/fuse/dev.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2x00usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
-@@ -262,23 +262,20 @@ static void rt2x00usb_interrupt_txdone(s
- 	struct queue_entry *entry = (struct queue_entry *)urb->context;
- 	struct rt2x00_dev *rt2x00dev = entry->queue->rt2x00dev;
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1358,6 +1358,10 @@ static int fuse_notify_inval_entry(struc
+ 	if (outarg.namelen > FUSE_NAME_MAX)
+ 		goto err;
  
--	if (!test_and_clear_bit(ENTRY_OWNER_DEVICE_DATA, &entry->flags))
-+	if (!test_bit(ENTRY_OWNER_DEVICE_DATA, &entry->flags))
- 		return;
--
--	if (rt2x00dev->ops->lib->tx_dma_done)
--		rt2x00dev->ops->lib->tx_dma_done(entry);
--
--	/*
--	 * Report the frame as DMA done
--	 */
--	rt2x00lib_dmadone(entry);
--
- 	/*
- 	 * Check if the frame was correctly uploaded
- 	 */
- 	if (urb->status)
- 		set_bit(ENTRY_DATA_IO_FAILED, &entry->flags);
-+	/*
-+	 * Report the frame as DMA done
-+	 */
-+	rt2x00lib_dmadone(entry);
- 
-+	if (rt2x00dev->ops->lib->tx_dma_done)
-+		rt2x00dev->ops->lib->tx_dma_done(entry);
- 	/*
- 	 * Schedule the delayed work for reading the TX status
- 	 * from the device.
++	err = -EINVAL;
++	if (size != sizeof(outarg) + outarg.namelen + 1)
++		goto err;
++
+ 	name.name = buf;
+ 	name.len = outarg.namelen;
+ 	err = fuse_copy_one(cs, buf, outarg.namelen + 1);
 
 
