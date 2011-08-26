@@ -1,133 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab1HZW2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 18:28:43 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:58860 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751433Ab1HZW2l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 18:28:41 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Date: Fri, 26 Aug 2011 15:27:51 -0700
-Subject: [PATCH] power: max8925.  remove support for irq bits that do not
- exist
-Thread-Topic: [PATCH] power: max8925.  remove support for irq bits that do
- not exist
-Thread-Index: AcxkP14p+ITaRfh9SgKAC8Wiyw3sDQ==
-Message-ID: <86216CAF-2B76-4C5E-8077-68D535FEDBB9@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753310Ab1HZWcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 18:32:14 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58342 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752109Ab1HZWcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 18:32:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,286,1312182000"; 
+   d="scan'208";a="42896290"
+From: Andi Kleen <andi@firstfloor.org>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/3] tick-broadcast: push down tick_broadcast_lock
+Date: Fri, 26 Aug 2011 15:32:04 -0700
+Message-Id: <1314397924-10236-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1314397924-10236-1-git-send-email-andi@firstfloor.org>
+References: <1314397924-10236-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andi Kleen <ak@linux.intel.com>
 
-The max8925 cannot return usb status.  The bits
--       [MAX8925_IRQ_VCHG_USB_OVP] = {
--               .reg            = MAX8925_CHG_IRQ1,
--               .mask_reg       = MAX8925_CHG_IRQ1_MASK,
--               .offs           = 1 << 3,
--       },
--       [MAX8925_IRQ_VCHG_USB_F] =  {
--               .reg            = MAX8925_CHG_IRQ1,
--               .mask_reg       = MAX8925_CHG_IRQ1_MASK,
--               .offs           = 1 << 4,
--       },
--       [MAX8925_IRQ_VCHG_USB_R] = {
--               .reg            = MAX8925_CHG_IRQ1,
--               .mask_reg       = MAX8925_CHG_IRQ1_MASK,
--               .offs           = 1 << 5,
--       },
+For the oneshot case, only take the tick_broadcast_lock when the
+global device is actually changing. For the case when the new
+event is only setting the wakeup to a later time than it already
+is we don't need the lock.
 
-do not exist in the irq register.
+This avoids lock contention for some special cases on systems
+that don't have an always running per cpu timer. It's not a full
+solution to the scalability problem there unfortunately, just
+the first step.
 
-Signed-off-by: Philip Rakity <prakity@marvell.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/mfd/max8925-core.c    |   15 ---------------
- drivers/power/max8925_power.c |   13 -------------
- include/linux/mfd/max8925.h   |    3 ---
- 3 files changed, 0 insertions(+), 31 deletions(-)
+ kernel/time/tick-broadcast.c |   18 ++++++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
-index e1e59c9..ca881ef 100644
---- a/drivers/mfd/max8925-core.c
-+++ b/drivers/mfd/max8925-core.c
-@@ -210,21 +210,6 @@ static struct max8925_irq_data max8925_irqs[] = {
- 		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
- 		.offs		= 1 << 2,
- 	},
--	[MAX8925_IRQ_VCHG_USB_OVP] = {
--		.reg		= MAX8925_CHG_IRQ1,
--		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
--		.offs		= 1 << 3,
--	},
--	[MAX8925_IRQ_VCHG_USB_F] =  {
--		.reg		= MAX8925_CHG_IRQ1,
--		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
--		.offs		= 1 << 4,
--	},
--	[MAX8925_IRQ_VCHG_USB_R] = {
--		.reg		= MAX8925_CHG_IRQ1,
--		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
--		.offs		= 1 << 5,
--	},
- 	[MAX8925_IRQ_VCHG_THM_OK_R] = {
- 		.reg		= MAX8925_CHG_IRQ2,
- 		.mask_reg	= MAX8925_CHG_IRQ2_MASK,
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index 5e4e046..377d1e6 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -120,16 +120,6 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
- 		__set_charger(info, 0);
- 		dev_dbg(chip->dev, "Adapter removed\n");
- 		break;
--	case MAX8925_IRQ_VCHG_USB_R:
--		info->usb_online = 1;
--		__set_charger(info, 1);
--		dev_dbg(chip->dev, "USB inserted\n");
--		break;
--	case MAX8925_IRQ_VCHG_USB_F:
--		info->usb_online = 0;
--		__set_charger(info, 0);
--		dev_dbg(chip->dev, "USB removed\n");
--		break;
- 	case MAX8925_IRQ_VCHG_THM_OK_F:
- 		/* Battery is not ready yet */
- 		dev_dbg(chip->dev, "Battery temperature is out of range\n");
-@@ -370,9 +360,6 @@ static __devinit int max8925_init_charger(struct max8925_chip *chip,
- 		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_F, "ac-remove");
- 		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_R, "ac-insert");
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 7f33b15..1576da7 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -485,23 +485,33 @@ void tick_broadcast_oneshot_control(unsigned long reason)
+ 
+ 	bc = tick_broadcast_device.evtdev;
+ 
+-	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
+ 		if (!__get_cpu_var(state).need_oneshot) {
+ 			__get_cpu_var(state).need_oneshot = 1;
+ 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+-			if (dev->next_event.tv64 < bc->next_event.tv64)
++		       
++			/* Only take the lock if the events gets set earlier */
++			if (dev->next_event.tv64 < bc->next_event.tv64) {
++				raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 				tick_broadcast_set_event(dev->next_event, 1);
++				raw_spin_unlock_irqrestore(&tick_broadcast_lock, 
++							   flags);		
++			}
+ 		}
+ 	} else {
+ 		if (__get_cpu_var(state).need_oneshot) {
+ 			__get_cpu_var(state).need_oneshot = 0;
+ 			clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
+-			if (dev->next_event.tv64 != KTIME_MAX)
++
++			/* Only take the lock if the event changes */
++			if (dev->next_event.tv64 != KTIME_MAX) {
++				raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 				tick_program_event(dev->next_event, 1);
++				raw_spin_unlock_irqrestore(&tick_broadcast_lock, 
++							   flags);
++			}
+ 		}
  	}
--	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_OVP, "usb-ovp");
--	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_F, "usb-remove");
--	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_R, "usb-insert");
- 	if (!info->no_temp_support) {
- 		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
- 		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
-diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
-index 008f807..b8e6d94 100644
---- a/include/linux/mfd/max8925.h
-+++ b/include/linux/mfd/max8925.h
-@@ -167,9 +167,6 @@ enum {
- 	MAX8925_IRQ_VCHG_DC_OVP,
- 	MAX8925_IRQ_VCHG_DC_F,
- 	MAX8925_IRQ_VCHG_DC_R,
--	MAX8925_IRQ_VCHG_USB_OVP,
--	MAX8925_IRQ_VCHG_USB_F,
--	MAX8925_IRQ_VCHG_USB_R,
- 	MAX8925_IRQ_VCHG_THM_OK_R,
- 	MAX8925_IRQ_VCHG_THM_OK_F,
- 	MAX8925_IRQ_VCHG_SYSLOW_F,
+-	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
+ 
+ /*
 -- 
-1.7.6
-
+1.7.4.4
 
