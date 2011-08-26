@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619Ab1HZHfK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 03:35:10 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:32122 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704Ab1HZHfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 03:35:08 -0400
-Message-ID: <4E574CA5.4010701@openvz.org>
-Date: Fri, 26 Aug 2011 11:35:01 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110702 Iceape/2.0.14
+	id S1752307Ab1HZHkG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 03:40:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49217 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab1HZHkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 03:40:04 -0400
+Date: Fri, 26 Aug 2011 15:39:48 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Zhao Jin <cronozhj@gmail.com>
+Cc: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slab: trivial: cleanup: remove unneeded return
+Message-ID: <20110826073948.GA29130@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com>
+ <CADqbE97+FKz-7op-nmdOVmq3mrXadaxQrtk9Zud90E7iMMEUVQ@mail.gmail.com>
+ <4E573F68.1020603@gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Michal Hocko <mhocko@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] oom: skip frozen tasks
-References: <20110823073101.6426.77745.stgit@zurg> <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4E573F68.1020603@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Rientjes wrote:
-> On Thu, 25 Aug 2011, Michal Hocko wrote:
->
->>>>> That's obviously false since we call oom_killer_disable() in
->>>>> freeze_processes() to disable the oom killer from ever being called in the
->>>>> first place, so this is something you need to resolve with Rafael before
->>>>> you cause more machines to panic.
->>>>
->>>> I didn't mean suspend/resume path (that is protected by oom_killer_disabled)
->>>> so the patch doesn't make any change.
->>>
->>> Confused... freeze_processes() does try_to_freeze_tasks() before
->>> oom_killer_disable() ?
->>
->> Yes you are right, I must have been blind.
->>
->> Now I see the point. We do not want to panic while we are suspending and
->> the memory is really low just because all the userspace is already in
->> the the fridge.
->> Sorry for confusion.
->>
->> I still do not follow the oom_killer_disable note from David, though.
->>
->
-> oom_killer_disable() was added to that path for a reason when all threads
-> are frozen: memory allocations still occur in the suspend path in an oom
-> condition and adding the oom_killer_disable() will cause those
-> allocations to fail rather than sending pointless SIGKILLs to frozen
-> threads.
->
-> Now consider if the only _eligible_ threads for oom kill (because of
-> cpusets or mempolicies) are those that are frozen.  We certainly do not
-> want to panic because other cpusets are still getting work done.  We'd
-> either want to add a mem to the cpuset or thaw the processes because the
-> cpuset is oom.
->
-> You can't just selectively skip certain threads when their state can be
-> temporary without risking a panic.  That's why this patch is a
-> non-starter.
->
-> A much better solution would be to lower the badness score that the oom
-> killer uses for PF_FROZEN threads so that they aren't considered a
-> priority for kill unless there's nothing else left to kill.
+On Fri, Aug 26, 2011 at 02:38:32PM +0800, Zhao Jin wrote:
+> Terribly sorry. It was gmail who wrapped the line.
+> Please see this following version. Thanks!
 
-Anyway, oom killer shouldn't loop endlessly if it see TIF_MEMDIE on frozen task,
-it must go on and try to kill somebody else. We cannot wait for thawing this task.
+You can use git send-email instead or mail client,
+
+Thanks,
+Yong
+> 
+> ---
+>  mm/slab.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 6d90a09..82e0a0e 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -3678,13 +3678,12 @@ static inline void __cache_free(struct
+> kmem_cache *cachep, void *objp,
+> 
+>      if (likely(ac->avail < ac->limit)) {
+>          STATS_INC_FREEHIT(cachep);
+> -        ac->entry[ac->avail++] = objp;
+> -        return;
+>      } else {
+>          STATS_INC_FREEMISS(cachep);
+>          cache_flusharray(cachep, ac);
+> -        ac->entry[ac->avail++] = objp;
+>      }
+> +
+> +    ac->entry[ac->avail++] = objp;
+>  }
+> 
+>  /**
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Only stand for myself
