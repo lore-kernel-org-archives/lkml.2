@@ -1,191 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab1HZWc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 18:32:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49374 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752014Ab1HZWc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 18:32:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="42375421"
-From: Andi Kleen <andi@firstfloor.org>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, tim.c.chen@linux.intel.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/3] broadcast-tick: Move oneshot broadcast mask to per cpu variables
-Date: Fri, 26 Aug 2011 15:32:03 -0700
-Message-Id: <1314397924-10236-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1314397924-10236-1-git-send-email-andi@firstfloor.org>
-References: <1314397924-10236-1-git-send-email-andi@firstfloor.org>
+	id S1752469Ab1HZWfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 18:35:38 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43459 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751194Ab1HZWfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 18:35:36 -0400
+X-Sasl-enc: Ut8IWdEPjKdAVU2VXX23CkRgsvQM+0TQTGHK4i8OU850 1314398136
+Date: Fri, 26 Aug 2011 15:35:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
+Message-ID: <20110826223519.GA22607@kroah.com>
+References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
+ <20110826214329.GA6325@kroah.com>
+ <20110826222544.GV25996@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826222544.GV25996@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Sat, Aug 27, 2011 at 12:25:44AM +0200, Andi Kleen wrote:
+> > > wget ftp://ftp.kernel.org/pub/linux/kernel/people/ak/uname26/uname26.c
+> > > gcc -o uname26 uname26.c
+> > > ./uname26 program
+> > 
+> > I hate to ask, but can you put a proper copyright and license on this
+> > file so that distros can distribute it?
+> 
+> I assumed it's too trivial for that.
 
-Avoid a global cache line hotspot in the oneshot cpu mask. Maintain
-this information in per cpu variables instead.
+Lawyers never assume that :)
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/linux/tick.h         |    2 +-
- kernel/time/tick-broadcast.c |   40 ++++++++++++++++++++++++----------------
- kernel/time/timer_list.c     |   11 +++++++++--
- 3 files changed, 34 insertions(+), 19 deletions(-)
+> Anyways I put a GPL license on it now.
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b232ccc..3df6e2e 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -90,7 +90,7 @@ extern struct tick_device *tick_get_broadcast_device(void);
- extern struct cpumask *tick_get_broadcast_mask(void);
- 
- #  ifdef CONFIG_TICK_ONESHOT
--extern struct cpumask *tick_get_broadcast_oneshot_mask(void);
-+extern void tick_get_broadcast_oneshot_mask(struct cpumask *);
- #  endif
- 
- # endif /* BROADCAST */
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index c7218d1..7f33b15 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -358,15 +358,22 @@ int tick_resume_broadcast(void)
- 
- #ifdef CONFIG_TICK_ONESHOT
- 
--/* FIXME: use cpumask_var_t. */
--static DECLARE_BITMAP(tick_broadcast_oneshot_mask, NR_CPUS);
-+struct broadcast_cpu_state {
-+	int need_oneshot;
-+} ____cacheline_aligned;
-+static DEFINE_PER_CPU(struct broadcast_cpu_state, state);
- 
- /*
-  * Exposed for debugging: see timer_list.c
-  */
--struct cpumask *tick_get_broadcast_oneshot_mask(void)
-+void tick_get_broadcast_oneshot_mask(struct cpumask *mask)
- {
--	return to_cpumask(tick_broadcast_oneshot_mask);
-+	int i;
-+
-+	for_each_online_cpu (i) {
-+		if (per_cpu(state, i).need_oneshot)
-+			cpumask_set_cpu(i, mask);
-+	}
- }
- 
- static int tick_broadcast_set_event(ktime_t expires, int force)
-@@ -388,7 +395,7 @@ int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
-  */
- void tick_check_oneshot_broadcast(int cpu)
- {
--	if (cpumask_test_cpu(cpu, to_cpumask(tick_broadcast_oneshot_mask))) {
-+	if (per_cpu(state, cpu).need_oneshot) {
- 		struct tick_device *td = &per_cpu(tick_cpu_device, cpu);
- 
- 		clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
-@@ -411,7 +418,9 @@ again:
- 	cpumask_clear(to_cpumask(tmpmask));
- 	now = ktime_get();
- 	/* Find all expired events */
--	for_each_cpu(cpu, tick_get_broadcast_oneshot_mask()) {
-+	for_each_online_cpu(cpu) {
-+		if (!per_cpu(state, cpu).need_oneshot)
-+			continue;
- 		td = &per_cpu(tick_cpu_device, cpu);
- 		if (td->evtdev->next_event.tv64 <= now.tv64)
- 			cpumask_set_cpu(cpu, to_cpumask(tmpmask));
-@@ -478,16 +487,15 @@ void tick_broadcast_oneshot_control(unsigned long reason)
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
- 	if (reason == CLOCK_EVT_NOTIFY_BROADCAST_ENTER) {
--		if (!cpumask_test_cpu(cpu, tick_get_broadcast_oneshot_mask())) {
--			cpumask_set_cpu(cpu, tick_get_broadcast_oneshot_mask());
-+		if (!__get_cpu_var(state).need_oneshot) {
-+			__get_cpu_var(state).need_oneshot = 1;
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
- 			if (dev->next_event.tv64 < bc->next_event.tv64)
- 				tick_broadcast_set_event(dev->next_event, 1);
- 		}
- 	} else {
--		if (cpumask_test_cpu(cpu, tick_get_broadcast_oneshot_mask())) {
--			cpumask_clear_cpu(cpu,
--					  tick_get_broadcast_oneshot_mask());
-+		if (__get_cpu_var(state).need_oneshot) {
-+			__get_cpu_var(state).need_oneshot = 0;
- 			clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
- 			if (dev->next_event.tv64 != KTIME_MAX)
- 				tick_program_event(dev->next_event, 1);
-@@ -503,7 +511,7 @@ void tick_broadcast_oneshot_control(unsigned long reason)
-  */
- static void tick_broadcast_clear_oneshot(int cpu)
- {
--	cpumask_clear_cpu(cpu, tick_get_broadcast_oneshot_mask());
-+	per_cpu(state, cpu).need_oneshot = 0;
- }
- 
- static void tick_broadcast_init_next_event(struct cpumask *mask,
-@@ -529,6 +537,7 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- 	/* Set it up only once ! */
- 	if (bc->event_handler != tick_handle_oneshot_broadcast) {
- 		int was_periodic = bc->mode == CLOCK_EVT_MODE_PERIODIC;
-+		int i;
- 
- 		bc->event_handler = tick_handle_oneshot_broadcast;
- 		clockevents_set_mode(bc, CLOCK_EVT_MODE_ONESHOT);
-@@ -544,9 +553,8 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- 		 */
- 		cpumask_copy(to_cpumask(tmpmask), tick_get_broadcast_mask());
- 		cpumask_clear_cpu(cpu, to_cpumask(tmpmask));
--		cpumask_or(tick_get_broadcast_oneshot_mask(),
--			   tick_get_broadcast_oneshot_mask(),
--			   to_cpumask(tmpmask));
-+		for_each_cpu (i, to_cpumask(tmpmask))
-+			per_cpu(state, i).need_oneshot = 1;
- 
- 		if (was_periodic && !cpumask_empty(to_cpumask(tmpmask))) {
- 			tick_broadcast_init_next_event(to_cpumask(tmpmask),
-@@ -598,7 +606,7 @@ void tick_shutdown_broadcast_oneshot(unsigned int *cpup)
- 	 * Clear the broadcast mask flag for the dead cpu, but do not
- 	 * stop the broadcast device!
- 	 */
--	cpumask_clear_cpu(cpu, tick_get_broadcast_oneshot_mask());
-+	per_cpu(state, cpu).need_oneshot = 0;
- 
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
- }
-diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-index 3258455..28964ed 100644
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -235,14 +235,21 @@ print_tickdevice(struct seq_file *m, struct tick_device *td, int cpu)
- static void timer_list_show_tickdevices(struct seq_file *m)
- {
- 	int cpu;
-+#ifdef CONFIG_TICK_ONESHOT
-+	cpumask_var_t mask;
-+#endif
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- 	print_tickdevice(m, tick_get_broadcast_device(), -1);
- 	SEQ_printf(m, "tick_broadcast_mask: %08lx\n",
- 		   cpumask_bits(tick_get_broadcast_mask())[0]);
- #ifdef CONFIG_TICK_ONESHOT
--	SEQ_printf(m, "tick_broadcast_oneshot_mask: %08lx\n",
--		   cpumask_bits(tick_get_broadcast_oneshot_mask())[0]);
-+	if (zalloc_cpumask_var(&mask, GFP_KERNEL) == 0) {
-+		tick_get_broadcast_oneshot_mask(mask);
-+		SEQ_printf(m, "tick_broadcast_oneshot_mask: %08lx\n",
-+			   cpumask_bits(mask)[0]);
-+		free_cpumask_var(mask);
-+	}
- #endif
- 	SEQ_printf(m, "\n");
- #endif
--- 
-1.7.4.4
+Thanks, much appreciated.
 
+greg k-h
