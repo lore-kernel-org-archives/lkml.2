@@ -1,39 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab1HZQMC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:12:02 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:32315 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724Ab1HZQMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:12:00 -0400
-Date: Fri, 26 Aug 2011 12:11:28 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: jeremy@goop.org, xen-devel@lists.xensource.com, ian.campbell@citrix.com,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, JBeulich@novell.com,
-        stable@kernel.org
-Subject: Re: [Xen-devel] Re: [PATCH 1/5] xen-pcifront: Update warning comment
- to use 'e820_host' option.
-Message-ID: <20110826161127.GA29706@dumpdata.com>
-References: <1314225096-4861-1-git-send-email-konrad.wilk@oracle.com>
- <1314225096-4861-2-git-send-email-konrad.wilk@oracle.com>
- <1314225693.15882.13.camel@Joe-Laptop>
+	id S1754829Ab1HZQOZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:14:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30233 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754352Ab1HZQOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 12:14:24 -0400
+Date: Fri, 26 Aug 2011 12:14:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org
+Subject: VM: add would_have_oomkilled sysctl
+Message-ID: <20110826161422.GB30573@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314225693.15882.13.camel@Joe-Laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E57C5C8.00DA:SCFMA922111,ss=1,re=-0.101,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  				dev_err(&pdev->xdev->dev, "Could not claim resource %s/%d! "
-> 					"Device offline. Try using e820_host=1 in the guest config.\n",
-> 
+At various times in the past, we've had reports where users have been
+convinced that the oomkiller was too heavy handed. I added this sysctl
+mostly as a knob for them to see that the kernel really doesn't do much better
+without killing something.
 
-Done. Picked the one above. Thanks!
+Signed-off-by: Dave Jones <davej@redhat.com>
+
+diff --git a/include/linux/oom.h b/include/linux/oom.h
+index 5e3aa83..79a27b4 100644
+--- a/include/linux/oom.h
++++ b/include/linux/oom.h
+@@ -72,5 +72,6 @@ extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+ extern int sysctl_oom_dump_tasks;
+ extern int sysctl_oom_kill_allocating_task;
+ extern int sysctl_panic_on_oom;
++extern int sysctl_would_have_oomkilled;
+ #endif /* __KERNEL__*/
+ #endif /* _INCLUDE_LINUX_OOM_H */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 5abfa15..a0fed6d 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1000,6 +1000,13 @@ static struct ctl_table vm_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "would_have_oomkilled",
++		.data		= &sysctl_would_have_oomkilled,
++		.maxlen		= sizeof(sysctl_would_have_oomkilled),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "overcommit_ratio",
+ 		.data		= &sysctl_overcommit_ratio,
+ 		.maxlen		= sizeof(sysctl_overcommit_ratio),
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 7dcca55..281ac39 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -35,6 +35,7 @@
+ int sysctl_panic_on_oom;
+ int sysctl_oom_kill_allocating_task;
+ int sysctl_oom_dump_tasks = 1;
++int sysctl_would_have_oomkilled;
+ static DEFINE_SPINLOCK(zone_scan_lock);
+ 
+ #ifdef CONFIG_NUMA
+@@ -477,6 +478,13 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	}
+ 
+ 	task_lock(p);
++	if (sysctl_would_have_oomkilled) {
++		printk(KERN_ERR "%s: would have killed process %d (%s), but continuing instead...\n",
++			__func__, task_pid_nr(p), p->comm);
++		task_unlock(p);
++		return 0;
++	}
++
+ 	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
+ 		message, task_pid_nr(p), p->comm, points);
+ 	task_unlock(p);
+-- 
+1.7.3.2
+
