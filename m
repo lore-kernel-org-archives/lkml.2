@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab1HZH1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 03:27:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52014 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947Ab1HZH1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 03:27:37 -0400
-Message-ID: <4E574B09.6050108@cn.fujitsu.com>
-Date: Fri, 26 Aug 2011 15:28:09 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1751619Ab1HZHfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 03:35:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:32122 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704Ab1HZHfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 03:35:08 -0400
+Message-ID: <4E574CA5.4010701@openvz.org>
+Date: Fri, 26 Aug 2011 11:35:01 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110702 Iceape/2.0.14
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Paul Menage <paul@paulmenage.org>, Kay Sievers <kay.sievers@vrfy.org>,
-        Tim Hockin <thockin@hockin.org>,
+To: David Rientjes <rientjes@google.com>
+CC: Michal Hocko <mhocko@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [RFD] Task counter: cgroup core feature or cgroup subsystem?
- (was Re: [PATCH 0/8 v3] cgroups: Task counter subsystem)
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <20110801161900.1fe24b76.akpm@linux-foundation.org> <CAAAKZwupGmw_+EaApZFAqVcXWBF885Gsjx6tUWUdMuebXrt_Mg@mail.gmail.com> <CAPXgP11aUfdkq-SdaHc8=tfjA4W7DYXjSXG-asoZMi6hK4iOPQ@mail.gmail.com> <20110818143319.GC10441@somewhere> <CALdu-PA3+u-v1fj-DQuC-zyJ4Ud0Xi0sq0zcB0DLNcR_TMT6XQ@mail.gmail.com> <20110824175431.GA26417@somewhere.redhat.com>
-In-Reply-To: <20110824175431.GA26417@somewhere.redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-26 15:26:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-26 15:26:35,
-	Serialize complete at 2011-08-26 15:26:35
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] oom: skip frozen tasks
+References: <20110823073101.6426.77745.stgit@zurg> <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker wrote:
-> On Tue, Aug 23, 2011 at 09:07:59AM -0700, Paul Menage wrote:
->> On Thu, Aug 18, 2011 at 7:33 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+David Rientjes wrote:
+> On Thu, 25 Aug 2011, Michal Hocko wrote:
+>
+>>>>> That's obviously false since we call oom_killer_disable() in
+>>>>> freeze_processes() to disable the oom killer from ever being called in the
+>>>>> first place, so this is something you need to resolve with Rafael before
+>>>>> you cause more machines to panic.
+>>>>
+>>>> I didn't mean suspend/resume path (that is protected by oom_killer_disabled)
+>>>> so the patch doesn't make any change.
 >>>
->>> So the problem with the task counter as a subsystem is that you could
->>> mount it in your systemd cgroups hierarchy but then it's not anymore
->>> available for those who want to use containers.
+>>> Confused... freeze_processes() does try_to_freeze_tasks() before
+>>> oom_killer_disable() ?
 >>
->> Another possible option is something that I prototyped a couple of
->> years ago, but dropped due to lack of compelling need and demand - the
->> ability to have subsystems that can be bound on multiple subsystems at
->> once. See
+>> Yes you are right, I must have been blind.
 >>
->> http://lkml.indiana.edu/hypermail/linux/kernel/0907.0/00574.html
->> http://lkml.indiana.edu/hypermail/linux/kernel/0907.0/00576.html
->> http://lkml.indiana.edu/hypermail/linux/kernel/0907.0/00577.html
+>> Now I see the point. We do not want to panic while we are suspending and
+>> the memory is really low just because all the userspace is already in
+>> the the fridge.
+>> Sorry for confusion.
 >>
->> It's applicable to subsystems whose state isn't tied to any specific
->> single resource in the kernel outside of cgroups (so e.g. the CPU
->> scheduler couldn't be usefully multi-bindable, since the CPU cgroup
->> state is tied to the machine's single CPU scheduler).
+>> I still do not follow the oom_killer_disable note from David, though.
 >>
->> In the end I didn't work further on it, since it seemed that most
->> things that needed to be available to multiple hierarchies could more
->> simply be added to the core cgroups subsystem and automatically be
->> available on all hierarchies. But the point about tracking overhead
->> for fork/exit is certainly something that could make this worthwhile.
-> 
-> That sounds like a perfect fit. I like that much better because there
-> should be no noticeable overhead when the task counter subsys is
-> nowhere mounted, compared to a pure core feature.
-> 
+>
+> oom_killer_disable() was added to that path for a reason when all threads
+> are frozen: memory allocations still occur in the suspend path in an oom
+> condition and adding the oom_killer_disable() will cause those
+> allocations to fail rather than sending pointless SIGKILLs to frozen
+> threads.
+>
+> Now consider if the only _eligible_ threads for oom kill (because of
+> cpusets or mempolicies) are those that are frozen.  We certainly do not
+> want to panic because other cpusets are still getting work done.  We'd
+> either want to add a mem to the cpuset or thaw the processes because the
+> cpuset is oom.
+>
+> You can't just selectively skip certain threads when their state can be
+> temporary without risking a panic.  That's why this patch is a
+> non-starter.
+>
+> A much better solution would be to lower the badness score that the oom
+> killer uses for PF_FROZEN threads so that they aren't considered a
+> priority for kill unless there's nothing else left to kill.
 
-I had a patchset that can make things even better. The patchset is
-to bind/unbind a subsystem to/from an existing cgroup hierarchy.
-
-So if you found you need to use task couter but it's not avaiable
-in the hierarchy you've set up, you can do this:
-
-	# mount -o remount,task_num xxx /cgroup
-
-Currently the above operation is supported only if there's no child
-cgroups in /cgroup.
-
-> So I'm going to continue to work on that task counter subsystem and
-> I will unearth your old patch afterward to make that work on several
-> mountpoints once we are sure this is needed for systemd.
-> 
-> It seems your patch doesn't handle the ->fork() and ->exit() calls.
-> We probably need a quick access to states of multi-subsystems from
-> the task, some lists available from task->cgroups, I don't know yet.
-> 
+Anyway, oom killer shouldn't loop endlessly if it see TIF_MEMDIE on frozen task,
+it must go on and try to kill somebody else. We cannot wait for thawing this task.
