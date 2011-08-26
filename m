@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab1HZVuX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 17:50:23 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:36499 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab1HZVuV (ORCPT
+	id S1755593Ab1HZVvu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 17:51:50 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:42027 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755541Ab1HZVvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 17:50:21 -0400
+	Fri, 26 Aug 2011 17:51:49 -0400
+X-Sasl-enc: giIN3Uq3GpnEfjTA9QWh/x/x+Ar/Ine1aK3c+UtZaEfo 1314395508
+Date: Fri, 26 Aug 2011 14:51:39 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/35] 3.0.4-stable review
+Message-ID: <20110826215139.GA11498@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <0ad5d75e1d238d186a3beadefd9de80316409867.1314291910.git.jbaron@redhat.com>
-References: <cover.1314291909.git.jbaron@redhat.com> <0ad5d75e1d238d186a3beadefd9de80316409867.1314291910.git.jbaron@redhat.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Fri, 26 Aug 2011 15:47:49 -0600
-Message-ID: <CAJfuBxyyiGYJ-DmtJG2fy0HDZ6BbpYpXwnA02uetS_0RRuh+0w@mail.gmail.com>
-Subject: Re: [PATCH 3/4] dynamic_debug: use a single printk() to emit msgs
-To: Jason Baron <jbaron@redhat.com>
-Cc: gregkh@suse.de, joe@perches.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd2a0d2e6ced904ab6f8057
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd2a0d2e6ced904ab6f8057
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+This is the start of the stable review cycle for the 3.0.4 release.
+There are 35 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-On Thu, Aug 25, 2011 at 11:34 AM, Jason Baron <jbaron@redhat.com> wrote:
+Responses should be made by Monday, August 29, 2011, 12:00:00 UTC.
+Anything received after that time might be too late.
 
-> + =A0 =A0 =A0 if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 pos +=3D snprintf(buf + pos, LEFT(pos), "%s=
-:", desc->modname);
-> + =A0 =A0 =A0 if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 pos +=3D snprintf(buf + pos, LEFT(pos), "%s=
-:", desc->function);
-> + =A0 =A0 =A0 if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 pos +=3D snprintf(buf + pos, LEFT(pos), "%d=
- ", desc->lineno);
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.4-rc1.gz
+and the diffstat can be found below.
 
-this inserts a space after lineno, but not otherwize.
+thanks,
 
-I have patch to fix it, but maybe you want to fix it it here ?
-
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 9c8e133..122246f 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -439,7 +439,9 @@ static char *dynamic_emit_prefix(const struct
-_ddebug *desc, char *buf)
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
- 		pos +=3D snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
--		pos +=3D snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
-+		pos +=3D snprintf(buf + pos, LEFT(pos), "%d:", desc->lineno);
-+	if (pos - strlen(KERN_DEBUG))
-+		pos +=3D snprintf(buf + pos, LEFT(pos), " ");
-
- 	return buf;
- }
---=20
-1.7.4.4
+greg k-h
 
 
-also attached.
-If it doesnt apply, or you defer, I'll resend once Greg's accepted
-your whole set.
-
---000e0cd2a0d2e6ced904ab6f8057
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0003-dynamic_debug-add-space-at-end-of-non-null-dynamic-p.patch"
-Content-Disposition: attachment; 
-	filename="0003-dynamic_debug-add-space-at-end-of-non-null-dynamic-p.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_grtozdcw0
-
-RnJvbSBlYzc1Y2Q1MGJhODliZWQxZjBhZDc0Yjg5YzlhNDNlODdiMmJkNzY3IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBKaW0gQ3JvbWllIDxqaW0uY3JvbWllQGdtYWlsLmNvbT4KRGF0
-ZTogVHVlLCAyIEF1ZyAyMDExIDE1OjEyOjU1IC0wNjAwClN1YmplY3Q6IFtQQVRDSCAwMy8yOF0g
-ZHluYW1pY19kZWJ1ZzogYWRkIHNwYWNlIGF0IGVuZCBvZiBub24tbnVsbAogZHluYW1pYy1wcmVm
-aXgKCmR5bmFtaWNfZW1pdF9wcmVmaXgoKSBjdXJyZW50bHkgYWRkcyBhIHNwYWNlIGFmdGVyIGxp
-bmUtbnVtYmVyLApidXQgbm90IG90aGVyd2l6ZS4gIEZvciByZWFkYWJpbGl0eSwgYWRkIHNwYWNl
-IHdoZW5ldmVyIGFueSBwcmVmaXgKKGJlc2lkZXMgdGhlICI8Nz4iIGxvZ2xldmVsKSBoYXMgYmVl
-biB3cml0dGVuLgoKU2lnbmVkLW9mZi1ieTogSmltIENyb21pZSA8amltLmNyb21pZUBnbWFpbC5j
-b20+Ci0tLQogbGliL2R5bmFtaWNfZGVidWcuYyB8ICAgIDQgKysrLQogMSBmaWxlcyBjaGFuZ2Vk
-LCAzIGluc2VydGlvbnMoKyksIDEgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbGliL2R5bmFt
-aWNfZGVidWcuYyBiL2xpYi9keW5hbWljX2RlYnVnLmMKaW5kZXggOWM4ZTEzMy4uMTIyMjQ2ZiAx
-MDA2NDQKLS0tIGEvbGliL2R5bmFtaWNfZGVidWcuYworKysgYi9saWIvZHluYW1pY19kZWJ1Zy5j
-CkBAIC00MzksNyArNDM5LDkgQEAgc3RhdGljIGNoYXIgKmR5bmFtaWNfZW1pdF9wcmVmaXgoY29u
-c3Qgc3RydWN0IF9kZGVidWcgKmRlc2MsIGNoYXIgKmJ1ZikKIAlpZiAoZGVzYy0+ZmxhZ3MgJiBf
-RFBSSU5US19GTEFHU19JTkNMX0ZVTkNOQU1FKQogCQlwb3MgKz0gc25wcmludGYoYnVmICsgcG9z
-LCBMRUZUKHBvcyksICIlczoiLCBkZXNjLT5mdW5jdGlvbik7CiAJaWYgKGRlc2MtPmZsYWdzICYg
-X0RQUklOVEtfRkxBR1NfSU5DTF9MSU5FTk8pCi0JCXBvcyArPSBzbnByaW50ZihidWYgKyBwb3Ms
-IExFRlQocG9zKSwgIiVkICIsIGRlc2MtPmxpbmVubyk7CisJCXBvcyArPSBzbnByaW50ZihidWYg
-KyBwb3MsIExFRlQocG9zKSwgIiVkOiIsIGRlc2MtPmxpbmVubyk7CisJaWYgKHBvcyAtIHN0cmxl
-bihLRVJOX0RFQlVHKSkKKwkJcG9zICs9IHNucHJpbnRmKGJ1ZiArIHBvcywgTEVGVChwb3MpLCAi
-ICIpOwogCiAJcmV0dXJuIGJ1ZjsKIH0KLS0gCjEuNy40LjQKCg==
---000e0cd2a0d2e6ced904ab6f8057--
+ Makefile                                   |    4 +-
+ arch/x86/include/asm/xen/page.h            |    4 +-
+ arch/x86/kernel/apic/x2apic_uv_x.c         |    1 -
+ arch/x86/kernel/cpu/intel.c                |   10 +++---
+ arch/x86/kernel/cpu/mtrr/main.c            |   23 +++++++++++++++++
+ arch/x86/platform/olpc/olpc.c              |    4 +-
+ arch/x86/vdso/vdso32/sysenter.S            |    2 +-
+ arch/x86/xen/enlighten.c                   |    4 +-
+ arch/x86/xen/mmu.c                         |   12 ++++++---
+ arch/x86/xen/smp.c                         |    4 +-
+ drivers/block/loop.c                       |    6 +++-
+ drivers/block/xen-blkfront.c               |    6 ++--
+ drivers/edac/i7core_edac.c                 |    2 +-
+ drivers/gpu/drm/radeon/radeon_connectors.c |   10 +++++++
+ drivers/gpu/drm/ttm/ttm_bo.c               |    4 ++-
+ drivers/mmc/host/sdhci.c                   |    3 --
+ drivers/net/igb/e1000_82575.c              |    1 +
+ drivers/net/wireless/rt2x00/rt2x00usb.c    |   17 +++++-------
+ fs/befs/linuxvfs.c                         |   23 ++++++++++------
+ fs/btrfs/extent-tree.c                     |   12 +++++++-
+ fs/btrfs/tree-log.c                        |   28 +++++++++++++++++---
+ fs/btrfs/volumes.c                         |   17 ++++++++++++
+ fs/btrfs/volumes.h                         |    2 +
+ fs/cifs/connect.c                          |    3 +-
+ fs/cifs/dir.c                              |    4 +-
+ fs/ext4/ext4_jbd2.h                        |    4 +-
+ fs/ext4/inode.c                            |   26 +++++++++++++++++-
+ fs/ext4/page-io.c                          |    6 +++-
+ fs/ext4/super.c                            |    1 -
+ fs/fuse/dev.c                              |    4 +++
+ fs/nfs/callback.h                          |    2 +-
+ fs/nfs/callback_proc.c                     |   25 ++++++++++++++----
+ fs/nfs/callback_xdr.c                      |   24 +++++------------
+ fs/nfs/objlayout/objio_osd.c               |   28 +++++++++-----------
+ fs/nfs/objlayout/pnfs_osd_xdr_cli.c        |    3 ++
+ include/linux/personality.h                |    1 +
+ include/linux/stop_machine.h               |    2 +
+ kernel/irq/generic-chip.c                  |    4 +-
+ kernel/stop_machine.c                      |    2 +-
+ kernel/sys.c                               |   38 ++++++++++++++++++++++++++++
+ sound/pci/ac97/ac97_patch.c                |    1 +
+ sound/usb/caiaq/audio.c                    |   31 +++++++++++++++++++---
+ sound/usb/caiaq/device.h                   |    1 +
+ sound/usb/mixer.c                          |    3 +-
+ 44 files changed, 298 insertions(+), 114 deletions(-)
