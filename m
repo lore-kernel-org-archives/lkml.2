@@ -1,127 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab1HZNU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 09:20:59 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:6313 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755079Ab1HZNUx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 09:20:53 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQJEEP-02-7TQ-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>, David Brown <davidb@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH] iommu: Remove stub functions for !CONFIG_IOMMU_API
-Date: Fri, 26 Aug 2011 15:20:39 +0200
-Message-ID: <1314364839-28492-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754393Ab1HZNYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 09:24:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2981 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751442Ab1HZNYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 09:24:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,285,1312182000"; 
+   d="scan'208";a="42727962"
+Date: Fri, 26 Aug 2011 21:24:45 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110826132445.GA8219@localhost>
+References: <20110824001257.GA6349@localhost>
+ <1314202378.6925.48.camel@twins>
+ <20110826001846.GA6118@localhost>
+ <1314349469.26922.24.camel@twins>
+ <20110826100428.GA7996@localhost>
+ <20110826112637.GA17785@localhost>
+ <1314360710.11049.1.camel@twins>
+ <20110826122057.GA32711@localhost>
+ <20110826131341.GA7114@localhost>
+ <1314364701.12445.0.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314364701.12445.0.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove most of the stub functions because they are only
-allowed to use when CONFIG_IOMMU_API is set anyway. This
-will catch missing 'select' entries in kconfig at compile
-time already.
+On Fri, Aug 26, 2011 at 09:18:21PM +0800, Peter Zijlstra wrote:
+> On Fri, 2011-08-26 at 21:13 +0800, Wu Fengguang wrote:
+> > We got similar result as in the read disturber case, even though one
+> > disturbs N and the other impacts writeout bandwith.  The original
+> > patchset is consistently performing much better :) 
+> 
+> It does indeed, and I figure on these timescales it makes sense to
+> assumes N is a constant. Fair enough, thanks!
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- include/linux/iommu.h |   52 +-----------------------------------------------
- 1 files changed, 2 insertions(+), 50 deletions(-)
+Thank you! Glad that we finally reaches some consensus :)
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 9940319..296f41a 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -19,6 +19,8 @@
- #ifndef __LINUX_IOMMU_H
- #define __LINUX_IOMMU_H
- 
-+#ifdef CONFIG_IOMMU_API
-+
- #include <linux/errno.h>
- 
- #define IOMMU_READ	(1)
-@@ -49,8 +51,6 @@ struct iommu_ops {
- 			      unsigned long cap);
- };
- 
--#ifdef CONFIG_IOMMU_API
--
- extern void register_iommu(struct iommu_ops *ops);
- extern bool iommu_found(void);
- extern struct iommu_domain *iommu_domain_alloc(void);
-@@ -70,59 +70,11 @@ extern int iommu_domain_has_cap(struct iommu_domain *domain,
- 
- #else /* CONFIG_IOMMU_API */
- 
--static inline void register_iommu(struct iommu_ops *ops)
--{
--}
--
- static inline bool iommu_found(void)
- {
- 	return false;
- }
- 
--static inline struct iommu_domain *iommu_domain_alloc(void)
--{
--	return NULL;
--}
--
--static inline void iommu_domain_free(struct iommu_domain *domain)
--{
--}
--
--static inline int iommu_attach_device(struct iommu_domain *domain,
--				      struct device *dev)
--{
--	return -ENODEV;
--}
--
--static inline void iommu_detach_device(struct iommu_domain *domain,
--				       struct device *dev)
--{
--}
--
--static inline int iommu_map(struct iommu_domain *domain, unsigned long iova,
--			    phys_addr_t paddr, int gfp_order, int prot)
--{
--	return -ENODEV;
--}
--
--static inline int iommu_unmap(struct iommu_domain *domain, unsigned long iova,
--			      int gfp_order)
--{
--	return -ENODEV;
--}
--
--static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
--					     unsigned long iova)
--{
--	return 0;
--}
--
--static inline int domain_has_cap(struct iommu_domain *domain,
--				 unsigned long cap)
--{
--	return 0;
--}
--
- #endif /* CONFIG_IOMMU_API */
- 
- #endif /* __LINUX_IOMMU_H */
--- 
-1.7.4.1
-
-
+Thanks,
+Fengguang
