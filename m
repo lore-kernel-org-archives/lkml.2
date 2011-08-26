@@ -1,68 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab1HZUz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 16:55:28 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:41051 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181Ab1HZUz0 (ORCPT
+	id S1755103Ab1HZVAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 17:00:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46684 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755111Ab1HZU77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 16:55:26 -0400
-Message-ID: <4E580830.4010305@panasas.com>
-Date: Fri, 26 Aug 2011 13:55:12 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Fri, 26 Aug 2011 16:59:59 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Git Mailing List <git@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Junio C Hamano <gitster@pobox.com>
-Subject: Re: [PATCH] .gitattributes: Enable cpp diff parsing for .[ch] files
+In-Reply-To: <7vfwkndhc4.fsf@alter.siamese.dyndns.org>
 References: <4E56CE8F.8080501@panasas.com> <CA+55aFxNXK-AJdrHBBycM5W632qUBi4E=jangcdRoefQiHzbug@mail.gmail.com>
-In-Reply-To: <CA+55aFxNXK-AJdrHBBycM5W632qUBi4E=jangcdRoefQiHzbug@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+ <7vfwkndhc4.fsf@alter.siamese.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 26 Aug 2011 13:59:35 -0700
+Message-ID: <CA+55aFy=T82q==OxAzRfUgyfzMvy7=oeLOEAL8=rTJWOwkw-iA@mail.gmail.com>
+Subject: Re: [PATCH] .gitattributes: Enable cpp diff parsing for .[ch] files
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Git Mailing List <git@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2011 01:27 PM, Linus Torvalds wrote:
-> On Thu, Aug 25, 2011 at 3:37 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
->>
->> Add a .gitattributes file to the Linux tree to enable cpp parsing
->> of the source files.
-> 
-> Hmm. I'm not entirely conviced. If people really think that the hunk
-> description matters that much, maybe we should just instead improve on
-> the automatic diff detection, and extend it from just binary-vs-text,
-> to also do the common hunk-headers.
-> 
-> After all, not having a diff pattern already *does* mean "automatic",
-> so it would be just a rather trivial extension to that.
-> 
-> Junio?
-> 
+On Fri, Aug 26, 2011 at 1:54 PM, Junio C Hamano <gitster@pobox.com> wrote:
+>
+> Not quite sure what you exactly mean by "extend it from just binary-vs-text".
+> Do you mean update buffer_is_binary() and add source language detection?
 
-There was a patch submitted for new git version to auto detect file
-extensions and do the right thing. 
-(Look for the thread "git diff annoyance / feature request" on the git
- mailing list)
+Yes. Except the "detection" would be just "if we auto-detect it as
+text, then use the standard file extensions to also make an automatic
+hunk rule detection".
 
-But this patch is for all the people and distributions that are going
-to use the old git versions for a while, (Years).
+So it would do the most common cases (*.[Cch] etc)
 
-It is important for the Linux mailing-list review, because you get
-patches with:
-
-@@@ lable out:
--	change foo
-+	to bazz
-
-And how the hell are you suppose to know where in the file it is.
-This is such a trivial addition, that can help unify everyone's
-usage. I don't see the down sides.
-
-Thanks
-Boaz
-
->                      Linus
+                         Linus
