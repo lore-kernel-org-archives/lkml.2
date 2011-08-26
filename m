@@ -1,164 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1HZPig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:38:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38950 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab1HZPhZ (ORCPT
+	id S1754676Ab1HZPiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:38:52 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49324 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab1HZPiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:37:25 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        Eric B Munson <emunson@mgebm.net>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/6] perf symbols: Add some heuristics for choosing the best duplicate symbol
-Date: Fri, 26 Aug 2011 12:37:10 -0300
-Message-Id: <1314373031-6687-6-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1314373031-6687-1-git-send-email-acme@infradead.org>
-References: <1314373031-6687-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 26 Aug 2011 11:38:50 -0400
+Date: Fri, 26 Aug 2011 17:38:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, bblum@andrew.cmu.edu, lizf@cn.fujitsu.com,
+        oleg@redhat.com, paul@paulmenage.org, tj@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] cgroups: Don't attach task to subsystem if migration
+ failed
+Message-ID: <20110826153843.GE3298@somewhere>
+References: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+On Thu, Aug 25, 2011 at 01:44:36PM -0700, akpm@linux-foundation.org wrote:
+> 
+> The patch titled
+>      cgroups: fix ordering of calls in cgroup_attach_proc
+> has been added to the -mm tree.  Its filename is
+>      cgroups-fix-ordering-of-calls-in-cgroup_attach_proc.patch
+> 
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+> 
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
+> out what to do about this
+> 
+> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> 
+> ------------------------------------------------------
+> Subject: cgroups: fix ordering of calls in cgroup_attach_proc
+> From: Ben Blum <bblum@andrew.cmu.edu>
+> 
+> awaiting useful changelog...
+> 
 
-Try and pick the best symbol based on a few heuristics:
+Here is the patch with a (trial of a) useful changelog. Subject
+has been changed as well:
 
--  Prefer a non weak symbol over a weak one
--  Prefer a global symbol over a non global one
--  Prefer a symbol with less underscores (idea taken from kallsyms.c)
--  If all else fails, choose the symbol with the longest name
-
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110824065243.161953371@samba.org
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |   88 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 88 insertions(+), 0 deletions(-)
+>From a9b84e395a0355cd1aa5ee0f525cd682b16dad63 Mon Sep 17 00:00:00 2001
+From: Ben Blum <bblum@andrew.cmu.edu>
+Date: Thu, 25 Aug 2011 13:44:36 -0700
+Subject: [PATCH] cgroups: Don't attach task to subsystem if migration failed
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 0d94ddb..870b3b8 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -86,6 +86,92 @@ bool symbol_type__is_a(char symbol_type, enum map_type map_type)
- 	}
- }
- 
-+static int prefix_underscores_count(const char *str)
-+{
-+	const char *tail = str;
-+
-+	while (*tail == '_')
-+		tail++;
-+
-+	return tail - str;
-+}
-+
-+#define SYMBOL_A 0
-+#define SYMBOL_B 1
-+
-+static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
-+{
-+	s64 a;
-+	s64 b;
-+
-+	/* Prefer a symbol with non zero length */
-+	a = syma->end - syma->start;
-+	b = symb->end - symb->start;
-+	if ((b == 0) && (a > 0))
-+		return SYMBOL_A;
-+	else if ((a == 0) && (b > 0))
-+		return SYMBOL_B;
-+
-+	/* Prefer a non weak symbol over a weak one */
-+	a = syma->binding == STB_WEAK;
-+	b = symb->binding == STB_WEAK;
-+	if (b && !a)
-+		return SYMBOL_A;
-+	if (a && !b)
-+		return SYMBOL_B;
-+
-+	/* Prefer a global symbol over a non global one */
-+	a = syma->binding == STB_GLOBAL;
-+	b = symb->binding == STB_GLOBAL;
-+	if (a && !b)
-+		return SYMBOL_A;
-+	if (b && !a)
-+		return SYMBOL_B;
-+
-+	/* Prefer a symbol with less underscores */
-+	a = prefix_underscores_count(syma->name);
-+	b = prefix_underscores_count(symb->name);
-+	if (b > a)
-+		return SYMBOL_A;
-+	else if (a > b)
-+		return SYMBOL_B;
-+
-+	/* If all else fails, choose the symbol with the longest name */
-+	if (strlen(syma->name) >= strlen(symb->name))
-+		return SYMBOL_A;
-+	else
-+		return SYMBOL_B;
-+}
-+
-+static void symbols__fixup_duplicate(struct rb_root *symbols)
-+{
-+	struct rb_node *nd;
-+	struct symbol *curr, *next;
-+
-+	nd = rb_first(symbols);
-+
-+	while (nd) {
-+		curr = rb_entry(nd, struct symbol, rb_node);
-+again:
-+		nd = rb_next(&curr->rb_node);
-+		next = rb_entry(nd, struct symbol, rb_node);
-+
-+		if (!nd)
-+			break;
-+
-+		if (curr->start != next->start)
-+			continue;
-+
-+		if (choose_best_symbol(curr, next) == SYMBOL_A) {
-+			rb_erase(&next->rb_node, symbols);
-+			goto again;
+If a task has exited to the point it has called cgroup_exit()
+already, then we can't migrate it to another cgroup anymore.
+
+This can happen when we are attaching a task to a new cgroup
+between the call to ->can_attach_task() on subsystems and
+the migration that is eventually tried in cgroup_task_migrate().
+
+In this case cgroup_task_migrate() returns -ESRCH and we don't
+want to attach the task to the subsystems because the attachment
+to the new cgroup itself failed.
+
+Fix this by only calling ->attach_task() on the subsystems if
+the cgroup migration succeeded.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+Acked-by: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/cgroup.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1d2b6ce..84bdace 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2135,14 +2135,17 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 		oldcgrp = task_cgroup_from_root(tsk, root);
+ 		if (cgrp == oldcgrp)
+ 			continue;
+-		/* attach each task to each subsystem */
+-		for_each_subsys(root, ss) {
+-			if (ss->attach_task)
+-				ss->attach_task(cgrp, tsk);
+-		}
+ 		/* if the thread is PF_EXITING, it can just get skipped. */
+ 		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
+-		BUG_ON(retval != 0 && retval != -ESRCH);
++		if (retval == 0) {
++			/* attach each task to each subsystem */
++			for_each_subsys(root, ss) {
++				if (ss->attach_task)
++					ss->attach_task(cgrp, tsk);
++			}
 +		} else {
-+			nd = rb_next(&curr->rb_node);
-+			rb_erase(&curr->rb_node, symbols);
++			BUG_ON(retval != -ESRCH);
 +		}
-+	}
-+}
-+
- static void symbols__fixup_end(struct rb_root *symbols)
- {
- 	struct rb_node *nd, *prevnd = rb_first(symbols);
-@@ -692,6 +778,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
- 	if (dso__load_all_kallsyms(dso, filename, map) < 0)
- 		return -1;
+ 	}
+ 	/* nothing is sensitive to fork() after this point. */
  
-+	symbols__fixup_duplicate(&dso->symbols[map->type]);
- 	symbols__fixup_end(&dso->symbols[map->type]);
- 
- 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
-@@ -1269,6 +1356,7 @@ new_symbol:
- 	 * For misannotated, zeroed, ASM function sizes.
- 	 */
- 	if (nr > 0) {
-+		symbols__fixup_duplicate(&dso->symbols[map->type]);
- 		symbols__fixup_end(&dso->symbols[map->type]);
- 		if (kmap) {
- 			/*
 -- 
-1.6.2.5
+1.7.5.4
+
 
