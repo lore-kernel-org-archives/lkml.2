@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab1HZPke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:40:34 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55265 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996Ab1HZPkc (ORCPT
+	id S1754648Ab1HZPrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:47:46 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:56398 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab1HZPrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:40:32 -0400
-Date: Fri, 26 Aug 2011 11:39:40 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jovi Zhang <bookjovi@gmail.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigbrady.com>,
-        dhowells@redhat.com, roland@redhat.com, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
-Message-ID: <20110826153940.GA23556@hmsreliant.think-freely.org>
-References: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com>
- <4E527684.3020206@draigBrady.com>
- <20110822161914.GA9399@redhat.com>
- <CACV3sbJjDhzKq8YQEnrTQPVVw7YsZjLe45G5sWaMRBk3+Vxkcg@mail.gmail.com>
- <20110824110134.GA17362@hmsreliant.think-freely.org>
- <20110825155735.GA5380@redhat.com>
- <20110825184313.GA29763@hmsreliant.think-freely.org>
- <20110826141139.GB13620@redhat.com>
+	Fri, 26 Aug 2011 11:47:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110826141139.GB13620@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: 0.1 (/)
+In-Reply-To: <20110826103932.1626f1c5542b660bcd1b24aa@canb.auug.org.au>
+References: <20110825161843.daf46b6b4023926fcfeec387@canb.auug.org.au>
+	<20110825140820.GA9126@kroah.com>
+	<4E56689D.3080202@freescale.com>
+	<20110826015111.49af16f792d5554fd931d230@canb.auug.org.au>
+	<CACqU3MUs_97=MuuKAjr-LeUT7kSRxtzSntwUeKeeH4n8s7SSGg@mail.gmail.com>
+	<20110826103932.1626f1c5542b660bcd1b24aa@canb.auug.org.au>
+Date: Fri, 26 Aug 2011 11:47:40 -0400
+Message-ID: <CACqU3MVbKJw5VVqnz+gfLDnQEDu9Lv4xV+7RvdD4ZbetGu79WQ@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (tty tree related)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 04:11:39PM +0200, Oleg Nesterov wrote:
-> On 08/25, Neil Horman wrote:
-> >
-> > On Thu, Aug 25, 2011 at 05:57:35PM +0200, Oleg Nesterov wrote:
-> > > On 08/24, Neil Horman wrote:
-> > > >
-> > > > The long and the short of it is, making RLIMIT_CORE == 0 for the ispipe case
-> > > > skip the core dump, breaks lots of user space expectations
-> > >
-> > > Not sure this really makes sense, but perhaps ispipe can skip the dump
-> > > if RLIMIT_CORE == 0 _and_ the signal was sent from the user-space.
-> > >
-> > If you can guarantee that the signal came from user space, yes, that would work
-> > I imagine.
-> 
-> No, I was wrong.
-> 
-> > alternatively I expect we could modify the kernel thread creation
-> > routine such that it sets PR_SET_DUMPABLE to zero for all kernel threads
-> 
-> Just curious... why?
-> 
-Sorry, I read your words above backwards.  I was trying to suggest an equivalent
-solution, but my idea was quite inverted.
-Neil
+Hi,
 
-> Oleg.
-> 
-> 
+[Removed PPC folks from the CC list, the conversation drifted.]
+
+On Thu, Aug 25, 2011 at 8:39 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Arnaud,
+>
+> On Thu, 25 Aug 2011 12:09:20 -0400 Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>
+>> If you could provide an exhaustive list of them, I'd be interested. Do
+>> you account/reference them in the report you make on each new -next
+>> tree ?
+>
+> I don't refer to them at all :-(
+>
+> If you are not just referring to powerpc ones, then an x86_64
+> allmodconfig is a good place to start, there are several in there.
+>
+> Otherwise, I will send you the results of some of my builds this evening.
+>
+Couldn't all the error log be public, rotated over a 7 iteration
+period ? That would be fair to everyone.
+
+Thanks,
+ - Arnaud
