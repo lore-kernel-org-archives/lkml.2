@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab1HZQOZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:14:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab1HZQOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:14:24 -0400
-Date: Fri, 26 Aug 2011 12:14:22 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-mm@kvack.org
-Subject: VM: add would_have_oomkilled sysctl
-Message-ID: <20110826161422.GB30573@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+	id S1754859Ab1HZQQl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:16:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63552 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab1HZQQi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 12:16:38 -0400
+Date: Fri, 26 Aug 2011 17:16:33 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 11/13] of: add property iteration helpers
+Message-ID: <20110826161633.GB2802@pulham.picochip.com>
+References: <1314315824-9687-1-git-send-email-swarren@nvidia.com>
+ <1314315824-9687-12-git-send-email-swarren@nvidia.com>
+ <20110826092632.GB3926@pulham.picochip.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF04B24A40C8@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B24A40C8@HQMAIL01.nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At various times in the past, we've had reports where users have been
-convinced that the oomkiller was too heavy handed. I added this sysctl
-mostly as a knob for them to see that the kernel really doesn't do much better
-without killing something.
+On Fri, Aug 26, 2011 at 08:59:44AM -0700, Stephen Warren wrote:
+> Jamie Iles wrote at Friday, August 26, 2011 3:27 AM:
+> > For the !CONFIG_OF case, I *think* that
+> > of_iter_u32_prop and of_iter_string_prop can be empty struct's, but I
+> > wouldn't want to bet money on that!
+> 
+> Empty structs themselves certainly did compile OK, but the code that
+> uses these macros references iter.value directly, and isn't under #ifdef
+> CONFIG_OF, so that field has to exist.
+> 
+> I suppose an alternative would be to add an accessor function:
+> 
+> struct of_iter_string_prop iter;
+> for_each_string_property_value(iter, np, "pins")
+>         printk("Got value %s\n", of_iter_string_value(iter));
+> 
+> which would return NULL/"" when !CONFIG_OF, and hence allow iter.value
+> to be removed too. Do you think that's a good approach? It'd be easy to
+> implement.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+I think I prefer what you have now rather than a separate accessor, but 
+I'm happy either way!
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 5e3aa83..79a27b4 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -72,5 +72,6 @@ extern struct task_struct *find_lock_task_mm(struct task_struct *p);
- extern int sysctl_oom_dump_tasks;
- extern int sysctl_oom_kill_allocating_task;
- extern int sysctl_panic_on_oom;
-+extern int sysctl_would_have_oomkilled;
- #endif /* __KERNEL__*/
- #endif /* _INCLUDE_LINUX_OOM_H */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 5abfa15..a0fed6d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1000,6 +1000,13 @@ static struct ctl_table vm_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
-+		.procname	= "would_have_oomkilled",
-+		.data		= &sysctl_would_have_oomkilled,
-+		.maxlen		= sizeof(sysctl_would_have_oomkilled),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "overcommit_ratio",
- 		.data		= &sysctl_overcommit_ratio,
- 		.maxlen		= sizeof(sysctl_overcommit_ratio),
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 7dcca55..281ac39 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -35,6 +35,7 @@
- int sysctl_panic_on_oom;
- int sysctl_oom_kill_allocating_task;
- int sysctl_oom_dump_tasks = 1;
-+int sysctl_would_have_oomkilled;
- static DEFINE_SPINLOCK(zone_scan_lock);
- 
- #ifdef CONFIG_NUMA
-@@ -477,6 +478,13 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	}
- 
- 	task_lock(p);
-+	if (sysctl_would_have_oomkilled) {
-+		printk(KERN_ERR "%s: would have killed process %d (%s), but continuing instead...\n",
-+			__func__, task_pid_nr(p), p->comm);
-+		task_unlock(p);
-+		return 0;
-+	}
-+
- 	pr_err("%s: Kill process %d (%s) score %d or sacrifice child\n",
- 		message, task_pid_nr(p), p->comm, points);
- 	task_unlock(p);
--- 
-1.7.3.2
-
+Jamie
