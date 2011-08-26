@@ -1,98 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab1HZR3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 13:29:09 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64278 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab1HZR3F (ORCPT
+	id S1754157Ab1HZR3T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 13:29:19 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:54364 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab1HZR3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 13:29:05 -0400
-Message-ID: <4E57D7DD.5030902@lwfinger.net>
-Date: Fri, 26 Aug 2011 12:29:01 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	Fri, 26 Aug 2011 13:29:15 -0400
+Date: Fri, 26 Aug 2011 13:01:14 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        bblum@andrew.cmu.edu, lizf@cn.fujitsu.com, oleg@redhat.com,
+        paul@paulmenage.org, tj@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] cgroups: Don't attach task to subsystem if
+ migration failed
+Message-ID: <20110826170114.GA14508@unix33.andrew.cmu.edu>
+References: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org>
+ <20110826153843.GE3298@somewhere>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Lockdep warning
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826153843.GE3298@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
+X-SMTP-Spam-Clean: 8% (
+ BODY_SIZE_3000_3999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __FRAUD_BODY_WEBMAIL 0, __FRAUD_INTRO 0, __FRAUD_WEBMAIL 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_WWW 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With a new version of the staging driver rtl8192e, I'm getting the lockdep 
-warning posted below. The lock in question is for a timer that uses init_timer() 
-for initialization. From the definition of that macro, I thought this was 
-initialized with a lock_class_key that should prevent this warning. Obviously, 
-I'm missing something.
+On Fri, Aug 26, 2011 at 05:38:44PM +0200, Frederic Weisbecker wrote:
+> On Thu, Aug 25, 2011 at 01:44:36PM -0700, akpm@linux-foundation.org wrote:
+> > 
+> > The patch titled
+> >      cgroups: fix ordering of calls in cgroup_attach_proc
+> > has been added to the -mm tree.  Its filename is
+> >      cgroups-fix-ordering-of-calls-in-cgroup_attach_proc.patch
+> > 
+> > Before you just go and hit "reply", please:
+> >    a) Consider who else should be cc'ed
+> >    b) Prefer to cc a suitable mailing list as well
+> >    c) Ideally: find the original patch on the mailing list and do a
+> >       reply-to-all to that, adding suitable additional cc's
+> > 
+> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > 
+> > See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
+> > out what to do about this
+> > 
+> > The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > ------------------------------------------------------
+> > Subject: cgroups: fix ordering of calls in cgroup_attach_proc
+> > From: Ben Blum <bblum@andrew.cmu.edu>
+> > 
+> > awaiting useful changelog...
+> > 
+> 
+> Here is the patch with a (trial of a) useful changelog. Subject
+> has been changed as well:
 
-Any pointers would be appreciated.
+This description is much better than my original one - thanks!
 
-Thanks,
+I'd ack it, but my name is already there. :P
 
-Larry
+-- Ben
 
-
-[   88.048077] =============================================
-[   88.048086] [ INFO: possible recursive locking detected ]
-[   88.048093] 3.1.0-rc3-staging+ #5
-[   88.048097] ---------------------------------------------
-[   88.048102] kmemleak/631 is trying to acquire lock:
-[   88.048108]  (ptimer){+.-...}, at: [<ffffffff81059370>] del_timer_sync+0x0/0xc0
-[   88.048124]
-[   88.048125] but task is already holding lock:
-[   88.048131]  (ptimer){+.-...}, at: [<ffffffff81058e54>] 
-run_timer_softirq+0x124/0x400
-[   88.048142]
-[   88.048143] other info that might help us debug this:
-[   88.048149]  Possible unsafe locking scenario:
-[   88.048150]
-[   88.048156]        CPU0
-[   88.048159]        ----
-[   88.048162]   lock(ptimer);
-[   88.048167]   lock(ptimer);
-[   88.048172]
-[   88.048173]  *** DEADLOCK ***
-[   88.048174]
-[   88.048179]  May be due to missing lock nesting notation
-[   88.048180]
-[   88.048187] 2 locks held by kmemleak/631:
-[   88.048191]  #0:  (scan_mutex){+.+...}, at: [<ffffffff81122e76>] 
-kmemleak_scan_thread+0x56/0xd0
-[   88.048206]  #1:  (ptimer){+.-...}, at: [<ffffffff81058e54>] 
-run_timer_softirq+0x124/0x400
-[   88.048218]
-[   88.048219] stack backtrace:
-[   88.048225] Pid: 631, comm: kmemleak Tainted: G         C  3.1.0-rc3-staging+ #5
-[   88.048232] Call Trace:
-[   88.048236]  <IRQ>  [<ffffffff81083cbb>] __lock_acquire+0x119b/0x1ea0
-[   88.048254]  [<ffffffff81084fa5>] lock_acquire+0x95/0x120
-[   88.048263]  [<ffffffff81059370>] ? process_timeout+0x10/0x10
-[   88.048272]  [<ffffffff810593ac>] del_timer_sync+0x3c/0xc0
-[   88.048280]  [<ffffffff81059370>] ? process_timeout+0x10/0x10
-[   88.048289]  [<ffffffff81058e54>] ? run_timer_softirq+0x124/0x400
-[   88.048316]  [<ffffffffa008d1ee>] TsInitAddBA+0x6e/0x170 [r8192e_pci]
-[   88.048332]  [<ffffffffa008b4b3>] TsAddBaProcess+0x33/0x50 [r8192e_pci]
-[   88.048341]  [<ffffffff81058edb>] run_timer_softirq+0x1ab/0x400
-[   88.048350]  [<ffffffff81058e54>] ? run_timer_softirq+0x124/0x400
-[   88.048364]  [<ffffffffa008b480>] ? RxPktPendingTimeout+0x2d0/0x2d0 [r8192e_pci]
-[   88.048377]  [<ffffffff810502ad>] __do_softirq+0xbd/0x210
-[   88.048386]  [<ffffffff810714d7>] ? hrtimer_interrupt+0x137/0x240
-[   88.048396]  [<ffffffff8137176c>] call_softirq+0x1c/0x30
-[   88.048406]  [<ffffffff810048c5>] do_softirq+0x85/0xc0
-[   88.048414]  [<ffffffff81050686>] irq_exit+0x96/0xc0
-[   88.048422]  [<ffffffff8101e4e9>] smp_apic_timer_interrupt+0x69/0xa0
-[   88.048431]  [<ffffffff8136fff0>] apic_timer_interrupt+0x70/0x80
-[   88.048438]  <EOI>  [<ffffffff8136ea4d>] ? _raw_spin_unlock_irqrestore+0x3d/0x70
-[   88.048452]  [<ffffffff81122315>] scan_gray_list+0x155/0x170
-[   88.048460]  [<ffffffff8112262b>] kmemleak_scan+0x2fb/0x6e0
-[   88.048468]  [<ffffffff81122330>] ? scan_gray_list+0x170/0x170
-[   88.048477]  [<ffffffff81122e20>] ? kmemleak_write+0x390/0x390
-[   88.048485]  [<ffffffff81122e20>] ? kmemleak_write+0x390/0x390
-[   88.048494]  [<ffffffff81122e7b>] kmemleak_scan_thread+0x5b/0xd0
-[   88.048502]  [<ffffffff81122e20>] ? kmemleak_write+0x390/0x390
-[   88.048510]  [<ffffffff8106c8e6>] kthread+0x96/0xa0
-[   88.048519]  [<ffffffff81371674>] kernel_thread_helper+0x4/0x10
-[   88.048527]  [<ffffffff8136ed9d>] ? retint_restore_args+0xe/0xe
-[   88.048536]  [<ffffffff8106c850>] ? __init_kthread_worker+0x70/0x70
-[   88.048544]  [<ffffffff81371670>] ? gs_change+0xb/0xb
+> 
+> ---
+> From a9b84e395a0355cd1aa5ee0f525cd682b16dad63 Mon Sep 17 00:00:00 2001
+> From: Ben Blum <bblum@andrew.cmu.edu>
+> Date: Thu, 25 Aug 2011 13:44:36 -0700
+> Subject: [PATCH] cgroups: Don't attach task to subsystem if migration failed
+> 
+> If a task has exited to the point it has called cgroup_exit()
+> already, then we can't migrate it to another cgroup anymore.
+> 
+> This can happen when we are attaching a task to a new cgroup
+> between the call to ->can_attach_task() on subsystems and
+> the migration that is eventually tried in cgroup_task_migrate().
+> 
+> In this case cgroup_task_migrate() returns -ESRCH and we don't
+> want to attach the task to the subsystems because the attachment
+> to the new cgroup itself failed.
+> 
+> Fix this by only calling ->attach_task() on the subsystems if
+> the cgroup migration succeeded.
+> 
+> Reported-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+> Acked-by: Paul Menage <paul@paulmenage.org>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  kernel/cgroup.c |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 1d2b6ce..84bdace 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -2135,14 +2135,17 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+>  		oldcgrp = task_cgroup_from_root(tsk, root);
+>  		if (cgrp == oldcgrp)
+>  			continue;
+> -		/* attach each task to each subsystem */
+> -		for_each_subsys(root, ss) {
+> -			if (ss->attach_task)
+> -				ss->attach_task(cgrp, tsk);
+> -		}
+>  		/* if the thread is PF_EXITING, it can just get skipped. */
+>  		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
+> -		BUG_ON(retval != 0 && retval != -ESRCH);
+> +		if (retval == 0) {
+> +			/* attach each task to each subsystem */
+> +			for_each_subsys(root, ss) {
+> +				if (ss->attach_task)
+> +					ss->attach_task(cgrp, tsk);
+> +			}
+> +		} else {
+> +			BUG_ON(retval != -ESRCH);
+> +		}
+>  	}
+>  	/* nothing is sensitive to fork() after this point. */
+>  
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
