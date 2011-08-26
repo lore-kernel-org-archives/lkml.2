@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab1HZIDe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 04:03:34 -0400
-Received: from mailx4-2.csloxinfo.com ([58.137.249.234]:58867 "EHLO
-	mailx4-2.csloxinfo.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab1HZIDb (ORCPT
+	id S1753354Ab1HZIEC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 04:04:02 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40034 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab1HZID4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 04:03:31 -0400
-X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 04:03:30 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApoFAENQV07Lku2p/2dsb2JhbABABA+ZB44dgViBPD0BaRkMKDAJBBSHfAgCmXegMoM2BYMRBIdgnAUCPA
-X-IronPort-AV: E=Sophos;i="4.68,283,1312131600"; 
-   d="scan'208";a="278405089"
-Message-ID: <1314345206.4e5750f6866c0@webmail.loxinfo.co.th>
-Date: Fri, 26 Aug 2011 14:53:26 +0700
-From: System Administrator <help-deskx@telia.com>
-Reply-to: hechdaskz@aim.com
-Subject: Webmail kvoten har passerat den =?tis-620?b?Z3LkbnNlbg==?=
+	Fri, 26 Aug 2011 04:03:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=TIS-620
-Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) 3.2.1
-X-Originating-IP: 92.243.4.8
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <4E5715CE.2070806@st.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com>
+	<20110814083618.GE4986@n2100.arm.linux.org.uk>
+	<4E4CCF7B.8060704@st.com>
+	<20110821083306.GA12028@n2100.arm.linux.org.uk>
+	<4E532B19.6000103@st.com>
+	<4E5715CE.2070806@st.com>
+Date: Fri, 26 Aug 2011 10:03:55 +0200
+Message-ID: <CACRpkdapSvW=eMSoXTOOA2GyhfBLzq2OuyQcDctPxsnVzvr-4g@mail.gmail.com>
+Subject: Re: [PATCH 16/18] dmaengine/amba-pl08x: Add support for sg len
+ greater than one for slave transfers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Postlådan har överskridit lagringsutrymmet som är 1 GB som fastställts av 
-standard administratör, du är för närvarande slut kan du inte skicka eller ta 
-emot ny e-post förrän du återaktiverar din brevlåda. Att validera din postlåda 
-klicka här:
+On Fri, Aug 26, 2011 at 5:41 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
 
+> Probably this is the only issue left in this patch. (Sorry if i missed some other points)
+> Please suggest what should i modify here, so that Vinod can go ahead and push pending
+> patches too.
 
-http://diversified.aero/plugins/authenticate/account.html
+Patches are individual for that very reason - so they can be applied one by one.
 
-Tack
-systemadministratör
+I already suggested to Vinod to merge the other patches as far as possible,
+for certain 1 thru 15 could be merged right off with some minor
+manual fixup. Then we can fix this one patch.
 
-
-
-
+Yours,
+Linus Walleij
