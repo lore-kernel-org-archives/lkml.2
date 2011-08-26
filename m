@@ -1,151 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab1HZB4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 21:56:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:38876 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753954Ab1HZB4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 21:56:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,283,1312182000"; 
-   d="scan'208";a="45197296"
-Date: Fri, 26 Aug 2011 09:56:10 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110826015610.GA10320@localhost>
-References: <20110812142020.GB17781@localhost>
- <1314027488.24275.74.camel@twins>
- <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
- <20110823141504.GA15949@localhost>
- <20110823174757.GC15820@redhat.com>
- <20110824001257.GA6349@localhost>
- <20110824180058.GC22434@redhat.com>
- <20110825031934.GA9764@localhost>
- <20110825222001.GG27162@redhat.com>
+	id S1754767Ab1HZB7B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 21:59:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46348 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab1HZB7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 21:59:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825222001.GG27162@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACRpkdb4-0TfO-viUoZyW3VoLnVuo2ztHTX=8Hef3_RYWB52vg@mail.gmail.com>
+References: <1313747619-32222-1-git-send-email-linus.walleij@stericsson.com>
+ <CAGsJ_4z7s-ibmUuR1DA6Jps030dRrnE8M0dUWHoMhMPFtyyY_A@mail.gmail.com> <CACRpkdb4-0TfO-viUoZyW3VoLnVuo2ztHTX=8Hef3_RYWB52vg@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 26 Aug 2011 09:58:39 +0800
+Message-ID: <CAGsJ_4yEXEajH1JyNjnYE0hg13Fgd7bdiMNFs2fp6Ou=h_9N9g@mail.gmail.com>
+Subject: Re: [PATCH 0/4 v4] pin controller subsystem v4
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 06:20:01AM +0800, Vivek Goyal wrote:
-> On Thu, Aug 25, 2011 at 11:19:34AM +0800, Wu Fengguang wrote:
-> 
-> [..]
-> > > So you are trying to make one feedback loop aware of second loop so that
-> > > if second loop is unbalanced, first loop reacts to that as well and not
-> > > just look at dirty_rate and write_bw. So refining new balanced rate by
-> > > pos_ratio helps.
-> > > 						      write_bw	
-> > > bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * --------- * pos_ratio
-> > > 						      dirty_bw
-> > > 
-> > > Now if global dirty pages are imbalanced, balanced rate will still go
-> > > down despite the fact that dirty_bw == write_bw. This will lead to
-> > > further reduction in task dirty rate. Which in turn will lead to reduced
-> > > number of dirty rate and should eventually lead to pos_ratio=1.
-> > 
-> > Right, that's a good alternative viewpoint to the below one.
-> > 
-> >   						  write_bw	
-> >   bdi->dirty_ratelimit_(i+1) = task_ratelimit_i * ---------
-> >   						  dirty_bw
-> > 
-> > (1) the periodic rate estimation uses that to refresh the balanced rate on every 200ms
-> > (2) as long as the rate estimation is correct, pos_ratio is able to drive itself to 1.0
-> 
-> Personally I found it much easier to understand the other representation.
-> Once you have come up with equation.
-> 
-> balance_rate_(i+1) = balance_rate(i) * write_bw/dirty_bw
-> 
-> Can you please put few lines of comments to explain that why above
-> alone is not sufficient and we need to take pos_ratio also in to
-> account to keep number of dirty pages in check. And then go onto
-> 
-> balance_rate_(i+1) = balance_rate(i) * write_bw/dirty_bw * pos_ratio
-> 
-> This kind of maintains the continuity of explanation and explains
-> that why are we deviating from the theory we discussed so far.
+2011/8/22 Linus Walleij <linus.walleij@linaro.org>:
+> On Sun, Aug 21, 2011 at 4:42 PM, Barry Song <21cnbao@gmail.com> wrote:
+>
+>> it seems there is not an actual example that gpio requests pin from
+>> pinctrl yet. i might give one on SiRFprimaII.
+>
+> No good example yet, no.
+>
+> The reason is that for the U300 that I use as guinea pig, the
+> GPIO driver is tangled up in discussions about how to handle
+> the special control mechanics like requesting muxing and
+> biasing pins. Right now it seems easier to rewrite all that
+> to use the new pinctrl subsystem rather than actually trying
+> to work it into the GPIO subsystem first and refactor from
+> there, and that needs quite a bit of upfront work...
 
-Good point. Here is the commented code:
+Do you want the pinmux_request_gpio called by the gpiolib driver or by
+every device driver who uses this gpio?
+Do you think the following make sense in gpiolib driver?
+static int xxx_gpio_request(struct gpio_chip *chip, unsigned offset)
+{
+        int ret = 0;
 
-        /*
-         * task_ratelimit reflects each dd's dirty rate for the past 200ms.
-         */
-        task_ratelimit = (u64)dirty_ratelimit *
-                                        pos_ratio >> RATELIMIT_CALC_SHIFT;
+        ret = pinmux_request_gpio(chip->base + offset);
+        if (ret)
+                goto out;
+        .....
+out:
+        return ret;
+}
 
-        /*
-         * A linear estimation of the "balanced" throttle rate. The theory is,
-         * if there are N dd tasks, each throttled at task_ratelimit, the bdi's
-         * dirty_rate will be measured to be (N * task_ratelimit). So the below
-         * formula will yield the balanced rate limit (write_bw / N).
-         *
-         * Note that the expanded form is not a pure rate feedback:
-         *      rate_(i+1) = rate_(i) * (write_bw / dirty_rate)              (1)
-         * but also takes pos_ratio into account:
-         *      rate_(i+1) = rate_(i) * (write_bw / dirty_rate) * pos_ratio  (2)
-         *
-         * (1) is not realistic because pos_ratio also takes part in balancing
-         * the dirty rate.  Consider the state
-         *      pos_ratio = 0.5                                              (3)
-         *      rate = 2 * (write_bw / N)                                    (4)
-         * If (1) is used, it will stuck in that state! Because each dd will be
-         * throttled at
-         *      task_ratelimit = pos_ratio * rate = (write_bw / N)           (5)
-         * yielding
-         *      dirty_rate = N * task_ratelimit = write_bw                   (6)
-         * put (6) into (1) we get
-         *      rate_(i+1) = rate_(i)                                        (7)
-         *
-         * So we end up using (2) to always keep
-         *      rate_(i+1) ~= (write_bw / N)                                 (8)
-         * regardless of the value of pos_ratio. As long as (8) is satisfied,
-         * pos_ratio is able to drive itself to 1.0, which is not only where
-         * the dirty count meet the setpoint, but also where the slope of
-         * pos_ratio is most flat and hence task_ratelimit is least fluctuated.
-         */
-        balanced_dirty_ratelimit = div_u64((u64)task_ratelimit * write_bw,
-                                           dirty_rate | 1);
 
-> > 
-> > > A related question though I should have asked you this long back. How does
-> > > throttling based on rate helps. Why we could not just work with two
-> > > pos_ratios. One is gloabl postion ratio and other is bdi position ratio.
-> > > And then throttle task gradually to achieve smooth throttling behavior.
-> > > IOW, what property does rate provide which is not available just by
-> > > looking at per bdi dirty pages. Can't we come up with bdi setpoint and
-> > > limit the way you have done for gloabl setpoint and throttle tasks
-> > > accordingly?
-> > 
-> > Good question. If we have no idea of the balanced rate at all, but
-> > still want to limit dirty pages within the range [freerun, limit],
-> > all we can do is to throttle the task at eg. 1TB/s at @freerun and
-> > 0 at @limit. Then you get a really sharp control line which will make
-> > task_ratelimit fluctuate like mad...
-> > 
-> > So the balanced rate estimation is the key to get smooth task_ratelimit,
-> > while pos_ratio is the ultimate guarantee for the dirty pages range.
-> 
-> Ok, that makes sense. By keeping an estimation of rate at which bdi
-> can write, our range of throttling goes down. Say 0 to 300MB/s instead
-> of 0 to 1TB/sec and that can lead to a more smooth behavior.
+>
+> Linus Walleij
+>
 
-Yeah exactly, and even better, we can make the slope much more flat
-around the setpoint to achieve excellent smoothness in stable state :)
-
-Thanks,
-Fengguang
+Thanks
+Barry
