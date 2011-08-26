@@ -1,53 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab1HZQad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:30:33 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49953 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab1HZQab (ORCPT
+	id S1755301Ab1HZQcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:32:10 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:34835 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754804Ab1HZQcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:30:31 -0400
-From: Zhao Jin <cronozhj@gmail.com>
-To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com
-Cc: linux-kernel@vger.kernel.org, Zhao Jin <cronozhj@gmail.com>
-Subject: [PATCH 2/2][RESEND] slab: avoid unnecessary touching of a partial slab
-Date: Sat, 27 Aug 2011 00:28:15 +0800
-Message-Id: <1314376095-14991-1-git-send-email-cronozhj@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 26 Aug 2011 12:32:04 -0400
+Message-ID: <4E57CA80.4070509@gmail.com>
+Date: Fri, 26 Aug 2011 10:32:00 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, ming.m.lin@intel.com
+Subject: Re: [PATCH] perf: collect multiplexing timing information in perf
+ record
+References: <20110826152256.GA9421@quad>
+In-Reply-To: <20110826152256.GA9421@quad>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In cache_alloc_refill(), after refilling from a partial slab, if the
-slab remains partial, it would be deleted from and then added again to
-the partial list. As the slab is the first element in the list before
-deletion, such behavior has no effect. This patch avoids touching the
-slab in this case.
 
-Signed-off-by: Zhao Jin <cronozhj@gmail.com>
----
- mm/slab.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 82e0a0e..2d7a0f4 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3121,11 +3121,10 @@ retry:
- 		check_slabp(cachep, slabp);
- 
- 		/* move slabp to correct slabp list: */
--		list_del(&slabp->list);
- 		if (slabp->free == BUFCTL_END)
--			list_add(&slabp->list, &l3->slabs_full);
--		else
--			list_add(&slabp->list, &l3->slabs_partial);
-+			list_move(entry, &l3->slabs_full);
-+		else if (entry != l3->slabs_partial.next)
-+			list_move(entry, &l3->slabs_partial);
- 	}
- 
- must_grow:
--- 
-1.7.4.1
+On 08/26/2011 09:22 AM, Stephane Eranian wrote:
+> 
+> This patch modifies perf record to collect multiplexing timing
+> information (time_enabled, time_running) when the -R (raw) option
+> is used.
+> 
+> This allows you to compare events captured on a single run and
+> compute multi-event metrics. Further it allows you to compare
+> measurements between different runs where the number of collected
+> events has changed and across different architectures where the
+> event count will surely change.
+> 
+> To normalize an event (assuming a fixed period), you do:
+>  total_events = n_samples * period * time_enabled / time_running
+> 
+> You need the timing information to compensate for multiplexing
+> which may have happened.
+> 
+> To add timing information in each sample, it is necessary to
+> set PERF_SAMPLE_READ as per the kernel API. That has the side
+> effect of also storing the value of the sampling event in each
+> sample. This patch modifies perf report to correctly parse
+> such samples.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> 
+> ---
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index 6b0519f..c54e580 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -166,7 +166,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+>  				  PERF_FORMAT_TOTAL_TIME_RUNNING |
+>  				  PERF_FORMAT_ID;
+>  
+> -	attr->sample_type	|= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+> +	attr->sample_type |= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+>  
+>  	if (evlist->nr_entries > 1)
+>  		attr->sample_type |= PERF_SAMPLE_ID;
+> @@ -211,6 +211,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+>  		attr->sample_type	|= PERF_SAMPLE_TIME;
+>  		attr->sample_type	|= PERF_SAMPLE_RAW;
+>  		attr->sample_type	|= PERF_SAMPLE_CPU;
+> +		attr->sample_type	|= PERF_SAMPLE_ID | PERF_SAMPLE_READ;
+>  	}
+>  
+>  	if (nodelay) {
+> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+> index 55f4c76..997b7d7 100644
+> --- a/tools/perf/builtin-test.c
+> +++ b/tools/perf/builtin-test.c
+> @@ -561,7 +561,7 @@ static int test__basic_mmap(void)
+>  		}
+>  
+>  		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
+> -					       false, &sample);
+> +					       false, 0, &sample);
+>  		if (err) {
+>  			pr_err("Can't parse sample, err = %d\n", err);
+>  			goto out_munmap;
+> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> index 1d7f664..ed193eb 100644
+> --- a/tools/perf/util/event.h
+> +++ b/tools/perf/util/event.h
+> @@ -186,6 +186,6 @@ const char *perf_event__name(unsigned int id);
+>  
+>  int perf_event__parse_sample(const union perf_event *event, u64 type,
+>  			     int sample_size, bool sample_id_all,
+> -			     struct perf_sample *sample);
+> +			     u64 read_format, struct perf_sample *sample);
+>  
+>  #endif /* __PERF_RECORD_H */
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index c12bd47..be0e30c 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -477,6 +477,14 @@ int perf_evlist__set_filters(struct perf_evlist *evlist)
+>  	return 0;
+>  }
+>  
+> +u64 perf_evlist__read_format(const struct perf_evlist *evlist)
+> +{
+> +	struct perf_evsel *first;
+> +
+> +	first = list_entry(evlist->entries.next, struct perf_evsel, node);
+> +	return first->attr.read_format;
+> +}
+> +
+>  bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist)
+>  {
+>  	struct perf_evsel *pos, *first;
+> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+> index ce85ae9..0c0d0ff 100644
+> --- a/tools/perf/util/evlist.h
+> +++ b/tools/perf/util/evlist.h
+> @@ -68,6 +68,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
+>  void perf_evlist__delete_maps(struct perf_evlist *evlist);
+>  int perf_evlist__set_filters(struct perf_evlist *evlist);
+>  
+> +u64 perf_evlist__read_format(const struct perf_evlist *evlist);
+>  u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
+>  bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
+>  
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index a03a36b..630a7da 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -340,9 +340,32 @@ static bool sample_overlap(const union perf_event *event,
+>  	return false;
+>  }
+>  
+> +static int
+> +sample_read2u64(const u64 *array, u64 fmt)
+> +{
+> +	u64 nr = 1;
+> +	int ret = 1; /* nr or value */
+> +
+> +	if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED)
+> +		ret++;
+> +
+> +	if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING)
+> +		ret++;
+> +
+> +	if (fmt & PERF_FORMAT_GROUP) {
+> +		nr = *(u64 *)array;
+> +		ret += nr;
+> +	}
+> +
+> +	if (fmt & PERF_FORMAT_ID)
+> +		ret += nr;
 
+Why not add
+struct read_format {
+	u64     value;
+	u64     time_enabled;
+	u64     time_running;
+	u64     id;
+};
+
+to perf_sample and save the data there?
+
+David
+
+> +
+> +	return ret;
+> +}
+> +
+>  int perf_event__parse_sample(const union perf_event *event, u64 type,
+>  			     int sample_size, bool sample_id_all,
+> -			     struct perf_sample *data)
+> +			     u64 read_format,struct perf_sample *data)
+>  {
+>  	const u64 *array;
+>  
+> @@ -405,10 +428,8 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+>  		array++;
+>  	}
+>  
+> -	if (type & PERF_SAMPLE_READ) {
+> -		fprintf(stderr, "PERF_SAMPLE_READ is unsuported for now\n");
+> -		return -1;
+> -	}
+> +	if (type & PERF_SAMPLE_READ)
+> +		array += sample_read2u64(array, read_format);
+>  
+>  	if (type & PERF_SAMPLE_CALLCHAIN) {
+>  		if (sample_overlap(event, array, sizeof(data->callchain->nr)))
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 72458d9..25a4cf9 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -108,6 +108,7 @@ out:
+>  void perf_session__update_sample_type(struct perf_session *self)
+>  {
+>  	self->sample_type = perf_evlist__sample_type(self->evlist);
+> +	self->read_format = perf_evlist__read_format(self->evlist);
+>  	self->sample_size = __perf_evsel__sample_size(self->sample_type);
+>  	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
+>  	perf_session__id_header_size(self);
+> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+> index 170601e..903fc1a 100644
+> --- a/tools/perf/util/session.h
+> +++ b/tools/perf/util/session.h
+> @@ -42,7 +42,8 @@ struct perf_session {
+>  	 *	  perf.data file.
+>  	 */
+>  	struct hists		hists;
+> -	u64			sample_type;
+> +	u64			sample_type; /* identical for all events */
+> +	u64			read_format; /* identical for all events */
+>  	int			sample_size;
+>  	int			fd;
+>  	bool			fd_pipe;
+> @@ -162,7 +163,9 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+>  {
+>  	return perf_event__parse_sample(event, session->sample_type,
+>  					session->sample_size,
+> -					session->sample_id_all, sample);
+> +					session->sample_id_all,
+> +					session->read_format,
+> +					sample);
+>  }
+>  
+>  struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
