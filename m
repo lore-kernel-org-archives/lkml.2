@@ -1,68 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1HZPVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:21:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34581 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718Ab1HZPVp (ORCPT
+	id S1753905Ab1HZPXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:23:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33912 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab1HZPXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:21:45 -0400
-Date: Fri, 26 Aug 2011 17:21:39 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        bblum@andrew.cmu.edu, fweisbec@gmail.com, lizf@cn.fujitsu.com,
-        paul@paulmenage.org
-Subject: Re: + cgroups-fix-ordering-of-calls-in-cgroup_attach_proc.patch
- added to -mm tree
-Message-ID: <20110826152139.GH2632@htj.dyndns.org>
-References: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org>
- <20110826151245.GA16243@redhat.com>
+	Fri, 26 Aug 2011 11:23:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:to:cc:subject:message-id:
+	mime-version:content-type:content-disposition:user-agent:x-system-of-record;
+	b=XuOOqLAnd2awq4EErEMSpqDap3/a5jIyKRbktUsyylAROpWEeILPjUApd/Efkd/7e
+	CkyWhi98biJ3EatVi2v6w==
+Date: Fri, 26 Aug 2011 17:22:57 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, ming.m.lin@intel.com
+Subject: [PATCH] perf: collect multiplexing timing information in perf
+ record
+Message-ID: <20110826152256.GA9421@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110826151245.GA16243@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
 
-On Fri, Aug 26, 2011 at 05:12:45PM +0200, Oleg Nesterov wrote:
-> Yes, I think this is what we need, the patch itself looks fine.
-> 
-> But this doesn't answer my another question. After that the code does
-> 
-> 	 * step 4: do expensive, non-thread-specific subsystem callbacks.
-> 
-> 		ss->attach(ss, cgrp, oldcgrp, leader);
-> 
-> OK, non-thread-specific is nice, but how can this "leader" represent
-> the process?
-> 
-> It can be zombie (but still group_leader) even without any races.
-> Say, cpuset_attach() and mem_cgroup_move_task() need get_task_mm(p).
-> How this can work if the leader is dead?
-> 
-> Also. Even if we add the locking around while_each_thread() (btw,
-> we need this in any case), we can race with exec which can change
-> the leader. In this case this task_struct has nothing to do with
-> the process we are going to attach, at all.
-> 
-> And, ss->can_attach(leader) has the same problems, it seems.
+This patch modifies perf record to collect multiplexing timing
+information (time_enabled, time_running) when the -R (raw) option
+is used.
 
-Please take a look at the following series.
+This allows you to compare events captured on a single run and
+compute multi-event metrics. Further it allows you to compare
+measurements between different runs where the number of collected
+events has changed and across different architectures where the
+event count will surely change.
 
-  http://thread.gmane.org/gmane.linux.kernel/1184375
+To normalize an event (assuming a fixed period), you do:
+ total_events = n_samples * period * time_enabled / time_running
 
-attach racing against exit/exec is problematic and maybe we should
-extend task->threadgroup_fork_lock protection to cover both exit and
-exec.  I can't like it tho.  I hope this can be somehow done in
-lighter way.  cgroup attaches are quite cold paths and we're putting
-an extra rwsem in each task for that.
+You need the timing information to compensate for multiplexing
+which may have happened.
 
-Thanks.
+To add timing information in each sample, it is necessary to
+set PERF_SAMPLE_READ as per the kernel API. That has the side
+effect of also storing the value of the sampling event in each
+sample. This patch modifies perf report to correctly parse
+such samples.
 
--- 
-tejun
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+---
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 6b0519f..c54e580 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -166,7 +166,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+ 				  PERF_FORMAT_TOTAL_TIME_RUNNING |
+ 				  PERF_FORMAT_ID;
+ 
+-	attr->sample_type	|= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
++	attr->sample_type |= PERF_SAMPLE_IP | PERF_SAMPLE_TID;
+ 
+ 	if (evlist->nr_entries > 1)
+ 		attr->sample_type |= PERF_SAMPLE_ID;
+@@ -211,6 +211,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+ 		attr->sample_type	|= PERF_SAMPLE_TIME;
+ 		attr->sample_type	|= PERF_SAMPLE_RAW;
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
++		attr->sample_type	|= PERF_SAMPLE_ID | PERF_SAMPLE_READ;
+ 	}
+ 
+ 	if (nodelay) {
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 55f4c76..997b7d7 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -561,7 +561,7 @@ static int test__basic_mmap(void)
+ 		}
+ 
+ 		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
+-					       false, &sample);
++					       false, 0, &sample);
+ 		if (err) {
+ 			pr_err("Can't parse sample, err = %d\n", err);
+ 			goto out_munmap;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 1d7f664..ed193eb 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -186,6 +186,6 @@ const char *perf_event__name(unsigned int id);
+ 
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *sample);
++			     u64 read_format, struct perf_sample *sample);
+ 
+ #endif /* __PERF_RECORD_H */
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index c12bd47..be0e30c 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -477,6 +477,14 @@ int perf_evlist__set_filters(struct perf_evlist *evlist)
+ 	return 0;
+ }
+ 
++u64 perf_evlist__read_format(const struct perf_evlist *evlist)
++{
++	struct perf_evsel *first;
++
++	first = list_entry(evlist->entries.next, struct perf_evsel, node);
++	return first->attr.read_format;
++}
++
+ bool perf_evlist__valid_sample_type(const struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *pos, *first;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index ce85ae9..0c0d0ff 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -68,6 +68,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, pid_t target_pid,
+ void perf_evlist__delete_maps(struct perf_evlist *evlist);
+ int perf_evlist__set_filters(struct perf_evlist *evlist);
+ 
++u64 perf_evlist__read_format(const struct perf_evlist *evlist);
+ u64 perf_evlist__sample_type(const struct perf_evlist *evlist);
+ bool perf_evlist__sample_id_all(const const struct perf_evlist *evlist);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a03a36b..630a7da 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -340,9 +340,32 @@ static bool sample_overlap(const union perf_event *event,
+ 	return false;
+ }
+ 
++static int
++sample_read2u64(const u64 *array, u64 fmt)
++{
++	u64 nr = 1;
++	int ret = 1; /* nr or value */
++
++	if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED)
++		ret++;
++
++	if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING)
++		ret++;
++
++	if (fmt & PERF_FORMAT_GROUP) {
++		nr = *(u64 *)array;
++		ret += nr;
++	}
++
++	if (fmt & PERF_FORMAT_ID)
++		ret += nr;
++
++	return ret;
++}
++
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *data)
++			     u64 read_format,struct perf_sample *data)
+ {
+ 	const u64 *array;
+ 
+@@ -405,10 +428,8 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 		array++;
+ 	}
+ 
+-	if (type & PERF_SAMPLE_READ) {
+-		fprintf(stderr, "PERF_SAMPLE_READ is unsuported for now\n");
+-		return -1;
+-	}
++	if (type & PERF_SAMPLE_READ)
++		array += sample_read2u64(array, read_format);
+ 
+ 	if (type & PERF_SAMPLE_CALLCHAIN) {
+ 		if (sample_overlap(event, array, sizeof(data->callchain->nr)))
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 72458d9..25a4cf9 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -108,6 +108,7 @@ out:
+ void perf_session__update_sample_type(struct perf_session *self)
+ {
+ 	self->sample_type = perf_evlist__sample_type(self->evlist);
++	self->read_format = perf_evlist__read_format(self->evlist);
+ 	self->sample_size = __perf_evsel__sample_size(self->sample_type);
+ 	self->sample_id_all = perf_evlist__sample_id_all(self->evlist);
+ 	perf_session__id_header_size(self);
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 170601e..903fc1a 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -42,7 +42,8 @@ struct perf_session {
+ 	 *	  perf.data file.
+ 	 */
+ 	struct hists		hists;
+-	u64			sample_type;
++	u64			sample_type; /* identical for all events */
++	u64			read_format; /* identical for all events */
+ 	int			sample_size;
+ 	int			fd;
+ 	bool			fd_pipe;
+@@ -162,7 +163,9 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+ {
+ 	return perf_event__parse_sample(event, session->sample_type,
+ 					session->sample_size,
+-					session->sample_id_all, sample);
++					session->sample_id_all,
++					session->read_format,
++					sample);
+ }
+ 
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
