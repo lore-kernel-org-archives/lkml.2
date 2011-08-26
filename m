@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab1HZO4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 10:56:33 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38964 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab1HZO4a convert rfc822-to-8bit (ORCPT
+	id S1753201Ab1HZO6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 10:58:38 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55268 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab1HZO6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 10:56:30 -0400
+	Fri, 26 Aug 2011 10:58:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110826140900.GF2632@htj.dyndns.org>
-References: <1314312192-26885-1-git-send-email-tj@kernel.org>
- <4E5753D3.9080500@cn.fujitsu.com> <20110826140900.GF2632@htj.dyndns.org>
+In-Reply-To: <4E574B09.6050108@cn.fujitsu.com>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
+ <20110801161900.1fe24b76.akpm@linux-foundation.org> <CAAAKZwupGmw_+EaApZFAqVcXWBF885Gsjx6tUWUdMuebXrt_Mg@mail.gmail.com>
+ <CAPXgP11aUfdkq-SdaHc8=tfjA4W7DYXjSXG-asoZMi6hK4iOPQ@mail.gmail.com>
+ <20110818143319.GC10441@somewhere> <CALdu-PA3+u-v1fj-DQuC-zyJ4Ud0Xi0sq0zcB0DLNcR_TMT6XQ@mail.gmail.com>
+ <20110824175431.GA26417@somewhere.redhat.com> <4E574B09.6050108@cn.fujitsu.com>
 From: Paul Menage <paul@paulmenage.org>
-Date: Fri, 26 Aug 2011 07:56:09 -0700
-X-Google-Sender-Auth: f7z_6JHDGsNLW2iLOxel_IHhN5U
-Message-ID: <CALdu-PBthm1AcRX1UOAQEpXVWMU60UEPjMEcLDig3vZOawT9-A@mail.gmail.com>
-Subject: Re: [PATCHSET] cgroup: introduce cgroup_taskset and consolidate
- subsys methods, take#2
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, rjw@sisk.pl,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 26 Aug 2011 07:58:16 -0700
+X-Google-Sender-Auth: 3u3FNfT-LHm-bNMS3VRL34UK5OI
+Message-ID: <CALdu-PD0EBK7YvxeuxVw5Z21JvfqbgiUoR5Wh3Of-FhG+VE3zg@mail.gmail.com>
+Subject: Re: [RFD] Task counter: cgroup core feature or cgroup subsystem? (was
+ Re: [PATCH 0/8 v3] cgroups: Task counter subsystem)
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 7:09 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
+On Fri, Aug 26, 2011 at 12:28 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
 >
-> On Fri, Aug 26, 2011 at 04:05:39PM +0800, Li Zefan wrote:
->> It's fine for me to route those patches through pm-freezer, since this
->> work is initiated and needed for the work on freezer.
->
-> Awesome.  Paul, what do you think?  Rafael, if Paul agrees, can you
-> please take in this series?
->
+> I had a patchset that can make things even better. The patchset is
+> to bind/unbind a subsystem to/from an existing cgroup hierarchy.
 
-Sure - but can you make sure that there's nothing in -mm that
-conflicts with this patchset? If there is, then maybe cherry-pick
-those into pm-freezer too, and fix them up?
+Sigh, I'd been meaning to comment on that great patchset for ages, but
+they kind of slipped out of my attention :-( I'll try to look over
+them again - do they still apply cleanly after all the recent changes?
+
+The bindability is orthogonal to the multi-subsystem support, I think
+- they definitely complement each other.
 
 Paul
