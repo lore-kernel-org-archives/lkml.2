@@ -1,90 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1HZJyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:54:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62030 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754675Ab1HZJyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:54:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,284,1312182000"; 
-   d="scan'208";a="42680703"
-Date: Fri, 26 Aug 2011 17:53:56 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110826095356.GA5124@localhost>
-References: <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
- <20110823141504.GA15949@localhost>
- <20110823174757.GC15820@redhat.com>
- <20110824001257.GA6349@localhost>
- <20110824180058.GC22434@redhat.com>
- <20110825031934.GA9764@localhost>
- <20110825222001.GG27162@redhat.com>
- <20110826015610.GA10320@localhost>
- <1314348971.26922.20.camel@twins>
+	id S1754771Ab1HZJ4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:56:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58449 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590Ab1HZJ4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 05:56:37 -0400
+Date: Fri, 26 Aug 2011 13:56:31 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ralf Jung <ralfjung-e@gmx.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
+Message-ID: <20110826095631.GF3903@sun>
+References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
+ <201108261122.33304.ralfjung-e@gmx.de>
+ <20110826093917.GE3903@sun>
+ <201108261153.21103.ralfjung-e@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314348971.26922.20.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201108261153.21103.ralfjung-e@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 04:56:11PM +0800, Peter Zijlstra wrote:
-> On Fri, 2011-08-26 at 09:56 +0800, Wu Fengguang wrote:
-> >         /*
-> >          * A linear estimation of the "balanced" throttle rate. The theory is,
-> >          * if there are N dd tasks, each throttled at task_ratelimit, the bdi's
-> >          * dirty_rate will be measured to be (N * task_ratelimit). So the below
-> >          * formula will yield the balanced rate limit (write_bw / N).
-> >          *
-> >          * Note that the expanded form is not a pure rate feedback:
-> >          *      rate_(i+1) = rate_(i) * (write_bw / dirty_rate)              (1)
-> >          * but also takes pos_ratio into account:
-> >          *      rate_(i+1) = rate_(i) * (write_bw / dirty_rate) * pos_ratio  (2)
-> >          *
-> >          * (1) is not realistic because pos_ratio also takes part in balancing
-> >          * the dirty rate.  Consider the state
-> >          *      pos_ratio = 0.5                                              (3)
-> >          *      rate = 2 * (write_bw / N)                                    (4)
-> >          * If (1) is used, it will stuck in that state! Because each dd will be
-> >          * throttled at
-> >          *      task_ratelimit = pos_ratio * rate = (write_bw / N)           (5)
-> >          * yielding
-> >          *      dirty_rate = N * task_ratelimit = write_bw                   (6)
-> >          * put (6) into (1) we get
-> >          *      rate_(i+1) = rate_(i)                                        (7)
-> >          *
-> >          * So we end up using (2) to always keep
-> >          *      rate_(i+1) ~= (write_bw / N)                                 (8)
-> >          * regardless of the value of pos_ratio. As long as (8) is satisfied,
-> >          * pos_ratio is able to drive itself to 1.0, which is not only where
-> >          * the dirty count meet the setpoint, but also where the slope of
-> >          * pos_ratio is most flat and hence task_ratelimit is least fluctuated.
-> >          */ 
+On Fri, Aug 26, 2011 at 11:53:20AM +0200, Ralf Jung wrote:
+> Hi, 
 > 
-> I'm still not buying this, it has the massive assumption N is a
-> constant, without that assumption you get the same kind of thing you get
-> from not adding pos_ratio to the feedback term.
+> > Hi Ralf, I can't put that risk on you. Hell knows how it will react
+> > on such reprogramming (which is seems rather a bios duty than kernel).
+>
+> Oh, we are talking about that kind of problems? It's my main (and only) work 
+> laptop, so... thanks for the warning ;-)
+> 
 
-The reasoning between (3)-(7) actually assumes both N and write_bw to
-be some constant. It's documenting some stuck state..
+Yeah, i'm just curious ;) Anyway, Bjorn's patch fixes your problem
+and the warn_on I proposed might be added later, on top of this
+patch.
 
-> Also, I've yet to see what harm it does if you leave it out, all
-> feedback loops should stabilize just fine.
-
-That's a good question. It should be trivial to try out equation (1)
-and see how it work out in practice. Let me collect some figures..
-
-Thanks,
-Fengguang
+	Cyrill
