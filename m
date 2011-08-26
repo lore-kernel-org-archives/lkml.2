@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab1HZXr4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 19:47:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53094 "EHLO mga11.intel.com"
+	id S1754202Ab1HZXwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 19:52:09 -0400
+Received: from fieldses.org ([174.143.236.118]:44363 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab1HZXrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 19:47:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,287,1312182000"; 
-   d="scan'208";a="45241117"
-Subject: Re: MTRR setup failure on Fujitsu Lifebook S761
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Tony Vroon <tony@linx.net>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, "yinghai@kernel.org" <yinghai@kernel.org>,
-        venki@google.com
-Date: Fri, 26 Aug 2011 16:51:07 -0700
-In-Reply-To: <4E581D1A.90404@zytor.com>
-References: <4E579397.6010009@linx.net>  <4E57CBBB.3040806@zytor.com>
-	 <1314385315.8356.0.camel@localhost>
-	 <1314394157.4729.23.camel@sbsiddha-desk.sc.intel.com>
-	 <4E581D1A.90404@zytor.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1314402667.4729.38.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1752920Ab1HZXwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 19:52:08 -0400
+Date: Fri, 26 Aug 2011 19:52:01 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
+Message-ID: <20110826235201.GD18699@fieldses.org>
+References: <1312810169.2591.1153.camel@deadeye>
+ <20110808155538.GB904@fieldses.org>
+ <20110808180658.GC29924@decadent.org.uk>
+ <20110826220311.GA18140@fieldses.org>
+ <20110826233258.GE24107@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826233258.GE24107@decadent.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 15:24 -0700, H. Peter Anvin wrote:
-> On 08/26/2011 02:29 PM, Suresh Siddha wrote:
-> > On Fri, 2011-08-26 at 12:01 -0700, Tony Vroon wrote:
-> >> On Fri, 2011-08-26 at 09:37 -0700, H. Peter Anvin wrote:
-> >>> Hm, I don't see any evidence of the MTRR sanitizer running at all...
-> >>
-> >> It is almost as if it failed to find an optimal configuration; does that
-> >> error path not print anything?
-> > 
-> > MTRR cleanup bails out in mtrr_need_cleanup() if it finds any entry
-> > other than WB or UC. And the first entry you had was write-protect.
-> 
-> WP for the BIOS is becoming reasonably common; we need to handle that.
+On Sat, Aug 27, 2011 at 12:32:58AM +0100, Ben Hutchings wrote:
+> On Fri, Aug 26, 2011 at 06:03:11PM -0400, J. Bruce Fields wrote:
+> [...]
+> > diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
+> > index f566518..c9296ab 100644
+> > --- a/arch/sparc/kernel/systbls_64.S
+> > +++ b/arch/sparc/kernel/systbls_64.S
+> > @@ -145,7 +145,7 @@ sys_call_table:
+> >  	.word sys_fstatfs64, sys_llseek, sys_mlock, sys_munlock, sys_mlockall
+> >  /*240*/	.word sys_munlockall, sys_sched_setparam, sys_sched_getparam, sys_sched_setscheduler, sys_sched_getscheduler
+> >  	.word sys_sched_yield, sys_sched_get_priority_max, sys_sched_get_priority_min, sys_sched_rr_get_interval, sys_nanosleep
+> > -/*250*/	.word sys_64_mremap, sys_sysctl, sys_getsid, sys_fdatasync, sys_nfsservctl
+> > +/*250*/	.word sys_64_mremap, sys_sysctl, sys_getsid, sys_fdatasync, sys_nis_syscall
+> [...]
+>           	                                                                  ^
+> This seems to be a typo for 'sys_ni_syscall'.
 
-Agree. Ideally in this case PAT should have helped. There must be some
-other hidden issue that I am trying to understand.
+Is it?  On a quick skim, both seem to occur.  sys_nis_syscall seems to
+point to c_sys_nis_syscall(), which prints a warning and returns
+-ENOSYS.  I can't tell what sys_ni_syscall does.
 
-We should address the WP issue nevertheless.
-
-thanks,
-suresh
-
+--b.
