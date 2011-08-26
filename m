@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab1HZUlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 16:41:12 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:46510 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754300Ab1HZUlK (ORCPT
+	id S1754718Ab1HZUqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 16:46:07 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:39642 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754304Ab1HZUqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 16:41:10 -0400
-Date: Fri, 26 Aug 2011 16:40:53 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: convert k{un}map_atomic(p, KM_type) to
- k{un}map_atomic(p)
-Message-ID: <20110826204053.GA3408@elliptictech.com>
-References: <1314346676.6486.25.camel@minggr.sh.intel.com>
- <1314349096.26922.21.camel@twins>
- <20110826124239.fc503491.akpm@linux-foundation.org>
+	Fri, 26 Aug 2011 16:46:05 -0400
+Date: Fri, 26 Aug 2011 16:46:04 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Michal Nazarewicz <mnazarewicz@google.com>
+cc: Greg KH <greg@kroah.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5 1/4] usb: Provide usb_speed_string() function
+In-Reply-To: <op.v0t39bd1vgw7ix@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108261645200.5470-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110826124239.fc503491.akpm@linux-foundation.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-26 12:42 -0700, Andrew Morton wrote:
-> On Fri, 26 Aug 2011 10:58:16 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, 2011-08-26 at 16:17 +0800, Lin Ming wrote:
-> > > 
-> > > The KM_type parameter for kmap_atomic/kunmap_atomic is not used
-> > > anymore since commit 3e4d3af(mm: stack based kmap_atomic()).
-[...]
-> > yet-another-massive patch.. (you're the third or fourth to do so) if
-> > Andrew wants to take this one I won't mind, however previously he
-> > didn't want flag day patches..
+On Fri, 26 Aug 2011, Michal Nazarewicz wrote:
+
+> On Fri, 26 Aug 2011 20:49:05 +0200, Alan Stern <stern@rowland.harvard.edu>  
+> wrote:
+> > I don't know.  Michal, can you look into this?  What we want is:
+> >
+> > 	common.o gets included in the main kernel if either CONFIG_USB
+> > 	or CONFIG_USB_GADGET is set to Y.
+> >
+> > 	Otherwise, if either symbol is set to M then common.o gets
+> > 	built into its own little module.  Perhaps some other stuff
+> > 	could get put in there too, though at the moment I can't
+> > 	think of anything.
 > 
-> I'm OK with cleaning all these up, but I suggest that we leave the
-> back-compatibility macros in place for a while, to make sure that
-> various stragglers get converted.  Extra marks will be awarded for
-> working out how to make unconverted code generate a compile warning ;)
+> Wouldn't that be accomplished by a tristate Kconfig option selected by
+> USB and USB_GADGET?  Or a tristate that defaults to “y” but depends on
+> USB or USB_GADGET?
 
-It's possible to (ab)use the C preprocessor to accomplish this sort of
-thing.  For instance, consider the following:
+Like I said, I don't know.  Try it and see.
 
-  #include <stdio.h>
+Alan Stern
 
-  int foo(int x)
-  {
-     return x;
-  }
-
-  /* Deprecated; call foo instead. */
-  static inline int __attribute__((deprecated)) foo_unconverted(int x, int unused)
-  {
-     return foo(x);
-  }
-
-  #define PASTE(a, b) a ## b
-  #define PASTE2(a, b) PASTE(a, b)
-  
-  #define NARG_(_9, _8, _7, _6, _5, _4, _3, _2, _1, n, ...) n
-  #define NARG(...) NARG_(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, :)
-
-  #define foo1(...) foo(__VA_ARGS__)
-  #define foo2(...) foo_unconverted(__VA_ARGS__)
-  #define foo(...) PASTE2(foo, NARG(__VA_ARGS__)(__VA_ARGS__))
-
-  int main(void)
-  {
-    printf("%d\n", foo(42));
-    printf("%d\n", foo(54, 42));
-    return 0;
-  }
-
-The preprocessor will select between "foo" and "foo_unconverted"
-depending on the number of arguments passed; and gcc will emit a warning
-for the latter case:
-
-  % gcc test.c
-  test.c: In function ‘main’:
-  test.c:27: warning: ‘foo_unconverted’ is deprecated (declared at test.c:9)
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
