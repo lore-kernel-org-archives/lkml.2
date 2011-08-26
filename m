@@ -1,45 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab1HZXQb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 19:16:31 -0400
-Received: from lucidpixels.com ([72.73.18.11]:52933 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936Ab1HZXQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 19:16:29 -0400
-Date: Fri, 26 Aug 2011 19:16:28 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Steve French <smfrench@gmail.com>
-cc: Jeff Layton <jlayton@samba.org>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
- with linux-3.1-rc2
-In-Reply-To: <CAH2r5mtrUq4aTHgqRyG-YZZoUztU4_k4rh+nXrN13CVckex8ZQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1108261914250.2203@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <3300.1313637592@jrobl> <alpine.DEB.2.02.1108180632000.10458@p34.internal.lan> <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan> <alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
- <20110818091140.385a9455@barsoom.rdu.redhat.com> <alpine.DEB.2.02.1108180914180.7903@p34.internal.lan> <20110818130408.71c55b96@barsoom.rdu.redhat.com> <alpine.DEB.2.02.1108181314310.7903@p34.internal.lan> <CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
- <alpine.DEB.2.02.1108181331180.7903@p34.internal.lan> <CAH2r5msTpKdxwpgG+-3-gkkr5h7Ox1tL86q3LyTBMd1V8WS7aQ@mail.gmail.com> <alpine.DEB.2.02.1108181413030.7903@p34.internal.lan> <20110818145257.035a38e9@barsoom.rdu.redhat.com> <20110826175940.2830044d@tlielax.poochiereds.net>
- <alpine.DEB.2.02.1108261844170.2203@p34.internal.lan> <CAH2r5mtrUq4aTHgqRyG-YZZoUztU4_k4rh+nXrN13CVckex8ZQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753820Ab1HZX34 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 19:29:56 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:40166 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752936Ab1HZX3z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 19:29:55 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: "cbou@mail.ru" <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <hzhuang1@marvell.com>
+Date: Fri, 26 Aug 2011 16:29:21 -0700
+Subject: Re: [PATCH] power: max8925_power.  Do not detect ac insert if
+ handled by other code 
+Thread-Topic: [PATCH] power: max8925_power.  Do not detect ac insert if
+ handled by other code 
+Thread-Index: AcxkR/ScjsnueqSuSZu4bJNJE2AX+Q==
+Message-ID: <1D8C4706-7905-4E64-8C18-2057DA57FECF@marvell.com>
+References: <7F69A365-0154-4B4A-9ED9-D60AE4BEB23C@marvell.com>
+In-Reply-To: <7F69A365-0154-4B4A-9ED9-D60AE4BEB23C@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+loop maintainer
+On Aug 24, 2011, at 3:27 PM, Philip Rakity wrote:
 
-On Fri, 26 Aug 2011, Steve French wrote:
-
-> Fails with Jeff's new 20+ patch series?
-
-Hi,
-
-No, wanted to make sure it still mounted with 3.1-rc2+previous patches before 
-doing anything, there have been quite a few patches applied recently on the
-Windows host (updates) I'll need to check with the owner tomorrow; I want 
-to ensure I can mount as before before applying Jeff's patches.
-
-Justin.
+> On brownstone rev 4 ac-insert detect is handled by vbus.
+> 
+> allow the platform code to configure the disabling of insert
+> by setting no_insert_detect.
+> 
+> Signed-off-by: Philip Rakity <prakity@marvell.com>
+> ---
+> drivers/power/max8925_power.c |    8 ++++++--
+> include/linux/mfd/max8925.h   |    1 +
+> 2 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+> index dba07f3..fd32c08 100644
+> --- a/drivers/power/max8925_power.c
+> +++ b/drivers/power/max8925_power.c
+> @@ -79,6 +79,7 @@ struct max8925_power_info {
+> 	unsigned		topoff_threshold:2;
+> 	unsigned		fast_charge:3;
+> 	unsigned		no_temp_support:1;
+> +	unsigned		no_insert_detect:1;
+> 
+> 	int (*set_charger) (int);
+> };
+> @@ -366,8 +367,10 @@ static __devinit int max8925_init_charger(struct max8925_chip *chip,
+> 	int ret;
+> 
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_OVP, "ac-ovp");
+> -	REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_F, "ac-remove");
+> -	REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_R, "ac-insert");
+> +	if (!info->no_insert_detect) {
+> +		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_F, "ac-remove");
+> +		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_R, "ac-insert");
+> +	}
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_OVP, "usb-ovp");
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_F, "usb-remove");
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_R, "usb-insert");
+> @@ -482,6 +485,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+> 	info->fast_charge = pdata->fast_charge;
+> 	info->set_charger = pdata->set_charger;
+> 	info->no_temp_support = pdata->no_temp_support;
+> +	info->no_insert_detect = pdata->no_insert_detect;
+> 
+> 	max8925_init_charger(chip, info);
+> 	return 0;
+> diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
+> index 69ec8f0..e742e04 100644
+> --- a/include/linux/mfd/max8925.h
+> +++ b/include/linux/mfd/max8925.h
+> @@ -224,6 +224,7 @@ struct max8925_power_pdata {
+> 	unsigned	topoff_threshold:2;
+> 	unsigned	fast_charge:3;	/* charge current */
+> 	unsigned	no_temp_support:1; /* set if no temperature detect */
+> +	unsigned	no_insert_detect:1; /* set if no ac insert detect */
+> };
+> 
+> /*
+> -- 
+> 1.7.6
+> 
 
