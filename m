@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1H0O6W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:58:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46841 "EHLO mx2.suse.de"
+	id S1754921Ab1H0O6e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:58:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46869 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835Ab1H0O6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:58:17 -0400
+	id S1754864Ab1H0O60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:58:26 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:55 2011
-Message-Id: <20110826215054.936937469@clark.kroah.org>
+Message-Id: <20110826215055.048187376@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:37 -0700
+Date: Fri, 26 Aug 2011 14:49:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Sandeen <sandeen@redhat.com>, Tao Ma <boyu.mt@taobao.com>,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [20/35] ext4: Resolve the hang of direct i/o read in handling EXT4_IO_END_UNWRITTEN.
+Subject: [21/35] ext4: fix nomblk_io_submit option so it correctly converts uninit blocks
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tao Ma <boyu.mt@taobao.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 32c80b32c053dc52712dedac5e4d0aa7c93fc353 upstream.
+commit 9dd75f1f1a02d656a11a7b9b9e6c2759b9c1e946 upstream.
 
-EXT4_IO_END_UNWRITTEN flag set and the increase of i_aiodio_unwritten
-should be done simultaneously since ext4_end_io_nolock always clear
-the flag and decrease the counter in the same time.
+Bug discovered by Jan Kara:
 
-We don't increase i_aiodio_unwritten when setting
-EXT4_IO_END_UNWRITTEN so it will go nagative and causes some process
-to wait forever.
+Finally, commit 1449032be17abb69116dbc393f67ceb8bd034f92 returned back
+the old IO submission code but apparently it forgot to return the old
+handling of uninitialized buffers so we unconditionnaly call
+block_write_full_page() without specifying end_io function. So AFAICS
+we never convert unwritten extents to written in some cases. For
+example when I mount the fs as: mount -t ext4 -o
+nomblk_io_submit,dioread_nolock /dev/ubdb /mnt and do
+        int fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC, 0600);
+        char buf[1024];
+        memset(buf, 'a', sizeof(buf));
+        fallocate(fd, 0, 0, 16384);
+        write(fd, buf, sizeof(buf));
 
-Part of the patch came from Eric in his e-mail, but it doesn't fix the
-problem met by Michael actually.
+I get a file full of zeros (after remounting the filesystem so that
+pagecache is dropped) instead of seeing the first KB contain 'a's.
 
-http://marc.info/?l=linux-ext4&m=131316851417460&w=2
-
-Reported-and-Tested-by: Michael Tokarev<mjt@tls.msk.ru>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/inode.c   |    9 ++++++++-
- fs/ext4/page-io.c |    6 ++++--
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ fs/ext4/inode.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
 --- a/fs/ext4/inode.c
 +++ b/fs/ext4/inode.c
-@@ -3645,8 +3645,15 @@ static void ext4_end_io_buffer_write(str
- 		goto out;
- 	}
+@@ -2156,7 +2156,12 @@ static int mpage_da_submit_io(struct mpa
+ 			else if (test_opt(inode->i_sb, MBLK_IO_SUBMIT))
+ 				err = ext4_bio_write_page(&io_submit, page,
+ 							  len, mpd->wbc);
+-			else
++			else if (buffer_uninit(page_bufs)) {
++				ext4_set_bh_endio(page_bufs, inode);
++				err = block_write_full_page_endio(page,
++					noalloc_get_block_write,
++					mpd->wbc, ext4_end_io_buffer_write);
++			} else
+ 				err = block_write_full_page(page,
+ 					noalloc_get_block_write, mpd->wbc);
  
--	io_end->flag = EXT4_IO_END_UNWRITTEN;
-+	/*
-+	 * It may be over-defensive here to check EXT4_IO_END_UNWRITTEN now,
-+	 * but being more careful is always safe for the future change.
-+	 */
- 	inode = io_end->inode;
-+	if (!(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
-+		io_end->flag |= EXT4_IO_END_UNWRITTEN;
-+		atomic_inc(&EXT4_I(inode)->i_aiodio_unwritten);
-+	}
- 
- 	/* Add the io_end to per-inode completed io list*/
- 	spin_lock_irqsave(&EXT4_I(inode)->i_completed_io_lock, flags);
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -338,8 +338,10 @@ submit_and_retry:
- 	if ((io_end->num_io_pages >= MAX_IO_PAGES) &&
- 	    (io_end->pages[io_end->num_io_pages-1] != io_page))
- 		goto submit_and_retry;
--	if (buffer_uninit(bh))
--		io->io_end->flag |= EXT4_IO_END_UNWRITTEN;
-+	if (buffer_uninit(bh) && !(io_end->flag & EXT4_IO_END_UNWRITTEN)) {
-+		io_end->flag |= EXT4_IO_END_UNWRITTEN;
-+		atomic_inc(&EXT4_I(inode)->i_aiodio_unwritten);
-+	}
- 	io->io_end->size += bh->b_size;
- 	io->io_next_block++;
- 	ret = bio_add_page(io->io_bio, bh->b_page, bh->b_size, bh_offset(bh));
 
 
