@@ -1,92 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab1HZLcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 07:32:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60532 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab1HZLc3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 07:32:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.OSX.2.00.1108262117070.267@ibook.local>
-References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-	<alpine.OSX.2.00.1106011300550.199@ibook.intranet>
-	<20110605062702.GA2034@cynthia.pants.nu>
-	<CAMuHMdXVt5+nCaCSH3+z0fsL+vhOOTgbKsOAses8OudT-1OZGQ@mail.gmail.com>
-	<alpine.OSX.2.00.1108102007430.203@ibook.local>
-	<CAMuHMdXgeHtOB_3u6G6N9E4vaq=sJY-9NtF68XAnxhspMgRyGg@mail.gmail.com>
-	<alpine.OSX.2.00.1108262117070.267@ibook.local>
-Date: Fri, 26 Aug 2011 13:32:28 +0200
-X-Google-Sender-Auth: bOllMA_jh_94DM7FfpGDYfllNkI
-Message-ID: <CAMuHMdVz40_HyFpgttGmUO_DBM58vgOhEq3YGzJ0tUM+k9B26w@mail.gmail.com>
-Subject: Re: m68k: Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: Brad Boyer <flar@allandria.com>, "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752615Ab1HZLr6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 07:47:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52630 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752014Ab1HZLrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 07:47:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,284,1312182000"; 
+   d="scan'208";a="42702464"
+Message-Id: <20110826114619.133116662@intel.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 26 Aug 2011 19:38:17 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+to: <linux-fsdevel@vger.kernel.org>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Greg Thelen <gthelen@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/10] writeback: stabilize bdi->dirty_ratelimit
+References: <20110826113813.895522398@intel.com>
+Content-Disposition: inline; filename=dirty-ratelimit-stablize
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 13:21, Finn Thain <fthain@telegraphics.com.au> wrote:
-> On Fri, 26 Aug 2011, Geert Uytterhoeven wrote:
->> On Wed, Aug 10, 2011 at 12:53, Finn Thain <fthain@telegraphics.com.au> wrote:
->> >> via1_irq
->> >>     OSS_IRQLEV_VIA1 = IRQ_AUTO_6 (on oss)       conflict: psc_irq
->> >>
->> >>     IRQ_AUTO_1                                  conflict: iop_ism_irq
->>
->> >> iop_ism_irq
->> >>     OSS_IRQLEV_IOPISM = 1 = IRQ_AUTO_1 (on oss) conflict: via1_irq
->> >
->> > via1_irq is remapped to IRQ_AUTO_6 on OSS.
->>
->> According to via_register_interrupts(), it requests both:
->>
->>         if (via_alt_mapping) {
->>                 if (request_irq(IRQ_AUTO_1, via1_irq, 0, "software",
->>                                 (void *)via1))
->>                         pr_err("Couldn't register %s interrupt\n", "software");
->>                 if (request_irq(IRQ_AUTO_6, via1_irq, 0, "via1", (void *)via1))
->>                         pr_err("Couldn't register %s interrupt\n", "via1");
->>         } else {
->>                 if (request_irq(IRQ_AUTO_1, via1_irq, 0, "via1", (void *)via1))
->>                         pr_err("Couldn't register %s interrupt\n", "via1");
->>         }
->>
->> Hence IRQ_AUTO_1 must be shared and we cannot use an optimized chain
->> handler for via1_irq()
->
-> I'm pretty sure that the "software" request_irq can be removed. It has
-> come up before --
-> http://marc.info/?l=linux-mac68k&m=110973724208746&w=2
->
-> Maybe Brad can shed some light on this (?)
->
-> I've just cloned and built your m68k-genirq branch. I will run some tests.
+There are some imperfections in balanced_dirty_ratelimit.
 
-Thanks!
+1) large fluctuations
 
->> nor iop_ism_irq().
->
-> via_register_interrupts() is not called on OSS.
+The dirty_rate used for computing balanced_dirty_ratelimit is merely
+averaged in the past 200ms (very small comparing to the 3s estimation
+period for write_bw), which makes rather dispersed distribution of
+balanced_dirty_ratelimit.
 
-You're right, I missed that.
+It's pretty hard to average out the singular points by increasing the
+estimation period. Considering that the averaging technique will
+introduce very undesirable time lags, I give it up totally. (btw, the 3s
+write_bw averaging time lag is much more acceptable because its impact
+is one-way and therefore won't lead to oscillations.)
 
->> This is the only remaining conflict I see.
+The more practical way is filtering -- most singular
+balanced_dirty_ratelimit points can be filtered out by remembering some
+prev_balanced_rate and prev_prev_balanced_rate. However the more
+reliable way is to guard balanced_dirty_ratelimit with task_ratelimit.
 
-Good, I'll convert them all to chain handlers.
+2) due to truncates and fs redirties, the (write_bw <=> dirty_rate)
+match could become unbalanced, which may lead to large systematical
+errors in balanced_dirty_ratelimit. The truncates, due to its possibly
+bumpy nature, can hardly be compensated smoothly. So let's face it. When
+some over-estimated balanced_dirty_ratelimit brings dirty_ratelimit
+high, dirty pages will go higher than the setpoint. task_ratelimit will
+in turn become lower than dirty_ratelimit.  So if we consider both
+balanced_dirty_ratelimit and task_ratelimit and update dirty_ratelimit
+only when they are on the same side of dirty_ratelimit, the systematical
+errors in balanced_dirty_ratelimit won't be able to bring
+dirty_ratelimit far away.
 
-Gr{oetje,eeting}s,
+The balanced_dirty_ratelimit estimation may also be inaccurate near
+@limit or @freerun, however is less an issue.
 
-                        Geert
+3) since we ultimately want to
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+- keep the fluctuations of task ratelimit as small as possible
+- keep the dirty pages around the setpoint as long time as possible
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+the update policy used for (2) also serves the above goals nicely:
+if for some reason the dirty pages are high (task_ratelimit < dirty_ratelimit),
+and dirty_ratelimit is low (dirty_ratelimit < balanced_dirty_ratelimit),
+there is no point to bring up dirty_ratelimit in a hurry only to hurt
+both the above two goals.
+
+So, we make use of task_ratelimit to limit the update of dirty_ratelimit
+in two ways:
+
+1) avoid changing dirty rate when it's against the position control target
+   (the adjusted rate will slow down the progress of dirty pages going
+   back to setpoint).
+
+2) limit the step size. task_ratelimit is changing values step by step,
+   leaving a consistent trace comparing to the randomly jumping
+   balanced_dirty_ratelimit. task_ratelimit also has the nice smaller
+   errors in stable state and typically larger errors when there are big
+   errors in rate.  So it's a pretty good limiting factor for the step
+   size of dirty_ratelimit.
+
+Note that bdi->dirty_ratelimit is always tracking balanced_dirty_ratelimit.
+task_ratelimit is merely used as a limiting factor.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   64 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 63 insertions(+), 1 deletion(-)
+
+--- linux-next.orig/mm/page-writeback.c	2011-08-26 16:22:48.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-26 16:23:06.000000000 +0800
+@@ -809,6 +809,7 @@ static void bdi_update_dirty_ratelimit(s
+ 	unsigned long task_ratelimit;
+ 	unsigned long balanced_dirty_ratelimit;
+ 	unsigned long pos_ratio;
++	unsigned long step;
+ 
+ 	/*
+ 	 * The dirty rate will match the writeout rate in long term, except
+@@ -857,7 +858,68 @@ static void bdi_update_dirty_ratelimit(s
+ 	balanced_dirty_ratelimit = div_u64((u64)task_ratelimit * write_bw,
+ 					   dirty_rate | 1);
+ 
+-	bdi->dirty_ratelimit = max(balanced_dirty_ratelimit, 1UL);
++	/*
++	 * We could safely do this and return immediately:
++	 *
++	 *	bdi->dirty_ratelimit = balanced_dirty_ratelimit;
++	 *
++	 * However to get a more stable dirty_ratelimit, the below elaborated
++	 * code makes use of task_ratelimit to filter out sigular points and
++	 * limit the step size.
++	 *
++	 * The below code essentially only uses the relative value of
++	 *
++	 *	task_ratelimit - dirty_ratelimit
++	 *	= (pos_ratio - 1) * dirty_ratelimit
++	 *
++	 * which reflects the direction and size of dirty position error.
++	 */
++
++	/*
++	 * dirty_ratelimit will follow balanced_dirty_ratelimit iff
++	 * task_ratelimit is on the same side of dirty_ratelimit, too.
++	 * For example, when
++	 * - dirty_ratelimit > balanced_dirty_ratelimit
++	 * - dirty_ratelimit > task_ratelimit (dirty pages are above setpoint)
++	 * lowering dirty_ratelimit will help meet both the position and rate
++	 * control targets. Otherwise, don't update dirty_ratelimit if it will
++	 * only help meet the rate target. After all, what the users ultimately
++	 * feel and care are stable dirty rate and small position error.
++	 *
++	 * |task_ratelimit - dirty_ratelimit| is used to limit the step size
++	 * and filter out the sigular points of balanced_dirty_ratelimit. Which
++	 * keeps jumping around randomly and can even leap far away at times
++	 * due to the small 200ms estimation period of dirty_rate (we want to
++	 * keep that period small to reduce time lags).
++	 */
++	step = 0;
++	if (dirty_ratelimit < balanced_dirty_ratelimit) {
++		if (dirty_ratelimit < task_ratelimit)
++			step = min(balanced_dirty_ratelimit,
++				   task_ratelimit) - dirty_ratelimit;
++	} else {
++		if (dirty_ratelimit > task_ratelimit)
++			step = dirty_ratelimit - max(balanced_dirty_ratelimit,
++						     task_ratelimit);
++	}
++
++	/*
++	 * Don't pursue 100% rate matching. It's impossible since the balanced
++	 * rate itself is constantly fluctuating. So decrease the track speed
++	 * when it gets close to the target. Helps eliminate pointless tremors.
++	 */
++	step >>= dirty_ratelimit / (8 * step + 1);
++	/*
++	 * Limit the tracking speed to avoid overshooting.
++	 */
++	step = (step + 7) / 8;
++
++	if (dirty_ratelimit < balanced_dirty_ratelimit)
++		dirty_ratelimit += step;
++	else
++		dirty_ratelimit -= step;
++
++	bdi->dirty_ratelimit = max(dirty_ratelimit, 1UL);
+ }
+ 
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+
+
