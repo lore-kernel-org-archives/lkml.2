@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1H0Oz6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:55:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46379 "EHLO mx2.suse.de"
+	id S1753510Ab1H0PKP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 11:10:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46391 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905Ab1H0Ozv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:55:51 -0400
+	id S1752192Ab1H0Oz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:55:58 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:01:21 2011
-Message-Id: <20110826220121.342820140@clark.kroah.org>
+Message-Id: <20110826220121.543891734@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:58:38 -0700
+Date: Fri, 26 Aug 2011 14:58:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [17/19] drm/ttm: fix ttm_bo_add_ttm(user) failure path
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [19/19] igb: Fix lack of flush after register write and before delay
 In-Reply-To: <20110826220137.GA14059@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Carolyn Wyborny <carolyn.wyborny@intel.com>
 
-commit 7c4c3960dff109bc5db4c35da481c212dadb5eb5 upstream.
+commit 064b43304ed8ede8e13ff7b4338d09fd37bcffb1 upstream.
 
-ttm_tt_destroy kfrees passed object, so we need to nullify
-a reference to it.
+Register writes followed by a delay are required to have a flush
+before the delay in order to commit the values to the register.  Without
+the flush, the code following the delay may not function correctly.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: Tong Ho <tong.ho@ericsson.com>
+Reported-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Carolyn Wyborny <carolyn.wyborny@intel.com>
+Tested-by:  Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/ttm/ttm_bo.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/igb/e1000_82575.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -281,8 +281,10 @@ static int ttm_bo_add_ttm(struct ttm_buf
+--- a/drivers/net/igb/e1000_82575.c
++++ b/drivers/net/igb/e1000_82575.c
+@@ -941,6 +941,7 @@ static s32 igb_setup_copper_link_82575(s
+ 	ctrl |= E1000_CTRL_SLU;
+ 	ctrl &= ~(E1000_CTRL_FRCSPD | E1000_CTRL_FRCDPX);
+ 	wr32(E1000_CTRL, ctrl);
++	wrfl();
  
- 		ret = ttm_tt_set_user(bo->ttm, current,
- 				      bo->buffer_start, bo->num_pages);
--		if (unlikely(ret != 0))
-+		if (unlikely(ret != 0)) {
- 			ttm_tt_destroy(bo->ttm);
-+			bo->ttm = NULL;
-+		}
- 		break;
- 	default:
- 		printk(KERN_ERR TTM_PFX "Illegal buffer object type\n");
+ 	ret_val = igb_setup_serdes_link_82575(hw);
+ 	if (ret_val)
 
 
