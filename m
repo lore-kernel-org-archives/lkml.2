@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1H0O6b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:58:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46858 "EHLO mx2.suse.de"
+	id S932067Ab1H0O6m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:58:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46923 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754858Ab1H0O6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:58:22 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:53 2011
-Message-Id: <20110826215053.066597817@clark.kroah.org>
+	id S1754965Ab1H0O6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:58:39 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:55 2011
+Message-Id: <20110826215055.459804399@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:19 -0700
+Date: Fri, 26 Aug 2011 14:49:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@ZenIV.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [02/35] cifs: demote cERROR in build_path_from_dentry to cFYI
+        Stefan Bader <stefan.bader@canonical.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [25/35] xen: Do not enable PV IPIs when vector callback not present
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit fa71f447065f676157ba6a2c121ba419818fc559 upstream.
+commit 3c05c4bed4ccce3f22f6d7899b308faae24ad198 upstream.
 
-Running the cthon tests on a recent kernel caused this message to pop
-occasionally:
+Fix regression for HVM case on older (<4.1.1) hypervisors caused by
 
-    CIFS VFS: did not end path lookup where expected namelen is 0
+  commit 99bbb3a84a99cd04ab16b998b20f01a72cfa9f4f
+  Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+  Date:   Thu Dec 2 17:55:10 2010 +0000
 
-Some added debugging showed that namelen and dfsplen were both 0 when
-this occurred. That means that the read_seqretry returned true.
+    xen: PV on HVM: support PV spinlocks and IPIs
 
-Assuming that the comment inside the if statement is true, this should
-be harmless and just means that we raced with a rename. If that is the
-case, then there's no need for alarm and we can demote this to cFYI.
+This change replaced the SMP operations with event based handlers without
+taking into account that this only works when the hypervisor supports
+callback vectors. This causes unexplainable hangs early on boot for
+HVM guests with more than one CPU.
 
-While we're at it, print the dfsplen too so that we can see what
-happened here if the message pops during debugging.
+BugLink: http://bugs.launchpad.net/bugs/791850
 
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Tested-and-Reported-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/dir.c |    4 ++--
+ arch/x86/xen/smp.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -110,8 +110,8 @@ cifs_bp_rename_retry:
- 	}
- 	rcu_read_unlock();
- 	if (namelen != dfsplen || read_seqretry(&rename_lock, seq)) {
--		cERROR(1, "did not end path lookup where expected namelen is %d",
--			namelen);
-+		cFYI(1, "did not end path lookup where expected. namelen=%d "
-+			"dfsplen=%d", namelen, dfsplen);
- 		/* presumably this is only possible if racing with a rename
- 		of one of the parent directories  (we can not lock the dentries
- 		above us to prevent this, but retrying should be harmless) */
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -521,8 +521,6 @@ static void __init xen_hvm_smp_prepare_c
+ 	native_smp_prepare_cpus(max_cpus);
+ 	WARN_ON(xen_smp_intr_init(0));
+ 
+-	if (!xen_have_vector_callback)
+-		return;
+ 	xen_init_lock_cpu(0);
+ 	xen_init_spinlocks();
+ }
+@@ -546,6 +544,8 @@ static void xen_hvm_cpu_die(unsigned int
+ 
+ void __init xen_hvm_smp_init(void)
+ {
++	if (!xen_have_vector_callback)
++		return;
+ 	smp_ops.smp_prepare_cpus = xen_hvm_smp_prepare_cpus;
+ 	smp_ops.smp_send_reschedule = xen_smp_send_reschedule;
+ 	smp_ops.cpu_up = xen_hvm_cpu_up;
 
 
