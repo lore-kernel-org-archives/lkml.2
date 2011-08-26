@@ -1,36 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab1HZJpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:45:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38302 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab1HZJpQ convert rfc822-to-8bit (ORCPT
+	id S1754701Ab1HZJti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:49:38 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63576 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab1HZJth convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:45:16 -0400
-Subject: Re: [V3][PATCH 0/6] x86, nmi: new NMI handling routines
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com
-Date: Fri, 26 Aug 2011 11:44:57 +0200
-In-Reply-To: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
-References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 26 Aug 2011 05:49:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAM_iQpX2xwutn8czOayYZ1fWBKzNpqnXtU0s-SpZRszXKAc9kg@mail.gmail.com>
+References: <1312465977-12388-1-git-send-email-corentin.chary@gmail.com>
+	<1313484365-22129-1-git-send-email-corentincj@iksaif.net>
+	<CAM_iQpX2xwutn8czOayYZ1fWBKzNpqnXtU0s-SpZRszXKAc9kg@mail.gmail.com>
+Date: Fri, 26 Aug 2011 11:49:35 +0200
+Message-ID: <CAHR064iO7k15kcKXisRy5wfFE1fKCOZZsN90gTNMJYx80mwSeQ@mail.gmail.com>
+Subject: Re: [PATCH v3] scripts: add extract-vmlinux
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dick Streefland <dick@streefland.net>,
+        =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314351897.9377.2.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 12:45 -0400, Don Zickus wrote:
-> I spent some time hacking and came up with this patch.  I tested it on my
-> core2quad machine trying to enable all the NMI handler I could, mainly
-> perf and kgdb (and oprofile too when perf was disabled).  Everything seems
-> to work correctly.  If people are ok with this approach, I'll try and test
-> this on more machines. 
+On Thu, Aug 18, 2011 at 12:09 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> Ping...
+>
+> I don't know any way to check vmlinux, we can only check if it is ELF,
+> so this patch looks good.
+>
+> Michal?
 
-Right, code looks OK, the only worry that remains is overhead, always
-running all handlers must cost..
+Ping ?
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
