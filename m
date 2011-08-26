@@ -1,61 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1HZCJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 22:09:15 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58380 "EHLO smtps.tip.net.au"
+	id S1754935Ab1HZCQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 22:16:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58387 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754452Ab1HZCJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 22:09:09 -0400
-Date: Fri, 26 Aug 2011 12:09:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Christoph Hellwig <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>
-Subject: [PATCH] bio: use a static inline function for bio_integrity_clone
-Message-Id: <20110826120900.cdc6e4c3597c88ad45015a9b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754814Ab1HZCQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 22:16:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,283,1312182000"; 
+   d="scan'208";a="45202657"
+Date: Fri, 26 Aug 2011 10:16:48 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Linux Netdev List <netdev@vger.kernel.org>
+Subject: Re: slow performance on disk/network i/o full speed after
+ drop_caches
+Message-ID: <20110826021648.GA19529@localhost>
+References: <4E5494D4.1050605@profihost.ag>
+ <CAOJsxLEFYW0eDbXQ0Uixf-FjsxHZ_1nmnovNx1CWj=m-c-_vJw@mail.gmail.com>
+ <4E54BDCF.9020504@profihost.ag>
+ <20110824093336.GB5214@localhost>
+ <4E560F2A.1030801@profihost.ag>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E560F2A.1030801@profihost.ag>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_BLK_DEV_INTEGRITY is not set, we get these warnings:
+Hi Stefan,
 
-drivers/md/dm.c: In function 'split_bvec':
-drivers/md/dm.c:1061:3: warning: statement with no effect
-drivers/md/dm.c: In function 'clone_bio':
-drivers/md/dm.c:1088:3: warning: statement with no effect
+> Here is the data you requested:
+> 
+> root@server1015-han:~# grep . /sys/devices/system/node/node*/vmstat
+> /sys/devices/system/node/node0/vmstat:nr_written 5546561
+> /sys/devices/system/node/node0/vmstat:nr_dirtied 5572497
+> /sys/devices/system/node/node1/vmstat:nr_written 3936
+> /sys/devices/system/node/node1/vmstat:nr_dirtied 4190
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/linux/bio.h |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Ah you are running an older kernel that didn't show all the vmstat
+numbers. But still it's revealing that node 0 is used heavily and node
+1 is almost idle. So I won't be surprised to see most free pages lie
+in node 1.
 
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ce33e68..c98ecc8 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -527,7 +527,11 @@ extern void bio_integrity_init(void);
- #define bioset_integrity_create(a, b)	(0)
- #define bio_integrity_prep(a)		(0)
- #define bio_integrity_enabled(a)	(0)
--#define bio_integrity_clone(a, b, c, d)	(0)
-+static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
-+				      gfp_t gfp_mask, struct bio_set *bs)
-+{
-+	return 0;
-+}
- #define bioset_integrity_free(a)	do { } while (0)
- #define bio_integrity_free(a, b)	do { } while (0)
- #define bio_integrity_endio(a, b)	do { } while (0)
--- 
-1.7.5.4
+> modified it a little bit:
+> ~# while [ true ]; do ps -eo 
+> user,pid,tid,class,rtprio,ni,pri,psr,pcpu,vsz,rss,pmem,stat,wchan:28,cmd 
+> | grep scp | grep -v grep; sleep 1; done
+> 
+> root     12409 12409 TS       -   0  19   0 59.8  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+It's mostly doing poll() waits. There must be some dependency on
+something other to make progress. Would you post the full ps output
+for all tasks, and even better, run
+
+        echo t > /proc/sysrq-trigger
+
+To dump the kernel stacks?
+
+Thanks,
+Fengguang
+
+
+> root     12409 12409 TS       -   0  19   0 64.0  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   0 67.7  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 70.6  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 73.5  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 76.0  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 78.2  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 80.0  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 80.9  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   2 76.7  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 75.6  42136  1724  0.0 Ds 
+> pipe_read                    scp -t /tmp/
+> root     12409 12409 TS       -   0  19   0 76.0  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 75.2  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 76.6  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 77.9  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 79.0  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 72.8  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   0 73.0  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   0 73.8  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 74.3  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 73.4  42136  1724  0.0 Ss 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 71.3  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 71.9  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   0 72.7  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   3 73.5  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   3 74.4  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   3 75.2  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   0 76.0  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 76.6  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 74.8  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 73.2  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   1 73.9  42136  1724  0.0 Rs 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   0 72.4  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 72.0  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 72.5  42136  1724  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 72.9  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12409 12409 TS       -   0  19   8 73.5  42136  1724  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1  0.0  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 23.0  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 49.5  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   2 63.3  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 71.5  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 77.4  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 70.3  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 73.1  42136  1728  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12566 12566 TS       -   0  19   0 65.7  42136  1728  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 61.2  42136  1728  0.0 Ss 
+> -                            scp -t /tmp/
+> root     12566 12566 TS       -   0  19   1 63.7  42136  1728  0.0 Rs 
+> -                            scp -t /tmp/
+> root     12636 12636 TS       -   0  19   8  0.0  42136  1728  0.0 Ss 
+> poll_schedule_timeout        scp -t /tmp/
+> 
+> 
+> Stefan
