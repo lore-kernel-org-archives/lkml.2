@@ -1,106 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab1HZJVv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:21:51 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:55880 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab1HZJVs (ORCPT
+	id S1754593Ab1HZJWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:22:39 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41568 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754198Ab1HZJWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:21:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=cSI3vFYexh9yCKkE6CAUN3IXLtNJnKBIwTnx3dlj6sTxuT8xdqzGd2hGeP2nlz/96
-	UgZpSypa5VZ2KqxqloElw==
-Date: Fri, 26 Aug 2011 02:21:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Oleg Nesterov <oleg@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] oom: skip frozen tasks
-In-Reply-To: <20110826085610.GA9083@tiehlicka.suse.cz>
-Message-ID: <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com>
-References: <20110823073101.6426.77745.stgit@zurg> <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz>
- <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com> <20110826070946.GA7280@tiehlicka.suse.cz> <20110826085610.GA9083@tiehlicka.suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 26 Aug 2011 05:22:38 -0400
+X-Authenticated: #28077480
+X-Provags-ID: V01U2FsdGVkX18IzngGa7wI9ocUjgUjX6GxyxfgN6WavYT5M/V9W+
+	31ZjvIlLF5mkBl
+From: Ralf Jung <ralfjung-e@gmx.de>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
+Date: Fri, 26 Aug 2011 11:22:32 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com> <4E56F9E5.4000005@zytor.com> <20110826064838.GB3903@sun>
+In-Reply-To: <20110826064838.GB3903@sun>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108261122.33304.ralfjung-e@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Aug 2011, Michal Hocko wrote:
+Hi,
 
-> Let's give all frozen tasks a bonus (OOM_SCORE_ADJ_MAX/2) so that we do
-> not consider them unless really necessary and if we really pick up one
-> then thaw its threads before we try to kill it.
-> 
+> I rather wonder if there a way to assign a different address for the
+> watchdog Bjorn referring to. I don't have such machine to test but
+> seems its base address is configurable via pmio. Just curious.
+That would be the watchdog in my laptop then, I guess (I'm the reporter of the 
+bug mentioned by Bjorn)? I don't know much about all the inner workings, but 
+if you send me patches I can tell you what they do.
 
-I don't like arbitrary heuristics like this because they polluted the old 
-oom killer before it was rewritten and made it much more unpredictable.  
-The only heuristic it includes right now is a bonus for root tasks so that 
-when two processes have nearly the same amount of memory usage (within 3% 
-of available memory), the non-root task is chosen instead.
-
-This bonus is actually saying that a single frozen task can use up to 50% 
-more of the machine's capacity in a system-wide oom condition than the 
-task that will now be killed instead.  That seems excessive.
-
-I do like the idea of automatically thawing the task though and if that's 
-possible then I don't think we need to manipulate the badness heuristic at 
-all.  I know that wouldn't be feasible when we've frozen _all_ threads and 
-that's why we have oom_killer_disable(), but we'll have to check with 
-Rafael to see if something like this could work.  Rafael?
-
-> TODO
-> - given bonus might be too big?
-> - aren't we racing with try_to_freeze_tasks?
-> ---
->  mm/oom_kill.c |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 626303b..fd194bc 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -32,6 +32,7 @@
->  #include <linux/mempolicy.h>
->  #include <linux/security.h>
->  #include <linux/ptrace.h>
-> +#include <linux/freezer.h>
->  
->  int sysctl_panic_on_oom;
->  int sysctl_oom_kill_allocating_task;
-> @@ -214,6 +215,14 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
->  	points += p->signal->oom_score_adj;
->  
->  	/*
-> +	 * Do not try to kill frozen tasks unless there is nothing else to kill.
-> +	 * We do not want to give it 1 point because we still want to select a good
-> +	 * candidate among all frozen tasks. Let's give it a reasonable bonus.
-> +	 */
-> +	if (frozen(p))
-> +		points -= OOM_SCORE_ADJ_MAX/2;
-> +
-> +	/*
->  	 * Never return 0 for an eligible task that may be killed since it's
->  	 * possible that no single user task uses more than 0.1% of memory and
->  	 * no single admin tasks uses more than 3.0%.
-> @@ -450,6 +459,10 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
->  			pr_err("Kill process %d (%s) sharing same memory\n",
->  				task_pid_nr(q), q->comm);
->  			task_unlock(q);
-> +
-> +			if (frozen(q))
-> +				thaw_process(q);
-> +
->  			force_sig(SIGKILL, q);
->  		}
->  
+Kind regards,
+Ralf
