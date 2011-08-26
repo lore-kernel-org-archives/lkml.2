@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1H0O6J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:58:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46797 "EHLO mx2.suse.de"
+	id S1754825Ab1H0O6Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:58:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46828 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754694Ab1H0O6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:58:00 -0400
+	id S1754694Ab1H0O6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:58:10 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:54 2011
-Message-Id: <20110826215054.523325910@clark.kroah.org>
+Message-Id: <20110826215054.831900648@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:33 -0700
+Date: Fri, 26 Aug 2011 14:49:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Mack <zonque@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [16/35] ALSA: snd_usb_caiaq: track submitted output urbs
+        Jiaying Zhang <jiayingz@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [19/35] ext4: call ext4_ioend_wait and ext4_flush_completed_IO in ext4_evict_inode
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,125 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Jiaying Zhang <jiayingz@google.com>
 
-commit da6094ea7d3c2295473d8f5134279307255d6ebf upstream.
+commit 2581fdc810889fdea97689cb62481201d579c796 upstream.
 
-The snd_usb_caiaq driver currently assumes that output urbs are serviced
-in time and doesn't track when and whether they are given back by the
-USB core. That usually works fine, but due to temporary limitations of
-the XHCI stack, we faced that urbs were submitted more than once with
-this approach.
+Flush inode's i_completed_io_list before calling ext4_io_wait to
+prevent the following deadlock scenario: A page fault happens while
+some process is writing inode A. During page fault,
+shrink_icache_memory is called that in turn evicts another inode
+B. Inode B has some pending io_end work so it calls ext4_ioend_wait()
+that waits for inode B's i_ioend_count to become zero. However, inode
+B's ioend work was queued behind some of inode A's ioend work on the
+same cpu's ext4-dio-unwritten workqueue. As the ext4-dio-unwritten
+thread on that cpu is processing inode A's ioend work, it tries to
+grab inode A's i_mutex lock. Since the i_mutex lock of inode A is
+still hold before the page fault happened, we enter a deadlock.
 
-As it's no good practice to fire and forget urbs anyway, this patch
-introduces a proper bit mask to track which requests have been submitted
-and given back.
+Also moves ext4_flush_completed_IO and ext4_ioend_wait from
+ext4_destroy_inode() to ext4_evict_inode(). During inode deleteion,
+ext4_evict_inode() is called before ext4_destroy_inode() and in
+ext4_evict_inode(), we may call ext4_truncate() without holding
+i_mutex lock. As a result, there is a race between flush_completed_IO
+that is called from ext4_ext_truncate() and ext4_end_io_work, which
+may cause corruption on an io_end structure. This change moves
+ext4_flush_completed_IO and ext4_ioend_wait from ext4_destroy_inode()
+to ext4_evict_inode() to resolve the race between ext4_truncate() and
+ext4_end_io_work during inode deletion.
 
-That alone however doesn't make the driver work in case the host
-controller is broken and doesn't give back urbs at all, and the output
-stream will stop once all pre-allocated output urbs are consumed. But
-it does prevent crashes of the controller stack in such cases.
-
-See http://bugzilla.kernel.org/show_bug.cgi?id=40702 for more details.
-
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Matej Laitl <matej@laitl.cz>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jiaying Zhang <jiayingz@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/usb/caiaq/audio.c  |   31 +++++++++++++++++++++++++++----
- sound/usb/caiaq/device.h |    1 +
- 2 files changed, 28 insertions(+), 4 deletions(-)
+ fs/ext4/inode.c |    6 ++++++
+ fs/ext4/super.c |    1 -
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
---- a/sound/usb/caiaq/audio.c
-+++ b/sound/usb/caiaq/audio.c
-@@ -139,8 +139,12 @@ static void stream_stop(struct snd_usb_c
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -189,6 +189,12 @@ void ext4_evict_inode(struct inode *inod
+ 	int err;
  
- 	for (i = 0; i < N_URBS; i++) {
- 		usb_kill_urb(dev->data_urbs_in[i]);
--		usb_kill_urb(dev->data_urbs_out[i]);
+ 	trace_ext4_evict_inode(inode);
 +
-+		if (test_bit(i, &dev->outurb_active_mask))
-+			usb_kill_urb(dev->data_urbs_out[i]);
- 	}
++	mutex_lock(&inode->i_mutex);
++	ext4_flush_completed_IO(inode);
++	mutex_unlock(&inode->i_mutex);
++	ext4_ioend_wait(inode);
 +
-+	dev->outurb_active_mask = 0;
- }
+ 	if (inode->i_nlink) {
+ 		truncate_inode_pages(&inode->i_data, 0);
+ 		goto no_delete;
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -892,7 +892,6 @@ static void ext4_i_callback(struct rcu_h
  
- static int snd_usb_caiaq_substream_open(struct snd_pcm_substream *substream)
-@@ -612,8 +616,8 @@ static void read_completed(struct urb *u
+ static void ext4_destroy_inode(struct inode *inode)
  {
- 	struct snd_usb_caiaq_cb_info *info = urb->context;
- 	struct snd_usb_caiaqdev *dev;
--	struct urb *out;
--	int frame, len, send_it = 0, outframe = 0;
-+	struct urb *out = NULL;
-+	int i, frame, len, send_it = 0, outframe = 0;
- 	size_t offset = 0;
- 
- 	if (urb->status || !info)
-@@ -624,7 +628,17 @@ static void read_completed(struct urb *u
- 	if (!dev->streaming)
- 		return;
- 
--	out = dev->data_urbs_out[info->index];
-+	/* find an unused output urb that is unused */
-+	for (i = 0; i < N_URBS; i++)
-+		if (test_and_set_bit(i, &dev->outurb_active_mask) == 0) {
-+			out = dev->data_urbs_out[i];
-+			break;
-+		}
-+
-+	if (!out) {
-+		log("Unable to find an output urb to use\n");
-+		goto requeue;
-+	}
- 
- 	/* read the recently received packet and send back one which has
- 	 * the same layout */
-@@ -655,8 +669,12 @@ static void read_completed(struct urb *u
- 		out->number_of_packets = outframe;
- 		out->transfer_flags = URB_ISO_ASAP;
- 		usb_submit_urb(out, GFP_ATOMIC);
-+	} else {
-+		struct snd_usb_caiaq_cb_info *oinfo = out->context;
-+		clear_bit(oinfo->index, &dev->outurb_active_mask);
- 	}
- 
-+requeue:
- 	/* re-submit inbound urb */
- 	for (frame = 0; frame < FRAMES_PER_URB; frame++) {
- 		urb->iso_frame_desc[frame].offset = BYTES_PER_FRAME * frame;
-@@ -678,6 +696,8 @@ static void write_completed(struct urb *
- 		dev->output_running = 1;
- 		wake_up(&dev->prepare_wait_queue);
- 	}
-+
-+	clear_bit(info->index, &dev->outurb_active_mask);
- }
- 
- static struct urb **alloc_urbs(struct snd_usb_caiaqdev *dev, int dir, int *ret)
-@@ -829,6 +849,9 @@ int snd_usb_caiaq_audio_init(struct snd_
- 	if (!dev->data_cb_info)
- 		return -ENOMEM;
- 
-+	dev->outurb_active_mask = 0;
-+	BUILD_BUG_ON(N_URBS > (sizeof(dev->outurb_active_mask) * 8));
-+
- 	for (i = 0; i < N_URBS; i++) {
- 		dev->data_cb_info[i].dev = dev;
- 		dev->data_cb_info[i].index = i;
---- a/sound/usb/caiaq/device.h
-+++ b/sound/usb/caiaq/device.h
-@@ -96,6 +96,7 @@ struct snd_usb_caiaqdev {
- 	int input_panic, output_panic, warned;
- 	char *audio_in_buf, *audio_out_buf;
- 	unsigned int samplerates, bpp;
-+	unsigned long outurb_active_mask;
- 
- 	struct snd_pcm_substream *sub_playback[MAX_STREAMS];
- 	struct snd_pcm_substream *sub_capture[MAX_STREAMS];
+-	ext4_ioend_wait(inode);
+ 	if (!list_empty(&(EXT4_I(inode)->i_orphan))) {
+ 		ext4_msg(inode->i_sb, KERN_ERR,
+ 			 "Inode %lu (%p): orphan list check failed!",
 
 
