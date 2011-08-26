@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505Ab1HZSer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:34:47 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52394 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750715Ab1HZSem (ORCPT
+	id S1752039Ab1HZSe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:34:58 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33484 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751656Ab1HZSe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:34:42 -0400
-Date: Fri, 26 Aug 2011 19:33:31 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] gma500: frame buffer locking
-Message-ID: <20110826193331.5d42e0bf@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110826174547.GA9937@kroah.com>
-References: <20110826101734.16760.64364.stgit@localhost.localdomain>
-	<20110826101945.16760.8598.stgit@localhost.localdomain>
-	<20110826174547.GA9937@kroah.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Aug 2011 14:34:56 -0400
+X-Sasl-enc: kA/bCdbVFL62VNFRhCjfG8lBBeEZlm/MjtkCmtWoNirK 1314383695
+Date: Fri, 26 Aug 2011 11:29:00 -0700
+From: Greg KH <greg@kroah.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        rdunlap@xenotime.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] dynamic debug: cleanups + compile fix
+Message-ID: <20110826182900.GA30226@kroah.com>
+References: <cover.1314291909.git.jbaron@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1314291909.git.jbaron@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > index e861488..af2eec8 100644
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -512,7 +512,7 @@ static void __call_console_drivers(unsigned start, unsigned end)
-> >  	struct console *con;
-> >  
-> >  	for_each_console(con) {
-> > -		if (exclusive_console && con != exclusive_console)
-> > +		if (0 && exclusive_console && con != exclusive_console)
-> >  			continue;
-> >  		if ((con->flags & CON_ENABLED) && con->write &&
-> >  				(cpu_online(smp_processor_id()) ||
+On Thu, Aug 25, 2011 at 01:34:06PM -0400, Jason Baron wrote:
+> Hi,
 > 
-> Are you sure you want this in the tree?  I don't feel comfortable making
-> this fix just for one staging driver right now, do you?
+> This is a re-post of the last 3 patches, as requested by Greg:
+> https://lkml.org/lkml/2011/8/11/378
+> 
+> I've also added a compile fix that Randy Dunlap found in the -next tree.
 
-Oops no thats a debugging hack while using netconsole to chase out the
-bug.. that bit shouldn't be there !
+Care to redo this based on the comments received so far?
+
+thanks,
+
+greg k-h
