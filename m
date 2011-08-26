@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab1HZPRZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:17:25 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43322 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab1HZPRY (ORCPT
+	id S1753568Ab1HZPSt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:18:49 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42084 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab1HZPSs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:17:24 -0400
-Subject: Re: [PATCH] slab: avoid unnecessary touching of a partial slab
-From: Zhao Jin <cronozhj@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: penberg@kernel.org, mpm@selenic.com, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1108261004430.5818@router.home>
-References: <CADqbE97Vj0UV-2XvpkoELwdey_Xw7iCsF1AhQNFjwxY583SUwg@mail.gmail.com>
-	 <alpine.DEB.2.00.1108260841570.5818@router.home>
-	 <1314370016.8991.38.camel@vm>
-	 <alpine.DEB.2.00.1108260950220.5818@router.home>
-	 <1314370954.8991.46.camel@vm>
-	 <alpine.DEB.2.00.1108261004430.5818@router.home>
-Content-Type: text/plain; charset="us-ascii"
-Date: Fri, 26 Aug 2011 23:09:34 +0800
-Message-ID: <1314371374.8991.49.camel@vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Aug 2011 11:18:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110826151245.GA16243@redhat.com>
+References: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org> <20110826151245.GA16243@redhat.com>
+From: Paul Menage <paul@paulmenage.org>
+Date: Fri, 26 Aug 2011 08:18:26 -0700
+X-Google-Sender-Auth: HBftD7aGUPRVJ0Q3kwE8f2fDv9U
+Message-ID: <CALdu-PBaEJFvM4s4Kspm4Au-wfdAL0te8dLpdqO7dO+xfvWvaA@mail.gmail.com>
+Subject: Re: + cgroups-fix-ordering-of-calls-in-cgroup_attach_proc.patch added
+ to -mm tree
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        bblum@andrew.cmu.edu, fweisbec@gmail.com, lizf@cn.fujitsu.com,
+        tj@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 10:05 -0500, Christoph Lameter wrote:
-> On Fri, 26 Aug 2011, Zhao Jin wrote:
-> 
-> > > Correct but still tthe del/add is a list_move operation. Convert that the
-> > > other case as well?
-> > >
-> > Yes. The patch avoids list_del/list_add only if it is the case that a
-> > partial slab was used for refilling and remains partial (that is:
-> > partial => partial). If it is not the case( so it must be either partial
-> > => full, free => full or free => partial) the patched code behaves the
-> > same as current (list_del/list_add).
-> 
-> The second case is what I want you to change to list_move.
-> 
-> 
-Oops. I misunderstood your reply... I shall do it. Thanks a lot for
-pointing it out.
+On Fri, Aug 26, 2011 at 8:12 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+>
+>
+> But this doesn't answer my another question. After that the code does
+>
+>         * step 4: do expensive, non-thread-specific subsystem callbacks.
+>
+>                ss->attach(ss, cgrp, oldcgrp, leader);
+>
+> OK, non-thread-specific is nice, but how can this "leader" represent
+> the process?
 
-Regards,
-zhj
+There's a set of patches from Tejun Heo that address some of these
+inconsistencies and lack of information - search the list for
+cgroup_taskset.
 
-
+Paul
