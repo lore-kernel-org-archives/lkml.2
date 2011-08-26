@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab1H0O5j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:57:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46728 "EHLO mx2.suse.de"
+	id S1754485Ab1H0O5f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:57:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46717 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab1H0O5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:57:33 -0400
+	id S1754381Ab1H0O5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:57:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:04:19 2011
-Message-Id: <20110826220419.763326511@clark.kroah.org>
+Message-Id: <20110826220419.660057223@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 15:03:32 -0700
+Date: Fri, 26 Aug 2011 15:03:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Nick Piggin <npiggin@suse.de>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Krzysztof Helt <krzysztof.h1@poczta.fm>
-Subject: [09/20] mm: fix wrong vmap address calculations with odd NR_CPUS values
+        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [08/20] ALSA: snd-usb-caiaq: Correct offset fields of outbound iso_frame_desc
 In-Reply-To: <20110826220431.GA15382@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,53 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Daniel Mack <zonque@gmail.com>
 
-commit f982f91516fa4cfd9d20518833cd04ad714585be upstream.
+commit 15439bde3af7ff88459ea2b5520b77312e958df2 upstream.
 
-Commit db64fe02258f ("mm: rewrite vmap layer") introduced code that does
-address calculations under the assumption that VMAP_BLOCK_SIZE is a
-power of two.  However, this might not be true if CONFIG_NR_CPUS is not
-set to a power of two.
+This fixes faulty outbount packets in case the inbound packets
+received from the hardware are fragmented and contain bogus input
+iso frames. The bug has been there for ages, but for some strange
+reasons, it was only triggered by newer machines in 64bit mode.
 
-Wrong vmap_block index/offset values could lead to memory corruption.
-However, this has never been observed in practice (or never been
-diagnosed correctly); what caught this was the BUG_ON in vb_alloc() that
-checks for inconsistent vmap_block indices.
-
-To fix this, ensure that VMAP_BLOCK_SIZE always is a power of two.
-
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=31572
-Reported-by: Pavel Kysilka <goldenfish@linuxsoft.cz>
-Reported-by: Matias A. Fonzo <selk@dragora.org>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Krzysztof Helt <krzysztof.h1@poczta.fm>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: William Light <wrl@illest.net>
+Reported-by: Pedro Ribeiro <pedrib@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/vmalloc.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ sound/usb/caiaq/audio.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -671,9 +671,10 @@ static void free_unmap_vmap_area_addr(un
- #define VMAP_BBMAP_BITS_MIN	(VMAP_MAX_ALLOC*2)
- #define VMAP_MIN(x, y)		((x) < (y) ? (x) : (y)) /* can't use min() */
- #define VMAP_MAX(x, y)		((x) > (y) ? (x) : (y)) /* can't use max() */
--#define VMAP_BBMAP_BITS		VMAP_MIN(VMAP_BBMAP_BITS_MAX,		\
--					VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
--						VMALLOC_PAGES / NR_CPUS / 16))
-+#define VMAP_BBMAP_BITS		\
-+		VMAP_MIN(VMAP_BBMAP_BITS_MAX,	\
-+		VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
-+			VMALLOC_PAGES / roundup_pow_of_two(NR_CPUS) / 16))
+--- a/sound/usb/caiaq/audio.c
++++ b/sound/usb/caiaq/audio.c
+@@ -468,6 +468,7 @@ static void read_completed(struct urb *u
+ 	struct snd_usb_caiaqdev *dev;
+ 	struct urb *out;
+ 	int frame, len, send_it = 0, outframe = 0;
++	size_t offset = 0;
  
- #define VMAP_BLOCK_SIZE		(VMAP_BBMAP_BITS * PAGE_SIZE)
+ 	if (urb->status || !info)
+ 		return;
+@@ -488,7 +489,8 @@ static void read_completed(struct urb *u
+ 		len = urb->iso_frame_desc[outframe].actual_length;
+ 		out->iso_frame_desc[outframe].length = len;
+ 		out->iso_frame_desc[outframe].actual_length = 0;
+-		out->iso_frame_desc[outframe].offset = BYTES_PER_FRAME * frame;
++		out->iso_frame_desc[outframe].offset = offset;
++		offset += len;
  
+ 		if (len > 0) {
+ 			spin_lock(&dev->spinlock);
+@@ -504,7 +506,7 @@ static void read_completed(struct urb *u
+ 	}
+ 
+ 	if (send_it) {
+-		out->number_of_packets = FRAMES_PER_URB;
++		out->number_of_packets = outframe;
+ 		out->transfer_flags = URB_ISO_ASAP;
+ 		usb_submit_urb(out, GFP_ATOMIC);
+ 	}
 
 
