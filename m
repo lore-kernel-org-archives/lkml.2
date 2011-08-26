@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1HZXA2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 19:00:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56523 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab1HZXA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 19:00:27 -0400
-Message-ID: <4E582577.2060805@zytor.com>
-Date: Fri, 26 Aug 2011 16:00:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1753022Ab1HZXF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 19:05:57 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64914 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab1HZXF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 19:05:56 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: RFD: x32 ABI system call numbers
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1108261844170.2203@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
+	<3300.1313637592@jrobl>
+	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
+	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+	<20110818091140.385a9455@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
+	<20110818130408.71c55b96@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
+	<CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
+	<alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
+	<CAH2r5msTpKdxwpgG+-3-gkkr5h7Ox1tL86q3LyTBMd1V8WS7aQ@mail.gmail.com>
+	<alpine.DEB.2.02.1108181413030.7903@p34.internal.lan>
+	<20110818145257.035a38e9@barsoom.rdu.redhat.com>
+	<20110826175940.2830044d@tlielax.poochiereds.net>
+	<alpine.DEB.2.02.1108261844170.2203@p34.internal.lan>
+Date: Fri, 26 Aug 2011 18:05:55 -0500
+Message-ID: <CAH2r5mtrUq4aTHgqRyG-YZZoUztU4_k4rh+nXrN13CVckex8ZQ@mail.gmail.com>
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
+ with linux-3.1-rc2
+From: Steve French <smfrench@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Jeff Layton <jlayton@samba.org>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On Fri, Aug 26, 2011 at 5:57 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>
+> On Fri, 26 Aug 2011, Jeff Layton wrote:
+>
+>> On Thu, 18 Aug 2011 14:52:57 -0400
+>> Jeff Layton <jlayton@samba.org> wrote:
+>>
+>>> On Thu, 18 Aug 2011 14:18:15 -0400 (EDT)
+>>> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>>>
+>>>>
+>>> Like I said, read performance with cifs.ko just plain sucks currently.
+>>>
+>>> Don't look for cifs.ko to achieve anywhere near NFS' performance unless
+>>> you jump through some very odd hoops (like multithreading your workload
+>>> in userspace, etc). cifs.ko just doesn't do a good job of keeping the
+>>> pipe "stuffed" as most calls are handled synchronously. A single task
+>>> can only handle one call on the wire in most cases. The exception here
+>>> is writes, but that just recently changed...
+>>>
+>>> Reads are done using relatively small buffers and then copied to
+>>> pagecache. Part of what I'm working on will be to allow for much larger
+>>> reads directly into the pagecache. That should also help performance
+>>> significantly.
+>>>
+>>
+>> I just posted a patchset that should improve the performance of
+>> buffered reads. It's rather large but should apply to current upstream
+>> kernels. If you've had problems with cifs.ko read performance in the
+>> past, then this would be a good time to step up and help test them.
+>>
+>> If it makes things easier, then the patchset is also available via the
+>> cifs-3.2 branch of my public git tree:
+>>
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/jlayton/linux.git;a=shortlog;h=refs/heads/cifs-3.2
+>>
+>> Thanks,
+>> --
+>> Jeff Layton <jlayton@samba.org>
+>
+> Hi Jeff,
+>
+> This was working earlier..
+>
+> # mount -t cifs //10.0.1.1/x /mnt -o user=XXXXXXX,pass=XXXXXXXX
+> mount error(12): Cannot allocate memory
+> Refer to the mount.cifs(8) manual page (e.g. man mount.cifs)
+>
+> I'll need to contact the owner of the host to see if something has changed
+> as this _was_ working previously.
 
-As most of you know I and H.J. Lu have been working on a native 32-bit
-ABI for x86-64 Linux.  H.J. has had a prototype git tree for a while; I
-am currently in the process of cleaning up the kernel patches to post.
+Fails with Jeff's new 20+ patch series?
 
-Before posting, Ingo suggested that I discuss the handling of system
-calls, as this affects some of the machinery that needs to go into the
-patchset.
 
-x32 uses mostly the compat system calls already available for the i386
-ABI (which means it also uses i386 ABI numbers and data structure
-layouts).  There are only seven, mostly signal-related, entirely new
-system calls, and most of them are trivial wrappers.
+-- 
+Thanks,
 
-x32 uses the same SYSCALL64 instruction as native x86-64.  Currently, on
-x86, the choice of system call ABI is a purely local property -- a
-64-bit process can call int $0x80 and get the i386 ABI.  I have wanted
-to keep this property and avoid testing global state for the meaning of
-a system call.  As such, the only thing that is available to distinguish
-an x32 system call from an x86-64 system call is the system call number
-itself.
-
-In the current patchset, rather than having two separate system call
-tables (which would add several instructions to the system call entry
-path, including for native 64-bit binaries) we have added the x32 system
-calls to the 64-bit system call table with a small gap (starting at 512)
-to avoid adding to the cache footprint of native 64-bit processes.
-
-However, this leads to an annoying problem for the system calls which do
-*not* need to be duplicated between x86-64 and x32, which is actually
-most system calls -- 218 of 310 in the current kernel.  Unfortunately, a
-single subsystem -- input -- uses is_compat() on a bunch of the I/O
-paths, even changing things like the text format of sysfs entries
-depending on the ABI of the user space process.
-
-Rather than duplicating the system call table, we are proposing to deal
-with that by setting bit 30 in the system call number across the board
-when called from x32, so we end up with:
-
-# Shared system call, sys_read (0)
-
-x86-64:		%eax = 0x00000000
-x32:		%eax = 0x40000000
-
-# Unshared system call, sys_stat (4/513)
-
-x86-64:		%eax = 0x00000004
-x32:		%eax = 0x40000201
-
-The extra bit would be masked off and only affect device drivers like
-input which relies on is_compat().
-
-The question here is if anyone has a reason to believe this would be
-unacceptable.
-
-	-hpa
+Steve
