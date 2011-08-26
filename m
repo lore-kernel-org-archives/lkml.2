@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab1HZMo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:44:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:25940 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157Ab1HZMoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:44:55 -0400
-Message-ID: <4E579541.6060607@openvz.org>
-Date: Fri, 26 Aug 2011 16:44:49 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110702 Iceape/2.0.14
+	id S1754265Ab1HZMuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:50:21 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56636 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab1HZMuT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 08:50:19 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] oom: skip frozen tasks
-References: <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com> <20110826070946.GA7280@tiehlicka.suse.cz> <20110826085610.GA9083@tiehlicka.suse.cz> <4E576F65.5060009@openvz.org> <20110826104827.GC9083@tiehlicka.suse.cz>
-In-Reply-To: <20110826104827.GC9083@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com>
+References: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com>
+Date: Fri, 26 Aug 2011 08:50:17 -0400
+Message-ID: <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
+Subject: Re: [PATCH] Smack: SMACK_IOCLOADACCESS
+From: Eric Paris <eparis@parisplace.org>
+To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko wrote:
-> On Fri 26-08-11 14:03:17, Konstantin Khlebnikov wrote:
->> Michal Hocko wrote:
->>
->>> @@ -450,6 +459,10 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
->>>   			pr_err("Kill process %d (%s) sharing same memory\n",
->>>   				task_pid_nr(q), q->comm);
->>>   			task_unlock(q);
->>> +
->>> +			if (frozen(q))
->>> +				thaw_process(q);
->>> +
->>
->> We must thaw task strictly after sending SIGKILL.
+On Fri, Aug 26, 2011 at 1:52 AM, Jarkko Sakkinen
+<jarkko.sakkinen@intel.com> wrote:
+> IOCTL call for /smack/load that takes access rule in
+> the same format as they are written into /smack/load.
+> Sets errno to zero if access is allowed and to EACCES
+> if not.
 >
-> Sounds reasonable.
->
->> But anyway I think this is a bad idea.
->
-> Why?
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 
-Refrigerator may be used for digging in task's internal structures,
-so such digger may be very surprised if somebody suddenly thaws this task.
+[SELinux maintainer here, but Casey knew to already take what I say
+with a grain of salt]
 
->
->>
->>>   			force_sig(SIGKILL, q);
->>>   		}
->>>
->
+I'm not telling you to do anything differently, just telling you what
+SELinux does, and why we do it.  SELinux has a file in selinuxfs
+called 'access.'  The file can be opened and one can write a rule into
+the file.  One then calls read and gets back a structure which
+contains all of the permissions information allowed for the
+source/target/class.  In SELinux we calculate all of the permissions
+for the tuple at once so providing all of the information at once can
+make a lot of sense.  libselinux provides libraries that will cache
+these decisions in the userspace program and quickly answer the same
+(or similar) questions later.
 
+http://userspace.selinuxproject.org/trac/browser/libselinux/src/compute_av.c
+
+Shows the userspace side of out "access" interface.  Your interface is
+good in that it only takes 1 syscall and ours takes 2.  Your interface
+is bad in that it is ioctl and we are told since birth that we must
+hate them no matter what (not that read/write is really any
+different).  It isn't the same method the only other LSM I know about
+uses.  It can only every return one value (ok, I know ioctl can be
+made to do anything at all)
+
+Anyway, just food for thought....
+
+-Eric
