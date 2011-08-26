@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab1HZQYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:24:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53153 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870Ab1HZQYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:24:40 -0400
-Message-ID: <4E57C8A9.1070301@zytor.com>
-Date: Fri, 26 Aug 2011 09:24:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Ralf Jung <ralfjung-e@gmx.de>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
-References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com> <1314315225.16133.30.camel@sbsiddha-desk.sc.intel.com> <CAErSpo7N3UBJgQTb+zePnsf5YuFSQT8zy9CftwceyAKKfcHUjA@mail.gmail.com> <20110826062224.GA3903@sun> <CAErSpo66U-La7AXCraENWOUvQAuCECRT_eGvJmxC-S4BrN=yAA@mail.gmail.com>
-In-Reply-To: <CAErSpo66U-La7AXCraENWOUvQAuCECRT_eGvJmxC-S4BrN=yAA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754995Ab1HZQ2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:28:16 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59326 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755Ab1HZQ2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 12:28:07 -0400
+From: Zhao Jin <cronozhj@gmail.com>
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com
+Cc: linux-kernel@vger.kernel.org, Zhao Jin <cronozhj@gmail.com>
+Subject: [PATCH 1/2][RESEND] slab, cleanup: remove unneeded return
+Date: Sat, 27 Aug 2011 00:26:17 +0800
+Message-Id: <1314375977-14927-1-git-send-email-cronozhj@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2011 09:21 AM, Bjorn Helgaas wrote:
-> 
-> Is there some spec that requires all IOAPICs to be 1K aligned?  I
-> don't doubt that's the case; I'd just like to see something more
-> concrete than folklore.  I'm pretty sure there's some (possibly
-> secret) "IOAPIC architecture spec," and a section reference to it
-> would be nice.  Even before my patch, I don't think we actually
-> checked or enforced any *alignment* -- we only set the size.  I don't
-> know if it's worth it unless we have a problem it would fix, and it's
-> conceivable that we'd start warning about a perfectly functional
-> IOAPIC that's 128-byte aligned.
-> 
+The procedure ends right after the if-statement, so remove ``return''.
+Also move the last common statement outside.
 
-The PIIX3 IOAPIC decoder could only decode addresses on a 1K
-granularity, but I don't think that was architectural.  I will try to ask.
+Signed-off-by: Zhao Jin <cronozhj@gmail.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ mm/slab.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-	-hpa
+diff --git a/mm/slab.c b/mm/slab.c
+index 6d90a09..82e0a0e 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3678,13 +3678,12 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+ 
+ 	if (likely(ac->avail < ac->limit)) {
+ 		STATS_INC_FREEHIT(cachep);
+-		ac->entry[ac->avail++] = objp;
+-		return;
+ 	} else {
+ 		STATS_INC_FREEMISS(cachep);
+ 		cache_flusharray(cachep, ac);
+-		ac->entry[ac->avail++] = objp;
+ 	}
++
++	ac->entry[ac->avail++] = objp;
+ }
+ 
+ /**
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.4.1
 
