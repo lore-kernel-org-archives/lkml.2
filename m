@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1HZSqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:46:00 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:28031 "EHLO
+	id S1753459Ab1HZSqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:46:22 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:27976 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab1HZSo4 (ORCPT
+	with ESMTP id S1751360Ab1HZSox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:44:56 -0400
+	Fri, 26 Aug 2011 14:44:53 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         JBeulich@novell.com, jeremy@goop.org, ian.campbell@citrix.com,
         joe@perches.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH 1/6] xen-pcifront: Update warning comment to use 'e820_host' option.
-Date: Fri, 26 Aug 2011 14:44:25 -0400
-Message-Id: <1314384270-19850-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH v2] Xen PCI and Xen SWIOTLB patches for 3.2
+Date: Fri, 26 Aug 2011 14:44:24 -0400
+Message-Id: <1314384270-19850-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314384270-19850-1-git-send-email-konrad.wilk@oracle.com>
-References: <1314384270-19850-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A02020B.4E57E99F.017F,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020204.4E57E99E.0009:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With Xen changeset 23428 "libxl: Add 'e820_host' option to config file"
-the E820 as seen from the host can now be passed into the guest.
-This means that a PV guest can now:
- - Use the correct PCI I/O gap. Before these patches, Linux guest would
-   boot up and would tell:
-   [    0.000000] Allocating PCI resources starting at 40000000 (gap: 40000000:c0000000)
-   while in actuality the PCI I/O gap should have been:
-   [    0.000000] Allocating PCI resources starting at b0000000 (gap: b0000000:4c000000)
+I am proposing these six patches for 3.2.
 
- - The PV domain with PCI devices was limited to 3GB. It now can be booted
-   with 4GB, 8GB, or whatever number you want. The PCI devices will now _not_ conflict
-   with System RAM. Meaning the drivers can load.
+Changelog [since v1: https://lkml.org/lkml/2011/8/24/435]
+ - Make the string in pcifront be a continous line.
+ - Implement some smarts in coherent alloc/dealloc so it does not
+   always make a whole bunch hypercalls.
 
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: linux-pci@vger.kernel.org
-CC: stable@kernel.org
-[v2: Made the string less broken up. Suggested by Joe Perches]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/pci/xen-pcifront.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+[v1 said]:
+Nothing really exciting about them - just update some comments, fix
+comments, and also make Xen SWIOTLB a bit smarter. Please take a look.
 
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index 492b7d8..d4e7a10 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -400,9 +400,8 @@ static int pcifront_claim_resource(struct pci_dev *dev, void *data)
- 			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
- 				pci_name(dev), i);
- 			if (pci_claim_resource(dev, i)) {
--				dev_err(&pdev->xdev->dev, "Could not claim "
--					"resource %s/%d! Device offline. Try "
--					"giving less than 4GB to domain.\n",
-+				dev_err(&pdev->xdev->dev, "Could not claim resource %s/%d! "
-+					"Device offline. Try using e820_host=1 in the guest config.\n",
- 					pci_name(dev), i);
- 			}
- 		}
--- 
-1.7.4.1
+Patches are also available at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/pci.fixes
+
+
+ drivers/pci/xen-pcifront.c |    5 +--
+ drivers/xen/pci.c          |   11 ++++--
+ drivers/xen/swiotlb-xen.c  |   70 +++++++++++++++++++++++++++++++++----------
+ 3 files changed, 62 insertions(+), 24 deletions(-)
+
+Jan Beulich (1):
+      xen/pci: make bus notifier handler return sane values
+
+Konrad Rzeszutek Wilk (4):
+      xen-pcifront: Update warning comment to use 'e820_host' option.
+      xen-swiotlb: Retry up three times to allocate Xen-SWIOTLB
+      xen-swiotlb: Fix wrong panic.
+      xen-swiotlb: When doing coherent alloc/dealloc check before swizzling the MFNs.
+
+Randy Dunlap (1):
+      xen-swiotlb: fix printk and panic args
 
