@@ -1,266 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1H0O47 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:56:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46574 "EHLO mx2.suse.de"
+	id S1752785Ab1H0O42 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:56:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46457 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792Ab1H0O4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:56:50 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:04:20 2011
-Message-Id: <20110826220420.361800354@clark.kroah.org>
+	id S1752483Ab1H0O4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:56:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:01:20 2011
+Message-Id: <20110826220120.404233543@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 15:03:38 -0700
+Date: Fri, 26 Aug 2011 14:58:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Darren Hart <dvhart@linux.intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
-        eric.dumazet@gmail.com, zvonler@rgmadvisors.com, hughd@google.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [15/20] futex: Fix regression with read only mappings
-In-Reply-To: <20110826220431.GA15382@kroah.com>
+        Clemens Ladisch <clemens@ladisch.de>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Nick Piggin <npiggin@suse.de>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Krzysztof Helt <krzysztof.h1@poczta.fm>
+Subject: [08/19] mm: fix wrong vmap address calculations with odd NR_CPUS values
+In-Reply-To: <20110826220137.GA14059@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 9ea71503a8ed9184d2d0b8ccc4d269d05f7940ae upstream.
+commit f982f91516fa4cfd9d20518833cd04ad714585be upstream.
 
-commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
-parameter from get_futex_key()) in 2.6.33 fixed two problems:  First, It
-prevented a loop when encountering a ZERO_PAGE. Second, it fixed RW
-MAP_PRIVATE futex operations by forcing the COW to occur by
-unconditionally performing a write access get_user_pages_fast() to get
-the page.  The commit also introduced a user-mode regression in that it
-broke futex operations on read-only memory maps.  For example, this
-breaks workloads that have one or more reader processes doing a
-FUTEX_WAIT on a futex within a read only shared file mapping, and a
-writer processes that has a writable mapping issuing the FUTEX_WAKE.
+Commit db64fe02258f ("mm: rewrite vmap layer") introduced code that does
+address calculations under the assumption that VMAP_BLOCK_SIZE is a
+power of two.  However, this might not be true if CONFIG_NR_CPUS is not
+set to a power of two.
 
-This fixes the regression for valid futex operations on RO mappings by
-trying a RO get_user_pages_fast() when the RW get_user_pages_fast()
-fails. This change makes it necessary to also check for invalid use
-cases, such as anonymous RO mappings (which can never change) and the
-ZERO_PAGE which the commit referenced above was written to address.
+Wrong vmap_block index/offset values could lead to memory corruption.
+However, this has never been observed in practice (or never been
+diagnosed correctly); what caught this was the BUG_ON in vb_alloc() that
+checks for inconsistent vmap_block indices.
 
-This patch does restore the original behavior with RO MAP_PRIVATE
-mappings, which have inherent user-mode usage problems and don't really
-make sense.  With this patch performing a FUTEX_WAIT within a RO
-MAP_PRIVATE mapping will be successfully woken provided another process
-updates the region of the underlying mapped file.  However, the mmap()
-man page states that for a MAP_PRIVATE mapping:
+To fix this, ensure that VMAP_BLOCK_SIZE always is a power of two.
 
-  It is unspecified whether changes made to the file after
-  the mmap() call are visible in the mapped region.
-
-So user-mode users attempting to use futex operations on RO MAP_PRIVATE
-mappings are depending on unspecified behavior.  Additionally a
-RO MAP_PRIVATE mapping could fail to wake up in the following case.
-
-  Thread-A: call futex(FUTEX_WAIT, memory-region-A).
-            get_futex_key() return inode based key.
-            sleep on the key
-  Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
-  Thread-B: write memory-region-A.
-            COW happen. This process's memory-region-A become related
-            to new COWed private (ie PageAnon=1) page.
-  Thread-B: call futex(FUETX_WAKE, memory-region-A).
-            get_futex_key() return mm based key.
-            IOW, we fail to wake up Thread-A.
-
-Once again doing something like this is just silly and users who do
-something like this get what they deserve.
-
-While RO MAP_PRIVATE mappings are nonsensical, checking for a private
-mapping requires walking the vmas and was deemed too costly to avoid a
-userspace hang.
-
-This Patch is based on Peter Zijlstra's initial patch with modifications to
-only allow RO mappings for futex operations that need VERIFY_READ access.
-
-Reported-by: David Oliver <david@rgmadvisors.com>
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: peterz@infradead.org
-Cc: eric.dumazet@gmail.com
-Cc: zvonler@rgmadvisors.com
-Cc: hughd@google.com
-Link: http://lkml.kernel.org/r/1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=31572
+Reported-by: Pavel Kysilka <goldenfish@linuxsoft.cz>
+Reported-by: Matias A. Fonzo <selk@dragora.org>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Nick Piggin <npiggin@suse.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Krzysztof Helt <krzysztof.h1@poczta.fm>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- kernel/futex.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 42 insertions(+), 12 deletions(-)
+ mm/vmalloc.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -203,6 +203,8 @@ static void drop_futex_key_refs(union fu
-  * @uaddr:	virtual address of the futex
-  * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
-  * @key:	address where result is stored.
-+ * @rw:		mapping needs to be read/write (values: VERIFY_READ,
-+ *              VERIFY_WRITE)
-  *
-  * Returns a negative error code or 0
-  * The key words are stored in *key on success.
-@@ -214,12 +216,12 @@ static void drop_futex_key_refs(union fu
-  * lock_page() might sleep, the caller should not hold a spinlock.
-  */
- static int
--get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
-+get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
- {
- 	unsigned long address = (unsigned long)uaddr;
- 	struct mm_struct *mm = current->mm;
- 	struct page *page;
--	int err;
-+	int err, ro = 0;
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -671,9 +671,10 @@ static void free_unmap_vmap_area_addr(un
+ #define VMAP_BBMAP_BITS_MIN	(VMAP_MAX_ALLOC*2)
+ #define VMAP_MIN(x, y)		((x) < (y) ? (x) : (y)) /* can't use min() */
+ #define VMAP_MAX(x, y)		((x) > (y) ? (x) : (y)) /* can't use max() */
+-#define VMAP_BBMAP_BITS		VMAP_MIN(VMAP_BBMAP_BITS_MAX,		\
+-					VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
+-						VMALLOC_PAGES / NR_CPUS / 16))
++#define VMAP_BBMAP_BITS		\
++		VMAP_MIN(VMAP_BBMAP_BITS_MAX,	\
++		VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
++			VMALLOC_PAGES / roundup_pow_of_two(NR_CPUS) / 16))
  
- 	/*
- 	 * The futex address must be "naturally" aligned.
-@@ -247,14 +249,31 @@ get_futex_key(u32 __user *uaddr, int fsh
- 
- again:
- 	err = get_user_pages_fast(address, 1, 1, &page);
-+	/*
-+	 * If write access is not required (eg. FUTEX_WAIT), try
-+	 * and get read-only access.
-+	 */
-+	if (err == -EFAULT && rw == VERIFY_READ) {
-+		err = get_user_pages_fast(address, 1, 0, &page);
-+		ro = 1;
-+	}
- 	if (err < 0)
- 		return err;
-+	else
-+		err = 0;
- 
- 	page = compound_head(page);
- 	lock_page(page);
- 	if (!page->mapping) {
- 		unlock_page(page);
- 		put_page(page);
-+		/*
-+		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
-+		* trying to find one. RW mapping would have COW'd (and thus
-+		* have a mapping) so this page is RO and won't ever change.
-+		*/
-+		if ((page == ZERO_PAGE(address)))
-+			return -EFAULT;
- 		goto again;
- 	}
- 
-@@ -266,6 +285,15 @@ again:
- 	 * the object not the particular process.
- 	 */
- 	if (PageAnon(page)) {
-+		/*
-+		 * A RO anonymous page will never change and thus doesn't make
-+		 * sense for futex operations.
-+		 */
-+		if (ro) {
-+			err = -EFAULT;
-+			goto out;
-+		}
-+
- 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
- 		key->private.mm = mm;
- 		key->private.address = address;
-@@ -277,9 +305,10 @@ again:
- 
- 	get_futex_key_refs(key);
- 
-+out:
- 	unlock_page(page);
- 	put_page(page);
--	return 0;
-+	return err;
- }
- 
- static inline
-@@ -880,7 +909,7 @@ static int futex_wake(u32 __user *uaddr,
- 	if (!bitset)
- 		return -EINVAL;
- 
--	ret = get_futex_key(uaddr, fshared, &key);
-+	ret = get_futex_key(uaddr, fshared, &key, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-@@ -926,10 +955,10 @@ futex_wake_op(u32 __user *uaddr1, int fs
- 	int ret, op_ret;
- 
- retry:
--	ret = get_futex_key(uaddr1, fshared, &key1);
-+	ret = get_futex_key(uaddr1, fshared, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
--	ret = get_futex_key(uaddr2, fshared, &key2);
-+	ret = get_futex_key(uaddr2, fshared, &key2, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
- 
-@@ -1188,10 +1217,11 @@ retry:
- 		pi_state = NULL;
- 	}
- 
--	ret = get_futex_key(uaddr1, fshared, &key1);
-+	ret = get_futex_key(uaddr1, fshared, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
--	ret = get_futex_key(uaddr2, fshared, &key2);
-+	ret = get_futex_key(uaddr2, fshared, &key2,
-+			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
- 
-@@ -1746,7 +1776,7 @@ static int futex_wait_setup(u32 __user *
- 	 */
- retry:
- 	q->key = FUTEX_KEY_INIT;
--	ret = get_futex_key(uaddr, fshared, &q->key);
-+	ret = get_futex_key(uaddr, fshared, &q->key, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		return ret;
- 
-@@ -1912,7 +1942,7 @@ static int futex_lock_pi(u32 __user *uad
- 	q.requeue_pi_key = NULL;
- retry:
- 	q.key = FUTEX_KEY_INIT;
--	ret = get_futex_key(uaddr, fshared, &q.key);
-+	ret = get_futex_key(uaddr, fshared, &q.key, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-@@ -2031,7 +2061,7 @@ retry:
- 	if ((uval & FUTEX_TID_MASK) != task_pid_vnr(current))
- 		return -EPERM;
- 
--	ret = get_futex_key(uaddr, fshared, &key);
-+	ret = get_futex_key(uaddr, fshared, &key, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-@@ -2223,7 +2253,7 @@ static int futex_wait_requeue_pi(u32 __u
- 	rt_waiter.task = NULL;
- 
- 	key2 = FUTEX_KEY_INIT;
--	ret = get_futex_key(uaddr2, fshared, &key2);
-+	ret = get_futex_key(uaddr2, fshared, &key2, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
+ #define VMAP_BLOCK_SIZE		(VMAP_BBMAP_BITS * PAGE_SIZE)
  
 
 
