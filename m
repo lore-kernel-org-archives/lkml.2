@@ -1,148 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab1HZV7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 17:59:46 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41327 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab1HZV7o (ORCPT
+	id S1751071Ab1HZWB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 18:01:56 -0400
+Received: from nm20-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.165]:21639 "HELO
+	nm20-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750910Ab1HZWBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 17:59:44 -0400
-Date: Fri, 26 Aug 2011 17:59:40 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Steve French <smfrench@gmail.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also
- crashes with linux-3.1-rc2
-Message-ID: <20110826175940.2830044d@tlielax.poochiereds.net>
-In-Reply-To: <20110818145257.035a38e9@barsoom.rdu.redhat.com>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
-	<20110815064734.403b630f@corrin.poochiereds.net>
-	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
-	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
-	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
-	<3300.1313637592@jrobl>
-	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
-	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
-	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
-	<20110818091140.385a9455@barsoom.rdu.redhat.com>
-	<alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
-	<20110818130408.71c55b96@barsoom.rdu.redhat.com>
-	<alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
-	<CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
-	<alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
-	<CAH2r5msTpKdxwpgG+-3-gkkr5h7Ox1tL86q3LyTBMd1V8WS7aQ@mail.gmail.com>
-	<alpine.DEB.2.02.1108181413030.7903@p34.internal.lan>
-	<20110818145257.035a38e9@barsoom.rdu.redhat.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 26 Aug 2011 18:01:55 -0400
+X-Yahoo-Newman-Id: 346350.21307.bm@omp1046.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: _C4sCmMVM1lZ6u1wGGTcdt7w5bjKnZb5TQwxAKgSAM._6pq
+ d1UBvFRBlByQivXxH.UIYoI6vjDakp7lH06XPwDZ1gkgLOCSqfdXhqKL.iBE
+ OekdllP9g2it6z_SnzS1at4odLEJfU07Xj4dPNTcgO.K5OHbNP5_YF6fF2ee
+ 14OX5u5aOG3JAmaKPbkhrI94xPme4Ykr8t4axcXDltOzq7Lui_I2Jm64WAzX
+ GwJ5AOQl1tUWr0S4t4rSq7sbuEhpyE4RZP..V4bWVAVLWw.QHD1WFKyThQHv
+ s_L0YWR2cl4iZBqJ2jxPyduMYM0D3Mp_ORBoK62prw.jWzVIluqPKYG6pBJF
+ sjJb48bkdShvmQefP89jqe_PsU7tRO9ghNjB2vlve2qnL4KTzSoMR5vmrzwr
+ ufBG7gsZSubcgUI_LrVetBeNOJUxo_VJfEzknxXYNOQhU.dpKY5HUNFbLaW7
+ 8M7lZKt6VkZlswGIwAnJGIwLTyNby5lrOsBBQOU41FDV8IroLRV1wsZD7dqe
+ xO4HP9A0KIsWq4GxZniR1WPJ1tLhD7yExqHwEvCNmDS5.4S00L16qYw--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <4E58175A.9090209@schaufler-ca.com>
+Date: Fri, 26 Aug 2011 14:59:54 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Eric Paris <eparis@redhat.com>
+CC: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
+        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] Smack: SMACK_IOCLOADACCESS
+References: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com> <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com> <CADjiTvBkwusfjdE=PQ5B=MPMxr1bewR6v9qoqq6yMNWjp-BeLQ@mail.gmail.com> <4E57D17E.9020806@redhat.com>
+In-Reply-To: <4E57D17E.9020806@redhat.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011 14:52:57 -0400
-Jeff Layton <jlayton@samba.org> wrote:
+On 8/26/2011 10:01 AM, Eric Paris wrote:
+> On 08/26/2011 12:05 PM, Sakkinen, Jarkko wrote:
+>> On Fri, Aug 26, 2011 at 3:50 PM, Eric Paris <eparis@parisplace.org> wrote:
+>>> On Fri, Aug 26, 2011 at 1:52 AM, Jarkko Sakkinen
+>>> <jarkko.sakkinen@intel.com> wrote:
+>>>> IOCTL call for /smack/load that takes access rule in
+>>>> the same format as they are written into /smack/load.
+>>>> Sets errno to zero if access is allowed and to EACCES
+>>>> if not.
+>>>>
+>>>> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+>>> [SELinux maintainer here, but Casey knew to already take what I say
+>>> with a grain of salt]
+>>>
+>>> I'm not telling you to do anything differently, just telling you what
+>>> SELinux does, and why we do it.  SELinux has a file in selinuxfs
+>>> called 'access.'  The file can be opened and one can write a rule into
+>>> the file.  One then calls read and gets back a structure which
+>>> contains all of the permissions information allowed for the
+>>> source/target/class.  In SELinux we calculate all of the permissions
+>>> for the tuple at once so providing all of the information at once can
+>>> make a lot of sense.  libselinux provides libraries that will cache
+>>> these decisions in the userspace program and quickly answer the same
+>>> (or similar) questions later.
+>>>
+>>> http://userspace.selinuxproject.org/trac/browser/libselinux/src/compute_av.c
+>> Thank you for this information. One thing that concerns
+>> me in this approach is the scenario where things serialize
+>> to the following sequence:
+>>
+>> - Process A does open()
+>> - Process B does open()
+>> - Process A does write()
+>> - Process B does write()
+>> - Process A does read()
+>> - ... (sequence continues)
+>>
+>> What's the end result?
+> SELinux attaches the information needed to the struct file private area
+> inside the kernel using the kernel provided fs/libfs.c functions
+> simple_transation_*.  Which means that 2 processes have no issues
+> interfering with each other.  A multi threaded or misbehaving
+> application may get EBUSY on write() if another write()/read() combo is
+> in progress.  Its nice that the kernel has libraries which solve this
+> problem for us!
+>
+> I don't know SMACK internals, but if one ever wants to have SMACK
+> userspace object managers the ability for the interface to only be able
+> to return a single value might be an eventual bottleneck.
 
-> On Thu, 18 Aug 2011 14:18:15 -0400 (EDT)
-> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
-> 
-> > 
-> > 
-> > On Thu, 18 Aug 2011, Steve French wrote:
-> > 
-> > > If reading files - smbclient (ftp like syntax) should be able to reach
-> > > wire speeds (assuming the server disk can keep up) and for
-> > > writing it should be similar (perhaps a little slower but it won't
-> > > use i/o sizes as large as cifs kernel client).  I would expect
-> > > smbclient to/copy from Windows to be faster than Windows mount -> Samba.
-> > >
-> > > I reached near wirespeeds for GigE with cifs client (writing) to
-> > > Winodws 2003/2008/r2
-> > > and Samba - but didn't have fast enough disks to test 10GigE although I expect
-> > > very good performance with that if you have fast enough server disks (and
-> > > am willing to put performance patches in, if you detect additional
-> > > changes that we should make for 10GigE - in particular allowing
-> > > more than 50 simultaneous requests).
-> > >
-> > > If the registry fix for Windows 7 is in place (or if you copy to
-> > > WIndows 2008, Windows 2003, WIndows 2008r2) -
-> > > cifs kernel client is probably slightly faster for writes than alternatives,
-> > > smbclient much faster for reads.
-> > >
-> > > If going the other direction (Windows client copying to/from Samba server) -
-> > > Samba 3.6 (server) with SMB2 support
-> > > turned on - is going to be faster than most alternatives.
-> > 
-> > Hi,
-> > 
-> > Downloading from an FTP Server on the windows machine:
-> > 
-> > <--- 150 Connection accepted
-> > `file' at 418873344 (24%) 145.58M/s eta:9s [Receiving data]
-> > `file' at 735510528 (42%) 162.93M/s eta:6s [Receiving data]
-> > `file' at 1357185024 (78%) 172.89M/s eta:2s [Receiving data]
-> > <--- 226 Transfer OK 
-> > ---- Got EOF on data connection
-> > ---- Closing data socket
-> > 1719784995 bytes transferred in 9 seconds (181.65M/s)
-> > 
-> > Same file (via CIFS): 50MB/s
-> > 
-> > Device eth6 [10.0.1.2] (1/1):
-> > ================================================================================
-> > Incoming:                               Outgoing:
-> > Curr: 49.17 MByte/s                     Curr: 0.58 MByte/s
-> > Avg: 8.76 MByte/s                       Avg: 0.03 MByte/s
-> > Min: 0.00 MByte/s                       Min: 0.00 MByte/s
-> > Max: 197.68 MByte/s                     Max: 0.86 MByte/s
-> > Ttl: 585.87 GByte                       Ttl: 6.97 GByte
-> > 
-> > 0.02user 4.09system 0:33.84elapsed 12%CPU (0avgtext+0avgdata 3632maxresident)k
-> > 
-> > The RAID's on both systems can achieve > 750MiB/s sustained without any
-> > problems (benchmarked in the past) and the system has 56 PCI-e 2.0 lanes
-> > and a cable between two 10GbE nics.  Not sure where to start, Win7/box tweaks
-> > or Linux/CIFS options?
-> > 
-> > Again, Samba -> Linux = 500MiB/s, so FTP > 3x faster than CIFS.
-> > I know NFS gets a lot of testing (never had an issue with it/performance/etc)
-> > 
-> > However, regarding CIFS-- is there a test suite/or benchmark pack the CIFS 
-> > developers use to make sure everything is working in order?
-> > 
-> > Justin.
-> > 
-> > 
-> 
-> Like I said, read performance with cifs.ko just plain sucks currently.
-> 
-> Don't look for cifs.ko to achieve anywhere near NFS' performance unless
-> you jump through some very odd hoops (like multithreading your workload
-> in userspace, etc). cifs.ko just doesn't do a good job of keeping the
-> pipe "stuffed" as most calls are handled synchronously. A single task
-> can only handle one call on the wire in most cases. The exception here
-> is writes, but that just recently changed...
-> 
-> Reads are done using relatively small buffers and then copied to
-> pagecache. Part of what I'm working on will be to allow for much larger
-> reads directly into the pagecache. That should also help performance
-> significantly.
-> 
+Better to have a single question answered as required and with
+complete accuracy than to carry around the baggage necessary to
+maintain a cached duplicate of the kernel's rules and all the
+bookkeeping that requires. SELinux libraries probably have to
+make a system call just to determine if the caches they are
+maintaining are out of date.
 
-I just posted a patchset that should improve the performance of
-buffered reads. It's rather large but should apply to current upstream
-kernels. If you've had problems with cifs.ko read performance in the
-past, then this would be a good time to step up and help test them.
+>
+> Like I said, do whatever you guys think is best, but I'm constantly
+> going to point out and ask for LSM similarities when possible!
 
-If it makes things easier, then the patchset is also available via the
-cifs-3.2 branch of my public git tree:
+I'm going to argue that in this case the interface puts
+excessive burden on the user space code understanding a
+peculiar behavior and that an ioctl is significantly more
+appropriate to the task at hand. Even if there is precedence
+for doing it using transaction IO the scheme smells of foul
+sorcery.
 
-    http://git.kernel.org/?p=linux/kernel/git/jlayton/linux.git;a=shortlog;h=refs/heads/cifs-3.2
+> -Eric
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Thanks,
--- 
-Jeff Layton <jlayton@samba.org>
