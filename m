@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab1HZKYb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 06:24:31 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49241 "EHLO
+	id S1755040Ab1HZKZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 06:25:05 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49245 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab1HZKYa (ORCPT
+	with ESMTP id S1754850Ab1HZKZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 06:24:30 -0400
+	Fri, 26 Aug 2011 06:25:01 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 7/9] gma500: Fix backlight crash
+Subject: [PATCH 8/9] gma500: frame buffer locking
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Fri, 26 Aug 2011 11:19:34 +0100
-Message-ID: <20110826101927.16760.42350.stgit@localhost.localdomain>
+Date: Fri, 26 Aug 2011 11:19:58 +0100
+Message-ID: <20110826101945.16760.8598.stgit@localhost.localdomain>
 In-Reply-To: <20110826101734.16760.64364.stgit@localhost.localdomain>
 References: <20110826101734.16760.64364.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -24,176 +24,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Initial changes to get backlight behaviour we want and to fix backlight crashes
-on suspend/resume paths.
+If we are the console then a printk can hit us with a spin lock held (and
+in fact the kernel will do its best to take printing lock).
 
-[Note: on some boxes this will now produce a warning about the backlight, this
- isn't a regression it's an unfixed but non harmful case I still need to nail]
+In that case we cannot politely sleep when synching after an accelerated op
+but must behave obnixously to be sure of getting the bits out.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/power.c          |    2 +
- drivers/staging/gma500/psb_intel_lvds.c |   60 +++++++++++++++++--------------
- 2 files changed, 34 insertions(+), 28 deletions(-)
+ drivers/staging/gma500/accel_2d.c |   10 ++++++----
+ drivers/staging/gma500/psb_drv.c  |    2 +-
+ drivers/staging/gma500/psb_drv.h  |    2 +-
+ kernel/printk.c                   |    2 +-
+ 4 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/gma500/power.c b/drivers/staging/gma500/power.c
-index 972bea7..9402569 100644
---- a/drivers/staging/gma500/power.c
-+++ b/drivers/staging/gma500/power.c
-@@ -302,7 +302,7 @@ int psb_runtime_suspend(struct device *dev)
+diff --git a/drivers/staging/gma500/accel_2d.c b/drivers/staging/gma500/accel_2d.c
+index be92371..114b99a 100644
+--- a/drivers/staging/gma500/accel_2d.c
++++ b/drivers/staging/gma500/accel_2d.c
+@@ -111,8 +111,9 @@ static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
+ 	int ret = 0;
+ 	int i;
+ 	unsigned submit_size;
++	unsigned long flags;
  
- int psb_runtime_resume(struct device *dev)
- {
--	return 0;
-+	return gma_power_resume(dev);;
+-	mutex_lock(&dev_priv->mutex_2d);
++	spin_lock_irqsave(&dev_priv->lock_2d, flags);
+ 	while (size > 0) {
+ 		submit_size = (size < 0x60) ? size : 0x60;
+ 		size -= submit_size;
+@@ -127,7 +128,7 @@ static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
+ 
+ 		(void)PSB_RSGX32(PSB_SGX_2D_SLAVE_PORT + i - 4);
+ 	}
+-	mutex_unlock(&dev_priv->mutex_2d);
++	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
+ 	return ret;
  }
  
- int psb_runtime_idle(struct device *dev)
-diff --git a/drivers/staging/gma500/psb_intel_lvds.c b/drivers/staging/gma500/psb_intel_lvds.c
-index 8b951e3..21022e1 100644
---- a/drivers/staging/gma500/psb_intel_lvds.c
-+++ b/drivers/staging/gma500/psb_intel_lvds.c
-@@ -68,20 +68,23 @@ struct psb_intel_lvds_priv {
- static u32 psb_intel_lvds_get_max_backlight(struct drm_device *dev)
- {
+@@ -327,8 +328,9 @@ int psbfb_sync(struct fb_info *info)
  	struct drm_psb_private *dev_priv = dev->dev_private;
--	u32 retVal;
-+	u32 ret;
+ 	unsigned long _end = jiffies + DRM_HZ;
+ 	int busy = 0;
++	unsigned long flags;
  
- 	if (gma_power_begin(dev, false)) {
--		retVal = ((REG_READ(BLC_PWM_CTL) &
--			  BACKLIGHT_MODULATION_FREQ_MASK) >>
--			  BACKLIGHT_MODULATION_FREQ_SHIFT) * 2;
--
-+		ret = REG_READ(BLC_PWM_CTL);
- 		gma_power_end(dev);
--	} else
--		retVal = ((dev_priv->saveBLC_PWM_CTL &
--			  BACKLIGHT_MODULATION_FREQ_MASK) >>
--			  BACKLIGHT_MODULATION_FREQ_SHIFT) * 2;
--
--	return retVal;
-+	} else /* Powered off, use the saved value */
-+		ret = dev_priv->saveBLC_PWM_CTL;
-+
-+	/* Top 15bits hold the frequency mask */
-+	ret = (ret &  BACKLIGHT_MODULATION_FREQ_MASK) >>
-+					BACKLIGHT_MODULATION_FREQ_SHIFT;
-+
-+        ret *= 2;	/* Return a 16bit range as needed for setting */
-+        if (ret == 0)
-+                dev_err(dev->dev, "BL bug: Reg %08x save %08X\n",
-+                        REG_READ(BLC_PWM_CTL), dev_priv->saveBLC_PWM_CTL);
-+	return ret;
+-	mutex_lock(&dev_priv->mutex_2d);
++	spin_lock_irqsave(&dev_priv->lock_2d, flags);
+ 	/*
+ 	 * First idle the 2D engine.
+ 	 */
+@@ -357,7 +359,7 @@ int psbfb_sync(struct fb_info *info)
+ 					_PSB_C2B_STATUS_BUSY) != 0);
+ 
+ out:
+-	mutex_unlock(&dev_priv->mutex_2d);
++	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
+ 	return (busy) ? -EBUSY : 0;
  }
  
- /*
-@@ -142,7 +145,7 @@ static int psb_lvds_pwm_set_brightness(struct drm_device *dev, int level)
- 	max_pwm_blc = psb_intel_lvds_get_max_backlight(dev);
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index 34cf24a..9470af9 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -228,7 +228,7 @@ static int psb_do_init(struct drm_device *dev)
  
- 	/*BLC_PWM_CTL Should be initiated while backlight device init*/
--	BUG_ON((max_pwm_blc & PSB_BLC_MAX_PWM_REG_FREQ) == 0);
-+	BUG_ON(max_pwm_blc == 0);
  
- 	blc_pwm_duty_cycle = level * max_pwm_blc / BRIGHTNESS_MAX_LEVEL;
+ 	spin_lock_init(&dev_priv->irqmask_lock);
+-	mutex_init(&dev_priv->mutex_2d);
++	spin_lock_init(&dev_priv->lock_2d);
  
-@@ -154,6 +157,10 @@ static int psb_lvds_pwm_set_brightness(struct drm_device *dev, int level)
- 		  (max_pwm_blc << PSB_BACKLIGHT_PWM_CTL_SHIFT) |
- 		  (blc_pwm_duty_cycle));
+ 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
+ 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK1);
+diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
+index 9cbb494..11d963a 100644
+--- a/drivers/staging/gma500/psb_drv.h
++++ b/drivers/staging/gma500/psb_drv.h
+@@ -612,7 +612,7 @@ struct drm_psb_private {
+ 	void (*exit_idle)(struct drm_device *dev, u32 update_src);
  
-+        dev_info(dev->dev, "Backlight lvds set brightness %08x\n",
-+		  (max_pwm_blc << PSB_BACKLIGHT_PWM_CTL_SHIFT) |
-+		  (blc_pwm_duty_cycle));
-+
- 	return 0;
- }
+ 	/* 2D acceleration */
+-	struct mutex mutex_2d;
++	spinlock_t lock_2d;
  
-@@ -162,14 +169,12 @@ static int psb_lvds_pwm_set_brightness(struct drm_device *dev, int level)
-  */
- void psb_intel_lvds_set_brightness(struct drm_device *dev, int level)
- {
--	/*u32 blc_pwm_ctl;*/
--	struct drm_psb_private *dev_priv =
--			(struct drm_psb_private *)dev->dev_private;
-+	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	/* FIXME: Arrays anyone ? */
+ 	struct mdfld_dsi_encoder *encoder0;	
+diff --git a/kernel/printk.c b/kernel/printk.c
+index e861488..af2eec8 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -512,7 +512,7 @@ static void __call_console_drivers(unsigned start, unsigned end)
+ 	struct console *con;
  
- 	dev_dbg(dev->dev, "backlight level is %d\n", level);
- 
- 	if (!dev_priv->lvds_bl) {
--		dev_err(dev->dev, "NO LVDS Backlight Info\n");
-+		dev_err(dev->dev, "NO LVDS backlight info\n");
- 		return;
- 	}
- 
-@@ -190,11 +195,13 @@ static void psb_intel_lvds_set_backlight(struct drm_device *dev, int level)
- 	u32 blc_pwm_ctl;
- 
- 	if (gma_power_begin(dev, false)) {
--		blc_pwm_ctl =
--			REG_READ(BLC_PWM_CTL) & ~BACKLIGHT_DUTY_CYCLE_MASK;
-+		blc_pwm_ctl = REG_READ(BLC_PWM_CTL);
-+		blc_pwm_ctl &= ~BACKLIGHT_DUTY_CYCLE_MASK;
- 		REG_WRITE(BLC_PWM_CTL,
- 				(blc_pwm_ctl |
- 				(level << BACKLIGHT_DUTY_CYCLE_SHIFT)));
-+		dev_priv->saveBLC_PWM_CTL = (blc_pwm_ctl |
-+					(level << BACKLIGHT_DUTY_CYCLE_SHIFT));
- 		gma_power_end(dev);
- 	} else {
- 		blc_pwm_ctl = dev_priv->saveBLC_PWM_CTL &
-@@ -212,9 +219,11 @@ static void psb_intel_lvds_set_power(struct drm_device *dev,
- {
- 	u32 pp_status;
- 
--	if (!gma_power_begin(dev, true))
-+	if (!gma_power_begin(dev, true)) {
-+	        dev_err(dev->dev, "set power, chip off!\n");
- 		return;
--
-+        }
-+        
- 	if (on) {
- 		REG_WRITE(PP_CONTROL, REG_READ(PP_CONTROL) |
- 			  POWER_TARGET_ON);
-@@ -296,9 +305,6 @@ static void psb_intel_lvds_restore(struct drm_connector *connector)
- {
- 	struct drm_device *dev = connector->dev;
- 	u32 pp_status;
--
--	/*struct drm_psb_private *dev_priv =
--				(struct drm_psb_private *)dev->dev_private;*/
- 	struct psb_intel_output *psb_intel_output =
- 					to_psb_intel_output(connector);
- 	struct psb_intel_lvds_priv *lvds_priv =
-@@ -621,7 +627,8 @@ int psb_intel_lvds_set_property(struct drm_connector *connector,
- 			goto set_prop_error;
- 		else {
- #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE
--			struct drm_psb_private *devp = encoder->dev->dev_private;
-+			struct drm_psb_private *devp =
-+						encoder->dev->dev_private;
- 			struct backlight_device *bd = devp->backlight_device;
- 			if (bd) {
- 				bd->props.brightness = value;
-@@ -694,8 +701,7 @@ void psb_intel_lvds_init(struct drm_device *dev,
- 	struct drm_encoder *encoder;
- 	struct drm_display_mode *scan;	/* *modes, *bios_mode; */
- 	struct drm_crtc *crtc;
--	struct drm_psb_private *dev_priv =
--				(struct drm_psb_private *)dev->dev_private;
-+	struct drm_psb_private *dev_priv = dev->dev_private;
- 	u32 lvds;
- 	int pipe;
- 
-@@ -711,8 +717,8 @@ void psb_intel_lvds_init(struct drm_device *dev,
- 	}
- 
- 	psb_intel_output->dev_priv = lvds_priv;
--
- 	psb_intel_output->mode_dev = mode_dev;
-+
- 	connector = &psb_intel_output->base;
- 	encoder = &psb_intel_output->enc;
- 	drm_connector_init(dev, &psb_intel_output->base,
+ 	for_each_console(con) {
+-		if (exclusive_console && con != exclusive_console)
++		if (0 && exclusive_console && con != exclusive_console)
+ 			continue;
+ 		if ((con->flags & CON_ENABLED) && con->write &&
+ 				(cpu_online(smp_processor_id()) ||
 
