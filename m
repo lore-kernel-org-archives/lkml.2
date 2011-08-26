@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab1HZDlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 23:41:52 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:36465 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751243Ab1HZDls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 23:41:48 -0400
-Message-ID: <4E5715CE.2070806@st.com>
-Date: Fri, 26 Aug 2011 09:11:02 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Cc: Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 16/18] dmaengine/amba-pl08x: Add support for sg len greater
- than one for slave transfers
-References: <cover.1311936523.git.viresh.kumar@st.com> <5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com> <20110814083618.GE4986@n2100.arm.linux.org.uk> <4E4CCF7B.8060704@st.com> <20110821083306.GA12028@n2100.arm.linux.org.uk> <4E532B19.6000103@st.com>
-In-Reply-To: <4E532B19.6000103@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752627Ab1HZDrQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 23:47:16 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34821 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243Ab1HZDrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 23:47:14 -0400
+Date: Fri, 26 Aug 2011 13:47:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: linux-next: manual merge of the staging tree with the net tree
+Message-Id: <20110826134705.0d5b6767777f0af2f8667731@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/2011 9:52 AM, Viresh Kumar wrote:
-> On 8/21/2011 2:03 PM, Russell King - ARM Linux wrote:
->>>> I am not sure if i get this completely. In memcpy, we still don't support
->>>> more than one sg. We have created a new member in txd, which keeps track of
->>>> data (addresses, len).
->> Yes, but we shouldn't need to translate it into any kind of scatterlist.
->>
-> 
-> Ok. I way out is keeping two separate variables in txd, list for slave transfers,
-> and pointer to single element for memcpy. And that looks to be even bad to me.
-> Why waste memory, for second variable. Or create union of both.
-> 
-> One more thing, we can actually have scatter gather in memcpy too in future. This will be
-> helpful then also. But surely that's something not implemented currently.
-> 
+--Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Russell/Linus,
+Hi Greg,
 
-Probably this is the only issue left in this patch. (Sorry if i missed some other points)
-Please suggest what should i modify here, so that Vinod can go ahead and push pending
-patches too.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/rtl8192e/r8192E_core.c between commit afc4b13df143 ("net:
+remove use of ndo_set_multicast_list in drivers") from the net tree and
+commit 09505184ec3d ("staging: rtl8192e: Remove files that are not used")
+from the staging tree.
 
--- 
-viresh
+The latter removed the file, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOVxc5AAoJEDMEi1NhKgbsAuwIAKLlOw9PbsFF+yT8i5EkmDGM
+fFuIsUUK24VcHtSL7s4tilFHS+W5I/S+hRM6IGo9PhABpsQUf0e3X6VBB5fO29rL
+p6H+0tLIremxIL5X8U7epBYnGr//1iFkiZzv/QNha+l/zgJ73U8LyLJYX+E2hLuq
++JpSF+W3FINjlXqG13FBbDkaJXUibd4CxqVShgjp0gPb/zuSA/qcWMqlp1h2ht2M
+lH2ukc/MIoc8B/+a1ipMuzFYKyGrOJnnmQXHd+wAc1pKQZyJHNmporwsmy4hasdB
+SrDFU3o9oMi+jFB1apj7l9Ia6sqlgoPsUwgKUytYP9NTm/i7XxiNxErqjnKdwts=
+=XJ47
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Aug_2011_13_47_05_+1000_sWr=sN7c3s+ffcaa--
