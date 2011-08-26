@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1H0O7K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:59:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47080 "EHLO mx2.suse.de"
+	id S932184Ab1H0O7n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:59:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47216 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679Ab1H0O7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:59:07 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:53 2011
-Message-Id: <20110826215053.502040997@clark.kroah.org>
+	id S932110Ab1H0O7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:59:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:56 2011
+Message-Id: <20110826215056.396701567@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:23 -0700
+Date: Fri, 26 Aug 2011 14:49:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Len Brown <len.brown@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [06/35] x86, intel, power: Correct the MSR_IA32_ENERGY_PERF_BIAS message
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [34/35] igb: Fix lack of flush after register write and before delay
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Len Brown <len.brown@intel.com>
+From: Carolyn Wyborny <carolyn.wyborny@intel.com>
 
-commit 17edf2d79f1ea6dfdb4c444801d928953b9f98d6 upstream.
+commit 064b43304ed8ede8e13ff7b4338d09fd37bcffb1 upstream.
 
-Fix the printk_once() so that it actually prints (didn't print before
-due to a stray comma.)
+Register writes followed by a delay are required to have a flush
+before the delay in order to commit the values to the register.  Without
+the flush, the code following the delay may not function correctly.
 
-[ hpa: changed to an incremental patch and adjusted the description
-  accordingly. ]
-
-Signed-off-by: Len Brown <len.brown@intel.com>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1107151732480.18606@x980
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Tong Ho <tong.ho@ericsson.com>
+Reported-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Carolyn Wyborny <carolyn.wyborny@intel.com>
+Tested-by:  Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/intel.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/igb/e1000_82575.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -465,11 +465,11 @@ static void __cpuinit init_intel(struct
- 		u64 epb;
+--- a/drivers/net/igb/e1000_82575.c
++++ b/drivers/net/igb/e1000_82575.c
+@@ -1735,6 +1735,7 @@ static s32 igb_reset_hw_82580(struct e10
+ 		ctrl |= E1000_CTRL_RST;
  
- 		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
--		if ((epb & 0xF) == 0) {
--			printk_once(KERN_WARNING, "x86: updated energy_perf_bias"
--				" to 'normal' from 'performance'\n"
--				"You can view and update epb via utility,"
--				" such as x86_energy_perf_policy(8)\n");
-+		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
-+			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
-+				" Set to 'normal', was 'performance'\n"
-+				"ENERGY_PERF_BIAS: View and update with"
-+				" x86_energy_perf_policy(8)\n");
- 			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
- 			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
- 		}
+ 	wr32(E1000_CTRL, ctrl);
++	wrfl();
+ 
+ 	/* Add delay to insure DEV_RST has time to complete */
+ 	if (global_device_reset)
 
 
