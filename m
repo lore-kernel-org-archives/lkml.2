@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1HZQHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:07:21 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18073 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab1HZQHT convert rfc822-to-8bit (ORCPT
+	id S1754785Ab1HZQJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:09:44 -0400
+Received: from cynthia.allandria.com ([76.245.85.235]:56521 "EHLO
+	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568Ab1HZQJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:07:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 26 Aug 2011 09:07:03 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Olof Johansson <olof@lixom.net>
-CC: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Fri, 26 Aug 2011 09:07:00 -0700
-Subject: RE: [PATCH v3 00/13] arm/tegra: Initialize GPIO & pinmux from DT
-Thread-Topic: [PATCH v3 00/13] arm/tegra: Initialize GPIO & pinmux from DT
-Thread-Index: AcxjraSNAHrGl3f9QS2Cj+wS4qr0jQAW537g
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A40D2@HQMAIL01.nvidia.com>
-References: <1314315824-9687-1-git-send-email-swarren@nvidia.com>
- <CAOesGMiygfaNkPa7uURCiJpC=WDinWhKi07LFgJ+5JoGW_fLKw@mail.gmail.com>
-In-Reply-To: <CAOesGMiygfaNkPa7uURCiJpC=WDinWhKi07LFgJ+5JoGW_fLKw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Aug 2011 12:09:42 -0400
+Date: Fri, 26 Aug 2011 09:09:06 -0700
+From: Brad Boyer <flar@allandria.com>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: m68k: Convert to genirq (WIP)
+Message-ID: <20110826160905.GA17550@cynthia.pants.nu>
+References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
+ <alpine.OSX.2.00.1106011300550.199@ibook.intranet>
+ <20110605062702.GA2034@cynthia.pants.nu>
+ <CAMuHMdXVt5+nCaCSH3+z0fsL+vhOOTgbKsOAses8OudT-1OZGQ@mail.gmail.com>
+ <alpine.OSX.2.00.1108102007430.203@ibook.local>
+ <CAMuHMdXgeHtOB_3u6G6N9E4vaq=sJY-9NtF68XAnxhspMgRyGg@mail.gmail.com>
+ <alpine.OSX.2.00.1108262117070.267@ibook.local>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.OSX.2.00.1108262117070.267@ibook.local>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof Johansson wrote at Thursday, August 25, 2011 11:05 PM:
-> On Thu, Aug 25, 2011 at 4:43 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> > v3:
-...
-> This is looking pretty sane to me.
+On Fri, Aug 26, 2011 at 09:21:05PM +1000, Finn Thain wrote:
 > 
-> Grant, how do you prefer to handle this, since it spans of/dt, gpio
-> and tegra code? I can start a topic branch for Arnd to pull in for the
-> tegra parts, would you prefer picking up the of helper functions on
-> your own or is an ack from you and merge through the arm-soc tree
-> easier?
+> On Fri, 26 Aug 2011, Geert Uytterhoeven wrote:
+> 
+> > According to via_register_interrupts(), it requests both:
+> > 
+> >         if (via_alt_mapping) {
+> >                 if (request_irq(IRQ_AUTO_1, via1_irq, 0, "software",
+> >                                 (void *)via1))
+> >                         pr_err("Couldn't register %s interrupt\n", "software");
+> >                 if (request_irq(IRQ_AUTO_6, via1_irq, 0, "via1", (void *)via1))
+> >                         pr_err("Couldn't register %s interrupt\n", "via1");
+> >         } else {
+> >                 if (request_irq(IRQ_AUTO_1, via1_irq, 0, "via1", (void *)via1))
+> >                         pr_err("Couldn't register %s interrupt\n", "via1");
+> >         }
+> > 
+> > Hence IRQ_AUTO_1 must be shared and we cannot use an optimized chain
+> > handler for via1_irq()
+> 
+> I'm pretty sure that the "software" request_irq can be removed. It has 
+> come up before --
+> http://marc.info/?l=linux-mac68k&m=110973724208746&w=2
+> 
+> Maybe Brad can shed some light on this (?)
 
-I haven't thought through all the merging details yet, but do be aware
-of the dependencies this patchset has:
+Sorry, not really. We don't have any good documentation on how the
+alternate mapping really works on those systems. Anything that has
+it internally is using custom chips instead of a real VIA6522, so
+it's hard to say exactly how it behaves.
 
-1) Rename of arch/arm/mach-tegra/gpio.c -> drivers/gpio/gpio-tegra.c
-   This is in Grant's gpio for-next branch, and hence linux-next.
-   This is in some GPIO-related branch of Russell's.
+The real key of the alternate mapping is to move the timer interrupt
+higher than all the other hardware. This and the ADB are about all
+we really need from VIA1. It's possible one of the other interrupts
+we don't use is still on IRQ1. It's hard to say without trying.
 
-2) Various previous Tegra <mach/gpio.h> rework.
-   This is in some GPIO-related branch of Russell's; I assume the same one
-   as (1), but I can't actually find this branch, so can't check.
+I think I have a couple systems that have this hardware, but they
+are ones I haven't used much. If I can find some time I'll get the
+Q950 I acquired recently up and running since it should have the
+alternate mapping capability.
 
-Neither of those is in any Linus release or rc.
+One potential option is to just take it out and see if anything
+breaks with the change. We could add it back later if we find a
+use for it.
 
-I *think* that's it.
-
-For reference, this patchset was physical written/tested on top of
-next-20110823, with the patches mentioned in (2) aboe, and some others that
-hopefully aren't relevant, between linux-next and this patchset.
-
--- 
-nvpublic
+	Brad Boyer
+	flar@allandria.com
 
