@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab1HZKrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 06:47:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56862 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab1HZKrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 06:47:13 -0400
+	id S1751879Ab1HZKsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 06:48:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54190 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774Ab1HZKs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 06:48:29 -0400
+Date: Fri, 26 Aug 2011 12:48:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] oom: skip frozen tasks
+Message-ID: <20110826104827.GC9083@tiehlicka.suse.cz>
+References: <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com>
+ <20110824101927.GB3505@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com>
+ <20110825091920.GA22564@tiehlicka.suse.cz>
+ <20110825151818.GA4003@redhat.com>
+ <20110825164758.GB22564@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
+ <20110826070946.GA7280@tiehlicka.suse.cz>
+ <20110826085610.GA9083@tiehlicka.suse.cz>
+ <4E576F65.5060009@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <268bd0822736c924e45d966aa0ca3d60637ccc2b.1314291910.git.jbaron@redhat.com>
-References: <cover.1314291909.git.jbaron@redhat.com> <268bd0822736c924e45d966aa0ca3d60637ccc2b.1314291910.git.jbaron@redhat.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Fri, 26 Aug 2011 12:46:51 +0200
-X-Google-Sender-Auth: U-jmhmtSYrFyMjc2lKwGzMf0SKQ
-Message-ID: <CAO+b5-qfVRjQWNbdzK-GdU+GJT45LuifNSAYvn8bzpw+d=8O4A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] dynamic_debug: consolidate repetitive struct _ddebug
- descriptor definitions
-To: Jason Baron <jbaron@redhat.com>
-Cc: gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E576F65.5060009@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7QAlRM0013865
 
-On Thu, Aug 25, 2011 at 7:34 PM, Jason Baron <jbaron@redhat.com> wrote:
->
-> +#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)              \
-> +       static struct _ddebug __used __aligned(8)               \
-> +       __attribute__((section("__verbose"))) name = {          \
-> +               .modname = KBUILD_MODNAME,                      \
-> +               .function = __func__,                           \
-> +               .filename = __FILE__,                           \
-> +               .format = fmt,                                  \
-> +               .lineno = __LINE__,                             \
-> +               .flags =  _DPRINTK_FLAGS_DEFAULT,               \
-> +               .enabled = false,                               \
-> +       }
+On Fri 26-08-11 14:03:17, Konstantin Khlebnikov wrote:
+> Michal Hocko wrote:
+> 
+> >@@ -450,6 +459,10 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
+> >  			pr_err("Kill process %d (%s) sharing same memory\n",
+> >  				task_pid_nr(q), q->comm);
+> >  			task_unlock(q);
+> >+
+> >+			if (frozen(q))
+> >+				thaw_process(q);
+> >+
+> 
+> We must thaw task strictly after sending SIGKILL.
 
-A minor remark: macro arguments are usually surrounded by parentheses
-in a macro definition. That's not the case for "fmt" in the above.
+Sounds reasonable.
 
-Bart.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> But anyway I think this is a bad idea.
+
+Why?
+
+> 
+> >  			force_sig(SIGKILL, q);
+> >  		}
+> >
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
