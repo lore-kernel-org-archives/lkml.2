@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab1HZPiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:38:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58650 "EHLO
+	id S1754099Ab1HZPh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:37:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58644 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754128Ab1HZPh1 (ORCPT
+	with ESMTP id S1753956Ab1HZPhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:37:27 -0400
+	Fri, 26 Aug 2011 11:37:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, yrl.pp-manager.tt@hitachi.com,
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Eric B Munson <emunson@mgebm.net>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/6] perf probe: Fix regression of variable finder
-Date: Fri, 26 Aug 2011 12:37:06 -0300
-Message-Id: <1314373031-6687-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 3/6] perf symbols: /proc/kallsyms does not sort module symbols
+Date: Fri, 26 Aug 2011 12:37:08 -0300
+Message-Id: <1314373031-6687-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1314373031-6687-1-git-send-email-acme@infradead.org>
 References: <1314373031-6687-1-git-send-email-acme@infradead.org>
@@ -27,47 +26,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Anton Blanchard <anton@samba.org>
 
-Fix to call convert_variable() if previous call does not fail.
+kallsyms__parse assumes that /proc/kallsyms is sorted and sets the end
+of the previous symbol to the start of the current one.
 
-To call convert_variable, it ensures "ret" is 0. However, since
-"ret" has the return value of synthesize_perf_probe_arg() which
-always returns positive value if it succeeded, perf probe doesn't
-call convert_variable(). This will cause a SEGV when we add an
-event with arguments.
+Unfortunately module symbols are not sorted, eg:
 
-This has to be fixed as it ensures "ret" is greater than 0
-(or not negative).
+ffffffffa0081f30 t e1000_clean_rx_irq   [e1000e]
+ffffffffa00817a0 t e1000_alloc_rx_buffers       [e1000e]
 
-This regression has been introduced by my previous patch, f182e3e1.
+Some symbols end up with a negative length and others have a length
+larger than they should. This results in confusing perf output.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+We already have a function to fixup the end of zero length symbols so
+use that instead.
+
+Cc: Eric B Munson <emunson@mgebm.net>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20110820053922.3286.65805.stgit@fedora15
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110824065242.969681349@samba.org
+Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/symbol.c |   33 +++++++++++----------------------
+ 1 files changed, 11 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 555fc38..5d73262 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -659,7 +659,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
- 		if (!die_find_variable_at(&pf->cu_die, pf->pvar->var, 0, &vr_die))
- 			ret = -ENOENT;
- 	}
--	if (ret == 0)
-+	if (ret >= 0)
- 		ret = convert_variable(&vr_die, pf);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index bb5d32f..f119e85 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -438,18 +438,11 @@ int kallsyms__parse(const char *filename, void *arg,
+ 	char *line = NULL;
+ 	size_t n;
+ 	int err = -1;
+-	u64 prev_start = 0;
+-	char prev_symbol_type = 0;
+-	char *prev_symbol_name;
+ 	FILE *file = fopen(filename, "r");
  
- 	if (ret < 0)
+ 	if (file == NULL)
+ 		goto out_failure;
+ 
+-	prev_symbol_name = malloc(KSYM_NAME_LEN);
+-	if (prev_symbol_name == NULL)
+-		goto out_close;
+-
+ 	err = 0;
+ 
+ 	while (!feof(file)) {
+@@ -480,24 +473,18 @@ int kallsyms__parse(const char *filename, void *arg,
+ 			break;
+ 		}
+ 
+-		if (prev_symbol_type) {
+-			u64 end = start;
+-			if (end != prev_start)
+-				--end;
+-			err = process_symbol(arg, prev_symbol_name,
+-					     prev_symbol_type, prev_start, end);
+-			if (err)
+-				break;
+-		}
+-
+-		memcpy(prev_symbol_name, symbol_name, len + 1);
+-		prev_symbol_type = symbol_type;
+-		prev_start = start;
++		/*
++		 * module symbols are not sorted so we add all
++		 * symbols with zero length and rely on
++		 * symbols__fixup_end() to fix it up.
++		 */
++		err = process_symbol(arg, symbol_name,
++				     symbol_type, start, start);
++		if (err)
++			break;
+ 	}
+ 
+-	free(prev_symbol_name);
+ 	free(line);
+-out_close:
+ 	fclose(file);
+ 	return err;
+ 
+@@ -703,6 +690,8 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
+ 	if (dso__load_all_kallsyms(dso, filename, map) < 0)
+ 		return -1;
+ 
++	symbols__fixup_end(&dso->symbols[map->type]);
++
+ 	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+ 		dso->symtab_type = SYMTAB__GUEST_KALLSYMS;
+ 	else
 -- 
 1.6.2.5
 
