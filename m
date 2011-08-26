@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664Ab1HZE14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 00:27:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33221 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab1HZE1y (ORCPT
+	id S1751836Ab1HZE2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 00:28:43 -0400
+Received: from smtp131.iad.emailsrvr.com ([207.97.245.131]:42067 "EHLO
+	smtp131.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab1HZE2m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 00:27:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 26 Aug 2011 13:20:25 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com
-Subject: Re: [PATCH 6/6] cgroup: kill subsys->can_attach_task(),
- pre_attach() and attach_task()
-Message-Id: <20110826132025.3a47cac3.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1314312192-26885-7-git-send-email-tj@kernel.org>
-References: <1314312192-26885-1-git-send-email-tj@kernel.org>
-	<1314312192-26885-7-git-send-email-tj@kernel.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Aug 2011 00:28:42 -0400
+X-SMTPDoctor-Processed: csmtpprox 2.7.4
+MIME-Version: 1.0
+In-Reply-To: <20110825155456.4784f16d@lxorguk.ukuu.org.uk>
+References: <CAHzZGEz3EYuQQA0BK0Z9L14BXzuYRV4WVHS+6=L9rBwx+_G_8A@mail.gmail.com>
+	<20110825155456.4784f16d@lxorguk.ukuu.org.uk>
+Date: Fri, 26 Aug 2011 06:28:40 +0200
+Message-ID: <CAHzZGEzxm4K6vo8srHjjmgbXiwk9xHsn6hF02sQnZ3vfOZQCzQ@mail.gmail.com>
+Subject: Re: Problem with writing virtual serial device driver.
+From: =?UTF-8?B?RGF3aWQgQ2nEmcW8YXJraWV3aWN6?= <dawidc@b-labs.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Aug 2011 00:43:12 +0200
-Tejun Heo <tj@kernel.org> wrote:
+2011/8/25 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+> The first question would be what error code you get when you try and open
+> your new device, that would tell you much, and help identify your problem.
 
-> These three methods are no longer used.  Kill them.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Paul Menage <paul@paulmenage.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
+I don't get any error. I can open the device with minicom and
+everything appears to be fine but non of ops registered for the device
+get's called -- the device is not doing anything. The "dbg()" calls
+that I've put all around are not being triggered. The only time dbg()
+is printed is init function, which is successful.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+I have no clue what can be wrong. As the device is purly virtual I
+leave a lot of fields in the original structure empty so this might be
+a problem, but how do I know which ones should I fill with some dummy
+values? (if this would be a problem of course).
 
+-- 
+Dawid Ciężarkiewicz
+B-Labs. http://b-labs.com/
