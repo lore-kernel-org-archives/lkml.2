@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab1HZJAR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:00:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36528 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab1HZJAN convert rfc822-to-8bit (ORCPT
+	id S1753915Ab1HZJAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:00:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52008 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab1HZJAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:00:13 -0400
-Subject: Re: [PATCH 1/2] mm: convert k{un}map_atomic(p, KM_type) to
- k{un}map_atomic(p)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, linux-arch@vger.kernel.org
-Date: Fri, 26 Aug 2011 10:59:56 +0200
-In-Reply-To: <1314346676.6486.25.camel@minggr.sh.intel.com>
-References: <1314346676.6486.25.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314349196.26922.22.camel@twins>
-Mime-Version: 1.0
+	Fri, 26 Aug 2011 05:00:20 -0400
+Date: Fri, 26 Aug 2011 11:00:16 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: tytso@mit.edu, adilger.kernel@dilger.ca, eric.dumazet@gmail.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] percpu_counter: Put a reasonable upper bound on
+ percpu_counter_batch
+Message-ID: <20110826090016.GD2632@htj.dyndns.org>
+References: <20110826072622.406d3395@kryten>
+ <20110826072927.5b4781f9@kryten>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826072927.5b4781f9@kryten>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 16:17 +0800, Lin Ming wrote:
-> @@ -292,7 +292,7 @@ static unsigned int bm_bit_to_page_idx(struct drbd_bitmap *b, u64 bitnr)
->  static unsigned long *__bm_map_pidx(struct drbd_bitmap *b, unsigned int idx, const enum km_type km)
->  {
->         struct page *page = b->bm_pages[idx];
-> -       return (unsigned long *) kmap_atomic(page, km);
-> +       return (unsigned long *) kmap_atomic(page);
->  }
->  
->  static unsigned long *bm_map_pidx(struct drbd_bitmap *b, unsigned int idx)
-> @@ -302,7 +302,7 @@ static unsigned long *bm_map_pidx(struct drbd_bitmap *b, unsigned int idx)
->  
->  static void __bm_unmap(unsigned long *p_addr, const enum km_type km)
->  {
-> -       kunmap_atomic(p_addr, km);
-> +       kunmap_atomic(p_addr);
->  };
->   
+On Fri, Aug 26, 2011 at 07:29:27AM +1000, Anton Blanchard wrote:
+> 
+> When testing on a 1024 thread ppc64 box I noticed a large amount of
+> CPU time in ext4 code.
+> 
+> ext4_has_free_blocks has a fast path to avoid summing every free and
+> dirty block per cpu counter, but only if the global count shows more
+> free blocks than the maximum amount that could be stored in all the
+> per cpu counters.
+> 
+> Since percpu_counter_batch scales with num_online_cpus() and the maximum
+> amount in all per cpu counters is percpu_counter_batch * num_online_cpus(),
+> this breakpoint grows at O(n^2).
+> 
+> This issue will also hit with users of percpu_counter_compare which
+> does a similar thing for one percpu counter.
+> 
+> I chose to cap percpu_counter_batch at 1024 as a conservative first
+> step, but we may want to reduce it further based on further benchmarking.
+> 
+> Signed-off-by: Anton Blanchard <anton@samba.org>
 
-Stuff like that is really only a half-assed cleanup, IIRC there's more
-sites like that.
+Yeah, capping the upper bound seems reasonable but can you please add
+some comment explaining why the upper bound is necessary there?
 
-In my initial massive patch I cleaned all that up as well.
+Thank you.
+
+-- 
+tejun
