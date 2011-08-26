@@ -1,55 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1HZI52 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 04:57:28 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:63360 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab1HZI5Z convert rfc822-to-8bit (ORCPT
+	id S1754538Ab1HZI5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 04:57:09 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:49072 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753693Ab1HZI5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 04:57:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110825154705.GA6567@kroah.com>
-References: <927eab8b5c950c13991911cd4c16457a5d618bc7.1314252671.git.joe@perches.com>
-	<20110825154705.GA6567@kroah.com>
-Date: Fri, 26 Aug 2011 10:57:25 +0200
-Message-ID: <CACna6ryfHpSkTtnyMUXShyZvN2quD3w8higymGGXfXsu3f1GEA@mail.gmail.com>
-Subject: Re: [PATCH] staging: brcmfmac: Consolidate debugging macros
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Joe Perches <joe@perches.com>, Henry Ptasinski <henryp@broadcom.com>,
-        linux-kernel@vger.kernel.org, Brett Rudley <brudley@broadcom.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        devel@linuxdriverproject.org, Greg KH <gregkh@suse.de>,
-        Kan Yan <kanyan@broadcom.com>, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Aug 2011 04:57:04 -0400
+From: Joe Perches <joe@perches.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ath: Make ath_printk void not int and remove unused struct ath_common *
+Date: Fri, 26 Aug 2011 01:56:39 -0700
+Message-Id: <78869fcd8172cd02266b66a71aadbd0c0efbdebc.1314347556.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.405.gc1be0
+In-Reply-To: <cover.1314347556.git.joe@perches.com>
+References: <cover.1314347556.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/25 Greg KH <greg@kroah.com>:
-> On Wed, Aug 24, 2011 at 11:16:48PM -0700, Joe Perches wrote:
->> Convert multiple BRCMF_<debug_level> macros to a single
->> brcmf_dbg(level, fmt, ...) macro.
->>
->> Remove the now unnecessary double parentheses in the uses
->> of the old macros when converting to brcmf_dbg.
->>
->> Delete all uses of "%s: [fmt]", __func__, args... and move
->> the "%s: ", __func__ to the macro for consistency.
->>
->> Coalesce long formats.
->>
->> Signed-off-by: Joe Perches <joe@perches.com>
->
-> Applied, thanks.
+Changing the return type and removing the unused argument from
+ath_printk reduces code size.
 
-You didn't give even 24h before applying :|
+Add an __always_unused struct ath_common * to the macros
+that call ath_printk to avoid unused variable warnings.
 
-(Unless this patch was already posted somewhere else with RFC?)
+$ size drivers/net/wireless/ath/built-in.o*
+   text	   data	    bss	    dec	    hex	filename
+1159859	  16235	 212000	1388094	 152e3e	drivers/net/wireless/ath/built-in.o.new
+1164175	  16235	 212032	1392442	 153f3a	drivers/net/wireless/ath/built-in.o.old
 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/wireless/ath/ath.h  |   27 ++++++++++++++++-----------
+ drivers/net/wireless/ath/main.c |    8 ++------
+ 2 files changed, 18 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath.h b/drivers/net/wireless/ath/ath.h
+index a3f8505..9891fb6 100644
+--- a/drivers/net/wireless/ath/ath.h
++++ b/drivers/net/wireless/ath/ath.h
+@@ -178,24 +178,29 @@ bool ath_hw_keyreset(struct ath_common *common, u16 entry);
+ void ath_hw_cycle_counters_update(struct ath_common *common);
+ int32_t ath_hw_get_listen_time(struct ath_common *common);
+ 
+-extern __attribute__((format (printf, 3, 4)))
+-int ath_printk(const char *level, struct ath_common *common,
+-	       const char *fmt, ...);
++extern __attribute__((format (printf, 2, 3)))
++void ath_printk(const char *level, const char *fmt, ...);
++
++#define _ath_printk(level, common, fmt, ...)			\
++do {								\
++	__always_unused struct ath_common *unused = common;	\
++	ath_printk(level, fmt, ##__VA_ARGS__);			\
++} while (0)
+ 
+ #define ath_emerg(common, fmt, ...)				\
+-	ath_printk(KERN_EMERG, common, fmt, ##__VA_ARGS__)
++	_ath_printk(KERN_EMERG, common, fmt, ##__VA_ARGS__)
+ #define ath_alert(common, fmt, ...)				\
+-	ath_printk(KERN_ALERT, common, fmt, ##__VA_ARGS__)
++	_ath_printk(KERN_ALERT, common, fmt, ##__VA_ARGS__)
+ #define ath_crit(common, fmt, ...)				\
+-	ath_printk(KERN_CRIT, common, fmt, ##__VA_ARGS__)
++	_ath_printk(KERN_CRIT, common, fmt, ##__VA_ARGS__)
+ #define ath_err(common, fmt, ...)				\
+-	ath_printk(KERN_ERR, common, fmt, ##__VA_ARGS__)
++	_ath_printk(KERN_ERR, common, fmt, ##__VA_ARGS__)
+ #define ath_warn(common, fmt, ...)				\
+-	ath_printk(KERN_WARNING, common, fmt, ##__VA_ARGS__)
++	_ath_printk(KERN_WARNING, common, fmt, ##__VA_ARGS__)
+ #define ath_notice(common, fmt, ...)				\
+-	ath_printk(KERN_NOTICE, common, fmt, ##__VA_ARGS__)
++	_ath_printk(KERN_NOTICE, common, fmt, ##__VA_ARGS__)
+ #define ath_info(common, fmt, ...)				\
+-	ath_printk(KERN_INFO, common, fmt, ##__VA_ARGS__)
++	_ath_printk(KERN_INFO, common, fmt, ##__VA_ARGS__)
+ 
+ /**
+  * enum ath_debug_level - atheros wireless debug level
+@@ -250,7 +255,7 @@ enum ATH_DEBUG {
+ #define ath_dbg(common, dbg_mask, fmt, ...)				\
+ do {									\
+ 	if ((common)->debug_mask & dbg_mask)				\
+-		ath_printk(KERN_DEBUG, common, fmt, ##__VA_ARGS__);	\
++		_ath_printk(KERN_DEBUG, common, fmt, ##__VA_ARGS__);	\
+ } while (0)
+ 
+ #define ATH_DBG_WARN(foo, arg...) WARN(foo, arg)
+diff --git a/drivers/net/wireless/ath/main.c b/drivers/net/wireless/ath/main.c
+index c325202..d9218fe 100644
+--- a/drivers/net/wireless/ath/main.c
++++ b/drivers/net/wireless/ath/main.c
+@@ -57,22 +57,18 @@ struct sk_buff *ath_rxbuf_alloc(struct ath_common *common,
+ }
+ EXPORT_SYMBOL(ath_rxbuf_alloc);
+ 
+-int ath_printk(const char *level, struct ath_common *common,
+-	       const char *fmt, ...)
++void ath_printk(const char *level, const char *fmt, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+-	int rtn;
+ 
+ 	va_start(args, fmt);
+ 
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+ 
+-	rtn = printk("%sath: %pV", level, &vaf);
++	printk("%sath: %pV", level, &vaf);
+ 
+ 	va_end(args);
+-
+-	return rtn;
+ }
+ EXPORT_SYMBOL(ath_printk);
 -- 
-Rafał
+1.7.6.405.gc1be0
+
