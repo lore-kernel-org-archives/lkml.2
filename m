@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab1HZHD1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 03:03:27 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:59883 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab1HZHD0 (ORCPT
+	id S1751941Ab1HZHJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 03:09:46 -0400
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:50890
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750867Ab1HZHJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 03:03:26 -0400
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: linux-mmc@vger.kernel.org, cjb@laptop.org
-Cc: linux-kernel@vger.kernel.org, Seungwon Jeon <tgih.jun@samsung.com>
-Subject: [PATCH] mmc: core: Add default timeout value for CMD6.
-Date: Fri, 26 Aug 2011 15:48:06 +0900
-Message-Id: <1314341286-22141-1-git-send-email-tgih.jun@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 26 Aug 2011 03:09:45 -0400
+Message-ID: <4E5746B5.5090408@compulab.co.il>
+Date: Fri, 26 Aug 2011 10:09:41 +0300
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Kunze <thommycheck@gmx.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH] power_supply: collie_battery: simplify collie_bat_probe
+ error handling
+References: <1314328469.4571.1.camel@phoenix>
+In-Reply-To: <1314328469.4571.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EXT_CSD[248] includes the default maximum timeout for CMD6.
-This field is added at eMMC4.5 Spec.
+Mailer problem, sorry, sending once again...
 
-Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
----
- drivers/mmc/core/mmc.c   |    4 ++++
- include/linux/mmc/card.h |    1 +
- include/linux/mmc/mmc.h  |    1 +
- 3 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 5700b1c..68eb368 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -410,6 +410,10 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
- 	else
- 		card->erased_byte = 0x0;
+Hi Axel,
 
-+	if (card->ext_csd.rev >= 6)
-+		card->ext_csd.generic_cmd6_time = 10 *
-+			ext_csd[EXT_CSD_GENERIC_CMD6_TIME];
-+
- out:
- 	return err;
- }
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index b460fc2..e992fe3 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -52,6 +52,7 @@ struct mmc_ext_csd {
- 	u8			part_config;
- 	unsigned int		part_time;		/* Units: ms */
- 	unsigned int		sa_timeout;		/* Units: 100ns */
-+	unsigned int		generic_cmd6_time;	/* Units: ms */
- 	unsigned int		hs_max_dtr;
- 	unsigned int		sectors;
- 	unsigned int		card_type;
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 5a794cb..e869f00 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -293,6 +293,7 @@ struct _mmc_csd {
- #define EXT_CSD_SEC_ERASE_MULT		230	/* RO */
- #define EXT_CSD_SEC_FEATURE_SUPPORT	231	/* RO */
- #define EXT_CSD_TRIM_MULT		232	/* RO */
-+#define EXT_CSD_GENERIC_CMD6_TIME	248	/* RO */
 
- /*
-  * EXT_CSD field definitions
---
-1.7.0.4
+
+On 08/26/11 06:14, Axel Lin wrote:
+> I think this change is better in readability.
+>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+
+May be just convert it to use struct gpio and gpio_<request|free>_array() calls?
+Because right now it uses the same concept, but really awkward...
+
+>  drivers/power/collie_battery.c |   12 +++++-------
+>  1 files changed, 5 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/power/collie_battery.c b/drivers/power/collie_battery.c
+> index 548d263..89d6fcd 100644
+> --- a/drivers/power/collie_battery.c
+> +++ b/drivers/power/collie_battery.c
+> @@ -322,10 +322,8 @@ static int __devinit collie_bat_probe(struct ucb1x00_dev *dev)
+>  
+>  	for (i = 0; i < ARRAY_SIZE(gpios); i++) {
+>  		ret = gpio_request(gpios[i].gpio, gpios[i].name);
+> -		if (ret) {
+> -			i--;
+> +		if (ret)
+>  			goto err_gpio;
+> -		}
+>  
+>  		if (gpios[i].output)
+>  			ret = gpio_direction_output(gpios[i].gpio,
+> @@ -333,8 +331,10 @@ static int __devinit collie_bat_probe(struct ucb1x00_dev *dev)
+>  		else
+>  			ret = gpio_direction_input(gpios[i].gpio);
+>  
+> -		if (ret)
+> +		if (ret) {
+> +			gpio_free(gpios[i].gpio);
+>  			goto err_gpio;
+> +		}
+>  	}
+>  
+>  	mutex_init(&collie_bat_main.work_lock);
+> @@ -363,10 +363,8 @@ err_psy_reg_main:
+>  
+>  	/* see comment in collie_bat_remove */
+>  	cancel_work_sync(&bat_work);
+> -
+> -	i--;
+>  err_gpio:
+> -	for (; i >= 0; i--)
+> +	while (--i >= 0)
+>  		gpio_free(gpios[i].gpio);
+>  
+>  	return ret;
+
+-- 
+Regards,
+Igor.
 
