@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab1HZMjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:39:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41759 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab1HZMjt (ORCPT
+	id S1753961Ab1HZMmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:42:00 -0400
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:53237 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab1HZMl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:39:49 -0400
-Date: Fri, 26 Aug 2011 16:39:43 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>, containers@lists.osdl.org,
-        Andi Kleen <andi@firstfloor.org>, Nathan Lynch <ntl@pobox.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110826123943.GL3903@sun>
-References: <20110824111806.GA7191@albatros>
- <20110825082944.GH10030@sun>
- <20110825170147.GM2803@mtj.dyndns.org>
- <20110825170705.GA6387@sun>
- <20110825205426.GO2803@mtj.dyndns.org>
- <20110825211213.GP2803@mtj.dyndns.org>
- <20110825213459.GA1929@sun>
- <20110825213931.GR2803@mtj.dyndns.org>
- <20110826112943.GI3903@sun>
- <20110826122851.GA25853@shutemov.name>
+	Fri, 26 Aug 2011 08:41:59 -0400
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 08:41:58 EDT
+X-ME-engine: default
+Date: Fri, 26 Aug 2011 14:33:58 +0200
+From: Bastien Dejean <eschyle@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Limited Brightness Values with apple_backlight on an iMac 10,1
+Message-ID: <20110826123358.GA13479@circle.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110826122851.GA25853@shutemov.name>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 03:28:51PM +0300, Kirill A. Shutemov wrote:
-...
-> >  
-> > -static int proc_cwd_link(struct inode *inode, struct path *path)
-> > +static int proc_cwd_link(struct dentry *dentry, struct inode *inode, struct path *path)
-> 
-> Put proc_get_link() change in separate patch?
-> 
+Hi,
 
-Will do, but let leave it to a final pass, ie when all get agreed on idea and
-details, ok? Since I'll be re-sending the final version seraparely anyway.
-...
-> > +		down_read(&mm->mmap_sem);
-> > +
-> > +		nr_files = 0;
-> > +		for (vma = mm->mmap; vma; vma = vma->vm_next) {
-> > +			if (vma->vm_file)
-> > +				nr_files++;
-> > +		}
-> > +		if (!nr_files)
-> > +			goto out;
-> 
-> up_read(&mm->mmap_sem); ?
-> 
-> > +
-> > +		info = kmalloc(nr_files * sizeof(*info), GFP_KERNEL);
-> > +		if (!info) {
-> > +			ret = -ENOMEM;
-> > +			goto out;
-> 
-> Ditto.
-> 
+Since 2.6.39 I have a /sys/class/backlight/apple_backlight/ interface
+and I can change the brightness by echoing values to the relevant
+brightness file.
 
-Yeah, thanks Kirill!
+That's great but there's a little problem:
+
+On the 256 levels of brightness that my screen supports, I can only reach
+16 of the 128 upper values. It means that the lowest brightness I can
+access on Linux is at 50% of the real maximum brightness.
+
+Thanks,
+-- 
+Bastien
