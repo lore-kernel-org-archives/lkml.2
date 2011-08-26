@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab1HZKZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 06:25:05 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49245 "EHLO
+	id S1755062Ab1HZKZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 06:25:18 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49248 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850Ab1HZKZB (ORCPT
+	with ESMTP id S1754937Ab1HZKZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 06:25:01 -0400
+	Fri, 26 Aug 2011 06:25:16 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 8/9] gma500: frame buffer locking
+Subject: [PATCH 9/9] gma500: Fix up suspend/resume
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Fri, 26 Aug 2011 11:19:58 +0100
-Message-ID: <20110826101945.16760.8598.stgit@localhost.localdomain>
+Date: Fri, 26 Aug 2011 11:20:17 +0100
+Message-ID: <20110826102009.16760.66603.stgit@localhost.localdomain>
 In-Reply-To: <20110826101734.16760.64364.stgit@localhost.localdomain>
 References: <20110826101734.16760.64364.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -24,102 +24,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-If we are the console then a printk can hit us with a spin lock held (and
-in fact the kernel will do its best to take printing lock).
-
-In that case we cannot politely sleep when synching after an accelerated op
-but must behave obnixously to be sure of getting the bits out.
+This isn't ideal as we could do with deferring the power on a lot more on
+Oaktrail and Medfield. We can't however do that without fixing other things
+first.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/accel_2d.c |   10 ++++++----
- drivers/staging/gma500/psb_drv.c  |    2 +-
- drivers/staging/gma500/psb_drv.h  |    2 +-
- kernel/printk.c                   |    2 +-
- 4 files changed, 9 insertions(+), 7 deletions(-)
+ drivers/staging/gma500/power.c             |    6 +++--
+ drivers/staging/gma500/psb_drv.c           |   36 ++++++++++++----------------
+ drivers/staging/gma500/psb_intel_display.c |    4 ---
+ 3 files changed, 20 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/gma500/accel_2d.c b/drivers/staging/gma500/accel_2d.c
-index be92371..114b99a 100644
---- a/drivers/staging/gma500/accel_2d.c
-+++ b/drivers/staging/gma500/accel_2d.c
-@@ -111,8 +111,9 @@ static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
- 	int ret = 0;
- 	int i;
- 	unsigned submit_size;
-+	unsigned long flags;
- 
--	mutex_lock(&dev_priv->mutex_2d);
-+	spin_lock_irqsave(&dev_priv->lock_2d, flags);
- 	while (size > 0) {
- 		submit_size = (size < 0x60) ? size : 0x60;
- 		size -= submit_size;
-@@ -127,7 +128,7 @@ static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
- 
- 		(void)PSB_RSGX32(PSB_SGX_2D_SLAVE_PORT + i - 4);
- 	}
--	mutex_unlock(&dev_priv->mutex_2d);
-+	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
- 	return ret;
- }
- 
-@@ -327,8 +328,9 @@ int psbfb_sync(struct fb_info *info)
+diff --git a/drivers/staging/gma500/power.c b/drivers/staging/gma500/power.c
+index 9402569..436fe97 100644
+--- a/drivers/staging/gma500/power.c
++++ b/drivers/staging/gma500/power.c
+@@ -83,7 +83,7 @@ static void gma_suspend_display(struct drm_device *dev)
+ {
  	struct drm_psb_private *dev_priv = dev->dev_private;
- 	unsigned long _end = jiffies + DRM_HZ;
- 	int busy = 0;
-+	unsigned long flags;
  
--	mutex_lock(&dev_priv->mutex_2d);
-+	spin_lock_irqsave(&dev_priv->lock_2d, flags);
- 	/*
- 	 * First idle the 2D engine.
- 	 */
-@@ -357,7 +359,7 @@ int psbfb_sync(struct fb_info *info)
- 					_PSB_C2B_STATUS_BUSY) != 0);
+-	if (dev_priv->suspended)
++	if (!dev_priv->display_power)
+ 		return;
+ 	dev_priv->ops->save_regs(dev);
+ 	dev_priv->ops->power_down(dev);
+@@ -101,7 +101,7 @@ static void gma_resume_display(struct pci_dev *pdev)
+ 	struct drm_device *dev = pci_get_drvdata(pdev);
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
  
- out:
--	mutex_unlock(&dev_priv->mutex_2d);
-+	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
- 	return (busy) ? -EBUSY : 0;
- }
+-	if (dev_priv->suspended == false)
++	if (dev_priv->display_power)
+ 		return;
  
+ 	/* turn on the display power island */
+@@ -265,6 +265,8 @@ bool gma_power_begin(struct drm_device *dev, bool force_on)
+ 	/* Ok power up needed */
+ 	ret = gma_resume_pci(dev->pdev);
+ 	if (ret == 0) {
++		/* FIXME: we want to defer this for Medfield/Oaktrail */
++		gma_resume_display(dev);
+ 		psb_irq_preinstall(dev);
+ 		psb_irq_postinstall(dev);
+ 		pm_runtime_get(&dev->pdev->dev);
 diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index 34cf24a..9470af9 100644
+index 9470af9..dc676c2 100644
 --- a/drivers/staging/gma500/psb_drv.c
 +++ b/drivers/staging/gma500/psb_drv.c
-@@ -228,7 +228,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -448,12 +448,9 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
+ 
+ 	if (ret)
+ 		return ret;
+-#if 0
+-	/*enable runtime pm at last*/
+-	pm_runtime_enable(&dev->pdev->dev);
++
++	/* Enable runtime pm at last */
+ 	pm_runtime_set_active(&dev->pdev->dev);
+-#endif
+-	/*Intel drm driver load is done, continue doing pvr load*/
+ 	return 0;
+ out_err:
+ 	psb_driver_unload(dev);
+@@ -470,14 +467,13 @@ static int psb_sizes_ioctl(struct drm_device *dev, void *data,
+ 			   struct drm_file *file_priv)
+ {
+ 	struct drm_psb_private *dev_priv = psb_priv(dev);
+-	struct drm_psb_sizes_arg *arg =
+-		(struct drm_psb_sizes_arg *) data;
++	struct drm_psb_sizes_arg *arg = data;
+ 
+ 	*arg = dev_priv->sizes;
+ 	return 0;
+ }
+ 
+-static int psb_dc_state_ioctl(struct drm_device *dev, void * data,
++static int psb_dc_state_ioctl(struct drm_device *dev, void *data,
+ 				struct drm_file *file_priv)
+ {
+ 	uint32_t flags;
+@@ -485,8 +481,7 @@ static int psb_dc_state_ioctl(struct drm_device *dev, void * data,
+ 	struct drm_mode_object *obj;
+ 	struct drm_connector *connector;
+ 	struct drm_crtc *crtc;
+-	struct drm_psb_dc_state_arg *arg =
+-		(struct drm_psb_dc_state_arg *)data;
++	struct drm_psb_dc_state_arg *arg = data;
  
  
- 	spin_lock_init(&dev_priv->irqmask_lock);
--	mutex_init(&dev_priv->mutex_2d);
-+	spin_lock_init(&dev_priv->lock_2d);
+ 	/* Double check MRST case */
+@@ -1114,15 +1109,12 @@ static long psb_unlocked_ioctl(struct file *filp, unsigned int cmd,
+ {
+ 	struct drm_file *file_priv = filp->private_data;
+ 	struct drm_device *dev = file_priv->minor->dev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	static unsigned int runtime_allowed;
+-
+-	if (runtime_allowed == 1 && dev_priv->is_lvds_on) {
+-		runtime_allowed++;
+-		pm_runtime_allow(&dev->pdev->dev);
+-		dev_priv->rpm_enabled = 1;
+-	}
+-	return drm_ioctl(filp, cmd, arg);
++	int ret;
++	
++	pm_runtime_forbid(dev->dev);
++	ret = drm_ioctl(filp, cmd, arg);
++	pm_runtime_allow(dev->dev);
++	return ret;
+ 	/* FIXME: do we need to wrap the other side of this */
+ }
  
- 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
- 	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK1);
-diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index 9cbb494..11d963a 100644
---- a/drivers/staging/gma500/psb_drv.h
-+++ b/drivers/staging/gma500/psb_drv.h
-@@ -612,7 +612,7 @@ struct drm_psb_private {
- 	void (*exit_idle)(struct drm_device *dev, u32 update_src);
+@@ -1141,8 +1133,12 @@ static void psb_remove(struct pci_dev *pdev)
+ }
  
- 	/* 2D acceleration */
--	struct mutex mutex_2d;
-+	spinlock_t lock_2d;
+ static const struct dev_pm_ops psb_pm_ops = {
+-	.resume = gma_power_resume,
+ 	.suspend = gma_power_suspend,
++	.resume = gma_power_resume,
++	.freeze = gma_power_suspend,
++	.thaw = gma_power_resume,
++	.poweroff = gma_power_suspend,
++	.restore = gma_power_resume,
+ 	.runtime_suspend = psb_runtime_suspend,
+ 	.runtime_resume = psb_runtime_resume,
+ 	.runtime_idle = psb_runtime_idle,
+diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
+index 4afa671..caa9d86 100644
+--- a/drivers/staging/gma500/psb_intel_display.c
++++ b/drivers/staging/gma500/psb_intel_display.c
+@@ -1102,10 +1102,6 @@ static int psb_crtc_set_config(struct drm_mode_set *set)
+ {
+ 	int ret;
+ 	struct drm_device *dev = set->crtc->dev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-
+-	if (!dev_priv->rpm_enabled)
+-		return drm_crtc_helper_set_config(set);
  
- 	/* FIXME: Arrays anyone ? */
- 	struct mdfld_dsi_encoder *encoder0;	
-diff --git a/kernel/printk.c b/kernel/printk.c
-index e861488..af2eec8 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -512,7 +512,7 @@ static void __call_console_drivers(unsigned start, unsigned end)
- 	struct console *con;
- 
- 	for_each_console(con) {
--		if (exclusive_console && con != exclusive_console)
-+		if (0 && exclusive_console && con != exclusive_console)
- 			continue;
- 		if ((con->flags & CON_ENABLED) && con->write &&
- 				(cpu_online(smp_processor_id()) ||
+ 	pm_runtime_forbid(&dev->pdev->dev);
+ 	ret = drm_crtc_helper_set_config(set);
 
