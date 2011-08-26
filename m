@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab1HZJ4i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:56:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58449 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590Ab1HZJ4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:56:37 -0400
-Date: Fri, 26 Aug 2011 13:56:31 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ralf Jung <ralfjung-e@gmx.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
-Message-ID: <20110826095631.GF3903@sun>
-References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
- <201108261122.33304.ralfjung-e@gmx.de>
- <20110826093917.GE3903@sun>
- <201108261153.21103.ralfjung-e@gmx.de>
+	id S1754779Ab1HZJ7V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:59:21 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:31851 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803Ab1HZJ7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 05:59:20 -0400
+Message-ID: <4E576E6F.1030909@openvz.org>
+Date: Fri, 26 Aug 2011 13:59:11 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110702 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108261153.21103.ralfjung-e@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Michal Hocko <mhocko@suse.cz>, Oleg Nesterov <oleg@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] oom: skip frozen tasks
+References: <20110823073101.6426.77745.stgit@zurg> <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com> <4E574CA5.4010701@openvz.org> <alpine.DEB.2.00.1108260209050.14732@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1108260209050.14732@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 11:53:20AM +0200, Ralf Jung wrote:
-> Hi, 
-> 
-> > Hi Ralf, I can't put that risk on you. Hell knows how it will react
-> > on such reprogramming (which is seems rather a bios duty than kernel).
+David Rientjes wrote:
+> On Fri, 26 Aug 2011, Konstantin Khlebnikov wrote:
 >
-> Oh, we are talking about that kind of problems? It's my main (and only) work 
-> laptop, so... thanks for the warning ;-)
-> 
+>>> A much better solution would be to lower the badness score that the oom
+>>> killer uses for PF_FROZEN threads so that they aren't considered a
+>>> priority for kill unless there's nothing else left to kill.
+>>
+>> Anyway, oom killer shouldn't loop endlessly if it see TIF_MEMDIE on frozen
+>> task,
+>> it must go on and try to kill somebody else. We cannot wait for thawing this
+>> task.
+>>
+>
+> Did you read my suggestion?  I quoted it above again for you.  The badness
+> heuristic would only select those tasks to kill as a last resort in the
+> hopes they will eventually be thawed and may exit.  Panicking the entire
+> machine for what could be isolated by a cgroup is insanity.
 
-Yeah, i'm just curious ;) Anyway, Bjorn's patch fixes your problem
-and the warn_on I proposed might be added later, on top of this
-patch.
-
-	Cyrill
+Maybe just fix this "panic" logic? OOM killer should panic only on global memory shortage.
