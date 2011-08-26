@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab1HZPTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:19:15 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40372 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab1HZPTO convert rfc822-to-8bit (ORCPT
+	id S1753878Ab1HZPVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:21:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34581 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718Ab1HZPVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:19:14 -0400
+	Fri, 26 Aug 2011 11:21:45 -0400
+Date: Fri, 26 Aug 2011 17:21:39 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        bblum@andrew.cmu.edu, fweisbec@gmail.com, lizf@cn.fujitsu.com,
+        paul@paulmenage.org
+Subject: Re: + cgroups-fix-ordering-of-calls-in-cgroup_attach_proc.patch
+ added to -mm tree
+Message-ID: <20110826152139.GH2632@htj.dyndns.org>
+References: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org>
+ <20110826151245.GA16243@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110826135402.GS14479@barkeeper1-xen.linbit>
-References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
- <CAGpXXZKem-uEdF4SyUgpQFV6=d5Vo3v9p3wmcaygAKa4w4x01w@mail.gmail.com> <20110826135402.GS14479@barkeeper1-xen.linbit>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Fri, 26 Aug 2011 11:18:53 -0400
-Message-ID: <CAGZ=bqJojmtfVjQdbx3j2vZyrz01dZZs7wVqBxNbqreejZu4JQ@mail.gmail.com>
-Subject: Re: [Drbd-dev] [RFC 000/118] drbd: part 1 of adding multiple volume
- support to drbd
-To: Greg Freemyer <greg.freemyer@gmail.com>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        drbd-dev@lists.linbit.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826151245.GA16243@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 09:54, Lars Ellenberg <lars.ellenberg@linbit.com> wrote:
-> On Fri, Aug 26, 2011 at 09:20:51AM -0400, Greg Freemyer wrote:
->> On Thu, Aug 25, 2011 at 11:06 AM, Philipp Reisner <
->> philipp.reisner@linbit.com> wrote:
->>
->> > This the first request for review of drbd-8.4. The complete set has
->> > 500 patches. In this first series there are only 118 of these.
->>
->> I've only taken a quick glance, but is drbd functional between applying each
->> patch?
->>
->> It doesn't look like it to me, but I didn't look that close.  I also saw at
->> least one patch that introduced a new function with no caller to test it.
->>
->> The idea is that a patch series leave a testable / functional kernel after
->> each patch in the series is applied sequentially.
->>
->> That is the only way git bisect can do its job.
->
-> Very likely DRBD will not always be completely functional between
-> any arbitrary two of these patches.
->
-> The kernel as such will still be bisectable "just fine".
+Hello, Oleg.
 
-No.
+On Fri, Aug 26, 2011 at 05:12:45PM +0200, Oleg Nesterov wrote:
+> Yes, I think this is what we need, the patch itself looks fine.
+> 
+> But this doesn't answer my another question. After that the code does
+> 
+> 	 * step 4: do expensive, non-thread-specific subsystem callbacks.
+> 
+> 		ss->attach(ss, cgrp, oldcgrp, leader);
+> 
+> OK, non-thread-specific is nice, but how can this "leader" represent
+> the process?
+> 
+> It can be zombie (but still group_leader) even without any races.
+> Say, cpuset_attach() and mem_cgroup_move_task() need get_task_mm(p).
+> How this can work if the leader is dead?
+> 
+> Also. Even if we add the locking around while_each_thread() (btw,
+> we need this in any case), we can race with exec which can change
+> the leader. In this case this task_struct has nothing to do with
+> the process we are going to attach, at all.
+> 
+> And, ss->can_attach(leader) has the same problems, it seems.
 
-That's not the way that kernel development works.
+Please take a look at the following series.
 
-Besides which, that's not the way that "git bisect" works.
+  http://thread.gmane.org/gmane.linux.kernel/1184375
 
-For example, say I have a driver bug that happens to be triggering
-on my server which also happens to use GFS on DRBD.  I try to
-bisect the bug and it happens to pick a commit right in the middle
-of this DRBD branch.
+attach racing against exit/exec is problematic and maybe we should
+extend task->threadgroup_fork_lock protection to cover both exit and
+exec.  I can't like it tho.  I hope this can be somehow done in
+lighter way.  cgroup attaches are quite cold paths and we're putting
+an extra rwsem in each task for that.
 
-Suddenly DRBD is unusable or corrupting data or something, which
-is unacceptable for an unrelated bisection of a driver bug.
+Thanks.
 
-So if you want these patches merged into the kernel, you need to
-do them properly as per Documentation/SubmittingPatches.
-
-Cheers,
-Kyle Moffett
+-- 
+tejun
