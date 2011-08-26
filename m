@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab1HZGin (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 02:38:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:32908 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab1HZGim (ORCPT
+	id S1752768Ab1HZGkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 02:40:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64758 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab1HZGkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 02:38:42 -0400
-Message-ID: <4E573F68.1020603@gmail.com>
-Date: Fri, 26 Aug 2011 14:38:32 +0800
-From: Zhao Jin <cronozhj@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Fri, 26 Aug 2011 02:40:16 -0400
+Date: Fri, 26 Aug 2011 08:40:11 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, fweisbec@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH 3/6] cgroup: introduce cgroup_taskset and use it in
+ subsys->can_attach(), cancel_attach() and attach()
+Message-ID: <20110826064011.GA2632@htj.dyndns.org>
+References: <1314312192-26885-1-git-send-email-tj@kernel.org>
+ <1314312192-26885-4-git-send-email-tj@kernel.org>
+ <20110826023818.GC3457@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
-        trivial@kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slab: trivial: cleanup: remove unneeded return
-References: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com> <CADqbE97+FKz-7op-nmdOVmq3mrXadaxQrtk9Zud90E7iMMEUVQ@mail.gmail.com>
-In-Reply-To: <CADqbE97+FKz-7op-nmdOVmq3mrXadaxQrtk9Zud90E7iMMEUVQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826023818.GC3457@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Terribly sorry. It was gmail who wrapped the line.
-Please see this following version. Thanks!
+Hello, Matt.
 
----
-  mm/slab.c |    5 ++---
-  1 files changed, 2 insertions(+), 3 deletions(-)
+On Thu, Aug 25, 2011 at 07:38:18PM -0700, Matt Helsley wrote:
+> On Fri, Aug 26, 2011 at 12:43:09AM +0200, Tejun Heo wrote:
+> > Currently, there's no way to pass multiple tasks to cgroup_subsys
+> > methods necessitating the need for separate per-process and per-task
+> > methods.  This patch introduces cgroup_taskset which can be used to
+> > pass multiple tasks and their associated cgroups to cgroup_subsys
+> > methods.
+> 
+> This will be the third iterator-ish pattern in the cgroup code.
+> It's not your fault but it does seem a bit much to have:
+...
+> Is there a sane way to merge all this?
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 6d90a09..82e0a0e 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3678,13 +3678,12 @@ static inline void __cache_free(struct 
-kmem_cache *cachep, void *objp,
+If merging isn't complicated and simplifies the code and its users,
+definitely but I don't think that will be the case here.  If there are
+different targets to iterate, having matching iterators isn't a weird
+thing after all.  I personally am not too enthusiastic about mixing
+locking with iterator (the implied read_lock in the cgroup iterator)
+or iteration-by-callback but that's a different issue.
 
-      if (likely(ac->avail < ac->limit)) {
-          STATS_INC_FREEHIT(cachep);
--        ac->entry[ac->avail++] = objp;
--        return;
-      } else {
-          STATS_INC_FREEMISS(cachep);
-          cache_flusharray(cachep, ac);
--        ac->entry[ac->avail++] = objp;
-      }
-+
-+    ac->entry[ac->avail++] = objp;
-  }
+> Perhaps we could drop the iterator interfaces in 1) and 2) and replace
+> it with:
+> 
+> 		tset cgroup_taskset_from_cgroup(cgroup)
+> 
+> which would grab the css set lock to construct the tset from the given
+> cgroup -- essentially inlining the current iterator code into a single
+> function.
 
-  /**
+* It doesn't need to walk the whole cgroup.
+
+* It requires stable set of tasks (ie. atomicity w.r.t. the thread
+  group) with sleepable context which is currently achieved by a rwsem
+  in the task to protect against fork and getting an extra reference
+  to the tasks in the set.
+
+I don't think widening the scope would achieve much (why do we want to
+pass in unrelated tasks to subsystems as a single bundle?) while
+introducing unnecessary scalability limitation (moving out a single
+process ends up being an operation on the whole cgroup).
+
+I don't see how it would be better but, if you do, please go ahead.
+Consolidating stuff is (almost) always a good idea. :)
+
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
