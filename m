@@ -1,170 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab1HZJHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:07:40 -0400
-Received: from dns1.mips.com ([12.201.5.69]:46672 "EHLO dns1.mips.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106Ab1HZJHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:07:35 -0400
-From: Deng-Cheng Zhu <dczhu@mips.com>
-To: <jbarnes@virtuousgeek.org>, <ralf@linux-mips.org>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <eyal@mips.com>, <zenon@mips.com>,
-        <dczhu@mips.com>, <dengcheng.zhu@gmail.com>
-Subject: [PATCH v3 1/2] PCI: Pass available resources into pci_create_bus()
-Date: Fri, 26 Aug 2011 17:07:12 +0800
-Message-ID: <1314349633-13155-2-git-send-email-dczhu@mips.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1314349633-13155-1-git-send-email-dczhu@mips.com>
-References: <1314349633-13155-1-git-send-email-dczhu@mips.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-EMS-Proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
-X-EMS-STAMP: +Gi271TmD9u3k5qXcJ8rwQ==
+	id S1754223Ab1HZJHy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:07:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33856 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797Ab1HZJHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 05:07:49 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: linux@arm.linux.org.uk, linus.walleij@linaro.org, rpurdie@rpsys.net,
+        tony@atomide.com, jochen@scram.de, linux@maxim.org.za,
+        nicolas.pitre@linaro.org, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, jamie@jamieiles.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 10/18] mach-clps711x: retire custom LED code of P720T machine
+Date: Fri, 26 Aug 2011 17:03:27 +0800
+Message-Id: <1314349415-889-11-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.5
+In-Reply-To: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
+References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, after pci_create_bus(), resources available on the bus could be
-handled by pci_scan_child_bus(). The problem is that, in
-pci_scan_child_bus(), before calling arch-dependent pcibios_fixup_bus(),
-PCI quirks will probably conflict (while doing pci_claim_resource()) with
-resources like system controller's I/O resource that have not yet been
-added to the bus. One can see that, by default, ioport_resource and
-iomem_resource are filled into the bus->resource[] array as the initial
-resources in pci_create_bus(). So, to avoid such conflicts, add those
-really available resources right before returning the newly created bus in
-pci_create_bus() whose interface should then be extended to receive them.
+Add tigger based LED driver into board file of P720T.
+Remove old LED driver file.
 
-A related discussion thread can be found here:
-http://www.spinics.net/lists/mips/msg41654.html
-
-Signed-off-by: Deng-Cheng Zhu <dczhu@mips.com>
+Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 ---
-Changes (v3 - v2):
-None
+ arch/arm/mach-clps711x/Makefile            |    2 -
+ arch/arm/mach-clps711x/include/mach/time.h |    2 -
+ arch/arm/mach-clps711x/p720t-leds.c        |   67 ----------------------------
+ arch/arm/mach-clps711x/p720t.c             |   60 +++++++++++++++++++++++++
+ arch/arm/mach-clps711x/time.c              |    1 -
+ 5 files changed, 60 insertions(+), 72 deletions(-)
+ delete mode 100644 arch/arm/mach-clps711x/p720t-leds.c
 
-Changes (v2 - v1):
-o Add more info to the patch description.
-o Fix arch breaks in default resource setup discovered by Bjorn Helgaas.
-
- arch/microblaze/pci/pci-common.c |    3 ++-
- arch/powerpc/kernel/pci-common.c |    3 ++-
- arch/sparc/kernel/pci.c          |    3 ++-
- arch/x86/pci/acpi.c              |    2 +-
- drivers/pci/probe.c              |   15 +++++++++++----
- include/linux/pci.h              |    3 ++-
- 6 files changed, 20 insertions(+), 9 deletions(-)
-
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 4cfae20..9c35aa6 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -1581,7 +1581,8 @@ static void __devinit pcibios_scan_phb(struct pci_controller *hose)
- 		 node ? node->full_name : "<NO NAME>");
+diff --git a/arch/arm/mach-clps711x/Makefile b/arch/arm/mach-clps711x/Makefile
+index 4a19731..af9dcce 100644
+--- a/arch/arm/mach-clps711x/Makefile
++++ b/arch/arm/mach-clps711x/Makefile
+@@ -16,5 +16,3 @@ obj-$(CONFIG_ARCH_CLEP7312) += clep7312.o
+ obj-$(CONFIG_ARCH_EDB7211)  += edb7211-arch.o edb7211-mm.o
+ obj-$(CONFIG_ARCH_FORTUNET) += fortunet.o
+ obj-$(CONFIG_ARCH_P720T)    += p720t.o
+-leds-$(CONFIG_ARCH_P720T)   += p720t-leds.o
+-obj-$(CONFIG_LEDS)          += $(leds-y)
+diff --git a/arch/arm/mach-clps711x/include/mach/time.h b/arch/arm/mach-clps711x/include/mach/time.h
+index 61fef91..bafc325 100644
+--- a/arch/arm/mach-clps711x/include/mach/time.h
++++ b/arch/arm/mach-clps711x/include/mach/time.h
+@@ -17,7 +17,6 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+-#include <asm/leds.h>
+ #include <asm/hardware/clps7111.h>
  
- 	/* Create an empty bus for the toplevel */
--	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
-+	bus = pci_create_bus(hose->parent, hose->first_busno,
-+			     hose->ops, hose, NULL);
- 	if (bus == NULL) {
- 		printk(KERN_ERR "Failed to create bus for PCI domain %04x\n",
- 		       hose->global_number);
-diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-index 32656f1..2ede26a 100644
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -1703,7 +1703,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
- 		 node ? node->full_name : "<NO NAME>");
- 
- 	/* Create an empty bus for the toplevel */
--	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
-+	bus = pci_create_bus(hose->parent, hose->first_busno,
-+			     hose->ops, hose, NULL);
- 	if (bus == NULL) {
- 		pr_err("Failed to create bus for PCI domain %04x\n",
- 			hose->global_number);
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index 1e94f94..77c38bb 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -689,7 +689,8 @@ struct pci_bus * __devinit pci_scan_one_pbm(struct pci_pbm_info *pbm,
- 
- 	printk("PCI: Scanning PBM %s\n", node->full_name);
- 
--	bus = pci_create_bus(parent, pbm->pci_first_busno, pbm->pci_ops, pbm);
-+	bus = pci_create_bus(parent, pbm->pci_first_busno,
-+			     pbm->pci_ops, pbm, NULL);
- 	if (!bus) {
- 		printk(KERN_ERR "Failed to create bus for %s\n",
- 		       node->full_name);
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index c953302..bab2113 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -353,7 +353,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(sd);
- 	} else {
--		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd);
-+		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd, NULL);
- 		if (bus) {
- 			get_current_resources(device, busnum, domain, bus);
- 			bus->subordinate = pci_scan_child_bus(bus);
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 8473727..47a364c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1516,7 +1516,8 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
- }
- 
- struct pci_bus * pci_create_bus(struct device *parent,
--		int bus, struct pci_ops *ops, void *sysdata)
-+		int bus, struct pci_ops *ops, void *sysdata,
-+		struct pci_bus_resource *bus_res)
+ extern void clps711x_setup_timer(void);
+@@ -29,7 +28,6 @@ static irqreturn_t
+ p720t_timer_interrupt(int irq, void *dev_id)
  {
- 	int error;
- 	struct pci_bus *b, *b2;
-@@ -1570,8 +1571,14 @@ struct pci_bus * pci_create_bus(struct device *parent,
- 	pci_create_legacy_files(b);
+ 	struct pt_regs *regs = get_irq_regs();
+-	do_leds();
+ 	xtime_update(1);
+ #ifndef CONFIG_SMP
+ 	update_process_times(user_mode(regs));
+diff --git a/arch/arm/mach-clps711x/p720t-leds.c b/arch/arm/mach-clps711x/p720t-leds.c
+deleted file mode 100644
+index 1512144..0000000
+--- a/arch/arm/mach-clps711x/p720t-leds.c
++++ /dev/null
+@@ -1,67 +0,0 @@
+-/*
+- *  linux/arch/arm/mach-clps711x/leds.c
+- *
+- *  Integrator LED control routines
+- *
+- *  Copyright (C) 2000 Deep Blue Solutions Ltd
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/io.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-#include <asm/system.h>
+-#include <asm/mach-types.h>
+-
+-#include <asm/hardware/clps7111.h>
+-#include <asm/hardware/ep7212.h>
+-
+-static void p720t_leds_event(led_event_t ledevt)
+-{
+-	unsigned long flags;
+-	u32 pddr;
+-
+-	local_irq_save(flags);
+-	switch(ledevt) {
+-	case led_idle_start:
+-		break;
+-
+-	case led_idle_end:
+-		break;
+-
+-	case led_timer:
+-		pddr = clps_readb(PDDR);
+-		clps_writeb(pddr ^ 1, PDDR);
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	local_irq_restore(flags);
+-}
+-
+-static int __init leds_init(void)
+-{
+-	if (machine_is_p720t())
+-		leds_event = p720t_leds_event;
+-
+-	return 0;
+-}
+-
+-arch_initcall(leds_init);
+diff --git a/arch/arm/mach-clps711x/p720t.c b/arch/arm/mach-clps711x/p720t.c
+index cefbce0..13fd262 100644
+--- a/arch/arm/mach-clps711x/p720t.c
++++ b/arch/arm/mach-clps711x/p720t.c
+@@ -23,6 +23,8 @@
+ #include <linux/string.h>
+ #include <linux/mm.h>
+ #include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
  
- 	b->number = b->secondary = bus;
--	b->resource[0] = &ioport_resource;
--	b->resource[1] = &iomem_resource;
+ #include <mach/hardware.h>
+ #include <asm/pgtable.h>
+@@ -34,6 +36,8 @@
+ #include <asm/mach/map.h>
+ #include <mach/syspld.h>
+ 
++#include <asm/hardware/clps7111.h>
 +
-+	/* Add initial resources to the bus */
-+	if (bus_res != NULL)
-+		list_add_tail(&b->resources, &bus_res->list);
-+	else {
-+		b->resource[0] = &ioport_resource;
-+		b->resource[1] = &iomem_resource;
+ #include "common.h"
+ 
+ /*
+@@ -121,3 +125,59 @@ static int p720t_hw_init(void)
+ 
+ __initcall(p720t_hw_init);
+ 
++/*
++ * LED controled by CPLD
++ */
++static void p720t_led_set(struct led_classdev *cdev,
++			      enum led_brightness b)
++{
++	u8 reg = clps_readb(PDDR);
++
++	if (b != LED_OFF)
++		reg |= 0x1;
++	else
++		reg &= ~0x1;
++
++	clps_writeb(reg, PDDR);
++}
++
++static enum led_brightness p720t_led_get(struct led_classdev *cdev)
++{
++	u8 reg = clps_readb(PDDR);
++
++	return (reg & 0x1) ? LED_FULL : LED_OFF;
++}
++
++static int __init p720t_leds_init(void)
++{
++
++	struct led_classdev *cdev;
++	int ret;
++
++	if (!machine_is_p720t())
++		return -ENODEV;
++
++	cdev = kzalloc(sizeof(*cdev), GFP_KERNEL);
++	if (!cdev)
++		return -ENOMEM;
++
++	cdev->name = "p720t:0";
++	cdev->brightness_set = p720t_led_set;
++	cdev->brightness_get = p720t_led_get;
++	cdev->default_trigger = "heartbeat";
++
++	ret = led_classdev_register(NULL, cdev);
++	if (ret	< 0) {
++		kfree(cdev);
++		return ret;
 +	}
++
++	return 0;
++}
++
++/*
++ * Since we may have triggers on any subsystem, defer registration
++ * until after subsystem_init.
++ */
++fs_initcall(p720t_leds_init);
++
+diff --git a/arch/arm/mach-clps711x/time.c b/arch/arm/mach-clps711x/time.c
+index d581ef0..d79fe79 100644
+--- a/arch/arm/mach-clps711x/time.c
++++ b/arch/arm/mach-clps711x/time.c
+@@ -25,7 +25,6 @@
  
- 	return b;
+ #include <mach/hardware.h>
+ #include <asm/irq.h>
+-#include <asm/leds.h>
+ #include <asm/hardware/clps7111.h>
  
-@@ -1592,7 +1599,7 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
- {
- 	struct pci_bus *b;
- 
--	b = pci_create_bus(parent, bus, ops, sysdata);
-+	b = pci_create_bus(parent, bus, ops, sysdata, NULL);
- 	if (b)
- 		b->subordinate = pci_scan_child_bus(b);
- 	return b;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 8c230cb..5e1bacd 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -666,7 +666,8 @@ static inline struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *o
- 	return root_bus;
- }
- struct pci_bus *pci_create_bus(struct device *parent, int bus,
--			       struct pci_ops *ops, void *sysdata);
-+			       struct pci_ops *ops, void *sysdata,
-+			       struct pci_bus_resource *bus_res);
- struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
- 				int busnr);
- void pcie_update_link_speed(struct pci_bus *bus, u16 link_status);
+ #include <asm/mach/time.h>
 -- 
-1.7.1
+1.7.5
 
