@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1HZSo6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:44:58 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35625 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab1HZSow (ORCPT
+	id S1753235Ab1HZSqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:46:00 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:28031 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab1HZSo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:44:52 -0400
+	Fri, 26 Aug 2011 14:44:56 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         JBeulich@novell.com, jeremy@goop.org, ian.campbell@citrix.com,
         joe@perches.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/6] xen-swiotlb: Retry up three times to allocate Xen-SWIOTLB
-Date: Fri, 26 Aug 2011 14:44:26 -0400
-Message-Id: <1314384270-19850-3-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH 1/6] xen-pcifront: Update warning comment to use 'e820_host' option.
+Date: Fri, 26 Aug 2011 14:44:25 -0400
+Message-Id: <1314384270-19850-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314384270-19850-1-git-send-email-konrad.wilk@oracle.com>
 References: <1314384270-19850-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4E57E99E.0099:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A02020B.4E57E99F.017F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can fail seting up Xen-SWIOTLB if:
- - The host does not have enough contiguous DMA32 memory available
-   (can happen on a machine that has fragmented memory from starting,
-   stopping many guests).
- - Not enough low memory (almost never happens).
+With Xen changeset 23428 "libxl: Add 'e820_host' option to config file"
+the E820 as seen from the host can now be passed into the guest.
+This means that a PV guest can now:
+ - Use the correct PCI I/O gap. Before these patches, Linux guest would
+   boot up and would tell:
+   [    0.000000] Allocating PCI resources starting at 40000000 (gap: 40000000:c0000000)
+   while in actuality the PCI I/O gap should have been:
+   [    0.000000] Allocating PCI resources starting at b0000000 (gap: b0000000:4c000000)
 
-We retry allocating and exchanging the swath of contiguous memory
-up to three times. Each time we decrease the amount we need  - the
-minimum being of 2MB.
+ - The PV domain with PCI devices was limited to 3GB. It now can be booted
+   with 4GB, 8GB, or whatever number you want. The PCI devices will now _not_ conflict
+   with System RAM. Meaning the drivers can load.
 
-If we compleltly fail, we will print the reason for failure on the Xen
-console on top of doing it to earlyprintk=xen console.
-
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org
+CC: stable@kernel.org
+[v2: Made the string less broken up. Suggested by Joe Perches]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/swiotlb-xen.c |   35 +++++++++++++++++++++++++----------
- 1 files changed, 25 insertions(+), 10 deletions(-)
+ drivers/pci/xen-pcifront.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 6e8c15a..d45cbac 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -38,6 +38,7 @@
- #include <xen/swiotlb-xen.h>
- #include <xen/page.h>
- #include <xen/xen-ops.h>
-+#include <xen/hvc-console.h>
- /*
-  * Used to do a quick range check in swiotlb_tbl_unmap_single and
-  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
-@@ -146,8 +147,10 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
- void __init xen_swiotlb_init(int verbose)
- {
- 	unsigned long bytes;
--	int rc;
-+	int rc = -ENOMEM;
- 	unsigned long nr_tbl;
-+	char *m = NULL;
-+	unsigned int repeat = 3;
- 
- 	nr_tbl = swioltb_nr_tbl();
- 	if (nr_tbl)
-@@ -156,16 +159,17 @@ void __init xen_swiotlb_init(int verbose)
- 		xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
- 		xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
- 	}
--
-+retry:
- 	bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
- 
- 	/*
- 	 * Get IO TLB memory from any location.
- 	 */
- 	xen_io_tlb_start = alloc_bootmem(bytes);
--	if (!xen_io_tlb_start)
--		panic("Cannot allocate SWIOTLB buffer");
--
-+	if (!xen_io_tlb_start) {
-+		m = "Cannot allocate Xen-SWIOTLB buffer!\n";
-+		goto error;
-+	}
- 	xen_io_tlb_end = xen_io_tlb_start + bytes;
- 	/*
- 	 * And replace that memory with pages under 4GB.
-@@ -173,17 +177,28 @@ void __init xen_swiotlb_init(int verbose)
- 	rc = xen_swiotlb_fixup(xen_io_tlb_start,
- 			       bytes,
- 			       xen_io_tlb_nslabs);
--	if (rc)
-+	if (rc) {
-+		free_bootmem(__pa(xen_io_tlb_start), bytes);
-+		m = "Failed to get contiguous memory for DMA from Xen!\n"\
-+		    "You either: don't have the permissions, do not have"\
-+		    " enough free memory under 4GB, or the hypervisor memory"\
-+		    "is too fragmented!";
- 		goto error;
--
-+	}
- 	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
- 	swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
- 
- 	return;
- error:
--	panic("DMA(%d): Failed to exchange pages allocated for DMA with Xen! "\
--	      "We either don't have the permission or you do not have enough"\
--	      "free memory under 4GB!\n", rc);
-+	if (repeat--) {
-+		xen_io_tlb_nslabs = max(1024UL, /* Min is 2MB */
-+					(xen_io_tlb_nslabs >> 1));
-+		printk(KERN_INFO "Xen-SWIOTLB: Lowering to %luMB\n",
-+		      (xen_io_tlb_nslabs << IO_TLB_SHIFT) >> 20);
-+		goto retry;
-+	}
-+	xen_raw_printk("%s (rc:%d)", rc, m);
-+	panic("%s (rc:%d)", rc, m);
- }
- 
- void *
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index 492b7d8..d4e7a10 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -400,9 +400,8 @@ static int pcifront_claim_resource(struct pci_dev *dev, void *data)
+ 			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
+ 				pci_name(dev), i);
+ 			if (pci_claim_resource(dev, i)) {
+-				dev_err(&pdev->xdev->dev, "Could not claim "
+-					"resource %s/%d! Device offline. Try "
+-					"giving less than 4GB to domain.\n",
++				dev_err(&pdev->xdev->dev, "Could not claim resource %s/%d! "
++					"Device offline. Try using e820_host=1 in the guest config.\n",
+ 					pci_name(dev), i);
+ 			}
+ 		}
 -- 
 1.7.4.1
 
