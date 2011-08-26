@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab1HZE2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 00:28:43 -0400
-Received: from smtp131.iad.emailsrvr.com ([207.97.245.131]:42067 "EHLO
-	smtp131.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab1HZE2m convert rfc822-to-8bit (ORCPT
+	id S1751499Ab1HZEeR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 00:34:17 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46140 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750771Ab1HZEeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 00:28:42 -0400
-X-SMTPDoctor-Processed: csmtpprox 2.7.4
+	Fri, 26 Aug 2011 00:34:15 -0400
+X-Sasl-enc: Jr/ANzJoiQPfXrpDba5epcrDuNToQ8WHxbASa7MAcpUf 1314333254
+Date: Thu, 25 Aug 2011 21:33:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
+        netdev@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: linux-next: manual merge of the staging tree with the net tree
+Message-ID: <20110826043357.GA17686@kroah.com>
+References: <20110826134705.0d5b6767777f0af2f8667731@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20110825155456.4784f16d@lxorguk.ukuu.org.uk>
-References: <CAHzZGEz3EYuQQA0BK0Z9L14BXzuYRV4WVHS+6=L9rBwx+_G_8A@mail.gmail.com>
-	<20110825155456.4784f16d@lxorguk.ukuu.org.uk>
-Date: Fri, 26 Aug 2011 06:28:40 +0200
-Message-ID: <CAHzZGEzxm4K6vo8srHjjmgbXiwk9xHsn6hF02sQnZ3vfOZQCzQ@mail.gmail.com>
-Subject: Re: Problem with writing virtual serial device driver.
-From: =?UTF-8?B?RGF3aWQgQ2nEmcW8YXJraWV3aWN6?= <dawidc@b-labs.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826134705.0d5b6767777f0af2f8667731@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/25 Alan Cox <alan@lxorguk.ukuu.org.uk>:
-> The first question would be what error code you get when you try and open
-> your new device, that would tell you much, and help identify your problem.
+On Fri, Aug 26, 2011 at 01:47:05PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/rtl8192e/r8192E_core.c between commit afc4b13df143 ("net:
+> remove use of ndo_set_multicast_list in drivers") from the net tree and
+> commit 09505184ec3d ("staging: rtl8192e: Remove files that are not used")
+> from the staging tree.
+> 
+> The latter removed the file, so I did that.
 
-I don't get any error. I can open the device with minicom and
-everything appears to be fine but non of ops registered for the device
-get's called -- the device is not doing anything. The "dbg()" calls
-that I've put all around are not being triggered. The only time dbg()
-is printed is init function, which is successful.
+Thanks, that should be the correct thing :)
 
-I have no clue what can be wrong. As the device is purly virtual I
-leave a lot of fields in the original structure empty so this might be
-a problem, but how do I know which ones should I fill with some dummy
-values? (if this would be a problem of course).
-
--- 
-Dawid Ciężarkiewicz
-B-Labs. http://b-labs.com/
+greg k-h
