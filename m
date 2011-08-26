@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab1HZGWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 02:22:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39986 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab1HZGWa (ORCPT
+	id S1753635Ab1HZGYo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 02:24:44 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:34250 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753482Ab1HZGYn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 02:22:30 -0400
-Date: Fri, 26 Aug 2011 10:22:24 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ralf Jung <ralfjung-e@gmx.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
-Message-ID: <20110826062224.GA3903@sun>
-References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
- <1314315225.16133.30.camel@sbsiddha-desk.sc.intel.com>
- <CAErSpo7N3UBJgQTb+zePnsf5YuFSQT8zy9CftwceyAKKfcHUjA@mail.gmail.com>
+	Fri, 26 Aug 2011 02:24:43 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Dave Airlie <airlied@gmail.com>
+Subject: Re: [RFC PATCH v2] Resurrect Intel740 driver: i740fb
+Date: Fri, 26 Aug 2011 08:24:38 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+References: <201108212242.12717.linux@rainbow-software.org> <CAPM=9tzF7C_gW44csqYwK+wdT9mwWBrA3O_9JQNfg=6aip4kag@mail.gmail.com>
+In-Reply-To: <CAPM=9tzF7C_gW44csqYwK+wdT9mwWBrA3O_9JQNfg=6aip4kag@mail.gmail.com>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo7N3UBJgQTb+zePnsf5YuFSQT8zy9CftwceyAKKfcHUjA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201108260824.38352.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 06:17:06PM -0600, Bjorn Helgaas wrote:
-> On Thu, Aug 25, 2011 at 5:33 PM, Suresh Siddha
-> <suresh.b.siddha@intel.com> wrote:
-> > On Thu, 2011-08-25 at 16:05 -0700, Bjorn Helgaas wrote:
-> >> Previously we reserved 1024 bytes, but that's more space than the IOAPIC
-> >> consumes, and it can cause conflicts with nearby devices.  The known
-> >> requirement is 68 bytes (sizeof(struct io_apic)), and rounding up to a
-> >> power-of-2 gives us 128.
-> >>
+On Tuesday 23 August 2011, Dave Airlie wrote:
+> On Sun, Aug 21, 2011 at 9:42 PM, Ondrej Zary <linux@rainbow-software.org> 
+wrote:
+> > Hello,
+> > this is an v2 attempt to resurrect an old (like 2.4.19) out-of-tree
+> > driver for Intel740 graphics cards and modify it for recent kernels. The
+> > old driver is located at:
+> > http://sourceforge.net/projects/i740fbdev/files/
 > >
-> > Bjorn, Given the info from Intel that most of its io-apic
-> > implementations has registers up to 0xff offset (reserved), does
-> > reserving just the 128 bytes for the io-apic cause any address conflicts
-> > if the next 128 bytes are allocated (by the OS) for any other device.
-> 
-> If the OS allocated the next 128 bytes to another device, it sounds
-> like it would cause a conflict on Intel boxes.  This must be an area
-> that differs between vendors.  I haven't seen a spec that mentions 256
-> bytes as the required minimum MMIO size for IOAPICs, and apparently
-> the AMD IOAPIC decodes 240 bytes or fewer.
-> 
+> > It was easier to create a new driver based on skeletonfb, using most of
+> > the low level HW code from the old driver. The DDC code is completely
+> > new.
+> >
+> > The driver was tested on two 8MB cards: ManLi and Diamond Stealth II G460
+> >
+> > The i740_calc_fifo() function formatting is nice but does not pass
+> > checkpatch. Making it checkpatch-compliant makes the code look ugly. How
+> > to make it both nice and compatible with Linux coding style?
+> > (the remaining // comments mark things that need attention - missing xpan
+> > and suspend/resume)
+> >
+> > Changes in v2:
+> > - fixed 15bpp (16bpp 555) mode
+> > - not working 1280x1024-32 is not a bug but card's feature, it's now
+> > handled correctly by the driver
+> > - 24bpp modes still don't work in fbtest but it looks like fbtest bug!
+> >
+> > Is there any better way to test fb drivers than fbtest?
+> >
+> > no signed-off-by yet
+> >
+> > --- linux-2.6.39-rc2-orig/drivers/video/Kconfig 2011-04-06
+> > 03:30:43.000000000 +0200 +++ linux-2.6.39-rc2/drivers/video/Kconfig    
+> >  2011-07-30 11:34:10.000000000 +0200 @@ -1117,6 +1117,17 @@ config
+> > FB_RIVA_BACKLIGHT
+> >        help
+> >          Say Y here if you want to control the backlight of your display.
+> >
+> > +config FB_I740
+> > +       tristate "Intel740 support (EXPERIMENTAL)"
+> > +       depends on EXPERIMENTAL && FB && PCI && X86_32 && AGP_INTEL
+> > +       select FB_MODE_HELPERS
+> > +       select FB_CFB_FILLRECT
+> > +       select FB_CFB_COPYAREA
+> > +       select FB_CFB_IMAGEBLIT
+> > +       select VGASTATE
+> > +       help
+> > +         This driver supports graphics cards based on Intel740 chip.
+> > +
+>
+> It shouldn't need AGP_INTEL, as its an AGP card not an integrated
+> chipset, it might need just AGP.
 
-Hi Bjorn,
+Oops, I copied that from I810 and then forgot about it...will fix that to 
+really match the driver requirements.
 
-the former idea (as far as I remember) of all this IO_APIC_SLOT_SIZE
-was to be sure the io-apics are allocated with 1K step (which
-is requirements for io-apics), but definitely it doesn't consume
-that much space neither it decode the whole range.
+BTW. i740 cards are really picky, they don't even POST with most boards that 
+don't have i440LX/EX or i440BX/ZX chipsets.
 
-Which means, I would prefer if we have (since we change IO_APIC_SLOT_SIZE
-anyway) some additional check and WARN_ON in this code. Something like
 
- if (io-apic-base-address & 0x3ff)
-   WARN_ON();
-
-Hm? (also we have bad_ioapic() check, probably should put such test
-there instead).
-
-	Cyrill
+-- 
+Ondrej Zary
