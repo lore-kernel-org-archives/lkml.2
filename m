@@ -1,127 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1HZMjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:39:10 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:42853 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752603Ab1HZMjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:39:06 -0400
-Subject: Re: linux-next: Tree for Aug 22 (evm)
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-In-Reply-To: <CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
-References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-	 <20110822125355.bb01d76b.rdunlap@xenotime.net>
-	 <CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
-	 <20110822174958.73dd96c7.rdunlap@xenotime.net>
-	 <1314065358.3225.44.camel@localhost.localdomain>
-	 <20110823164035.ca28fdc6.rdunlap@xenotime.net>
-	 <CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Aug 2011 08:39:02 -0400
-Message-ID: <1314362342.3224.19.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1754121Ab1HZMjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:39:51 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41759 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab1HZMjt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 08:39:49 -0400
+Date: Fri, 26 Aug 2011 16:39:43 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>, containers@lists.osdl.org,
+        Andi Kleen <andi@firstfloor.org>, Nathan Lynch <ntl@pobox.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, Zan Lynx <zlynx@acm.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110826123943.GL3903@sun>
+References: <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
+ <20110825170705.GA6387@sun>
+ <20110825205426.GO2803@mtj.dyndns.org>
+ <20110825211213.GP2803@mtj.dyndns.org>
+ <20110825213459.GA1929@sun>
+ <20110825213931.GR2803@mtj.dyndns.org>
+ <20110826112943.GI3903@sun>
+ <20110826122851.GA25853@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826122851.GA25853@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 22:10 -0400, Arnaud Lacombe wrote:
-> Hi,
+On Fri, Aug 26, 2011 at 03:28:51PM +0300, Kirill A. Shutemov wrote:
+...
+> >  
+> > -static int proc_cwd_link(struct inode *inode, struct path *path)
+> > +static int proc_cwd_link(struct dentry *dentry, struct inode *inode, struct path *path)
 > 
-> On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> > I think that you are going to need to do something like Arnaud suggested
-> > and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
-> > unless you can convince someone that this is a kconfig bug.
-> >
-> dammit... I guess there is...
+> Put proc_get_link() change in separate patch?
 > 
-> If you consider the following Kconfig:
-> 
-> config MOD
->         bool
->         default y
->         option modules
-> 
-> config EXPERIMENTAL
->         bool
->         default y
-> 
-> menuconfig A
->         tristate "A"
->         depends on EXPERIMENTAL
-> 
-> config B
->         bool "B"
-> 
-> config B0
->         bool
-> 
-> config C
->         tristate "C"
->         depends on B
-> 
-> config C0
->         tristate
-> 
-> config D
->         boolean "D"
->         depends on A && B
->         select C
->         select C0
-> 
-> config E
->         tristate "E"
-> 
-> config F
->         tristate "F"
->         select E
-> 
-> B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
-> (TCG_TPM) allows to set D (EVM), which will select (C). Now,
-> menuconfig highlight the problem very well. Proceeding as following
-> A=m, B=y, C=m, E=y, F=y, we ends up having:
-> 
->  <M> A  --->
->  [*] B
->  {M} C
->  [*] D
->  -*- E
->  <*> F
-> 
-> which translate in the following config:
-> 
-> CONFIG_MOD=y
-> CONFIG_EXPERIMENTAL=y
-> CONFIG_A=m
-> CONFIG_B=y
-> CONFIG_C=m
-> CONFIG_C0=m
-> CONFIG_D=y
-> CONFIG_E=y
-> CONFIG_F=y
-> 
-> I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
-> If you remove D's dependency on 'A', everything works as expected. So
-> it would seem direct dependency state influence the state of reverse
-> dependencies...
-> 
-> Will have a look...
-> 
->  - Arnaud
 
-Thanks for looking into this!  Instead of changing 'TCG_TPM' to
-'TCG_TPM=y', the dependency should be on 'TRUSTED_KEYS=y'.  Then when
-I've refactored ENCRYPTED_KEYS, removing the ENCRYPTED_KEYS dependency
-on TRUSTED_KEYS, the EVM dependency would be '(TRUSTED_KEYS=y ||
-TRUSTED_KEYS=n)'.  Do you want a temporary fix for now?
+Will do, but let leave it to a final pass, ie when all get agreed on idea and
+details, ok? Since I'll be re-sending the final version seraparely anyway.
+...
+> > +		down_read(&mm->mmap_sem);
+> > +
+> > +		nr_files = 0;
+> > +		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> > +			if (vma->vm_file)
+> > +				nr_files++;
+> > +		}
+> > +		if (!nr_files)
+> > +			goto out;
+> 
+> up_read(&mm->mmap_sem); ?
+> 
+> > +
+> > +		info = kmalloc(nr_files * sizeof(*info), GFP_KERNEL);
+> > +		if (!info) {
+> > +			ret = -ENOMEM;
+> > +			goto out;
+> 
+> Ditto.
+> 
 
-thanks,
-
-Mimi
-
+Yeah, thanks Kirill!
