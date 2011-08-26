@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab1HZUqH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 16:46:07 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:39642 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754304Ab1HZUqF (ORCPT
+	id S1754794Ab1HZUuX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 16:50:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52988 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576Ab1HZUuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 16:46:05 -0400
-Date: Fri, 26 Aug 2011 16:46:04 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Michal Nazarewicz <mnazarewicz@google.com>
-cc: Greg KH <greg@kroah.com>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5 1/4] usb: Provide usb_speed_string() function
-In-Reply-To: <op.v0t39bd1vgw7ix@mnazarewicz-glaptop>
-Message-ID: <Pine.LNX.4.44L0.1108261645200.5470-100000@netrider.rowland.org>
+	Fri, 26 Aug 2011 16:50:22 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 3.1-rc3 on spitz
+Date: Fri, 26 Aug 2011 22:50:18 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: rpurdie@rpsys.net, lenz@cs.wisc.edu,
+        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
+References: <20110826203024.GA6630@ucw.cz>
+In-Reply-To: <20110826203024.GA6630@ucw.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108262250.18454.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Aug 2011, Michal Nazarewicz wrote:
-
-> On Fri, 26 Aug 2011 20:49:05 +0200, Alan Stern <stern@rowland.harvard.edu>  
-> wrote:
-> > I don't know.  Michal, can you look into this?  What we want is:
-> >
-> > 	common.o gets included in the main kernel if either CONFIG_USB
-> > 	or CONFIG_USB_GADGET is set to Y.
-> >
-> > 	Otherwise, if either symbol is set to M then common.o gets
-> > 	built into its own little module.  Perhaps some other stuff
-> > 	could get put in there too, though at the moment I can't
-> > 	think of anything.
+On Friday, August 26, 2011 10:30:24 PM Pavel Machek wrote:
+> Hi!
 > 
-> Wouldn't that be accomplished by a tristate Kconfig option selected by
-> USB and USB_GADGET?  Or a tristate that defaults to “y” but depends on
-> USB or USB_GADGET?
+> Seems to work correctly, including bluetooth. 3.1 might be good
+> release for zaurus :-)
 
-Like I said, I don't know.  Try it and see.
-
-Alan Stern
-
+Oh that's certainly great :-) Now just to be careful about our machine IDs ;-)
