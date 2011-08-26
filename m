@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab1H0Ozc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:55:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46333 "EHLO mx2.suse.de"
+	id S1753750Ab1H0O4o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:56:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46543 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab1H0Oza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:55:30 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:01:20 2011
-Message-Id: <20110826220120.726579794@clark.kroah.org>
+	id S1752513Ab1H0O4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:56:40 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:04:20 2011
+Message-Id: <20110826220420.061085648@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:58:32 -0700
+Date: Fri, 26 Aug 2011 15:03:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Timo Warns <warns@pre-sense.de>
-Subject: [11/19] befs: Validate length of long symbolic links.
-In-Reply-To: <20110826220137.GA14059@kroah.com>
+Subject: [12/20] befs: Validate length of long symbolic links.
+In-Reply-To: <20110826220431.GA15382@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
