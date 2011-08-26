@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab1HZBBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 21:01:52 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:25448 "EHLO
+	id S1754590Ab1HZBBx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 21:01:53 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:45395 "EHLO
 	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab1HZBBu (ORCPT
+	with ESMTP id S1754495Ab1HZBBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 21:01:50 -0400
+	Thu, 25 Aug 2011 21:01:51 -0400
 From: JJ Ding <jj_ding@emc.com.tw>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Seth Forshee <seth.forshee@canonical.com>,
@@ -17,9 +17,9 @@ Cc: Seth Forshee <seth.forshee@canonical.com>,
         Chase Douglas <chase.douglas@canonical.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
-Subject: [PATCH v3 1/7] Input: elantech - correct x, y value range for v2 hardware
-Date: Fri, 26 Aug 2011 09:03:05 +0800
-Message-Id: <1314320591-11551-2-git-send-email-jj_ding@emc.com.tw>
+Subject: [PATCH v3 2/7] Input: elantech - get rid of ETP_2FT_* in elantech.h
+Date: Fri, 26 Aug 2011 09:03:06 +0800
+Message-Id: <1314320591-11551-3-git-send-email-jj_ding@emc.com.tw>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314320591-11551-1-git-send-email-jj_ding@emc.com.tw>
 References: <1314320591-11551-1-git-send-email-jj_ding@emc.com.tw>
@@ -27,79 +27,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x, y values are actually 12-bit long. Also update protocol document to reflect
-the change.
+For two finger touches the coordinate of each finger gets reported
+separately but with reduced resolution.
 
+With this change, we now have the same range for ST and MT data and
+scale MT data because it has lower resolution to match ST.
+
+Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Acked-by: Daniel Kurtz <djkurtz@chromium.org>
 Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
 ---
- Documentation/input/elantech.txt |    8 ++++----
- drivers/input/mouse/elantech.c   |    8 ++++----
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/input/mouse/elantech.c |   28 +++++++++++++---------------
+ drivers/input/mouse/elantech.h |   11 -----------
+ 2 files changed, 13 insertions(+), 26 deletions(-)
 
-diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
-index db798af..bce9941 100644
---- a/Documentation/input/elantech.txt
-+++ b/Documentation/input/elantech.txt
-@@ -389,14 +389,14 @@ byte 0:
- byte 1:
- 
-    bit   7   6   5   4   3   2   1   0
--	 p7  p6  p5  p4  .  x10 x9  x8
-+	 p7  p6  p5  p4 x11 x10 x9  x8
- 
- byte 2:
- 
-    bit   7   6   5   4   3   2   1   0
- 	 x7  x6  x5  x4  x3  x2  x1  x0
- 
--         x10..x0 = absolute x value (horizontal)
-+         x11..x0 = absolute x value (horizontal)
- 
- byte 3:
- 
-@@ -420,7 +420,7 @@ byte 3:
- byte 4:
- 
-    bit   7   6   5   4   3   2   1   0
--        p3  p1  p2  p0   .   .  y9  y8
-+        p3  p1  p2  p0  y11 y10 y9  y8
- 
- 	 p7..p0 = pressure (not EF113)
- 
-@@ -429,7 +429,7 @@ byte 5:
-    bit   7   6   5   4   3   2   1   0
-         y7  y6  y5  y4  y3  y2  y1  y0
- 
--         y9..y0 = absolute y value (vertical)
-+         y11..y0 = absolute y value (vertical)
- 
- 
- 4.2.2 Two finger touch
 diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 3250356..da161da 100644
+index da161da..cd8e2e5 100644
 --- a/drivers/input/mouse/elantech.c
 +++ b/drivers/input/mouse/elantech.c
-@@ -290,15 +290,15 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
- 		/* pass through... */
- 	case 1:
- 		/*
--		 * byte 1:  .   .   .   .   .  x10 x9  x8
-+		 * byte 1:  .   .   .   .  x11 x10 x9  x8
- 		 * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
- 		 */
--		x1 = ((packet[1] & 0x07) << 8) | packet[2];
-+		x1 = ((packet[1] & 0x0f) << 8) | packet[2];
- 		/*
--		 * byte 4:  .   .   .   .   .   .  y9  y8
-+		 * byte 4:  .   .   .   .  y11 y10 y9  y8
- 		 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
- 		 */
--		y1 = ETP_YMAX_V2 - (((packet[4] & 0x03) << 8) | packet[5]);
-+		y1 = ETP_YMAX_V2 - (((packet[4] & 0x0f) << 8) | packet[5]);
+@@ -273,11 +273,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 	struct elantech_data *etd = psmouse->private;
+ 	struct input_dev *dev = psmouse->dev;
+ 	unsigned char *packet = psmouse->packet;
+-	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0, width = 0, pres = 0;
++	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
++	unsigned int width = 0, pres = 0;
  
- 		input_report_abs(dev, ABS_X, x1);
- 		input_report_abs(dev, ABS_Y, y1);
+ 	/* byte 0: n1  n0   .   .   .   .   R   L */
+ 	fingers = (packet[0] & 0xc0) >> 6;
+-	input_report_key(dev, BTN_TOUCH, fingers != 0);
+ 
+ 	switch (fingers) {
+ 	case 3:
+@@ -300,9 +300,6 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		 */
+ 		y1 = ETP_YMAX_V2 - (((packet[4] & 0x0f) << 8) | packet[5]);
+ 
+-		input_report_abs(dev, ABS_X, x1);
+-		input_report_abs(dev, ABS_Y, y1);
+-
+ 		pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+ 		width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+ 		break;
+@@ -314,22 +311,18 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		 * byte 0:  .   .  ay8 ax8  .   .   .   .
+ 		 * byte 1: ax7 ax6 ax5 ax4 ax3 ax2 ax1 ax0
+ 		 */
+-		x1 = ((packet[0] & 0x10) << 4) | packet[1];
++		x1 = (((packet[0] & 0x10) << 4) | packet[1]) << 2;
+ 		/* byte 2: ay7 ay6 ay5 ay4 ay3 ay2 ay1 ay0 */
+-		y1 = ETP_2FT_YMAX - (((packet[0] & 0x20) << 3) | packet[2]);
++		y1 = ETP_YMAX_V2 -
++			((((packet[0] & 0x20) << 3) | packet[2]) << 2);
+ 		/*
+ 		 * byte 3:  .   .  by8 bx8  .   .   .   .
+ 		 * byte 4: bx7 bx6 bx5 bx4 bx3 bx2 bx1 bx0
+ 		 */
+-		x2 = ((packet[3] & 0x10) << 4) | packet[4];
++		x2 = (((packet[3] & 0x10) << 4) | packet[4]) << 2;
+ 		/* byte 5: by7 by8 by5 by4 by3 by2 by1 by0 */
+-		y2 = ETP_2FT_YMAX - (((packet[3] & 0x20) << 3) | packet[5]);
+-		/*
+-		 * For compatibility with the X Synaptics driver scale up
+-		 * one coordinate and report as ordinary mouse movent
+-		 */
+-		input_report_abs(dev, ABS_X, x1 << 2);
+-		input_report_abs(dev, ABS_Y, y1 << 2);
++		y2 = ETP_YMAX_V2 -
++			((((packet[3] & 0x20) << 3) | packet[5]) << 2);
+ 
+ 		/* Unknown so just report sensible values */
+ 		pres = 127;
+@@ -337,6 +330,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		break;
+ 	}
+ 
++	input_report_key(dev, BTN_TOUCH, fingers != 0);
++	if (fingers != 0) {
++		input_report_abs(dev, ABS_X, x1);
++		input_report_abs(dev, ABS_Y, y1);
++	}
+ 	elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
+ 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+ 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
+index fabb2b9..1c5894e 100644
+--- a/drivers/input/mouse/elantech.h
++++ b/drivers/input/mouse/elantech.h
+@@ -82,17 +82,6 @@
+ #define ETP_WMIN_V2			0
+ #define ETP_WMAX_V2			15
+ 
+-/*
+- * For two finger touches the coordinate of each finger gets reported
+- * separately but with reduced resolution.
+- */
+-#define ETP_2FT_FUZZ			4
+-
+-#define ETP_2FT_XMIN			(  0 + ETP_2FT_FUZZ)
+-#define ETP_2FT_XMAX			(288 - ETP_2FT_FUZZ)
+-#define ETP_2FT_YMIN			(  0 + ETP_2FT_FUZZ)
+-#define ETP_2FT_YMAX			(192 - ETP_2FT_FUZZ)
+-
+ struct elantech_data {
+ 	unsigned char reg_10;
+ 	unsigned char reg_11;
 -- 
 1.7.4.1
 
