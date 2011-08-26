@@ -1,39 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab1HZWZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 18:25:50 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:53119 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab1HZWZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 18:25:49 -0400
-Date: Sat, 27 Aug 2011 00:25:44 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Greg KH <greg@kroah.com>
-Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-Message-ID: <20110826222544.GV25996@one.firstfloor.org>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org> <20110826214329.GA6325@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110826214329.GA6325@kroah.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1753283Ab1HZW2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 18:28:43 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:58860 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751433Ab1HZW2l convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 18:28:41 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Date: Fri, 26 Aug 2011 15:27:51 -0700
+Subject: [PATCH] power: max8925.  remove support for irq bits that do not
+ exist
+Thread-Topic: [PATCH] power: max8925.  remove support for irq bits that do
+ not exist
+Thread-Index: AcxkP14p+ITaRfh9SgKAC8Wiyw3sDQ==
+Message-ID: <86216CAF-2B76-4C5E-8077-68D535FEDBB9@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > wget ftp://ftp.kernel.org/pub/linux/kernel/people/ak/uname26/uname26.c
-> > gcc -o uname26 uname26.c
-> > ./uname26 program
-> 
-> I hate to ask, but can you put a proper copyright and license on this
-> file so that distros can distribute it?
 
-I assumed it's too trivial for that.
+The max8925 cannot return usb status.  The bits
+-       [MAX8925_IRQ_VCHG_USB_OVP] = {
+-               .reg            = MAX8925_CHG_IRQ1,
+-               .mask_reg       = MAX8925_CHG_IRQ1_MASK,
+-               .offs           = 1 << 3,
+-       },
+-       [MAX8925_IRQ_VCHG_USB_F] =  {
+-               .reg            = MAX8925_CHG_IRQ1,
+-               .mask_reg       = MAX8925_CHG_IRQ1_MASK,
+-               .offs           = 1 << 4,
+-       },
+-       [MAX8925_IRQ_VCHG_USB_R] = {
+-               .reg            = MAX8925_CHG_IRQ1,
+-               .mask_reg       = MAX8925_CHG_IRQ1_MASK,
+-               .offs           = 1 << 5,
+-       },
 
-Anyways I put a GPL license on it now.
+do not exist in the irq register.
 
--Andi
+Signed-off-by: Philip Rakity <prakity@marvell.com>
+---
+ drivers/mfd/max8925-core.c    |   15 ---------------
+ drivers/power/max8925_power.c |   13 -------------
+ include/linux/mfd/max8925.h   |    3 ---
+ 3 files changed, 0 insertions(+), 31 deletions(-)
+
+diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
+index e1e59c9..ca881ef 100644
+--- a/drivers/mfd/max8925-core.c
++++ b/drivers/mfd/max8925-core.c
+@@ -210,21 +210,6 @@ static struct max8925_irq_data max8925_irqs[] = {
+ 		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
+ 		.offs		= 1 << 2,
+ 	},
+-	[MAX8925_IRQ_VCHG_USB_OVP] = {
+-		.reg		= MAX8925_CHG_IRQ1,
+-		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
+-		.offs		= 1 << 3,
+-	},
+-	[MAX8925_IRQ_VCHG_USB_F] =  {
+-		.reg		= MAX8925_CHG_IRQ1,
+-		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
+-		.offs		= 1 << 4,
+-	},
+-	[MAX8925_IRQ_VCHG_USB_R] = {
+-		.reg		= MAX8925_CHG_IRQ1,
+-		.mask_reg	= MAX8925_CHG_IRQ1_MASK,
+-		.offs		= 1 << 5,
+-	},
+ 	[MAX8925_IRQ_VCHG_THM_OK_R] = {
+ 		.reg		= MAX8925_CHG_IRQ2,
+ 		.mask_reg	= MAX8925_CHG_IRQ2_MASK,
+diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+index 5e4e046..377d1e6 100644
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@ -120,16 +120,6 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
+ 		__set_charger(info, 0);
+ 		dev_dbg(chip->dev, "Adapter removed\n");
+ 		break;
+-	case MAX8925_IRQ_VCHG_USB_R:
+-		info->usb_online = 1;
+-		__set_charger(info, 1);
+-		dev_dbg(chip->dev, "USB inserted\n");
+-		break;
+-	case MAX8925_IRQ_VCHG_USB_F:
+-		info->usb_online = 0;
+-		__set_charger(info, 0);
+-		dev_dbg(chip->dev, "USB removed\n");
+-		break;
+ 	case MAX8925_IRQ_VCHG_THM_OK_F:
+ 		/* Battery is not ready yet */
+ 		dev_dbg(chip->dev, "Battery temperature is out of range\n");
+@@ -370,9 +360,6 @@ static __devinit int max8925_init_charger(struct max8925_chip *chip,
+ 		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_F, "ac-remove");
+ 		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_R, "ac-insert");
+ 	}
+-	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_OVP, "usb-ovp");
+-	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_F, "usb-remove");
+-	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_R, "usb-insert");
+ 	if (!info->no_temp_support) {
+ 		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
+ 		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
+diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
+index 008f807..b8e6d94 100644
+--- a/include/linux/mfd/max8925.h
++++ b/include/linux/mfd/max8925.h
+@@ -167,9 +167,6 @@ enum {
+ 	MAX8925_IRQ_VCHG_DC_OVP,
+ 	MAX8925_IRQ_VCHG_DC_F,
+ 	MAX8925_IRQ_VCHG_DC_R,
+-	MAX8925_IRQ_VCHG_USB_OVP,
+-	MAX8925_IRQ_VCHG_USB_F,
+-	MAX8925_IRQ_VCHG_USB_R,
+ 	MAX8925_IRQ_VCHG_THM_OK_R,
+ 	MAX8925_IRQ_VCHG_THM_OK_F,
+ 	MAX8925_IRQ_VCHG_SYSLOW_F,
+-- 
+1.7.6
+
+
