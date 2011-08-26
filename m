@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751152Ab1HZEXq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 00:23:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37155 "EHLO
+	id S1751392Ab1HZEZi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 00:25:38 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45560 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab1HZEXp (ORCPT
+	with ESMTP id S1750823Ab1HZEZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 00:23:45 -0400
+	Fri, 26 Aug 2011 00:25:37 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 26 Aug 2011 13:16:14 +0900
+Date: Fri, 26 Aug 2011 13:18:05 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
@@ -16,13 +16,14 @@ Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
         containers@lists.linux-foundation.org, fweisbec@gmail.com,
         matthltc@us.ibm.com, Balbir Singh <bsingharora@gmail.com>,
         Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH 3/6] cgroup: introduce cgroup_taskset and use it in
- subsys->can_attach(), cancel_attach() and attach()
-Message-Id: <20110826131614.bf9b73c6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1314312192-26885-4-git-send-email-tj@kernel.org>
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 4/6] cgroup: don't use subsys->can_attach_task() or
+ ->attach_task()
+Message-Id: <20110826131805.7b835bd1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1314312192-26885-5-git-send-email-tj@kernel.org>
 References: <1314312192-26885-1-git-send-email-tj@kernel.org>
-	<1314312192-26885-4-git-send-email-tj@kernel.org>
+	<1314312192-26885-5-git-send-email-tj@kernel.org>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -32,29 +33,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Aug 2011 00:43:09 +0200
+On Fri, 26 Aug 2011 00:43:10 +0200
 Tejun Heo <tj@kernel.org> wrote:
 
-> Currently, there's no way to pass multiple tasks to cgroup_subsys
-> methods necessitating the need for separate per-process and per-task
-> methods.  This patch introduces cgroup_taskset which can be used to
-> pass multiple tasks and their associated cgroups to cgroup_subsys
-> methods.
+> Now that subsys->can_attach() and attach() take @tset instead of
+> @task, they can handle per-task operations.  Convert
+> ->can_attach_task() and ->attach_task() users to use ->can_attach()
+> and attach() instead.  Most converions are straight-forward.
+> Noteworthy changes are,
 > 
-> Three methods - can_attach(), cancel_attach() and attach() - are
-> converted to use cgroup_taskset.  This unifies passed parameters so
-> that all methods have access to all information.  Conversions in this
-> patchset are identical and don't introduce any behavior change.
+> * In cgroup_freezer, remove unnecessary NULL assignments to unused
+>   methods.  It's useless and very prone to get out of sync, which
+>   already happened.
 > 
-> -v2: documentation updated as per Paul Menage's suggestion.
+> * In cpuset, PF_THREAD_BOUND test is checked for each task.  This
+>   doesn't make any practical difference but is conceptually cleaner.
 > 
 > Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: Paul Menage <paul@paulmenage.org>
+> Cc: Paul Menage <paul@paulmenage.org>
 > Cc: Li Zefan <lizf@cn.fujitsu.com>
 > Cc: Balbir Singh <bsingharora@gmail.com>
 > Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > Cc: James Morris <jmorris@namei.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <peterz@infradead.org>
 
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
