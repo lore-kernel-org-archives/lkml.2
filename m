@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab1HZADH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 20:03:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42214 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752188Ab1HZADE (ORCPT
+	id S1753620Ab1HZAEO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 20:04:14 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:50313 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752912Ab1HZAEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 20:03:04 -0400
-Date: Thu, 25 Aug 2011 17:03:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH -v2] debug-pagealloc: add support for highmem pages
-Message-Id: <20110825170302.81ed210c.akpm@linux-foundation.org>
-In-Reply-To: <1314281649-21508-1-git-send-email-akinobu.mita@gmail.com>
-References: <1314281649-21508-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Aug 2011 20:04:12 -0400
+X-Sasl-enc: zrnfOBgnyTzundyIrm+nB1/D7JkJUeOrJyRAjW3xtMWV 1314317051
+Date: Thu, 25 Aug 2011 17:03:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Brian Swetland <swetland@google.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tim Bird <tbird20d@gmail.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, stable-review@kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com,
+        Arve =?iso-8859-1?Q?Hj=F8nnev=E5?= <arve@android.com>
+Subject: Re: Future of the -longterm kernel releases (i.e. how we pick them).
+Message-ID: <20110826000328.GA1314@kroah.com>
+References: <20110815041524.GA7578@kroah.com>
+ <CA+bK7J7_EKdQACnoJGWkd4asH+096SJ-gjEvsnjmRX6Dmc6dpA@mail.gmail.com>
+ <20110817045856.GB4936@kroah.com>
+ <20110817132114.GB10209@sirena.org.uk>
+ <CANqkERC2eyy3SQ6_vJncvuMdi=Yu=O8mZoXkggkX1q_4=d+q7g@mail.gmail.com>
+ <20110824045702.GA1674@kroah.com>
+ <CANqkERC9evgXzOMMiqtyvu3RsoUQWdUAh47yRNz1JjmB4Vydbg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANqkERC9evgXzOMMiqtyvu3RsoUQWdUAh47yRNz1JjmB4Vydbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011 23:14:09 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
-
-> This adds support for highmem pages poisoning and verification to the
-> debug-pagealloc feature for no-architecture support.
+On Wed, Aug 24, 2011 at 09:49:22PM -0700, Brian Swetland wrote:
+> On Tue, Aug 23, 2011 at 9:57 PM, Greg KH <greg@kroah.com> wrote:
+> > On Wed, Aug 17, 2011 at 10:33:05AM -0700, Brian Swetland wrote:
+> >> As far as long-term kernels goes, from the Android perspective we
+> >> strongly prefer to snap up to the most recent released kernel on every
+> >> platform/device release.  I prefer to be as up to date on bugfixes and
+> >> features from mainline as possible and minimize the deltas on our
+> >> stack 'o patches as much as possible.
+> >
+> > That's good to hear.
+> >
+> >> We've been getting more aggressive about merging in the -rc#s and then
+> >> rebasing on the final during development (before final stabilization
+> >> freeze for a release) in the last year or so, and it seems to work
+> >> pretty well.
+> >
+> > Is your kernel git tree public during this merge cycle so that others
+> > can track it?  I tried to dig through android.kernel.org but there are a
+> > lot of different kernel trees there :(
 > 
+> We really need a "which branch is which" quick guide that's easily
+> findable.  kernel/common is always where our generic patch stack
+> lives, and it looks like android-3.0 is the most recent (which has
+> 3.0.1 merged in).
+> 
+> http://android.git.kernel.org/?p=kernel/common.git;a=summary
 
-Sorry, I had a brainfart.  kmap_atomic() internally does the
-preempt_disable() (actually pagefault_disable()).
+Thanks for the pointer.
 
---- a/mm/debug-pagealloc.c~debug-pagealloc-add-support-for-highmem-pages-fix
-+++ a/mm/debug-pagealloc.c
-@@ -23,14 +23,11 @@ static inline bool page_poison(struct pa
- 
- static void poison_page(struct page *page)
- {
--	void *addr;
-+	void *addr = kmap_atomic(page);
- 
--	preempt_disable();
--	addr = kmap_atomic(page);
- 	set_page_poison(page);
- 	memset(addr, PAGE_POISON, PAGE_SIZE);
- 	kunmap_atomic(addr);
--	preempt_enable();
- }
- 
- static void poison_pages(struct page *page, int n)
-@@ -82,12 +79,10 @@ static void unpoison_page(struct page *p
- 	if (!page_poison(page))
- 		return;
- 
--	preempt_disable();
- 	addr = kmap_atomic(page);
- 	check_poison_mem(addr, PAGE_SIZE);
- 	clear_page_poison(page);
- 	kunmap_atomic(addr);
--	preempt_enable();
- }
- 
- static void unpoison_pages(struct page *page, int n)
-_
+If you ever get such a quick guide, I'd appreciate a link to it.
 
+greg k-h
