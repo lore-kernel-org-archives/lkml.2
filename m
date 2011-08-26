@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab1HZQFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 12:05:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38664 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab1HZQF3 convert rfc822-to-8bit (ORCPT
+	id S1754795Ab1HZQHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 12:07:21 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18073 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab1HZQHT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 12:05:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
-References: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com>
-	<CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
-Date: Fri, 26 Aug 2011 19:05:27 +0300
-Message-ID: <CADjiTvBkwusfjdE=PQ5B=MPMxr1bewR6v9qoqq6yMNWjp-BeLQ@mail.gmail.com>
-Subject: Re: [PATCH] Smack: SMACK_IOCLOADACCESS
-From: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Aug 2011 12:07:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 26 Aug 2011 09:07:03 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Olof Johansson <olof@lixom.net>
+CC: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Fri, 26 Aug 2011 09:07:00 -0700
+Subject: RE: [PATCH v3 00/13] arm/tegra: Initialize GPIO & pinmux from DT
+Thread-Topic: [PATCH v3 00/13] arm/tegra: Initialize GPIO & pinmux from DT
+Thread-Index: AcxjraSNAHrGl3f9QS2Cj+wS4qr0jQAW537g
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A40D2@HQMAIL01.nvidia.com>
+References: <1314315824-9687-1-git-send-email-swarren@nvidia.com>
+ <CAOesGMiygfaNkPa7uURCiJpC=WDinWhKi07LFgJ+5JoGW_fLKw@mail.gmail.com>
+In-Reply-To: <CAOesGMiygfaNkPa7uURCiJpC=WDinWhKi07LFgJ+5JoGW_fLKw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 3:50 PM, Eric Paris <eparis@parisplace.org> wrote:
-> On Fri, Aug 26, 2011 at 1:52 AM, Jarkko Sakkinen
-> <jarkko.sakkinen@intel.com> wrote:
->> IOCTL call for /smack/load that takes access rule in
->> the same format as they are written into /smack/load.
->> Sets errno to zero if access is allowed and to EACCES
->> if not.
->>
->> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
->
-> [SELinux maintainer here, but Casey knew to already take what I say
-> with a grain of salt]
->
-> I'm not telling you to do anything differently, just telling you what
-> SELinux does, and why we do it.  SELinux has a file in selinuxfs
-> called 'access.'  The file can be opened and one can write a rule into
-> the file.  One then calls read and gets back a structure which
-> contains all of the permissions information allowed for the
-> source/target/class.  In SELinux we calculate all of the permissions
-> for the tuple at once so providing all of the information at once can
-> make a lot of sense.  libselinux provides libraries that will cache
-> these decisions in the userspace program and quickly answer the same
-> (or similar) questions later.
->
-> http://userspace.selinuxproject.org/trac/browser/libselinux/src/compute_av.c
+Olof Johansson wrote at Thursday, August 25, 2011 11:05 PM:
+> On Thu, Aug 25, 2011 at 4:43 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> > v3:
+...
+> This is looking pretty sane to me.
+> 
+> Grant, how do you prefer to handle this, since it spans of/dt, gpio
+> and tegra code? I can start a topic branch for Arnd to pull in for the
+> tegra parts, would you prefer picking up the of helper functions on
+> your own or is an ack from you and merge through the arm-soc tree
+> easier?
 
-Thank you for this information. One thing that concerns
-me in this approach is the scenario where things serialize
-to the following sequence:
+I haven't thought through all the merging details yet, but do be aware
+of the dependencies this patchset has:
 
-- Process A does open()
-- Process B does open()
-- Process A does write()
-- Process B does write()
-- Process A does read()
-- ... (sequence continues)
+1) Rename of arch/arm/mach-tegra/gpio.c -> drivers/gpio/gpio-tegra.c
+   This is in Grant's gpio for-next branch, and hence linux-next.
+   This is in some GPIO-related branch of Russell's.
 
-What's the end result?
+2) Various previous Tegra <mach/gpio.h> rework.
+   This is in some GPIO-related branch of Russell's; I assume the same one
+   as (1), but I can't actually find this branch, so can't check.
 
-> Shows the userspace side of out "access" interface.  Your interface is
-> good in that it only takes 1 syscall and ours takes 2.  Your interface
-> is bad in that it is ioctl and we are told since birth that we must
-> hate them no matter what (not that read/write is really any
-> different).  It isn't the same method the only other LSM I know about
-> uses.  It can only every return one value (ok, I know ioctl can be
-> made to do anything at all)
+Neither of those is in any Linus release or rc.
 
-I'm aware of the fact that IOCTLs should be avoided
-but on the other hand in this use case I see it as the
-cleanest possible API that enables clean and simple
-user space support for access control and has least
-risk for any side-effects.
+I *think* that's it.
 
->
-> Anyway, just food for thought....
->
-> -Eric
->
+For reference, this patchset was physical written/tested on top of
+next-20110823, with the patches mentioned in (2) aboe, and some others that
+hopefully aren't relevant, between linux-next and this patchset.
 
-/Jarkko
+-- 
+nvpublic
+
