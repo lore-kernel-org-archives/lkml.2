@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1HZSJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:09:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58810 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab1HZSJg (ORCPT
+	id S1755461Ab1HZSJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:09:56 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58398 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755381Ab1HZSJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:09:36 -0400
-Date: Fri, 26 Aug 2011 22:09:30 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ralf Jung <ralfjung-e@gmx.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
-Message-ID: <20110826180930.GA1930@sun>
-References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
- <1314315225.16133.30.camel@sbsiddha-desk.sc.intel.com>
- <CAErSpo7N3UBJgQTb+zePnsf5YuFSQT8zy9CftwceyAKKfcHUjA@mail.gmail.com>
- <20110826062224.GA3903@sun>
- <CAErSpo66U-La7AXCraENWOUvQAuCECRT_eGvJmxC-S4BrN=yAA@mail.gmail.com>
+	Fri, 26 Aug 2011 14:09:54 -0400
+X-Sasl-enc: R3H15kuRUuvaz/7I7KFovQ8xMhlnTqVQhYaNeJ0aOE/D 1314382193
+Date: Fri, 26 Aug 2011 11:07:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Michal Nazarewicz <mnazarewicz@google.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 1/4] usb: Provide usb_speed_string() function
+Message-ID: <20110826180734.GA24226@kroah.com>
+References: <cover.1314364322.git.mina86@mina86.com>
+ <6ffc8c43e9d3fbef765329f0760fb236d20b585a.1314364323.git.mina86@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo66U-La7AXCraENWOUvQAuCECRT_eGvJmxC-S4BrN=yAA@mail.gmail.com>
+In-Reply-To: <6ffc8c43e9d3fbef765329f0760fb236d20b585a.1314364323.git.mina86@mina86.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 10:21:02AM -0600, Bjorn Helgaas wrote:
-...
-> >
-> > Which means, I would prefer if we have (since we change IO_APIC_SLOT_SIZE
-> > anyway) some additional check and WARN_ON in this code. Something like
-> >
-> >  if (io-apic-base-address & 0x3ff)
-> >   WARN_ON();
-> >
-> > Hm? (also we have bad_ioapic() check, probably should put such test
-> > there instead).
+On Fri, Aug 26, 2011 at 03:18:34PM +0200, Michal Nazarewicz wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
 > 
-> Is there some spec that requires all IOAPICs to be 1K aligned?  I
-> don't doubt that's the case; I'd just like to see something more
-> concrete than folklore.  I'm pretty sure there's some (possibly
-> secret) "IOAPIC architecture spec," and a section reference to it
-> would be nice.  Even before my patch, I don't think we actually
-> checked or enforced any *alignment* -- we only set the size.  I don't
-> know if it's worth it unless we have a problem it would fix, and it's
-> conceivable that we'd start warning about a perfectly functional
-> IOAPIC that's 128-byte aligned.
+> In a few places in the kernel, the code prints
+> a human-readable USB device speed (eg. "high speed").
+> This involves a switch statement sometimes wrapped
+> around in ({ ... }) block leading to code repetition.
 > 
-> Bjorn
+> To mitigate this issue, this commit introduces
+> usb_speed_string() function, which returns
+> a human-readable name of provided speed.
+> 
+> It also changes a few places switch was used to use
+> this new function.  This changes a bit the way the
+> speed is printed in few instances at the same time
+> standardising it.
+> ---
+>  drivers/usb/Makefile                |    2 +
+>  drivers/usb/common.c                |   24 ++++++++++++++++
+>  drivers/usb/core/hub.c              |   27 ++++++------------
+>  drivers/usb/gadget/amd5536udc.c     |    9 +----
+>  drivers/usb/gadget/atmel_usba_udc.c |    9 ++---
+>  drivers/usb/gadget/composite.c      |   22 ++------------
+>  drivers/usb/gadget/file_storage.c   |   15 ++-------
+>  drivers/usb/gadget/fsl_udc_core.c   |   53 ++++++++++++----------------------
+>  drivers/usb/gadget/gmidi.c          |   11 +------
+>  drivers/usb/gadget/langwell_udc.c   |   50 +++++++++++---------------------
+>  drivers/usb/gadget/net2272.c        |    4 +-
+>  drivers/usb/gadget/net2280.c        |    4 +--
+>  drivers/usb/gadget/printer.c        |   14 ++-------
+>  drivers/usb/gadget/s3c-hsotg.c      |    8 +----
+>  drivers/usb/gadget/udc-core.c       |   19 +-----------
+>  drivers/usb/misc/usbtest.c          |   21 +------------
+>  include/linux/usb/ch9.h             |   12 ++++++++
+>  17 files changed, 109 insertions(+), 195 deletions(-)
+>  create mode 100644 drivers/usb/common.c
+> 
+> diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
+> index 969b0a5..2d5af21 100644
+> --- a/drivers/usb/Makefile
+> +++ b/drivers/usb/Makefile
+> @@ -53,3 +53,5 @@ obj-$(CONFIG_USB_MUSB_HDRC)	+= musb/
+>  obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
+>  obj-$(CONFIG_USB_OTG_UTILS)	+= otg/
+>  obj-$(CONFIG_USB_GADGET)	+= gadget/
+> +
+> +obj-$(CONFIG_USB_SUPPORT)	+= common.o
 
-Yes, one of the spec is Intel's MP specification (as far as I remember).
-Letme re-check...
+You just built this into the kernel, which while ok for some things,
+might not be what some people want.
 
- | 3.6.5 APIC Memory Mapping
- |
- | "Unlike the local APICs, the I/O APICs are mapped to give shared access from all
- | processors, providing full symmetric I/O access. The default base address for the
- | first I/O APIC is 0FEC0_0000h. Subsequent I/O APIC addresses are assigned in
- | 4K increments. For example, the second I/O APIC is at 0FEC0_1000h. Non-default
- | APIC base addresses can be used if the MP configuration table is provided.
- | (Refer to Chapter 4.) However, the local APIC base address must be aligned
- | on a 4K boundary, and the I/O APIC base address must be aligned on a 1K
- | boundary."
+Please make this into a separate module if people are building the usb
+code as modules, usb_common.ko perhaps?
 
-Ie -- 4K increment with 1K base address. If I find other sources I have in mind
-I'll ping you.
+> diff --git a/drivers/usb/common.c b/drivers/usb/common.c
+> new file mode 100644
+> index 0000000..2f6627c
+> --- /dev/null
+> +++ b/drivers/usb/common.c
+> @@ -0,0 +1,24 @@
+> +/*
+> + * Provides code common for host and device side USB.
+> + */
+> +
+> +#include <linux/kernel.h>  /* for ARRAY_SIZE() */
+> +#include <linux/module.h>  /* for EXPORT_SYMBOL_GPL() */
 
-	Cyrill
+No need for the "/* for ... */" lines, we all know what this is for.
+
+> --- a/include/linux/usb/ch9.h
+> +++ b/include/linux/usb/ch9.h
+> @@ -868,6 +868,18 @@ enum usb_device_speed {
+>  	USB_SPEED_SUPER,			/* usb 3.0 */
+>  };
+>  
+> +#ifdef __KERNEL__
+> +
+> +/**
+> + * usb_speed_string() - Returns human readable-name of the speed.
+> + * @speed: The speed to return human-readable name for.  If it's not
+> + *   any of the speeds defined in usb_device_speed enum, string for
+> + *   USB_SPEED_UNKNOWN will be returned.
+> + */
+> +extern const char *usb_speed_string(enum usb_device_speed speed);
+> +
+> +#endif
+
+No, this should be in include/linux/usb.h, not ch9.h.
+
+thanks,
+
+greg k-h
