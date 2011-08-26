@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab1HZTMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 15:12:24 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48080 "EHLO
+	id S1754244Ab1HZTMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 15:12:41 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51801 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753705Ab1HZTMX (ORCPT
+	by vger.kernel.org with ESMTP id S1754114Ab1HZTM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 15:12:23 -0400
-X-Sasl-enc: 5gk1M195HPXNEW3ETN4sl2Li/C6wlfgIn69qv9TuGGCY 1314385942
-Date: Fri, 26 Aug 2011 12:11:30 -0700
+	Fri, 26 Aug 2011 15:12:28 -0400
+X-Sasl-enc: 90B2Aa25FS4Nmx8YTW89q+0BWvgVNjYKg2BjFcNaVtxE 1314385947
+Date: Fri, 26 Aug 2011 12:11:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] driver core fixes for 3.1
-Message-ID: <20110826191130.GA5557@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] more USB fixes for 3.1
+Message-ID: <20110826191148.GD5557@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,20 +23,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's some driver core, and other driver-core related fixes for your
-3.1 git tree.
+Here are some fixes for your 3.1 git tree for the USB subsystem.
 
-Just a few minor fixes for things that people have reported, and a
-number of bug fixes for the ti-st driver.
+Lots of new device ids, some xhci bug fixes to resolve issues that
+were reported, and some build fixes that people hit.
 
 Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/ driver-core-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
 
-All of these patches have been in the linux-next and mm trees for a
-while now.
-
-The patches will be sent as a follow-on to this message to lkml for
-people to see.
+All have been in the -next releases for a while now.
 
 thanks,
 
@@ -44,41 +39,90 @@ greg k-h
 
 ------------
 
- drivers/base/devres.c          |    1 +
- drivers/base/devtmpfs.c        |    2 +-
- drivers/base/platform.c        |    2 +-
- drivers/firmware/google/gsmi.c |    2 +-
- drivers/misc/Kconfig           |    1 +
- drivers/misc/ti-st/st_core.c   |   10 +++++++++-
- drivers/misc/ti-st/st_kim.c    |   33 +++++++++++++++++++++++++++++++++
- drivers/misc/ti-st/st_ll.c     |   19 +++++++++++++++++++
- include/linux/ti_wilink_st.h   |   27 ++++++++++++++++++++++++++-
- 9 files changed, 92 insertions(+), 5 deletions(-)
+ drivers/usb/core/hcd.c           |    2 +
+ drivers/usb/gadget/f_phonet.c    |    1 +
+ drivers/usb/host/ehci-hub.c      |    7 +--
+ drivers/usb/host/ehci-s5p.c      |    1 +
+ drivers/usb/host/xhci-hub.c      |   17 +++++--
+ drivers/usb/host/xhci-ring.c     |   90 +++++++++++++++++++++++----------
+ drivers/usb/host/xhci.c          |   28 +++++++++--
+ drivers/usb/musb/blackfin.c      |    1 +
+ drivers/usb/musb/cppi_dma.c      |   26 ++++++---
+ drivers/usb/musb/musb_core.h     |   12 +++--
+ drivers/usb/musb/musb_gadget.c   |    4 +-
+ drivers/usb/musb/musb_regs.h     |    6 ++-
+ drivers/usb/musb/tusb6010.c      |    1 +
+ drivers/usb/musb/tusb6010_omap.c |    1 +
+ drivers/usb/musb/ux500_dma.c     |   38 ++++++++------
+ drivers/usb/serial/ftdi_sio.c    |   20 +++++++-
+ drivers/usb/serial/option.c      |  104 ++++++++++++++++++++++++++++++++++++-
+ 17 files changed, 283 insertions(+), 76 deletions(-)
 
 ---------------
 
-Arnaud Lacombe (1):
-      drivers/base/devtmpfs.c: correct annotation of `setup_done'
+Andiry Xu (2):
+      xHCI: fix port U3 status check condition
+      xHCI: report USB2 port in resuming as suspend
 
-H Hartley Sweeten (1):
-      base/devres.c: quiet sparse noise about context imbalance
+Andrew Bird (3):
+      USB option driver add PID of Huawei Vodafone K3806
+      USB option driver add PID of Huawei Vodafone K4605
+      USB option driver K3765/K4505 avoid CDC_DATA interface
 
-Heiko Carstens (1):
-      pti: add missing CONFIG_PCI dependency
+Axel Lin (1):
+      usb: gadget: s3c2410_udc: fix unterminated platform_device_id table
 
-Pavan Savoy (7):
-      drivers:misc: ti-st: avoid a misleading dbg msg
-      drivers:misc:ti-st: platform hooks for chip states
-      drivers:misc: ti-st: reinit completion on ver read
-      drivers:misc: ti-st: reinit completion before send
-      drivers:misc: ti-st: wait for completion at fail
-      drivers:misc: ti-st: free skb on firmware download
-      drivers:misc: ti-st: fix unexpected UART close
+Bob Liu (1):
+      usb: musb: blackfin: include prefetch head file
 
-Randy Dunlap (2):
-      firmware: fix google/gsmi.c build warning
-      driver core: fix kernel-doc warning in platform.c
+Felipe Balbi (1):
+      usb: musb: tusb6010: fix compilation
 
-Vijay Badawadagi (1):
-      drivers:misc: ti-st: fail-safe on wrong pkt type
+Gavin.zhu (1):
+      USB: option: add YUGA device id to driver
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      USB: ftdi_sio: add Calao reference board support
+
+John Stultz (1):
+      usb: musb: fix oops on musb_gadget_pullup
+
+Kuninori Morimoto (1):
+      usb: gadget: renesas_usbhs: fix DMA build by including dma-mapping.h
+
+Ming Lei (1):
+      usb: host: ehci-omap: fix .remove and failure handling path of .probe(v1)
+
+Per Forlin (3):
+      usb: musb: ux500: set dma config for both src and dst
+      usb: musb: ux500: replace missing DBG with dev_dbg
+      usb: musb: cppi: fix build errors due to DBG and missing musb variable
+
+Rabin Vincent (1):
+      usb: musb: fix Kconfig
+
+Sarah Sharp (5):
+      xhci: Fix memory leak during failed enqueue.
+      xhci: Fix failed enqueue in the middle of isoch TD.
+      xhci: Remove TDs from TD lists when URBs are canceled.
+      USB: Avoid NULL pointer deref in usb_hcd_alloc_bandwidth.
+      xhci: Handle zero-length isochronous packets.
+
+Sebastian Andrzej Siewior (4):
+      usb: gadget: fusb300: remove #if 0 block
+      usb: gadget: composite: fix bMaxPacketSize for SuperSpeed
+      usb: gadget: f_phonet: unlock in error case
+      usb: musb: gadget: fix error path
+
+Sebastian Bauer (1):
+      usb: gadget: hid: don't STALL when processing a HID Descriptor request
+
+Sergei Trofimovich (1):
+      usb: musb: tusb6010_omap: fix build failure: error: 'musb' undeclared
+
+Wang Zhi (1):
+      USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
+
+Yulgon Kim (1):
+      usb: s5p-ehci: fix a NULL pointer deference
 
