@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab1HZUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 16:34:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37015 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754852Ab1HZUeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 16:34:05 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 03/13] drivers/base/devtmpfs.c: correct annotation of `setup_done'
-Date: Fri, 26 Aug 2011 13:33:44 -0700
-Message-Id: <1314390834-3411-3-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1314390834-3411-1-git-send-email-gregkh@suse.de>
-References: <20110826191130.GA5557@kroah.com>
- <1314390834-3411-1-git-send-email-gregkh@suse.de>
+	id S932069Ab1HZUhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 16:37:09 -0400
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:46952 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149Ab1HZUhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 16:37:06 -0400
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Breno Leitao <leitao@linux.vnet.ibm.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Subject: [PATCH] powerpc/eeh: fix /proc/ppc64/eeh creation
+Date: Fri, 26 Aug 2011 17:36:31 -0300
+Message-Id: <1314390991-27223-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.4
+x-cbid: 11082620-8936-0000-0000-000004451486
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaud Lacombe <lacombar@gmail.com>
+Since commit 188917e183cf9ad0374b571006d0fc6d48a7f447, /proc/ppc64 is a
+symlink to /proc/powerpc/. That means that creating /proc/ppc64/eeh will
+end up with a unaccessible file, that is not listed under /proc/powerpc/
+and, then, not listed under /proc/ppc64/.
 
-This fixes the following section mismatch issue:
+Creating /proc/powerpc/eeh fixes that problem and maintain the
+compatibility intended with the ppc64 symlink.
 
-WARNING: vmlinux.o(.text+0x1192bf): Section mismatch in reference from the function devtmpfsd() to the variable .init.data:setup_done
-The function devtmpfsd() references the variable __initdata setup_done.
-This is often because devtmpfsd lacks a __initdata annotation or the annotation of setup_done is wrong.
-
-WARNING: vmlinux.o(.text+0x119342): Section mismatch in reference from the function devtmpfsd() to the variable .init.data:setup_done
-The function devtmpfsd() references the variable __initdata setup_done.
-This is often because devtmpfsd lacks a __initdata annotation or the annotation of setup_done is wrong.
-
-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 ---
- drivers/base/devtmpfs.c |    2 +-
+ arch/powerpc/platforms/pseries/eeh.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index 33e1bed..a4760e0 100644
---- a/drivers/base/devtmpfs.c
-+++ b/drivers/base/devtmpfs.c
-@@ -376,7 +376,7 @@ int devtmpfs_mount(const char *mntdir)
- 	return err;
- }
- 
--static __initdata DECLARE_COMPLETION(setup_done);
-+static DECLARE_COMPLETION(setup_done);
- 
- static int handle(const char *name, mode_t mode, struct device *dev)
+diff --git a/arch/powerpc/platforms/pseries/eeh.c b/arch/powerpc/platforms/pseries/eeh.c
+index ada6e07..d42f37d 100644
+--- a/arch/powerpc/platforms/pseries/eeh.c
++++ b/arch/powerpc/platforms/pseries/eeh.c
+@@ -1338,7 +1338,7 @@ static const struct file_operations proc_eeh_operations = {
+ static int __init eeh_init_proc(void)
  {
+ 	if (machine_is(pseries))
+-		proc_create("ppc64/eeh", 0, NULL, &proc_eeh_operations);
++		proc_create("powerpc/eeh", 0, NULL, &proc_eeh_operations);
+ 	return 0;
+ }
+ __initcall(eeh_init_proc);
 -- 
-1.7.6.1
+1.7.4.4
 
