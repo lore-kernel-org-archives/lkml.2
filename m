@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab1HZHXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 03:23:31 -0400
-Received: from 125-static-inova.u.inova.com.br ([187.61.57.125]:34287 "EHLO
-	r-sv5.v.inova.com.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751781Ab1HZHX3 (ORCPT
+	id S1753143Ab1HZH0u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 03:26:50 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:42541 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751506Ab1HZH0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 03:23:29 -0400
-X-Greylist: delayed 23242 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 03:23:29 EDT
-Date: Fri, 26 Aug 2011 04:23:26 -0300 (BRT)
-From: Webmail Administrator <chafariz@veloxmail.com.br>
-Reply-To: Webmail Administrator <transferdpt111@helixnet.cn>
-Message-ID: <1211214400.176582.1314343406491.JavaMail.root@r-zv1>
-Subject: Please Update Your Account
+	Fri, 26 Aug 2011 03:26:48 -0400
+Message-ID: <885a6d6210a7d4c56601380f146e7ba9.squirrel@xenotime.net>
+In-Reply-To: <20110825163515.0ed2cf354f61a3e9c53564b2@canb.auug.org.au>
+References: <20110825163515.0ed2cf354f61a3e9c53564b2@canb.auug.org.au>
+Date: Fri, 26 Aug 2011 00:26:48 -0700
+Subject: Re: linux-next: Tree for Aug 25
+From: "Randy Dunlap" <rdunlap@xenotime.net>
+To: "Stephen Rothwell" <sfr@canb.auug.org.au>, linux-scsi@vger.kernel.org
+Cc: linux-next@vger.kernel.org, "LKML" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.1.17]
-X-Mailer: Zimbra 6.0.12_GA_2883 (zclient/6.0.12_GA_2883)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:program running on server}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+On Wed, August 24, 2011 11:35 pm, Stephen Rothwell wrote:
+> Hi all,
+>
+> The powerpc allyesconfig build still fails today.
 
-This letter is to inform you that we are currently updating our Webmail database, homepage view, advanced security installations of the new 2011 Anti-Spam and Antivirus. Also introducing a larger mailbox space. Note that We will be deleting any inactive email account in order to create space for new users. If you wish to continue using our Webmail services, you should therefore re-confirm your email account below.
- 
-* Email address:.....................
-* Password:..........................
-* Confirm password:...............
-* Alternate email:...................
-* password:................................
-* Confirm password:..............
-* Date of birth:......................
- 
-Your full email address, password, date of birth and alternate email are required to update/re-confirm your email. It is pertinent for you to understand that our 
-primary concern is security for our customers, and for the security of their files and data. It is important that you reply to this letter and follow the above 
-instructions in order to avoid deleting your email account from our database.
- 
-We apologize for the inconveniences this may cause you. Thank you for your understanding.
+
+CONFIG_FCOE is not enabled:
+
+drivers/scsi/bnx2fc/bnx2fc_fcoe.c: In function 'bnx2fc_net_config':
+drivers/scsi/bnx2fc/bnx2fc_fcoe.c:765: error: 'NETDEV_FCOE_WWNN'
+undeclared (first use in this function)
+drivers/scsi/bnx2fc/bnx2fc_fcoe.c:771: error: 'NETDEV_FCOE_WWPN'
+undeclared (first use in this function)
+
+
+Maybe this driver should select FCOE?
+
+~Randy
+
