@@ -1,137 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab1HZRsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 13:48:39 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:37271 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751365Ab1HZRsi (ORCPT
+	id S1755389Ab1HZRyX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 13:54:23 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51696 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251Ab1HZRyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 13:48:38 -0400
-X-Sasl-enc: SKx8Dqne2wqeXd+YUWeJLIRYS5JynGKGPiaRuNAmVJLG 1314380917
-Date: Fri, 26 Aug 2011 10:48:14 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] gma500: frame buffer locking
-Message-ID: <20110826174814.GA21442@kroah.com>
-References: <20110826101734.16760.64364.stgit@localhost.localdomain>
- <20110826101945.16760.8598.stgit@localhost.localdomain>
- <20110826174547.GA9937@kroah.com>
+	Fri, 26 Aug 2011 13:54:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110826174547.GA9937@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110826104031.4c5861e5.rdunlap@xenotime.net>
+References: <20110826150000.302334d0b86c17cd9b89b590@canb.auug.org.au>
+	<205ae102ed038641e32cf38c48334f9e.squirrel@xenotime.net>
+	<CA+icZUX1zaw7xxka8yP4B0tFt7XgXe=8faw8vBnNWm+6teJVaA@mail.gmail.com>
+	<20110826104031.4c5861e5.rdunlap@xenotime.net>
+Date: Fri, 26 Aug 2011 19:54:18 +0200
+Message-ID: <CA+icZUVC_Sfbc=kqzq-PpDnwLJkSRc1+rraWiopz9nnaxutF1Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 26 (i7core_edac)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 10:45:47AM -0700, Greg KH wrote:
-> On Fri, Aug 26, 2011 at 11:19:58AM +0100, Alan Cox wrote:
-> > From: Alan Cox <alan@linux.intel.com>
-> > 
-> > If we are the console then a printk can hit us with a spin lock held (and
-> > in fact the kernel will do its best to take printing lock).
-> > 
-> > In that case we cannot politely sleep when synching after an accelerated op
-> > but must behave obnixously to be sure of getting the bits out.
-> > 
-> > Signed-off-by: Alan Cox <alan@linux.intel.com>
-> > ---
-> > 
-> >  drivers/staging/gma500/accel_2d.c |   10 ++++++----
-> >  drivers/staging/gma500/psb_drv.c  |    2 +-
-> >  drivers/staging/gma500/psb_drv.h  |    2 +-
-> >  kernel/printk.c                   |    2 +-
-> >  4 files changed, 9 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/staging/gma500/accel_2d.c b/drivers/staging/gma500/accel_2d.c
-> > index be92371..114b99a 100644
-> > --- a/drivers/staging/gma500/accel_2d.c
-> > +++ b/drivers/staging/gma500/accel_2d.c
-> > @@ -111,8 +111,9 @@ static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
-> >  	int ret = 0;
-> >  	int i;
-> >  	unsigned submit_size;
-> > +	unsigned long flags;
-> >  
-> > -	mutex_lock(&dev_priv->mutex_2d);
-> > +	spin_lock_irqsave(&dev_priv->lock_2d, flags);
-> >  	while (size > 0) {
-> >  		submit_size = (size < 0x60) ? size : 0x60;
-> >  		size -= submit_size;
-> > @@ -127,7 +128,7 @@ static int psbfb_2d_submit(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
-> >  
-> >  		(void)PSB_RSGX32(PSB_SGX_2D_SLAVE_PORT + i - 4);
-> >  	}
-> > -	mutex_unlock(&dev_priv->mutex_2d);
-> > +	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
-> >  	return ret;
-> >  }
-> >  
-> > @@ -327,8 +328,9 @@ int psbfb_sync(struct fb_info *info)
-> >  	struct drm_psb_private *dev_priv = dev->dev_private;
-> >  	unsigned long _end = jiffies + DRM_HZ;
-> >  	int busy = 0;
-> > +	unsigned long flags;
-> >  
-> > -	mutex_lock(&dev_priv->mutex_2d);
-> > +	spin_lock_irqsave(&dev_priv->lock_2d, flags);
-> >  	/*
-> >  	 * First idle the 2D engine.
-> >  	 */
-> > @@ -357,7 +359,7 @@ int psbfb_sync(struct fb_info *info)
-> >  					_PSB_C2B_STATUS_BUSY) != 0);
-> >  
-> >  out:
-> > -	mutex_unlock(&dev_priv->mutex_2d);
-> > +	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
-> >  	return (busy) ? -EBUSY : 0;
-> >  }
-> >  
-> > diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-> > index 34cf24a..9470af9 100644
-> > --- a/drivers/staging/gma500/psb_drv.c
-> > +++ b/drivers/staging/gma500/psb_drv.c
-> > @@ -228,7 +228,7 @@ static int psb_do_init(struct drm_device *dev)
-> >  
-> >  
-> >  	spin_lock_init(&dev_priv->irqmask_lock);
-> > -	mutex_init(&dev_priv->mutex_2d);
-> > +	spin_lock_init(&dev_priv->lock_2d);
-> >  
-> >  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-> >  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK1);
-> > diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-> > index 9cbb494..11d963a 100644
-> > --- a/drivers/staging/gma500/psb_drv.h
-> > +++ b/drivers/staging/gma500/psb_drv.h
-> > @@ -612,7 +612,7 @@ struct drm_psb_private {
-> >  	void (*exit_idle)(struct drm_device *dev, u32 update_src);
-> >  
-> >  	/* 2D acceleration */
-> > -	struct mutex mutex_2d;
-> > +	spinlock_t lock_2d;
-> >  
-> >  	/* FIXME: Arrays anyone ? */
-> >  	struct mdfld_dsi_encoder *encoder0;	
-> > diff --git a/kernel/printk.c b/kernel/printk.c
-> > index e861488..af2eec8 100644
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -512,7 +512,7 @@ static void __call_console_drivers(unsigned start, unsigned end)
-> >  	struct console *con;
-> >  
-> >  	for_each_console(con) {
-> > -		if (exclusive_console && con != exclusive_console)
-> > +		if (0 && exclusive_console && con != exclusive_console)
-> >  			continue;
-> >  		if ((con->flags & CON_ENABLED) && con->write &&
-> >  				(cpu_online(smp_processor_id()) ||
-> 
-> Are you sure you want this in the tree?  I don't feel comfortable making
-> this fix just for one staging driver right now, do you?
+On Fri, Aug 26, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Fri, 26 Aug 2011 16:16:11 +0200 Sedat Dilek wrote:
+>
+>> On Fri, Aug 26, 2011 at 10:07 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> >
+>> > On Thu, August 25, 2011 10:00 pm, Stephen Rothwell wrote:
+>> >> Hi all,
+>> >>
+>> >> The powerpc allyesconfig build still fails today.
+>> >>
+>> >> Changes since 20110825:
+>> >
+>> >
+>> > on i386:
+>> >
+>> > ERROR: "__udivdi3" [drivers/edac/i7core_edac.ko] undefined!
+>> >
+>> > in both get_sdram_scrub_rate()
+>> > and set_sdram_scrub_rate()
+>> >
+>> > --
+>>
+>> Hi Randy,
+>>
+>> can you test with the patch attached, please?
+>>
+>> ( UNTESTED, just followed patches like "[PATCH] p54: Use do_div for
+>> 64-bit division to fix 32-bit kernels" or "[PATCH v1] carl9170: Use
+>> do_div for 64-bit division to fix 32-bit kernels" )
+>
+> Yes, this works after I removed the extra right parens in both cases.
 
-I've applied the other 8 patches here, skipping this one.
+The closing brackets were a test for you (indeed they are wrong).
 
-greg k-h
+> (did you test it?)
+>
+
+No, even not compile-tested, still struggling with todays linux-next.
+Seems I am not alone [1].
+
+- Sedat -
+
+[1] http://lkml.org/lkml/2011/8/26/300
+
+> thanks,
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
