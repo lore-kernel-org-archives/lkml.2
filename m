@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1HZJI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:08:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60481 "EHLO
+	id S1754323Ab1HZJJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:09:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60493 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab1HZJIx (ORCPT
+	with ESMTP id S1753976Ab1HZJJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:08:53 -0400
+	Fri, 26 Aug 2011 05:09:12 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, linus.walleij@linaro.org, rpurdie@rpsys.net,
         tony@atomide.com, jochen@scram.de, linux@maxim.org.za,
         nicolas.pitre@linaro.org, arnd@arndb.de,
         linux-arm-kernel@lists.infradead.org, jamie@jamieiles.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/18] mach-footbridge: retire custom LED code
-Date: Fri, 26 Aug 2011 17:03:29 +0800
-Message-Id: <1314349415-889-13-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 13/18] mach-pxa: retire custom LED code
+Date: Fri, 26 Aug 2011 17:03:30 +0800
+Message-Id: <1314349415-889-14-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.5
 In-Reply-To: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
 References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
@@ -25,200 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 ---
- arch/arm/mach-footbridge/Makefile              |    4 -
- arch/arm/mach-footbridge/ebsa285-leds.c        |  139 ------------------------
- arch/arm/mach-footbridge/ebsa285.c             |   79 ++++++++++++++
- arch/arm/mach-footbridge/include/mach/system.h |    1 -
- arch/arm/mach-footbridge/netwinder-hw.c        |  110 ++++++++++++++++---
- arch/arm/mach-footbridge/netwinder-leds.c      |  139 ------------------------
- 6 files changed, 175 insertions(+), 297 deletions(-)
- delete mode 100644 arch/arm/mach-footbridge/ebsa285-leds.c
- delete mode 100644 arch/arm/mach-footbridge/netwinder-leds.c
+ arch/arm/mach-pxa/Makefile         |    8 --
+ arch/arm/mach-pxa/idp.c            |   79 +++++++++++++++++++++++
+ arch/arm/mach-pxa/leds-idp.c       |  116 ---------------------------------
+ arch/arm/mach-pxa/leds-lubbock.c   |  125 ------------------------------------
+ arch/arm/mach-pxa/leds-mainstone.c |  120 ----------------------------------
+ arch/arm/mach-pxa/leds.c           |   32 ---------
+ arch/arm/mach-pxa/leds.h           |   13 ----
+ arch/arm/mach-pxa/lubbock.c        |   93 ++++++++++++++++++++++++++
+ arch/arm/mach-pxa/mainstone.c      |   92 ++++++++++++++++++++++++++
+ 9 files changed, 264 insertions(+), 414 deletions(-)
+ delete mode 100644 arch/arm/mach-pxa/leds-idp.c
+ delete mode 100644 arch/arm/mach-pxa/leds-lubbock.c
+ delete mode 100644 arch/arm/mach-pxa/leds-mainstone.c
+ delete mode 100644 arch/arm/mach-pxa/leds.c
+ delete mode 100644 arch/arm/mach-pxa/leds.h
 
-diff --git a/arch/arm/mach-footbridge/Makefile b/arch/arm/mach-footbridge/Makefile
-index 3afb1b2..0b64dd4 100644
---- a/arch/arm/mach-footbridge/Makefile
-+++ b/arch/arm/mach-footbridge/Makefile
-@@ -14,15 +14,11 @@ pci-$(CONFIG_ARCH_EBSA285_HOST) += ebsa285-pci.o
- pci-$(CONFIG_ARCH_NETWINDER) += netwinder-pci.o
- pci-$(CONFIG_ARCH_PERSONAL_SERVER) += personal-pci.o
+diff --git a/arch/arm/mach-pxa/Makefile b/arch/arm/mach-pxa/Makefile
+index cc39d17..2d42d23 100644
+--- a/arch/arm/mach-pxa/Makefile
++++ b/arch/arm/mach-pxa/Makefile
+@@ -95,12 +95,4 @@ obj-$(CONFIG_MACH_RAUMFELD_CONNECTOR)	+= raumfeld.o
+ obj-$(CONFIG_MACH_RAUMFELD_SPEAKER)	+= raumfeld.o
+ obj-$(CONFIG_MACH_ZIPIT2)	+= z2.o
  
--leds-$(CONFIG_ARCH_EBSA285) += ebsa285-leds.o
--leds-$(CONFIG_ARCH_NETWINDER) += netwinder-leds.o
+-# Support for blinky lights
+-led-y := leds.o
+-led-$(CONFIG_ARCH_LUBBOCK)	+= leds-lubbock.o
+-led-$(CONFIG_MACH_MAINSTONE)	+= leds-mainstone.o
+-led-$(CONFIG_ARCH_PXA_IDP)	+= leds-idp.o
 -
- obj-$(CONFIG_ARCH_CATS) += cats-hw.o isa-timer.o
- obj-$(CONFIG_ARCH_EBSA285) += ebsa285.o dc21285-timer.o
- obj-$(CONFIG_ARCH_NETWINDER) += netwinder-hw.o isa-timer.o
- obj-$(CONFIG_ARCH_PERSONAL_SERVER) += personal.o dc21285-timer.o
- 
- obj-$(CONFIG_PCI)	+=$(pci-y)
--obj-$(CONFIG_LEDS)	+=$(leds-y)
- 
- obj-$(CONFIG_ISA)	+= isa.o isa-rtc.o
-diff --git a/arch/arm/mach-footbridge/ebsa285-leds.c b/arch/arm/mach-footbridge/ebsa285-leds.c
-deleted file mode 100644
-index 4e10090..0000000
---- a/arch/arm/mach-footbridge/ebsa285-leds.c
-+++ /dev/null
-@@ -1,139 +0,0 @@
--/*
-- *  linux/arch/arm/mach-footbridge/ebsa285-leds.c
-- *
-- *  Copyright (C) 1998-1999 Russell King
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- * EBSA-285 control routines.
-- *
-- * The EBSA-285 uses the leds as follows:
-- *  - Green - toggles state every 50 timer interrupts
-- *  - Amber - On if system is not idle
-- *  - Red   - currently unused
-- *
-- * Changelog:
-- *   02-05-1999	RMK	Various cleanups
-- */
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/spinlock.h>
+-obj-$(CONFIG_LEDS)		+= $(led-y)
 -
--#include <mach/hardware.h>
--#include <asm/leds.h>
--#include <asm/mach-types.h>
--#include <asm/system.h>
--
--#define LED_STATE_ENABLED	1
--#define LED_STATE_CLAIMED	2
--static char led_state;
--static char hw_led_state;
--
--static DEFINE_SPINLOCK(leds_lock);
--
--static void ebsa285_leds_event(led_event_t evt)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&leds_lock, flags);
--
--	switch (evt) {
--	case led_start:
--		hw_led_state = XBUS_LED_RED | XBUS_LED_GREEN;
--#ifndef CONFIG_LEDS_CPU
--		hw_led_state |= XBUS_LED_AMBER;
--#endif
--		led_state |= LED_STATE_ENABLED;
--		break;
--
--	case led_stop:
--		led_state &= ~LED_STATE_ENABLED;
--		break;
--
--	case led_claim:
--		led_state |= LED_STATE_CLAIMED;
--		hw_led_state = XBUS_LED_RED | XBUS_LED_GREEN | XBUS_LED_AMBER;
--		break;
--
--	case led_release:
--		led_state &= ~LED_STATE_CLAIMED;
--		hw_led_state = XBUS_LED_RED | XBUS_LED_GREEN | XBUS_LED_AMBER;
--		break;
--
--#ifdef CONFIG_LEDS_TIMER
--	case led_timer:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state ^= XBUS_LED_GREEN;
--		break;
--#endif
--
--#ifdef CONFIG_LEDS_CPU
--	case led_idle_start:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state |= XBUS_LED_AMBER;
--		break;
--
--	case led_idle_end:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state &= ~XBUS_LED_AMBER;
--		break;
--#endif
--
--	case led_halted:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state &= ~XBUS_LED_RED;
--		break;
--
--	case led_green_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~XBUS_LED_GREEN;
--		break;
--
--	case led_green_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= XBUS_LED_GREEN;
--		break;
--
--	case led_amber_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~XBUS_LED_AMBER;
--		break;
--
--	case led_amber_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= XBUS_LED_AMBER;
--		break;
--
--	case led_red_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~XBUS_LED_RED;
--		break;
--
--	case led_red_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= XBUS_LED_RED;
--		break;
--
--	default:
--		break;
--	}
--
--	if  (led_state & LED_STATE_ENABLED)
--		*XBUS_LEDS = hw_led_state;
--
--	spin_unlock_irqrestore(&leds_lock, flags);
--}
--
--static int __init leds_init(void)
--{
--	if (machine_is_ebsa285())
--		leds_event = ebsa285_leds_event;
--
--	leds_event(led_start);
--
--	return 0;
--}
--
--__initcall(leds_init);
-diff --git a/arch/arm/mach-footbridge/ebsa285.c b/arch/arm/mach-footbridge/ebsa285.c
-index 2ef69ff..465a738 100644
---- a/arch/arm/mach-footbridge/ebsa285.c
-+++ b/arch/arm/mach-footbridge/ebsa285.c
-@@ -5,6 +5,8 @@
-  */
- #include <linux/init.h>
- #include <linux/spinlock.h>
-+#include <linux/slab.h>
-+#include <linux/leds.h>
- 
- #include <asm/hardware/dec21285.h>
- #include <asm/mach-types.h>
-@@ -13,6 +15,83 @@
- 
- #include "common.h"
+ obj-$(CONFIG_TOSA_BT)		+= tosa-bt.o
+diff --git a/arch/arm/mach-pxa/idp.c b/arch/arm/mach-pxa/idp.c
+index ddf20e5..eec8e9b 100644
+--- a/arch/arm/mach-pxa/idp.c
++++ b/arch/arm/mach-pxa/idp.c
+@@ -191,6 +191,85 @@ static void __init idp_map_io(void)
+ 	iotable_init(idp_io_desc, ARRAY_SIZE(idp_io_desc));
+ }
  
 +/* LEDs */
-+struct ebsa285_led {
++struct idp_led {
 +	struct led_classdev     cdev;
 +	u8                      mask;
 +};
@@ -230,53 +79,609 @@ index 2ef69ff..465a738 100644
 +static const struct {
 +	const char *name;
 +	const char *trigger;
-+} ebsa285_leds[] = {
-+	{ "ebsa285:amber", "heartbeat", },
-+	{ "ebsa285:green", "cpu0", },
-+	{ "ebsa285:red",},
++} idp_leds[] = {
++	{ "idp:green", "heartbeat", },
++	{ "idp:red", "cpu0", },
 +};
 +
-+static void ebsa285_led_set(struct led_classdev *cdev,
++static void idp_led_set(struct led_classdev *cdev,
 +		enum led_brightness b)
 +{
-+	struct ebsa285_led *led = container_of(cdev,
-+			struct ebsa285_led, cdev);
++	struct idp_led *led = container_of(cdev,
++			struct idp_led, cdev);
++	u32 reg = IDP_CPLD_LED_CONTROL;
 +
 +	if (b != LED_OFF)
-+		*XBUS_LEDS |= led->mask;
++		reg &= ~led->mask;
 +	else
-+		*XBUS_LEDS &= ~led->mask;
++		reg |= led->mask;
++
++	IDP_CPLD_LED_CONTROL = reg;
 +}
 +
-+static enum led_brightness ebsa285_led_get(struct led_classdev *cdev)
++static enum led_brightness idp_led_get(struct led_classdev *cdev)
 +{
-+	struct ebsa285_led *led = container_of(cdev,
-+			struct ebsa285_led, cdev);
++	struct idp_led *led = container_of(cdev,
++			struct idp_led, cdev);
 +
-+	return (*XBUS_LEDS & led->mask) ? LED_FULL : LED_OFF;
++	return (IDP_CPLD_LED_CONTROL & led->mask) ? LED_OFF : LED_FULL;
 +}
 +
-+static int __init ebsa285_leds_init(void)
++static int __init idp_leds_init(void)
 +{
 +	int i;
 +
-+	if (machine_is_ebsa285())
++	if (!machine_is_pxa_idp())
 +		return -ENODEV;
 +
-+	/* 3 LEDS All ON */
-+	*XBUS_LEDS |= XBUS_LED_AMBER | XBUS_LED_GREEN | XBUS_LED_RED;
-+
-+	for (i = 0; i < ARRAY_SIZE(ebsa285_leds); i++) {
-+		struct ebsa285_led *led;
++	for (i = 0; i < ARRAY_SIZE(idp_leds); i++) {
++		struct idp_led *led;
 +
 +		led = kzalloc(sizeof(*led), GFP_KERNEL);
 +		if (!led)
 +			break;
 +
-+		led->cdev.name = ebsa285_leds[i].name;
-+		led->cdev.brightness_set = ebsa285_led_set;
-+		led->cdev.brightness_get = ebsa285_led_get;
-+		led->cdev.default_trigger = ebsa285_leds[i].trigger;
++		led->cdev.name = idp_leds[i].name;
++		led->cdev.brightness_set = idp_led_set;
++		led->cdev.brightness_get = idp_led_get;
++		led->cdev.default_trigger = idp_leds[i].trigger;
++
++		if (i == 0)
++			led->mask = IDP_HB_LED;
++		else
++			led->mask = IDP_BUSY_LED;
++
++		if (led_classdev_register(NULL, &led->cdev) < 0) {
++			kfree(led);
++			break;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * Since we may have triggers on any subsystem, defer registration
++ * until after subsystem_init.
++ */
++fs_initcall(idp_leds_init);
+ 
+ MACHINE_START(PXA_IDP, "Vibren PXA255 IDP")
+ 	/* Maintainer: Vibren Technologies */
+diff --git a/arch/arm/mach-pxa/leds-idp.c b/arch/arm/mach-pxa/leds-idp.c
+deleted file mode 100644
+index 8b9c171..0000000
+--- a/arch/arm/mach-pxa/leds-idp.c
++++ /dev/null
+@@ -1,116 +0,0 @@
+-/*
+- * linux/arch/arm/mach-pxa/leds-idp.c
+- *
+- * Copyright (C) 2000 John Dorsey <john+@cs.cmu.edu>
+- *
+- * Copyright (c) 2001 Jeff Sutherland <jeffs@accelent.com>
+- *
+- * Original (leds-footbridge.c) by Russell King
+- *
+- * Macros for actual LED manipulation should be in machine specific
+- * files in this 'mach' directory.
+- */
+-
+-
+-#include <linux/init.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-#include <asm/system.h>
+-
+-#include <mach/pxa25x.h>
+-#include <mach/idp.h>
+-
+-#include "leds.h"
+-
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
+-
+-static unsigned int led_state;
+-static unsigned int hw_led_state;
+-
+-void idp_leds_event(led_event_t evt)
+-{
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	switch (evt) {
+-	case led_start:
+-		hw_led_state = IDP_HB_LED | IDP_BUSY_LED;
+-		led_state = LED_STATE_ENABLED;
+-		break;
+-
+-	case led_stop:
+-		led_state &= ~LED_STATE_ENABLED;
+-		break;
+-
+-	case led_claim:
+-		led_state |= LED_STATE_CLAIMED;
+-		hw_led_state = IDP_HB_LED | IDP_BUSY_LED;
+-		break;
+-
+-	case led_release:
+-		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = IDP_HB_LED | IDP_BUSY_LED;
+-		break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-	case led_timer:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state ^= IDP_HB_LED;
+-		break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state &= ~IDP_BUSY_LED;
+-		break;
+-
+-	case led_idle_end:
+-		if (!(led_state & LED_STATE_CLAIMED))
+-			hw_led_state |= IDP_BUSY_LED;
+-		break;
+-#endif
+-
+-	case led_halted:
+-		break;
+-
+-	case led_green_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= IDP_HB_LED;
+-		break;
+-
+-	case led_green_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~IDP_HB_LED;
+-		break;
+-
+-	case led_amber_on:
+-		break;
+-
+-	case led_amber_off:
+-		break;
+-
+-	case led_red_on:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state |= IDP_BUSY_LED;
+-		break;
+-
+-	case led_red_off:
+-		if (led_state & LED_STATE_CLAIMED)
+-			hw_led_state &= ~IDP_BUSY_LED;
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	if  (led_state & LED_STATE_ENABLED)
+-		IDP_CPLD_LED_CONTROL = ( (IDP_CPLD_LED_CONTROL | IDP_LEDS_MASK) & ~hw_led_state);
+-	else
+-		IDP_CPLD_LED_CONTROL |= IDP_LEDS_MASK;
+-
+-	local_irq_restore(flags);
+-}
+diff --git a/arch/arm/mach-pxa/leds-lubbock.c b/arch/arm/mach-pxa/leds-lubbock.c
+deleted file mode 100644
+index e26d5ef..0000000
+--- a/arch/arm/mach-pxa/leds-lubbock.c
++++ /dev/null
+@@ -1,125 +0,0 @@
+-/*
+- * linux/arch/arm/mach-pxa/leds-lubbock.c
+- *
+- * Copyright (C) 2000 John Dorsey <john+@cs.cmu.edu>
+- *
+- * Copyright (c) 2001 Jeff Sutherland <jeffs@accelent.com>
+- *
+- * Original (leds-footbridge.c) by Russell King
+- *
+- * Major surgery on April 2004 by Nicolas Pitre for less global
+- * namespace collision.  Mostly adapted the Mainstone version.
+- */
+-
+-#include <linux/init.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-#include <asm/system.h>
+-#include <mach/pxa25x.h>
+-#include <mach/lubbock.h>
+-
+-#include "leds.h"
+-
+-/*
+- * 8 discrete leds available for general use:
+- *
+- * Note: bits [15-8] are used to enable/blank the 8 7 segment hex displays
+- * so be sure to not monkey with them here.
+- */
+-
+-#define D28			(1 << 0)
+-#define D27			(1 << 1)
+-#define D26			(1 << 2)
+-#define D25			(1 << 3)
+-#define D24			(1 << 4)
+-#define D23			(1 << 5)
+-#define D22			(1 << 6)
+-#define D21			(1 << 7)
+-
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
+-
+-static unsigned int led_state;
+-static unsigned int hw_led_state;
+-
+-void lubbock_leds_event(led_event_t evt)
+-{
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	switch (evt) {
+-	case led_start:
+-		hw_led_state = 0;
+-		led_state = LED_STATE_ENABLED;
+-		break;
+-
+-	case led_stop:
+-		led_state &= ~LED_STATE_ENABLED;
+-		break;
+-
+-	case led_claim:
+-		led_state |= LED_STATE_CLAIMED;
+-		hw_led_state = 0;
+-		break;
+-
+-	case led_release:
+-		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = 0;
+-		break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-	case led_timer:
+-		hw_led_state ^= D26;
+-		break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:
+-		hw_led_state &= ~D27;
+-		break;
+-
+-	case led_idle_end:
+-		hw_led_state |= D27;
+-		break;
+-#endif
+-
+-	case led_halted:
+-		break;
+-
+-	case led_green_on:
+-		hw_led_state |= D21;
+-		break;
+-
+-	case led_green_off:
+-		hw_led_state &= ~D21;
+-		break;
+-
+-	case led_amber_on:
+-		hw_led_state |= D22;
+-		break;
+-
+-	case led_amber_off:
+-		hw_led_state &= ~D22;
+-		break;
+-
+-	case led_red_on:
+-		hw_led_state |= D23;
+-		break;
+-
+-	case led_red_off:
+-		hw_led_state &= ~D23;
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	if  (led_state & LED_STATE_ENABLED)
+-		LUB_DISC_BLNK_LED = (LUB_DISC_BLNK_LED | 0xff) & ~hw_led_state;
+-	else
+-		LUB_DISC_BLNK_LED |= 0xff;
+-
+-	local_irq_restore(flags);
+-}
+diff --git a/arch/arm/mach-pxa/leds-mainstone.c b/arch/arm/mach-pxa/leds-mainstone.c
+deleted file mode 100644
+index db4af5e..0000000
+--- a/arch/arm/mach-pxa/leds-mainstone.c
++++ /dev/null
+@@ -1,120 +0,0 @@
+-/*
+- * linux/arch/arm/mach-pxa/leds-mainstone.c
+- *
+- * Author:     Nicolas Pitre
+- * Created:    Nov 05, 2002
+- * Copyright:  MontaVista Software Inc.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#include <linux/init.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/leds.h>
+-#include <asm/system.h>
+-
+-#include <mach/pxa27x.h>
+-#include <mach/mainstone.h>
+-
+-#include "leds.h"
+-
+-
+-/* 8 discrete leds available for general use: */
+-#define D28			(1 << 0)
+-#define D27			(1 << 1)
+-#define D26			(1 << 2)
+-#define D25			(1 << 3)
+-#define D24			(1 << 4)
+-#define D23			(1 << 5)
+-#define D22			(1 << 6)
+-#define D21			(1 << 7)
+-
+-#define LED_STATE_ENABLED	1
+-#define LED_STATE_CLAIMED	2
+-
+-static unsigned int led_state;
+-static unsigned int hw_led_state;
+-
+-void mainstone_leds_event(led_event_t evt)
+-{
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	switch (evt) {
+-	case led_start:
+-		hw_led_state = 0;
+-		led_state = LED_STATE_ENABLED;
+-		break;
+-
+-	case led_stop:
+-		led_state &= ~LED_STATE_ENABLED;
+-		break;
+-
+-	case led_claim:
+-		led_state |= LED_STATE_CLAIMED;
+-		hw_led_state = 0;
+-		break;
+-
+-	case led_release:
+-		led_state &= ~LED_STATE_CLAIMED;
+-		hw_led_state = 0;
+-		break;
+-
+-#ifdef CONFIG_LEDS_TIMER
+-	case led_timer:
+-		hw_led_state ^= D26;
+-		break;
+-#endif
+-
+-#ifdef CONFIG_LEDS_CPU
+-	case led_idle_start:
+-		hw_led_state &= ~D27;
+-		break;
+-
+-	case led_idle_end:
+-		hw_led_state |= D27;
+-		break;
+-#endif
+-
+-	case led_halted:
+-		break;
+-
+-	case led_green_on:
+-		hw_led_state |= D21;
+-		break;
+-
+-	case led_green_off:
+-		hw_led_state &= ~D21;
+-		break;
+-
+-	case led_amber_on:
+-		hw_led_state |= D22;
+-		break;
+-
+-	case led_amber_off:
+-		hw_led_state &= ~D22;
+-		break;
+-
+-	case led_red_on:
+-		hw_led_state |= D23;
+-		break;
+-
+-	case led_red_off:
+-		hw_led_state &= ~D23;
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	if  (led_state & LED_STATE_ENABLED)
+-		MST_LEDCTRL = (MST_LEDCTRL | 0xff) & ~hw_led_state;
+-	else
+-		MST_LEDCTRL |= 0xff;
+-
+-	local_irq_restore(flags);
+-}
+diff --git a/arch/arm/mach-pxa/leds.c b/arch/arm/mach-pxa/leds.c
+deleted file mode 100644
+index bbe4d5f..0000000
+--- a/arch/arm/mach-pxa/leds.c
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * linux/arch/arm/mach-pxa/leds.c
+- *
+- * xscale LEDs dispatcher
+- *
+- * Copyright (C) 2001 Nicolas Pitre
+- *
+- * Copyright (c) 2001 Jeff Sutherland, Accelent Systems Inc.
+- */
+-#include <linux/compiler.h>
+-#include <linux/init.h>
+-
+-#include <asm/leds.h>
+-#include <asm/mach-types.h>
+-
+-#include "leds.h"
+-
+-static int __init
+-pxa_leds_init(void)
+-{
+-	if (machine_is_lubbock())
+-		leds_event = lubbock_leds_event;
+-	if (machine_is_mainstone())
+-		leds_event = mainstone_leds_event;
+-	if (machine_is_pxa_idp())
+-		leds_event = idp_leds_event;
+-
+-	leds_event(led_start);
+-	return 0;
+-}
+-
+-core_initcall(pxa_leds_init);
+diff --git a/arch/arm/mach-pxa/leds.h b/arch/arm/mach-pxa/leds.h
+deleted file mode 100644
+index 7f0dfe0..0000000
+--- a/arch/arm/mach-pxa/leds.h
++++ /dev/null
+@@ -1,13 +0,0 @@
+-/*
+- * arch/arm/mach-pxa/leds.h
+- *
+- * Copyright (c) 2001 Jeff Sutherland, Accelent Systems Inc.
+- *
+- * blinky lights for various PXA-based systems:
+- *
+- */
+-
+-extern void idp_leds_event(led_event_t evt);
+-extern void lubbock_leds_event(led_event_t evt);
+-extern void mainstone_leds_event(led_event_t evt);
+-extern void trizeps4_leds_event(led_event_t evt);
+diff --git a/arch/arm/mach-pxa/lubbock.c b/arch/arm/mach-pxa/lubbock.c
+index a8c696b..e92eb5c 100644
+--- a/arch/arm/mach-pxa/lubbock.c
++++ b/arch/arm/mach-pxa/lubbock.c
+@@ -14,6 +14,7 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
++#include <linux/io.h>
+ #include <linux/platform_device.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/major.h>
+@@ -22,6 +23,8 @@
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+ #include <linux/smc91x.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
+ 
+ #include <linux/spi/spi.h>
+ #include <linux/spi/ads7846.h>
+@@ -548,6 +551,96 @@ static void __init lubbock_map_io(void)
+ 	PCFR |= PCFR_OPDE;
+ }
+ 
++/*
++ * Driver for the 8 discrete LEDs available for general use:
++ * Note: bits [15-8] are used to enable/blank the 8 7 segment hex displays
++ * so be sure to not monkey with them here.
++ */
++
++struct lubbock_led {
++	struct led_classdev	cdev;
++	u8			mask;
++};
++
++/*
++ * The triggers lines up below will only be used if the
++ * LED triggers are compiled in.
++ */
++static const struct {
++	const char *name;
++	const char *trigger;
++} lubbock_leds[] = {
++	{ "lubbock:D28", "default-on", },
++	{ "lubbock:D27", "cpu0", },
++	{ "lubbock:D26", "heartbeat" },
++	{ "lubbock:D25", },
++	{ "lubbock:D24", },
++	{ "lubbock:D23", },
++	{ "lubbock:D22", },
++	{ "lubbock:D21", },
++};
++
++static void lubbock_led_set(struct led_classdev *cdev,
++			      enum led_brightness b)
++{
++	struct lubbock_led *led = container_of(cdev,
++					 struct lubbock_led, cdev);
++	u32 reg = LUB_DISC_BLNK_LED;
++
++	if (b != LED_OFF)
++		reg |= led->mask;
++	else
++		reg &= ~led->mask;
++
++	LUB_DISC_BLNK_LED = reg;
++}
++
++static enum led_brightness lubbock_led_get(struct led_classdev *cdev)
++{
++	struct lubbock_led *led = container_of(cdev,
++					 struct lubbock_led, cdev);
++	u32 reg = LUB_DISC_BLNK_LED;
++
++	return (reg & led->mask) ? LED_FULL : LED_OFF;
++}
++
++static int __init lubbock_leds_init(void)
++{
++	int i;
++
++	if (!machine_is_lubbock())
++		return -ENODEV;
++
++	/* All ON */
++	LUB_DISC_BLNK_LED |= 0xff;
++	for (i = 0; i < ARRAY_SIZE(lubbock_leds); i++) {
++		struct lubbock_led *led;
++
++		led = kzalloc(sizeof(*led), GFP_KERNEL);
++		if (!led)
++			break;
++
++		led->cdev.name = lubbock_leds[i].name;
++		led->cdev.brightness_set = lubbock_led_set;
++		led->cdev.brightness_get = lubbock_led_get;
++		led->cdev.default_trigger = lubbock_leds[i].trigger;
 +		led->mask = BIT(i);
 +
 +		if (led_classdev_register(NULL, &led->cdev) < 0) {
@@ -292,77 +697,37 @@ index 2ef69ff..465a738 100644
 + * Since we may have triggers on any subsystem, defer registration
 + * until after subsystem_init.
 + */
-+fs_initcall(ebsa285_leds_init);
++fs_initcall(lubbock_leds_init);
 +
- MACHINE_START(EBSA285, "EBSA285")
- 	/* Maintainer: Russell King */
- 	.boot_params	= 0x00000100,
-diff --git a/arch/arm/mach-footbridge/include/mach/system.h b/arch/arm/mach-footbridge/include/mach/system.h
-index 0b29315..c026efa 100644
---- a/arch/arm/mach-footbridge/include/mach/system.h
-+++ b/arch/arm/mach-footbridge/include/mach/system.h
-@@ -10,7 +10,6 @@
- #include <linux/io.h>
- #include <asm/hardware/dec21285.h>
- #include <mach/hardware.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
- 
- static inline void arch_idle(void)
-diff --git a/arch/arm/mach-footbridge/netwinder-hw.c b/arch/arm/mach-footbridge/netwinder-hw.c
-index 06e514f..e5450fe 100644
---- a/arch/arm/mach-footbridge/netwinder-hw.c
-+++ b/arch/arm/mach-footbridge/netwinder-hw.c
-@@ -12,9 +12,10 @@
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
+ MACHINE_START(LUBBOCK, "Intel DBPXA250 Development Platform (aka Lubbock)")
+ 	/* Maintainer: MontaVista Software Inc. */
+ 	.map_io		= lubbock_map_io,
+diff --git a/arch/arm/mach-pxa/mainstone.c b/arch/arm/mach-pxa/mainstone.c
+index 4622eb7..d7e5902 100644
+--- a/arch/arm/mach-pxa/mainstone.c
++++ b/arch/arm/mach-pxa/mainstone.c
+@@ -28,6 +28,8 @@
+ #include <linux/pwm_backlight.h>
+ #include <linux/smc91x.h>
+ #include <linux/i2c/pxa-i2c.h>
 +#include <linux/slab.h>
 +#include <linux/leds.h>
  
- #include <asm/hardware/dec21285.h>
--#include <asm/leds.h>
- #include <asm/mach-types.h>
+ #include <asm/types.h>
  #include <asm/setup.h>
- 
-@@ -26,13 +27,6 @@
- #define GP1_IO_BASE		0x338
- #define GP2_IO_BASE		0x33a
- 
--
--#ifdef CONFIG_LEDS
--#define DEFAULT_LEDS	0
--#else
--#define DEFAULT_LEDS	GPIO_GREEN_LED
--#endif
--
- /*
-  * Winbond WB83977F accessibility stuff
-  */
-@@ -610,15 +604,9 @@ static void __init rwa010_init(void)
- static int __init nw_hw_init(void)
- {
- 	if (machine_is_netwinder()) {
--		unsigned long flags;
--
- 		wb977_init();
- 		cpld_init();
- 		rwa010_init();
--
--		spin_lock_irqsave(&nw_gpio_lock, flags);
--		nw_gpio_modify_op(GPIO_RED_LED|GPIO_GREEN_LED, DEFAULT_LEDS);
--		spin_unlock_irqrestore(&nw_gpio_lock, flags);
- 	}
- 	return 0;
- }
-@@ -646,6 +634,100 @@ fixup_netwinder(struct machine_desc *desc, struct tag *tags,
- #endif
+@@ -614,6 +616,96 @@ static void __init mainstone_map_io(void)
+  	PCFR = 0x66;
  }
  
-+/* LEDs */
-+struct netwinder_led {
-+	struct led_classdev     cdev;
-+	u8                      mask;
++/*
++ * Driver for the 8 discrete LEDs available for general use:
++ * Note: bits [15-8] are used to enable/blank the 8 7 segment hex displays
++ * so be sure to not monkey with them here.
++ */
++
++struct mainstone_led {
++	struct led_classdev	cdev;
++	u8			mask;
 +};
 +
 +/*
@@ -372,71 +737,62 @@ index 06e514f..e5450fe 100644
 +static const struct {
 +	const char *name;
 +	const char *trigger;
-+} netwinder_leds[] = {
-+	{ "netwinder:green", "heartbeat", },
-+	{ "netwinder:red", "cpu0", },
++} mainstone_leds[] = {
++	{ "mainstone:D28", "default-on", },
++	{ "mainstone:D27", "cpu0", },
++	{ "mainstone:D26", "heartbeat" },
++	{ "mainstone:D25", },
++	{ "mainstone:D24", },
++	{ "mainstone:D23", },
++	{ "mainstone:D22", },
++	{ "mainstone:D21", },
 +};
 +
-+/*
-+ * The LED control in Netwinder is reversed:
-+ *  - setting bit means turn off LED
-+ *  - clearing bit means turn on LED
-+ */
-+static void netwinder_led_set(struct led_classdev *cdev,
-+		enum led_brightness b)
++static void mainstone_led_set(struct led_classdev *cdev,
++			      enum led_brightness b)
 +{
-+	struct netwinder_led *led = container_of(cdev,
-+			struct netwinder_led, cdev);
-+	unsigned long flags;
-+	u32 reg;
++	struct mainstone_led *led = container_of(cdev,
++					 struct mainstone_led, cdev);
++	u32 reg = MST_LEDCTRL;
 +
-+	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	reg = nw_gpio_read();
 +	if (b != LED_OFF)
-+		reg &= ~led->mask;
-+	else
 +		reg |= led->mask;
-+	nw_gpio_modify_op(led->mask, reg);
-+	spin_unlock_irqrestore(&nw_gpio_lock, flags);
++	else
++		reg &= ~led->mask;
++
++	MST_LEDCTRL = reg;
 +}
 +
-+static enum led_brightness netwinder_led_get(struct led_classdev *cdev)
++static enum led_brightness mainstone_led_get(struct led_classdev *cdev)
 +{
-+	struct netwinder_led *led = container_of(cdev,
-+			struct netwinder_led, cdev);
-+	unsigned long flags;
-+	u32 reg;
++	struct mainstone_led *led = container_of(cdev,
++					 struct mainstone_led, cdev);
++	u32 reg = MST_LEDCTRL;
 +
-+	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	reg = nw_gpio_read();
-+	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+
-+	return (reg & led->mask) ? LED_OFF : LED_FULL;
++	return (reg & led->mask) ? LED_FULL : LED_OFF;
 +}
 +
-+static int __init netwinder_leds_init(void)
++static int __init mainstone_leds_init(void)
 +{
 +	int i;
 +
-+	if (!machine_is_netwinder())
++	if (!machine_is_mainstone())
 +		return -ENODEV;
 +
-+	for (i = 0; i < ARRAY_SIZE(netwinder_leds); i++) {
-+		struct netwinder_led *led;
++	/* All ON */
++	MST_LEDCTRL |= 0xff;
++	for (i = 0; i < ARRAY_SIZE(mainstone_leds); i++) {
++		struct mainstone_led *led;
 +
 +		led = kzalloc(sizeof(*led), GFP_KERNEL);
 +		if (!led)
 +			break;
 +
-+		led->cdev.name = netwinder_leds[i].name;
-+		led->cdev.brightness_set = netwinder_led_set;
-+		led->cdev.brightness_get = netwinder_led_get;
-+		led->cdev.default_trigger = netwinder_leds[i].trigger;
-+
-+		if (i == 0)
-+			led->mask = GPIO_GREEN_LED;
-+		else
-+			led->mask = GPIO_RED_LED;
++		led->cdev.name = mainstone_leds[i].name;
++		led->cdev.brightness_set = mainstone_led_set;
++		led->cdev.brightness_get = mainstone_led_get;
++		led->cdev.default_trigger = mainstone_leds[i].trigger;
++		led->mask = BIT(i);
 +
 +		if (led_classdev_register(NULL, &led->cdev) < 0) {
 +			kfree(led);
@@ -451,156 +807,11 @@ index 06e514f..e5450fe 100644
 + * Since we may have triggers on any subsystem, defer registration
 + * until after subsystem_init.
 + */
-+fs_initcall(netwinder_leds_init);
++fs_initcall(mainstone_leds_init);
 +
- MACHINE_START(NETWINDER, "Rebel-NetWinder")
- 	/* Maintainer: Russell King/Rebel.com */
- 	.boot_params	= 0x00000100,
-diff --git a/arch/arm/mach-footbridge/netwinder-leds.c b/arch/arm/mach-footbridge/netwinder-leds.c
-deleted file mode 100644
-index 00269fe..0000000
---- a/arch/arm/mach-footbridge/netwinder-leds.c
-+++ /dev/null
-@@ -1,139 +0,0 @@
--/*
-- *  linux/arch/arm/mach-footbridge/netwinder-leds.c
-- *
-- *  Copyright (C) 1998-1999 Russell King
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * NetWinder LED control routines.
-- *
-- * The Netwinder uses the leds as follows:
-- *  - Green - toggles state every 50 timer interrupts
-- *  - Red   - On if the system is not idle
-- *
-- * Changelog:
-- *   02-05-1999	RMK	Various cleanups
-- */
--#include <linux/module.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--#include <linux/spinlock.h>
--
--#include <mach/hardware.h>
--#include <asm/leds.h>
--#include <asm/mach-types.h>
--#include <asm/system.h>
--
--#define LED_STATE_ENABLED	1
--#define LED_STATE_CLAIMED	2
--static char led_state;
--static char hw_led_state;
--
--static DEFINE_SPINLOCK(leds_lock);
--
--static void netwinder_leds_event(led_event_t evt)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&leds_lock, flags);
--
--	switch (evt) {
--	case led_start:
--		led_state |= LED_STATE_ENABLED;
--		hw_led_state = GPIO_GREEN_LED;
--		break;
--
--	case led_stop:
--		led_state &= ~LED_STATE_ENABLED;
--		break;
--
--	case led_claim:
--		led_state |= LED_STATE_CLAIMED;
--		hw_led_state = 0;
--		break;
--
--	case led_release:
--		led_state &= ~LED_STATE_CLAIMED;
--		hw_led_state = 0;
--		break;
--
--#ifdef CONFIG_LEDS_TIMER
--	case led_timer:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state ^= GPIO_GREEN_LED;
--		break;
--#endif
--
--#ifdef CONFIG_LEDS_CPU
--	case led_idle_start:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state &= ~GPIO_RED_LED;
--		break;
--
--	case led_idle_end:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state |= GPIO_RED_LED;
--		break;
--#endif
--
--	case led_halted:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state |= GPIO_RED_LED;
--		break;
--
--	case led_green_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= GPIO_GREEN_LED;
--		break;
--
--	case led_green_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~GPIO_GREEN_LED;
--		break;
--
--	case led_amber_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= GPIO_GREEN_LED | GPIO_RED_LED;
--		break;
--
--	case led_amber_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~(GPIO_GREEN_LED | GPIO_RED_LED);
--		break;
--
--	case led_red_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= GPIO_RED_LED;
--		break;
--
--	case led_red_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~GPIO_RED_LED;
--		break;
--
--	default:
--		break;
--	}
--
--	spin_unlock_irqrestore(&leds_lock, flags);
--
--	if  (led_state & LED_STATE_ENABLED) {
--		spin_lock_irqsave(&nw_gpio_lock, flags);
--		nw_gpio_modify_op(GPIO_RED_LED | GPIO_GREEN_LED, hw_led_state);
--		spin_unlock_irqrestore(&nw_gpio_lock, flags);
--	}
--}
--
--static int __init leds_init(void)
--{
--	if (machine_is_netwinder())
--		leds_event = netwinder_leds_event;
--
--	leds_event(led_start);
--
--	return 0;
--}
--
--__initcall(leds_init);
+ MACHINE_START(MAINSTONE, "Intel HCDDBBVA0 Development Platform (aka Mainstone)")
+ 	/* Maintainer: MontaVista Software Inc. */
+ 	.boot_params	= 0xa0000100,	/* BLOB boot parameter setting */
 -- 
 1.7.5
 
