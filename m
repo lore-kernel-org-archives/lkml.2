@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab1HZPFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:05:21 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:38272 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752694Ab1HZPFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:05:17 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: yDffVuYVM1lDayTNR3TB1SfbYCEFgm7SnhnZT6wX_RK1Peh
- fiewIQut_VQxot7wtJYswp1b06xzXN81lot7R4GlSwnuDYUS4n__i6zmLSS7
- g4IyT3mO7.VhtZ40.NCczo7U0kn1R1f0tzipdfarlz3ZjBQLgJvQGv3eNwT7
- 81EK9SODyNAyfUMItxDNggDMRhxTMMTklQ_YW.v0gRAmsdHmkiBQfTSPMF7x
- fuUdWwzgbAzZjAne.drtbkLXyeewCoeAZeY65tAMvyLmyVIg6F8OwjOeHJQF
- BiimaER7zbsSUUb771.SXXINFaY4u_buZPR4Wsx4ojs7eNJyHkDlnPR0HpmI
- MkAU_bV.c1p2lLY1XPp53P62Di0fxAm22.nYH_JzarVgrRQ--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 26 Aug 2011 10:05:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Zhao Jin <cronozhj@gmail.com>
-cc: penberg@kernel.org, mpm@selenic.com, trivial@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slab: avoid unnecessary touching of a partial slab
-In-Reply-To: <1314370954.8991.46.camel@vm>
-Message-ID: <alpine.DEB.2.00.1108261004430.5818@router.home>
-References: <CADqbE97Vj0UV-2XvpkoELwdey_Xw7iCsF1AhQNFjwxY583SUwg@mail.gmail.com>  <alpine.DEB.2.00.1108260841570.5818@router.home>  <1314370016.8991.38.camel@vm>  <alpine.DEB.2.00.1108260950220.5818@router.home> <1314370954.8991.46.camel@vm>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753542Ab1HZPP4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:15:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656Ab1HZPPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 11:15:55 -0400
+Date: Fri, 26 Aug 2011 17:12:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, bblum@andrew.cmu.edu, fweisbec@gmail.com,
+        lizf@cn.fujitsu.com, paul@paulmenage.org, tj@kernel.org
+Subject: Re: + cgroups-fix-ordering-of-calls-in-cgroup_attach_proc.patch
+	added to -mm tree
+Message-ID: <20110826151245.GA16243@redhat.com>
+References: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108252044.p7PKiaHd006997@imap1.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Aug 2011, Zhao Jin wrote:
+On 08/25, Andrew Morton wrote:
+>
+> From: Ben Blum <bblum@andrew.cmu.edu>
+>
+> @@ -2135,14 +2135,17 @@ int cgroup_attach_proc(struct cgroup *cg
+>  		oldcgrp = task_cgroup_from_root(tsk, root);
+>  		if (cgrp == oldcgrp)
+>  			continue;
+> -		/* attach each task to each subsystem */
+> -		for_each_subsys(root, ss) {
+> -			if (ss->attach_task)
+> -				ss->attach_task(cgrp, tsk);
+> -		}
+>  		/* if the thread is PF_EXITING, it can just get skipped. */
+>  		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
+> -		BUG_ON(retval != 0 && retval != -ESRCH);
+> +		if (retval == 0) {
+> +			/* attach each task to each subsystem */
+> +			for_each_subsys(root, ss) {
+> +				if (ss->attach_task)
+> +					ss->attach_task(cgrp, tsk);
+> +			}
 
-> > Correct but still tthe del/add is a list_move operation. Convert that the
-> > other case as well?
-> >
-> Yes. The patch avoids list_del/list_add only if it is the case that a
-> partial slab was used for refilling and remains partial (that is:
-> partial => partial). If it is not the case( so it must be either partial
-> => full, free => full or free => partial) the patched code behaves the
-> same as current (list_del/list_add).
+Yes, I think this is what we need, the patch itself looks fine.
 
-The second case is what I want you to change to list_move.
 
+
+But this doesn't answer my another question. After that the code does
+
+	 * step 4: do expensive, non-thread-specific subsystem callbacks.
+
+		ss->attach(ss, cgrp, oldcgrp, leader);
+
+OK, non-thread-specific is nice, but how can this "leader" represent
+the process?
+
+It can be zombie (but still group_leader) even without any races.
+Say, cpuset_attach() and mem_cgroup_move_task() need get_task_mm(p).
+How this can work if the leader is dead?
+
+Also. Even if we add the locking around while_each_thread() (btw,
+we need this in any case), we can race with exec which can change
+the leader. In this case this task_struct has nothing to do with
+the process we are going to attach, at all.
+
+And, ss->can_attach(leader) has the same problems, it seems.
+
+
+
+
+And. Say, devcgroup_can_attach() checks CAP_SYS_ADMIN. This is
+security check. Why it is enough to check the leader only? We are
+going to attach all threads. OK, this is probably fine, and I never
+understood why capable/creds are not per-process, but this looks
+so strange.
+
+Oleg.
 
