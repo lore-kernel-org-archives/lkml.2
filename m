@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab1HZPhd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:37:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38961 "EHLO
+	id S1754604Ab1HZPhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:37:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38962 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957Ab1HZPh2 (ORCPT
+	with ESMTP id S1754207Ab1HZPh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:37:28 -0400
+	Fri, 26 Aug 2011 11:37:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Blanchard <anton@samba.org>, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        <stable@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Eric B Munson <emunson@mgebm.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, yrl.pp-manager.tt@hitachi.com,
-        arnaldo.melo@gmail.com
-Subject: [GIT PULL 0/6] perf/urgent fixes
-Date: Fri, 26 Aug 2011 12:37:05 -0300
-Message-Id: <1314373031-6687-1-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/6] perf symbols: Fix ppc64 SEGV in dso__load_sym with debuginfo files
+Date: Fri, 26 Aug 2011 12:37:07 -0300
+Message-Id: <1314373031-6687-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1314373031-6687-1-git-send-email-acme@infradead.org>
+References: <1314373031-6687-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Anton Blanchard <anton@samba.org>
 
-        Please consider pulling from:
+64bit PowerPC debuginfo files have an empty function descriptor section.
+I hit a SEGV when perf tried to use this section for symbol resolution.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/urgent
+To fix this we need to check the section is valid and we can do this by
+checking for type SHT_PROGBITS.
 
-Regards,
+Cc: <stable@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Eric B Munson <emunson@mgebm.net>
+Link: http://lkml.kernel.org/r/20110824065242.895239970@samba.org
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-- Arnaldo
-
-Anton Blanchard (4):
-  perf symbols: Fix ppc64 SEGV in dso__load_sym with debuginfo files
-  perf symbols: /proc/kallsyms does not sort module symbols
-  perf symbols: Preserve symbol scope when parsing /proc/kallsyms
-  perf symbols: Add some heuristics for choosing the best duplicate symbol
-
-David Ahern (1):
-  perf record: Create events initially disabled and enable after init
-
-Masami Hiramatsu (1):
-  perf probe: Fix regression of variable finder
-
- tools/perf/builtin-record.c    |    3 +
- tools/perf/util/evlist.c       |   13 ++++
- tools/perf/util/evlist.h       |    1 +
- tools/perf/util/probe-finder.c |    2 +-
- tools/perf/util/symbol.c       |  129 ++++++++++++++++++++++++++++++++--------
- 5 files changed, 123 insertions(+), 25 deletions(-)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 469c026..bb5d32f 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1111,6 +1111,8 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 	}
+ 
+ 	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
++	if (opdshdr.sh_type != SHT_PROGBITS)
++		opdsec = NULL;
+ 	if (opdsec)
+ 		opddata = elf_rawdata(opdsec, NULL);
+ 
+-- 
+1.6.2.5
 
