@@ -1,123 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab1HZSJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:09:56 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58398 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755381Ab1HZSJy (ORCPT
+	id S1753956Ab1HZSNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:13:46 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49348 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab1HZSNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:09:54 -0400
-X-Sasl-enc: R3H15kuRUuvaz/7I7KFovQ8xMhlnTqVQhYaNeJ0aOE/D 1314382193
-Date: Fri, 26 Aug 2011 11:07:34 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <mnazarewicz@google.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 1/4] usb: Provide usb_speed_string() function
-Message-ID: <20110826180734.GA24226@kroah.com>
-References: <cover.1314364322.git.mina86@mina86.com>
- <6ffc8c43e9d3fbef765329f0760fb236d20b585a.1314364323.git.mina86@mina86.com>
+	Fri, 26 Aug 2011 14:13:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=o9Y7wZW7LBV07J1FTbaNPsaZcJG4HzTNpAuw0yVRpNp1SkqvIYoZTqrZBzMWs3AQH
+	fU5s8DbJ5wE2Dc9V52W5A==
+Date: Fri, 26 Aug 2011 11:13:40 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] oom: skip frozen tasks
+In-Reply-To: <20110826095356.GB9083@tiehlicka.suse.cz>
+Message-ID: <alpine.DEB.2.00.1108261110020.13943@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz> <20110825151818.GA4003@redhat.com>
+ <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com> <20110826070946.GA7280@tiehlicka.suse.cz> <20110826085610.GA9083@tiehlicka.suse.cz> <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com>
+ <20110826095356.GB9083@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6ffc8c43e9d3fbef765329f0760fb236d20b585a.1314364323.git.mina86@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 03:18:34PM +0200, Michal Nazarewicz wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
+On Fri, 26 Aug 2011, Michal Hocko wrote:
+
+> > I do like the idea of automatically thawing the task though and if that's 
+> > possible then I don't think we need to manipulate the badness heuristic at 
+> > all.  I know that wouldn't be feasible when we've frozen _all_ threads and 
 > 
-> In a few places in the kernel, the code prints
-> a human-readable USB device speed (eg. "high speed").
-> This involves a switch statement sometimes wrapped
-> around in ({ ... }) block leading to code repetition.
+> Why it wouldn't be feasible for all threads? If you have all tasks
+> frozen (suspend going on, whole cgroup or all tasks in a cpuset/nodemask
+> are frozen) then the selection is more natural because all of them are
+> equal (with or without a bonus). The bonus tries to reduce thawing if
+> not all of them are frozen.
+
+Yeah, this comment wasn't in reference to your heuristic change, it was in 
+reference to the fact that if all threads are frozen then there is little 
+hope for us recovering from the situation without a user response.  I 
+think that's why we want oom_killer_disable() so that we avoid looping 
+forever and can actually fail allocations in the hope that we'll bring 
+ourselves out of suspend.
+
+> I am not saying the bonus is necessary, though. It depends on what
+> the freezer is used for (e.g. freeze a process which went wild and
+> debug what went wrong wouldn't welcome that somebody killed it or other
+> (mis)use which relies on D state).
 > 
-> To mitigate this issue, this commit introduces
-> usb_speed_string() function, which returns
-> a human-readable name of provided speed.
-> 
-> It also changes a few places switch was used to use
-> this new function.  This changes a bit the way the
-> speed is printed in few instances at the same time
-> standardising it.
-> ---
->  drivers/usb/Makefile                |    2 +
->  drivers/usb/common.c                |   24 ++++++++++++++++
->  drivers/usb/core/hub.c              |   27 ++++++------------
->  drivers/usb/gadget/amd5536udc.c     |    9 +----
->  drivers/usb/gadget/atmel_usba_udc.c |    9 ++---
->  drivers/usb/gadget/composite.c      |   22 ++------------
->  drivers/usb/gadget/file_storage.c   |   15 ++-------
->  drivers/usb/gadget/fsl_udc_core.c   |   53 ++++++++++++----------------------
->  drivers/usb/gadget/gmidi.c          |   11 +------
->  drivers/usb/gadget/langwell_udc.c   |   50 +++++++++++---------------------
->  drivers/usb/gadget/net2272.c        |    4 +-
->  drivers/usb/gadget/net2280.c        |    4 +--
->  drivers/usb/gadget/printer.c        |   14 ++-------
->  drivers/usb/gadget/s3c-hsotg.c      |    8 +----
->  drivers/usb/gadget/udc-core.c       |   19 +-----------
->  drivers/usb/misc/usbtest.c          |   21 +------------
->  include/linux/usb/ch9.h             |   12 ++++++++
->  17 files changed, 109 insertions(+), 195 deletions(-)
->  create mode 100644 drivers/usb/common.c
-> 
-> diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
-> index 969b0a5..2d5af21 100644
-> --- a/drivers/usb/Makefile
-> +++ b/drivers/usb/Makefile
-> @@ -53,3 +53,5 @@ obj-$(CONFIG_USB_MUSB_HDRC)	+= musb/
->  obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
->  obj-$(CONFIG_USB_OTG_UTILS)	+= otg/
->  obj-$(CONFIG_USB_GADGET)	+= gadget/
-> +
-> +obj-$(CONFIG_USB_SUPPORT)	+= common.o
 
-You just built this into the kernel, which while ok for some things,
-might not be what some people want.
+I'd love to be able to do a thaw on a PF_FROZEN task in the oom killer 
+followed by a SIGKILL if that task is selected for oom kill without an 
+heuristic change.  Not sure if that's possible, so we'll wait for Rafael 
+to chime in.
 
-Please make this into a separate module if people are building the usb
-code as modules, usb_common.ko perhaps?
-
-> diff --git a/drivers/usb/common.c b/drivers/usb/common.c
-> new file mode 100644
-> index 0000000..2f6627c
-> --- /dev/null
-> +++ b/drivers/usb/common.c
-> @@ -0,0 +1,24 @@
-> +/*
-> + * Provides code common for host and device side USB.
-> + */
-> +
-> +#include <linux/kernel.h>  /* for ARRAY_SIZE() */
-> +#include <linux/module.h>  /* for EXPORT_SYMBOL_GPL() */
-
-No need for the "/* for ... */" lines, we all know what this is for.
-
-> --- a/include/linux/usb/ch9.h
-> +++ b/include/linux/usb/ch9.h
-> @@ -868,6 +868,18 @@ enum usb_device_speed {
->  	USB_SPEED_SUPER,			/* usb 3.0 */
->  };
->  
-> +#ifdef __KERNEL__
-> +
-> +/**
-> + * usb_speed_string() - Returns human readable-name of the speed.
-> + * @speed: The speed to return human-readable name for.  If it's not
-> + *   any of the speeds defined in usb_device_speed enum, string for
-> + *   USB_SPEED_UNKNOWN will be returned.
-> + */
-> +extern const char *usb_speed_string(enum usb_device_speed speed);
-> +
-> +#endif
-
-No, this should be in include/linux/usb.h, not ch9.h.
-
-thanks,
-
-greg k-h
+If it actually does come down to a heuristic change, then it need not 
+happen in the oom killer: the freezing code would need to use 
+test_set_oom_score_adj() to temporarily reduce the oom_score_adj for that 
+task until it comes out of the refrigerator.  We already use that in ksm 
+and swapoff to actually prefer threads, but we can use it to bias against 
+threads as well.
