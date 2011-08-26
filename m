@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab1H0Ozn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:55:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46343 "EHLO mx2.suse.de"
+	id S1752912Ab1H0PLB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 11:11:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46362 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab1H0Oze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:55:34 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:01:20 2011
-Message-Id: <20110826220120.816637549@clark.kroah.org>
+	id S1752509Ab1H0Ozm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:55:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:01:21 2011
+Message-Id: <20110826220121.028835856@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:58:33 -0700
+Date: Fri, 26 Aug 2011 14:58:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Mack <zonque@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [12/19] ALSA: snd_usb_caiaq: track submitted output urbs
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Darren Hart <dvhart@linux.intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, zvonler@rgmadvisors.com, hughd@google.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [14/19] futex: Fix regression with read only mappings
 In-Reply-To: <20110826220137.GA14059@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,125 +30,237 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-commit da6094ea7d3c2295473d8f5134279307255d6ebf upstream.
+commit 9ea71503a8ed9184d2d0b8ccc4d269d05f7940ae upstream.
 
-The snd_usb_caiaq driver currently assumes that output urbs are serviced
-in time and doesn't track when and whether they are given back by the
-USB core. That usually works fine, but due to temporary limitations of
-the XHCI stack, we faced that urbs were submitted more than once with
-this approach.
+commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+parameter from get_futex_key()) in 2.6.33 fixed two problems:  First, It
+prevented a loop when encountering a ZERO_PAGE. Second, it fixed RW
+MAP_PRIVATE futex operations by forcing the COW to occur by
+unconditionally performing a write access get_user_pages_fast() to get
+the page.  The commit also introduced a user-mode regression in that it
+broke futex operations on read-only memory maps.  For example, this
+breaks workloads that have one or more reader processes doing a
+FUTEX_WAIT on a futex within a read only shared file mapping, and a
+writer processes that has a writable mapping issuing the FUTEX_WAKE.
 
-As it's no good practice to fire and forget urbs anyway, this patch
-introduces a proper bit mask to track which requests have been submitted
-and given back.
+This fixes the regression for valid futex operations on RO mappings by
+trying a RO get_user_pages_fast() when the RW get_user_pages_fast()
+fails. This change makes it necessary to also check for invalid use
+cases, such as anonymous RO mappings (which can never change) and the
+ZERO_PAGE which the commit referenced above was written to address.
 
-That alone however doesn't make the driver work in case the host
-controller is broken and doesn't give back urbs at all, and the output
-stream will stop once all pre-allocated output urbs are consumed. But
-it does prevent crashes of the controller stack in such cases.
+This patch does restore the original behavior with RO MAP_PRIVATE
+mappings, which have inherent user-mode usage problems and don't really
+make sense.  With this patch performing a FUTEX_WAIT within a RO
+MAP_PRIVATE mapping will be successfully woken provided another process
+updates the region of the underlying mapped file.  However, the mmap()
+man page states that for a MAP_PRIVATE mapping:
 
-See http://bugzilla.kernel.org/show_bug.cgi?id=40702 for more details.
+  It is unspecified whether changes made to the file after
+  the mmap() call are visible in the mapped region.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-and-tested-by: Matej Laitl <matej@laitl.cz>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+So user-mode users attempting to use futex operations on RO MAP_PRIVATE
+mappings are depending on unspecified behavior.  Additionally a
+RO MAP_PRIVATE mapping could fail to wake up in the following case.
+
+  Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+            get_futex_key() return inode based key.
+            sleep on the key
+  Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+  Thread-B: write memory-region-A.
+            COW happen. This process's memory-region-A become related
+            to new COWed private (ie PageAnon=1) page.
+  Thread-B: call futex(FUETX_WAKE, memory-region-A).
+            get_futex_key() return mm based key.
+            IOW, we fail to wake up Thread-A.
+
+Once again doing something like this is just silly and users who do
+something like this get what they deserve.
+
+While RO MAP_PRIVATE mappings are nonsensical, checking for a private
+mapping requires walking the vmas and was deemed too costly to avoid a
+userspace hang.
+
+This Patch is based on Peter Zijlstra's initial patch with modifications to
+only allow RO mappings for futex operations that need VERIFY_READ access.
+
+Reported-by: David Oliver <david@rgmadvisors.com>
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: peterz@infradead.org
+Cc: eric.dumazet@gmail.com
+Cc: zvonler@rgmadvisors.com
+Cc: hughd@google.com
+Link: http://lkml.kernel.org/r/1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- sound/usb/caiaq/audio.c  |   31 +++++++++++++++++++++++++++----
- sound/usb/caiaq/device.h |    1 +
- 2 files changed, 28 insertions(+), 4 deletions(-)
 
---- a/sound/usb/caiaq/audio.c
-+++ b/sound/usb/caiaq/audio.c
-@@ -138,8 +138,12 @@ static void stream_stop(struct snd_usb_c
- 
- 	for (i = 0; i < N_URBS; i++) {
- 		usb_kill_urb(dev->data_urbs_in[i]);
--		usb_kill_urb(dev->data_urbs_out[i]);
-+
-+		if (test_bit(i, &dev->outurb_active_mask))
-+			usb_kill_urb(dev->data_urbs_out[i]);
- 	}
-+
-+	dev->outurb_active_mask = 0;
- }
- 
- static int snd_usb_caiaq_substream_open(struct snd_pcm_substream *substream)
-@@ -466,8 +470,8 @@ static void read_completed(struct urb *u
+---
+ kernel/futex.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 42 insertions(+), 12 deletions(-)
+
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -203,6 +203,8 @@ static void drop_futex_key_refs(union fu
+  * @uaddr:	virtual address of the futex
+  * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+  * @key:	address where result is stored.
++ * @rw:		mapping needs to be read/write (values: VERIFY_READ,
++ *              VERIFY_WRITE)
+  *
+  * Returns a negative error code or 0
+  * The key words are stored in *key on success.
+@@ -214,12 +216,12 @@ static void drop_futex_key_refs(union fu
+  * lock_page() might sleep, the caller should not hold a spinlock.
+  */
+ static int
+-get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
++get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
  {
- 	struct snd_usb_caiaq_cb_info *info = urb->context;
- 	struct snd_usb_caiaqdev *dev;
--	struct urb *out;
--	int frame, len, send_it = 0, outframe = 0;
-+	struct urb *out = NULL;
-+	int i, frame, len, send_it = 0, outframe = 0;
- 	size_t offset = 0;
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+ 	struct page *page;
+-	int err;
++	int err, ro = 0;
  
- 	if (urb->status || !info)
-@@ -478,7 +482,17 @@ static void read_completed(struct urb *u
- 	if (!dev->streaming)
- 		return;
+ 	/*
+ 	 * The futex address must be "naturally" aligned.
+@@ -247,14 +249,31 @@ get_futex_key(u32 __user *uaddr, int fsh
  
--	out = dev->data_urbs_out[info->index];
-+	/* find an unused output urb that is unused */
-+	for (i = 0; i < N_URBS; i++)
-+		if (test_and_set_bit(i, &dev->outurb_active_mask) == 0) {
-+			out = dev->data_urbs_out[i];
-+			break;
+ again:
+ 	err = get_user_pages_fast(address, 1, 1, &page);
++	/*
++	 * If write access is not required (eg. FUTEX_WAIT), try
++	 * and get read-only access.
++	 */
++	if (err == -EFAULT && rw == VERIFY_READ) {
++		err = get_user_pages_fast(address, 1, 0, &page);
++		ro = 1;
++	}
+ 	if (err < 0)
+ 		return err;
++	else
++		err = 0;
+ 
+ 	page = compound_head(page);
+ 	lock_page(page);
+ 	if (!page->mapping) {
+ 		unlock_page(page);
+ 		put_page(page);
++		/*
++		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
++		* trying to find one. RW mapping would have COW'd (and thus
++		* have a mapping) so this page is RO and won't ever change.
++		*/
++		if ((page == ZERO_PAGE(address)))
++			return -EFAULT;
+ 		goto again;
+ 	}
+ 
+@@ -266,6 +285,15 @@ again:
+ 	 * the object not the particular process.
+ 	 */
+ 	if (PageAnon(page)) {
++		/*
++		 * A RO anonymous page will never change and thus doesn't make
++		 * sense for futex operations.
++		 */
++		if (ro) {
++			err = -EFAULT;
++			goto out;
 +		}
 +
-+	if (!out) {
-+		log("Unable to find an output urb to use\n");
-+		goto requeue;
-+	}
+ 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+@@ -277,9 +305,10 @@ again:
  
- 	/* read the recently received packet and send back one which has
- 	 * the same layout */
-@@ -509,8 +523,12 @@ static void read_completed(struct urb *u
- 		out->number_of_packets = outframe;
- 		out->transfer_flags = URB_ISO_ASAP;
- 		usb_submit_urb(out, GFP_ATOMIC);
-+	} else {
-+		struct snd_usb_caiaq_cb_info *oinfo = out->context;
-+		clear_bit(oinfo->index, &dev->outurb_active_mask);
- 	}
+ 	get_futex_key_refs(key);
  
-+requeue:
- 	/* re-submit inbound urb */
- 	for (frame = 0; frame < FRAMES_PER_URB; frame++) {
- 		urb->iso_frame_desc[frame].offset = BYTES_PER_FRAME * frame;
-@@ -532,6 +550,8 @@ static void write_completed(struct urb *
- 		dev->output_running = 1;
- 		wake_up(&dev->prepare_wait_queue);
- 	}
-+
-+	clear_bit(info->index, &dev->outurb_active_mask);
++out:
+ 	unlock_page(page);
+ 	put_page(page);
+-	return 0;
++	return err;
  }
  
- static struct urb **alloc_urbs(struct snd_usb_caiaqdev *dev, int dir, int *ret)
-@@ -682,6 +702,9 @@ int snd_usb_caiaq_audio_init(struct snd_
- 	if (!dev->data_cb_info)
- 		return -ENOMEM;
+ static inline
+@@ -880,7 +909,7 @@ static int futex_wake(u32 __user *uaddr,
+ 	if (!bitset)
+ 		return -EINVAL;
  
-+	dev->outurb_active_mask = 0;
-+	BUILD_BUG_ON(N_URBS > (sizeof(dev->outurb_active_mask) * 8));
-+
- 	for (i = 0; i < N_URBS; i++) {
- 		dev->data_cb_info[i].dev = dev;
- 		dev->data_cb_info[i].index = i;
---- a/sound/usb/caiaq/device.h
-+++ b/sound/usb/caiaq/device.h
-@@ -92,6 +92,7 @@ struct snd_usb_caiaqdev {
- 	int input_panic, output_panic, warned;
- 	char *audio_in_buf, *audio_out_buf;
- 	unsigned int samplerates, bpp;
-+	unsigned long outurb_active_mask;
+-	ret = get_futex_key(uaddr, fshared, &key);
++	ret = get_futex_key(uaddr, fshared, &key, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
  
- 	struct snd_pcm_substream *sub_playback[MAX_STREAMS];
- 	struct snd_pcm_substream *sub_capture[MAX_STREAMS];
+@@ -926,10 +955,10 @@ futex_wake_op(u32 __user *uaddr1, int fs
+ 	int ret, op_ret;
+ 
+ retry:
+-	ret = get_futex_key(uaddr1, fshared, &key1);
++	ret = get_futex_key(uaddr1, fshared, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, fshared, &key2);
++	ret = get_futex_key(uaddr2, fshared, &key2, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+ 
+@@ -1188,10 +1217,11 @@ retry:
+ 		pi_state = NULL;
+ 	}
+ 
+-	ret = get_futex_key(uaddr1, fshared, &key1);
++	ret = get_futex_key(uaddr1, fshared, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, fshared, &key2);
++	ret = get_futex_key(uaddr2, fshared, &key2,
++			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+ 
+@@ -1746,7 +1776,7 @@ static int futex_wait_setup(u32 __user *
+ 	 */
+ retry:
+ 	q->key = FUTEX_KEY_INIT;
+-	ret = get_futex_key(uaddr, fshared, &q->key);
++	ret = get_futex_key(uaddr, fshared, &q->key, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		return ret;
+ 
+@@ -1912,7 +1942,7 @@ static int futex_lock_pi(u32 __user *uad
+ 	q.requeue_pi_key = NULL;
+ retry:
+ 	q.key = FUTEX_KEY_INIT;
+-	ret = get_futex_key(uaddr, fshared, &q.key);
++	ret = get_futex_key(uaddr, fshared, &q.key, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -2031,7 +2061,7 @@ retry:
+ 	if ((uval & FUTEX_TID_MASK) != task_pid_vnr(current))
+ 		return -EPERM;
+ 
+-	ret = get_futex_key(uaddr, fshared, &key);
++	ret = get_futex_key(uaddr, fshared, &key, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -2223,7 +2253,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 	rt_waiter.task = NULL;
+ 
+ 	key2 = FUTEX_KEY_INIT;
+-	ret = get_futex_key(uaddr2, fshared, &key2);
++	ret = get_futex_key(uaddr2, fshared, &key2, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
 
 
