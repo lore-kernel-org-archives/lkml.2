@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab1HZFEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 01:04:34 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:33294 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab1HZFEc convert rfc822-to-8bit (ORCPT
+	id S1752182Ab1HZFNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 01:13:20 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:53928 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab1HZFNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 01:04:32 -0400
+	Fri, 26 Aug 2011 01:13:20 -0400
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1314315824-9687-1-git-send-email-swarren@nvidia.com>
-References: <1314315824-9687-1-git-send-email-swarren@nvidia.com>
-Date: Thu, 25 Aug 2011 22:04:31 -0700
-Message-ID: <CAOesGMiygfaNkPa7uURCiJpC=WDinWhKi07LFgJ+5JoGW_fLKw@mail.gmail.com>
-Subject: Re: [PATCH v3 00/13] arm/tegra: Initialize GPIO & pinmux from DT
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        Linus Walleij <linus.walleij@linaro.org>
+Date: Fri, 26 Aug 2011 13:13:19 +0800
+Message-ID: <CADqbE97Vj0UV-2XvpkoELwdey_Xw7iCsF1AhQNFjwxY583SUwg@mail.gmail.com>
+Subject: [PATCH] slab: avoid unnecessary touching of a partial slab
+From: Zhao Jin <cronozhj@gmail.com>
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 4:43 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> v3:
-> * Build on Jamie Iles' patches to split some of the DT parsing into
->  common code.
-> * Renamed some properties to remove "nvidia," from name; they can be
->  generic.
-> * Support pins property, to apply DT nodes to multiple pins/groups
-> * Some minor error-message changes driven by some of the above.
-> * Removed requirement to #ifdef CONFIG_OF
-> * Removed AUXDATA table entries in mach-tegra/board-dt.c
->
-> TODO:
-> * Convert from using strings to using integers for the function and pin
->  names. This relies on the dtc patches I posted yesterday, but should
->  be pretty simple once they're in.
->
-> Jamie Iles (1):
->  of: add a generic pinmux helper
->
-> Stephen Warren (12):
->  arm/tegra: Prep boards for gpio/pinmux conversion to pdevs
->  docs/dt: Document nvidia,tegra20-gpio's nvidia,enabled-gpios property
->  arm/dt: Tegra: Add nvidia,enabled-gpios property to GPIO controller
->  docs/dt: Document nvidia,tegra20-pinmux binding
->  arm/dt: Tegra: Add pinmux node
->  dt: add empty for_each_child_of_node, of_find_property
->  gpio/tegra: Convert to a platform device
->  gpio/tegra: Add device tree support
->  arm/tegra: Convert pinmux driver to a platform device
->  of: add property iteration helpers
->  arm/tegra: Add device tree support to pinmux driver
->  arm/tegra: board-dt: Remove dependency on non-dt pinmux functions
+In cache_alloc_refill(), after refilling from a partial slab, if the
+slab remains partial, it would be deleted from and then added again to
+the partial list. As the slab is the first element in the list before
+deletion, such behavior has no effect. This patch avoids touching the
+slab in this case.
 
+Signed-off-by: Zhao Jin <cronozhj@gmail.com>
+---
+ mm/slab.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-This is looking pretty sane to me.
+diff --git a/mm/slab.c b/mm/slab.c
+index 6d90a09..3469c6f 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3121,11 +3121,14 @@ retry:
+ 		check_slabp(cachep, slabp);
 
-Grant, how do you prefer to handle this, since it spans of/dt, gpio
-and tegra code? I can start a topic branch for Arnd to pull in for the
-tegra parts, would you prefer picking up the of helper functions on
-your own or is an ack from you and merge through the arm-soc tree
-easier?
+ 		/* move slabp to correct slabp list: */
+-		list_del(&slabp->list);
+-		if (slabp->free == BUFCTL_END)
++		if (slabp->free == BUFCTL_END) {
++			list_del(&slabp->list);
+ 			list_add(&slabp->list, &l3->slabs_full);
+-		else
++		}
++		else if (&slabp->list != l3->slabs_partial.next) {
++			list_del(&slabp->list);
+ 			list_add(&slabp->list, &l3->slabs_partial);
++		}
+ 	}
 
-
--Olof
+ must_grow:
+-- 
+1.7.4.1
