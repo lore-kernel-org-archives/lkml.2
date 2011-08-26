@@ -1,33 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab1HZApE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 20:45:04 -0400
-Received: from ozlabs.org ([203.10.76.45]:57140 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab1HZApD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 20:45:03 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Wang Sheng-Hui <shhuiw@gmail.com>, mst@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio.h: correct comment for struct virtio_driver
-In-Reply-To: <4E564845.3020209@gmail.com>
-References: <4E564845.3020209@gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Fri, 26 Aug 2011 09:16:31 +0930
-Message-ID: <87mxex2gx4.fsf@rustcorp.com.au>
+	id S1754499Ab1HZBBf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 21:01:35 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:18560 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab1HZBBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 21:01:33 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        =?UTF-8?q?=C3=89ric=20Piel?= <E.A.B.Piel@tudelft.nl>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
+Subject: [PATCH v3 0/7] Input: elantech: add support for newer hardware
+Date: Fri, 26 Aug 2011 09:03:04 +0800
+Message-Id: <1314320591-11551-1-git-send-email-jj_ding@emc.com.tw>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011 21:04:05 +0800, Wang Sheng-Hui <shhuiw@gmail.com> wrote:
-> The patch is against 3.0.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+Hi Lists,
 
-Thanks, applied!
+This is a series of patches to add support for newer generation of ELAN
+touchpad.
 
-Cheers,
-Rusty.
+Patches #1~#6 are essentially fixes and cleanups that pave the way for
+patch #7, which really adds code for v3 hardware.
+
+Any comments, suggestoins are welcome.
+
+Thank you.
+
+Changes since v1:
+- drop EC workaround patch.
+- add patch #2, make ST and MT have the same range, as Dmitry suggested.
+- add patch #4, remove ETP_EDGE_FUZZ_V2, as Éric suggested.
+- rename all packet checking functions so they are consistent.
+- some code cleanup, and don't report ABS_[XY] when fingers == 0, as Seth suggested.
+- add document for v3 debounce, and now check debounce in elantech_packet_check_v3.
+
+Changes since v2:
+- fix v3 hardware packet checking (reported by Seth and fix by Dmitry.)
+
+JJ Ding (7):
+  Input: elantech - correct x, y value range for v2 hardware
+  Input: elantech - get rid of ETP_2FT_* in elantech.h
+  Input: elantech - use firmware provided x, y ranges
+  Input: elantech - remove ETP_EDGE_FUZZ_V2
+  Input: elantech - packet checking for v2 hardware
+  Input: elantech - clean up elantech_init
+  Input: elantech - add v3 hardware support
+
+ Documentation/input/elantech.txt |  125 +++++++++++--
+ drivers/input/mouse/elantech.c   |  385 +++++++++++++++++++++++++++++++-------
+ drivers/input/mouse/elantech.h   |   35 ++--
+ 3 files changed, 442 insertions(+), 103 deletions(-)
+
+-- 
+1.7.4.1
+
