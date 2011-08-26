@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab1HZPhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:37:52 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38962 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab1HZPh3 (ORCPT
+	id S1754169Ab1HZPh2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:37:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58645 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab1HZPhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:37:29 -0400
+	Fri, 26 Aug 2011 11:37:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        <stable@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric B Munson <emunson@mgebm.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/6] perf symbols: Fix ppc64 SEGV in dso__load_sym with debuginfo files
-Date: Fri, 26 Aug 2011 12:37:07 -0300
-Message-Id: <1314373031-6687-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 6/6] perf record: Create events initially disabled and enable after init
+Date: Fri, 26 Aug 2011 12:37:11 -0300
+Message-Id: <1314373031-6687-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1314373031-6687-1-git-send-email-acme@infradead.org>
 References: <1314373031-6687-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+From: David Ahern <dsahern@gmail.com>
 
-64bit PowerPC debuginfo files have an empty function descriptor section.
-I hit a SEGV when perf tried to use this section for symbol resolution.
+perf-record currently creates events enabled. When doing a system wide
+collection (-a arg) this causes data collection for perf's
+initialization activities -- eg., perf_event__synthesize_threads().
 
-To fix this we need to check the section is valid and we can do this by
-checking for type SHT_PROGBITS.
+For some events (e.g., context switch S/W event or tracepoints like
+syscalls) perf's initialization causes a lot of events to be captured
+frequently generating "Check IO/CPU overload!" warnings on larger
+systems (e.g., 2 socket, quad core, hyperthreading).
 
-Cc: <stable@kernel.org>
+perf's initialization phase can be skipped by creating events
+disabled and then enabling them once the initialization is done.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Eric B Munson <emunson@mgebm.net>
-Link: http://lkml.kernel.org/r/20110824065242.895239970@samba.org
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1314289075-14706-1-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/builtin-record.c |    3 +++
+ tools/perf/util/evlist.c    |   13 +++++++++++++
+ tools/perf/util/evlist.h    |    1 +
+ 3 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 469c026..bb5d32f 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1111,6 +1111,8 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 6b0519f..f4c3fbe 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -161,6 +161,7 @@ static void config_attr(struct perf_evsel *evsel, struct perf_evlist *evlist)
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int track = !evsel->idx; /* only the first counter needs these */
+ 
++	attr->disabled		= 1;
+ 	attr->inherit		= !no_inherit;
+ 	attr->read_format	= PERF_FORMAT_TOTAL_TIME_ENABLED |
+ 				  PERF_FORMAT_TOTAL_TIME_RUNNING |
+@@ -671,6 +672,8 @@ static int __cmd_record(int argc, const char **argv)
+ 		}
  	}
  
- 	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
-+	if (opdshdr.sh_type != SHT_PROGBITS)
-+		opdsec = NULL;
- 	if (opdsec)
- 		opddata = elf_rawdata(opdsec, NULL);
++	perf_evlist__enable(evsel_list);
++
+ 	/*
+ 	 * Let the child rip
+ 	 */
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index c12bd47..72e9f48 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -113,6 +113,19 @@ void perf_evlist__disable(struct perf_evlist *evlist)
+ 	}
+ }
  
++void perf_evlist__enable(struct perf_evlist *evlist)
++{
++	int cpu, thread;
++	struct perf_evsel *pos;
++
++	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
++		list_for_each_entry(pos, &evlist->entries, node) {
++			for (thread = 0; thread < evlist->threads->nr; thread++)
++				ioctl(FD(pos, cpu, thread), PERF_EVENT_IOC_ENABLE);
++		}
++	}
++}
++
+ int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+ {
+ 	int nfds = evlist->cpus->nr * evlist->threads->nr * evlist->nr_entries;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index ce85ae9..f349150 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -54,6 +54,7 @@ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite);
+ void perf_evlist__munmap(struct perf_evlist *evlist);
+ 
+ void perf_evlist__disable(struct perf_evlist *evlist);
++void perf_evlist__enable(struct perf_evlist *evlist);
+ 
+ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
+ 					 struct cpu_map *cpus,
 -- 
 1.6.2.5
 
