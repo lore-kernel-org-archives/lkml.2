@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab1HZPh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 11:37:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58644 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956Ab1HZPhY (ORCPT
+	id S1753984Ab1HZPig (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:38:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38950 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab1HZPhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 11:37:24 -0400
+	Fri, 26 Aug 2011 11:37:25 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
@@ -14,13 +14,13 @@ Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3/6] perf symbols: /proc/kallsyms does not sort module symbols
-Date: Fri, 26 Aug 2011 12:37:08 -0300
-Message-Id: <1314373031-6687-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 5/6] perf symbols: Add some heuristics for choosing the best duplicate symbol
+Date: Fri, 26 Aug 2011 12:37:10 -0300
+Message-Id: <1314373031-6687-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1314373031-6687-1-git-send-email-acme@infradead.org>
 References: <1314373031-6687-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,97 +28,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Blanchard <anton@samba.org>
 
-kallsyms__parse assumes that /proc/kallsyms is sorted and sets the end
-of the previous symbol to the start of the current one.
+Try and pick the best symbol based on a few heuristics:
 
-Unfortunately module symbols are not sorted, eg:
-
-ffffffffa0081f30 t e1000_clean_rx_irq   [e1000e]
-ffffffffa00817a0 t e1000_alloc_rx_buffers       [e1000e]
-
-Some symbols end up with a negative length and others have a length
-larger than they should. This results in confusing perf output.
-
-We already have a function to fixup the end of zero length symbols so
-use that instead.
+-  Prefer a non weak symbol over a weak one
+-  Prefer a global symbol over a non global one
+-  Prefer a symbol with less underscores (idea taken from kallsyms.c)
+-  If all else fails, choose the symbol with the longest name
 
 Cc: Eric B Munson <emunson@mgebm.net>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110824065242.969681349@samba.org
+Link: http://lkml.kernel.org/r/20110824065243.161953371@samba.org
 Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |   33 +++++++++++----------------------
- 1 files changed, 11 insertions(+), 22 deletions(-)
+ tools/perf/util/symbol.c |   88 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 88 insertions(+), 0 deletions(-)
 
 diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index bb5d32f..f119e85 100644
+index 0d94ddb..870b3b8 100644
 --- a/tools/perf/util/symbol.c
 +++ b/tools/perf/util/symbol.c
-@@ -438,18 +438,11 @@ int kallsyms__parse(const char *filename, void *arg,
- 	char *line = NULL;
- 	size_t n;
- 	int err = -1;
--	u64 prev_start = 0;
--	char prev_symbol_type = 0;
--	char *prev_symbol_name;
- 	FILE *file = fopen(filename, "r");
- 
- 	if (file == NULL)
- 		goto out_failure;
- 
--	prev_symbol_name = malloc(KSYM_NAME_LEN);
--	if (prev_symbol_name == NULL)
--		goto out_close;
--
- 	err = 0;
- 
- 	while (!feof(file)) {
-@@ -480,24 +473,18 @@ int kallsyms__parse(const char *filename, void *arg,
- 			break;
- 		}
- 
--		if (prev_symbol_type) {
--			u64 end = start;
--			if (end != prev_start)
--				--end;
--			err = process_symbol(arg, prev_symbol_name,
--					     prev_symbol_type, prev_start, end);
--			if (err)
--				break;
--		}
--
--		memcpy(prev_symbol_name, symbol_name, len + 1);
--		prev_symbol_type = symbol_type;
--		prev_start = start;
-+		/*
-+		 * module symbols are not sorted so we add all
-+		 * symbols with zero length and rely on
-+		 * symbols__fixup_end() to fix it up.
-+		 */
-+		err = process_symbol(arg, symbol_name,
-+				     symbol_type, start, start);
-+		if (err)
-+			break;
+@@ -86,6 +86,92 @@ bool symbol_type__is_a(char symbol_type, enum map_type map_type)
  	}
+ }
  
--	free(prev_symbol_name);
- 	free(line);
--out_close:
- 	fclose(file);
- 	return err;
- 
-@@ -703,6 +690,8 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
++static int prefix_underscores_count(const char *str)
++{
++	const char *tail = str;
++
++	while (*tail == '_')
++		tail++;
++
++	return tail - str;
++}
++
++#define SYMBOL_A 0
++#define SYMBOL_B 1
++
++static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
++{
++	s64 a;
++	s64 b;
++
++	/* Prefer a symbol with non zero length */
++	a = syma->end - syma->start;
++	b = symb->end - symb->start;
++	if ((b == 0) && (a > 0))
++		return SYMBOL_A;
++	else if ((a == 0) && (b > 0))
++		return SYMBOL_B;
++
++	/* Prefer a non weak symbol over a weak one */
++	a = syma->binding == STB_WEAK;
++	b = symb->binding == STB_WEAK;
++	if (b && !a)
++		return SYMBOL_A;
++	if (a && !b)
++		return SYMBOL_B;
++
++	/* Prefer a global symbol over a non global one */
++	a = syma->binding == STB_GLOBAL;
++	b = symb->binding == STB_GLOBAL;
++	if (a && !b)
++		return SYMBOL_A;
++	if (b && !a)
++		return SYMBOL_B;
++
++	/* Prefer a symbol with less underscores */
++	a = prefix_underscores_count(syma->name);
++	b = prefix_underscores_count(symb->name);
++	if (b > a)
++		return SYMBOL_A;
++	else if (a > b)
++		return SYMBOL_B;
++
++	/* If all else fails, choose the symbol with the longest name */
++	if (strlen(syma->name) >= strlen(symb->name))
++		return SYMBOL_A;
++	else
++		return SYMBOL_B;
++}
++
++static void symbols__fixup_duplicate(struct rb_root *symbols)
++{
++	struct rb_node *nd;
++	struct symbol *curr, *next;
++
++	nd = rb_first(symbols);
++
++	while (nd) {
++		curr = rb_entry(nd, struct symbol, rb_node);
++again:
++		nd = rb_next(&curr->rb_node);
++		next = rb_entry(nd, struct symbol, rb_node);
++
++		if (!nd)
++			break;
++
++		if (curr->start != next->start)
++			continue;
++
++		if (choose_best_symbol(curr, next) == SYMBOL_A) {
++			rb_erase(&next->rb_node, symbols);
++			goto again;
++		} else {
++			nd = rb_next(&curr->rb_node);
++			rb_erase(&curr->rb_node, symbols);
++		}
++	}
++}
++
+ static void symbols__fixup_end(struct rb_root *symbols)
+ {
+ 	struct rb_node *nd, *prevnd = rb_first(symbols);
+@@ -692,6 +778,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename,
  	if (dso__load_all_kallsyms(dso, filename, map) < 0)
  		return -1;
  
-+	symbols__fixup_end(&dso->symbols[map->type]);
-+
++	symbols__fixup_duplicate(&dso->symbols[map->type]);
+ 	symbols__fixup_end(&dso->symbols[map->type]);
+ 
  	if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
- 		dso->symtab_type = SYMTAB__GUEST_KALLSYMS;
- 	else
+@@ -1269,6 +1356,7 @@ new_symbol:
+ 	 * For misannotated, zeroed, ASM function sizes.
+ 	 */
+ 	if (nr > 0) {
++		symbols__fixup_duplicate(&dso->symbols[map->type]);
+ 		symbols__fixup_end(&dso->symbols[map->type]);
+ 		if (kmap) {
+ 			/*
 -- 
 1.6.2.5
 
