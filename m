@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab1HZRBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 13:01:45 -0400
-Received: from tac.ki.iif.hu ([193.6.222.43]:43320 "EHLO tac.ki.iif.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753045Ab1HZRBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 13:01:43 -0400
-From: Ferenc Wagner <wferi@niif.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kashyap\,  Desai" <kashyap.desai@lsi.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [SCSI] fusion: ensure NUL-termination of MptCallbacksName elements
-References: <cd21dfb714e3a89aadd8eda1fda1748dec9ed7aa.1314276422.git.wferi@niif.hu>
-	<20110825145915.abde72e2.akpm@linux-foundation.org>
-Date: Fri, 26 Aug 2011 19:01:33 +0200
-In-Reply-To: <20110825145915.abde72e2.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Thu, 25 Aug 2011 14:59:15 -0700")
-Message-ID: <87k4a0gl8y.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752435Ab1HZRJj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 13:09:39 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59845 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab1HZRJi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 13:09:38 -0400
+Subject: Re: [PATCH 05/13] mm: convert shrinkers to use new API
+From: Wanlong Gao <wanlong.gao@gmail.com>
+Reply-To: wanlong.gao@gmail.com
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, khlebnikov@openvz.org
+In-Reply-To: <1314089786-20535-6-git-send-email-david@fromorbit.com>
+References: <1314089786-20535-1-git-send-email-david@fromorbit.com>
+	 <1314089786-20535-6-git-send-email-david@fromorbit.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: FNST
+Date: Sat, 27 Aug 2011 01:09:30 +0800
+Message-ID: <1314378570.1987.8.camel@Allen>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Tue, 2011-08-23 at 18:56 +1000, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> Modify shrink_slab() to use the new .count_objects/.scan_objects API
+> and implement the callouts for all the existing shrinkers.
 
-> On Thu, 25 Aug 2011 14:44:57 +0200
-> Ferenc Wagner <wferi@niif.hu> wrote:
->
->> Signed-off-by: Ferenc Wagner <wferi@niif.hu>
->
-> The lack of a changelog is a hint that the patch needed a changelog!
+> +static long
+> +cifs_idmap_shrinker_scan(struct shrinker *shrink, struct shrink_control *sc)
+>  {
+> -	int nr_to_scan = sc->nr_to_scan;
+> -	int nr_del = 0;
+> -	int nr_rem = 0;
+>  	struct rb_root *root;
+> +	long freed;
+>  
+>  	root = &uidtree;
+>  	spin_lock(&siduidlock);
+> -	shrink_idmap_tree(root, nr_to_scan, &nr_rem, &nr_del);
+> +	freed = shrink_idmap_tree(root, sc->nr_to_scan);
+>  	spin_unlock(&siduidlock);
+>  
+>  	root = &gidtree;
+>  	spin_lock(&sidgidlock);
+> -	shrink_idmap_tree(root, nr_to_scan, &nr_rem, &nr_del);
+> +	freed += shrink_idmap_tree(root, sc->nr_to_scan);
+>  	spin_unlock(&sidgidlock);
+>  
+> -	return nr_rem;
+> +	return freed;
+> +}
+> +
+> +/*
+> + * This still abuses the nr_to_scan == 0 trick to get the common code just to
+> + * count objects. There neds to be an external count of the objects in the
 
-Sorry, I thought repeating the subject wasn't useful.  I could also talk
-a little about removing a magic number, but that's about it...
+			  ^^^^^?
+Hi Dave:
+Great work. a bit comments.
+Thanks
+-Wanlong Gao
 
-Concerning the checkpatch fixup patch, I decided that mptbase.c
-contained overfull lines already, so I'd better keep these on a single
-line.  Of course I don't argue for this the least.
 
->> diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
->> index 7956a10..eb906e2 100644
->> --- a/drivers/message/fusion/mptbase.c
->> +++ b/drivers/message/fusion/mptbase.c
->> @@ -113,7 +113,7 @@ module_param(mpt_fwfault_debug, int, 0600);
->>  MODULE_PARM_DESC(mpt_fwfault_debug,
->>  		 "Enable detection of Firmware fault and halt Firmware on fault - (default=0)");
->>  
->> -static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][50];
->> +static char	MptCallbacksName[MPT_MAX_PROTOCOL_DRIVERS][MPT_MAX_CALLBACKNAME_LEN+1];
->>  
->>  #ifdef MFCNT
->>  static int mfcounter = 0;
->> @@ -656,8 +656,7 @@ mpt_register(MPT_CALLBACK cbfunc, MPT_DRIVER_CLASS dclass, char *func_name)
->>  			MptDriverClass[cb_idx] = dclass;
->>  			MptEvHandlers[cb_idx] = NULL;
->>  			last_drv_idx = cb_idx;
->> -			memcpy(MptCallbacksName[cb_idx], func_name,
->> -			    strlen(func_name) > 50 ? 50 : strlen(func_name));
->> +			strlcpy(MptCallbacksName[cb_idx], func_name, MPT_MAX_CALLBACKNAME_LEN+1);
->>  			break;
->>  		}
->>  	}
->> diff --git a/drivers/message/fusion/mptbase.h b/drivers/message/fusion/mptbase.h
->> index fe90233..c10416d 100644
->> --- a/drivers/message/fusion/mptbase.h
->> +++ b/drivers/message/fusion/mptbase.h
->> @@ -89,6 +89,7 @@
->>   */
->>  #define MPT_MAX_ADAPTERS		18
->>  #define MPT_MAX_PROTOCOL_DRIVERS	16
->> +#define MPT_MAX_CALLBACKNAME_LEN	49
->>  #define MPT_MAX_BUS			1	/* Do not change */
->>  #define MPT_MAX_FC_DEVICES		255
->>  #define MPT_MAX_SCSI_DEVICES		16
->
-> Does the patch fix some real-world observed problem?  If so, please
-> fully describe it.
-
-Not at all, I just stumbled upon this while pondering over
-https://bugzilla.kernel.org/show_bug.cgi?id=26692 and thought this could
-be made better.  Actually, I can't see why copying the callback name is
-necessary instead of simply storing a pointer to it (just like to the
-callback function itself), but that goes beyond my scope, I'm afraid.
-
-I'll send a v2 of this patch in a couple of days with shorter lines and
-longer description.  Please all feel free to express opinions about the
-name of the constant, the +1s and/or the spaces around the binop, etc. :)
--- 
-Thanks,
-Feri.
