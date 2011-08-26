@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab1H0O4o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:56:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46543 "EHLO mx2.suse.de"
+	id S1753816Ab1H0O4u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:56:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46561 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513Ab1H0O4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:56:40 -0400
+	id S1753755Ab1H0O4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:56:46 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 15:04:20 2011
-Message-Id: <20110826220420.061085648@clark.kroah.org>
+Message-Id: <20110826220420.259061638@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 15:03:35 -0700
+Date: Fri, 26 Aug 2011 15:03:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Timo Warns <warns@pre-sense.de>
-Subject: [12/20] befs: Validate length of long symbolic links.
+        Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [14/20] ALSA: ac97: Add HP Compaq dc5100 SFF(PT003AW) to Headphone Jack Sense whitelist
 In-Reply-To: <20110826220431.GA15382@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Warns <Warns@pre-sense.de>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 338d0f0a6fbc82407864606f5b64b75aeb3c70f2 upstream.
+commit eade7b281c9fc18401b989c77d5e5e660b25a3b7 upstream.
 
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+BugLink: https://bugs.launchpad.net/bugs/826081
+
+The original reporter needs 'Headphone Jack Sense' enabled to have
+audible audio, so add his PCI SSID to the whitelist.
+
+Reported-and-tested-by: Muhammad Khurram Khan
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/befs/linuxvfs.c |   23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+ sound/pci/ac97/ac97_patch.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/befs/linuxvfs.c
-+++ b/fs/befs/linuxvfs.c
-@@ -469,17 +469,22 @@ befs_follow_link(struct dentry *dentry,
- 		befs_data_stream *data = &befs_ino->i_data.ds;
- 		befs_off_t len = data->size;
- 
--		befs_debug(sb, "Follow long symlink");
--
--		link = kmalloc(len, GFP_NOFS);
--		if (!link) {
--			link = ERR_PTR(-ENOMEM);
--		} else if (befs_read_lsymlink(sb, data, link, len) != len) {
--			kfree(link);
--			befs_error(sb, "Failed to read entire long symlink");
-+		if (len == 0) {
-+			befs_error(sb, "Long symlink with illegal length");
- 			link = ERR_PTR(-EIO);
- 		} else {
--			link[len - 1] = '\0';
-+			befs_debug(sb, "Follow long symlink");
-+
-+			link = kmalloc(len, GFP_NOFS);
-+			if (!link) {
-+				link = ERR_PTR(-ENOMEM);
-+			} else if (befs_read_lsymlink(sb, data, link, len) != len) {
-+				kfree(link);
-+				befs_error(sb, "Failed to read entire long symlink");
-+				link = ERR_PTR(-EIO);
-+			} else {
-+				link[len - 1] = '\0';
-+			}
- 		}
- 	} else {
- 		link = befs_ino->i_data.symlink;
+--- a/sound/pci/ac97/ac97_patch.c
++++ b/sound/pci/ac97/ac97_patch.c
+@@ -1915,6 +1915,7 @@ static unsigned int ad1981_jacks_whiteli
+ 	0x103c0944, /* HP nc6220 */
+ 	0x103c0934, /* HP nc8220 */
+ 	0x103c006d, /* HP nx9105 */
++	0x103c300d, /* HP Compaq dc5100 SFF(PT003AW) */
+ 	0x17340088, /* FSC Scenic-W */
+ 	0 /* end */
+ };
 
 
