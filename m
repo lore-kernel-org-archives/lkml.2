@@ -1,170 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab1HZCQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 22:16:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58387 "EHLO mga01.intel.com"
+	id S1754998Ab1HZCik (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 22:38:40 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:47318 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754814Ab1HZCQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 22:16:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,283,1312182000"; 
-   d="scan'208";a="45202657"
-Date: Fri, 26 Aug 2011 10:16:48 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Linux Netdev List <netdev@vger.kernel.org>
-Subject: Re: slow performance on disk/network i/o full speed after
- drop_caches
-Message-ID: <20110826021648.GA19529@localhost>
-References: <4E5494D4.1050605@profihost.ag>
- <CAOJsxLEFYW0eDbXQ0Uixf-FjsxHZ_1nmnovNx1CWj=m-c-_vJw@mail.gmail.com>
- <4E54BDCF.9020504@profihost.ag>
- <20110824093336.GB5214@localhost>
- <4E560F2A.1030801@profihost.ag>
+	id S1754866Ab1HZCih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 22:38:37 -0400
+Date: Thu, 25 Aug 2011 19:38:18 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, fweisbec@gmail.com,
+        matthltc@us.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH 3/6] cgroup: introduce cgroup_taskset and use it in
+ subsys->can_attach(), cancel_attach() and attach()
+Message-ID: <20110826023818.GC3457@count0.beaverton.ibm.com>
+References: <1314312192-26885-1-git-send-email-tj@kernel.org>
+ <1314312192-26885-4-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E560F2A.1030801@profihost.ag>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1314312192-26885-4-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
+On Fri, Aug 26, 2011 at 12:43:09AM +0200, Tejun Heo wrote:
+> Currently, there's no way to pass multiple tasks to cgroup_subsys
+> methods necessitating the need for separate per-process and per-task
+> methods.  This patch introduces cgroup_taskset which can be used to
+> pass multiple tasks and their associated cgroups to cgroup_subsys
+> methods.
 
-> Here is the data you requested:
-> 
-> root@server1015-han:~# grep . /sys/devices/system/node/node*/vmstat
-> /sys/devices/system/node/node0/vmstat:nr_written 5546561
-> /sys/devices/system/node/node0/vmstat:nr_dirtied 5572497
-> /sys/devices/system/node/node1/vmstat:nr_written 3936
-> /sys/devices/system/node/node1/vmstat:nr_dirtied 4190
+This will be the third iterator-ish pattern in the cgroup code.
+It's not your fault but it does seem a bit much to have:
 
-Ah you are running an older kernel that didn't show all the vmstat
-numbers. But still it's revealing that node 0 is used heavily and node
-1 is almost idle. So I won't be surprised to see most free pages lie
-in node 1.
+	1) When we need to iterate over all tasks in the cgroup and
+	don't mind holding the css set lock:
+		void cgroup_iter_start(cgroup, iterator)
+		task cgroup_iter_next(cgroup, iterator)
+		void cgroup_iter_end(cgroup, iterator)
 
-> modified it a little bit:
-> ~# while [ true ]; do ps -eo 
-> user,pid,tid,class,rtprio,ni,pri,psr,pcpu,vsz,rss,pmem,stat,wchan:28,cmd 
-> | grep scp | grep -v grep; sleep 1; done
-> 
-> root     12409 12409 TS       -   0  19   0 59.8  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
+	2) For subsystem methods when we're iterating over a subset of
+	tasks that may or may not be in the cgroup (e.g. for can_attach)
+	-- use cgroup_tasksets:
+		task cgroup_taskset_first(tset)
+		task cgroup_taskset_next(tset)
 
-It's mostly doing poll() waits. There must be some dependency on
-something other to make progress. Would you post the full ps output
-for all tasks, and even better, run
+	3) An iterator over all the tasks which doesn't hold the css set
+	lock:
+		struct cgroup_scanner {
+			struct cgroup *cg;
+			int (*test_task)(struct task_struct *p,
+					struct cgroup_scanner *scan);
+			void (*process_task)(struct task_struct *p,
+					struct cgroup_scanner *scan);
+			struct ptr_heap *heap;
+			void *data;
+		};
+	This is only used in cpuset code so far. Are other cgroup
+	patches planning on making use of it?
 
-        echo t > /proc/sysrq-trigger
+Is there a sane way to merge all this?
 
-To dump the kernel stacks?
+Perhaps we could drop the iterator interfaces in 1) and 2) and replace
+it with:
 
-Thanks,
-Fengguang
+		tset cgroup_taskset_from_cgroup(cgroup)
 
+which would grab the css set lock to construct the tset from the given
+cgroup -- essentially inlining the current iterator code into a single
+function.
 
-> root     12409 12409 TS       -   0  19   0 64.0  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   0 67.7  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 70.6  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 73.5  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 76.0  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 78.2  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 80.0  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 80.9  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   2 76.7  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 75.6  42136  1724  0.0 Ds 
-> pipe_read                    scp -t /tmp/
-> root     12409 12409 TS       -   0  19   0 76.0  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 75.2  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 76.6  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 77.9  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 79.0  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 72.8  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   0 73.0  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   0 73.8  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 74.3  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 73.4  42136  1724  0.0 Ss 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 71.3  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 71.9  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   0 72.7  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   3 73.5  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   3 74.4  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   3 75.2  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   0 76.0  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 76.6  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 74.8  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 73.2  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   1 73.9  42136  1724  0.0 Rs 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   0 72.4  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 72.0  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 72.5  42136  1724  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 72.9  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12409 12409 TS       -   0  19   8 73.5  42136  1724  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1  0.0  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 23.0  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 49.5  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   2 63.3  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 71.5  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 77.4  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 70.3  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 73.1  42136  1728  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12566 12566 TS       -   0  19   0 65.7  42136  1728  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 61.2  42136  1728  0.0 Ss 
-> -                            scp -t /tmp/
-> root     12566 12566 TS       -   0  19   1 63.7  42136  1728  0.0 Rs 
-> -                            scp -t /tmp/
-> root     12636 12636 TS       -   0  19   8  0.0  42136  1728  0.0 Ss 
-> poll_schedule_timeout        scp -t /tmp/
-> 
-> 
-> Stefan
+Of course this would eliminate the restriction that all the tasks in the
+taskset are part of the same thread group; that would only be true for
+those passed as parameters to the subsystem methods.
+
+Cheers,
+	-Matt Helsley
