@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1HZWfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 18:35:38 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43459 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751194Ab1HZWfg (ORCPT
+	id S1752243Ab1HZWst (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 18:48:49 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34473 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab1HZWss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 18:35:36 -0400
-X-Sasl-enc: Ut8IWdEPjKdAVU2VXX23CkRgsvQM+0TQTGHK4i8OU850 1314398136
-Date: Fri, 26 Aug 2011 15:35:19 -0700
-From: Greg KH <greg@kroah.com>
+	Fri, 26 Aug 2011 18:48:48 -0400
+Subject: Re: [PATCH 2/3] broadcast-tick: Move oneshot broadcast mask to per
+ cpu variables
+From: Eric Dumazet <eric.dumazet@gmail.com>
 To: Andi Kleen <andi@firstfloor.org>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-Message-ID: <20110826223519.GA22607@kroah.com>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
- <20110826214329.GA6325@kroah.com>
- <20110826222544.GV25996@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110826222544.GV25996@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        tim.c.chen@linux.intel.com, Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <1314397924-10236-2-git-send-email-andi@firstfloor.org>
+References: <1314397924-10236-1-git-send-email-andi@firstfloor.org>
+	 <1314397924-10236-2-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 27 Aug 2011 00:48:42 +0200
+Message-ID: <1314398922.3036.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 12:25:44AM +0200, Andi Kleen wrote:
-> > > wget ftp://ftp.kernel.org/pub/linux/kernel/people/ak/uname26/uname26.c
-> > > gcc -o uname26 uname26.c
-> > > ./uname26 program
-> > 
-> > I hate to ask, but can you put a proper copyright and license on this
-> > file so that distros can distribute it?
+Le vendredi 26 août 2011 à 15:32 -0700, Andi Kleen a écrit :
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> I assumed it's too trivial for that.
+> Avoid a global cache line hotspot in the oneshot cpu mask. Maintain
+> this information in per cpu variables instead.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
 
-Lawyers never assume that :)
+>  
+> -/* FIXME: use cpumask_var_t. */
+> -static DECLARE_BITMAP(tick_broadcast_oneshot_mask, NR_CPUS);
+> +struct broadcast_cpu_state {
+> +	int need_oneshot;
+> +} ____cacheline_aligned;
+> +static DEFINE_PER_CPU(struct broadcast_cpu_state, state);
 
-> Anyways I put a GPL license on it now.
+static DEFINE_PER_CPU_ALIGNED(...)
 
-Thanks, much appreciated.
+It avoids adding an alignment requirement on .data..percpu
 
-greg k-h
+
+
