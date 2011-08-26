@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab1H0O6x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:58:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46985 "EHLO mx2.suse.de"
+	id S1754985Ab1H0O6j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:58:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46898 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053Ab1H0O6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:58:50 -0400
+	id S1754771Ab1H0O6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:58:36 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:55 2011
-Message-Id: <20110826215055.657463305@clark.kroah.org>
+Message-Id: <20110826215055.355019099@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:44 -0700
+Date: Fri, 26 Aug 2011 14:49:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [27/35] x86-32, vdso: On system call restart after SYSENTER, use int $0x80
+        Jan Beulich <jbeulich@novell.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [24/35] xen/x86: replace order-based range checking of M2P table by linear one
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +26,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Jan Beulich <JBeulich@novell.com>
 
-commit 7ca0758cdb7c241cb4e0490a8d95f0eb5b861daf upstream.
+commit ccbcdf7cf1b5f6c6db30d84095b9c6c53043af55 upstream.
 
-When we enter a 32-bit system call via SYSENTER or SYSCALL, we shuffle
-the arguments to match the int $0x80 calling convention.  This was
-probably a design mistake, but it's what it is now.  This causes
-errors if the system call as to be restarted.
+The order-based approach is not only less efficient (requiring a shift
+and a compare, typical generated code looking like this
 
-For SYSENTER, we have to invoke the instruction from the vdso as the
-return address is hardcoded.  Accordingly, we can simply replace the
-jump in the vdso with an int $0x80 instruction and use the slower
-entry point for a post-restart.
+	mov	eax, [machine_to_phys_order]
+	mov	ecx, eax
+	shr	ebx, cl
+	test	ebx, ebx
+	jnz	...
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/CA%2B55aFztZ=r5wa0x26KJQxvZOaQq8s2v3u50wCyJcA-Sc4g8gQ@mail.gmail.com
+whereas a direct check requires just a compare, like in
+
+	cmp	ebx, [machine_to_phys_nr]
+	jae	...
+
+), but also slightly dangerous in the 32-on-64 case - the element
+address calculation can wrap if the next power of two boundary is
+sufficiently far away from the actual upper limit of the table, and
+hence can result in user space addresses being accessed (with it being
+unknown what may actually be mapped there).
+
+Additionally, the elimination of the mistaken use of fls() here (should
+have been __fls()) fixes a latent issue on x86-64 that would trigger
+if the code was run on a system with memory extending beyond the 44-bit
+boundary.
+
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+[v1: Based on Jeremy's feedback]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/vdso/vdso32/sysenter.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/xen/page.h |    4 ++--
+ arch/x86/xen/enlighten.c        |    4 ++--
+ arch/x86/xen/mmu.c              |   12 ++++++++----
+ 3 files changed, 12 insertions(+), 8 deletions(-)
 
---- a/arch/x86/vdso/vdso32/sysenter.S
-+++ b/arch/x86/vdso/vdso32/sysenter.S
-@@ -43,7 +43,7 @@ __kernel_vsyscall:
- 	.space 7,0x90
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -39,7 +39,7 @@ typedef struct xpaddr {
+     ((unsigned long)((u64)CONFIG_XEN_MAX_DOMAIN_MEMORY * 1024 * 1024 * 1024 / PAGE_SIZE))
  
- 	/* 14: System call restart point is here! (SYSENTER_RETURN-2) */
--	jmp .Lenter_kernel
-+	int $0x80
- 	/* 16: System call normal return point is here! */
- VDSO32_SYSENTER_RETURN:	/* Symbol used by sysenter.c via vdso32-syms.h */
- 	pop %ebp
+ extern unsigned long *machine_to_phys_mapping;
+-extern unsigned int   machine_to_phys_order;
++extern unsigned long  machine_to_phys_nr;
+ 
+ extern unsigned long get_phys_to_machine(unsigned long pfn);
+ extern bool set_phys_to_machine(unsigned long pfn, unsigned long mfn);
+@@ -87,7 +87,7 @@ static inline unsigned long mfn_to_pfn(u
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return mfn;
+ 
+-	if (unlikely((mfn >> machine_to_phys_order) != 0)) {
++	if (unlikely(mfn >= machine_to_phys_nr)) {
+ 		pfn = ~0;
+ 		goto try_override;
+ 	}
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -77,8 +77,8 @@ EXPORT_SYMBOL_GPL(xen_domain_type);
+ 
+ unsigned long *machine_to_phys_mapping = (void *)MACH2PHYS_VIRT_START;
+ EXPORT_SYMBOL(machine_to_phys_mapping);
+-unsigned int   machine_to_phys_order;
+-EXPORT_SYMBOL(machine_to_phys_order);
++unsigned long  machine_to_phys_nr;
++EXPORT_SYMBOL(machine_to_phys_nr);
+ 
+ struct start_info *xen_start_info;
+ EXPORT_SYMBOL_GPL(xen_start_info);
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1626,15 +1626,19 @@ static void __init xen_map_identity_earl
+ void __init xen_setup_machphys_mapping(void)
+ {
+ 	struct xen_machphys_mapping mapping;
+-	unsigned long machine_to_phys_nr_ents;
+ 
+ 	if (HYPERVISOR_memory_op(XENMEM_machphys_mapping, &mapping) == 0) {
+ 		machine_to_phys_mapping = (unsigned long *)mapping.v_start;
+-		machine_to_phys_nr_ents = mapping.max_mfn + 1;
++		machine_to_phys_nr = mapping.max_mfn + 1;
+ 	} else {
+-		machine_to_phys_nr_ents = MACH2PHYS_NR_ENTRIES;
++		machine_to_phys_nr = MACH2PHYS_NR_ENTRIES;
+ 	}
+-	machine_to_phys_order = fls(machine_to_phys_nr_ents - 1);
++#ifdef CONFIG_X86_32
++	if ((machine_to_phys_mapping + machine_to_phys_nr)
++	    < machine_to_phys_mapping)
++		machine_to_phys_nr = (unsigned long *)NULL
++				     - machine_to_phys_mapping;
++#endif
+ }
+ 
+ #ifdef CONFIG_X86_64
 
 
