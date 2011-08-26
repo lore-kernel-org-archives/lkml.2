@@ -1,528 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab1HZMfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:35:21 -0400
-Received: from shutemov.name ([188.40.19.243]:37893 "EHLO shutemov.name"
+	id S1753889Ab1HZMjK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:39:10 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:42853 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab1HZMfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:35:18 -0400
-X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 08:35:17 EDT
-Date: Fri, 26 Aug 2011 15:28:51 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>, containers@lists.osdl.org,
-        Andi Kleen <andi@firstfloor.org>, Nathan Lynch <ntl@pobox.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, Zan Lynx <zlynx@acm.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110826122851.GA25853@shutemov.name>
-References: <20110824085329.GL29452@sun>
- <20110824111806.GA7191@albatros>
- <20110825082944.GH10030@sun>
- <20110825170147.GM2803@mtj.dyndns.org>
- <20110825170705.GA6387@sun>
- <20110825205426.GO2803@mtj.dyndns.org>
- <20110825211213.GP2803@mtj.dyndns.org>
- <20110825213459.GA1929@sun>
- <20110825213931.GR2803@mtj.dyndns.org>
- <20110826112943.GI3903@sun>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110826112943.GI3903@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752603Ab1HZMjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 08:39:06 -0400
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+In-Reply-To: <CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	 <20110822125355.bb01d76b.rdunlap@xenotime.net>
+	 <CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+	 <20110822174958.73dd96c7.rdunlap@xenotime.net>
+	 <1314065358.3225.44.camel@localhost.localdomain>
+	 <20110823164035.ca28fdc6.rdunlap@xenotime.net>
+	 <CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Aug 2011 08:39:02 -0400
+Message-ID: <1314362342.3224.19.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 03:29:44PM +0400, Cyrill Gorcunov wrote:
-> On Thu, Aug 25, 2011 at 11:39:31PM +0200, Tejun Heo wrote:
-> ...
-> > 
-> > Why would you need an extra reference?  All these data structures are
-> > created dynamically on access and dentry is always available while any
-> > operation on the inode is in progress so it's guaranteed to be
-> > available and there's no reason to diddle with reference count.
-> > Anyways, we can deal with this optimization later, I think.
-> > 
+On Tue, 2011-08-23 at 22:10 -0400, Arnaud Lacombe wrote:
+> Hi,
 > 
-> Hi, thanks a huge for all feedback! Mind to give the below one a
-> review shot? Hope this time I've addressed all concerns. Thanks.
-> (please check map_files_d_revalidate() precisely). Complains are
-> welcome, as always.
+> On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > I think that you are going to need to do something like Arnaud suggested
+> > and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
+> > unless you can convince someone that this is a kconfig bug.
+> >
+> dammit... I guess there is...
 > 
-> 	Cyrill
-> ---
-> fs, proc: Introduce the /proc/<pid>/map_files/ directory v4
+> If you consider the following Kconfig:
 > 
-> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-> one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
-> the target is the file. Opening a symlink results in a file that point exactly
-> to the same inode as them vma's one.
+> config MOD
+>         bool
+>         default y
+>         option modules
 > 
-> For example the ls -l of some arbitrary /proc/<pid>/map_files/
+> config EXPERIMENTAL
+>         bool
+>         default y
 > 
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
->  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
+> menuconfig A
+>         tristate "A"
+>         depends on EXPERIMENTAL
 > 
-> This helps checkpointing process in three ways:
+> config B
+>         bool "B"
 > 
-> 1. When dumping a task mappings we do know exact file that is mapped by particular
->    region. We do this by opening /proc/pid/map_files/address symlink the way we do
->    with file descriptors.
+> config B0
+>         bool
 > 
-> 2. This also helps in determining which anonymous shared mappings are shared with
->    each other by comparing the inodes of them.
+> config C
+>         tristate "C"
+>         depends on B
 > 
-> 3. When restoring a set of process in case two of them has a mapping shared, we map
->    the memory by the 1st one and then open its /proc/pid/map_files/address file and
->    map it by the 2nd task.
+> config C0
+>         tristate
 > 
-> v2: (spotted by Tejun Heo)
->  - /proc/<pid>/mfd changed to /proc/<pid>/map_files
->  - find_vma helper is used instead of linear search
->  - routines are re-grouped
->  - d_revalidate is set now
+> config D
+>         boolean "D"
+>         depends on A && B
+>         select C
+>         select C0
 > 
-> v3:
->  - d_revalidate reworked, now it should drops no longer valid dentries (Tejun Heo)
->  - ptrace_may_access added into proc_map_files_lookup (Vasiliy Kulikov)
->  - because of filldir (which eventually might need to lock mmap_sem)
->    the proc_map_files_readdir() was reworked to call proc_fill_cache()
->    with unlocked mmap_sem
+> config E
+>         tristate "E"
 > 
-> v4: (feedback by Tejun Heo and Vasiliy Kulikov)
->  - instead of saving data in proc_inode we rather make a dentry name
->    to keep both vm_start and vm_end accordingly
->  - d_revalidate now honor task credentials
+> config F
+>         tristate "F"
+>         select E
 > 
-> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  fs/proc/base.c          |  326 +++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/proc_fs.h |    2 
->  2 files changed, 321 insertions(+), 7 deletions(-)
+> B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
+> (TCG_TPM) allows to set D (EVM), which will select (C). Now,
+> menuconfig highlight the problem very well. Proceeding as following
+> A=m, B=y, C=m, E=y, F=y, we ends up having:
 > 
-> Index: linux-2.6.git/fs/proc/base.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/proc/base.c
-> +++ linux-2.6.git/fs/proc/base.c
-> @@ -165,7 +165,7 @@ static int get_task_root(struct task_str
->  	return result;
->  }
->  
-> -static int proc_cwd_link(struct inode *inode, struct path *path)
-> +static int proc_cwd_link(struct dentry *dentry, struct inode *inode, struct path *path)
+>  <M> A  --->
+>  [*] B
+>  {M} C
+>  [*] D
+>  -*- E
+>  <*> F
+> 
+> which translate in the following config:
+> 
+> CONFIG_MOD=y
+> CONFIG_EXPERIMENTAL=y
+> CONFIG_A=m
+> CONFIG_B=y
+> CONFIG_C=m
+> CONFIG_C0=m
+> CONFIG_D=y
+> CONFIG_E=y
+> CONFIG_F=y
+> 
+> I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
+> If you remove D's dependency on 'A', everything works as expected. So
+> it would seem direct dependency state influence the state of reverse
+> dependencies...
+> 
+> Will have a look...
+> 
+>  - Arnaud
 
-Put proc_get_link() change in separate patch?
+Thanks for looking into this!  Instead of changing 'TCG_TPM' to
+'TCG_TPM=y', the dependency should be on 'TRUSTED_KEYS=y'.  Then when
+I've refactored ENCRYPTED_KEYS, removing the ENCRYPTED_KEYS dependency
+on TRUSTED_KEYS, the EVM dependency would be '(TRUSTED_KEYS=y ||
+TRUSTED_KEYS=n)'.  Do you want a temporary fix for now?
 
->  {
->  	struct task_struct *task = get_proc_task(inode);
->  	int result = -ENOENT;
-> @@ -182,7 +182,7 @@ static int proc_cwd_link(struct inode *i
->  	return result;
->  }
->  
-> -static int proc_root_link(struct inode *inode, struct path *path)
-> +static int proc_root_link(struct dentry *dentry, struct inode *inode, struct path *path)
->  {
->  	struct task_struct *task = get_proc_task(inode);
->  	int result = -ENOENT;
-> @@ -1580,7 +1580,7 @@ static const struct file_operations proc
->  	.release	= single_release,
->  };
->  
-> -static int proc_exe_link(struct inode *inode, struct path *exe_path)
-> +static int proc_exe_link(struct dentry *dentry, struct inode *inode, struct path *exe_path)
->  {
->  	struct task_struct *task;
->  	struct mm_struct *mm;
-> @@ -1616,7 +1616,7 @@ static void *proc_pid_follow_link(struct
->  	if (!proc_fd_access_allowed(inode))
->  		goto out;
->  
-> -	error = PROC_I(inode)->op.proc_get_link(inode, &nd->path);
-> +	error = PROC_I(inode)->op.proc_get_link(dentry, inode, &nd->path);
->  out:
->  	return ERR_PTR(error);
->  }
-> @@ -1655,7 +1655,7 @@ static int proc_pid_readlink(struct dent
->  	if (!proc_fd_access_allowed(inode))
->  		goto out;
->  
-> -	error = PROC_I(inode)->op.proc_get_link(inode, &path);
-> +	error = PROC_I(inode)->op.proc_get_link(dentry, inode, &path);
->  	if (error)
->  		goto out;
->  
-> @@ -1947,7 +1947,7 @@ static int proc_fd_info(struct inode *in
->  	return -ENOENT;
->  }
->  
-> -static int proc_fd_link(struct inode *inode, struct path *path)
-> +static int proc_fd_link(struct dentry *dentry, struct inode *inode, struct path *path)
->  {
->  	return proc_fd_info(inode, path, NULL);
->  }
-> @@ -2170,6 +2170,319 @@ static const struct file_operations proc
->  	.llseek		= default_llseek,
->  };
->  
-> +static struct vm_area_struct *
-> +find_exact_vma(struct mm_struct *mm, unsigned long vm_start, unsigned long vm_end)
-> +{
-> +	struct vm_area_struct *vma = find_vma(mm, vm_start);
-> +	if (vma && (vma->vm_start != vm_start || vma->vm_end != vm_end))
-> +		vma = NULL;
-> +	return vma;
-> +}
-> +
-> +static int map_name_to_addr(const unsigned char *name, unsigned long *start, unsigned long *end)
-> +{
-> +	int ret = -1;
-> +	char *endp;
-> +
-> +	if (unlikely(!name))
-> +		goto err;
-> +
-> +	*start = simple_strtoul(name, &endp, 16);
-> +	if (*endp != '-')
-> +		goto err;
-> +	*end = simple_strtoul(endp + 1, &endp, 16);
-> +	if (*endp != 0)
-> +		goto err;
-> +
-> +	ret = 0;
-> +
-> +err:
-> +	return ret;
-> +}
-> +
-> +static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
-> +{
-> +	struct vm_area_struct *vma = NULL;
-> +	unsigned long vm_start, vm_end;
-> +	struct task_struct *task;
-> +	const struct cred *cred;
-> +	struct mm_struct *mm;
-> +	struct inode *inode;
-> +
-> +	if (nd && nd->flags & LOOKUP_RCU)
-> +		return -ECHILD;
-> +
-> +	inode = dentry->d_inode;
-> +	task = get_proc_task(inode);
-> +	if (!task)
-> +		goto out;
-> +
-> +	mm = get_task_mm(task);
-> +	put_task_struct(task);
-> +	if (!mm)
-> +		goto out;
-> +
-> +	if (!map_name_to_addr(dentry->d_name.name, &vm_start, &vm_end)) {
-> +		down_read(&mm->mmap_sem);
-> +		vma = find_exact_vma(mm, vm_start, vm_end);
-> +		up_read(&mm->mmap_sem);
-> +	}
-> +
-> +	mmput(mm);
-> +
-> +	if (vma) {
-> +		if (task_dumpable(task)) {
-> +			rcu_read_lock();
-> +			cred = __task_cred(task);
-> +			inode->i_uid = cred->euid;
-> +			inode->i_gid = cred->egid;
-> +			rcu_read_unlock();
-> +		} else {
-> +			inode->i_uid = 0;
-> +			inode->i_gid = 0;
-> +		}
-> +		security_task_to_inode(task, inode);
-> +		return 1;
-> +	}
-> +out:
-> +	d_drop(dentry);
-> +	return 0;
-> +}
-> +
-> +static const struct dentry_operations tid_map_files_dentry_operations = {
-> +	.d_revalidate	= map_files_d_revalidate,
-> +	.d_delete	= pid_delete_dentry,
-> +};
-> +
-> +static int proc_map_files_get_link(struct dentry *dentry, struct inode *inode, struct path *path)
-> +{
-> +	unsigned long vm_start, vm_end;
-> +	struct vm_area_struct *vma;
-> +	struct task_struct *task;
-> +	struct mm_struct *mm;
-> +	int rc = -ENOENT;
-> +
-> +	task = get_proc_task(inode);
-> +	if (!task)
-> +		goto out;
-> +
-> +	mm = get_task_mm(task);
-> +	put_task_struct(task);
-> +	if (!mm)
-> +		goto out;
-> +
-> +	if (map_name_to_addr(dentry->d_name.name,
-> +			     &vm_start, &vm_end))
-> +		goto out_mmput;
-> +
-> +	down_read(&mm->mmap_sem);
-> +	vma = find_exact_vma(mm, vm_start, vm_end);
-> +	if (vma && vma->vm_file) {
-> +		*path = vma->vm_file->f_path;
-> +		path_get(path);
-> +		rc = 0;
-> +	}
-> +	up_read(&mm->mmap_sem);
-> +
-> +out_mmput:
-> +	mmput(mm);
-> +out:
-> +	return rc;
-> +}
-> +
-> +struct map_files_info {
-> +	struct file	*file;
-> +	unsigned char	name[16+16+2]; /* max: %016lx-%016lx\0 */
-> +	unsigned long	len;
-> +};
-> +
-> +static struct dentry *
-> +proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
-> +			   struct task_struct *task, const void *ptr)
-> +{
-> +	const struct file *file = ptr;
-> +	struct proc_inode *ei;
-> +	struct inode *inode;
-> +
-> +	if (!file)
-> +		return ERR_PTR(-ENOENT);
-> +
-> +	inode = proc_pid_make_inode(dir->i_sb, task);
-> +	if (!inode)
-> +		return ERR_PTR(-ENOENT);
-> +
-> +	ei			= PROC_I(inode);
-> +	ei->op.proc_get_link	= proc_map_files_get_link;
-> +
-> +	inode->i_op	= &proc_pid_link_inode_operations;
-> +	inode->i_size	= 64;
-> +	inode->i_mode	= S_IFLNK;
-> +
-> +	if (file->f_mode & FMODE_READ)
-> +		inode->i_mode |= S_IRUSR | S_IXUSR;
-> +	if (file->f_mode & FMODE_WRITE)
-> +		inode->i_mode |= S_IWUSR | S_IXUSR;
-> +
-> +	d_set_d_op(dentry, &tid_map_files_dentry_operations);
-> +	d_add(dentry, inode);
-> +
-> +	return NULL;
-> +}
-> +
-> +static struct dentry *proc_map_files_lookup(struct inode *dir,
-> +		struct dentry *dentry, struct nameidata *nd)
-> +{
-> +	unsigned long vm_start, vm_end;
-> +	struct task_struct *task;
-> +	struct vm_area_struct *vma;
-> +	struct mm_struct *mm;
-> +	struct dentry *result;
-> +
-> +	result = ERR_PTR(-ENOENT);
-> +	task = get_proc_task(dir);
-> +	if (!task)
-> +		goto out_no_task;
-> +
-> +	result = ERR_PTR(-EPERM);
-> +	if (!ptrace_may_access(task, PTRACE_MODE_READ));
-> +		goto out_no_mm;
-> +
-> +	result = ERR_PTR(-ENOENT);
-> +	if (map_name_to_addr(dentry->d_name.name,
-> +			     &vm_start, &vm_end))
-> +		goto out_no_mm;
-> +
-> +	mm = get_task_mm(task);
-> +	if (!mm)
-> +		goto out_no_mm;
-> +
-> +	down_read(&mm->mmap_sem);
-> +	vma = find_exact_vma(mm, vm_start, vm_end);
-> +	if (!vma)
-> +		goto out_no_vma;
-> +
-> +	result = proc_map_files_instantiate(dir, dentry, task, vma->vm_file);
-> +
-> +out_no_vma:
-> +	up_read(&mm->mmap_sem);
-> +	mmput(mm);
-> +out_no_mm:
-> +	put_task_struct(task);
-> +out_no_task:
-> +	return result;
-> +}
-> +
-> +static const struct inode_operations proc_map_files_inode_operations = {
-> +	.lookup		= proc_map_files_lookup,
-> +	.setattr	= proc_setattr,
-> +};
-> +
-> +static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
-> +{
-> +	struct dentry *dentry = filp->f_path.dentry;
-> +	struct inode *inode = dentry->d_inode;
-> +	struct vm_area_struct *vma;
-> +	struct task_struct *task;
-> +	struct mm_struct *mm;
-> +	unsigned int vmai;
-> +	ino_t ino;
-> +	int ret;
-> +
-> +	ret = -ENOENT;
-> +	task = get_proc_task(inode);
-> +	if (!task)
-> +		goto out_no_task;
-> +
-> +	ret = -EPERM;
-> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> +		goto out;
-> +
-> +	ret = 0;
-> +	switch (filp->f_pos) {
-> +	case 0:
-> +		ino = inode->i_ino;
-> +		if (filldir(dirent, ".", 1, 0, ino, DT_DIR) < 0)
-> +			goto out;
-> +		filp->f_pos++;
-> +	case 1:
-> +		ino = parent_ino(dentry);
-> +		if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
-> +			goto out;
-> +		filp->f_pos++;
-> +	default:
-> +	{
-> +		unsigned long nr_files, used, i;
-> +		struct map_files_info *info;
-> +
-> +		mm = get_task_mm(task);
-> +		if (!mm)
-> +			goto out;
-> +		down_read(&mm->mmap_sem);
-> +
-> +		nr_files = 0;
-> +		for (vma = mm->mmap; vma; vma = vma->vm_next) {
-> +			if (vma->vm_file)
-> +				nr_files++;
-> +		}
-> +		if (!nr_files)
-> +			goto out;
+thanks,
 
-up_read(&mm->mmap_sem); ?
+Mimi
 
-> +
-> +		info = kmalloc(nr_files * sizeof(*info), GFP_KERNEL);
-> +		if (!info) {
-> +			ret = -ENOMEM;
-> +			goto out;
-
-Ditto.
-
-> +		}
-> +
-> +		used = 0;
-> +		for (vma = mm->mmap, vmai = 2; vma; vma = vma->vm_next) {
-> +			if (!vma->vm_file)
-> +				continue;
-> +			vmai++;
-> +			if (vmai <= filp->f_pos)
-> +				continue;
-> +
-> +			get_file(vma->vm_file);
-> +			info[used].file	= vma->vm_file;
-> +			info[used].len	= snprintf(info[used].name,
-> +						   sizeof(info[used].name),
-> +						   "%lx-%lx", vma->vm_start,
-> +						   vma->vm_end);
-> +			used++;
-> +		}
-> +
-> +		up_read(&mm->mmap_sem);
-> +
-> +		for (i = 0; i < used; i++) {
-> +			ret = proc_fill_cache(filp, dirent, filldir,
-> +					      info[i].name,
-> +					      info[i].len,
-> +					      proc_map_files_instantiate,
-> +					      task, info[i].file);
-> +			if (ret)
-> +				break;
-> +			filp->f_pos++;
-> +		}
-> +
-> +		for (i = 0; i < used; i++)
-> +			put_filp(info[i].file);
-> +
-> +		kfree(info);
-> +		mmput(mm);
-> +	}
-> +	}
-> +
-> +out:
-> +	put_task_struct(task);
-> +out_no_task:
-> +	return ret;
-> +}
-> +
-> +static const struct file_operations proc_map_files_operations = {
-> +	.read		= generic_read_dir,
-> +	.readdir	= proc_map_files_readdir,
-> +	.llseek		= default_llseek,
-> +};
-> +
->  /*
->   * /proc/pid/fd needs a special permission handler so that a process can still
->   * access /proc/self/fd after it has executed a setuid().
-> @@ -2785,6 +3098,7 @@ static const struct inode_operations pro
->  static const struct pid_entry tgid_base_stuff[] = {
->  	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
->  	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
-> +	DIR("map_files",  S_IRUSR|S_IXUSR, proc_map_files_inode_operations, proc_map_files_operations),
->  	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
->  	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
->  #ifdef CONFIG_NET
-> Index: linux-2.6.git/include/linux/proc_fs.h
-> ===================================================================
-> --- linux-2.6.git.orig/include/linux/proc_fs.h
-> +++ linux-2.6.git/include/linux/proc_fs.h
-> @@ -253,7 +253,7 @@ extern const struct proc_ns_operations u
->  extern const struct proc_ns_operations ipcns_operations;
->  
->  union proc_op {
-> -	int (*proc_get_link)(struct inode *, struct path *);
-> +	int (*proc_get_link)(struct dentry *, struct inode *, struct path *);
->  	int (*proc_read)(struct task_struct *task, char *page);
->  	int (*proc_show)(struct seq_file *m,
->  		struct pid_namespace *ns, struct pid *pid,
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
-
--- 
- Kirill A. Shutemov
