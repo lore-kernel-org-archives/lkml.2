@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab1HZGso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 02:48:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60724 "EHLO
+	id S1751626Ab1HZG7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 02:59:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55802 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab1HZGsn (ORCPT
+	with ESMTP id S1750704Ab1HZG7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 02:48:43 -0400
-Date: Fri, 26 Aug 2011 10:48:38 +0400
+	Fri, 26 Aug 2011 02:59:04 -0400
+Date: Fri, 26 Aug 2011 10:58:57 +0400
 From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Ralf Jung <ralfjung-e@gmx.de>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, ioapic: Reserve only 128 bytes for IOAPICs
-Message-ID: <20110826064838.GB3903@sun>
-References: <20110825230539.5355.13851.stgit@bhelgaas.mtv.corp.google.com>
- <1314315225.16133.30.camel@sbsiddha-desk.sc.intel.com>
- <CAErSpo7N3UBJgQTb+zePnsf5YuFSQT8zy9CftwceyAKKfcHUjA@mail.gmail.com>
- <4E56F9E5.4000005@zytor.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <jbottomley@parallels.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
+        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+Message-ID: <20110826065857.GC3903@sun>
+References: <20110824085329.GL29452@sun>
+ <20110824111806.GA7191@albatros>
+ <20110825082944.GH10030@sun>
+ <20110825170147.GM2803@mtj.dyndns.org>
+ <20110825170705.GA6387@sun>
+ <20110825205426.GO2803@mtj.dyndns.org>
+ <20110825211213.GP2803@mtj.dyndns.org>
+ <20110825213459.GA1929@sun>
+ <20110825213931.GR2803@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E56F9E5.4000005@zytor.com>
+In-Reply-To: <20110825213931.GR2803@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 06:41:57PM -0700, H. Peter Anvin wrote:
-> On 08/25/2011 05:17 PM, Bjorn Helgaas wrote:
-> > 
-> > If the OS allocated the next 128 bytes to another device, it sounds
-> > like it would cause a conflict on Intel boxes.  This must be an area
-> > that differs between vendors.  I haven't seen a spec that mentions 256
-> > bytes as the required minimum MMIO size for IOAPICs, and apparently
-> > the AMD IOAPIC decodes 240 bytes or fewer.
-> > 
+On Thu, Aug 25, 2011 at 11:39:31PM +0200, Tejun Heo wrote:
+> Hello,
 > 
-> For what it's worth, it's probably a bad idea on x86 for the OS to
-> allocate addresses in the 0xFExxxxxx range...
+> On Fri, Aug 26, 2011 at 01:34:59AM +0400, Cyrill Gorcunov wrote:
+> > > Unfortunately, not quite as easy as I expected.  The information still
+> > > seems redundant but it seems we'll need to change
+> > > proc_inode->get_link() to take dentry instead of inode before doing
+> > > away with proc_inode->fd, but, at any rate, I don't think this is a
+> > > big deal one way or the other.
+> > 
+> > Hohum... picking up an additional reference to dentry might be dangerous
+> > I think. How exactly you imagine we would do that? (without this problem
+> > I guess we indeed may drop or rather not change proc-inode).
 > 
-> 	-hpa
+> Why would you need an extra reference?  All these data structures are
+> created dynamically on access and dentry is always available while any
+> operation on the inode is in progress so it's guaranteed to be
+> available and there's no reason to diddle with reference count.
+> Anyways, we can deal with this optimization later, I think.
 > 
 
-I rather wonder if there a way to assign a different address for the
-watchdog Bjorn referring to. I don't have such machine to test but
-seems its base address is configurable via pmio. Just curious.
+Hi Tejun, yeah, I somehow missed that you propose to lift up
+proc_get_link a bit. Letme try such approach indeed. Thanks!
 
 	Cyrill
