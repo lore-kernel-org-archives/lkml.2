@@ -1,78 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab1HZM7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:59:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43588 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752789Ab1HZM72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:59:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,285,1312182000"; 
-   d="scan'208";a="42719578"
-Date: Fri, 26 Aug 2011 20:59:24 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/10] writeback: per task dirty rate limit
-Message-ID: <20110826125924.GA6014@localhost>
-References: <20110826113813.895522398@intel.com>
- <20110826114619.268843347@intel.com>
- <1314363069.11049.3.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314363069.11049.3.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754799Ab1HZNJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 09:09:17 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47447 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab1HZNJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 09:09:17 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix printk warning issue in cb_pcidas64.c
+Date: Fri, 26 Aug 2011 18:38:52 +0530
+Message-Id: <1314364132-3545-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi:fix printk issue in cb_pcidas64.c>
+References: <[PATCH]Staging: comedi:fix printk issue in cb_pcidas64.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 08:51:09PM +0800, Peter Zijlstra wrote:
-> On Fri, 2011-08-26 at 19:38 +0800, Wu Fengguang wrote:
-> > +       preempt_disable();
-> >         /*
-> > -        * Check the rate limiting. Also, we do not want to throttle real-time
-> > -        * tasks in balance_dirty_pages(). Period.
-> > +        * This prevents one CPU to accumulate too many dirtied pages without
-> > +        * calling into balance_dirty_pages(), which can happen when there are
-> > +        * 1000+ tasks, all of them start dirtying pages at exactly the same
-> > +        * time, hence all honoured too large initial task->nr_dirtied_pause.
-> >          */
-> > -       preempt_disable();
-> >         p =  &__get_cpu_var(bdp_ratelimits);
-> 
-> 	p = &get_cpu_var(bdp_ratelimits);
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Ah yeah.. I actually followed your suggestion, and then find we'll
-eventually do two __get_cpu_var() calls here, one for bdp_ratelimits
-and the other for dirty_leaks in a planned patch. So let's keep the
-preempt_disable()/preempt_enable().
+This is a patch to the cb_pcidas64.c file that fixes up a printk warning found by the checkpatch.pl tool
 
-> > -       *p += nr_pages_dirtied;
-> > -       if (unlikely(*p >= ratelimit)) {
-> > -               ratelimit = sync_writeback_pages(*p);
-> > +       if (unlikely(current->nr_dirtied >= ratelimit))
-> >                 *p = 0;
-> > -               preempt_enable();
-> > -               balance_dirty_pages(mapping, ratelimit);
-> > -               return;
-> > +       else {
-> > +               *p += nr_pages_dirtied;
-> > +               if (unlikely(*p >= ratelimit_pages)) {
-> > +                       *p = 0;
-> > +                       ratelimit = 0;
-> > +               }
-> >         }
-> >         preempt_enable(); 
-> 
-> 	put_cpu_var(bdp_ratelimits);
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/cb_pcidas64.c |   22 ++++++++--------------
+ 1 files changed, 8 insertions(+), 14 deletions(-)
 
-ditto.
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index 1e32419..37a0402 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -1739,7 +1739,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	uint32_t local_range, local_decode;
+ 	int retval;
+ 
+-	printk("comedi%d: cb_pcidas64\n", dev->minor);
++	pr_info("comedi%d: cb_pcidas64\n", dev->minor);
+ 
+ /*
+  * Allocate the private structure area.
+@@ -1776,17 +1776,15 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	}
+ 
+ 	if (dev->board_ptr == NULL) {
+-		printk
+-		    ("No supported ComputerBoards/MeasurementComputing card found\n");
++		pr_warn("No supported ComputerBoards/MeasurementComputing card found\n");
+ 		return -EIO;
+ 	}
+ 
+-	printk("Found %s on bus %i, slot %i\n", board(dev)->name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
++	pr_info("Found %s on bus %i, slot %i\n", board(dev)->name,
++			pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+ 
+ 	if (comedi_pci_enable(pcidev, driver_cb_pcidas.driver_name)) {
+-		printk(KERN_WARNING
+-		       " failed to enable PCI device and request regions\n");
++		pr_warn(" failed to enable PCI device and request regions\n");
+ 		return -EIO;
+ 	}
+ 	pci_set_master(pcidev);
+@@ -1813,10 +1811,8 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		    pci_resource_len(pcidev, DIO_COUNTER_BADDRINDEX));
+ 
+ 	if (!priv(dev)->plx9080_iobase || !priv(dev)->main_iobase
+-	    || !priv(dev)->dio_counter_iobase) {
+-		printk(" failed to remap io memory\n");
++			|| !priv(dev)->dio_counter_iobase)
+ 		return -ENOMEM;
+-	}
+ 
+ 	DEBUG_PRINT(" plx9080 remapped to 0x%p\n", priv(dev)->plx9080_iobase);
+ 	DEBUG_PRINT(" main remapped to 0x%p\n", priv(dev)->main_iobase);
+@@ -1850,17 +1846,15 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	priv(dev)->hw_revision =
+ 	    hw_revision(dev, readw(priv(dev)->main_iobase + HW_STATUS_REG));
+-	printk(" stc hardware revision %i\n", priv(dev)->hw_revision);
+ 	init_plx9080(dev);
+ 	init_stc_registers(dev);
+ 	/*  get irq */
+ 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
+ 			"cb_pcidas64", dev)) {
+-		printk(" unable to allocate irq %u\n", pcidev->irq);
++		pr_warn(" unable to allocate irq %u\n", pcidev->irq);
+ 		return -EINVAL;
+ 	}
+ 	dev->irq = pcidev->irq;
+-	printk(" irq %u\n", dev->irq);
+ 
+ 	retval = setup_subdevices(dev);
+ 	if (retval < 0)
+@@ -1882,7 +1876,7 @@ static int detach(struct comedi_device *dev)
+ {
+ 	unsigned int i;
+ 
+-	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
++	pr_info("comedi%d: cb_pcidas: remove\n", dev->minor);
+ 
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
+-- 
+1.7.6
 
-Thanks,
-Fengguang
