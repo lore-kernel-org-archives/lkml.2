@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab1HZG7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 02:59:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55802 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab1HZG7E (ORCPT
+	id S1752109Ab1HZHD1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 03:03:27 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:59883 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab1HZHD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 02:59:04 -0400
-Date: Fri, 26 Aug 2011 10:58:57 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org,
-        Zan Lynx <zlynx@acm.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110826065857.GC3903@sun>
-References: <20110824085329.GL29452@sun>
- <20110824111806.GA7191@albatros>
- <20110825082944.GH10030@sun>
- <20110825170147.GM2803@mtj.dyndns.org>
- <20110825170705.GA6387@sun>
- <20110825205426.GO2803@mtj.dyndns.org>
- <20110825211213.GP2803@mtj.dyndns.org>
- <20110825213459.GA1929@sun>
- <20110825213931.GR2803@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110825213931.GR2803@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Aug 2011 03:03:26 -0400
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: linux-mmc@vger.kernel.org, cjb@laptop.org
+Cc: linux-kernel@vger.kernel.org, Seungwon Jeon <tgih.jun@samsung.com>
+Subject: [PATCH] mmc: core: Add default timeout value for CMD6.
+Date: Fri, 26 Aug 2011 15:48:06 +0900
+Message-Id: <1314341286-22141-1-git-send-email-tgih.jun@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 11:39:31PM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On Fri, Aug 26, 2011 at 01:34:59AM +0400, Cyrill Gorcunov wrote:
-> > > Unfortunately, not quite as easy as I expected.  The information still
-> > > seems redundant but it seems we'll need to change
-> > > proc_inode->get_link() to take dentry instead of inode before doing
-> > > away with proc_inode->fd, but, at any rate, I don't think this is a
-> > > big deal one way or the other.
-> > 
-> > Hohum... picking up an additional reference to dentry might be dangerous
-> > I think. How exactly you imagine we would do that? (without this problem
-> > I guess we indeed may drop or rather not change proc-inode).
-> 
-> Why would you need an extra reference?  All these data structures are
-> created dynamically on access and dentry is always available while any
-> operation on the inode is in progress so it's guaranteed to be
-> available and there's no reason to diddle with reference count.
-> Anyways, we can deal with this optimization later, I think.
-> 
+EXT_CSD[248] includes the default maximum timeout for CMD6.
+This field is added at eMMC4.5 Spec.
 
-Hi Tejun, yeah, I somehow missed that you propose to lift up
-proc_get_link a bit. Letme try such approach indeed. Thanks!
+Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+---
+ drivers/mmc/core/mmc.c   |    4 ++++
+ include/linux/mmc/card.h |    1 +
+ include/linux/mmc/mmc.h  |    1 +
+ 3 files changed, 6 insertions(+), 0 deletions(-)
 
-	Cyrill
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 5700b1c..68eb368 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -410,6 +410,10 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+ 	else
+ 		card->erased_byte = 0x0;
+
++	if (card->ext_csd.rev >= 6)
++		card->ext_csd.generic_cmd6_time = 10 *
++			ext_csd[EXT_CSD_GENERIC_CMD6_TIME];
++
+ out:
+ 	return err;
+ }
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index b460fc2..e992fe3 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -52,6 +52,7 @@ struct mmc_ext_csd {
+ 	u8			part_config;
+ 	unsigned int		part_time;		/* Units: ms */
+ 	unsigned int		sa_timeout;		/* Units: 100ns */
++	unsigned int		generic_cmd6_time;	/* Units: ms */
+ 	unsigned int		hs_max_dtr;
+ 	unsigned int		sectors;
+ 	unsigned int		card_type;
+diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+index 5a794cb..e869f00 100644
+--- a/include/linux/mmc/mmc.h
++++ b/include/linux/mmc/mmc.h
+@@ -293,6 +293,7 @@ struct _mmc_csd {
+ #define EXT_CSD_SEC_ERASE_MULT		230	/* RO */
+ #define EXT_CSD_SEC_FEATURE_SUPPORT	231	/* RO */
+ #define EXT_CSD_TRIM_MULT		232	/* RO */
++#define EXT_CSD_GENERIC_CMD6_TIME	248	/* RO */
+
+ /*
+  * EXT_CSD field definitions
+--
+1.7.0.4
+
