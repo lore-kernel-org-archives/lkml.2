@@ -1,145 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab1HZGZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 02:25:13 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:47029 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab1HZGYr (ORCPT
+	id S1753645Ab1HZGao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 02:30:44 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56251 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092Ab1HZGan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 02:24:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:to:cc:subject:message-id:
-	references:mime-version:content-type:content-disposition:in-reply-to:
-	user-agent:x-system-of-record;
-	b=JHVH3yCTj+sAmvgGt1OcfJqdtvXb3hnFkDvnobqNOGQFwKdmxcTuwa+nyOwF6/KbR
-	h/0JFc5FAYzKjuxcEvh1g==
-Date: Thu, 25 Aug 2011 23:24:36 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] thp: tail page refcounting fix #2
-Message-ID: <20110826062436.GA5847@google.com>
-References: <1313740111-27446-1-git-send-email-walken@google.com>
- <20110822213347.GF2507@redhat.com>
- <CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
- <20110824000914.GH23870@redhat.com>
- <20110824002717.GI23870@redhat.com>
- <20110824133459.GP23870@redhat.com>
+	Fri, 26 Aug 2011 02:30:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110824133459.GP23870@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+In-Reply-To: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com>
+References: <CADqbE94+eZPeMggwkeZsXYxmkCRddRT7OXeiEyj_b3m=g5GxUQ@mail.gmail.com>
+Date: Fri, 26 Aug 2011 14:30:42 +0800
+Message-ID: <CADqbE97+FKz-7op-nmdOVmq3mrXadaxQrtk9Zud90E7iMMEUVQ@mail.gmail.com>
+Subject: Re: [PATCH] slab: trivial: cleanup: remove unneeded return
+From: Zhao Jin <cronozhj@gmail.com>
+To: cl@linux-foundation.org, penberg@kernel.org, mpm@selenic.com,
+        trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 03:34:59PM +0200, Andrea Arcangeli wrote:
-> On Wed, Aug 24, 2011 at 02:27:17AM +0200, Andrea Arcangeli wrote:
-> > On Wed, Aug 24, 2011 at 02:09:14AM +0200, Andrea Arcangeli wrote:
-> > > That's an optimization I can look into agreed. I guess I just added
-> > > one line and not even think too much at optimizing this,
-> > > split_huge_page isn't in a fast path.
-> > 
-> > So this would more or less be the optimization (untested):
-> > 
-> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > --- a/mm/huge_memory.c
-> > +++ b/mm/huge_memory.c
-> > @@ -1169,8 +1169,8 @@ static void __split_huge_page_refcount(s
-> >  		atomic_sub(page_mapcount(page_tail), &page->_count);
-> >  		BUG_ON(atomic_read(&page->_count) <= 0);
-> >  		BUG_ON(atomic_read(&page_tail->_count) != 0);
-> > -		atomic_add(page_mapcount(page) + 1, &page_tail->_count);
-> > -		atomic_add(page_mapcount(page_tail), &page_tail->_count);
-> > +		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
-> > +			   &page_tail->_count);
-> >  
-> >  		/* after clearing PageTail the gup refcount can be released */
-> >  		smp_mb();
-> 
-> So this is a new version incorporating only the above
-> microoptimization. Unless somebody can guarantee me the atomic_set is
-> safe in all archs (which requires get_page_unless_zero() running vs C
-> language page_tail->_count = 1 to provide a deterministic result) I'd
-> stick with the atomic_add above to be sure.
-> 
-> I think on even on x86 32bit it wouldn't be safe on PPro with OOSTORE
-> (PPro errata 66, 92) which should also have PSE.
+The line starting with ``@@'' in the patch was wrapped by my text
+editor when I copied it.
+Please see the following corrected one. Sorry for the trouble.
 
-I had never heard before of locked instructions being necessary when a
-straight assignment would do what we want, but after reading the erratas
-you listed, I'm not so sure anymore. Given that, I think the version with
-just one single atomic add is good enough.
+---
+ mm/slab.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-(there are also 511 consecutive atomic_sub calls on the head page _count,
-which could just as well be coalesced into a signle one at the end of the
-tail page loop).
+diff --git a/mm/slab.c b/mm/slab.c
+index 6d90a09..82e0a0e 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3678,13 +3678,12 @@ static inline void __cache_free(struct
+kmem_cache *cachep, void *objp,
 
+ 	if (likely(ac->avail < ac->limit)) {
+ 		STATS_INC_FREEHIT(cachep);
+-		ac->entry[ac->avail++] = objp;
+-		return;
+ 	} else {
+ 		STATS_INC_FREEMISS(cachep);
+ 		cache_flusharray(cachep, ac);
+-		ac->entry[ac->avail++] = objp;
+ 	}
++
++	ac->entry[ac->avail++] = objp;
+ }
 
-But enough about the atomics - there are other points I want to feedback on.
-
-
-I think your current __get_page_tail() is unsafe when it takes the
-compound lock on the head page, because there is no refcount held on it.
-If the THP page gets broken up before we get the compound lock, the head
-page could get freed. But it looks like you could fix that by doing
-get_page_unless_zero on the head, and you should end up with something
-very much like the put_page() function, which I find incredibly tricky
-but seems to be safe.
-
-
-I would suggest moving get_page_foll() and __get_page_tail_foll() to
-mm/internal.h so that people writing code outside of mm/ don't get confused
-about which get_page() version they must call.
-
-
-In __get_page_tail(), you could add a VM_BUG_ON(page_mapcount(page) <= 0)
-to reflect the fact that get_page() callers are expected to have already
-gotten a reference on the page through a gup call.
-
-
-(not your fault, you just moved that code) The comment above
-reset_page_mapcount() and page_mapcount() mentions that _count starts from -1.
-This does not seem to be accurate anymore - as you see page_count() just
-returns the _count value without adding 1. I guess you could just remove
-', like _count,' from the comment and that'd make it accurate :)
-
-
-The use of _mapcount to store tail page counts should probably be
-documented somewhere - probably in mm_types.h where _mapcount is
-defined, and/or before the page_mapcount accessor function. Or, there
-could be a tail_page_count() accessor function for that so that it's
-evident in all call sites that we're accessing a refcount and not a mapcount:
-
-static inline int tail_page_count(struct page *page)
-{
-	VM_BUG_ON(!PageTail(page));
-	return page_mapcount(page);
-}
-
-
-(probably for another commit) I'm not too comfortable with having several
-arch-specific fast gup functions knowning details about how page counts
-are implemented. Linus's tree also adds such support in sparc arch
-(and it doesn't even seem to be correct as it increments the head count
-but not the tail count). This should probably be cleaned up sometime by
-moving such details into generic inline helper functions.
-
-
-Besides these comments, overall I like the change a lot & I'm especially
-happy to see get_page() work in all cases again :)
-
-Thanks,
-
+ /**
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.4.1
