@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1HZSsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:48:39 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11624 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171Ab1HZSsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:48:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,286,1312182000"; 
-   d="scan'208";a="42836139"
-Message-ID: <4E57EA84.3080405@linux.intel.com>
-Date: Fri, 26 Aug 2011 11:48:36 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1753354Ab1HZStJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:49:09 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:59338 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751929Ab1HZStH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 14:49:07 -0400
+Date: Fri, 26 Aug 2011 14:49:05 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Greg KH <greg@kroah.com>
+cc: Michal Nazarewicz <mnazarewicz@google.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5 1/4] usb: Provide usb_speed_string() function
+In-Reply-To: <20110826183450.GA32142@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1108261437200.2275-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: Kerneloops.org defunct?
-References: <4DE6264A.2040901@gmail.com> <20110601212432.2677b03a.rdunlap@xenotime.net> <201106211534.10366.roucaries.bastien@gmail.com> <CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com> <20110826173517.7321c086@lxorguk.ukuu.org.uk> <m2ei089fwq.fsf@firstfloor.org> <CACqU3MU4hPpULM7w2HOz-5w7SGLH0E1SMdrdZ9Dremvxqr0tCg@mail.gmail.com>
-In-Reply-To: <CACqU3MU4hPpULM7w2HOz-5w7SGLH0E1SMdrdZ9Dremvxqr0tCg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/26/2011 11:47 AM, Arnaud Lacombe wrote:
->
-> Is the code available somewhere, or will it need to be rewritten ?
+On Fri, 26 Aug 2011, Greg KH wrote:
 
-we have the code on the server/etc... if someone signs up to help he 
-will be on the server of course
+> > > No, this should be in include/linux/usb.h, not ch9.h.
+> > 
+> > There's a reason for both of these things.  The usb_speed_string 
+> > routine, like the other stuff in ch9.h, is meant to be used with both 
+> > the host-side and device-side USB stacks.
+> 
+> Ok, the __KERNEL__ stuff threw me off, those should not be in the patch
+> as they are not needed, so it's ok to keep it here, sorry.
+
+The __KERNEL__ guard is needed there because ch9.h is one of the files 
+exported to /usr/include/linux.
+
+> > This makes deciding where to put it kind of difficult.  The two stacks 
+> > are pretty much independent; one might be built into the kernel while 
+> > the other is built as modules.  The easiest solution that will always 
+> > work is to put common.c into the main kernel.
+> 
+> A module, if the USB Host core is a module, and a module if the USB
+> gadge core is a module, would be best if at all possible.  I'm a bit
+> leery of adding stuff to be built into the kernel no matter how the user
+> decided to configure USB.
+> 
+> Is this possible with the Kbuild system somehow?
+
+I don't know.  Michal, can you look into this?  What we want is:
+
+	common.o gets included in the main kernel if either CONFIG_USB 
+	or CONFIG_USB_GADGET is set to Y.
+
+	Otherwise, if either symbol is set to M then common.o gets 
+	built into its own little module.  Perhaps some other stuff
+	could get put in there too, though at the moment I can't
+	think of anything.
+
+Alan Stern
 
