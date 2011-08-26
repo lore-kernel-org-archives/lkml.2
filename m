@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab1HZIgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 04:36:36 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:38978 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab1HZIgf (ORCPT
+	id S1753603Ab1HZIjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 04:39:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60116 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256Ab1HZIjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 04:36:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4yGSJPDiywak=ArMSv6DUKyCRAZ2J1Fxj6ZKgryyMzu8g@mail.gmail.com>
-References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
-	<CAGsJ_4yGSJPDiywak=ArMSv6DUKyCRAZ2J1Fxj6ZKgryyMzu8g@mail.gmail.com>
-Date: Fri, 26 Aug 2011 10:36:34 +0200
-Message-ID: <CACRpkdbWQ3Zz5cn3Bt9K3Le6FmFmAqqPEjj8CP_Pt8m9bG4Opg@mail.gmail.com>
-Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Aug 2011 04:39:44 -0400
+Subject: Re: [PATCH 2/2] percpu_counter: Put a reasonable upper bound on
+ percpu_counter_batch
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Anton Blanchard <anton@samba.org>
+Cc: tytso@mit.edu, adilger.kernel@dilger.ca, tj@kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110826072927.5b4781f9@kryten>
+References: <20110826072622.406d3395@kryten>
+	 <20110826072927.5b4781f9@kryten>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Aug 2011 10:39:43 +0200
+Message-ID: <1314347983.2563.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 5:12 AM, Barry Song <21cnbao@gmail.com> wrote:
+Le vendredi 26 août 2011 à 07:29 +1000, Anton Blanchard a écrit :
 
-> Tested-by: Barry Song <baohua.song@csr.com>
+> +/*
+> + * We set the batch at 2 * num_online_cpus(), with a minimum of 32 and
+> + * a maximum of 1024.
+> + */
+>  static void compute_batch_value(void)
+>  {
+>  	int nr = num_online_cpus();
+>  
+> -	percpu_counter_batch = max(32, nr*2);
+> +	percpu_counter_batch = min(1024, max(32, nr*2));
+>  }
+>  
+>  static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
 
-Thanks!
+Or use the following :
 
-> Linus, i'll also send the patch of csr pinmux prototype. you might
-> review and take it as another example except your stericsson U300 and
-> take care while you merge pinmux.
+percpu_counter_batch = clamp(nr*2, 32, 1024);
 
-OK I'm modifying the data model to suit Stephen and Sachas
-remarks but I might be able to carry your mux driver along too.
 
-Yours,
-Linus Walleij
+
