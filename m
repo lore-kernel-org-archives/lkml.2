@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab1H0O7e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:59:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47152 "EHLO mx2.suse.de"
+	id S932102Ab1H0O7W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:59:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47122 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932113Ab1H0O7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:59:24 -0400
+	id S1755035Ab1H0O7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:59:17 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:53 2011
-Message-Id: <20110826215052.954390130@clark.kroah.org>
+Message-Id: <20110826215053.815842209@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:18 -0700
+Date: Fri, 26 Aug 2011 14:49:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [01/35] genirq: Fix wrong bit operation
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [09/35] NFSv4.1: Fix the callback highest_used_slotid behaviour
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +25,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "jhbird.choi@samsung.com" <jhbird.choi@samsung.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 1dd75f91ae713049eb6baaa640078f3a6549e522 upstream.
+commit 55a673990ec04cf63005318bcf08c2b0046e5778 upstream.
 
-(!msk & 0x01) should be !(msk & 0x01)
+Currently, there is no guarantee that we will call nfs4_cb_take_slot() even
+though nfs4_callback_compound() will consistently call
+nfs4_cb_free_slot() provided the cb_process_state has set the 'clp' field.
+The result is that we can trigger the BUG_ON() upon the next call to
+nfs4_cb_take_slot().
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Link: http://lkml.kernel.org/r/1311229754-6003-1-git-send-email-jhbird.choi@samsung.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This patch fixes the above problem by using the slot id that was taken in
+the CB_SEQUENCE operation as a flag for whether or not we need to call
+nfs4_cb_free_slot().
+It also fixes an atomicity problem: we need to set tbl->highest_used_slotid
+atomically with the check for NFS4_SESSION_DRAINING, otherwise we end up
+racing with the various tests in nfs4_begin_drain_session().
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/irq/generic-chip.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfs/callback.h      |    2 +-
+ fs/nfs/callback_proc.c |   20 ++++++++++++++------
+ fs/nfs/callback_xdr.c  |   24 +++++++-----------------
+ 3 files changed, 22 insertions(+), 24 deletions(-)
 
---- a/kernel/irq/generic-chip.c
-+++ b/kernel/irq/generic-chip.c
-@@ -246,7 +246,7 @@ void irq_setup_generic_chip(struct irq_c
- 		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
+--- a/fs/nfs/callback.h
++++ b/fs/nfs/callback.h
+@@ -38,6 +38,7 @@ enum nfs4_callback_opnum {
+ struct cb_process_state {
+ 	__be32			drc_status;
+ 	struct nfs_client	*clp;
++	int			slotid;
+ };
  
- 	for (i = gc->irq_base; msk; msk >>= 1, i++) {
--		if (!msk & 0x01)
-+		if (!(msk & 0x01))
- 			continue;
+ struct cb_compound_hdr_arg {
+@@ -166,7 +167,6 @@ extern unsigned nfs4_callback_layoutreca
+ 	void *dummy, struct cb_process_state *cps);
  
- 		if (flags & IRQ_GC_INIT_NESTED_LOCK)
-@@ -301,7 +301,7 @@ void irq_remove_generic_chip(struct irq_
- 	raw_spin_unlock(&gc_lock);
+ extern void nfs4_check_drain_bc_complete(struct nfs4_session *ses);
+-extern void nfs4_cb_take_slot(struct nfs_client *clp);
  
- 	for (; msk; msk >>= 1, i++) {
--		if (!msk & 0x01)
-+		if (!(msk & 0x01))
- 			continue;
+ struct cb_devicenotifyitem {
+ 	uint32_t		cbd_notify_type;
+--- a/fs/nfs/callback_proc.c
++++ b/fs/nfs/callback_proc.c
+@@ -333,7 +333,7 @@ validate_seqid(struct nfs4_slot_table *t
+ 	/* Normal */
+ 	if (likely(args->csa_sequenceid == slot->seq_nr + 1)) {
+ 		slot->seq_nr++;
+-		return htonl(NFS4_OK);
++		goto out_ok;
+ 	}
  
- 		/* Remove handler first. That will mask the irq line */
+ 	/* Replay */
+@@ -352,11 +352,14 @@ validate_seqid(struct nfs4_slot_table *t
+ 	/* Wraparound */
+ 	if (args->csa_sequenceid == 1 && (slot->seq_nr + 1) == 0) {
+ 		slot->seq_nr = 1;
+-		return htonl(NFS4_OK);
++		goto out_ok;
+ 	}
+ 
+ 	/* Misordered request */
+ 	return htonl(NFS4ERR_SEQ_MISORDERED);
++out_ok:
++	tbl->highest_used_slotid = args->csa_slotid;
++	return htonl(NFS4_OK);
+ }
+ 
+ /*
+@@ -418,26 +421,32 @@ __be32 nfs4_callback_sequence(struct cb_
+ 			      struct cb_sequenceres *res,
+ 			      struct cb_process_state *cps)
+ {
++	struct nfs4_slot_table *tbl;
+ 	struct nfs_client *clp;
+ 	int i;
+ 	__be32 status = htonl(NFS4ERR_BADSESSION);
+ 
+-	cps->clp = NULL;
+-
+ 	clp = nfs4_find_client_sessionid(args->csa_addr, &args->csa_sessionid);
+ 	if (clp == NULL)
+ 		goto out;
+ 
++	tbl = &clp->cl_session->bc_slot_table;
++
++	spin_lock(&tbl->slot_tbl_lock);
+ 	/* state manager is resetting the session */
+ 	if (test_bit(NFS4_SESSION_DRAINING, &clp->cl_session->session_state)) {
+-		status = NFS4ERR_DELAY;
++		spin_unlock(&tbl->slot_tbl_lock);
++		status = htonl(NFS4ERR_DELAY);
+ 		goto out;
+ 	}
+ 
+ 	status = validate_seqid(&clp->cl_session->bc_slot_table, args);
++	spin_unlock(&tbl->slot_tbl_lock);
+ 	if (status)
+ 		goto out;
+ 
++	cps->slotid = args->csa_slotid;
++
+ 	/*
+ 	 * Check for pending referring calls.  If a match is found, a
+ 	 * related callback was received before the response to the original
+@@ -454,7 +463,6 @@ __be32 nfs4_callback_sequence(struct cb_
+ 	res->csr_slotid = args->csa_slotid;
+ 	res->csr_highestslotid = NFS41_BC_MAX_CALLBACKS - 1;
+ 	res->csr_target_highestslotid = NFS41_BC_MAX_CALLBACKS - 1;
+-	nfs4_cb_take_slot(clp);
+ 
+ out:
+ 	cps->clp = clp; /* put in nfs4_callback_compound */
+--- a/fs/nfs/callback_xdr.c
++++ b/fs/nfs/callback_xdr.c
+@@ -754,26 +754,15 @@ static void nfs4_callback_free_slot(stru
+ 	 * Let the state manager know callback processing done.
+ 	 * A single slot, so highest used slotid is either 0 or -1
+ 	 */
+-	tbl->highest_used_slotid--;
++	tbl->highest_used_slotid = -1;
+ 	nfs4_check_drain_bc_complete(session);
+ 	spin_unlock(&tbl->slot_tbl_lock);
+ }
+ 
+-static void nfs4_cb_free_slot(struct nfs_client *clp)
++static void nfs4_cb_free_slot(struct cb_process_state *cps)
+ {
+-	if (clp && clp->cl_session)
+-		nfs4_callback_free_slot(clp->cl_session);
+-}
+-
+-/* A single slot, so highest used slotid is either 0 or -1 */
+-void nfs4_cb_take_slot(struct nfs_client *clp)
+-{
+-	struct nfs4_slot_table *tbl = &clp->cl_session->bc_slot_table;
+-
+-	spin_lock(&tbl->slot_tbl_lock);
+-	tbl->highest_used_slotid++;
+-	BUG_ON(tbl->highest_used_slotid != 0);
+-	spin_unlock(&tbl->slot_tbl_lock);
++	if (cps->slotid != -1)
++		nfs4_callback_free_slot(cps->clp->cl_session);
+ }
+ 
+ #else /* CONFIG_NFS_V4_1 */
+@@ -784,7 +773,7 @@ preprocess_nfs41_op(int nop, unsigned in
+ 	return htonl(NFS4ERR_MINOR_VERS_MISMATCH);
+ }
+ 
+-static void nfs4_cb_free_slot(struct nfs_client *clp)
++static void nfs4_cb_free_slot(struct cb_process_state *cps)
+ {
+ }
+ #endif /* CONFIG_NFS_V4_1 */
+@@ -866,6 +855,7 @@ static __be32 nfs4_callback_compound(str
+ 	struct cb_process_state cps = {
+ 		.drc_status = 0,
+ 		.clp = NULL,
++		.slotid = -1,
+ 	};
+ 	unsigned int nops = 0;
+ 
+@@ -906,7 +896,7 @@ static __be32 nfs4_callback_compound(str
+ 
+ 	*hdr_res.status = status;
+ 	*hdr_res.nops = htonl(nops);
+-	nfs4_cb_free_slot(cps.clp);
++	nfs4_cb_free_slot(&cps);
+ 	nfs_put_client(cps.clp);
+ 	dprintk("%s: done, status = %u\n", __func__, ntohl(status));
+ 	return rpc_success;
 
 
