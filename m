@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1HZM4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:56:47 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33822 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab1HZM4n (ORCPT
+	id S1754677Ab1HZM5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:57:39 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:52266 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151Ab1HZM5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:56:43 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] x86,mrst: Add mapping for bma023
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 26 Aug 2011 13:51:47 +0100
-Message-ID: <20110826125131.5316.18229.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Aug 2011 08:57:35 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix printk() issue in cb_pcidas.c
+Date: Fri, 26 Aug 2011 18:27:06 +0530
+Message-Id: <1314363426-3233-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi:fix printk issue in cb_pcidas.c>
+References: <[PATCH]Staging: comedi:fix printk issue in cb_pcidas.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: William Douglas <william.douglas@intel.com>
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-There is now an upstream bma023 driver so instead of submitting ours we
-use that one. The defaults are just fine so it's a simple mapping entry.
+This is a patch to the cb_pcidas.c file that fixes up a printk warning found by the checkpatch.pl tool
 
-(Thanks go to Erik Andersson for incorporating the changes we needed into his
- version)
-
-Signed-off-by: William Douglas <william.douglas@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 ---
+ drivers/staging/comedi/drivers/cb_pcidas.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
 
- arch/x86/platform/mrst/mrst.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index cb6aa34..38dc8a8 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -498,6 +498,7 @@ static void __init *no_platform_data(void *info)
- }
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas.c b/drivers/staging/comedi/drivers/cb_pcidas.c
+index 61968a5..a8f2c42 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas.c
+@@ -565,7 +565,7 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ 	int index;
+ 	int i;
  
- static const struct devs_id __initconst device_ids[] = {
-+	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data},
- 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
- 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
- 	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
+-	printk("comedi%d: cb_pcidas: ", dev->minor);
++	pr_info("comedi%d: cb_pcidas: ", dev->minor);
+ 
+ /*
+  * Allocate the private structure area.
+@@ -576,7 +576,7 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ /*
+  * Probe the device to determine what device in the series it is.
+  */
+-	printk("\n");
++	pr_cont("\n");
+ 
+ 	for_each_pci_dev(pcidev) {
+ 		/*  is it not a computer boards card? */
+@@ -600,20 +600,22 @@ static int cb_pcidas_attach(struct comedi_device *dev,
+ 		}
+ 	}
+ 
+-	printk("No supported ComputerBoards/MeasurementComputing card found on "
+-	       "requested position\n");
++	pr_warn("comedi%d: cb_pcidas: No supported ComputerBoards/MeasurementComputing "
++			"card found on requested position\n", dev->minor);
+ 	return -EIO;
+ 
+ found:
+ 
+-	printk("Found %s on bus %i, slot %i\n", cb_pcidas_boards[index].name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
++	pr_info("comedi%d: cb_pcidas: Found %s on bus %i, slot %i\n",
++			dev->minor, cb_pcidas_boards[index].name,
++			pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+ 
+ 	/*
+ 	 * Enable PCI device and reserve I/O ports.
+ 	 */
+ 	if (comedi_pci_enable(pcidev, "cb_pcidas")) {
+-		printk(" Failed to enable PCI device and request regions\n");
++		pr_warn("comedi%d: cb_pcidas: Failed to enable PCI device and request regions\n",
++				dev->minor);
+ 		return -EIO;
+ 	}
+ 	/*
+@@ -639,7 +641,8 @@ found:
+ 	/*  get irq */
+ 	if (request_irq(devpriv->pci_dev->irq, cb_pcidas_interrupt,
+ 			IRQF_SHARED, "cb_pcidas", dev)) {
+-		printk(" unable to allocate irq %d\n", devpriv->pci_dev->irq);
++		pr_warn("comedi%d: cb_pcidas: unable to allocate irq %d\n",
++				dev->minor, devpriv->pci_dev->irq);
+ 		return -EINVAL;
+ 	}
+ 	dev->irq = devpriv->pci_dev->irq;
+@@ -768,7 +771,7 @@ found:
+  */
+ static int cb_pcidas_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
++	pr_info("comedi%d: cb_pcidas: remove\n", dev->minor);
+ 
+ 	if (devpriv) {
+ 		if (devpriv->s5933_config) {
+-- 
+1.7.6
 
