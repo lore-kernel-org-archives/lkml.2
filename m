@@ -1,126 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1HZI5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 04:57:09 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:49072 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753693Ab1HZI5E (ORCPT
+	id S1753880Ab1HZI6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 04:58:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56766 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab1HZI6b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 04:57:04 -0400
-From: Joe Perches <joe@perches.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ath: Make ath_printk void not int and remove unused struct ath_common *
-Date: Fri, 26 Aug 2011 01:56:39 -0700
-Message-Id: <78869fcd8172cd02266b66a71aadbd0c0efbdebc.1314347556.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.405.gc1be0
-In-Reply-To: <cover.1314347556.git.joe@perches.com>
-References: <cover.1314347556.git.joe@perches.com>
+	Fri, 26 Aug 2011 04:58:31 -0400
+Subject: Re: [PATCH 1/2] mm: convert k{un}map_atomic(p, KM_type) to
+ k{un}map_atomic(p)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org, linux-arch@vger.kernel.org
+Date: Fri, 26 Aug 2011 10:58:16 +0200
+In-Reply-To: <1314346676.6486.25.camel@minggr.sh.intel.com>
+References: <1314346676.6486.25.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314349096.26922.21.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing the return type and removing the unused argument from
-ath_printk reduces code size.
+On Fri, 2011-08-26 at 16:17 +0800, Lin Ming wrote:
+> 
+> The KM_type parameter for kmap_atomic/kunmap_atomic is not used anymore
+> since commit 3e4d3af(mm: stack based kmap_atomic()).
+> 
+> So convert k{un}map_atomic(p, KM_type) to k{un}map_atomic(p).
+> Most conversion are done by below commands. Some are done by hand.
+> 
+> find . -type f | xargs sed -i 's/\(kmap_atomic(.*\),\ .*)/\1)/'
+> find . -type f | xargs sed -i 's/\(kunmap_atomic(.*\),\ .*)/\1)/'
+> 
+> Build and tested on 32/64bit x86 kernel(allyesconfig) with 3G memory.
+> 
+> ARM, MIPS, PowerPc and Sparc are build tested only with
+> CONFIG_HIGHMEM=y and CONFIG_HIGHMEM=n.
+> I don't have cross-compiler for other arches. 
 
-Add an __always_unused struct ath_common * to the macros
-that call ath_printk to avoid unused variable warnings.
-
-$ size drivers/net/wireless/ath/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
-1159859	  16235	 212000	1388094	 152e3e	drivers/net/wireless/ath/built-in.o.new
-1164175	  16235	 212032	1392442	 153f3a	drivers/net/wireless/ath/built-in.o.old
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/ath/ath.h  |   27 ++++++++++++++++-----------
- drivers/net/wireless/ath/main.c |    8 ++------
- 2 files changed, 18 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath.h b/drivers/net/wireless/ath/ath.h
-index a3f8505..9891fb6 100644
---- a/drivers/net/wireless/ath/ath.h
-+++ b/drivers/net/wireless/ath/ath.h
-@@ -178,24 +178,29 @@ bool ath_hw_keyreset(struct ath_common *common, u16 entry);
- void ath_hw_cycle_counters_update(struct ath_common *common);
- int32_t ath_hw_get_listen_time(struct ath_common *common);
- 
--extern __attribute__((format (printf, 3, 4)))
--int ath_printk(const char *level, struct ath_common *common,
--	       const char *fmt, ...);
-+extern __attribute__((format (printf, 2, 3)))
-+void ath_printk(const char *level, const char *fmt, ...);
-+
-+#define _ath_printk(level, common, fmt, ...)			\
-+do {								\
-+	__always_unused struct ath_common *unused = common;	\
-+	ath_printk(level, fmt, ##__VA_ARGS__);			\
-+} while (0)
- 
- #define ath_emerg(common, fmt, ...)				\
--	ath_printk(KERN_EMERG, common, fmt, ##__VA_ARGS__)
-+	_ath_printk(KERN_EMERG, common, fmt, ##__VA_ARGS__)
- #define ath_alert(common, fmt, ...)				\
--	ath_printk(KERN_ALERT, common, fmt, ##__VA_ARGS__)
-+	_ath_printk(KERN_ALERT, common, fmt, ##__VA_ARGS__)
- #define ath_crit(common, fmt, ...)				\
--	ath_printk(KERN_CRIT, common, fmt, ##__VA_ARGS__)
-+	_ath_printk(KERN_CRIT, common, fmt, ##__VA_ARGS__)
- #define ath_err(common, fmt, ...)				\
--	ath_printk(KERN_ERR, common, fmt, ##__VA_ARGS__)
-+	_ath_printk(KERN_ERR, common, fmt, ##__VA_ARGS__)
- #define ath_warn(common, fmt, ...)				\
--	ath_printk(KERN_WARNING, common, fmt, ##__VA_ARGS__)
-+	_ath_printk(KERN_WARNING, common, fmt, ##__VA_ARGS__)
- #define ath_notice(common, fmt, ...)				\
--	ath_printk(KERN_NOTICE, common, fmt, ##__VA_ARGS__)
-+	_ath_printk(KERN_NOTICE, common, fmt, ##__VA_ARGS__)
- #define ath_info(common, fmt, ...)				\
--	ath_printk(KERN_INFO, common, fmt, ##__VA_ARGS__)
-+	_ath_printk(KERN_INFO, common, fmt, ##__VA_ARGS__)
- 
- /**
-  * enum ath_debug_level - atheros wireless debug level
-@@ -250,7 +255,7 @@ enum ATH_DEBUG {
- #define ath_dbg(common, dbg_mask, fmt, ...)				\
- do {									\
- 	if ((common)->debug_mask & dbg_mask)				\
--		ath_printk(KERN_DEBUG, common, fmt, ##__VA_ARGS__);	\
-+		_ath_printk(KERN_DEBUG, common, fmt, ##__VA_ARGS__);	\
- } while (0)
- 
- #define ATH_DBG_WARN(foo, arg...) WARN(foo, arg)
-diff --git a/drivers/net/wireless/ath/main.c b/drivers/net/wireless/ath/main.c
-index c325202..d9218fe 100644
---- a/drivers/net/wireless/ath/main.c
-+++ b/drivers/net/wireless/ath/main.c
-@@ -57,22 +57,18 @@ struct sk_buff *ath_rxbuf_alloc(struct ath_common *common,
- }
- EXPORT_SYMBOL(ath_rxbuf_alloc);
- 
--int ath_printk(const char *level, struct ath_common *common,
--	       const char *fmt, ...)
-+void ath_printk(const char *level, const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--	int rtn;
- 
- 	va_start(args, fmt);
- 
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
- 
--	rtn = printk("%sath: %pV", level, &vaf);
-+	printk("%sath: %pV", level, &vaf);
- 
- 	va_end(args);
--
--	return rtn;
- }
- EXPORT_SYMBOL(ath_printk);
--- 
-1.7.6.405.gc1be0
-
+yet-another-massive patch.. (you're the third or fourth to do so) if
+Andrew wants to take this one I won't mind, however previously he didn't
+want flag day patches..
