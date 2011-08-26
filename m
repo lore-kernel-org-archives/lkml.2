@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab1HZMHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:07:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52245 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab1HZMHk (ORCPT
+	id S1753943Ab1HZMIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:08:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14944 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab1HZMIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:07:40 -0400
-From: John Kacur <jkacur@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        rt-users <linux-rt-users@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        lkml <linux-kernel@vger.kernel.org>, John Kacur <jkacur@redhat.com>
-Subject: [PATCH] PREEMPT_RT_FULL Build error fix
-Date: Fri, 26 Aug 2011 14:06:33 +0200
-Message-Id: <1314360393-13605-1-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 26 Aug 2011 08:08:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=GYZz5C479KeY3jlo4P2l8uI2j9Ywm0eR1vqtXj6HE0IhhGbnpUugQ3ihTRA6KFR7x
+	UDrg8ZTA98lN+xPxDtZOA==
 MIME-Version: 1.0
+In-Reply-To: <CABPqkBSaW3ShYbJoO6YdFpZ7Rt+OfszP8m-uLSoBjCWZYVQ0Bw@mail.gmail.com>
+References: <CABPqkBS_Og3Vbe90xwyzA8S5ftfF08gMtJdtpqQTHFOwm+CAkg@mail.gmail.com>
+	<1314293560.27911.38.camel@twins>
+	<CABPqkBSaW3ShYbJoO6YdFpZ7Rt+OfszP8m-uLSoBjCWZYVQ0Bw@mail.gmail.com>
+Date: Fri, 26 Aug 2011 14:08:07 +0200
+Message-ID: <CABPqkBRXJPMqbdxAdapc0YtqKgZZubo2iFEhsV8VxpDG4WM9Sg@mail.gmail.com>
+Subject: Re: [BUG] perf_event: semantic of PERF_SAMPLE_READ unclear
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
+        Robert Richter <robert.richter@amd.com>,
+        Vince Weaver <vweaver1@eecs.utk.edu>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Problem:
-make O=/bld/3.0.3-rt11/ kernel/fork.o
-/home/jkacur/jk-2.6/kernel/fork.c:91: error: section of ‘name’ conflicts with previous declaration
+Ok, forget what I said, I think the current code is fine.
 
-__cacheline_aligned is already part of the definition of DEFINE_RWLOCK
-for -rt
+perf_output_read_group() does call event->pmu->read() which
+calls x86_perf_event_update(). And this routine does read the
+actual counter. So you do get the latest version possible.
 
-However it is not always used for the tasklist_lock in non-rt, so it can't
-simply be added to the definition of DEFINE_RWLOCK in non-rt, so I modified
-the definition in fork.c
 
-Signed-off-by: John Kacur
----
- kernel/fork.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/fork.c b/kernel/fork.c
-index aa5fe26..0d264ec 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -87,7 +87,11 @@ int max_threads;		/* tunable limit on nr_threads */
- 
- DEFINE_PER_CPU(unsigned long, process_counts) = 0;
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
- __cacheline_aligned DEFINE_RWLOCK(tasklist_lock);  /* outer */
-+#else
-+DEFINE_RWLOCK(tasklist_lock);  /* outer */
-+#endif
- 
- #ifdef CONFIG_PROVE_RCU
- int lockdep_tasklist_lock_is_held(void)
--- 
-1.7.2.3
-
+On Fri, Aug 26, 2011 at 2:02 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Thu, Aug 25, 2011 at 7:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Thu, 2011-08-25 at 19:19 +0200, Stephane Eranian wrote:
+>>> But the difficulty is that
+>>> we cannot grab any locks, not sure we need one given the call path.
+>>
+>> Nah we should be able to simply iterate all siblings and update them
+>> in-place, since its group members they should all be co-scheduled. The
+>> only difficulty is cross pmu group members..
+>>
+> Are we allowing event from different PMU to be in the same event group?
+> If so, is that useful?
+>
