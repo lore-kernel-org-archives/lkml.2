@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab1HZUeZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 16:34:25 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55783 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab1HZUeT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 16:34:19 -0400
-MIME-Version: 1.0
-Date: Fri, 26 Aug 2011 22:34:18 +0200
-X-Google-Sender-Auth: _ctiCIxVZlrddzb0Fj1gJ1D1QSQ
-Message-ID: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com>
-Subject: m68k: [v5] Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Linux/m68k" <linux-m68k@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1755239Ab1HZUea (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 16:34:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37038 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755088Ab1HZUe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 16:34:26 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Vijay Badawadagi <bvijay@ti.com>, Pavan Savoy <pavan_savoy@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 09/13] drivers:misc: ti-st: fail-safe on wrong pkt type
+Date: Fri, 26 Aug 2011 13:33:50 -0700
+Message-Id: <1314390834-3411-9-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1314390834-3411-1-git-send-email-gregkh@suse.de>
+References: <20110826191130.GA5557@kroah.com>
+ <1314390834-3411-1-git-send-email-gregkh@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I rebased and updated my m68k-genirq branch at
+From: Vijay Badawadagi <bvijay@ti.com>
 
-git://git.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git m68k-genirq
-http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-genirq
+Texas Instrument's shared transport driver interpret incoming data from the
+UART based on the various protocol drivers registered to the driver such as
+btwilink driver or FM or GPS driver which provide logical channel IDs.
 
-[PATCH 01/24] ide-{cd,floppy,tape}, keyboard: Do not include <linux/irq.>
-[PATCH 02/24] m68k/irq: Rename irq_controller to irq_chip
-[PATCH 03/24] m68k/irq: Kill irq_node_t typedef, always use struct irq_node
-[PATCH 04/24] m68k/irq: Rename irq_node to irq_data
-[PATCH 05/24] m68k/irq: Switch irq_chip methods to "struct irq_data *data"
-[PATCH 06/24] m68k/irq: Rename setup_irq() to m68k_setup_irq() and
-make it static
-[PATCH 07/24] m68k/irq: Extract irq_set_chip()
-[PATCH 08/24] m68k/irq: Add m68k_setup_irq_controller()
-[PATCH 09/24] m68k/irq: Rename {,__}m68k_handle_int()
-[PATCH 10/24] m68k/irq: Remove obsolete IRQ_FLG_* definitions and users
-[PATCH 11/24] m68k/irq: Add genirq support
-[PATCH 12/24] m68k/atari: Convert Atari to genirq
-[PATCH 13/24] m68k/atari: Remove code and comments about different irq types
-[PATCH 14/24] m68k/amiga: Refactor amiints.c
-[PATCH 15/24] m68k/amiga: Convert Amiga to genirq
-[PATCH 16/24] m68k/amiga: Optimize interrupts using chain handlers
-[PATCH 17/24] m68k/mac: Convert Mac to genirq
-[PATCH 18/24] m68k/mac: Optimize interrupts using chain handlers
-[PATCH 19/24] m68k/hp300: Convert HP9000/300 and HP9000/400 to genirq
-[PATCH 20/24] m68k/vme: Convert VME to genirq
-[PATCH 21/24] m68k/sun3: Use the kstat_irqs_cpu() wrapper
-[PATCH 22/24] m68k/apollo: Convert Apollo to genirq
-[PATCH 23/24] m68k/sun3: Convert Sun3/3x to genirq
-[PATCH 24/24] m68k/q40: Convert Q40/Q60 to genirq
+In case of bad-behavior from chip such as HCI Event response for a GPS command
+or a HCI Event (h/w error event) for a FM response & In case of bad-behavior
+from UART driver such as dropping data bytes a fail-safe is required to avoid
+kernel panic.
 
-Changes:
-  - [PATCH 11/24]: Keep m68k_setup_auto_interrupt(), it's still needed for Q40
-  - [PATCH 18/24]: m68k/mac: Optimize interrupts using chain handlers (NEW)
-  - [PATCH 24/24]: m68k/q40: Convert Q40/Q60 to genirq (NEW)
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+Signed-off-by: Vijay Badawadagi <bvijay@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/misc/ti-st/st_core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Todo:
- - Removal of legacy code inside #ifndef CONFIG_GENERIC_HARDIRQ,
- - Proper patch submission emails,
- - Get it merged (For 3.3? Or even 3.2?).
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index c8e335d..1f973ce 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -338,6 +338,12 @@ void st_int_recv(void *disc_data,
+ 			/* Unknow packet? */
+ 		default:
+ 			type = *ptr;
++			if (st_gdata->list[type] == NULL) {
++				pr_err("chip/interface misbehavior dropping"
++					" frame starting with 0x%02x", type);
++				goto done;
++
++			}
+ 			st_gdata->rx_skb = alloc_skb(
+ 					st_gdata->list[type]->max_frame_size,
+ 					GFP_ATOMIC);
+@@ -354,6 +360,7 @@ void st_int_recv(void *disc_data,
+ 		ptr++;
+ 		count--;
+ 	}
++done:
+ 	spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 	pr_debug("done %s", __func__);
+ 	return;
+-- 
+1.7.6.1
 
-Oh, I almost forgot: testing ;-)! So far I tested it on Atari (ARAnyM)
-and Amiga only.
-
-Thanks for testing and feedback!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
