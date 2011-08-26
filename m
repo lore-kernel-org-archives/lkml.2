@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1HZTMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 15:12:41 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:51801 "EHLO
+	id S1754195Ab1HZTM3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 15:12:29 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59246 "EHLO
 	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754114Ab1HZTM2 (ORCPT
+	by vger.kernel.org with ESMTP id S1753705Ab1HZTMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 15:12:28 -0400
-X-Sasl-enc: 90B2Aa25FS4Nmx8YTW89q+0BWvgVNjYKg2BjFcNaVtxE 1314385947
-Date: Fri, 26 Aug 2011 12:11:48 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] more USB fixes for 3.1
-Message-ID: <20110826191148.GD5557@kroah.com>
+	Fri, 26 Aug 2011 15:12:25 -0400
+X-Sasl-enc: p+4Sinqj16lTVUiKwiZKT0mTHZLtOll0nC3bDDhs2d7i 1314385944
+Date: Fri, 26 Aug 2011 12:11:38 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] more STAGING fixes for 3.1
+Message-ID: <20110826191138.GB5557@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,106 +22,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some fixes for your 3.1 git tree for the USB subsystem.
+Here are a number of minor staging driver fixes for your 3.1 tree.
 
-Lots of new device ids, some xhci bug fixes to resolve issues that
-were reported, and some build fixes that people hit.
+Full details are below, nothing really major, but lots of build fixes
+for stuff people have reported.
 
 Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
 
-All have been in the -next releases for a while now.
+All patches have been in the -next releases for a while now.
+
+These patches will be sent to the linux driver project list for all to
+see.
 
 thanks,
 
 greg k-h
 
-------------
+--------------
 
- drivers/usb/core/hcd.c           |    2 +
- drivers/usb/gadget/f_phonet.c    |    1 +
- drivers/usb/host/ehci-hub.c      |    7 +--
- drivers/usb/host/ehci-s5p.c      |    1 +
- drivers/usb/host/xhci-hub.c      |   17 +++++--
- drivers/usb/host/xhci-ring.c     |   90 +++++++++++++++++++++++----------
- drivers/usb/host/xhci.c          |   28 +++++++++--
- drivers/usb/musb/blackfin.c      |    1 +
- drivers/usb/musb/cppi_dma.c      |   26 ++++++---
- drivers/usb/musb/musb_core.h     |   12 +++--
- drivers/usb/musb/musb_gadget.c   |    4 +-
- drivers/usb/musb/musb_regs.h     |    6 ++-
- drivers/usb/musb/tusb6010.c      |    1 +
- drivers/usb/musb/tusb6010_omap.c |    1 +
- drivers/usb/musb/ux500_dma.c     |   38 ++++++++------
- drivers/usb/serial/ftdi_sio.c    |   20 +++++++-
- drivers/usb/serial/option.c      |  104 ++++++++++++++++++++++++++++++++++++-
- 17 files changed, 283 insertions(+), 76 deletions(-)
+ drivers/staging/brcm80211/brcmsmac/otp.c     |    1 +
+ drivers/staging/brcm80211/brcmsmac/types.h   |    1 +
+ drivers/staging/octeon/ethernet-rgmii.c      |    1 +
+ drivers/staging/octeon/ethernet-spi.c        |    1 +
+ drivers/staging/tidspbridge/core/dsp-clock.c |    1 -
+ drivers/staging/zcache/tmem.c                |    2 +-
+ drivers/staging/zcache/zcache-main.c         |    8 ++++----
+ 7 files changed, 9 insertions(+), 6 deletions(-)
 
 ---------------
 
-Andiry Xu (2):
-      xHCI: fix port U3 status check condition
-      xHCI: report USB2 port in resuming as suspend
+Arend Van Spriel (1):
+      staging: brcm80211: fix compile error on non-x86 archs since 3.0 kernel
 
-Andrew Bird (3):
-      USB option driver add PID of Huawei Vodafone K3806
-      USB option driver add PID of Huawei Vodafone K4605
-      USB option driver K3765/K4505 avoid CDC_DATA interface
+Dan Carpenter (1):
+      Staging: zcache: signedness bug in tmem_get()
 
-Axel Lin (1):
-      usb: gadget: s3c2410_udc: fix unterminated platform_device_id table
+David Daney (1):
+      staging: octeon-ethernet: Add missing #includes.
 
-Bob Liu (1):
-      usb: musb: blackfin: include prefetch head file
+Omar Ramirez Luna (1):
+      staging: tidspbridge: fix compilation on dsp clock functions
 
-Felipe Balbi (1):
-      usb: musb: tusb6010: fix compilation
+Pieter-Paul Giesberts (1):
+      staging: brcm80211: SPARC build error fix
 
-Gavin.zhu (1):
-      USB: option: add YUGA device id to driver
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      USB: ftdi_sio: add Calao reference board support
-
-John Stultz (1):
-      usb: musb: fix oops on musb_gadget_pullup
-
-Kuninori Morimoto (1):
-      usb: gadget: renesas_usbhs: fix DMA build by including dma-mapping.h
-
-Ming Lei (1):
-      usb: host: ehci-omap: fix .remove and failure handling path of .probe(v1)
-
-Per Forlin (3):
-      usb: musb: ux500: set dma config for both src and dst
-      usb: musb: ux500: replace missing DBG with dev_dbg
-      usb: musb: cppi: fix build errors due to DBG and missing musb variable
-
-Rabin Vincent (1):
-      usb: musb: fix Kconfig
-
-Sarah Sharp (5):
-      xhci: Fix memory leak during failed enqueue.
-      xhci: Fix failed enqueue in the middle of isoch TD.
-      xhci: Remove TDs from TD lists when URBs are canceled.
-      USB: Avoid NULL pointer deref in usb_hcd_alloc_bandwidth.
-      xhci: Handle zero-length isochronous packets.
-
-Sebastian Andrzej Siewior (4):
-      usb: gadget: fusb300: remove #if 0 block
-      usb: gadget: composite: fix bMaxPacketSize for SuperSpeed
-      usb: gadget: f_phonet: unlock in error case
-      usb: musb: gadget: fix error path
-
-Sebastian Bauer (1):
-      usb: gadget: hid: don't STALL when processing a HID Descriptor request
-
-Sergei Trofimovich (1):
-      usb: musb: tusb6010_omap: fix build failure: error: 'musb' undeclared
-
-Wang Zhi (1):
-      USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
-
-Yulgon Kim (1):
-      usb: s5p-ehci: fix a NULL pointer deference
+Seth Jennings (1):
+      staging: zcache: fix crash on high memory swap
 
