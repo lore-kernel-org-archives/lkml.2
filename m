@@ -1,88 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab1HZVvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 17:51:50 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:42027 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755541Ab1HZVvt (ORCPT
+	id S1755632Ab1HZV7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 17:59:46 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41327 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407Ab1HZV7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 17:51:49 -0400
-X-Sasl-enc: giIN3Uq3GpnEfjTA9QWh/x/x+Ar/Ine1aK3c+UtZaEfo 1314395508
-Date: Fri, 26 Aug 2011 14:51:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/35] 3.0.4-stable review
-Message-ID: <20110826215139.GA11498@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Aug 2011 17:59:44 -0400
+Date: Fri, 26 Aug 2011 17:59:40 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Steve French <smfrench@gmail.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also
+ crashes with linux-3.1-rc2
+Message-ID: <20110826175940.2830044d@tlielax.poochiereds.net>
+In-Reply-To: <20110818145257.035a38e9@barsoom.rdu.redhat.com>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<20110815064734.403b630f@corrin.poochiereds.net>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
+	<3300.1313637592@jrobl>
+	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
+	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+	<20110818091140.385a9455@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
+	<20110818130408.71c55b96@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
+	<CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
+	<alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
+	<CAH2r5msTpKdxwpgG+-3-gkkr5h7Ox1tL86q3LyTBMd1V8WS7aQ@mail.gmail.com>
+	<alpine.DEB.2.02.1108181413030.7903@p34.internal.lan>
+	<20110818145257.035a38e9@barsoom.rdu.redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.4 release.
-There are 35 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+On Thu, 18 Aug 2011 14:52:57 -0400
+Jeff Layton <jlayton@samba.org> wrote:
 
-Responses should be made by Monday, August 29, 2011, 12:00:00 UTC.
-Anything received after that time might be too late.
+> On Thu, 18 Aug 2011 14:18:15 -0400 (EDT)
+> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+> 
+> > 
+> > 
+> > On Thu, 18 Aug 2011, Steve French wrote:
+> > 
+> > > If reading files - smbclient (ftp like syntax) should be able to reach
+> > > wire speeds (assuming the server disk can keep up) and for
+> > > writing it should be similar (perhaps a little slower but it won't
+> > > use i/o sizes as large as cifs kernel client).  I would expect
+> > > smbclient to/copy from Windows to be faster than Windows mount -> Samba.
+> > >
+> > > I reached near wirespeeds for GigE with cifs client (writing) to
+> > > Winodws 2003/2008/r2
+> > > and Samba - but didn't have fast enough disks to test 10GigE although I expect
+> > > very good performance with that if you have fast enough server disks (and
+> > > am willing to put performance patches in, if you detect additional
+> > > changes that we should make for 10GigE - in particular allowing
+> > > more than 50 simultaneous requests).
+> > >
+> > > If the registry fix for Windows 7 is in place (or if you copy to
+> > > WIndows 2008, Windows 2003, WIndows 2008r2) -
+> > > cifs kernel client is probably slightly faster for writes than alternatives,
+> > > smbclient much faster for reads.
+> > >
+> > > If going the other direction (Windows client copying to/from Samba server) -
+> > > Samba 3.6 (server) with SMB2 support
+> > > turned on - is going to be faster than most alternatives.
+> > 
+> > Hi,
+> > 
+> > Downloading from an FTP Server on the windows machine:
+> > 
+> > <--- 150 Connection accepted
+> > `file' at 418873344 (24%) 145.58M/s eta:9s [Receiving data]
+> > `file' at 735510528 (42%) 162.93M/s eta:6s [Receiving data]
+> > `file' at 1357185024 (78%) 172.89M/s eta:2s [Receiving data]
+> > <--- 226 Transfer OK 
+> > ---- Got EOF on data connection
+> > ---- Closing data socket
+> > 1719784995 bytes transferred in 9 seconds (181.65M/s)
+> > 
+> > Same file (via CIFS): 50MB/s
+> > 
+> > Device eth6 [10.0.1.2] (1/1):
+> > ================================================================================
+> > Incoming:                               Outgoing:
+> > Curr: 49.17 MByte/s                     Curr: 0.58 MByte/s
+> > Avg: 8.76 MByte/s                       Avg: 0.03 MByte/s
+> > Min: 0.00 MByte/s                       Min: 0.00 MByte/s
+> > Max: 197.68 MByte/s                     Max: 0.86 MByte/s
+> > Ttl: 585.87 GByte                       Ttl: 6.97 GByte
+> > 
+> > 0.02user 4.09system 0:33.84elapsed 12%CPU (0avgtext+0avgdata 3632maxresident)k
+> > 
+> > The RAID's on both systems can achieve > 750MiB/s sustained without any
+> > problems (benchmarked in the past) and the system has 56 PCI-e 2.0 lanes
+> > and a cable between two 10GbE nics.  Not sure where to start, Win7/box tweaks
+> > or Linux/CIFS options?
+> > 
+> > Again, Samba -> Linux = 500MiB/s, so FTP > 3x faster than CIFS.
+> > I know NFS gets a lot of testing (never had an issue with it/performance/etc)
+> > 
+> > However, regarding CIFS-- is there a test suite/or benchmark pack the CIFS 
+> > developers use to make sure everything is working in order?
+> > 
+> > Justin.
+> > 
+> > 
+> 
+> Like I said, read performance with cifs.ko just plain sucks currently.
+> 
+> Don't look for cifs.ko to achieve anywhere near NFS' performance unless
+> you jump through some very odd hoops (like multithreading your workload
+> in userspace, etc). cifs.ko just doesn't do a good job of keeping the
+> pipe "stuffed" as most calls are handled synchronously. A single task
+> can only handle one call on the wire in most cases. The exception here
+> is writes, but that just recently changed...
+> 
+> Reads are done using relatively small buffers and then copied to
+> pagecache. Part of what I'm working on will be to allow for much larger
+> reads directly into the pagecache. That should also help performance
+> significantly.
+> 
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.4-rc1.gz
-and the diffstat can be found below.
+I just posted a patchset that should improve the performance of
+buffered reads. It's rather large but should apply to current upstream
+kernels. If you've had problems with cifs.ko read performance in the
+past, then this would be a good time to step up and help test them.
 
-thanks,
+If it makes things easier, then the patchset is also available via the
+cifs-3.2 branch of my public git tree:
 
-greg k-h
+    http://git.kernel.org/?p=linux/kernel/git/jlayton/linux.git;a=shortlog;h=refs/heads/cifs-3.2
 
-
- Makefile                                   |    4 +-
- arch/x86/include/asm/xen/page.h            |    4 +-
- arch/x86/kernel/apic/x2apic_uv_x.c         |    1 -
- arch/x86/kernel/cpu/intel.c                |   10 +++---
- arch/x86/kernel/cpu/mtrr/main.c            |   23 +++++++++++++++++
- arch/x86/platform/olpc/olpc.c              |    4 +-
- arch/x86/vdso/vdso32/sysenter.S            |    2 +-
- arch/x86/xen/enlighten.c                   |    4 +-
- arch/x86/xen/mmu.c                         |   12 ++++++---
- arch/x86/xen/smp.c                         |    4 +-
- drivers/block/loop.c                       |    6 +++-
- drivers/block/xen-blkfront.c               |    6 ++--
- drivers/edac/i7core_edac.c                 |    2 +-
- drivers/gpu/drm/radeon/radeon_connectors.c |   10 +++++++
- drivers/gpu/drm/ttm/ttm_bo.c               |    4 ++-
- drivers/mmc/host/sdhci.c                   |    3 --
- drivers/net/igb/e1000_82575.c              |    1 +
- drivers/net/wireless/rt2x00/rt2x00usb.c    |   17 +++++-------
- fs/befs/linuxvfs.c                         |   23 ++++++++++------
- fs/btrfs/extent-tree.c                     |   12 +++++++-
- fs/btrfs/tree-log.c                        |   28 +++++++++++++++++---
- fs/btrfs/volumes.c                         |   17 ++++++++++++
- fs/btrfs/volumes.h                         |    2 +
- fs/cifs/connect.c                          |    3 +-
- fs/cifs/dir.c                              |    4 +-
- fs/ext4/ext4_jbd2.h                        |    4 +-
- fs/ext4/inode.c                            |   26 +++++++++++++++++-
- fs/ext4/page-io.c                          |    6 +++-
- fs/ext4/super.c                            |    1 -
- fs/fuse/dev.c                              |    4 +++
- fs/nfs/callback.h                          |    2 +-
- fs/nfs/callback_proc.c                     |   25 ++++++++++++++----
- fs/nfs/callback_xdr.c                      |   24 +++++------------
- fs/nfs/objlayout/objio_osd.c               |   28 +++++++++-----------
- fs/nfs/objlayout/pnfs_osd_xdr_cli.c        |    3 ++
- include/linux/personality.h                |    1 +
- include/linux/stop_machine.h               |    2 +
- kernel/irq/generic-chip.c                  |    4 +-
- kernel/stop_machine.c                      |    2 +-
- kernel/sys.c                               |   38 ++++++++++++++++++++++++++++
- sound/pci/ac97/ac97_patch.c                |    1 +
- sound/usb/caiaq/audio.c                    |   31 +++++++++++++++++++---
- sound/usb/caiaq/device.h                   |    1 +
- sound/usb/mixer.c                          |    3 +-
- 44 files changed, 298 insertions(+), 114 deletions(-)
+Thanks,
+-- 
+Jeff Layton <jlayton@samba.org>
