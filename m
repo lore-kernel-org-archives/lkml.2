@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab1H0O7b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:59:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47177 "EHLO mx2.suse.de"
+	id S932136Ab1H0O7e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:59:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47152 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754790Ab1H0O72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:59:28 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:56 2011
-Message-Id: <20110826215055.994347118@clark.kroah.org>
+	id S932113Ab1H0O7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 10:59:24 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 26 14:50:53 2011
+Message-Id: <20110826215052.954390130@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 26 Aug 2011 14:49:47 -0700
+Date: Fri, 26 Aug 2011 14:49:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Reim <reimth@gmail.com>, Chris Routh <routhy@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [30/35] drm/radeon: Extended DDC Probing for Toshiba L300D Radeon Mobility X1100 HDMI-A Connector
+        Jonghwan Choi <jhbird.choi@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [01/35] genirq: Fix wrong bit operation
 In-Reply-To: <20110826215139.GA11498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Reim <reimth@googlemail.com>
+From: "jhbird.choi@samsung.com" <jhbird.choi@samsung.com>
 
-commit f2b60717e692550bf753a5d64a5b69ea430fc832 upstream.
+commit 1dd75f91ae713049eb6baaa640078f3a6549e522 upstream.
 
-Toshiba Satellite L300D with ATI Mobility Radeon X1100 sends data
-   to i2c bus for a HDMI connector that is not implemented/existent
-   on the notebook's board.
+(!msk & 0x01) should be !(msk & 0x01)
 
-   Fix by applying extented DDC probing for this connector.
-
-   Requires [PATCH] drm/radeon: Extended DDC Probing for Connectors
-   with Improperly Wired DDC Lines
-
-   Tested for kernel 2.6.38 on Toshiba Satellite L300D notebook
-
-   BugLink: http://bugs.launchpad.net/bugs/826677
-
-Signed-off-by: Thomas Reim <reimth@gmail.com>
-Acked-by: Chris Routh <routhy@gmail.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Link: http://lkml.kernel.org/r/1311229754-6003-1-git-send-email-jhbird.choi@samsung.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ kernel/irq/generic-chip.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -466,6 +466,16 @@ static bool radeon_connector_needs_exten
- 		    (supported_device == ATOM_DEVICE_DFP2_SUPPORT))
- 			return true;
- 	}
-+	/* TOSHIBA Satellite L300D with ATI Mobility Radeon x1100
-+	 * (RS690M) sends data to i2c bus for a HDMI connector that
-+	 * is not implemented */
-+	if ((dev->pdev->device == 0x791f) &&
-+	    (dev->pdev->subsystem_vendor == 0x1179) &&
-+	    (dev->pdev->subsystem_device == 0xff68)) {
-+		if ((connector_type == DRM_MODE_CONNECTOR_HDMIA) &&
-+		    (supported_device == ATOM_DEVICE_DFP2_SUPPORT))
-+			return true;
-+	}
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -246,7 +246,7 @@ void irq_setup_generic_chip(struct irq_c
+ 		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
  
- 	/* Default: no EDID header probe required for DDC probing */
- 	return false;
+ 	for (i = gc->irq_base; msk; msk >>= 1, i++) {
+-		if (!msk & 0x01)
++		if (!(msk & 0x01))
+ 			continue;
+ 
+ 		if (flags & IRQ_GC_INIT_NESTED_LOCK)
+@@ -301,7 +301,7 @@ void irq_remove_generic_chip(struct irq_
+ 	raw_spin_unlock(&gc_lock);
+ 
+ 	for (; msk; msk >>= 1, i++) {
+-		if (!msk & 0x01)
++		if (!(msk & 0x01))
+ 			continue;
+ 
+ 		/* Remove handler first. That will mask the irq line */
 
 
