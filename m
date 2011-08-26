@@ -1,125 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab1HZLBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 07:01:08 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:35705 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab1HZLBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 07:01:06 -0400
-Date: Fri, 26 Aug 2011 05:01:05 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Kevin Hilman <khilman@ti.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Felipe Balbi <balbi@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        "G, Manjunath Kondaiah" <manjugk@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Scott Wood <scottwood@freescale.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linux-kernel@vger.kernel.org, Kumar Gala <galak@kernel.crashing.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Removing platform_get_resource_byname() (was Re: How to handle named
- resources with DT?)
-In-Reply-To: <32081673.hbCQs4qpyo@wuerfel>
-Message-ID: <alpine.DEB.2.00.1108260342560.9743@utopia.booyaka.com>
-References: <20110809205723.GE11568@ponder.secretlab.ca> <201108251705.43168.arnd@arndb.de> <877h6173wm.fsf@ti.com> <32081673.hbCQs4qpyo@wuerfel>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752039Ab1HZLB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 07:01:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57177 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466Ab1HZLBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 07:01:55 -0400
+Date: Fri, 26 Aug 2011 13:01:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] oom: skip frozen tasks
+Message-ID: <20110826110150.GD9083@tiehlicka.suse.cz>
+References: <20110824101927.GB3505@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com>
+ <20110825091920.GA22564@tiehlicka.suse.cz>
+ <20110825151818.GA4003@redhat.com>
+ <20110825164758.GB22564@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
+ <20110826070946.GA7280@tiehlicka.suse.cz>
+ <20110826085610.GA9083@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com>
+ <20110826095356.GB9083@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826095356.GB9083@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Aug 2011, Arnd Bergmann wrote:
+On Fri 26-08-11 11:53:56, Michal Hocko wrote:
+> On Fri 26-08-11 02:21:42, David Rientjes wrote:
+> > On Fri, 26 Aug 2011, Michal Hocko wrote:
+> > 
+> > > Let's give all frozen tasks a bonus (OOM_SCORE_ADJ_MAX/2) so that we do
+> > > not consider them unless really necessary and if we really pick up one
+> > > then thaw its threads before we try to kill it.
+> > > 
+> > 
+> > I don't like arbitrary heuristics like this because they polluted the old 
+> > oom killer before it was rewritten and made it much more unpredictable.  
+> > The only heuristic it includes right now is a bonus for root tasks so that 
+> > when two processes have nearly the same amount of memory usage (within 3% 
+> > of available memory), the non-root task is chosen instead.
+> > 
+> > This bonus is actually saying that a single frozen task can use up to 50% 
+> > more of the machine's capacity in a system-wide oom condition than the 
+> > task that will now be killed instead.  That seems excessive.
+> 
+> Yes, the number is probably too high. I just wanted to start up with
+> something. Maybe we can give it another root bonus. But I agree whatever
+> we use it will be just a random value...
+> 
+> > 
+> > I do like the idea of automatically thawing the task though and if that's 
+> > possible then I don't think we need to manipulate the badness heuristic at 
+> > all.  I know that wouldn't be feasible when we've frozen _all_ threads and 
+> 
+> Why it wouldn't be feasible for all threads? If you have all tasks
+> frozen (suspend going on, whole cgroup or all tasks in a cpuset/nodemask
+> are frozen) then the selection is more natural because all of them are
+> equal (with or without a bonus). The bonus tries to reduce thawing if
+> not all of them are frozen.
+> I am not saying the bonus is necessary, though. It depends on what
+> the freezer is used for (e.g. freeze a process which went wild and
+> debug what went wrong wouldn't welcome that somebody killed it or other
+> (mis)use which relies on D state).
 
-> It's not at all about whether the Linux codein drivers/of supports this
-> or not, adding it would be trivial. The point is that it would be
-> *wrong* to add it because there already exists a way to identify every
-> resource in the device tree and we should not extend that interface
-> to have multiple ways to do the same thing just for convenience of
-> a few device drivers!
+Anyway, I do agree, the two things (bonus and thaw during oom_kill)
+should be handled separately.
 
-The point is that:
-
-- there was a reason why platform_get_resource_byname() was added to the 
-  Linux kernel, that at least some people find useful and relevant
-
-- some folks are effectively proposing to remove
-  platform_get_resource_byname() not because it's a bad interface, but 
-  because it would result in changes to the way that DT files are 
-  generated and used
-
-Just as you consider the preservation of platform_get_resource_byname() to 
-be wrong (because it conflicts with DT), some people consider the above 
-rationale to be faulty, because it removes a useful way to abstract 
-drivers from SoC data.
-
-For example, consider that the ordering of device resources, such as IRQ 
-lines or memory regions, in the hardware IP block is arbitrary.  Whomever 
-generates a DT file for that hardware will need to hardcode the driver's 
-assumptions for resource order into the DT generator.  And then hope that 
-the binding assumptions made by that driver are coordinated between all of 
-the other potential DT users out there: other OSes (proprietary or not), 
-bootloaders, etc.
-
-Contrast this with the situation when named resources are used.  The 
-resources are named with a string that represents their use by the 
-hardware IP block.  In this situation, the order in which they appear in 
-the DT file is unimportant.  There need be no extra hacks added to the DT 
-generation code or to the drivers to ensure that they find the correct 
-resource.
-
-Please don't misunderstand: I personally don't consider this specific 
-problem to be a showstopper.  It makes sense to me to improve the DT 
-format to use named resources.  But if the consensus is that the problem 
-is just going to be knowingly pushed on to the poor folks who have to 
-generate DT files, who will have to maintain a bunch of hacks to do so, 
-then, so be it.  But the issue highlights a much larger problem: the 
-apparent level of resistance to improving the DT data format in ways that 
-may affect backwards compatibility.
-
-There are several aspects of DT, and the way that it's used in the kernel, 
-that could be improved -- like, for example, the fact that computer 
-systems for the past several years are not well-represented by a tree of 
-devices.  And if we don't have a strategy for versioning the content and 
-the layout of the device data, as opposed to simply its binary format, 
-then it's unwise to consider it for broader adoption until this exists, 
-IMHO.
-
-> One of the important advantages of using the IEEE device tree bindings 
-> is that we can define device trees that are to a large degree compatible 
-> with how AIX, Solaris, MacOS, FreeBSD and probably many more (lesser 
-> known) operating systems probe their systems.
-
-By that rationale, we should just use ACPI.  It's far more widely deployed 
-than all of those other OSes combined.  (No, I don't think we should use 
-ACPI.)
-
-By the way, MacOS stopped using Device Tree several years ago.
-
-> Changing the resource interface in Linux to have two 'name' fields
-> would also be terribly confusing and is not a good interface
-
-There are other ways of solving that particular problem, other than having 
-two 'name' fields.
-
-> it would just solve another problem (silly entries in /proc/iomem) that 
-> we don't need to have in the first place when we do the obvious 
-> conversion of the drivers to the IEEE standard way of doing this.
-
-Just like MacOS, the IEEE gave up on Device Tree -- in fact, over a decade 
-ago -- so it doesn't make sense to cite them as an authority any more.
-
-My point is not to disrespect DT, which seems like a useful way of moving 
-device data out of the kernel tree; but rather, to try to ensure that 
-we're not locked into a rigid and outdated way of doing things: either 
-technically, or by people's attitudes.
-
-
-- Paul
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
