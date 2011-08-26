@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab1HZUar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 16:30:47 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:32967 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab1HZUaq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 16:30:46 -0400
-Date: Fri, 26 Aug 2011 22:30:24 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: rpurdie@rpsys.net, lenz@cs.wisc.edu,
-        kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
-        Cyril Hrubis <metan@ucw.cz>, thommycheck@gmail.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: 3.1-rc3 on spitz
-Message-ID: <20110826203024.GA6630@ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754743Ab1HZUeA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 16:34:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37005 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754666Ab1HZUd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 16:33:59 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Mike Waychison <mikew@google.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 01/13] firmware: fix google/gsmi.c build warning
+Date: Fri, 26 Aug 2011 13:33:42 -0700
+Message-Id: <1314390834-3411-1-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <20110826191130.GA5557@kroah.com>
+References: <20110826191130.GA5557@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Seems to work correctly, including bluetooth. 3.1 might be good
-release for zaurus :-)
+Modify function parameter type to match expected type.  Fixes a
+build warning:
+
+drivers/firmware/google/gsmi.c:473: warning: initialization from incompatible pointer type
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mike Waychison <mikew@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/firmware/google/gsmi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/firmware/google/gsmi.c b/drivers/firmware/google/gsmi.c
+index 68810fd..aa83de9 100644
+--- a/drivers/firmware/google/gsmi.c
++++ b/drivers/firmware/google/gsmi.c
+@@ -420,7 +420,7 @@ static efi_status_t gsmi_get_next_variable(unsigned long *name_size,
+ 
+ static efi_status_t gsmi_set_variable(efi_char16_t *name,
+ 				      efi_guid_t *vendor,
+-				      unsigned long attr,
++				      u32 attr,
+ 				      unsigned long data_size,
+ 				      void *data)
+ {
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.6.1
+
