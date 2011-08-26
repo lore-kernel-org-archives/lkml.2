@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab1HZLrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 07:47:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39650 "EHLO mga03.intel.com"
+	id S1753092Ab1HZLsP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 07:48:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52630 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213Ab1HZLrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 07:47:51 -0400
+	id S1752022Ab1HZLrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 07:47:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,284,1312182000"; 
-   d="scan'208";a="42702461"
-Message-Id: <20110826113813.895522398@intel.com>
+   d="scan'208";a="42702469"
+Message-Id: <20110826114619.531760091@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 26 Aug 2011 19:38:13 +0800
+Date: Fri, 26 Aug 2011 19:38:20 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 to: <linux-fsdevel@vger.kernel.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
 cc: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>
 CC: Christoph Hellwig <hch@lst.de>
@@ -25,60 +26,167 @@ CC: Vivek Goyal <vgoyal@redhat.com>
 CC: Andrea Righi <arighi@develer.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Subject: [PATCH 00/10] IO-less dirty throttling v10 
+Subject: [PATCH 07/10] writeback: dirty ratelimit - think time compensation
+References: <20110826113813.895522398@intel.com>
+Content-Disposition: inline; filename=think-time-compensation
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Compensate the task's think time when computing the final pause time,
+so that ->dirty_ratelimit can be executed accurately.
 
-The core algorithms for IO-less balance_dirty_pages().
+        think time := time spend outside of balance_dirty_pages()
 
-        git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v10
+In the rare case that the task slept longer than the 200ms period time
+(result in negative pause time), the sleep time will be compensated in
+the following periods, too, if it's less than 1 second.
 
-Changes since v9:
+Accumulated errors are carefully avoided as long as the max pause area
+is not hitted.
 
-- a lot of renames and comment/changelog rework, again
-- seperate out the dirty_ratelimit update policy (as patch 04)
-- add think time compensation
-- add 3 trace events
+Pseudo code:
 
-Changes since v8:
+        period = pages_dirtied / task_ratelimit;
+        think = jiffies - dirty_paused_when;
+        pause = period - think;
 
-- a lot of renames and comment/changelog rework
-- use 3rd order polynomial as the global control line (Peter)
-- stabilize dirty_ratelimit by decreasing update step size on small errors
-- limit per-CPU dirtied pages to avoid dirty pages run away on 1k+ tasks (Peter)
+1) normal case: period > think
 
-Thanks a lot to Peter, Vivek and Andrea for the careful reviews!
+        pause = period - think
+        dirty_paused_when = jiffies + pause
+        nr_dirtied = 0
 
-shortlog:
+                             period time
+              |===============================>|
+                  think time      pause time
+              |===============>|==============>|
+        ------|----------------|---------------|------------------------
+        dirty_paused_when   jiffies
 
-	Wu Fengguang (10):
-	      writeback: account per-bdi accumulated dirtied pages
-	      writeback: dirty position control
-	      writeback: dirty rate control
-	      writeback: stabilize bdi->dirty_ratelimit
-	      writeback: per task dirty rate limit
-	      writeback: IO-less balance_dirty_pages()
-	      writeback: dirty ratelimit - think time compensation
-	      writeback: trace balance_dirty_pages
-	      writeback: trace dirty_ratelimit
-	      trace task_io (RFC)
 
-diffstat:
+2) no pause case: period <= think
 
-	 fs/fs-writeback.c                |    2 +-
-	 include/linux/backing-dev.h      |    8 +
-	 include/linux/sched.h            |    8 +
-	 include/linux/writeback.h        |    1 +
-	 include/trace/events/writeback.h |  181 +++++++++--
-	 kernel/fork.c                    |    4 +
-	 mm/backing-dev.c                 |    3 +
-	 mm/page-writeback.c              |  664 +++++++++++++++++++++++++++++---------
-	 8 files changed, 693 insertions(+), 178 deletions(-)
+        don't pause; reduce future pause time by:
+        dirty_paused_when += period
+        nr_dirtied = 0
 
-Thanks,
-Fengguang
+                           period time
+              |===============================>|
+                                  think time
+              |===================================================>|
+        ------|--------------------------------+-------------------|----
+        dirty_paused_when                                       jiffies
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/sched.h |    1 +
+ kernel/fork.c         |    1 +
+ mm/page-writeback.c   |   34 +++++++++++++++++++++++++++++++---
+ 3 files changed, 33 insertions(+), 3 deletions(-)
+
+--- linux-next.orig/include/linux/sched.h	2011-08-16 08:50:41.000000000 +0800
++++ linux-next/include/linux/sched.h	2011-08-16 08:54:13.000000000 +0800
+@@ -1531,6 +1531,7 @@ struct task_struct {
+ 	 */
+ 	int nr_dirtied;
+ 	int nr_dirtied_pause;
++	unsigned long dirty_paused_when; /* start of a write-and-pause period */
+ 
+ #ifdef CONFIG_LATENCYTOP
+ 	int latency_record_count;
+--- linux-next.orig/mm/page-writeback.c	2011-08-16 08:54:08.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-16 08:54:13.000000000 +0800
+@@ -913,6 +913,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
++	long period;
+ 	long pause = 0;
+ 	bool dirty_exceeded = false;
+ 	unsigned long task_ratelimit;
+@@ -922,6 +923,8 @@ static void balance_dirty_pages(struct a
+ 	unsigned long start_time = jiffies;
+ 
+ 	for (;;) {
++		unsigned long now = jiffies;
++
+ 		/*
+ 		 * Unstable writes are a feature of certain networked
+ 		 * filesystems (i.e. NFS) in which data may have been
+@@ -940,8 +943,11 @@ static void balance_dirty_pages(struct a
+ 		 * when the bdi limits are ramping up.
+ 		 */
+ 		if (nr_dirty <= dirty_freerun_ceiling(dirty_thresh,
+-						      background_thresh))
++						      background_thresh)) {
++			current->dirty_paused_when = now;
++			current->nr_dirtied = 0;
+ 			break;
++		}
+ 
+ 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+ 
+@@ -979,18 +985,41 @@ static void balance_dirty_pages(struct a
+ 					       background_thresh, nr_dirty,
+ 					       bdi_thresh, bdi_dirty);
+ 		if (unlikely(pos_ratio == 0)) {
++			period = MAX_PAUSE;
+ 			pause = MAX_PAUSE;
+ 			goto pause;
+ 		}
+ 		task_ratelimit = (u64)base_rate *
+ 					pos_ratio >> RATELIMIT_CALC_SHIFT;
+-		pause = (HZ * pages_dirtied) / (task_ratelimit | 1);
++		period = (HZ * pages_dirtied) / (task_ratelimit | 1);
++		pause = current->dirty_paused_when + period - now;
++		/*
++		 * For less than 1s think time (ext3/4 may block the dirtier
++		 * for up to 800ms from time to time on 1-HDD; so does xfs,
++		 * however at much less frequency), try to compensate it in
++		 * future periods by updating the virtual time; otherwise just
++		 * do a reset, as it may be a light dirtier.
++		 */
++		if (unlikely(pause <= 0)) {
++			if (pause < -HZ) {
++				current->dirty_paused_when = now;
++				current->nr_dirtied = 0;
++			} else if (period) {
++				current->dirty_paused_when += period;
++				current->nr_dirtied = 0;
++			}
++			pause = 1; /* avoid resetting nr_dirtied_pause below */
++			break;
++		}
+ 		pause = min(pause, (long)MAX_PAUSE);
+ 
+ pause:
+ 		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
+ 
++		current->dirty_paused_when = now + pause;
++		current->nr_dirtied = 0;
++
+ 		dirty_thresh = hard_dirty_limit(dirty_thresh);
+ 		/*
+ 		 * max-pause area. If dirty exceeded but still within this
+@@ -1017,7 +1046,6 @@ pause:
+ 	if (!dirty_exceeded && bdi->dirty_exceeded)
+ 		bdi->dirty_exceeded = 0;
+ 
+-	current->nr_dirtied = 0;
+ 	current->nr_dirtied_pause = dirty_poll_interval(nr_dirty, dirty_thresh);
+ 
+ 	if (writeback_in_progress(bdi))
+--- linux-next.orig/kernel/fork.c	2011-08-16 08:50:41.000000000 +0800
++++ linux-next/kernel/fork.c	2011-08-16 08:54:13.000000000 +0800
+@@ -1303,6 +1303,7 @@ static struct task_struct *copy_process(
+ 
+ 	p->nr_dirtied = 0;
+ 	p->nr_dirtied_pause = 128 >> (PAGE_SHIFT - 10);
++	p->dirty_paused_when = 0;
+ 
+ 	/*
+ 	 * Ok, make it visible to the rest of the system.
+
 
