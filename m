@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1HZO6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 10:58:38 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55268 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab1HZO6h (ORCPT
+	id S1753335Ab1HZPCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 11:02:46 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:62160 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab1HZPCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 10:58:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E574B09.6050108@cn.fujitsu.com>
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
- <20110801161900.1fe24b76.akpm@linux-foundation.org> <CAAAKZwupGmw_+EaApZFAqVcXWBF885Gsjx6tUWUdMuebXrt_Mg@mail.gmail.com>
- <CAPXgP11aUfdkq-SdaHc8=tfjA4W7DYXjSXG-asoZMi6hK4iOPQ@mail.gmail.com>
- <20110818143319.GC10441@somewhere> <CALdu-PA3+u-v1fj-DQuC-zyJ4Ud0Xi0sq0zcB0DLNcR_TMT6XQ@mail.gmail.com>
- <20110824175431.GA26417@somewhere.redhat.com> <4E574B09.6050108@cn.fujitsu.com>
-From: Paul Menage <paul@paulmenage.org>
-Date: Fri, 26 Aug 2011 07:58:16 -0700
-X-Google-Sender-Auth: 3u3FNfT-LHm-bNMS3VRL34UK5OI
-Message-ID: <CALdu-PD0EBK7YvxeuxVw5Z21JvfqbgiUoR5Wh3Of-FhG+VE3zg@mail.gmail.com>
-Subject: Re: [RFD] Task counter: cgroup core feature or cgroup subsystem? (was
- Re: [PATCH 0/8 v3] cgroups: Task counter subsystem)
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Aug 2011 11:02:46 -0400
+Subject: Re: [PATCH] slab: avoid unnecessary touching of a partial slab
+From: Zhao Jin <cronozhj@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: penberg@kernel.org, mpm@selenic.com, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1108260950220.5818@router.home>
+References: <CADqbE97Vj0UV-2XvpkoELwdey_Xw7iCsF1AhQNFjwxY583SUwg@mail.gmail.com>
+	 <alpine.DEB.2.00.1108260841570.5818@router.home>
+	 <1314370016.8991.38.camel@vm>
+	 <alpine.DEB.2.00.1108260950220.5818@router.home>
+Content-Type: text/plain; charset="us-ascii"
+Date: Fri, 26 Aug 2011 23:02:34 +0800
+Message-ID: <1314370954.8991.46.camel@vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 12:28 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
->
-> I had a patchset that can make things even better. The patchset is
-> to bind/unbind a subsystem to/from an existing cgroup hierarchy.
+On Fri, 2011-08-26 at 09:50 -0500, Christoph Lameter wrote:
+> On Fri, 26 Aug 2011, Zhao Jin wrote:
+> 
+> > On Fri, 2011-08-26 at 09:08 -0500, Christoph Lameter wrote:
+> > > On Fri, 26 Aug 2011, Zhao Jin wrote:
+> > >
+> > > > In cache_alloc_refill(), after refilling from a partial slab, if the
+> > > > slab remains partial, it would be deleted from and then added again to
+> > > > the partial list. As the slab is the first element in the list before
+> > > > deletion, such behavior has no effect. This patch avoids touching the
+> > > > slab in this case.
+> > >
+> > > The list_del/list_add action is a list_move.
+> >
+> > But in cache_alloc_refill(), it is the first slab (that is: its list
+> > field is pointed by the l3->slabs_partial.next) that is picked from the
+> > partial list for refilling. Assume it remains partial after that. Since
+> > list_add inserts a new element after the head (l3->slabs_partial), the
+> > position of the slab in the partial list won't change after
+> > list_del/list_add: it will be still the first element. Therefore,
+> > list_del/list_add has done nothing actually in this case.
+> 
+> Correct but still tthe del/add is a list_move operation. Convert that the
+> other case as well?
+> 
+Yes. The patch avoids list_del/list_add only if it is the case that a
+partial slab was used for refilling and remains partial (that is:
+partial => partial). If it is not the case( so it must be either partial
+=> full, free => full or free => partial) the patched code behaves the
+same as current (list_del/list_add).
 
-Sigh, I'd been meaning to comment on that great patchset for ages, but
-they kind of slipped out of my attention :-( I'll try to look over
-them again - do they still apply cleanly after all the recent changes?
+Regards,
+zhj
 
-The bindability is orthogonal to the multi-subsystem support, I think
-- they definitely complement each other.
 
-Paul
+
