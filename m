@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab1HZMvt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:51:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37125 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab1HZMvs convert rfc822-to-8bit (ORCPT
+	id S1754579Ab1HZMw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:52:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42293 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165Ab1HZMwZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:51:48 -0400
-Subject: Re: [PATCH 05/10] writeback: per task dirty rate limit
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 26 Aug 2011 14:51:09 +0200
-In-Reply-To: <20110826114619.268843347@intel.com>
-References: <20110826113813.895522398@intel.com>
-	 <20110826114619.268843347@intel.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 26 Aug 2011 08:52:25 -0400
+Subject: Re: [Linux-cachefs] 3.0.3 64-bit Crash running fscache/cachefilesd
+Mime-Version: 1.0 (Apple Message framework v1244.3)
+Content-Type: text/plain; charset=windows-1251
+From: =?koi8-r?B?5M3J1NLJyiDpzNjJzg==?= <idv1985@gmail.com>
+In-Reply-To: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
+Date: Fri, 26 Aug 2011 16:52:20 +0400
+Cc: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314363069.11049.3.camel@twins>
-Mime-Version: 1.0
+Message-Id: <F6E761C1-015D-4E50-AC8E-31DA654157F4@gmail.com>
+References: <CAOH1cHnymZ1WasD4q+HXbeQb9wBAWmS9f451gEekA0-YjCZtLA@mail.gmail.com>
+To: Linux filesystem caching discussion list 
+	<linux-cachefs@redhat.com>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 19:38 +0800, Wu Fengguang wrote:
-> +       preempt_disable();
->         /*
-> -        * Check the rate limiting. Also, we do not want to throttle real-time
-> -        * tasks in balance_dirty_pages(). Period.
-> +        * This prevents one CPU to accumulate too many dirtied pages without
-> +        * calling into balance_dirty_pages(), which can happen when there are
-> +        * 1000+ tasks, all of them start dirtying pages at exactly the same
-> +        * time, hence all honoured too large initial task->nr_dirtied_pause.
->          */
-> -       preempt_disable();
->         p =  &__get_cpu_var(bdp_ratelimits);
+Same problem here bro)
 
-	p = &get_cpu_var(bdp_ratelimits);
+Heavy NFS based web hosting too.
 
-> -       *p += nr_pages_dirtied;
-> -       if (unlikely(*p >= ratelimit)) {
-> -               ratelimit = sync_writeback_pages(*p);
-> +       if (unlikely(current->nr_dirtied >= ratelimit))
->                 *p = 0;
-> -               preempt_enable();
-> -               balance_dirty_pages(mapping, ratelimit);
-> -               return;
-> +       else {
-> +               *p += nr_pages_dirtied;
-> +               if (unlikely(*p >= ratelimit_pages)) {
-> +                       *p = 0;
-> +                       ratelimit = 0;
-> +               }
->         }
->         preempt_enable(); 
+I get mostly this on 38 kernel
 
-	put_cpu_var(bdp_ratelimits);
+[416779.040059] CacheFiles: Error: Overlong wait for old active object
+to go away
+[416779.040104] object: OBJ43981
+[416779.040127] objstate=OBJECT_LOOKING_UP fl=0 wbusy=2 ev=0[7b]
+[416779.040154] ops=0 inp=0 exc=0
+[416779.040174] parent=ffff8800cca3c3c0
+[416779.040197] cookie=ffff880100029870 [pr=ffff8801131520f0
+nd=ffff88000662b180 fl=7]
+[416779.040241] key=[36]
+'010007010100a00800000000e6c715cb23cd4aa38338eea581f3d1045c2e680a1b56d03d'
+[416779.040325] xobject: OBJ431fe
+[416779.040348] xobjstate=OBJECT_RECYCLING fl=0 wbusy=2 ev=20[3]
+[416779.040373] xops=0 inp=0 exc=0
+[416779.040394] xparent=ffff8800cca3c3c0
+[416779.040416] xcookie=NULL
+
+And 3.0.1 kernel crashes too.
+
+No idea how to debug…
+
+fscache is NOT stable and looks like will never be.
+NFS without cache is too slow.
+
+CIFS is even worse.
+GFS2/OCFS2 too complex and unstable.
+PVFS? Coda? GlusterFS? Lustre?
+They do not suite well for shared web hosting(
+
+Looks like clustering is bad idea and we'll have to return to separate servers and caching servers.
+
+
