@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab1HZOQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 10:16:50 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:38673 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab1HZOQt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 10:16:49 -0400
+	id S1755276Ab1HZOVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 10:21:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30252 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab1HZOVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 10:21:10 -0400
+Date: Fri, 26 Aug 2011 16:18:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH v2 03/43] arm: Use set_current_blocked() and
+	block_sigmask()
+Message-ID: <20110826141801.GA14276@redhat.com>
+References: <1313772419-21951-1-git-send-email-matt@console-pimps.org> <1313772419-21951-4-git-send-email-matt@console-pimps.org> <20110825171556.GH27143@e102144-lin.cambridge.arm.com> <1314353194.17145.9.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
-Message-ID: <24f09c1f-3ff8-4677-a1f7-c3494ced04c1@default>
-Date: Fri, 26 Aug 2011 07:15:30 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        hughd@google.com, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
-        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
-        sjenning@linux.vnet.ibm.com, jackdachef@gmail.com, cyclonusj@gmail.com
-Subject: RE: Subject: [PATCH V7 1/4] mm: frontswap: swap data structure
- changes
-References: <20110823145755.GA23174@ca-server1.us.oracle.com>
- <20110825143312.a6fe93d5.kamezawa.hiroyu@jp.fujitsu.com>
- <8a95a804-7ba3-416e-9ba5-8da7b9cabba5@default
- 20110826090214.2f7f2cdc.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110826090214.2f7f2cdc.kamezawa.hiroyu@jp.fujitsu.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E57AA9D.0235:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Disposition: inline
+In-Reply-To: <1314353194.17145.9.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
-> Subject: Re: Subject: [PATCH V7 1/4] mm: frontswap: swap data structure changes
-> 
-> > > From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
-> > > Subject: Re: Subject: [PATCH V7 1/4] mm: frontswap: swap data structure changes
+On 08/26, Matt Fleming wrote:
+>
+> On Thu, 2011-08-25 at 18:15 +0100, Will Deacon wrote:
+> > Ok. Looks like the only change from v1 is calling block_sigmask. which does
+> > what was previously done inline (in v1).
 > >
-> > Hi Kamezawa-san --
-> >
-> > Domo arigato for the review and feedback!
-> >
-> > > Hmm....could you modify mm/swapfile.c and remove 'static' in the same patch ?
-> >
-> > I separated out this header patch because I thought it would
-> > make the key swap data structure changes more visible.  Are you
-> > saying that it is more confusing?
-> 
-> Yes. I know you add a new header file which is not included but..
-> 
-> At reviewing patch, I check whether all required changes are done.
-> In this case, you turned out the function to be externed but you
-> leave the function definition as 'static'. This unbalance confues me.
-> 
-> I always read patches from 1 to END. When I found an incomplete change
-> in patch 1, I remember it and need to find missng part from patch 2->End.
-> This makes my review confused a little.
-> 
-> In another case, when a patch adds a new file, I check Makefile change.
-> Considering dependency, the patch order should be
-> 
-> 	[patch 1] Documentaion/Config
-> 	[patch 2] Makefile + add new file.
-> 
-> But plesse note: This is my thought. Other guys may have other idea.
+> > So you can keep my ack if you like!
+>
+> Thanks!
 
-I think that is probably a good approach.  I will try to use it
-for future patches.  But since this frontswap patchset is already
-on V7, I hope it is OK if I continue to organize it for V8 the same
-as it has been, as it might be confusing to previous reviewers
-to change the organization now.
+Yes, thanks.
 
-Thanks,
-Dan
+> Oleg, could you add Will's Acked-by?
+
+Ooooh. Will, Matt, I really hope you won't insist. The problem is,
+I already pushed these changes, I'd like to avoid another test of
+my poor git skills ;)
+
+Oleg.
+
