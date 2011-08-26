@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab1HZAiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Aug 2011 20:38:12 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:44050 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753549Ab1HZAiL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Aug 2011 20:38:11 -0400
-Subject: Re: [PATCH] mm: Neaten warn_alloc_failed
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20110825170534.0d425c75.akpm@linux-foundation.org>
-References: <5a0bef0143ed2b3176917fdc0ddd6a47f4c79391.1314303846.git.joe@perches.com>
-	 <20110825165006.af771ef7.akpm@linux-foundation.org>
-	 <1314316801.19476.6.camel@Joe-Laptop>
-	 <20110825170534.0d425c75.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Aug 2011 17:38:08 -0700
-Message-ID: <1314319088.19476.17.camel@Joe-Laptop>
+	id S1754419Ab1HZAjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Aug 2011 20:39:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49027 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754362Ab1HZAjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Aug 2011 20:39:42 -0400
+Date: Fri, 26 Aug 2011 10:39:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Timur Tabi <timur@freescale.com>, Greg KH <greg@kroah.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: build failure after merge of the final tree (tty
+ tree related)
+Message-Id: <20110826103932.1626f1c5542b660bcd1b24aa@canb.auug.org.au>
+In-Reply-To: <CACqU3MUs_97=MuuKAjr-LeUT7kSRxtzSntwUeKeeH4n8s7SSGg@mail.gmail.com>
+References: <20110825161843.daf46b6b4023926fcfeec387@canb.auug.org.au>
+	<20110825140820.GA9126@kroah.com>
+	<4E56689D.3080202@freescale.com>
+	<20110826015111.49af16f792d5554fd931d230@canb.auug.org.au>
+	<CACqU3MUs_97=MuuKAjr-LeUT7kSRxtzSntwUeKeeH4n8s7SSGg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__26_Aug_2011_10_39_32_+1000_UQfyvCYc3R3Zechk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-25 at 17:05 -0700, Andrew Morton wrote:
-> On Thu, 25 Aug 2011 17:00:01 -0700
-> Joe Perches <joe@perches.com> wrote:
-> > On Thu, 2011-08-25 at 16:50 -0700, Andrew Morton wrote:
-> > > On Thu, 25 Aug 2011 13:26:19 -0700
-> > > Joe Perches <joe@perches.com> wrote:
-> > > > Add __attribute__((format (printf...) to the function
-> > > > to validate format and arguments.  Use vsprintf extension
-> > > > %pV to avoid any possible message interleaving. Coalesce
-> > > > format string.  Convert printks/pr_warning to pr_warn.
-> > []
-> > > > -extern void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
-> > > > +extern __attribute__((format (printf, 3, 4)))
-> > > > +void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...);
-> > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > looky:
-> > Looky what?
-> > There are _far_ more uses of __attribute__((format...)
-> > than __printf(...)
-> > I generally go with what's more commonly used,
-> > especially when it's 206 to 8, and 1 of the
-> > 8 is the #define itself.
-> > $ grep -rP --include=*.[ch] "__attribute__.*format" * | wc -l
-> > 206
-> > $ grep -rP --include=*.[ch]  -w "__printf" * | wc -l
-> > 8
-> So?
+--Signature=_Fri__26_Aug_2011_10_39_32_+1000_UQfyvCYc3R3Zechk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So if you really like it that much:
+Hi Arnaud,
 
-grep -rPl --include=*.[ch] -w "__attribute__" * |
-grep -v "^tools" | grep -v "^scripts" | grep -v "include/linux/compiler-gcc.h" |
-xargs perl -n -i -e 'local $/; while (<>) { s/\b__attribute__\s*\(\s*\(\s*format\s*\(\s*printf\s*,\s*(.+)\s*,\s*(.+)\s*\)\s*\)\s*\)/__printf($1, $2)/g ; print; }'
+On Thu, 25 Aug 2011 12:09:20 -0400 Arnaud Lacombe <lacombar@gmail.com> wrot=
+e:
+>
+> If you could provide an exhaustive list of them, I'd be interested. Do
+> you account/reference them in the report you make on each new -next
+> tree ?
 
-Then they're all the same.
+I don't refer to them at all :-(
 
-cheers, Joe
+If you are not just referring to powerpc ones, then an x86_64
+allmodconfig is a good place to start, there are several in there.
 
+Otherwise, I will send you the results of some of my builds this evening.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__26_Aug_2011_10_39_32_+1000_UQfyvCYc3R3Zechk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOVutEAAoJEDMEi1NhKgbstWUH/2xvvQhPrYnpIAFED1Sk616Q
+MffZWwjA3EpcxIYBQcyEVkLeymFZG3zcEpPo6dyEoiV1h8c1TCjQkFt2ACFPnbjj
+H49835CYAzc9Yl6M2K8FM5XdkBgVXRbIA4J+Bd+aUddYYewNhju2Etk2leGEnzH/
+KvAXoCgl8sPh1Q93QCeML7EbgFPpuK175d9k7Ckid4ihfoVPazA1kOTsQLVADroH
+NC0pLcs0H69p4RDU4I6kEFNfEHIU1c+YyoVm3hebw7hLWe8UeS6ipTTLGWmg3ARo
+tWxLPHFmKV29gVzvYNwPVNsaYivaDq389qk8Nd6L3Ju5wBxYNgR1O31fircJOoo=
+=qvYM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Aug_2011_10_39_32_+1000_UQfyvCYc3R3Zechk--
