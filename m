@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1HZMHi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 08:07:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:3601 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540Ab1HZMHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 08:07:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,284,1312182000"; 
-   d="scan'208";a="42708000"
-Date: Fri, 26 Aug 2011 20:07:33 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+	id S1753627Ab1HZMHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 08:07:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52245 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab1HZMHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 08:07:40 -0400
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        rt-users <linux-rt-users@vger.kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/10] writeback: trace balance_dirty_pages
-Message-ID: <20110826120733.GB26666@localhost>
-References: <20110826113813.895522398@intel.com>
- <20110826114619.661085405@intel.com>
+        lkml <linux-kernel@vger.kernel.org>, John Kacur <jkacur@redhat.com>
+Subject: [PATCH] PREEMPT_RT_FULL Build error fix
+Date: Fri, 26 Aug 2011 14:06:33 +0200
+Message-Id: <1314360393-13605-1-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110826114619.661085405@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	TP_printk("bdi %s: "
-> +		  "limit=%lu goal=%lu dirty=%lu "
-> +		  "bdi_goal=%lu bdi_dirty=%lu "
-> +		  "base_rate=%lu task_ratelimit=%lu "
-> +		  "dirtied=%u dirtied_pause=%u "
-> +		  "period=%lu think=%ld pause=%ld paused=%lu",
+Problem:
+make O=/bld/3.0.3-rt11/ kernel/fork.o
+/home/jkacur/jk-2.6/kernel/fork.c:91: error: section of ‘name’ conflicts with previous declaration
 
-Sorry, forgot the rename: base_rate => dirty_ratelimit.
+__cacheline_aligned is already part of the definition of DEFINE_RWLOCK
+for -rt
 
-Thanks,
-Fengguang
+However it is not always used for the tasklist_lock in non-rt, so it can't
+simply be added to the definition of DEFINE_RWLOCK in non-rt, so I modified
+the definition in fork.c
+
+Signed-off-by: John Kacur
+---
+ kernel/fork.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/fork.c b/kernel/fork.c
+index aa5fe26..0d264ec 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -87,7 +87,11 @@ int max_threads;		/* tunable limit on nr_threads */
+ 
+ DEFINE_PER_CPU(unsigned long, process_counts) = 0;
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ __cacheline_aligned DEFINE_RWLOCK(tasklist_lock);  /* outer */
++#else
++DEFINE_RWLOCK(tasklist_lock);  /* outer */
++#endif
+ 
+ #ifdef CONFIG_PROVE_RCU
+ int lockdep_tasklist_lock_is_held(void)
+-- 
+1.7.2.3
+
