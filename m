@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab1HZSfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 14:35:13 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57918 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751747Ab1HZSe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 14:34:57 -0400
-X-Sasl-enc: 7pKwB0de4vsJ2fK9AmRJTZNrDow1PgIJFU6GlgRMtiFQ 1314383696
-Date: Fri, 26 Aug 2011 11:34:50 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Michal Nazarewicz <mnazarewicz@google.com>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 1/4] usb: Provide usb_speed_string() function
-Message-ID: <20110826183450.GA32142@kroah.com>
-References: <20110826180734.GA24226@kroah.com>
- <Pine.LNX.4.44L0.1108261422460.2275-100000@netrider.rowland.org>
+	id S1751466Ab1HZSiv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 14:38:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34889 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab1HZSit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 14:38:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,286,1312182000"; 
+   d="scan'208";a="45135380"
+From: Andi Kleen <andi@firstfloor.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: Kerneloops.org defunct?
+References: <4DE6264A.2040901@gmail.com>
+	<20110601212432.2677b03a.rdunlap@xenotime.net>
+	<201106211534.10366.roucaries.bastien@gmail.com>
+	<CAE2SPAa=AD=YGyLJn2bX4E8Mu70BaXGi2CvL_fikPKP1gab7+g@mail.gmail.com>
+	<20110826173517.7321c086@lxorguk.ukuu.org.uk>
+Date: Fri, 26 Aug 2011 11:38:45 -0700
+In-Reply-To: <20110826173517.7321c086@lxorguk.ukuu.org.uk> (Alan Cox's message
+	of "Fri, 26 Aug 2011 17:35:17 +0100")
+Message-ID: <m2ei089fwq.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1108261422460.2275-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 02:26:43PM -0400, Alan Stern wrote:
-> On Fri, 26 Aug 2011, Greg KH wrote:
-> 
-> > > --- a/drivers/usb/Makefile
-> > > +++ b/drivers/usb/Makefile
-> > > @@ -53,3 +53,5 @@ obj-$(CONFIG_USB_MUSB_HDRC)	+= musb/
-> > >  obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
-> > >  obj-$(CONFIG_USB_OTG_UTILS)	+= otg/
-> > >  obj-$(CONFIG_USB_GADGET)	+= gadget/
-> > > +
-> > > +obj-$(CONFIG_USB_SUPPORT)	+= common.o
-> > 
-> > You just built this into the kernel, which while ok for some things,
-> > might not be what some people want.
-> > 
-> > Please make this into a separate module if people are building the usb
-> > code as modules, usb_common.ko perhaps?
-> 
-> > > +#ifdef __KERNEL__
-> > > +
-> > > +/**
-> > > + * usb_speed_string() - Returns human readable-name of the speed.
-> > > + * @speed: The speed to return human-readable name for.  If it's not
-> > > + *   any of the speeds defined in usb_device_speed enum, string for
-> > > + *   USB_SPEED_UNKNOWN will be returned.
-> > > + */
-> > > +extern const char *usb_speed_string(enum usb_device_speed speed);
-> > > +
-> > > +#endif
-> > 
-> > No, this should be in include/linux/usb.h, not ch9.h.
-> 
-> There's a reason for both of these things.  The usb_speed_string 
-> routine, like the other stuff in ch9.h, is meant to be used with both 
-> the host-side and device-side USB stacks.
+Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
 
-Ok, the __KERNEL__ stuff threw me off, those should not be in the patch
-as they are not needed, so it's ok to keep it here, sorry.
+> On Fri, 26 Aug 2011 18:35:05 +0200
+> Bastien ROUCARIES <roucaries.bastien@gmail.com> wrote:
+>
+>> Ping ?
+>> 
+>> Could we know what is the status for kerneloops ?
+>
+> How long as it been down ? I think we can assume its dead, defunct and
+> someone needs to create a replacement !
 
-> This makes deciding where to put it kind of difficult.  The two stacks 
-> are pretty much independent; one might be built into the kernel while 
-> the other is built as modules.  The easiest solution that will always 
-> work is to put common.c into the main kernel.
+Even when it wasn't down it didn't work already for quite some time
+(mostly returning errors on queries)
 
-A module, if the USB Host core is a module, and a module if the USB
-gadge core is a module, would be best if at all possible.  I'm a bit
-leery of adding stuff to be built into the kernel no matter how the user
-decided to configure USB.
+I guess just needs someone to run it?
 
-Is this possible with the Kbuild system somehow?
+It definitely was a useful service.
 
-thanks,
+-Andi
 
-greg k-h
+-- 
+ak@linux.intel.com -- Speaking for myself only
