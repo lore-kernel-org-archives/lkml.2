@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1HZJG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:06:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33813 "EHLO
+	id S1754010Ab1HZJGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:06:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33824 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab1HZJGZ (ORCPT
+	with ESMTP id S1750747Ab1HZJGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:06:25 -0400
+	Fri, 26 Aug 2011 05:06:46 -0400
 From: Bryan Wu <bryan.wu@canonical.com>
 To: linux@arm.linux.org.uk, linus.walleij@linaro.org, rpurdie@rpsys.net,
         tony@atomide.com, jochen@scram.de, linux@maxim.org.za,
         nicolas.pitre@linaro.org, arnd@arndb.de,
         linux-arm-kernel@lists.infradead.org, jamie@jamieiles.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 06/18] mach-shark: retire custom LED code
-Date: Fri, 26 Aug 2011 17:03:23 +0800
-Message-Id: <1314349415-889-7-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 07/18] mach-orion5x: convert custom LED code to gpio_led and LED CPU trigger
+Date: Fri, 26 Aug 2011 17:03:24 +0800
+Message-Id: <1314349415-889-8-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.5
 In-Reply-To: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
 References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
@@ -23,302 +23,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU activity LED is now handled by the trigger in the leds
-subsystem, retire this old CONFIG_LEDS-based code.
-
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+Acked-by: Nicolas Pitre <nico@fluxnic.net>
 ---
- arch/arm/mach-shark/Makefile |    4 +-
- arch/arm/mach-shark/core.c   |    1 -
- arch/arm/mach-shark/leds.c   |  227 ++++++++++++++++--------------------------
- 3 files changed, 89 insertions(+), 143 deletions(-)
+ arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c |    1 -
+ arch/arm/mach-orion5x/rd88f5181l-ge-setup.c  |    1 -
+ arch/arm/mach-orion5x/rd88f5182-setup.c      |   74 ++++++++------------------
+ arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c |    1 -
+ 4 files changed, 23 insertions(+), 54 deletions(-)
 
-diff --git a/arch/arm/mach-shark/Makefile b/arch/arm/mach-shark/Makefile
-index 45be9b0..2965718 100644
---- a/arch/arm/mach-shark/Makefile
-+++ b/arch/arm/mach-shark/Makefile
-@@ -4,9 +4,7 @@
- 
- # Object file lists.
- 
--obj-y			:= core.o dma.o irq.o pci.o
-+obj-y			:= core.o dma.o irq.o pci.o leds.o
- obj-m			:=
- obj-n			:=
- obj-			:=
--
--obj-$(CONFIG_LEDS)	+= leds.o
-diff --git a/arch/arm/mach-shark/core.c b/arch/arm/mach-shark/core.c
-index ac2873c..36b6b87 100644
---- a/arch/arm/mach-shark/core.c
-+++ b/arch/arm/mach-shark/core.c
-@@ -13,7 +13,6 @@
- 
- #include <asm/setup.h>
+diff --git a/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c b/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
+index 291d22b..fb9c635 100644
+--- a/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
++++ b/arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c
+@@ -19,7 +19,6 @@
+ #include <net/dsa.h>
  #include <asm/mach-types.h>
+ #include <asm/gpio.h>
 -#include <asm/leds.h>
- #include <asm/param.h>
- 
- #include <asm/mach/map.h>
-diff --git a/arch/arm/mach-shark/leds.c b/arch/arm/mach-shark/leds.c
-index c9e32de..55433b0 100644
---- a/arch/arm/mach-shark/leds.c
-+++ b/arch/arm/mach-shark/leds.c
-@@ -1,166 +1,115 @@
- /*
-- * arch/arm/mach-shark/leds.c
-- * by Alexander Schulz
-- *
-- * derived from:
-- * arch/arm/kernel/leds-footbridge.c
-- * Copyright (C) 1998-1999 Russell King
-- *
-  * DIGITAL Shark LED control routines.
-  *
-- * The leds use is as follows:
-- *  - Green front - toggles state every 50 timer interrupts
-- *  - Amber front - Unused, this is a dual color led (Amber/Green)
-- *  - Amber back  - On if system is not idle
-+ * Driver for the 3 user LEDs found on the Shark
-+ * Based on Versatile and RealView machine LED code
-  *
-- * Changelog:
-+ * License terms: GNU General Public License (GPL) version 2
-+ * Author: Bryan Wu <bryan.wu@canonical.com>
-  */
- #include <linux/kernel.h>
--#include <linux/module.h>
- #include <linux/init.h>
--#include <linux/spinlock.h>
--#include <linux/ioport.h>
- #include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/slab.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
+diff --git a/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c b/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
+index 3f02362..f4d64e6 100644
+--- a/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
++++ b/arch/arm/mach-orion5x/rd88f5181l-ge-setup.c
+@@ -20,7 +20,6 @@
+ #include <net/dsa.h>
+ #include <asm/mach-types.h>
+ #include <asm/gpio.h>
+-#include <asm/leds.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
+diff --git a/arch/arm/mach-orion5x/rd88f5182-setup.c b/arch/arm/mach-orion5x/rd88f5182-setup.c
+index 27fd38e..6c6cd48 100644
+--- a/arch/arm/mach-orion5x/rd88f5182-setup.c
++++ b/arch/arm/mach-orion5x/rd88f5182-setup.c
+@@ -19,9 +19,9 @@
+ #include <linux/mv643xx_eth.h>
+ #include <linux/ata_platform.h>
+ #include <linux/i2c.h>
++#include <linux/gpio.h>
 +#include <linux/leds.h>
- 
+ #include <asm/mach-types.h>
+-#include <asm/gpio.h>
 -#include <asm/leds.h>
--#include <asm/system.h>
-+#include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
+@@ -54,12 +54,6 @@
+ #define RD88F5182_PCI_SLOT0_IRQ_A_PIN	7
+ #define RD88F5182_PCI_SLOT0_IRQ_B_PIN	6
  
--#define LED_STATE_ENABLED	1
--#define LED_STATE_CLAIMED	2
-+struct shark_led {
-+	struct led_classdev cdev;
-+	u8 mask;
-+};
+-/*
+- * GPIO Debug LED
+- */
+-
+-#define RD88F5182_GPIO_DBG_LED		0
+-
+ /*****************************************************************************
+  * 16M NOR Flash on Device bus CS1
+  ****************************************************************************/
+@@ -84,55 +78,32 @@ static struct platform_device rd88f5182_nor_flash = {
+ 	.resource		= &rd88f5182_nor_flash_resource,
+ };
  
--#define SEQUOIA_LED_GREEN       (1<<6)
--#define SEQUOIA_LED_AMBER       (1<<5)
--#define SEQUOIA_LED_BACK        (1<<7)
-+/*
-+ * The triggers lines up below will only be used if the
-+ * LED triggers are compiled in.
-+ */
-+static const struct {
-+	const char *name;
-+	const char *trigger;
-+} shark_leds[] = {
-+	{ "shark:amber0", "default-on", },	/* Bit 5 */
-+	{ "shark:green", "heartbeat", },	/* Bit 6 */
-+	{ "shark:amber1", "cpu0" },		/* Bit 7 */
-+};
-+
-+static u16 led_reg_read(void)
-+{
-+	outw(0x09, 0x24);
-+	return inw(0x26);
-+}
+-#ifdef CONFIG_LEDS
+-
+ /*****************************************************************************
+- * Use GPIO debug led as CPU active indication
++ * Use GPIO LED as CPU active indication
+  ****************************************************************************/
  
--static char led_state;
--static short hw_led_state;
--static short saved_state;
-+static void led_reg_write(u16 value)
-+{
-+	outw(0x09, 0x24);
-+	outw(value, 0x26);
-+}
- 
--static DEFINE_SPINLOCK(leds_lock);
-+static void shark_led_set(struct led_classdev *cdev,
-+			      enum led_brightness b)
-+{
-+	struct shark_led *led = container_of(cdev,
-+						 struct shark_led, cdev);
-+	u16 reg = led_reg_read();
- 
--short sequoia_read(int addr) {
--  outw(addr,0x24);
--  return inw(0x26);
+-static void rd88f5182_dbgled_event(led_event_t evt)
+-{
+-	int val;
+-
+-	if (evt == led_idle_end)
+-		val = 1;
+-	else if (evt == led_idle_start)
+-		val = 0;
+-	else
+-		return;
+-
+-	gpio_set_value(RD88F5182_GPIO_DBG_LED, val);
 -}
-+	if (b != LED_OFF)
-+		reg |= led->mask;
-+	else
-+		reg &= ~led->mask;
+-
+-static int __init rd88f5182_dbgled_init(void)
+-{
+-	int pin;
+-
+-	if (machine_is_rd88f5182()) {
+-		pin = RD88F5182_GPIO_DBG_LED;
++#define RD88F5182_GPIO_LED		0
  
--void sequoia_write(short value,short addr) {
--  outw(addr,0x24);
--  outw(value,0x26);
-+	led_reg_write(reg);
- }
- 
--static void sequoia_leds_event(led_event_t evt)
-+static enum led_brightness shark_led_get(struct led_classdev *cdev)
- {
--	unsigned long flags;
+-		if (gpio_request(pin, "DBGLED") == 0) {
+-			if (gpio_direction_output(pin, 0) != 0) {
+-				printk(KERN_ERR "rd88f5182_dbgled_init failed "
+-						"to set output pin %d\n", pin);
+-				gpio_free(pin);
+-				return 0;
+-			}
+-		} else {
+-			printk(KERN_ERR "rd88f5182_dbgled_init failed "
+-					"to request gpio %d\n", pin);
+-			return 0;
+-		}
 -
--	spin_lock_irqsave(&leds_lock, flags);
--
--	hw_led_state = sequoia_read(0x09);
--
--	switch (evt) {
--	case led_start:
--		hw_led_state |= SEQUOIA_LED_GREEN;
--		hw_led_state |= SEQUOIA_LED_AMBER;
--#ifdef CONFIG_LEDS_CPU
--		hw_led_state |= SEQUOIA_LED_BACK;
--#else
--		hw_led_state &= ~SEQUOIA_LED_BACK;
--#endif
--		led_state |= LED_STATE_ENABLED;
--		break;
--
--	case led_stop:
--		hw_led_state &= ~SEQUOIA_LED_BACK;
--		hw_led_state |= SEQUOIA_LED_GREEN;
--		hw_led_state |= SEQUOIA_LED_AMBER;
--		led_state &= ~LED_STATE_ENABLED;
--		break;
--
--	case led_claim:
--		led_state |= LED_STATE_CLAIMED;
--		saved_state = hw_led_state;
--		hw_led_state &= ~SEQUOIA_LED_BACK;
--		hw_led_state |= SEQUOIA_LED_GREEN;
--		hw_led_state |= SEQUOIA_LED_AMBER;
--		break;
--
--	case led_release:
--		led_state &= ~LED_STATE_CLAIMED;
--		hw_led_state = saved_state;
--		break;
--
--#ifdef CONFIG_LEDS_TIMER
--	case led_timer:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state ^= SEQUOIA_LED_GREEN;
--		break;
--#endif
--
--#ifdef CONFIG_LEDS_CPU
--	case led_idle_start:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state &= ~SEQUOIA_LED_BACK;
--		break;
--
--	case led_idle_end:
--		if (!(led_state & LED_STATE_CLAIMED))
--			hw_led_state |= SEQUOIA_LED_BACK;
--		break;
--#endif
--
--	case led_green_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~SEQUOIA_LED_GREEN;
--		break;
--
--	case led_green_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= SEQUOIA_LED_GREEN;
--		break;
--
--	case led_amber_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~SEQUOIA_LED_AMBER;
--		break;
--
--	case led_amber_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= SEQUOIA_LED_AMBER;
--		break;
--
--	case led_red_on:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state |= SEQUOIA_LED_BACK;
--		break;
--
--	case led_red_off:
--		if (led_state & LED_STATE_CLAIMED)
--			hw_led_state &= ~SEQUOIA_LED_BACK;
--		break;
--
--	default:
--		break;
+-		leds_event = rd88f5182_dbgled_event;
 -	}
 -
--	if  (led_state & LED_STATE_ENABLED)
--		sequoia_write(hw_led_state,0x09);
-+	struct shark_led *led = container_of(cdev,
-+						 struct shark_led, cdev);
-+	u16 reg = led_reg_read();
+-	return 0;
+-}
++static struct gpio_led rd88f5182_gpio_led_pins[] = {
++	{
++		.name		= "rd88f5182:cpu",
++		.default_trigger = "cpu0",
++		.gpio		= RD88F5182_GPIO_LED,
++	},
++};
  
--	spin_unlock_irqrestore(&leds_lock, flags);
-+	return (reg & led->mask) ? LED_FULL : LED_OFF;
+-__initcall(rd88f5182_dbgled_init);
++static struct gpio_led_platform_data rd88f5182_gpio_led_data = {
++	.leds		= rd88f5182_gpio_led_pins,
++	.num_leds	= ARRAY_SIZE(rd88f5182_gpio_led_pins),
++};
+ 
+-#endif
++static struct platform_device rd88f5182_gpio_leds = {
++	.name	= "leds-gpio",
++	.id	= -1,
++	.dev	= {
++		.platform_data = &rd88f5182_gpio_led_data,
++	},
++};
+ 
+ /*****************************************************************************
+  * PCI
+@@ -300,6 +271,7 @@ static void __init rd88f5182_init(void)
+ 
+ 	orion5x_setup_dev1_win(RD88F5182_NOR_BASE, RD88F5182_NOR_SIZE);
+ 	platform_device_register(&rd88f5182_nor_flash);
++	platform_device_register(&rd88f5182_gpio_leds);
+ 
+ 	i2c_register_board_info(0, &rd88f5182_i2c_rtc, 1);
  }
- 
--static int __init leds_init(void)
-+static int __init shark_leds_init(void)
- {
--	extern void (*leds_event)(led_event_t);
--	short temp;
--	
--	leds_event = sequoia_leds_event;
-+	int i;
-+	u16 reg;
-+
-+	if (!machine_is_shark())
-+		return -ENODEV;
-+
-+	for (i = 0; i < ARRAY_SIZE(shark_leds); i++) {
-+		struct shark_led *led;
-+
-+		led = kzalloc(sizeof(*led), GFP_KERNEL);
-+		if (!led)
-+			break;
-+
-+		led->cdev.name = shark_leds[i].name;
-+		led->cdev.brightness_set = shark_led_set;
-+		led->cdev.brightness_get = shark_led_get;
-+		led->cdev.default_trigger = shark_leds[i].trigger;
-+
-+		/* Count in 5 bits offset */
-+		led->mask = BIT(i + 5);
-+
-+		if (led_classdev_register(NULL, &led->cdev) < 0) {
-+			kfree(led);
-+			break;
-+		}
-+	}
- 
- 	/* Make LEDs independent of power-state */
--	request_region(0x24,4,"sequoia");
--	temp = sequoia_read(0x09);
--	temp |= 1<<10;
--	sequoia_write(temp,0x09);
--	leds_event(led_start);
-+	request_region(0x24, 4, "led_reg");
-+	reg = led_reg_read();
-+	reg |= 1 << 10;
-+	led_reg_write(reg);
-+
- 	return 0;
- }
- 
--__initcall(leds_init);
-+/*
-+ * Since we may have triggers on any subsystem, defer registration
-+ * until after subsystem_init.
-+ */
-+fs_initcall(shark_leds_init);
+diff --git a/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c b/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
+index ad2eba9..0c5d1d2 100644
+--- a/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
++++ b/arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c
+@@ -22,7 +22,6 @@
+ #include <net/dsa.h>
+ #include <asm/mach-types.h>
+ #include <asm/gpio.h>
+-#include <asm/leds.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/pci.h>
+ #include <mach/orion5x.h>
 -- 
 1.7.5
 
