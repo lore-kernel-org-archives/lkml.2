@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab1HZRgn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 13:36:43 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:36096 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab1HZRgl (ORCPT
+	id S1754667Ab1HZRkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 13:40:37 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:41484 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752070Ab1HZRke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 13:36:41 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Aug 2011 13:36:41 EDT
-Subject: Re: [PATCH] Smack: SMACK_IOCLOADACCESS
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Eric Paris <eparis@parisplace.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Casey Schaufler <casey@schaufler-ca.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-In-Reply-To: <20110826141410.3d639231@lxorguk.ukuu.org.uk>
-References: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com>
-	 <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com>
-	 <20110826141410.3d639231@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Fri, 26 Aug 2011 13:36:26 -0400
-Message-ID: <1314380186.25778.30.camel@moss-pluto>
+	Fri, 26 Aug 2011 13:40:34 -0400
+Date: Fri, 26 Aug 2011 10:40:31 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-edac@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 26 (i7core_edac)
+Message-Id: <20110826104031.4c5861e5.rdunlap@xenotime.net>
+In-Reply-To: <CA+icZUX1zaw7xxka8yP4B0tFt7XgXe=8faw8vBnNWm+6teJVaA@mail.gmail.com>
+References: <20110826150000.302334d0b86c17cd9b89b590@canb.auug.org.au>
+	<205ae102ed038641e32cf38c48334f9e.squirrel@xenotime.net>
+	<CA+icZUX1zaw7xxka8yP4B0tFt7XgXe=8faw8vBnNWm+6teJVaA@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-26 at 14:14 +0100, Alan Cox wrote:
-> > good in that it only takes 1 syscall and ours takes 2.  Your interface
-> > is bad in that it is ioctl and we are told since birth that we must
-> > hate them no matter what (not that read/write is really any
-> > different).  It isn't the same method the only other LSM I know about
-> > uses.  It can only every return one value (ok, I know ioctl can be
-> > made to do anything at all)
+On Fri, 26 Aug 2011 16:16:11 +0200 Sedat Dilek wrote:
+
+> On Fri, Aug 26, 2011 at 10:07 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >
+> > On Thu, August 25, 2011 10:00 pm, Stephen Rothwell wrote:
+> >> Hi all,
+> >>
+> >> The powerpc allyesconfig build still fails today.
+> >>
+> >> Changes since 20110825:
+> >
+> >
+> > on i386:
+> >
+> > ERROR: "__udivdi3" [drivers/edac/i7core_edac.ko] undefined!
+> >
+> > in both get_sdram_scrub_rate()
+> > and set_sdram_scrub_rate()
+> >
+> > --
 > 
-> I'm all in favour of the use of brains rather than the cult of ioctl
-> hating. You can design bad ioctls and good ones. Also ioctl is pretty
-> much unique in being bidirectional, it allows a query/respose action
-> without having to worry about whether the respose is the one to your
-> query or another parallel query.
+> Hi Randy,
+> 
+> can you test with the patch attached, please?
+> 
+> ( UNTESTED, just followed patches like "[PATCH] p54: Use do_div for
+> 64-bit division to fix 32-bit kernels" or "[PATCH v1] carl9170: Use
+> do_div for 64-bit division to fix 32-bit kernels" )
 
-The transaction ops achieve that property as well - the response is
-stored in an open file private buffer and thus can only correspond to a
-request written to that same open file instance.
+Yes, this works after I removed the extra right parens in both cases.
+(did you test it?)
 
--- 
-Stephen Smalley
-National Security Agency
-
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
