@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab1HZJTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 05:19:08 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53082 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab1HZJTG convert rfc822-to-8bit (ORCPT
+	id S1754302Ab1HZJVv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 05:21:51 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55880 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab1HZJVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 05:19:06 -0400
+	Fri, 26 Aug 2011 05:21:48 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=cSI3vFYexh9yCKkE6CAUN3IXLtNJnKBIwTnx3dlj6sTxuT8xdqzGd2hGeP2nlz/96
+	UgZpSypa5VZ2KqxqloElw==
+Date: Fri, 26 Aug 2011 02:21:42 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] oom: skip frozen tasks
+In-Reply-To: <20110826085610.GA9083@tiehlicka.suse.cz>
+Message-ID: <alpine.DEB.2.00.1108260218050.14732@chino.kir.corp.google.com>
+References: <20110823073101.6426.77745.stgit@zurg> <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz> <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com> <20110825091920.GA22564@tiehlicka.suse.cz>
+ <20110825151818.GA4003@redhat.com> <20110825164758.GB22564@tiehlicka.suse.cz> <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com> <20110826070946.GA7280@tiehlicka.suse.cz> <20110826085610.GA9083@tiehlicka.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1314349357.9624.3.camel@Joe-Laptop>
-References: <927eab8b5c950c13991911cd4c16457a5d618bc7.1314252671.git.joe@perches.com>
-	<CACna6ryWtZG9obyj0w=d5jrF-y1pYNmanhkze2F429kHCLCi=A@mail.gmail.com>
-	<1314349357.9624.3.camel@Joe-Laptop>
-Date: Fri, 26 Aug 2011 11:19:05 +0200
-Message-ID: <CACna6rwvaxd4i0Gh0hFRsXhHKBBLgn+SeMEdM62qf=mT7aCzpA@mail.gmail.com>
-Subject: Re: [PATCH] staging: brcmfmac: Consolidate debugging macros
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Henry Ptasinski <henryp@broadcom.com>, linux-kernel@vger.kernel.org,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        devel@linuxdriverproject.org, Greg KH <gregkh@suse.de>,
-        Kan Yan <kanyan@broadcom.com>, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 26 sierpnia 2011 11:02 użytkownik Joe Perches <joe@perches.com> napisał:
-> On Fri, 2011-08-26 at 10:55 +0200, Rafał Miłecki wrote:
->> 2011/8/25 Joe Perches <joe@perches.com>:
->> > Convert multiple BRCMF_<debug_level> macros to a single
->> > brcmf_dbg(level, fmt, ...) macro.
->> I'm not sure if that "_dbg" suffix is a really good choice. You use
->> "_dbg" for all the kinds of messages, while "DEBUG" is already one
->> kind of messages.
->
-> No, not really.  These _are_ debugging uses.
->
-> The #include is called dhd_dbg.h and
-> the whole block is guarded by
->
-> #if defined(BCMDBG)
->
->> We have also other types like EMERG, ALERT, CRIT,
->> ERR, WARNING, NOTICE, INFO and DEBUG.
->
-> Except for the last, those aren't debugging uses,
-> these are.
+On Fri, 26 Aug 2011, Michal Hocko wrote:
 
-It makes sense, maybe some messages should be just always printed. It
-seems some of they may be important for common-user having problem
-with his card. Just few random ones:
-brcmf_dbg(ERROR, "device attach failed\n");
-brcmf_dbg(ERROR, "Failed to enable F1 Err: 0x%08x\n", err_ret);
-brcmf_dbg(ERROR, "MACEVENT: %s [unsupported version --> brcmf
-version:%d dongle version:%d]\n",
-brcmf_dbg(ERROR, "mismatched OUI, bailing\n");
-brcmf_dbg(ERROR, "brcmf_net_attach failed, err %d\n",
-brcmf_dbg(ERROR, "failed to bring up cfg80211\n");
-brcmf_dbg(ERROR, "HT Avail request error: %d\n", err);
+> Let's give all frozen tasks a bonus (OOM_SCORE_ADJ_MAX/2) so that we do
+> not consider them unless really necessary and if we really pick up one
+> then thaw its threads before we try to kill it.
+> 
 
--- 
-Rafał
+I don't like arbitrary heuristics like this because they polluted the old 
+oom killer before it was rewritten and made it much more unpredictable.  
+The only heuristic it includes right now is a bonus for root tasks so that 
+when two processes have nearly the same amount of memory usage (within 3% 
+of available memory), the non-root task is chosen instead.
+
+This bonus is actually saying that a single frozen task can use up to 50% 
+more of the machine's capacity in a system-wide oom condition than the 
+task that will now be killed instead.  That seems excessive.
+
+I do like the idea of automatically thawing the task though and if that's 
+possible then I don't think we need to manipulate the badness heuristic at 
+all.  I know that wouldn't be feasible when we've frozen _all_ threads and 
+that's why we have oom_killer_disable(), but we'll have to check with 
+Rafael to see if something like this could work.  Rafael?
+
+> TODO
+> - given bonus might be too big?
+> - aren't we racing with try_to_freeze_tasks?
+> ---
+>  mm/oom_kill.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 626303b..fd194bc 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/mempolicy.h>
+>  #include <linux/security.h>
+>  #include <linux/ptrace.h>
+> +#include <linux/freezer.h>
+>  
+>  int sysctl_panic_on_oom;
+>  int sysctl_oom_kill_allocating_task;
+> @@ -214,6 +215,14 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+>  	points += p->signal->oom_score_adj;
+>  
+>  	/*
+> +	 * Do not try to kill frozen tasks unless there is nothing else to kill.
+> +	 * We do not want to give it 1 point because we still want to select a good
+> +	 * candidate among all frozen tasks. Let's give it a reasonable bonus.
+> +	 */
+> +	if (frozen(p))
+> +		points -= OOM_SCORE_ADJ_MAX/2;
+> +
+> +	/*
+>  	 * Never return 0 for an eligible task that may be killed since it's
+>  	 * possible that no single user task uses more than 0.1% of memory and
+>  	 * no single admin tasks uses more than 3.0%.
+> @@ -450,6 +459,10 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
+>  			pr_err("Kill process %d (%s) sharing same memory\n",
+>  				task_pid_nr(q), q->comm);
+>  			task_unlock(q);
+> +
+> +			if (frozen(q))
+> +				thaw_process(q);
+> +
+>  			force_sig(SIGKILL, q);
+>  		}
+>  
