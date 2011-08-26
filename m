@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab1HZHJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 03:09:46 -0400
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:50890
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750867Ab1HZHJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 03:09:45 -0400
-Message-ID: <4E5746B5.5090408@compulab.co.il>
-Date: Fri, 26 Aug 2011 10:09:41 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1752497Ab1HZHJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 03:09:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39568 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750941Ab1HZHJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 03:09:49 -0400
+Date: Fri, 26 Aug 2011 09:09:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] oom: skip frozen tasks
+Message-ID: <20110826070946.GA7280@tiehlicka.suse.cz>
+References: <20110823073101.6426.77745.stgit@zurg>
+ <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com>
+ <20110824101927.GB3505@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com>
+ <20110825091920.GA22564@tiehlicka.suse.cz>
+ <20110825151818.GA4003@redhat.com>
+ <20110825164758.GB22564@tiehlicka.suse.cz>
+ <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Kunze <thommycheck@gmx.de>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: [PATCH] power_supply: collie_battery: simplify collie_bat_probe
- error handling
-References: <1314328469.4571.1.camel@phoenix>
-In-Reply-To: <1314328469.4571.1.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1108251404130.18747@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mailer problem, sorry, sending once again...
+On Thu 25-08-11 14:14:20, David Rientjes wrote:
+> On Thu, 25 Aug 2011, Michal Hocko wrote:
+> 
+> > > > > That's obviously false since we call oom_killer_disable() in 
+> > > > > freeze_processes() to disable the oom killer from ever being called in the 
+> > > > > first place, so this is something you need to resolve with Rafael before 
+> > > > > you cause more machines to panic.
+> > > >
+> > > > I didn't mean suspend/resume path (that is protected by oom_killer_disabled)
+> > > > so the patch doesn't make any change.
+> > > 
+> > > Confused... freeze_processes() does try_to_freeze_tasks() before
+> > > oom_killer_disable() ?
+> > 
+> > Yes you are right, I must have been blind. 
+> > 
+> > Now I see the point. We do not want to panic while we are suspending and
+> > the memory is really low just because all the userspace is already in
+> > the the fridge.
+> > Sorry for confusion.
+> > 
+> > I still do not follow the oom_killer_disable note from David, though.
+> > 
+> 
+> oom_killer_disable() was added to that path for a reason when all threads 
+> are frozen: memory allocations still occur in the suspend path in an oom 
+> condition and adding the oom_killer_disable() will cause those 
+> allocations to fail rather than sending pointless SIGKILLs to frozen 
+> threads.
+> 
+> Now consider if the only _eligible_ threads for oom kill (because of 
+> cpusets or mempolicies) are those that are frozen.  We certainly do not 
+> want to panic because other cpusets are still getting work done.  We'd 
+> either want to add a mem to the cpuset or thaw the processes because the 
+> cpuset is oom.
 
+Sure.
 
-Hi Axel,
+> 
+> You can't just selectively skip certain threads when their state can be 
+> temporary without risking a panic.  That's why this patch is a 
+> non-starter.
+> 
+> A much better solution would be to lower the badness score that the oom 
+> killer uses for PF_FROZEN threads so that they aren't considered a 
+> priority for kill unless there's nothing else left to kill.
 
+Yes, sounds better.
 
-
-On 08/26/11 06:14, Axel Lin wrote:
-> I think this change is better in readability.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-
-May be just convert it to use struct gpio and gpio_<request|free>_array() calls?
-Because right now it uses the same concept, but really awkward...
-
->  drivers/power/collie_battery.c |   12 +++++-------
->  1 files changed, 5 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/power/collie_battery.c b/drivers/power/collie_battery.c
-> index 548d263..89d6fcd 100644
-> --- a/drivers/power/collie_battery.c
-> +++ b/drivers/power/collie_battery.c
-> @@ -322,10 +322,8 @@ static int __devinit collie_bat_probe(struct ucb1x00_dev *dev)
->  
->  	for (i = 0; i < ARRAY_SIZE(gpios); i++) {
->  		ret = gpio_request(gpios[i].gpio, gpios[i].name);
-> -		if (ret) {
-> -			i--;
-> +		if (ret)
->  			goto err_gpio;
-> -		}
->  
->  		if (gpios[i].output)
->  			ret = gpio_direction_output(gpios[i].gpio,
-> @@ -333,8 +331,10 @@ static int __devinit collie_bat_probe(struct ucb1x00_dev *dev)
->  		else
->  			ret = gpio_direction_input(gpios[i].gpio);
->  
-> -		if (ret)
-> +		if (ret) {
-> +			gpio_free(gpios[i].gpio);
->  			goto err_gpio;
-> +		}
->  	}
->  
->  	mutex_init(&collie_bat_main.work_lock);
-> @@ -363,10 +363,8 @@ err_psy_reg_main:
->  
->  	/* see comment in collie_bat_remove */
->  	cancel_work_sync(&bat_work);
-> -
-> -	i--;
->  err_gpio:
-> -	for (; i >= 0; i--)
-> +	while (--i >= 0)
->  		gpio_free(gpios[i].gpio);
->  
->  	return ret;
-
+Thanks
 -- 
-Regards,
-Igor.
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
