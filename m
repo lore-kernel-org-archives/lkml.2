@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab1H0SLl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:11:41 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:38073
+	id S1751874Ab1H0SLh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 14:11:37 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:38046
 	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751502Ab1H0SLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 14:11:12 -0400
+	id S1751439Ab1H0SLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 14:11:10 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 24/46] Staging: hv: storvsc: Cleanup storvsc_drv.c after adding the contents of storvsc.c
-Date: Sat, 27 Aug 2011 11:31:23 -0700
-Message-Id: <1314469905-7058-24-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/46] Staging: hv: netvsc: Inline the code for free_net_device()
+Date: Sat, 27 Aug 2011 11:31:10 -0700
+Message-Id: <1314469905-7058-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314469905-7058-1-git-send-email-kys@microsoft.com>
 References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
@@ -23,192 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup storvsc_drv.c after adding the contents of storvsc.c.
+Inline the code for free_net_device().
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |  147 +++++++-------------------------------
- 1 files changed, 27 insertions(+), 120 deletions(-)
+ drivers/staging/hv/netvsc.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index ddb31cf..096f615 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -19,11 +19,17 @@
-  *   Hank Janssen  <hjanssen@microsoft.com>
-  *   K. Y. Srinivasan <kys@microsoft.com>
-  */
-+
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/completion.h>
-+#include <linux/string.h>
-+#include <linux/mm.h>
-+#include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/device.h>
--#include <linux/blkdev.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
- #include <scsi/scsi_host.h>
-@@ -37,39 +43,28 @@
- #include "hyperv_storage.h"
- 
- 
--/*
-- * Copyright (c) 2009, Microsoft Corporation.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-- * Place - Suite 330, Boston, MA 02111-1307 USA.
-- *
-- * Authors:
-- *   Haiyang Zhang <haiyangz@microsoft.com>
-- *   Hank Janssen  <hjanssen@microsoft.com>
-- *   K. Y. Srinivasan <kys@microsoft.com>
-- *
-- */
--#include <linux/kernel.h>
--#include <linux/sched.h>
--#include <linux/completion.h>
--#include <linux/string.h>
--#include <linux/slab.h>
--#include <linux/mm.h>
--#include <linux/delay.h>
-+static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
- 
--#include "hyperv.h"
--#include "hyperv_storage.h"
-+module_param(storvsc_ringbuffer_size, int, S_IRUGO);
-+MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
-+
-+struct hv_host_device {
-+	struct hv_device *dev;
-+	struct kmem_cache *request_pool;
-+	unsigned int port;
-+	unsigned char path;
-+	unsigned char target;
-+};
-+
-+struct storvsc_cmd_request {
-+	struct list_head entry;
-+	struct scsi_cmnd *cmd;
- 
-+	unsigned int bounce_sgl_count;
-+	struct scatterlist *bounce_sgl;
-+
-+	struct hv_storvsc_request request;
-+};
- 
- static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- {
-@@ -500,94 +495,6 @@ int storvsc_do_io(struct hv_device *device,
- 	return ret;
+diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
+index b6e1fb9..75c6ed7 100644
+--- a/drivers/staging/hv/netvsc.c
++++ b/drivers/staging/hv/netvsc.c
+@@ -49,14 +49,6 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
+ 	return net_device;
  }
  
--/*
-- * The channel properties uniquely specify how the device is to be
-- * presented to the guest. Map this information for use by the block
-- * driver. For Linux guests on Hyper-V, we emulate a scsi HBA in the guest
-- * (storvsc_drv) and so scsi devices in the guest  are handled by
-- * native upper level Linux drivers. Consequently, Hyper-V
-- * block driver, while being a generic block driver, presently does not
-- * deal with anything other than devices that would need to be presented
-- * to the guest as an IDE disk.
-- *
-- * This function maps the channel properties as embedded in the input
-- * parameter device_info onto information necessary to register the
-- * corresponding block device.
-- *
-- * Currently, there is no way to stop the emulation of the block device
-- * on the host side. And so, to prevent the native IDE drivers in Linux
-- * from taking over these devices (to be managedby Hyper-V block
-- * driver), we will take over if need be the major of the IDE controllers.
-- *
-- */
--
--int storvsc_get_major_info(struct storvsc_device_info *device_info,
--			    struct storvsc_major_info *major_info)
+-static void free_net_device(struct netvsc_device *device)
 -{
--	static bool ide0_registered;
--	static bool ide1_registered;
--
--	/*
--	 * For now we only support IDE disks.
--	 */
--	major_info->devname = "ide";
--	major_info->diskname = "hd";
--
--	if (device_info->path_id) {
--		major_info->major = 22;
--		if (!ide1_registered) {
--			major_info->do_register = true;
--			ide1_registered = true;
--		} else
--			major_info->do_register = false;
--
--		if (device_info->target_id)
--			major_info->index = 3;
--		else
--			major_info->index = 2;
--
--		return 0;
--	} else {
--		major_info->major = 3;
--		if (!ide0_registered) {
--			major_info->do_register = true;
--			ide0_registered = true;
--		} else
--			major_info->do_register = false;
--
--		if (device_info->target_id)
--			major_info->index = 1;
--		else
--			major_info->index = 0;
--
--		return 0;
--	}
--
--	return -ENODEV;
+-	WARN_ON(atomic_read(&device->refcnt) != 0);
+-	device->dev->ext = NULL;
+-	kfree(device);
 -}
--static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
 -
--module_param(storvsc_ringbuffer_size, int, S_IRUGO);
--MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
 -
--struct hv_host_device {
--	struct hv_device *dev;
--	struct kmem_cache *request_pool;
--	unsigned int port;
--	unsigned char path;
--	unsigned char target;
--};
--
--struct storvsc_cmd_request {
--	struct list_head entry;
--	struct scsi_cmnd *cmd;
--
--	unsigned int bounce_sgl_count;
--	struct scatterlist *bounce_sgl;
--
--	struct hv_storvsc_request request;
--};
--
- static void storvsc_get_ide_info(struct hv_device *dev, int *target, int *path)
+ /* Get the net device object iff exists and its refcount > 1 */
+ static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
  {
- 	*target =
+@@ -438,7 +430,7 @@ int netvsc_device_remove(struct hv_device *device)
+ 		kfree(netvsc_packet);
+ 	}
+ 
+-	free_net_device(net_device);
++	kfree(net_device);
+ 	return 0;
+ }
+ 
+@@ -980,7 +972,7 @@ cleanup:
+ 		release_outbound_net_device(device);
+ 		release_inbound_net_device(device);
+ 
+-		free_net_device(net_device);
++		kfree(net_device);
+ 	}
+ 
+ 	return ret;
 -- 
 1.7.4.1
 
