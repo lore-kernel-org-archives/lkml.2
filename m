@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab1H0ASy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 20:18:54 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58856 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754643Ab1H0ASx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 20:18:53 -0400
-Date: Fri, 26 Aug 2011 17:18:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: jhbird.choi@samsung.com
-Cc: linux-kernel@vger.kernel.org, Donggeun Kim <dg77.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] driver/misc/fsa9480.c fix potential null-pointer
- dereference
-Message-Id: <20110826171849.4f488908.akpm@linux-foundation.org>
-In-Reply-To: <1311668375-24131-1-git-send-email-jhbird.choi@samsung.com>
-References: <1311668375-24131-1-git-send-email-jhbird.choi@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1754649Ab1H0Ag4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 20:36:56 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47689 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754528Ab1H0Agy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 20:36:54 -0400
+Subject: [GIT PULL] RTC fixes for 3.1
+From: john stultz <johnstul@us.ibm.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Aug 2011 17:36:49 -0700
+Message-ID: <1314405409.2970.280.camel@work-vm>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jul 2011 17:19:35 +0900
-jhbird.choi@samsung.com wrote:
+Hey Thomas, Ingo, Andrew,
 
-> From: Jonghwan Choi <jhbird.choi@samsung.com>
-> 
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  drivers/misc/fsa9480.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/misc/fsa9480.c b/drivers/misc/fsa9480.c
-> index 5325a7e..0bd1e5b 100644
-> --- a/drivers/misc/fsa9480.c
-> +++ b/drivers/misc/fsa9480.c
-> @@ -400,7 +400,8 @@ static int fsa9480_irq_init(struct fsa9480_usbsw *usbsw)
->  			return ret;
->  		}
->  
-> -		device_init_wakeup(&client->dev, pdata->wakeup);
-> +		if (pdata)
-> +			device_init_wakeup(&client->dev, pdata->wakeup);
->  	}
->  
->  	return 0;
+	I had sent most of these out earlier, but so far have not gotten any
+response on them (I know tglx has been out). Since that posting a few
+more changes have been submitted, so I've added them to my tree and
+wanted to re-request the pull.
 
-So i2c_client.dev.platform_data was NULL.  Is this an allowed state? 
-What would cause this?
+You can find the changes here:
+  git://git.linaro.org/people/jstultz/linux.git fortglx/3.1/tip/timers/rtc
+
+Axel Lin (1):
+      rtc: ep93xx: Fix 'rtc' may be used uninitialized warning
+
+Ilkka Koskinen (1):
+      rtc: rtc-twl: Switch to using threaded irq
+
+John Stultz (1):
+      rtc: Fix RTC PIE frequency limit
+
+Mike Waychison (1):
+      rtc: Initialized rtc_time->tm_isdst
+
+Sebastian Reichel (1):
+      rtc: rtc-twl: Remove lockdep related local_irq_enable()
+
+Todd Poynor (1):
+      rtc: twl: Fix registration vs. init order
+
+ drivers/rtc/interface.c  |    2 +-
+ drivers/rtc/rtc-ep93xx.c |   16 ++++++------
+ drivers/rtc/rtc-lib.c    |    2 +
+ drivers/rtc/rtc-twl.c    |   60 ++++++++++++++++++---------------------------
+ include/linux/rtc.h      |    3 ++
+ 5 files changed, 38 insertions(+), 45 deletions(-)
+
+
