@@ -1,33 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106Ab1H0OkT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:40:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37353 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993Ab1H0OkR convert rfc822-to-8bit (ORCPT
+	id S1752140Ab1H0Op6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:45:58 -0400
+Received: from mail-gy0-f194.google.com ([209.85.160.194]:47227 "EHLO
+	mail-gy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab1H0Opy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:40:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110826220311.GA18140@fieldses.org>
-References: <1312810169.2591.1153.camel@deadeye> <20110808155538.GB904@fieldses.org>
- <20110808180658.GC29924@decadent.org.uk> <20110826220311.GA18140@fieldses.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sat, 27 Aug 2011 10:39:55 -0400
-Message-ID: <CAMjpGUdJOh0=trV8vA9D3_uL27STo7MwbabwC9JHi1nVMwWLrA@mail.gmail.com>
-Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 27 Aug 2011 10:45:54 -0400
+Date: Sat, 27 Aug 2011 10:31:49 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Steve French <smfrench@gmail.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also
+ crashes with linux-3.1-rc2
+Message-ID: <20110827103149.2d186dbb@tlielax.poochiereds.net>
+In-Reply-To: <alpine.DEB.2.02.1108261914250.2203@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
+	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+	<20110818091140.385a9455@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
+	<20110818130408.71c55b96@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
+	<CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
+	<alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
+	<CAH2r5msTpKdxwpgG+-3-gkkr5h7Ox1tL86q3LyTBMd1V8WS7aQ@mail.gmail.com>
+	<alpine.DEB.2.02.1108181413030.7903@p34.internal.lan>
+	<20110818145257.035a38e9@barsoom.rdu.redhat.com>
+	<20110826175940.2830044d@tlielax.poochiereds.net>
+	<alpine.DEB.2.02.1108261844170.2203@p34.internal.lan>
+	<CAH2r5mtrUq4aTHgqRyG-YZZoUztU4_k4rh+nXrN13CVckex8ZQ@mail.gmail.com>
+	<alpine.DEB.2.02.1108261914250.2203@p34.internal.lan>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 18:03, J. Bruce Fields wrote:
->  arch/blackfin/mach-common/entry.S      |    2 +-
+On Fri, 26 Aug 2011 19:16:28 -0400 (EDT)
+Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+> 
+> 
+> On Fri, 26 Aug 2011, Steve French wrote:
+> 
+> > Fails with Jeff's new 20+ patch series?
+> 
+> Hi,
+> 
+> No, wanted to make sure it still mounted with 3.1-rc2+previous patches before 
+> doing anything, there have been quite a few patches applied recently on the
+> Windows host (updates) I'll need to check with the owner tomorrow; I want 
+> to ensure I can mount as before before applying Jeff's patches.
+> 
+> Justin.
+> 
+
+Doubtful that it's related to your -ENOMEM problem, but I have found a
+couple of problems with the async read patchset. You may want to wait on
+testing it just yet. I've fixed a couple of the problems, but there's
+one I'm still hunting down.
+
+Steve, you may want to wait on merging any of it until I understand
+what the problem actually is. I'll re-post the set once I get it
+straightened out.
+
+Thanks,
+-- 
+Jeff Layton <jlayton@samba.org>
