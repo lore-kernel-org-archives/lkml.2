@@ -1,27 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab1H0NpU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 09:45:20 -0400
-Received: from mail.najdschools.edu.sa ([212.119.79.83]:55428 "EHLO
-	mail.najdschools.edu.sa" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab1H0NpS convert rfc822-to-8bit (ORCPT
+	id S1751943Ab1H0N6P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 09:58:15 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41908 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab1H0N6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 09:45:18 -0400
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 27 Aug 2011 09:58:14 -0400
+Date: Sat, 27 Aug 2011 15:58:10 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 3/8] cgroups: Add previous cgroup in
+ can_attach_task/attach_task callbacks
+Message-ID: <20110827135808.GI3298@somewhere>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
+ <1311956010-32076-4-git-send-email-fweisbec@gmail.com>
+ <4E4B2A23.70105@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: Thanks
-To: Recipients <info@mail.com>
-From: Song Li <info@mail.com>
-Date: Sat, 27 Aug 2011 21:34:18 -0700
-Reply-To: mrsong.lile@yahoo.cn
-Message-Id: <20110827132115.D271549F2BB@mail.najdschools.edu.sa>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4B2A23.70105@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-l am a Staff of Hang Seng Bank HongKong, I do not know if we can work
-together in transferring $19,500,000.USD from my bank.
-Finally if you are interested I shall provide you with more details.
-Email: mrsong.lile@yahoo.cn
+On Wed, Aug 17, 2011 at 10:40:35AM +0800, Li Zefan wrote:
+> Frederic Weisbecker wrote:
+> > This is to prepare the integration of a new max number of proc
+> > cgroup subsystem. We'll need to release some resources from the
+> > previous cgroup.
+> > 
+> 
+> Documentation/cgroups/cgroups.txt needs update accordingly.
+
+Yup, will update.
+
+Thanks.
