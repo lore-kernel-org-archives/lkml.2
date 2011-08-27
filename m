@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab1H0SL7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:11:59 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54795
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S1752045Ab1H0SLw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 14:11:52 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39841
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751484Ab1H0SLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751496Ab1H0SLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 27 Aug 2011 14:11:11 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 06/46] Staging: hv: storvsc: Introduce state to manage the lifecycle of stor device
-Date: Sat, 27 Aug 2011 11:31:05 -0700
-Message-Id: <1314469905-7058-6-git-send-email-kys@microsoft.com>
+Subject: [PATCH 27/46] Staging: hv: storvsc: Fixup srb and scsi status for INQUIRY and MODE_SENSE
+Date: Sat, 27 Aug 2011 11:31:26 -0700
+Message-Id: <1314469905-7058-27-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314469905-7058-1-git-send-email-kys@microsoft.com>
 References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
@@ -23,58 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce state to manage the lifecycle of stor device. This would be the
-basis for managing the references on the stor object.
+The current VHD handler on the Windows Host does not correctly handle
+INQUIRY and MODE_SENSE commands with some options. Fixup srb_status
+in these cases since the failure is not fatal.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hyperv_storage.h |    2 +-
- drivers/staging/hv/storvsc.c        |    8 +++++++-
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
-index a224413..d93bf93 100644
---- a/drivers/staging/hv/hyperv_storage.h
-+++ b/drivers/staging/hv/hyperv_storage.h
-@@ -266,7 +266,7 @@ struct storvsc_device {
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 0bb4e0e..72ca25c 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -512,6 +512,23 @@ static void storvsc_on_io_completion(struct hv_device *device,
  
- 	/* 0 indicates the device is being destroyed */
- 	atomic_t ref_count;
--
-+	bool	 destroy;
- 	bool	 drain_notify;
- 	atomic_t num_outstanding_req;
+ 	stor_pkt = &request->vstor_packet;
  
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 48bd8da..0f8c609 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -43,7 +43,7 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- 	/* Set to 2 to allow both inbound and outbound traffics */
- 	/* (ie get_out_stor_device() and get_in_stor_device()) to proceed. */
- 	atomic_set(&stor_device->ref_count, 2);
--
-+	stor_device->destroy = false;
- 	init_waitqueue_head(&stor_device->waiting_to_drain);
- 	stor_device->device = device;
- 	device->ext = stor_device;
-@@ -399,9 +399,15 @@ int storvsc_dev_add(struct hv_device *device,
- int storvsc_dev_remove(struct hv_device *device)
- {
- 	struct storvsc_device *stor_device;
-+	unsigned long flags;
++	/*
++	 * The current SCSI handling on the host side does
++	 * not correctly handle:
++	 * INQUIRY command with page code parameter set to 0x80
++	 * MODE_SENSE command with cmd[2] == 0x1c
++	 *
++	 * Setup srb and scsi status so this won't be fatal.
++	 * We do this so we can distinguish truly fatal failues
++	 * (srb status == 0x4) and off-line the device in that case.
++	 */
++
++	if ((stor_pkt->vm_srb.cdb[0] == INQUIRY) ||
++		(stor_pkt->vm_srb.cdb[0] == MODE_SENSE)) {
++		vstor_packet->vm_srb.scsi_status = 0;
++		vstor_packet->vm_srb.srb_status = 0x1;
++	}
 +
  
- 	stor_device = release_stor_device(device);
- 
-+	spin_lock_irqsave(&device->channel->inbound_lock, flags);
-+	stor_device->destroy = true;
-+	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
-+
- 	/*
- 	 * At this point, all outbound traffic should be disable. We
- 	 * only allow inbound traffic (responses) to proceed so that
+ 	/* Copy over the status...etc */
+ 	stor_pkt->vm_srb.scsi_status = vstor_packet->vm_srb.scsi_status;
 -- 
 1.7.4.1
 
