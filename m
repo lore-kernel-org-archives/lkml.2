@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab1H0SMb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:12:31 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39884
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1752422Ab1H0SM2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 14:12:28 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54869
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751561Ab1H0SLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751550Ab1H0SLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 27 Aug 2011 14:11:13 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 43/46] Staging: hv: vmbus: Fix a checkpatch warning in ring_buffer.c
-Date: Sat, 27 Aug 2011 11:31:42 -0700
-Message-Id: <1314469905-7058-43-git-send-email-kys@microsoft.com>
+Subject: [PATCH 46/46] Staging: hv: Update the TODO file
+Date: Sat, 27 Aug 2011 11:31:45 -0700
+Message-Id: <1314469905-7058-46-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314469905-7058-1-git-send-email-kys@microsoft.com>
 References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
@@ -23,28 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a checkpatch warning in ring_buffer.c
+Update the TODO file.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/ring_buffer.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/staging/hv/TODO |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/hv/ring_buffer.c b/drivers/staging/hv/ring_buffer.c
-index 9212699..70e2e66 100644
---- a/drivers/staging/hv/ring_buffer.c
-+++ b/drivers/staging/hv/ring_buffer.c
-@@ -34,7 +34,8 @@
+diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
+index 582fd4a..23c74ed 100644
+--- a/drivers/staging/hv/TODO
++++ b/drivers/staging/hv/TODO
+@@ -1,14 +1,30 @@
+ TODO:
+-	- fix remaining checkpatch warnings and errors
+ 	- audit the vmbus to verify it is working properly with the
+ 	  driver model
+-	- see if the vmbus can be merged with the other virtual busses
+-	  in the kernel
++
++		STATUS (July 19, 2011):
++		All outstanding issues (known to us)  with regards
++		to conforming to Linux Driver Model have been addressed.
++
+ 	- audit the network driver
+ 	  - checking for carrier inside open is wrong, network device API
+             confusion??
++
++		STATUS (July 19, 2011):
++		The network driver has been reviewed by the community.
++		We have addressed the various issues that were raised in this
++		review.
++
+ 	- audit the block driver
+ 	- audit the scsi driver
  
- 
- /* Amount of space to write to */
--#define BYTES_AVAIL_TO_WRITE(r, w, z) ((w) >= (r)) ? ((z) - ((w) - (r))) : ((r) - (w))
-+#define BYTES_AVAIL_TO_WRITE(r, w, z) \
-+	((w) >= (r)) ? ((z) - ((w) - (r))) : ((r) - (w))
- 
- 
- /*
++		STATUS (July 19, 2011):
++		One of the longstanding comment on this body of code
++		has been to merge the block and scsi driver. This has been done
++		and patches have been submitted. We have also addressed all the
++		review comments on this body of code.
++
++
+ Please send patches for this code to Greg Kroah-Hartman <gregkh@suse.de>,
+-Hank Janssen <hjanssen@microsoft.com>, and Haiyang Zhang <haiyangz@microsoft.com>.
++Hank Janssen <hjanssen@microsoft.com>, and Haiyang Zhang <haiyangz@microsoft.com>,
++K. Y. Srinivasan <kys@microsoft.com>.
 -- 
 1.7.4.1
 
