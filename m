@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab1H0SLe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:11:34 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39819
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1751764Ab1H0SLa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 14:11:30 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54786
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751458Ab1H0SLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 14:11:10 -0400
+	id S1751470Ab1H0SLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 14:11:11 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 19/46]  Staging: hv: storvsc: Handle IDE devices using the storvsc driver
-Date: Sat, 27 Aug 2011 11:31:18 -0700
-Message-Id: <1314469905-7058-19-git-send-email-kys@microsoft.com>
+Subject: [PATCH 22/46] Staging: hv: storvsc: Optimize the bounce buffer handling in the "read" case
+Date: Sat, 27 Aug 2011 11:31:21 -0700
+Message-Id: <1314469905-7058-22-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314469905-7058-1-git-send-email-kys@microsoft.com>
 References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
@@ -23,102 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, enable handling of all IDE devices by extending the storvsc
-device id table to handle IDE guid. As part of this cleanup Kconfig
-and Hyper-V Makefile to not build the IDE driver (blkvsc).
+Optimize the bounce buffer handling in the "read" case.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/Kconfig       |    7 -------
- drivers/staging/hv/Makefile      |    2 --
- drivers/staging/hv/storvsc_drv.c |   21 ++++++++-------------
- 3 files changed, 8 insertions(+), 22 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index 5e0c9f6..26b5064 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -15,13 +15,6 @@ config HYPERV_STORAGE
- 	help
- 	 Select this option to enable the Hyper-V virtual storage driver.
- 
--config HYPERV_BLOCK
--	tristate "Microsoft Hyper-V virtual block driver"
--	depends on BLOCK && SCSI && (LBDAF || 64BIT)
--	default HYPERV
--	help
--	  Select this option to enable the Hyper-V virtual block driver.
--
- config HYPERV_NET
- 	tristate "Microsoft Hyper-V virtual network driver"
- 	depends on NET
-diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
-index 3004674..bb89437 100644
---- a/drivers/staging/hv/Makefile
-+++ b/drivers/staging/hv/Makefile
-@@ -1,6 +1,5 @@
- obj-$(CONFIG_HYPERV)		+= hv_vmbus.o hv_timesource.o
- obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
--obj-$(CONFIG_HYPERV_BLOCK)	+= hv_blkvsc.o
- obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
- obj-$(CONFIG_HYPERV_UTILS)	+= hv_utils.o
- obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
-@@ -9,6 +8,5 @@ hv_vmbus-y := vmbus_drv.o \
- 		 hv.o connection.o channel.o \
- 		 channel_mgmt.o ring_buffer.o
- hv_storvsc-y := storvsc_drv.o storvsc.o
--hv_blkvsc-y := blkvsc_drv.o  storvsc.o
- hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
- hv_utils-y := hv_util.o hv_kvp.o
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index f434200..9464f99 100644
+index 90b91ad..3e00e70 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -645,27 +645,22 @@ static struct scsi_host_template scsi_driver = {
- 	.dma_boundary =		PAGE_SIZE-1,
- };
+@@ -560,12 +560,10 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 				ALIGN(scsi_bufflen(scmnd), PAGE_SIZE) >>
+ 					PAGE_SHIFT;
  
-+/*
-+ * The storvsc_probe function assumes that the IDE guid
-+ * is the second entry.
-+ */
- static const struct hv_vmbus_device_id id_table[] = {
- 	/* SCSI guid */
- 	{ VMBUS_DEVICE(0xd9, 0x63, 0x61, 0xba, 0xa1, 0x04, 0x29, 0x4d,
- 		       0xb6, 0x05, 0x72, 0xe2, 0xff, 0xb1, 0xdc, 0x7f) },
-+	/* IDE guid */
-+	{ VMBUS_DEVICE(0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
-+		       0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5) },
- 	{ },
- };
+-			/*
+-			 * FIXME: We can optimize on reads by just skipping
+-			 * this
+-			 */
+-			copy_to_bounce_buffer(sgl, cmd_request->bounce_sgl,
+-					      scsi_sg_count(scmnd));
++			if (vm_srb->data_in == WRITE_TYPE)
++				copy_to_bounce_buffer(sgl,
++					cmd_request->bounce_sgl,
++					scsi_sg_count(scmnd));
  
- MODULE_DEVICE_TABLE(vmbus, id_table);
- 
--/*
-- * This declaration is temporary; once we get the
-- * infrastructure in place, we will integrate with
-- * id_table.
-- */
--
--static const uuid_le ide_blk_guid = {
--	.b = {
--		0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
--		0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
--	}
--};
- 
- /*
-  * storvsc_probe - Add a new device for this driver
-@@ -681,7 +676,7 @@ static int storvsc_probe(struct hv_device *device)
- 	int path = 0;
- 	int target = 0;
- 
--	if (!uuid_le_cmp(device->dev_type, ide_blk_guid))
-+	if (!memcmp(&device->dev_type.b, id_table[1].guid, sizeof(uuid_le)))
- 		dev_is_ide = true;
- 	else
- 		dev_is_ide = false;
+ 			sgl = cmd_request->bounce_sgl;
+ 			sg_count = cmd_request->bounce_sgl_count;
 -- 
 1.7.4.1
 
