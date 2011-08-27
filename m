@@ -1,139 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab1H0Sze (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:55:34 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58386 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab1H0SzY (ORCPT
+	id S1751527Ab1H0TC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 15:02:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37184 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab1H0TCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 14:55:24 -0400
+	Sat, 27 Aug 2011 15:02:23 -0400
+Date: Sat, 27 Aug 2011 23:01:47 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: kernel-hardening@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, security@kernel.org
+Subject: [PATCH v2] proc: fix races against execve() of /proc/PID/fd**
+Message-ID: <20110827190147.GA3015@albatros>
+References: <20110804162009.GA2469@albatros>
+ <20110823144430.75315ce8.akpm@linux-foundation.org>
+ <20110826132909.GA8266@albatros>
+ <20110826124021.15f8e20c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20110826213641.GA8671@www5.open-std.org>
-References: <20110809181534.GR10171@einval.com>
-	<20110823161134.GV3053@linaro.org>
-	<efc47c3039402c1507d76f381a790115@mail.shatteredsilicon.net>
-	<CAPweEDwkVWH=r_moJj1_CKLxRUkkbBgHenZhwi8CzY9z3BO-Cw@mail.gmail.com>
-	<CADkCAuuaH5k2duuvUdmj1j9=6oaCKORN-NJGg4gt2ovEshHYmw@mail.gmail.com>
-	<alpine.DEB.2.02.1108241648360.29431@asgard.lang.hm>
-	<CADkCAut2sMMKcCLiG0g+Rwt5z4dXJgRZYyvUAzCQVTQQMPFJmA@mail.gmail.com>
-	<20110826163502.GB23469@n2100.arm.linux.org.uk>
-	<CAPweEDxJO0=tFOHhiiiDvucQYZ-0EJZZbsqWwc7BHrZQ2=a5sQ@mail.gmail.com>
-	<20110826213641.GA8671@www5.open-std.org>
-Date: Sat, 27 Aug 2011 19:55:22 +0100
-X-Google-Sender-Auth: 6Bt228RrajshWhus1D5LLfplG_E
-Message-ID: <CAPweEDwPD_v454sDtPqZNmpRs+gw4U9KQUHncuJ32gpd8uedYg@mail.gmail.com>
-Subject: Re: [lsb-discuss] [fedora-arm] ARM summit at Plumbers 2011
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: keld@keldix.com, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        david@lang.hm, cross-distro@lists.linaro.org,
-        Bill Gatliff <bgat@billgatliff.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Perens <bruce@perens.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        torvalds@linux-foundation.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110826124021.15f8e20c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 10:36 PM,  <keld@keldix.com> wrote:
-> I would relly like the dscussion to go on widely as it is now.
-> Otherwise I would probably not follow this interesting discussion.
+fd* files are restricted to the task's owner, and other users may not
+get direct access to them.  But one may open any of these files and run
+any setuid program, keeping opened file descriptors.  As there are
+permission checks on open(), but not on stat(), readdir(), and read(),
+operations on the kept file descriptors will not be checked.  It makes
+it possible to violate procfs permission model.
 
- keld, the encouragement is appreciated, and i do follow the reasoning
-(which is that, given that gnu/linux distros are at such an
-interesting threshold point, there's simply been no need for such a
-large cross-posting before).
+Reading fdinfo/* may disclosure current fds' position and flags, reading
+directory contents of fdinfo/ and fd/ may disclosure the number of opened
+files by the target task.  This information is not sensible per se, but
+it can reveal some private information (like length of a password stored in
+a file) under certain conditions.
 
- but, i have to keep my word, and i said i wouldn't interrupt people
-on such a large scale, preferring instead that those people who are
-*actively* interested participate.  if, however, *you* - or anybody
-else feels that this topic still needs to reach a wider audience, in
-order to help things reach critical mass, please do actively bring it
-to their attention.
+Used existing (un)lock_trace functions to check for ptrace_may_access(),
+but instead of using EPERM return code from it use EACCES to be
+consistent with existing proc_pid_follow_link()/proc_pid_readlink()
+return codes.  If they'd differ, attacker can guess what fds exist by
+analyzing stat() return code.  Patched handlers: stat() for fd/*, stat()
+and read() for fdindo/*, readdir() and lookup() for fd/ and fdinfo/.
 
- i have another write-up, done today, which brings together both the
-software and this time hardware strategic design concepts that i
-believe will help put control firmly back into the hands of Free
-Software Developers:
+v2 - Rebased to v3.1-rc3.
+   - Handle stat() case.
 
- http://lkcl.net/linux/modular.computing.architecture.html
+CC: Stable Tree <stable@kernel.org>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/proc/base.c |  145 +++++++++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 101 insertions(+), 44 deletions(-)
 
- linus: if you're happiest doing device driver development, then for
-goodness sake stop complaining about how bad ARM development is going,
-and get involved in a real-world ARM embedded project.  not just _any_
-old ARM embedded project, but a "Meta-"Project that would help future
-Linux Kernel Development through large-scale code re-use.  and,
-through that, you'd actually really _really_ begin to appreciate why
-Russell's getting so pissed off.
-
- russell: i realise that this is going to sound strange, but if you're
-actually _happy_ continuing to get pissed off and disillusioned with
-being nothing more than a Git Patch Conflict Manager, please feel free
-to completely ignore the entirety of this message _and_ the link
-above.  you _can_ tell people to piss off: you're perfectly within
-your rights as a Free Software Developer to do so.  take a busman's
-holiday: lead by example and help spearhead this project.
-
-everyone else: if you feel that you want to see happen a project to
-put the kind of hardware that is desirable *to you* into *your* hands
-(because it was, like the OpenPandora, developed with open involvement
-from its community, rather than developed in secret and presented as a
-fait-accomplit), then make yourself known - especially to those people
-whom *you* believe should spearhead the project.
-
-also it has to be said that if you believe that there is someone else
-whom you feel would be more suitable to spearhead the project, please
-do say so - and help campaign to bring them in.
-
-OpenPandora was - is - a *success*, despite vast sums of money - 4,000
-preorderers *up-front* money held in escrow - being spent on casework
-and on making mistakes such as paying an ex-TI employee $50k to fail
-to get the 1251 WIFI module PCB area right.
-
-learning from these mistakes, it *is* possible to drastically cut the
-cost of hardware development, by leveraging existing designs and
-adapting them.
-
-now, it has to be said that if, after hitting such a large audience i
-_still_ don't get any traction on this project, then that's it, i'm
-"dun spammin".  as an experienced Free Software Developer with
-ARM-embedded HTC Reverse-Engineering experience, i _will_ continue as
-best i can to play "guess what kind of hardware that Free Software
-Developers would want", and i _will_ continue to fit this into ongoing
-negotiations with PCB Factories in China, with whom i have been
-working hard to get them to respect and understand the importance of
-GPL Compliance *up-front*.
-
-a translation of that paragraph is: you, The Free Software Community,
-are being presented with an OpenPandora-like opportunity, to leverage
-negotiations for the production of mass-volume products, to actually
-really REALLY get that decent ARM Laptop with a pre-loaded GNU/Linux
-Distro of YOUR choice (*), or that decent Desktop PC with a pre-loaded
-GNU/Linux Distro of your choice - whatever it is, you need to speak up
-NOW.
-
-and the reason you need to speak up right now is because then i can
-justify going to the factory to say "yes, there are NN people who want
-this", and it goes from there.
-
-but, of course, it goes without saying, that if you would prefer that
-there be other figureheads leading this project, for them to choose
-appropriate factories and to negotiate them into GPL compliance,
-please feel free to do so, and take this opportunity to speak up and
-to campaign for such figureheads to back this project.
-
-i don't mind that happening: all i want is my damn 1280x800 12in (and
-importantly $160) ARM-based laptop, damnit :)
-
-l.
-
-(*) instead of a laptop with only 512mb of RAM.  or a 1024x600 LCD
-(Toshiba AC100, Genesi Efika, AlwaysInnovating, etc.).  or being
-vapourware (too numerous and pointless to enumerate).  or being an R&D
-model which was so expensive to develop that no retailer could touch
-it (e.g. the Pegatron Netbook).  or being effectively closed-source
-(almost every Android product in existence).  or GPL-violating (almost
-every Android Tablet in existence).  or requiring reverse-engineering
-(the Toshiba AC100).
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 5eb0206..c162080 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1665,12 +1665,43 @@ out:
+ 	return error;
+ }
+ 
++static int proc_pid_fd_link_getattr(struct vfsmount *mnt, struct dentry *dentry,
++		struct kstat *stat)
++{
++	struct inode *inode = dentry->d_inode;
++	struct task_struct *task = get_proc_task(inode);
++	int rc;
++
++	rc = -EACCES;
++	if (lock_trace(task))
++		goto out_task;
++
++	generic_fillattr(inode, stat);
++	unlock_trace(task);
++	put_task_struct(task);
++	rc = 0;
++out_task:
++	return rc;
++}
++
+ static const struct inode_operations proc_pid_link_inode_operations = {
+ 	.readlink	= proc_pid_readlink,
+ 	.follow_link	= proc_pid_follow_link,
+ 	.setattr	= proc_setattr,
+ };
+ 
++static const struct inode_operations proc_fdinfo_link_inode_operations = {
++	.setattr	= proc_setattr,
++	.getattr	= proc_pid_fd_link_getattr,
++};
++
++static const struct inode_operations proc_fd_link_inode_operations = {
++	.readlink	= proc_pid_readlink,
++	.follow_link	= proc_pid_follow_link,
++	.setattr	= proc_setattr,
++	.getattr	= proc_pid_fd_link_getattr,
++};
++
+ 
+ /* building an inode */
+ 
+@@ -1902,49 +1933,61 @@ out:
+ 
+ static int proc_fd_info(struct inode *inode, struct path *path, char *info)
+ {
+-	struct task_struct *task = get_proc_task(inode);
+-	struct files_struct *files = NULL;
++	struct task_struct *task;
++	struct files_struct *files;
+ 	struct file *file;
+ 	int fd = proc_fd(inode);
++	int rc;
+ 
+-	if (task) {
+-		files = get_files_struct(task);
+-		put_task_struct(task);
+-	}
+-	if (files) {
+-		/*
+-		 * We are not taking a ref to the file structure, so we must
+-		 * hold ->file_lock.
+-		 */
+-		spin_lock(&files->file_lock);
+-		file = fcheck_files(files, fd);
+-		if (file) {
+-			unsigned int f_flags;
+-			struct fdtable *fdt;
+-
+-			fdt = files_fdtable(files);
+-			f_flags = file->f_flags & ~O_CLOEXEC;
+-			if (FD_ISSET(fd, fdt->close_on_exec))
+-				f_flags |= O_CLOEXEC;
+-
+-			if (path) {
+-				*path = file->f_path;
+-				path_get(&file->f_path);
+-			}
+-			if (info)
+-				snprintf(info, PROC_FDINFO_MAX,
+-					 "pos:\t%lli\n"
+-					 "flags:\t0%o\n",
+-					 (long long) file->f_pos,
+-					 f_flags);
+-			spin_unlock(&files->file_lock);
+-			put_files_struct(files);
+-			return 0;
++	task = get_proc_task(inode);
++	if (!task)
++		return -ENOENT;
++
++	rc = -EACCES;
++	if (lock_trace(task))
++		goto out_task;
++
++	rc = -ENOENT;
++	files = get_files_struct(task);
++	if (files == NULL)
++		goto out_unlock;
++
++	/*
++	 * We are not taking a ref to the file structure, so we must
++	 * hold ->file_lock.
++	 */
++	spin_lock(&files->file_lock);
++	file = fcheck_files(files, fd);
++	if (file) {
++		unsigned int f_flags;
++		struct fdtable *fdt;
++
++		fdt = files_fdtable(files);
++		f_flags = file->f_flags & ~O_CLOEXEC;
++		if (FD_ISSET(fd, fdt->close_on_exec))
++			f_flags |= O_CLOEXEC;
++
++		if (path) {
++			*path = file->f_path;
++			path_get(&file->f_path);
+ 		}
+-		spin_unlock(&files->file_lock);
+-		put_files_struct(files);
+-	}
+-	return -ENOENT;
++		if (info)
++			snprintf(info, PROC_FDINFO_MAX,
++				 "pos:\t%lli\n"
++				 "flags:\t0%o\n",
++				 (long long) file->f_pos,
++				 f_flags);
++		rc = 0;
++	} else
++		rc = -ENOENT;
++	spin_unlock(&files->file_lock);
++	put_files_struct(files);
++
++out_unlock:
++	unlock_trace(task);
++out_task:
++	put_task_struct(task);
++	return rc;
+ }
+ 
+ static int proc_fd_link(struct inode *inode, struct path *path)
+@@ -2039,7 +2082,7 @@ static struct dentry *proc_fd_instantiate(struct inode *dir,
+ 	spin_unlock(&files->file_lock);
+ 	put_files_struct(files);
+ 
+-	inode->i_op = &proc_pid_link_inode_operations;
++	inode->i_op = &proc_fd_link_inode_operations;
+ 	inode->i_size = 64;
+ 	ei->op.proc_get_link = proc_fd_link;
+ 	d_set_d_op(dentry, &tid_fd_dentry_operations);
+@@ -2071,7 +2114,12 @@ static struct dentry *proc_lookupfd_common(struct inode *dir,
+ 	if (fd == ~0U)
+ 		goto out;
+ 
++	result = ERR_PTR(-EACCES);
++	if (lock_trace(task))
++		goto out;
++
+ 	result = instantiate(dir, dentry, task, &fd);
++	unlock_trace(task);
+ out:
+ 	put_task_struct(task);
+ out_no_task:
+@@ -2091,23 +2139,28 @@ static int proc_readfd_common(struct file * filp, void * dirent,
+ 	retval = -ENOENT;
+ 	if (!p)
+ 		goto out_no_task;
++
++	retval = -EACCES;
++	if (lock_trace(p))
++		goto out;
++
+ 	retval = 0;
+ 
+ 	fd = filp->f_pos;
+ 	switch (fd) {
+ 		case 0:
+ 			if (filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR) < 0)
+-				goto out;
++				goto out_unlock;
+ 			filp->f_pos++;
+ 		case 1:
+ 			ino = parent_ino(dentry);
+ 			if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
+-				goto out;
++				goto out_unlock;
+ 			filp->f_pos++;
+ 		default:
+ 			files = get_files_struct(p);
+ 			if (!files)
+-				goto out;
++				goto out_unlock;
+ 			rcu_read_lock();
+ 			for (fd = filp->f_pos-2;
+ 			     fd < files_fdtable(files)->max_fds;
+@@ -2131,6 +2184,9 @@ static int proc_readfd_common(struct file * filp, void * dirent,
+ 			rcu_read_unlock();
+ 			put_files_struct(files);
+ 	}
++
++out_unlock:
++	unlock_trace(p);
+ out:
+ 	put_task_struct(p);
+ out_no_task:
+@@ -2187,6 +2243,7 @@ static int proc_fd_permission(struct inode *inode, int mask)
+ /*
+  * proc directories can do almost nothing..
+  */
++
+ static const struct inode_operations proc_fd_inode_operations = {
+ 	.lookup		= proc_lookupfd,
+ 	.permission	= proc_fd_permission,
+@@ -2208,6 +2265,7 @@ static struct dentry *proc_fdinfo_instantiate(struct inode *dir,
+ 	ei->fd = fd;
+ 	inode->i_mode = S_IFREG | S_IRUSR;
+ 	inode->i_fop = &proc_fdinfo_file_operations;
++	inode->i_op = &proc_fdinfo_link_inode_operations;
+ 	d_set_d_op(dentry, &tid_fd_dentry_operations);
+ 	d_add(dentry, inode);
+ 	/* Close the race of the process dying before we return the dentry */
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
