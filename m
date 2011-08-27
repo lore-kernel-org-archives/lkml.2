@@ -1,53 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114Ab1H0GBr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 02:01:47 -0400
-Received: from eastrmfepi106.cox.net ([68.230.241.202]:39138 "EHLO
-	eastrmfepi106.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab1H0GBq (ORCPT
+	id S1751071Ab1H0GGG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 02:06:06 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:36044 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab1H0GGD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 02:01:46 -0400
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020208.4E5883D0.0059,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=ax4i8a8snyEA9uWfgWYmXW+3D+RWNhitQWxcW0Jxd9c=
- c=1 sm=1 a=Dyoqhi_TatcA:10 a=LGgl8L9ij00A:10 a=Cfj4BQAnxiAA:10
- a=tfTJCCgaRzYEgYdw3iw+Og==:17 a=DiB_km-8H8twGZILIBAA:9 a=Ft8UYL4EG9YA:10
- a=tfTJCCgaRzYEgYdw3iw+Og==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=dsfkjk232@cox.net
-Reply-To: <verificationwebservice2@qatar.io>
-From: "Acount update" <con@telus.net>
-Subject: mail box exceed limit
-Date: Sat, 27 Aug 2011 11:28:51 +0530
+	Sat, 27 Aug 2011 02:06:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110826-1, 08/27/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110827055903.KLVF3924.eastrmfepo103.cox.net@eastrmimpo02.cox.net>
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20110826100011.9213d872.rdunlap@xenotime.net>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	<20110822125355.bb01d76b.rdunlap@xenotime.net>
+	<CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+	<20110822174958.73dd96c7.rdunlap@xenotime.net>
+	<1314065358.3225.44.camel@localhost.localdomain>
+	<20110823164035.ca28fdc6.rdunlap@xenotime.net>
+	<CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
+	<1314362342.3224.19.camel@localhost.localdomain>
+	<20110826100011.9213d872.rdunlap@xenotime.net>
+Date: Sat, 27 Aug 2011 02:06:03 -0400
+Message-ID: <CACqU3MXBjHi9nOfxeQGJVtc7x33KbzK2Mi+_+A+jr+bPwqzY-Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+On Fri, Aug 26, 2011 at 1:00 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Fri, 26 Aug 2011 08:39:02 -0400 Mimi Zohar wrote:
+>
+>> On Tue, 2011-08-23 at 22:10 -0400, Arnaud Lacombe wrote:
+>> > Hi,
+>> >
+>> > On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> > > I think that you are going to need to do something like Arnaud suggested
+>> > > and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
+>> > > unless you can convince someone that this is a kconfig bug.
+>> > >
+>> > dammit... I guess there is...
+>> >
+>> > If you consider the following Kconfig:
+>> >
+>> > config MOD
+>> >         bool
+>> >         default y
+>> >         option modules
+>> >
+>> > config EXPERIMENTAL
+>> >         bool
+>> >         default y
+>> >
+>> > menuconfig A
+>> >         tristate "A"
+>> >         depends on EXPERIMENTAL
+>> >
+>> > config B
+>> >         bool "B"
+>> >
+>> > config B0
+>> >         bool
+>> >
+>> > config C
+>> >         tristate "C"
+>> >         depends on B
+>> >
+>> > config C0
+>> >         tristate
+>> >
+>> > config D
+>> >         boolean "D"
+>> >         depends on A && B
+>> >         select C
+>> >         select C0
+>> >
+>> > config E
+>> >         tristate "E"
+>> >
+>> > config F
+>> >         tristate "F"
+>> >         select E
+>> >
+>> > B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
+>> > (TCG_TPM) allows to set D (EVM), which will select (C). Now,
+>> > menuconfig highlight the problem very well. Proceeding as following
+>> > A=m, B=y, C=m, E=y, F=y, we ends up having:
+>> >
+>> >  <M> A  --->
+>> >  [*] B
+>> >  {M} C
+>> >  [*] D
+>> >  -*- E
+>> >  <*> F
+>> >
+>> > which translate in the following config:
+>> >
+>> > CONFIG_MOD=y
+>> > CONFIG_EXPERIMENTAL=y
+>> > CONFIG_A=m
+>> > CONFIG_B=y
+>> > CONFIG_C=m
+>> > CONFIG_C0=m
+>> > CONFIG_D=y
+>> > CONFIG_E=y
+>> > CONFIG_F=y
+>> >
+>> > I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
+>> > If you remove D's dependency on 'A', everything works as expected. So
+>> > it would seem direct dependency state influence the state of reverse
+>> > dependencies...
+>> >
+>> > Will have a look...
+>> >
+>> >  - Arnaud
+>>
+>> Thanks for looking into this!  Instead of changing 'TCG_TPM' to
+>> 'TCG_TPM=y', the dependency should be on 'TRUSTED_KEYS=y'.  Then when
+>> I've refactored ENCRYPTED_KEYS, removing the ENCRYPTED_KEYS dependency
+>> on TRUSTED_KEYS, the EVM dependency would be '(TRUSTED_KEYS=y ||
+>> TRUSTED_KEYS=n)'.  Do you want a temporary fix for now?
+>
+> Yes, linux-next (randconfig) builds are still failing, so we need something
+> to prevent that.
+>
+you may want to try:
 
+git://github.com/lacombar/linux-2.6.git master/kconfig/expr-woes
 
-Your Mailbox has exceeded the storage limit which is 20GB as set by your
-Administrator, you are currently running on 20GB, you may not be able to
-send or receive new mails until you re-validate your mailbox.
+only the last commit is relevant to the problem, but depend on one
+another to get <assert.h>. The rest aims at tidying the expr stuff.
+I'm looking for regression it may have introduced.
 
-To re-validate your mailbox please
-provide your (USER NAME-------            PASSWORD--------    DATE OF BIRTH----------)
+Thanks,
+ - Arnaud
 
+ps: I'll most likely be AFK until sunday evening (to be conservative).
 
-submit to us
-Thanks
-@chello admin
+> thanks,
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
