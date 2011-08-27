@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455Ab1H0MUr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 08:20:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41984 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab1H0MUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 08:20:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
-Date: Sat, 27 Aug 2011 14:22:33 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Oleg Nesterov <oleg@redhat.com>, menage@google.com,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-References: <1313763382-12341-1-git-send-email-tj@kernel.org> <201108271251.22719.rjw@sisk.pl> <20110827110224.GL2632@htj.dyndns.org>
-In-Reply-To: <20110827110224.GL2632@htj.dyndns.org>
+	id S1751748Ab1H0Myh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 08:54:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43976 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1H0Mye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 08:54:34 -0400
+X-AuditID: b753bd60-a46b0ba0000019f4-9e-4e58e9078128
+X-AuditID: b753bd60-a46b0ba0000019f4-9e-4e58e9078128
+Message-ID: <4E58E905.4020704@hitachi.com>
+Date: Sat, 27 Aug 2011 21:54:29 +0900
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108271422.33754.rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, James.Bottomley@HansenPartnership.com,
+        dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, kay.sievers@gmail.com
+Subject: Re: [-v3 PATCH 0/3] Persistent device name using alias
+References: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp> <20110825101602.GI3286@htj.dyndns.org> <4E58C3BD.3000609@hitachi.com> <20110827102655.GJ2632@htj.dyndns.org>
+In-Reply-To: <20110827102655.GJ2632@htj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Saturday, August 27, 2011, Tejun Heo wrote:
+(2011/08/27 19:26), Tejun Heo wrote:
+> (cc'ing Kay)
 > Hello,
 > 
-> On Sat, Aug 27, 2011 at 12:51:22PM +0200, Rafael J. Wysocki wrote:
-> > It seems that you are confusing two things - the interactions between the
-> > drivers and kernel subsystems that can happen at any time, even during suspend
-> > and resume, which can be taken care of with the help of various synchronization
-> > mechanisms _inside_ of the kernel, and the interactions between the drivers
-> > and user space resulting from user space using sysfs, ioctls, mmap,
-> > proc, debugfs, sysv IPC, open/close, read/write and so on and so on.
-> > The freezer's job is to take the second type of interactions out of the
-> > picture for suspend/resume.
+> On Sat, Aug 27, 2011 at 07:15:25PM +0900, Nao Nishijima wrote:
+>> Our concern is the failure analysis. For example, when the disk failure
+>> happened, we need to identify the disk from kernel log.
+>>
+>> Kernel messages are output to serial console when kernel crashes.
+>> It's so hard to convert a device name to the alias. Thus the script
+>> can't always convert the name.
 > 
-> So, there are two layers - user <-> driver and driver <-> hardware.
-> Quiescing the first layer (user <-> driver) in most cases would
-> effectively quiesce the second layer (driver <-> hardware) too and
-> some drivers depend on that.  What I'm trying to say is that that
-> cascading of quiescing can be unreliable.  Operations can propagate
-> via asynchronous mechanisms.
+> Hmm... I don't follow.  Why wouldn't it be able to?  All the
+> informations are in the log.  It is messy but it's there.  If you want
 
-I agree.
+In many cases, the script is able to convert the name. However there is
+the special case that the logs do not exist in memory and disk due to
+the crash except console.
 
-> So, I think it's better to quiesce the kernel <-> device layer like
-> SCSI/ATA drivers do.
 
-Well, in general that _should_ be done in addition to the
-user <-> driver quiescing. :-)
- 
-> For things like direct access to hardware from ioctl, freezing does
-> make sense but there were some drivers (I don't remember which
-> exactly) which depended on freezing for block IO quiescing (nobody is
-> issuing no new IO so it should be safe!), which is quite scary given
-> the async nature of block IO processing.
+> more structured information, u{dev|disks} already maintain device
+> libarary - what maps to what, connected how with what attributes and
+> so on.  Sending them off to the log machine as device hotplug events
+> occur and consulting it when post-processing log message would work
+> fine.  All you need is just some python scripting.  I don't really see
+> much point in messing with device names directly.  The only thing is
+> that the raw log would be prettier.  I don't think that is useful
+> enough to justify changing kernel device names.
 
-Those are bugs in the majority of cases.
+A kernel device names (e.g. sda) is not useful information because it
+doesn't always point the same disk at each boot-up time.
 
-> For block IOs, for example, I think the best way would be put most of
-> quiescing logic and responsibilities to block layer directly.
+An alias is just an option and provides the ability to give all
+kernel devices a "preferred name".
 
-Perhaps.
+By default, dev_printk's will show a kernel device name. They show an
+alias only when the user assigns a "preferred name" to an alias.
+Even if the persistend device name is used, the device names in logs are
+different from the name that the users are using. So, an alias helps the
+user identify the disk.
 
-> > _Some_ drivers may want to use the freezer for their own purposes (e.g.
-> > by using a freezable workqueue to avoid their own work items from being
-> > executed in parallel with suspend/resume routines), but obviously they
-> > have to know what they are doing.
-> 
-> One such driver was thinkpad_acpi.  It used the fact that the kthread
-> entered freezer as a que to intiate hardware reset.  Maybe it's okay
-> but I think that really should hang off proper suspend/resume hook.
 
-It's difficult to comment being unfamiliar with the driver's internals,
-but definitely using a proper suspend/resume sounds like a good idea.
+Best regards,
 
-Thanks,
-Rafael
+-- 
+Nao NISHIJIMA
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., YOKOHAMA Research  Laboratory
+Email： nao.nishijima.xt@hitachi.com
