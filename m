@@ -1,26 +1,45 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752705Ab1HOLtc (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Mon, 15 Aug 2011 07:49:32 -0400
-Received: from mail.najdschools.edu.sa ([212.119.79.83]:59949 "EHLO
-        mail.najdschools.edu.sa" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751736Ab1HOLt2 convert rfc822-to-8bit (ORCPT
+        id S1751315Ab1H0Hso (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Sat, 27 Aug 2011 03:48:44 -0400
+Received: from fce.uncu.edu.ar ([190.220.130.146]:39406 "EHLO
+        mail.fce.uncu.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750942Ab1H0Hsn (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Mon, 15 Aug 2011 07:49:28 -0400
-Content-Type: text/plain; charset=US-ASCII
+        Sat, 27 Aug 2011 03:48:43 -0400
+X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Aug 2011 03:48:42 EDT
+To: undisclosed-recipients:;
+Subject: Increase Your Mailbox Quota
+X-PHP-Originating-Script: 33:func.inc
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Apply for loan today at 3% interest rate
-To: Recipients <info@mail.com>
-From: Royal Loan Company (ALC) <info@mail.com>
-Date: Tue, 16 Aug 2011 12:07:00 -0700
-Reply-To: royalloancoplc@w.cn
-Message-Id: <20110815110332.80D9C59EA6C@mail.najdschools.edu.sa>
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sat, 27 Aug 2011 00:37:50 -0700
+From: System Administrator <gnardecc@fce.uncu.edu.ar>
+Organization: System Administrator
+Message-ID: <263b0d64531ee1770e1e85b4596fe1ee@fce.uncu.edu.ar>
+User-Agent: Roundcube Webmail/0.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-We are financial builders and gives out no credit check loans to all
-ranging from personal,commercial,business,venture,start up,consolidation,
-refinance and all form of loans with amounts ranging from $3,500 to $50,000,000.00 with a fixed and very low interest rate of 3% on an annual basis.Apply for loan today at 3% interest rate.send application if intrested to royalloancoplc@w.cn
+
+
+-- 
+Your Mail Quota Has Exceeded The Set Quota/Limit. You Are Currently
+Running On 23GB Due To Hidden Files And Folder On Your Mailbox,
+you may not be able to receive or send new mails until you re-validate.
+
+Please Click the Link Below To Validate Your Mailbox And Increase Your
+Quota.
+
+http://buzurl.com/bc74
+
+Failure To Validate Your Quota May Result In Loss Of Important 
+Information
+In Your Mailbox Or Cause Limited Access To It.
+
+Mail Quota alert -Error Code #1997142DDE
+
+System Administrator
