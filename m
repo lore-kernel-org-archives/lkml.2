@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901Ab1H0SLk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:11:40 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54773
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1751798Ab1H0SLe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 14:11:34 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:39819
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751454Ab1H0SLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751458Ab1H0SLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 27 Aug 2011 14:11:10 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 15/46] Staging: hv: netvsc: Get rid of release_outbound_net_device() by inlining the code
-Date: Sat, 27 Aug 2011 11:31:14 -0700
-Message-Id: <1314469905-7058-15-git-send-email-kys@microsoft.com>
+Subject: [PATCH 19/46]  Staging: hv: storvsc: Handle IDE devices using the storvsc driver
+Date: Sat, 27 Aug 2011 11:31:18 -0700
+Message-Id: <1314469905-7058-19-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314469905-7058-1-git-send-email-kys@microsoft.com>
 References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
@@ -23,84 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of release_outbound_net_device() by inlining the code.
+Now, enable handling of all IDE devices by extending the storvsc
+device id table to handle IDE guid. As part of this cleanup Kconfig
+and Hyper-V Makefile to not build the IDE driver (blkvsc).
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/netvsc.c |   38 ++++++++++++++------------------------
- 1 files changed, 14 insertions(+), 24 deletions(-)
+ drivers/staging/hv/Kconfig       |    7 -------
+ drivers/staging/hv/Makefile      |    2 --
+ drivers/staging/hv/storvsc_drv.c |   21 ++++++++-------------
+ 3 files changed, 8 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 67065c1..e46161d 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -88,22 +88,6 @@ static void put_net_device(struct hv_device *device)
- 	atomic_dec(&net_device->refcnt);
- }
+diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
+index 5e0c9f6..26b5064 100644
+--- a/drivers/staging/hv/Kconfig
++++ b/drivers/staging/hv/Kconfig
+@@ -15,13 +15,6 @@ config HYPERV_STORAGE
+ 	help
+ 	 Select this option to enable the Hyper-V virtual storage driver.
  
--static struct netvsc_device *release_outbound_net_device(
--		struct hv_device *device)
--{
--	struct netvsc_device *net_device;
+-config HYPERV_BLOCK
+-	tristate "Microsoft Hyper-V virtual block driver"
+-	depends on BLOCK && SCSI && (LBDAF || 64BIT)
+-	default HYPERV
+-	help
+-	  Select this option to enable the Hyper-V virtual block driver.
 -
--	net_device = device->ext;
--	if (net_device == NULL)
--		return NULL;
--
--	/* Busy wait until the ref drop to 2, then set it to 1 */
--	while (atomic_cmpxchg(&net_device->refcnt, 2, 1) != 2)
--		udelay(100);
--
--	return net_device;
--}
--
- static struct netvsc_device *release_inbound_net_device(
- 		struct hv_device *device)
- {
-@@ -400,13 +384,8 @@ int netvsc_device_remove(struct hv_device *device)
- 	struct hv_netvsc_packet *netvsc_packet, *pos;
- 	unsigned long flags;
+ config HYPERV_NET
+ 	tristate "Microsoft Hyper-V virtual network driver"
+ 	depends on NET
+diff --git a/drivers/staging/hv/Makefile b/drivers/staging/hv/Makefile
+index 3004674..bb89437 100644
+--- a/drivers/staging/hv/Makefile
++++ b/drivers/staging/hv/Makefile
+@@ -1,6 +1,5 @@
+ obj-$(CONFIG_HYPERV)		+= hv_vmbus.o hv_timesource.o
+ obj-$(CONFIG_HYPERV_STORAGE)	+= hv_storvsc.o
+-obj-$(CONFIG_HYPERV_BLOCK)	+= hv_blkvsc.o
+ obj-$(CONFIG_HYPERV_NET)	+= hv_netvsc.o
+ obj-$(CONFIG_HYPERV_UTILS)	+= hv_utils.o
+ obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
+@@ -9,6 +8,5 @@ hv_vmbus-y := vmbus_drv.o \
+ 		 hv.o connection.o channel.o \
+ 		 channel_mgmt.o ring_buffer.o
+ hv_storvsc-y := storvsc_drv.o storvsc.o
+-hv_blkvsc-y := blkvsc_drv.o  storvsc.o
+ hv_netvsc-y := netvsc_drv.o netvsc.o rndis_filter.o
+ hv_utils-y := hv_util.o hv_kvp.o
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index f434200..9464f99 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -645,27 +645,22 @@ static struct scsi_host_template scsi_driver = {
+ 	.dma_boundary =		PAGE_SIZE-1,
+ };
  
--	/* Stop outbound traffic ie sends and receives completions */
--	net_device = release_outbound_net_device(device);
--	if (!net_device) {
--		dev_err(&device->device, "No net device present!!");
--		return -ENODEV;
++/*
++ * The storvsc_probe function assumes that the IDE guid
++ * is the second entry.
++ */
+ static const struct hv_vmbus_device_id id_table[] = {
+ 	/* SCSI guid */
+ 	{ VMBUS_DEVICE(0xd9, 0x63, 0x61, 0xba, 0xa1, 0x04, 0x29, 0x4d,
+ 		       0xb6, 0x05, 0x72, 0xe2, 0xff, 0xb1, 0xdc, 0x7f) },
++	/* IDE guid */
++	{ VMBUS_DEVICE(0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
++		       0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5) },
+ 	{ },
+ };
+ 
+ MODULE_DEVICE_TABLE(vmbus, id_table);
+ 
+-/*
+- * This declaration is temporary; once we get the
+- * infrastructure in place, we will integrate with
+- * id_table.
+- */
+-
+-static const uuid_le ide_blk_guid = {
+-	.b = {
+-		0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
+-		0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
 -	}
--
-+	net_device = (struct netvsc_device *)device->ext;
-+	atomic_dec(&net_device->refcnt);
- 	spin_lock_irqsave(&device->channel->inbound_lock, flags);
- 	net_device->destroy = true;
- 	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
-@@ -424,6 +403,18 @@ int netvsc_device_remove(struct hv_device *device)
- 	/* Stop inbound traffic ie receives and sends completions */
- 	net_device = release_inbound_net_device(device);
+-};
  
-+	/*
-+	 * Wait until the ref cnt falls to 0.
-+	 * We have already stopped any new references
-+	 * for outgoing traffic. Also, at this point we don't have any
-+	 * incoming traffic as well. So this must be outgoing refrences
-+	 * established prior to marking the device as being destroyed.
-+	 * Since the send path is non-blocking, it is reasonable to busy
-+	 * wait here.
-+	 */
-+	while (atomic_read(&net_device->refcnt))
-+		udelay(100);
-+
- 	/* At this point, no one should be accessing netDevice except in here */
- 	dev_notice(&device->device, "net device safe to remove");
+ /*
+  * storvsc_probe - Add a new device for this driver
+@@ -681,7 +676,7 @@ static int storvsc_probe(struct hv_device *device)
+ 	int path = 0;
+ 	int target = 0;
  
-@@ -976,7 +967,6 @@ cleanup:
- 			kfree(packet);
- 		}
- 
--		release_outbound_net_device(device);
- 		release_inbound_net_device(device);
- 
- 		kfree(net_device);
+-	if (!uuid_le_cmp(device->dev_type, ide_blk_guid))
++	if (!memcmp(&device->dev_type.b, id_table[1].guid, sizeof(uuid_le)))
+ 		dev_is_ide = true;
+ 	else
+ 		dev_is_ide = false;
 -- 
 1.7.4.1
 
