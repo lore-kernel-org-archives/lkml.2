@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab1H0TI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 15:08:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33214 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab1H0TIz (ORCPT
+	id S1751675Ab1H0TOA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 15:14:00 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:47473 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751357Ab1H0TN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 15:08:55 -0400
-Date: Sat, 27 Aug 2011 23:08:12 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel-hardening@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH v2] proc: fix races against execve() of /proc/PID/fd**
-Message-ID: <20110827190812.GA3804@albatros>
-References: <20110804162009.GA2469@albatros>
- <20110823144430.75315ce8.akpm@linux-foundation.org>
- <20110826132909.GA8266@albatros>
- <20110826124021.15f8e20c.akpm@linux-foundation.org>
- <20110827190147.GA3015@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110827190147.GA3015@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 27 Aug 2011 15:13:59 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18wvXxpGLYwTXXYrhkoPlUhxwUflkHlvo2P2fRCQb
+	sVgY8TX3TyOTvj
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH] MAINTAINERS: change framebuffer maintainer
+Date: Sat, 27 Aug 2011 19:32:34 +0000
+Message-Id: <1314473554-3317-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <4E4A1AB1.6040001@gmx.de>
+References: <4E4A1AB1.6040001@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 23:01 +0400, Vasiliy Kulikov wrote:
-> fd* files are restricted to the task's owner, and other users may not
-> get direct access to them.  But one may open any of these files and run
-> any setuid program, keeping opened file descriptors.  As there are
-> permission checks on open(), but not on stat(), readdir(), and read(),
-> operations on the kept file descriptors will not be checked.  It makes
-> it possible to violate procfs permission model.
-> 
-> Reading fdinfo/* may disclosure current fds' position and flags, reading
-> directory contents of fdinfo/ and fd/ may disclosure the number of opened
-> files by the target task.  This information is not sensible per se, but
-> it can reveal some private information (like length of a password stored in
-> a file) under certain conditions.
-> 
-> Used existing (un)lock_trace functions to check for ptrace_may_access(),
-> but instead of using EPERM return code from it use EACCES to be
-> consistent with existing proc_pid_follow_link()/proc_pid_readlink()
-> return codes.  If they'd differ, attacker can guess what fds exist by
-> analyzing stat() return code.  Patched handlers: stat() for fd/*, stat()
-> and read() for fdindo/*, readdir() and lookup() for fd/ and fdinfo/.
-> 
-> v2 - Rebased to v3.1-rc3.
->    - Handle stat() case.
-> 
-> CC: Stable Tree <stable@kernel.org>
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
-...
-> @@ -2187,6 +2243,7 @@ static int proc_fd_permission(struct inode *inode, int mask)
->  /*
->   * proc directories can do almost nothing..
->   */
-> +
->  static const struct inode_operations proc_fd_inode_operations = {
->  	.lookup		= proc_lookupfd,
->  	.permission	= proc_fd_permission,
+As Paul has not much time for it I take over maintaining the
+framebuffer subsystem.
 
-Oops, odd blank line.  Andrew, should I resend the patch to fix it?
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+---
+ MAINTAINERS |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 1d445f5..ac7e485 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2649,11 +2649,11 @@ F:	drivers/net/wan/dlci.c
+ F:	drivers/net/wan/sdla.c
+ 
+ FRAMEBUFFER LAYER
+-M:	Paul Mundt <lethal@linux-sh.org>
++M:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+ L:	linux-fbdev@vger.kernel.org
+ W:	http://linux-fbdev.sourceforge.net/
+ Q:	http://patchwork.kernel.org/project/linux-fbdev/list/
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6.git
++T:	git git://github.com/schandinat/linux-2.6.git fbdev-next
+ S:	Maintained
+ F:	Documentation/fb/
+ F:	Documentation/devicetree/bindings/fb/
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+1.6.3.2
+
