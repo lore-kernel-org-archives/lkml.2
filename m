@@ -1,92 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab1H0H30 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 03:29:26 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:59573 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab1H0H3Y convert rfc822-to-8bit (ORCPT
+	id S1751355Ab1H0IcL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 04:32:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51656 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1H0IcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 03:29:24 -0400
+	Sat, 27 Aug 2011 04:32:07 -0400
+Subject: [PATCH] mm: fix page-faults detection in swap-token logic
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Sat, 27 Aug 2011 12:32:01 +0300
+Message-ID: <20110827083201.21854.56111.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <4E576637.4020209@broadcom.com>
-References: <927eab8b5c950c13991911cd4c16457a5d618bc7.1314252671.git.joe@perches.com>
-	<CACna6ryWtZG9obyj0w=d5jrF-y1pYNmanhkze2F429kHCLCi=A@mail.gmail.com>
-	<1314349357.9624.3.camel@Joe-Laptop>
-	<CACna6rwvaxd4i0Gh0hFRsXhHKBBLgn+SeMEdM62qf=mT7aCzpA@mail.gmail.com>
-	<4E576637.4020209@broadcom.com>
-Date: Sat, 27 Aug 2011 09:29:23 +0200
-Message-ID: <CACna6rxc=Kpy+_S2BE7tui_oy-C7vCUQDHDa5XQ+jLp0p=vG8Q@mail.gmail.com>
-Subject: Re: [PATCH] staging: brcmfmac: Consolidate debugging macros
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Joe Perches <joe@perches.com>, Henry Ptasinski <henryp@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brett Rudley <brudley@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Greg KH <gregkh@suse.de>, Kan Yan <kanyan@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 26 sierpnia 2011 11:24 użytkownik Arend van Spriel
-<arend@broadcom.com> napisał:
-> On 08/26/2011 11:19 AM, Rafał Miłecki wrote:
->>
->> W dniu 26 sierpnia 2011 11:02 użytkownik Joe Perches<joe@perches.com>
->>  napisał:
->>>
->>> On Fri, 2011-08-26 at 10:55 +0200, Rafał Miłecki wrote:
->>>>
->>>> 2011/8/25 Joe Perches<joe@perches.com>:
->>>>>
->>>>> Convert multiple BRCMF_<debug_level>  macros to a single
->>>>> brcmf_dbg(level, fmt, ...) macro.
->>>>
->>>> I'm not sure if that "_dbg" suffix is a really good choice. You use
->>>> "_dbg" for all the kinds of messages, while "DEBUG" is already one
->>>> kind of messages.
->>>
->>> No, not really.  These _are_ debugging uses.
->>>
->>> The #include is called dhd_dbg.h and
->>> the whole block is guarded by
->>>
->>> #if defined(BCMDBG)
->>>
->>>> We have also other types like EMERG, ALERT, CRIT,
->>>> ERR, WARNING, NOTICE, INFO and DEBUG.
->>>
->>> Except for the last, those aren't debugging uses,
->>> these are.
->>
->> It makes sense, maybe some messages should be just always printed. It
->> seems some of they may be important for common-user having problem
->> with his card. Just few random ones:
->> brcmf_dbg(ERROR, "device attach failed\n");
->> brcmf_dbg(ERROR, "Failed to enable F1 Err: 0x%08x\n", err_ret);
->> brcmf_dbg(ERROR, "MACEVENT: %s [unsupported version -->  brcmf
->> version:%d dongle version:%d]\n",
->> brcmf_dbg(ERROR, "mismatched OUI, bailing\n");
->> brcmf_dbg(ERROR, "brcmf_net_attach failed, err %d\n",
->> brcmf_dbg(ERROR, "failed to bring up cfg80211\n");
->> brcmf_dbg(ERROR, "HT Avail request error: %d\n", err);
->
-> Hi Rafał,
->
-> The feedback from Greg was that no user would be interested in it so we
-> cleaned it up and put it under Kconfig option.
+After commit v2.6.36-5896-gd065bd8 "mm: retry page fault when blocking on disk transfer"
+we usually wait in page-faults without mmap_sem held, so all swap-token logic was broken,
+because it based on using rwsem_is_locked(&mm->mmap_sem) as sign of in progress page-faults.
 
-Having messages like "Entered xxx function" are really useless for
-common user, but I believe errors should be printed, to let use known
-sth is wrong.
+This patch adds to mm_struct atomic counter of in progress page-faults for mm with swap-token.
 
-Did Greg really mean all that messages? Including error ones? Greg?
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ include/linux/mm_types.h |    1 +
+ include/linux/swap.h     |   34 ++++++++++++++++++++++++++++++++++
+ kernel/fork.c            |    1 +
+ mm/memory.c              |   13 +++++++++++++
+ mm/rmap.c                |    3 +--
+ 5 files changed, 50 insertions(+), 2 deletions(-)
 
--- 
-Rafał
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 774b895..1b299a3 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -312,6 +312,7 @@ struct mm_struct {
+ 	unsigned int faultstamp;
+ 	unsigned int token_priority;
+ 	unsigned int last_interval;
++	atomic_t active_swap_token;
+ 
+ 	/* How many tasks sharing this mm are OOM_DISABLE */
+ 	atomic_t oom_disable_count;
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 14d6249..3f40636 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -360,6 +360,26 @@ static inline void put_swap_token(struct mm_struct *mm)
+ 		__put_swap_token(mm);
+ }
+ 
++static inline bool has_active_swap_token(struct mm_struct *mm)
++{
++	return has_swap_token(mm) && atomic_read(&mm->active_swap_token);
++}
++
++static inline bool activate_swap_token(struct mm_struct *mm)
++{
++	if (has_swap_token(mm)) {
++		atomic_inc(&mm->active_swap_token);
++		return true;
++	}
++	return false;
++}
++
++static inline void deactivate_swap_token(struct mm_struct *mm, bool swap_token)
++{
++	if (swap_token)
++		atomic_dec(&mm->active_swap_token);
++}
++
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+ extern void
+ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout);
+@@ -485,6 +505,20 @@ static inline int has_swap_token(struct mm_struct *mm)
+ 	return 0;
+ }
+ 
++static inline bool has_active_swap_token(struct mm_struct *mm)
++{
++	return false;
++}
++
++static inline bool activate_swap_token(struct mm_struct *mm)
++{
++	return false;
++}
++
++static inline void deactivate_swap_token(struct mm_struct *mm, bool swap_token)
++{
++}
++
+ static inline void disable_swap_token(struct mem_cgroup *memcg)
+ {
+ }
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 8e6b6f4..494b75c 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -735,6 +735,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ 	/* Initializing for Swap token stuff */
+ 	mm->token_priority = 0;
+ 	mm->last_interval = 0;
++	atomic_set(&mm->active_swap_token, 0);
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	mm->pmd_huge_pte = NULL;
+diff --git a/mm/memory.c b/mm/memory.c
+index a56e3ba..6f42218 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2861,6 +2861,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct mem_cgroup *ptr;
+ 	int exclusive = 0;
+ 	int ret = 0;
++	bool swap_token;
+ 
+ 	if (!pte_unmap_same(mm, pmd, page_table, orig_pte))
+ 		goto out;
+@@ -2909,7 +2910,12 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto out_release;
+ 	}
+ 
++	swap_token = activate_swap_token(mm);
++
+ 	locked = lock_page_or_retry(page, mm, flags);
++
++	deactivate_swap_token(mm, swap_token);
++
+ 	delayacct_clear_flag(DELAYACCT_PF_SWAPIN);
+ 	if (!locked) {
+ 		ret |= VM_FAULT_RETRY;
+@@ -3156,6 +3162,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct vm_fault vmf;
+ 	int ret;
+ 	int page_mkwrite = 0;
++	bool swap_token;
+ 
+ 	/*
+ 	 * If we do COW later, allocate page befor taking lock_page()
+@@ -3177,6 +3184,8 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	} else
+ 		cow_page = NULL;
+ 
++	swap_token = activate_swap_token(mm);
++
+ 	vmf.virtual_address = (void __user *)(address & PAGE_MASK);
+ 	vmf.pgoff = pgoff;
+ 	vmf.flags = flags;
+@@ -3245,6 +3254,8 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	}
+ 
++	deactivate_swap_token(mm, swap_token);
++
+ 	page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 
+ 	/*
+@@ -3316,9 +3327,11 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	return ret;
+ 
+ unwritable_page:
++	deactivate_swap_token(mm, swap_token);
+ 	page_cache_release(page);
+ 	return ret;
+ uncharge_out:
++	deactivate_swap_token(mm, swap_token);
+ 	/* fs's fault handler get error */
+ 	if (cow_page) {
+ 		mem_cgroup_uncharge_page(cow_page);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 8005080..f54a6dd 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -715,8 +715,7 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 
+ 	/* Pretend the page is referenced if the task has the
+ 	   swap token and is in the middle of a page fault. */
+-	if (mm != current->mm && has_swap_token(mm) &&
+-			rwsem_is_locked(&mm->mmap_sem))
++	if (mm != current->mm && has_active_swap_token(mm))
+ 		referenced++;
+ 
+ 	(*mapcount)--;
+
