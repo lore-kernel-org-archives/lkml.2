@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1H0AQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 20:16:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754390Ab1H0AQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 20:16:35 -0400
-Message-ID: <4E58375E.3010603@redhat.com>
-Date: Fri, 26 Aug 2011 20:16:30 -0400
-From: Eric Paris <eparis@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
-        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Smack: SMACK_IOCLOADACCESS
-References: <1314337927-17210-1-git-send-email-jarkko.sakkinen@intel.com> <CACLa4pvbaWM8jRJvBW2NvN2OLK8x4wP44pfdUQ9He1fZwWYcfA@mail.gmail.com> <CADjiTvBkwusfjdE=PQ5B=MPMxr1bewR6v9qoqq6yMNWjp-BeLQ@mail.gmail.com> <4E57D17E.9020806@redhat.com> <4E58175A.9090209@schaufler-ca.com>
-In-Reply-To: <4E58175A.9090209@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754731Ab1H0ASy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 20:18:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58856 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754643Ab1H0ASx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Aug 2011 20:18:53 -0400
+Date: Fri, 26 Aug 2011 17:18:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: jhbird.choi@samsung.com
+Cc: linux-kernel@vger.kernel.org, Donggeun Kim <dg77.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] driver/misc/fsa9480.c fix potential null-pointer
+ dereference
+Message-Id: <20110826171849.4f488908.akpm@linux-foundation.org>
+In-Reply-To: <1311668375-24131-1-git-send-email-jhbird.choi@samsung.com>
+References: <1311668375-24131-1-git-send-email-jhbird.choi@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2011 05:59 PM, Casey Schaufler wrote:
-> On 8/26/2011 10:01 AM, Eric Paris wrote:
+On Tue, 26 Jul 2011 17:19:35 +0900
+jhbird.choi@samsung.com wrote:
 
-> Better to have a single question answered as required and with
-> complete accuracy than to carry around the baggage necessary to
-> maintain a cached duplicate of the kernel's rules and all the
-> bookkeeping that requires. SELinux libraries probably have to
-> make a system call just to determine if the caches they are
-> maintaining are out of date.
+> From: Jonghwan Choi <jhbird.choi@samsung.com>
+> 
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> ---
+>  drivers/misc/fsa9480.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/misc/fsa9480.c b/drivers/misc/fsa9480.c
+> index 5325a7e..0bd1e5b 100644
+> --- a/drivers/misc/fsa9480.c
+> +++ b/drivers/misc/fsa9480.c
+> @@ -400,7 +400,8 @@ static int fsa9480_irq_init(struct fsa9480_usbsw *usbsw)
+>  			return ret;
+>  		}
+>  
+> -		device_init_wakeup(&client->dev, pdata->wakeup);
+> +		if (pdata)
+> +			device_init_wakeup(&client->dev, pdata->wakeup);
+>  	}
+>  
+>  	return 0;
 
-Come on Casey, this is Linux.  We have choices!  I believe there are
-currently 3 solutions to solving the 'out of date caches' problem.  The
-first and oldest is just a syscall per access request option (I think it
-does read() but don't remember).  There is an option to get a netlink
-message informing you to flush your cache.  SE-XWindows found that ONE
-syscall per check was WAY WAY WAY too much overhead and uses this
-method.  There is also a magic selinuxfs file which a userspace process
-can mmap and just read the memory location to tell if a reload occurred.
- SE-PostgreSQL uses this method because their software architecture did
-not have a good way to handle a netlink socket.
-
-The value of the userspace cache is admittedly entirely a question of
-the willingness to accept the overhead of kernel lookups.
-
-/me checks out of thread.
-
--Eric
+So i2c_client.dev.platform_data was NULL.  Is this an allowed state? 
+What would cause this?
