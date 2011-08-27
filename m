@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab1H0QfP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 12:35:15 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12024 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab1H0QfM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 12:35:12 -0400
-Date: Sat, 27 Aug 2011 18:36:12 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Andi Kleen <andi@firstfloor.org>
-cc: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-In-Reply-To: <20110826222544.GV25996@one.firstfloor.org>
-Message-ID: <alpine.LNX.2.00.1108271829590.27813@swampdragon.chaosbits.net>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org> <20110826214329.GA6325@kroah.com> <20110826222544.GV25996@one.firstfloor.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751302Ab1H0Qmg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 12:42:36 -0400
+Received: from [206.117.179.246] ([206.117.179.246]:33386 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750974Ab1H0Qmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 12:42:35 -0400
+Subject: Re: [PATCH 06/14] [media] cx18: Use current logging styles
+From: Joe Perches <joe@perches.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1314451740.2244.7.camel@palomino.walls.org>
+References: <cover.1313966088.git.joe@perches.com>
+	 <29abc343c4fce5d019ce56f5a3882aedaeb092bc.1313966089.git.joe@perches.com>
+	 <1314182047.2253.3.camel@palomino.walls.org>
+	 <1314222175.15882.8.camel@Joe-Laptop>
+	 <1314451740.2244.7.camel@palomino.walls.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 27 Aug 2011 09:42:32 -0700
+Message-ID: <1314463352.6852.5.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Aug 2011, Andi Kleen wrote:
+On Sat, 2011-08-27 at 09:28 -0400, Andy Walls wrote:
+> On Wed, 2011-08-24 at 14:42 -0700, Joe Perches wrote:
+> > On Wed, 2011-08-24 at 06:34 -0400, Andy Walls wrote:
+> > > On Sun, 2011-08-21 at 15:56 -0700, Joe Perches wrote:
+> > > > Add pr_fmt.
+> > > > Convert printks to pr_<level>.
+> > > > Convert printks without KERN_<level> to appropriate pr_<level>.
+> > > > Removed embedded prefixes when pr_fmt was added.
+> > > > Use ##__VA_ARGS__ for variadic macros.
+> > > > Coalesce format strings.
+> > > 1. It is important to preserve the per-card prefixes emitted by the
+> > > driver: cx18-0, cx18-1, cx18-2, etc.  With a quick skim, I think your
+> > > change preserves the format of all output messages (except removing
+> > > periods).  Can you confirm this?
+> > Here's the output diff of
+> > strings built-in.o | grep "^<.>" | sort
+> > new and old
+[]
+> Yuck.
+> > > 2. PLease don't add a pr_fmt() #define to exevry file.  Just put one
+> > > where all the other CX18_*() macros are defined.  Every file picks those
+> > > up.
+> > It's not the first #include of every file.
+> > printk.h has a default #define pr_fmt(fmt) fmt
+> Well then don't use "pr_fmt(fmt)" in cx18, if it overloads a define
+> somewhere else in the kernel and has a dependency on its order relative
+> to #include statements.  That sort of thing just ups maintenance hours
+> later.  That's not a good trade off for subjectively better log
+> messages.
+> Won't redifining the 'pr_fmt(fmt)' generate preprocessor warnings
+> anyway?
 
-> > > wget ftp://ftp.kernel.org/pub/linux/kernel/people/ak/uname26/uname26.c
-> > > gcc -o uname26 uname26.c
-> > > ./uname26 program
-> > 
-> > I hate to ask, but can you put a proper copyright and license on this
-> > file so that distros can distribute it?
-> 
-> I assumed it's too trivial for that.
-> 
-> Anyways I put a GPL license on it now.
-> 
+No.
 
-Hi Andi
+Andy, I fully understand how this stuff works.
+You apparently don't (yet).
 
-I assume the mention of "mcelog" is a cut'n'paste error and that it really 
-should have been "uname26", so here's a trivial patch to correct that.
-I also deleted all trailing whitespace and used EXIT_FAILURE rather than 1 
-for exit().
+Look at include/linux/printk.h
 
-Take it or leave it :)
+#ifndef pr_fmt
+#define pr_fmt(fmt) fmt
+#endif
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
+A default empty define is used when one
+is not specified before printk.h is
+included.  kernel.h includes printk.h
 
---- uname26.c.orig	2011-08-27 18:26:46.538017670 +0200
-+++ uname26.c	2011-08-27 18:32:21.032163525 +0200
-@@ -1,19 +1,19 @@
--/* Copyright (C) 2011 Intel Corporation 
-+/* Copyright (C) 2011 Intel Corporation
-    Author: Andi Kleen
-    Set 2.6.x personality
- 
--   mcelog is free software; you can redistribute it and/or
-+   uname26 is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public
-    License as published by the Free Software Foundation; version
-    2.
- 
--   mcelog is distributed in the hope that it will be useful,
-+   uname26 is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    General Public License for more details.
- 
-    You should find a copy of v2 of the GNU General Public License somewhere
--   on your Linux system; if not, write to the Free Software Foundation, 
-+   on your Linux system; if not, write to the Free Software Foundation,
-    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA */
- #include <sys/personality.h>
- #include <stdio.h>
-@@ -26,15 +26,15 @@
- 
- int main(int ac, char **av)
- {
--	if (!av[1]) { 
-+	if (!av[1]) {
- 		fprintf(stderr, "Usage: uname26 program ...\n"
- 				"Run program with the uname 2.6 personality\n");
--		exit(1);
-+		exit(EXIT_FAILURE);
- 	}
- 	if (personality(PER_LINUX | UNAME26) < 0)
- 		perror("personality"), exit(1);
--	
-+
- 	execvp(av[1], av + 1);
- 	fprintf(stderr, "Cannot execute %s: %s\n", av[1], strerror(errno));
--	exit(1);
-+	exit(EXIT_FAILURE);
- }
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+v4l2_<level> uses the "name" of the video
+device in its output.  That name may not
+be the same name as the module.
 
