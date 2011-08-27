@@ -1,107 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab1H0OQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 10:16:26 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58566 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab1H0OQZ (ORCPT
+	id S1752106Ab1H0OkT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 10:40:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37353 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab1H0OkR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 10:16:25 -0400
-Date: Sat, 27 Aug 2011 16:16:21 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
-Message-ID: <20110827141618.GM3298@somewhere>
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
- <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
- <4E4B3322.6060608@cn.fujitsu.com>
+	Sat, 27 Aug 2011 10:40:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E4B3322.6060608@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110826220311.GA18140@fieldses.org>
+References: <1312810169.2591.1153.camel@deadeye> <20110808155538.GB904@fieldses.org>
+ <20110808180658.GC29924@decadent.org.uk> <20110826220311.GA18140@fieldses.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sat, 27 Aug 2011 10:39:55 -0400
+Message-ID: <CAMjpGUdJOh0=trV8vA9D3_uL27STo7MwbabwC9JHi1nVMwWLrA@mail.gmail.com>
+Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 11:18:58AM +0800, Li Zefan wrote:
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 412c21b..bea98d2d 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -690,6 +690,13 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-> >  	  select this option (if, for some reason, they need to disable it
-> >  	  then noswapaccount does the trick).
-> >  
-> > +config CGROUP_TASK_COUNTER
-> > +        bool "Control number of tasks in a cgroup"
-> 
-> TAB
+On Fri, Aug 26, 2011 at 18:03, J. Bruce Fields wrote:
+>  arch/blackfin/mach-common/entry.S      |    2 +-
 
-I suck at configuring emacs correctly, it always makes me do some crazy things
-on Kconfig files.
-
-> 
-> > +	depends on RESOURCE_COUNTERS
-> > +	help
-> > +	  This option let the user to set up an upper bound allowed number
-> 
-> will let?
-
-First of all I should just not start with "This option ..." :)
-
-> 
-> > +	  of tasks inside a cgroup.
-> > +
-> >  config CGROUP_PERF
-> >  	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
-> >  	depends on PERF_EVENTS && CGROUPS
-> 
-> ...
-> 
-> > +int cgroup_task_counter_fork(struct task_struct *child)
-> > +{
-> > +	struct cgroup_subsys_state *css = child->cgroups->subsys[tasks_subsys_id];
-> > +	struct cgroup *cgrp = css->cgroup;
-> > +	struct res_counter *limit_fail_at;
-> > +
-> > +	/* Optimize for the root cgroup case, which doesn't have a limit */
-> > +	if (!cgrp->parent)
-> > +		return 0;
-> > +
-> > +	return res_counter_charge(cgroup_task_counter_res(cgrp), 1, &limit_fail_at);
-> 
-> I think we should change the return value of res_counter_charge.
-> Currently it returns -ENOMEM when we excceed limit.
-
-Yeah like I said previously in the thread, I need to tweak that from
-res_counter API.
-
-
-> 
-> > +}
-> > +
-> > +struct cgroup_subsys tasks_subsys = {
-> > +	.name			= "tasks",
-> > +	.subsys_id		= tasks_subsys_id,
-> > +	.create			= task_counter_create,
-> > +	.post_clone		= task_counter_post_clone,
-> > +	.destroy		= task_counter_destroy,
-> > +	.exit			= task_counter_exit,
-> > +	.can_attach_task	= task_counter_can_attach_task,
-> > +	.cancel_attach_task	= task_counter_cancel_attach_task,
-> > +	.attach_task		= task_counter_attach_task,
-> > +	.populate		= task_counter_populate,
-> > +	.early_init		= 1,
-> 
-> Just set early_init to 0, since this subsystem doesn't have to be
-> initialized early during kernel boot.
-
-Ah right, now that we don't touch the root cgroup anymore, we can do that
-later.
-
-Thanks.
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
