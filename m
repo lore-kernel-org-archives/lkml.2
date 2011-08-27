@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1H0AAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Aug 2011 20:00:52 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:59971 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276Ab1H0AAv (ORCPT
+	id S1754548Ab1H0ACJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Aug 2011 20:02:09 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40452 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281Ab1H0ACH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Aug 2011 20:00:51 -0400
-Date: Fri, 26 Aug 2011 20:00:40 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/4] x86: base support for the TS-5500 platform
-Message-ID: <20110826200040.2025eb0b@v0nbox>
-In-Reply-To: <4E55836D.8030209@zytor.com>
-References: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1314217407-31249-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<4E55670F.90102@zytor.com>
-	<20110824180837.6841f3d8@v0nbox>
-	<4E5576CF.2050905@zytor.com>
-	<20110824183814.64abc94c@v0nbox>
-	<4E55836D.8030209@zytor.com>
-Organization: Savoir-faire Linux Inc.
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+	Fri, 26 Aug 2011 20:02:07 -0400
+Date: Fri, 26 Aug 2011 20:01:09 -0400 (EDT)
+Message-Id: <20110826.200109.1784685596300352827.davem@davemloft.net>
+To: ben@decadent.org.uk
+Cc: bfields@fieldses.org, torvalds@linux-foundation.org, neilb@suse.de,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110826233258.GE24107@decadent.org.uk>
+References: <20110808180658.GC29924@decadent.org.uk>
+	<20110826220311.GA18140@fieldses.org>
+	<20110826233258.GE24107@decadent.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 26 Aug 2011 17:01:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011 16:04:13 -0700,
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Sat, 27 Aug 2011 00:32:58 +0100
 
-> On 08/24/2011 03:38 PM, Vivien Didelot wrote:
-> > 
-> > I agree with you. The platform does not provide many identification
-> > points. We have specific hardware such as the CPU, Ethernet, Cardbus
-> > and USB controllers; there is no DMI available; no PCI bridge
-> > subvendor info, only the BIOS provides a 16-bit identification
-> > call... We discussed that point in
-> > https://lkml.org/lkml/2011/5/4/437 without success.
-> > 
-> > What would be the proper way in your opinion?
-> > 
-> > Vivien.
-> 
-> First of all, given that these clowns seem to be selling a product
-> specifically targeting Linux support, they really need to be given a
-> clue transfusion.  It is *NOT* acceptable to not provide DMI, and
-> *NOT* acceptable not to set the subvendor information.
-> 
-> We should arguably push for them to fix that in their BIOSes, but that
-> is as usual too little, too late.
-> 
-> Probably the best option we have is to look for some kind of magic
-> string in their BIOS -- i.e. the classic way to detect things before
-> DMI existed.
-> 
-> If not, you're going to have an explicit switch on the kernel command
-> line, but that is an absolute last resort.
-> 
-> 	-hpa
+> On Fri, Aug 26, 2011 at 06:03:11PM -0400, J. Bruce Fields wrote:
+> [...]
+>> diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
+>> index f566518..c9296ab 100644
+>> --- a/arch/sparc/kernel/systbls_64.S
+>> +++ b/arch/sparc/kernel/systbls_64.S
+>> @@ -145,7 +145,7 @@ sys_call_table:
+>>  	.word sys_fstatfs64, sys_llseek, sys_mlock, sys_munlock, sys_mlockall
+>>  /*240*/	.word sys_munlockall, sys_sched_setparam, sys_sched_getparam, sys_sched_setscheduler, sys_sched_getscheduler
+>>  	.word sys_sched_yield, sys_sched_get_priority_max, sys_sched_get_priority_min, sys_sched_rr_get_interval, sys_nanosleep
+>> -/*250*/	.word sys_64_mremap, sys_sysctl, sys_getsid, sys_fdatasync, sys_nfsservctl
+>> +/*250*/	.word sys_64_mremap, sys_sysctl, sys_getsid, sys_fdatasync, sys_nis_syscall
+> [...]
+>           	                                                                  ^
+> This seems to be a typo for 'sys_ni_syscall'.
 
-Hi,
-
-The initialization function is now reading the BIOS to find this magic
-string, thanks for the tip. I've sent the updated version. The
-corresponding thread is here: https://lkml.org/lkml/2011/8/26/425.
-
-Regards,
-Vivien.
+It's intentional, look at the sparc sources.
