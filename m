@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964Ab1H0SLn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:11:43 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54806
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1751940Ab1H0SLl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 14:11:41 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:38073
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751498Ab1H0SLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 14:11:11 -0400
+	id S1751502Ab1H0SLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 14:11:12 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 10/46] Staging: hv: storvsc: Get rid of the reference counting in struct storvsc_device
-Date: Sat, 27 Aug 2011 11:31:09 -0700
-Message-Id: <1314469905-7058-10-git-send-email-kys@microsoft.com>
+Subject: [PATCH 24/46] Staging: hv: storvsc: Cleanup storvsc_drv.c after adding the contents of storvsc.c
+Date: Sat, 27 Aug 2011 11:31:23 -0700
+Message-Id: <1314469905-7058-24-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314469905-7058-1-git-send-email-kys@microsoft.com>
 References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
@@ -23,178 +23,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the reference counting in struct storvsc_device. We manage the lifecycle with 
-the following logic: If the device is marked for destruction, we dot allow any
-outgoing traffic on the device. Incoming traffic is allowed only to drain pending
-outgoing traffic. Note that while the upper level code in Linux deals with outstanding
-I/Os, we may have situations on Hyper-V where some book keeping messages are sent out
-that the upper level Linux code may not be aware of.
+Cleanup storvsc_drv.c after adding the contents of storvsc.c.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hyperv_storage.h |   18 ++----------------
- drivers/staging/hv/storvsc.c        |   33 +++++++++++++++++++++------------
- drivers/staging/hv/storvsc_drv.c    |    1 -
- 3 files changed, 23 insertions(+), 29 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |  147 +++++++-------------------------------
+ 1 files changed, 27 insertions(+), 120 deletions(-)
 
-diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
-index 1a59ca0..687cdc5 100644
---- a/drivers/staging/hv/hyperv_storage.h
-+++ b/drivers/staging/hv/hyperv_storage.h
-@@ -264,8 +264,6 @@ struct storvsc_major_info {
- struct storvsc_device {
- 	struct hv_device *device;
- 
--	/* 0 indicates the device is being destroyed */
--	atomic_t ref_count;
- 	bool	 destroy;
- 	bool	 drain_notify;
- 	atomic_t num_outstanding_req;
-@@ -287,32 +285,20 @@ struct storvsc_device {
- };
- 
- 
--/* Get the stordevice object iff exists and its refcount > 1 */
- static inline struct storvsc_device *get_out_stor_device(
- 					struct hv_device *device)
- {
- 	struct storvsc_device *stor_device;
- 
- 	stor_device = (struct storvsc_device *)device->ext;
--	if (stor_device && (atomic_read(&stor_device->ref_count) > 1) &&
--		!stor_device->destroy)
--		atomic_inc(&stor_device->ref_count);
--	else
-+
-+	if (stor_device && stor_device->destroy)
- 		stor_device = NULL;
- 
- 	return stor_device;
- }
- 
- 
--static inline void put_stor_device(struct hv_device *device)
--{
--	struct storvsc_device *stor_device;
--
--	stor_device = (struct storvsc_device *)device->ext;
--
--	atomic_dec(&stor_device->ref_count);
--}
--
- static inline void storvsc_wait_to_drain(struct storvsc_device *dev)
- {
- 	dev->drain_notify = true;
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c
-index 3e9829f..fb7b3ca 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -40,9 +40,6 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- 	if (!stor_device)
- 		return NULL;
- 
--	/* Set to 2 to allow both inbound and outbound traffics */
--	/* (ie get_out_stor_device() and get_in_stor_device()) to proceed. */
--	atomic_set(&stor_device->ref_count, 2);
- 	stor_device->destroy = false;
- 	init_waitqueue_head(&stor_device->waiting_to_drain);
- 	stor_device->device = device;
-@@ -52,19 +49,31 @@ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- }
- 
- 
--/* Get the stordevice object iff exists and its refcount > 0 */
- static inline struct storvsc_device *get_in_stor_device(
- 					struct hv_device *device)
- {
- 	struct storvsc_device *stor_device;
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&device->channel->inbound_lock, flags);
- 	stor_device = (struct storvsc_device *)device->ext;
--	if (stor_device && atomic_read(&stor_device->ref_count))
--		atomic_inc(&stor_device->ref_count);
--	else
-+
-+	if (!stor_device)
-+		goto get_in_err;
-+
-+	/*
-+	 * If the device is being destroyed; allow incoming
-+	 * traffic only to cleanup outstanding requests.
-+	 */
-+
-+	if (stor_device->destroy  &&
-+		(atomic_read(&stor_device->num_outstanding_req) == 0))
- 		stor_device = NULL;
- 
-+get_in_err:
-+	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
- 	return stor_device;
-+
- }
- 
- static int storvsc_channel_init(struct hv_device *device)
-@@ -190,7 +199,6 @@ static int storvsc_channel_init(struct hv_device *device)
- 
- 
- cleanup:
--	put_stor_device(device);
- 	return ret;
- }
- 
-@@ -303,7 +311,6 @@ static void storvsc_on_channel_callback(void *context)
- 		}
- 	} while (1);
- 
--	put_stor_device(device);
- 	return;
- }
- 
-@@ -371,7 +378,6 @@ int storvsc_dev_remove(struct hv_device *device)
- 	unsigned long flags;
- 
- 	stor_device = (struct storvsc_device *)device->ext;
--	atomic_dec(&stor_device->ref_count);
- 
- 	spin_lock_irqsave(&device->channel->inbound_lock, flags);
- 	stor_device->destroy = true;
-@@ -388,9 +394,13 @@ int storvsc_dev_remove(struct hv_device *device)
- 	/*
- 	 * Since we have already drained, we don't need to busy wait
- 	 * as was done in final_release_stor_device()
-+	 * Note that we cannot set the ext pointer to NULL until
-+	 * we have drained - to drain the outgoing packets, we need to
-+	 * allow incoming packets.
- 	 */
--	atomic_set(&stor_device->ref_count, 0);
-+	spin_lock_irqsave(&device->channel->inbound_lock, flags);
- 	device->ext = NULL;
-+	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
- 
- 	/* Close the channel */
- 	vmbus_close(device->channel);
-@@ -448,7 +458,6 @@ int storvsc_do_io(struct hv_device *device,
- 
- 	atomic_inc(&stor_device->num_outstanding_req);
- 
--	put_stor_device(device);
- 	return ret;
- }
- 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 5b2004f..ae74f50 100644
+index ddb31cf..096f615 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -378,7 +378,6 @@ static int storvsc_host_reset(struct hv_device *device)
- 	 */
+@@ -19,11 +19,17 @@
+  *   Hank Janssen  <hjanssen@microsoft.com>
+  *   K. Y. Srinivasan <kys@microsoft.com>
+  */
++
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/completion.h>
++#include <linux/string.h>
++#include <linux/mm.h>
++#include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+-#include <linux/blkdev.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <scsi/scsi_host.h>
+@@ -37,39 +43,28 @@
+ #include "hyperv_storage.h"
  
- cleanup:
--	put_stor_device(device);
+ 
+-/*
+- * Copyright (c) 2009, Microsoft Corporation.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+- * Place - Suite 330, Boston, MA 02111-1307 USA.
+- *
+- * Authors:
+- *   Haiyang Zhang <haiyangz@microsoft.com>
+- *   Hank Janssen  <hjanssen@microsoft.com>
+- *   K. Y. Srinivasan <kys@microsoft.com>
+- *
+- */
+-#include <linux/kernel.h>
+-#include <linux/sched.h>
+-#include <linux/completion.h>
+-#include <linux/string.h>
+-#include <linux/slab.h>
+-#include <linux/mm.h>
+-#include <linux/delay.h>
++static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
+ 
+-#include "hyperv.h"
+-#include "hyperv_storage.h"
++module_param(storvsc_ringbuffer_size, int, S_IRUGO);
++MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
++
++struct hv_host_device {
++	struct hv_device *dev;
++	struct kmem_cache *request_pool;
++	unsigned int port;
++	unsigned char path;
++	unsigned char target;
++};
++
++struct storvsc_cmd_request {
++	struct list_head entry;
++	struct scsi_cmnd *cmd;
+ 
++	unsigned int bounce_sgl_count;
++	struct scatterlist *bounce_sgl;
++
++	struct hv_storvsc_request request;
++};
+ 
+ static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
+ {
+@@ -500,94 +495,6 @@ int storvsc_do_io(struct hv_device *device,
  	return ret;
  }
  
+-/*
+- * The channel properties uniquely specify how the device is to be
+- * presented to the guest. Map this information for use by the block
+- * driver. For Linux guests on Hyper-V, we emulate a scsi HBA in the guest
+- * (storvsc_drv) and so scsi devices in the guest  are handled by
+- * native upper level Linux drivers. Consequently, Hyper-V
+- * block driver, while being a generic block driver, presently does not
+- * deal with anything other than devices that would need to be presented
+- * to the guest as an IDE disk.
+- *
+- * This function maps the channel properties as embedded in the input
+- * parameter device_info onto information necessary to register the
+- * corresponding block device.
+- *
+- * Currently, there is no way to stop the emulation of the block device
+- * on the host side. And so, to prevent the native IDE drivers in Linux
+- * from taking over these devices (to be managedby Hyper-V block
+- * driver), we will take over if need be the major of the IDE controllers.
+- *
+- */
+-
+-int storvsc_get_major_info(struct storvsc_device_info *device_info,
+-			    struct storvsc_major_info *major_info)
+-{
+-	static bool ide0_registered;
+-	static bool ide1_registered;
+-
+-	/*
+-	 * For now we only support IDE disks.
+-	 */
+-	major_info->devname = "ide";
+-	major_info->diskname = "hd";
+-
+-	if (device_info->path_id) {
+-		major_info->major = 22;
+-		if (!ide1_registered) {
+-			major_info->do_register = true;
+-			ide1_registered = true;
+-		} else
+-			major_info->do_register = false;
+-
+-		if (device_info->target_id)
+-			major_info->index = 3;
+-		else
+-			major_info->index = 2;
+-
+-		return 0;
+-	} else {
+-		major_info->major = 3;
+-		if (!ide0_registered) {
+-			major_info->do_register = true;
+-			ide0_registered = true;
+-		} else
+-			major_info->do_register = false;
+-
+-		if (device_info->target_id)
+-			major_info->index = 1;
+-		else
+-			major_info->index = 0;
+-
+-		return 0;
+-	}
+-
+-	return -ENODEV;
+-}
+-static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
+-
+-module_param(storvsc_ringbuffer_size, int, S_IRUGO);
+-MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+-
+-struct hv_host_device {
+-	struct hv_device *dev;
+-	struct kmem_cache *request_pool;
+-	unsigned int port;
+-	unsigned char path;
+-	unsigned char target;
+-};
+-
+-struct storvsc_cmd_request {
+-	struct list_head entry;
+-	struct scsi_cmnd *cmd;
+-
+-	unsigned int bounce_sgl_count;
+-	struct scatterlist *bounce_sgl;
+-
+-	struct hv_storvsc_request request;
+-};
+-
+ static void storvsc_get_ide_info(struct hv_device *dev, int *target, int *path)
+ {
+ 	*target =
 -- 
 1.7.4.1
 
