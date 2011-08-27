@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab1H0SMF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 14:12:05 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54822
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1752135Ab1H0SMD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 14:12:03 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:38054
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751506Ab1H0SLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 14:11:12 -0400
+	id S1751466Ab1H0SLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Aug 2011 14:11:11 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 37/46] Staging: hv: vmbus: Check for events before messages
-Date: Sat, 27 Aug 2011 11:31:36 -0700
-Message-Id: <1314469905-7058-37-git-send-email-kys@microsoft.com>
+Subject: [PATCH 21/46] Staging: hv: storvsc: Optimize bounce buffer handling for the "write" case
+Date: Sat, 27 Aug 2011 11:31:20 -0700
+Message-Id: <1314469905-7058-21-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314469905-7058-1-git-send-email-kys@microsoft.com>
 References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
@@ -23,50 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Conform to Windows specification by checking for events before messages.
+Optimize bounce buffer handling for the "write" case.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/vmbus_drv.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 5dcc8c3..4e07d4f 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -445,15 +445,6 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
- 	union hv_synic_event_flags *event;
- 	bool handled = false;
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 9464f99..90b91ad 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -425,17 +425,17 @@ static void storvsc_commmand_completion(struct hv_storvsc_request *request)
+ 	struct scsi_sense_hdr sense_hdr;
+ 	struct vmscsi_request *vm_srb;
  
--	page_addr = hv_context.synic_message_page[cpu];
--	msg = (struct hv_message *)page_addr + VMBUS_MESSAGE_SINT;
++	vm_srb = &request->vstor_packet.vm_srb;
+ 	if (cmd_request->bounce_sgl_count) {
 -
--	/* Check if there are actual msgs to be process */
--	if (msg->header.message_type != HVMSG_NONE) {
--		handled = true;
--		tasklet_schedule(&msg_dpc);
--	}
--
- 	page_addr = hv_context.synic_event_page[cpu];
- 	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
- 
-@@ -463,6 +454,15 @@ static irqreturn_t vmbus_isr(int irq, void *dev_id)
- 		tasklet_schedule(&event_dpc);
+-		/* FIXME: We can optimize on writes by just skipping this */
+-		copy_from_bounce_buffer(scsi_sglist(scmnd),
++		if (vm_srb->data_in == READ_TYPE) {
++			copy_from_bounce_buffer(scsi_sglist(scmnd),
+ 					cmd_request->bounce_sgl,
+ 					scsi_sg_count(scmnd));
+-		destroy_bounce_buffer(cmd_request->bounce_sgl,
+-				      cmd_request->bounce_sgl_count);
++			destroy_bounce_buffer(cmd_request->bounce_sgl,
++					cmd_request->bounce_sgl_count);
++		}
  	}
  
-+	page_addr = hv_context.synic_message_page[cpu];
-+	msg = (struct hv_message *)page_addr + VMBUS_MESSAGE_SINT;
-+
-+	/* Check if there are actual msgs to be processed */
-+	if (msg->header.message_type != HVMSG_NONE) {
-+		handled = true;
-+		tasklet_schedule(&msg_dpc);
-+	}
-+
- 	if (handled)
- 		return IRQ_HANDLED;
- 	else
+-	vm_srb = &request->vstor_packet.vm_srb;
+ 	scmnd->result = vm_srb->scsi_status;
+ 
+ 	if (scmnd->result) {
 -- 
 1.7.4.1
 
