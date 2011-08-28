@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1H1Twp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 15:52:45 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:49736 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752148Ab1H1Twg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 15:52:36 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19+ww1tyUd+A/0w7XZPotARDsRthDpe9VM1SvrYim
-	Mo+JS/O44PCILD
-From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [PATCH] net/mac80211/debugfs: Convert to kstrou8_from_user
-Date: Sun, 28 Aug 2011 21:52:31 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <1307478974-32727-1-git-send-email-peterhuewe@gmx.de>
-In-Reply-To: <1307478974-32727-1-git-send-email-peterhuewe@gmx.de>
+	id S1752483Ab1H1Tx3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 15:53:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43713 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab1H1TxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 15:53:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tino Keitel <tino.keitel@tikei.de>
+Subject: Re: [Bug #40062] USB related "unable to handle kernel paging request" in 3.0.0-rc7
+Date: Sun, 28 Aug 2011 21:52:13 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <Sm7qbRR0zn.A.yAG.LepWOB@chimera> <gUVi6eNP8RE.A.rqG.2epWOB@chimera> <20110828194745.GA20770@mac.home>
+In-Reply-To: <20110828194745.GA20770@mac.home>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108282152.32180.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Message-Id: <201108282152.13938.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 07 Juni 2011, 22:36:14 schrieb Peter Huewe:
-> This patch replaces the code for getting an number from a
-> userspace buffer by a simple call to kstrou8_from_user.
-> This makes it easier to read and less error prone.
+On Sunday, August 28, 2011, Tino Keitel wrote:
+> On Sun, Aug 28, 2011 at 21:01:13 +0200, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.39 and 3.0.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.39 and 3.0.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40062
+> > Subject		: USB related "unable to handle kernel paging request" in 3.0.0-rc7
+> > Submitter	: Tino Keitel <tino.keitel@tikei.de>
+> > Date		: 2011-07-22 19:27 (38 days old)
+> > Message-ID	: <20110722192722.GA9369@x61.home>
+> > References	: http://marc.info/?l=linux-kernel&m=131136334621623&w=2
+> > Patch		: https://lkml.org/lkml/2011/8/2/174
 > 
-> Since the old buffer was only 10 bytes long and the value is masked by a
-> nibble-mask anyway, we don't need to use kstrtoul but rather kstrtou8.
-> 
-> Kernel Version: v3.0-rc2
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> The patch was not added to git master or 3.0.y yet.
 
-Any updates on this one?
-Still applies to the latest linus' tree
+Thanks for the update.
 
-Thanks,
-Peter
+Rafael
