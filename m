@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab1H1SnK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 14:43:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44207 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab1H1SnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 14:43:09 -0400
+	id S1751658Ab1H1SuF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 14:50:05 -0400
+Received: from serv132.fzu.cz ([147.231.26.132]:38741 "EHLO serv132.fzu.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836Ab1H1SuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 14:50:00 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkkDAHiNWk6T5xpZgWdsb2JhbABChEyjKxQBARYmJYFAAQEFI1UBEAsYCRYLAgIJAwIBAgFFBg0BBwEBh3CnHpAlhTuBEQSOFYUKhQ6LeA
+X-IronPort-AV: E=Sophos;i="4.68,293,1312149600"; 
+   d="asc'?scan'208";a="1699154"
+Message-ID: <4E5A8DB5.2020100@flaska.net>
+Date: Sun, 28 Aug 2011 20:49:25 +0200
+From: =?UTF-8?B?SmFuIEt1bmRyw6F0?= <jkt@flaska.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Date: Sun, 28 Aug 2011 15:43:07 -0300
-Message-ID: <CAK1XTrvcXHwDAOdh7SDevuer-eZuhMjXwvuoRCr0BUEOCr6HgA@mail.gmail.com>
-Subject: ptrace() behaviour when doing PTRACE_KILL
-From: Pablo Antonio <pabloa@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: IPv6: metrics of default routes on different interfaces (Ethernet
+ vs. wifi)
+References: <4E5A586E.90509@flaska.net> <4E5A6353.5020202@gmail.com>
+In-Reply-To: <4E5A6353.5020202@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig31143D64781D99FA4D42E7A6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-    I was writing some user code that uses the ptrace() system call
-and found it wasn't behaving as I expected. Maybe this is simply
-because I don't know enough about ptrace()'s behaviour, so I'd like
-someone to enlighten me with some information.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig31143D64781D99FA4D42E7A6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-So, here's the code: http://codepad.org/TJ7Lua4Q Basically, I was
-expecting the parent process to kill the child when the later
-attempted to use the kill() system call, not letting it send signals
-to other processes. I had done this before with pretty much the same
-code, but instead of killing when kill() was called, I was doing it
-when a fork() or clone() was attempted. And it worked. If the child
-process tried to create a new process via fork() or clone(), then it
-was immediately killed and no process was created.
+On 08/28/11 17:48, Alexander E. Patrakov wrote:
+> It is not in the kernel. You have to grep through the source of whateve=
+r
+> utility you are using to configure your interfaces. For dhcpcd, the cod=
+e
+> is around line 200 in net.c:
 
-But now that I'm doing the same thing with kill(), I'm seeing that the
-child process ends up killed, as expected, but the signal is sent
-nonetheless. I understand that when I do the PTRACE_KILL, a SIGKILL
-signal is sent to the child. And PTRACE_KILL is used on syscall
-entrance in that code. If the SIGKILL signal is delivered to the
-process before it continues executing the system call in kernelspace,
-then I don't understand why this code doesn't work as expected. If the
-signal is delivered after the system call is completely executed, then
-I don't understand why this was working for the fork() and clone()
-case.
+Doh, that completely explains what I'm seeing. The IPv6
+autoconfiguration is not handled by userspace at all, AFAIK.
 
-I'd really appreciate if someone told me what's happening here, or
-what I'm not seeing.
+Thanks for correcting my assumptions, now I know where to work further.
 
-Thanks,
+With kind regards,
+Jan
 
--- 
-Pablo Antonio (AKA crazy2k)
-http://www.pablo-a.com.ar/
+--=20
+Trojita, a fast e-mail client -- http://trojita.flaska.net/
+
+
+--------------enig31143D64781D99FA4D42E7A6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk5ajbUACgkQamXfqERyJRfQyQCfYcldYnzFztBGPB09i1v5Gjn2
+jIQAniwq5jixX4b952pk+Lg0jASY5DWp
+=2mtA
+-----END PGP SIGNATURE-----
+
+--------------enig31143D64781D99FA4D42E7A6--
