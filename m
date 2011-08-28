@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab1H1SUe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 14:20:34 -0400
-Received: from void.printf.net ([89.145.121.20]:43722 "EHLO void.printf.net"
+	id S1751902Ab1H1SY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 14:24:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22694 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab1H1SU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 14:20:29 -0400
-From: Chris Ball <cjb@laptop.org>
-To: ian@mnementh.co.uk
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: tmio: eliminate unused variable 'mmc' warning
-References: <1312354138.14329.1.camel@phoenix>
-	<Pine.LNX.4.64.1108030924440.28502@axis700.grange>
-	<m2liva7ize.fsf@bob.laptop.org> <1314471775.2138.28.camel@drake>
-Date: Sun, 28 Aug 2011 14:20:20 -0400
-In-Reply-To: <1314471775.2138.28.camel@drake> (Ian Molton's message of "Sat,
-	27 Aug 2011 20:02:51 +0100")
-Message-ID: <m2k49xxusb.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1751394Ab1H1SYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 14:24:50 -0400
+Date: Sun, 28 Aug 2011 20:21:24 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 08/16] freezer: use dedicated lock instead of
+	task_lock() + memory barrier
+Message-ID: <20110828182124.GE27032@redhat.com>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-9-git-send-email-tj@kernel.org> <20110828175116.GA27032@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110828175116.GA27032@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ian,
-
-On Sat, Aug 27 2011, Ian Molton wrote:
-> On Wed, 2011-08-03 at 08:55 -0400, Chris Ball wrote:
->> > Good for 3.1, do we also push such "harmless" compiler warning fixes
->> > to stable?
->> >
->> > Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->> 
->> Pushed for 3.1, thanks.  I don't think this is appropriate for stable.
+On 08/28, Oleg Nesterov wrote:
 >
-> Why on earth not? its obviously correct...
+> Off-topic, but fake_signal_wake_up() is not safe if the caller
+> try_to_freeze_cgroup(). Unlike try_to_freeze_tasks() (which holds
+> tasklist) we can race with the exiting thread, ->sighand can be
+> NULL.
 
-Because the rules for stable@ consist of more than the patch being
-obviously correct.
+Although with PF_NOFREEZE in do_exit() from 6/16, this race is only
+theoretical.
 
-You seem to have chosen one stable@ rule that this patch meets, and
-ignored the other nine which it mostly does not meet:
+And, forgot to mention, __thaw_task() looks racy too, but i think
+this recalc_sigpending_and_wake() can simply go away.
 
-Documentation/stable_kernel_rules.txt:
- - It must fix a real bug that bothers people (not a, "This could be a
-   problem..." type thing).
- - It must fix a problem that causes a build error (but not for
-   things marked CONFIG_BROKEN), an oops, a hang, data corruption,
-   a real security issue, or some "oh, that's not good" issue.
-   In short, something critical.
- - It cannot contain any "trivial" fixes in it (spelling changes,
-   whitespace cleanups, etc).
+Oleg.
 
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
