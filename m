@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1H1VTX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 17:19:23 -0400
-Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:30374 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab1H1VTT (ORCPT
+	id S1752434Ab1H1Vsg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 17:48:36 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47593 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab1H1Vsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 17:19:19 -0400
-X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Aug 2011 17:19:18 EDT
-X-ME-engine: default
-Message-ID: <4E5AAEFB.2020703@free.fr>
-Date: Sun, 28 Aug 2011 23:11:23 +0200
-From: Eric Valette <eric.valette@free.fr>
-Reply-To: eric.valette@free.fr
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Icedove/5.0
+	Sun, 28 Aug 2011 17:48:32 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #41262] Terracted T5 does no more work
-References: <Sm7qbRR0zn.A.yAG.LepWOB@chimera> <gUVi6eNP8RE.A.xHG.WepWOB@chimera>
-In-Reply-To: <gUVi6eNP8RE.A.xHG.WepWOB@chimera>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110828053624.GC12851@liondog.tnic>
+References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
+ <1314435638.2321.12.camel@thor.local> <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
+ <20110828053624.GC12851@liondog.tnic>
+From: Pavel Ivanov <paivanof@gmail.com>
+Date: Sun, 28 Aug 2011 17:47:59 -0400
+Message-ID: <CAG1a4rv8YirPpyYP735Zn3gpp-kcvvECd=-haZ-qx90_99x8aQ@mail.gmail.com>
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+To: Borislav Petkov <bp@alien8.de>, Pavel Ivanov <paivanof@gmail.com>,
+        =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
+        dri-devel@lists.freedesktop.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/08/2011 21:01, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.39 and 3.0.
+On Sun, Aug 28, 2011 at 1:36 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> > With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
+>> > loaded from userspace, so it needs to be built into the kernel as well.
+>>
+>> How should I do that? I've tried to set all "m"s to "y" in .config and
+>> still saw this issue. Should I set some special parameter?
 >
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.39 and 3.0.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+> You need to add "radeon/CEDAR_pfp.bin" to CONFIG_EXTRA_FIRMWARE when you
+> configure your kernel and enable CONFIG_FIRMWARE_IN_KERNEL.
+>
+> The radeon/CEDAR_pfp.bin file (+ leading directory, mind you) should
+> most probably be located in /lib/firmware or to whatever you have set
+> CONFIG_EXTRA_FIRMWARE_DIR so that Kbuild can find it (if not, you'll get
+> a warning at the end of the kernel build). This way, it works for both
+> radeon being =m and =y.
 
-I think this bug and bug 41232 in the regression list are identical: 
-they both use the same dibcom chipsets. At least proposed patches are 
-identical.
-
-Eyes Tv diversity needs this patches too.
-
---eric
+Everything else in /lib/firmware/radeon is needed after user space
+become available?
 
 
+Pavel
