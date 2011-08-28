@@ -1,120 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab1H1Ms4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 08:48:56 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64433 "EHLO
+	id S1751973Ab1H1Mvk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 08:51:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:53753 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab1H1Msv (ORCPT
+	with ESMTP id S1750850Ab1H1Mvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 08:48:51 -0400
-Message-ID: <4E5A3924.4050006@gmail.com>
-Date: Sun, 28 Aug 2011 20:48:36 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: wanlong.gao@gmail.com, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: fix size computation according to the definition
- of struct vring_used in vring_size
-References: <4E584365.1010806@gmail.com> <1314413399.1913.1.camel@Allen> <4E58BA41.6050503@gmail.com> <4E58BE42.8030700@gmail.com> <20110828113132.GB4875@redhat.com>
-In-Reply-To: <20110828113132.GB4875@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 28 Aug 2011 08:51:35 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] spinlock_debug: print owner on spinlock lockup
+Date: Sun, 28 Aug 2011 21:53:35 +0900
+Message-Id: <1314536015-10981-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011年08月28日 19:31, Michael S. Tsirkin wrote:
-> On Sat, Aug 27, 2011 at 05:52:02PM +0800, Wang Sheng-Hui wrote:
->> On 2011年08月27日 17:34, Wang Sheng-Hui wrote:
->>> On 2011年08月27日 10:49, Wanlong Gao wrote:
->>>> On Sat, 2011-08-27 at 09:07 +0800, Wang Sheng-Hui wrote:
->>>>> The patch is against 3.1-rc3.
->>>>>
->>>>> struct vring_used has two __u16 fields plus array of struct vring_used_elem.
->>>>> Current vring_size counts the __u16 fields to 3. Fix it to 2 in the patch.
->>>>>
->>>>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
->>>>> ---
->>>>>  include/linux/virtio_ring.h |    2 +-
->>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>>>
->>>>> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
->>>>> index 4a32cb6..fcda152 100644
->>>>> --- a/include/linux/virtio_ring.h
->>>>> +++ b/include/linux/virtio_ring.h
->>>>> @@ -143,7 +143,7 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
->>>>>  {
->>>>>  	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
->>>>>  		 + align - 1) & ~(align - 1))
->>>>> -		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
->>>>> +		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
->>>>>  }
->>>>>  
->>>>>  /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
->>>>
->>>> Hi:
->>>> I'm not deep into it, but I think you can see this:
->>>> http://marc.info/?l=git-commits-head&m=130687915816130&w=2
->>>>
->>>> Thanks
->>>> -Wanlong Gao
->>>>
->>>
->>> Thanks.
->>>
->>> I checked the comments, and think we should patch vring_init
->>> and vring_size according to the layout description in the comments.
->>> Right?
->>
->> New patch generated. Please check it. Thanks,
-> 
-> 
->> [PATCH] virtio: modify vring_init and vring_size to take account of the layout containing *_event_idx
->>
->> The patch is against 3.1-rc3.
->>
->> Based on the layout description in the comments, take account of
->> the *_event_idx in functions vring_init and vring_size.
->>
->> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> 
-> Is this a bugfix or just a cleanup?
-> Alignment makes us get the same values with and without, right?
+When SPIN_BUG_ON is triggered, the lock owner information is reported.
+But it is omitted when spinlock lockup is detected.
 
-It's just a cleanup.
-For normal case, the value 16 is too small compared with
-the alignment, I think.
+This information is useful especially on the architectures which don't
+implement trigger_all_cpu_backtrace() that is called just after detecting
+lockup.  So report it and also avoid message format duplication.
 
-> 
->> ---
->>  include/linux/virtio_ring.h |    6 +++---
->>  1 files changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
->> index 4a32cb6..300af76 100644
->> --- a/include/linux/virtio_ring.h
->> +++ b/include/linux/virtio_ring.h
->> @@ -135,13 +135,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
->>  	vr->num = num;
->>  	vr->desc = p;
->>  	vr->avail = p + num*sizeof(struct vring_desc);
->> -	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
->> -			    & ~(align - 1));
->> +	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + 16
->> +		+ align-1) & ~(align - 1));
->>  }
->>  
->>  static inline unsigned vring_size(unsigned int num, unsigned long align)
->>  {
->> -	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
->> +	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
->>  		 + align - 1) & ~(align - 1))
->>  		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
->>  }
->> -- 
->> 1.7.1
->>
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ lib/spinlock_debug.c |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
+index 4755b98..5f3eacd 100644
+--- a/lib/spinlock_debug.c
++++ b/lib/spinlock_debug.c
+@@ -49,13 +49,10 @@ void __rwlock_init(rwlock_t *lock, const char *name,
+ 
+ EXPORT_SYMBOL(__rwlock_init);
+ 
+-static void spin_bug(raw_spinlock_t *lock, const char *msg)
++static void spin_dump(raw_spinlock_t *lock, const char *msg)
+ {
+ 	struct task_struct *owner = NULL;
+ 
+-	if (!debug_locks_off())
+-		return;
+-
+ 	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
+ 		owner = lock->owner;
+ 	printk(KERN_EMERG "BUG: spinlock %s on CPU#%d, %s/%d\n",
+@@ -70,6 +67,14 @@ static void spin_bug(raw_spinlock_t *lock, const char *msg)
+ 	dump_stack();
+ }
+ 
++static void spin_bug(raw_spinlock_t *lock, const char *msg)
++{
++	if (!debug_locks_off())
++		return;
++
++	spin_dump(lock, msg);
++}
++
+ #define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
+ 
+ static inline void
+@@ -113,11 +118,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
+ 		/* lockup suspected: */
+ 		if (print_once) {
+ 			print_once = 0;
+-			printk(KERN_EMERG "BUG: spinlock lockup on CPU#%d, "
+-					"%s/%d, %p\n",
+-				raw_smp_processor_id(), current->comm,
+-				task_pid_nr(current), lock);
+-			dump_stack();
++			spin_dump(lock, "lockup");
+ #ifdef CONFIG_SMP
+ 			trigger_all_cpu_backtrace();
+ #endif
+-- 
+1.7.4.4
 
