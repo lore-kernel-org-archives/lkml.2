@@ -1,172 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab1H1NUy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 09:20:54 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59316 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1H1NUr (ORCPT
+	id S1752040Ab1H1NWt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 09:22:49 -0400
+Received: from mta21.charter.net ([216.33.127.81]:40693 "EHLO
+	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab1H1NWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 09:20:47 -0400
-X-AuditID: b753bd60-a1286ba000000655-4a-4e5a40ac38ff
-X-AuditID: b753bd60-a1286ba000000655-4a-4e5a40ac38ff
-Message-ID: <4E5A40A9.2000404@hitachi.com>
-Date: Sun, 28 Aug 2011 22:20:41 +0900
-From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?UTF-8?B?TWljaGHFgk1pcm9zxYJhdw==?= <mirq-linux@rere.qmqm.pl>,
-        Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
+	Sun, 28 Aug 2011 09:22:45 -0400
+X-Authority-Analysis: v=1.1 cv=L1BYdMBFPEvrb1U4o1gj35Y72n0OWZIL8AeNhXtfs6g=
+ c=1 sm=1 a=Vf8cZDdO_eoA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=nJi8-eznS81EM7dbCzUA:9 a=ZgSVEvT6e5zXbNYqKw8A:7
+ a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: wey-yi.w.guy@intel.com, linville@tuxdriver.com
+Cc: ilw@linux.intel.com, linux-wireless@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH net-next ] Fix time-lag of IFF_RUNNING flag consistency
- between vlan and real devices
-References: <20110826060257.5304.62723.stgit@ltc219.sdl.hitachi.co.jp> <20110825230859.11b2b132@nehalam.ftrdhcpuser.net> <20110826064553.GA5874@gondor.apana.org.au>
-In-Reply-To: <20110826064553.GA5874@gondor.apana.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH] iwlwifi: iwl-agn-rs.c: remove old comment
+Date: Sun, 28 Aug 2011 08:22:38 -0500
+Message-Id: <1314537758-19159-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen and Herbert
+this comment refers to some code that was removed.
 
-Thank you for your comments.
+Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+---
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-(2011/08/26 15:08), Stephen Hemminger wrote:
-> I don't think this is the right way to solve the problem.
->
-> The flags are supposed to propagate back from real device to vlan
-> via network notifications.
->
-> Just doing this for ioctl is not enough, API's other than user space depend on this.
-> Also the user may have manually set different flags on vlan than on
-> the real device.
-
-I agreed.
-I will try another way to solve this problem, as you said.
-
-
-(2011/08/26 15:45), Herbert Xu wrote:
-> On Thu, Aug 25, 2011 at 11:08:59PM -0700, Stephen Hemminger wrote:
->> Just doing this for ioctl is not enough, API's other than user space depend on this.
->> Also the user may have manually set different flags on vlan than on
->> the real device.
-> Right, anything that tests netif_carrier_ok directly on the VLAN
-> device will still be delayed.
->
-> Now I remember discussing this issue in Japan.  However, I can't
-> recall the exact scenario in which the delay occured.
->
-> Is the issue with the link status going down on the real device,
-> or the real device coming up?
->
-> IIRC we already have mechanisms in place to ensure that down events
-> are not delayed by linkwatch.  Of course it is possible that this
-> isn't working for some reason, or some other part of the system is
-> causing the delay.
->
-> So please clarify the scenario for us Hayasaka-san.  Also please
-> let us know how you measured the delay.
->
-> Thanks,
-
-This issue happens when the link status is going down on the real 
-device.
-
-ex) A cable is broken, or is unplugged from a NIC.
-
-I measured the delay using ioctl with SIOCGIFFLAGS from userspace 
-in order to check if there is a time-lag of the flag between vlan 
-and real devices.
-
-Also, you can check it using a script below.
-
--------------------------
-#!/bin/sh
-t=0
-while :
-do
-	echo $t; t=$((t+1))
-	echo -n real; ifconfig RealDev | grep UP
-	echo -n vlan; ifconfig VlanDev | grep UP
-	sleep 0.2
-done
--------------------------
-
-The result is shown as follows.
-It is observed that there is a time-lag of RUNNING status between 
-real and vlan devices.
-
-
-....
-
-19
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-20
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1  * A cable is unplugged from NIC.
-21
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-22
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-23
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-24
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-25
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-26
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-27
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-28
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-29
-real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-30
-real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-31
-real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-32
-real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-33
-real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-34
-real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-35
-real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-36
-real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-vlan          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-
-
-Thanks.
-
-
-
-
-
-
-
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
+index 3789ff4..733bd38 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
+@@ -2209,7 +2209,6 @@ static void rs_stay_in_table(struct iwl_lq_sta *lq_sta, bool force_search)
+ 
+ /*
+  * setup rate table in uCode
+- * return rate_n_flags as used in the table
+  */
+ static void rs_update_rate_tbl(struct iwl_priv *priv,
+ 			       struct iwl_rxon_context *ctx,
+-- 
+1.7.5.4
 
