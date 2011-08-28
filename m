@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab1H1CFs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 22:05:48 -0400
-Received: from vm4.telegraphics.com.au ([98.124.60.149]:49081 "EHLO
-	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926Ab1H1CFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 22:05:42 -0400
-Date: Sun, 28 Aug 2011 12:08:11 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Linux/m68k <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: m68k: [v5] Convert to genirq (WIP)
-In-Reply-To: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com>
-Message-ID: <alpine.OSX.2.00.1108271506320.190@ibook.local>
-References: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1750966Ab1H1Fgh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 01:36:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43936 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab1H1Fg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 01:36:29 -0400
+Date: Sun, 28 Aug 2011 07:36:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
+        dri-devel@lists.freedesktop.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+Message-ID: <20110828053624.GC12851@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Pavel Ivanov <paivanof@gmail.com>,
+	Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
+	dri-devel@lists.freedesktop.org,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
+ <1314435638.2321.12.camel@thor.local>
+ <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 27, 2011 at 06:50:37PM -0400, Pavel Ivanov wrote:
+> 2011/8/27 Michel Dänzer <michel@daenzer.net>:
+> >> I observe very strange behavior dependent on value of
+> >> CONFIG_DRM_RADEON parameter. When it's set to m everything works very
+> >> good, no problem. When I set it to y I see kernel hang during boot. Or
+> >> I should better say it "almost hangs" because during last boot attempt
+> >> I accidentally waited a little bit longer and saw that after more than
+> >> a minute waiting system continued to boot. Dmesg after "hang" shows
+> >> these messages:
+> >>
+> >> [    8.542639] [drm] Loading CEDAR Microcode
+> >> [   69.161605] r600_cp: Failed to load firmware "radeon/CEDAR_pfp.bin"
+> >> [   69.161670] [drm:evergreen_startup] *ERROR* Failed to load firmware!
+> >>
+> >> While during normal boot
+> >>
+> >> [    9.898870] [drm] Loading CEDAR Microcode
+> >> [    9.908425] radeon 0000:05:00.0: WB enabled
+> >
+> > With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
+> > loaded from userspace, so it needs to be built into the kernel as well.
+> 
+> How should I do that? I've tried to set all "m"s to "y" in .config and
+> still saw this issue. Should I set some special parameter?
 
-On Fri, 26 Aug 2011, Geert Uytterhoeven wrote:
+You need to add "radeon/CEDAR_pfp.bin" to CONFIG_EXTRA_FIRMWARE when you
+configure your kernel and enable CONFIG_FIRMWARE_IN_KERNEL.
 
-> - [PATCH 18/24]: m68k/mac: Optimize interrupts using chain handlers (NEW)
+The radeon/CEDAR_pfp.bin file (+ leading directory, mind you) should
+most probably be located in /lib/firmware or to whatever you have set
+CONFIG_EXTRA_FIRMWARE_DIR so that Kbuild can find it (if not, you'll get
+a warning at the end of the kernel build). This way, it works for both
+radeon being =m and =y.
 
-That patch has a mistake --
+HTH.
 
-	irq_set_chained_handler(IRQ_AUTO_4, psc_irq);
-	irq_set_handler_data(IRQ_AUTO_3, (void *)0x40);
-	irq_set_chained_handler(IRQ_AUTO_5, psc_irq);
-	irq_set_handler_data(IRQ_AUTO_3, (void *)0x50);
-	irq_set_chained_handler(IRQ_AUTO_6, psc_irq);
-	irq_set_handler_data(IRQ_AUTO_3, (void *)0x60);
-
-should be
-
-	irq_set_chained_handler(IRQ_AUTO_4, psc_irq);
-	irq_set_handler_data(IRQ_AUTO_4, (void *)0x40);
-	irq_set_chained_handler(IRQ_AUTO_5, psc_irq);
-	irq_set_handler_data(IRQ_AUTO_5, (void *)0x50);
-	irq_set_chained_handler(IRQ_AUTO_6, psc_irq);
-	irq_set_handler_data(IRQ_AUTO_6, (void *)0x60);
-
-I also found that the mac_esp driver probe (when in PIO mode) locks up the 
-machine. I worked around this by changing the 
-disable_irq(IRQ_VIA2_3)/enable_irq(IRQ_VIA2_3) calls to 
-local_irq_save/local_irq_restore, but this is not a good solution.
-
-Apparently genirq doesn't permit nested disable_irq/enable_irq calls. But 
-I haven't found any outer disable_irq/enable_irq pair yet, so I'm only 
-guessing as to the cause of the problem. I'll keep looking.
-
-On one VIA-based machine that I tested, !CONFIG_USE_GENERIC_HARDIRQS 
-gives:
-
-# cat /proc/interrupts
-auto       1:       2299 via1
-auto       2:       3876 via2
-auto       4:        562 SCC
-auto       7:          0 NMI
-mac       10:        590 pmu-shift
-mac       12:         90 pmu-clock
-mac       14:       1635 timer
-mac       17:       3876 nubus
-mac       56:       3879 sonic
-
-whereas, CONFIG_USE_GENERIC_HARDIRQS=y gives:
-
-# cat /proc/interrupts
-           CPU0       
-  4:       5303      auto  SCC
-  7:          0      auto  NMI
- 10:       2136       mac  pmu-shift
- 12:        607       mac  pmu-clock
- 14:      41858       mac  timer
- 56:      66876       mac  sonic
-ERR:          0
-
-Are there no counters for chained IRQs?
-
-Other than these issues everything looks OK. I will test OSS and Baboon 
-when I get the relevant hardware set up.
-
-Finn
+-- 
+Regards/Gruss,
+    Boris.
