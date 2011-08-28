@@ -1,54 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab1H1LQH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 07:16:07 -0400
-Received: from smtp1.kelcom.net ([206.248.148.197]:59912 "EHLO
-	proxee.kelcom.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751821Ab1H1LQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 07:16:03 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Aug 2011 07:16:03 EDT
+	id S1751935Ab1H1La7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 07:30:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25515 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab1H1Law (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 07:30:52 -0400
+Date: Sun, 28 Aug 2011 14:31:32 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: wanlong.gao@gmail.com, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio: fix size computation according to the definition
+ of struct vring_used in vring_size
+Message-ID: <20110828113132.GB4875@redhat.com>
+References: <4E584365.1010806@gmail.com>
+ <1314413399.1913.1.camel@Allen>
+ <4E58BA41.6050503@gmail.com>
+ <4E58BE42.8030700@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Date: Sun, 28 Aug 2011 04:08:07 -0700
-From: USAID United Kingdom <usaid@usaid.org>
-To: undisclosed-recipients:;
-Subject: USAID GRANT
-Reply-To: <usaiduk@pacificwest.com>
-Mail-Reply-To: <usaiduk@pacificwest.com>
-Message-ID: <cbc479222ed2ba6206b925b76252f01e@kelcom.net>
-User-Agent: RoundCube Webmail/0.5-trunk
+In-Reply-To: <4E58BE42.8030700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 27, 2011 at 05:52:02PM +0800, Wang Sheng-Hui wrote:
+> On 2011年08月27日 17:34, Wang Sheng-Hui wrote:
+> > On 2011年08月27日 10:49, Wanlong Gao wrote:
+> >> On Sat, 2011-08-27 at 09:07 +0800, Wang Sheng-Hui wrote:
+> >>> The patch is against 3.1-rc3.
+> >>>
+> >>> struct vring_used has two __u16 fields plus array of struct vring_used_elem.
+> >>> Current vring_size counts the __u16 fields to 3. Fix it to 2 in the patch.
+> >>>
+> >>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+> >>> ---
+> >>>  include/linux/virtio_ring.h |    2 +-
+> >>>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>>
+> >>> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> >>> index 4a32cb6..fcda152 100644
+> >>> --- a/include/linux/virtio_ring.h
+> >>> +++ b/include/linux/virtio_ring.h
+> >>> @@ -143,7 +143,7 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
+> >>>  {
+> >>>  	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
+> >>>  		 + align - 1) & ~(align - 1))
+> >>> -		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+> >>> +		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
+> >>>  }
+> >>>  
+> >>>  /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
+> >>
+> >> Hi:
+> >> I'm not deep into it, but I think you can see this:
+> >> http://marc.info/?l=git-commits-head&m=130687915816130&w=2
+> >>
+> >> Thanks
+> >> -Wanlong Gao
+> >>
+> > 
+> > Thanks.
+> > 
+> > I checked the comments, and think we should patch vring_init
+> > and vring_size according to the layout description in the comments.
+> > Right?
+> 
+> New patch generated. Please check it. Thanks,
 
 
--- 
- Please contact us with the information requested below for the delivery 
- of your Donation draft of $300,000USD (Three Hundred Thousand United 
- States Dollars) From United States Agency for International Development 
- (USAID) United Kingdom.
- 
- 1.First name:
- 2.Last Name:
- 3.Telephone:
- 4.Nationality:
- 5.Age:
- 6.Occupation:
- 7.Address: (Not P.O.Box)
- 
- United States Agency for International Development (USAID) Donation 
- Grant.
+> [PATCH] virtio: modify vring_init and vring_size to take account of the layout containing *_event_idx
+> 
+> The patch is against 3.1-rc3.
+> 
+> Based on the layout description in the comments, take account of
+> the *_event_idx in functions vring_init and vring_size.
+> 
+> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
 
- EMAIL: usaiduk@pacificwest.com
+Is this a bugfix or just a cleanup?
+Alignment makes us get the same values with and without, right?
 
- Your replies must be sent to this address (usaiduk@pacificwest.com)
-
- Regards,
- USAID Award/Donation Team.
- © USAID United Kingdom 2011.
-
-
+> ---
+>  include/linux/virtio_ring.h |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> index 4a32cb6..300af76 100644
+> --- a/include/linux/virtio_ring.h
+> +++ b/include/linux/virtio_ring.h
+> @@ -135,13 +135,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+>  	vr->num = num;
+>  	vr->desc = p;
+>  	vr->avail = p + num*sizeof(struct vring_desc);
+> -	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
+> -			    & ~(align - 1));
+> +	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + 16
+> +		+ align-1) & ~(align - 1));
+>  }
+>  
+>  static inline unsigned vring_size(unsigned int num, unsigned long align)
+>  {
+> -	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
+> +	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
+>  		 + align - 1) & ~(align - 1))
+>  		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+>  }
+> -- 
+> 1.7.1
+> 
