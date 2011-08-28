@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935Ab1H1La7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 07:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766Ab1H1Law (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 07:30:52 -0400
-Date: Sun, 28 Aug 2011 14:31:32 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: wanlong.gao@gmail.com, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: fix size computation according to the definition
- of struct vring_used in vring_size
-Message-ID: <20110828113132.GB4875@redhat.com>
-References: <4E584365.1010806@gmail.com>
- <1314413399.1913.1.camel@Allen>
- <4E58BA41.6050503@gmail.com>
- <4E58BE42.8030700@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E58BE42.8030700@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751384Ab1H1MDe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 08:03:34 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36384 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab1H1MDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 08:03:31 -0400
+From: Arun Thomas <arun.thomas@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andre Przywara <andre.przywara@amd.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Christoph Lameter <cl@linux.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Arun Thomas <arun.thomas@gmail.com>
+Subject: [PATCH] x86, cpu: Add cpufeature flag for TSC-Deadline
+Date: Sun, 28 Aug 2011 14:03:12 +0200
+Message-Id: <1314532992-19495-1-git-send-email-arun.thomas@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 05:52:02PM +0800, Wang Sheng-Hui wrote:
-> On 2011年08月27日 17:34, Wang Sheng-Hui wrote:
-> > On 2011年08月27日 10:49, Wanlong Gao wrote:
-> >> On Sat, 2011-08-27 at 09:07 +0800, Wang Sheng-Hui wrote:
-> >>> The patch is against 3.1-rc3.
-> >>>
-> >>> struct vring_used has two __u16 fields plus array of struct vring_used_elem.
-> >>> Current vring_size counts the __u16 fields to 3. Fix it to 2 in the patch.
-> >>>
-> >>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> >>> ---
-> >>>  include/linux/virtio_ring.h |    2 +-
-> >>>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>>
-> >>> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-> >>> index 4a32cb6..fcda152 100644
-> >>> --- a/include/linux/virtio_ring.h
-> >>> +++ b/include/linux/virtio_ring.h
-> >>> @@ -143,7 +143,7 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
-> >>>  {
-> >>>  	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
-> >>>  		 + align - 1) & ~(align - 1))
-> >>> -		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
-> >>> +		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
-> >>>  }
-> >>>  
-> >>>  /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
-> >>
-> >> Hi:
-> >> I'm not deep into it, but I think you can see this:
-> >> http://marc.info/?l=git-commits-head&m=130687915816130&w=2
-> >>
-> >> Thanks
-> >> -Wanlong Gao
-> >>
-> > 
-> > Thanks.
-> > 
-> > I checked the comments, and think we should patch vring_init
-> > and vring_size according to the layout description in the comments.
-> > Right?
-> 
-> New patch generated. Please check it. Thanks,
+This patch adds a flag for TSC-Deadline mode, which allows software to
+set the local APIC timer to one-shot interrupt at an absolute time
+(i.e., a TSC deadline).
 
+Signed-off-by: Arun Thomas <arun.thomas@gmail.com>
+---
+ arch/x86/include/asm/cpufeature.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> [PATCH] virtio: modify vring_init and vring_size to take account of the layout containing *_event_idx
-> 
-> The patch is against 3.1-rc3.
-> 
-> Based on the layout description in the comments, take account of
-> the *_event_idx in functions vring_init and vring_size.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index f24ed51..f19e1e8 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -121,6 +121,7 @@
+ #define X86_FEATURE_X2APIC	(4*32+21) /* x2APIC */
+ #define X86_FEATURE_MOVBE	(4*32+22) /* MOVBE instruction */
+ #define X86_FEATURE_POPCNT      (4*32+23) /* POPCNT instruction */
++#define X86_FEATURE_TSC_DEADLINE (4*32+24) /* APIC supports TSC deadline mode */
+ #define X86_FEATURE_AES		(4*32+25) /* AES instructions */
+ #define X86_FEATURE_XSAVE	(4*32+26) /* XSAVE/XRSTOR/XSETBV/XGETBV */
+ #define X86_FEATURE_OSXSAVE	(4*32+27) /* "" XSAVE enabled in the OS */
+-- 
+1.7.4.1
 
-Is this a bugfix or just a cleanup?
-Alignment makes us get the same values with and without, right?
-
-> ---
->  include/linux/virtio_ring.h |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-> index 4a32cb6..300af76 100644
-> --- a/include/linux/virtio_ring.h
-> +++ b/include/linux/virtio_ring.h
-> @@ -135,13 +135,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
->  	vr->num = num;
->  	vr->desc = p;
->  	vr->avail = p + num*sizeof(struct vring_desc);
-> -	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
-> -			    & ~(align - 1));
-> +	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + 16
-> +		+ align-1) & ~(align - 1));
->  }
->  
->  static inline unsigned vring_size(unsigned int num, unsigned long align)
->  {
-> -	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
-> +	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
->  		 + align - 1) & ~(align - 1))
->  		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
->  }
-> -- 
-> 1.7.1
-> 
