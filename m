@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab1H1UFI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 16:05:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43733 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab1H1UFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 16:05:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chris Ball <cjb@laptop.org>
-Subject: Re: [Bug #38922] Lenovo T420 (Sandy Bridge) Crashes on SD Card gpt partition writing and io errors on insert
-Date: Sun, 28 Aug 2011 22:06:53 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Andrei Warkentin" <andreiw@motorola.com>,
-        "Peter Vollmer" <vollmerpeter@googlemail.com>
-References: <Sm7qbRR0zn.A.yAG.LepWOB@chimera> <gUVi6eNP8RE.A.uJH.tfpWOB@chimera> <m2fwklxqjy.fsf@bob.laptop.org>
-In-Reply-To: <m2fwklxqjy.fsf@bob.laptop.org>
+	id S1752153Ab1H1UH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 16:07:27 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56219 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1H1UHV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 16:07:21 -0400
+Date: Sun, 28 Aug 2011 21:06:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] spi: Fix builderror in spi-pl022.c
+Message-ID: <20110828200648.GC13379@n2100.arm.linux.org.uk>
+References: <E1Qvo1q-0000qv-TQ@rmk-PC.arm.linux.org.uk> <1314559619-19923-1-git-send-email-peterhuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108282206.53949.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314559619-19923-1-git-send-email-peterhuewe@gmx.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, August 28, 2011, Chris Ball wrote:
-> Hi Rafael,
-> 
-> On Sun, Aug 28 2011, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.39 and 3.0.
-> >
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.39 and 3.0.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> >
-> >
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38922
-> > Subject : Lenovo T420 (Sandy Bridge) Crashes on SD Card gpt partition
-> > writing and io errors on insert
-> > Submitter	: Peter Vollmer <vollmerpeter@googlemail.com>
-> > Date		: 2011-07-07 17:33 (53 days old)
-> > First-Bad-Commit:
-> > http://git.kernel.org/linus/a3c7778f8153b9e4eceea6738973280b9e63c618
-> 
-> Yes, still present.
+On Sun, Aug 28, 2011 at 09:26:59PM +0200, Peter Huewe wrote:
+> This patch fixes a build error, introduced by commit (67fc8b9f, "PM: add
+> runtime PM support to core Primecell driver") which unfortunately was a little
+> bit incomplete and did contain a typo (11 instead of 22).
+> I'm not sure how this patch could have been tested back then, if it
+> doesn't even compile ;)
 
-Thanks for the update.
+Maybe it was tested on configs without CONFIG_SUSPEND enabled - which
+is highly likely since my ARM development boards don't support S2RAM.
 
-Rafael
+That's the problem with ifdef'ing code.  It makes it impossible to
+ensure that it's properly tested.
