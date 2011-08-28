@@ -1,86 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab1H1MfX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 08:35:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35267 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab1H1MfR (ORCPT
+	id S1751933Ab1H1Ms4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 08:48:56 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:64433 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab1H1Msv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 08:35:17 -0400
-Message-ID: <4E5A35CB.7060005@gentoo.org>
-Date: Sun, 28 Aug 2011 15:34:19 +0300
-From: Stratos Psomadakis <psomas@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Sun, 28 Aug 2011 08:48:51 -0400
+Message-ID: <4E5A3924.4050006@gmail.com>
+Date: Sun, 28 Aug 2011 20:48:36 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [00/19] 2.6.32.46-longterm review
-References: <20110826220137.GA14059@kroah.com>
-In-Reply-To: <20110826220137.GA14059@kroah.com>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: wanlong.gao@gmail.com, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio: fix size computation according to the definition
+ of struct vring_used in vring_size
+References: <4E584365.1010806@gmail.com> <1314413399.1913.1.camel@Allen> <4E58BA41.6050503@gmail.com> <4E58BE42.8030700@gmail.com> <20110828113132.GB4875@redhat.com>
+In-Reply-To: <20110828113132.GB4875@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2011 01:01 AM, Greg KH wrote:
-> This is the start of the longterm review cycle for the 2.6.32.46 release.
-> There are 19 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let us know.  If anyone is a maintainer of the proper subsystem, and
-> wants to add a Signed-off-by: line to the patch, please respond with it.
->
-> Responses should be made by Monday, August 29, 2011, 12:00:00 UTC.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.46-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
-Hi,
+On 2011年08月28日 19:31, Michael S. Tsirkin wrote:
+> On Sat, Aug 27, 2011 at 05:52:02PM +0800, Wang Sheng-Hui wrote:
+>> On 2011年08月27日 17:34, Wang Sheng-Hui wrote:
+>>> On 2011年08月27日 10:49, Wanlong Gao wrote:
+>>>> On Sat, 2011-08-27 at 09:07 +0800, Wang Sheng-Hui wrote:
+>>>>> The patch is against 3.1-rc3.
+>>>>>
+>>>>> struct vring_used has two __u16 fields plus array of struct vring_used_elem.
+>>>>> Current vring_size counts the __u16 fields to 3. Fix it to 2 in the patch.
+>>>>>
+>>>>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+>>>>> ---
+>>>>>  include/linux/virtio_ring.h |    2 +-
+>>>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>>
+>>>>> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+>>>>> index 4a32cb6..fcda152 100644
+>>>>> --- a/include/linux/virtio_ring.h
+>>>>> +++ b/include/linux/virtio_ring.h
+>>>>> @@ -143,7 +143,7 @@ static inline unsigned vring_size(unsigned int num, unsigned long align)
+>>>>>  {
+>>>>>  	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
+>>>>>  		 + align - 1) & ~(align - 1))
+>>>>> -		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+>>>>> +		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
+>>>>>  }
+>>>>>  
+>>>>>  /* The following is used with USED_EVENT_IDX and AVAIL_EVENT_IDX */
+>>>>
+>>>> Hi:
+>>>> I'm not deep into it, but I think you can see this:
+>>>> http://marc.info/?l=git-commits-head&m=130687915816130&w=2
+>>>>
+>>>> Thanks
+>>>> -Wanlong Gao
+>>>>
+>>>
+>>> Thanks.
+>>>
+>>> I checked the comments, and think we should patch vring_init
+>>> and vring_size according to the layout description in the comments.
+>>> Right?
+>>
+>> New patch generated. Please check it. Thanks,
+> 
+> 
+>> [PATCH] virtio: modify vring_init and vring_size to take account of the layout containing *_event_idx
+>>
+>> The patch is against 3.1-rc3.
+>>
+>> Based on the layout description in the comments, take account of
+>> the *_event_idx in functions vring_init and vring_size.
+>>
+>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+> 
+> Is this a bugfix or just a cleanup?
+> Alignment makes us get the same values with and without, right?
 
-upstream commit d5aa407f59f5b83d2c50ec88f5bf56d40f1f8978 ("tunnels: fix
-netns vs proto registration ordering") , which was included in
-2.6.32.44-longterm, was not backported correctly, and results in a NULL
-pointer dereference in ip6_tunnel.c for longterm kernels 2.6.32.44 and
-2.6.32.45.
+It's just a cleanup.
+For normal case, the value 16 is too small compared with
+the alignment, I think.
 
-The bug has been reported at the Gentoo [1] and Debian [2] bugzillas,
-and fixed in the latest grsec-patches [3], but I haven't found a report
-for this at the lkml (or at the kernel's bugzilla).
-
-The fix is trivial, and I think it can be included in 2.6.32.46, if
-possible.
-If you want, I can submit it with a new email to stable@kernel.org.
-
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 7fb3e02..53e0d51 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1466,7 +1466,7 @@ static int __init ip6_tunnel_init(void)
- {
-        int  err;
- 
--       err = register_pernet_device(&ip6_tnl_net_ops);
-+       err = register_pernet_gen_device(&ip6_tnl_net_id, &ip6_tnl_net_ops);
-        if (err < 0)
-                goto out_pernet;
-
-Btw, this has been fixed in grsec-patches, and an identical patch has
-also been posted at the Debian bugzilla, so I'm not sure about the
-Signed-off-by and Reported-by tags.
-
-[1] https://bugs.gentoo.org/show_bug.cgi?id=380609
-[2] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=633738
-[3] http://grsecurity.net/changelog-stable.txt
-
--- 
-Stratos Psomadakis
-<psomas@gentoo.org>
+> 
+>> ---
+>>  include/linux/virtio_ring.h |    6 +++---
+>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+>> index 4a32cb6..300af76 100644
+>> --- a/include/linux/virtio_ring.h
+>> +++ b/include/linux/virtio_ring.h
+>> @@ -135,13 +135,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+>>  	vr->num = num;
+>>  	vr->desc = p;
+>>  	vr->avail = p + num*sizeof(struct vring_desc);
+>> -	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
+>> -			    & ~(align - 1));
+>> +	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + 16
+>> +		+ align-1) & ~(align - 1));
+>>  }
+>>  
+>>  static inline unsigned vring_size(unsigned int num, unsigned long align)
+>>  {
+>> -	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
+>> +	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
+>>  		 + align - 1) & ~(align - 1))
+>>  		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+>>  }
+>> -- 
+>> 1.7.1
+>>
 
