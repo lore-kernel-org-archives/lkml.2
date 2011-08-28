@@ -1,51 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab1H1NRP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 09:17:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40264 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab1H1NRK (ORCPT
+	id S1751979Ab1H1NUy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 09:20:54 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:59316 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab1H1NUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 09:17:10 -0400
-Message-ID: <4E5A3FCC.2030504@gnutls.org>
-Date: Sun, 28 Aug 2011 15:17:00 +0200
-From: Nikos Mavrogiannopoulos <nmav@gnutls.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Icedove/3.1.12
+	Sun, 28 Aug 2011 09:20:47 -0400
+X-AuditID: b753bd60-a1286ba000000655-4a-4e5a40ac38ff
+X-AuditID: b753bd60-a1286ba000000655-4a-4e5a40ac38ff
+Message-ID: <4E5A40A9.2000404@hitachi.com>
+Date: Sun, 28 Aug 2011 22:20:41 +0900
+From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: cryptodev-linux-devel@gna.org,
-        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: comparison of the AF_ALG interface with the /dev/crypto
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?UTF-8?B?TWljaGHFgk1pcm9zxYJhdw==?= <mirq-linux@rere.qmqm.pl>,
+        Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH net-next ] Fix time-lag of IFF_RUNNING flag consistency
+ between vlan and real devices
+References: <20110826060257.5304.62723.stgit@ltc219.sdl.hitachi.co.jp> <20110825230859.11b2b132@nehalam.ftrdhcpuser.net> <20110826064553.GA5874@gondor.apana.org.au>
+In-Reply-To: <20110826064553.GA5874@gondor.apana.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-  I've compared the cryptodev [0] and AF_ALG interfaces in terms of
-performance [1]. I've put the results, as well as the benchmarks used
-in: http://home.gna.org/cryptodev-linux/comparison.html
+Hi Stephen and Herbert
 
-The benchmark idea was to test the speed of initialization, encryption
-and deinitiation, as well as the encryption speed alone. These are the
-most common use cases of the frameworks (i.e. how they would be used by 
-a cryptographic library).
+Thank you for your comments.
 
-The AF_ALG appears to have poor performance comparing to cryptodev. Note
-that the test with software AES is not really indicative because the
-cost of software encryption masks the overhead of the framework. The
-difference is clearly seen in the NULL cipher that has no cost (as one
-would expect from a hardware cipher accelerator).
+(2011/08/26 15:08), Stephen Hemminger wrote:
+> I don't think this is the right way to solve the problem.
+>
+> The flags are supposed to propagate back from real device to vlan
+> via network notifications.
+>
+> Just doing this for ioctl is not enough, API's other than user space depend on this.
+> Also the user may have manually set different flags on vlan than on
+> the real device.
 
-Given my benchmarks have no issues, it is not apparent to me why one
-should use AF_ALG instead of cryptodev. I do not know though why AF_ALG
-performs so poor. I'd speculate by blaming it on the usage of the socket
-API and the number of system calls required.
+I agreed.
+I will try another way to solve this problem, as you said.
 
-regards,
-Nikos
 
-[0]. http://home.gna.org/cryptodev-linux/
-[1]. Both intend to provide user-space with high-bandwidth hardware 
-accelerated ciphers, thus performance seems a rational to compare.
+(2011/08/26 15:45), Herbert Xu wrote:
+> On Thu, Aug 25, 2011 at 11:08:59PM -0700, Stephen Hemminger wrote:
+>> Just doing this for ioctl is not enough, API's other than user space depend on this.
+>> Also the user may have manually set different flags on vlan than on
+>> the real device.
+> Right, anything that tests netif_carrier_ok directly on the VLAN
+> device will still be delayed.
+>
+> Now I remember discussing this issue in Japan.  However, I can't
+> recall the exact scenario in which the delay occured.
+>
+> Is the issue with the link status going down on the real device,
+> or the real device coming up?
+>
+> IIRC we already have mechanisms in place to ensure that down events
+> are not delayed by linkwatch.  Of course it is possible that this
+> isn't working for some reason, or some other part of the system is
+> causing the delay.
+>
+> So please clarify the scenario for us Hayasaka-san.  Also please
+> let us know how you measured the delay.
+>
+> Thanks,
+
+This issue happens when the link status is going down on the real 
+device.
+
+ex) A cable is broken, or is unplugged from a NIC.
+
+I measured the delay using ioctl with SIOCGIFFLAGS from userspace 
+in order to check if there is a time-lag of the flag between vlan 
+and real devices.
+
+Also, you can check it using a script below.
+
+-------------------------
+#!/bin/sh
+t=0
+while :
+do
+	echo $t; t=$((t+1))
+	echo -n real; ifconfig RealDev | grep UP
+	echo -n vlan; ifconfig VlanDev | grep UP
+	sleep 0.2
+done
+-------------------------
+
+The result is shown as follows.
+It is observed that there is a time-lag of RUNNING status between 
+real and vlan devices.
+
+
+....
+
+19
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+20
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1  * A cable is unplugged from NIC.
+21
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+22
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+23
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+24
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+25
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+26
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+27
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+28
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+29
+real          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+30
+real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+31
+real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+32
+real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+33
+real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+34
+real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+35
+real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+36
+real          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+vlan          UP BROADCAST MULTICAST  MTU:1500  Metric:1
+
+
+Thanks.
+
+
+
+
+
+
+
+
