@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab1H0XDp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Aug 2011 19:03:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63705 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab1H0XDn convert rfc822-to-8bit (ORCPT
+	id S1751527Ab1H1CFs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Aug 2011 22:05:48 -0400
+Received: from vm4.telegraphics.com.au ([98.124.60.149]:49081 "EHLO
+	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1H1CFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Aug 2011 19:03:43 -0400
+	Sat, 27 Aug 2011 22:05:42 -0400
+Date: Sun, 28 Aug 2011 12:08:11 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Linux/m68k <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: m68k: [v5] Convert to genirq (WIP)
+In-Reply-To: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com>
+Message-ID: <alpine.OSX.2.00.1108271506320.190@ibook.local>
+References: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1314435638.2321.12.camel@thor.local>
-References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
- <1314435638.2321.12.camel@thor.local>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Sat, 27 Aug 2011 19:03:22 -0400
-Message-ID: <CAGZ=bqKizV5rkeca67z-HdRJ_CayvYh+HHgf=LzUTpoxSwpZ2A@mail.gmail.com>
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-To: =?UTF-8?Q?Michel_D=C3=A4nzer?= <michel@daenzer.net>
-Cc: Pavel Ivanov <paivanof@gmail.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/27 Michel Dänzer <michel@daenzer.net>:
-> On Sam, 2011-08-27 at 00:20 -0400, Pavel Ivanov wrote:
->> I observe very strange behavior dependent on value of
->> CONFIG_DRM_RADEON parameter. When it's set to m everything works very
->> good, no problem. When I set it to y I see kernel hang during boot. Or
->> I should better say it "almost hangs" because during last boot attempt
->> I accidentally waited a little bit longer and saw that after more than
->> a minute waiting system continued to boot. Dmesg after "hang" shows
->> these messages:
->>
->> [    8.542639] [drm] Loading CEDAR Microcode
->> [   69.161605] r600_cp: Failed to load firmware "radeon/CEDAR_pfp.bin"
->> [   69.161670] [drm:evergreen_startup] *ERROR* Failed to load firmware!
->>
->> While during normal boot
->>
->> [    9.898870] [drm] Loading CEDAR Microcode
->> [    9.908425] radeon 0000:05:00.0: WB enabled
->
-> With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
-> loaded from userspace, so it needs to be built into the kernel as well.
 
-Linus has gotten pissed previously about drivers that do this.
+On Fri, 26 Aug 2011, Geert Uytterhoeven wrote:
 
-I actually recall a patch previously that made request_firmware() fail instantly
-before userspace is loaded, which would get rid of the hang, but presumably
-not actually make the driver work when built-in.
+> - [PATCH 18/24]: m68k/mac: Optimize interrupts using chain handlers (NEW)
 
-The solution is to allow the driver to "attach" to the device but if
-the firmware is
-not available at that time then retrying the request_firmware() later, ideally
-triggered from some userspace action.
+That patch has a mistake --
 
-Cheers,
-Kyle Moffett
+	irq_set_chained_handler(IRQ_AUTO_4, psc_irq);
+	irq_set_handler_data(IRQ_AUTO_3, (void *)0x40);
+	irq_set_chained_handler(IRQ_AUTO_5, psc_irq);
+	irq_set_handler_data(IRQ_AUTO_3, (void *)0x50);
+	irq_set_chained_handler(IRQ_AUTO_6, psc_irq);
+	irq_set_handler_data(IRQ_AUTO_3, (void *)0x60);
+
+should be
+
+	irq_set_chained_handler(IRQ_AUTO_4, psc_irq);
+	irq_set_handler_data(IRQ_AUTO_4, (void *)0x40);
+	irq_set_chained_handler(IRQ_AUTO_5, psc_irq);
+	irq_set_handler_data(IRQ_AUTO_5, (void *)0x50);
+	irq_set_chained_handler(IRQ_AUTO_6, psc_irq);
+	irq_set_handler_data(IRQ_AUTO_6, (void *)0x60);
+
+I also found that the mac_esp driver probe (when in PIO mode) locks up the 
+machine. I worked around this by changing the 
+disable_irq(IRQ_VIA2_3)/enable_irq(IRQ_VIA2_3) calls to 
+local_irq_save/local_irq_restore, but this is not a good solution.
+
+Apparently genirq doesn't permit nested disable_irq/enable_irq calls. But 
+I haven't found any outer disable_irq/enable_irq pair yet, so I'm only 
+guessing as to the cause of the problem. I'll keep looking.
+
+On one VIA-based machine that I tested, !CONFIG_USE_GENERIC_HARDIRQS 
+gives:
+
+# cat /proc/interrupts
+auto       1:       2299 via1
+auto       2:       3876 via2
+auto       4:        562 SCC
+auto       7:          0 NMI
+mac       10:        590 pmu-shift
+mac       12:         90 pmu-clock
+mac       14:       1635 timer
+mac       17:       3876 nubus
+mac       56:       3879 sonic
+
+whereas, CONFIG_USE_GENERIC_HARDIRQS=y gives:
+
+# cat /proc/interrupts
+           CPU0       
+  4:       5303      auto  SCC
+  7:          0      auto  NMI
+ 10:       2136       mac  pmu-shift
+ 12:        607       mac  pmu-clock
+ 14:      41858       mac  timer
+ 56:      66876       mac  sonic
+ERR:          0
+
+Are there no counters for chained IRQs?
+
+Other than these issues everything looks OK. I will test OSS and Baboon 
+when I get the relevant hardware set up.
+
+Finn
