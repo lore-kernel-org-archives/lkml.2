@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab1H1OKC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 10:10:02 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38997 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab1H1OJ4 (ORCPT
+	id S1751878Ab1H1PIL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 11:08:11 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41060 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998Ab1H1PIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 10:09:56 -0400
-Subject: Re: [PATCH net-next ] Fix time-lag of IFF_RUNNING flag consistency
- between vlan and real devices
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        =?UTF-8?Q?Micha=C5=82Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
-        Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <4E5A40A9.2000404@hitachi.com>
-References: <20110826060257.5304.62723.stgit@ltc219.sdl.hitachi.co.jp>
-	 <20110825230859.11b2b132@nehalam.ftrdhcpuser.net>
-	 <20110826064553.GA5874@gondor.apana.org.au>  <4E5A40A9.2000404@hitachi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 28 Aug 2011 16:09:49 +0200
-Message-ID: <1314540589.3036.12.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Sun, 28 Aug 2011 11:08:04 -0400
+X-Sasl-enc: QKM4Y9lZFrphTlB42yg5y3rZIWHm7YRs0yxcCKO1AJUk 1314544083
+Date: Sun, 28 Aug 2011 08:07:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Stratos Psomadakis <psomas@gentoo.org>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [stable] [00/19] 2.6.32.46-longterm review
+Message-ID: <20110828150757.GA16301@kroah.com>
+References: <20110826220137.GA14059@kroah.com>
+ <4E5A35CB.7060005@gentoo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5A35CB.7060005@gentoo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 28 août 2011 à 22:20 +0900, HAYASAKA Mitsuo a écrit :
-> Hi Stephen and Herbert
-> 
-> Thank you for your comments.
-> 
-> (2011/08/26 15:08), Stephen Hemminger wrote:
-> > I don't think this is the right way to solve the problem.
+On Sun, Aug 28, 2011 at 03:34:19PM +0300, Stratos Psomadakis wrote:
+> On 08/27/2011 01:01 AM, Greg KH wrote:
+> > This is the start of the longterm review cycle for the 2.6.32.46 release.
+> > There are 19 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
 > >
-> > The flags are supposed to propagate back from real device to vlan
-> > via network notifications.
+> > Responses should be made by Monday, August 29, 2011, 12:00:00 UTC.
+> > Anything received after that time might be too late.
 > >
-> > Just doing this for ioctl is not enough, API's other than user space depend on this.
-> > Also the user may have manually set different flags on vlan than on
-> > the real device.
-> 
-> I agreed.
-> I will try another way to solve this problem, as you said.
-> 
-> 
-> (2011/08/26 15:45), Herbert Xu wrote:
-> > On Thu, Aug 25, 2011 at 11:08:59PM -0700, Stephen Hemminger wrote:
-> >> Just doing this for ioctl is not enough, API's other than user space depend on this.
-> >> Also the user may have manually set different flags on vlan than on
-> >> the real device.
-> > Right, anything that tests netif_carrier_ok directly on the VLAN
-> > device will still be delayed.
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.46-rc1.gz
+> > and the diffstat can be found below.
 > >
-> > Now I remember discussing this issue in Japan.  However, I can't
-> > recall the exact scenario in which the delay occured.
+> > thanks,
 > >
-> > Is the issue with the link status going down on the real device,
-> > or the real device coming up?
-> >
-> > IIRC we already have mechanisms in place to ensure that down events
-> > are not delayed by linkwatch.  Of course it is possible that this
-> > isn't working for some reason, or some other part of the system is
-> > causing the delay.
-> >
-> > So please clarify the scenario for us Hayasaka-san.  Also please
-> > let us know how you measured the delay.
-> >
-> > Thanks,
+> > greg k-h
+> Hi,
 > 
-> This issue happens when the link status is going down on the real 
-> device.
+> upstream commit d5aa407f59f5b83d2c50ec88f5bf56d40f1f8978 ("tunnels: fix
+> netns vs proto registration ordering") , which was included in
+> 2.6.32.44-longterm, was not backported correctly, and results in a NULL
+> pointer dereference in ip6_tunnel.c for longterm kernels 2.6.32.44 and
+> 2.6.32.45.
 > 
-> ex) A cable is broken, or is unplugged from a NIC.
+> The bug has been reported at the Gentoo [1] and Debian [2] bugzillas,
+> and fixed in the latest grsec-patches [3], but I haven't found a report
+> for this at the lkml (or at the kernel's bugzilla).
 > 
-> I measured the delay using ioctl with SIOCGIFFLAGS from userspace 
-> in order to check if there is a time-lag of the flag between vlan 
-> and real devices.
-> 
-> Also, you can check it using a script below.
-> 
-> -------------------------
-> #!/bin/sh
-> t=0
-> while :
-> do
-> 	echo $t; t=$((t+1))
-> 	echo -n real; ifconfig RealDev | grep UP
-> 	echo -n vlan; ifconfig VlanDev | grep UP
-> 	sleep 0.2
-> done
-> -------------------------
-> 
-> The result is shown as follows.
-> It is observed that there is a time-lag of RUNNING status between 
-> real and vlan devices.
-> 
-> 
+> The fix is trivial, and I think it can be included in 2.6.32.46, if
+> possible.
+> If you want, I can submit it with a new email to stable@kernel.org.
 
-Hi !
+Yes, please do so I can properly add it.
 
-This reminds me some work done in linkwatch
+thanks,
 
-Please take a look at commit e014debecd3ee3832e647 (linkwatch:
-linkwatch_forget_dev() to speedup device dismantle)
-
-And more generally, code in net/core/link_watch.c
-
-
-
-
+greg k-h
