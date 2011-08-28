@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab1H1SHg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 14:07:36 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51565 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab1H1SH3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 14:07:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110827132044.GN2632@htj.dyndns.org>
-References: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp>
- <20110825101602.GI3286@htj.dyndns.org> <4E58C3BD.3000609@hitachi.com>
- <20110827102655.GJ2632@htj.dyndns.org> <4E58E905.4020704@hitachi.com> <20110827132044.GN2632@htj.dyndns.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sun, 28 Aug 2011 20:07:09 +0200
-Message-ID: <CAPXgP12Qn2s5ZS5jHCR-Nw_E9FWkX6E3MXhQ5gy6YEq4Zm8S0g@mail.gmail.com>
-Subject: Re: [-v3 PATCH 0/3] Persistent device name using alias
+	id S1751924Ab1H1SMe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 14:12:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30151 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751740Ab1H1SM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 14:12:27 -0400
+Date: Sun, 28 Aug 2011 20:09:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James.Bottomley@hansenpartnership.com,
-        dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, kay.sievers@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Cc: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 12/16] freezer: clean up freeze_processes() failure path
+Message-ID: <20110828180901.GD27032@redhat.com>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-13-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313763382-12341-13-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 15:20, Tejun Heo <tj@kernel.org> wrote:
-> On Sat, Aug 27, 2011 at 09:54:29PM +0900, Nao Nishijima wrote:
->> > Hmm... I don't follow.  Why wouldn't it be able to?  All the
->> > informations are in the log.  It is messy but it's there.  If you want
->>
->> In many cases, the script is able to convert the name. However there is
->> the special case that the logs do not exist in memory and disk due to
->> the crash except console.
+On 08/19, Tejun Heo wrote:
 >
-> Sorry but I still don't get it.  If you can extract the log, the
-> information is there and w/ remote logging (be it via serial or
-> network), the information always has to be there.  Are you talking
-> about the case where somehow only the video console somehow succeeds
-> to print out oops?  I don't think that's a common case as serial (also
-> on IPMI) tends to be pretty robust, often more robust than vide
-> output, and even when such case occurs, the only thing you want is
-> mapping kernel device name to more recognizable information, which
-> isn't difficult at all.  If you wanna do it in a really simple manner,
-> just save udisks --dump output after boot and each hotplug event and
-> write a simple script to search it.
->
->> > more structured information, u{dev|disks} already maintain device
->> > libarary - what maps to what, connected how with what attributes and
->> > so on.  Sending them off to the log machine as device hotplug events
->> > occur and consulting it when post-processing log message would work
->> > fine.  All you need is just some python scripting.  I don't really see
->> > much point in messing with device names directly.  The only thing is
->> > that the raw log would be prettier.  I don't think that is useful
->> > enough to justify changing kernel device names.
->>
->> A kernel device names (e.g. sda) is not useful information because it
->> doesn't always point the same disk at each boot-up time.
->
-> Eh?  What difference does that make?  Just make the target machines
-> send up-to-date disk config info to the log server.
->
->> An alias is just an option and provides the ability to give all
->> kernel devices a "preferred name".
->>
->> By default, dev_printk's will show a kernel device name. They show an
->> alias only when the user assigns a "preferred name" to an alias.
->> Even if the persistend device name is used, the device names in logs are
->> different from the name that the users are using. So, an alias helps the
->> user identify the disk.
->
-> Yes, I do understand what it's doing and can see there can be cases it
-> can be somewhat useful but I still think it's too adhoc an approach
-> which doesn't really justify itself.  It just does too little to solve
-> the actual problem and even that 'little' part isn't very trivial - it
-> adds whole lot of policy decisions to make and I'm pretty sure it will
-> cause good amount of havoc w/ all the system tools which currently
-> don't expect block device names to change to some admin determined
-> free format string on the fly.
+>  void __thaw_task(struct task_struct *p)
+>  {
+>  	unsigned long flags;
+> @@ -150,11 +135,19 @@ void __thaw_task(struct task_struct *p)
+>  	 * be visible to @p as waking up implies wmb.  Waking up inside
+>  	 * freezer_lock also prevents wakeups from leaking outside
+>  	 * refrigerator.
+> +	 *
+> +	 * If !FROZEN, @p hasn't reached refrigerator, recalc sigpending to
+> +	 * avoid leaving dangling TIF_SIGPENDING behind.
+>  	 */
+>  	spin_lock_irqsave(&freezer_lock, flags);
+>  	clear_freeze_flag(p);
+> -	if (frozen(p))
+> +	if (frozen(p)) {
+>  		wake_up_process(p);
+> +	} else {
+> +		spin_lock(&p->sighand->siglock);
+> +		recalc_sigpending_and_wake(p);
 
-My take on this in short again:
-The very same thing that needs to store the 'pretty name' in the
-kernel here, can instead just log that name along with the kernel name
-to /dev/kmsg. It ends up in the kernel log buffer and is the marker to
-safely match all later log entries.
+This was copied from cancel_, yes. but what this
+recalc_sigpending_and_wake() can or should do?
 
-This can be done today, even on many years old distros, with a single
-udev rule and a tiny program. It needs no kernel or tool changes and
-gives almost all the benefits of the 'pretty name' infrastructure.
+It looks simply pointless. It can't clear TIF_SIGPENDING,
+it can only do the unneeded/spurious wake_up(INTERRUPTIBLE).
 
-Kay
+Oleg.
+
