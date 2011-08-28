@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750966Ab1H1Fgh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 01:36:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43936 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778Ab1H1Fg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 01:36:29 -0400
-Date: Sun, 28 Aug 2011 07:36:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
-        dri-devel@lists.freedesktop.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-Message-ID: <20110828053624.GC12851@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Pavel Ivanov <paivanof@gmail.com>,
-	Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
-	dri-devel@lists.freedesktop.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
- <1314435638.2321.12.camel@thor.local>
- <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751288Ab1H1G45 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 02:56:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47436 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750926Ab1H1G4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 02:56:54 -0400
+Subject: Re: [PATCH 44/46] Staging: hv: vmbus: Fix checkpatch warnings in
+ connection.c
+From: Joe Perches <joe@perches.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+In-Reply-To: <1314469905-7058-44-git-send-email-kys@microsoft.com>
+References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
+	 <1314469905-7058-1-git-send-email-kys@microsoft.com>
+	 <1314469905-7058-44-git-send-email-kys@microsoft.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 27 Aug 2011 23:56:52 -0700
+Message-ID: <1314514612.6852.11.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 06:50:37PM -0400, Pavel Ivanov wrote:
-> 2011/8/27 Michel Dänzer <michel@daenzer.net>:
-> >> I observe very strange behavior dependent on value of
-> >> CONFIG_DRM_RADEON parameter. When it's set to m everything works very
-> >> good, no problem. When I set it to y I see kernel hang during boot. Or
-> >> I should better say it "almost hangs" because during last boot attempt
-> >> I accidentally waited a little bit longer and saw that after more than
-> >> a minute waiting system continued to boot. Dmesg after "hang" shows
-> >> these messages:
-> >>
-> >> [    8.542639] [drm] Loading CEDAR Microcode
-> >> [   69.161605] r600_cp: Failed to load firmware "radeon/CEDAR_pfp.bin"
-> >> [   69.161670] [drm:evergreen_startup] *ERROR* Failed to load firmware!
-> >>
-> >> While during normal boot
-> >>
-> >> [    9.898870] [drm] Loading CEDAR Microcode
-> >> [    9.908425] radeon 0000:05:00.0: WB enabled
-> >
-> > With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
-> > loaded from userspace, so it needs to be built into the kernel as well.
-> 
-> How should I do that? I've tried to set all "m"s to "y" in .config and
-> still saw this issue. Should I set some special parameter?
+On Sat, 2011-08-27 at 11:31 -0700, K. Y. Srinivasan wrote:
+> Fix checkpatch warnings in connection.c.
+[]
+> diff --git a/drivers/staging/hv/connection.c b/drivers/staging/hv/connection.c
+[]
+> @@ -220,11 +220,11 @@ static void process_chn_event(u32 relid)
+>  	channel = relid2channel(relid);
+>  
+>  	spin_lock_irqsave(&channel->inbound_lock, flags);
+> -	if (channel && (channel->onchannel_callback != NULL)) {
+> +	if (channel && (channel->onchannel_callback != NULL))
 
-You need to add "radeon/CEDAR_pfp.bin" to CONFIG_EXTRA_FIRMWARE when you
-configure your kernel and enable CONFIG_FIRMWARE_IN_KERNEL.
+Useless test for channel or bad placement for spin_lock.
+channel has already been dereferenced by the spin_lock.
 
-The radeon/CEDAR_pfp.bin file (+ leading directory, mind you) should
-most probably be located in /lib/firmware or to whatever you have set
-CONFIG_EXTRA_FIRMWARE_DIR so that Kbuild can find it (if not, you'll get
-a warning at the end of the kernel build). This way, it works for both
-radeon being =m and =y.
 
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
