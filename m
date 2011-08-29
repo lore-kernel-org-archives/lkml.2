@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1H2RpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 13:45:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57860 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab1H2RoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 13:44:07 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 3/6] staging: et131x: Remove unused xcvr_id in struct ce_stats
-Date: Mon, 29 Aug 2011 18:42:38 +0100
-Message-Id: <1314639761-4947-3-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1314639761-4947-1-git-send-email-mark.einon@gmail.com>
-References: <1314639761-4947-1-git-send-email-mark.einon@gmail.com>
+	id S1754543Ab1H2RrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 13:47:09 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:53620 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753962Ab1H2RrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 13:47:06 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Mike Thomas <rmthomas@sciolus.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: [PATCH] staging/easycap: fix mismatch in easycap_poll() mutex lock-unlock
+Date: Mon, 29 Aug 2011 21:46:57 +0400
+Message-Id: <1314640017-27561-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xcvr_id holds the phy ID which is stored but never used in the driver.
+In case if condition (kd != isdongle(peasycap)) becomes true,
+easycap_poll() returns without releasing easycapdc60_dongle[kd].mutex_video.
+The patch adds mutex_unlock() before that return.
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- drivers/staging/et131x/et1310_phy.c     |    4 ----
- drivers/staging/et131x/et131x_adapter.h |    1 -
- 2 files changed, 0 insertions(+), 5 deletions(-)
+ drivers/staging/easycap/easycap_main.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/et131x/et1310_phy.c b/drivers/staging/et131x/et1310_phy.c
-index c845c27..21e0704 100644
---- a/drivers/staging/et131x/et1310_phy.c
-+++ b/drivers/staging/et131x/et1310_phy.c
-@@ -242,7 +242,6 @@ int et131x_xcvr_find(struct et131x_adapter *adapter)
- 	u8 xcvr_addr;
- 	u16 idr1;
- 	u16 idr2;
--	u32 xcvr_id;
- 
- 	/* We need to get xcvr id and address we just get the first one */
- 	for (xcvr_addr = 0; xcvr_addr < 32; xcvr_addr++) {
-@@ -254,10 +253,7 @@ int et131x_xcvr_find(struct et131x_adapter *adapter)
- 			     (u8) offsetof(struct mi_regs, idr2),
- 			     &idr2);
- 
--		xcvr_id = (u32) ((idr1 << 16) | idr2);
--
- 		if (idr1 != 0 && idr1 != 0xffff) {
--			adapter->stats.xcvr_id = xcvr_id;
- 			adapter->stats.xcvr_addr = xcvr_addr;
- 			return 0;
- 		}
-diff --git a/drivers/staging/et131x/et131x_adapter.h b/drivers/staging/et131x/et131x_adapter.h
-index 762e07c..b03460b 100644
---- a/drivers/staging/et131x/et131x_adapter.h
-+++ b/drivers/staging/et131x/et131x_adapter.h
-@@ -115,7 +115,6 @@ struct ce_stats {
- 
- 	/* Transceiver state informations. */
- 	u8		xcvr_addr;
--	u32		xcvr_id;
- 
- 	/* Tx Statistics. */
- 	u32		tx_underflows;
+diff --git a/drivers/staging/easycap/easycap_main.c b/drivers/staging/easycap/easycap_main.c
+index bea2816..3ea51c3 100644
+--- a/drivers/staging/easycap/easycap_main.c
++++ b/drivers/staging/easycap/easycap_main.c
+@@ -953,8 +953,10 @@ static unsigned int easycap_poll(struct file *file, poll_table *wait)
+ 	 *  peasycap, IN WHICH CASE A REPEAT CALL TO isdongle() WILL FAIL.
+ 	 *  IF NECESSARY, BAIL OUT.
+ 	 */
+-		if (kd != isdongle(peasycap))
++		if (kd != isdongle(peasycap)) {
++			mutex_unlock(&easycapdc60_dongle[kd].mutex_video);
+ 			return -ERESTARTSYS;
++		}
+ 		if (!file) {
+ 			SAY("ERROR:  file is NULL\n");
+ 			mutex_unlock(&easycapdc60_dongle[kd].mutex_video);
 -- 
-1.7.6
+1.7.4.1
 
