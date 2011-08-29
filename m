@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1H2NiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:38:21 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:36977
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753674Ab1H2NiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:38:16 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz936eK1432N98dKzz1202h1082kzz8275dhz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQOZ7M-02-9TX-02
-X-M-MSG: 
-Date: Mon, 29 Aug 2011 15:38:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Alex Deucher <alexdeucher@gmail.com>
-CC: Pavel Ivanov <paivanof@gmail.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        <dri-devel@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-Message-ID: <20110829133808.GA2025@gere.osrc.amd.com>
-References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
- <1314435638.2321.12.camel@thor.local>
- <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
- <20110828053624.GC12851@liondog.tnic>
- <1314624021.2816.30.camel@twins>
+	id S1752469Ab1H2NmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:42:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65277 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963Ab1H2NmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 09:42:04 -0400
+Date: Mon, 29 Aug 2011 15:41:47 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, paulus@samba.org, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [PATCH] perf, tool, record: Fix the header generation for pipe
+Message-ID: <20110829134147.GD1918@jolsa.redhat.com>
+References: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
+ <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20110822145210.GA8694@jolsa.brq.redhat.com>
+ <1314028266.2307.93.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20110822160713.GA10134@jolsa.brq.redhat.com>
+ <20110829132037.GB27261@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1314624021.2816.30.camel@twins>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110829132037.GB27261@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 03:20:21PM +0200, Peter Zijlstra wrote:
-> On Sun, 2011-08-28 at 07:36 +0200, Borislav Petkov wrote:
-> > > > With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
-> > > > loaded from userspace, so it needs to be built into the kernel as well.
-> > > 
-> > > How should I do that? I've tried to set all "m"s to "y" in .config and
-> > > still saw this issue. Should I set some special parameter?
-> > 
-> > You need to add "radeon/CEDAR_pfp.bin" to CONFIG_EXTRA_FIRMWARE when you
-> > configure your kernel and enable CONFIG_FIRMWARE_IN_KERNEL.
-> > 
-> > The radeon/CEDAR_pfp.bin file (+ leading directory, mind you) should
-> > most probably be located in /lib/firmware or to whatever you have set
-> > CONFIG_EXTRA_FIRMWARE_DIR so that Kbuild can find it (if not, you'll get
-> > a warning at the end of the kernel build). This way, it works for both
-> > radeon being =m and =y.
+On Mon, Aug 29, 2011 at 10:20:37AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Aug 22, 2011 at 06:07:13PM +0200, Jiri Olsa escreveu:
+> > On Mon, Aug 22, 2011 at 05:51:06PM +0200, Eric Dumazet wrote:
+> > > Le lundi 22 août 2011 à 16:52 +0200, Jiri Olsa a écrit :
+> > > > - fd is always file.. the descriptor, which might be pipe, is in output_fd variable
+> > > >   but, maybe the die call is not necessary.. this should not fail
 > 
-> Should we make Kconfig pop up a dialog and ask for the whereabouts of
-> these firmware thingies when you mark the driver =y? 
+> > > > - the record_file function is called only on debugfs or procfs files:
+> > > > 	events/header_page
+> > > > 	events/header_event
+> > > > 	events/**/format
+> > > > 	printk_formats
+> > > > 	/proc/kallsyms
 > 
-> This all sounds like magic to me, having to know you need to add to
-> EXTRA_FIRMWARE, having to know what file it needs etc.. For all intents
-> and purposes =y just doesn't work and that's broken.
+> > > > so I think I need to read the whole file as in current code.
+> 
+> > > You read the file twice. Is it the right fix ?
+> 
+> > > Once to compute the length to be able to write the output header, once
+> > > to process the content.
+> 
+> > > Are you sure length cannot change between the two phases ?
+> 
+> > > /proc/kallsyms can definitely change when a module is loaded.
+> 
+> > Right, better to store it to a temp file as you suggest, so we have
+> > consistent view.. I'll prepare new patch.
+> 
+> Hi Jiri, any news here?
+> 
+> I just stumbled in this bug while testing Neil's net_dropmonitor script
+> :-\
 
-Yep, you make a lot of sense. I had to fumble the build/reboot cycle a
-couple of times and do some code staring even to figure this out. In
-the end, I copied the whole radeon/ folder from David's firmware git
-repo into /lib/firmware and made radeon.ko =m again so that I don't have
-to add *.bin entries to CONFIG_EXTRA_FIRMWARE each time I'm building a
-kernel on a different machine.
+well, I was thinking about taking files snapshot, so we dont read them
+twice and omit the reading for size.. but it'll be probably bigger
+change, I'll try to send out something by the end of the week
 
-Besides, there was this other issue on lkml today where
-CONFIG_EXTRA_FIRMWARE can cause nconf to segfault when you overflow
-its length of 256 by trying to include a bunch of firmware *bin files:
-http://lkml.org/lkml/2011/8/29/86
+if you need workaround, the initial patch should work
 
-Alex?
-
--- 
-Regards/Gruss,
-Boris.
-
+jirka
