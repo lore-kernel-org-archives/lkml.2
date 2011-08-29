@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab1H2UzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 16:55:05 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:34674 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755106Ab1H2UzB (ORCPT
+	id S1754898Ab1H2U6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 16:58:44 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:56702 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646Ab1H2U6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 16:55:01 -0400
-Date: Mon, 29 Aug 2011 13:54:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        driverdevel <devel@driverdev.osuosl.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] staging: fix rtl8192e build errors
-Message-Id: <20110829135459.d4090a39.rdunlap@xenotime.net>
-In-Reply-To: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
-References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 29 Aug 2011 16:58:43 -0400
+Message-ID: <4E5BFD36.2090000@panasas.com>
+Date: Mon, 29 Aug 2011 13:57:26 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Git Mailing List <git@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Junio C Hamano <gitster@pobox.com>
+Subject: Re: [PATCH] .gitattributes: Enable cpp diff parsing for .[ch] files
+References: <4E56CE8F.8080501@panasas.com>  <CA+55aFxNXK-AJdrHBBycM5W632qUBi4E=jangcdRoefQiHzbug@mail.gmail.com>  <4E580830.4010305@panasas.com> <1314624752.2816.32.camel@twins>
+In-Reply-To: <1314624752.2816.32.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On 08/29/2011 06:32 AM, Peter Zijlstra wrote:
+> On Fri, 2011-08-26 at 13:55 -0700, Boaz Harrosh wrote:
+> 
+>> But this patch is for all the people and distributions that are going
+>> to use the old git versions for a while, (Years).
+>>
+>> It is important for the Linux mailing-list review, because you get
+>> patches with:
+>>
+>> @@@ lable out:
+>> -	change foo
+>> +	to bazz
+>>
+>> And how the hell are you suppose to know where in the file it is.
+>> This is such a trivial addition, that can help unify everyone's
+>> usage. I don't see the down sides.
+> 
+> Ah, I'm using:
+> 
+> # cat ~/.gitconfig 
+> [diff "default"]
+>                 xfuncname = "^[[:alpha:]$_].*[^:]$"
+> 
+> 
+> For this.
 
-drivers/staging/rtl8192e/rtllib.h:2329: error: field 'wx_sem' has incomplete type
-drivers/staging/rtl8192e/rtllib.h:2330: error: field 'scan_sem' has incomplete type
-drivers/staging/rtl8192e/rtllib.h:2331: error: field 'ips_sem' has incomplete type
-drivers/staging/rtl8192e/rtllib_wx.c:267: error: implicit declaration of function 'down'
-drivers/staging/rtl8192e/rtllib_wx.c:290: error: implicit declaration of function 'up'
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/staging/rtl8192e/rtllib.h |    1 +
- 1 file changed, 1 insertion(+)
+It looks like a lost cause so I'll try for the last time.
 
-but the driver probably should be using mutexes instead of semaphores...
+Everyone is suggesting that each one do his own cooked up secrets and solutions.
+And those that are stupid and know nothing like me are un-lucky. But what I'm
+proposing is that by just doing a "git clone" you'll be using these settings
+that we like to see, when you send us your patches.
 
---- linux-next-20110829.orig/drivers/staging/rtl8192e/rtllib.h
-+++ linux-next-20110829/drivers/staging/rtl8192e/rtllib.h
-@@ -31,6 +31,7 @@
- #include <linux/jiffies.h>
- #include <linux/timer.h>
- #include <linux/sched.h>
-+#include <linux/semaphore.h>
- 
- #include <linux/delay.h>
- #include <linux/wireless.h>
+Adding a .gitattributes file to the Linux git tree is a very simple message.
+"In the linux git tree all .c and .h files are c-source files" (And git will
+treat them that way)
+
+Now that was not so hard was it? Really, no one said anything bad or negative
+about the patch, only excuses how it can be achieved, very difficultly, in
+another way. So for the last time:
+  What are you guys afraid of? what possibly could be bad about this patch?
+
+Sigh
+
+Good bye to this subject
+Boaz
