@@ -1,183 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab1H2VFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:05:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59515 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab1H2VFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:05:05 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/5] toshiba_acpi: Fix up return codes
-Date: Mon, 29 Aug 2011 16:04:52 -0500
-Message-Id: <1314651895-24345-3-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314651895-24345-1-git-send-email-seth.forshee@canonical.com>
-References: <1314651895-24345-1-git-send-email-seth.forshee@canonical.com>
+	id S1754648Ab1H2VFu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:05:50 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:57657 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754425Ab1H2VFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:05:46 -0400
+Date: Mon, 29 Aug 2011 23:05:09 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+Message-ID: <20110829210508.GA1599@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+ <CALWz4iwChnacF061L9vWo7nEA7qaXNJrK=+jsEe9xBtvEBD9MA@mail.gmail.com>
+ <20110811210914.GB31229@cmpxchg.org>
+ <CALWz4iwJfyWRineMy+W02YBvS0Y=Pv1y8Rb=8i5R=vUCfrO+iQ@mail.gmail.com>
+ <CALWz4iwRXBheXFND5zq3ze2PJDkeoxYHD1zOsTyzOe3XqY5apA@mail.gmail.com>
+ <20110829190426.GC1434@cmpxchg.org>
+ <CALWz4ix1X8=L0HzQpdGd=XVbjZuMCtYngzdG+hLMoeJJCUEjrg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWz4ix1X8=L0HzQpdGd=XVbjZuMCtYngzdG+hLMoeJJCUEjrg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many routines are returning success on failure, and those that are
-indicating failure frequently return incorrect error codes. Fix
-these up throughout the driver.
+On Mon, Aug 29, 2011 at 01:36:48PM -0700, Ying Han wrote:
+> On Mon, Aug 29, 2011 at 12:04 PM, Johannes Weiner <hannes@cmpxchg.org>wrote:
+> > On Mon, Aug 29, 2011 at 12:22:02AM -0700, Ying Han wrote:
+> > > > @@ -888,19 +888,21 @@ void mem_cgroup_del_lru_list(struct page *page,
+> > > > enum lru_list lru)
+> > > >  {
+> > > >  >------struct page_cgroup *pc;
+> > > >  >------struct mem_cgroup_per_zone *mz;
+> > > > +>------struct mem_cgroup *mem;
+> > > > ·
+> > > >  >------if (mem_cgroup_disabled())
+> > > >  >------>-------return;
+> > > >  >------pc = lookup_page_cgroup(page);
+> > > > ->------/* can happen while we handle swapcache. */
+> > > > ->------if (!TestClearPageCgroupAcctLRU(pc))
+> > > > ->------>-------return;
+> > > > ->------VM_BUG_ON(!pc->mem_cgroup);
+> > > > ->------/*
+> > > > ->------ * We don't check PCG_USED bit. It's cleared when the "page" is
+> > finally
+> > > > ->------ * removed from global LRU.
+> > > > ->------ */
+> > > > ->------mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
+> > > > +
+> > > > +>------if (TestClearPageCgroupAcctLRU(pc) || PageCgroupUsed(pc)) {
+> >
+> > This PageCgroupUsed part confuses me.  A page that is being isolated
+> > shortly after being charged while on the LRU may reach here, and then
+> > it is unaccounted from pc->mem_cgroup, which it never was accounted
+> > to.
+> >
+> > Could you explain why you added it?
+> 
+> To be honest, i don't have very good reason for that. The PageCgroupUsed
+> check is put there after running some tests and some fixes seems help the
+> test, including this one.
+> 
+> The one case I can think of for page !AcctLRU | Used is in the pagevec.
+> However, we shouldn't get to the mem_cgroup_del_lru_list() for a page in
+> pagevec at the first place.
+> 
+> I now made it so that PageCgroupAcctLRU on the LRU means accounted
+> to pc->mem_cgroup,
+> 
+> this is the same logic currently.
+> 
+> > and !PageCgroupAcctLRU on the LRU means accounted to
+> > and babysitted by root_mem_cgroup.
+> 
+> this seems to be different from what it is now, especially for swapcache
+> page. So, the page here is linked to root cgroup LRU or not?
+> 
+> Anyway, the AcctLRU flags still seems confusing to me:
+> 
+> what this flag tells me is that whether or not the page is on a PRIVATE lru
+> and being accounted, i used private here to differentiate from the per zone
+> lru, where it also has PageLRU flag.  The two flags are separate since pages
+> could be on one lru not the other ( I guess ) , but this is changed after
+> having the root cgroup lru back. For example, AcctLRU is used to keep track
+> of the accounted lru pages, especially for root ( we didn't account the
+> !Used pages to root like readahead swapcache). Now we account the full size
+> of lru list of root including Used and !Used, but only mark the Used pages
+> w/ AcctLRU flag.
+> 
+> So in general, i am wondering we should be able to replace that eventually
+> with existing Used and LRU bit.  Sorry this seems to be something we like to
+> consider later, not necessarily now :)
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
----
- drivers/platform/x86/toshiba_acpi.c |   45 +++++++++++++++-------------------
- 1 files changed, 20 insertions(+), 25 deletions(-)
+I have now the following comment in mem_cgroup_lru_del_list():
 
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 604c666..bb142e9 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -191,7 +191,7 @@ static int write_acpi_int(const char *methodName, int val)
- 	in_objs[0].integer.value = val;
- 
- 	status = acpi_evaluate_object(NULL, (char *)methodName, &params, NULL);
--	return (status == AE_OK);
-+	return (status == AE_OK) ? 0 : -EIO;
- }
- 
- /* Perform a raw HCI call.  Here we don't care about input or output buffer
-@@ -419,7 +419,7 @@ static int bt_rfkill_set_block(void *data, bool blocked)
- 
- 	mutex_lock(&dev->mutex);
- 	if (hci_get_radio_state(dev, &radio_state) != HCI_SUCCESS) {
--		err = -EBUSY;
-+		err = -EIO;
- 		goto out;
- 	}
- 
-@@ -432,7 +432,7 @@ static int bt_rfkill_set_block(void *data, bool blocked)
- 	hci_write2(dev, HCI_WIRELESS, value, HCI_WIRELESS_BT_ATTACH, &result2);
- 
- 	if (result1 != HCI_SUCCESS || result2 != HCI_SUCCESS)
--		err = -EBUSY;
-+		err = -EIO;
- 	else
- 		err = 0;
-  out:
-@@ -478,10 +478,10 @@ static int get_lcd(struct backlight_device *bd)
- 	u32 value;
- 
- 	hci_read1(dev, HCI_LCD_BRIGHTNESS, &value, &hci_result);
--	if (hci_result == HCI_SUCCESS) {
-+	if (hci_result == HCI_SUCCESS)
- 		return (value >> HCI_LCD_BRIGHTNESS_SHIFT);
--	} else
--		return -EFAULT;
-+
-+	return -EIO;
- }
- 
- static int lcd_proc_show(struct seq_file *m, void *v)
-@@ -497,11 +497,11 @@ static int lcd_proc_show(struct seq_file *m, void *v)
- 		seq_printf(m, "brightness:              %d\n", value);
- 		seq_printf(m, "brightness_levels:       %d\n",
- 			     HCI_LCD_BRIGHTNESS_LEVELS);
--	} else {
--		pr_err("Error reading LCD brightness\n");
-+		return 0;
- 	}
- 
--	return 0;
-+	pr_err("Error reading LCD brightness\n");
-+	return -EIO;
- }
- 
- static int lcd_proc_open(struct inode *inode, struct file *file)
-@@ -515,10 +515,7 @@ static int set_lcd(struct toshiba_acpi_dev *dev, int value)
- 
- 	value = value << HCI_LCD_BRIGHTNESS_SHIFT;
- 	hci_write1(dev, HCI_LCD_BRIGHTNESS, value, &hci_result);
--	if (hci_result != HCI_SUCCESS)
--		return -EFAULT;
--
--	return 0;
-+	return hci_result == HCI_SUCCESS ? 0 : -EIO;
- }
- 
- static int set_lcd_status(struct backlight_device *bd)
-@@ -575,11 +572,10 @@ static int video_proc_show(struct seq_file *m, void *v)
- 		seq_printf(m, "lcd_out:                 %d\n", is_lcd);
- 		seq_printf(m, "crt_out:                 %d\n", is_crt);
- 		seq_printf(m, "tv_out:                  %d\n", is_tv);
--	} else {
--		pr_err("Error reading video out status\n");
-+		return 0;
- 	}
- 
--	return 0;
-+	return -EIO;
- }
- 
- static int video_proc_open(struct inode *inode, struct file *file)
-@@ -592,6 +588,7 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
- {
- 	struct toshiba_acpi_dev *dev = PDE(file->f_path.dentry->d_inode)->data;
- 	char *cmd, *buffer;
-+	int ret = 0;
- 	int value;
- 	int remain = count;
- 	int lcd_out = -1;
-@@ -644,12 +641,12 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
- 		/* To avoid unnecessary video disruption, only write the new
- 		 * video setting if something changed. */
- 		if (new_video_out != video_out)
--			write_acpi_int(METHOD_VIDEO_OUT, new_video_out);
-+			ret = write_acpi_int(METHOD_VIDEO_OUT, new_video_out);
- 	} else {
--		return -EFAULT;
-+		ret = -EIO;
- 	}
- 
--	return count;
-+	return ret ? ret : count;
- }
- 
- static const struct file_operations video_proc_fops = {
-@@ -671,11 +668,10 @@ static int fan_proc_show(struct seq_file *m, void *v)
- 	if (hci_result == HCI_SUCCESS) {
- 		seq_printf(m, "running:                 %d\n", (value > 0));
- 		seq_printf(m, "force_on:                %d\n", dev->force_fan);
--	} else {
--		pr_err("Error reading fan status\n");
-+		return 0;
- 	}
- 
--	return 0;
-+	return -EIO;
- }
- 
- static int fan_proc_open(struct inode *inode, struct file *file)
-@@ -701,7 +697,7 @@ static ssize_t fan_proc_write(struct file *file, const char __user *buf,
- 	    value >= 0 && value <= 1) {
- 		hci_write1(dev, HCI_FAN, value, &hci_result);
- 		if (hci_result != HCI_SUCCESS)
--			return -EFAULT;
-+			return -EIO;
- 		else
- 			dev->force_fan = value;
- 	} else {
-@@ -741,13 +737,12 @@ static int keys_proc_show(struct seq_file *m, void *v)
- 			pr_notice("Re-enabled hotkeys\n");
- 		} else {
- 			pr_err("Error reading hotkey status\n");
--			goto end;
-+			return -EIO;
- 		}
- 	}
- 
- 	seq_printf(m, "hotkey_ready:            %d\n", dev->key_event_valid);
- 	seq_printf(m, "hotkey:                  0x%04x\n", dev->last_key_event);
--end:
- 	return 0;
- }
- 
--- 
-1.7.4.1
+        /*
+         * root_mem_cgroup babysits uncharged LRU pages, but
+         * PageCgroupUsed is cleared when the page is about to get
+         * freed.  PageCgroupAcctLRU remembers whether the
+         * LRU-accounting happened against pc->mem_cgroup or
+         * root_mem_cgroup.
+         */
 
+Does that answer your question?  If not, please tell me, so I can fix
+the comment :-)
+
+> > Always.  Which also means that before_commit now ensures an LRU
+> > page is moved to root_mem_cgroup for babysitting during the
+> > charge, so that concurrent isolations/putbacks are always
+> > accounted correctly.  Is this what you had in mind?  Did I miss
+> > something?
+> 
+> In my tree, the before->commit->after protocol is folded into one function.
+> I didn't post it since I know you also have patch doing that.  So guess I
+> don't understand why we need to move the page to root while it is gonna be
+> charged to a memcg by commit_charge shortly after.
+
+It is a consequence of your fix that LRU-accounts unused pages to
+root_mem_cgroup upon lru-add, and thus deaccounts !PageCgroupAcctLRU
+from root_mem_cgroup unconditionally upon lru-del.
+
+Consider the following scenario:
+
+	1. page with multiple mappings swapped out.
+
+	2. one memcg faults the page, then unmaps it.  The page is
+	uncharged, but swap-freeing fails due to the other ptes, and
+	the page stays lru-accounted on the memcg it's no longer
+	charged to.
+
+	3. another memcg faults the page.  before_commit must
+	lru-unaccount from pc->mem_cgroup before pc->mem_cgroup is
+	overwritten.
+
+	4. the page is charged.  after_commit does the fixup.
+
+Between 3. and 4., a reclaimer can isolate the page.  The old
+lru-accounting is undone and mem_cgroup_lru_del() does this:
+
+        if (TestClearPageCgroupAcctLRU(pc)) {
+                VM_BUG_ON(!pc->mem_cgroup);
+                mem = pc->mem_cgroup;
+        } else
+                mem = root_mem_cgroup;
+       mz = page_cgroup_zoneinfo(mem, page);
+        /* huge page split is done under lru_lock. so, we have no races. */
+        MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+
+The rule is that !PageCgroupAcctLRU means that the page is
+lru-accounted to root_mem_cgroup.  So when charging, the page has to
+be moved to root_mem_cgroup until a new memcg is responsible for it.
+
+> My understanding is that in before_commit, we uncharge the page from
+> previous memcg lru if AcctLRU was set, then in the commit_charge we update
+> the new owner of it. And in after_commit we update the memcg lru for the new
+> owner after linking the page in the lru.
+
+Exactly, just that between unaccounting from the old and accounting to
+the new, someone else may look at the page and has to find it in a
+sensible state.
