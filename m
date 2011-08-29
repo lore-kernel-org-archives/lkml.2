@@ -1,121 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab1H2NeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:34:25 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57223 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab1H2NeU (ORCPT
+	id S1753704Ab1H2Nfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:35:51 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45979 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608Ab1H2Nfo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:34:20 -0400
+	Mon, 29 Aug 2011 09:35:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110829130014.GB13925@legolas.emea.dhcp.ti.com>
-References: <20110829122320.GX13925@legolas.emea.dhcp.ti.com>
-	<1314621110-19367-1-git-send-email-balbi@ti.com>
-	<CABb+yY15qrszsbJSGGFra7mrVRO_oQPUhNT=U7TNpyoYikABPw@mail.gmail.com>
-	<20110829130014.GB13925@legolas.emea.dhcp.ti.com>
-Date: Mon, 29 Aug 2011 19:04:18 +0530
-Message-ID: <CABb+yY2yLTrGHOF2UuFZb1bB7SC7ahfUaznsT-1L3RUXyfdOUA@mail.gmail.com>
-Subject: Re: [PATCH v2] sound: usb: mixer: increase control transfer timeout
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: balbi@ti.com
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>, clemens@ladisch.de
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110829122344.GI1855@nb.net.home>
+References: <20110829122344.GI1855@nb.net.home>
+Date: Mon, 29 Aug 2011 15:35:44 +0200
+Message-ID: <CAFLxGvwXreixiYoj+SVoJuH+dLx8THw9cJJ2prEFpUxYTTUbAw@mail.gmail.com>
+Subject: Re: [ANNOUNCE] util-linux v2.20
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Karel Zak <kzak@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7TDYSpw018057
 
-On Mon, Aug 29, 2011 at 6:30 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
+On Mon, Aug 29, 2011 at 2:23 PM, Karel Zak <kzak@redhat.com> wrote:
+> Util-linux 2.20 Release Notes
+> =============================
 >
-> On Mon, Aug 29, 2011 at 06:07:30PM +0530, Jassi Brar wrote:
->> On Mon, Aug 29, 2011 at 6:01 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > 100ms might not be enough for slower devices. Increasing
->> > timeout to 1000ms doesn't seem like overkill.
->> >
->> > Signed-off-by: Felipe Balbi <balbi@ti.com>
->> > ---
->> >
->> > Changes since v1:
->> >  . Increase all 100ms timeout to 1000ms
->> >
->> >  sound/usb/mixer.c        |    4 ++--
->> >  sound/usb/mixer_quirks.c |   10 +++++-----
->> >  2 files changed, 7 insertions(+), 7 deletions(-)
->> >
->> > diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
->> > index cdd19d7..1c9d443 100644
->> > --- a/sound/usb/mixer.c
->> > +++ b/sound/usb/mixer.c
->> > @@ -296,7 +296,7 @@ static int get_ctl_value_v1(struct usb_mixer_elem_info *cval, int request, int v
->> >                if (snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), request,
->> >                                    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
->> >                                    validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
->> > -                                   buf, val_len, 100) >= val_len) {
->> > +                                   buf, val_len, 1000) >= val_len) {
->> >                        *value_ret = convert_signed_value(cval, snd_usb_combine_bytes(buf, val_len));
->> >                        snd_usb_autosuspend(cval->mixer->chip);
->> >                        return 0;
->> > @@ -445,7 +445,7 @@ int snd_usb_mixer_set_ctl_value(struct usb_mixer_elem_info *cval,
->> >                                    usb_sndctrlpipe(chip->dev, 0), request,
->> >                                    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT,
->> >                                    validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
->> > -                                   buf, val_len, 100) >= 0) {
->> > +                                   buf, val_len, 1000) >= 0) {
->> >                        snd_usb_autosuspend(chip);
->> >                        return 0;
->> >                }
->> > diff --git a/sound/usb/mixer_quirks.c b/sound/usb/mixer_quirks.c
->> > index 3d0f487..7c41399 100644
->> > --- a/sound/usb/mixer_quirks.c
->> > +++ b/sound/usb/mixer_quirks.c
->> > @@ -190,18 +190,18 @@ static int snd_audigy2nx_led_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
->> >                err = snd_usb_ctl_msg(mixer->chip->dev,
->> >                              usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
->> >                              USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
->> > -                             !value, 0, NULL, 0, 100);
->> > +                             !value, 0, NULL, 0, 1000);
->> >        /* USB X-Fi S51 Pro */
->> >        if (mixer->chip->usb_id == USB_ID(0x041e, 0x30df))
->> >                err = snd_usb_ctl_msg(mixer->chip->dev,
->> >                              usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
->> >                              USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
->> > -                             !value, 0, NULL, 0, 100);
->> > +                             !value, 0, NULL, 0, 1000);
->> >        else
->> >                err = snd_usb_ctl_msg(mixer->chip->dev,
->> >                              usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
->> >                              USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
->> > -                             value, index + 2, NULL, 0, 100);
->> > +                             value, index + 2, NULL, 0, 1000);
->> >        if (err < 0)
->> >                return err;
->> >        mixer->audigy2nx_leds[index] = value;
->> > @@ -299,7 +299,7 @@ static void snd_audigy2nx_proc_read(struct snd_info_entry *entry,
->> >                                      usb_rcvctrlpipe(mixer->chip->dev, 0),
->> >                                      UAC_GET_MEM, USB_DIR_IN | USB_TYPE_CLASS |
->> >                                      USB_RECIP_INTERFACE, 0,
->> > -                                     jacks[i].unitid << 8, buf, 3, 100);
->> > +                                     jacks[i].unitid << 8, buf, 3, 1000);
->> >                if (err == 3 && (buf[0] == 3 || buf[0] == 6))
->> >                        snd_iprintf(buffer, "%02x %02x\n", buf[1], buf[2]);
->> >                else
->> > @@ -332,7 +332,7 @@ static int snd_xonar_u1_switch_put(struct snd_kcontrol *kcontrol,
->> >        err = snd_usb_ctl_msg(mixer->chip->dev,
->> >                              usb_sndctrlpipe(mixer->chip->dev, 0), 0x08,
->> >                              USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
->> > -                             50, 0, &new_status, 1, 100);
->> > +                             50, 0, &new_status, 1, 1000);
->>
->> How about also converting to use a local define for timeout value ?
+> �The ddate(1) command is not built by default (see --enable-ddate).
 >
-> should it be part of another patch ? The current code has no defines at
-> all and $SUBJECT is just changing what's currently there to another
-> value.
 
-Can't speak for maintainers, but personally I'd prefer a single patch with two
-points in changelog. The change is trivial enough.
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+This change will make the discordians very unhappy. ;-)
+
+-- 
+Thanks,
+//richard
