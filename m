@@ -1,140 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab1H2O4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:56:12 -0400
-Received: from waldorf.bytemark.co.uk ([212.110.162.22]:48523 "EHLO
-	waldorf.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab1H2O4G (ORCPT
+	id S1753864Ab1H2O4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:56:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57281 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579Ab1H2O4C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:56:06 -0400
-Date: Mon, 29 Aug 2011 10:55:43 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Manohar Vanga <manohar.vanga@cern.ch>
-Cc: gregkh@suse.de, martyn.welch@ge.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: vme: make match() driver specific to
- improve non-VME64x support
-Message-ID: <20110829145543.GA9952@flamenco.cs.columbia.edu>
-References: <1314608570-32766-1-git-send-email-manohar.vanga@cern.ch>
- <1314608570-32766-4-git-send-email-manohar.vanga@cern.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314608570-32766-4-git-send-email-manohar.vanga@cern.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Aug 2011 10:56:02 -0400
+Subject: Re: [PATCH 12/32] nohz: Try not to give the timekeeping duty to a
+ cpuset nohz cpu
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Dimitri Sivanich <sivanich@sgi.com>
+Date: Mon, 29 Aug 2011 16:55:45 +0200
+In-Reply-To: <1313423549-27093-13-git-send-email-fweisbec@gmail.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <1313423549-27093-13-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314629745.2816.84.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Manohar,
+On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> Try to give the timekeeing duty to a CPU that doesn't belong
+> to any nohz cpuset when possible, so that we increase the chance
+> for these nohz cpusets to run their CPUs out of periodic tick
+> mode. 
 
-Great work! A couple of comments inlined below.
+You and Dmitiri might want to get together:
 
-On Mon, Aug 29, 2011 at 11:02:50 +0200, Manohar Vanga wrote:
-(snip)
-> +static int __vme_register_driver_bus(struct vme_driver *drv,
-> +	struct vme_bridge *bridge, unsigned int ndevs)
-> +{
-> +	int err;
-> +	unsigned int i;
-> +	struct vme_dev *vdev;
-> +	struct vme_dev *tmp;
-> +
-> +	for (i = 0; i < ndevs; i++) {
-> +		vdev = kzalloc(sizeof(struct vme_dev), GFP_KERNEL);
-> +		if (!vdev) {
-> +			err = -ENOMEM;
-> +			goto err_alloc;
-> +		}
-> +		vdev->id.num = i;
->  		vdev->id.bus = bridge->num;
->  		vdev->id.slot = i + 1;
->  		vdev->bridge = bridge;
-> +		vdev->dev.platform_data = drv;
-> +		vdev->dev.release = vme_dev_release;
->  		vdev->dev.parent = bridge->parent;
->  		vdev->dev.bus = &vme_bus_type;
-> -		/*
-> -		 * We save a pointer to the bridge in platform_data so that we
-> -		 * can get to it later. We keep driver_data for use by the
-> -		 * driver that binds against the slot
-> -		 */
-> -		vdev->dev.platform_data = bridge;
-> -		dev_set_name(&vdev->dev, "vme-%x.%x", bridge->num, i + 1);
-> -
-> -		retval = device_register(&vdev->dev);
-> -		if (retval)
-> -			goto err_reg;
-> +		dev_set_name(&vdev->dev, "%s.%u-%u", drv->name, vdev->id.bus,
-> +			vdev->id.num);
-> +
-> +		err = device_register(&vdev->dev);
-> +		if (err)
-> +			goto err_dev_reg;
-> +
-> +		if (vdev->dev.platform_data) {
-> +			list_add_tail(&vdev->list, &drv->devices);
-> +			drv->ndev++;
-> +		} else {
-> +			device_unregister(&vdev->dev);
-> +			kfree(vdev);
-> +		}
->  	}
-> +	return 0;
->  
-> -	return retval;
-> -
-> -err_reg:
-> -	while (--i >= 0) {
-> -		vdev = &bridge->dev[i];
-> +err_dev_reg:
-> +	kfree(vdev);
-> +err_alloc:
-> +	list_for_each_entry_safe(vdev, tmp, &drv->devices, list) {
-> +		list_del(&vdev->list);
->  		device_unregister(&vdev->dev);
-
-Here there seems to be a missing kfree(vdev), like the one after device_unregister()
-a few lines earlier.
-
->  	}
-> -	vme_remove_bus(bridge);
-> -	return retval;
-> +	return err;
->  }
-> -EXPORT_SYMBOL(vme_register_bridge);
-
-(snip)
-
-> -int vme_register_driver(struct vme_driver *drv)
-> +int vme_register_driver(struct vme_driver *drv, unsigned int ndevs)
->  {
-> +	int err;
-> +
->  	drv->driver.name = drv->name;
->  	drv->driver.bus = &vme_bus_type;
-> -
-> -	return driver_register(&drv->driver);
-> +	INIT_LIST_HEAD(&drv->devices);
-> +
-> +	err = driver_register(&drv->driver);
-> +	if (err)
-> +		return err;
-> +
-> +	err = __vme_register_driver(drv, ndevs);
-> +	if (!err & (drv->ndev == 0))
-
-Probably you meant if (!err && drv->ndev == 0) here.
-
-In fact one could imagine a driver that has no devices when it's
-installed (it might get them later); so I'd remove this check.
-
-> +		err = -ENODEV;
-> +	if (err)
-> +		vme_unregister_driver(drv);
-> +	return err;
->  }
->  EXPORT_SYMBOL(vme_register_driver);
-
-
-		Emilio
+lkml.kernel.org/r/20110823195628.GB4533@sgi.com
