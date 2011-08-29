@@ -1,94 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1H2Mtu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 08:49:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32434 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037Ab1H2Mtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 08:49:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,296,1312182000"; 
-   d="scan'208";a="46007465"
-Subject: Re: [PATCH] dma: shdma: transfer based runtime PM
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1108291419410.31184@axis700.grange>
-References: <Pine.LNX.4.64.1108181650530.5245@axis700.grange>
-	 <1314282386.1606.42.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108251636190.17190@axis700.grange>
-	 <1314283286.1606.52.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
-	 <1314292850.1606.88.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108260107550.17190@axis700.grange>
-	 <1314619909.1606.130.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108291419410.31184@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Aug 2011 18:18:33 +0530
-Message-ID: <1314622113.1606.134.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753509Ab1H2MxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 08:53:04 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:52105 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab1H2Mw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 08:52:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <201108291351.06092.philipp.reisner@linbit.com>
+References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
+	<20110826135402.GS14479@barkeeper1-xen.linbit>
+	<CAGZ=bqJojmtfVjQdbx3j2vZyrz01dZZs7wVqBxNbqreejZu4JQ@mail.gmail.com>
+	<201108291351.06092.philipp.reisner@linbit.com>
+Date: Mon, 29 Aug 2011 15:52:56 +0300
+X-Google-Sender-Auth: rDQJMgI49ODmYANm7lVVCfCsmZQ
+Message-ID: <CAOJsxLHQFhHaASj9eSJeQ9H_VyS59ztu=caOoUipYEneiB1vAA@mail.gmail.com>
+Subject: Re: [Drbd-dev] [RFC 000/118] drbd: part 1 of adding multiple volume
+ support to drbd
+From: Pekka Enberg <penberg@kernel.org>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com,
+        Greg Freemyer <greg.freemyer@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 14:21 +0200, Guennadi Liakhovetski wrote:
-> On Mon, 29 Aug 2011, Vinod Koul wrote:
-> 
-> > On Fri, 2011-08-26 at 01:11 +0200, Guennadi Liakhovetski wrote:
-> > > On Thu, 25 Aug 2011, Koul, Vinod wrote:
-> > > > Wont it be easy to to do:
-> > > > - pm_runtime_get() in each submit
-> > > > - pm_runtime_put() in each callback
-> > > > Normal case above would work just fine
-> > > > - In terminate case, count the number of issued transactions, and call
-> > > > pm_runtime_put() for each canceled transaction
-> > > > (i am assuming that for each timeout error, the client will call
-> > > > terminate)
-> > > 
-> > > As I said, this won't be very easy to do this in a robust way. You'd have 
-> > > to scan your list of DMA blocks and see, which of them belong to one 
-> > > descriptor, and once you reach the end of that descriptor, issue a put(). 
-> > > Perhaps, this can be done, but my choice went to the currently presented 
-> > > solution.
-> > If you count the number of descriptor submitted in your submitted list
-> > and call _put for each, I see no reason why it wont be simple and better
-> > than current approach.
-> 
-> Sorry, I thought, you wanted to avoid extra counting, because runtime-pm 
-> counts by itself. Now you propose to count...
-see below it doesn't count but iterate thru list
-> 
-> > Something like:
-> > /* since callback is set for last descriptor of chain, we call runtime
-> >  * put for that desc alone
-> >  */
-> > list_for_each_entry_safe(desc, __desc, sh_chan->ld_queue, node) {
-> > 	if (desc->async_tx.callback)
-> > 		pm_runtime_put(device);
-> 
-> Not all dma users have callbacks.
-Do you have such usage today, at least I dont :)
-Nevertheless, in tx_submit adding a simple flag in your drivers
-descriptor structure can tell you whether to call _put() or not. Agreed?
+On Mon, Aug 29, 2011 at 2:51 PM, Philipp Reisner
+<philipp.reisner@linbit.com> wrote:
+> The new feature set, might be partially broken, but introducing
+> the new features is the whole point of this patch series.
 
---
-~Vinod 
-> 
-> > If i read shdma correctly, descriptors are put into ld_queue of channel
-> > and any pending should be checked in this list alone.
-> > For normal case again you check for the callback to decide if you need
-> > to call pm_runtime_put() or not.
-> 
-> Thanks
-> Guennadi
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
+If that new feature can, for example, corrupt your data while you're
+doing "git bisect" on non-DRBD regression, that's no good. Can that
+happen?
 
-
-
+                        Pekka
