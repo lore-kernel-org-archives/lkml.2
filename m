@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab1H2VVE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:21:04 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44884 "EHLO
+	id S1755238Ab1H2VUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:20:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50389 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754173Ab1H2VVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:21:00 -0400
+	id S1754895Ab1H2VT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:19:59 -0400
 From: Joe Perches <joe@perches.com>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/24] rfkill: Remove unnecessary OOM logging messages
-Date: Mon, 29 Aug 2011 14:17:34 -0700
-Message-Id: <0a0d9ce42d5d0bcef3517be27c2759350ca4e1f5.1314650069.git.joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [PATCH 09/24] decnet: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 14:17:28 -0700
+Message-Id: <d8d25441690f07e551ebf886a6990312918c9e95.1314650069.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1314650069.git.joe@perches.com>
 References: <cover.1314650069.git.joe@perches.com>
@@ -29,21 +28,40 @@ delete them.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/rfkill/rfkill-regulator.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ net/decnet/dn_neigh.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/net/rfkill/rfkill-regulator.c b/net/rfkill/rfkill-regulator.c
-index 18dc512..3ca7277 100644
---- a/net/rfkill/rfkill-regulator.c
-+++ b/net/rfkill/rfkill-regulator.c
-@@ -90,7 +90,6 @@ static int __devinit rfkill_regulator_probe(struct platform_device *pdev)
- 				pdata->type,
- 				&rfkill_regulator_ops, rfkill_data);
- 	if (rf_kill == NULL) {
--		dev_err(&pdev->dev, "Cannot alloc rfkill device\n");
- 		ret = -ENOMEM;
- 		goto err_rfkill_alloc;
- 	}
+diff --git a/net/decnet/dn_neigh.c b/net/decnet/dn_neigh.c
+index 7f0eb08..0889870 100644
+--- a/net/decnet/dn_neigh.c
++++ b/net/decnet/dn_neigh.c
+@@ -230,8 +230,6 @@ static int dn_long_output(struct neighbour *neigh, struct sk_buff *skb)
+ 	if (skb_headroom(skb) < headroom) {
+ 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
+ 		if (skb2 == NULL) {
+-			if (net_ratelimit())
+-				printk(KERN_CRIT "dn_long_output: no memory\n");
+ 			kfree_skb(skb);
+ 			return -ENOBUFS;
+ 		}
+@@ -275,8 +273,6 @@ static int dn_short_output(struct neighbour *neigh, struct sk_buff *skb)
+ 	if (skb_headroom(skb) < headroom) {
+ 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
+ 		if (skb2 == NULL) {
+-			if (net_ratelimit())
+-				printk(KERN_CRIT "dn_short_output: no memory\n");
+ 			kfree_skb(skb);
+ 			return -ENOBUFS;
+ 		}
+@@ -316,8 +312,6 @@ static int dn_phase3_output(struct neighbour *neigh, struct sk_buff *skb)
+ 	if (skb_headroom(skb) < headroom) {
+ 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
+ 		if (skb2 == NULL) {
+-			if (net_ratelimit())
+-				printk(KERN_CRIT "dn_phase3_output: no memory\n");
+ 			kfree_skb(skb);
+ 			return -ENOBUFS;
+ 		}
 -- 
 1.7.6.405.gc1be0
 
