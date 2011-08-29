@@ -1,50 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab1H2FhW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 01:37:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1268 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752693Ab1H2FhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 01:37:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,295,1312182000"; 
-   d="scan'208";a="43402522"
-Message-ID: <4E5B258D.9090904@intel.com>
-Date: Mon, 29 Aug 2011 13:37:17 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
-MIME-Version: 1.0
-To: Pavel Ivanov <paivanof@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: APEI: Can not request iomem region for GARs
-References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com> <4E520149.3010802@intel.com> <CAG1a4rtMnDXSGLkmwE+6N9smoghWp0W4b5-X_gogzJ9fDLTeBg@mail.gmail.com> <4E571D66.1070302@intel.com> <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com>
-In-Reply-To: <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752716Ab1H2FpK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 01:45:10 -0400
+Received: from mga10.intel.com ([192.55.52.92]:45090 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750738Ab1H2FpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 01:45:08 -0400
+X-Greylist: delayed 565 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Aug 2011 01:45:08 EDT
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: [PATCH] Smack: check permissions from user space
+Date: Mon, 29 Aug 2011 08:35:11 +0300
+Message-Id: <1314596111-2781-1-git-send-email-jarkko.sakkinen@intel.com>
+X-Mailer: git-send-email 1.7.4.1
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2011 11:28 AM, Pavel Ivanov wrote:
-> Huang,
-> 
-> I can confirm that new patch got rid of the old error message but
-> introduced a new one:
-> 
-> ERST: Failed to get Error Log Address Range
-> 
-> Also I noticed there's another suspicious message in dmesg and it was
-> there earlier too (although it's not shown on console):
-> 
-> GHES: Failed to enable APEI firmware first mode
-> 
-> Is it bad? What does it mean?
+Adds a new file into SmackFS called 'access'. Wanted
+Smack permission is written into /smack/access.
+After that result can be read from the opened file.
+If access applies result contains 1 and otherwise
+0. File access is protected from race conditions
+by using simple_transaction_get()/set() API.
 
-Maybe this has been fixed, please this patch,
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+---
+ security/smack/smack.h   |    1 +
+ security/smack/smackfs.c |  181 ++++++++++++++++++++++++++++++----------------
+ 2 files changed, 119 insertions(+), 63 deletions(-)
 
-https://lkml.org/lkml/2011/8/11/297
+diff --git a/security/smack/smack.h b/security/smack/smack.h
+index 2b6c6a5..82c5a30 100644
+--- a/security/smack/smack.h
++++ b/security/smack/smack.h
+@@ -189,6 +189,7 @@ struct smk_audit_info {
+ 	struct common_audit_data a;
+ #endif
+ };
++
+ /*
+  * These functions are in smack_lsm.c
+  */
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index f934601..5a87075 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -27,6 +27,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/ctype.h>
+ #include <linux/audit.h>
++#include <linux/smack.h>
+ #include "smack.h"
+ 
+ /*
+@@ -44,6 +45,7 @@ enum smk_inos {
+ 	SMK_ONLYCAP	= 9,	/* the only "capable" label */
+ 	SMK_LOGGING	= 10,	/* logging */
+ 	SMK_LOAD_SELF	= 11,	/* task specific rules */
++	SMK_ACCESSES	= 12,	/* access policy */
+ };
+ 
+ /*
+@@ -176,71 +178,19 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
+ }
+ 
+ /**
+- * smk_write_load_list - write() for any /smack/load
+- * @file: file pointer, not actually used
+- * @buf: where to get the data from
+- * @count: bytes sent
+- * @ppos: where to start - must be 0
+- * @rule_list: the list of rules to write to
+- * @rule_lock: lock for the rule list
+- *
+- * Get one smack access rule from above.
+- * The format is exactly:
+- *     char subject[SMK_LABELLEN]
+- *     char object[SMK_LABELLEN]
+- *     char access[SMK_ACCESSLEN]
+- *
+- * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
++ * smk_parse_rule - parse subject, object and access type
++ * @data: string to be parsed whose size is SMK_LOADLEN
++ * @rule: parsed entities are stored in here
+  */
+-static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+-				size_t count, loff_t *ppos,
+-				struct list_head *rule_list,
+-				struct mutex *rule_lock)
++static int smk_parse_rule(const char *data, struct smack_rule *rule)
+ {
+-	struct smack_rule *rule;
+-	char *data;
+-	int rc = -EINVAL;
+-
+-	/*
+-	 * No partial writes.
+-	 * Enough data must be present.
+-	 */
+-	if (*ppos != 0)
+-		return -EINVAL;
+-	/*
+-	 * Minor hack for backward compatibility
+-	 */
+-	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
+-		return -EINVAL;
+-
+-	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
+-	if (data == NULL)
+-		return -ENOMEM;
+-
+-	if (copy_from_user(data, buf, count) != 0) {
+-		rc = -EFAULT;
+-		goto out;
+-	}
+-
+-	/*
+-	 * More on the minor hack for backward compatibility
+-	 */
+-	if (count == (SMK_OLOADLEN))
+-		data[SMK_OLOADLEN] = '-';
+-
+-	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
+-	if (rule == NULL) {
+-		rc = -ENOMEM;
+-		goto out;
+-	}
+-
+ 	rule->smk_subject = smk_import(data, 0);
+ 	if (rule->smk_subject == NULL)
+-		goto out_free_rule;
++		return -1;
+ 
+ 	rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
+ 	if (rule->smk_object == NULL)
+-		goto out_free_rule;
++		return -1;
+ 
+ 	rule->smk_access = 0;
+ 
+@@ -252,7 +202,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_READ;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
+ 
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 1]) {
+@@ -263,7 +213,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_WRITE;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
+ 
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 2]) {
+@@ -274,7 +224,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_EXEC;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
+ 
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 3]) {
+@@ -285,7 +235,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_APPEND;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
+ 
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 4]) {
+@@ -296,9 +246,74 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_TRANSMUTE;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
+ 
++	return 0;
++}
++
++/**
++ * smk_write_load_list - write() for any /smack/load
++ * @file: file pointer, not actually used
++ * @buf: where to get the data from
++ * @count: bytes sent
++ * @ppos: where to start - must be 0
++ * @rule_list: the list of rules to write to
++ * @rule_lock: lock for the rule list
++ *
++ * Get one smack access rule from above.
++ * The format is exactly:
++ *     char subject[SMK_LABELLEN]
++ *     char object[SMK_LABELLEN]
++ *     char access[SMK_ACCESSLEN]
++ *
++ * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
++ */
++static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos,
++				struct list_head *rule_list,
++				struct mutex *rule_lock)
++{
++	struct smack_rule *rule;
++	char *data;
++	int rc = -EINVAL;
++
++	/*
++	 * No partial writes.
++	 * Enough data must be present.
++	 */
++	if (*ppos != 0)
++		return -EINVAL;
++	/*
++	 * Minor hack for backward compatibility
++	 */
++	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
++		return -EINVAL;
++
++	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
++	if (data == NULL)
++		return -ENOMEM;
++
++	if (copy_from_user(data, buf, count) != 0) {
++		rc = -EFAULT;
++		goto out;
++	}
++
++	/*
++	 * More on the minor hack for backward compatibility
++	 */
++	if (count == (SMK_OLOADLEN))
++		data[SMK_OLOADLEN] = '-';
++
++	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
++	if (rule == NULL) {
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	if (smk_parse_rule(data, rule))
++		goto out_free_rule;
++
+ 	rc = count;
+ 	/*
+ 	 * smk_set_access returns true if there was already a rule
+@@ -1425,6 +1440,44 @@ static const struct file_operations smk_load_self_ops = {
+ 	.write		= smk_write_load_self,
+ 	.release        = seq_release,
+ };
++
++/**
++ * smk_write_access - handle access check transaction
++ * @file: file pointer
++ * @buf: data from user space
++ * @count: bytes sent
++ * @ppos: where to start - must be 0
++ */
++static ssize_t smk_write_access(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	struct smack_rule rule;
++	char *data;
++
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	data = simple_transaction_get(file, buf, count);
++	if (IS_ERR(data))
++		return PTR_ERR(data);
++
++	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule))
++		return -EINVAL;
++
++	data[0] = smk_access(rule.smk_subject, rule.smk_object,
++			     rule.smk_access, NULL) == 0;
++
++	simple_transaction_set(file, 1);
++	return SMK_LOADLEN;
++}
++
++static const struct file_operations smk_access_ops = {
++	.write		= smk_write_access,
++	.read		= simple_transaction_read,
++	.release	= simple_transaction_release,
++	.llseek		= generic_file_llseek,
++};
++
+ /**
+  * smk_fill_super - fill the /smackfs superblock
+  * @sb: the empty superblock
+@@ -1459,6 +1512,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
+ 			"logging", &smk_logging_ops, S_IRUGO|S_IWUSR},
+ 		[SMK_LOAD_SELF] = {
+ 			"load-self", &smk_load_self_ops, S_IRUGO|S_IWUGO},
++		[SMK_ACCESSES] = {
++			"access", &smk_access_ops, S_IRUGO|S_IWUSR},
+ 		/* last one */
+ 			{""}
+ 	};
+-- 
+1.7.4.1
 
-Best Regards,
-Huang Ying
