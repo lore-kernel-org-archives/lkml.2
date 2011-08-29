@@ -1,44 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab1H2Hz6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 03:55:58 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:7087 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995Ab1H2Hzv (ORCPT
+	id S1753089Ab1H2H4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 03:56:20 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56071 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022Ab1H2H4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 03:55:51 -0400
-Date: Mon, 29 Aug 2011 09:55:30 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Hans Berglund <hb@spacetec.no>, Jonas Bonn <jonas@southpole.se>,
-        Arnd Bergmann <arnd@arndb.de>, linux-i2c@vger.kernel.org,
+	Mon, 29 Aug 2011 03:56:10 -0400
+Message-ID: <4E5B460F.7070707@gmail.com>
+Date: Mon, 29 Aug 2011 15:55:59 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: wanlong.gao@gmail.com, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: I2C_ELEKTOR should depend on HAS_IOPORT
-Message-ID: <20110829095530.789ec9ea@endymion.delvare>
-In-Reply-To: <CAMuHMdVX_p4Q1E+-Q1HOjUO-Zhbsv_uji2qqGZipii=qY0hHWw@mail.gmail.com>
-References: <1312802446-19154-1-git-send-email-geert@linux-m68k.org>
-	<20110816195033.014f302b@endymion.delvare>
-	<CAMuHMdUk_xTwGbhG0MHkS-8rkF76b1fg193pPcs+9MVyB-qHQw@mail.gmail.com>
-	<20110817113910.47dc819f@endymion.delvare>
-	<CAMuHMdVX_p4Q1E+-Q1HOjUO-Zhbsv_uji2qqGZipii=qY0hHWw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] virtio: fix size computation according to the definition
+ of struct vring_used in vring_size
+References: <4E584365.1010806@gmail.com> <1314413399.1913.1.camel@Allen> <4E58BA41.6050503@gmail.com> <4E58BE42.8030700@gmail.com> <87fwkl2ajr.fsf@rustcorp.com.au>
+In-Reply-To: <87fwkl2ajr.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-On Mon, 29 Aug 2011 09:48:17 +0200, Geert Uytterhoeven wrote:
-> On Wed, Aug 17, 2011 at 11:39, Jean Delvare <khali@linux-fr.org> wrote:
-> > OK, fair enough. Patch applied, thanks.
+On 2011年08月29日 10:53, Rusty Russell wrote:
+> On Sat, 27 Aug 2011 17:52:02 +0800, Wang Sheng-Hui <shhuiw@gmail.com> wrote:
+>> On 2011年08月27日 17:34, Wang Sheng-Hui wrote:
+>> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+>> index 4a32cb6..300af76 100644
+>> --- a/include/linux/virtio_ring.h
+>> +++ b/include/linux/virtio_ring.h
+>> @@ -135,13 +135,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+>>  	vr->num = num;
+>>  	vr->desc = p;
+>>  	vr->avail = p + num*sizeof(struct vring_desc);
+>> -	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
+>> -			    & ~(align - 1));
+>> +	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + 16
+>> +		+ align-1) & ~(align - 1));
+>>  }
 > 
-> Any chance it will finds its way in 3.1, since it's still breaking
-> m68k allmodconfig builds.
+> This + 16 should be + sizeof(__u16), right?  It's just the
+> used_event_idx which has been added:
+> 
+>  *	__u16 available[num];
+>  *	__u16 used_event_idx;
+>  *
+>  *	// Padding to the next align boundary.
+>  *	char pad[];
+>  *
+>  * [USED]
+> 
+>>  static inline unsigned vring_size(unsigned int num, unsigned long align)
+>>  {
+>> -	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
+>> +	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
+>>  		 + align - 1) & ~(align - 1))
+>>  		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+> 
+> This is correct.
+> 
+> And, yes, since align is always 4096, it's currently just a cleanup, but
+> it makes things much less confusing!
+> 
+> Thanks,
+> Rusty.
 
-This is the plan, yes. It should happen by the end of the week.
+Patch regerated to use sizeof(__u16) instead of 16 in vring_init.
+Please check it.
 
+
+[PATCH] virtio: modify vring_init and vring_size to take account of the layout containing *_event_idx
+
+The patch is against 3.1-rc3.
+
+Based on the layout description in the comments, take account of
+the *_event_idx in functions vring_init and vring_size.
+
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ include/linux/virtio_ring.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+index 4a32cb6..2a731bd 100644
+--- a/include/linux/virtio_ring.h
++++ b/include/linux/virtio_ring.h
+@@ -135,13 +135,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
+ 	vr->num = num;
+ 	vr->desc = p;
+ 	vr->avail = p + num*sizeof(struct vring_desc);
+-	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
+-			    & ~(align - 1));
++	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + sizeof(__16)
++		+ align-1) & ~(align - 1));
+ }
+ 
+ static inline unsigned vring_size(unsigned int num, unsigned long align)
+ {
+-	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
++	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
+ 		 + align - 1) & ~(align - 1))
+ 		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
+ }
 -- 
-Jean Delvare
+1.7.1
+
+
