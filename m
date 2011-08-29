@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab1H2RwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 13:52:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18481 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495Ab1H2RwC convert rfc822-to-8bit (ORCPT
+	id S1754673Ab1H2RxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 13:53:06 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46556 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753594Ab1H2RxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 13:52:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="43075771"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-CC: Mike Thomas <rmthomas@sciolus.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldv-project@ispras.ru" <ldv-project@ispras.ru>
-Date: Mon, 29 Aug 2011 20:51:51 +0300
-Subject: RE: [PATCH] staging/easycap: fix mismatch in easycap_poll() mutex
- lock-unlock
-Thread-Topic: [PATCH] staging/easycap: fix mismatch in easycap_poll() mutex
- lock-unlock
-Thread-Index: Acxmc6yBOBkij8XWSPuwbMG+LHPEOgAAJSQg
-Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401C7A0567B@hasmsx504.ger.corp.intel.com>
-References: <1314640017-27561-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1314640017-27561-1-git-send-email-khoroshilov@ispras.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 29 Aug 2011 13:53:02 -0400
+X-Sasl-enc: +bwO0LmQkoB/aCInUf+l96C8jjwexHbIevVQRksbEEyE 1314640381
+Date: Mon, 29 Aug 2011 10:52:41 -0700
+From: Greg KH <greg@kroah.com>
+To: Manohar Vanga <manohar.vanga@cern.ch>
+Cc: gregkh@suse.de, martyn.welch@ge.com, cota@braap.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] staging: vme: add struct vme_dev for VME devices
+Message-ID: <20110829175241.GC10250@kroah.com>
+References: <1314608570-32766-1-git-send-email-manohar.vanga@cern.ch>
+ <1314608570-32766-3-git-send-email-manohar.vanga@cern.ch>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314608570-32766-3-git-send-email-manohar.vanga@cern.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 29, 2011 at 11:02:49AM +0200, Manohar Vanga wrote:
+> --- a/drivers/staging/vme/vme_bridge.h
+> +++ b/drivers/staging/vme/vme_bridge.h
+> @@ -115,9 +115,8 @@ struct vme_bridge {
+>  	struct list_head bus_list; /* list of VME buses */
+>  	struct module *owner;	/* module that owns the bridge */
+>  
+> -	struct device dev[VME_SLOTS_MAX];	/* Device registered with
+> -						 * device model on VME bus
+> -						 */
+> +	struct vme_dev dev[VME_SLOTS_MAX];	/* Device registered
+> +						 * on VME bus */
 
+Overall, this is the right way to go, using a vme_dev.
 
-> -----Original Message-----
-> From: Alexey Khoroshilov [mailto:khoroshilov@ispras.ru]
-> Sent: Monday, August 29, 2011 8:47 PM
-> To: Greg Kroah-Hartman
-> Cc: Alexey Khoroshilov; Winkler, Tomas; Mike Thomas;
-> devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; ldv-
-> project@ispras.ru
-> Subject: [PATCH] staging/easycap: fix mismatch in easycap_poll() mutex lock-
-> unlock
-> 
-> In case if condition (kd != isdongle(peasycap)) becomes true,
-> easycap_poll() returns without releasing
-> easycapdc60_dongle[kd].mutex_video.
-> The patch adds mutex_unlock() before that return.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+BUT, you should never have a static list of devices, these should be
+pointers, not actual structures here, otherwise your reference counting
+just got all messed up and is wrong.
 
+And yes, I know you didn't create the code this way, but it needs to be
+fixed _before_ you make this kind of a change.
 
-Looks correct, thanks
-Tomas
+thanks,
 
-> ---
->  drivers/staging/easycap/easycap_main.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/easycap/easycap_main.c
-> b/drivers/staging/easycap/easycap_main.c
-> index bea2816..3ea51c3 100644
-> --- a/drivers/staging/easycap/easycap_main.c
-> +++ b/drivers/staging/easycap/easycap_main.c
-> @@ -953,8 +953,10 @@ static unsigned int easycap_poll(struct file *file,
-> poll_table *wait)
->  	 *  peasycap, IN WHICH CASE A REPEAT CALL TO isdongle() WILL FAIL.
->  	 *  IF NECESSARY, BAIL OUT.
->  	 */
-> -		if (kd != isdongle(peasycap))
-> +		if (kd != isdongle(peasycap)) {
-> +
-> 	mutex_unlock(&easycapdc60_dongle[kd].mutex_video);
->  			return -ERESTARTSYS;
-> +		}
->  		if (!file) {
->  			SAY("ERROR:  file is NULL\n");
-> 
-> 	mutex_unlock(&easycapdc60_dongle[kd].mutex_video);
-> --
-> 1.7.4.1
-
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
+greg k-h
