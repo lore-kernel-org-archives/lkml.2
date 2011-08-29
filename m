@@ -1,28 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab1H2XXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:23:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31423 "EHLO mga14.intel.com"
+	id S1755594Ab1H2XZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:25:11 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:43182 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755323Ab1H2XX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:23:27 -0400
-X-ExtLoop1: 1
+	id S1755486Ab1H2XZG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:25:06 -0400
 X-IronPort-AV: E=Sophos;i="4.68,298,1312182000"; 
-   d="scan'208";a="43701317"
-From: Andi Kleen <andi@firstfloor.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Updated direct IO optimization patchkit v3
-Date: Mon, 29 Aug 2011 16:23:11 -0700
-Message-Id: <1314660202-661-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.4.4
+   d="scan'208";a="576123002"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 19/24] sunrpc: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 16:25:08 -0700
+Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4FAF@SACMVEXC2-PRD.hq.netapp.com>
+In-Reply-To: <20110829.180348.1774953636752413432.davem@davemloft.net>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 19/24] sunrpc: Remove unnecessary OOM logging messages
+Thread-Index: Acxmm6ruc33ltz2dSia6LidoeBcgAwABfISg
+References: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4EE9@SACMVEXC2-PRD.hq.netapp.com><20110829.143751.1153162956919885670.davem@davemloft.net><4E5C0AB3.90401@panasas.com> <20110829.180348.1774953636752413432.davem@davemloft.net>
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "David Miller" <davem@davemloft.net>, <bharrosh@panasas.com>
+Cc: <joe@perches.com>, <bfields@fieldses.org>, <neilb@suse.de>,
+        <linux-nfs@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 29 Aug 2011 23:25:05.0110 (UTC) FILETIME=[E21BA760:01CC66A2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various micro optimizations of the block direct IO path.
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Monday, August 29, 2011 6:04 PM
+> To: bharrosh@panasas.com
+> Cc: Myklebust, Trond; joe@perches.com; bfields@fieldses.org;
+> neilb@suse.de; linux-nfs@vger.kernel.org; netdev@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 19/24] sunrpc: Remove unnecessary OOM logging
+> messages
+> 
+> From: Boaz Harrosh <bharrosh@panasas.com>
+> Date: Mon, 29 Aug 2011 14:54:59 -0700
+> 
+> > I have a question about that. Are the dprints going to show the
+stack
+> backtrace?
+> 
+> Yes, OOMs give full stack backtraces.
+> 
+> > If yes above? then I'm not sure I like it either, because am I'll be
+> getting a full
+> > stack backtrace for every failed allocation?
+> 
+> They've been doing this for years, so obviously they haven't bothered
+> you
+> enough to care up to this point.
+> 
+> All of this pushback is pure uneducated noise, please stop blocking
+> progress
+> with poorly informed objections.
 
-v3: Minor updates from review. Added Acked-bys.
+I can see that slub.c has the slab_out_of_memory() function that
+(although ratelimited) warns you if the allocation failed. However I
+can't find any equivalent for slab.c or slob.c.
 
--Andi
+Trond
