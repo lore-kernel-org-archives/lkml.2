@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab1H1Xu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 19:50:28 -0400
-Received: from ozlabs.org ([203.10.76.45]:33051 "EHLO ozlabs.org"
+	id S1752569Ab1H2ApA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 20:45:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36496 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506Ab1H1XuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 19:50:23 -0400
-Date: Mon, 29 Aug 2011 09:50:21 +1000
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
-Message-ID: <20110828235021.GS19739@ozlabs.org>
-Mail-Followup-To: "J. Bruce Fields" <bfields@fieldses.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ben Hutchings <ben@decadent.org.uk>, Neil Brown <neilb@suse.de>,
-	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-arch@vger.kernel.org
-References: <1312810169.2591.1153.camel@deadeye>
- <20110808155538.GB904@fieldses.org>
- <20110808180658.GC29924@decadent.org.uk>
- <20110826220311.GA18140@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110826220311.GA18140@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752526Ab1H2Ao4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 20:44:56 -0400
+Date: Mon, 29 Aug 2011 10:44:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        NeilBrown <neilb@suse.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-parisc@vger.kernel.org, "J. Bruce Fields" <bfields@redhat.com>
+Subject: linux-next: build failure in Linus' tree
+Message-Id: <20110829104451.1c777e24ff72823d1e399f12@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 06:03:11PM -0400, J. Bruce Fields wrote:
-> From: NeilBrown <neilb@suse.de>
-> 
-> The nfsservctl system call is now gone, so we should remove all
-> linkage for it.
+Hi Linus,
 
-What about powerpc?
+After merging the fixes tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-$ egrep -r nfsservctl arch/powerpc/
-arch/powerpc/include/asm/systbl.h:COMPAT_SYS(nfsservctl)
-arch/powerpc/include/asm/unistd.h:#define __NR_nfsservctl		168
+arch/powerpc/kernel/built-in.o: In function `.sys_call_table':
+(.text+0xbd00): undefined reference to `.sys_nfsservctl'
+arch/powerpc/kernel/built-in.o: In function `.sys_call_table':
+(.text+0xbd08): undefined reference to `.compat_sys_nfsservctl'
 
-Yours Tony
+Caused by commit f5b940997397 ("All Arch: remove linkage for
+sys_nfsservctl system call") which also missed parisc.
+
+I will apply this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 29 Aug 2011 10:38:57 +1000
+Subject: [PATCH] remove remaining references to nfsservctl
+
+These were missed in commit f5b940997397 "All Arch: remove linkage
+for sys_nfsservctl system call" due to them having no sys_ prefix
+(presumably).
+
+Cc: NeilBrown <neilb@suse.de>
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-parisc@vger.kernel.org
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/parisc/kernel/syscall_table.S |    2 +-
+ arch/powerpc/include/asm/systbl.h  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/parisc/kernel/syscall_table.S b/arch/parisc/kernel/syscall_table.S
+index e66366f..3735abd 100644
+--- a/arch/parisc/kernel/syscall_table.S
++++ b/arch/parisc/kernel/syscall_table.S
+@@ -259,7 +259,7 @@
+ 	ENTRY_SAME(ni_syscall)		/* query_module */
+ 	ENTRY_SAME(poll)
+ 	/* structs contain pointers and an in_addr... */
+-	ENTRY_COMP(nfsservctl)
++	ENTRY_SAME(ni_syscall)		/* was nfsservctl */
+ 	ENTRY_SAME(setresgid)		/* 170 */
+ 	ENTRY_SAME(getresgid)
+ 	ENTRY_SAME(prctl)
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index f6736b7..fa0d27a 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -171,7 +171,7 @@ SYSCALL_SPU(setresuid)
+ SYSCALL_SPU(getresuid)
+ SYSCALL(ni_syscall)
+ SYSCALL_SPU(poll)
+-COMPAT_SYS(nfsservctl)
++SYSCALL(ni_syscall)
+ SYSCALL_SPU(setresgid)
+ SYSCALL_SPU(getresgid)
+ COMPAT_SYS_SPU(prctl)
+-- 
+1.7.5.4
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
