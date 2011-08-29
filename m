@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1H2QPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:15:12 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:18300 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054Ab1H2QPF (ORCPT
+	id S1754291Ab1H2QPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:15:23 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62408 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab1H2QPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:15:05 -0400
-Message-ID: <4E5BBAEF.8020808@siemens.com>
-Date: Mon, 29 Aug 2011 18:14:39 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Mon, 29 Aug 2011 12:15:18 -0400
+Date: Mon, 29 Aug 2011 18:15:11 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 02/32 RESEND] nohz: Drop ts->idle_active
+Message-ID: <20110829161508.GA8649@somewhere>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-3-git-send-email-fweisbec@gmail.com>
+ <1314627792.2816.60.camel@twins>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: Broken pci_block_user_cfg_access interface
-References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <20110829155835.GB7480@redhat.com>
-In-Reply-To: <20110829155835.GB7480@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314627792.2816.60.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-29 17:58, Michael S. Tsirkin wrote:
-> On Mon, Aug 29, 2011 at 05:42:16PM +0200, Jan Kiszka wrote:
->> I still don't get what prevents converting ipr to allow plain mutex
->> synchronization. My vision is:
->>  - push reset-on-error of ipr into workqueue (or threaded IRQ?)
->>  - require mutex synchronization for common config space access
+On Mon, Aug 29, 2011 at 04:23:12PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-08-15 at 17:51 +0200, Frederic Weisbecker wrote:
+> > ts->idle_active is used to know if we want to account the idle sleep
+> > time. But ts->inidle is enough to check that.
+> > 
+> While possibly true, its not immediately obvious and no hints are
+> supplied. For example: tick_check_nohz() would disable ->idle_active..
+> where is this mirrored in the ->inidle state.
+
+Hmm, you're right. By the time we call tick_check_nohz() (irq_enter())
+and tick_nohz_stop_sched_tick() (irq_exit()) there may be a softirq
+and then another hard irq that could update the idle time spuriously.
+
+So the mapping inidle - idle_active is wrong.
+
+Let's drop that patch.
+
 > 
-> Meaning pci_user_ read/write config?
-
-And pci_dev_reset, yes.
-
+> Also, tick_nohz_stop_sched_tick() has this comment:
 > 
->>     and the
->>    full reset cycle
->>  - only exception: INTx status/masking access
->>     => use pci_lock + test for reset_in_progress, skip operation if
->>        that is the case
->>
->> That would allow to drop the whole block_user_cfg infrastructure.
->>
->> Jan
+> 	/*
+> 	 * Set ts->inidle unconditionally. Even if the system did not
+> 	 * switch to NOHZ mode the cpu frequency governers rely on the
+> 	 * update of the idle time accounting in tick_nohz_start_idle().
+> 	 */
+> 	ts->inidle = 1;
 > 
-> We still need to block userspace access while INTx does
-> the status/masking access, right?
-
-Yes, pci_lock would do that for us.
-
-We should consider making the related bits for INTx test & mask/unmask
-generic PCI services so that no user (uio_pci_generic, kvm, vfio) needs
-to worry about the locking details.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+> Which suggest the ->inidle state doesn't accurately reflect things.
+> 
+> This is all rather hairy code, such changes really want more in terms of
+> explanation.
+> 
+> 
