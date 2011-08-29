@@ -1,67 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab1H2OJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:09:39 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41341 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab1H2OJf (ORCPT
+	id S1753472Ab1H2OOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:14:08 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59251 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab1H2OOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:09:35 -0400
-From: Ravishankarkm <ravi.shankar@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 1/1] Staging: comedi: fix printk issue in serial2002.c
-Date: Mon, 29 Aug 2011 19:39:13 +0530
-Message-Id: <1314626953-14151-1-git-send-email-ravi.shankar@greenturtles.in>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <[PATCH]Staging: comedi:fix printk issue in serial2002.c>
-References: <[PATCH]Staging: comedi:fix printk issue in serial2002.c>
+	Mon, 29 Aug 2011 10:14:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
+References: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
+Date: Mon, 29 Aug 2011 10:14:00 -0400
+Message-ID: <CACqU3MVRY6TvSJMOHzKTaF+Y=m8EtH=vaBT-_aTNqvLtnPVmLg@mail.gmail.com>
+Subject: Re: [RFC] nconf bug fixes and improvements
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Cheng Renquan <crquan@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7TEEFQZ018231
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+Hi,
 
-This is a patch to the serial2002.c file that fixes up a printk warning found by the checkpatch.pl tool
+On Mon, Aug 29, 2011 at 5:09 AM, Cheng Renquan <crquan@gmail.com> wrote:
+> bug fixes:
+>
+Please split diff in logical changes, one patch per issue. This is
+unreviewable in the current state. And please, use git.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/serial2002.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+See `Documentation/SubmittingPatches' for further informations.
 
-diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
-index ade2202..0f9bd4f 100644
---- a/drivers/staging/comedi/drivers/serial2002.c
-+++ b/drivers/staging/comedi/drivers/serial2002.c
-@@ -824,7 +824,7 @@ static int serial2002_attach(struct comedi_device *dev,
- {
- 	struct comedi_subdevice *s;
- 
--	printk("comedi%d: serial2002: ", dev->minor);
-+	pr_info("comedi%d: serial2002: ", dev->minor);
- 	dev->board_name = thisboard->name;
- 	if (alloc_private(dev, sizeof(struct serial2002_private)) < 0)
- 		return -ENOMEM;
-@@ -832,7 +832,7 @@ static int serial2002_attach(struct comedi_device *dev,
- 	dev->close = serial_2002_close;
- 	devpriv->port = it->options[0];
- 	devpriv->speed = it->options[1];
--	printk("/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
-+	pr_cont("/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
- 
- 	if (alloc_subdevices(dev, 5) < 0)
- 		return -ENOMEM;
-@@ -891,7 +891,7 @@ static int serial2002_detach(struct comedi_device *dev)
- 	struct comedi_subdevice *s;
- 	int i;
- 
--	printk("comedi%d: serial2002: remove\n", dev->minor);
-+	pr_info("comedi%d: serial2002: remove\n", dev->minor);
- 	for (i = 0; i < 5; i++) {
- 		s = &dev->subdevices[i];
- 		kfree(s->maxdata_list);
--- 
-1.7.6
+Thanks,
+ - Arnaud
 
+> 1) char dialog_input_result[256]; is not enough for config item like:
+>   CONFIG_EXTRA_FIRMWARE="iwlwifi-100-5.ucode iwlwifi-1000-3.ucode
+> iwlwifi-3945-2.ucode iwlwifi-4965-2.ucode iwlwifi-5000-1.ucode
+> iwlwifi-5000-2.ucode iwlwifi-5150-2.ucode iwlwifi-6000-4.ucode
+> iwlwifi-6000g2a-5.ucode iwlwifi-6000g2b-5.ucode iwlwifi-6050-4.ucode
+> iwlwifi-6050-5.ucode radeon/CEDAR_me.bin radeon/CEDAR_pfp.bin
+> radeon/CEDAR_rlc.bin radeon/CYPRESS_me.bin radeon/CYPRESS_pfp.bin
+> radeon/CYPRESS_rlc.bin radeon/JUNIPER_me.bin radeon/JUNIPER_pfp.bin
+> radeon/JUNIPER_rlc.bin radeon/R600_rlc.bin radeon/R700_rlc.bin
+> radeon/REDWOOD_me.bin radeon/REDWOOD_pfp.bin radeon/REDWOOD_rlc.bin"
+>
+>   the original nconf just stack overflow / crashed when dealing with
+> longer than 256 bytes strings; Since the original menuconfig also just
+> uses a fixed length buffer [MAX_LEN=2048] which works for the years,
+> here I just append a 0 make it work in the easiest way; if required,
+> it could also be changed to a dynamically allocated buffer;
+>
+>   char dialog_input_result[MAX_LEN + 1];
+>
+> 2) memmove's 3rd argument should be len-cursor_position+1, the
+> original len+1 may cause segment fault in theory;
+>                                memmove(&result[cursor_position+1],
+>                                                &result[cursor_position],
+> -                                               len+1);
+> +                                               len-cursor_position+1);
+>
+> 3) typo:
+>
+> -                               mvprintw(0, 0, "unknow key: %d\n", res);
+> +                               mvprintw(0, 0, "unknown key: %d\n", res);
+>
+>
+> improvement:
+> 1) its original conf_string doesn't work with longer string values
+> (longer than its dialog box width), not at all
+>   (or may work in an invisible way if anyone has tried that)
+>   Here I added a new variable cursor_form_win to record that new state:
+>   cursor of the input box; and make it fun:
+>   when you move cursor to almost left/right edge, it auto adjust text
+> to center, by half prompt box width;
+>
+> 2) Remove KEY_UP as RIGHT and KEY_DOWN as LEFT,
+>   Add Home/End to locate the string begin/end;
+>   Emacs-like key bind (C-a/C-e as Home/End, C-f/C-b as forward/backward);
+>   this keybind I'd like but may be controversial, it could be
+> discussed and separated;
+>
+> This is just [Request for Comments], it just works here on one of my
+> distributor kernels,
+> if anyone may think it's useful, please feedback and I would like to
+> split it into
+> patch series and rebase to linus latest branch;
+>
+> Thanks,
+>
+> --- /mnt/static/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.c     2011-07-21
+> 19:17:23.000000000 -0700
+> +++ /mnt/dynamic/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.c    2011-08-28
+> 18:08:05.699883340 -0700
+> @@ -1360,7 +1360,7 @@ static void conf_choice(struct menu *men
+>  static void conf_string(struct menu *menu)
+>  {
+>        const char *prompt = menu_get_prompt(menu);
+> -       char dialog_input_result[256];
+> +       char dialog_input_result[2560];
+>
+>        while (1) {
+>                int res;
+> --- /mnt/static/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.gui.c 2011-07-21
+> 19:17:23.000000000 -0700
+> +++ /mnt/dynamic/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.gui.c        2011-08-28
+> 18:00:56.441862565 -0700
+> @@ -367,7 +367,15 @@ int dialog_inputbox(WINDOW *main_window,
+>        int i, x, y;
+>        int res = -1;
+>        int cursor_position = strlen(init);
+> +       int cursor_form_win;
+>
+> +       if (strlen(init) +80 > result_len) {
+> +               (void) attrset(attributes[FUNCTION_HIGHLIGHT] | A_BLINK);
+> +               mvprintw(0, 0, "result_len(%d) not enough to contain
+> init_strlen(%d) in %s:%d:%s\n",
+> +                        result_len, strlen(init),
+> +                        __FILE__, __LINE__, __func__);
+> +               flash();
+> +       }
+>
+>        /* find the widest line of msg: */
+>        prompt_lines = get_line_no(prompt);
+> @@ -405,7 +413,11 @@ int dialog_inputbox(WINDOW *main_window,
+>        fill_window(prompt_win, prompt);
+>
+>        mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
+> -       mvwprintw(form_win, 0, 0, "%s", result);
+> +       cursor_form_win = min(cursor_position, prompt_width-1);
+> +       mvwprintw(form_win, 0, 0, "%s",
+> +                 result + cursor_position-cursor_form_win);
+> +       mvprintw(0, 0, "cursor_position=%d, cursor_form_win=%d, prompt_width=%d\n",
+> +                cursor_position, cursor_form_win, prompt_width);
+>
+>        /* create panels */
+>        panel = new_panel(win);
+> @@ -416,6 +428,8 @@ int dialog_inputbox(WINDOW *main_window,
+>        touchwin(win);
+>        refresh_all_windows(main_window);
+>        while ((res = wgetch(form_win))) {
+> +               mvprintw(0, 0, "got key: %d\n", res);
+> +
+>                int len = strlen(result);
+>                switch (res) {
+>                case 10: /* ENTER */
+> @@ -431,6 +445,13 @@ int dialog_inputbox(WINDOW *main_window,
+>                                                &result[cursor_position],
+>                                                len-cursor_position+1);
+>                                cursor_position--;
+> +                               if (cursor_form_win < 5
+> +                                   && cursor_position > 5)
+> +                                       cursor_form_win += prompt_width/2;
+> +                               else
+> +                                       cursor_form_win--;
+> +                               if (cursor_form_win > cursor_position)
+> +                                       cursor_form_win = cursor_position;
+>                        }
+>                        break;
+>                case KEY_DC:
+> @@ -440,16 +461,41 @@ int dialog_inputbox(WINDOW *main_window,
+>                                                len-cursor_position+1);
+>                        }
+>                        break;
+> -               case KEY_UP:
+> +               case 6: /* Ctrl-F */
+>                case KEY_RIGHT:
+> -                       if (cursor_position < len &&
+> -                           cursor_position < min(result_len, prompt_width))
+> +                       if (cursor_position < len) {
+>                                cursor_position++;
+> +                               if (cursor_form_win > prompt_width-5
+> +                                   && cursor_position < len-5)
+> +                                       cursor_form_win -= prompt_width/2;
+> +                               else
+> +                                       cursor_form_win++;
+> +                               if (cursor_form_win < min(cursor_position, prompt_width-1) -
+> (len-cursor_position))
+> +                                       cursor_form_win = min(cursor_position, prompt_width-1) -
+> (len-cursor_position);
+> +                       }
+>                        break;
+> -               case KEY_DOWN:
+> +               case 2: /* Ctrl-B */
+>                case KEY_LEFT:
+> -                       if (cursor_position > 0)
+> +                       if (cursor_position > 0) {
+>                                cursor_position--;
+> +                               if (cursor_form_win < 5
+> +                                   && cursor_position > 5)
+> +                                       cursor_form_win += prompt_width/2;
+> +                               else
+> +                                       cursor_form_win--;
+> +                               if (cursor_form_win > cursor_position)
+> +                                       cursor_form_win = cursor_position;
+> +                       }
+> +                       break;
+> +               case 1: /* Ctrl-A */
+> +               case KEY_HOME:
+> +                       cursor_position = 0;
+> +                       cursor_form_win = 0;
+> +                       break;
+> +               case 5: /* Ctrl-E */
+> +               case KEY_END:
+> +                       cursor_position = len;
+> +                       cursor_form_win = min(cursor_position, prompt_width-1);
+>                        break;
+>                default:
+>                        if ((isgraph(res) || isspace(res)) &&
+> @@ -457,19 +503,24 @@ int dialog_inputbox(WINDOW *main_window,
+>                                /* insert the char at the proper position */
+>                                memmove(&result[cursor_position+1],
+>                                                &result[cursor_position],
+> -                                               len+1);
+> +                                               len-cursor_position+1);
+>                                result[cursor_position] = res;
+>                                cursor_position++;
+> +                               if (cursor_form_win < prompt_width-1)
+> +                                       cursor_form_win++;
+>                        } else {
+> -                               mvprintw(0, 0, "unknow key: %d\n", res);
+> +                               mvprintw(0, 0, "unknown key: %d\n", res);
+>                        }
+>                        break;
+>                }
+> +               mvprintw(0, 0, "got key: %d, cursor_position=%d, cursor_form_win=%d\n",
+> +                        res, cursor_position, cursor_form_win);
+>                wmove(form_win, 0, 0);
+>                wclrtoeol(form_win);
+>                mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
+> -               mvwprintw(form_win, 0, 0, "%s", result);
+> -               wmove(form_win, 0, cursor_position);
+> +               mvwprintw(form_win, 0, 0, "%s",
+> +                         result + cursor_position-cursor_form_win);
+> +               wmove(form_win, 0, cursor_form_win);
+>                touchwin(win);
+>                refresh_all_windows(main_window);
+>
+>
+> --
+> Cheng Renquan (程任全)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
