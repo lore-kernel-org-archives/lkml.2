@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1H2XPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:15:11 -0400
-Received: from ozlabs.org ([203.10.76.45]:55300 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755259Ab1H2XPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:15:09 -0400
-Date: Tue, 30 Aug 2011 09:15:06 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net,
-        penberg@cs.helsinki.fi
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf symbols: Synthesize anonymous mmap events
-Message-ID: <20110830091506.60b51fe8@kryten>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755439Ab1H2XSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:18:08 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:1709 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755242Ab1H2XSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:18:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=fEvBRZF705ktIjmEu7S5TPZcFu46PZEWgDARhM/n3cuLFYAcdKFaZcZ2+vi+eLx1b
+	NS1lAFILpL/5e0X8rXWWQ==
+Date: Mon, 29 Aug 2011 16:17:55 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>, Ying Han <yinghan@google.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, roland@hack.frob.com,
+        tj@kernel.org, dvlasenk@redhat.com, matt.fleming@linux.intel.com,
+        linux-kernel@vger.kernel.org, avagin@openvz.org, fhrbata@redhat.com
+Subject: Re: mm->oom_disable_count is broken
+In-Reply-To: <20110829183743.GA15216@redhat.com>
+Message-ID: <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com>
+References: <20110727163159.GA23785@redhat.com> <20110727163610.GJ23793@redhat.com> <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com>
+ <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com> <4E369372.80105@jp.fujitsu.com> <20110829183743.GA15216@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 29 Aug 2011, Oleg Nesterov wrote:
 
-perf_event__synthesize_mmap_events does not create anonymous mmap
-events even though the kernel does. As a result an already running
-application with dynamically created code will not get profiled -
-all samples end up in the unknown bucket.
+> > IIRC, I did pointed out this issue. But nobody replied.
+> > I think ->oom_disable_count is currently broken. but now I have no time to
+> > audit this stuff. So, I'd suggest to revert this code if nobody don't fix it.
+> 
+> I tend to agree, of course we can fix oom_disable_count but I don't
+> really understand why do we want it.
+> 
 
-This patch skips any entries with '[' in the name to avoid adding
-events for special regions (eg the vsyscall page). All other
-executable mmaps are assumed to be anonymous and an event is
-synthesized.
+I'd rather just remove it entirely, we'll have to ask it's author.  Ying, 
+do you see a reason to keep oom_disable_count around?
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
+The only thing that I can see it doing is preventing a thread that shares 
+an ->mm with an unkillable thread from being killed itself since it won't 
+lead to future memory freeing.  It prevents the second tasklist iteration 
+after a task has been chosen to check if another thread sharing the memory 
+cannot be killed.
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 3c1b8a6..437f8ca 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -169,12 +169,17 @@ static int perf_event__synthesize_mmap_events(union perf_event *event,
- 			continue;
- 		pbf += n + 3;
- 		if (*pbf == 'x') { /* vm_exec */
-+			char anonstr[] = "//anon\n";
- 			char *execname = strchr(bf, '/');
- 
- 			/* Catch VDSO */
- 			if (execname == NULL)
- 				execname = strstr(bf, "[vdso]");
- 
-+			/* Catch anonymous mmaps */
-+			if ((execname == NULL) && !strstr(bf, "["))
-+				execname = anonstr;
-+
- 			if (execname == NULL)
- 				continue;
- 
+I'd rather just kill the thread anyway because there's a chance that the 
+OOM_DISABLE thread is waiting on it and may free its memory as well and 
+there's no guarantee that when you set a thread to be OOM_DISABLE that all 
+threads sharing the same memory are disabled as well.
+
+> And. personally I dislike it because ->oom_disable_count is just another
+> proof that ->oom_score_adj should be in ->mm, not per-process. IIRC,
+> you already explained me why we can't do this, but - sorry - I forgot.
+> May be something with vfork... Could you explain this again?
+> 
+
+I actually really wanted oom_score_adj to be in the ->mm, it would 
+simplify a lot of the code :)  The problem was the inheritance property: 
+we expect a job scheduler that is OOM_DISABLE to be able to vfork, change 
+the oom_score_adj of the child, and then exec so that it is not oom 
+disabled before starting to allocate memory.  If this were in the mm, then 
+setting the oom_score_adj of the child prior to exec would change the job 
+scheduler's oom score as well.
