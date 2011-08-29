@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab1H2Ruv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 13:50:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48217 "EHLO
+	id S1754643Ab1H2Rvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 13:51:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50760 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab1H2Rut convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754495Ab1H2Rvp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 13:50:49 -0400
+	Mon, 29 Aug 2011 13:51:45 -0400
 Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
 From: Peter Zijlstra <peterz@infradead.org>
 To: Borislav Petkov <bp@alien8.de>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
+Cc: Kyle Moffett <kyle@moffetthome.net>, Alex Deucher <alexdeucher@gmail.com>,
+        Pavel Ivanov <paivanof@gmail.com>,
         Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kbuild@vger.kernel.org
-Date: Mon, 29 Aug 2011 19:50:34 +0200
-In-Reply-To: <20110829171750.GD2025@gere.osrc.amd.com>
-References: <20110829141612.GB2025@gere.osrc.amd.com>
-	 <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
-	 <20110829155501.GC2025@gere.osrc.amd.com>
-	 <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
-	 <20110829171750.GD2025@gere.osrc.amd.com>
+        dri-devel@lists.freedesktop.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 29 Aug 2011 19:51:33 +0200
+In-Reply-To: <20110829172146.GE2025@gere.osrc.amd.com>
+References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
+	 <1314435638.2321.12.camel@thor.local>
+	 <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
+	 <20110828053624.GC12851@liondog.tnic> <1314624021.2816.30.camel@twins>
+	 <20110829133808.GA2025@gere.osrc.amd.com>
+	 <CADnq5_Mppeym2spCqsRGYALQxWDjQ_yNuta4SYRH6Oocy=UjSg@mail.gmail.com>
+	 <CAGZ=bqKHvauaW8jdPR98d-X5dry_pADYHWH-OsJE_CXT9hdwVw@mail.gmail.com>
+	 <20110829172146.GE2025@gere.osrc.amd.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314640234.2816.118.camel@twins>
+Message-ID: <1314640293.2816.119.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 19:17 +0200, Borislav Petkov wrote:
-> On Mon, Aug 29, 2011 at 12:10:45PM -0400, Arnaud Lacombe wrote:
-> > do you want something ala:
-> > 
-> > config EXTRA_FIRMWARE
-> >     string
-> >     default ""
-> >     append "FOO" if BAR
-> >     append "FOZ" if BAZ
-> > 
-> > or maybe a new type "list" which would behave as a comma/space separated value.
-> > 
-> > config EXTRA_FIRMWARE
-> >     list "bla"
-> >     append "FOO" if BAR
-> >     append "FOZ" if BAZ
+On Mon, 2011-08-29 at 19:21 +0200, Borislav Petkov wrote:
 > 
-> Yeah, actually Kyle's note (http://lkml.org/lkml/2011/8/29/289) makes
-> much more sense for linux and the whole firmware in the kernel deal.
-> So it looks like the drivers should be taught to wait for userspace to
-> appear instead of Kconfig helping them build-in firmware. And then we
-> should go ahead and remove CONFIG_EXTRA_FIRMWARE completely...
-
-That would suck, suppose this radeon thing is the only console you've
-got (ppc64/sparc64 don't have text mode iirc) and userspace doesn't come
-up?
+> Yeah, sounds much better than Kconfig actually aiding and abetting
+> firmware blobs in the kernel and users needing to do stuff.
+> 
+I would very much like to retain that option.. and having to manually
+figure out what blob goes with what driver just isn't fun.
 
 
