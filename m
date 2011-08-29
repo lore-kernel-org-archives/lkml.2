@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab1H2PZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:25:06 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47447 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753879Ab1H2PZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:25:02 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, dchinner@redhat.com, hch@lst.de,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] ramfs: Remove module leftovers
-Date: Mon, 29 Aug 2011 17:24:51 +0200
-Message-Id: <1314631491-27095-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6.1
+	id S1754072Ab1H2PZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:25:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54224 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab1H2PZ4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 11:25:56 -0400
+Subject: Re: [PATCH 13/32] nohz: Adaptive tick stop and restart on nohz
+ cpuset
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Date: Mon, 29 Aug 2011 17:25:36 +0200
+In-Reply-To: <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314631536.2816.89.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since ramfs is hard-selected to "y", the module leftovers make
-no sense.
+On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> When a CPU is included in a nohz cpuset, try to switch
+> it to nohz mode from the timer interrupt if it is the
+> only non-idle task running.
+> 
+> Then restart the tick if necessary from the wakeup path
+> if we are enqueuing a second task while the timer is stopped,
+> so that the scheduler tick is rearmed.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- fs/ramfs/inode.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+Shouldn't you first put the syscall hooks in place before allowing the
+tick to be switched off? It seems this patch is somewhat too early in
+the series.
 
-diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-index eacb166..313ae92 100644
---- a/fs/ramfs/inode.c
-+++ b/fs/ramfs/inode.c
-@@ -23,7 +23,6 @@
-  * caches is sufficient.
-  */
- 
--#include <linux/module.h>
- #include <linux/fs.h>
- #include <linux/pagemap.h>
- #include <linux/highmem.h>
-@@ -294,8 +293,8 @@ static void __exit exit_ramfs_fs(void)
- 	unregister_filesystem(&ramfs_fs_type);
- }
- 
--module_init(init_ramfs_fs)
--module_exit(exit_ramfs_fs)
-+device_initcall(init_ramfs_fs);
-+__exitcall(exit_ramfs_fs);
- 
- int __init init_rootfs(void)
- {
-@@ -311,5 +310,3 @@ int __init init_rootfs(void)
- 
- 	return err;
- }
--
--MODULE_LICENSE("GPL");
--- 
-1.7.6.1
+> This assumes we are using TTWU_QUEUE sched feature so I need
+> to handle the off case (or actually not handle it but properly),
+> because we need the adaptive tick restart and what will come
+> along in further patches to be done locally and before the new
+> task ever gets scheduled.
+
+We could certainly remove that feature flag and always use it, it was
+mostly a transition debug switch in case something didn't work or
+performance issues were found due to this.
+
+> I also need to look at the ARCH_WANT_INTERRUPTS_ON_CTXW case
+> and the remote wakeups.
+
+Well, ideally we'd simply get rid of that, rmk has some preliminary
+patches in that direction.
 
