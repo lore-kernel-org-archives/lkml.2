@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1H2QAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:00:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52749 "EHLO
+	id S1753809Ab1H2QCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:02:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56117 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab1H2QAO convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753485Ab1H2QCU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:00:14 -0400
-Subject: Re: [PATCH 18/32] nohz/cpuset: Don't stop the tick if posix cpu
- timers are running
+	Mon, 29 Aug 2011 12:02:20 -0400
+Subject: Re: [PATCH 19/32] nohz/cpuset: Restart tick when nohz flag is
+ cleared on cpuset
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -20,48 +20,71 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 17:59:37 +0200
-In-Reply-To: <1313423549-27093-19-git-send-email-fweisbec@gmail.com>
+Date: Mon, 29 Aug 2011 18:02:01 +0200
+In-Reply-To: <1313423549-27093-20-git-send-email-fweisbec@gmail.com>
 References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-19-git-send-email-fweisbec@gmail.com>
+	 <1313423549-27093-20-git-send-email-fweisbec@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314633577.2816.107.camel@twins>
+Message-ID: <1314633721.2816.109.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> If either a per thread or a per process posix cpu timer is running,
-> don't stop the tick.
-> 
-> TODO: restart the tick if it is stopped and a posix cpu timer is
-> enqueued. Check we probably need a memory barrier for the per
-> process posix timer that can be enqueued from another task
-> of the group.
-
-
-it would
-
-> +++ b/kernel/sched.c
-> @@ -71,6 +71,7 @@
->  #include <linux/ctype.h>
->  #include <linux/ftrace.h>
->  #include <linux/slab.h>
-> +#include <linux/posix-timers.h>
+> +++ b/kernel/cpuset.c
+> @@ -1199,6 +1199,14 @@ static void cpuset_change_flag(struct task_struct *tsk,
 >  
->  #include <asm/tlb.h>
->  #include <asm/irq_regs.h>
-> @@ -2491,6 +2492,9 @@ bool cpuset_nohz_can_stop_tick(void)
->  	if (rcu_pending(cpu))
->  		return false;
+>  DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
 >  
-> +	if (posix_cpu_timers_running(current))
-> +		return false;
+> +static void cpu_exit_nohz(int cpu)
+> +{
+> +       preempt_disable();
+> +       smp_call_function_single(cpu, cpuset_exit_nohz_interrupt,
+> +                                NULL, true);
+> +       preempt_enable();
+> +}
 > +
->  	return true;
+>  static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
+>  {
+>         int cpu;
+> @@ -1212,6 +1220,19 @@ static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
+>                         per_cpu(cpu_adaptive_nohz_ref, cpu) += 1;
+>                 else
+>                         per_cpu(cpu_adaptive_nohz_ref, cpu) -= 1;
+> +
+> +               val = per_cpu(cpu_adaptive_nohz_ref, cpu);
+> +
+> +               if (!val) {
+> +                       /*
+> +                        * The update to cpu_adaptive_nohz_ref must be
+> +                        * visible right away. So that once we restart the tick
+> +                        * from the IPI, it won't be stopped again due to cache
+> +                        * update lag.
+> +                        */
+> +                       smp_mb();
+> +                       cpu_exit_nohz(cpu);
+> +               }
+>         }
 >  }
+>  #else
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 78ea0a5..75378be 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2513,6 +2513,14 @@ void cpuset_update_nohz(void)
+>                 cpuset_nohz_restart_tick();
+>  }
+>  
+> +void cpuset_exit_nohz_interrupt(void *unused)
+> +{
+> +       if (!tick_nohz_adaptive_mode())
+> +               return;
+> +
+> +       cpuset_nohz_restart_tick();
+> +} 
 
-Doesn't belong here, go poke at tick_nohz_can_stop_tick().
+You do this just to annoy me, right? Why doesn't it live in cpuset.c
+where you use it?
