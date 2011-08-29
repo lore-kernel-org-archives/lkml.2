@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab1H2WPk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 18:15:40 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60674 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab1H2WPg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 18:15:36 -0400
-Date: Mon, 29 Aug 2011 18:15:20 -0400 (EDT)
-Message-Id: <20110829.181520.933815499847625814.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: joe@perches.com, vladislav.yasevich@hp.com, sri@us.ibm.com,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/24] sctp: Remove unnecessary OOM logging messages
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1314654681.2563.10.camel@edumazet-laptop>
-References: <21b4d996c8861373ac77d427914ec7882fe0c83e.1314650069.git.joe@perches.com>
-	<1314654209.2563.7.camel@edumazet-laptop>
-	<1314654681.2563.10.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 29 Aug 2011 15:15:24 -0700 (PDT)
+	id S1755374Ab1H2WQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 18:16:05 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:37465 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755015Ab1H2WQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 18:16:02 -0400
+Message-ID: <4E5C0F9F.5000405@nod.at>
+Date: Tue, 30 Aug 2011 00:15:59 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: [PATCH 8/9] um: fix strrchr problems
+References: <1314634419-24766-1-git-send-email-richard@nod.at> <1314634419-24766-9-git-send-email-richard@nod.at> <20110829142705.5be82d7c.akpm@linux-foundation.org> <4E5C06DF.60508@nod.at> <20110829221230.GP2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110829221230.GP2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 29 Aug 2011 23:51:21 +0200
+Am 30.08.2011 00:12, schrieb Al Viro:
+> On Mon, Aug 29, 2011 at 11:38:39PM +0200, Richard Weinberger wrote:
+>>>
+>>> ok, I give up.  How does this work?
+>>
+>> *grrr*, you can drop this patch.
+>> To my excuse, I've dropped it already from my queue but after
+>> pulling a second time from Al's git branch it made it again into my
+>> queue and I forgot about it, sorry!
+>
+> That gets you link errors with libc-2.11...
 
-> Le lundi 29 août 2011 à 23:43 +0200, Eric Dumazet a écrit :
-> 
->> Furthermore, a failed vmalloc() is not guaranteed to emit an OOM
->> message, is it ?
-> 
-> It currently displays a message without context :
-> 
-> vmap allocation for size XXXXXX failed: use vmalloc=<size> to increase
-> size.
-> 
-> So we dont know which part of the kernel asked this allocation.
-> 
-> Please dont remove existing error messages after failed vmalloc() calls.
+Not here.
+I'm using 2.11.3.
 
-Indeed.
-
-Joe, these vmalloc() and also the __GFP_NOWARN cases will need to be
-attended to and this series resubmitted as such.
-
-Thanks.
+Confused,
+//richard
