@@ -1,112 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab1H2TPE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 15:15:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17091 "EHLO mx1.redhat.com"
+	id S1754881Ab1H2TSS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 15:18:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754655Ab1H2TPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 15:15:01 -0400
-Date: Mon, 29 Aug 2011 15:14:54 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: gregkh@suse.de, joe@perches.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] dynamic_debug: use a single printk() to emit msgs
-Message-ID: <20110829191453.GA3031@redhat.com>
-References: <cover.1314291909.git.jbaron@redhat.com>
- <0ad5d75e1d238d186a3beadefd9de80316409867.1314291910.git.jbaron@redhat.com>
- <CAJfuBxyyiGYJ-DmtJG2fy0HDZ6BbpYpXwnA02uetS_0RRuh+0w@mail.gmail.com>
+	id S1754325Ab1H2TSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 15:18:16 -0400
+Date: Mon, 29 Aug 2011 22:18:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: Broken pci_block_user_cfg_access interface
+Message-ID: <20110829191858.GA9415@redhat.com>
+References: <20110829150552.GA6851@redhat.com>
+ <4E5BB358.3060705@siemens.com>
+ <4E5BDEAB.5000405@siemens.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJfuBxyyiGYJ-DmtJG2fy0HDZ6BbpYpXwnA02uetS_0RRuh+0w@mail.gmail.com>
+In-Reply-To: <4E5BDEAB.5000405@siemens.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 03:47:49PM -0600, Jim Cromie wrote:
-> On Thu, Aug 25, 2011 at 11:34 AM, Jason Baron <jbaron@redhat.com> wrote:
+On Mon, Aug 29, 2011 at 08:47:07PM +0200, Jan Kiszka wrote:
+> On 2011-08-29 17:42, Jan Kiszka wrote:
+> > I still don't get what prevents converting ipr to allow plain mutex
+> > synchronization. My vision is:
+> >  - push reset-on-error of ipr into workqueue (or threaded IRQ?)
 > 
-> > +       if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
-> > +               pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->modname);
-> > +       if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
-> > +               pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
-> > +       if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
-> > +               pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
+> I'm starting to like your proposal: I had a look at ipr, but it turned
+> out to be anything but trivial to convert that driver. It runs its
+> complete state machine under spin_lock_irq, and the functions calling
+> pci_block/unblock_user_cfg_access are deep inside this thing. I have no
+> hardware to test whatever change, and I feel a bit uncomfortable asking
+> Brian to redesign his driver that massively.
 > 
-> this inserts a space after lineno, but not otherwize.
+> So back to your idea: I would generalize pci_block_user_cfg_access to
+> pci_block_cfg_access. It should fail when some other site already holds
+> the access lock, but it should remain non-blocking - for the sake of ipr.
+
+It would be easy to have blocking and non-blocking variants.
+
+But
+- I have no idea whether supporting sysfs config/reset access
+  while ipr is active makes any sense - I know we need it for uio.
+- reset while uio handles interrupt needs to block, not fail I think
+
+
+> We should still provide generic pci-2.3 IRQ masking services, but that
+> could be done in a second step. I could have a look at this.
 > 
-> I have patch to fix it, but maybe you want to fix it it here ?
+> Jan
 > 
-
-Hi Jim,
-
-Thanks for your fix...since Greg hasn't taken the series yet...I guess
-I'll re-spin to include this fix. Probably wouldn't send it out until
-tomorrow due to my test systems being down atm...
-
-thanks,
-
--Jason
-
-
-> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> index 9c8e133..122246f 100644
-> --- a/lib/dynamic_debug.c
-> +++ b/lib/dynamic_debug.c
-> @@ -439,7 +439,9 @@ static char *dynamic_emit_prefix(const struct
-> _ddebug *desc, char *buf)
->  	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
->  		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
->  	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
-> -		pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
-> +		pos += snprintf(buf + pos, LEFT(pos), "%d:", desc->lineno);
-> +	if (pos - strlen(KERN_DEBUG))
-> +		pos += snprintf(buf + pos, LEFT(pos), " ");
-> 
->  	return buf;
->  }
 > -- 
-> 1.7.4.4
-> 
-> 
-> also attached.
-> If it doesnt apply, or you defer, I'll resend once Greg's accepted
-> your whole set.
-
-> From ec75cd50ba89bed1f0ad74b89c9a43e87b2bd767 Mon Sep 17 00:00:00 2001
-> From: Jim Cromie <jim.cromie@gmail.com>
-> Date: Tue, 2 Aug 2011 15:12:55 -0600
-> Subject: [PATCH 03/28] dynamic_debug: add space at end of non-null
->  dynamic-prefix
-> 
-> dynamic_emit_prefix() currently adds a space after line-number,
-> but not otherwize.  For readability, add space whenever any prefix
-> (besides the "<7>" loglevel) has been written.
-> 
-> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> ---
->  lib/dynamic_debug.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> index 9c8e133..122246f 100644
-> --- a/lib/dynamic_debug.c
-> +++ b/lib/dynamic_debug.c
-> @@ -439,7 +439,9 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
->  	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
->  		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
->  	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
-> -		pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
-> +		pos += snprintf(buf + pos, LEFT(pos), "%d:", desc->lineno);
-> +	if (pos - strlen(KERN_DEBUG))
-> +		pos += snprintf(buf + pos, LEFT(pos), " ");
->  
->  	return buf;
->  }
-> -- 
-> 1.7.4.4
-> 
-
+> Siemens AG, Corporate Technology, CT T DE IT 1
+> Corporate Competence Center Embedded Linux
