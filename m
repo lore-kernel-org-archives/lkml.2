@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab1H2QEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:04:14 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:34789 "EHLO radon.swed.at"
+	id S1754121Ab1H2QEe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:04:34 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:34822 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab1H2QEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:04:14 -0400
+	id S1753948Ab1H2QEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 12:04:23 -0400
 From: Richard Weinberger <richard@nod.at>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net
-Subject: UML fixes for 3.1-rcX
-Date: Mon, 29 Aug 2011 18:03:53 +0200
-Message-Id: <1314633842-24515-1-git-send-email-richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        Al Viro <viro@ftp.linux.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 7/9] um: PTRACE_[GS]ETFPXREGS had been wired on the wrong subarch
+Date: Mon, 29 Aug 2011 18:04:00 +0200
+Message-Id: <1314633842-24515-8-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1314633842-24515-1-git-send-email-richard@nod.at>
+References: <1314633842-24515-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH 1/9] um: disable CMPXCHG_DOUBLE as it breaks UML build
-[PATCH 2/9] um: drivers/xterm.c: fix a file descriptor leak
-[PATCH 3/9] um: Save FPU registers between task switches
-[PATCH 4/9] um: fix oopsable race in line_close()
-[PATCH 5/9] um: winch_interrupt() can happen inside of free_winch()
-[PATCH 6/9] um: fix free_winch() mess
-[PATCH 7/9] um: PTRACE_[GS]ETFPXREGS had been wired on the wrong
-[PATCH 8/9] um: fix strrchr problems
-[PATCH 9/9] um: clean arch_ptrace() up a bit
+From: Al Viro <viro@ftp.linux.org.uk>
 
- arch/um/Kconfig.x86                       |    4 ++
- arch/um/Makefile                          |    2 +-
- arch/um/drivers/line.c                    |   61 +++++++++++++++++------------
- arch/um/drivers/xterm.c                   |    1 +
- arch/um/include/asm/ptrace-generic.h      |    4 --
- arch/um/include/shared/line.h             |    1 +
- arch/um/include/shared/registers.h        |    2 +-
- arch/um/kernel/process.c                  |    2 +-
- arch/um/kernel/ptrace.c                   |   28 -------------
- arch/um/os-Linux/registers.c              |    9 ++++-
- arch/um/os-Linux/skas/mem.c               |    2 +-
- arch/um/os-Linux/skas/process.c           |   19 ++++++++-
- arch/um/sys-i386/asm/ptrace.h             |    5 --
- arch/um/sys-i386/ptrace.c                 |   28 +++++++++++--
- arch/um/sys-i386/shared/sysdep/ptrace.h   |    1 +
- arch/um/sys-x86_64/ptrace.c               |   12 ++++--
- arch/um/sys-x86_64/shared/sysdep/ptrace.h |    1 +
- 17 files changed, 105 insertions(+), 77 deletions(-)
+It's 32bit-only, not 64bit-only...  And while we are at it, it's
+set_fpxregs(), not set_fpregs()...
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/sys-i386/ptrace.c   |   14 +++++++++++++-
+ arch/um/sys-x86_64/ptrace.c |   14 +-------------
+ 2 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/arch/um/sys-i386/ptrace.c b/arch/um/sys-i386/ptrace.c
+index d23b2d3..49fd25a 100644
+--- a/arch/um/sys-i386/ptrace.c
++++ b/arch/um/sys-i386/ptrace.c
+@@ -206,5 +206,17 @@ int set_fpxregs(struct user_fxsr_struct __user *buf, struct task_struct *child)
+ long subarch_ptrace(struct task_struct *child, long request,
+ 		    unsigned long addr, unsigned long data)
+ {
+-	return -EIO;
++	int ret = -EIO;
++	void __user *datap = (void __user *) data;
++
++	switch (request) {
++	case PTRACE_GETFPXREGS: /* Get the child FPU state. */
++		ret = get_fpxregs(datap, child);
++		break;
++	case PTRACE_SETFPXREGS: /* Set the child FPU state. */
++		ret = set_fpxregs(datap, child);
++		break;
++	}
++
++	return ret;
+ }
+diff --git a/arch/um/sys-x86_64/ptrace.c b/arch/um/sys-x86_64/ptrace.c
+index f436136..7ed49ac 100644
+--- a/arch/um/sys-x86_64/ptrace.c
++++ b/arch/um/sys-x86_64/ptrace.c
+@@ -178,17 +178,5 @@ int set_fpregs(struct user_i387_struct __user *buf, struct task_struct *child)
+ long subarch_ptrace(struct task_struct *child, long request,
+ 		    unsigned long addr, unsigned long data)
+ {
+-	int ret = -EIO;
+-	void __user *datap = (void __user *) data;
+-
+-	switch (request) {
+-	case PTRACE_GETFPXREGS: /* Get the child FPU state. */
+-		ret = get_fpregs(datap, child);
+-		break;
+-	case PTRACE_SETFPXREGS: /* Set the child FPU state. */
+-		ret = set_fpregs(datap, child);
+-		break;
+-	}
+-
+-	return ret;
++	return -EIO;
+ }
+-- 
+1.7.6.1
+
