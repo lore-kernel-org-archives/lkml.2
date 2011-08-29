@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1H2IBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 04:01:09 -0400
-Received: from linux-sh.org ([111.68.239.195]:38352 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026Ab1H2IBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 04:01:00 -0400
-Date: Mon, 29 Aug 2011 17:00:47 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        Magnus Damm <damm@opensource.se>
-Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only channel ID
-Message-ID: <20110829080047.GJ31809@linux-sh.org>
-References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange> <1308916071.1536.4.camel@vkoul-udesk3>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308916071.1536.4.camel@vkoul-udesk3>
-User-Agent: Mutt/1.4.1i
+	id S1753145Ab1H2IHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 04:07:25 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:56632 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab1H2IHV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 04:07:21 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz936eK148cM1432N98dKzz1202hzzz2ei2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+From: Giridhar Malavali <giridhar.malavali@qlogic.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Chad Dupuis <chad.dupuis@qlogic.com>
+Date: Mon, 29 Aug 2011 01:07:16 -0700
+Subject: Re: linux-next: build failure after merge of the scsi tree
+Thread-Topic: linux-next: build failure after merge of the scsi tree
+Thread-Index: AcxmIqtWO4xL2SLnTM+1gK0kITfAMw==
+Message-ID: <CA809449.296D8%giridhar.malavali@qlogic.com>
+In-Reply-To: <1314602256.5038.1.camel@dabdike>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.10.0.110310
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 05:17:51PM +0530, Koul, Vinod wrote:
-> On Fri, 2011-06-24 at 13:56 +0200, Guennadi Liakhovetski wrote:
-> > On some sh-mobile systems there are more than one DMA controllers, that
-> > can be used for serial ports. Specifying a DMA device in sh-sci platform
-> > data unnecessarily restricts the driver to only use one DMA controller.
-> > 
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > ---
-> >  drivers/tty/serial/sh-sci.c |   25 ++++++++-----------------
-> >  include/linux/serial_sci.h  |    2 --
-> >  2 files changed, 8 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
-> > index ebd8629..8711f4e 100644
-> > --- a/drivers/tty/serial/sh-sci.c
-> > +++ b/drivers/tty/serial/sh-sci.c
-> > @@ -1295,12 +1295,8 @@ static bool filter(struct dma_chan *chan, void *slave)
-> >  	dev_dbg(chan->device->dev, "%s: slave ID %d\n", __func__,
-> >  		param->slave_id);
-> >  
-> > -	if (param->dma_dev == chan->device->dev) {
-> > -		chan->private = param;
-> > -		return true;
-> > -	} else {
-> > -		return false;
-> > -	}
-> > +	chan->private = param;
-> > +	return true;
-> You should not assign chan->private. 
-> Please move this  to dma_slave_control API
 
-I haven't seen any reply to this comment and this patch seems to still be
-outstanding, is there an updated version of this patch that I've missed?
+
+>>
+
+>On Mon, 2011-08-29 at 12:09 +1000, Stephen Rothwell wrote:
+>> Hi James,
+>> 
+>> After merging the scsi tree, today's linux-next build (powerpc
+>> ppc64_defconfig) failed like this:
+>> 
+>> drivers/scsi/qla2xxx/qla_nx.c: In function 'qla82xx_md_alloc':
+>> drivers/scsi/qla2xxx/qla_nx.c:4815:2: error: implicit declaration of
+>>function 'vmalloc'
+>> drivers/scsi/qla2xxx/qla_nx.c:4815:14: warning: assignment makes
+>>pointer from integer without a cast
+>> drivers/scsi/qla2xxx/qla_nx.c: In function 'qla82xx_md_free':
+>> drivers/scsi/qla2xxx/qla_nx.c:4845:3: error: implicit declaration of
+>>function 'vfree'
+>> 
+>> Caused by commit b60bb5832c00 ("[SCSI] qla2xxx: Add support for ISP82xx
+>> to capture dump (minidump) on failure").  Missing include of
+>> linux/vmalloc.h.  See Rule 1 in Documentation/SubmitChecklist.
+>> 
+>> I have used the scsi tree from next-20110826 for today.
+>
+>Thanks for finding the problem.  I updated the commit with a simple fix
+>and re-pushed.
+
+Thanks James and Stephen for finding and fixing this problem. I will make
+sure that such issues won't happen in future.
+
+-- Giri
+
+>
+>James
+>
+>
+>
+
+
