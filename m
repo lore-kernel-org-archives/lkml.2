@@ -1,66 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1H2Rin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 13:38:43 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:53352 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753560Ab1H2Rim convert rfc822-to-8bit (ORCPT
+	id S1754562Ab1H2RoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 13:44:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48500 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab1H2RoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 13:38:42 -0400
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kbuild@vger.kernel.org
-Date: Mon, 29 Aug 2011 19:38:26 +0200
-In-Reply-To: <20110829171750.GD2025@gere.osrc.amd.com>
-References: <20110829141612.GB2025@gere.osrc.amd.com>
-	 <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
-	 <20110829155501.GC2025@gere.osrc.amd.com>
-	 <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
-	 <20110829171750.GD2025@gere.osrc.amd.com>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA
-	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2 
-Message-ID: <1314639506.30297.29.camel@thor.local>
-Mime-Version: 1.0
+	Mon, 29 Aug 2011 13:44:09 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=204/6=5D=20staging=3A=20et131x=3A=20Remove=20redundant=20replica=20loopback=20code?=
+Date: Mon, 29 Aug 2011 18:42:39 +0100
+Message-Id: <1314639761-4947-4-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1314639761-4947-1-git-send-email-mark.einon@gmail.com>
+References: <1314639761-4947-1-git-send-email-mark.einon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 19:17 +0200, Borislav Petkov wrote: 
-> On Mon, Aug 29, 2011 at 12:10:45PM -0400, Arnaud Lacombe wrote:
-> > do you want something ala:
-> > 
-> > config EXTRA_FIRMWARE
-> >     string
-> >     default ""
-> >     append "FOO" if BAR
-> >     append "FOZ" if BAZ
-> > 
-> > or maybe a new type "list" which would behave as a comma/space separated value.
-> > 
-> > config EXTRA_FIRMWARE
-> >     list "bla"
-> >     append "FOO" if BAR
-> >     append "FOZ" if BAZ
-> 
-> Yeah, actually Kyle's note (http://lkml.org/lkml/2011/8/29/289) makes
-> much more sense for linux and the whole firmware in the kernel deal.
-> So it looks like the drivers should be taught to wait for userspace to
-> appear [...]
+A mechanism used to set the phy in loopback mode is not present in the driver, making associated checks and variables redundant. Removing them.
 
-What would be the point of building radeon into the kernel then? It's
-not gonna be active before the module could be loaded...
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et1310_address_map.h |    6 +++---
+ drivers/staging/et131x/et1310_rx.c          |   11 -----------
+ drivers/staging/et131x/et131x_adapter.h     |    4 ----
+ drivers/staging/et131x/et131x_isr.c         |   16 +++++++---------
+ 4 files changed, 10 insertions(+), 27 deletions(-)
 
-
+diff --git a/drivers/staging/et131x/et1310_address_map.h b/drivers/staging/et131x/et1310_address_map.h
+index 410677e..38ec56c 100644
+--- a/drivers/staging/et131x/et1310_address_map.h
++++ b/drivers/staging/et131x/et1310_address_map.h
+@@ -1,6 +1,6 @@
+ /*
+  * Agere Systems Inc.
+- * 10/100/1000 Base-T Ethernet Driver for the ET1301 and ET131x series MACs
++ * 10/100/1000 Base-T Ethernet Driver for the ET1310 and ET131x series MACs
+  *
+  * Copyright © 2005 Agere Systems Inc.
+  * All rights reserved.
+@@ -149,7 +149,7 @@
+  * GLOBAL Module of JAGCore Address Mapping
+  * Located at address 0x0000
+  */
+-struct global_regs {			/* Location: */
++struct global_regs {				/* Location: */
+ 	u32 txq_start_addr;			/*  0x0000 */
+ 	u32 txq_end_addr;			/*  0x0004 */
+ 	u32 rxq_start_addr;			/*  0x0008 */
+@@ -163,7 +163,7 @@ struct global_regs {			/* Location: */
+ 	u32 sw_reset;				/*  0x0028 */
+ 	u32 slv_timer;				/*  0x002C */
+ 	u32 msi_config;				/*  0x0030 */
+-	u32 loopback;			/*  0x0034 */
++	u32 loopback;				/*  0x0034 */
+ 	u32 watchdog_timer;			/*  0x0038 */
+ };
+ 
+diff --git a/drivers/staging/et131x/et1310_rx.c b/drivers/staging/et131x/et1310_rx.c
+index e6458db..f50420c 100644
+--- a/drivers/staging/et131x/et1310_rx.c
++++ b/drivers/staging/et131x/et1310_rx.c
+@@ -988,17 +988,6 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
+ 	}
+ 
+ 	if (len) {
+-		if (adapter->replica_phy_loopbk == 1) {
+-			buf = rx_local->fbr[ring_index]->virt[buff_index];
+-
+-			if (memcmp(&buf[6], adapter->addr, ETH_ALEN) == 0) {
+-				if (memcmp(&buf[42], "Replica packet",
+-					   ETH_HLEN)) {
+-					adapter->replica_phy_loopbk_passfail = 1;
+-				}
+-			}
+-		}
+-
+ 		/* Determine if this is a multicast packet coming in */
+ 		if ((word0 & ALCATEL_MULTICAST_PKT) &&
+ 		    !(word0 & ALCATEL_BROADCAST_PKT)) {
+diff --git a/drivers/staging/et131x/et131x_adapter.h b/drivers/staging/et131x/et131x_adapter.h
+index b03460b..508cc63 100644
+--- a/drivers/staging/et131x/et131x_adapter.h
++++ b/drivers/staging/et131x/et131x_adapter.h
+@@ -222,10 +222,6 @@ struct et131x_adapter {
+ 	/* Rx Memory Variables */
+ 	struct rx_ring rx_ring;
+ 
+-	/* Loopback specifics */
+-	u8 replica_phy_loopbk;		/* Replica Enable */
+-	u8 replica_phy_loopbk_passfail;	/* Replica Enable Pass/Fail */
+-
+ 	/* Stats */
+ 	struct ce_stats stats;
+ 
+diff --git a/drivers/staging/et131x/et131x_isr.c b/drivers/staging/et131x/et131x_isr.c
+index 7cfd213..4d75690 100644
+--- a/drivers/staging/et131x/et131x_isr.c
++++ b/drivers/staging/et131x/et131x_isr.c
+@@ -389,17 +389,15 @@ void et131x_isr_handler(struct work_struct *work)
+ 					(uint8_t) offsetof(struct mi_regs, isr),
+ 					&myisr);
+ 
+-			if (!adapter->replica_phy_loopbk) {
+-				et131x_mii_read(adapter,
+-				       (uint8_t) offsetof(struct mi_regs, bmsr),
+-				       &bmsr_data);
++			et131x_mii_read(adapter,
++			       (uint8_t) offsetof(struct mi_regs, bmsr),
++			       &bmsr_data);
+ 
+-				bmsr_ints = adapter->bmsr ^ bmsr_data;
+-				adapter->bmsr = bmsr_data;
++			bmsr_ints = adapter->bmsr ^ bmsr_data;
++			adapter->bmsr = bmsr_data;
+ 
+-				/* Do all the cable in / cable out stuff */
+-				et131x_mii_check(adapter, bmsr_data, bmsr_ints);
+-			}
++			/* Do all the cable in / cable out stuff */
++			et131x_mii_check(adapter, bmsr_data, bmsr_ints);
+ 		}
+ 
+ 		/* Let's move on to the TxMac */
 -- 
-Earthling Michel Dänzer           |                   http://www.amd.com
-Libre software enthusiast         |          Debian, X and DRI developer
+1.7.6
+
