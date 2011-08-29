@@ -1,73 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1H2XSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:18:08 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:1709 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755242Ab1H2XSE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:18:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=fEvBRZF705ktIjmEu7S5TPZcFu46PZEWgDARhM/n3cuLFYAcdKFaZcZ2+vi+eLx1b
-	NS1lAFILpL/5e0X8rXWWQ==
-Date: Mon, 29 Aug 2011 16:17:55 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>, Ying Han <yinghan@google.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, roland@hack.frob.com,
-        tj@kernel.org, dvlasenk@redhat.com, matt.fleming@linux.intel.com,
-        linux-kernel@vger.kernel.org, avagin@openvz.org, fhrbata@redhat.com
-Subject: Re: mm->oom_disable_count is broken
-In-Reply-To: <20110829183743.GA15216@redhat.com>
-Message-ID: <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com>
-References: <20110727163159.GA23785@redhat.com> <20110727163610.GJ23793@redhat.com> <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com>
- <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com> <4E369372.80105@jp.fujitsu.com> <20110829183743.GA15216@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1755586Ab1H2XXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:23:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24129 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755457Ab1H2XXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:23:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="43424144"
+From: Andi Kleen <andi@firstfloor.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 11/11] DIO: optimize cache misses in the submission path v2
+Date: Mon, 29 Aug 2011 16:23:22 -0700
+Message-Id: <1314660202-661-12-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1314660202-661-1-git-send-email-andi@firstfloor.org>
+References: <1314660202-661-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011, Oleg Nesterov wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> > IIRC, I did pointed out this issue. But nobody replied.
-> > I think ->oom_disable_count is currently broken. but now I have no time to
-> > audit this stuff. So, I'd suggest to revert this code if nobody don't fix it.
-> 
-> I tend to agree, of course we can fix oom_disable_count but I don't
-> really understand why do we want it.
-> 
+Some investigation of a transaction processing workload showed that
+a major consumer of cycles in __blockdev_direct_IO is the cache miss
+while accessing the block size. This is because it has to walk
+the chain from block_dev to gendisk to queue.
 
-I'd rather just remove it entirely, we'll have to ask it's author.  Ying, 
-do you see a reason to keep oom_disable_count around?
+The block size is needed early on to check alignment and sizes.
+It's only done if the check for the inode block size fails.
+But the costly block device state is unconditionally fetched.
 
-The only thing that I can see it doing is preventing a thread that shares 
-an ->mm with an unkillable thread from being killed itself since it won't 
-lead to future memory freeing.  It prevents the second tasklist iteration 
-after a task has been chosen to check if another thread sharing the memory 
-cannot be killed.
+- Reorganize the code to only fetch block dev state when actually
+needed.
 
-I'd rather just kill the thread anyway because there's a chance that the 
-OOM_DISABLE thread is waiting on it and may free its memory as well and 
-there's no guarantee that when you set a thread to be OOM_DISABLE that all 
-threads sharing the same memory are disabled as well.
+Then do a prefetch on the block dev early on in the direct IO
+path. This is worth it, because there is substantial code run
+before we actually touch the block dev now.
 
-> And. personally I dislike it because ->oom_disable_count is just another
-> proof that ->oom_score_adj should be in ->mm, not per-process. IIRC,
-> you already explained me why we can't do this, but - sorry - I forgot.
-> May be something with vfork... Could you explain this again?
-> 
+- I also added some unlikelies to make it clear the compiler
+that block device fetch code is not normally executed.
 
-I actually really wanted oom_score_adj to be in the ->mm, it would 
-simplify a lot of the code :)  The problem was the inheritance property: 
-we expect a job scheduler that is OOM_DISABLE to be able to vfork, change 
-the oom_score_adj of the child, and then exec so that it is not oom 
-disabled before starting to allocate memory.  If this were in the mm, then 
-setting the oom_score_adj of the child prior to exec would change the job 
-scheduler's oom score as well.
+This gave a small, but measurable improvement on a large database
+benchmark (about 0.3%)
+
+v2: Remove unlikely (Jeff Moyer)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ fs/direct-io.c |   45 ++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 36 insertions(+), 9 deletions(-)
+
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 03bcc6f..e149f5f 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -1086,8 +1086,8 @@ static inline int drop_refcount(struct dio *dio)
+  * individual fields and will generate much worse code. 
+  * This is important for the whole file.
+  */
+-ssize_t
+-__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
++static inline ssize_t
++do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
+ 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
+ 	dio_submit_t submit_io,	int flags)
+@@ -1096,7 +1096,6 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	size_t size;
+ 	unsigned long addr;
+ 	unsigned blkbits = inode->i_blkbits;
+-	unsigned bdev_blkbits = 0;
+ 	unsigned blocksize_mask = (1 << blkbits) - 1;
+ 	ssize_t retval = -EINVAL;
+ 	loff_t end = offset;
+@@ -1109,12 +1108,14 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	if (rw & WRITE)
+ 		rw = WRITE_ODIRECT;
+ 
+-	if (bdev)
+-		bdev_blkbits = blksize_bits(bdev_logical_block_size(bdev));
++	/* 
++	 * Avoid references to bdev if not absolutely needed to give
++	 * the early prefetch in the caller enough time.
++	 */
+ 
+ 	if (offset & blocksize_mask) {
+ 		if (bdev)
+-			 blkbits = bdev_blkbits;
++			blkbits = blksize_bits(bdev_logical_block_size(bdev));
+ 		blocksize_mask = (1 << blkbits) - 1;
+ 		if (offset & blocksize_mask)
+ 			goto out;
+@@ -1125,11 +1126,13 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 		addr = (unsigned long)iov[seg].iov_base;
+ 		size = iov[seg].iov_len;
+ 		end += size;
+-		if ((addr & blocksize_mask) || (size & blocksize_mask))  {
++		if (unlikely((addr & blocksize_mask) || 
++			     (size & blocksize_mask)))  {
+ 			if (bdev)
+-				 blkbits = bdev_blkbits;
++				 blkbits = blksize_bits(
++					 bdev_logical_block_size(bdev));
+ 			blocksize_mask = (1 << blkbits) - 1;
+-			if ((addr & blocksize_mask) || (size & blocksize_mask))  
++			if ((addr & blocksize_mask) || (size & blocksize_mask))
+ 				goto out;
+ 		}
+ 	}
+@@ -1312,6 +1315,30 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ out:
+ 	return retval;
+ }
++
++ssize_t
++__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
++	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
++	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
++	dio_submit_t submit_io,	int flags)
++{
++	/* 
++	 * The block device state is needed in the end to finally
++	 * submit everything.  Since it's likely to be cache cold
++	 * prefetch it here as first thing to hide some of the
++	 * latency.
++	 * 
++	 * Attempt to prefetch the pieces we likely need later.
++	 */
++	prefetch(&bdev->bd_disk->part_tbl);
++	prefetch(bdev->bd_queue);
++	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
++
++	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
++				     nr_segs, get_block, end_io,
++				     submit_io, flags);
++}
++
+ EXPORT_SYMBOL(__blockdev_direct_IO);
+ 
+ static __init int dio_init(void)
+-- 
+1.7.4.4
+
