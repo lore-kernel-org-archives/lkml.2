@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab1H2Gvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 02:51:43 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:34365 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab1H2Gvh (ORCPT
+	id S1752464Ab1H2Gwi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 02:52:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42558 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1H2Gwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 02:51:37 -0400
-Message-ID: <4E5B36EC.8030303@gmail.com>
-Date: Mon, 29 Aug 2011 14:51:24 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Mon, 29 Aug 2011 02:52:34 -0400
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: wanlong.gao@gmail.com, mst@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: fix size computation according to the definition
- of struct vring_used in vring_size
-References: <4E584365.1010806@gmail.com> <1314413399.1913.1.camel@Allen> <4E58BA41.6050503@gmail.com> <4E58BE42.8030700@gmail.com> <87fwkl2ajr.fsf@rustcorp.com.au>
-In-Reply-To: <87fwkl2ajr.fsf@rustcorp.com.au>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
+References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
+Date: Mon, 29 Aug 2011 08:52:29 +0200
+Message-ID: <CA+icZUWHaVCaBwPm0+A9=2hfY8xOjRFM3XJ6_tOqSyKun-MOQA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 29
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011年08月29日 10:53, Rusty Russell wrote:
-> On Sat, 27 Aug 2011 17:52:02 +0800, Wang Sheng-Hui <shhuiw@gmail.com> wrote:
->> On 2011年08月27日 17:34, Wang Sheng-Hui wrote:
->> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
->> index 4a32cb6..300af76 100644
->> --- a/include/linux/virtio_ring.h
->> +++ b/include/linux/virtio_ring.h
->> @@ -135,13 +135,13 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
->>  	vr->num = num;
->>  	vr->desc = p;
->>  	vr->avail = p + num*sizeof(struct vring_desc);
->> -	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
->> -			    & ~(align - 1));
->> +	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + 16
->> +		+ align-1) & ~(align - 1));
->>  }
-> 
-> This + 16 should be + sizeof(__u16), right?  It's just the
-> used_event_idx which has been added:
+On Mon, Aug 29, 2011 at 8:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> The powerpc allyesconfig build still fails today.
+>
+> Changes since 20110826:
+>
+> New tree: iommu
+>
+> Dropped tree: iommu (build failure)
+>
+> Linus' tree gained build failures for which I applied 2 patches.
+>
+> The arm-soc tree gained a conflict against the arm tree.
+>
+> The scsi tree gained a build failure, so I used the version from
+> next-20110826.
+>
+> The net tree lost 2 conflicts.
+>
+> The iommu tree gained a build failure so I dropped it.
+>
+> I have still reverted the x86/spinlocks branch from the tip tree for
+> today.
+>
+> The driver-core tree gained a conflict against the arm-soc tree.
+>
+> The tty tree lost its build failure.
+>
+> The moduleh tree lost 2 conflicts.
+>
+> The akpm tree gained conflicts agains Linus' tree - I dropped several
+> patches that had been merged upstream.
+>
+> ----------------------------------------------------------------------------
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).
 
-Yes.
+Might be time to store next patch in .../v3.x/next/ or a new own
+http://www.kernel.org/pub/linux/kernel/next/ upload-dir?
 
-> 
->  *	__u16 available[num];
->  *	__u16 used_event_idx;
->  *
->  *	// Padding to the next align boundary.
->  *	char pad[];
->  *
->  * [USED]
-> 
->>  static inline unsigned vring_size(unsigned int num, unsigned long align)
->>  {
->> -	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (2 + num)
->> +	return ((sizeof(struct vring_desc) * num + sizeof(__u16) * (3 + num)
->>  		 + align - 1) & ~(align - 1))
->>  		+ sizeof(__u16) * 3 + sizeof(struct vring_used_elem) * num;
-> 
-> This is correct.
-> 
-> And, yes, since align is always 4096, it's currently just a cleanup, but
-> it makes things much less confusing!
-> 
-> Thanks,
-> Rusty.
-
+- Sedat -
