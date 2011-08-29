@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab1H2FhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 01:37:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44330 "EHLO mga14.intel.com"
+	id S1752731Ab1H2FhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 01:37:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:1268 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105Ab1H2FhB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 01:37:01 -0400
+	id S1752693Ab1H2FhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 01:37:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,295,1312182000"; 
-   d="scan'208";a="11986500"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>
-Date: Mon, 29 Aug 2011 11:00:07 +0530
-Subject: RE: [Power-supply]: Error handling in max17042_battery.c
-Thread-Topic: [Power-supply]: Error handling in max17042_battery.c
-Thread-Index: Acxjs47fEM7dlp1iSkeRZO6cUh7CdQCWL64w
-Message-ID: <12D0C12AF19E15409D57F22566E88EF5097576F280@bgsmsx501.gar.corp.intel.com>
-References: <12D0C12AF19E15409D57F22566E88EF5097576EBFB@bgsmsx501.gar.corp.intel.com>
-In-Reply-To: <12D0C12AF19E15409D57F22566E88EF5097576EBFB@bgsmsx501.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="43402522"
+Message-ID: <4E5B258D.9090904@intel.com>
+Date: Mon, 29 Aug 2011 13:37:17 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
 MIME-Version: 1.0
+To: Pavel Ivanov <paivanof@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: APEI: Can not request iomem region for GARs
+References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com> <4E520149.3010802@intel.com> <CAG1a4rtMnDXSGLkmwE+6N9smoghWp0W4b5-X_gogzJ9fDLTeBg@mail.gmail.com> <4E571D66.1070302@intel.com> <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com>
+In-Reply-To: <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi All,
+On 08/27/2011 11:28 AM, Pavel Ivanov wrote:
+> Huang,
 > 
-> I am working on the I2C based max17042 fuel gauge driver
-> Which is drivers/power/max17042_battery.c
+> I can confirm that new patch got rid of the old error message but
+> introduced a new one:
 > 
-> In max17042_get_property(...), the values returned by
-> Max17042_read_reg are directly assigned to the variables,
-> even if the read results in an error. Shouldn't we check
-> for the 'correctness' of the returned values and then
-> assign them ? Can I submit a patch to change this ?
+> ERST: Failed to get Error Log Address Range
 > 
-> Or Is this done intentionally ?
+> Also I noticed there's another suspicious message in dmesg and it was
+> there earlier too (although it's not shown on console):
+> 
+> GHES: Failed to enable APEI firmware first mode
+> 
+> Is it bad? What does it mean?
 
-Any inputs on this?
+Maybe this has been fixed, please this patch,
 
-Thanks,
-Ram
+https://lkml.org/lkml/2011/8/11/297
+
+Best Regards,
+Huang Ying
