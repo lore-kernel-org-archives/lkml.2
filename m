@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab1H2I14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 04:27:56 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:38868 "EHLO
+	id S1753282Ab1H2I1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 04:27:36 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:12004 "EHLO
 	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab1H2I1E (ORCPT
+	with ESMTP id S1753211Ab1H2I1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 04:27:04 -0400
+	Mon, 29 Aug 2011 04:27:06 -0400
 From: JJ Ding <jj_ding@emc.com.tw>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Seth Forshee <seth.forshee@canonical.com>,
@@ -17,9 +17,9 @@ Cc: Seth Forshee <seth.forshee@canonical.com>,
         Chase Douglas <chase.douglas@canonical.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
-Subject: [PATCH v4 3/8] Input: elantech - use firmware provided x, y ranges
-Date: Mon, 29 Aug 2011 16:28:54 +0800
-Message-Id: <1314606539-24722-4-git-send-email-jj_ding@emc.com.tw>
+Subject: [PATCH v4 5/8] Input: elantech - packet checking for v2 hardware
+Date: Mon, 29 Aug 2011 16:28:56 +0800
+Message-Id: <1314606539-24722-6-git-send-email-jj_ding@emc.com.tw>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314606539-24722-1-git-send-email-jj_ding@emc.com.tw>
 References: <1314606539-24722-1-git-send-email-jj_ding@emc.com.tw>
@@ -27,194 +27,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With newer hardware, the touchpad provides range info.
-Let's use it.
+For v2 hardware, there is no real parity check, but we can still check
+some constant bits for data integrity.
+
+Also rename elantech_check_parity_v1 to elantech_packet_check_v1 to make
+these packet checking function names consistent.
 
 Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
 Acked-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/mouse/elantech.c |   71 +++++++++++++++++++++++++++++++--------
- drivers/input/mouse/elantech.h |    3 +-
- 2 files changed, 58 insertions(+), 16 deletions(-)
+ drivers/input/mouse/elantech.c |   39 ++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 34 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index cd8e2e5..282b8b6 100644
+index 282b8b6..008e8c2 100644
 --- a/drivers/input/mouse/elantech.c
 +++ b/drivers/input/mouse/elantech.c
-@@ -223,7 +223,7 @@ static void elantech_report_absolute_v1(struct psmouse *psmouse)
- 		input_report_abs(dev, ABS_X,
- 			((packet[1] & 0x0c) << 6) | packet[2]);
- 		input_report_abs(dev, ABS_Y,
--			ETP_YMAX_V1 - (((packet[1] & 0x03) << 8) | packet[3]));
-+			etd->y_max - (((packet[1] & 0x03) << 8) | packet[3]));
- 	}
- 
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
-@@ -233,7 +233,7 @@ static void elantech_report_absolute_v1(struct psmouse *psmouse)
- 	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
- 
- 	if (etd->fw_version < 0x020000 &&
--	    (etd->capabilities & ETP_CAP_HAS_ROCKER)) {
-+	    (etd->capabilities[0] & ETP_CAP_HAS_ROCKER)) {
- 		/* rocker up */
- 		input_report_key(dev, BTN_FORWARD, packet[0] & 0x40);
- 		/* rocker down */
-@@ -298,7 +298,7 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
- 		 * byte 4:  .   .   .   .  y11 y10 y9  y8
- 		 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
- 		 */
--		y1 = ETP_YMAX_V2 - (((packet[4] & 0x0f) << 8) | packet[5]);
-+		y1 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
- 
- 		pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
- 		width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
-@@ -313,7 +313,7 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
- 		 */
- 		x1 = (((packet[0] & 0x10) << 4) | packet[1]) << 2;
- 		/* byte 2: ay7 ay6 ay5 ay4 ay3 ay2 ay1 ay0 */
--		y1 = ETP_YMAX_V2 -
-+		y1 = etd->y_max -
- 			((((packet[0] & 0x20) << 3) | packet[2]) << 2);
- 		/*
- 		 * byte 3:  .   .  by8 bx8  .   .   .   .
-@@ -321,7 +321,7 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
- 		 */
- 		x2 = (((packet[3] & 0x10) << 4) | packet[4]) << 2;
- 		/* byte 5: by7 by8 by5 by4 by3 by2 by1 by0 */
--		y2 = ETP_YMAX_V2 -
-+		y2 = etd->y_max -
- 			((((packet[3] & 0x20) << 3) | packet[5]) << 2);
- 
- 		/* Unknown so just report sensible values */
-@@ -468,6 +468,41 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
- 	return rc;
+@@ -350,7 +350,7 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 	input_sync(dev);
  }
  
-+static void set_range(struct psmouse *psmouse, unsigned int *x_min,
-+		     unsigned int *y_min, unsigned int *x_max,
-+		     unsigned int *y_max)
+-static int elantech_check_parity_v1(struct psmouse *psmouse)
++static int elantech_packet_check_v1(struct psmouse *psmouse)
+ {
+ 	struct elantech_data *etd = psmouse->private;
+ 	unsigned char *packet = psmouse->packet;
+@@ -374,6 +374,34 @@ static int elantech_check_parity_v1(struct psmouse *psmouse)
+ 	       etd->parity[packet[3]] == p3;
+ }
+ 
++static int elantech_packet_check_v2(struct psmouse *psmouse)
 +{
 +	struct elantech_data *etd = psmouse->private;
-+	int i;
++	unsigned char *packet = psmouse->packet;
 +
-+	switch (etd->hw_version) {
-+	case 1:
-+		*x_min = ETP_XMIN_V1;
-+		*y_min = ETP_YMIN_V1;
-+		*x_max = ETP_XMAX_V1;
-+		*y_max = ETP_YMAX_V1;
-+		break;
++	/*
++	 * V2 hardware has two flavors. Older ones that do not report pressure,
++	 * and newer ones that reports pressure and width. With newer ones, all
++	 * packets (1, 2, 3 finger touch) have the same constant bits. With
++	 * older ones, 1/3 finger touch packets and 2 finger touch packets
++	 * have different constant bits.
++	 * With all three cases, if the constant bits are not exactly what I
++	 * expected, I consider them invalid.
++	 */
++	if (etd->reports_pressure)
++		return (packet[0] & 0x0c) == 0x04 &&
++		       (packet[3] & 0x0f) == 0x02;
 +
-+	case 2:
-+		if (etd->fw_version == 0x020800 ||
-+		    etd->fw_version == 0x020b00 ||
-+		    etd->fw_version == 0x020030) {
-+			*x_min = ETP_XMIN_V2;
-+			*y_min = ETP_YMIN_V2;
-+			*x_max = ETP_XMAX_V2;
-+			*y_max = ETP_YMAX_V2;
-+		} else {
-+			i = (etd->fw_version > 0x020800 &&
-+			     etd->fw_version < 0x020900) ? 1 : 2;
-+			*x_min = 0;
-+			*y_min = 0;
-+			*x_max = (etd->capabilities[1] - i) * 64;
-+			*y_max = (etd->capabilities[2] - i) * 64;
-+		}
-+		break;
-+	}
++	if ((packet[0] & 0xc0) == 0x80)
++		return (packet[0] & 0x0c) == 0x0c &&
++		       (packet[3] & 0x0e) == 0x08;
++
++	return (packet[0] & 0x3c) == 0x3c &&
++	       (packet[1] & 0xf0) == 0x00 &&
++	       (packet[3] & 0x3e) == 0x38 &&
++	       (packet[4] & 0xf0) == 0x00;
 +}
 +
  /*
-  * Set the appropriate event bits for the input subsystem
+  * Process byte stream from mouse and handle complete packets
   */
-@@ -475,6 +510,9 @@ static void elantech_set_input_params(struct psmouse *psmouse)
- {
- 	struct input_dev *dev = psmouse->dev;
- 	struct elantech_data *etd = psmouse->private;
-+	unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0;
-+
-+	set_range(psmouse, &x_min, &y_min, &x_max, &y_max);
+@@ -389,14 +417,16 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
  
- 	__set_bit(EV_KEY, dev->evbit);
- 	__set_bit(EV_ABS, dev->evbit);
-@@ -492,18 +530,18 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+ 	switch (etd->hw_version) {
  	case 1:
- 		/* Rocker button */
- 		if (etd->fw_version < 0x020000 &&
--		    (etd->capabilities & ETP_CAP_HAS_ROCKER)) {
-+		    (etd->capabilities[0] & ETP_CAP_HAS_ROCKER)) {
- 			__set_bit(BTN_FORWARD, dev->keybit);
- 			__set_bit(BTN_BACK, dev->keybit);
- 		}
--		input_set_abs_params(dev, ABS_X, ETP_XMIN_V1, ETP_XMAX_V1, 0, 0);
--		input_set_abs_params(dev, ABS_Y, ETP_YMIN_V1, ETP_YMAX_V1, 0, 0);
-+		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-+		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+-		if (etd->paritycheck && !elantech_check_parity_v1(psmouse))
++		if (etd->paritycheck && !elantech_packet_check_v1(psmouse))
+ 			return PSMOUSE_BAD_DATA;
+ 
+ 		elantech_report_absolute_v1(psmouse);
  		break;
  
  	case 2:
- 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
--		input_set_abs_params(dev, ABS_X, ETP_XMIN_V2, ETP_XMAX_V2, 0, 0);
--		input_set_abs_params(dev, ABS_Y, ETP_YMIN_V2, ETP_YMAX_V2, 0, 0);
-+		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-+		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
- 		if (etd->reports_pressure) {
- 			input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
- 					     ETP_PMAX_V2, 0, 0);
-@@ -512,10 +550,12 @@ static void elantech_set_input_params(struct psmouse *psmouse)
- 		}
- 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
- 		input_mt_init_slots(dev, 2);
--		input_set_abs_params(dev, ABS_MT_POSITION_X, ETP_XMIN_V2, ETP_XMAX_V2, 0, 0);
--		input_set_abs_params(dev, ABS_MT_POSITION_Y, ETP_YMIN_V2, ETP_YMAX_V2, 0, 0);
-+		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
-+		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+-		/* We don't know how to check parity in protocol v2 */
++		if (etd->paritycheck && !elantech_packet_check_v2(psmouse))
++			return PSMOUSE_BAD_DATA;
++
+ 		elantech_report_absolute_v2(psmouse);
  		break;
  	}
-+
-+	etd->y_max = y_max;
- }
+@@ -795,8 +825,7 @@ int elantech_init(struct psmouse *psmouse)
+ 		etd->hw_version = 2;
+ 		/* For now show extra debug information */
+ 		etd->debug = 1;
+-		/* Don't know how to do parity checking for version 2 */
+-		etd->paritycheck = 0;
++		etd->paritycheck = 1;
  
- struct elantech_attr_data {
-@@ -769,13 +809,14 @@ int elantech_init(struct psmouse *psmouse)
- 	pr_info("assuming hardware version %d, firmware version %d.%d.%d\n",
- 		etd->hw_version, param[0], param[1], param[2]);
- 
--	if (synaptics_send_cmd(psmouse, ETP_CAPABILITIES_QUERY, param)) {
-+	if (synaptics_send_cmd(psmouse, ETP_CAPABILITIES_QUERY,
-+	    etd->capabilities)) {
- 		pr_err("failed to query capabilities.\n");
- 		goto init_fail;
- 	}
- 	pr_info("Synaptics capabilities query result 0x%02x, 0x%02x, 0x%02x.\n",
--		param[0], param[1], param[2]);
--	etd->capabilities = param[0];
-+		etd->capabilities[0], etd->capabilities[1],
-+		etd->capabilities[2]);
- 
- 	/*
- 	 * This firmware suffers from misreporting coordinates when
-diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-index 1c5894e..b54ea27 100644
---- a/drivers/input/mouse/elantech.h
-+++ b/drivers/input/mouse/elantech.h
-@@ -93,13 +93,14 @@ struct elantech_data {
- 	unsigned char reg_25;
- 	unsigned char reg_26;
- 	unsigned char debug;
--	unsigned char capabilities;
-+	unsigned char capabilities[3];
- 	bool paritycheck;
- 	bool jumpy_cursor;
- 	bool reports_pressure;
- 	unsigned char hw_version;
- 	unsigned int fw_version;
- 	unsigned int single_finger_reports;
-+	unsigned int y_max;
- 	unsigned char parity[256];
- };
- 
+ 		if (etd->fw_version >= 0x020800)
+ 			etd->reports_pressure = true;
 -- 
 1.7.4.1
 
