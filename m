@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1H2SHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:07:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35430 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754295Ab1H2SH0 convert rfc822-to-8bit (ORCPT
+	id S1754520Ab1H2SJs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:09:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44687 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab1H2SJo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:07:26 -0400
-Subject: Re: [PATCH 13/32] nohz: Adaptive tick stop and restart on nohz
- cpuset
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 20:07:10 +0200
-In-Reply-To: <20110829180222.GG9748@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
-	 <1314631689.2816.91.camel@twins>
-	 <20110829180222.GG9748@somewhere.redhat.com>
+	Mon, 29 Aug 2011 14:09:44 -0400
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
+        Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-kbuild@vger.kernel.org
+Date: Mon, 29 Aug 2011 20:09:32 +0200
+References: <20110829141612.GB2025@gere.osrc.amd.com>
+	 <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+	 <20110829155501.GC2025@gere.osrc.amd.com>
+	 <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
+	 <20110829171750.GD2025@gere.osrc.amd.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314641230.2816.129.camel@twins>
+Message-ID: <1314641372.2816.131.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 20:02 +0200, Frederic Weisbecker wrote:
-> On Mon, Aug 29, 2011 at 05:28:09PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > > +bool cpuset_nohz_can_stop_tick(void)
-> > > +{
-> > > +       struct rq *rq;
-> > > +
-> > > +       rq = this_rq();
-> > > +
-> > > +       /* More than one running task need preemption */
-> > > +       if (rq->nr_running > 1)
-> > > +               return false;
-> > > +
-> > > +       return true;
-> > > +} 
+On Mon, 2011-08-29 at 19:50 +0200, Peter Zijlstra wrote:
+> On Mon, 2011-08-29 at 19:17 +0200, Borislav Petkov wrote:
+> > On Mon, Aug 29, 2011 at 12:10:45PM -0400, Arnaud Lacombe wrote:
+> > > do you want something ala:
+> > > 
+> > > config EXTRA_FIRMWARE
+> > >     string
+> > >     default ""
+> > >     append "FOO" if BAR
+> > >     append "FOZ" if BAZ
+> > > 
+> > > or maybe a new type "list" which would behave as a comma/space separated value.
+> > > 
+> > > config EXTRA_FIRMWARE
+> > >     list "bla"
+> > >     append "FOO" if BAR
+> > >     append "FOZ" if BAZ
 > > 
-> > int sched_needs_cpu(int cpu), seems the right name, matches the existing
-> > {rcu,printk,arch}_needs_cpu() functions.
+> > Yeah, actually Kyle's note (http://lkml.org/lkml/2011/8/29/289) makes
+> > much more sense for linux and the whole firmware in the kernel deal.
+> > So it looks like the drivers should be taught to wait for userspace to
+> > appear instead of Kconfig helping them build-in firmware. And then we
+> > should go ahead and remove CONFIG_EXTRA_FIRMWARE completely...
 > 
-> tick_nohz_stop_sched_tick() already handles that by keeping a periodic
-> behaviour if one of these conditions are met.
+> That would suck, suppose this radeon thing is the only console you've
+> got (ppc64/sparc64 don't have text mode iirc) and userspace doesn't come
+> up?
 
-What? tick_nohz_stop_sched_tick() most surely cannot access struct rq,
-so it cannot do the nr_running test.
+Same is true for NICs and netconsole of course. Not being able to stick
+blobs into the kernel image would so suck.
 
-> It has also the upside to restore the periodic behaviour if needed
-> from irq return if the tick was stopped.
-
-Again, what?
+Silently building a kernel without one and then getting stuck on boot,
+only to figure out after much pain that you need EXTRA_FIRMWARE and the
+more pain to figure out what blob to stick in is beyond crazy.
