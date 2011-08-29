@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1H2MxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 08:53:04 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:52105 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab1H2Mw6 (ORCPT
+	id S1753539Ab1H2MxQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 08:53:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50419 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab1H2MxL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 08:52:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <201108291351.06092.philipp.reisner@linbit.com>
-References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
-	<20110826135402.GS14479@barkeeper1-xen.linbit>
-	<CAGZ=bqJojmtfVjQdbx3j2vZyrz01dZZs7wVqBxNbqreejZu4JQ@mail.gmail.com>
-	<201108291351.06092.philipp.reisner@linbit.com>
-Date: Mon, 29 Aug 2011 15:52:56 +0300
-X-Google-Sender-Auth: rDQJMgI49ODmYANm7lVVCfCsmZQ
-Message-ID: <CAOJsxLHQFhHaASj9eSJeQ9H_VyS59ztu=caOoUipYEneiB1vAA@mail.gmail.com>
-Subject: Re: [Drbd-dev] [RFC 000/118] drbd: part 1 of adding multiple volume
- support to drbd
-From: Pekka Enberg <penberg@kernel.org>
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: Kyle Moffett <kyle@moffetthome.net>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com,
-        Greg Freemyer <greg.freemyer@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Aug 2011 08:53:11 -0400
+Subject: Re: [PATCH] perf_event: fix broken calc_timer_values()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, emunson@mgebm.net,
+        vweaver1@eecs.utk.edu
+Date: Mon, 29 Aug 2011 14:53:01 +0200
+In-Reply-To: <20110829124112.GA4828@quad>
+References: <20110829124112.GA4828@quad>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314622381.2816.17.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 2:51 PM, Philipp Reisner
-<philipp.reisner@linbit.com> wrote:
-> The new feature set, might be partially broken, but introducing
-> the new features is the whole point of this patch series.
+On Mon, 2011-08-29 at 14:41 +0200, Stephane Eranian wrote:
 
-If that new feature can, for example, corrupt your data while you're
-doing "git bisect" on non-DRBD regression, that's no good. Can that
-happen?
+> @@ -3354,8 +3354,8 @@ static int perf_event_index(struct perf_event *event)
+>  }
+>  
+>  static void calc_timer_values(struct perf_event *event,
+> -				u64 *running,
+> -				u64 *enabled)
+> +				u64 *enabled,
+> +				u64 *running)
+>  {
+>  	u64 now, ctx_time;
+>  
 
-                        Pekka
+Urgh, nice catch.. I'll queue it for perf/urgent and Cc stable for 3.0.x
