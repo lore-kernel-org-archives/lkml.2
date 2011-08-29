@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab1H2N0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:26:51 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58456 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab1H2N0r convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:26:47 -0400
+	id S1753606Ab1H2N15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:27:57 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:54529 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753524Ab1H2N1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 09:27:51 -0400
+Date: Mon, 29 Aug 2011 09:27:34 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Anton Blanchard <anton@samba.org>
+Cc: adilger.kernel@dilger.ca, eric.dumazet@gmail.com, tj@kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] percpu_counter: Put a reasonable upper bound on
+ percpu_counter_batch
+Message-ID: <20110829132734.GB12187@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Anton Blanchard <anton@samba.org>, adilger.kernel@dilger.ca,
+	eric.dumazet@gmail.com, tj@kernel.org, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110826072622.406d3395@kryten>
+ <20110826072927.5b4781f9@kryten>
+ <A91A91A5-9EF0-42FE-B1C3-184D65112EA9@mit.edu>
 MIME-Version: 1.0
-In-Reply-To: <201108291346.29847.philipp.reisner@linbit.com>
-References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com>
- <CAGpXXZKem-uEdF4SyUgpQFV6=d5Vo3v9p3wmcaygAKa4w4x01w@mail.gmail.com> <201108291346.29847.philipp.reisner@linbit.com>
-From: Greg Freemyer <greg.freemyer@gmail.com>
-Date: Mon, 29 Aug 2011 09:26:16 -0400
-Message-ID: <CAGpXXZK4wSCoVfyGpwt7ygN_8mqQ1cNzuVD4XsWXunJzUvEX+g@mail.gmail.com>
-Subject: Re: [Drbd-dev] [RFC 000/118] drbd: part 1 of adding multiple volume
- support to drbd
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        drbd-dev@lists.linbit.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A91A91A5-9EF0-42FE-B1C3-184D65112EA9@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 7:46 AM, Philipp Reisner
-<philipp.reisner@linbit.com> wrote:
-> Am Freitag, 26. August 2011, 15:20:51 schrieb Greg Freemyer:
->> On Thu, Aug 25, 2011 at 11:06 AM, Philipp Reisner <
->>
->> philipp.reisner@linbit.com> wrote:
->> > This the first request for review of drbd-8.4. The complete set has
->> > 500 patches. In this first series there are only 118 of these.
->>
->> Lars,
->>
->> I've only taken a quick glance, but is drbd functional between applying
->> each patch?
->>
->> It doesn't look like it to me, but I didn't look that close.  I also saw at
->> least one patch that introduced a new function with no caller to test it.
->>
->> The idea is that a patch series leave a testable / functional kernel after
->> each patch in the series is applied sequentially.
->>
->> That is the only way git bisect can do its job.
->>
->> ie. Introducing a new function but no new caller makes a change, but there
->> is no way to test it.  Therefore there is no real value in not merging that
->> patch with one that has the new call in it.
->>
->
-> Greg,
->
-> You replied to mail 000. Please point out to which patch/function you
-> refer, so that we can fix this.
->
-> Best,
->  Phil
+On Fri, Aug 26, 2011 at 07:48:52AM -0400, Theodore Tso wrote:
+> 
+> I understand why we would want to reduce this number.   Unfortunately, the
+> question is what do we do if all 1024 threads try to do buffered writes into
+> the file system at the same instant, when we have less than 4 megabytes
+> of space left?
 
-Phillip,
+Oops, sorry, that should be 4 GB of space left (i.e., what do we do if
+all 1024 cpu's all try write 1024 4k blocks all at the same time).
+Imagine an simulation application where all threads finish at more or
+less the same time and then try to write out their data files at the
+same time....
 
-Take a look at patch 115 of 118 in your series.  I did not review the
-whole series, I just poked around briefly and noticed this one.
-
-Greg
+							- Ted
