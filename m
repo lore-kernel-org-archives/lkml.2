@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab1H2R45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 13:56:57 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34049 "EHLO
+	id S1754545Ab1H2SAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:00:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43300 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab1H2R4x convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754203Ab1H2SAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 13:56:53 -0400
+	Mon, 29 Aug 2011 14:00:03 -0400
+Date: Mon, 29 Aug 2011 19:59:57 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to idle
+ enter/exit APIs
+Message-ID: <20110829175954.GF9748@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
+ <1314627922.2816.65.camel@twins>
+ <20110829171155.GD9748@somewhere.redhat.com>
+ <1314640155.2816.117.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com>
-References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
- <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Mon, 29 Aug 2011 19:56:33 +0200
-X-Google-Sender-Auth: kGycPZW_VWV4yLIufI-J_-CLfxc
-Message-ID: <CAO+b5-qBCBuROmqSPHofQ4A4xxpaUVJL8AzGDHfy7k8QcWYzWw@mail.gmail.com>
-Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
- device is removed
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314640155.2816.117.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 1:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> On Sat, 27 Aug 2011, Bart Van Assche wrote:
->
->> Apparently blkdev_issue_discard() never times out, not even if the
->> device has been removed. This is what appeared in the kernel log after
->> device removal (triggered by running mkfs.ext4 on an SRP SCSI device
->> node):
->>
->> sd 15:0:0:0: [sdb] Attached SCSI disk
->> scsi host15: SRP abort called
->> scsi host15: SRP reset_device called
->> scsi host15: ib_srp: SRP reset_host called
->> scsi host15: ib_srp: connection closed
->> scsi host15: ib_srp: Got failed path rec status -110
->> scsi host15: ib_srp: Path record query failed
->> scsi host15: ib_srp: reconnect failed (-110), removing target port.
->> sd 15:0:0:0: Device offlined - not ready after error recovery
->> INFO: task mkfs.ext4:4304 blocked for more than 120 seconds.
->> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> mkfs.ext4       D 0000000000000000     0 4304 3649 0x00000000
->>  ffff88006c313b98 0000000000000046 ffffffff813e3038 ffffffff81e6b580
->>  0000000000000082 000000010003cfdc ffff88006c313fd8 ffff880070fbcbc0
->>  00000000001d1f40 ffff88006c313fd8 ffff88006c312000 ffff88006c312000
->> Call Trace:
->>  [<ffffffff813e3038>] ? schedule+0x628/0x830
->>  [<ffffffff813e3835>] schedule_timeout+0x1d5/0x310
->>  [<ffffffff810805de>] ? put_lock_stats+0xe/0x40
->>  [<ffffffff81080e05>] ? lock_release_holdtime+0xb5/0x160
->>  [<ffffffff813e6ac0>] ? _raw_spin_unlock_irq+0x30/0x60
->>  [<ffffffff8103f7d9>] ? sub_preempt_count+0xa9/0xe0
->>  [<ffffffff813e28e0>] wait_for_common+0x110/0x160
->>  [<ffffffff810425f0>] ? try_to_wake_up+0x2c0/0x2c0
->>  [<ffffffff813e2a0d>] wait_for_completion+0x1d/0x20
->>  [<ffffffff811de93a>] blkdev_issue_discard+0x27a/0x2c0
->>  [<ffffffff813e2806>] ? wait_for_common+0x36/0x160
->>  [<ffffffff811df371>] blkdev_ioctl+0x701/0x760
->>  [<ffffffff8112b7bf>] ? kmem_cache_free+0x6f/0x160
->>  [<ffffffff811755b7>] block_ioctl+0x47/0x50
->>  [<ffffffff81151b78>] do_vfs_ioctl+0x98/0x570
->>  [<ffffffff813e76dc>] ? sysret_check+0x27/0x62
->>  [<ffffffff8115209f>] sys_ioctl+0x4f/0x80
->>  [<ffffffff813e76ab>] system_call_fastpath+0x16/0x1b
->> no locks held by mkfs.ext4/4304.
->>
->> The above message kept repeating forever until system reboot.
->>
->> Kernel version:
->> $ git show | head -n 1
->> commit ed8f37370d83e695c0a4fa5d5fc7a83ecb947526
->> $ git describe
->> v3.0-7216-ged8f373
->>
->> I'm considering this as a bug because the state described above makes it
->> impossible to kill the mkfs process and also makes it impossible to remove the
->> kernel module ib_srp. That's why I also reported this as
->> https://bugzilla.kernel.org/show_bug.cgi?id=40472.
->
-> I am trying to find some race condition that would cause the problem in
-> blkdev_issue_discard(), however I can not see anything.
+On Mon, Aug 29, 2011 at 07:49:15PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-08-29 at 19:11 +0200, Frederic Weisbecker wrote:
+> > On Mon, Aug 29, 2011 at 04:25:22PM +0200, Peter Zijlstra wrote:
+> > > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> > > > To prepare for nohz / idle logic split, pull out the rcu dynticks
+> > > > idle mode switching to strict idle entry/exit areas.
+> > > > 
+> > > > So we make the dyntick mode possible without always involving rcu
+> > > > extended quiescent state. 
+> > > 
+> > > Why is this a good thing? I would be thinking that if we're a userspace
+> > > bound task and we disable the tick rcu would be finished on this cpu and
+> > > thus the extended quiescent state is just what we want?
+> > 
+> > But we can stop the tick from the kernel, not just userspace.
+> 
+> Humm!? I'm confused, I thought the idea was to only stop the tick when
+> we're 'stuck' in a user bound task. Now I get that we have to stop the
+> tick from kernel space (as in the interrupt will clearly run in kernel
+> space), but assuming the normal return from interrupt path doesn't use
+> rcu, and using rcu (as per a later patch) re-enables the tick again, it
+> doesn't matter, right?
 
-I'm not sure why you are looking for a race condition - this looks
-like a plain deadlock to me.
+Yeah. Either the interrupt returns to userspace and then we call
+rcu_enter_nohz() or we return to kernel space and then a further
+use of rcu will restart the tick.
 
-> The only reason for this to happen I can see is that the last bio was
-> not completed yet (e.g. the bio_batch_end_io() callback has not been
-> called by the last submitted bio). Does bios have some sort of timeout
-> after it dies out? Is it possible that we can lose bio like that ?
+Now this is not any use of rcu. Uses of rcu read side critical section
+don't need the tick. But we need it as long as there is an RCU callback
+enqueued on some CPU.
 
-A key fact here is that the block device to which the discard request
-was issued is gone, so the discard request will never finish
-successfully. Do all relevant error paths guarantee that
-blkdev_issue_discard() will finish in a finite time ?
+> Also, RCU needs the tick to drive the state machine, so how can you stop
+> the tick and not also stop the RCU state machine?
 
-Bart.
+This is why we have rcu_needs_cpu() and rcu_pending() checks before
+stopping the tick.
+
+rcu_needs_cpu() checks we have no local callback enqueued, in which
+case the local CPU is responsible of the RCU state machine.
+
+rcu_pending() is there to know if another CPU started a grace period
+so we need the tick to complete it.
