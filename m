@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab1H2OGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:06:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53826 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1H2OG2 (ORCPT
+	id S1753328Ab1H2OJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:09:39 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41341 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab1H2OJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:06:28 -0400
-Date: Mon, 29 Aug 2011 16:06:21 +0200
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Menage <paul@paulmenage.org>
-Cc: containers@lists.linux-foundation.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH pm-freezer 4/4] freezer: use lock_task_sighand() in
- fake_signal_wake_up()
-Message-ID: <20110829140621.GE18871@mtj.dyndns.org>
-References: <20110829140418.GB18871@mtj.dyndns.org>
- <20110829140509.GC18871@mtj.dyndns.org>
- <20110829140549.GD18871@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829140549.GD18871@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Aug 2011 10:09:35 -0400
+From: Ravishankarkm <ravi.shankar@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 1/1] Staging: comedi: fix printk issue in serial2002.c
+Date: Mon, 29 Aug 2011 19:39:13 +0530
+Message-Id: <1314626953-14151-1-git-send-email-ravi.shankar@greenturtles.in>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi:fix printk issue in serial2002.c>
+References: <[PATCH]Staging: comedi:fix printk issue in serial2002.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_freezer calls freeze_task() without holding tasklist_lock and,
-if the task is exiting, its ->sighand may be gone by the time
-fake_signal_wake_up() is called.  Use lock_task_sighand() instead of
-accessing ->sighand directly.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Paul Menage <paul@paulmenage.org>
+This is a patch to the serial2002.c file that fixes up a printk warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 ---
- kernel/freezer.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/serial2002.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: work/kernel/freezer.c
-===================================================================
---- work.orig/kernel/freezer.c
-+++ work/kernel/freezer.c
-@@ -103,9 +103,10 @@ static void fake_signal_wake_up(struct t
+diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
+index ade2202..0f9bd4f 100644
+--- a/drivers/staging/comedi/drivers/serial2002.c
++++ b/drivers/staging/comedi/drivers/serial2002.c
+@@ -824,7 +824,7 @@ static int serial2002_attach(struct comedi_device *dev,
  {
- 	unsigned long flags;
+ 	struct comedi_subdevice *s;
  
--	spin_lock_irqsave(&p->sighand->siglock, flags);
--	signal_wake_up(p, 0);
--	spin_unlock_irqrestore(&p->sighand->siglock, flags);
-+	if (lock_task_sighand(p, &flags)) {
-+		signal_wake_up(p, 0);
-+		unlock_task_sighand(p, &flags);
-+	}
- }
+-	printk("comedi%d: serial2002: ", dev->minor);
++	pr_info("comedi%d: serial2002: ", dev->minor);
+ 	dev->board_name = thisboard->name;
+ 	if (alloc_private(dev, sizeof(struct serial2002_private)) < 0)
+ 		return -ENOMEM;
+@@ -832,7 +832,7 @@ static int serial2002_attach(struct comedi_device *dev,
+ 	dev->close = serial_2002_close;
+ 	devpriv->port = it->options[0];
+ 	devpriv->speed = it->options[1];
+-	printk("/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
++	pr_cont("/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
  
- /**
+ 	if (alloc_subdevices(dev, 5) < 0)
+ 		return -ENOMEM;
+@@ -891,7 +891,7 @@ static int serial2002_detach(struct comedi_device *dev)
+ 	struct comedi_subdevice *s;
+ 	int i;
+ 
+-	printk("comedi%d: serial2002: remove\n", dev->minor);
++	pr_info("comedi%d: serial2002: remove\n", dev->minor);
+ 	for (i = 0; i < 5; i++) {
+ 		s = &dev->subdevices[i];
+ 		kfree(s->maxdata_list);
+-- 
+1.7.6
+
