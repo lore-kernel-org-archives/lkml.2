@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1H2Qce (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:32:34 -0400
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:34694 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753859Ab1H2Qca convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:32:30 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "cbou@mail.ru" <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Date: Mon, 29 Aug 2011 09:32:04 -0700
-Subject: [PATCH] power: max8925 - Enable power change notifications
-Thread-Topic: [PATCH] power: max8925 - Enable power change notifications
-Thread-Index: AcxmaTCP9f+JjRcaTb+RRCPjCSVHiA==
-Message-ID: <03653C9B-09A4-40D0-B63F-ABDDDC0124D9@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754120Ab1H2QeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:34:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62014 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753866Ab1H2QeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 12:34:17 -0400
+Date: Mon, 29 Aug 2011 18:30:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 14/16] freezer: make freezing() test freeze conditions
+	in effect instead of TIF_FREEZE
+Message-ID: <20110829163047.GA9973@redhat.com>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-15-git-send-email-tj@kernel.org> <20110829154944.GA7531@redhat.com> <20110829155640.GA8392@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110829155640.GA8392@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/29, Oleg Nesterov wrote:
+>
+> I'm afraid I wasn't clear....
+>
+> On 08/29, Oleg Nesterov wrote:
+> >
+> > On 08/19, Tejun Heo wrote:
+> > >
+> > > @@ -311,9 +315,11 @@ static int freezer_change_state(struct cgroup *cgroup,
+> > >
+> > >  	switch (goal_state) {
+> > >  	case CGROUP_THAWED:
+> > > +		atomic_dec(&system_freezing_cnt);
+> > >  		unfreeze_cgroup(cgroup, freezer);
+> > >  		break;
+> > >  	case CGROUP_FROZEN:
+> > > +		atomic_inc(&system_freezing_cnt);
+> >
+> > This is harmless, but afaics is not exactly right. CGROUP_FROZEN doesn't
+> > need system_freezing_cnt != 0, everything is already frozen and we just
+> > provoke freezing_slow_path() without any reason. Right?
+>
+> Of course, this atomic_inc() is right, we are going to call
+> try_to_freeze_cgroup(). But probably it makes sense to do atomic_dec()
+> when freezer->state becomes CGROUP_FROZEN.
 
-The power core infrastructure allow external power change
-events to be passed to drivers what are listed in the
-supplied_to call back field.  Enable this feature by
-allowing the supplied_to field to be passed to the driver.
+Damn, I was wrong again.
 
-This feature will enable drivers named in the supplied_to field that have a
-external_power_changed callback to be notified when power
-was been turned on or off.
+No, we can't do this. __refrigerator() should handle the spurious
+wakeups correctly, it checks checks freezing() in the main loop.
 
-Signed-off-by: Philip Rakity <prakity@marvell.com>
----
- drivers/power/max8925_power.c |    5 +++++
- include/linux/mfd/max8925.h   |    2 ++
- 2 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index fd32c08..29b5d2c 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -455,6 +455,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
- 	info->ac.properties = max8925_ac_props;
- 	info->ac.num_properties = ARRAY_SIZE(max8925_ac_props);
- 	info->ac.get_property = max8925_ac_get_prop;
-+	info->ac.supplied_to = pdata->supplied_to;
-+	info->ac.num_supplicants = pdata->num_supplicants;
- 	ret = power_supply_register(&pdev->dev, &info->ac);
- 	if (ret)
- 		goto out;
-@@ -465,6 +467,9 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
- 	info->usb.properties = max8925_usb_props;
- 	info->usb.num_properties = ARRAY_SIZE(max8925_usb_props);
- 	info->usb.get_property = max8925_usb_get_prop;
-+	info->usb.supplied_to = pdata->supplied_to;
-+	info->usb.num_supplicants = pdata->num_supplicants;
-+
- 	ret = power_supply_register(&pdev->dev, &info->usb);
- 	if (ret)
- 		goto out_usb;
-diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
-index e742e04..008f807 100644
---- a/include/linux/mfd/max8925.h
-+++ b/include/linux/mfd/max8925.h
-@@ -225,6 +225,8 @@ struct max8925_power_pdata {
- 	unsigned	fast_charge:3;	/* charge current */
- 	unsigned	no_temp_support:1; /* set if no temperature detect */
- 	unsigned	no_insert_detect:1; /* set if no ac insert detect */
-+	char		**supplied_to;
-+	int		num_supplicants;
- };
- 
- /*
--- 
-1.7.6
-
+Oleg.
 
