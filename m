@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab1H2L1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 07:27:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58492 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab1H2L1b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 07:27:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 1/2] arch/powerpc/platforms/cell/iommu.c: add missing of_node_put
-Date: Mon, 29 Aug 2011 13:26:49 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: kernel-janitors@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-References: <1313943001-12884-1-git-send-email-julia@diku.dk>
-In-Reply-To: <1313943001-12884-1-git-send-email-julia@diku.dk>
+	id S1753221Ab1H2L3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 07:29:31 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:1384 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab1H2L3Y (ORCPT
+	<rfc822;groupwise-SJayaraman@suse.com:0:0>);
+	Mon, 29 Aug 2011 07:29:24 -0400
+Message-ID: <4E5B77D5.7090006@suse.de>
+Date: Mon, 29 Aug 2011 16:58:21 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+Reply-To: sjayaraman@suse.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Jens Axboe <axboe@kernel.dk>
+CC: LKML <linux-kernel@vger.kernel.org>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: [PATCH v2] block: document blk-plug
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108291326.49561.arnd@arndb.de>
-X-Provags-ID: V02:K0:Zordxq6pOcnEomQsTBzJNHJs+oXb6TubYKcnbkOB4Rn
- 4NKAJadssKLUmJY10viJfyqq++xTiVgQy6s9nseOuD9pqkUxSN
- ByIDh3iC5jOAEm/IbofSJ6CU37+jWUQo/6ZELc/zWv9a2TaPiP
- 3vcAgOYPOHP1VXtIG7fKBZ5WtG9IkZKC1Pw/GLhDuBf6CP3q1C
- qh/J2dtU0bsOyFNH+Xdhg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 21 August 2011, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> np is initialized to the result of calling a function that calls
-> of_node_get, so of_node_put should be called before the pointer is dropped.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e,e1,e2;
-> @@
-> 
-> * e = \(of_find_node_by_type\|of_find_node_by_name\)(...)
->   ... when != of_node_put(e)
->       when != true e == NULL
->       when != e2 = e
->   e = e1
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thus spake Andrew Morton:
+
+"And I have the usual maintainability whine.  If someone comes up to
+vmscan.c and sees it calling blk_start_plug(), how are they supposed to
+work out why that call is there?  They go look at the blk_start_plug()
+definition and it is undocumented.  I think we can do better than this?"
+
+Adapted from the LWN article - http://lwn.net/Articles/438256/ by Jens
+Axboe and from an earlier attempt by Shaohua Li to document blk-plug.
+
+Changes since -v1:
+
+  * explain how blk_plug helps with potential deadlock avoidance.
+  * explain why we need blk-plug.
+  * add a note that cb_list is required by md.
+
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+---
+ block/blk-core.c       |   14 ++++++++++++++
+ include/linux/blkdev.h |   16 +++++++++++-----
+ 2 files changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 90e1ffd..ea360c8 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2626,6 +2626,20 @@ EXPORT_SYMBOL(kblockd_schedule_delayed_work);
+ 
+ #define PLUG_MAGIC	0x91827364
+ 
++/**
++ * blk_start_plug - initialize blk_plug and track it inside the task_struct
++ * @plug:	The &struct blk_plug that needs to be initialized
++ *
++ * Description:
++ *   Tracking blk_plug inside the task_struct will help with auto-flushing the
++ *   pending I/O should the task end up blocking between blk_start_plug() and
++ *   blk_finish_plug(). This is important from a performance perspective, but
++ *   also ensures that we don't deadlock. For instance, if the task is blocking
++ *   for a memory allocation, memory reclaim could end up wanting to free a
++ *   page belonging to that request that is currently residing in our private
++ *   plug. By flushing the pending I/O when the process goes to sleep, we avoid
++ *   this kind of deadlocks.
++ */
+ void blk_start_plug(struct blk_plug *plug)
+ {
+ 	struct task_struct *tsk = current;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 84b15d5..f45d783 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -863,17 +863,23 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
+ extern void blk_put_queue(struct request_queue *);
+ 
+ /*
++ * blk_plug allows to build up a queue of related requests by holding the I/O
++ * fragments for a short period. This allows merging of sequential requests
++ * into single larger request. As the requests are moved from per-task list to
++ * the device's request_queue in a batch, this results in improved
++ * scalability as the lock contention for request_queue lock is reduced.
++ *
+  * Note: Code in between changing the blk_plug list/cb_list or element of such
+  * lists is preemptable, but such code can't do sleep (or be very careful),
+  * otherwise data is corrupted. For details, please check schedule() where
+  * blk_schedule_flush_plug() is called.
+  */
+ struct blk_plug {
+-	unsigned long magic;
+-	struct list_head list;
+-	struct list_head cb_list;
+-	unsigned int should_sort;
+-	unsigned int count;
++	unsigned long magic; /* detect uninitialized use-cases */
++	struct list_head list; /* requests */
++	struct list_head cb_list; /* md requires an unplug callback */
++	unsigned int should_sort; /*list to be sorted before flushing? */
++	unsigned int count; /* request count to avoid list getting too big */
+ };
+ #define BLK_MAX_REQUEST_COUNT 16
