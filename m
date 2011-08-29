@@ -1,65 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1H2GEX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 02:04:23 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:39993 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750738Ab1H2GES convert rfc822-to-8bit (ORCPT
+	id S1752814Ab1H2GGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 02:06:35 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:53229 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750738Ab1H2GG3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 02:04:18 -0400
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Pavel Ivanov <paivanof@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Date: Mon, 29 Aug 2011 08:04:04 +0200
-In-Reply-To: <20110829054926.GA7123@liondog.tnic>
-References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
-	 <1314435638.2321.12.camel@thor.local>
-	 <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
-	 <20110828053624.GC12851@liondog.tnic>
-	 <CAG1a4rv8YirPpyYP735Zn3gpp-kcvvECd=-haZ-qx90_99x8aQ@mail.gmail.com>
-	 <20110829054926.GA7123@liondog.tnic>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA
-	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 29 Aug 2011 02:06:29 -0400
+Date: Sun, 28 Aug 2011 23:06:28 -0700 (PDT)
+From: Stephen Hemminger <stephen.hemminger@vyatta.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        =?utf-8?Q?Micha=C5=82Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
+        Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl pp-manager tt <yrl.pp-manager.tt@hitachi.com>,
+        HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+Subject: Re: [PATCH net-next ] Fix time-lag of IFF_RUNNING flag consistency between vlan and real devices
+Message-ID: <f6ded72b-346d-43af-af47-4edae5060406@tahiti.vyatta.com>
+In-Reply-To: <1314540589.3036.12.camel@edumazet-laptop>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.1 
-Message-ID: <1314597844.31972.32.camel@thor.local>
-Mime-Version: 1.0
+MIME-Version: 1.0
+X-Originating-IP: [50.53.80.93]
+X-Mailer: Zimbra 7.1.1_GA_3213 (ZimbraWebClient - SAF3 (Linux)/7.1.1_GA_3196)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 07:49 +0200, Borislav Petkov wrote: 
-> On Sun, Aug 28, 2011 at 05:47:59PM -0400, Pavel Ivanov wrote:
-> > On Sun, Aug 28, 2011 at 1:36 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > >> > With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
-> > >> > loaded from userspace, so it needs to be built into the kernel as well.
-> > >>
-> > >> How should I do that? I've tried to set all "m"s to "y" in .config and
-> > >> still saw this issue. Should I set some special parameter?
-> > >
-> > > You need to add "radeon/CEDAR_pfp.bin" to CONFIG_EXTRA_FIRMWARE when you
-> > > configure your kernel and enable CONFIG_FIRMWARE_IN_KERNEL.
-> > >
-> > > The radeon/CEDAR_pfp.bin file (+ leading directory, mind you) should
-> > > most probably be located in /lib/firmware or to whatever you have set
-> > > CONFIG_EXTRA_FIRMWARE_DIR so that Kbuild can find it (if not, you'll get
-> > > a warning at the end of the kernel build). This way, it works for both
-> > > radeon being =m and =y.
+
+
+----- Original Message -----
+> Le dimanche 28 août 2011 à 22:20 +0900, HAYASAKA Mitsuo a écrit :
+> > Hi Stephen and Herbert
 > > 
-> > Everything else in /lib/firmware/radeon is needed after user space
-> > become available?
+> > Thank you for your comments.
+> > 
+> > (2011/08/26 15:08), Stephen Hemminger wrote:
+> > > I don't think this is the right way to solve the problem.
+> > >
+> > > The flags are supposed to propagate back from real device to vlan
+> > > via network notifications.
+> > >
+> > > Just doing this for ioctl is not enough, API's other than user
+> > > space depend on this.
+> > > Also the user may have manually set different flags on vlan than
+> > > on
+> > > the real device.
+> > 
+> > I agreed.
+> > I will try another way to solve this problem, as you said.
+> > 
+> > 
+> > (2011/08/26 15:45), Herbert Xu wrote:
+> > > On Thu, Aug 25, 2011 at 11:08:59PM -0700, Stephen Hemminger
+> > > wrote:
+> > >> Just doing this for ioctl is not enough, API's other than user
+> > >> space depend on this.
+> > >> Also the user may have manually set different flags on vlan than
+> > >> on
+> > >> the real device.
+> > > Right, anything that tests netif_carrier_ok directly on the VLAN
+> > > device will still be delayed.
+> > >
+> > > Now I remember discussing this issue in Japan.  However, I can't
+> > > recall the exact scenario in which the delay occured.
+> > >
+> > > Is the issue with the link status going down on the real device,
+> > > or the real device coming up?
+> > >
+> > > IIRC we already have mechanisms in place to ensure that down
+> > > events
+> > > are not delayed by linkwatch.  Of course it is possible that this
+> > > isn't working for some reason, or some other part of the system
+> > > is
+> > > causing the delay.
+> > >
+> > > So please clarify the scenario for us Hayasaka-san.  Also please
+> > > let us know how you measured the delay.
+> > >
+> > > Thanks,
+> > 
+> > This issue happens when the link status is going down on the real
+> > device.
+> > 
+> > ex) A cable is broken, or is unplugged from a NIC.
+> > 
+> > I measured the delay using ioctl with SIOCGIFFLAGS from userspace
+> > in order to check if there is a time-lag of the flag between vlan
+> > and real devices.
+> > 
+> > Also, you can check it using a script below.
+> > 
+> > -------------------------
+> > #!/bin/sh
+> > t=0
+> > while :
+> > do
+> > 	echo $t; t=$((t+1))
+> > 	echo -n real; ifconfig RealDev | grep UP
+> > 	echo -n vlan; ifconfig VlanDev | grep UP
+> > 	sleep 0.2
+> > done
+> > -------------------------
+> > 
+> > The result is shown as follows.
+> > It is observed that there is a time-lag of RUNNING status between
+> > real and vlan devices.
+> > 
+> > 
 > 
-> You mean the other *.bin files? If so, not for your case, AFAICT - your
-> driver is requesting CEDAR_pfp.bin only, correct?
+> Hi !
+> 
+> This reminds me some work done in linkwatch
+> 
+> Please take a look at commit e014debecd3ee3832e647 (linkwatch:
+> linkwatch_forget_dev() to speedup device dismantle)
+> 
+> And more generally, code in net/core/link_watch.c
 
-It'll need all the CEDAR_*.bin files.
-
-
--- 
-Earthling Michel Dänzer           |                   http://www.amd.com
-Libre software enthusiast         |          Debian, X and DRI developer
+Maybe the problem is specific to a ethernet driver. Some devices poll
+for link changes, and also do a manual check when ioctl was done.
+This was mostly typical of older hardware that did not have a PHY
+interrupt.
