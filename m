@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab1H2O2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:28:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60632 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab1H2O2Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:28:24 -0400
-Subject: Re: [PATCH 06/32] nohz: Move idle ticks stats tracking out of nohz
- handlers
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 16:28:08 +0200
-In-Reply-To: <1313423549-27093-7-git-send-email-fweisbec@gmail.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-7-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314628088.2816.68.camel@twins>
-Mime-Version: 1.0
+	id S1753715Ab1H2Omb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:42:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38549 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751580Ab1H2OmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 10:42:25 -0400
+Date: Mon, 29 Aug 2011 16:42:14 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Lin Ming <lxy@ss.pku.edu.cn>
+cc: Lukas Czerner <lczerner@redhat.com>, Bart Van Assche <bvanassche@acm.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
+ device is removed
+In-Reply-To: <CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1108291637470.3904@dhcp-27-109.brq.redhat.com>
+References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com> <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com> <CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> Idle ticks time tracking is merged into nohz stop/restart
-> handlers. Pull it out into idle entry/exit handlers instead,
-> so that nohz APIs is more idle independant. 
+On Mon, 29 Aug 2011, Lin Ming wrote:
 
-Are you trying to say:
+> On Mon, Aug 29, 2011 at 7:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> >
+> > Regarding the atomic operations I do not think that implicit memory
+> > barriers are needed here as atomic_dec_and_test() implies memory
+> 
+> Which implicit memory barrier you are talking about?
 
-Currently idle time tracking is part of the nohz state tracking,
-separate this so that we can disable the tick while we're non-idle?
+smp_mb() at both side of the operation as documented here in
+Documentation/memory-barriers.txt
 
-If so, how does idle time tracking work on a !NOHZ kernel, surely such
-things can be idle too..
+[citation]
+Any atomic operation that modifies some state in memory and returns
+information about the state (old or new) implies an SMP-conditional
+general memory barrier (smp_mb()) on each side of the actual operation
+(with the exception of explicit lock operations, described later).
+These include:
+
+	xchg();
+	cmpxchg();
+	atomic_cmpxchg();
+	atomic_inc_return();
+	atomic_dec_return();
+	atomic_add_return();
+	atomic_sub_return();
+	atomic_inc_and_test();
+	atomic_dec_and_test();
+	atomic_sub_and_test();
+	atomic_add_negative();
+	atomic_add_unless();
+	test_and_set_bit();
+	test_and_clear_bit();
+	test_and_change_bit();
+
+[/citation]
+
+-Lukas
+
+> 
+> > barrier, atomic_set() is out of the scope of our interest (and it would
+> > not cause the problem like that anyway) and reordering atomic_inc()
+> > would not cause problem like this as well.
+> 
