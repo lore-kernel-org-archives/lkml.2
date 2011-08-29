@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab1H2Jmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 05:42:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50935 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab1H2Jmo convert rfc822-to-8bit (ORCPT
+	id S1753500Ab1H2KLv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 06:11:51 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:45779 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab1H2KLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 05:42:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <1314329782-17238-1-git-send-email-Baohua.Song@csr.com>
-References: <1314329782-17238-1-git-send-email-Baohua.Song@csr.com>
-Date: Mon, 29 Aug 2011 11:42:43 +0200
-Message-ID: <CACRpkdYmmY8ycBUL70ERawumSMdZEORYsmMBxBxZxchcfMS7EA@mail.gmail.com>
-Subject: Re: [PATCH] pinmux: add a driver for the CSR SiRFprimaII pinmux
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Barry Song <Baohua.Song@csr.com>
-Cc: grant.likely@secretlab.ca, linus.walleij@stericsson.com,
-        linux-arm-kernel@lists.infradead.org, workgroup.linux@csr.com,
-        linux-kernel@vger.kernel.org, Rongjun Ying <rongjun.ying@csr.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Aug 2011 06:11:44 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-1b-4e5b65dfd959
+Date: Mon, 29 Aug 2011 19:11:18 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+Subject: Re: [RFC PATCH v2] support ioctl for tunable user request
+In-reply-to: <CAF1ivSaveqVs8dGF+HZBytJpUpTJPysUox=qmHDTFQvqBmm+rw@mail.gmail.com>
+To: Lin Ming <lxy@ss.pku.edu.cn>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <4E5B65C6.6070300@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ko; rv:1.9.2.4)
+ Gecko/20100608 Thunderbird/3.1
+References: <4E5B4AAF.2040101@samsung.com>
+ <CAF1ivSaveqVs8dGF+HZBytJpUpTJPysUox=qmHDTFQvqBmm+rw@mail.gmail.com>
+X-OriginalArrivalTime: 29 Aug 2011 10:12:20.0605 (UTC)
+ FILETIME=[23742AD0:01CC6634]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 5:36 AM, Barry Song <Baohua.Song@csr.com> wrote:
+Hi
 
-> Though there are still many discussions about data model and device/function
-> mapping, pinmux core is basically usable to CSR SiRFprimaII for the moment.
->
-> This patch is another example to use Linus W's pinmux framework.
->
-> Tests by this example show basic pinmux APIs like pinmux_get, pinmux_enable,
-> pinmux_disable and pinmux_put are able to work in Linus W's patch v4.
+Lin Ming wrote:
+> On Mon, Aug 29, 2011 at 4:15 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>> This patch is added the ioctl for tunable user request.
+> 
+> Hi,
+> 
+> What's the use case for this new ioctl?
+> 
+In my case, this ioctl is used the background operation for eMMC.
+In eMMC's case, background operation(BKOPS) is supported.
+(but that is running with only card notifier, so i added new ioctl for user request)
 
-Thanks a lot Barry, if you rebase this to the v5 patch set I can probably
-carry it as part of my set.
+if we send the BKOPS request, card is notified to need the BKOPS. 
+then running background operation. (Then user's responsibility is done)
 
-> diff --git a/drivers/pinctrl/pinmux-sirf.c b/drivers/pinctrl/pinmux-sirf.c
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_platform.h>
+In future, i think that other block device should be used this ioctl.
+(if supported like BKOPS)
 
-It's especially nice to see these DT-bindings!
+Regard,
+Jaehoon Chung
 
-> +static const struct sirfsoc_muxmask lcd_16bits_sirfsoc_muxmask[] = {
-> +       {
-> +               .group = 3,
-> +               .mask = 0x7FFFF,
-
-These things look a bit magic...
-
-Maybe: #define SIRFSOC_PMX_ALLBITS 0x7FFFF
-(Just a suggestion)
-
-> +       }, {
-> +               .group = 2,
-> +               .mask = 1 << 31,
-
-This too.
-
-To make it clearer:
-
-#include <linux/bitops.h>
-
-.mask = BIT(31),
-
-> +       },
-> +};
-> +
-> +static const struct sirfsoc_padmux lcd_16bits_padmux = {
-> +       .muxmask_counts = ARRAY_SIZE(lcd_16bits_sirfsoc_muxmask),
-> +       .muxmask = lcd_16bits_sirfsoc_muxmask,
-> +       .funcmask = 1 << 4,
-> +       .funcval = 0 << 4,
-
-BIT(1)
-BIT(0)
-
-> +};
-> +
-> +static const unsigned lcd_16bits_pins[] = { 95, 96, 97, 98, 99, 100, 101, 102, 103, 104,
-> +       105, 106, 107, 108, 109, 110, 111, 112, 113, 114 };
-> +
-> +static const struct sirfsoc_muxmask lcd_18bits_muxmask[] = {
-> +       {
-> +               .group = 3,
-> +               .mask = 0x7FFFF,
-> +       }, {
-> +               .group = 2,
-> +               .mask = 1 << 31,
-
-BIT(31)
-
-> +       }, {
-> +               .group = 0,
-> +               .mask = (1 << 16) | (1 << 17),
-
-BIT(16)|BIT(17)
-
-(etc)
-
-> +static int sirfsoc_pinmux_enable(struct pinctrl_dev *pmxdev, unsigned selector)
-
-These will have an optional "position" parameter now, which you can
-ignore for this simple driver. (Compare U300 pinmux v5).
-
-> +{
-> +       struct sirfsoc_pmx *upmx;
-
-I think "upmx" = U300 padmux :-D
-
-Maybe rename it something like spmx or so, globally...
-
-Yours,
-Linus Walleij
