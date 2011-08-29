@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab1H2HRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 03:17:44 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38791 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751458Ab1H2HRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 03:17:38 -0400
-Subject: Re: linux-next: build failure after merge of the scsi tree
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>
-In-Reply-To: <20110829120902.f95a92022c2d9170defdc083@canb.auug.org.au>
-References: <20110829120902.f95a92022c2d9170defdc083@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Aug 2011 00:17:36 -0700
-Message-ID: <1314602256.5038.1.camel@dabdike>
+	id S1752809Ab1H2HUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 03:20:05 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58021 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751080Ab1H2HT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 03:19:59 -0400
+Date: Mon, 29 Aug 2011 17:19:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Aug 29
+Message-Id: <20110829171946.4aaee92af22c1e1953358a78@canb.auug.org.au>
+In-Reply-To: <CA+icZUWHaVCaBwPm0+A9=2hfY8xOjRFM3XJ6_tOqSyKun-MOQA@mail.gmail.com>
+References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
+	<CA+icZUWHaVCaBwPm0+A9=2hfY8xOjRFM3XJ6_tOqSyKun-MOQA@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 12:09 +1000, Stephen Rothwell wrote:
-> Hi James,
-> 
-> After merging the scsi tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> drivers/scsi/qla2xxx/qla_nx.c: In function 'qla82xx_md_alloc':
-> drivers/scsi/qla2xxx/qla_nx.c:4815:2: error: implicit declaration of function 'vmalloc'
-> drivers/scsi/qla2xxx/qla_nx.c:4815:14: warning: assignment makes pointer from integer without a cast
-> drivers/scsi/qla2xxx/qla_nx.c: In function 'qla82xx_md_free':
-> drivers/scsi/qla2xxx/qla_nx.c:4845:3: error: implicit declaration of function 'vfree'
-> 
-> Caused by commit b60bb5832c00 ("[SCSI] qla2xxx: Add support for ISP82xx
-> to capture dump (minidump) on failure").  Missing include of
-> linux/vmalloc.h.  See Rule 1 in Documentation/SubmitChecklist.
-> 
-> I have used the scsi tree from next-20110826 for today.
+--Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for finding the problem.  I updated the commit with a simple fix
-and re-pushed.
+Hi Sedat,
 
-James
+On Mon, 29 Aug 2011 08:52:29 +0200 Sedat Dilek <sedat.dilek@googlemail.com>=
+ wrote:
+>
+> Might be time to store next patch in .../v3.x/next/ or a new own
+> http://www.kernel.org/pub/linux/kernel/next/ upload-dir?
 
+I have already asked for a chnge, but not response :-(
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOWz2SAAoJEDMEi1NhKgbs6zkH/iTlzgE1xr6m3UUSs4r7boNA
+1XzmRfj+mkDx1aL87WTPSlE0O+9grRXT4CNziHojjgztbbWe+umPQPAMmVzvEik2
+fDtoALrSw+23lWXQi0KB4IBkeiw0lwl1lgHR/IloaD9ais3d8Yulr3qW9dViqTlh
+c0/K5A8kuTcjScO1ExzOprq0HqmaDaOxtzQ6U7c9jgs5eG0NAO0Zj7dgZH7OmB+G
+YBHTeh3P4j5T7QYbRlP2Ks/VLEJbn0W+zgAvbbN4++7dzaMsREhzeenvorP2ulEI
+Pkh+61hF0+49Fx7GGjl6xQnWwBgohnX/WVFpjru42dtIQdMDZ3KnMtrcHkP6JME=
+=WWYm
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r--
