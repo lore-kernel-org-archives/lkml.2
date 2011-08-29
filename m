@@ -1,150 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab1H2VS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:18:27 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35307 "EHLO
+	id S1755069Ab1H2VSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:18:54 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40475 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754724Ab1H2VSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:18:23 -0400
+	id S1755022Ab1H2VSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:18:52 -0400
 From: Joe Perches <joe@perches.com>
-To: linux-hams@vger.kernel.org, b.a.t.m.a.n@lists.open-mesh.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-decnet-user@lists.sourceforge.net,
-        linux-s390@vger.kernel.org, linux-wireless@vger.kernel.org,
-        lvs-devel@vger.kernel.org, rds-devel@oss.oracle.com,
-        linux-sctp@vger.kernel.org, linux-nfs@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net, linux-x25@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org
-Subject: [PATCH 00/24] net: Remove unnecessary OOM logging messages
-Date: Mon, 29 Aug 2011 14:17:19 -0700
-Message-Id: <cover.1314650069.git.joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 03/24] atm: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 14:17:22 -0700
+Message-Id: <af6564f9301e7a3db39491238154fdd7172fea8a.1314650069.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
+In-Reply-To: <cover.1314650069.git.joe@perches.com>
+References: <cover.1314650069.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all the site-specific OOM messages because they duplicate
-the MM subsystem generic OOM message.
+Removing unnecessary messages saves code and text.
 
-Saves ~.2% (~2.5kb) of code/text in an x86 defconfig
+Site specific OOM messages are duplications of a generic MM
+out of memory message and aren't really useful, so just
+delete them.
 
-$ size net/built-in.o*defconfig
-   text	   data	    bss	    dec	    hex	filename
-1506772	  58652	  34928	1600352	 186b60	net/built-in.o.new.defconfig
-1509144	  58652	  34928	1602724	 1874a4	net/built-in.o.old.defconfig
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/atm/lec.c         |    4 +---
+ net/atm/mpc.c         |   17 +++++------------
+ net/atm/mpoa_caches.c |    8 ++------
+ 3 files changed, 8 insertions(+), 21 deletions(-)
 
-$ size net/built-in.o*allyesconfig
-   text	   data	    bss	    dec	    hex	filename
-7655361	 275361	2062352	 9993074 987b72	net/built-in.o.new.allyesconfig
-7667400	 275649	2064024	10007073 98b221	net/built-in.o.old.allyesconfig
-
-Joe Perches (24):
-  802: Remove unnecessary OOM logging messages
-  9p: Remove unnecessary OOM logging messages
-  atm: Remove unnecessary OOM logging messages
-  ax25: Remove unnecessary OOM logging messages
-  batman-adv: Remove unnecessary OOM logging messages
-  netfilter: Remove unnecessary OOM logging messages
-  net: Remove unnecessary OOM logging messages
-  ceph: Remove unnecessary OOM logging messages
-  decnet: Remove unnecessary OOM logging messages
-  econet: Remove unnecessary OOM logging messages
-  iucv: Remove unnecessary OOM logging messages
-  mac80211: Remove unnecessary OOM logging messages
-  netrom: Remove unnecessary OOM logging messages
-  rds: Remove unnecessary OOM logging messages
-  rfkill: Remove unnecessary OOM logging messages
-  rose: Remove unnecessary OOM logging messages
-  sched: Remove unnecessary OOM logging messages
-  sctp: Remove unnecessary OOM logging messages
-  sunrpc: Remove unnecessary OOM logging messages
-  tipc: Remove unnecessary OOM logging messages
-  wanrouter: Remove unnecessary OOM logging messages
-  wireless: Remove unnecessary OOM logging messages
-  x25: Remove unnecessary OOM logging messages
-  net: Remove unnecessary OOM logging messages
-
- net/802/tr.c                            |    1 -
- net/9p/client.c                         |    7 +----
- net/9p/trans_virtio.c                   |    6 +----
- net/atm/lec.c                           |    4 +--
- net/atm/mpc.c                           |   17 ++++----------
- net/atm/mpoa_caches.c                   |    8 +-----
- net/ax25/ax25_dev.c                     |    5 +--
- net/ax25/ax25_out.c                     |    8 +++---
- net/ax25/ax25_route.c                   |    5 +--
- net/batman-adv/hard-interface.c         |    5 +---
- net/batman-adv/main.c                   |    2 -
- net/batman-adv/originator.c             |   16 +++----------
- net/batman-adv/soft-interface.c         |    4 +--
- net/batman-adv/vis.c                    |    4 +--
- net/bridge/netfilter/ebt_ulog.c         |    7 ++---
- net/can/af_can.c                        |    6 +---
- net/ceph/messenger.c                    |    5 +---
- net/ceph/msgpool.c                      |    6 +----
- net/core/dev.c                          |   25 ++++++----------------
- net/core/flow.c                         |    4 +--
- net/core/pktgen.c                       |    5 +---
- net/decnet/dn_neigh.c                   |    6 -----
- net/econet/af_econet.c                  |    4 +--
- net/ipv4/netfilter/ipt_CLUSTERIP.c      |    1 -
- net/ipv4/netfilter/ipt_ULOG.c           |    4 +--
- net/ipv4/netfilter/nf_nat_snmp_basic.c  |   22 +-----------------
- net/ipv6/netfilter/nf_conntrack_reasm.c |    7 ++---
- net/iucv/iucv.c                         |    5 +--
- net/mac80211/agg-rx.c                   |   19 +---------------
- net/mac80211/agg-tx.c                   |   35 +++++++-----------------------
- net/mac80211/debugfs.c                  |    3 ++
- net/mac80211/ht.c                       |    6 +----
- net/mac80211/mesh.c                     |    5 +--
- net/mac80211/mlme.c                     |   17 ++++----------
- net/mac80211/spectmgmt.c                |    6 +----
- net/mac80211/tx.c                       |   17 ++++----------
- net/mac80211/util.c                     |   11 ++-------
- net/mac80211/work.c                     |    6 +---
- net/netfilter/ipset/ip_set_core.c       |    4 +--
- net/netfilter/ipvs/ip_vs_core.c         |    5 +--
- net/netfilter/ipvs/ip_vs_ctl.c          |   18 +++++----------
- net/netfilter/ipvs/ip_vs_dh.c           |    5 +--
- net/netfilter/ipvs/ip_vs_lblc.c         |    9 ++-----
- net/netfilter/ipvs/ip_vs_lblcr.c        |   13 +++--------
- net/netfilter/ipvs/ip_vs_proto.c        |    5 +--
- net/netfilter/ipvs/ip_vs_sh.c           |    5 +--
- net/netfilter/ipvs/ip_vs_wrr.c          |    5 +--
- net/netfilter/nf_conntrack_core.c       |    5 +---
- net/netfilter/nfnetlink_log.c           |    7 +----
- net/netfilter/xt_IDLETIMER.c            |    2 -
- net/netfilter/xt_hashlimit.c            |    5 +---
- net/netrom/af_netrom.c                  |    8 +-----
- net/rds/ib_rdma.c                       |    1 -
- net/rds/iw_rdma.c                       |    8 +------
- net/rds/iw_send.c                       |    8 +-----
- net/rfkill/rfkill-regulator.c           |    1 -
- net/rose/af_rose.c                      |    1 -
- net/sched/act_api.c                     |    6 +---
- net/sched/sch_atm.c                     |    1 -
- net/sctp/protocol.c                     |    3 --
- net/socket.c                            |    5 +---
- net/sunrpc/auth_gss/gss_krb5_crypto.c   |   10 +-------
- net/sunrpc/auth_gss/gss_krb5_mech.c     |    2 -
- net/sunrpc/backchannel_rqst.c           |    9 ++-----
- net/sunrpc/clnt.c                       |    3 --
- net/sunrpc/rpc_pipe.c                   |    3 +-
- net/sunrpc/rpcb_clnt.c                  |    2 -
- net/sunrpc/xprtrdma/svc_rdma.c          |    8 +-----
- net/sunrpc/xprtrdma/transport.c         |    5 +---
- net/sunrpc/xprtrdma/verbs.c             |   14 ------------
- net/sunrpc/xprtsock.c                   |    5 +---
- net/tipc/link.c                         |    4 +--
- net/wanrouter/wanmain.c                 |    8 +------
- net/wireless/lib80211_crypt_ccmp.c      |    2 -
- net/wireless/lib80211_crypt_tkip.c      |    4 ---
- net/wireless/lib80211_crypt_wep.c       |    4 ---
- net/wireless/util.c                     |    5 +--
- net/x25/x25_dev.c                       |   10 +++-----
- 78 files changed, 137 insertions(+), 415 deletions(-)
-
+diff --git a/net/atm/lec.c b/net/atm/lec.c
+index f1964ca..6dc635c 100644
+--- a/net/atm/lec.c
++++ b/net/atm/lec.c
+@@ -1674,10 +1674,8 @@ static struct lec_arp_table *make_entry(struct lec_priv *priv,
+ 	struct lec_arp_table *to_return;
+ 
+ 	to_return = kzalloc(sizeof(struct lec_arp_table), GFP_ATOMIC);
+-	if (!to_return) {
+-		pr_info("LEC: Arp entry kmalloc failed\n");
++	if (!to_return)
+ 		return NULL;
+-	}
+ 	memcpy(to_return->mac_addr, mac_addr, ETH_ALEN);
+ 	INIT_HLIST_NODE(&to_return->next);
+ 	setup_timer(&to_return->timer, lec_arp_expire_arp,
+diff --git a/net/atm/mpc.c b/net/atm/mpc.c
+index aa97240..fc85df0 100644
+--- a/net/atm/mpc.c
++++ b/net/atm/mpc.c
+@@ -184,10 +184,8 @@ struct atm_mpoa_qos *atm_mpoa_add_qos(__be32 dst_ip, struct atm_qos *qos)
+ 	}
+ 
+ 	entry = kmalloc(sizeof(struct atm_mpoa_qos), GFP_KERNEL);
+-	if (entry == NULL) {
+-		pr_info("mpoa: out of memory\n");
++	if (entry == NULL)
+ 		return entry;
+-	}
+ 
+ 	entry->ipaddr = dst_ip;
+ 	entry->qos = *qos;
+@@ -473,10 +471,8 @@ static const uint8_t *copy_macs(struct mpoa_client *mpc,
+ 			kfree(mpc->mps_macs);
+ 		mpc->number_of_mps_macs = 0;
+ 		mpc->mps_macs = kmalloc(num_macs * ETH_ALEN, GFP_KERNEL);
+-		if (mpc->mps_macs == NULL) {
+-			pr_info("(%s) out of mem\n", mpc->dev->name);
++		if (mpc->mps_macs == NULL)
+ 			return NULL;
+-		}
+ 	}
+ 	memcpy(mpc->mps_macs, router_mac, ETH_ALEN);
+ 	tlvs += 20; if (device_type == MPS_AND_MPC) tlvs += 20;
+@@ -1260,10 +1256,8 @@ static void purge_egress_shortcut(struct atm_vcc *vcc, eg_cache_entry *entry)
+ 	}
+ 
+ 	skb = alloc_skb(sizeof(struct k_message), GFP_ATOMIC);
+-	if (skb == NULL) {
+-		pr_info("out of memory\n");
++	if (skb == NULL)
+ 		return;
+-	}
+ 
+ 	skb_put(skb, sizeof(struct k_message));
+ 	memset(skb->data, 0, sizeof(struct k_message));
+@@ -1379,10 +1373,9 @@ static void set_mps_mac_addr_rcvd(struct k_message *msg,
+ 		kfree(client->mps_macs);
+ 	client->number_of_mps_macs = 0;
+ 	client->mps_macs = kmemdup(msg->MPS_ctrl, ETH_ALEN, GFP_KERNEL);
+-	if (client->mps_macs == NULL) {
+-		pr_info("out of memory\n");
++	if (client->mps_macs == NULL)
+ 		return;
+-	}
++
+ 	client->number_of_mps_macs = 1;
+ }
+ 
+diff --git a/net/atm/mpoa_caches.c b/net/atm/mpoa_caches.c
+index d1b2d9a..cc5f46d 100644
+--- a/net/atm/mpoa_caches.c
++++ b/net/atm/mpoa_caches.c
+@@ -98,10 +98,8 @@ static in_cache_entry *in_cache_add_entry(__be32 dst_ip,
+ {
+ 	in_cache_entry *entry = kzalloc(sizeof(in_cache_entry), GFP_KERNEL);
+ 
+-	if (entry == NULL) {
+-		pr_info("mpoa: mpoa_caches.c: new_in_cache_entry: out of memory\n");
++	if (entry == NULL)
+ 		return NULL;
+-	}
+ 
+ 	dprintk("adding an ingress entry, ip = %pI4\n", &dst_ip);
+ 
+@@ -460,10 +458,8 @@ static eg_cache_entry *eg_cache_add_entry(struct k_message *msg,
+ {
+ 	eg_cache_entry *entry = kzalloc(sizeof(eg_cache_entry), GFP_KERNEL);
+ 
+-	if (entry == NULL) {
+-		pr_info("out of memory\n");
++	if (entry == NULL)
+ 		return NULL;
+-	}
+ 
+ 	dprintk("adding an egress entry, ip = %pI4, this should be our IP\n",
+ 		&msg->content.eg_info.eg_dst_ip);
 -- 
 1.7.6.405.gc1be0
 
