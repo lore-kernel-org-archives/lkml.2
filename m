@@ -1,32 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab1H2K6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 06:58:30 -0400
-Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:57612 "EHLO
-	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750998Ab1H2K6Y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 06:58:24 -0400
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Aug 2011 06:58:24 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AslmAIdtW07AqCcr/2dsb2JhbABCD4JngVaTA4U8gRqHKoESO2J3WlkGAyQKCGYQDQINGQIxAQ4KGC+FKIIlmAGOWkqGdoktgSyED4ERBIdikGlNhT6CH4J8Aj0
-X-IronPort-AV: E=Sophos;i="4.68,296,1312128000"; 
-   d="scan'208";a="732647966"
-Date: Mon, 29 Aug 2011 18:48:57 +0800 (WST)
-From: Pepsi Bottling Company Plc <huon01@westnet.com.au>
-Reply-To: Pepsi Bottling Company Plc <manager_pepsi@live.co.uk>
-Message-ID: <644355200.2987051314614937933.JavaMail.root@zim-store03.web.westnet.com.au>
-Subject: RE
+	id S1753138Ab1H2K7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 06:59:30 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46319 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab1H2K70 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 06:59:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.203.64.252]
-X-Mailer: Zimbra 5.0.18_GA_3011.RHEL4_64 (zclient/5.0.18_GA_3011.RHEL4_64)
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20110829101550.GT1923@amd.com>
+References: <1314364839-28492-1-git-send-email-joerg.roedel@amd.com>
+ <CAK=WgbaiNxo_226Zp9BZpgUjYFajnvgPPCjCOYP2Tj4pkWTwVA@mail.gmail.com> <20110829101550.GT1923@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 29 Aug 2011 13:59:05 +0300
+X-Google-Sender-Auth: zTUcEiJ4DFpsEMDjL4eQY_5jECA
+Message-ID: <CADMYwHwZPiH12HxOP952-Znm_+uMXKpj2M6ew8W-frZ7R8EcWg@mail.gmail.com>
+Subject: Re: [PATCH] iommu: Remove stub functions for !CONFIG_IOMMU_API
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 29, 2011 at 1:15 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> Isn't the abstraction that the drivers use the dma-api? There should be
+> an implementation that doesn't require the iommu-api for such devices,
+> no?
 
+Before we boot a remote processor device we often need to map it to
+some (specific) bus addresses (e.g. to allow the processor access to
+certain peripheral devices), and we're doing it directly with the
+IOMMU API.
 
-You won £120,000
+Do you think this kind of functionality should be added to the DMA API as well ?
+
+IIRC, it was suggested awhile ago but you supported using the IOMMU
+API directly in this case.
+
+Thanks,
+Ohad.
