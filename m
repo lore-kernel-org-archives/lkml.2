@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab1H2Omb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:42:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38549 "EHLO mx1.redhat.com"
+	id S1753818Ab1H2Omr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:42:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab1H2OmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:42:25 -0400
-Date: Mon, 29 Aug 2011 16:42:14 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Lin Ming <lxy@ss.pku.edu.cn>
-cc: Lukas Czerner <lczerner@redhat.com>, Bart Van Assche <bvanassche@acm.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
- device is removed
-In-Reply-To: <CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1108291637470.3904@dhcp-27-109.brq.redhat.com>
-References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com> <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com> <CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753742Ab1H2Omm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 10:42:42 -0400
+Date: Mon, 29 Aug 2011 16:38:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frank Rowand <frank.rowand@am.sony.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org,
+        hch <hch@infradead.org>, "yong.zhang0" <yong.zhang0@gmail.com>,
+        scameron@beardog.cce.hp.com, Jens Axboe <jaxboe@fusionio.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: Re: [kernel.org users] [KORG] Panics on master backend
+Message-ID: <20110829143855.GA29953@redhat.com>
+References: <4E53ECEF.7040109@kernel.org> <1314129133.8002.102.camel@twins> <20110824160806.GA12317@redhat.com> <1314267872.27911.6.camel@twins> <20110825135429.GA32048@redhat.com> <1314623216.2816.25.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314623216.2816.25.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011, Lin Ming wrote:
-
-> On Mon, Aug 29, 2011 at 7:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+On 08/29, Peter Zijlstra wrote:
+>
+> On Thu, 2011-08-25 at 15:54 +0200, Oleg Nesterov wrote:
+> > > Isn't us holding ->pi_lock sufficient to stabilize task_cpu()? If its a
+> > > running task the initial ->state check would have failed,
 > >
-> > Regarding the atomic operations I do not think that implicit memory
-> > barriers are needed here as atomic_dec_and_test() implies memory
-> 
-> Which implicit memory barrier you are talking about?
+> > Of course it is not TASK_RUNNING, but it can be running or not.
+> >
+> > > and thus its a
+> > > proper wakeup when we get here and thus ->pi_lock is serializing things.
+> >
+> > I am not sure. If ->on_rq is true, we need rq->lock. Say, pull_task() can
+> > change its cpu.
+>
+> If its !TASK_RUNNING but ->on_rq is true, it must be current, and
+> pull_task() will never move current around.
 
-smp_mb() at both side of the operation as documented here in
-Documentation/memory-barriers.txt
+You meant task_running() ? But it can be preempted in !TASK_RUNNING
+state.
 
-[citation]
-Any atomic operation that modifies some state in memory and returns
-information about the state (old or new) implies an SMP-conditional
-general memory barrier (smp_mb()) on each side of the actual operation
-(with the exception of explicit lock operations, described later).
-These include:
+Oleg.
 
-	xchg();
-	cmpxchg();
-	atomic_cmpxchg();
-	atomic_inc_return();
-	atomic_dec_return();
-	atomic_add_return();
-	atomic_sub_return();
-	atomic_inc_and_test();
-	atomic_dec_and_test();
-	atomic_sub_and_test();
-	atomic_add_negative();
-	atomic_add_unless();
-	test_and_set_bit();
-	test_and_clear_bit();
-	test_and_change_bit();
-
-[/citation]
-
--Lukas
-
-> 
-> > barrier, atomic_set() is out of the scope of our interest (and it would
-> > not cause the problem like that anyway) and reordering atomic_inc()
-> > would not cause problem like this as well.
-> 
