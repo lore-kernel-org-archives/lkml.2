@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502Ab1H2Rfh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 13:35:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39821 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab1H2Rff (ORCPT
+	id S1754551Ab1H2Rfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 13:35:50 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:40149 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754529Ab1H2Rfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 13:35:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:date:message-id:subject:from:to:
-	content-type:x-system-of-record;
-	b=QFoN6j+tK/ohb3iegvB+6XBImC4rGUpNC82w3bT4quVFl6dwxG+1GPJ2PfkKutth2
-	JmWL+oo9FrN2cKb/t7Ecw==
+	Mon, 29 Aug 2011 13:35:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 0CF.04UVM1n1teMZuzZ.BDyCFLE43ErGt5sm_Jey.dWNC6U
+ YxgUlj9wJCqe5ZcWDoc4pU3Pj_ubcetjaHlKIYqTO7L69VgJuATItBRgq.Go
+ A08zk_IE8X77ACKc_uJW1fgMlr_aXFQOX0xPOEtgDQyFZDko8GwnJCCFgd.R
+ cWdiEKMF.KtzUH2o9mYAQhnlXsg6Z8a1rZoS0QddrTk8ymB07q0W42sF9gkF
+ lmALm3kLVH.M7GqNS_0JyeX2H9lk35fTmy29ARtAVphepkOQGkzBC7THHGsW
+ dW0n8tLL_oyrcZTxb_723mv9DaiDNIgxKPaREMQM0mjKw4g70naVpHfpbrYV
+ GYkOgHK3CMMUUmfyepMvqG4bRWCnX3XPFTog2ixgq7FlvDvbk8Dhc98VIbpk
+ QbExSWngQ_fq4spopqiVd6Q--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 29 Aug 2011 12:35:41 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Richard Weinberger <richard@nod.at>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 1/9] um: disable CMPXCHG_DOUBLE as it breaks UML build
+In-Reply-To: <1314634419-24766-2-git-send-email-richard@nod.at>
+Message-ID: <alpine.DEB.2.00.1108291235180.16005@router.home>
+References: <1314634419-24766-1-git-send-email-richard@nod.at> <1314634419-24766-2-git-send-email-richard@nod.at>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Mon, 29 Aug 2011 10:33:24 -0700
-Message-ID: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
-Subject: Approaches to making io_submit not block
-From: Daniel Ehrenberg <dehrenberg@google.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 29 Aug 2011, Richard Weinberger wrote:
 
-The Linux AIO interface (io_submit, io_getevents, etc) is useful in
-allowing multiple requests to through the I/O stack without requiring
-a userspace or even kernel thread per pending request. This is really
-great for maxing out high-performance devices like SSDs. However, it
-seems incomplete to me because io_submit sometimes blocks for a couple
-filesystem-related reasons. I'm wondering if this could be fixed, or
-if there is an inherent need for this sort of blocking.
+> Commit b789ef518b2a7231b0668c813f677cee528a9d3f tests for cmpxchg_double
+> support in the SLUB code and it breaks UML builds with SLUB. Since UML
+> does not support checking for CPU features, disable CMPXCHG_DOUBLE just
+> like CMPXCHG_LOCAL is disabled for UML.
 
-- Blocking due to reading metadata.
-Proposed solution:
-Add a per-ioctx work queue to do metadata reads. It will be triggered
-from the dio code: if in async mode, then get_block will be called
-with an additional flag, meaning something like O_NONBLOCK on sockets.
-File systems' get_block functions can implement this flag and return
--EAGAIN if a read from the underlying device would be necessary. (If
-we're worried that EAGAIN might be used for other purposes in the
-future, we could make a new errno for this purpose.) From a quick
-glance at the code, it looks like this would not be too difficult to
-add to ext4 for extent-based files, and support in other file systems
-could be added gradually. If -EAGAIN is returned, then the struct dio
-will be put on the work queue together with a description of what kind
-of processing it was doing. The work queue only serves the metadata
-request, and the rest of the request is served on the existing path.
-
-- Blocking for appends and writes to file holes due to the need for a
-metadata write after the data write
-Proposed solution:
-Maintain a work queue for all appends and writes to file holes, which
-executes the current code.
-
-Has anything like this been discussed or implemented? What I'm talking
-about isn't optimal in terms of parallelism; it just matches the
-parallelism of the current approach (with the minor caveat that
-multiple threads on the same core calling io_submit on the same ioctx
-don't get to run their metadata/append I/O requests concurrently), but
-allows the io_submit system call to return to userspace much faster.
-I've read about other proposals for general asynchronous syscalls, but
-this would be lighter weight in not requiring a kernel task per I/O
-request.
-
-Thanks,
-Dan
+Reviewed-by: Christoph Lameter <cl@linux.com>
