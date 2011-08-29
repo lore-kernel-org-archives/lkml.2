@@ -1,163 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab1H2LRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 07:17:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53206 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab1H2LRJ convert rfc822-to-8bit (ORCPT
+	id S1753253Ab1H2LTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 07:19:45 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:55490 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752307Ab1H2LTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 07:17:09 -0400
+	Mon, 29 Aug 2011 07:19:39 -0400
+Date: Mon, 29 Aug 2011 14:19:32 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Felipe Balbi <balbi@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] sound: usb: mixer: increase control transfer timeout
+Message-ID: <20110829111931.GU13925@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1314616226-15942-1-git-send-email-balbi@ti.com>
+ <20110829111607.GB21556@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1314315824-9687-11-git-send-email-swarren@nvidia.com>
-References: <1314315824-9687-1-git-send-email-swarren@nvidia.com>
-	<1314315824-9687-11-git-send-email-swarren@nvidia.com>
-Date: Mon, 29 Aug 2011 13:09:19 +0200
-Message-ID: <CACRpkdaTiWEtgjVOhUKeXhpiESvrWyz97p5j_PHe3MvEM4UaCw@mail.gmail.com>
-Subject: Re: [PATCH v3 10/13] of: add a generic pinmux helper
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sBvc846/5FzkyDmz"
+Content-Disposition: inline
+In-Reply-To: <20110829111607.GB21556@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 1:43 AM, Stephen Warren <swarren@nvidia.com> wrote:
 
-> diff --git a/drivers/of/of_pinmux.c b/drivers/of/of_pinmux.c
+--sBvc846/5FzkyDmz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +int of_pinmux_parse(const struct of_pinmux_ctrl *ctrl,
-> +                   struct of_pinmux_cfg *cfg)
+Hi,
 
-OK...
+On Mon, Aug 29, 2011 at 01:16:07PM +0200, Sebastian Andrzej Siewior wrote:
+> * Felipe Balbi | 2011-08-29 14:10:26 [+0300]:
+>=20
+> >Not sure this information is valid on a commit log, but I
+> >have a FPGA-platform which I use to test my USB controller
+> >and when that's running on FS, this message fails because
+> >control message times out before controller has the opportunity
+> >to complete all three phases of the SETUP transaction.
+>=20
+> Does it still happen if you remove all the debug output from your udc
+> driver?
 
-> +{
-> +       struct device_node *np;
-> +
-> +       if (!ctrl || !ctrl->dev || !ctrl->node || !ctrl->configure)
-> +               return -EINVAL;
-> +
-> +       for_each_child_of_node(ctrl->node, np) {
-> +               int ret;
-> +               bool hadpins = 0;
-> +               struct of_iter_string_prop iter;
-> +
-> +               cfg->node = np;
-> +
-> +               ret = of_property_read_string(np, "function",
-> +                                             &cfg->function);
-> +               if (ret < 0) {
-> +                       dev_err(ctrl->dev, "no function for node %s\n",
-> +                               np->name);
-> +                       continue;
-> +               }
+I can try it out, but what's the point ? If we don't increase the
+timeout, then whenever we want to debug some other problem, we will have
+to keep a local patch on that file ?
 
-I buy this part.
+--=20
+balbi
 
-> +
-> +               cfg->flags &= 0;
-> +
-> +               if (of_find_property(np, "pull-up", NULL))
-> +                       cfg->flags |= OF_PINMUX_PULL_UP;
-> +               if (of_find_property(np, "pull-down", NULL))
-> +                       cfg->flags |= OF_PINMUX_PULL_DOWN;
-> +
-> +               if ((cfg->flags & OF_PINMUX_PULL_MASK) ==
-> +                   OF_PINMUX_PULL_MASK) {
-> +                       dev_warn(ctrl->dev, "node %s has both "
-> +                                "pull-up and pull-down properties - "
-> +                                "defaulting to no pull\n",
-> +                                np->name);
-> +                       cfg->flags &= ~OF_PINMUX_PULL_MASK;
-> +               }
-> +
-> +               if (of_find_property(np, "tristate", NULL))
-> +                       cfg->flags |= OF_PINMUX_TRISTATE;
+--sBvc846/5FzkyDmz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-But what does this stuff has to do with pinmux?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-I call this "pin biasing" and it has very little to do with muxing.
+iQEcBAEBAgAGBQJOW3XDAAoJEAv8Txj19kN1G6wH/RBB5V93bS68st7mY8fW2WUl
+QwVOl/ztpPCRGrVuNKw7e+dW3jL9R1BI0LlmjRDzc51dtTCZixs6//PqciwF1V+I
+fMj7olopOdIlU7DNwrA9lgFb2E0239XQBVVPw+spJX09XK8D/h7BLpKmDCZRNJOw
+yXnY9jF9tphy43UH/NLC1BkN3ql5L+JeN729jnOJ7Ymp2aqob/Rh0a0bg/cpfj/4
+4EMthpYP0AD9vfGJy4Pcl9VYibbsn1vSL/SbyfLbgHATHRIHiW2w/5vUwgrOqiAq
+i07Ng9YQ364pF5U7Gp1SlCODacZx2AWARHpOBB11mOhGtbs9KKk0rRuR8/QiyeE=
+=7At/
+-----END PGP SIGNATURE-----
 
-If a broader, generic term is to be used, I'd prefer "pin control"
-which sort of nails the thing.
-
-> +               for_each_string_property_value(iter, np, "pins") {
-> +                       hadpins = 1;
-> +
-> +                       cfg->pin = iter.value;
-> +
-> +                       dev_dbg(ctrl->dev,
-> +                               "configure pin %s func=%s flags=0x%lx\n",
-> +                               cfg->pin, cfg->function, cfg->flags);
-> +                       if (ctrl->configure(ctrl, cfg))
-> +                               dev_warn(ctrl->dev,
-> +                                        "failed to configure pin %s\n",
-> +                                        cfg->pin);
-> +               }
-> +
-> +               if (!hadpins)
-> +                       dev_warn(ctrl->dev, "no pins for node %s\n",
-> +                                np->name);
-> +       }
-> +
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(of_pinmux_parse);
-
-Renamed of_pinctrl_parse I'm happier with it.
-
-> +/**
-> + * struct of_pinmux_cfg - configuration state for a single pinmux entry.
-> + *
-> + * @function: the name of the function that the pinmux entry should be
-> + *     configured to.
-> + * @pin: the device_node of the pinmux entry that should be configured.
-> + *     Platform specific properties that aren't in the generic binding may be
-> + *     obtained from this device node.
-> + * @flags: flags for common pinmux options such as pull and tristate.
-
-I don't think these things has anything to do with pinmux at all.
-
-But with the struct renamed of_pinctrl_cfg I'm again happier.
-
-> + */
-> +struct of_pinmux_cfg {
-> +       struct device_node      *node;
-> +       const char              *pin;
-> +       const char              *function;
-> +       unsigned long           flags;
-> +};
-
-The current pinctrl patch set would probably want an unsigned
-"position" attribute too. (If we should build on that.)
-
-> +/**
-> + * struct of_pinmux_ctrl - platform specific pinmux control state.
-> + *
-> + * @pinmux: the pinmux device node.  All child nodes are required to be the
-> + *     pinmux entry definitions.  Depending on the platform, this may either be
-> + *     a single pin or a group of pins where they can be set to a common
-> + *     function.
-> + * @configure: platform specific callback to configure the pinmux entry.
-> + */
-> +struct of_pinmux_ctrl {
-> +       struct device      *dev;
-> +       struct device_node *node;
-> +       int                (*parse)(const struct of_pinmux_ctrl *ctrl,
-> +                                   struct of_pinmux_cfg *cfg);
-> +       int                (*configure)(const struct of_pinmux_ctrl *ctrl,
-> +                                       const struct of_pinmux_cfg *cfg);
-> +};
-
-s/pinmux/pinctrl/g
-
-Yours,
-Linus Walleij
+--sBvc846/5FzkyDmz--
