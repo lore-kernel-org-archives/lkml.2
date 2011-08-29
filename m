@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab1H2Uyi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 16:54:38 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:53731 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755019Ab1H2Uyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 16:54:33 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Jarod Wilson <jarod@wilsonet.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] staging: lirc_sasem: fix NULL pointer dereference in sasem_probe
-Date: Tue, 30 Aug 2011 00:54:21 +0400
-Message-Id: <1314651261-31850-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755171Ab1H2UzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 16:55:05 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:34674 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755106Ab1H2UzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 16:55:01 -0400
+Date: Mon, 29 Aug 2011 13:54:59 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        driverdevel <devel@driverdev.osuosl.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next] staging: fix rtl8192e build errors
+Message-Id: <20110829135459.d4090a39.rdunlap@xenotime.net>
+In-Reply-To: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
+References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If any memory allocation failed, goto alloc_status_switch
-leads to mutex_unlock(&context->ctx_lock) while context is NULL.
-The patch moves alloc_status_switch to handle error conditions
-in correct way.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+drivers/staging/rtl8192e/rtllib.h:2329: error: field 'wx_sem' has incomplete type
+drivers/staging/rtl8192e/rtllib.h:2330: error: field 'scan_sem' has incomplete type
+drivers/staging/rtl8192e/rtllib.h:2331: error: field 'ips_sem' has incomplete type
+drivers/staging/rtl8192e/rtllib_wx.c:267: error: implicit declaration of function 'down'
+drivers/staging/rtl8192e/rtllib_wx.c:290: error: implicit declaration of function 'up'
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- drivers/staging/lirc/lirc_sasem.c |   46 ++++++++++++++++++------------------
- 1 files changed, 23 insertions(+), 23 deletions(-)
+ drivers/staging/rtl8192e/rtllib.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/lirc/lirc_sasem.c b/drivers/staging/lirc/lirc_sasem.c
-index 7080cde..a2d18b0 100644
---- a/drivers/staging/lirc/lirc_sasem.c
-+++ b/drivers/staging/lirc/lirc_sasem.c
-@@ -814,29 +814,6 @@ static int sasem_probe(struct usb_interface *interface,
- 		printk(KERN_INFO "%s: Registered Sasem driver (minor:%d)\n",
- 			__func__, lirc_minor);
- 
--alloc_status_switch:
--
--	switch (alloc_status) {
--
--	case 7:
--		if (vfd_ep_found)
--			usb_free_urb(tx_urb);
--	case 6:
--		usb_free_urb(rx_urb);
--	case 5:
--		lirc_buffer_free(rbuf);
--	case 4:
--		kfree(rbuf);
--	case 3:
--		kfree(driver);
--	case 2:
--		kfree(context);
--		context = NULL;
--	case 1:
--		retval = -ENOMEM;
--		goto unlock;
--	}
--
- 	/* Needed while unregistering! */
- 	driver->minor = lirc_minor;
- 
-@@ -867,6 +844,29 @@ alloc_status_switch:
- 			__func__, dev->bus->busnum, dev->devnum);
- unlock:
- 	mutex_unlock(&context->ctx_lock);
-+
-+alloc_status_switch:
-+	switch (alloc_status) {
-+
-+	case 7:
-+		if (vfd_ep_found)
-+			usb_free_urb(tx_urb);
-+	case 6:
-+		usb_free_urb(rx_urb);
-+	case 5:
-+		lirc_buffer_free(rbuf);
-+	case 4:
-+		kfree(rbuf);
-+	case 3:
-+		kfree(driver);
-+	case 2:
-+		kfree(context);
-+		context = NULL;
-+	case 1:
-+		if (retval == 0)
-+			retval = -ENOMEM;
-+	}
-+
- exit:
- 	return retval;
- }
--- 
-1.7.4.1
+but the driver probably should be using mutexes instead of semaphores...
 
+--- linux-next-20110829.orig/drivers/staging/rtl8192e/rtllib.h
++++ linux-next-20110829/drivers/staging/rtl8192e/rtllib.h
+@@ -31,6 +31,7 @@
+ #include <linux/jiffies.h>
+ #include <linux/timer.h>
+ #include <linux/sched.h>
++#include <linux/semaphore.h>
+ 
+ #include <linux/delay.h>
+ #include <linux/wireless.h>
