@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1H2N15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:27:57 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54529 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab1H2N1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:27:51 -0400
-Date: Mon, 29 Aug 2011 09:27:34 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Anton Blanchard <anton@samba.org>
-Cc: adilger.kernel@dilger.ca, eric.dumazet@gmail.com, tj@kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] percpu_counter: Put a reasonable upper bound on
- percpu_counter_batch
-Message-ID: <20110829132734.GB12187@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Anton Blanchard <anton@samba.org>, adilger.kernel@dilger.ca,
-	eric.dumazet@gmail.com, tj@kernel.org, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110826072622.406d3395@kryten>
- <20110826072927.5b4781f9@kryten>
- <A91A91A5-9EF0-42FE-B1C3-184D65112EA9@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A91A91A5-9EF0-42FE-B1C3-184D65112EA9@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1753626Ab1H2Ncr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:32:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35488 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab1H2Ncl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 09:32:41 -0400
+Subject: Re: [PATCH] .gitattributes: Enable cpp diff parsing for .[ch] files
+From: Peter Zijlstra <peterz@infradead.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Git Mailing List <git@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Junio C Hamano <gitster@pobox.com>
+Date: Mon, 29 Aug 2011 15:32:32 +0200
+In-Reply-To: <4E580830.4010305@panasas.com>
+References: <4E56CE8F.8080501@panasas.com>
+	 <CA+55aFxNXK-AJdrHBBycM5W632qUBi4E=jangcdRoefQiHzbug@mail.gmail.com>
+	 <4E580830.4010305@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314624752.2816.32.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 26, 2011 at 07:48:52AM -0400, Theodore Tso wrote:
+On Fri, 2011-08-26 at 13:55 -0700, Boaz Harrosh wrote:
+
+> But this patch is for all the people and distributions that are going
+> to use the old git versions for a while, (Years).
 > 
-> I understand why we would want to reduce this number.   Unfortunately, the
-> question is what do we do if all 1024 threads try to do buffered writes into
-> the file system at the same instant, when we have less than 4 megabytes
-> of space left?
+> It is important for the Linux mailing-list review, because you get
+> patches with:
+> 
+> @@@ lable out:
+> -	change foo
+> +	to bazz
+> 
+> And how the hell are you suppose to know where in the file it is.
+> This is such a trivial addition, that can help unify everyone's
+> usage. I don't see the down sides.
 
-Oops, sorry, that should be 4 GB of space left (i.e., what do we do if
-all 1024 cpu's all try write 1024 4k blocks all at the same time).
-Imagine an simulation application where all threads finish at more or
-less the same time and then try to write out their data files at the
-same time....
+Ah, I'm using:
 
-							- Ted
+# cat ~/.gitconfig 
+[diff "default"]
+                xfuncname = "^[[:alpha:]$_].*[^:]$"
+
+
+For this.
