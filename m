@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1H2LqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 07:46:20 -0400
-Received: from ozlabs.org ([203.10.76.45]:34008 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276Ab1H2LqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 07:46:13 -0400
-Date: Mon, 29 Aug 2011 21:46:09 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: tytso@mit.edu, adilger.kernel@dilger.ca, tj@kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] percpu_counter: Put a reasonable upper bound on
- percpu_counter_batch
-Message-ID: <20110829214609.495ee299@kryten>
-In-Reply-To: <1314347983.2563.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20110826072622.406d3395@kryten>
-	<20110826072927.5b4781f9@kryten>
-	<1314347983.2563.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753482Ab1H2Lqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 07:46:42 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:41942 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab1H2Lqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 07:46:38 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Greg Freemyer <greg.freemyer@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Drbd-dev] [RFC 000/118] drbd: part 1 of adding multiple volume support to drbd
+Date: Mon, 29 Aug 2011 13:46:23 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
+Cc: drbd-dev@lists.linbit.com
+References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com> <CAGpXXZKem-uEdF4SyUgpQFV6=d5Vo3v9p3wmcaygAKa4w4x01w@mail.gmail.com>
+In-Reply-To: <CAGpXXZKem-uEdF4SyUgpQFV6=d5Vo3v9p3wmcaygAKa4w4x01w@mail.gmail.com>
+X-OTRS-FollowUp-SenderType: agent
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201108291346.29847.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Freitag, 26. August 2011, 15:20:51 schrieb Greg Freemyer:
+> On Thu, Aug 25, 2011 at 11:06 AM, Philipp Reisner <
+> 
+> philipp.reisner@linbit.com> wrote:
+> > This the first request for review of drbd-8.4. The complete set has
+> > 500 patches. In this first series there are only 118 of these.
+> 
+> Lars,
+> 
+> I've only taken a quick glance, but is drbd functional between applying
+> each patch?
+> 
+> It doesn't look like it to me, but I didn't look that close.  I also saw at
+> least one patch that introduced a new function with no caller to test it.
+> 
+> The idea is that a patch series leave a testable / functional kernel after
+> each patch in the series is applied sequentially.
+> 
+> That is the only way git bisect can do its job.
+> 
+> ie. Introducing a new function but no new caller makes a change, but there
+> is no way to test it.  Therefore there is no real value in not merging that
+> patch with one that has the new call in it.
+> 
 
-When testing on a 1024 thread ppc64 box I noticed a large amount of
-CPU time in ext4 code.
+Greg,
 
-ext4_has_free_blocks has a fast path to avoid summing every free and
-dirty block per cpu counter, but only if the global count shows more
-free blocks than the maximum amount that could be stored in all the
-per cpu counters.
+You replied to mail 000. Please point out to which patch/function you
+refer, so that we can fix this.
 
-Since percpu_counter_batch scales with num_online_cpus() and the maximum
-amount in all per cpu counters is percpu_counter_batch * num_online_cpus(),
-this breakpoint grows at O(n^2).
+Best,
+ Phil
+-- 
+: Dipl-Ing Philipp Reisner
+: LINBIT | Your Way to High Availability
+: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
+: http://www.linbit.com
 
-This issue will also hit with users of percpu_counter_compare which
-does a similar thing for one percpu counter.
-
-I chose to cap percpu_counter_batch at 1024 as a conservative first
-step, but we may want to reduce it further based on further benchmarking.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
-
-Index: linux-2.6-work/lib/percpu_counter.c
-===================================================================
---- linux-2.6-work.orig/lib/percpu_counter.c	2011-08-29 19:50:44.482008591 +1000
-+++ linux-2.6-work/lib/percpu_counter.c	2011-08-29 21:21:10.026779139 +1000
-@@ -153,7 +153,14 @@ static void compute_batch_value(void)
- {
- 	int nr = num_online_cpus();
- 
--	percpu_counter_batch = max(32, nr*2);
-+	/*
-+	 * The cutoff point for the percpu_counter_compare() fast path grows
-+	 * at num_online_cpus^2 and on a big enough machine it will be
-+	 * unlikely to hit.
-+	 * We clamp the batch value to 1024 so the cutoff point only grows
-+	 * linearly past 512 CPUs.
-+	 */
-+	percpu_counter_batch = clamp(nr*2, 32, 1024);
- }
- 
- static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
+DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
