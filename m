@@ -1,80 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab1H2SAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:00:06 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43300 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab1H2SAD (ORCPT
+	id S1754576Ab1H2SAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:00:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35630 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab1H2SAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:00:03 -0400
-Date: Mon, 29 Aug 2011 19:59:57 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to idle
- enter/exit APIs
-Message-ID: <20110829175954.GF9748@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
- <1314627922.2816.65.camel@twins>
- <20110829171155.GD9748@somewhere.redhat.com>
- <1314640155.2816.117.camel@twins>
+	Mon, 29 Aug 2011 14:00:21 -0400
+Date: Mon, 29 Aug 2011 22:00:11 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: kernel-hardening@lists.openwall.com, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, security@kernel.org
+Subject: [PATCH v3] proc: fix races against execve() of /proc/PID/fd**
+Message-ID: <20110829180011.GA8839@albatros>
+References: <20110804162009.GA2469@albatros>
+ <20110823144430.75315ce8.akpm@linux-foundation.org>
+ <20110826132909.GA8266@albatros>
+ <20110826124021.15f8e20c.akpm@linux-foundation.org>
+ <20110827190147.GA3015@albatros>
+ <20110828092520.GA8537@sun>
+ <20110828093156.GA6291@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314640155.2816.117.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110828093156.GA6291@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 07:49:15PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-08-29 at 19:11 +0200, Frederic Weisbecker wrote:
-> > On Mon, Aug 29, 2011 at 04:25:22PM +0200, Peter Zijlstra wrote:
-> > > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > > > To prepare for nohz / idle logic split, pull out the rcu dynticks
-> > > > idle mode switching to strict idle entry/exit areas.
-> > > > 
-> > > > So we make the dyntick mode possible without always involving rcu
-> > > > extended quiescent state. 
-> > > 
-> > > Why is this a good thing? I would be thinking that if we're a userspace
-> > > bound task and we disable the tick rcu would be finished on this cpu and
-> > > thus the extended quiescent state is just what we want?
-> > 
-> > But we can stop the tick from the kernel, not just userspace.
-> 
-> Humm!? I'm confused, I thought the idea was to only stop the tick when
-> we're 'stuck' in a user bound task. Now I get that we have to stop the
-> tick from kernel space (as in the interrupt will clearly run in kernel
-> space), but assuming the normal return from interrupt path doesn't use
-> rcu, and using rcu (as per a later patch) re-enables the tick again, it
-> doesn't matter, right?
+fd* files are restricted to the task's owner, and other users may not
+get direct access to them.  But one may open any of these files and run
+any setuid program, keeping opened file descriptors.  As there are
+permission checks on open(), but not on readdir() and read(), operations
+on the kept file descriptors will not be checked.  It makes it possible
+to violate procfs permission model.
 
-Yeah. Either the interrupt returns to userspace and then we call
-rcu_enter_nohz() or we return to kernel space and then a further
-use of rcu will restart the tick.
+Reading fdinfo/* may disclosure current fds' position and flags, reading
+directory contents of fdinfo/ and fd/ may disclosure the number of opened
+files by the target task.  This information is not sensible per se, but
+it can reveal some private information (like length of a password stored in
+a file) under certain conditions.
 
-Now this is not any use of rcu. Uses of rcu read side critical section
-don't need the tick. But we need it as long as there is an RCU callback
-enqueued on some CPU.
+Used existing (un)lock_trace functions to check for ptrace_may_access(),
+but instead of using EPERM return code from it use EACCES to be
+consistent with existing proc_pid_follow_link()/proc_pid_readlink()
+return code.  If they differ, attacker can guess what fds exist by
+analyzing stat() return code.  Patched handlers: stat() for fd/*, stat()
+and read() for fdindo/*, readdir() and lookup() for fd/ and fdinfo/.
 
-> Also, RCU needs the tick to drive the state machine, so how can you stop
-> the tick and not also stop the RCU state machine?
+v3 - Added a check of get_proc_task() result for NULL.
 
-This is why we have rcu_needs_cpu() and rcu_pending() checks before
-stopping the tick.
+v2 - Rebased to v3.1-rc3.
+   - Handle stat() case.
 
-rcu_needs_cpu() checks we have no local callback enqueued, in which
-case the local CPU is responsible of the RCU state machine.
+CC: Stable Tree <stable@kernel.org>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/proc/base.c |  146 +++++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 103 insertions(+), 43 deletions(-)
 
-rcu_pending() is there to know if another CPU started a grace period
-so we need the tick to complete it.
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 5eb0206..b65bd88 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1665,12 +1665,46 @@ out:
+ 	return error;
+ }
+ 
++static int proc_pid_fd_link_getattr(struct vfsmount *mnt, struct dentry *dentry,
++		struct kstat *stat)
++{
++	struct inode *inode = dentry->d_inode;
++	struct task_struct *task = get_proc_task(inode);
++	int rc;
++
++	if (task == NULL)
++		return -ESRCH;
++
++	rc = -EACCES;
++	if (lock_trace(task))
++		goto out_task;
++
++	generic_fillattr(inode, stat);
++	unlock_trace(task);
++	put_task_struct(task);
++	rc = 0;
++out_task:
++	return rc;
++}
++
+ static const struct inode_operations proc_pid_link_inode_operations = {
+ 	.readlink	= proc_pid_readlink,
+ 	.follow_link	= proc_pid_follow_link,
+ 	.setattr	= proc_setattr,
+ };
+ 
++static const struct inode_operations proc_fdinfo_link_inode_operations = {
++	.setattr	= proc_setattr,
++	.getattr	= proc_pid_fd_link_getattr,
++};
++
++static const struct inode_operations proc_fd_link_inode_operations = {
++	.readlink	= proc_pid_readlink,
++	.follow_link	= proc_pid_follow_link,
++	.setattr	= proc_setattr,
++	.getattr	= proc_pid_fd_link_getattr,
++};
++
+ 
+ /* building an inode */
+ 
+@@ -1902,49 +1936,61 @@ out:
+ 
+ static int proc_fd_info(struct inode *inode, struct path *path, char *info)
+ {
+-	struct task_struct *task = get_proc_task(inode);
+-	struct files_struct *files = NULL;
++	struct task_struct *task;
++	struct files_struct *files;
+ 	struct file *file;
+ 	int fd = proc_fd(inode);
++	int rc;
+ 
+-	if (task) {
+-		files = get_files_struct(task);
+-		put_task_struct(task);
+-	}
+-	if (files) {
+-		/*
+-		 * We are not taking a ref to the file structure, so we must
+-		 * hold ->file_lock.
+-		 */
+-		spin_lock(&files->file_lock);
+-		file = fcheck_files(files, fd);
+-		if (file) {
+-			unsigned int f_flags;
+-			struct fdtable *fdt;
+-
+-			fdt = files_fdtable(files);
+-			f_flags = file->f_flags & ~O_CLOEXEC;
+-			if (FD_ISSET(fd, fdt->close_on_exec))
+-				f_flags |= O_CLOEXEC;
+-
+-			if (path) {
+-				*path = file->f_path;
+-				path_get(&file->f_path);
+-			}
+-			if (info)
+-				snprintf(info, PROC_FDINFO_MAX,
+-					 "pos:\t%lli\n"
+-					 "flags:\t0%o\n",
+-					 (long long) file->f_pos,
+-					 f_flags);
+-			spin_unlock(&files->file_lock);
+-			put_files_struct(files);
+-			return 0;
++	task = get_proc_task(inode);
++	if (!task)
++		return -ENOENT;
++
++	rc = -EACCES;
++	if (lock_trace(task))
++		goto out_task;
++
++	rc = -ENOENT;
++	files = get_files_struct(task);
++	if (files == NULL)
++		goto out_unlock;
++
++	/*
++	 * We are not taking a ref to the file structure, so we must
++	 * hold ->file_lock.
++	 */
++	spin_lock(&files->file_lock);
++	file = fcheck_files(files, fd);
++	if (file) {
++		unsigned int f_flags;
++		struct fdtable *fdt;
++
++		fdt = files_fdtable(files);
++		f_flags = file->f_flags & ~O_CLOEXEC;
++		if (FD_ISSET(fd, fdt->close_on_exec))
++			f_flags |= O_CLOEXEC;
++
++		if (path) {
++			*path = file->f_path;
++			path_get(&file->f_path);
+ 		}
+-		spin_unlock(&files->file_lock);
+-		put_files_struct(files);
+-	}
+-	return -ENOENT;
++		if (info)
++			snprintf(info, PROC_FDINFO_MAX,
++				 "pos:\t%lli\n"
++				 "flags:\t0%o\n",
++				 (long long) file->f_pos,
++				 f_flags);
++		rc = 0;
++	} else
++		rc = -ENOENT;
++	spin_unlock(&files->file_lock);
++	put_files_struct(files);
++
++out_unlock:
++	unlock_trace(task);
++out_task:
++	put_task_struct(task);
++	return rc;
+ }
+ 
+ static int proc_fd_link(struct inode *inode, struct path *path)
+@@ -2039,7 +2085,7 @@ static struct dentry *proc_fd_instantiate(struct inode *dir,
+ 	spin_unlock(&files->file_lock);
+ 	put_files_struct(files);
+ 
+-	inode->i_op = &proc_pid_link_inode_operations;
++	inode->i_op = &proc_fd_link_inode_operations;
+ 	inode->i_size = 64;
+ 	ei->op.proc_get_link = proc_fd_link;
+ 	d_set_d_op(dentry, &tid_fd_dentry_operations);
+@@ -2071,7 +2117,12 @@ static struct dentry *proc_lookupfd_common(struct inode *dir,
+ 	if (fd == ~0U)
+ 		goto out;
+ 
++	result = ERR_PTR(-EACCES);
++	if (lock_trace(task))
++		goto out;
++
+ 	result = instantiate(dir, dentry, task, &fd);
++	unlock_trace(task);
+ out:
+ 	put_task_struct(task);
+ out_no_task:
+@@ -2091,23 +2142,28 @@ static int proc_readfd_common(struct file * filp, void * dirent,
+ 	retval = -ENOENT;
+ 	if (!p)
+ 		goto out_no_task;
++
++	retval = -EACCES;
++	if (lock_trace(p))
++		goto out;
++
+ 	retval = 0;
+ 
+ 	fd = filp->f_pos;
+ 	switch (fd) {
+ 		case 0:
+ 			if (filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR) < 0)
+-				goto out;
++				goto out_unlock;
+ 			filp->f_pos++;
+ 		case 1:
+ 			ino = parent_ino(dentry);
+ 			if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
+-				goto out;
++				goto out_unlock;
+ 			filp->f_pos++;
+ 		default:
+ 			files = get_files_struct(p);
+ 			if (!files)
+-				goto out;
++				goto out_unlock;
+ 			rcu_read_lock();
+ 			for (fd = filp->f_pos-2;
+ 			     fd < files_fdtable(files)->max_fds;
+@@ -2131,6 +2187,9 @@ static int proc_readfd_common(struct file * filp, void * dirent,
+ 			rcu_read_unlock();
+ 			put_files_struct(files);
+ 	}
++
++out_unlock:
++	unlock_trace(p);
+ out:
+ 	put_task_struct(p);
+ out_no_task:
+@@ -2208,6 +2267,7 @@ static struct dentry *proc_fdinfo_instantiate(struct inode *dir,
+ 	ei->fd = fd;
+ 	inode->i_mode = S_IFREG | S_IRUSR;
+ 	inode->i_fop = &proc_fdinfo_file_operations;
++	inode->i_op = &proc_fdinfo_link_inode_operations;
+ 	d_set_d_op(dentry, &tid_fd_dentry_operations);
+ 	d_add(dentry, inode);
+ 	/* Close the race of the process dying before we return the dentry */
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
