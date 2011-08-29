@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab1H2MxQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 08:53:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50419 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454Ab1H2MxL convert rfc822-to-8bit (ORCPT
+	id S1751531Ab1H2M4G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 08:56:06 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52717 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab1H2M4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 08:53:11 -0400
-Subject: Re: [PATCH] perf_event: fix broken calc_timer_values()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, emunson@mgebm.net,
-        vweaver1@eecs.utk.edu
-Date: Mon, 29 Aug 2011 14:53:01 +0200
-In-Reply-To: <20110829124112.GA4828@quad>
-References: <20110829124112.GA4828@quad>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314622381.2816.17.camel@twins>
-Mime-Version: 1.0
+	Mon, 29 Aug 2011 08:56:01 -0400
+MIME-Version: 1.0
+X-Originating-IP: [93.173.174.182]
+In-Reply-To: <20110829122516.GB9730@amd.com>
+References: <1314364839-28492-1-git-send-email-joerg.roedel@amd.com>
+ <CAK=WgbaiNxo_226Zp9BZpgUjYFajnvgPPCjCOYP2Tj4pkWTwVA@mail.gmail.com>
+ <20110829101550.GT1923@amd.com> <CADMYwHwZPiH12HxOP952-Znm_+uMXKpj2M6ew8W-frZ7R8EcWg@mail.gmail.com>
+ <20110829122516.GB9730@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 29 Aug 2011 15:55:40 +0300
+Message-ID: <CAK=WgbbqCL60uf9gWhLYbkJo44Sva3BwQuZk2R--ER4M+yDV2w@mail.gmail.com>
+Subject: Re: [PATCH] iommu: Remove stub functions for !CONFIG_IOMMU_API
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 14:41 +0200, Stephane Eranian wrote:
+On Mon, Aug 29, 2011 at 3:25 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> Right, when the system has an iommu then the iommu-api is the right
+> choice to do that. But how to you handle this on systems without an
+> iommu?
 
-> @@ -3354,8 +3354,8 @@ static int perf_event_index(struct perf_event *event)
->  }
->  
->  static void calc_timer_values(struct perf_event *event,
-> -				u64 *running,
-> -				u64 *enabled)
-> +				u64 *enabled,
-> +				u64 *running)
->  {
->  	u64 now, ctx_time;
->  
+On iommu-less systems this is completely moot, as the remote processor
+can access the bus directly, and thus doesn't need any iommu
+configuration to take place before it boots.
 
-Urgh, nice catch.. I'll queue it for perf/urgent and Cc stable for 3.0.x
+So in case there is an iommu - we configure it appropriately, and if
+there isn't, we just skip that part.
