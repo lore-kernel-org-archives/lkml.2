@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab1H2WL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 18:11:27 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34962 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754800Ab1H2WL1 (ORCPT
+	id S1755349Ab1H2WMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 18:12:00 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57060 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173Ab1H2WL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 18:11:27 -0400
-Date: Mon, 29 Aug 2011 23:11:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Al Viro <viro@ftp.linux.org.uk>
-Subject: Re: [PATCH 8/9] um: fix strrchr problems
-Message-ID: <20110829221110.GO2203@ZenIV.linux.org.uk>
-References: <1314634419-24766-1-git-send-email-richard@nod.at>
- <1314634419-24766-9-git-send-email-richard@nod.at>
- <20110829142705.5be82d7c.akpm@linux-foundation.org>
+	Mon, 29 Aug 2011 18:11:59 -0400
+Date: Mon, 29 Aug 2011 23:11:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: x86@kernel.org, Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [v2 2/4] platform: (TS-5500) add GPIO support
+Message-ID: <20110829221132.GB26846@sirena.org.uk>
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1314402027-11293-3-git-send-email-vivien.didelot@savoirfairelinux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110829142705.5be82d7c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1314402027-11293-3-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Cookie: Every morning is a Smirnoff morning.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 02:27:05PM -0700, Andrew Morton wrote:
+On Fri, Aug 26, 2011 at 07:40:25PM -0400, Vivien Didelot wrote:
 
-> z:/usr/src/linux-3.1-rc4> grep -r kernel_strrchr .       
-> z:/usr/src/linux-3.1-rc4> 
-> 
-> ok, I give up.  How does this work?
+>  arch/x86/platform/ts5500/ts5500_gpio.c |  421 ++++++++++++++++++++++++++++++++
+>  arch/x86/platform/ts5500/ts5500_gpio.h |   60 +++++
 
-You are grepping for the wrong thing ;-)  It works the same way defines
-next to it do - both the kernel and libc define functions with the
-same name (doing the same thing) and we get problems when linking.
+New GPIO drivers should really go under drivers/gpiolib and be called
+gpio-foo.c.
 
-See the comment right before it:
+> +static int ts5500_gpio_request(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct ts5500_drvdata *drvdata;
+> +
+> +	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
+> +
+> +	mutex_lock(&drvdata->gpio_lock);
+> +	if (requested_gpios[offset]) {
+> +		mutex_unlock(&drvdata->gpio_lock);
+> +		return -EBUSY;
+> +	}
+> +	requested_gpios[offset] = 1;
+> +	mutex_unlock(&drvdata->gpio_lock);
 
-# -Dvmap=kernel_vmap prevents anything from referencing the libpcap.o symbol so
-# named - it's a common symbol in libpcap, so we get a binary which crashes.
-#
-# Same things for in6addr_loopback and mktime - found in libc. For these two we
-# only get link-time error, luckily.
-#
-# These apply to USER_CFLAGS to.
+gpiolib should already be making sure there's only one user at once, no
+need to bother open coding it in the driver.
 
+> +	bitno = line_to_bit_map[offset];
+> +
+> +	mutex_lock(&drvdata->gpio_lock);
+> +	byte = inb(ioaddr);
+> +	mutex_unlock(&drvdata->gpio_lock);
+
+Do you really need the lock to do a read?
