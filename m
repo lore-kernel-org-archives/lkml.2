@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab1H2VUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:20:04 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50389 "EHLO
+	id S1755408Ab1H2VWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:22:16 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55923 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754895Ab1H2VT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:19:59 -0400
+	id S1754500Ab1H2VWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:22:12 -0400
 From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: [PATCH 09/24] decnet: Remove unnecessary OOM logging messages
-Date: Mon, 29 Aug 2011 14:17:28 -0700
-Message-Id: <d8d25441690f07e551ebf886a6990312918c9e95.1314650069.git.joe@perches.com>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 22/24] wireless: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 14:17:41 -0700
+Message-Id: <c451f15431dc866c1345e6d5ec199c373af76166.1314650069.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1314650069.git.joe@perches.com>
 References: <cover.1314650069.git.joe@perches.com>
@@ -28,40 +29,99 @@ delete them.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/decnet/dn_neigh.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ net/wireless/lib80211_crypt_ccmp.c |    2 --
+ net/wireless/lib80211_crypt_tkip.c |    4 ----
+ net/wireless/lib80211_crypt_wep.c  |    4 ----
+ net/wireless/util.c                |    5 ++---
+ 4 files changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/net/decnet/dn_neigh.c b/net/decnet/dn_neigh.c
-index 7f0eb08..0889870 100644
---- a/net/decnet/dn_neigh.c
-+++ b/net/decnet/dn_neigh.c
-@@ -230,8 +230,6 @@ static int dn_long_output(struct neighbour *neigh, struct sk_buff *skb)
- 	if (skb_headroom(skb) < headroom) {
- 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
- 		if (skb2 == NULL) {
--			if (net_ratelimit())
--				printk(KERN_CRIT "dn_long_output: no memory\n");
- 			kfree_skb(skb);
- 			return -ENOBUFS;
- 		}
-@@ -275,8 +273,6 @@ static int dn_short_output(struct neighbour *neigh, struct sk_buff *skb)
- 	if (skb_headroom(skb) < headroom) {
- 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
- 		if (skb2 == NULL) {
--			if (net_ratelimit())
--				printk(KERN_CRIT "dn_short_output: no memory\n");
- 			kfree_skb(skb);
- 			return -ENOBUFS;
- 		}
-@@ -316,8 +312,6 @@ static int dn_phase3_output(struct neighbour *neigh, struct sk_buff *skb)
- 	if (skb_headroom(skb) < headroom) {
- 		struct sk_buff *skb2 = skb_realloc_headroom(skb, headroom);
- 		if (skb2 == NULL) {
--			if (net_ratelimit())
--				printk(KERN_CRIT "dn_phase3_output: no memory\n");
- 			kfree_skb(skb);
- 			return -ENOBUFS;
- 		}
+diff --git a/net/wireless/lib80211_crypt_ccmp.c b/net/wireless/lib80211_crypt_ccmp.c
+index dacb3b4..755738d 100644
+--- a/net/wireless/lib80211_crypt_ccmp.c
++++ b/net/wireless/lib80211_crypt_ccmp.c
+@@ -77,8 +77,6 @@ static void *lib80211_ccmp_init(int key_idx)
+ 
+ 	priv->tfm = crypto_alloc_cipher("aes", 0, CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(priv->tfm)) {
+-		printk(KERN_DEBUG "lib80211_crypt_ccmp: could not allocate "
+-		       "crypto API aes\n");
+ 		priv->tfm = NULL;
+ 		goto fail;
+ 	}
+diff --git a/net/wireless/lib80211_crypt_tkip.c b/net/wireless/lib80211_crypt_tkip.c
+index 7ea4f2b..3873484 100644
+--- a/net/wireless/lib80211_crypt_tkip.c
++++ b/net/wireless/lib80211_crypt_tkip.c
+@@ -101,7 +101,6 @@ static void *lib80211_tkip_init(int key_idx)
+ 	priv->tx_tfm_arc4 = crypto_alloc_blkcipher("ecb(arc4)", 0,
+ 						CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(priv->tx_tfm_arc4)) {
+-		printk(KERN_DEBUG pr_fmt("could not allocate crypto API arc4\n"));
+ 		priv->tx_tfm_arc4 = NULL;
+ 		goto fail;
+ 	}
+@@ -109,7 +108,6 @@ static void *lib80211_tkip_init(int key_idx)
+ 	priv->tx_tfm_michael = crypto_alloc_hash("michael_mic", 0,
+ 						 CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(priv->tx_tfm_michael)) {
+-		printk(KERN_DEBUG pr_fmt("could not allocate crypto API michael_mic\n"));
+ 		priv->tx_tfm_michael = NULL;
+ 		goto fail;
+ 	}
+@@ -117,7 +115,6 @@ static void *lib80211_tkip_init(int key_idx)
+ 	priv->rx_tfm_arc4 = crypto_alloc_blkcipher("ecb(arc4)", 0,
+ 						CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(priv->rx_tfm_arc4)) {
+-		printk(KERN_DEBUG pr_fmt("could not allocate crypto API arc4\n"));
+ 		priv->rx_tfm_arc4 = NULL;
+ 		goto fail;
+ 	}
+@@ -125,7 +122,6 @@ static void *lib80211_tkip_init(int key_idx)
+ 	priv->rx_tfm_michael = crypto_alloc_hash("michael_mic", 0,
+ 						 CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(priv->rx_tfm_michael)) {
+-		printk(KERN_DEBUG pr_fmt("could not allocate crypto API michael_mic\n"));
+ 		priv->rx_tfm_michael = NULL;
+ 		goto fail;
+ 	}
+diff --git a/net/wireless/lib80211_crypt_wep.c b/net/wireless/lib80211_crypt_wep.c
+index 2f265e0..c130401 100644
+--- a/net/wireless/lib80211_crypt_wep.c
++++ b/net/wireless/lib80211_crypt_wep.c
+@@ -50,16 +50,12 @@ static void *lib80211_wep_init(int keyidx)
+ 
+ 	priv->tx_tfm = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(priv->tx_tfm)) {
+-		printk(KERN_DEBUG "lib80211_crypt_wep: could not allocate "
+-		       "crypto API arc4\n");
+ 		priv->tx_tfm = NULL;
+ 		goto fail;
+ 	}
+ 
+ 	priv->rx_tfm = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
+ 	if (IS_ERR(priv->rx_tfm)) {
+-		printk(KERN_DEBUG "lib80211_crypt_wep: could not allocate "
+-		       "crypto API arc4\n");
+ 		priv->rx_tfm = NULL;
+ 		goto fail;
+ 	}
+diff --git a/net/wireless/util.c b/net/wireless/util.c
+index 844ddb0..4252765 100644
+--- a/net/wireless/util.c
++++ b/net/wireless/util.c
+@@ -513,10 +513,9 @@ int ieee80211_data_from_8023(struct sk_buff *skb, const u8 *addr,
+ 		if (head_need)
+ 			skb_orphan(skb);
+ 
+-		if (pskb_expand_head(skb, head_need, 0, GFP_ATOMIC)) {
+-			pr_err("failed to reallocate Tx buffer\n");
++		if (pskb_expand_head(skb, head_need, 0, GFP_ATOMIC))
+ 			return -ENOMEM;
+-		}
++
+ 		skb->truesize += head_need;
+ 	}
+ 
 -- 
 1.7.6.405.gc1be0
 
