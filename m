@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab1H2Srm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:47:42 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:16908 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab1H2Srj (ORCPT
+	id S1754756Ab1H2Stq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:49:46 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:57055 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754471Ab1H2Stn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:47:39 -0400
-Message-ID: <4E5BDEAB.5000405@siemens.com>
-Date: Mon, 29 Aug 2011 20:47:07 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: Broken pci_block_user_cfg_access interface
-References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com>
-In-Reply-To: <4E5BB358.3060705@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Aug 2011 14:49:43 -0400
+Date: Mon, 29 Aug 2011 11:49:40 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net
+Subject: [PATCH -next] net: fix Makefile typos & build errors
+Message-Id: <20110829114940.4d29febc.rdunlap@xenotime.net>
+In-Reply-To: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
+References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-29 17:42, Jan Kiszka wrote:
-> I still don't get what prevents converting ipr to allow plain mutex
-> synchronization. My vision is:
->  - push reset-on-error of ipr into workqueue (or threaded IRQ?)
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-I'm starting to like your proposal: I had a look at ipr, but it turned
-out to be anything but trivial to convert that driver. It runs its
-complete state machine under spin_lock_irq, and the functions calling
-pci_block/unblock_user_cfg_access are deep inside this thing. I have no
-hardware to test whatever change, and I feel a bit uncomfortable asking
-Brian to redesign his driver that massively.
+Fix many (randconfig) PPP build errors by fixing typos in
+drivers/net/Makefile.
 
-So back to your idea: I would generalize pci_block_user_cfg_access to
-pci_block_cfg_access. It should fail when some other site already holds
-the access lock, but it should remain non-blocking - for the sake of ipr.
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/net/Makefile |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-We should still provide generic pci-2.3 IRQ masking services, but that
-could be done in a second step. I could have a look at this.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+--- linux-next-20110829.orig/drivers/net/Makefile
++++ linux-next-20110829/drivers/net/Makefile
+@@ -35,7 +35,7 @@ obj-$(CONFIG_HIPPI) += hippi/
+ obj-$(CONFIG_HAMRADIO) += hamradio/
+ obj-$(CONFIG_IRDA) += irda/
+ obj-$(CONFIG_PLIP) += plip/
+-onj-$(CONFIG_PPP) += ppp/
++obj-$(CONFIG_PPP) += ppp/
+ obj-$(CONFIG_PPP_ASYNC) += ppp/
+ obj-$(CONFIG_PPP_BSDCOMP) += ppp/
+ obj-$(CONFIG_PPP_DEFLATE) += ppp/
+@@ -44,10 +44,10 @@ obj-$(CONFIG_PPP_SYNC_TTY) += ppp/
+ obj-$(CONFIG_PPPOE) += ppp/
+ obj-$(CONFIG_PPPOL2TP) += ppp/
+ obj-$(CONFIG_PPTP) += ppp/
+-onj-$(CONFIG_SLIP) += slip/
++obj-$(CONFIG_SLIP) += slip/
+ obj-$(CONFIG_SLHC) += slip/
+ obj-$(CONFIG_NET_SB1000) += sb1000.o
+-onj-$(CONFIG_SLIP) += slip/
++obj-$(CONFIG_SLIP) += slip/
+ obj-$(CONFIG_SUNGEM_PHY) += sungem_phy.o
+ obj-$(CONFIG_TR) += tokenring/
+ obj-$(CONFIG_WAN) += wan/
