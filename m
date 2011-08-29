@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab1H2Wrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 18:47:36 -0400
-Received: from yaina.de ([78.46.107.162]:36035 "EHLO mail.yaina.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754505Ab1H2Wre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 18:47:34 -0400
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Aug 2011 18:47:34 EDT
-Date: Tue, 30 Aug 2011 00:42:00 +0200
-From: Joerg Reuter <jreuter@yaina.de>
-To: Joe Perches <joe@perches.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-hams@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/24] ax25: Remove unnecessary OOM logging messages
-Message-ID: <20110829224159.GB23854@yaina.de>
-References: <cover.1314650069.git.joe@perches.com>
- <a426e678426cf2be1552edfbbb0de7ce08e9a7ef.1314650069.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a426e678426cf2be1552edfbbb0de7ce08e9a7ef.1314650069.git.joe@perches.com>
-X-Face: #DGJ)DCeau/h"w7G~n9r|/jxvQQrtU)nat27v-><7':==-=.mfnXc+8&qOj`*R|qPr14[|4
- E_BUo5T*NT\(+fE7wr3}QoN*!c7\.Z.DiA{ko;01^TCi$K}1TIV|bNO.$jm;i<A,|
-X-Message-Flag: Your mail client is broken beyond repair
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755300Ab1H2Wup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 18:50:45 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60260 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754103Ab1H2Wun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 18:50:43 -0400
+Subject: Re: linux-next: build failure in Linus' tree
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
+        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
+        "J. Bruce Fields" <bfields@redhat.com>
+In-Reply-To: <20110830083218.1819a5d73c3a33e5053e8312@canb.auug.org.au>
+References: <20110829104451.1c777e24ff72823d1e399f12@canb.auug.org.au>
+	 <20110830083218.1819a5d73c3a33e5053e8312@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Aug 2011 15:50:42 -0700
+Message-ID: <1314658242.3078.18.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 02:17:23PM -0700, Joe Perches wrote:
+On Tue, 2011-08-30 at 08:32 +1000, Stephen Rothwell wrote:
+> Hi Linus,
+> 
+> On Mon, 29 Aug 2011 10:44:51 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the fixes tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> > 
+> > arch/powerpc/kernel/built-in.o: In function `.sys_call_table':
+> > (.text+0xbd00): undefined reference to `.sys_nfsservctl'
+> > arch/powerpc/kernel/built-in.o: In function `.sys_call_table':
+> > (.text+0xbd08): undefined reference to `.compat_sys_nfsservctl'
+> > 
+> > Caused by commit f5b940997397 ("All Arch: remove linkage for
+> > sys_nfsservctl system call") which also missed parisc.
+> > 
+> > I will apply this patch for today:
+> 
+> Will you please appply this?  (repeated for ease of inclusion)
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 29 Aug 2011 10:38:57 +1000
+> Subject: [PATCH] remove remaining references to nfsservctl
+> 
+> These were missed in commit f5b940997397 "All Arch: remove linkage
+> for sys_nfsservctl system call" due to them having no sys_ prefix
+> (presumably).
+> 
+> Cc: NeilBrown <neilb@suse.de>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-parisc@vger.kernel.org
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-> Removing unnecessary messages saves code and text.
+Thanks for finding this ... definitely acked by me if necessary.
 
-Not really that much of an impact, but yes, I agree it just swamps
-syslog with duplicate messages... It was more debug code than
-anything else originally. Beats me why it is logged as KERN_ERR or
-KERN_CRIT, being out of buffers is not really fatal or even
-unusual.
+James
 
-Still alive with just not enough time for hamradio stuff nowadays,
-	Joerg DL1BKE
-
--- 
-Joerg Reuter                                    http://yaina.de/jreuter
-And I make my way to where the warm scent of soil fills the evening air. 
-Everything is waiting quietly out there....                 (Anne Clark)
 
