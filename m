@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab1H2VV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:21:56 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52024 "EHLO
+	id S1755341Ab1H2VVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:21:23 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40352 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754500Ab1H2VVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:21:52 -0400
+	id S1755187Ab1H2VVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:21:20 -0400
 From: Joe Perches <joe@perches.com>
-To: Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>
+To: Jamal Hadi Salim <hadi@cyberus.ca>
 Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 20/24] tipc: Remove unnecessary OOM logging messages
-Date: Mon, 29 Aug 2011 14:17:39 -0700
-Message-Id: <22c8098d9704a07ce8ccb5b13c6ac531dbb9dd1e.1314650069.git.joe@perches.com>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 17/24] sched: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 14:17:36 -0700
+Message-Id: <2c57e8e336c6059dc550ba88e96dcaa27056382f.1314650069.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1314650069.git.joe@perches.com>
 References: <cover.1314650069.git.joe@perches.com>
@@ -29,25 +28,47 @@ delete them.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/tipc/link.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ net/sched/act_api.c |    6 ++----
+ net/sched/sch_atm.c |    1 -
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/net/tipc/link.c b/net/tipc/link.c
-index f89570c..5c96289 100644
---- a/net/tipc/link.c
-+++ b/net/tipc/link.c
-@@ -325,10 +325,8 @@ struct link *tipc_link_create(struct tipc_node *n_ptr,
- 	}
+diff --git a/net/sched/act_api.c b/net/sched/act_api.c
+index f2fb67e..fb98a30 100644
+--- a/net/sched/act_api.c
++++ b/net/sched/act_api.c
+@@ -749,10 +749,9 @@ static struct tc_action *create_a(int i)
+ 	struct tc_action *act;
  
- 	l_ptr = kzalloc(sizeof(*l_ptr), GFP_ATOMIC);
--	if (!l_ptr) {
--		warn("Link creation failed, no memory\n");
-+	if (!l_ptr)
+ 	act = kzalloc(sizeof(*act), GFP_KERNEL);
+-	if (act == NULL) {
+-		pr_debug("create_a: failed to alloc!\n");
++	if (act == NULL)
  		return NULL;
 -	}
++
+ 	act->order = i;
+ 	return act;
+ }
+@@ -778,7 +777,6 @@ static int tca_action_flush(struct net *net, struct nlattr *nla,
  
- 	l_ptr->addr = peer;
- 	if_name = strchr(b_ptr->name, ':') + 1;
+ 	skb = alloc_skb(NLMSG_GOODSIZE, GFP_KERNEL);
+ 	if (!skb) {
+-		pr_debug("tca_action_flush: failed skb alloc\n");
+ 		kfree(a);
+ 		return err;
+ 	}
+diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
+index e25e490..cba66c4 100644
+--- a/net/sched/sch_atm.c
++++ b/net/sched/sch_atm.c
+@@ -270,7 +270,6 @@ static int atm_tc_change(struct Qdisc *sch, u32 classid, u32 parent,
+ 	}
+ 	pr_debug("atm_tc_change: new id %x\n", classid);
+ 	flow = kzalloc(sizeof(struct atm_flow_data) + hdr_len, GFP_KERNEL);
+-	pr_debug("atm_tc_change: flow %p\n", flow);
+ 	if (!flow) {
+ 		error = -ENOBUFS;
+ 		goto err_out;
 -- 
 1.7.6.405.gc1be0
 
