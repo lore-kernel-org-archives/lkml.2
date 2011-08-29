@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1H2Xa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755449Ab1H2Xa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:30:58 -0400
-Date: Tue, 30 Aug 2011 01:30:01 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] thp: tail page refcounting fix #4
-Message-ID: <20110829233001.GM4051@redhat.com>
-References: <CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
- <20110824000914.GH23870@redhat.com>
- <20110824002717.GI23870@redhat.com>
- <20110824133459.GP23870@redhat.com>
- <20110826062436.GA5847@google.com>
- <20110826161048.GE23870@redhat.com>
- <20110826185430.GA2854@redhat.com>
- <20110827094152.GA16402@google.com>
- <20110827173421.GA2967@redhat.com>
- <CANN689G4HowkFC7BG69F-PJMne5Mhs51O=KgmmJUjiXfG-o9BQ@mail.gmail.com>
+	id S1755562Ab1H2XfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:35:03 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:59609 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755453Ab1H2XfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:35:00 -0400
+Message-ID: <4E5C21E2.4070903@panasas.com>
+Date: Mon, 29 Aug 2011 16:33:54 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANN689G4HowkFC7BG69F-PJMne5Mhs51O=KgmmJUjiXfG-o9BQ@mail.gmail.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: David Miller <davem@davemloft.net>, <joe@perches.com>,
+        <bfields@fieldses.org>, <neilb@suse.de>, <linux-nfs@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 19/24] sunrpc: Remove unnecessary OOM logging messages
+References: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4EE9@SACMVEXC2-PRD.hq.netapp.com><20110829.143751.1153162956919885670.davem@davemloft.net><4E5C0AB3.90401@panasas.com> <20110829.180348.1774953636752413432.davem@davemloft.net> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4FAF@SACMVEXC2-PRD.hq.netapp.com>
+In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4FAF@SACMVEXC2-PRD.hq.netapp.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 03:40:07PM -0700, Michel Lespinasse wrote:
-> Looks great.
+On 08/29/2011 04:25 PM, Myklebust, Trond wrote:
+>> -----Original Message-----
+>> From: David Miller [mailto:davem@davemloft.net]
+<>
+>> They've been doing this for years, so obviously they haven't bothered
+>> you enough to care up to this point.
+>>
+>> All of this pushback is pure uneducated noise, please stop blocking
+>> progress with poorly informed objections.
+> 
+> I can see that slub.c has the slab_out_of_memory() function that
+> (although ratelimited) warns you if the allocation failed. However I
+> can't find any equivalent for slab.c or slob.c.
+> 
 
-Thanks!
+OK That would explain why I never saw it in my debugging. For some reason
+I'm always using slab. 
 
-> I think some page_mapcount call sites would be easier to read if you
-> took on my tail_page_count() suggestion (so we can casually see it's a
-> refcount rather than mapcount). But you don't have to do it if you
-> don't think it helps. I'm happy enough with the code already :)
+Which one is the best for development and memory problems debugging?
 
-I initially tried to do it but I wanted it in internal.h (it's really
-an internal thing not mean for any driver whatsoever) but then the
-gup.c files wouldn't see it, so I wasn't sure how to proceed and I
-dropped it. It's still possible to do it later...
+> Trond
+
+Thanks
+Boaz
