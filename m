@@ -1,40 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab1H2P4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:56:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53299 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab1H2P4A convert rfc822-to-8bit (ORCPT
+	id S1753800Ab1H2P4L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:56:11 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:47499 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab1H2P4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:56:00 -0400
-Subject: Re: [PATCH 16/32] nohz/cpuset: Wake up adaptive nohz CPU when a
- timer gets enqueued
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 17:55:37 +0200
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-17-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314633337.2816.104.camel@twins>
-Mime-Version: 1.0
+	Mon, 29 Aug 2011 11:56:04 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz146fK1432N98dKzz1202h1082kzz8275dhz32i668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LQP5JT-01-2BN-02
+X-M-MSG: 
+Date: Mon, 29 Aug 2011 17:55:01 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: David Airlie <airlied@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, Pavel Ivanov <paivanof@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        <linux-kbuild@vger.kernel.org>
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+Message-ID: <20110829155501.GC2025@gere.osrc.amd.com>
+References: <20110829141612.GB2025@gere.osrc.amd.com>
+ <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 17:51 +0200, Peter Zijlstra wrote:
+On Mon, Aug 29, 2011 at 11:47:24AM -0400, David Airlie wrote:
+> > On Mon, Aug 29, 2011 at 09:48:22AM -0400, Alex Deucher wrote:
+> > > >> Should we make Kconfig pop up a dialog and ask for the
+> > > >> whereabouts of
+> > > >> these firmware thingies when you mark the driver =y?
+> > > >>
+> > > >> This all sounds like magic to me, having to know you need to add
+> > > >> to
+> > > >> EXTRA_FIRMWARE, having to know what file it needs etc.. For all
+> > > >> intents
+> > > >> and purposes =y just doesn't work and that's broken.
+> > > >
+> > > > Yep, you make a lot of sense. I had to fumble the build/reboot
+> > > > cycle a
+> > > > couple of times and do some code staring even to figure this out.
+> > > > In
+> > > > the end, I copied the whole radeon/ folder from David's firmware
+> > > > git
+> > > > repo into /lib/firmware and made radeon.ko =m again so that I
+> > > > don't have
+> > > > to add *.bin entries to CONFIG_EXTRA_FIRMWARE each time I'm
+> > > > building a
+> > > > kernel on a different machine.
+> > > >
+> > > > Besides, there was this other issue on lkml today where
+> > > > CONFIG_EXTRA_FIRMWARE can cause nconf to segfault when you
+> > > > overflow
+> > > > its length of 256 by trying to include a bunch of firmware *bin
+> > > > files:
+> > > > http://lkml.org/lkml/2011/8/29/86
+> > >
+> > > If you are going to build the ucode into your kernel you'll need to
+> > > pick the ones you want to include or increase the limit regardless
+> > > of
+> > > whether it's radeon ucode or ucode for some other chip. For a
+> > > particular card you only need the ones for that card (e.g.,
+> > > CEDAR_*.bin or REDWOOD_*.bin, etc.)
+> > 
+> > Alex, Dave, yeah, that's all fine.
+> > 
+> > The question Peter asked is, how to make this much more understandable
+> > to the user so that she/he doesn't have to figure it out on their own.
+> > IOW, if one sets RADEON to =y in Kconfig, it should automatically
+> > generate a selection menu with all the firmware required so that
+> > the user can select from it either the CEDAR* or the REDWOOD* (or
+> > the DOUGHNUT* :-)) ones for her/his card and when the user selects
+> > one entry, the required strings are added to CONFIG_EXTRA_FIRMWARE
+> > _automatically_.
+> > 
+> > Maybe even Kbuild should try to find them on the system, and, if
+> > unable
+> > to, remind the user to install the needed firmware package.
+> > 
+> > Anyway, something to that effect, the above is just to illustrate the
+> > intention, I don't know whether it would work. In any case, we're
+> > lacking user help there and we don't want to put every user through
+> > the process of finding which firmware files she/he needs when setting
+> > RADEON=y.
+> > 
+> > Does that make more sense?
 > 
-> Also, all the delta_jiffies stuff in the current
-> tick_nohz_stop_sched_tick() deals with this, why duplicate the logic?
+> Oh it makes sense, just neither of us are Kbuild hackers and I'm not sure that'll change at any point :)
 > 
-Damn, n/m this is about new timers.. tick_nohz_new_timer() then.
+> It also sounds like something that could apply to any driver with external firmware.
+
+So it seems like all the request_firmware() drivers could use a Kbuild
+functionality of some sort which presents the user with an option to
+select the firmware blobs for his hw when those drivers are =y. Hairy.
+
+Adding kbuild ML.
+
+-- 
+Regards/Gruss,
+Boris.
+
