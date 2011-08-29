@@ -1,135 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab1H2Xfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:35:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60797 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755508Ab1H2Xf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:35:28 -0400
-Date: Tue, 30 Aug 2011 01:35:23 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to idle
- enter/exit APIs
-Message-ID: <20110829233521.GK9748@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
- <1314627922.2816.65.camel@twins>
- <20110829171155.GD9748@somewhere.redhat.com>
- <1314640155.2816.117.camel@twins>
- <20110829175954.GF9748@somewhere.redhat.com>
- <1314641160.2816.128.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314641160.2816.128.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755548Ab1H2XjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:39:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50757 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755401Ab1H2XjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:39:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="43427269"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, eric.dumazet@gmail.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/4] posix-timers: limit the number of posix timers per process
+Date: Mon, 29 Aug 2011 16:39:15 -0700
+Message-Id: <1314661157-22173-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
+References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 08:06:00PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-08-29 at 19:59 +0200, Frederic Weisbecker wrote:
-> > On Mon, Aug 29, 2011 at 07:49:15PM +0200, Peter Zijlstra wrote:
-> > > On Mon, 2011-08-29 at 19:11 +0200, Frederic Weisbecker wrote:
-> > > > On Mon, Aug 29, 2011 at 04:25:22PM +0200, Peter Zijlstra wrote:
-> > > > > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > > > > > To prepare for nohz / idle logic split, pull out the rcu dynticks
-> > > > > > idle mode switching to strict idle entry/exit areas.
-> > > > > > 
-> > > > > > So we make the dyntick mode possible without always involving rcu
-> > > > > > extended quiescent state. 
-> > > > > 
-> > > > > Why is this a good thing? I would be thinking that if we're a userspace
-> > > > > bound task and we disable the tick rcu would be finished on this cpu and
-> > > > > thus the extended quiescent state is just what we want?
-> > > > 
-> > > > But we can stop the tick from the kernel, not just userspace.
-> > > 
-> > > Humm!? I'm confused, I thought the idea was to only stop the tick when
-> > > we're 'stuck' in a user bound task. Now I get that we have to stop the
-> > > tick from kernel space (as in the interrupt will clearly run in kernel
-> > > space), but assuming the normal return from interrupt path doesn't use
-> > > rcu, and using rcu (as per a later patch) re-enables the tick again, it
-> > > doesn't matter, right?
-> > 
-> > Yeah. Either the interrupt returns to userspace and then we call
-> > rcu_enter_nohz() or we return to kernel space and then a further
-> > use of rcu will restart the tick.
-> > 
-> > Now this is not any use of rcu. Uses of rcu read side critical section
-> > don't need the tick. 
-> 
-> But but but, then how is it going to stop a grace period from happening?
-> The grace period state is per-cpu and the whole state machine is tick
-> driven.
+From: Andi Kleen <ak@linux.intel.com>
 
-But rcu read side critical sections (preemption disabled, rcu_read_lock(),
-softirq disabled) don't need the tick to enforce the critical section
-itself.
+Now this is the main reason I wrote the whole patchkit: previously
+there was no limit on the maximum number of POSIX timers a process
+could allocate.  This limits the amount of unswappable kernel memory
+a process can pin down this way.
 
-OTOH it is needed to find non-critical sections when asked to cooperate
-in a grace period completion. But if no callback have been enqueued on
-the whole system we are fine.
+With the POSIX timer ids being per process we can do this limit
+per process now without allowing one process DoSing another.
 
-> Now some of the new RCU things go kick cpus with IPIs to push grace
-> periods along, but I would expect you don't want that to happen either,
-> the whole purpose here is to leave a cpu alone, unperturbed.
+I implemented it as a sysctl, not a rlimit for now, because
+there was no clear use case for rlimit.
 
-Sure we want the CPU to be unperturbed but not if that sacrifies correctness.
-As long as we run in the kernel we want to receive such IPIs to restart
-the tick as needed.
+The 1024 default is completely arbitrary, but seems reasonable
+for now.
 
-> That means it has to be in an extended grace period when we stop the
-> tick.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ Documentation/sysctl/kernel.txt |    7 +++++++
+ kernel/posix-timers.c           |    8 ++++++++
+ kernel/sysctl.c                 |    9 +++++++++
+ 3 files changed, 24 insertions(+), 0 deletions(-)
 
-You mean extended quiescent state?
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 704e474..1f69cae 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -35,6 +35,7 @@ show up in /proc/sys/kernel:
+ - kptr_restrict
+ - kstack_depth_to_print       [ X86 only ]
+ - l2cr                        [ PPC only ]
++- max_posix_timer
+ - modprobe                    ==> Documentation/debugging-modules.txt
+ - modules_disabled
+ - msgmax
+@@ -299,6 +300,12 @@ This flag controls the L2 cache of G3 processor boards. If
+ 
+ ==============================================================
+ 
++max_posix_timers
++
++The maximum number of POSIX timer ids per process.
++
++==============================================================
++
+ modules_disabled:
+ 
+ A toggle value indicating if modules are allowed to be loaded
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 4193cf7..ef6721c 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -71,6 +71,8 @@
+  */
+ static struct kmem_cache *posix_timers_cache;
+ 
++int sysctl_max_posix_timers __read_mostly = 1024;
++
+ /*
+  * we assume that the new SIGEV_THREAD_ID shares no bits with the other
+  * SIGEV values.  Here we put out an error if this assumption fails.
+@@ -572,6 +574,12 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 
+ 	it_id_set = IT_ID_SET;
+ 	new_timer->it_id = (timer_t) new_timer_id;
++
++	if (new_timer_id >= sysctl_max_posix_timers) {
++		error = -EMFILE;  /* better error? */
++		goto out;
++	}
++
+ 	new_timer->it_clock = which_clock;
+ 	new_timer->it_overrun = -1;
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 11d65b5..8fcf8b5 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -108,6 +108,7 @@ extern int sysctl_nr_trim_pages;
+ #ifdef CONFIG_BLOCK
+ extern int blk_iopoll_enabled;
+ #endif
++extern int sysctl_max_posix_timers;
+ 
+ /* Constants used for minimum and  maximum */
+ #ifdef CONFIG_LOCKUP_DETECTOR
+@@ -984,6 +985,14 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++	{
++		.procname	= "max_posix_timers",
++		.data		= &sysctl_max_posix_timers,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++
+ 	{ }
+ };
+ 
+-- 
+1.7.4.4
 
-As a summary here is what we do:
-
-- if we are in the kernel, we can't run into extended quiescent state because
-we may make use of rcu anytime there. But if we run nohz we don't have the tick
-to notice quiescent states to the RCU machinery and help completing grace periods
-so as soon as we receive an rcu IPI from another CPU (due to the grace period
-beeing extended because our nohz CPU doesn't report quiescent states), we restart
-the tick. We are optimistic enough to consider that we may avoid a lot of ticks
-even if there are some risks to be disturbed in some random rates.
-So even with the IPI we consider it as an upside.
-
-- if we are in userspace we can run in extended quiescent state.
-
-> 
-> > But we need it as long as there is an RCU callback
-> > enqueued on some CPU.
-> 
-> Well, no, only if there's one enqueued on this cpu because then we can't
-> enter the extended grace period.
-
-True if we are in userspace. 
-
-> > > Also, RCU needs the tick to drive the state machine, so how can you stop
-> > > the tick and not also stop the RCU state machine?
-> > 
-> > This is why we have rcu_needs_cpu() and rcu_pending() checks before
-> > stopping the tick.
-> > 
-> > rcu_needs_cpu() checks we have no local callback enqueued, in which
-> > case the local CPU is responsible of the RCU state machine.
-> > 
-> > rcu_pending() is there to know if another CPU started a grace period
-> > so we need the tick to complete it.
-> 
-> Hence the extended grace period, so we don't need to complete grace
-> periods.
-
-I hope the above explanations made things more clear.
