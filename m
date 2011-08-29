@@ -1,132 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab1H2Nhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:37:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45886 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753645Ab1H2Nhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:37:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,296,1312182000"; 
-   d="scan'208";a="43515139"
-Date: Mon, 29 Aug 2011 21:37:29 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110829133729.GA27871@localhost>
-References: <1313154259.6576.42.camel@twins>
- <20110812142020.GB17781@localhost>
- <1314027488.24275.74.camel@twins>
- <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
- <20110823141504.GA15949@localhost>
- <20110823174757.GC15820@redhat.com>
- <20110824001257.GA6349@localhost>
- <20110824180058.GC22434@redhat.com>
- <1314623527.2816.28.camel@twins>
+	id S1753728Ab1H2NiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:38:21 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:36977
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753674Ab1H2NiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 09:38:16 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz936eK1432N98dKzz1202h1082kzz8275dhz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LQOZ7M-02-9TX-02
+X-M-MSG: 
+Date: Mon, 29 Aug 2011 15:38:08 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Alex Deucher <alexdeucher@gmail.com>
+CC: Pavel Ivanov <paivanof@gmail.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        <dri-devel@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+Message-ID: <20110829133808.GA2025@gere.osrc.amd.com>
+References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
+ <1314435638.2321.12.camel@thor.local>
+ <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
+ <20110828053624.GC12851@liondog.tnic>
+ <1314624021.2816.30.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1314623527.2816.28.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1314624021.2816.30.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 09:12:07PM +0800, Peter Zijlstra wrote:
-> On Wed, 2011-08-24 at 14:00 -0400, Vivek Goyal wrote:
+On Mon, Aug 29, 2011 at 03:20:21PM +0200, Peter Zijlstra wrote:
+> On Sun, 2011-08-28 at 07:36 +0200, Borislav Petkov wrote:
+> > > > With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
+> > > > loaded from userspace, so it needs to be built into the kernel as well.
+> > > 
+> > > How should I do that? I've tried to set all "m"s to "y" in .config and
+> > > still saw this issue. Should I set some special parameter?
 > > 
-> > Ok, I think I am beginning to see your point. Let me just elaborate on
-> > the example you gave.
+> > You need to add "radeon/CEDAR_pfp.bin" to CONFIG_EXTRA_FIRMWARE when you
+> > configure your kernel and enable CONFIG_FIRMWARE_IN_KERNEL.
 > > 
-> > Assume a system is completely balanced and a task is writing at 100MB/s
-> > rate.
-> > 
-> > write_bw = dirty_rate = 100MB/s, pos_ratio = 1; N=1
-> > 
-> > bdi->dirty_ratelimit = 100MB/s
-> > 
-> > Now another tasks starts dirtying the page cache on same bdi. Number of 
-> > dirty pages should go up pretty fast and likely position ratio feedback
-> > will kick in to reduce the dirtying rate. (rate based feedback does not
-> > kick in till next 200ms) and pos_ratio feedback seems to be instantaneous.
-> > Assume new pos_ratio is .5
-> > 
-> > So new throttle rate for both the tasks is 50MB/s.
-> > 
-> > bdi->dirty_ratelimit = 100MB/s (a feedback has not kicked in yet)
-> > task_ratelimit = bdi->dirty_ratelimit * pos_ratio = 100 *.5 = 50MB/s
-> > 
-> > Now lets say 200ms have passed and rate base feedback is reevaluated.
-> > 
-> >                                                       write_bw  
-> > bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * ---------
-> >                                                       dirty_bw
-> > 
-> > bdi->dirty_ratelimit_(i+1) = 100 * 100/100 = 100MB/s
-> > 
-> > Ideally bdi->dirty_ratelimit should have now become 50MB/s as N=2 but 
-> > that did not happen. And reason being that there are two feedback control
-> > loops and pos_ratio loops reacts to imbalances much more quickly. Because
-> > previous loop has already reacted to the imbalance and reduced the
-> > dirtying rate of task, rate based loop does not try to adjust anything
-> > and thinks everything is just fine.
-> > 
-> > Things are fine in the sense that still dirty_rate == write_bw but
-> > system is not balanced in terms of number of dirty pages and pos_ratio=.5
-> > 
-> > So you are trying to make one feedback loop aware of second loop so that
-> > if second loop is unbalanced, first loop reacts to that as well and not
-> > just look at dirty_rate and write_bw. So refining new balanced rate by
-> > pos_ratio helps.
-> >                                                       write_bw  
-> > bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * --------- * pos_ratio
-> >                                                       dirty_bw
-> > 
-> > Now if global dirty pages are imbalanced, balanced rate will still go
-> > down despite the fact that dirty_bw == write_bw. This will lead to
-> > further reduction in task dirty rate. Which in turn will lead to reduced
-> > number of dirty rate and should eventually lead to pos_ratio=1.
+> > The radeon/CEDAR_pfp.bin file (+ leading directory, mind you) should
+> > most probably be located in /lib/firmware or to whatever you have set
+> > CONFIG_EXTRA_FIRMWARE_DIR so that Kbuild can find it (if not, you'll get
+> > a warning at the end of the kernel build). This way, it works for both
+> > radeon being =m and =y.
 > 
+> Should we make Kconfig pop up a dialog and ask for the whereabouts of
+> these firmware thingies when you mark the driver =y? 
 > 
-> Ok so this argument makes sense, is there some formalism to describe
-> such systems where such things are more evident?
+> This all sounds like magic to me, having to know you need to add to
+> EXTRA_FIRMWARE, having to know what file it needs etc.. For all intents
+> and purposes =y just doesn't work and that's broken.
 
-I find the most easy and clean way to describe it is,
+Yep, you make a lot of sense. I had to fumble the build/reboot cycle a
+couple of times and do some code staring even to figure this out. In
+the end, I copied the whole radeon/ folder from David's firmware git
+repo into /lib/firmware and made radeon.ko =m again so that I don't have
+to add *.bin entries to CONFIG_EXTRA_FIRMWARE each time I'm building a
+kernel on a different machine.
 
-(1) the below formula
-                                                          write_bw  
-    bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * --------- * pos_ratio
-                                                          dirty_bw
-is able to yield
+Besides, there was this other issue on lkml today where
+CONFIG_EXTRA_FIRMWARE can cause nconf to segfault when you overflow
+its length of 256 by trying to include a bunch of firmware *bin files:
+http://lkml.org/lkml/2011/8/29/86
 
-    dirty_ratelimit_(i) ~= (write_bw / N)
+Alex?
 
-as long as
+-- 
+Regards/Gruss,
+Boris.
 
-- write_bw, dirty_bw and pos_ratio are not changing rapidly
-- dirty pages are not around @freerun or @limit
-
-Otherwise there will be larger estimation errors.
-
-(2) based on (1), we get
-
-    task_ratelimit ~= (write_bw / N) * pos_ratio
-
-So the pos_ratio feedback is able to drive dirty count to the
-setpoint, where pos_ratio = 1.
-
-That interpretation based on _real values_ can neatly decouple the two
-feedback loops :) It makes full utilization of the fact "the
-dirty_ratelimit _value_ is independent on pos_ratio except for
-possible impacts on estimation errors".
-
-Thanks,
-Fengguang
