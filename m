@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab1H2VTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:19:52 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50546 "EHLO
+	id S1755244Ab1H2VUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:20:11 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48792 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754412Ab1H2VTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:19:50 -0400
+	id S1755089Ab1H2VUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:20:08 -0400
 From: Joe Perches <joe@perches.com>
-To: Sage Weil <sage@newdream.net>
-Cc: "David S. Miller" <davem@davemloft.net>, ceph-devel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 08/24] ceph: Remove unnecessary OOM logging messages
-Date: Mon, 29 Aug 2011 14:17:27 -0700
-Message-Id: <f211b163caf9dbf6e39c16bc21d9050a625812db.1314650069.git.joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 10/24] econet: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 14:17:29 -0700
+Message-Id: <05e147e61f40f97fadd63ce51ae1fcf3138fc109.1314650069.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1314650069.git.joe@perches.com>
 References: <cover.1314650069.git.joe@perches.com>
@@ -28,45 +27,26 @@ delete them.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/ceph/messenger.c |    5 +----
- net/ceph/msgpool.c   |    6 +-----
- 2 files changed, 2 insertions(+), 9 deletions(-)
+ net/econet/af_econet.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index c340e2e..2cd6683 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2331,11 +2331,8 @@ struct ceph_msg *ceph_msg_new(int type, int front_len, gfp_t flags)
- 		} else {
- 			m->front.iov_base = kmalloc(front_len, flags);
- 		}
--		if (m->front.iov_base == NULL) {
--			pr_err("msg_new can't allocate %d bytes\n",
--			     front_len);
-+		if (m->front.iov_base == NULL)
- 			goto out2;
--		}
- 	} else {
- 		m->front.iov_base = NULL;
- 	}
-diff --git a/net/ceph/msgpool.c b/net/ceph/msgpool.c
-index d5f2d97..4ac37d4 100644
---- a/net/ceph/msgpool.c
-+++ b/net/ceph/msgpool.c
-@@ -10,12 +10,8 @@
- static void *alloc_fn(gfp_t gfp_mask, void *arg)
- {
- 	struct ceph_msgpool *pool = arg;
--	void *p;
+diff --git a/net/econet/af_econet.c b/net/econet/af_econet.c
+index 1c1f26c..6ab525d 100644
+--- a/net/econet/af_econet.c
++++ b/net/econet/af_econet.c
+@@ -865,11 +865,9 @@ static void aun_incoming(struct sk_buff *skb, struct aunhdr *ah, size_t len)
  
--	p = ceph_msg_new(0, pool->front_len, gfp_mask);
--	if (!p)
--		pr_err("msgpool %s alloc failed\n", pool->name);
--	return p;
-+	return ceph_msg_new(0, pool->front_len, gfp_mask);
- }
+ 	newskb = alloc_skb((len - sizeof(struct aunhdr) + 15) & ~15,
+ 			   GFP_ATOMIC);
+-	if (newskb == NULL) {
+-		pr_debug("AUN: memory squeeze, dropping packet\n");
++	if (newskb == NULL)
+ 		/* Send nack and hope sender tries again */
+ 		goto bad;
+-	}
  
- static void free_fn(void *element, void *arg)
+ 	memcpy(skb_put(newskb, len - sizeof(struct aunhdr)), (void *)(ah + 1),
+ 	       len - sizeof(struct aunhdr));
 -- 
 1.7.6.405.gc1be0
 
