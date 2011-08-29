@@ -1,143 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab1H2D5o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 23:57:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:30079 "EHLO mga14.intel.com"
+	id S1752711Ab1H2D5i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 23:57:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45068 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194Ab1H2D5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 23:57:06 -0400
+	id S1752577Ab1H2D5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 23:57:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,295,1312182000"; 
-   d="scan'208";a="43384116"
-Message-Id: <20110829034932.135446238@intel.com>
+   d="scan'208";a="43384128"
+Message-Id: <20110829034932.531048150@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 29 Aug 2011 11:29:55 +0800
+Date: Mon, 29 Aug 2011 11:29:58 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 to: Ingo Molnar <mingo@elte.hu>
-cc: Mel Gorman <mgorman@suse.de>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Mel Gorman <mgorman@suse.de>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
 cc: Linux Memory Management List <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH 4/7] tracing/mm: dump more page frame information
+Subject: [RFC][PATCH 7/7] tracing/mm: add memcg field
 References: <20110829032951.677220552@intel.com>
-Content-Disposition: inline; filename=mm-export-pageflag_names.patch
+Content-Disposition: inline; filename=memcg-page-id.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 4 more fields to dump_page_frame trace event.
+Dump the memcg id associated with a pagecache page.
 
-1) stable page flags in addition to the raw page flags
+The downside is, the page_memcg_id() is a pretty heavy weight function
+that needs to lock/unlock the page..
 
-User space should only make use the stable page flags.  The raw page
-flags is stored mainly to take advantage of ftrace_print_flags_seq()
-for showing symbolic flag names.
-
-2) struct page address
-3) page->private
-4) page->mapping
-
-The above 3 fields are mainly targeted for VM debug aids.
-
+CC: Balbir Singh <balbir@linux.vnet.ibm.com>
+CC: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/page-flags.h |    1 +
- include/trace/events/mm.h  |   29 +++++++++++++++++++++++++----
- mm/page_alloc.c            |    4 ++--
- 3 files changed, 28 insertions(+), 6 deletions(-)
+ include/linux/memcontrol.h |    6 ++++++
+ include/trace/events/mm.h  |   16 +++++++++++-----
+ kernel/trace/trace_mm.c    |   12 +++++++++---
+ mm/memcontrol.c            |   18 ++++++++++++++++++
+ 4 files changed, 44 insertions(+), 8 deletions(-)
 
---- linux-mmotm.orig/mm/page_alloc.c	2011-08-28 10:09:24.000000000 +0800
-+++ linux-mmotm/mm/page_alloc.c	2011-08-28 10:09:31.000000000 +0800
-@@ -5743,7 +5743,7 @@ bool is_free_buddy_page(struct page *pag
+--- linux-mmotm.orig/include/linux/memcontrol.h	2011-08-29 10:55:48.000000000 +0800
++++ linux-mmotm/include/linux/memcontrol.h	2011-08-29 10:55:53.000000000 +0800
+@@ -91,6 +91,7 @@ extern void mem_cgroup_uncharge_cache_pa
+ extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask);
+ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
+ 
++extern unsigned short page_memcg_id(struct page *page);
+ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+ extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+ extern struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm);
+@@ -199,6 +200,11 @@ static inline int mem_cgroup_try_charge_
+ 	return 0;
  }
- #endif
  
--static struct trace_print_flags pageflag_names[] = {
-+struct trace_print_flags pageflag_names[] = {
- 	{1UL << PG_locked,		"locked"	},
- 	{1UL << PG_error,		"error"		},
- 	{1UL << PG_referenced,		"referenced"	},
-@@ -5790,7 +5790,7 @@ static void dump_page_flags(unsigned lon
- 	printk(KERN_ALERT "page flags: %#lx(", flags);
- 
- 	/* remove zone id */
--	flags &= (1UL << NR_PAGEFLAGS) - 1;
-+	flags &= PAGE_FLAGS_MASK;
- 
- 	for (i = 0; pageflag_names[i].name && flags; i++) {
- 
---- linux-mmotm.orig/include/linux/page-flags.h	2011-08-28 10:09:24.000000000 +0800
-+++ linux-mmotm/include/linux/page-flags.h	2011-08-28 10:09:31.000000000 +0800
-@@ -462,6 +462,7 @@ static inline int PageTransCompound(stru
-  * there has been a kernel bug or struct page corruption.
-  */
- #define PAGE_FLAGS_CHECK_AT_PREP	((1 << NR_PAGEFLAGS) - 1)
-+#define PAGE_FLAGS_MASK			((1 << NR_PAGEFLAGS) - 1)
- 
- #define PAGE_FLAGS_PRIVATE				\
- 	(1 << PG_private | 1 << PG_private_2)
---- linux-mmotm.orig/include/trace/events/mm.h	2011-08-28 10:09:27.000000000 +0800
-+++ linux-mmotm/include/trace/events/mm.h	2011-08-28 10:43:38.000000000 +0800
-@@ -2,11 +2,14 @@
- #define _TRACE_MM_H
- 
- #include <linux/tracepoint.h>
-+#include <linux/page-flags.h>
- #include <linux/mm.h>
- 
- #undef TRACE_SYSTEM
- #define TRACE_SYSTEM mm
- 
-+extern struct trace_print_flags pageflag_names[];
++static inline unsigned short page_memcg_id(struct page *page)
++{
++	return 0;
++}
 +
- /**
-  * dump_page_frame - called by the trace page dump trigger
-  * @pfn: page frame number
-@@ -23,23 +26,41 @@ TRACE_EVENT(dump_page_frame,
+ static inline void mem_cgroup_commit_charge_swapin(struct page *page,
+ 					  struct mem_cgroup *ptr)
+ {
+--- linux-mmotm.orig/mm/memcontrol.c	2011-08-29 10:55:48.000000000 +0800
++++ linux-mmotm/mm/memcontrol.c	2011-08-29 10:59:28.000000000 +0800
+@@ -591,6 +591,24 @@ mem_cgroup_largest_soft_limit_node(struc
+ 	return mz;
+ }
  
- 	TP_STRUCT__entry(
- 		__field(	unsigned long,	pfn		)
-+		__field(	struct page *,	page		)
-+		__field(	u64,		stable_flags	)
++unsigned short page_memcg_id(struct page *page)
++{
++	struct mem_cgroup *memcg;
++	struct cgroup_subsys_state *css;
++	unsigned short id = 0;
++
++	lock_page(page);
++	memcg = try_get_mem_cgroup_from_page(page);
++	if (memcg) {
++		css = mem_cgroup_css(memcg);
++		id = css_id(css);
++		css_put(css);
++	}
++	unlock_page(page);
++
++	return id;
++}
++
+ /*
+  * Implementation Note: reading percpu statistics for memcg.
+  *
+--- linux-mmotm.orig/include/trace/events/mm.h	2011-08-29 10:55:52.000000000 +0800
++++ linux-mmotm/include/trace/events/mm.h	2011-08-29 10:55:53.000000000 +0800
+@@ -34,6 +34,7 @@ TRACE_EVENT(dump_page_frame,
  		__field(	unsigned long,	flags		)
--		__field(	unsigned long,	index		)
  		__field(	unsigned int,	count		)
  		__field(	unsigned int,	mapcount	)
-+		__field(	unsigned long,	private		)
-+		__field(	unsigned long,	mapping		)
-+		__field(	unsigned long,	index		)
- 	),
- 
- 	TP_fast_assign(
- 		__entry->pfn		= pfn;
-+		__entry->page		= page;
-+		__entry->stable_flags	= stable_page_flags(page);
++		__field(	unsigned int,	memcg		)
+ 		__field(	unsigned long,	private		)
+ 		__field(	unsigned long,	mapping		)
+ 		__field(	unsigned long,	index		)
+@@ -46,17 +47,19 @@ TRACE_EVENT(dump_page_frame,
  		__entry->flags		= page->flags;
  		__entry->count		= atomic_read(&page->_count);
  		__entry->mapcount	= page_mapcount(page);
-+		__entry->private	= page->private;
-+		__entry->mapping	= (unsigned long)page->mapping;
++		__entry->memcg		= page_memcg_id(page);
+ 		__entry->private	= page->private;
+ 		__entry->mapping	= (unsigned long)page->mapping;
  		__entry->index		= page->index;
  	),
  
--	TP_printk("pfn=%lu flags=%lx count=%u mapcount=%u index=%lu",
--		  __entry->pfn, __entry->flags, __entry->count,
--		  __entry->mapcount, __entry->index)
-+	TP_printk("pfn=%lu page=%p count=%u mapcount=%u "
-+		  "private=%lx mapping=%lx index=%lx flags=%s",
-+		  __entry->pfn,
-+		  __entry->page,
-+		  __entry->count,
+ 	TP_printk("pfn=%lu page=%p count=%u mapcount=%u "
+-		  "private=%lx mapping=%lx index=%lx flags=%s",
++		  "memcg=%u private=%lx mapping=%lx index=%lx flags=%s",
+ 		  __entry->pfn,
+ 		  __entry->page,
+ 		  __entry->count,
+ 		  __entry->mapcount,
++		  __entry->memcg,
+ 		  __entry->private,
+ 		  __entry->mapping,
+ 		  __entry->index,
+@@ -68,9 +71,9 @@ TRACE_EVENT(dump_page_frame,
+ 
+ TRACE_EVENT(dump_page_cache,
+ 
+-	TP_PROTO(struct page *page, unsigned long len),
++	TP_PROTO(struct page *page, unsigned long len, unsigned int memcg),
+ 
+-	TP_ARGS(page, len),
++	TP_ARGS(page, len, memcg),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(	unsigned long,	index		)
+@@ -78,6 +81,7 @@ TRACE_EVENT(dump_page_cache,
+ 		__field(	u64,		flags		)
+ 		__field(	unsigned int,	count		)
+ 		__field(	unsigned int,	mapcount	)
++		__field(	unsigned int,	memcg		)
+ 	),
+ 
+ 	TP_fast_assign(
+@@ -86,10 +90,11 @@ TRACE_EVENT(dump_page_cache,
+ 		__entry->flags		= stable_page_flags(page);
+ 		__entry->count		= atomic_read(&page->_count);
+ 		__entry->mapcount	= page_mapcount(page);
++		__entry->memcg		= memcg;
+ 	),
+ 
+ 	TP_printk("index=%lu len=%lu flags=%c%c%c%c%c%c%c%c%c%c%c "
+-		  "count=%u mapcount=%u",
++		  "count=%u mapcount=%u memcg=%u",
+ 		  __entry->index,
+ 		  __entry->len,
+ 		  __entry->flags & (1ULL << KPF_MMAP)		? 'M' : '_',
+@@ -104,7 +109,8 @@ TRACE_EVENT(dump_page_cache,
+ 		  __entry->flags & (1ULL << KPF_MAPPEDTODISK)	? 'd' : '_',
+ 		  __entry->flags & (1ULL << KPF_PRIVATE)	? 'P' : '_',
+ 		  __entry->count,
+-		  __entry->mapcount)
 +		  __entry->mapcount,
-+		  __entry->private,
-+		  __entry->mapping,
-+		  __entry->index,
-+		  ftrace_print_flags_seq(p, "|",
-+					 __entry->flags & PAGE_FLAGS_MASK,
-+					 pageflag_names)
-+	)
++		  __entry->memcg)
  );
  
- #endif /*  _TRACE_MM_H */
+ 
+--- linux-mmotm.orig/kernel/trace/trace_mm.c	2011-08-29 10:56:02.000000000 +0800
++++ linux-mmotm/kernel/trace/trace_mm.c	2011-08-29 11:01:04.000000000 +0800
+@@ -155,6 +155,8 @@ static void dump_pagecache(struct addres
+ 	struct page *page;
+ 	unsigned long start = 0;
+ 	unsigned long len = 0;
++	unsigned int memcg0;
++	unsigned int memcg;
+ 	int i;
+ 
+ 	for (;;) {
+@@ -165,23 +167,27 @@ static void dump_pagecache(struct addres
+ 
+ 		if (nr_pages == 0) {
+ 			if (len)
+-				trace_dump_page_cache(page0, len);
++				trace_dump_page_cache(page0, len, memcg0);
+ 			return;
+ 		}
+ 
+ 		for (i = 0; i < nr_pages; i++) {
+ 			page = pages[i];
++			memcg = page_memcg_id(page);
+ 
+ 			if (len &&
+ 			    page->index == start + len &&
+-			    pages_similar(page0, page))
++			    pages_similar(page0, page) &&
++			    memcg0 == memcg)
+ 				len++;
+ 			else {
+ 				if (len)
+-					trace_dump_page_cache(page0, len);
++					trace_dump_page_cache(page0, len,
++							      memcg0);
+ 				page0 = page;
+ 				start = page->index;
+ 				len = 1;
++				memcg0 = memcg;
+ 			}
+ 		}
+ 		cond_resched();
 
 
