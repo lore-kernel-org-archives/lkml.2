@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1H2Pim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:38:42 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:52964 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab1H2Pil (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:38:41 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Pekka Enberg <penberg@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Drbd-dev] [RFC 000/118] drbd: part 1 of adding multiple volume support to drbd
-Date: Mon, 29 Aug 2011 17:38:33 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
-Cc: Kyle Moffett <kyle@moffetthome.net>, drbd-dev@lists.linbit.com,
-        Greg Freemyer <greg.freemyer@gmail.com>
-References: <1314284934-17999-1-git-send-email-philipp.reisner@linbit.com> <201108291351.06092.philipp.reisner@linbit.com> <CAOJsxLHQFhHaASj9eSJeQ9H_VyS59ztu=caOoUipYEneiB1vAA@mail.gmail.com>
-In-Reply-To: <CAOJsxLHQFhHaASj9eSJeQ9H_VyS59ztu=caOoUipYEneiB1vAA@mail.gmail.com>
-X-OTRS-FollowUp-SenderType: agent
+	id S1754100Ab1H2Pj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:39:56 -0400
+Received: from home.keithp.com ([63.227.221.253]:45981 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753941Ab1H2Pjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 11:39:54 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Pawel Sikora <pluto@agmk.net>, linux-kernel@vger.kernel.org
+Cc: kamal@canonical.com
+Subject: Re: Linux 3.1-rc4
+In-Reply-To: <2352775.A2sX9R5EWV@pawels>
+References: <2352775.A2sX9R5EWV@pawels>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 29 Aug 2011 08:39:46 -0700
+Message-ID: <yun8vqccjlp.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108291738.33747.philipp.reisner@linbit.com>
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 29. August 2011, 14:52:56 schrieb Pekka Enberg:
-> On Mon, Aug 29, 2011 at 2:51 PM, Philipp Reisner
-> 
-> <philipp.reisner@linbit.com> wrote:
-> > The new feature set, might be partially broken, but introducing
-> > the new features is the whole point of this patch series.
-> 
-> If that new feature can, for example, corrupt your data while you're
-> doing "git bisect" on non-DRBD regression, that's no good. Can that
-> happen?
-> 
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-No, that can not happen. Maybe it fails to connect to the peer, etc...
-It will not destroy data.
+On Mon, 29 Aug 2011 15:22:10 +0200, Pawel Sikora <pluto@agmk.net> wrote:
+> Hi,
+>=20
+> the recent -rc4 fix ( Kamal Mostafa / i915: do not setup intel_backlight =
+twice ) fixes an oops
+> described in https://bugzilla.kernel.org/show_bug.cgi?id=3D40892#c1 but t=
+he core error
+> "[drm:intel_dsm_platform_mux_info] *ERROR* MUX INFO call failed" still
+> exists.
 
-Best,
- Phil
--- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
+That looks harmless; I'll check with the ACPI experts though.
 
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
+> Aug 29 15:10:55 vmx kernel: [22761.103401] BUG: unable to handle kernel p=
+aging request at 000000104a69c2f8
+> Aug 29 15:10:55 vmx kernel: [22761.103403] IP: [<ffffffff81265d02>] fb_fl=
+ashcursor+0x42/0x150
+
+I'm assuming this is a regression; can you find a version that it worked
+on without any other changes in the environment? I'm concerned that
+you're loading both vesafb and then switching to the drm fb, which
+always seems fraught with peril to me.
+
+And, of course, a bisect would be most helpful if possible. I can't
+think of any i915-specific changes that would cause fb mappings to go wrong.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOW7LCQp8BWwlsTdMRAhLkAJ9iYXJGwVan6kSN91enB72uTBISPACfe5Bc
+s5CTbi9PG+JUCVkihUrbfjQ=
+=7EiT
+-----END PGP SIGNATURE-----
+--=-=-=--
