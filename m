@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab1H2IHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 04:07:39 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58914 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab1H2IH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 04:07:26 -0400
-Date: Mon, 29 Aug 2011 10:07:11 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
-Message-ID: <20110829080711.GC32114@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
- <CALWz4iwChnacF061L9vWo7nEA7qaXNJrK=+jsEe9xBtvEBD9MA@mail.gmail.com>
- <20110811210914.GB31229@cmpxchg.org>
- <CALWz4iwJfyWRineMy+W02YBvS0Y=Pv1y8Rb=8i5R=vUCfrO+iQ@mail.gmail.com>
+	id S1753159Ab1H2INw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 04:13:52 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37631 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab1H2INq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 04:13:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALWz4iwJfyWRineMy+W02YBvS0Y=Pv1y8Rb=8i5R=vUCfrO+iQ@mail.gmail.com>
+In-Reply-To: <20110829095530.789ec9ea@endymion.delvare>
+References: <1312802446-19154-1-git-send-email-geert@linux-m68k.org>
+	<20110816195033.014f302b@endymion.delvare>
+	<CAMuHMdUk_xTwGbhG0MHkS-8rkF76b1fg193pPcs+9MVyB-qHQw@mail.gmail.com>
+	<20110817113910.47dc819f@endymion.delvare>
+	<CAMuHMdVX_p4Q1E+-Q1HOjUO-Zhbsv_uji2qqGZipii=qY0hHWw@mail.gmail.com>
+	<20110829095530.789ec9ea@endymion.delvare>
+Date: Mon, 29 Aug 2011 10:13:44 +0200
+X-Google-Sender-Auth: iOTSCRSUz_AKIXHqJyLhTR7U_tQ
+Message-ID: <CAMuHMdVi7GK06NMqZwpN+AuJEC+F51LhVMED0hOFVwb7hxxYFg@mail.gmail.com>
+Subject: Re: [PATCH] i2c: I2C_ELEKTOR should depend on HAS_IOPORT
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Hans Berglund <hb@spacetec.no>, Jonas Bonn <jonas@southpole.se>,
+        Arnd Bergmann <arnd@arndb.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 12:15:57AM -0700, Ying Han wrote:
-> On Thu, Aug 11, 2011 at 2:09 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >
-> > On Thu, Aug 11, 2011 at 01:39:45PM -0700, Ying Han wrote:
-> > > Please consider including the following patch for the next post. It causes
-> > > crash on some of the tests where sc->mem_cgroup is NULL (global kswapd).
-> > >
-> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > > index b72a844..12ab25d 100644
-> > > --- a/mm/vmscan.c
-> > > +++ b/mm/vmscan.c
-> > > @@ -2768,7 +2768,8 @@ loop_again:
-> > >                          * Do some background aging of the anon list, to
-> > > give
-> > >                          * pages a chance to be referenced before
-> > > reclaiming.
-> > >                          */
-> > > -                       if (inactive_anon_is_low(zone, &sc))
-> > > +                       if (scanning_global_lru(&sc) &&
-> > > +                                       inactive_anon_is_low(zone, &sc))
-> > >                                 shrink_active_list(SWAP_CLUSTER_MAX, zone,
-> > >                                                         &sc, priority, 0);
-> >
-> > Thanks!  I completely overlooked this one and only noticed it after
-> > changing the arguments to shrink_active_list().
-> >
-> > On memcg configurations, scanning_global_lru() will essentially never
-> > be true again, so I moved the anon pre-aging to a separate function
-> > that also does a hierarchy loop to preage the per-memcg anon lists.
-> >
-> > I hope to send out the next revision soon.
-> 
-> Also, please consider to fold in the following patch as well. It fixes
-> the root cgroup lru accounting and we could easily trigger OOM while
-> doing some swapoff test w/o it.
+Hi Jean,
 
-This makes perfect sense.  I'll incorporate this and add your
-sign-offs to the original patch.  Thanks very to the both of you and
-sorry for the inconvenience.
+On Mon, Aug 29, 2011 at 09:55, Jean Delvare <khali@linux-fr.org> wrote:
+> On Mon, 29 Aug 2011 09:48:17 +0200, Geert Uytterhoeven wrote:
+>> On Wed, Aug 17, 2011 at 11:39, Jean Delvare <khali@linux-fr.org> wrote:
+>> > OK, fair enough. Patch applied, thanks.
+>>
+>> Any chance it will finds its way in 3.1, since it's still breaking
+>> m68k allmodconfig builds.
+>
+> This is the plan, yes. It should happen by the end of the week.
+
+Great, thanks!
+
+Gr{oetje,eeting}s,
+
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
