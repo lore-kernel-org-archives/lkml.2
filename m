@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab1H2VUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:20:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42392 "EHLO
+	id S1755324Ab1H2VVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:21:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:48384 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754173Ab1H2VUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:20:51 -0400
+	id S1755187Ab1H2VVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:21:10 -0400
 From: Joe Perches <joe@perches.com>
-To: Andy Grover <andy.grover@oracle.com>
-Cc: "David S. Miller" <davem@davemloft.net>, rds-devel@oss.oracle.com,
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-hams@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/24] rds: Remove unnecessary OOM logging messages
-Date: Mon, 29 Aug 2011 14:17:33 -0700
-Message-Id: <e193b309f7be940bbe9d3aba393bb862a3502115.1314650069.git.joe@perches.com>
+Subject: [PATCH 16/24] rose: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 14:17:35 -0700
+Message-Id: <719ff1b5a486b1d2cf7820d09e29fe60bafc023d.1314650069.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1314650069.git.joe@perches.com>
 References: <cover.1314650069.git.joe@perches.com>
@@ -28,81 +28,21 @@ delete them.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/rds/ib_rdma.c |    1 -
- net/rds/iw_rdma.c |    8 +-------
- net/rds/iw_send.c |    8 ++------
- 3 files changed, 3 insertions(+), 14 deletions(-)
+ net/rose/af_rose.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/net/rds/ib_rdma.c b/net/rds/ib_rdma.c
-index 819c35a..3b76b74 100644
---- a/net/rds/ib_rdma.c
-+++ b/net/rds/ib_rdma.c
-@@ -355,7 +355,6 @@ static struct rds_ib_mr *rds_ib_alloc_fmr(struct rds_ib_device *rds_ibdev)
- 	if (IS_ERR(ibmr->fmr)) {
- 		err = PTR_ERR(ibmr->fmr);
- 		ibmr->fmr = NULL;
--		printk(KERN_WARNING "RDS/IB: ib_alloc_fmr failed (err=%d)\n", err);
- 		goto out_no_cigar;
+diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
+index f9ea925..63ab96b 100644
+--- a/net/rose/af_rose.c
++++ b/net/rose/af_rose.c
+@@ -1537,7 +1537,6 @@ static int __init rose_proto_init(void)
+ 
+ 	dev_rose = kzalloc(rose_ndevs * sizeof(struct net_device *), GFP_KERNEL);
+ 	if (dev_rose == NULL) {
+-		printk(KERN_ERR "ROSE: rose_proto_init - unable to allocate device structure\n");
+ 		rc = -ENOMEM;
+ 		goto out_proto_unregister;
  	}
- 
-diff --git a/net/rds/iw_rdma.c b/net/rds/iw_rdma.c
-index 8b77edb..7b18283 100644
---- a/net/rds/iw_rdma.c
-+++ b/net/rds/iw_rdma.c
-@@ -339,10 +339,8 @@ struct rds_iw_mr_pool *rds_iw_create_mr_pool(struct rds_iw_device *rds_iwdev)
- 	struct rds_iw_mr_pool *pool;
- 
- 	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
--	if (!pool) {
--		printk(KERN_WARNING "RDS/IW: rds_iw_create_mr_pool alloc error\n");
-+	if (!pool)
- 		return ERR_PTR(-ENOMEM);
--	}
- 
- 	pool->device = rds_iwdev;
- 	INIT_LIST_HEAD(&pool->dirty_list);
-@@ -676,8 +674,6 @@ static int rds_iw_init_fastreg(struct rds_iw_mr_pool *pool,
- 	mr = ib_alloc_fast_reg_mr(rds_iwdev->pd, pool->max_message_size);
- 	if (IS_ERR(mr)) {
- 		err = PTR_ERR(mr);
--
--		printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_mr failed (err=%d)\n", err);
- 		return err;
- 	}
- 
-@@ -687,8 +683,6 @@ static int rds_iw_init_fastreg(struct rds_iw_mr_pool *pool,
- 	page_list = ib_alloc_fast_reg_page_list(rds_iwdev->dev, pool->max_message_size);
- 	if (IS_ERR(page_list)) {
- 		err = PTR_ERR(page_list);
--
--		printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_page_list failed (err=%d)\n", err);
- 		ib_dereg_mr(mr);
- 		return err;
- 	}
-diff --git a/net/rds/iw_send.c b/net/rds/iw_send.c
-index e40c3c5..debf586 100644
---- a/net/rds/iw_send.c
-+++ b/net/rds/iw_send.c
-@@ -154,17 +154,13 @@ void rds_iw_send_init_ring(struct rds_iw_connection *ic)
- 		sge->lkey = 0;
- 
- 		send->s_mr = ib_alloc_fast_reg_mr(ic->i_pd, fastreg_message_size);
--		if (IS_ERR(send->s_mr)) {
--			printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_mr failed\n");
-+		if (IS_ERR(send->s_mr))
- 			break;
--		}
- 
- 		send->s_page_list = ib_alloc_fast_reg_page_list(
- 			ic->i_cm_id->device, fastreg_message_size);
--		if (IS_ERR(send->s_page_list)) {
--			printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_page_list failed\n");
-+		if (IS_ERR(send->s_page_list))
- 			break;
--		}
- 	}
- }
- 
 -- 
 1.7.6.405.gc1be0
 
