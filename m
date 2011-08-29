@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab1H2P0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:26:55 -0400
-Received: from mail.ss.pku.edu.cn ([211.101.48.138]:60670 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753879Ab1H2P0y (ORCPT
+	id S1754057Ab1H2P2l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:28:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37574 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab1H2P2j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:26:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1108291712590.3904@dhcp-27-109.brq.redhat.com>
-References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
-	<alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com>
-	<CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com>
-	<alpine.LFD.2.00.1108291637470.3904@dhcp-27-109.brq.redhat.com>
-	<CAF1ivSYu=0Xh3aXJGbuBUZjT_azLTO6Tq1gzhNRBWsHXCUMjiw@mail.gmail.com>
-	<alpine.LFD.2.00.1108291712590.3904@dhcp-27-109.brq.redhat.com>
-Date: Mon, 29 Aug 2011 23:26:49 +0800
-Message-ID: <CAF1ivSbwSXhz7sKzKrA=3CcTi6hJHP4T5PYsgefpEQx7DBnD5A@mail.gmail.com>
-Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
- device is removed
-From: Lin Ming <lxy@ss.pku.edu.cn>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Aug 2011 11:28:39 -0400
+Subject: Re: [PATCH 13/32] nohz: Adaptive tick stop and restart on nohz
+ cpuset
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Date: Mon, 29 Aug 2011 17:28:09 +0200
+In-Reply-To: <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314631689.2816.91.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 11:16 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> On Mon, 29 Aug 2011, Lin Ming wrote:
->
->> On Mon, Aug 29, 2011 at 10:42 PM, Lukas Czerner <lczerner@redhat.com> wrote:
->> > On Mon, 29 Aug 2011, Lin Ming wrote:
->> >
->> >> On Mon, Aug 29, 2011 at 7:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
->> >> >
->> >> > Regarding the atomic operations I do not think that implicit memory
->> >> > barriers are needed here as atomic_dec_and_test() implies memory
->> >>
->> >> Which implicit memory barrier you are talking about?
->> >
->> > smp_mb() at both side of the operation as documented here in
->> > Documentation/memory-barriers.txt
->>
->> Thanks for the info.
->>
->> But I don't follow you ... why that implicit memory barriers are NOT needed?
->>
->
-> Oh, I am sorry I have actually wanted to say that *explicit* memory
-> barriers are no needed in that case. Sorry for the confusion!
+On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> +bool cpuset_nohz_can_stop_tick(void)
+> +{
+> +       struct rq *rq;
+> +
+> +       rq = this_rq();
+> +
+> +       /* More than one running task need preemption */
+> +       if (rq->nr_running > 1)
+> +               return false;
+> +
+> +       return true;
+> +} 
 
-Make sense now :)
-
-Thanks.
+int sched_needs_cpu(int cpu), seems the right name, matches the existing
+{rcu,printk,arch}_needs_cpu() functions.
