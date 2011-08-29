@@ -1,56 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab1H2O0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:26:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab1H2O0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:26:14 -0400
-Date: Mon, 29 Aug 2011 11:25:47 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, a.p.zijlstra@chello.nl,
-        mingo@elte.hu, paulus@samba.org, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH] perf, tool, record: Fix the header generation for pipe
-Message-ID: <20110829142547.GC27261@ghostprotocols.net>
-References: <1314022997-9217-1-git-send-email-jolsa@redhat.com> <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110822145210.GA8694@jolsa.brq.redhat.com> <1314028266.2307.93.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110822160713.GA10134@jolsa.brq.redhat.com> <20110829132037.GB27261@ghostprotocols.net> <20110829134147.GD1918@jolsa.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829134147.GD1918@jolsa.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753812Ab1H2O06 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:26:58 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34794 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab1H2O0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 10:26:52 -0400
+From: Ravishankar <ravi.shankar@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankarkm <ravi.shankar@greenturtles.in>
+Subject: [PATCH 1/1] Staging: comedi: fix printk issue in das6402.c
+Date: Mon, 29 Aug 2011 19:56:32 +0530
+Message-Id: <1314627992-14358-1-git-send-email-ravi.shankar@greenturtles.in>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi: fix printk issues in das6402.c>
+References: <[PATCH]Staging: comedi: fix printk issues in das6402.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 29, 2011 at 03:41:47PM +0200, Jiri Olsa escreveu:
-> On Mon, Aug 29, 2011 at 10:20:37AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Aug 22, 2011 at 06:07:13PM +0200, Jiri Olsa escreveu:
-> > > On Mon, Aug 22, 2011 at 05:51:06PM +0200, Eric Dumazet wrote:
-> > > > Are you sure length cannot change between the two phases ?
-> > 
-> > > > /proc/kallsyms can definitely change when a module is loaded.
-> > 
-> > > Right, better to store it to a temp file as you suggest, so we have
-> > > consistent view.. I'll prepare new patch.
-> > 
-> > Hi Jiri, any news here?
-> > 
-> > I just stumbled in this bug while testing Neil's net_dropmonitor script
-> > :-\
-> 
-> well, I was thinking about taking files snapshot, so we dont read them
-> twice and omit the reading for size.. but it'll be probably bigger
-> change, I'll try to send out something by the end of the week
+From: Ravishankarkm <ravi.shankar@greenturtles.in>
 
-Yeah, at least one thing there I plan to remove, i.e. no need to copy
-kallsyms when we have build ids, just stash the build id and use it
-later to get the right symtab to resolve symbols.
+This is a patch to the das6402.c file that fixes up a printk warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankarkm <ravi.shankar@greenturtles.in>
+---
+ Added #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ Converted printk to pr_<levels>, dev_verson.
+ drivers/staging/comedi/drivers/das6402.c |   37 ++++++++++++-----------------
+ 1 files changed, 15 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
+index 6328f52..a6f9828 100644
+--- a/drivers/staging/comedi/drivers/das6402.c
++++ b/drivers/staging/comedi/drivers/das6402.c
+@@ -38,6 +38,9 @@ Devices: [Keithley Metrabyte] DAS6402 (das6402)
+ This driver has suffered bitrot.
+ */
  
-> if you need workaround, the initial patch should work
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/interrupt.h>
+ #include "../comedidev.h"
+ 
+@@ -171,24 +174,20 @@ static irqreturn_t intr_handler(int irq, void *d)
+ 	struct comedi_subdevice *s = dev->subdevices;
+ 
+ 	if (!dev->attached || devpriv->das6402_ignoreirq) {
+-		printk("das6402: BUG: spurious interrupt\n");
++		dev_warn(dev->hw_dev, " BUG: spurious interrupt\n");
+ 		return IRQ_HANDLED;
+ 	}
+-#ifdef DEBUG
+-	printk("das6402: interrupt! das6402_irqcount=%i\n",
+-	       devpriv->das6402_irqcount);
+-	printk("das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
+-#endif
++	dev_dbg(dev->hw_dev, "interrupt! das6402_irqcount=%i\n",
++			devpriv->das6402_irqcount);
++	dev_dbg(dev->hw_dev, "iobase+2=%i\n", inw_p(dev->iobase + 2));
+ 
+ 	das6402_ai_fifo_dregs(dev, s);
+ 
+ 	if (s->async->buf_write_count >= devpriv->ai_bytes_to_read) {
+ 		outw_p(SCANL, dev->iobase + 2);	/* clears the fifo */
+ 		outb(0x07, dev->iobase + 8);	/* clears all flip-flops */
+-#ifdef DEBUG
+-		printk("das6402: Got %i samples\n\n",
+-		       devpriv->das6402_wordsread - diff);
+-#endif
++		dev_dbg(dev->hw_dev, "Got %i samples\n",
++				devpriv->das6402_wordsread - diff);
+ 		s->async->events |= COMEDI_CB_EOA;
+ 		comedi_event(dev, s);
+ 	}
+@@ -228,9 +227,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
+ 	 */
+ 
+ 	devpriv->das6402_ignoreirq = 1;
+-#ifdef DEBUG
+-	printk("das6402: Stopping acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
+ 	devpriv->das6402_ignoreirq = 1;
+ 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+@@ -247,9 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
+ {
+ 	devpriv->das6402_ignoreirq = 1;
+ 
+-#ifdef DEBUG
+-	printk("das6402: Starting acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Starting acquisition\n");
+ 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+ 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
+@@ -329,10 +324,11 @@ static int das6402_attach(struct comedi_device *dev,
+ 	if (iobase == 0)
+ 		iobase = 0x300;
+ 
+-	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
++	pr_info("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
+ 
+ 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
+-		printk(" I/O port conflict\n");
++		pr_cont("\n");
++		pr_warn("comedi%d: das6402: I/O port conflict\n", dev->minor);
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -340,12 +336,9 @@ static int das6402_attach(struct comedi_device *dev,
+ 	/* should do a probe here */
+ 
+ 	irq = it->options[0];
+-	printk(" ( irq = %u )", irq);
+ 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
+-	if (ret < 0) {
+-		printk("irq conflict\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+ 	dev->irq = irq;
+ 
+ 	ret = alloc_private(dev, sizeof(struct das6402_private));
+-- 
+1.7.6
 
-Ok, thanks.
-
-- Arnaldo
