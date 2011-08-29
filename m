@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1H2Nuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:50:44 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43085 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab1H2Nui (ORCPT
+	id S1752900Ab1H2NwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:52:04 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:32860 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751766Ab1H2Nv5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:50:38 -0400
-From: Ravishankarkm <ravi.shankar@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankarkm <ravi.shankar@greenturtles.in>
-Subject: [PATCH 1/1] Staging: comedi: fix printk issue in cb_pcidda.c
-Date: Mon, 29 Aug 2011 19:20:13 +0530
-Message-Id: <1314625813-13975-1-git-send-email-ravi.snkar@greenturtles.in>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <[PATCH]Staging: comedi:fix printk issue in cb_pcidda.c>
-References: <[PATCH]Staging: comedi:fix printk issue in cb_pcidda.c>
+	Mon, 29 Aug 2011 09:51:57 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [patch] rapidio: potential null deref in rio_setup_device()
+Date: Mon, 29 Aug 2011 06:51:53 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520210D5A4@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <20110827100045.GL3775@shale.localdomain>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [patch] rapidio: potential null deref in rio_setup_device()
+Thread-Index: AcxkoInG+ihilDkpQWSmhVCNQTJwfwBsOAww
+References: <20110827100045.GL3775@shale.localdomain>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Dan Carpenter" <error27@gmail.com>,
+        "Matt Porter" <mporter@kernel.crashing.org>
+Cc: "open list" <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankarkm <ravi.shankar@greenturtles.in>
+Dan Carpenter <error27@gmail.com> wrote:
 
-This is a patch to the cb_pcidda.c file that fixes up a printk warning found by the checkpatch.pl tool
+> The "goto cleanup" path can dereference "rswitch" which is NULL here.
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> ---
+> This is sort of embarrassing, I've patched this function before but
+> missed this.  Hopefully it's right now.
+> 
+> diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
+> index 0914f49..882cef9 100644
+> --- a/drivers/rapidio/rio-scan.c
+> +++ b/drivers/rapidio/rio-scan.c
+> @@ -432,7 +432,7 @@ static struct rio_dev __devinit
+> *rio_setup_device(struct rio_net *net,
+>  		/* Assign component tag to device */
+>  		if (next_comptag >= 0x10000) {
+>  			pr_err("RIO: Component Tag Counter Overflow\n");
+> -			goto cleanup;
+> +			goto out_rdev;
+>  		}
+>  		rio_mport_write_config_32(port, destid, hopcount,
+>  					  RIO_COMPONENT_TAG_CSR,
+next_comptag);
+> @@ -518,7 +518,7 @@ static struct rio_dev __devinit
+> *rio_setup_device(struct rio_net *net,
+>  cleanup:
+>  	if (rio_is_switch(rdev))
+>  		kfree(rswitch->route_table);
 
-Signed-off-by: Ravishankarkm <ravi.shankar@greenturtles.in>
----
- drivers/staging/comedi/drivers/cb_pcidda.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
+Because rswitch is set not-NULL only for switch devices the check below
+can make things simpler: 
+  cleanup:
+	if (rswitch)
+  		kfree(rswitch->route_table);
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-index 49102b3..665501b 100644
---- a/drivers/staging/comedi/drivers/cb_pcidda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-@@ -282,7 +282,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
- 	struct pci_dev *pcidev = NULL;
- 	int index;
- 
--	printk("comedi%d: cb_pcidda: ", dev->minor);
-+	pr_info("comedi%d: cb_pcidda: ", dev->minor);
- 
- /*
-  * Allocate the private structure area.
-@@ -293,7 +293,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
- /*
-  * Probe the device to determine what device in the series it is.
-  */
--	printk("\n");
-+	pr_cont("\n");
- 
- 	for_each_pci_dev(pcidev) {
- 		if (pcidev->vendor == PCI_VENDOR_ID_CB) {
-@@ -312,22 +312,24 @@ static int cb_pcidda_attach(struct comedi_device *dev,
- 		}
- 	}
- 	if (!pcidev) {
--		printk
--		    ("Not a ComputerBoards/MeasurementComputing card on requested position\n");
-+		pr_warn("comedi%d: cb_pcidda: Not a "
-+				"ComputerBoards/MeasurementComputing card on "
-+				"requested position\n", dev->minor);
- 		return -EIO;
- 	}
- found:
- 	devpriv->pci_dev = pcidev;
- 	dev->board_ptr = cb_pcidda_boards + index;
- 	/*  "thisboard" macro can be used from here. */
--	printk("Found %s at requested position\n", thisboard->name);
-+	pr_info("comedi%d: cb_pcidda: Found %s at requested position\n",
-+			dev->minor, thisboard->name);
- 
- 	/*
- 	 * Enable PCI device and request regions.
- 	 */
- 	if (comedi_pci_enable(pcidev, thisboard->name)) {
--		printk
--		    ("cb_pcidda: failed to enable PCI device and request regions\n");
-+		pr_warn("comedi%d: cb_pcidda: failed to enable "
-+				"PCI device and request regions\n",
-+				dev->minor);
- 		return -EIO;
- 	}
- 
-@@ -377,12 +379,12 @@ found:
- 	s = dev->subdevices + 2;
- 	subdev_8255_init(dev, s, NULL, devpriv->digitalio + PORT2A);
- 
--	printk(" eeprom:");
-+	pr_debug("comedi%d: cb_pcidda: eeprom:", dev->minor);
- 	for (index = 0; index < EEPROM_SIZE; index++) {
- 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
--		printk(" %i:0x%x ", index, devpriv->eeprom_data[index]);
-+		pr_cont(" %i:0x%x ", index, devpriv->eeprom_data[index]);
- 	}
--	printk("\n");
-+	pr_cont("\n");
- 
- 	/*  set calibrations dacs */
- 	for (index = 0; index < thisboard->ao_chans; index++)
-@@ -417,7 +419,7 @@ static int cb_pcidda_detach(struct comedi_device *dev)
- 		subdev_8255_cleanup(dev, dev->subdevices + 2);
- 	}
- 
--	printk("comedi%d: cb_pcidda: remove\n", dev->minor);
-+	pr_info("comedi%d: cb_pcidda: remove\n", dev->minor);
- 
- 	return 0;
- }
--- 
-1.7.6
-
+> -
+> +out_rdev:
+>  	kfree(rdev);
+>  	return NULL;
+>  }
