@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab1H2MAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 08:00:01 -0400
-Received: from nm2-vm1.bullet.mail.in.yahoo.com ([121.101.151.250]:27963 "HELO
-	nm2-vm1.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752452Ab1H2L7z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 07:59:55 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 748361.30671.bm@omp1001.mail.in.yahoo.com
-X-YMail-OSG: BMjlZuEVM1k5MSJfb_R3apZQ19Yvz_A4I5f1.4gM.eB1sTu
- ZvDD0R3_aQejr3rX57CyEJ7e_cr7v.4G.Pn1AOYO6ZAWEA_KlNhmbquUJZ7b
- JNWFQxs5ab0clmKlW_W0fs6kUIuYbtOr2qzB033CBLuXGXwdKMOeKarM4Nw1
- DdKZP_CtIOuqS9hh6p2kZ7yNi4YM0WqgyrPvg11ZX81lrLOjHgPFV_IFfppe
- V2bJFFc4qDZNxLnF.6yYa.oNbM8TXPatkjHx1ihq8_gk4HVqobeUv8TClc15
- eSMtL5ZPPwIQjdqrK0QtSBZGDpXLpHGnc1a6zhxZruLb_IpTz5C97.xF.vdZ
- dMRiBGkYX8QiIe96A2ih4DtD3RVFSUpX4Ujr1FUoJ.Bzrb9zi9bgzArBqMe0
- OFUx1.._jVnDw04VrV2W94j.CrEiCpzThlLbYUdQvoHaGANKm4eO7P5ONqOY
- YJ8RZIqRF1g5CnOBb9bjiK_TY171t3oWshlCUq.fSaQayyxqw8a8FbIrDYEq
- WEJbTYUoKHQ7Y7qxcg62FmmxKvvyfNsPm.lI1eoym
-X-RocketYMMF: qazolaz
-X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.113.315625
-Message-ID: <1314619192.79899.YahooMailClassic@web137908.mail.in.yahoo.com>
-Date: Mon, 29 Aug 2011 17:29:52 +0530 (IST)
-From: francis <franciskabore12@gmail.com>
-Reply-To: franciskabore.10@gmail.com
-Subject: REPLY VERY URGENTLY.
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1752643Ab1H2MNG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 08:13:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31408 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464Ab1H2MM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 08:12:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="43238509"
+Subject: Re: [PATCH] dma: shdma: transfer based runtime PM
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <Pine.LNX.4.64.1108260107550.17190@axis700.grange>
+References: <Pine.LNX.4.64.1108181650530.5245@axis700.grange>
+	 <1314282386.1606.42.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108251636190.17190@axis700.grange>
+	 <1314283286.1606.52.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
+	 <1314292850.1606.88.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108260107550.17190@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Aug 2011 17:41:49 +0530
+Message-ID: <1314619909.1606.130.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-08-26 at 01:11 +0200, Guennadi Liakhovetski wrote:
+> On Thu, 25 Aug 2011, Koul, Vinod wrote:
+> > Wont it be easy to to do:
+> > - pm_runtime_get() in each submit
+> > - pm_runtime_put() in each callback
+> > Normal case above would work just fine
+> > - In terminate case, count the number of issued transactions, and call
+> > pm_runtime_put() for each canceled transaction
+> > (i am assuming that for each timeout error, the client will call
+> > terminate)
+> 
+> As I said, this won't be very easy to do this in a robust way. You'd have 
+> to scan your list of DMA blocks and see, which of them belong to one 
+> descriptor, and once you reach the end of that descriptor, issue a put(). 
+> Perhaps, this can be done, but my choice went to the currently presented 
+> solution.
+If you count the number of descriptor submitted in your submitted list
+and call _put for each, I see no reason why it wont be simple and better
+than current approach.
 
-Dear Friend,
+Something like:
+/* since callback is set for last descriptor of chain, we call runtime
+ * put for that desc alone
+ */
+list_for_each_entry_safe(desc, __desc, sh_chan->ld_queue, node) {
+	if (desc->async_tx.callback)
+		pm_runtime_put(device);
 
-I know that this message will come to you as a surprise. I am the Auditing and Accounting section manager with African Development Bank, Ouagadougou Burkina faso. I Hope that you will not expose or betray this trust and confident that I am about to repose on you for the mutual benefit of our both families.
+If i read shdma correctly, descriptors are put into ld_queue of channel
+and any pending should be checked in this list alone.
+For normal case again you check for the callback to decide if you need
+to call pm_runtime_put() or not.
 
-I need your urgent assistance in transferring the sum of($39.5)million to your account within 10 or 14 banking days. This money has been dormant for years in our Bank without claim.I want the bank to release the money to you as the nearest person to our deceased customer late George small. who died along with his supposed next of kin in an air crash since 31st October 1999.
-
-I don't want the money to go into government treasury as an abandoned fund. So this is the reason why I am contacting you so that the bank can release the money to you as the next of kin to the deceased customer. Please I would like you to keep this proposal as atop secret and delete it if you are not interested.
-
-Upon receipt of your reply, I will give you full details on how the business will be executed and also note that you will have 40% of the above mentioned sum if you agree to handle this business with me.
-
-I am expecting your urgent response as soon as you receive my message.
-
-Best Regard,
-
-Mr Francis Kabore
+--
+~Vinod
 
