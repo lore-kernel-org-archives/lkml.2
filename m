@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab1H2QAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:00:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56601 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752763Ab1H2QAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:00:06 -0400
-Date: Mon, 29 Aug 2011 17:56:40 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 14/16] freezer: make freezing() test freeze conditions
-	in effect instead of TIF_FREEZE
-Message-ID: <20110829155640.GA8392@redhat.com>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-15-git-send-email-tj@kernel.org> <20110829154944.GA7531@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829154944.GA7531@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753914Ab1H2QAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:00:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52749 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab1H2QAO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 12:00:14 -0400
+Subject: Re: [PATCH 18/32] nohz/cpuset: Don't stop the tick if posix cpu
+ timers are running
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Date: Mon, 29 Aug 2011 17:59:37 +0200
+In-Reply-To: <1313423549-27093-19-git-send-email-fweisbec@gmail.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <1313423549-27093-19-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314633577.2816.107.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm afraid I wasn't clear....
+On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> If either a per thread or a per process posix cpu timer is running,
+> don't stop the tick.
+> 
+> TODO: restart the tick if it is stopped and a posix cpu timer is
+> enqueued. Check we probably need a memory barrier for the per
+> process posix timer that can be enqueued from another task
+> of the group.
 
-On 08/29, Oleg Nesterov wrote:
->
-> On 08/19, Tejun Heo wrote:
-> >
-> > @@ -311,9 +315,11 @@ static int freezer_change_state(struct cgroup *cgroup,
-> >
-> >  	switch (goal_state) {
-> >  	case CGROUP_THAWED:
-> > +		atomic_dec(&system_freezing_cnt);
-> >  		unfreeze_cgroup(cgroup, freezer);
-> >  		break;
-> >  	case CGROUP_FROZEN:
-> > +		atomic_inc(&system_freezing_cnt);
->
-> This is harmless, but afaics is not exactly right. CGROUP_FROZEN doesn't
-> need system_freezing_cnt != 0, everything is already frozen and we just
-> provoke freezing_slow_path() without any reason. Right?
 
-Of course, this atomic_inc() is right, we are going to call
-try_to_freeze_cgroup(). But probably it makes sense to do atomic_dec()
-when freezer->state becomes CGROUP_FROZEN.
+it would
 
-Oleg.
+> +++ b/kernel/sched.c
+> @@ -71,6 +71,7 @@
+>  #include <linux/ctype.h>
+>  #include <linux/ftrace.h>
+>  #include <linux/slab.h>
+> +#include <linux/posix-timers.h>
+>  
+>  #include <asm/tlb.h>
+>  #include <asm/irq_regs.h>
+> @@ -2491,6 +2492,9 @@ bool cpuset_nohz_can_stop_tick(void)
+>  	if (rcu_pending(cpu))
+>  		return false;
+>  
+> +	if (posix_cpu_timers_running(current))
+> +		return false;
+> +
+>  	return true;
+>  }
 
+Doesn't belong here, go poke at tick_nohz_can_stop_tick().
