@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1H2OZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:25:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44265 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab1H2OZj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:25:39 -0400
-Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to
- idle enter/exit APIs
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 16:25:22 +0200
-In-Reply-To: <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314627922.2816.65.camel@twins>
-Mime-Version: 1.0
+	id S1753284Ab1H2O0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:26:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753725Ab1H2O0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 10:26:14 -0400
+Date: Mon, 29 Aug 2011 11:25:47 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, paulus@samba.org, linux-kernel@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [PATCH] perf, tool, record: Fix the header generation for pipe
+Message-ID: <20110829142547.GC27261@ghostprotocols.net>
+References: <1314022997-9217-1-git-send-email-jolsa@redhat.com> <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110822145210.GA8694@jolsa.brq.redhat.com> <1314028266.2307.93.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110822160713.GA10134@jolsa.brq.redhat.com> <20110829132037.GB27261@ghostprotocols.net> <20110829134147.GD1918@jolsa.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110829134147.GD1918@jolsa.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> To prepare for nohz / idle logic split, pull out the rcu dynticks
-> idle mode switching to strict idle entry/exit areas.
+Em Mon, Aug 29, 2011 at 03:41:47PM +0200, Jiri Olsa escreveu:
+> On Mon, Aug 29, 2011 at 10:20:37AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Aug 22, 2011 at 06:07:13PM +0200, Jiri Olsa escreveu:
+> > > On Mon, Aug 22, 2011 at 05:51:06PM +0200, Eric Dumazet wrote:
+> > > > Are you sure length cannot change between the two phases ?
+> > 
+> > > > /proc/kallsyms can definitely change when a module is loaded.
+> > 
+> > > Right, better to store it to a temp file as you suggest, so we have
+> > > consistent view.. I'll prepare new patch.
+> > 
+> > Hi Jiri, any news here?
+> > 
+> > I just stumbled in this bug while testing Neil's net_dropmonitor script
+> > :-\
 > 
-> So we make the dyntick mode possible without always involving rcu
-> extended quiescent state. 
+> well, I was thinking about taking files snapshot, so we dont read them
+> twice and omit the reading for size.. but it'll be probably bigger
+> change, I'll try to send out something by the end of the week
 
-Why is this a good thing? I would be thinking that if we're a userspace
-bound task and we disable the tick rcu would be finished on this cpu and
-thus the extended quiescent state is just what we want?
+Yeah, at least one thing there I plan to remove, i.e. no need to copy
+kallsyms when we have build ids, just stash the build id and use it
+later to get the right symtab to resolve symbols.
+ 
+> if you need workaround, the initial patch should work
 
+Ok, thanks.
 
+- Arnaldo
