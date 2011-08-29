@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab1H2Gbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 02:31:42 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33171 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab1H2Gbg (ORCPT
+	id S1751689Ab1H2Gff (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 02:35:35 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:54226 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab1H2Gfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 02:31:36 -0400
-Date: Mon, 29 Aug 2011 08:30:50 +0200
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #41512] 3.1-rc2 failed s2ram: Freezing of tasks failed
- after 20.00 seconds
-Message-ID: <20110829063050.GA15560@Pilar.site>
-References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
- <sfuyzWlorBN.A.PrF.cBpWOB@chimera>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <sfuyzWlorBN.A.PrF.cBpWOB@chimera>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Aug 2011 02:35:31 -0400
+Date: Mon, 29 Aug 2011 02:34:08 -0400 (EDT)
+Message-Id: <20110829.023408.440980195220010292.davem@davemloft.net>
+To: stephen.hemminger@vyatta.com
+Cc: eric.dumazet@gmail.com, herbert@gondor.hengli.com.au, kaber@trash.net,
+        mirq-linux@rere.qmqm.pl, therbert@google.com, jesse@nicira.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com, mitsuo.hayasaka.hu@hitachi.com
+Subject: Re: [PATCH net-next ] Fix time-lag of IFF_RUNNING flag consistency
+ between vlan and real devices
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <f6ded72b-346d-43af-af47-4edae5060406@tahiti.vyatta.com>
+References: <1314540589.3036.12.camel@edumazet-laptop>
+	<f6ded72b-346d-43af-af47-4edae5060406@tahiti.vyatta.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 28 Aug 2011 23:34:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Aug 2011 at 20:30:51 +0200, Rafael J. Wysocki wrote:
-> 
-> The following bug entry is on the current list of known regressions
-> from 3.0.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+From: Stephen Hemminger <stephen.hemminger@vyatta.com>
+Date: Sun, 28 Aug 2011 23:06:28 -0700 (PDT)
 
-It didn't happen again since then (with post -rc2 kernels).
+> This was mostly typical of older hardware that did not have a PHY
+> interrupt.
 
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=41512
-> Subject		: 3.1-rc2 failed s2ram: Freezing of tasks failed after 20.00 seconds
-> Submitter	: Carlos R. Mafra <crmafra2@gmail.com>
-> Date		: 2011-08-16 9:42 (13 days old)
-> Message-ID	: <20110816094245.GA2042@Pilar.site>
-> References	: http://marc.info/?l=linux-kernel&m=131348782017435&w=2
-> 
+Many have to poll because the PHY interrupt is simply unreliable.
