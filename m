@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab1H2FWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 01:22:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5016 "EHLO mga03.intel.com"
+	id S1752322Ab1H2FXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 01:23:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46087 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab1H2FWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 01:22:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,295,1312182000"; 
-   d="scan'208";a="11983740"
-Message-ID: <4E5B221B.4080309@intel.com>
-Date: Mon, 29 Aug 2011 13:22:35 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
-MIME-Version: 1.0
-To: Pavel Ivanov <paivanof@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: APEI: Can not request iomem region for GARs
-References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com> <4E520149.3010802@intel.com> <CAG1a4rtMnDXSGLkmwE+6N9smoghWp0W4b5-X_gogzJ9fDLTeBg@mail.gmail.com> <4E571D66.1070302@intel.com> <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com> <4E5AE82E.6000807@intel.com> <CAG1a4rsyQ5Ox_5i7K9tZT5q3YAnwRiG4uPkAkyY8JUZUjDkHpQ@mail.gmail.com>
-In-Reply-To: <CAG1a4rsyQ5Ox_5i7K9tZT5q3YAnwRiG4uPkAkyY8JUZUjDkHpQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752533Ab1H2FWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 01:22:55 -0400
+Date: Mon, 29 Aug 2011 15:22:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        WANG Cong <xiyou.wangcong@gmail.com>
+Subject: linux-next: manual merge of the akpm with Linus' tree
+Message-Id: <20110829152250.d6427f6ecee4dbd59718cc4f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2011 12:10 PM, Pavel Ivanov wrote:
-> On Sun, Aug 28, 2011 at 9:15 PM, Huang Ying <ying.huang@intel.com> wrote:
->> Hi, Pavel,
->>
->> On 08/27/2011 11:28 AM, Pavel Ivanov wrote:
->>> Huang,
->>>
->>> I can confirm that new patch got rid of the old error message but
->>> introduced a new one:
->>>
->>> ERST: Failed to get Error Log Address Range
->>
->> Please try the attached patch to find why there is the error message.
-> 
-> dmesg after the patch is in attachment.
+--Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--ENOENT is returned for apei_exec_run(, ACPI_ERST_GET_ERROR_RANGE).
-That is there is no instructions for mandatory action
-ACPI_ERST_GET_ERROR_RANGE.  It should be a firmware bug, try raise it to
-firmware vendor?
+Hi Andrew,
 
-Best Regards,
-Huang Ying
+Today's linux-next merge of the scsi-post-merge tree got a conflict in
+arch/cris/include/asm/serial.h between commit 02016bc0381c ("cris: add
+arch/cris/include/asm/serial.h") from Linus' tree and commit f8b20ed71f1b
+("Fix the following build errors:") from the akpm tree.
+
+There former appears to be a later version of the latter, so I dropped
+the latter.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOWyIqAAoJEDMEi1NhKgbs2uQIAIiVuSTsgpanPMKKc8SrgLY9
+fuRN0dpMs2Nr6EEOJUak8VMuY7FNFONeZSgWgfd9msPqH0wzodtplRf16arT1aPL
+j8WrpXvAxxATuZ0wYg6aH+VOjYVYzGHaQvbI5yOX3E6FzPk9zejECyyOoNlHK6Fg
+BPQv4iHl+92+u8C1jGUrHRhT84+QzDQjMUqbLjny0P4poTUMVXTMMEuIETzVaIPP
+QhRIwTTFLV0aUlG1XKz1Cp1Uv4+dLBW+G95yTaEnZdju21Oq7XXdez6plFTVyPNk
+MZMUlDoJ06pr4OFcy9bzngvNQT0w6kyZko02D8A2vt/ErGeo/3a7RKyOxBGIAe8=
+=HgJ0
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ--
