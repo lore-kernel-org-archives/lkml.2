@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab1H2OtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:49:01 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:46311 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753806Ab1H2Osp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:48:45 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaud Lacombe <lacombar@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v1 2/2] evm: remove TCG_TPM dependency
-Date: Mon, 29 Aug 2011 10:48:33 -0400
-Message-Id: <1314629313-11980-2-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1314629313-11980-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1314629313-11980-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S1753917Ab1H2OtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:49:08 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:19453 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab1H2Osz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 10:48:55 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=nHU0OEgxYIU38IFvLophid5b8iNTYaG0jAHZ3RCAJXdozay5msT9td0ynIS14H1UX
+	L4RjyahupBUeBVoN4msjg==
+MIME-Version: 1.0
+In-Reply-To: <4E5AEAF4.3000800@intel.com>
+References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com>
+ <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
+ <4E520149.3010802@intel.com> <CAG1a4rtMnDXSGLkmwE+6N9smoghWp0W4b5-X_gogzJ9fDLTeBg@mail.gmail.com>
+ <4E571D66.1070302@intel.com> <CAErSpo5L1X49hfeJ69o_hwfuzMT6R+7TKhGbYCkyqtqVpf4tEw@mail.gmail.com>
+ <4E5AEAF4.3000800@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 29 Aug 2011 08:48:28 -0600
+Message-ID: <CAErSpo7=SZ1XKBY0dDUg-c+_d-GoZF7uNypQc3Ecm+iofkXTMA@mail.gmail.com>
+Subject: Re: APEI: Can not request iomem region for GARs
+To: Huang Ying <ying.huang@intel.com>
+Cc: Pavel Ivanov <paivanof@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All tristates selected by EVM(boolean) are forced to be builtin, except
-in the TCG_TPM(tristate) dependency case. Arnaud Lacombe summarizes the
-Kconfig bug as, "So it would seem direct dependency state influence the
-state of reverse dependencies.."  For a detailed explanation, refer to
-Arnaud Lacombe's posting http://lkml.org/lkml/2011/8/23/498.
+On Sun, Aug 28, 2011 at 7:27 PM, Huang Ying <ying.huang@intel.com> wrote:
+> On 08/26/2011 09:43 PM, Bjorn Helgaas wrote:
+>> On Thu, Aug 25, 2011 at 10:13 PM, Huang Ying <ying.huang@intel.com> wrote:
+>>> Hi, Pavel,
+>>>
+>>> Sorry,  there is a minor issue in the patch.  Do you have time to try
+>>> the updated version attached.
+>>
+>> I think Yinghai's patch is a better approach (though it needs a changelog).
+>>
+>> The ACPI NVS space should not be marked as "busy" by the e820 code in
+>> the iomem_resource tree.
+>>
+>> It's way too complicated to mess around with registering NVS space and
+>> trying to deal with it specially in APEI.
+>
+> ACPI NVS is different, it can be used only by firmware, and its
+> interpreter, such as ACPI AML interpreter and APEI interpreter.  It can
+> not be used by ordinary driver.  If my understanding is correct, this is
+> why ACPI NVS is marked as busy.
 
-With the "encrypted-keys: remove trusted-keys dependency" patch, EVM
-can now be built without a dependency on TCG_TPM.  The trusted-keys
-dependency requires trusted-keys to either be builtin or not selected.
-This dependency will prevent the boolean/tristate mismatch from
-occuring.
+I don't understand why ACPI NVS is different.  If we reserve it in
+iomem_resource (without marking it busy), it's already unavailable to
+anything else unless you know something connected to the NVS region.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>,
-             Randy Dunlap <rdunlap@xenotimenet>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
----
- security/integrity/evm/Kconfig |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+The only way to allocate space inside NVS is to first discover the
+ACPI NVS resource, so you could pass it to request_resource() or
+allocate_resource() as the "root" to allocate from.  There's no
+mechanism for locating that resource, so it's already protected in
+that sense.
 
-diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
-index 884617d..afbb59d 100644
---- a/security/integrity/evm/Kconfig
-+++ b/security/integrity/evm/Kconfig
-@@ -1,11 +1,10 @@
- config EVM
- 	boolean "EVM support"
--	depends on SECURITY && KEYS && TCG_TPM
-+	depends on SECURITY && KEYS && (TRUSTED_KEYS=y || TRUSTED_KEYS=n)
- 	select CRYPTO_HMAC
- 	select CRYPTO_MD5
- 	select CRYPTO_SHA1
- 	select ENCRYPTED_KEYS
--	select TRUSTED_KEYS
- 	default n
- 	help
- 	  EVM protects a file's security extended attributes against
--- 
-1.7.3.4
+To use request_mem_region() (which marks the region busy), you all you
+need is an address.  The only way for a driver to learn an address
+inside NVS is from the ACPI tables.  So I think it's effectively
+limited to APEI there, too.
 
+Bjorn
