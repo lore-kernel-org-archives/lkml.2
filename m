@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab1H2QQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:16:06 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:52389 "EHLO radon.swed.at"
+	id S1753938Ab1H2QV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:21:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46895 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753581Ab1H2QNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:13:50 -0400
-From: Richard Weinberger <richard@nod.at>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 2/9] um: drivers/xterm.c: fix a file descriptor leak
-Date: Mon, 29 Aug 2011 18:13:32 +0200
-Message-Id: <1314634419-24766-3-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1314634419-24766-1-git-send-email-richard@nod.at>
-References: <1314634419-24766-1-git-send-email-richard@nod.at>
+	id S1753410Ab1H2QVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 12:21:22 -0400
+Date: Mon, 29 Aug 2011 18:17:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 14/16] freezer: make freezing() test freeze conditions
+	in effect instead of TIF_FREEZE
+Message-ID: <20110829161750.GA9411@redhat.com>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-15-git-send-email-tj@kernel.org> <20110829154944.GA7531@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110829154944.GA7531@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
+On 08/29, Oleg Nesterov wrote:
+>
+> > @@ -120,13 +120,18 @@ int freeze_processes(void)
+> >  {
+> >  	int error;
+> >
+> > +	if (!pm_freezing)
+> > +		atomic_inc(&system_freezing_cnt);
+> > +
+> >  	printk("Freezing user space processes ... ");
+> > +	pm_freezing = true;
+>
+> and
+>
+> > @@ -146,6 +151,11 @@ void thaw_processes(void)
+> >  {
+> >  	struct task_struct *g, *p;
+> >
+> > +	if (pm_freezing)
+> > +		atomic_dec(&system_freezing_cnt);
+> > +	pm_freezing = false;
+>
+> I simply can't understand this... Why freeze_processes/thaw_processes
+> check pm_freezing?
 
-I could use out_close1, but that seems to be the code path to close the
-fd returned by os_create_unix_socket, and using it to close the fd
-returned by mkstemp might lead to some confusion, so I don't do it.
+Ah, wait, I seem to understand.
 
-Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/drivers/xterm.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> IIUC, the calls to freeze/thaw should be serialized anyway
 
-diff --git a/arch/um/drivers/xterm.c b/arch/um/drivers/xterm.c
-index 8ac7146..2e1de57 100644
---- a/arch/um/drivers/xterm.c
-+++ b/arch/um/drivers/xterm.c
-@@ -123,6 +123,7 @@ static int xterm_open(int input, int output, int primary, void *d,
- 		err = -errno;
- 		printk(UM_KERN_ERR "xterm_open : unlink failed, errno = %d\n",
- 		       errno);
-+		close(fd);
- 		return err;
- 	}
- 	close(fd);
--- 
-1.7.6.1
+Yes, and that is why this should actually work, I think.
+
+Sorry for noise...
+
+Oleg.
 
