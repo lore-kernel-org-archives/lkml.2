@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab1H2OWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:22:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56083 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab1H2OWL (ORCPT
+	id S1753759Ab1H2OXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:23:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50132 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab1H2OXc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:22:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E5B9CB0.4090708@ladisch.de>
-References: <20110829122320.GX13925@legolas.emea.dhcp.ti.com>
-	<1314621110-19367-1-git-send-email-balbi@ti.com>
-	<CABb+yY15qrszsbJSGGFra7mrVRO_oQPUhNT=U7TNpyoYikABPw@mail.gmail.com>
-	<4E5B9CB0.4090708@ladisch.de>
-Date: Mon, 29 Aug 2011 19:52:09 +0530
-Message-ID: <CABb+yY1aQtN2fHKDk9a1MoAra40PSg3kotUJMhGJt8sb7EqTgA@mail.gmail.com>
-Subject: Re: [PATCH v2] sound: usb: mixer: increase control transfer timeout
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Felipe Balbi <balbi@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 29 Aug 2011 10:23:32 -0400
+Subject: Re: [PATCH 04/32] nohz: Separate idle sleeping time accounting from
+ nohz switching
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Date: Mon, 29 Aug 2011 16:23:19 +0200
+In-Reply-To: <1313423549-27093-5-git-send-email-fweisbec@gmail.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <1313423549-27093-5-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314627800.2816.62.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7TEMJdl018281
 
-On Mon, Aug 29, 2011 at 7:35 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
+On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> To prepare for having nohz mode switching independant from idle,
+> pull the idle sleeping time accounting out of the tick stop API.
+> 
+> This implies to implement some new API to call when we
+> enter/exit idle. 
 
->> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  buf, val_len, 1000) >= val_len) {
->> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  buf, val_len, 1000) >= 0) {
->> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  !value, 0, NULL, 0, 1000);
->> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  !value, 0, NULL, 0, 1000);
->> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  value, index + 2, NULL, 0, 1000);
->> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  jacks[i].unitid << 8, buf, 3, 1000);
->> > + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  50, 0, &new_status, 1, 1000);
->>
->> How about also converting to use a local define for timeout value ?
->
-> ... now that _all_ calls to snd_usb_ctl_msg use the same timeout value,
-> we could just as well drop this parameter.
-Sounds better, esp when we have 9 arguments to snd_usb_ctl_msg!
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I mean, I really love brevity, but you seem to just not state all the
+important bits ;-)
+
+So the goal is to disable the tick more often (say when running 1
+userbound task), why does that need new hooks? If we already had the
+tick disabled, the tick_nohz_stop_sched_tick() call on going idle will
+simply not do anything.
+
+If we go from idle to running something we want to enable the tick
+initially because doing the task wakeup involves RCU etc.. Once we find
+the task is indeed userbound and we've finished all our state we can
+disable the thing again.
+
+
