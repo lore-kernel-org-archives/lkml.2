@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab1H2QOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:14:47 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:52404 "EHLO radon.swed.at"
+	id S1754234Ab1H2QPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:15:04 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:52393 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab1H2QNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:13:51 -0400
+	id S1754054Ab1H2QNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 12:13:50 -0400
 From: Richard Weinberger <richard@nod.at>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        Al Viro <viro@ftp.linux.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 5/9] um: winch_interrupt() can happen inside of free_winch()
-Date: Mon, 29 Aug 2011 18:13:35 +0200
-Message-Id: <1314634419-24766-6-git-send-email-richard@nod.at>
+        Ingo van Lil <inguin@gmx.de>, Richard Weinberger <richard@nod.at>,
+        Stanislav Meduna <stano@meduna.org>
+Subject: [PATCH 3/9] um: Save FPU registers between task switches
+Date: Mon, 29 Aug 2011 18:13:33 +0200
+Message-Id: <1314634419-24766-4-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1314634419-24766-1-git-send-email-richard@nod.at>
 References: <1314634419-24766-1-git-send-email-richard@nod.at>
@@ -21,42 +21,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ftp.linux.org.uk>
+From: Ingo van Lil <inguin@gmx.de>
 
-... so set winch->fd to -1 before doing free_irq(), to avoid having
-winch_interrupt() come from/during the latter and attempt to do
-reactivate_fd() on something that's already gone.
+Some time ago Jeff prepared a patch (42daba3) for UML to stop saving the
+process FP state between task switches. The assumption was that since
+with SKAS0 every guest process runs inside a host process context the
+host OS will take care of keeping the proper FP state. Unfortunately
+this is not true for multi-threaded applications, where all guest
+threads share a single host process context yet all may use the FPU on
+their own. Although I haven't verified it I suspect things to be even
+worse in SKAS3 mode where all guest processes run inside a single host
+process.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+The patch below reintroduces the saving and restoring of the FP context
+between task switches.
+
+Signed-off-by: Ingo van Lil <inguin@gmx.de>
 Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/drivers/line.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+Reported-by: gunnarlindroth@hotmail.com
+Tested-by: gunnarlindroth@hotmail.com
+CC: Stanislav Meduna <stano@meduna.org>
 
-diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
-index c5bff1d..91bf1894 100644
---- a/arch/um/drivers/line.c
-+++ b/arch/um/drivers/line.c
-@@ -725,6 +725,8 @@ struct winch {
+[richard@nod.at: Ingo posted this patch in 2009, sadly it was never applied
+and got lost. Now in 2011 the problem was reported by Gunnar.]
+---
+ arch/um/include/shared/registers.h        |    2 +-
+ arch/um/kernel/process.c                  |    2 +-
+ arch/um/os-Linux/registers.c              |    9 ++++++++-
+ arch/um/os-Linux/skas/mem.c               |    2 +-
+ arch/um/os-Linux/skas/process.c           |   19 ++++++++++++++++++-
+ arch/um/sys-i386/shared/sysdep/ptrace.h   |    1 +
+ arch/um/sys-x86_64/shared/sysdep/ptrace.h |    1 +
+ 7 files changed, 31 insertions(+), 5 deletions(-)
+
+diff --git a/arch/um/include/shared/registers.h b/arch/um/include/shared/registers.h
+index b0b4589..f1e0aa5 100644
+--- a/arch/um/include/shared/registers.h
++++ b/arch/um/include/shared/registers.h
+@@ -16,7 +16,7 @@ extern int restore_fpx_registers(int pid, unsigned long *fp_regs);
+ extern int save_registers(int pid, struct uml_pt_regs *regs);
+ extern int restore_registers(int pid, struct uml_pt_regs *regs);
+ extern int init_registers(int pid);
+-extern void get_safe_registers(unsigned long *regs);
++extern void get_safe_registers(unsigned long *regs, unsigned long *fp_regs);
+ extern unsigned long get_thread_reg(int reg, jmp_buf *buf);
+ extern int get_fp_registers(int pid, unsigned long *regs);
+ extern int put_fp_registers(int pid, unsigned long *regs);
+diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
+index fab4371..21c1ae7 100644
+--- a/arch/um/kernel/process.c
++++ b/arch/um/kernel/process.c
+@@ -202,7 +202,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 		arch_copy_thread(&current->thread.arch, &p->thread.arch);
+ 	}
+ 	else {
+-		get_safe_registers(p->thread.regs.regs.gp);
++		get_safe_registers(p->thread.regs.regs.gp, p->thread.regs.regs.fp);
+ 		p->thread.request.u.thread = current->thread.request.u.thread;
+ 		handler = new_thread_handler;
+ 	}
+diff --git a/arch/um/os-Linux/registers.c b/arch/um/os-Linux/registers.c
+index 830fe6a..b866b9e 100644
+--- a/arch/um/os-Linux/registers.c
++++ b/arch/um/os-Linux/registers.c
+@@ -8,6 +8,8 @@
+ #include <string.h>
+ #include <sys/ptrace.h>
+ #include "sysdep/ptrace.h"
++#include "sysdep/ptrace_user.h"
++#include "registers.h"
  
- static void free_winch(struct winch *winch, int free_irq_ok)
+ int save_registers(int pid, struct uml_pt_regs *regs)
  {
-+	int fd = winch->fd;
-+	winch->fd = -1;
- 	if (free_irq_ok)
- 		free_irq(WINCH_IRQ, winch);
+@@ -32,6 +34,7 @@ int restore_registers(int pid, struct uml_pt_regs *regs)
+ /* This is set once at boot time and not changed thereafter */
  
-@@ -732,8 +734,8 @@ static void free_winch(struct winch *winch, int free_irq_ok)
+ static unsigned long exec_regs[MAX_REG_NR];
++static unsigned long exec_fp_regs[FP_SIZE];
  
- 	if (winch->pid != -1)
- 		os_kill_process(winch->pid, 1);
--	if (winch->fd != -1)
--		os_close_file(winch->fd);
-+	if (fd != -1)
-+		os_close_file(fd);
- 	if (winch->stack != 0)
- 		free_stack(winch->stack, 0);
- 	kfree(winch);
+ int init_registers(int pid)
+ {
+@@ -42,10 +45,14 @@ int init_registers(int pid)
+ 		return -errno;
+ 
+ 	arch_init_registers(pid);
++	get_fp_registers(pid, exec_fp_regs);
+ 	return 0;
+ }
+ 
+-void get_safe_registers(unsigned long *regs)
++void get_safe_registers(unsigned long *regs, unsigned long *fp_regs)
+ {
+ 	memcpy(regs, exec_regs, sizeof(exec_regs));
++
++	if (fp_regs)
++		memcpy(fp_regs, exec_fp_regs, sizeof(exec_fp_regs));
+ }
+diff --git a/arch/um/os-Linux/skas/mem.c b/arch/um/os-Linux/skas/mem.c
+index d261f17..e771398 100644
+--- a/arch/um/os-Linux/skas/mem.c
++++ b/arch/um/os-Linux/skas/mem.c
+@@ -39,7 +39,7 @@ static unsigned long syscall_regs[MAX_REG_NR];
+ 
+ static int __init init_syscall_regs(void)
+ {
+-	get_safe_registers(syscall_regs);
++	get_safe_registers(syscall_regs, NULL);
+ 	syscall_regs[REGS_IP_INDEX] = STUB_CODE +
+ 		((unsigned long) &batch_syscall_stub -
+ 		 (unsigned long) &__syscall_stub_start);
+diff --git a/arch/um/os-Linux/skas/process.c b/arch/um/os-Linux/skas/process.c
+index d6e0a22..dee0e8c 100644
+--- a/arch/um/os-Linux/skas/process.c
++++ b/arch/um/os-Linux/skas/process.c
+@@ -373,6 +373,9 @@ void userspace(struct uml_pt_regs *regs)
+ 		if (ptrace(PTRACE_SETREGS, pid, 0, regs->gp))
+ 			fatal_sigsegv();
+ 
++		if (put_fp_registers(pid, regs->fp))
++			fatal_sigsegv();
++
+ 		/* Now we set local_using_sysemu to be used for one loop */
+ 		local_using_sysemu = get_using_sysemu();
+ 
+@@ -399,6 +402,12 @@ void userspace(struct uml_pt_regs *regs)
+ 			fatal_sigsegv();
+ 		}
+ 
++		if (get_fp_registers(pid, regs->fp)) {
++			printk(UM_KERN_ERR "userspace -  get_fp_registers failed, "
++			       "errno = %d\n", errno);
++			fatal_sigsegv();
++		}
++
+ 		UPT_SYSCALL_NR(regs) = -1; /* Assume: It's not a syscall */
+ 
+ 		if (WIFSTOPPED(status)) {
+@@ -457,10 +466,11 @@ void userspace(struct uml_pt_regs *regs)
+ }
+ 
+ static unsigned long thread_regs[MAX_REG_NR];
++static unsigned long thread_fp_regs[FP_SIZE];
+ 
+ static int __init init_thread_regs(void)
+ {
+-	get_safe_registers(thread_regs);
++	get_safe_registers(thread_regs, thread_fp_regs);
+ 	/* Set parent's instruction pointer to start of clone-stub */
+ 	thread_regs[REGS_IP_INDEX] = STUB_CODE +
+ 				(unsigned long) stub_clone_handler -
+@@ -503,6 +513,13 @@ int copy_context_skas0(unsigned long new_stack, int pid)
+ 		return err;
+ 	}
+ 
++	err = put_fp_registers(pid, thread_fp_regs);
++	if (err < 0) {
++		printk(UM_KERN_ERR "copy_context_skas0 : put_fp_registers "
++		       "failed, pid = %d, err = %d\n", pid, err);
++		return err;
++	}
++
+ 	/* set a well known return code for detection of child write failure */
+ 	child_data->err = 12345678;
+ 
+diff --git a/arch/um/sys-i386/shared/sysdep/ptrace.h b/arch/um/sys-i386/shared/sysdep/ptrace.h
+index d50e62e..c398a50 100644
+--- a/arch/um/sys-i386/shared/sysdep/ptrace.h
++++ b/arch/um/sys-i386/shared/sysdep/ptrace.h
+@@ -53,6 +53,7 @@ extern int sysemu_supported;
+ 
+ struct uml_pt_regs {
+ 	unsigned long gp[MAX_REG_NR];
++	unsigned long fp[HOST_FPX_SIZE];
+ 	struct faultinfo faultinfo;
+ 	long syscall;
+ 	int is_user;
+diff --git a/arch/um/sys-x86_64/shared/sysdep/ptrace.h b/arch/um/sys-x86_64/shared/sysdep/ptrace.h
+index fdba545..8ee8f8e 100644
+--- a/arch/um/sys-x86_64/shared/sysdep/ptrace.h
++++ b/arch/um/sys-x86_64/shared/sysdep/ptrace.h
+@@ -85,6 +85,7 @@
+ 
+ struct uml_pt_regs {
+ 	unsigned long gp[MAX_REG_NR];
++	unsigned long fp[HOST_FP_SIZE];
+ 	struct faultinfo faultinfo;
+ 	long syscall;
+ 	int is_user;
 -- 
 1.7.6.1
 
