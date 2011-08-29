@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab1H2SPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:15:51 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41222 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754416Ab1H2SPt (ORCPT
+	id S1754734Ab1H2SRJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:17:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51424 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab1H2SRH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:15:49 -0400
-X-Sasl-enc: ZGxSYd8zxtLlwZD9nUtxbYmrsvuM/5HzDH6EzHV7JRUu 1314641749
-Date: Mon, 29 Aug 2011 11:12:06 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 46/46] Staging: hv: Update the TODO file
-Message-ID: <20110829181206.GB19668@kroah.com>
-References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
- <1314469905-7058-1-git-send-email-kys@microsoft.com>
- <1314469905-7058-46-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314469905-7058-46-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Aug 2011 14:17:07 -0400
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
+        Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-kbuild@vger.kernel.org
+Date: Mon, 29 Aug 2011 20:16:53 +0200
+References: <20110829141612.GB2025@gere.osrc.amd.com>
+	 <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+	 <20110829155501.GC2025@gere.osrc.amd.com>
+	 <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
+	 <20110829171750.GD2025@gere.osrc.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314641813.2816.133.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 11:31:45AM -0700, K. Y. Srinivasan wrote:
-> Update the TODO file.
+On Mon, 2011-08-29 at 20:09 +0200, Peter Zijlstra wrote:
+> > That would suck, suppose this radeon thing is the only console you've
+> > got (ppc64/sparc64 don't have text mode iirc) and userspace doesn't come
+> > up?
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/staging/hv/TODO |   24 ++++++++++++++++++++----
->  1 files changed, 20 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO
-> index 582fd4a..23c74ed 100644
-> --- a/drivers/staging/hv/TODO
-> +++ b/drivers/staging/hv/TODO
-> @@ -1,14 +1,30 @@
->  TODO:
-> -	- fix remaining checkpatch warnings and errors
->  	- audit the vmbus to verify it is working properly with the
->  	  driver model
-> -	- see if the vmbus can be merged with the other virtual busses
-> -	  in the kernel
-> +
-> +		STATUS (July 19, 2011):
-> +		All outstanding issues (known to us)  with regards
-> +		to conforming to Linux Driver Model have been addressed.
+> Same is true for NICs and netconsole of course. Not being able to stick
+> blobs into the kernel image would so suck. 
 
-The TODO file is not a place to have a "conversation" about what is and
-is not completed by having status reports.
-
-Let's discuss this through email, and if we all agree, then the TODO
-entries can be removed.
-
-greg k-h
+NICs and nfsroot, I suppose can you use an initrd over tftp as well, but
+really, what's the point of an in-kernel nfsroot if you need initrd
+crap.
