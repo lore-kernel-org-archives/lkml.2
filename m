@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab1H2F1Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 01:27:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47674 "EHLO smtps.tip.net.au"
+	id S1752667Ab1H2FhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 01:37:05 -0400
+Received: from mga14.intel.com ([143.182.124.37]:44330 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab1H2F1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 01:27:10 -0400
-Date: Mon, 29 Aug 2011 15:27:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: linux-next: build warning after merge of the ptrace tree
-Message-Id: <20110829152704.e533760bfb83fc7480333b20@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f"
+	id S1752105Ab1H2FhB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 01:37:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,295,1312182000"; 
+   d="scan'208";a="11986500"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>
+Date: Mon, 29 Aug 2011 11:00:07 +0530
+Subject: RE: [Power-supply]: Error handling in max17042_battery.c
+Thread-Topic: [Power-supply]: Error handling in max17042_battery.c
+Thread-Index: Acxjs47fEM7dlp1iSkeRZO6cUh7CdQCWL64w
+Message-ID: <12D0C12AF19E15409D57F22566E88EF5097576F280@bgsmsx501.gar.corp.intel.com>
+References: <12D0C12AF19E15409D57F22566E88EF5097576EBFB@bgsmsx501.gar.corp.intel.com>
+In-Reply-To: <12D0C12AF19E15409D57F22566E88EF5097576EBFB@bgsmsx501.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi All,
+> 
+> I am working on the I2C based max17042 fuel gauge driver
+> Which is drivers/power/max17042_battery.c
+> 
+> In max17042_get_property(...), the values returned by
+> Max17042_read_reg are directly assigned to the variables,
+> even if the read results in an error. Shouldn't we check
+> for the 'correctness' of the returned values and then
+> assign them ? Can I submit a patch to change this ?
+> 
+> Or Is this done intentionally ?
 
-Hi all,
+Any inputs on this?
 
-After merging the ptrace tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
-
-fs/autofs4/waitq.c: In function 'autofs4_wait':
-fs/autofs4/waitq.c:462:17: warning: unused variable 'irqflags'
-
-Introduced by commit 33ee1d9bc213 ("autofs4: Use set_current_blocked()").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOWyMoAAoJEDMEi1NhKgbsh4sH+wcB09K7v4HWTFqQ6Lh2bOWH
-KuYwJ5qnUl49o7EUwldPL5JqgTSh5oHXSVfigyFF79TQ1l4rr5rKdygw7/ZTE5f0
-qBDtu/lQ3zfL/YnNmUj0gVwgrTRN4l/+NpYDKAvF8DmmUXJL6+8faDyW3Ey5sVPh
-KZnAbGXt+BT8wk61891nefH18lYwhyBeRhPxjuwV+b5lZC+zR+aFginlbd2IWlAN
-/88B2NxXImAllJ4f7oem9mTQJ+Sd+sVs71UrCNjTqPT9T7VSj78NL6idZMPS78kY
-p+XVXCpXZ9afjUOOTdZJht0UoVtPIHzxMG4YpM6HgduOLk/rj85isIfOBVvOsoQ=
-=6ahb
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f--
+Thanks,
+Ram
