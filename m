@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1H2XMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:12:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39092 "EHLO mx2.suse.de"
+	id S1755417Ab1H2XPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:15:11 -0400
+Received: from ozlabs.org ([203.10.76.45]:55300 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376Ab1H2XMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:12:12 -0400
-Date: Tue, 30 Aug 2011 09:11:50 +1000
-From: NeilBrown <neilb@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
-Message-ID: <20110830091150.176cd08c@notabene.brown>
-In-Reply-To: <20110830085752.6db1ffa600f4c82135b3f3eb@canb.auug.org.au>
-References: <1312810169.2591.1153.camel@deadeye>
-	<20110808155538.GB904@fieldses.org>
-	<20110808180658.GC29924@decadent.org.uk>
-	<20110826220311.GA18140@fieldses.org>
-	<20110830085752.6db1ffa600f4c82135b3f3eb@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1755259Ab1H2XPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:15:09 -0400
+Date: Tue, 30 Aug 2011 09:15:06 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net,
+        penberg@cs.helsinki.fi
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf symbols: Synthesize anonymous mmap events
+Message-ID: <20110830091506.60b51fe8@kryten>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -29,41 +23,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 08:57:52 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
-wrote:
 
-> Hi Bruce,
-> 
-> On Fri, 26 Aug 2011 18:03:11 -0400 "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> >
-> > From: NeilBrown <neilb@suse.de>
-> > 
-> > The nfsservctl system call is now gone, so we should remove all
-> > linkage for it.
-> > 
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> > ---
-> > 
-> > I don't normally have to deal with this kind of cross-architecture
-> > patch; is this the right etiquette for it?
-> 
-> It turns out (with hindsight) that my reaction to this patch should have
-> been:
-> 
-> If you haven't built this on all architectures (an noone expects you to
-> actually do that), then it should spend a day or two in linux-next before
-> being sent to Linus.
-> 
+perf_event__synthesize_mmap_events does not create anonymous mmap
+events even though the kernel does. As a result an already running
+application with dynamically created code will not get profiled -
+all samples end up in the unknown bucket.
 
-Hi Stephen,
- Thanks for your help in sorting this out.  I have no idea how I missed those
- few nfsservctl references but I clearly did and you and -next have proved
- valuable yet again.
+This patch skips any entries with '[' in the name to avoid adding
+events for special regions (eg the vsyscall page). All other
+executable mmaps are assumed to be anonymous and an event is
+synthesized.
 
- And really *everything* should spend a few days in linux-next before going
- to Linus.  We all know that but it sometimes seem hard to *do* that ....
- until we have learnt the hard way a couple of times :-(
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
 
-Thanks,
-NeilBrown
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 3c1b8a6..437f8ca 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -169,12 +169,17 @@ static int perf_event__synthesize_mmap_events(union perf_event *event,
+ 			continue;
+ 		pbf += n + 3;
+ 		if (*pbf == 'x') { /* vm_exec */
++			char anonstr[] = "//anon\n";
+ 			char *execname = strchr(bf, '/');
+ 
+ 			/* Catch VDSO */
+ 			if (execname == NULL)
+ 				execname = strstr(bf, "[vdso]");
+ 
++			/* Catch anonymous mmaps */
++			if ((execname == NULL) && !strstr(bf, "["))
++				execname = anonstr;
++
+ 			if (execname == NULL)
+ 				continue;
+ 
