@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab1H2S1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:27:00 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41568 "EHLO
+	id S1754751Ab1H2S2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:28:45 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60404 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab1H2S07 (ORCPT
+	with ESMTP id S1754386Ab1H2S2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:26:59 -0400
-Date: Mon, 29 Aug 2011 14:26:55 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Bryan Wu <bryan.wu@canonical.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>, arnd@arndb.de, tony@atomide.com,
-        jochen@scram.de, linux-kernel@vger.kernel.org, jamie@jamieiles.com,
-        linux@maxim.org.za, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 00/18] Introduce a led trigger for CPU activity and
- consolidate LED driver in ARM
-In-Reply-To: <CAK5ve-+dEc8ie-pFp8e99rrqxAgWeiW3t30JO_sEBqd3BXeZkg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1108291424310.20358@xanadu.home>
-References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com> <CACRpkda6-8dxSbF12N-Q32cOpogu-ZZmTApnvNBa03iOcEeqaQ@mail.gmail.com> <CAK5ve-JM=01vTqSi59R6ASyGU_2fVXzKtjNh42LKeF2HF3NzSA@mail.gmail.com> <20110829151333.GA17887@n2100.arm.linux.org.uk>
- <CAK5ve-+dEc8ie-pFp8e99rrqxAgWeiW3t30JO_sEBqd3BXeZkg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 29 Aug 2011 14:28:44 -0400
+Date: Mon, 29 Aug 2011 20:28:38 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 13/32] nohz: Adaptive tick stop and restart on nohz cpuset
+Message-ID: <20110829182836.GI9748@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
+ <1314631689.2816.91.camel@twins>
+ <20110829180222.GG9748@somewhere.redhat.com>
+ <1314641230.2816.129.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314641230.2816.129.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011, Bryan Wu wrote:
-
-> On Mon, Aug 29, 2011 at 11:13 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Mon, Aug 29, 2011 at 09:18:29PM +0800, Bryan Wu wrote:
-> >> Yeah, I replied that email with a patch to select LEDS_CLASS when
-> >> CONFIG_NEW_LEDS=y.
-> >
-> > I don't see any point to that:
-> >
+On Mon, Aug 29, 2011 at 08:07:10PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-08-29 at 20:02 +0200, Frederic Weisbecker wrote:
+> > On Mon, Aug 29, 2011 at 05:28:09PM +0200, Peter Zijlstra wrote:
+> > > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> > > > +bool cpuset_nohz_can_stop_tick(void)
+> > > > +{
+> > > > +       struct rq *rq;
+> > > > +
+> > > > +       rq = this_rq();
+> > > > +
+> > > > +       /* More than one running task need preemption */
+> > > > +       if (rq->nr_running > 1)
+> > > > +               return false;
+> > > > +
+> > > > +       return true;
+> > > > +} 
+> > > 
+> > > int sched_needs_cpu(int cpu), seems the right name, matches the existing
+> > > {rcu,printk,arch}_needs_cpu() functions.
+> > 
+> > tick_nohz_stop_sched_tick() already handles that by keeping a periodic
+> > behaviour if one of these conditions are met.
 > 
-> Actually, what I really want to propose is to kill this option and
-> build in leds-class.c when CONFIG_NEW_LEDS=y, since most of functions
-> of leds-class.c are widely used by others.
+> What? tick_nohz_stop_sched_tick() most surely cannot access struct rq,
+> so it cannot do the nr_running test.
+
+I was talking about {rcu,printk,arch}_needs_cpu() functions.
+
 > 
-> And you know, to select it as default is a simple workaround.
+> > It has also the upside to restore the periodic behaviour if needed
+> > from irq return if the tick was stopped.
+> 
+> Again, what?
 
-Please go ahead with complete solutions when they exist.  We don't want 
-the mainline source tree filled with simple workarounds.
-
-
-Nicolas
+If the tick is stopped then an irq fires and something calls printk() or call_rcu()
+then on interrupt return, tick_nohz_stop_sched_tick() checks that
+with {rcu,printk,arch}_needs_cpu() and restores a periodic behaviour
+until nobody else needs the CPU.
