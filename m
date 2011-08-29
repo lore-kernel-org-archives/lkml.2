@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab1H2CJU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 22:09:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46505 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab1H2CJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 22:09:13 -0400
-Date: Mon, 29 Aug 2011 12:09:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>
-Subject: linux-next: build failure after merge of the scsi tree
-Message-Id: <20110829120902.f95a92022c2d9170defdc083@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__29_Aug_2011_12_09_02_+1000_K_pijKcOfQ0asW99"
+	id S1752137Ab1H2C3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 22:29:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49132 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab1H2C3i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 22:29:38 -0400
+Date: Mon, 29 Aug 2011 10:29:26 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org,
+        hch <hch@infradead.org>, scameron@beardog.cce.hp.com,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [kernel.org users] [KORG] Panics on master backend
+Message-ID: <20110829022926.GA10356@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <4E53ECEF.7040109@kernel.org>
+ <1314129133.8002.102.camel@twins>
+ <20110824160806.GA12317@redhat.com>
+ <1314267872.27911.6.camel@twins>
+ <20110825135429.GA32048@redhat.com>
+ <20110826060107.GA28189@zhy>
+ <20110826135739.GA12565@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110826135739.GA12565@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Aug_2011_12_09_02_+1000_K_pijKcOfQ0asW99
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Aug 26, 2011 at 03:57:39PM +0200, Oleg Nesterov wrote:
+> On 08/26, Yong Zhang wrote:
+> >
+> > On Thu, Aug 25, 2011 at 03:54:29PM +0200, Oleg Nesterov wrote:
+> > >
+> > > Of course it is not TASK_RUNNING, but it can be running or not.
+> >
+> > Yup. Before we go beyond ttwu_remote() in ttwu(), 'cpu' is not safe.
+> > For example, wait_event() could be preempted in between.
+> >
+> > But after we go beyond ttwu_remote(), ->pi_lock will stabilize it.
+> 
+> Yes.
+> 
+> > So after we take Oleg's suggestion("task_cpu(p) == smp_processor_id()"),
+> > things we left is just how to account stat correctly.
+> 
+> Imho, we don't really care. This race is very unlikely, 
 
-Hi James,
+Yup.
 
-After merging the scsi tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> and I think
+> that the "wrong" cpu argument in ttwu_stat() is harmless.
 
-drivers/scsi/qla2xxx/qla_nx.c: In function 'qla82xx_md_alloc':
-drivers/scsi/qla2xxx/qla_nx.c:4815:2: error: implicit declaration of functi=
-on 'vmalloc'
-drivers/scsi/qla2xxx/qla_nx.c:4815:14: warning: assignment makes pointer fr=
-om integer without a cast
-drivers/scsi/qla2xxx/qla_nx.c: In function 'qla82xx_md_free':
-drivers/scsi/qla2xxx/qla_nx.c:4845:3: error: implicit declaration of functi=
-on 'vfree'
+Hmm, the affected accounting is sched_domain->ttwu_wake_remote.
 
-Caused by commit b60bb5832c00 ("[SCSI] qla2xxx: Add support for ISP82xx
-to capture dump (minidump) on failure").  Missing include of
-linux/vmalloc.h.  See Rule 1 in Documentation/SubmitChecklist.
+> > @@ -2696,7 +2697,12 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+> >  	success = 1; /* we're going to change ->state */
+> >  	cpu = task_cpu(p);
+> >  
+> > -	if (p->on_rq && ttwu_remote(p, wake_flags))
+> > +	/*
+> > +	 * read cpu for another time if ttwu_remote() success,
+> > +	 * just to prevent task migration in between, otherwise
+> > +	 * we maybe account stat incorrectly.
+> > +	 */
+> > +	if (p->on_rq && ttwu_remote(p, wake_flags, &cpu))
+> 
+> I don't think this makes the things better. p->on_rq can be already
+> false or ttwu_remote() can fail, in this case we still use the result
+> of initial task_cpu().
 
-I have used the scsi tree from next-20110826 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Ah, My code (ttwu_remote(p, wake_flags, &cpu)) just catch the case:
+task is dancing with 'p->on_rq == true'.
 
---Signature=_Mon__29_Aug_2011_12_09_02_+1000_K_pijKcOfQ0asW99
-Content-Type: application/pgp-signature
+But forget the case: task has danced with 'p->on_rq == false' in the end.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+So we should reread task_cpu(p) if 'p->on_cpu == true &&
+__ARCH_WANT_INTERRUPTS_ON_CTXSW == y', but the code will be a little ugly
+and it only aims to account stat more correctly.
+We need some balance here :)
+BTW, I don't think we should care much on the 'incorrect stat' either
+if we don't make intolerable mistake.
 
-iQEcBAEBAgAGBQJOWvS+AAoJEDMEi1NhKgbsRnIH/Ru+c6HpieAwS7tb7VtLo9Gq
-OVXTfaIuK3TWH//TTAgWVRWLM7prxDZWeE11EwNDMrD4t6fi4wSLq63ZS6YHOyDD
-LGZHjOYPLcRjrRCq33iCKwsWN8k4FJuwjKziNrsdp4pUyg/fyR2pXReRmHXy4gKh
-4cInG/bv6/DGERkaLewB4ntk+U8yFnXI8AygWj1ChGsSPAiCnCUO0n/1c9NTiGq0
-/me0I6QSlbbhUk9JhTW/KHEbdrNAlfGcdSiiD3OilLVcFuCHmZw92WtSMMOup5PT
-9Qtprcm4FlENTkyJJeQQoxczvL8pSPuIvaspAJm/LLOy1WJ3fUGSXwOkUZPqZPo=
-=QajH
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Aug_2011_12_09_02_+1000_K_pijKcOfQ0asW99--
+Thanks,
+Yong
