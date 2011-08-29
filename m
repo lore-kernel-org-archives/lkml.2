@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1H2W4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 18:56:23 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:39654 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755194Ab1H2W4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 18:56:21 -0400
-Date: Mon, 29 Aug 2011 15:56:18 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: dmitry@broadcom.com
-Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Eilon Greenstein" <eilong@broadcom.com>
-Subject: Re: linux-next: Tree for Aug 29 (bnx2x)
-Message-Id: <20110829155618.01a73cce.rdunlap@xenotime.net>
-In-Reply-To: <1314653744.3085.2.camel@lb-tlvb-dmitry>
-References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
-	<20110829132800.f7174f2e.rdunlap@xenotime.net>
-	<1314653744.3085.2.camel@lb-tlvb-dmitry>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1755355Ab1H2W6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 18:58:03 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55837 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754103Ab1H2W6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 18:58:01 -0400
+Date: Tue, 30 Aug 2011 08:57:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
+Message-Id: <20110830085752.6db1ffa600f4c82135b3f3eb@canb.auug.org.au>
+In-Reply-To: <20110826220311.GA18140@fieldses.org>
+References: <1312810169.2591.1153.camel@deadeye>
+	<20110808155538.GB904@fieldses.org>
+	<20110808180658.GC29924@decadent.org.uk>
+	<20110826220311.GA18140@fieldses.org>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__30_Aug_2011_08_57_52_+1000_Uw9KG.Cbr6Myuj=k"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 00:35:44 +0300 Dmitry Kravkov wrote:
+--Signature=_Tue__30_Aug_2011_08_57_52_+1000_Uw9KG.Cbr6Myuj=k
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, 2011-08-29 at 13:28 -0700, Randy Dunlap wrote:
-> > On Mon, 29 Aug 2011 16:19:07 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > 
-> > (on i386 or x86_64)
-> > 
-> > drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:10148: error: 'bnx2x_fcoe_get_wwn' undeclared here (not in a function)
-> > 
-> > 
-> > Full randconfig file is attached.
-> > 
-> > ---
-> > ~Randy
-> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> This should sync #define structures between definition and declaration
+Hi Bruce,
+
+On Fri, 26 Aug 2011 18:03:11 -0400 "J. Bruce Fields" <bfields@fieldses.org>=
+ wrote:
+>
+> From: NeilBrown <neilb@suse.de>
+>=20
+> The nfsservctl system call is now gone, so we should remove all
+> linkage for it.
+>=20
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 > ---
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Dmitry Kravkov <dmitry@broadcom.com>
+>=20
+> I don't normally have to deal with this kind of cross-architecture
+> patch; is this the right etiquette for it?
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+It turns out (with hindsight) that my reaction to this patch should have
+been:
 
-Thanks.
+If you haven't built this on all architectures (an noone expects you to
+actually do that), then it should spend a day or two in linux-next before
+being sent to Linus.
 
-> ---
->  drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
-> index f290b23..5b1f9b5 100644
-> --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
-> +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h
-> @@ -522,7 +522,7 @@ void bnx2x_free_mem_bp(struct bnx2x *bp);
->   */
->  int bnx2x_change_mtu(struct net_device *dev, int new_mtu);
->  
-> -#if defined(BCM_CNIC) && (defined(CONFIG_FCOE) || defined(CONFIG_FCOE_MODULE))
-> +#if defined(NETDEV_FCOE_WWNN) && defined(BCM_CNIC)
->  /**
->   * bnx2x_fcoe_get_wwn - return the requested WWN value for this port
->   *
-> -- 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__30_Aug_2011_08_57_52_+1000_Uw9KG.Cbr6Myuj=k
+Content-Type: application/pgp-signature
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOXBlwAAoJEDMEi1NhKgbssnMH/0Bb99IHgDTSfYa3/mtwN+Rg
+JFZiEYu/kaqLwT9lBx2xElHwjRBb+Moi+GHdFcQYV2YtOKldJqeVptEFHLQScuHK
+i2T3bYz2WjIRkfYjp58smmLk6pByLMDJBjO1E+x3MCiENvvze501nqooyrbd4eA0
+Oa7dwrIKosmZBNImuZfpBIdmOELQo6n5ewqyXqKFB+g/YRAiifhj2Pq1pMuawPxa
+JiEFywkrJuOSs8F6bk/p2WLydH70piIzdJsHxKisE0Pqvy1shHXS782gv/LTDWZp
+UjaQ2e+CdmmHmm/6lMCoemwOfYX13O0lmXdJa2kPKuBukadH/SsBsrpFv0UghVY=
+=zdQQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__30_Aug_2011_08_57_52_+1000_Uw9KG.Cbr6Myuj=k--
