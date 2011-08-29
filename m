@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab1H2Nnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:43:37 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37261 "EHLO
+	id S1752796Ab1H2Ns1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:48:27 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42804 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab1H2Nn3 (ORCPT
+	with ESMTP id S1750965Ab1H2NsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:43:29 -0400
+	Mon, 29 Aug 2011 09:48:22 -0400
 MIME-Version: 1.0
 In-Reply-To: <20110829133808.GA2025@gere.osrc.amd.com>
 References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
@@ -15,14 +15,12 @@ References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
 	<20110828053624.GC12851@liondog.tnic>
 	<1314624021.2816.30.camel@twins>
 	<20110829133808.GA2025@gere.osrc.amd.com>
-Date: Mon, 29 Aug 2011 14:43:28 +0100
-Message-ID: <CAPM=9tyW7GYa0HSeqDb1WPs5K5ov=K2yOPKu1s0mMzhSJVvqPQ@mail.gmail.com>
+Date: Mon, 29 Aug 2011 09:48:22 -0400
+Message-ID: <CADnq5_Mppeym2spCqsRGYALQxWDjQ_yNuta4SYRH6Oocy=UjSg@mail.gmail.com>
 Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-From: Dave Airlie <airlied@gmail.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 To: Borislav Petkov <bp@alien8.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Pavel Ivanov <paivanof@gmail.com>,
+Cc: Peter Zijlstra <peterz@infradead.org>, Pavel Ivanov <paivanof@gmail.com>,
         =?ISO-8859-1?Q?Michel_D=E4nzer?= <michel@daenzer.net>,
         dri-devel@lists.freedesktop.org,
         linux-kernel <linux-kernel@vger.kernel.org>
@@ -62,13 +60,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > repo into /lib/firmware and made radeon.ko =m again so that I don't have
 > to add *.bin entries to CONFIG_EXTRA_FIRMWARE each time I'm building a
 > kernel on a different machine.
+>
+> Besides, there was this other issue on lkml today where
+> CONFIG_EXTRA_FIRMWARE can cause nconf to segfault when you overflow
+> its length of 256 by trying to include a bunch of firmware *bin files:
+> http://lkml.org/lkml/2011/8/29/86
 
-That asks the question is your distro isn't shipping those firmware for you.
+If you are going to build the ucode into your kernel you'll need to
+pick the ones you want to include or increase the limit regardless of
+whether it's radeon ucode or ucode for some other chip.  For a
+particular card you only need the ones for that card (e.g.,
+CEDAR_*.bin or REDWOOD_*.bin, etc.)
 
-The main thing is you build in the driver which firmware to include?
-granted all the radeon firmware is only about 580k so its probably not
-a problem to somehow magically add them all to CONFIG_EXTRA_FIRMWARE
-if RADEON=y, if someone thinks to make kbuild do it, but you really
-only 3 or 4 of them on any one card.
-
-Dave.
+Alex
