@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab1H2SCb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:02:31 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57956 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab1H2SCa (ORCPT
+	id S1754482Ab1H2SFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:05:51 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45805 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754182Ab1H2SFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:02:30 -0400
-Date: Mon, 29 Aug 2011 20:02:25 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [PATCH 13/32] nohz: Adaptive tick stop and restart on nohz cpuset
-Message-ID: <20110829180222.GG9748@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
- <1314631689.2816.91.camel@twins>
+	Mon, 29 Aug 2011 14:05:49 -0400
+X-Sasl-enc: XuLCzDP4RZjWp3L5evCAafWvPu1mcSQDOLQfH7FDi20M 1314641148
+Date: Mon, 29 Aug 2011 11:05:11 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 37/46] Staging: hv: vmbus: Check for events before
+ messages
+Message-ID: <20110829180511.GA7167@kroah.com>
+References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
+ <1314469905-7058-1-git-send-email-kys@microsoft.com>
+ <1314469905-7058-37-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314631689.2816.91.camel@twins>
+In-Reply-To: <1314469905-7058-37-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 05:28:09PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > +bool cpuset_nohz_can_stop_tick(void)
-> > +{
-> > +       struct rq *rq;
-> > +
-> > +       rq = this_rq();
-> > +
-> > +       /* More than one running task need preemption */
-> > +       if (rq->nr_running > 1)
-> > +               return false;
-> > +
-> > +       return true;
-> > +} 
-> 
-> int sched_needs_cpu(int cpu), seems the right name, matches the existing
-> {rcu,printk,arch}_needs_cpu() functions.
+On Sat, Aug 27, 2011 at 11:31:36AM -0700, K. Y. Srinivasan wrote:
+> Conform to Windows specification by checking for events before messages.
 
-tick_nohz_stop_sched_tick() already handles that by keeping a periodic
-behaviour if one of these conditions are met.
+What specification?
 
-It has also the upside to restore the periodic behaviour if needed
-from irq return if the tick was stopped.
+Care to provide a comment in the code that you are doing this in this
+explicit order because of some rule that the hypervisor imposes on us?
+
+thanks,
+
+greg k-h
