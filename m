@@ -1,132 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab1H2IkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 04:40:07 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:42982 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751176Ab1H2IkB (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
-	Mon, 29 Aug 2011 04:40:01 -0400
-Message-Id: <4E5BDCFD0200002300030F1C@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 29 Aug 2011 02:39:57 -0600
-From: "Joey Lee" <jlee@suse.com>
-To: <trenn@suse.de>
-Cc: <devel@acpica.org>, <jnelson-suse@jamponi.net>, <lenb@kernel.org>,
-        <x86@kernel.org>, <eric.piel@tremplin-utc.net>,
-        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH 2/2] ACPI: Implement overriding of arbitrary ACPI
- tables via initrd
-References: <1314179290-31526-1-git-send-email-trenn@suse.de>
- <1314179290-31526-3-git-send-email-trenn@suse.de>
- <4E5BDB090200002300030F12@novprvlin0050.provo.novell.com>
-In-Reply-To: <4E5BDB090200002300030F12@novprvlin0050.provo.novell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1753331Ab1H2IkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 04:40:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58931 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab1H2IkE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 04:40:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B24A412A@HQMAIL01.nvidia.com>
+References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B24A3BC0@HQMAIL01.nvidia.com>
+	<CACRpkdaZfG4hiGf8vug3EGMRMc0c92xbj=L_HAQcS27DAXYc4Q@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B24A3EDB@HQMAIL01.nvidia.com>
+	<CACRpkdbBBaNFETLLcxeCFZoLbdMok7uRi_o-HcbpYdMtRiGFcw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B24A412A@HQMAIL01.nvidia.com>
+Date: Mon, 29 Aug 2011 10:40:03 +0200
+Message-ID: <CACRpkdahBjE5cyz5i44BNPi-q=+v+HM1hmgCWszuOFNq6xedSQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        ext Tony Lindgren <tony@atomide.com>,
+        David Brown <davidb@codeaurora.org>,
+        Sascha Hauer <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-æ–¼ ä¸€ï¼Œ2011-08-29 æ–¼ 02:31 -0600ï¼ŒJoey Lee æåˆ°ï¼š
-> æ–¼ ä¸‰ï¼Œ2011-08-24 æ–¼ 11:48 +0200ï¼ŒThomas Renninger æåˆ°ï¼š
-> > Details can be found in:
-> > Documentation/acpi/initrd_table_override.txt
-> > 
-> > Additional dmesg output of a booted system with
-> > FACP (FADT), DSDT and SSDT (the 9th dynamically loaded one)
-> > tables overridden (with ### marked comments):
-> > 
-> > ### ACPI tables found glued to initrd
-> > DSDT ACPI table found in initrd - size: 16234
-> > FACP ACPI table found in initrd - size: 116
-> > SSDT ACPI table found in initrd - size: 334
-> > ### Re-printed e820 map via e820_update() with additionally created
-> > ### ACPI data section at 0xcff55000 where the ACPI tables passed via
-> > ### initrd where copied to
-> > modified physical RAM map:
-> > ...
-> >   ### New ACPI data section:
-> >   modified: 00000000cff55000 - 00000000cff5912c (ACPI data)
-> >   ### BIOS e820 provided ACPI data section:
-> >   modified: 00000000cff60000 - 00000000cff69000 (ACPI data)
-> > ...
-> > ### Total size of all ACPI tables glued to initrd
-> > ### The address is initrd_start which gets updated to
-> > ### initrd_start = initrd_start + "size of all ACPI tables glued to initrd"
-> > Found acpi tables of size: 16684 at 0xffff8800374c4000
-> > 
-> > Disabling lock debugging due to kernel taint
-> > ### initrd provided FACP and DSDT tables are used instead of BIOS provided ones
-> > ACPI: FACP @ 0x00000000cff68dd8 Phys table override, replaced with:
-> > ACPI: FACP 00000000cff58f6a 00074 (v01 INTEL  TUMWATER 06040000 PTL  00000003)
-> > ACPI: DSDT @ 0x00000000cff649d4 Phys table override, replaced with:
-> > ACPI: DSDT 00000000cff55000 04404 (v01  Intel BLAKFORD 06040000 MSFT 0100000E)
-> > ...
-> > ### Much later, the 9th (/sys/firmware/acpi/table/dynamic/SSDT9) dynamically
-> > ### loaded ACPI table matches and gets overridden:
-> > ACPI: SSDT @ 0x00000000cff64824 Phys table override, replaced with:
-> > ACPI: SSDT 00000000cff58fde 0014E (v01  PmRef  Cpu7Ist 00003000 INTL 20110316)
-> > ACPI: Dynamic OEM Table Load:
-> > ACPI: SSDT           (null) 0014E (v01  PmRef  Cpu7Ist 00003000 INTL 20110316)
-> > ...
-> > 
-> > If the initrd does not start with a valid ACPI table signature or the ACPI
-> > table's checksum is wrong, there is no functional change.
-> > 
-> > Signed-off-by: Thomas Renninger <trenn@suse.de>
-> > CC: linux-acpi@vger.kernel.org
-> > CC: lenb@kernel.org
-> > CC: linux-kernel@vger.kernel.org
-> > CC: x86@kernel.org
-> > ---
-> 
-> This patch works fine to me on Acer TravelMate 8572.
-> I added a debug message to _BCM method in DSDT then override it in
-> initrd by follow initrd_table_override.txt.
-> 
-> The attached is my dmesg log.
-> 
-> > +3) How does it work
-> > +-------------------
-> > +
-> > +# Extract the machine's ACPI tables:
-> > +acpidump >acpidump
-> > +acpixtract -a acpidump
-> > +# Disassemble, modify and recompile them:
-> > +iasl -d *.dat
-> > +# For example add this statement into a _PRT (PCI Routing Table) function
-> > +# of the DSDT:
-> > +Store("Hello World", debug)
-> > +iasl -sa *.dsl
-> > +# glue them together with the initrd. ACPI tables go first, original initrd
-> > +# goes on top:
-> > +cat TBL1.dat >>instrumented_initrd
-> > +cat TBL2.dat >>instrumented_initrd
-> > +cat TBL3.dat >>instrumented_initrd
-> 
-> I suggest use TBL1.aml to replace TBL1.dat in initrd_table_override.txt,
-> because iasl -sa default generate out *.aml file but not *.dat file, my
-> iasl version is Intel 20110112-64 [Feb 27 2011].
-> That will be more clear for the first time user to understand need cat
-> *.aml file.
-> 
-> Tested-by: Lee, Chun-Yi <jlee@suse.com>
-> 
-> 
-> Thank's
-> Joey Lee
-> 
+On Fri, Aug 26, 2011 at 7:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-I applied the 2 patches on linux v3.0 kernel but not on the latest
-linux-acpi-2.6 branch.
+> However, we'd then need a extra table defining what each locality meant:
+>
+> function locality list_of_pins_in_function_at_locality
+> -------- -------- ------------------------------------
+> i2c0     0        0, 1
+> i2c0     1        2, 3
+> (hard-coded into pinmux driver implementation)
 
-I will also test it on linux-acpi-2.6.
+I *think* this is what I have implemented in the v5 patch set,
+have a look.
 
+> It seems slightly more complex to me to have these two separate tables,
+> rather than just iterating over n entries in a single mapping table.
 
-Thank's
-Joey Lee
+I can deal with it....
 
+> Still, I suppose this an implementation detail. I guess I also need to
+> think a little more about how both those models would work with Tegra,
+> where special functions are selected at a granularity of pin groups,
+> yet GPIO is selected at a granularity of a single pin. Perhaps that
+> final table I wrote above (mapping locality to pin list) might also help
+> represent Tegra's pin-group- rather than pin-level muxing capabilities...
 
+I have made the assumption that we want to handle groups
+of pins, so a certain function in a certain position represents what
+the device want to request.
+
+Well, let's look at the code...
+
+Thanks,
+Linus Walleij
