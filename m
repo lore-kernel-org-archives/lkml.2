@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab1H2PZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:25:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54224 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab1H2PZ4 convert rfc822-to-8bit (ORCPT
+	id S1754076Ab1H2P0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:26:55 -0400
+Received: from mail.ss.pku.edu.cn ([211.101.48.138]:60670 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab1H2P0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:25:56 -0400
-Subject: Re: [PATCH 13/32] nohz: Adaptive tick stop and restart on nohz
- cpuset
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 17:25:36 +0200
-In-Reply-To: <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-14-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314631536.2816.89.camel@twins>
-Mime-Version: 1.0
+	Mon, 29 Aug 2011 11:26:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1108291712590.3904@dhcp-27-109.brq.redhat.com>
+References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
+	<alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com>
+	<CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com>
+	<alpine.LFD.2.00.1108291637470.3904@dhcp-27-109.brq.redhat.com>
+	<CAF1ivSYu=0Xh3aXJGbuBUZjT_azLTO6Tq1gzhNRBWsHXCUMjiw@mail.gmail.com>
+	<alpine.LFD.2.00.1108291712590.3904@dhcp-27-109.brq.redhat.com>
+Date: Mon, 29 Aug 2011 23:26:49 +0800
+Message-ID: <CAF1ivSbwSXhz7sKzKrA=3CcTi6hJHP4T5PYsgefpEQx7DBnD5A@mail.gmail.com>
+Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
+ device is removed
+From: Lin Ming <lxy@ss.pku.edu.cn>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Bart Van Assche <bvanassche@acm.org>, Jens Axboe <jaxboe@fusionio.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> When a CPU is included in a nohz cpuset, try to switch
-> it to nohz mode from the timer interrupt if it is the
-> only non-idle task running.
-> 
-> Then restart the tick if necessary from the wakeup path
-> if we are enqueuing a second task while the timer is stopped,
-> so that the scheduler tick is rearmed.
+On Mon, Aug 29, 2011 at 11:16 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> On Mon, 29 Aug 2011, Lin Ming wrote:
+>
+>> On Mon, Aug 29, 2011 at 10:42 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+>> > On Mon, 29 Aug 2011, Lin Ming wrote:
+>> >
+>> >> On Mon, Aug 29, 2011 at 7:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+>> >> >
+>> >> > Regarding the atomic operations I do not think that implicit memory
+>> >> > barriers are needed here as atomic_dec_and_test() implies memory
+>> >>
+>> >> Which implicit memory barrier you are talking about?
+>> >
+>> > smp_mb() at both side of the operation as documented here in
+>> > Documentation/memory-barriers.txt
+>>
+>> Thanks for the info.
+>>
+>> But I don't follow you ... why that implicit memory barriers are NOT needed?
+>>
+>
+> Oh, I am sorry I have actually wanted to say that *explicit* memory
+> barriers are no needed in that case. Sorry for the confusion!
 
-Shouldn't you first put the syscall hooks in place before allowing the
-tick to be switched off? It seems this patch is somewhat too early in
-the series.
+Make sense now :)
 
-> This assumes we are using TTWU_QUEUE sched feature so I need
-> to handle the off case (or actually not handle it but properly),
-> because we need the adaptive tick restart and what will come
-> along in further patches to be done locally and before the new
-> task ever gets scheduled.
-
-We could certainly remove that feature flag and always use it, it was
-mostly a transition debug switch in case something didn't work or
-performance issues were found due to this.
-
-> I also need to look at the ARCH_WANT_INTERRUPTS_ON_CTXW case
-> and the remote wakeups.
-
-Well, ideally we'd simply get rid of that, rmk has some preliminary
-patches in that direction.
-
+Thanks.
