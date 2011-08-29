@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1H2WCU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 18:02:20 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:58255 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab1H2WCS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 18:02:18 -0400
-Message-ID: <4E5C0AB3.90401@panasas.com>
-Date: Mon, 29 Aug 2011 14:54:59 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1755304Ab1H2WDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 18:03:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53240 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753945Ab1H2WDa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 18:03:30 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <Trond.Myklebust@netapp.com>, <joe@perches.com>, <bfields@fieldses.org>,
-        <neilb@suse.de>, <linux-nfs@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 19/24] sunrpc: Remove unnecessary OOM logging messages
-References: <cover.1314650069.git.joe@perches.com> <8a6378b3fef105983db001fb720c84b669491439.1314650069.git.joe@perches.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4EE9@SACMVEXC2-PRD.hq.netapp.com> <20110829.143751.1153162956919885670.davem@davemloft.net>
-In-Reply-To: <20110829.143751.1153162956919885670.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4E5BFD36.2090000@panasas.com>
+References: <4E56CE8F.8080501@panasas.com> <CA+55aFxNXK-AJdrHBBycM5W632qUBi4E=jangcdRoefQiHzbug@mail.gmail.com>
+ <4E580830.4010305@panasas.com> <1314624752.2816.32.camel@twins> <4E5BFD36.2090000@panasas.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 29 Aug 2011 15:02:35 -0700
+Message-ID: <CA+55aFxB7mBByT9W4c0D6kELcZMZDD_j0_S2869nS4LV0mNTbA@mail.gmail.com>
+Subject: Re: [PATCH] .gitattributes: Enable cpp diff parsing for .[ch] files
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Git Mailing List <git@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Junio C Hamano <gitster@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2011 02:37 PM, David Miller wrote:
-> From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-> Date: Mon, 29 Aug 2011 14:36:17 -0700
-> 
->> Big NACK...
->>
->> By whose standard are those "not useful"?
-> 
-> By mine, that's for sure.  It's duplicating something that the allocation
-> layers are already going to print.
+On Mon, Aug 29, 2011 at 1:57 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+>
+>  What are you guys afraid of? what possibly could be bad about this patch?
 
-I have a question about that. Are the dprints going to show the stack backtrace?
-Otherwise how can I see which exact allocation failed and was not properly handled?
+I just detest filling the kernel tree with git stuff.
 
-If yes above? then I'm not sure I like it either, because am I'll be getting a full
-stack backtrace for every failed allocation?
+Right now, the only git-specific file we have in the kernel tree is
+the ".gitignore" files, afaik. And if you were to use some other SCM,
+the "ignore" model at least translates directly to just about anything
+else (with the problem that the .gitignore model tends to be more
+powerful than most other SCM's have, but whatever).
 
-But I might like it if I try. How do I turn on allocation failures prints?
-Can I filter out to print only GFP_KERNEL failures and or other GFP combinations?
+I'd hate to start populating the project with more stuff.
 
-Thanks 
-Boaz
+                     Linus
