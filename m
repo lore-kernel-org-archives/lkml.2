@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1H2Tu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 15:50:27 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33160 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754566Ab1H2TuX (ORCPT
+	id S1754943Ab1H2Tx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 15:53:29 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:54955 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754722Ab1H2Tx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 15:50:23 -0400
-Date: Mon, 29 Aug 2011 12:50:17 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
-Subject: [PATCH] input: fix misc/twl6040-vibra.c warning
-Message-Id: <20110829125017.9337299c.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 29 Aug 2011 15:53:28 -0400
+MIME-Version: 1.0
+Date: Mon, 29 Aug 2011 23:53:27 +0400
+Message-ID: <CAKMM7E3E7z_EXgaFLD3iwo-L9W2YhB4FQsWeyDeaGR7L5Oe-XA@mail.gmail.com>
+Subject: Linux kernel ARM problem
+From: =?KOI8-R?B?4s/Hz83B2s/XIOvJ0snMzA==?= <nnovnet@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+Good day!
+I hope very much for your help. I have been porting Android on HTC
+device Mega (Qualcomm
 
-Fix warning from Geert's build summary emails by changing "if" to
-"ifdef".  Also handle the case of CONFIG_PM_SLEEP not enabled.
+MSM7225 ) with loader Haret. At that moment I'm using to debug the
+code vibratory phone and I
 
-drivers/input/misc/twl6040-vibra.c:231:5: warning: "CONFIG_PM_SLEEP" is not defined
+can say that Haret work.For the kernel I used source code from a
+similar device HTC Buzz with
 
-Builds cleanly with CONFIG_PM_SLEEP enabled or disabled.
+some modifications.I am sure that the kernel is loaded into RAM so I
+added vibration code to the
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/input/misc/twl6040-vibra.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+kernel/head.S and receive device vibrating. However, when I added the
+code in the vibration board-
 
---- linux-next-20110829.orig/drivers/input/misc/twl6040-vibra.c
-+++ linux-next-20110829/drivers/input/misc/twl6040-vibra.c
-@@ -228,7 +228,7 @@ static void twl6040_vibra_close(struct i
- 	mutex_unlock(&info->mutex);
- }
- 
--#if CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM_SLEEP
- static int twl6040_vibra_suspend(struct device *dev)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
-@@ -244,10 +244,13 @@ static int twl6040_vibra_suspend(struct 
- 	return 0;
- }
- 
--#endif
--
- static SIMPLE_DEV_PM_OPS(twl6040_vibra_pm_ops, twl6040_vibra_suspend, NULL);
- 
-+#define TWL6040_VIBRA_PM_OPS	(&twl6040_vibra_pm_ops)
-+#else
-+#define TWL6040_VIBRA_PM_OPS	NULL
-+#endif
-+
- static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
- {
- 	struct twl4030_vibra_data *pdata = pdev->dev.platform_data;
-@@ -400,7 +403,7 @@ static struct platform_driver twl6040_vi
- 	.driver		= {
- 		.name	= "twl6040-vibra",
- 		.owner	= THIS_MODULE,
--		.pm	= &twl6040_vibra_pm_ops,
-+		.pm	= TWL6040_VIBRA_PM_OPS,
- 	},
- };
- 
+buzz.c  that does not work anyway.My device freeze after message
+"Booting Linux". Tell me how I can track and debug the error? There
+especially
+
+in the kernel boots Buzz? That may interfere with loading on an
+identical device?Thank you in
+
+advance for your help.
