@@ -1,97 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224Ab1H2EP7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 00:15:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46205 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab1H2EPw (ORCPT
+	id S1751396Ab1H2EUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 00:20:32 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60289 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab1H2EU2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 00:15:52 -0400
-Date: Sun, 28 Aug 2011 23:15:42 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Kevin Tian <kevin.tian@intel.com>,
-        Fengzhe Zhang <fengzhe.zhang@intel.com>, mingo@redhat.com,
-        hpa@zytor.com, Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        JBeulich@novell.com, xen-devel@lists.xensource.com,
-        Lars Boegild Thomsen <lth@cow.dk>
-Subject: [regression] Ideapad S10-3 does not wake up from suspend (Re: [PATCH
- v2 2/2] x86: don't unmask disabled irqs when migrating them)
-Message-ID: <20110829041532.GA22087@elie.gateway.2wire.net>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
+	Mon, 29 Aug 2011 00:20:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+In-Reply-To: <20110827173421.GA2967@redhat.com>
+References: <1313740111-27446-1-git-send-email-walken@google.com>
+	<20110822213347.GF2507@redhat.com>
+	<CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
+	<20110824000914.GH23870@redhat.com>
+	<20110824002717.GI23870@redhat.com>
+	<20110824133459.GP23870@redhat.com>
+	<20110826062436.GA5847@google.com>
+	<20110826161048.GE23870@redhat.com>
+	<20110826185430.GA2854@redhat.com>
+	<20110827094152.GA16402@google.com>
+	<20110827173421.GA2967@redhat.com>
+Date: Mon, 29 Aug 2011 13:20:26 +0900
+Message-ID: <CAEwNFnDk0bQZKReKccuQMPEw_6EA2DxN4dm9cmjr01BVT4A7Dw@mail.gmail.com>
+Subject: Re: [PATCH] thp: tail page refcounting fix #4
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Lars Boegild Thomsen writes[1]:
-
-> After update from 2.6 kernel to 3.0 my Idepad S10-3 will not wake up after 
-> sleep.  Back to latest 2.6 kernel works fine.
-[...]
-> Upon wakeup, the power light go from slow flashing to on, the battery light 
-> goes from off to on, the hdd light blink once and then everything is dead.  
-> Nothing happens on the screen, all keys dead.  The fan/hdd switch on 
-> physically (very hard to hear on this model or I am getting deaf).  
-> Ctrl+alt+del or the alt+sysreq is non-responsive.  The only LED that show 
-> keyboard status is CAPS lock and that is unresponsive too.  Only way I have 
-> found to get it rebooted is holding down the power button a few secs until it 
-> switch physically off and then switch it on again.
-[...]
-> Here's the result of the final bisect:
+On Sun, Aug 28, 2011 at 2:34 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Sat, Aug 27, 2011 at 02:41:52AM -0700, Michel Lespinasse wrote:
+>> I understand you may have to remove the VM_BUG_ON(page_mapcount(page) <= 0)
+>> that I had suggested in __get_page_tail() (sorry about that).
 >
-> 983bbf1af0664b78689612b247acb514300f62c7 is the first bad commit
-[...]
-> I also tried to go back to HEAD and manually change arch/x86/irq.c revert this 
-> particular commit and it works.
-
-For reference:
-
-> commit 983bbf1af0664b78689612b247acb514300f62c7
-> Author: Tian, Kevin <kevin.tian@intel.com>
-> Date:   Fri May 6 14:43:56 2011 +0800
+> The function doing that is snd_pcm_mmap_data_fault and it's doing what
+> I described in prev email.
 >
->    x86: Don't unmask disabled irqs when migrating them
+>> My only additional suggestion is about the put_page_testzero in
+>> __get_page_tail(), maybe if you could just increment the tail page count
+>> instead of calling __get_page_tail_foll(), then you wouldn't have to
+>> release the extra head page count there. And it would even look kinda
+>> natural, head page count gets acquired before compound_lock_irqsave(),
+>> so we only have to acquire an extra tail page count after confirming
+>> this is still a tail page.
 >
->    It doesn't make sense to unconditionally unmask a disabled irq when
->    migrating it from offlined cpu to another. If the irq triggers then it
->    will be disabled in the interrupt handler anyway. So we can just avoid
->    unmasking it.
-> 
->    [ tglx: Made masking unconditional again and fixed the changelog ]
-> 
->    Signed-off-by: Fengzhe Zhang <fengzhe.zhang@intel.com>
->    Signed-off-by: Kevin Tian <kevin.tian@intel.com>
->    Cc: Ian Campbell <Ian.Campbell@citrix.com>
->    Cc: Jan Beulich <JBeulich@novell.com>
->    Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
->    Link: http://lkml.kernel.org/r/%3C625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3%40shsmsx502.ccr.corp.intel.com%3
->    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Ok, I added a param to __get_page_tail_foll, it is constant at build
+> time and because it's inline the branch should be optimized away at
+> build time without requiring a separate function. The bugchecks are
+> the same so we can share and just skip the atomic_inc on the
+> page_head in __get_page_tail_foll. Also it had to be moved into
+> internal.h as a further cleanup.
 >
-> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-> index 544efe2741be..6c0802eb2f7f 100644
-> --- a/arch/x86/kernel/irq.c
-> +++ b/arch/x86/kernel/irq.c
-> @@ -276,7 +276,8 @@ void fixup_irqs(void)
->  		else if (!(warned++))
->  			set_affinity = 0;
->  
-> -		if (!irqd_can_move_in_process_context(data) && chip->irq_unmask)
-> +		if (!irqd_can_move_in_process_context(data) &&
-> +		    !irqd_irq_disabled(data) && chip->irq_unmask)
->  			chip->irq_unmask(data);
->  
->  		raw_spin_unlock(&desc->lock);
+>> Either way, the code looks OK by now.
+>>
+>> Reviewed-by: Michel Lespinasse <walken@google.com>
+>
+> Thanks. Incremental diff to correct the false positive bug on for
+> drivers like alsa allocating __GFP_COMP and mapping subpages with page
+> faults.
+>
+> diff --git a/mm/swap.c b/mm/swap.c
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -166,12 +166,6 @@ int __get_page_tail(struct page *page)
+>                flags = compound_lock_irqsave(page_head);
+>                /* here __split_huge_page_refcount won't run anymore */
+>                if (likely(PageTail(page))) {
+> -                       /*
+> -                        * get_page() can only be called on tail pages
+> -                        * after get_page_foll() taken a tail page
+> -                        * refcount.
+> -                        */
+> -                       VM_BUG_ON(page_mapcount(page) <= 0);
+>                        __get_page_tail_foll(page);
+>                        got = 1;
+>
+>                        /*
+>
+> This is the optimization.
+>
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -375,26 +375,6 @@ static inline int page_count(struct page
+>        return atomic_read(&compound_head(page)->_count);
+>  }
+>
+> -static inline void __get_page_tail_foll(struct page *page)
+> -{
+> -       /*
+> -        * If we're getting a tail page, the elevated page->_count is
+> -        * required only in the head page and we will elevate the head
+> -        * page->_count and tail page->_mapcount.
+> -        *
+> -        * We elevate page_tail->_mapcount for tail pages to force
+> -        * page_tail->_count to be zero at all times to avoid getting
+> -        * false positives from get_page_unless_zero() with
+> -        * speculative page access (like in
+> -        * page_cache_get_speculative()) on tail pages.
+> -        */
+> -       VM_BUG_ON(atomic_read(&page->first_page->_count) <= 0);
+> -       VM_BUG_ON(atomic_read(&page->_count) != 0);
+> -       VM_BUG_ON(page_mapcount(page) < 0);
+> -       atomic_inc(&page->first_page->_count);
+> -       atomic_inc(&page->_mapcount);
+> -}
+> -
+>  extern int __get_page_tail(struct page *page);
+>
+>  static inline void get_page(struct page *page)
+> diff --git a/mm/internal.h b/mm/internal.h
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -37,6 +37,28 @@ static inline void __put_page(struct pag
+>        atomic_dec(&page->_count);
+>  }
+>
+> +static inline void __get_page_tail_foll(struct page *page,
+> +                                       bool get_page_head)
+> +{
+> +       /*
+> +        * If we're getting a tail page, the elevated page->_count is
+> +        * required only in the head page and we will elevate the head
+> +        * page->_count and tail page->_mapcount.
+> +        *
+> +        * We elevate page_tail->_mapcount for tail pages to force
+> +        * page_tail->_count to be zero at all times to avoid getting
+> +        * false positives from get_page_unless_zero() with
+> +        * speculative page access (like in
+> +        * page_cache_get_speculative()) on tail pages.
+> +        */
+> +       VM_BUG_ON(atomic_read(&page->first_page->_count) <= 0);
+> +       VM_BUG_ON(atomic_read(&page->_count) != 0);
+> +       VM_BUG_ON(page_mapcount(page) < 0);
+> +       if (get_page_head)
+> +               atomic_inc(&page->first_page->_count);
+> +       atomic_inc(&page->_mapcount);
+> +}
+> +
+>  static inline void get_page_foll(struct page *page)
+>  {
+>        if (unlikely(PageTail(page)))
+> @@ -45,7 +67,7 @@ static inline void get_page_foll(struct
+>                 * __split_huge_page_refcount() can't run under
+>                 * get_page_foll() because we hold the proper PT lock.
+>                 */
+> -               __get_page_tail_foll(page);
+> +               __get_page_tail_foll(page, true);
+>        else {
+>                /*
+>                 * Getting a normal page or the head of a compound page
+> diff --git a/mm/swap.c b/mm/swap.c
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -166,16 +166,8 @@ int __get_page_tail(struct page *page)
+>                flags = compound_lock_irqsave(page_head);
+>                /* here __split_huge_page_refcount won't run anymore */
+>                if (likely(PageTail(page))) {
+> -                       __get_page_tail_foll(page);
+> +                       __get_page_tail_foll(page, false);
+>                        got = 1;
+> -                       /*
+> -                        * We can release the refcount taken by
+> -                        * get_page_unless_zero() now that
+> -                        * __split_huge_page_refcount() is blocked on
+> -                        * the compound_lock.
+> -                        */
+> -                       if (put_page_testzero(page_head))
+> -                               VM_BUG_ON(1);
+>                }
+>                compound_unlock_irqrestore(page_head, flags);
+>                if (unlikely(!got))
+>
+>
+> ===
+> Subject: thp: tail page refcounting fix
+>
+> From: Andrea Arcangeli <aarcange@redhat.com>
+>
+> Michel while working on the working set estimation code, noticed that calling
+> get_page_unless_zero() on a random pfn_to_page(random_pfn) wasn't safe, if the
+> pfn ended up being a tail page of a transparent hugepage under splitting by
+> __split_huge_page_refcount(). He then found the problem could also
+> theoretically materialize with page_cache_get_speculative() during the
+> speculative radix tree lookups that uses get_page_unless_zero() in SMP if the
+> radix tree page is freed and reallocated and get_user_pages is called on it
+> before page_cache_get_speculative has a chance to call get_page_unless_zero().
+>
+> So the best way to fix the problem is to keep page_tail->_count zero at all
+> times. This will guarantee that get_page_unless_zero() can never succeed on any
+> tail page. page_tail->_mapcount is guaranteed zero and is unused for all tail
+> pages of a compound page, so we can simply account the tail page references
+> there and transfer them to tail_page->_count in __split_huge_page_refcount() (in
+> addition to the head_page->_mapcount).
+>
+> While debugging this s/_count/_mapcount/ change I also noticed get_page is
+> called by direct-io.c on pages returned by get_user_pages. That wasn't entirely
+> safe because the two atomic_inc in get_page weren't atomic. As opposed other
+> get_user_page users like secondary-MMU page fault to establish the shadow
+> pagetables would never call any superflous get_page after get_user_page
+> returns. It's safer to make get_page universally safe for tail pages and to use
+> get_page_foll() within follow_page (inside get_user_pages()). get_page_foll()
+> is safe to do the refcounting for tail pages without taking any locks because
+> it is run within PT lock protected critical sections (PT lock for pte and
+> page_table_lock for pmd_trans_huge). The standard get_page() as invoked by
+> direct-io instead will now take the compound_lock but still only for tail
+> pages. The direct-io paths are usually I/O bound and the compound_lock is per
+> THP so very finegrined, so there's no risk of scalability issues with it. A
+> simple direct-io benchmarks with all lockdep prove locking and spinlock
+> debugging infrastructure enabled shows identical performance and no overhead.
+> So it's worth it. Ideally direct-io should stop calling get_page() on pages
+> returned by get_user_pages(). The spinlock in get_page() is already optimized
+> away for no-THP builds but doing get_page() on tail pages returned by GUP is
+> generally a rare operation and usually only run in I/O paths.
+>
+> This new refcounting on page_tail->_mapcount in addition to avoiding new RCU
+> critical sections will also allow the working set estimation code to work
+> without any further complexity associated to the tail page refcounting
+> with THP.
+>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Reported-by: Michel Lespinasse <walken@google.com>
+> Reviewed-by: Michel Lespinasse <walken@google.com>
 
-Known problem?  Ideas?
+There is a just nitpick at below but the code looks more clear than
+old and even fixed bug I missed but Michel found.
 
-Regards,
-Jonathan
+Thanks!
 
-[1] http://bugs.debian.org/635575
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+
+> @@ -1156,6 +1156,7 @@ static void __split_huge_page_refcount(s
+>        unsigned long head_index = page->index;
+>        struct zone *zone = page_zone(page);
+>        int zonestat;
+> +       int tail_count = 0;
+>
+>        /* prevent PageLRU to go away from under us, and freeze lru stats */
+>        spin_lock_irq(&zone->lru_lock);
+> @@ -1164,11 +1165,14 @@ static void __split_huge_page_refcount(s
+>        for (i = 1; i < HPAGE_PMD_NR; i++) {
+>                struct page *page_tail = page + i;
+>
+> -               /* tail_page->_count cannot change */
+> -               atomic_sub(atomic_read(&page_tail->_count), &page->_count);
+> -               BUG_ON(page_count(page) <= 0);
+> -               atomic_add(page_mapcount(page) + 1, &page_tail->_count);
+> -               BUG_ON(atomic_read(&page_tail->_count) <= 0);
+> +               /* tail_page->_mapcount cannot change */
+> +               BUG_ON(page_mapcount(page_tail) < 0);
+> +               tail_count += page_mapcount(page_tail);
+> +               /* check for overflow */
+> +               BUG_ON(tail_count < 0);
+> +               BUG_ON(atomic_read(&page_tail->_count) != 0);
+> +               atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
+> +                          &page_tail->_count);
+
+I doubt someone might try to change this with atomic_set for reducing
+LOCK_PREFIX overhead in future although it's not fast path. Of course,
+we can prevent that patch but can't prevent his wasted time. I hope
+there is a comment why we use atomic_add like the errata PPro with
+OOStore.
+
+
+
+
+
+-- 
+Kind regards,
+Minchan Kim
