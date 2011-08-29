@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab1H2JR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 05:17:28 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55766 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab1H2JRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 05:17:22 -0400
+	id S1753445Ab1H2JRk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 05:17:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10450 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753402Ab1H2JRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 05:17:33 -0400
+Date: Mon, 29 Aug 2011 11:17:18 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, util-linux@vger.kernel.org
+Subject: Re: [PATCH] setarch: Add --uname-2.6 option for personality flag
+	UNAME26
+Message-ID: <20110829091718.GF1855@nb.net.home>
+References: <1313795710-30827-1-git-send-email-andi@firstfloor.org> <1314079201.12047.68.camel@deadeye>
 MIME-Version: 1.0
-In-Reply-To: <20110829110435.e7f2a6ae1637a6b13f2c5874@canb.auug.org.au>
-References: <20110829110435.e7f2a6ae1637a6b13f2c5874@canb.auug.org.au>
-Date: Mon, 29 Aug 2011 11:17:21 +0200
-Message-ID: <CACRpkdYgiDkgH8V7awhK66HxPAnFHzB3QhKj=VhMPn8UWwk5KQ@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314079201.12047.68.camel@deadeye>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 3:04 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Tue, Aug 23, 2011 at 07:00:01AM +0100, Ben Hutchings wrote:
+>  configure.ac        |    1 +
+>  sys-utils/setarch.8 |    3 +++
+>  sys-utils/setarch.c |   12 +++++++++++-
+>  3 files changed, 15 insertions(+), 1 deletions(-)
 
-> Hi Arnd,
->
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-u300/Makefile.boot between commit 74b84ad6c1a5 ("ARM:
-> 7022/1: allow to detect conflicting zreladdrs") from the arm tree and
-> commit 732851465445 ("mach-u300: retire odd singlemem variant") from the
-> arm-soc tree.
->
-> I fixed it up (see below) and can carry the fix as necessary.
+ Applied, thanks.
 
-Looks correct, and it's one of the unavoidable things as we clean up
-the ARM tree, thanks a lot Stephen!
+    Karel
 
-Yours,
-Linus Walleij
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
