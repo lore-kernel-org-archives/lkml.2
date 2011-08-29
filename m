@@ -1,61 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab1H2OyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:54:21 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52619 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab1H2OyQ (ORCPT
+	id S1753912Ab1H2O4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:56:12 -0400
+Received: from waldorf.bytemark.co.uk ([212.110.162.22]:48523 "EHLO
+	waldorf.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab1H2O4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:54:16 -0400
-Subject: [PATCH v2 RESEND] regulator: tps65023: Remove num_voltages array
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Aug 2011 22:54:09 +0800
-Message-ID: <1314629649.2753.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Aug 2011 10:56:06 -0400
+Date: Mon, 29 Aug 2011 10:55:43 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Manohar Vanga <manohar.vanga@cern.ch>
+Cc: gregkh@suse.de, martyn.welch@ge.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: vme: make match() driver specific to
+ improve non-VME64x support
+Message-ID: <20110829145543.GA9952@flamenco.cs.columbia.edu>
+References: <1314608570-32766-1-git-send-email-manohar.vanga@cern.ch>
+ <1314608570-32766-4-git-send-email-manohar.vanga@cern.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314608570-32766-4-git-send-email-manohar.vanga@cern.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can get n_voltages for each regulator from table_len of struct tps_info.
+Hi Manohar,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/tps65023-regulator.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+Great work! A couple of comments inlined below.
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 701a590..3d2a81a 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -106,10 +106,6 @@ static const u16 LDO2_VSEL_table[] = {
- 	2500, 2800, 3000, 3300,
- };
- 
--static unsigned int num_voltages[] = {ARRAY_SIZE(VDCDC1_VSEL_table),
--				0, 0, ARRAY_SIZE(LDO1_VSEL_table),
--				ARRAY_SIZE(LDO2_VSEL_table)};
--
- /* Regulator specific details */
- struct tps_info {
- 	const char *name;
-@@ -453,7 +449,7 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 
- 		tps->desc[i].name = info->name;
- 		tps->desc[i].id = i;
--		tps->desc[i].n_voltages = num_voltages[i];
-+		tps->desc[i].n_voltages = info->table_len;
- 		tps->desc[i].ops = (i > TPS65023_DCDC_3 ?
- 					&tps65023_ldo_ops : &tps65023_dcdc_ops);
- 		tps->desc[i].type = REGULATOR_VOLTAGE;
--- 
-1.7.4.1
+On Mon, Aug 29, 2011 at 11:02:50 +0200, Manohar Vanga wrote:
+(snip)
+> +static int __vme_register_driver_bus(struct vme_driver *drv,
+> +	struct vme_bridge *bridge, unsigned int ndevs)
+> +{
+> +	int err;
+> +	unsigned int i;
+> +	struct vme_dev *vdev;
+> +	struct vme_dev *tmp;
+> +
+> +	for (i = 0; i < ndevs; i++) {
+> +		vdev = kzalloc(sizeof(struct vme_dev), GFP_KERNEL);
+> +		if (!vdev) {
+> +			err = -ENOMEM;
+> +			goto err_alloc;
+> +		}
+> +		vdev->id.num = i;
+>  		vdev->id.bus = bridge->num;
+>  		vdev->id.slot = i + 1;
+>  		vdev->bridge = bridge;
+> +		vdev->dev.platform_data = drv;
+> +		vdev->dev.release = vme_dev_release;
+>  		vdev->dev.parent = bridge->parent;
+>  		vdev->dev.bus = &vme_bus_type;
+> -		/*
+> -		 * We save a pointer to the bridge in platform_data so that we
+> -		 * can get to it later. We keep driver_data for use by the
+> -		 * driver that binds against the slot
+> -		 */
+> -		vdev->dev.platform_data = bridge;
+> -		dev_set_name(&vdev->dev, "vme-%x.%x", bridge->num, i + 1);
+> -
+> -		retval = device_register(&vdev->dev);
+> -		if (retval)
+> -			goto err_reg;
+> +		dev_set_name(&vdev->dev, "%s.%u-%u", drv->name, vdev->id.bus,
+> +			vdev->id.num);
+> +
+> +		err = device_register(&vdev->dev);
+> +		if (err)
+> +			goto err_dev_reg;
+> +
+> +		if (vdev->dev.platform_data) {
+> +			list_add_tail(&vdev->list, &drv->devices);
+> +			drv->ndev++;
+> +		} else {
+> +			device_unregister(&vdev->dev);
+> +			kfree(vdev);
+> +		}
+>  	}
+> +	return 0;
+>  
+> -	return retval;
+> -
+> -err_reg:
+> -	while (--i >= 0) {
+> -		vdev = &bridge->dev[i];
+> +err_dev_reg:
+> +	kfree(vdev);
+> +err_alloc:
+> +	list_for_each_entry_safe(vdev, tmp, &drv->devices, list) {
+> +		list_del(&vdev->list);
+>  		device_unregister(&vdev->dev);
+
+Here there seems to be a missing kfree(vdev), like the one after device_unregister()
+a few lines earlier.
+
+>  	}
+> -	vme_remove_bus(bridge);
+> -	return retval;
+> +	return err;
+>  }
+> -EXPORT_SYMBOL(vme_register_bridge);
+
+(snip)
+
+> -int vme_register_driver(struct vme_driver *drv)
+> +int vme_register_driver(struct vme_driver *drv, unsigned int ndevs)
+>  {
+> +	int err;
+> +
+>  	drv->driver.name = drv->name;
+>  	drv->driver.bus = &vme_bus_type;
+> -
+> -	return driver_register(&drv->driver);
+> +	INIT_LIST_HEAD(&drv->devices);
+> +
+> +	err = driver_register(&drv->driver);
+> +	if (err)
+> +		return err;
+> +
+> +	err = __vme_register_driver(drv, ndevs);
+> +	if (!err & (drv->ndev == 0))
+
+Probably you meant if (!err && drv->ndev == 0) here.
+
+In fact one could imagine a driver that has no devices when it's
+installed (it might get them later); so I'd remove this check.
+
+> +		err = -ENODEV;
+> +	if (err)
+> +		vme_unregister_driver(drv);
+> +	return err;
+>  }
+>  EXPORT_SYMBOL(vme_register_driver);
 
 
-
+		Emilio
