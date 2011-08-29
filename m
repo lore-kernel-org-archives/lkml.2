@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab1H2X3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:29:40 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:59546 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323Ab1H2X3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:29:38 -0400
-Message-ID: <4E5C20A7.9040603@panasas.com>
-Date: Mon, 29 Aug 2011 16:28:39 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1755574Ab1H2Xa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:30:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755449Ab1H2Xa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:30:58 -0400
+Date: Tue, 30 Aug 2011 01:30:01 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] thp: tail page refcounting fix #4
+Message-ID: <20110829233001.GM4051@redhat.com>
+References: <CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
+ <20110824000914.GH23870@redhat.com>
+ <20110824002717.GI23870@redhat.com>
+ <20110824133459.GP23870@redhat.com>
+ <20110826062436.GA5847@google.com>
+ <20110826161048.GE23870@redhat.com>
+ <20110826185430.GA2854@redhat.com>
+ <20110827094152.GA16402@google.com>
+ <20110827173421.GA2967@redhat.com>
+ <CANN689G4HowkFC7BG69F-PJMne5Mhs51O=KgmmJUjiXfG-o9BQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        <user-mode-linux-devel@lists.sourceforge.net>,
-        Al Viro <viro@ftp.linux.org.uk>
-Subject: Re: [uml-devel] [PATCH 8/9] um: fix strrchr problems
-References: <1314634419-24766-1-git-send-email-richard@nod.at> <1314634419-24766-9-git-send-email-richard@nod.at> <20110829142705.5be82d7c.akpm@linux-foundation.org> <4E5C06DF.60508@nod.at> <20110829221230.GP2203@ZenIV.linux.org.uk> <4E5C0F9F.5000405@nod.at> <20110829221922.GQ2203@ZenIV.linux.org.uk> <4E5C11D5.4020404@nod.at>
-In-Reply-To: <4E5C11D5.4020404@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANN689G4HowkFC7BG69F-PJMne5Mhs51O=KgmmJUjiXfG-o9BQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2011 03:25 PM, Richard Weinberger wrote:
->>
->> Try to build it static...
-> 
-> I'm building most of the time static.
-> Using defconfig and
-> CONFIG_STATIC_LINK=y
-> it builds fine here (x86_64 and i386)
-> 
-> Thanks,
-> //richard
+On Mon, Aug 29, 2011 at 03:40:07PM -0700, Michel Lespinasse wrote:
+> Looks great.
 
-With some switches and optimization gcc might turn strrchr
-into a built-in inline.
+Thanks!
 
-What option turns off all optimizations? It might fail then.
+> I think some page_mapcount call sites would be easier to read if you
+> took on my tail_page_count() suggestion (so we can casually see it's a
+> refcount rather than mapcount). But you don't have to do it if you
+> don't think it helps. I'm happy enough with the code already :)
 
-Boaz
+I initially tried to do it but I wanted it in internal.h (it's really
+an internal thing not mean for any driver whatsoever) but then the
+gup.c files wouldn't see it, so I wasn't sure how to proceed and I
+dropped it. It's still possible to do it later...
