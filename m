@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab1H2OQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:16:24 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:46802
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751362Ab1H2OQU (ORCPT
+	id S1753723Ab1H2OQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:16:48 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38930 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753619Ab1H2OQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:16:20 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz146fK1432N98dKzz1202h1082kzz8275dhz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQP0Z1-02-CN5-02
-X-M-MSG: 
-Date: Mon, 29 Aug 2011 16:16:12 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Pavel Ivanov <paivanof@gmail.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        <dri-devel@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-Message-ID: <20110829141612.GB2025@gere.osrc.amd.com>
-References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
- <1314435638.2321.12.camel@thor.local>
- <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
- <20110828053624.GC12851@liondog.tnic>
- <1314624021.2816.30.camel@twins>
- <20110829133808.GA2025@gere.osrc.amd.com>
- <CADnq5_Mppeym2spCqsRGYALQxWDjQ_yNuta4SYRH6Oocy=UjSg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CADnq5_Mppeym2spCqsRGYALQxWDjQ_yNuta4SYRH6Oocy=UjSg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Mon, 29 Aug 2011 10:16:43 -0400
+From: Raishankarkm <ravi.shankar@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankarkm <ravi.shankar@greenturtles.in>
+Subject: [PATCH 3/3] Staging: comedi: fix line over 80 character issue in das1800.c
+Date: Mon, 29 Aug 2011 19:46:24 +0530
+Message-Id: <1314627384-14268-1-git-send-email-ravi.shankar@greenturtles.in>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi: fix line over 80 charcter in das1800.c>
+References: <[PATCH]Staging: comedi: fix line over 80 charcter in das1800.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 09:48:22AM -0400, Alex Deucher wrote:
-> >> Should we make Kconfig pop up a dialog and ask for the whereabouts of
-> >> these firmware thingies when you mark the driver =y?
-> >>
-> >> This all sounds like magic to me, having to know you need to add to
-> >> EXTRA_FIRMWARE, having to know what file it needs etc.. For all intents
-> >> and purposes =y just doesn't work and that's broken.
-> >
-> > Yep, you make a lot of sense. I had to fumble the build/reboot cycle a
-> > couple of times and do some code staring even to figure this out. In
-> > the end, I copied the whole radeon/ folder from David's firmware git
-> > repo into /lib/firmware and made radeon.ko =m again so that I don't have
-> > to add *.bin entries to CONFIG_EXTRA_FIRMWARE each time I'm building a
-> > kernel on a different machine.
-> >
-> > Besides, there was this other issue on lkml today where
-> > CONFIG_EXTRA_FIRMWARE can cause nconf to segfault when you overflow
-> > its length of 256 by trying to include a bunch of firmware *bin files:
-> > http://lkml.org/lkml/2011/8/29/86
-> 
-> If you are going to build the ucode into your kernel you'll need to
-> pick the ones you want to include or increase the limit regardless of
-> whether it's radeon ucode or ucode for some other chip.  For a
-> particular card you only need the ones for that card (e.g.,
-> CEDAR_*.bin or REDWOOD_*.bin, etc.)
+From: Ravishankarkm <ravi.shankar@greenturtles.in>
 
-Alex, Dave, yeah, that's all fine.
+This is a patch to the das1800.c file that fixes up a line over 80 character warning found by the checkpatch.pl tool
 
-The question Peter asked is, how to make this much more understandable
-to the user so that she/he doesn't have to figure it out on their own.
-IOW, if one sets RADEON to =y in Kconfig, it should automatically
-generate a selection menu with all the firmware required so that
-the user can select from it either the CEDAR* or the REDWOOD* (or
-the DOUGHNUT* :-)) ones for her/his card and when the user selects
-one entry, the required strings are added to CONFIG_EXTRA_FIRMWARE
-_automatically_.
+Signed-off-by: Ravishankarkm <ravi.shankar@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/das1800.c |   33 ++++++++++++++++++++----------
+ 1 files changed, 22 insertions(+), 11 deletions(-)
 
-Maybe even Kbuild should try to find them on the system, and, if unable
-to, remind the user to install the needed firmware package.
-
-Anyway, something to that effect, the above is just to illustrate the
-intention, I don't know whether it would work. In any case, we're
-lacking user help there and we don't want to put every user through
-the process of finding which firmware files she/he needs when setting
-RADEON=y.
-
-Does that make more sense?
-
+diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
+index e548a03..8d19853 100644
+--- a/drivers/staging/comedi/drivers/das1800.c
++++ b/drivers/staging/comedi/drivers/das1800.c
+@@ -1623,11 +1623,15 @@ static int das1800_ai_rinsn(struct comedi_device *dev,
+ 	range = CR_RANGE(insn->chanspec) & 0x3;
+ 	chan_range = chan | (range << 8);
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(QRAM, dev->iobase + DAS1800_SELECT);	/* select QRAM for baseAddress + 0x0 */
+-	outb(0x0, dev->iobase + DAS1800_QRAM_ADDRESS);	/* set QRAM address start */
++	/* select QRAM for baseAddress + 0x0 */
++	outb(QRAM, dev->iobase + DAS1800_SELECT);
++	/* set QRAM address start */
++	outb(0x0, dev->iobase + DAS1800_QRAM_ADDRESS);
+ 	outw(chan_range, dev->iobase + DAS1800_QRAM);
+-	outb(0x0, dev->iobase + DAS1800_QRAM_ADDRESS);	/*finish write to QRAM */
+-	outb(ADC, dev->iobase + DAS1800_SELECT);	/* select ADC for baseAddress + 0x0 */
++	/*finish write to QRAM */
++	outb(0x0, dev->iobase + DAS1800_QRAM_ADDRESS);
++	/* select ADC for baseAddress + 0x0 */
++	outb(ADC, dev->iobase + DAS1800_SELECT);
+ 
+ 	for (n = 0; n < insn->n; n++) {
+ 		/* trigger conversion */
+@@ -1666,14 +1670,17 @@ static int das1800_ao_winsn(struct comedi_device *dev,
+ 
+ 	/*   card expects two's complement data */
+ 	output = data[0] - (1 << (thisboard->resolution - 1));
+-	/*  if the write is to the 'update' channel, we need to remember its value */
++	/* if the write is to the 'update' channel,
++	 * we need to remember its value */
+ 	if (chan == update_chan)
+ 		devpriv->ao_update_bits = output;
+ 	/*  write to channel */
+ 	spin_lock_irqsave(&dev->spinlock, irq_flags);
+-	outb(DAC(chan), dev->iobase + DAS1800_SELECT);	/* select dac channel for baseAddress + 0x0 */
++	/* select dac channel for baseAddress + 0x0 */
++	outb(DAC(chan), dev->iobase + DAS1800_SELECT);
+ 	outw(output, dev->iobase + DAS1800_DAC);
+-	/*  now we need to write to 'update' channel to update all dac channels */
++	/* now we need to write to 'update' channel
++	 * to update all dac channels */
+ 	if (chan != update_chan) {
+ 		outb(DAC(update_chan), dev->iobase + DAS1800_SELECT);	/* select 'update' channel for baseAddress + 0x0 */
+ 		outw(devpriv->ao_update_bits, dev->iobase + DAS1800_DAC);
+@@ -1764,12 +1771,15 @@ static unsigned int burst_convert_arg(unsigned int convert_arg, int round_mode)
+ 	return micro_sec * 1000;
+ }
+ 
+-/* utility function that suggests a dma transfer size based on the conversion period 'ns' */
++/* utility function that suggests a dma transfer size based on
++ * the conversion period 'ns' */
+ static unsigned int suggest_transfer_size(struct comedi_cmd *cmd)
+ {
+ 	unsigned int size = DMA_BUF_SIZE;
+-	static const int sample_size = 2;	/*  size in bytes of one sample from board */
+-	unsigned int fill_time = 300000000;	/*  target time in nanoseconds for filling dma buffer */
++	static const int sample_size = 2;	/*  size in bytes of one sample
++						 *  from board */
++	unsigned int fill_time = 300000000;	/* target time in nanoseconds
++						 * for filling dma buffer */
+ 	unsigned int max_size;	/*  maximum size we will allow for a transfer */
+ 
+ 	/*  make dma buffer fill in 0.3 seconds for timed modes */
+@@ -1789,7 +1799,8 @@ static unsigned int suggest_transfer_size(struct comedi_cmd *cmd)
+ 
+ 	/*  set a minimum and maximum size allowed */
+ 	max_size = DMA_BUF_SIZE;
+-	/*  if we are taking limited number of conversions, limit transfer size to that */
++	/* if we are taking limited number of conversions, limit transfer size
++	 * to that */
+ 	if (cmd->stop_src == TRIG_COUNT &&
+ 	    cmd->stop_arg * cmd->chanlist_len * sample_size < max_size)
+ 		max_size = cmd->stop_arg * cmd->chanlist_len * sample_size;
 -- 
-Regards/Gruss,
-Boris.
+1.7.6
 
