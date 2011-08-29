@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab1H2PoL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:44:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41837 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab1H2PoK convert rfc822-to-8bit (ORCPT
+	id S1754117Ab1H2PrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:47:11 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60978 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab1H2PrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:44:10 -0400
-Subject: Re: [PATCH 15/32] nohz/cpuset: Restart tick when switching to idle
- task
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 17:43:40 +0200
-In-Reply-To: <1313423549-27093-16-git-send-email-fweisbec@gmail.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-16-git-send-email-fweisbec@gmail.com>
+	Mon, 29 Aug 2011 11:47:09 -0400
+Subject: Re: [PATCH v1 1/2] encrypted-keys: remove trusted-keys dependency
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-security-module@vger.kernel.org, James Morris <jmorris@namei.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaud Lacombe <lacombar@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <1314629812.29761.21.camel@sasha>
+References: <1314629313-11980-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1314629812.29761.21.camel@sasha>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314632620.2816.100.camel@twins>
+Date: Mon, 29 Aug 2011 11:46:26 -0400
+Message-ID: <1314632786.3534.38.camel@localhost.localdomain>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> Ideally if we are in adaptive nohz mode and we switch to the
-> the idle task, we shouldn't restart the tick since it's going
-> to stop the tick soon anyway.
+On Mon, 2011-08-29 at 17:56 +0300, Sasha Levin wrote:
+> On Mon, 2011-08-29 at 10:48 -0400, Mimi Zohar wrote:
+> > Encrypted keys are decrypted/encrypted using either a trusted-key or,
+> > for those systems without a TPM, a user-defined key.  This patch
+> > removes the trusted-keys and TCG_TPM dependencies.
+> > 
+> > Changelog v1:
+> > - Fixed encrypted-keys move from security/keys to security/keys/encrypted-keys
+> > - Removed trailing blank line
+> > 
+> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> > ---
 > 
-> That optimization requires some minor tweaks here and there
-> though, lets handle that later. 
+> Please look into using 'git mv' and the '--find-renames' option of git
+> format-patch.
+> 
+> You just want to mark the files as moved, without ruining the entire
+> history of the old files.
+> 
 
-You have a knack for confusing changelogs.. so basically you say:
+Thanks for the tip. 'git blame' shows multiple commits, but perhaps if
+encrypted-keys had a longer history some of it would have been lost.
+I'll keep your suggestion in mind in the future.
 
-  Restart the tick when we switch to idle.
+thanks,
 
-Now all that needs is an explanation of why..
+Mimi
 
-Also, please drop the whole cpuset_nohz_ stuff, this really isn't about
-cpusets, cpusets simly provide the interface, the functionality lives in
-the tick_nohz_ namespace.
