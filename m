@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab1H2FXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 01:23:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46087 "EHLO smtps.tip.net.au"
+	id S1752689Ab1H2F1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 01:27:16 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47674 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533Ab1H2FWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 01:22:55 -0400
-Date: Mon, 29 Aug 2011 15:22:50 +1000
+	id S1750873Ab1H2F1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 01:27:10 -0400
+Date: Mon, 29 Aug 2011 15:27:04 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        WANG Cong <xiyou.wangcong@gmail.com>
-Subject: linux-next: manual merge of the akpm with Linus' tree
-Message-Id: <20110829152250.d6427f6ecee4dbd59718cc4f@canb.auug.org.au>
+        Matt Fleming <matt.fleming@intel.com>
+Subject: linux-next: build warning after merge of the ptrace tree
+Message-Id: <20110829152704.e533760bfb83fc7480333b20@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ"
+ boundary="Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ
+--Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+Hi all,
 
-Today's linux-next merge of the scsi-post-merge tree got a conflict in
-arch/cris/include/asm/serial.h between commit 02016bc0381c ("cris: add
-arch/cris/include/asm/serial.h") from Linus' tree and commit f8b20ed71f1b
-("Fix the following build errors:") from the akpm tree.
+After merging the ptrace tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
-There former appears to be a later version of the latter, so I dropped
-the latter.
+fs/autofs4/waitq.c: In function 'autofs4_wait':
+fs/autofs4/waitq.c:462:17: warning: unused variable 'irqflags'
+
+Introduced by commit 33ee1d9bc213 ("autofs4: Use set_current_blocked()").
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ
+--Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOWyIqAAoJEDMEi1NhKgbs2uQIAIiVuSTsgpanPMKKc8SrgLY9
-fuRN0dpMs2Nr6EEOJUak8VMuY7FNFONeZSgWgfd9msPqH0wzodtplRf16arT1aPL
-j8WrpXvAxxATuZ0wYg6aH+VOjYVYzGHaQvbI5yOX3E6FzPk9zejECyyOoNlHK6Fg
-BPQv4iHl+92+u8C1jGUrHRhT84+QzDQjMUqbLjny0P4poTUMVXTMMEuIETzVaIPP
-QhRIwTTFLV0aUlG1XKz1Cp1Uv4+dLBW+G95yTaEnZdju21Oq7XXdez6plFTVyPNk
-MZMUlDoJ06pr4OFcy9bzngvNQT0w6kyZko02D8A2vt/ErGeo/3a7RKyOxBGIAe8=
-=HgJ0
+iQEcBAEBAgAGBQJOWyMoAAoJEDMEi1NhKgbsh4sH+wcB09K7v4HWTFqQ6Lh2bOWH
+KuYwJ5qnUl49o7EUwldPL5JqgTSh5oHXSVfigyFF79TQ1l4rr5rKdygw7/ZTE5f0
+qBDtu/lQ3zfL/YnNmUj0gVwgrTRN4l/+NpYDKAvF8DmmUXJL6+8faDyW3Ey5sVPh
+KZnAbGXt+BT8wk61891nefH18lYwhyBeRhPxjuwV+b5lZC+zR+aFginlbd2IWlAN
+/88B2NxXImAllJ4f7oem9mTQJ+Sd+sVs71UrCNjTqPT9T7VSj78NL6idZMPS78kY
+p+XVXCpXZ9afjUOOTdZJht0UoVtPIHzxMG4YpM6HgduOLk/rj85isIfOBVvOsoQ=
+=6ahb
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__29_Aug_2011_15_22_50_+1000_B4uU0FVvUBBnm=oJ--
+--Signature=_Mon__29_Aug_2011_15_27_04_+1000_34HzZs=EiWB68_6f--
