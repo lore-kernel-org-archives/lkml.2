@@ -1,73 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab1H2Dtw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 23:49:52 -0400
+	id S1752598Ab1H2DuD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 23:50:03 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:35432 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab1H2Dtq (ORCPT
+	with ESMTP id S1752489Ab1H2Dtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 23:49:46 -0400
+	Sun, 28 Aug 2011 23:49:50 -0400
 From: Namhyung Kim <namhyung@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/6] blktrace: bio-based device tracing improvement
-Date: Mon, 29 Aug 2011 12:47:34 +0900
-Message-Id: <1314589660-2918-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 2/6] block: introduce __bio_endio()
+Date: Mon, 29 Aug 2011 12:47:36 +0900
+Message-Id: <1314589660-2918-3-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1314589660-2918-1-git-send-email-namhyung@gmail.com>
+References: <1314589660-2918-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently, bio_endio() lacks its completion tracepoint in it,
+so that the bio-based devices - except DM which inserted the
+tracepoint explicitly - cannot send us such an event when using
+blktrace. Adding the tracepoint in the function will fix this.
 
-The blktrace is used to report block device activities to user space
-using kernel tracepoint but it was focused to block I/O request struct.
-Thus bio-based devices (i.e. loop, ram, md, ...) which don't make use
-of the request structure could not be supported well - the tool only
-can detect a limited number of events such as queuing, cloning and
-remapping but it cannot know when the I/O activity is completed.
+However, bio_endio() is also used for other ways like some
+nested bio-handling path and request-based devices. Simply
+adding will result in duplicated event for those cases. Thus
+add new __bio_endio() function to do things as before but no
+tracepoint. Similarly, __bio_io_error() helper was added too.
 
-bio_endio(), the I/O completion callback, can be used to fix this
-problem by adding appropriate tracepoint in it. However it was called
-from other paths too (normal request-based block devices and some of
-nested block I/O handling routines) so that we should split such cases
-to remove duplicated reports. In this series, __bio_endio() (and its
-helper __bio_io_error) was introduced and converted for that purpose.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ block/blk-core.c    |    4 ++--
+ fs/bio.c            |   19 +++++++++++++++++++
+ include/linux/bio.h |    2 ++
+ 3 files changed, 23 insertions(+), 2 deletions(-)
 
-Note that (bio-based) dm already supported completion report by adding
-the tracepoint into the path manually. With this patches, it will be
-converted to use generic mechanism.
-
-This patch set is based on v3.1-rc3.
-Patch 1 is to correct remapping information and independent to others.
-Patch 2 is the core of this series and Patch 3-5 are mechanical converts.
-Patch 6 removes manual use of the tracepoint in dm.
-
-Any feedbacks are welcome.
-
-Thanks.
-
-
-Namhyung Kim (6):
-  block: move trace_block_bio_remap() before blk_partition_remap
-  block: introduce __bio_endio()
-  bounce: convert to __bio_endio() for bounced bio's
-  bio-integrity: convert to __bio_endio()
-  Btrfs: convert to __bio_endio()
-  dm: get rid of block_bio_complete tracepoint
-
- block/blk-core.c       |   11 +++++------
- drivers/md/dm.c        |    1 -
- fs/bio-integrity.c     |    4 ++--
- fs/bio.c               |   19 +++++++++++++++++++
- fs/btrfs/compression.c |    4 ++--
- fs/btrfs/disk-io.c     |    2 +-
- fs/btrfs/inode.c       |    8 ++++----
- fs/btrfs/volumes.c     |    4 ++--
- include/linux/bio.h    |    2 ++
- mm/bounce.c            |    2 +-
- 10 files changed, 38 insertions(+), 19 deletions(-)
-
+diff --git a/block/blk-core.c b/block/blk-core.c
+index a60b46cc9da5..62b79692c7e8 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -172,7 +172,7 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
+ 
+ 	/* don't actually finish bio if it's part of flush sequence */
+ 	if (bio->bi_size == 0 && !(rq->cmd_flags & REQ_FLUSH_SEQ))
+-		bio_endio(bio, error);
++		__bio_endio(bio, error);
+ }
+ 
+ void blk_dump_rq_flags(struct request *rq, char *msg)
+@@ -1551,7 +1551,7 @@ static inline void __generic_make_request(struct bio *bio)
+ 	return;
+ 
+ end_io:
+-	bio_endio(bio, err);
++	__bio_endio(bio, err);
+ }
+ 
+ /*
+diff --git a/fs/bio.c b/fs/bio.c
+index 9bfade8a609b..9d7403f53efb 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1426,6 +1426,21 @@ void bio_flush_dcache_pages(struct bio *bi)
+ EXPORT_SYMBOL(bio_flush_dcache_pages);
+ #endif
+ 
++/*
++ * no-trace version of bio_endio().
++ */
++void __bio_endio(struct bio *bio, int error)
++{
++	if (error)
++		clear_bit(BIO_UPTODATE, &bio->bi_flags);
++	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
++		error = -EIO;
++
++	if (bio->bi_end_io)
++		bio->bi_end_io(bio, error);
++}
++EXPORT_SYMBOL(__bio_endio);
++
+ /**
+  * bio_endio - end I/O on a bio
+  * @bio:	bio
+@@ -1442,11 +1457,15 @@ EXPORT_SYMBOL(bio_flush_dcache_pages);
+  **/
+ void bio_endio(struct bio *bio, int error)
+ {
++	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
++
+ 	if (error)
+ 		clear_bit(BIO_UPTODATE, &bio->bi_flags);
+ 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+ 		error = -EIO;
+ 
++	trace_block_bio_complete(q, bio, error);
++
+ 	if (bio->bi_end_io)
+ 		bio->bi_end_io(bio, error);
+ }
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index ce33e6868a2f..453a9bec49b8 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -132,6 +132,7 @@ static inline int bio_has_allocated_vec(struct bio *bio)
+ #define BIO_SEG_BOUNDARY(q, b1, b2) \
+ 	BIOVEC_SEG_BOUNDARY((q), __BVEC_END((b1)), __BVEC_START((b2)))
+ 
++#define __bio_io_error(bio) __bio_endio((bio), -EIO)
+ #define bio_io_error(bio) bio_endio((bio), -EIO)
+ 
+ /*
+@@ -217,6 +218,7 @@ extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
+ extern void bio_put(struct bio *);
+ extern void bio_free(struct bio *, struct bio_set *);
+ 
++extern void __bio_endio(struct bio *, int);
+ extern void bio_endio(struct bio *, int);
+ struct request_queue;
+ extern int bio_phys_segments(struct request_queue *, struct bio *);
 -- 
 1.7.6
 
