@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab1H2SJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:09:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44687 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab1H2SJo convert rfc822-to-8bit (ORCPT
+	id S1754581Ab1H2SKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:10:13 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:55665 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753808Ab1H2SKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:09:44 -0400
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
-        Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kbuild@vger.kernel.org
-Date: Mon, 29 Aug 2011 20:09:32 +0200
-References: <20110829141612.GB2025@gere.osrc.amd.com>
-	 <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
-	 <20110829155501.GC2025@gere.osrc.amd.com>
-	 <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
-	 <20110829171750.GD2025@gere.osrc.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314641372.2816.131.camel@twins>
-Mime-Version: 1.0
+	Mon, 29 Aug 2011 14:10:08 -0400
+X-Sasl-enc: kUhBnoKqzy+VrGNErKeElcwXUv4wnQ5eqJUPeqnAwCA/ 1314641408
+Date: Mon, 29 Aug 2011 11:08:42 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 41/46] Staging: hv: vmbus: Fix a bug in error handling in
+ vmbus_bus_init()
+Message-ID: <20110829180842.GA23618@kroah.com>
+References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
+ <1314469905-7058-1-git-send-email-kys@microsoft.com>
+ <1314469905-7058-41-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314469905-7058-41-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 19:50 +0200, Peter Zijlstra wrote:
-> On Mon, 2011-08-29 at 19:17 +0200, Borislav Petkov wrote:
-> > On Mon, Aug 29, 2011 at 12:10:45PM -0400, Arnaud Lacombe wrote:
-> > > do you want something ala:
-> > > 
-> > > config EXTRA_FIRMWARE
-> > >     string
-> > >     default ""
-> > >     append "FOO" if BAR
-> > >     append "FOZ" if BAZ
-> > > 
-> > > or maybe a new type "list" which would behave as a comma/space separated value.
-> > > 
-> > > config EXTRA_FIRMWARE
-> > >     list "bla"
-> > >     append "FOO" if BAR
-> > >     append "FOZ" if BAZ
-> > 
-> > Yeah, actually Kyle's note (http://lkml.org/lkml/2011/8/29/289) makes
-> > much more sense for linux and the whole firmware in the kernel deal.
-> > So it looks like the drivers should be taught to wait for userspace to
-> > appear instead of Kconfig helping them build-in firmware. And then we
-> > should go ahead and remove CONFIG_EXTRA_FIRMWARE completely...
+On Sat, Aug 27, 2011 at 11:31:40AM -0700, K. Y. Srinivasan wrote:
+> Fix a bug in error handling in vmbus_bus_init().
 > 
-> That would suck, suppose this radeon thing is the only console you've
-> got (ppc64/sparc64 don't have text mode iirc) and userspace doesn't come
-> up?
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/staging/hv/vmbus_drv.c |   21 ++++++++++-----------
+>  1 files changed, 10 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> index 02edb11..4d1b123 100644
+> --- a/drivers/staging/hv/vmbus_drv.c
+> +++ b/drivers/staging/hv/vmbus_drv.c
+> @@ -492,7 +492,7 @@ static int vmbus_bus_init(int irq)
+>  
+>  	ret = bus_register(&hv_bus);
+>  	if (ret)
+> -		return ret;
+> +		goto err1;
+>  
+>  	ret = request_irq(irq, vmbus_isr, IRQF_SAMPLE_RANDOM,
+>  			driver_name, hv_acpi_dev);
+> @@ -500,10 +500,7 @@ static int vmbus_bus_init(int irq)
+>  	if (ret != 0) {
+>  		pr_err("Unable to request IRQ %d\n",
+>  			   irq);
+> -
+> -		bus_unregister(&hv_bus);
+> -
+> -		return ret;
+> +		goto err2;
+>  	}
+>  
+>  	vector = IRQ0_VECTOR + irq;
+> @@ -514,16 +511,18 @@ static int vmbus_bus_init(int irq)
+>  	 */
+>  	on_each_cpu(hv_synic_init, (void *)&vector, 1);
+>  	ret = vmbus_connect();
+> -	if (ret) {
+> -		free_irq(irq, hv_acpi_dev);
+> -		bus_unregister(&hv_bus);
+> -		return ret;
+> -	}
+> -
+> +	if (ret)
+> +		goto err3;
+>  
+>  	vmbus_request_offers();
+>  
+>  	return 0;
+> +
+> +err3:	free_irq(irq, hv_acpi_dev);
+> +err2:	bus_unregister(&hv_bus);
+> +err1:	hv_cleanup();
 
-Same is true for NICs and netconsole of course. Not being able to stick
-blobs into the kernel image would so suck.
+The traditional way to write this is:
 
-Silently building a kernel without one and then getting stuck on boot,
-only to figure out after much pain that you need EXTRA_FIRMWARE and the
-more pain to figure out what blob to stick in is beyond crazy.
+err3:
+	free_irq(irq, hv_acpi_dev);
+err2:
+	bus_unregister(&hv_bus);
+err1:
+	hv_cleanup();
+
+Care to fix this up and resend it?
+
+thanks,
+
+greg k-h
