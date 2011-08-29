@@ -1,230 +1,1182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1H2JK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 05:10:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62749 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab1H2JKV convert rfc822-to-8bit (ORCPT
+	id S1753417Ab1H2JLB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 05:11:01 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:57418 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753210Ab1H2JK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 05:10:21 -0400
+	Mon, 29 Aug 2011 05:10:56 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>, Barry Song <21cnbao@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 2/4 v5] pinmux: add a driver for the U300 pinmux
+Date: Mon, 29 Aug 2011 11:10:08 +0200
+Message-ID: <1314609008-28093-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-From: Cheng Renquan <crquan@gmail.com>
-Date: Mon, 29 Aug 2011 02:09:59 -0700
-Message-ID: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
-Subject: [RFC] nconf bug fixes and improvements
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>,
-        crquan@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bug fixes:
-1) char dialog_input_result[256]; is not enough for config item like:
-   CONFIG_EXTRA_FIRMWARE="iwlwifi-100-5.ucode iwlwifi-1000-3.ucode
-iwlwifi-3945-2.ucode iwlwifi-4965-2.ucode iwlwifi-5000-1.ucode
-iwlwifi-5000-2.ucode iwlwifi-5150-2.ucode iwlwifi-6000-4.ucode
-iwlwifi-6000g2a-5.ucode iwlwifi-6000g2b-5.ucode iwlwifi-6050-4.ucode
-iwlwifi-6050-5.ucode radeon/CEDAR_me.bin radeon/CEDAR_pfp.bin
-radeon/CEDAR_rlc.bin radeon/CYPRESS_me.bin radeon/CYPRESS_pfp.bin
-radeon/CYPRESS_rlc.bin radeon/JUNIPER_me.bin radeon/JUNIPER_pfp.bin
-radeon/JUNIPER_rlc.bin radeon/R600_rlc.bin radeon/R700_rlc.bin
-radeon/REDWOOD_me.bin radeon/REDWOOD_pfp.bin radeon/REDWOOD_rlc.bin"
+From: Linus Walleij <linus.walleij@linaro.org>
 
-   the original nconf just stack overflow / crashed when dealing with
-longer than 256 bytes strings; Since the original menuconfig also just
-uses a fixed length buffer [MAX_LEN=2048] which works for the years,
-here I just append a 0 make it work in the easiest way; if required,
-it could also be changed to a dynamically allocated buffer;
+This adds a driver for the U300 pinmux portions of the system
+controller "SYSCON". It also serves as an example of how to use
+the pinmux subsystem. This driver also houses the platform data
+for the only supported platform.
 
-   char dialog_input_result[MAX_LEN + 1];
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v4->v5:
 
-2) memmove's 3rd argument should be len-cursor_position+1, the
-original len+1 may cause segment fault in theory;
- 				memmove(&result[cursor_position+1],
- 						&result[cursor_position],
--						len+1);
-+						len-cursor_position+1);
+- Update to match the core changes introducing positions for
+  functions, this driver does not use positions so these are
+  blissfully ignored.
 
-3) typo:
+- Implement a GPIO range, this is mainly as reference and cannot
+  be used for anything useful until we merge the U300 GPIO driver
+  into this pincontrol driver
 
--				mvprintw(0, 0, "unknow key: %d\n", res);
-+				mvprintw(0, 0, "unknown key: %d\n", res);
+- Adressed comments from Jamie Iles: unnecessary NULL check and
+  de-parenthesization.
 
+- Define all 467 pins in this platform so as to make a more
+  complete example.
 
-improvement:
-1) its original conf_string doesn't work with longer string values
-(longer than its dialog box width), not at all
-   (or may work in an invisible way if anyone has tried that)
-   Here I added a new variable cursor_form_win to record that new state:
-   cursor of the input box; and make it fun:
-   when you move cursor to almost left/right edge, it auto adjust text
-to center, by half prompt box width;
+- Define a function for all the power pins even though these can't
+  be muxed, just to show how you can hog up pins.
+---
+ arch/arm/mach-u300/core.c     |   26 ++
+ drivers/pinctrl/Kconfig       |    7 +
+ drivers/pinctrl/Makefile      |    1 +
+ drivers/pinctrl/pinmux-u300.c |  884 +++++++++++++++++++++++++++++++++++++++++
+ drivers/pinctrl/pinmux-u300.h |  141 +++++++
+ 5 files changed, 1059 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pinctrl/pinmux-u300.c
+ create mode 100644 drivers/pinctrl/pinmux-u300.h
 
-2) Remove KEY_UP as RIGHT and KEY_DOWN as LEFT,
-   Add Home/End to locate the string begin/end;
-   Emacs-like key bind (C-a/C-e as Home/End, C-f/C-b as forward/backward);
-   this keybind I'd like but may be controversial, it could be
-discussed and separated;
-
-This is just [Request for Comments], it just works here on one of my
-distributor kernels,
-if anyone may think it's useful, please feedback and I would like to
-split it into
-patch series and rebase to linus latest branch;
-
-Thanks,
-
---- /mnt/static/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.c	2011-07-21
-19:17:23.000000000 -0700
-+++ /mnt/dynamic/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.c	2011-08-28
-18:08:05.699883340 -0700
-@@ -1360,7 +1360,7 @@ static void conf_choice(struct menu *men
- static void conf_string(struct menu *menu)
- {
- 	const char *prompt = menu_get_prompt(menu);
--	char dialog_input_result[256];
-+	char dialog_input_result[2560];
-
- 	while (1) {
- 		int res;
---- /mnt/static/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.gui.c	2011-07-21
-19:17:23.000000000 -0700
-+++ /mnt/dynamic/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.gui.c	2011-08-28
-18:00:56.441862565 -0700
-@@ -367,7 +367,15 @@ int dialog_inputbox(WINDOW *main_window,
- 	int i, x, y;
- 	int res = -1;
- 	int cursor_position = strlen(init);
-+	int cursor_form_win;
-
-+	if (strlen(init) +80 > result_len) {
-+		(void) attrset(attributes[FUNCTION_HIGHLIGHT] | A_BLINK);
-+		mvprintw(0, 0, "result_len(%d) not enough to contain
-init_strlen(%d) in %s:%d:%s\n",
-+			 result_len, strlen(init),
-+			 __FILE__, __LINE__, __func__);
-+		flash();
-+	}
-
- 	/* find the widest line of msg: */
- 	prompt_lines = get_line_no(prompt);
-@@ -405,7 +413,11 @@ int dialog_inputbox(WINDOW *main_window,
- 	fill_window(prompt_win, prompt);
-
- 	mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
--	mvwprintw(form_win, 0, 0, "%s", result);
-+	cursor_form_win = min(cursor_position, prompt_width-1);
-+	mvwprintw(form_win, 0, 0, "%s",
-+		  result + cursor_position-cursor_form_win);
-+	mvprintw(0, 0, "cursor_position=%d, cursor_form_win=%d, prompt_width=%d\n",
-+		 cursor_position, cursor_form_win, prompt_width);
-
- 	/* create panels */
- 	panel = new_panel(win);
-@@ -416,6 +428,8 @@ int dialog_inputbox(WINDOW *main_window,
- 	touchwin(win);
- 	refresh_all_windows(main_window);
- 	while ((res = wgetch(form_win))) {
-+		mvprintw(0, 0, "got key: %d\n", res);
+diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+index 399c89f..2020bf9 100644
+--- a/arch/arm/mach-u300/core.c
++++ b/arch/arm/mach-u300/core.c
+@@ -25,6 +25,7 @@
+ #include <linux/err.h>
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/fsmc.h>
++#include <linux/pinctrl/machine.h>
+ 
+ #include <asm/types.h>
+ #include <asm/setup.h>
+@@ -1630,6 +1631,27 @@ static struct platform_device dma_device = {
+ 	},
+ };
+ 
++static struct platform_device pinmux_device = {
++	.name = "pinmux-u300",
++	.id = -1,
++	.num_resources = ARRAY_SIZE(pinmux_resources),
++	.resource = pinmux_resources,
++};
 +
- 		int len = strlen(result);
- 		switch (res) {
- 		case 10: /* ENTER */
-@@ -431,6 +445,13 @@ int dialog_inputbox(WINDOW *main_window,
- 						&result[cursor_position],
- 						len-cursor_position+1);
- 				cursor_position--;
-+				if (cursor_form_win < 5
-+				    && cursor_position > 5)
-+					cursor_form_win += prompt_width/2;
-+				else
-+					cursor_form_win--;
-+				if (cursor_form_win > cursor_position)
-+					cursor_form_win = cursor_position;
- 			}
- 			break;
- 		case KEY_DC:
-@@ -440,16 +461,41 @@ int dialog_inputbox(WINDOW *main_window,
- 						len-cursor_position+1);
- 			}
- 			break;
--		case KEY_UP:
-+		case 6: /* Ctrl-F */
- 		case KEY_RIGHT:
--			if (cursor_position < len &&
--			    cursor_position < min(result_len, prompt_width))
-+			if (cursor_position < len) {
- 				cursor_position++;
-+				if (cursor_form_win > prompt_width-5
-+				    && cursor_position < len-5)
-+					cursor_form_win -= prompt_width/2;
-+				else
-+					cursor_form_win++;
-+				if (cursor_form_win < min(cursor_position, prompt_width-1) -
-(len-cursor_position))
-+					cursor_form_win = min(cursor_position, prompt_width-1) -
-(len-cursor_position);
-+			}
- 			break;
--		case KEY_DOWN:
-+		case 2: /* Ctrl-B */
- 		case KEY_LEFT:
--			if (cursor_position > 0)
-+			if (cursor_position > 0) {
- 				cursor_position--;
-+				if (cursor_form_win < 5
-+				    && cursor_position > 5)
-+					cursor_form_win += prompt_width/2;
-+				else
-+					cursor_form_win--;
-+				if (cursor_form_win > cursor_position)
-+					cursor_form_win = cursor_position;
-+			}
-+			break;
-+		case 1: /* Ctrl-A */
-+		case KEY_HOME:
-+			cursor_position = 0;
-+			cursor_form_win = 0;
-+			break;
-+		case 5: /* Ctrl-E */
-+		case KEY_END:
-+			cursor_position = len;
-+			cursor_form_win = min(cursor_position, prompt_width-1);
- 			break;
- 		default:
- 			if ((isgraph(res) || isspace(res)) &&
-@@ -457,19 +503,24 @@ int dialog_inputbox(WINDOW *main_window,
- 				/* insert the char at the proper position */
- 				memmove(&result[cursor_position+1],
- 						&result[cursor_position],
--						len+1);
-+						len-cursor_position+1);
- 				result[cursor_position] = res;
- 				cursor_position++;
-+				if (cursor_form_win < prompt_width-1)
-+					cursor_form_win++;
- 			} else {
--				mvprintw(0, 0, "unknow key: %d\n", res);
-+				mvprintw(0, 0, "unknown key: %d\n", res);
- 			}
- 			break;
- 		}
-+		mvprintw(0, 0, "got key: %d, cursor_position=%d, cursor_form_win=%d\n",
-+			 res, cursor_position, cursor_form_win);
- 		wmove(form_win, 0, 0);
- 		wclrtoeol(form_win);
- 		mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
--		mvwprintw(form_win, 0, 0, "%s", result);
--		wmove(form_win, 0, cursor_position);
-+		mvwprintw(form_win, 0, 0, "%s",
-+			  result + cursor_position-cursor_form_win);
-+		wmove(form_win, 0, cursor_form_win);
- 		touchwin(win);
- 		refresh_all_windows(main_window);
++/* Padmux settings */
++static struct pinmux_map u300_padmux_map[] = {
++	/* anonymous map for chip power */
++	{
++		.name = "power",
++		.ctrl_dev_name = "pinctrl.0",
++		.function = "power",
++		.dev_name = NULL,
++	},
++	PINMUX_MAP_PRIMARY("mmc0", "mmci"),
++	PINMUX_MAP_PRIMARY("spi0", "pl022"),
++	PINMUX_MAP_PRIMARY("uart0", "uart0"),
++};
++
+ /*
+  * Notice that AMBA devices are initialized before platform devices.
+  *
+@@ -1828,6 +1850,10 @@ void __init u300_init_devices(void)
+ 
+ 	u300_assign_physmem();
+ 
++	/* Initialize pinmuxing */
++	pinmux_register_mappings(u300_padmux_map,
++				 ARRAY_SIZE(u300_padmux_map));
++
+ 	/* Register subdevices on the I2C buses */
+ 	u300_i2c_register_board_devices();
+ 
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index adb0be0..fdeca2f 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -26,4 +26,11 @@ config DEBUG_PINCTRL
+ 	help
+ 	  Say Y here to add some extra checks and diagnostics to PINCTRL calls.
+ 
++config PINMUX_U300
++	bool "U300 pinmux driver"
++	depends on ARCH_U300
++	select PINMUX
++	help
++	  Say Y here to enable the U300 pinmux driver
++
+ endif
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 596ce9f..63d4241 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -4,3 +4,4 @@ ccflags-$(CONFIG_DEBUG_PINMUX)	+= -DDEBUG
+ 
+ obj-$(CONFIG_PINCTRL)		+= core.o
+ obj-$(CONFIG_PINMUX)		+= pinmux.o
++obj-$(CONFIG_PINMUX_U300)	+= pinmux-u300.o
+diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinmux-u300.c
+new file mode 100644
+index 0000000..6108e96
+--- /dev/null
++++ b/drivers/pinctrl/pinmux-u300.c
+@@ -0,0 +1,884 @@
++/*
++ * Driver for the U300 pin controller
++ *
++ * Based on the original U300 padmux functions
++ * Copyright (C) 2009-2011 ST-Ericsson AB
++ * Author: Martin Persson <martin.persson@stericsson.com>
++ * Author: Linus Walleij <linus.walleij@linaro.org>
++ *
++ * The DB3350 design and control registers are oriented around pads rather than
++ * pins, so we enumerate the pads we can mux rather than actual pins. The pads
++ * are connected to different pins in different packaging types, so it would
++ * be confusing.
++ */
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinmux.h>
++
++#include "pinmux-u300.h"
++
++#define DRIVER_NAME "pinmux-u300"
++
++/*
++ * The DB3350 has 467 pads, I have enumerated the pads clockwise around the
++ * edges of the silicon, finger by finger. LTCORNER upper left is pad 0.
++ * Data taken from the PadRing chart, arranged like this:
++ *
++ *   0 ..... 104
++ * 466        105
++ *   .        .
++ *   .        .
++ * 358        224
++ *  357 .... 225
++ */
++#define U300_NUM_PADS 467
++
++/* Pad names for the pinmux subsystem */
++const struct pinctrl_pin_desc __refdata u300_pads[] = {
++	/* Pads along the top edge of the chip */
++	PINCTRL_PIN(0, "P PAD VDD 28"),
++	PINCTRL_PIN(1, "P PAD GND 28"),
++	PINCTRL_PIN(2, "PO SIM RST N"),
++	PINCTRL_PIN(3, "VSSIO 25"),
++	PINCTRL_PIN(4, "VSSA ADDA ESDSUB"),
++	PINCTRL_PIN(5, "PWR VSSCOMMON"),
++	PINCTRL_PIN(6, "PI ADC I1 POS"),
++	PINCTRL_PIN(7, "PI ADC I1 NEG"),
++	PINCTRL_PIN(8, "PWR VSSAD0"),
++	PINCTRL_PIN(9, "PWR VCCAD0"),
++	PINCTRL_PIN(10, "PI ADC Q1 NEG"),
++	PINCTRL_PIN(11, "PI ADC Q1 POS"),
++	PINCTRL_PIN(12, "PWR VDDAD"),
++	PINCTRL_PIN(13, "PWR GNDAD"),
++	PINCTRL_PIN(14, "PI ADC I2 POS"),
++	PINCTRL_PIN(15, "PI ADC I2 NEG"),
++	PINCTRL_PIN(16, "PWR VSSAD1"),
++	PINCTRL_PIN(17, "PWR VCCAD1"),
++	PINCTRL_PIN(18, "PI ADC Q2 NEG"),
++	PINCTRL_PIN(19, "PI ADC Q2 POS"),
++	PINCTRL_PIN(20, "VSSA ADDA ESDSUB"),
++	PINCTRL_PIN(21, "PWR VCCGPAD"),
++	PINCTRL_PIN(22, "PI TX POW"),
++	PINCTRL_PIN(23, "PWR VSSGPAD"),
++	PINCTRL_PIN(24, "PO DAC I POS"),
++	PINCTRL_PIN(25, "PO DAC I NEG"),
++	PINCTRL_PIN(26, "PO DAC Q POS"),
++	PINCTRL_PIN(27, "PO DAC Q NEG"),
++	PINCTRL_PIN(28, "PWR VSSDA"),
++	PINCTRL_PIN(29, "PWR VCCDA"),
++	PINCTRL_PIN(30, "VSSA ADDA ESDSUB"),
++	PINCTRL_PIN(31, "P PAD VDDIO 11"),
++	PINCTRL_PIN(32, "PI PLL 26 FILTVDD"),
++	PINCTRL_PIN(33, "PI PLL 26 VCONT"),
++	PINCTRL_PIN(34, "PWR AGNDPLL2V5 32 13"),
++	PINCTRL_PIN(35, "PWR AVDDPLL2V5 32 13"),
++	PINCTRL_PIN(36, "VDDA PLL ESD"),
++	PINCTRL_PIN(37, "VSSA PLL ESD"),
++	PINCTRL_PIN(38, "VSS PLL"),
++	PINCTRL_PIN(39, "VDDC PLL"),
++	PINCTRL_PIN(40, "PWR AGNDPLL2V5 26 60"),
++	PINCTRL_PIN(41, "PWR AVDDPLL2V5 26 60"),
++	PINCTRL_PIN(42, "PWR AVDDPLL2V5 26 208"),
++	PINCTRL_PIN(43, "PWR AGNDPLL2V5 26 208"),
++	PINCTRL_PIN(44, "PWR AVDDPLL2V5 13 208"),
++	PINCTRL_PIN(45, "PWR AGNDPLL2V5 13 208"),
++	PINCTRL_PIN(46, "P PAD VSSIO 11"),
++	PINCTRL_PIN(47, "P PAD VSSIO 12"),
++	PINCTRL_PIN(48, "PI POW RST N"),
++	PINCTRL_PIN(49, "VDDC IO"),
++	PINCTRL_PIN(50, "P PAD VDDIO 16"),
++	PINCTRL_PIN(51, "PO RF WCDMA EN 4"),
++	PINCTRL_PIN(52, "PO RF WCDMA EN 3"),
++	PINCTRL_PIN(53, "PO RF WCDMA EN 2"),
++	PINCTRL_PIN(54, "PO RF WCDMA EN 1"),
++	PINCTRL_PIN(55, "PO RF WCDMA EN 0"),
++	PINCTRL_PIN(56, "PO GSM PA ENABLE"),
++	PINCTRL_PIN(57, "PO RF DATA STRB"),
++	PINCTRL_PIN(58, "PO RF DATA2"),
++	PINCTRL_PIN(59, "PIO RF DATA1"),
++	PINCTRL_PIN(60, "PIO RF DATA0"),
++	PINCTRL_PIN(61, "P PAD VDD 11"),
++	PINCTRL_PIN(62, "P PAD GND 11"),
++	PINCTRL_PIN(63, "P PAD VSSIO 16"),
++	PINCTRL_PIN(64, "P PAD VDDIO 18"),
++	PINCTRL_PIN(65, "PO RF CTRL STRB2"),
++	PINCTRL_PIN(66, "PO RF CTRL STRB1"),
++	PINCTRL_PIN(67, "PO RF CTRL STRB0"),
++	PINCTRL_PIN(68, "PIO RF CTRL DATA"),
++	PINCTRL_PIN(69, "PO RF CTRL CLK"),
++	PINCTRL_PIN(70, "PO TX ADC STRB"),
++	PINCTRL_PIN(71, "PO ANT SW 2"),
++	PINCTRL_PIN(72, "PO ANT SW 3"),
++	PINCTRL_PIN(73, "PO ANT SW 0"),
++	PINCTRL_PIN(74, "PO ANT SW 1"),
++	PINCTRL_PIN(75, "PO M CLKRQ"),
++	PINCTRL_PIN(76, "PI M CLK"),
++	PINCTRL_PIN(77, "PI RTC CLK"),
++	PINCTRL_PIN(78, "P PAD VDD 8"),
++	PINCTRL_PIN(79, "P PAD GND 8"),
++	PINCTRL_PIN(80, "P PAD VSSIO 13"),
++	PINCTRL_PIN(81, "P PAD VDDIO 13"),
++	PINCTRL_PIN(82, "PO SYS 1 CLK"),
++	PINCTRL_PIN(83, "PO SYS 2 CLK"),
++	PINCTRL_PIN(84, "PO SYS 0 CLK"),
++	PINCTRL_PIN(85, "PI SYS 0 CLKRQ"),
++	PINCTRL_PIN(86, "PO PWR MNGT CTRL 1"),
++	PINCTRL_PIN(87, "PO PWR MNGT CTRL 0"),
++	PINCTRL_PIN(88, "PO RESOUT2 RST N"),
++	PINCTRL_PIN(89, "PO RESOUT1 RST N"),
++	PINCTRL_PIN(90, "PO RESOUT0 RST N"),
++	PINCTRL_PIN(91, "PI SERVICE N"),
++	PINCTRL_PIN(92, "P PAD VDD 29"),
++	PINCTRL_PIN(93, "P PAD GND 29"),
++	PINCTRL_PIN(94, "P PAD VSSIO 8"),
++	PINCTRL_PIN(95, "P PAD VDDIO 8"),
++	PINCTRL_PIN(96, "PI EXT IRQ1 N"),
++	PINCTRL_PIN(97, "PI EXT IRQ0 N"),
++	PINCTRL_PIN(98, "PIO DC ON"),
++	PINCTRL_PIN(99, "PIO ACC APP I2C DATA"),
++	PINCTRL_PIN(100, "PIO ACC APP I2C CLK"),
++	PINCTRL_PIN(101, "P PAD VDD 12"),
++	PINCTRL_PIN(102, "P PAD GND 12"),
++	PINCTRL_PIN(103, "P PAD VSSIO 14"),
++	PINCTRL_PIN(104, "P PAD VDDIO 14"),
++	/* Pads along the right edge of the chip */
++	PINCTRL_PIN(105, "PIO APP I2C1 DATA"),
++	PINCTRL_PIN(106, "PIO APP I2C1 CLK"),
++	PINCTRL_PIN(107, "PO KEY OUT0"),
++	PINCTRL_PIN(108, "PO KEY OUT1"),
++	PINCTRL_PIN(109, "PO KEY OUT2"),
++	PINCTRL_PIN(110, "PO KEY OUT3"),
++	PINCTRL_PIN(111, "PO KEY OUT4"),
++	PINCTRL_PIN(112, "PI KEY IN0"),
++	PINCTRL_PIN(113, "PI KEY IN1"),
++	PINCTRL_PIN(114, "PI KEY IN2"),
++	PINCTRL_PIN(115, "P PAD VDDIO 15"),
++	PINCTRL_PIN(116, "P PAD VSSIO 15"),
++	PINCTRL_PIN(117, "P PAD GND 13"),
++	PINCTRL_PIN(118, "P PAD VDD 13"),
++	PINCTRL_PIN(119, "PI KEY IN3"),
++	PINCTRL_PIN(120, "PI KEY IN4"),
++	PINCTRL_PIN(121, "PI KEY IN5"),
++	PINCTRL_PIN(122, "PIO APP PCM I2S1 DATA B"),
++	PINCTRL_PIN(123, "PIO APP PCM I2S1 DATA A"),
++	PINCTRL_PIN(124, "PIO APP PCM I2S1 WS"),
++	PINCTRL_PIN(125, "PIO APP PCM I2S1 CLK"),
++	PINCTRL_PIN(126, "PIO APP PCM I2S0 DATA B"),
++	PINCTRL_PIN(127, "PIO APP PCM I2S0 DATA A"),
++	PINCTRL_PIN(128, "PIO APP PCM I2S0 WS"),
++	PINCTRL_PIN(129, "PIO APP PCM I2S0 CLK"),
++	PINCTRL_PIN(130, "P PAD VDD 17"),
++	PINCTRL_PIN(131, "P PAD GND 17"),
++	PINCTRL_PIN(132, "P PAD VSSIO 19"),
++	PINCTRL_PIN(133, "P PAD VDDIO 19"),
++	PINCTRL_PIN(134, "UART0 RTS"),
++	PINCTRL_PIN(135, "UART0 CTS"),
++	PINCTRL_PIN(136, "UART0 TX"),
++	PINCTRL_PIN(137, "UART0 RX"),
++	PINCTRL_PIN(138, "PIO ACC SPI DO"),
++	PINCTRL_PIN(139, "PIO ACC SPI DI"),
++	PINCTRL_PIN(140, "PIO ACC SPI CS0 N"),
++	PINCTRL_PIN(141, "PIO ACC SPI CS1 N"),
++	PINCTRL_PIN(142, "PIO ACC SPI CS2 N"),
++	PINCTRL_PIN(143, "PIO ACC SPI CLK"),
++	PINCTRL_PIN(144, "PO PDI EXT RST N"),
++	PINCTRL_PIN(145, "P PAD VDDIO 22"),
++	PINCTRL_PIN(146, "P PAD VSSIO 22"),
++	PINCTRL_PIN(147, "P PAD GND 18"),
++	PINCTRL_PIN(148, "P PAD VDD 18"),
++	PINCTRL_PIN(149, "PIO PDI C0"),
++	PINCTRL_PIN(150, "PIO PDI C1"),
++	PINCTRL_PIN(151, "PIO PDI C2"),
++	PINCTRL_PIN(152, "PIO PDI C3"),
++	PINCTRL_PIN(153, "PIO PDI C4"),
++	PINCTRL_PIN(154, "PIO PDI C5"),
++	PINCTRL_PIN(155, "PIO PDI D0"),
++	PINCTRL_PIN(156, "PIO PDI D1"),
++	PINCTRL_PIN(157, "PIO PDI D2"),
++	PINCTRL_PIN(158, "PIO PDI D3"),
++	PINCTRL_PIN(159, "P PAD VDDIO 21"),
++	PINCTRL_PIN(160, "P PAD VSSIO 21"),
++	PINCTRL_PIN(161, "PIO PDI D4"),
++	PINCTRL_PIN(162, "PIO PDI D5"),
++	PINCTRL_PIN(163, "PIO PDI D6"),
++	PINCTRL_PIN(164, "PIO PDI D7"),
++	PINCTRL_PIN(165, "PIO MS INS"),
++	PINCTRL_PIN(166, "MMC DATA DIR LS"),
++	PINCTRL_PIN(167, "MMC DATA 3"),
++	PINCTRL_PIN(168, "MMC DATA 2"),
++	PINCTRL_PIN(169, "MMC DATA 1"),
++	PINCTRL_PIN(170, "MMC DATA 0"),
++	PINCTRL_PIN(171, "MMC CMD DIR LS"),
++	PINCTRL_PIN(172, "P PAD VDD 27"),
++	PINCTRL_PIN(173, "P PAD GND 27"),
++	PINCTRL_PIN(174, "P PAD VSSIO 20"),
++	PINCTRL_PIN(175, "P PAD VDDIO 20"),
++	PINCTRL_PIN(176, "MMC CMD"),
++	PINCTRL_PIN(177, "MMC CLK"),
++	PINCTRL_PIN(178, "PIO APP GPIO 14"),
++	PINCTRL_PIN(179, "PIO APP GPIO 13"),
++	PINCTRL_PIN(180, "PIO APP GPIO 11"),
++	PINCTRL_PIN(181, "PIO APP GPIO 25"),
++	PINCTRL_PIN(182, "PIO APP GPIO 24"),
++	PINCTRL_PIN(183, "PIO APP GPIO 23"),
++	PINCTRL_PIN(184, "PIO APP GPIO 22"),
++	PINCTRL_PIN(185, "PIO APP GPIO 21"),
++	PINCTRL_PIN(186, "PIO APP GPIO 20"),
++	PINCTRL_PIN(187, "P PAD VDD 19"),
++	PINCTRL_PIN(188, "P PAD GND 19"),
++	PINCTRL_PIN(189, "P PAD VSSIO 23"),
++	PINCTRL_PIN(190, "P PAD VDDIO 23"),
++	PINCTRL_PIN(191, "PIO APP GPIO 19"),
++	PINCTRL_PIN(192, "PIO APP GPIO 18"),
++	PINCTRL_PIN(193, "PIO APP GPIO 17"),
++	PINCTRL_PIN(194, "PIO APP GPIO 16"),
++	PINCTRL_PIN(195, "PI CI D1"),
++	PINCTRL_PIN(196, "PI CI D0"),
++	PINCTRL_PIN(197, "PI CI HSYNC"),
++	PINCTRL_PIN(198, "PI CI VSYNC"),
++	PINCTRL_PIN(199, "PI CI EXT CLK"),
++	PINCTRL_PIN(200, "PO CI EXT RST N"),
++	PINCTRL_PIN(201, "P PAD VSSIO 43"),
++	PINCTRL_PIN(202, "P PAD VDDIO 43"),
++	PINCTRL_PIN(203, "PI CI D6"),
++	PINCTRL_PIN(204, "PI CI D7"),
++	PINCTRL_PIN(205, "PI CI D2"),
++	PINCTRL_PIN(206, "PI CI D3"),
++	PINCTRL_PIN(207, "PI CI D4"),
++	PINCTRL_PIN(208, "PI CI D5"),
++	PINCTRL_PIN(209, "PI CI D8"),
++	PINCTRL_PIN(210, "PI CI D9"),
++	PINCTRL_PIN(211, "P PAD VDD 20"),
++	PINCTRL_PIN(212, "P PAD GND 20"),
++	PINCTRL_PIN(213, "P PAD VSSIO 24"),
++	PINCTRL_PIN(214, "P PAD VDDIO 24"),
++	PINCTRL_PIN(215, "P PAD VDDIO 26"),
++	PINCTRL_PIN(216, "PO EMIF 1 A26"),
++	PINCTRL_PIN(217, "PO EMIF 1 A25"),
++	PINCTRL_PIN(218, "P PAD VSSIO 26"),
++	PINCTRL_PIN(219, "PO EMIF 1 A24"),
++	PINCTRL_PIN(220, "PO EMIF 1 A23"),
++	/* Pads along the bottom edge of the chip */
++	PINCTRL_PIN(221, "PO EMIF 1 A22"),
++	PINCTRL_PIN(222, "PO EMIF 1 A21"),
++	PINCTRL_PIN(223, "P PAD VDD 21"),
++	PINCTRL_PIN(224, "P PAD GND 21"),
++	PINCTRL_PIN(225, "P PAD VSSIO 27"),
++	PINCTRL_PIN(226, "P PAD VDDIO 27"),
++	PINCTRL_PIN(227, "PO EMIF 1 A20"),
++	PINCTRL_PIN(228, "PO EMIF 1 A19"),
++	PINCTRL_PIN(229, "PO EMIF 1 A18"),
++	PINCTRL_PIN(230, "PO EMIF 1 A17"),
++	PINCTRL_PIN(231, "P PAD VDDIO 28"),
++	PINCTRL_PIN(232, "P PAD VSSIO 28"),
++	PINCTRL_PIN(233, "PO EMIF 1 A16"),
++	PINCTRL_PIN(234, "PIO EMIF 1 D15"),
++	PINCTRL_PIN(235, "PO EMIF 1 A15"),
++	PINCTRL_PIN(236, "PIO EMIF 1 D14"),
++	PINCTRL_PIN(237, "P PAD VDD 22"),
++	PINCTRL_PIN(238, "P PAD GND 22"),
++	PINCTRL_PIN(239, "P PAD VSSIO 29"),
++	PINCTRL_PIN(240, "P PAD VDDIO 29"),
++	PINCTRL_PIN(241, "PO EMIF 1 A14"),
++	PINCTRL_PIN(242, "PIO EMIF 1 D13"),
++	PINCTRL_PIN(243, "PO EMIF 1 A13"),
++	PINCTRL_PIN(244, "PIO EMIF 1 D12"),
++	PINCTRL_PIN(245, "P PAD VSSIO 30"),
++	PINCTRL_PIN(246, "P PAD VDDIO 30"),
++	PINCTRL_PIN(247, "PO EMIF 1 A12"),
++	PINCTRL_PIN(248, "PIO EMIF 1 D11"),
++	PINCTRL_PIN(249, "PO EMIF 1 A11"),
++	PINCTRL_PIN(250, "PIO EMIF 1 D10"),
++	PINCTRL_PIN(251, "P PAD VSSIO 31"),
++	PINCTRL_PIN(252, "P PAD VDDIO 31"),
++	PINCTRL_PIN(253, "PO EMIF 1 A10"),
++	PINCTRL_PIN(254, "PIO EMIF 1 D09"),
++	PINCTRL_PIN(255, "PO EMIF 1 A09"),
++	PINCTRL_PIN(256, "P PAD VDDIO 32"),
++	PINCTRL_PIN(257, "P PAD VSSIO 32"),
++	PINCTRL_PIN(258, "P PAD GND 24"),
++	PINCTRL_PIN(259, "P PAD VDD 24"),
++	PINCTRL_PIN(260, "PIO EMIF 1 D08"),
++	PINCTRL_PIN(261, "PO EMIF 1 A08"),
++	PINCTRL_PIN(262, "PIO EMIF 1 D07"),
++	PINCTRL_PIN(263, "PO EMIF 1 A07"),
++	PINCTRL_PIN(264, "P PAD VDDIO 33"),
++	PINCTRL_PIN(265, "P PAD VSSIO 33"),
++	PINCTRL_PIN(266, "PIO EMIF 1 D06"),
++	PINCTRL_PIN(267, "PO EMIF 1 A06"),
++	PINCTRL_PIN(268, "PIO EMIF 1 D05"),
++	PINCTRL_PIN(269, "PO EMIF 1 A05"),
++	PINCTRL_PIN(270, "P PAD VDDIO 34"),
++	PINCTRL_PIN(271, "P PAD VSSIO 34"),
++	PINCTRL_PIN(272, "PIO EMIF 1 D04"),
++	PINCTRL_PIN(273, "PO EMIF 1 A04"),
++	PINCTRL_PIN(274, "PIO EMIF 1 D03"),
++	PINCTRL_PIN(275, "PO EMIF 1 A03"),
++	PINCTRL_PIN(276, "P PAD VDDIO 35"),
++	PINCTRL_PIN(277, "P PAD VSSIO 35"),
++	PINCTRL_PIN(278, "P PAD GND 23"),
++	PINCTRL_PIN(279, "P PAD VDD 23"),
++	PINCTRL_PIN(280, "PIO EMIF 1 D02"),
++	PINCTRL_PIN(281, "PO EMIF 1 A02"),
++	PINCTRL_PIN(282, "PIO EMIF 1 D01"),
++	PINCTRL_PIN(283, "PO EMIF 1 A01"),
++	PINCTRL_PIN(284, "P PAD VDDIO 36"),
++	PINCTRL_PIN(285, "P PAD VSSIO 36"),
++	PINCTRL_PIN(286, "PIO EMIF 1 D00"),
++	PINCTRL_PIN(287, "PO EMIF 1 BE1 N"),
++	PINCTRL_PIN(288, "PO EMIF 1 BE0 N"),
++	PINCTRL_PIN(289, "PO EMIF 1 ADV N"),
++	PINCTRL_PIN(290, "P PAD VDDIO 37"),
++	PINCTRL_PIN(291, "P PAD VSSIO 37"),
++	PINCTRL_PIN(292, "PO EMIF 1 SD CKE0"),
++	PINCTRL_PIN(293, "PO EMIF 1 OE N"),
++	PINCTRL_PIN(294, "PO EMIF 1 WE N"),
++	PINCTRL_PIN(295, "P PAD VDDIO 38"),
++	PINCTRL_PIN(296, "P PAD VSSIO 38"),
++	PINCTRL_PIN(297, "PO EMIF 1 CLK"),
++	PINCTRL_PIN(298, "PIO EMIF 1 SD CLK"),
++	PINCTRL_PIN(299, "P PAD VSSIO 45 (not bonded)"),
++	PINCTRL_PIN(300, "P PAD VDDIO 42"),
++	PINCTRL_PIN(301, "P PAD VSSIO 42"),
++	PINCTRL_PIN(302, "P PAD GND 31"),
++	PINCTRL_PIN(303, "P PAD VDD 31"),
++	PINCTRL_PIN(304, "PI EMIF 1 RET CLK"),
++	PINCTRL_PIN(305, "PI EMIF 1 WAIT N"),
++	PINCTRL_PIN(306, "PI EMIF 1 NFIF READY"),
++	PINCTRL_PIN(307, "PO EMIF 1 SD CKE1"),
++	PINCTRL_PIN(308, "PO EMIF 1 CS3 N"),
++	PINCTRL_PIN(309, "P PAD VDD 25"),
++	PINCTRL_PIN(310, "P PAD GND 25"),
++	PINCTRL_PIN(311, "P PAD VSSIO 39"),
++	PINCTRL_PIN(312, "P PAD VDDIO 39"),
++	PINCTRL_PIN(313, "PO EMIF 1 CS2 N"),
++	PINCTRL_PIN(314, "PO EMIF 1 CS1 N"),
++	PINCTRL_PIN(315, "PO EMIF 1 CS0 N"),
++	PINCTRL_PIN(316, "PO ETM TRACE PKT0"),
++	PINCTRL_PIN(317, "PO ETM TRACE PKT1"),
++	PINCTRL_PIN(318, "PO ETM TRACE PKT2"),
++	PINCTRL_PIN(319, "P PAD VDD 30"),
++	PINCTRL_PIN(320, "P PAD GND 30"),
++	PINCTRL_PIN(321, "P PAD VSSIO 44"),
++	PINCTRL_PIN(322, "P PAD VDDIO 44"),
++	PINCTRL_PIN(323, "PO ETM TRACE PKT3"),
++	PINCTRL_PIN(324, "PO ETM TRACE PKT4"),
++	PINCTRL_PIN(325, "PO ETM TRACE PKT5"),
++	PINCTRL_PIN(326, "PO ETM TRACE PKT6"),
++	PINCTRL_PIN(327, "PO ETM TRACE PKT7"),
++	PINCTRL_PIN(328, "PO ETM PIPE STAT0"),
++	PINCTRL_PIN(329, "P PAD VDD 26"),
++	PINCTRL_PIN(330, "P PAD GND 26"),
++	PINCTRL_PIN(331, "P PAD VSSIO 40"),
++	PINCTRL_PIN(332, "P PAD VDDIO 40"),
++	PINCTRL_PIN(333, "PO ETM PIPE STAT1"),
++	PINCTRL_PIN(334, "PO ETM PIPE STAT2"),
++	PINCTRL_PIN(335, "PO ETM TRACE CLK"),
++	PINCTRL_PIN(336, "PO ETM TRACE SYNC"),
++	PINCTRL_PIN(337, "PIO ACC GPIO 33"),
++	PINCTRL_PIN(338, "PIO ACC GPIO 32"),
++	PINCTRL_PIN(339, "PIO ACC GPIO 30"),
++	PINCTRL_PIN(340, "PIO ACC GPIO 29"),
++	PINCTRL_PIN(341, "P PAD VDDIO 17"),
++	PINCTRL_PIN(342, "P PAD VSSIO 17"),
++	PINCTRL_PIN(343, "P PAD GND 15"),
++	PINCTRL_PIN(344, "P PAD VDD 15"),
++	PINCTRL_PIN(345, "PIO ACC GPIO 28"),
++	PINCTRL_PIN(346, "PIO ACC GPIO 27"),
++	PINCTRL_PIN(347, "PIO ACC GPIO 16"),
++	PINCTRL_PIN(348, "PI TAP TMS"),
++	PINCTRL_PIN(349, "PI TAP TDI"),
++	PINCTRL_PIN(350, "PO TAP TDO"),
++	PINCTRL_PIN(351, "PI TAP RST N"),
++	/* Pads along the left edge of the chip */
++	PINCTRL_PIN(352, "PI EMU MODE 0"),
++	PINCTRL_PIN(353, "PO TAP RET CLK"),
++	PINCTRL_PIN(354, "PI TAP CLK"),
++	PINCTRL_PIN(355, "PO EMIF 0 SD CS N"),
++	PINCTRL_PIN(356, "PO EMIF 0 SD CAS N"),
++	PINCTRL_PIN(357, "PO EMIF 0 SD WE N"),
++	PINCTRL_PIN(358, "P PAD VDDIO 1"),
++	PINCTRL_PIN(359, "P PAD VSSIO 1"),
++	PINCTRL_PIN(360, "P PAD GND 1"),
++	PINCTRL_PIN(361, "P PAD VDD 1"),
++	PINCTRL_PIN(362, "PO EMIF 0 SD CKE"),
++	PINCTRL_PIN(363, "PO EMIF 0 SD DQML"),
++	PINCTRL_PIN(364, "PO EMIF 0 SD DQMU"),
++	PINCTRL_PIN(365, "PO EMIF 0 SD RAS N"),
++	PINCTRL_PIN(366, "PIO EMIF 0 D15"),
++	PINCTRL_PIN(367, "PO EMIF 0 A15"),
++	PINCTRL_PIN(368, "PIO EMIF 0 D14"),
++	PINCTRL_PIN(369, "PO EMIF 0 A14"),
++	PINCTRL_PIN(370, "PIO EMIF 0 D13"),
++	PINCTRL_PIN(371, "PO EMIF 0 A13"),
++	PINCTRL_PIN(372, "P PAD VDDIO 2"),
++	PINCTRL_PIN(373, "P PAD VSSIO 2"),
++	PINCTRL_PIN(374, "P PAD GND 2"),
++	PINCTRL_PIN(375, "P PAD VDD 2"),
++	PINCTRL_PIN(376, "PIO EMIF 0 D12"),
++	PINCTRL_PIN(377, "PO EMIF 0 A12"),
++	PINCTRL_PIN(378, "PIO EMIF 0 D11"),
++	PINCTRL_PIN(379, "PO EMIF 0 A11"),
++	PINCTRL_PIN(380, "PIO EMIF 0 D10"),
++	PINCTRL_PIN(381, "PO EMIF 0 A10"),
++	PINCTRL_PIN(382, "PIO EMIF 0 D09"),
++	PINCTRL_PIN(383, "PO EMIF 0 A09"),
++	PINCTRL_PIN(384, "PIO EMIF 0 D08"),
++	PINCTRL_PIN(385, "PO EMIF 0 A08"),
++	PINCTRL_PIN(386, "PIO EMIF 0 D07"),
++	PINCTRL_PIN(387, "PO EMIF 0 A07"),
++	PINCTRL_PIN(388, "P PAD VDDIO 3"),
++	PINCTRL_PIN(389, "P PAD VSSIO 3"),
++	PINCTRL_PIN(390, "P PAD GND 3"),
++	PINCTRL_PIN(391, "P PAD VDD 3"),
++	PINCTRL_PIN(392, "PO EFUSE RDOUT1"),
++	PINCTRL_PIN(393, "PIO EMIF 0 D06"),
++	PINCTRL_PIN(394, "PO EMIF 0 A06"),
++	PINCTRL_PIN(395, "PIO EMIF 0 D05"),
++	PINCTRL_PIN(396, "PO EMIF 0 A05"),
++	PINCTRL_PIN(397, "PIO EMIF 0 D04"),
++	PINCTRL_PIN(398, "PO EMIF 0 A04"),
++	PINCTRL_PIN(399, "A PADS/A VDDCO1v82v5 GND 80U SF LIN VDDCO AF"),
++	PINCTRL_PIN(400, "PWR VDDCO AF"),
++	PINCTRL_PIN(401, "PWR EFUSE HV1"),
++	PINCTRL_PIN(402, "P PAD VSSIO 4"),
++	PINCTRL_PIN(403, "P PAD VDDIO 4"),
++	PINCTRL_PIN(404, "P PAD GND 4"),
++	PINCTRL_PIN(405, "P PAD VDD 4"),
++	PINCTRL_PIN(406, "PIO EMIF 0 D03"),
++	PINCTRL_PIN(407, "PO EMIF 0 A03"),
++	PINCTRL_PIN(408, "PWR EFUSE HV2"),
++	PINCTRL_PIN(409, "PWR EFUSE HV3"),
++	PINCTRL_PIN(410, "PIO EMIF 0 D02"),
++	PINCTRL_PIN(411, "PO EMIF 0 A02"),
++	PINCTRL_PIN(412, "PIO EMIF 0 D01"),
++	PINCTRL_PIN(413, "P PAD VDDIO 5"),
++	PINCTRL_PIN(414, "P PAD VSSIO 5"),
++	PINCTRL_PIN(415, "P PAD GND 5"),
++	PINCTRL_PIN(416, "P PAD VDD 5"),
++	PINCTRL_PIN(417, "PO EMIF 0 A01"),
++	PINCTRL_PIN(418, "PIO EMIF 0 D00"),
++	PINCTRL_PIN(419, "IF 0 SD CLK"),
++	PINCTRL_PIN(420, "APP SPI CLK"),
++	PINCTRL_PIN(421, "APP SPI DO"),
++	PINCTRL_PIN(422, "APP SPI DI"),
++	PINCTRL_PIN(423, "APP SPI CS0"),
++	PINCTRL_PIN(424, "APP SPI CS1"),
++	PINCTRL_PIN(425, "APP SPI CS2"),
++	PINCTRL_PIN(426, "PIO APP GPIO 10"),
++	PINCTRL_PIN(427, "P PAD VDDIO 41"),
++	PINCTRL_PIN(428, "P PAD VSSIO 41"),
++	PINCTRL_PIN(429, "P PAD GND 6"),
++	PINCTRL_PIN(430, "P PAD VDD 6"),
++	PINCTRL_PIN(431, "PIO ACC SDIO0 CMD"),
++	PINCTRL_PIN(432, "PIO ACC SDIO0 CK"),
++	PINCTRL_PIN(433, "PIO ACC SDIO0 D3"),
++	PINCTRL_PIN(434, "PIO ACC SDIO0 D2"),
++	PINCTRL_PIN(435, "PIO ACC SDIO0 D1"),
++	PINCTRL_PIN(436, "PIO ACC SDIO0 D0"),
++	PINCTRL_PIN(437, "PIO USB PU"),
++	PINCTRL_PIN(438, "PIO USB SP"),
++	PINCTRL_PIN(439, "PIO USB DAT VP"),
++	PINCTRL_PIN(440, "PIO USB SE0 VM"),
++	PINCTRL_PIN(441, "PIO USB OE"),
++	PINCTRL_PIN(442, "PIO USB SUSP"),
++	PINCTRL_PIN(443, "P PAD VSSIO 6"),
++	PINCTRL_PIN(444, "P PAD VDDIO 6"),
++	PINCTRL_PIN(445, "PIO USB PUEN"),
++	PINCTRL_PIN(446, "PIO ACC UART0 RX"),
++	PINCTRL_PIN(447, "PIO ACC UART0 TX"),
++	PINCTRL_PIN(448, "PIO ACC UART0 CTS"),
++	PINCTRL_PIN(449, "PIO ACC UART0 RTS"),
++	PINCTRL_PIN(450, "PIO ACC UART3 RX"),
++	PINCTRL_PIN(451, "PIO ACC UART3 TX"),
++	PINCTRL_PIN(452, "PIO ACC UART3 CTS"),
++	PINCTRL_PIN(453, "PIO ACC UART3 RTS"),
++	PINCTRL_PIN(454, "PIO ACC IRDA TX"),
++	PINCTRL_PIN(455, "P PAD VDDIO 7"),
++	PINCTRL_PIN(456, "P PAD VSSIO 7"),
++	PINCTRL_PIN(457, "P PAD GND 7"),
++	PINCTRL_PIN(458, "P PAD VDD 7"),
++	PINCTRL_PIN(459, "PIO ACC IRDA RX"),
++	PINCTRL_PIN(460, "PIO ACC PCM I2S CLK"),
++	PINCTRL_PIN(461, "PIO ACC PCM I2S WS"),
++	PINCTRL_PIN(462, "PIO ACC PCM I2S DATA A"),
++	PINCTRL_PIN(463, "PIO ACC PCM I2S DATA B"),
++	PINCTRL_PIN(464, "PO SIM CLK"),
++	PINCTRL_PIN(465, "PIO ACC IRDA SD"),
++	PINCTRL_PIN(466, "PIO SIM DATA"),
++};
++
++/**
++ * @dev: a pointer back to containing device
++ * @virtbase: the offset to the controller in virtual memory
++ */
++struct u300_pmx {
++	struct device *dev;
++	struct pinmux_dev *pmx;
++	u32 phybase;
++	u32 physize;
++	void __iomem *virtbase;
++};
++
++/**
++ * u300_pmx_registers - the array of registers read/written for each pinmux
++ * shunt setting
++ */
++const u32 u300_pmx_registers[] = {
++	U300_SYSCON_PMC1LR,
++	U300_SYSCON_PMC1HR,
++	U300_SYSCON_PMC2R,
++	U300_SYSCON_PMC3R,
++	U300_SYSCON_PMC4R,
++};
++
++/**
++ * struct pmx_onmask - mask bits to enable/disable padmux
++ * @mask: mask bits to disable
++ * @val: mask bits to enable
++ *
++ * onmask lazy dog:
++ * onmask = {
++ *   {"PMC1LR" mask, "PMC1LR" value},
++ *   {"PMC1HR" mask, "PMC1HR" value},
++ *   {"PMC2R"  mask, "PMC2R"  value},
++ *   {"PMC3R"  mask, "PMC3R"  value},
++ *   {"PMC4R"  mask, "PMC4R"  value}
++ * }
++ */
++struct u300_pmx_mask {
++	u16 mask;
++	u16 bits;
++};
++
++/**
++ * struct u300_pmx_func - describes a U300 pinmux function
++ * @name: the name of this specific function
++ * @pins: an array of discrete physical pins used in this mapping, taken
++ *	from the global pin enumeration space
++ * @num_pins: the number of pins in this mapping array, i.e. the number of
++ *	elements in .pins so we can iterate over that array
++ * @onmask: bits to set to enable this muxing
++ */
++struct u300_pmx_func {
++	const char *name;
++	const unsigned int *pins;
++	const unsigned num_pins;
++	const struct u300_pmx_mask *mask;
++};
++
++/* The chip power pins are VDD, GND, VDDIO and VSSIO */
++static const unsigned power_pins[] = { 0, 1, 3, 31, 46, 47, 49, 50, 61, 62, 63,
++	64, 78, 79, 80, 81, 92, 93, 94, 95, 101, 102, 103, 104, 115, 116, 117,
++	118, 130, 131, 132, 133, 145, 146, 147, 148, 159, 160, 172, 173, 174,
++	175, 187, 188, 189, 190, 201, 202, 211, 212, 213, 214, 215, 218, 223,
++	224, 225, 226, 231, 232, 237, 238, 239, 240, 245, 246, 251, 252, 256,
++	257, 258, 259, 264, 265, 270, 271, 276, 277, 278, 279, 284, 285, 290,
++	291, 295, 296, 299, 300, 301, 302, 303, 309, 310, 311, 312, 319, 320,
++	321, 322, 329, 330, 331, 332, 341, 342, 343, 344, 358, 359, 360, 361,
++	372, 373, 374, 375, 388, 389, 390, 391, 402, 403, 404, 405, 413, 414,
++	415, 416, 427, 428, 429, 430, 443, 444, 455, 456, 457, 458 };
++static const unsigned uart0_pins[] = { 134, 135, 136, 137 };
++static const unsigned mmc0_pins[] = { 166, 167, 168, 169, 170, 171, 176, 177 };
++static const unsigned spi0_pins[] = { 420, 421, 422, 423, 424, 425 };
++
++static const struct u300_pmx_mask uart0_mask[] = {
++	{0, 0},
++	{
++		U300_SYSCON_PMC1HR_APP_UART0_1_MASK |
++		U300_SYSCON_PMC1HR_APP_UART0_2_MASK,
++		U300_SYSCON_PMC1HR_APP_UART0_1_UART0 |
++		U300_SYSCON_PMC1HR_APP_UART0_2_UART0
++	},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++};
++
++static const struct u300_pmx_mask mmc0_mask[] = {
++	{ U300_SYSCON_PMC1LR_MMCSD_MASK, U300_SYSCON_PMC1LR_MMCSD_MMCSD},
++	{0, 0},
++	{0, 0},
++	{0, 0},
++	{ U300_SYSCON_PMC4R_APP_MISC_12_MASK,
++	  U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO }
++};
++
++static const struct u300_pmx_mask spi0_mask[] = {
++	{0, 0},
++	{
++		U300_SYSCON_PMC1HR_APP_SPI_2_MASK |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK,
++		U300_SYSCON_PMC1HR_APP_SPI_2_SPI |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI |
++		U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI
++	},
++	{0, 0},
++	{0, 0},
++	{0, 0}
++};
++
++static const struct u300_pmx_func u300_pmx_funcs[] = {
++	{
++		.name = "power",
++		.pins = power_pins,
++		.num_pins = ARRAY_SIZE(power_pins),
++		/* Mask is N/A */
++	},
++	{
++		.name = "uart0",
++		.pins = uart0_pins,
++		.num_pins = ARRAY_SIZE(uart0_pins),
++		.mask = uart0_mask,
++	},
++	{
++		.name = "mmc0",
++		.pins = mmc0_pins,
++		.num_pins = ARRAY_SIZE(mmc0_pins),
++		.mask = mmc0_mask,
++	},
++	{
++		.name = "spi0",
++		.pins = spi0_pins,
++		.num_pins = ARRAY_SIZE(spi0_pins),
++		.mask = spi0_mask,
++	},
++};
++
++static void u300_pmx_endisable(struct u300_pmx *upmx, unsigned selector,
++			       bool enable)
++{
++	u16 regval, val, mask;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(u300_pmx_registers); i++) {
++		if (enable)
++			val = u300_pmx_funcs[selector].mask->bits;
++		else
++			val = 0;
++
++		mask = u300_pmx_funcs[selector].mask->mask;
++		if (mask != 0) {
++			regval = readw(upmx->virtbase + u300_pmx_registers[i]);
++			regval &= ~mask;
++			regval |= val;
++			writew(regval, upmx->virtbase + u300_pmx_registers[i]);
++		}
++	}
++}
++
++static int u300_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
++			   unsigned position)
++{
++	struct u300_pmx *upmx;
++
++	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
++		return -EINVAL;
++
++	/* There is nothing to do with the power pins */
++	if (selector == 0)
++		return 0;
++
++	upmx = pctldev_get_drvdata(pctldev);
++	u300_pmx_endisable(upmx, selector, true);
++
++	return 0;
++}
++
++static void u300_pmx_disable(struct pinctrl_dev *pctldev, unsigned selector,
++			     unsigned position)
++{
++	struct u300_pmx *upmx;
++
++	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
++		return;
++
++	/* There is nothing to do with the power pins */
++	if (selector == 0)
++		return;
++
++	upmx = pctldev_get_drvdata(pctldev);
++	u300_pmx_endisable(upmx, selector, false);
++}
++
++static int u300_pmx_list_funcs(struct pinctrl_dev *pctldev, unsigned selector)
++{
++	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
++		return -EINVAL;
++	return 0;
++}
++
++/*
++ * If the functions could be mapped in different positions, we would
++ * enumerate them here.
++ */
++static int u300_pmx_list_positions(struct pinctrl_dev *pctldev,
++				   unsigned selector,
++				   unsigned position)
++{
++	/* Only one selectable position per selector in this driver */
++	if (position != 0)
++		return -EINVAL;
++	return 0;
++}
++
++static const char *u300_pmx_get_fname(struct pinctrl_dev *pctldev,
++				      unsigned selector)
++{
++	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
++		return NULL;
++	return u300_pmx_funcs[selector].name;
++}
++
++static int u300_pmx_get_pins(struct pinctrl_dev *pctldev, unsigned selector,
++			     unsigned position, unsigned ** const pins,
++			     unsigned * const num_pins)
++{
++	if (position != 0)
++		return -EINVAL;
++	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
++		return -EINVAL;
++	*pins = (unsigned *) u300_pmx_funcs[selector].pins;
++	*num_pins = u300_pmx_funcs[selector].num_pins;
++	return 0;
++}
++
++static void u300_dbg_show(struct pinmux_dev *pmxdev, struct seq_file *s,
++		   unsigned offset)
++{
++	seq_printf(s, " " DRIVER_NAME);
++}
++
++static struct pinmux_ops u300_pmx_ops = {
++	.list_functions = u300_pmx_list_funcs,
++	.list_positions = u300_pmx_list_positions,
++	.get_function_name = u300_pmx_get_fname,
++	.get_function_pins = u300_pmx_get_pins,
++	.enable = u300_pmx_enable,
++	.disable = u300_pmx_disable,
++	.dbg_show = u300_dbg_show,
++};
++
++/*
++ * FIXME: this will be set to sane values as this driver engulfs
++ * drivers/gpio/gpio-u300.c and we really know this stuff.
++ */
++static struct pinctrl_gpio_range u300_gpio_range = {
++	.name = "COH901*",
++	.id = 0,
++	.base = 0,
++	.npins = 64,
++};
++
++static struct pinctrl_desc u300_pmx_desc = {
++	.name = DRIVER_NAME,
++	.pins = u300_pads,
++	.npins = ARRAY_SIZE(u300_pads),
++	.maxpin = U300_NUM_PADS-1,
++	.pmxops = &u300_pmx_ops,
++	.owner = THIS_MODULE,
++};
++
++static int __init u300_pmx_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct u300_pmx *upmx;
++	struct resource *res;
++
++	/* Create state holders etc for this driver */
++	upmx = kzalloc(sizeof(struct u300_pmx), GFP_KERNEL);
++	if (!upmx)
++		return -ENOMEM;
++
++	upmx->dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		ret = -ENOENT;
++		goto out_no_resource;
++	}
++	upmx->phybase = res->start;
++	upmx->physize = resource_size(res);
++
++	if (request_mem_region(upmx->phybase, upmx->physize,
++			       DRIVER_NAME) == NULL) {
++		ret = -EBUSY;
++		goto out_no_memregion;
++	}
++
++	upmx->virtbase = ioremap(upmx->phybase, upmx->physize);
++	if (!upmx->virtbase) {
++		ret = -ENOMEM;
++		goto out_no_remap;
++	}
++
++	/* Now register the pin controller and all pins it handles */
++	upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
++	if (IS_ERR(upmx->pctl)) {
++		dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
++		ret = PTR_ERR(upmx->pmx);
++		goto out_no_pmx;
++	}
++
++	/* We will handle a range of GPIO pins */
++	pinctrl_add_gpio_range(upmx->pctl, &u300_gpio_range);
++
++	platform_set_drvdata(pdev, upmx);
++
++	dev_info(&pdev->dev, "initialized U300 pinmux driver\n");
++
++	return 0;
++
++out_no_pmx:
++	iounmap(upmx->virtbase);
++out_no_remap:
++	platform_set_drvdata(pdev, NULL);
++out_no_memregion:
++	release_mem_region(upmx->phybase, upmx->physize);
++out_no_resource:
++	kfree(upmx);
++	return ret;
++}
++
++static int __exit u300_pmx_remove(struct platform_device *pdev)
++{
++	struct u300_pmx *upmx = platform_get_drvdata(pdev);
++
++	pinctrl_unregister(upmx->pctl);
++	iounmap(upmx->virtbase);
++	release_mem_region(upmx->phybase, upmx->physize);
++	platform_set_drvdata(pdev, NULL);
++	kfree(upmx);
++
++	return 0;
++}
++
++static struct platform_driver u300_pmx_driver = {
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++	},
++	.remove = __exit_p(u300_pmx_remove),
++};
++
++static int __init u300_pmx_init(void)
++{
++	return platform_driver_probe(&u300_pmx_driver, u300_pmx_probe);
++}
++arch_initcall(u300_pmx_init);
++
++static void __exit u300_pmx_exit(void)
++{
++	platform_driver_unregister(&u300_pmx_driver);
++}
++module_exit(u300_pmx_exit);
++
++MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
++MODULE_DESCRIPTION("U300 pin control driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/pinctrl/pinmux-u300.h b/drivers/pinctrl/pinmux-u300.h
+new file mode 100644
+index 0000000..490af79
+--- /dev/null
++++ b/drivers/pinctrl/pinmux-u300.h
+@@ -0,0 +1,141 @@
++/*
++ * Register definitions for the U300 Padmux control registers in the
++ * system controller
++ */
++
++/* PAD MUX Control register 1 (LOW) 16bit (R/W) */
++#define U300_SYSCON_PMC1LR					0x007C
++#define U300_SYSCON_PMC1LR_MASK					0xFFFF
++#define U300_SYSCON_PMC1LR_CDI_MASK				0xC000
++#define U300_SYSCON_PMC1LR_CDI_CDI				0x0000
++#define U300_SYSCON_PMC1LR_CDI_EMIF				0x4000
++/* For BS335 */
++#define U300_SYSCON_PMC1LR_CDI_CDI2				0x8000
++#define U300_SYSCON_PMC1LR_CDI_WCDMA_APP_GPIO			0xC000
++/* For BS365 */
++#define U300_SYSCON_PMC1LR_CDI_GPIO				0x8000
++#define U300_SYSCON_PMC1LR_CDI_WCDMA				0xC000
++/* Common defs */
++#define U300_SYSCON_PMC1LR_PDI_MASK				0x3000
++#define U300_SYSCON_PMC1LR_PDI_PDI				0x0000
++#define U300_SYSCON_PMC1LR_PDI_EGG				0x1000
++#define U300_SYSCON_PMC1LR_PDI_WCDMA				0x3000
++#define U300_SYSCON_PMC1LR_MMCSD_MASK				0x0C00
++#define U300_SYSCON_PMC1LR_MMCSD_MMCSD				0x0000
++#define U300_SYSCON_PMC1LR_MMCSD_MSPRO				0x0400
++#define U300_SYSCON_PMC1LR_MMCSD_DSP				0x0800
++#define U300_SYSCON_PMC1LR_MMCSD_WCDMA				0x0C00
++#define U300_SYSCON_PMC1LR_ETM_MASK				0x0300
++#define U300_SYSCON_PMC1LR_ETM_ACC				0x0000
++#define U300_SYSCON_PMC1LR_ETM_APP				0x0100
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_MASK			0x00C0
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_NFIF			0x0040
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_SDRAM			0x0080
++#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC_2GB		0x00C0
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_MASK			0x0030
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_NFIF			0x0010
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SDRAM			0x0020
++#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SEMI			0x0030
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_MASK			0x000C
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_NFIF			0x0004
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SDRAM			0x0008
++#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SEMI			0x000C
++#define U300_SYSCON_PMC1LR_EMIF_1_MASK				0x0003
++#define U300_SYSCON_PMC1LR_EMIF_1_STATIC			0x0000
++#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM0			0x0001
++#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM1			0x0002
++#define U300_SYSCON_PMC1LR_EMIF_1				0x0003
++/* PAD MUX Control register 2 (HIGH) 16bit (R/W) */
++#define U300_SYSCON_PMC1HR					0x007E
++#define U300_SYSCON_PMC1HR_MASK					0xFFFF
++#define U300_SYSCON_PMC1HR_MISC_2_MASK				0xC000
++#define U300_SYSCON_PMC1HR_MISC_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_MISC_2_MSPRO				0x4000
++#define U300_SYSCON_PMC1HR_MISC_2_DSP				0x8000
++#define U300_SYSCON_PMC1HR_MISC_2_AAIF				0xC000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_MASK			0x3000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_NFIF			0x1000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_DSP			0x2000
++#define U300_SYSCON_PMC1HR_APP_GPIO_2_AAIF			0x3000
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_MASK			0x0C00
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_MMC			0x0400
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_DSP			0x0800
++#define U300_SYSCON_PMC1HR_APP_GPIO_1_AAIF			0x0C00
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK			0x0300
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_APP_GPIO		0x0000
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI			0x0100
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_AAIF			0x0300
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK			0x00C0
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_APP_GPIO		0x0000
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI			0x0040
++#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_AAIF			0x00C0
++#define U300_SYSCON_PMC1HR_APP_SPI_2_MASK			0x0030
++#define U300_SYSCON_PMC1HR_APP_SPI_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_SPI_2_SPI			0x0010
++#define U300_SYSCON_PMC1HR_APP_SPI_2_DSP			0x0020
++#define U300_SYSCON_PMC1HR_APP_SPI_2_AAIF			0x0030
++#define U300_SYSCON_PMC1HR_APP_UART0_2_MASK			0x000C
++#define U300_SYSCON_PMC1HR_APP_UART0_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_UART0_2_UART0			0x0004
++#define U300_SYSCON_PMC1HR_APP_UART0_2_NFIF_CS			0x0008
++#define U300_SYSCON_PMC1HR_APP_UART0_2_AAIF			0x000C
++#define U300_SYSCON_PMC1HR_APP_UART0_1_MASK			0x0003
++#define U300_SYSCON_PMC1HR_APP_UART0_1_APP_GPIO			0x0000
++#define U300_SYSCON_PMC1HR_APP_UART0_1_UART0			0x0001
++#define U300_SYSCON_PMC1HR_APP_UART0_1_AAIF			0x0003
++/* Padmux 2 control */
++#define U300_SYSCON_PMC2R					0x100
++#define U300_SYSCON_PMC2R_APP_MISC_0_MASK			0x00C0
++#define U300_SYSCON_PMC2R_APP_MISC_0_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_0_EMIF_SDRAM			0x0040
++#define U300_SYSCON_PMC2R_APP_MISC_0_MMC			0x0080
++#define U300_SYSCON_PMC2R_APP_MISC_0_CDI2			0x00C0
++#define U300_SYSCON_PMC2R_APP_MISC_1_MASK			0x0300
++#define U300_SYSCON_PMC2R_APP_MISC_1_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_1_EMIF_SDRAM			0x0100
++#define U300_SYSCON_PMC2R_APP_MISC_1_MMC			0x0200
++#define U300_SYSCON_PMC2R_APP_MISC_1_CDI2			0x0300
++#define U300_SYSCON_PMC2R_APP_MISC_2_MASK			0x0C00
++#define U300_SYSCON_PMC2R_APP_MISC_2_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_2_EMIF_SDRAM			0x0400
++#define U300_SYSCON_PMC2R_APP_MISC_2_MMC			0x0800
++#define U300_SYSCON_PMC2R_APP_MISC_2_CDI2			0x0C00
++#define U300_SYSCON_PMC2R_APP_MISC_3_MASK			0x3000
++#define U300_SYSCON_PMC2R_APP_MISC_3_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_3_EMIF_SDRAM			0x1000
++#define U300_SYSCON_PMC2R_APP_MISC_3_MMC			0x2000
++#define U300_SYSCON_PMC2R_APP_MISC_3_CDI2			0x3000
++#define U300_SYSCON_PMC2R_APP_MISC_4_MASK			0xC000
++#define U300_SYSCON_PMC2R_APP_MISC_4_APP_GPIO			0x0000
++#define U300_SYSCON_PMC2R_APP_MISC_4_EMIF_SDRAM			0x4000
++#define U300_SYSCON_PMC2R_APP_MISC_4_MMC			0x8000
++#define U300_SYSCON_PMC2R_APP_MISC_4_ACC_GPIO			0xC000
++/* TODO: More SYSCON registers missing */
++#define U300_SYSCON_PMC3R					0x10C
++#define U300_SYSCON_PMC3R_APP_MISC_11_MASK			0xC000
++#define U300_SYSCON_PMC3R_APP_MISC_11_SPI			0x4000
++#define U300_SYSCON_PMC3R_APP_MISC_10_MASK			0x3000
++#define U300_SYSCON_PMC3R_APP_MISC_10_SPI			0x1000
++/* TODO: Missing other configs */
++#define U300_SYSCON_PMC4R					0x168
++#define U300_SYSCON_PMC4R_APP_MISC_12_MASK			0x0003
++#define U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO			0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_13_MASK			0x000C
++#define U300_SYSCON_PMC4R_APP_MISC_13_CDI			0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA			0x0004
++#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA2			0x0008
++#define U300_SYSCON_PMC4R_APP_MISC_13_APP_GPIO			0x000C
++#define U300_SYSCON_PMC4R_APP_MISC_14_MASK			0x0030
++#define U300_SYSCON_PMC4R_APP_MISC_14_CDI			0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_14_SMIA			0x0010
++#define U300_SYSCON_PMC4R_APP_MISC_14_CDI2			0x0020
++#define U300_SYSCON_PMC4R_APP_MISC_14_APP_GPIO			0x0030
++#define U300_SYSCON_PMC4R_APP_MISC_16_MASK			0x0300
++#define U300_SYSCON_PMC4R_APP_MISC_16_APP_GPIO_13		0x0000
++#define U300_SYSCON_PMC4R_APP_MISC_16_APP_UART1_CTS		0x0100
++#define U300_SYSCON_PMC4R_APP_MISC_16_EMIF_1_STATIC_CS5_N	0x0200
+-- 
+1.7.3.2
 
-
---
-Cheng Renquan (程任全)
