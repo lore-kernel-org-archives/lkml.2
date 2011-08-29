@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab1H2VTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:19:06 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44158 "EHLO
+	id S1755212Ab1H2VTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:19:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55581 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755088Ab1H2VTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:19:02 -0400
+	id S1755194Ab1H2VTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:19:40 -0400
 From: Joe Perches <joe@perches.com>
-To: Joerg Reuter <jreuter@yaina.de>, Ralf Baechle <ralf@linux-mips.org>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-hams@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/24] ax25: Remove unnecessary OOM logging messages
-Date: Mon, 29 Aug 2011 14:17:23 -0700
-Message-Id: <a426e678426cf2be1552edfbbb0de7ce08e9a7ef.1314650069.git.joe@perches.com>
+To: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Urs Thuermann <urs.thuermann@volkswagen.de>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 07/24] can: Remove unnecessary OOM logging messages
+Date: Mon, 29 Aug 2011 14:17:26 -0700
+Message-Id: <d2773db0709a09bfe6d43a28ba1323c5d3f9a76b.1314650069.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1314650069.git.joe@perches.com>
 References: <cover.1314650069.git.joe@perches.com>
@@ -28,72 +29,27 @@ delete them.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/ax25/ax25_dev.c   |    5 ++---
- net/ax25/ax25_out.c   |    8 ++++----
- net/ax25/ax25_route.c |    5 ++---
- 3 files changed, 8 insertions(+), 10 deletions(-)
+ net/can/af_can.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/net/ax25/ax25_dev.c b/net/ax25/ax25_dev.c
-index c1cb982..986908a 100644
---- a/net/ax25/ax25_dev.c
-+++ b/net/ax25/ax25_dev.c
-@@ -55,10 +55,9 @@ void ax25_dev_device_up(struct net_device *dev)
- {
- 	ax25_dev *ax25_dev;
+diff --git a/net/can/af_can.c b/net/can/af_can.c
+index b9efa94..11300be 100644
+--- a/net/can/af_can.c
++++ b/net/can/af_can.c
+@@ -770,11 +770,9 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
  
--	if ((ax25_dev = kzalloc(sizeof(*ax25_dev), GFP_ATOMIC)) == NULL) {
--		printk(KERN_ERR "AX.25: ax25_dev_device_up - out of memory\n");
-+	ax25_dev = kzalloc(sizeof(*ax25_dev), GFP_ATOMIC);
-+	if (ax25_dev == NULL)
- 		return;
--	}
- 
- 	ax25_unregister_sysctl();
- 
-diff --git a/net/ax25/ax25_out.c b/net/ax25/ax25_out.c
-index 37507d8..a27046d 100644
---- a/net/ax25/ax25_out.c
-+++ b/net/ax25/ax25_out.c
-@@ -146,9 +146,9 @@ void ax25_output(ax25_cb *ax25, int paclen, struct sk_buff *skb)
- 
- 		while (skb->len > 0) {
- 			spin_lock_bh(&ax25_frag_lock);
--			if ((skbn = alloc_skb(paclen + 2 + frontlen, GFP_ATOMIC)) == NULL) {
-+			skbn = alloc_skb(paclen + 2 + frontlen, GFP_ATOMIC);
-+			if (skbn == NULL) {
- 				spin_unlock_bh(&ax25_frag_lock);
--				printk(KERN_CRIT "AX.25: ax25_output - out of memory\n");
- 				return;
- 			}
- 
-@@ -342,8 +342,8 @@ void ax25_transmit_buffer(ax25_cb *ax25, struct sk_buff *skb, int type)
- 	headroom = ax25_addr_size(ax25->digipeat);
- 
- 	if (skb_headroom(skb) < headroom) {
--		if ((skbn = skb_realloc_headroom(skb, headroom)) == NULL) {
--			printk(KERN_CRIT "AX.25: ax25_transmit_buffer - out of memory\n");
-+		skbn = skb_realloc_headroom(skb, headroom);
-+		if (skbn == NULL) {
- 			kfree_skb(skb);
- 			return;
- 		}
-diff --git a/net/ax25/ax25_route.c b/net/ax25/ax25_route.c
-index a169084..75e67c0 100644
---- a/net/ax25/ax25_route.c
-+++ b/net/ax25/ax25_route.c
-@@ -466,10 +466,9 @@ struct sk_buff *ax25_rt_build_path(struct sk_buff *skb, ax25_address *src,
- 	len = digi->ndigi * AX25_ADDR_LEN;
- 
- 	if (skb_headroom(skb) < len) {
--		if ((skbn = skb_realloc_headroom(skb, len)) == NULL) {
--			printk(KERN_CRIT "AX.25: ax25_dg_build_path - out of memory\n");
-+		skbn = skb_realloc_headroom(skb, len);
-+		if (skbn == NULL)
- 			return NULL;
+ 		/* create new dev_rcv_lists for this device */
+ 		d = kzalloc(sizeof(*d), GFP_KERNEL);
+-		if (!d) {
+-			printk(KERN_ERR
+-			       "can: allocation of receive list failed\n");
++		if (!d)
+ 			return NOTIFY_DONE;
 -		}
++
+ 		BUG_ON(dev->ml_priv);
+ 		dev->ml_priv = d;
  
- 		if (skb->sk != NULL)
- 			skb_set_owner_w(skbn, skb->sk);
 -- 
 1.7.6.405.gc1be0
 
