@@ -1,154 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab1H2L7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 07:59:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44315 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab1H2L7P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 07:59:15 -0400
+	id S1751475Ab1H2MAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 08:00:01 -0400
+Received: from nm2-vm1.bullet.mail.in.yahoo.com ([121.101.151.250]:27963 "HELO
+	nm2-vm1.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752452Ab1H2L7z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 07:59:55 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 748361.30671.bm@omp1001.mail.in.yahoo.com
+X-YMail-OSG: BMjlZuEVM1k5MSJfb_R3apZQ19Yvz_A4I5f1.4gM.eB1sTu
+ ZvDD0R3_aQejr3rX57CyEJ7e_cr7v.4G.Pn1AOYO6ZAWEA_KlNhmbquUJZ7b
+ JNWFQxs5ab0clmKlW_W0fs6kUIuYbtOr2qzB033CBLuXGXwdKMOeKarM4Nw1
+ DdKZP_CtIOuqS9hh6p2kZ7yNi4YM0WqgyrPvg11ZX81lrLOjHgPFV_IFfppe
+ V2bJFFc4qDZNxLnF.6yYa.oNbM8TXPatkjHx1ihq8_gk4HVqobeUv8TClc15
+ eSMtL5ZPPwIQjdqrK0QtSBZGDpXLpHGnc1a6zhxZruLb_IpTz5C97.xF.vdZ
+ dMRiBGkYX8QiIe96A2ih4DtD3RVFSUpX4Ujr1FUoJ.Bzrb9zi9bgzArBqMe0
+ OFUx1.._jVnDw04VrV2W94j.CrEiCpzThlLbYUdQvoHaGANKm4eO7P5ONqOY
+ YJ8RZIqRF1g5CnOBb9bjiK_TY171t3oWshlCUq.fSaQayyxqw8a8FbIrDYEq
+ WEJbTYUoKHQ7Y7qxcg62FmmxKvvyfNsPm.lI1eoym
+X-RocketYMMF: qazolaz
+X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.113.315625
+Message-ID: <1314619192.79899.YahooMailClassic@web137908.mail.in.yahoo.com>
+Date: Mon, 29 Aug 2011 17:29:52 +0530 (IST)
+From: francis <franciskabore12@gmail.com>
+Reply-To: franciskabore.10@gmail.com
+Subject: REPLY VERY URGENTLY.
+To: undisclosed recipients:;
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYmmY8ycBUL70ERawumSMdZEORYsmMBxBxZxchcfMS7EA@mail.gmail.com>
-References: <1314329782-17238-1-git-send-email-Baohua.Song@csr.com> <CACRpkdYmmY8ycBUL70ERawumSMdZEORYsmMBxBxZxchcfMS7EA@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 29 Aug 2011 19:58:53 +0800
-Message-ID: <CAGsJ_4xXMx7_G2ADJF-s4Xws4k4XqBnE3eysokd66ogdb=jbOA@mail.gmail.com>
-Subject: Re: [PATCH] pinmux: add a driver for the CSR SiRFprimaII pinmux
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Barry Song <Baohua.Song@csr.com>, linus.walleij@stericsson.com,
-        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
-        grant.likely@secretlab.ca, Rongjun Ying <rongjun.ying@csr.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-Thanks !
 
-2011/8/29 Linus Walleij <linus.walleij@linaro.org>
->
-> On Fri, Aug 26, 2011 at 5:36 AM, Barry Song <Baohua.Song@csr.com> wrote:
->
-> > Though there are still many discussions about data model and device/function
-> > mapping, pinmux core is basically usable to CSR SiRFprimaII for the moment.
-> >
-> > This patch is another example to use Linus W's pinmux framework.
-> >
-> > Tests by this example show basic pinmux APIs like pinmux_get, pinmux_enable,
-> > pinmux_disable and pinmux_put are able to work in Linus W's patch v4.
->
-> Thanks a lot Barry, if you rebase this to the v5 patch set I can probably
-> carry it as part of my set.
+Dear Friend,
 
-i'll rebase it to your v5 and make some tests.
+I know that this message will come to you as a surprise. I am the Auditing and Accounting section manager with African Development Bank, Ouagadougou Burkina faso. I Hope that you will not expose or betray this trust and confident that I am about to repose on you for the mutual benefit of our both families.
 
->
-> > diff --git a/drivers/pinctrl/pinmux-sirf.c b/drivers/pinctrl/pinmux-sirf.c
-> > +#include <linux/of.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/of_device.h>
-> > +#include <linux/of_platform.h>
->
-> It's especially nice to see these DT-bindings!
->
-> > +static const struct sirfsoc_muxmask lcd_16bits_sirfsoc_muxmask[] = {
-> > +       {
-> > +               .group = 3,
-> > +               .mask = 0x7FFFF,
->
-> These things look a bit magic...
+I need your urgent assistance in transferring the sum of($39.5)million to your account within 10 or 14 banking days. This money has been dormant for years in our Bank without claim.I want the bank to release the money to you as the nearest person to our deceased customer late George small. who died along with his supposed next of kin in an air crash since 31st October 1999.
 
-register seems to be magic by itself. this is register set mask of
-group 3 for LCD. group in the structure is also an offset of register
-layout.
+I don't want the money to go into government treasury as an abandoned fund. So this is the reason why I am contacting you so that the bank can release the money to you as the next of kin to the deceased customer. Please I would like you to keep this proposal as atop secret and delete it if you are not interested.
 
->
-> Maybe: #define SIRFSOC_PMX_ALLBITS 0x7FFFF
+Upon receipt of your reply, I will give you full details on how the business will be executed and also note that you will have 40% of the above mentioned sum if you agree to handle this business with me.
 
-0x7fff is only for all LCD. maybe "#define SIRFSOC_LCD_GROUP3_MASK
-0x7FFFF". that seems ugly too :-)
+I am expecting your urgent response as soon as you receive my message.
 
-> (Just a suggestion)
->
-> > +       }, {
-> > +               .group = 2,
-> > +               .mask = 1 << 31,
->
-> This too.
->
-> To make it clearer:
->
-> #include <linux/bitops.h>
->
-> .mask = BIT(31),
+Best Regard,
 
-agree
+Mr Francis Kabore
 
->
-> > +       },
-> > +};
-> > +
-> > +static const struct sirfsoc_padmux lcd_16bits_padmux = {
-> > +       .muxmask_counts = ARRAY_SIZE(lcd_16bits_sirfsoc_muxmask),
-> > +       .muxmask = lcd_16bits_sirfsoc_muxmask,
-> > +       .funcmask = 1 << 4,
-> > +       .funcval = 0 << 4,
->
-> BIT(1)
-
-agree
-
-> BIT(0)
->
-> > +};
-> > +
-> > +static const unsigned lcd_16bits_pins[] = { 95, 96, 97, 98, 99, 100, 101, 102, 103, 104,
-> > +       105, 106, 107, 108, 109, 110, 111, 112, 113, 114 };
-> > +
-> > +static const struct sirfsoc_muxmask lcd_18bits_muxmask[] = {
-> > +       {
-> > +               .group = 3,
-> > +               .mask = 0x7FFFF,
-> > +       }, {
-> > +               .group = 2,
-> > +               .mask = 1 << 31,
->
-> BIT(31)
->
-> > +       }, {
-> > +               .group = 0,
-> > +               .mask = (1 << 16) | (1 << 17),
->
-> BIT(16)|BIT(17)
->
-> (etc)
->
-agree
-
-> > +static int sirfsoc_pinmux_enable(struct pinctrl_dev *pmxdev, unsigned selector)
->
-> These will have an optional "position" parameter now, which you can
-> ignore for this simple driver. (Compare U300 pinmux v5).
-
-ok.
-
->
-> > +{
-> > +       struct sirfsoc_pmx *upmx;
->
-> I think "upmx" = U300 padmux :-D
->
-> Maybe rename it something like spmx or so, globally...
-
-could be.
-
-
->
-> Yours,
-> Linus Walleij
->
-
--barry
