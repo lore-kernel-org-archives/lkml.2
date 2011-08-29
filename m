@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab1H2XXt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:23:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24129 "EHLO mga02.intel.com"
+	id S1755601Ab1H2XXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:23:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31507 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755457Ab1H2XXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:23:30 -0400
+	id S1755470Ab1H2XXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 19:23:32 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="43424144"
+X-IronPort-AV: E=Sophos;i="4.68,298,1312182000"; 
+   d="scan'208";a="46259901"
 From: Andi Kleen <andi@firstfloor.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         viro@zeniv.linux.org.uk, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 11/11] DIO: optimize cache misses in the submission path v2
-Date: Mon, 29 Aug 2011 16:23:22 -0700
-Message-Id: <1314660202-661-12-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/11] DIO: Use a slab cache for struct dio
+Date: Mon, 29 Aug 2011 16:23:15 -0700
+Message-Id: <1314660202-661-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1314660202-661-1-git-send-email-andi@firstfloor.org>
 References: <1314660202-661-1-git-send-email-andi@firstfloor.org>
@@ -25,123 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Some investigation of a transaction processing workload showed that
-a major consumer of cycles in __blockdev_direct_IO is the cache miss
-while accessing the block size. This is because it has to walk
-the chain from block_dev to gendisk to queue.
+A direct slab call is slightly faster than kmalloc and can be better cached
+per CPU. It also avoids rounding to the next kmalloc slab.
 
-The block size is needed early on to check alignment and sizes.
-It's only done if the check for the inode block size fails.
-But the costly block device state is unconditionally fetched.
+In addition this enforces cache line alignment for struct dio to avoid
+any false sharing.
 
-- Reorganize the code to only fetch block dev state when actually
-needed.
-
-Then do a prefetch on the block dev early on in the direct IO
-path. This is worth it, because there is substantial code run
-before we actually touch the block dev now.
-
-- I also added some unlikelies to make it clear the compiler
-that block device fetch code is not normally executed.
-
-This gave a small, but measurable improvement on a large database
-benchmark (about 0.3%)
-
-v2: Remove unlikely (Jeff Moyer)
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- fs/direct-io.c |   45 ++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 36 insertions(+), 9 deletions(-)
+ fs/direct-io.c |   19 ++++++++++++++-----
+ 1 files changed, 14 insertions(+), 5 deletions(-)
 
 diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 03bcc6f..e149f5f 100644
+index 8f23db3..e91ac83 100644
 --- a/fs/direct-io.c
 +++ b/fs/direct-io.c
-@@ -1086,8 +1086,8 @@ static inline int drop_refcount(struct dio *dio)
-  * individual fields and will generate much worse code. 
-  * This is important for the whole file.
-  */
--ssize_t
--__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
-+static inline ssize_t
-+do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
- 	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
- 	dio_submit_t submit_io,	int flags)
-@@ -1096,7 +1096,6 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	size_t size;
- 	unsigned long addr;
- 	unsigned blkbits = inode->i_blkbits;
--	unsigned bdev_blkbits = 0;
- 	unsigned blocksize_mask = (1 << blkbits) - 1;
- 	ssize_t retval = -EINVAL;
- 	loff_t end = offset;
-@@ -1109,12 +1108,14 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	if (rw & WRITE)
- 		rw = WRITE_ODIRECT;
+@@ -140,7 +140,9 @@ struct dio {
+ 	 * wish that they not be zeroed.
+ 	 */
+ 	struct page *pages[DIO_PAGES];	/* page buffer */	
+-};
++} ____cacheline_aligned_in_smp;
++
++static struct kmem_cache *dio_cache __read_mostly;
  
--	if (bdev)
--		bdev_blkbits = blksize_bits(bdev_logical_block_size(bdev));
-+	/* 
-+	 * Avoid references to bdev if not absolutely needed to give
-+	 * the early prefetch in the caller enough time.
-+	 */
+ static void __inode_dio_wait(struct inode *inode)
+ {
+@@ -330,7 +332,7 @@ static void dio_bio_end_aio(struct bio *bio, int error)
  
- 	if (offset & blocksize_mask) {
- 		if (bdev)
--			 blkbits = bdev_blkbits;
-+			blkbits = blksize_bits(bdev_logical_block_size(bdev));
- 		blocksize_mask = (1 << blkbits) - 1;
- 		if (offset & blocksize_mask)
- 			goto out;
-@@ -1125,11 +1126,13 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 		addr = (unsigned long)iov[seg].iov_base;
- 		size = iov[seg].iov_len;
- 		end += size;
--		if ((addr & blocksize_mask) || (size & blocksize_mask))  {
-+		if (unlikely((addr & blocksize_mask) || 
-+			     (size & blocksize_mask)))  {
- 			if (bdev)
--				 blkbits = bdev_blkbits;
-+				 blkbits = blksize_bits(
-+					 bdev_logical_block_size(bdev));
- 			blocksize_mask = (1 << blkbits) - 1;
--			if ((addr & blocksize_mask) || (size & blocksize_mask))  
-+			if ((addr & blocksize_mask) || (size & blocksize_mask))
- 				goto out;
- 		}
+ 	if (remaining == 0) {
+ 		dio_complete(dio, dio->iocb->ki_pos, 0, true);
+-		kfree(dio);
++		kmem_cache_free(dio_cache, dio);
  	}
-@@ -1312,6 +1315,30 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- out:
+ }
+ 
+@@ -1178,7 +1180,7 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
+ 
+ 	if (ret2 == 0) {
+ 		ret = dio_complete(dio, offset, ret, false);
+-		kfree(dio);
++		kmem_cache_free(dio_cache, dio);
+ 	} else
+ 		BUG_ON(ret != -EIOCBQUEUED);
+ 
+@@ -1254,7 +1256,7 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	if (rw == READ && end == offset)
+ 		return 0;
+ 
+-	dio = kmalloc(sizeof(*dio), GFP_KERNEL);
++	dio = kmem_cache_alloc(dio_cache, GFP_KERNEL);
+ 	retval = -ENOMEM;
+ 	if (!dio)
+ 		goto out;
+@@ -1278,7 +1280,7 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 							      end - 1);
+ 			if (retval) {
+ 				mutex_unlock(&inode->i_mutex);
+-				kfree(dio);
++				kmem_cache_free(dio_cache, dio);
+ 				goto out;
+ 			}
+ 		}
+@@ -1306,3 +1308,10 @@ out:
  	return retval;
  }
-+
-+ssize_t
-+__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
-+	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
-+	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
-+	dio_submit_t submit_io,	int flags)
-+{
-+	/* 
-+	 * The block device state is needed in the end to finally
-+	 * submit everything.  Since it's likely to be cache cold
-+	 * prefetch it here as first thing to hide some of the
-+	 * latency.
-+	 * 
-+	 * Attempt to prefetch the pieces we likely need later.
-+	 */
-+	prefetch(&bdev->bd_disk->part_tbl);
-+	prefetch(bdev->bd_queue);
-+	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
-+
-+	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
-+				     nr_segs, get_block, end_io,
-+				     submit_io, flags);
-+}
-+
  EXPORT_SYMBOL(__blockdev_direct_IO);
- 
- static __init int dio_init(void)
++
++static __init int dio_init(void)
++{
++	dio_cache = KMEM_CACHE(dio, SLAB_PANIC);
++	return 0;
++}
++module_init(dio_init)
 -- 
 1.7.4.4
 
