@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab1H2TeF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 15:34:05 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58399 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754797Ab1H2TeC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 15:34:02 -0400
-X-Sasl-enc: ogkxU9zjAYLZFJ8CbLli3Cm3inblrl94PH2lKO2LVTob 1314646441
-Date: Mon, 29 Aug 2011 12:33:44 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?=22Uwe_Kleine-K=F6nig=22?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: linux-next: manual merge of the driver-core tree with the
- arm-soc tree
-Message-ID: <20110829193344.GA13418@kroah.com>
-References: <20110829143150.78ade5470cf62a83ad9b56f1@canb.auug.org.au>
+	id S1754909Ab1H2ThC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 15:37:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46810 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754876Ab1H2ThA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 15:37:00 -0400
+Date: Mon, 29 Aug 2011 15:36:48 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+cc: Christoph Hellwig <hch@infradead.org>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] shrinker: fix a bug when callback returns -1
+Message-ID: <Pine.LNX.4.64.1108291534140.19003@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829143150.78ade5470cf62a83ad9b56f1@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 02:31:50PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core tree got a conflict in
-> arch/arm/plat-mxc/devices.c between commit 160a84cfc975 ("ARM: mxc: drop
-> now unused function mxc_register_device") from the arm-soc tree and
-> commit 0e392412f334 ("ARM: mxc: convert device creation to use
-> platform_device_register_full") from the driver-core tree.
-> 
-> Just context changes.  I fixed it up (see below) anc can carry the fix as
-> necessary.
+Hi
 
-Thanks, that looks fine.
+This patch fixes a lockup when shrinker callback returns -1.
 
-greg k-h
+BTW. shouldn't the value returned by callback be long instead of int? On 
+64-bit architectures, there may be more than 2^32 entries allocated.
+
+Mikulas
+
+---
+
+shrinker: fix a bug when callback returns -1
+
+Shrinker callback can return -1 if it is at a risk of deadlock.
+However, this is not tested at some places.
+
+If do_shrinker_shrink returns -1 here
+"max_pass = do_shrinker_shrink(shrinker, shrink, 0)",
+it is converted to an unsigned long integer. This may result in excessive
+total_scan value and a lockup due to code looping too much in
+"while (total_scan >= batch_size)" cycle.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+
+---
+ mm/vmscan.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+Index: linux-3.1-rc3-fast/mm/vmscan.c
+===================================================================
+--- linux-3.1-rc3-fast.orig/mm/vmscan.c	2011-08-29 20:34:27.000000000 +0200
++++ linux-3.1-rc3-fast/mm/vmscan.c	2011-08-29 20:37:38.000000000 +0200
+@@ -250,6 +250,7 @@ unsigned long shrink_slab(struct shrink_
+ 		unsigned long long delta;
+ 		unsigned long total_scan;
+ 		unsigned long max_pass;
++		int sr;
+ 		int shrink_ret = 0;
+ 		long nr;
+ 		long new_nr;
+@@ -266,7 +267,10 @@ unsigned long shrink_slab(struct shrink_
+ 		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
+ 
+ 		total_scan = nr;
+-		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
++		sr = do_shrinker_shrink(shrinker, shrink, 0);
++		if (sr == -1)
++			continue;
++		max_pass = sr;
+ 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
+ 		delta *= max_pass;
+ 		do_div(delta, lru_pages + 1);
+@@ -309,6 +313,8 @@ unsigned long shrink_slab(struct shrink_
+ 			int nr_before;
+ 
+ 			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
++			if (nr_before == -1)
++				break;
+ 			shrink_ret = do_shrinker_shrink(shrinker, shrink,
+ 							batch_size);
+ 			if (shrink_ret == -1)
