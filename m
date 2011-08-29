@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab1H2WBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 18:01:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754361Ab1H2WBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 18:01:38 -0400
-Date: Mon, 29 Aug 2011 18:00:24 -0400
-From: Dave Jones <davej@redhat.com>
-To: Jonathan =?iso-8859-1?Q?Neusch=E4fer?= <j.neuschaefer@gmx.net>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH trivial] input: apanel: remove a redundant MODULE_ALIAS
-Message-ID: <20110829220024.GA27009@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Jonathan =?iso-8859-1?Q?Neusch=E4fer?= <j.neuschaefer@gmx.net>,
-	Jiri Kosina <trivial@kernel.org>, linux-input@vger.kernel.org,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Stephen Hemminger <shemminger@linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-References: <1314653189-31020-1-git-send-email-j.neuschaefer@gmx.net>
+	id S1755289Ab1H2WCU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 18:02:20 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:58255 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754992Ab1H2WCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 18:02:18 -0400
+Message-ID: <4E5C0AB3.90401@panasas.com>
+Date: Mon, 29 Aug 2011 14:54:59 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1314653189-31020-1-git-send-email-j.neuschaefer@gmx.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: <Trond.Myklebust@netapp.com>, <joe@perches.com>, <bfields@fieldses.org>,
+        <neilb@suse.de>, <linux-nfs@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 19/24] sunrpc: Remove unnecessary OOM logging messages
+References: <cover.1314650069.git.joe@perches.com> <8a6378b3fef105983db001fb720c84b669491439.1314650069.git.joe@perches.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4EE9@SACMVEXC2-PRD.hq.netapp.com> <20110829.143751.1153162956919885670.davem@davemloft.net>
+In-Reply-To: <20110829.143751.1153162956919885670.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 11:26:29PM +0200, Jonathan Neuschäfer wrote:
- 
- > -MODULE_ALIAS("dmi:*:svnFUJITSU:pnLifeBook*:pvr*:rvnFUJITSU:*");
- >  MODULE_ALIAS("dmi:*:svnFUJITSU:pnLifebook*:pvr*:rvnFUJITSU:*");
- 
-                                         ^
-Is the module matching code case-insensitive ?
+On 08/29/2011 02:37 PM, David Miller wrote:
+> From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+> Date: Mon, 29 Aug 2011 14:36:17 -0700
+> 
+>> Big NACK...
+>>
+>> By whose standard are those "not useful"?
+> 
+> By mine, that's for sure.  It's duplicating something that the allocation
+> layers are already going to print.
 
-	Dave
+I have a question about that. Are the dprints going to show the stack backtrace?
+Otherwise how can I see which exact allocation failed and was not properly handled?
 
+If yes above? then I'm not sure I like it either, because am I'll be getting a full
+stack backtrace for every failed allocation?
+
+But I might like it if I try. How do I turn on allocation failures prints?
+Can I filter out to print only GFP_KERNEL failures and or other GFP combinations?
+
+Thanks 
+Boaz
