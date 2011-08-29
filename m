@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab1H2Sko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:40:44 -0400
-Received: from waldorf.bytemark.co.uk ([212.110.162.22]:44068 "EHLO
-	waldorf.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754199Ab1H2Skn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:40:43 -0400
-Date: Mon, 29 Aug 2011 14:40:12 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Greg KH <greg@kroah.com>
-Cc: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de, martyn.welch@ge.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging: vme: add functions for bridge module
- refcounting
-Message-ID: <20110829184012.GA19793@flamenco.cs.columbia.edu>
-References: <1314608570-32766-1-git-send-email-manohar.vanga@cern.ch>
- <1314608570-32766-2-git-send-email-manohar.vanga@cern.ch>
- <20110829175104.GB10250@kroah.com>
+	id S1754690Ab1H2SmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:42:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754323Ab1H2SmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 14:42:02 -0400
+Date: Mon, 29 Aug 2011 20:37:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: rientjes@google.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, roland@hack.frob.com, tj@kernel.org,
+        dvlasenk@redhat.com, matt.fleming@linux.intel.com,
+        linux-kernel@vger.kernel.org, avagin@openvz.org, fhrbata@redhat.com,
+        yinghan@google.com
+Subject: Re: mm->oom_disable_count is broken
+Message-ID: <20110829183743.GA15216@redhat.com>
+References: <20110727163159.GA23785@redhat.com> <20110727163610.GJ23793@redhat.com> <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com> <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com> <4E369372.80105@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110829175104.GB10250@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E369372.80105@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 10:51:04 -0700, Greg KH wrote:
-> On Mon, Aug 29, 2011 at 11:02:48AM +0200, Manohar Vanga wrote:
-> > This patch adds functions that allow for reference counting
-> > bridge modules. The patch introduces the functions
-> > 'vme_bridge_get()' and 'vme_bridge_put()'.
-> > 
-> > The functions are automatically called during .probe and .remove
-> > for drivers.
-> > 
-> > This patch is based on the changes introduced by Emilio G. Cota
-> > in the patch:
-> > 
-> >     https://lkml.org/lkml/2010/10/25/492
-> 
-> Generally do not try to couple a module reference count with a device
-> count, you are locking code, not data, and we really don't want to lock
-> code anymore now that we properly handle device reference counts.
+On 08/01, KOSAKI Motohiro wrote:
+>
+> > And this reminds me. mm->oom_disable_count looks absolutely broken.
+> > IIRC, I already complained but nobody replied.
+> >
+> > [...snip...]
+>
+> IIRC, I did pointed out this issue. But nobody replied.
+> I think ->oom_disable_count is currently broken. but now I have no time to
+> audit this stuff. So, I'd suggest to revert this code if nobody don't fix it.
 
-(snip)
+I tend to agree, of course we can fix oom_disable_count but I don't
+really understand why do we want it.
 
-> > diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-> > index 8959670..ef751a4 100644
-> > --- a/drivers/staging/vme/vme_bridge.h
-> > +++ b/drivers/staging/vme/vme_bridge.h
-> > @@ -113,6 +113,7 @@ struct vme_bridge {
-> >  	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
-> >  	void *driver_priv;	/* Private pointer for the bridge driver */
-> >  	struct list_head bus_list; /* list of VME buses */
-> > +	struct module *owner;	/* module that owns the bridge */
-> 
-> Why?  When you register the device for this bridge, you should properly
-> handle the module reference counting in the vme core for any open sysfs
-> files.
-> 
-> Other than that, you shouldn't care about the module reference at all,
-> right?
-> 
-> What am I missing here?  What is this solving?
-> 
-> confused,
+David, could you please explain? I mean, CLONE_VM (without CLONE_THREAD)
+is not that common, I think. Does this counter really help in practice?
 
-AFAIK currently a vme bridge driver can be freely removed with rmmod
-even if it has devices under it. The patch avoids this by increasing
-the refcount of the bridge module every time a device is registered
-under it.
 
-What's the appropriate thing to do when rmmod tries to remove a bridge
-module? Shall we remove each bridge and all the child devices, or just
-refuse to remove a bridge when it has child devices? Manohar implements
-the latter, although incrementing the refcount of the module is admittedly
-coarse. He said he'd later change this to implement the refcounting on
-each bridge device (and not module).
+And. personally I dislike it because ->oom_disable_count is just another
+proof that ->oom_score_adj should be in ->mm, not per-process. IIRC,
+you already explained me why we can't do this, but - sorry - I forgot.
+May be something with vfork... Could you explain this again?
 
-Hope this helps, thanks for looking at it.
-
-		Emilio
+Oleg.
 
