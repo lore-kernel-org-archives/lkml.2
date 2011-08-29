@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1H2Vt2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:49:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39345 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754480Ab1H2Vt0 (ORCPT
+	id S1755243Ab1H2Vva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:51:30 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58433 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753977Ab1H2Vv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:49:26 -0400
-Date: Mon, 29 Aug 2011 14:48:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: sjayaraman@suse.de
-Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        Shaohua Li <shaohua.li@intel.com>, Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH v2] block: document blk-plug
-Message-Id: <20110829144843.c8e9d397.akpm@linux-foundation.org>
-In-Reply-To: <4E5B77D5.7090006@suse.de>
-References: <4E5B77D5.7090006@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 29 Aug 2011 17:51:28 -0400
+Subject: Re: [PATCH 18/24] sctp: Remove unnecessary OOM logging messages
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Vlad Yasevich <vladislav.yasevich@hp.com>,
+        Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1314654209.2563.7.camel@edumazet-laptop>
+References: <cover.1314650069.git.joe@perches.com>
+	 <21b4d996c8861373ac77d427914ec7882fe0c83e.1314650069.git.joe@perches.com>
+	 <1314654209.2563.7.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Aug 2011 23:51:21 +0200
+Message-ID: <1314654681.2563.10.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011 16:58:21 +0530
-Suresh Jayaraman <sjayaraman@suse.de> wrote:
+Le lundi 29 août 2011 à 23:43 +0200, Eric Dumazet a écrit :
 
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -863,17 +863,23 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
->  extern void blk_put_queue(struct request_queue *);
->  
->  /*
-> + * blk_plug allows to build up a queue of related requests by holding the I/O
-> + * fragments for a short period. This allows merging of sequential requests
-> + * into single larger request. As the requests are moved from per-task list to
-> + * the device's request_queue in a batch, this results in improved
-> + * scalability as the lock contention for request_queue lock is reduced.
-> + *
->   * Note: Code in between changing the blk_plug list/cb_list or element of such
->   * lists is preemptable, but such code can't do sleep (or be very careful),
->   * otherwise data is corrupted. For details, please check schedule() where
->   * blk_schedule_flush_plug() is called.
+> Furthermore, a failed vmalloc() is not guaranteed to emit an OOM
+> message, is it ?
 
-What does the older part of this comment mean?  If a code section is
-preemptible then it *will* sleep.  That's what preemption does.
+It currently displays a message without context :
+
+vmap allocation for size XXXXXX failed: use vmalloc=<size> to increase
+size.
+
+So we dont know which part of the kernel asked this allocation.
+
+Please dont remove existing error messages after failed vmalloc() calls.
+
+
 
