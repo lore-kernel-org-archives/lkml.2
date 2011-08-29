@@ -1,47 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab1H2Quz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 12:50:55 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48041 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab1H2Quw (ORCPT
+	id S1754398Ab1H2QvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 12:51:09 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:22255 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754382Ab1H2QvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 12:50:52 -0400
-Date: Mon, 29 Aug 2011 12:50:20 -0400 (EDT)
-Message-Id: <20110829.125020.877556014112084807.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 29 Aug 2011 09:50:23 -0700 (PDT)
+	Mon, 29 Aug 2011 12:51:06 -0400
+Date: Mon, 29 Aug 2011 09:49:49 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
+        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
+        matthew@wil.cx, chris.mason@oracle.com, dan.magenheimer@oracle.com,
+        sjenning@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
+        jackdachef@gmail.com, cyclonusj@gmail.com, levinsasha928@gmail.com
+Subject: [PATCH V8 4/4] mm: frontswap: config and doc files
+Message-ID: <20110829164949.GA27238@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-11)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4E5BC339.006E:SCFMA922111,ss=1,re=-2.401,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+Subject: [PATCH V8 4/4] mm: frontswap: config and doc files
 
-Please pull to get this sparc64 build fix and a sparc32 fix for
-IRQ cross-calls.
+This fourth patch of four in the frontswap series adds configuration
+and documentation files.
 
-Thanks!
+[v8: rebase to 3.0-rc4]
+[v7: rebase to 3.0-rc3]
+[v6: rebase to 3.0-rc1]
+[v5: change config default to n]
+[v4: rebase to 2.6.39]
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
+Acked-by: Jan Beulich <JBeulich@novell.com>
+Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Matthew Wilcox <matthew@wil.cx>
+Cc: Chris Mason <chris.mason@oracle.com>
+Cc: Rik Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 
-The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
-
-  Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
-
-are available in the git repository at:
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc.git master
-
-Kjetil Oftedal (1):
-      sparc32,sun4d: Change IPI IRQ level to prevent collision between IPI and timer interrupt
-
-Stephen Rothwell (1):
-      sparc: Remove another reference to nfsservctl
-
- arch/sparc/kernel/irq.h        |    2 +-
- arch/sparc/kernel/systbls_64.S |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+--- linux/mm/Makefile	2011-07-20 14:50:42.365999021 -0600
++++ frontswap/mm/Makefile	2011-08-29 09:52:14.308745832 -0600
+@@ -25,6 +25,7 @@ obj-$(CONFIG_HAVE_MEMBLOCK) += memblock.
+ 
+ obj-$(CONFIG_BOUNCE)	+= bounce.o
+ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
++obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
+ obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+ obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
+ obj-$(CONFIG_NUMA) 	+= mempolicy.o
+--- linux/mm/Kconfig	2011-08-08 08:19:26.303686905 -0600
++++ frontswap/mm/Kconfig	2011-08-29 09:52:14.308745832 -0600
+@@ -370,3 +370,20 @@ config CLEANCACHE
+ 	  in a negligible performance hit.
+ 
+ 	  If unsure, say Y to enable cleancache
++
++config FRONTSWAP
++	bool "Enable frontswap to cache swap pages if tmem is present"
++	depends on SWAP
++	default n
++	help
++	  Frontswap is so named because it can be thought of as the opposite
++	  of a "backing" store for a swap device.  The data is stored into
++	  "transcendent memory", memory that is not directly accessible or
++	  addressable by the kernel and is of unknown and possibly
++	  time-varying size.  When space in transcendent memory is available,
++	  a significant swap I/O reduction may be achieved.  When none is
++	  available, all frontswap calls are reduced to a single pointer-
++	  compare-against-NULL resulting in a negligible performance hit
++	  and swap data is stored as normal on the matching swap device.
++
++	  If unsure, say Y to enable frontswap.
+--- linux/Documentation/ABI/testing/sysfs-kernel-mm-frontswap	1969-12-31 17:00:00.000000000 -0700
++++ frontswap/Documentation/ABI/testing/sysfs-kernel-mm-frontswap	2011-08-29 09:52:14.281745211 -0600
+@@ -0,0 +1,16 @@
++What:		/sys/kernel/mm/frontswap/
++Date:		August 2011
++Contact:	Dan Magenheimer <dan.magenheimer@oracle.com>
++Description:
++		/sys/kernel/mm/frontswap/ contains a number of files which
++		record a count of various frontswap operations (sum across
++		all swap devices):
++			succ_puts
++			failed_puts
++			gets
++			flushes
++		In addition, reading the curr_pages file shows how many
++		pages are currently contained in frontswap and writing this
++		file with an integer performs a "partial swapoff", reducing
++		the number of frontswap pages to that integer if memory
++		constraints permit.
+--- linux/Documentation/vm/frontswap.txt	1969-12-31 17:00:00.000000000 -0700
++++ frontswap/Documentation/vm/frontswap.txt	2011-08-29 09:52:14.304747064 -0600
+@@ -0,0 +1,215 @@
++Frontswap provides a "transcendent memory" interface for swap pages.
++In some environments, dramatic performance savings may be obtained because
++swapped pages are saved in RAM (or a RAM-like device) instead of a swap disk.
++
++Frontswap is so named because it can be thought of as the opposite of
++a "backing" store for a swap device.  The storage is assumed to be
++a synchronous concurrency-safe page-oriented "pseudo-RAM device" conforming
++to the requirements of transcendent memory (such as Xen's "tmem", or
++in-kernel compressed memory, aka "zcache", or future RAM-like devices);
++this pseudo-RAM device is not directly accessible or addressable by the
++kernel and is of unknown and possibly time-varying size.  The driver
++links itself to frontswap by calling frontswap_register_ops to set the
++frontswap_ops funcs appropriately and the functions it provides must
++conform to certain policies as follows:
++
++An "init" prepares the device to receive frontswap pages associated
++with the specified swap device number (aka "type").  A "put_page" will
++copy the page to transcendent memory and associate it with the type and
++offset associated with the page. A "get_page" will copy the page, if found,
++from transcendent memory into kernel memory, but will NOT remove the page
++from from transcendent memory.  A "flush_page" will remove the page from
++transcendent memory and a "flush_area" will remove ALL pages associated
++with the swap type (e.g., like swapoff) and notify the "device" to refuse
++further puts with that swap type.
++
++Once a page is successfully put, a matching get on the page will normally
++succeed.  So when the kernel finds itself in a situation where it needs
++to swap out a page, it first attempts to use frontswap.  If the put returns
++success, the data has been successfully saved to transcendent memory and
++a disk write and, if the data is later read back, a disk read are avoided.
++If a put returns failure, transcendent memory has rejected the data, and the
++page can be written to swap as usual.
++
++Note that if a page is put and the page already exists in transcendent memory
++(a "duplicate" put), either the put succeeds and the data is overwritten,
++or the put fails AND the page is flushed.  This ensures stale data may
++never be obtained from frontswap.
++
++Monitoring and control of frontswap is done by sysfs files in the
++/sys/kernel/mm/frontswap directory.  The effectiveness of frontswap can
++be measured (across all swap devices) with:
++
++curr_pages	- number of pages currently contained in frontswap
++failed_puts	- how many put attempts have failed
++gets		- how many gets were attempted (all should succeed)
++succ_puts	- how many put attempts have succeeded
++flushes		- how many flushes were attempted
++
++The number of pages currently contained in frontswap can be reduced by root by
++writing an integer target to curr_pages, which results in a "partial swapoff",
++thus reducing the number of frontswap pages to that target if memory
++constraints permit.
++
++FAQ
++
++1) Where's the value?
++
++When a workload starts swapping, performance falls through the floor.
++Frontswap significantly increases performance in many such workloads by
++providing a clean, dynamic interface to read and write swap pages to
++"transcendent memory" that is otherwise not directly addressable to the kernel.
++This interface is ideal when data is transformed to a different form
++and size (such as with compression) or secretly moved (as might be
++useful for write-balancing for some RAM-like devices).  Swap pages (and
++evicted page-cache pages) are a great use for this kind of slower-than-RAM-
++but-much-faster-than-disk "pseudo-RAM device" and the frontswap (and
++cleancache) interface to transcendent memory provides a nice way to read
++and write -- and indirectly "name" -- the pages.
++
++In the virtual case, the whole point of virtualization is to statistically
++multiplex physical resources acrosst the varying demands of multiple
++virtual machines.  This is really hard to do with RAM and efforts to do
++it well with no kernel changes have essentially failed (except in some
++well-publicized special-case workloads).  Frontswap -- and cleancache --
++with a fairly small impact on the kernel, provides a huge amount
++of flexibility for more dynamic, flexible RAM multiplexing.
++Specifically, the Xen Transcendent Memory backend allows otherwise
++"fallow" hypervisor-owned RAM to not only be "time-shared" between multiple
++virtual machines, but the pages can be compressed and deduplicated to
++optimize RAM utilization.  And when guest OS's are induced to surrender
++underutilized RAM (e.g. with "self-ballooning"), sudden unexpected
++memory pressure may result in swapping; frontswap allows those pages
++to be swapped to and from hypervisor RAM if overall host system memory
++conditions allow.
++
++2) Sure there may be performance advantages in some situations, but
++   what's the space/time overhead of frontswap?
++
++If CONFIG_FRONTSWAP is disabled, every frontswap hook compiles into
++nothingness and the only overhead is a few extra bytes per swapon'ed
++swap device.  If CONFIG_FRONTSWAP is enabled but no frontswap "backend"
++registers, there is one extra global variable compared to zero for
++every swap page read or written.  If CONFIG_FRONTSWAP is enabled
++AND a frontswap backend registers AND the backend fails every "put"
++request (i.e. provides no memory despite claiming it might),
++CPU overhead is still negligible -- and since every frontswap fail
++precedes a swap page write-to-disk, the system is highly likely
++to be I/O bound and using a small fraction of a percent of a CPU
++will be irrelevant anyway.
++
++As for space, if CONFIG_FRONTSWAP is enabled AND a frontswap backend
++registers, one bit is allocated for every swap page for every swap
++device that is swapon'd.  This is added to the EIGHT bits (which
++was sixteen until about 2.6.34) that the kernel already allocates
++for every swap page for every swap device that is swapon'd.  (Hugh
++Dickins has observed that frontswap could probably steal one of
++the existing eight bits, but let's worry about that minor optimization
++later.)  For very large swap disks (which are rare) on a standard
++4K pagesize, this is 1MB per 32GB swap.
++
++3) OK, how about a quick overview of what this frontswap patch does
++   in terms that a kernel hacker can grok?
++
++Let's assume that a frontswap "backend" has registered during
++kernel initialization; this registration indicates that this
++frontswap backend has access to some "memory" that is not directly
++accessible by the kernel.  Exactly how much memory it provides is
++entirely dynamic and random.
++
++Whenever a swap-device is swapon'd frontswap_init() is called,
++passing the swap device number (aka "type") as a parameter.
++This notifies frontswap to expect attempts to "put" swap pages
++associated with that number.
++
++Whenever the swap subsystem is readying a page to write to a swap
++device (c.f swap_writepage()), frontswap_put_page is called.  Frontswap
++consults with the frontswap backend and if the backend says it does NOT
++have room, frontswap_put_page returns -1 and the kernel swaps the page
++to the swap device as normal.  Note that the response from the frontswap
++backend is unpredictable to the kernel; it may choose to never accept a
++page, it could accept every ninth page, or it might accept every
++page.  But if the backend does accept a page, the data from the page
++has already been copied and associated with the type and offset,
++and the backend guarantees the persistence of the data.  In this case,
++frontswap sets a bit in the "frontswap_map" for the swap device
++corresponding to the page offset on the swap device to which it would
++otherwise have written the data.
++
++When the swap subsystem needs to swap-in a page (swap_readpage()),
++it first calls frontswap_get_page() which checks the frontswap_map to
++see if the page was earlier accepted by the frontswap backend.  If
++it was, the page of data is filled from the frontswap backend and
++the swap-in is complete.  If not, the normal swap-in code is
++executed to obtain the page of data from the real swap device.
++
++So every time the frontswap backend accepts a page, a swap device read
++and (potentially) a swap device write are replaced by a "frontswap backend
++put" and (possibly) a "frontswap backend get", which are presumably much
++faster.
++
++4) Can't frontswap be configured as a "special" swap device that is
++   just higher priority than any real swap device (e.g. like zswap)?
++
++No.  Recall that acceptance of any swap page by the frontswap
++backend is entirely unpredictable. This is critical to the definition
++of frontswap because it grants completely dynamic discretion to the
++backend.  But since any "put" might fail, there must always be a real
++slot on a real swap device to swap the page.  Thus frontswap must be
++implemented as a "shadow" to every swapon'd device with the potential
++capability of holding every page that the swap device might have held
++and the possibility that it might hold no pages at all.
++On the downside, this also means that frontswap cannot contain more
++pages than the total of swapon'd swap devices.  For example, if NO
++swap device is configured on some installation, frontswap is useless.
++
++Further, frontswap is entirely synchronous whereas a real swap
++device is, by definition, asynchronous and uses block I/O.  The
++block I/O layer is not only unnecessary, but may perform "optimizations"
++that are inappropriate for a RAM-oriented device including delaying
++the write of some pages for a significant amount of time.  Synchrony is
++required to ensure the dynamicity of the backend and to avoid thorny race
++conditions that would unnecessarily and greatly complicate frontswap
++and/or the block I/O subsystem.
++
++In a virtualized environment, the dynamicity allows the hypervisor
++(or host OS) to do "intelligent overcommit".  For example, it can
++choose to accept pages only until host-swapping might be imminent,
++then force guests to do their own swapping.  In zcache, "poorly"
++compressible pages can be rejected, where "poorly" can itself be defined
++dynamically depending on current memory constraints.
++
++5) Why this weird definition about "duplicate puts"?  If a page
++   has been previously successfully put, can't it always be
++   successfully overwritten?
++
++Nearly always it can, but no, sometimes it cannot.  Consider an example
++where data is compressed and the original 4K page has been compressed
++to 1K.  Now an attempt is made to overwrite the page with data that
++is non-compressible and so would take the entire 4K.  But the backend
++has no more space.  In this case, the put must be rejected.  Whenever
++frontswap rejects a put that would overwrite, it also must flush
++the old data and ensure that it is no longer accessible.  Since the
++swap subsystem then writes the new data to the read swap device,
++this is the correct course of action to ensure coherency.
++
++6) What is frontswap_shrink for?
++
++When the (non-frontswap) swap subsystem swaps out a page to a real
++swap device, that page is only taking up low-value pre-allocated disk
++space.  But if frontswap has placed a page in transcendent memory, that
++page may be taking up valuable real estate.  The frontswap_shrink
++routine allows a process outside of the swap subsystem (such as
++a userland service via the sysfs interface, or a kernel thread)
++to force pages out of the memory managed by frontswap and back into
++kernel-addressable memory.
++
++7) Why does the frontswap patch create the new include file swapfile.h?
++
++The frontswap code depends on some swap-subsystem-internal data
++structures that have, over the years, moved back and forth between
++static and global.  This seemed a reasonable compromise:  Define
++them as global but declare them in a new include file that isn't
++included by the large number of source files that include swap.h.
++
++Dan Magenheimer, last updated August 8, 2011
