@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab1H2V1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:27:40 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:49276 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754317Ab1H2V1j (ORCPT
+	id S1755248Ab1H2V2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:28:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48364 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754479Ab1H2V2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:27:39 -0400
-X-Authenticated: #41721828
-X-Provags-ID: V01U2FsdGVkX19ttW84iaJttQo8bujp17DFaHgLGmvo/ANyWVNDyF
-	7b9Rd5T6o1aJVt
-From: =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jonathan=20Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-Subject: [PATCH trivial] input: apanel: remove a redundant MODULE_ALIAS
-Date: Mon, 29 Aug 2011 23:26:29 +0200
-Message-Id: <1314653189-31020-1-git-send-email-j.neuschaefer@gmx.net>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	Mon, 29 Aug 2011 17:28:02 -0400
+Date: Mon, 29 Aug 2011 14:27:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        Al Viro <viro@ftp.linux.org.uk>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 8/9] um: fix strrchr problems
+Message-Id: <20110829142705.5be82d7c.akpm@linux-foundation.org>
+In-Reply-To: <1314634419-24766-9-git-send-email-richard@nod.at>
+References: <1314634419-24766-1-git-send-email-richard@nod.at>
+	<1314634419-24766-9-git-send-email-richard@nod.at>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jonathan Neuschäfer <j.neuschaefer@gmx.net>
----
- drivers/input/misc/apanel.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/input/misc/apanel.c b/drivers/input/misc/apanel.c
-index a8d2b8d..1dd1bd3 100644
---- a/drivers/input/misc/apanel.c
-+++ b/drivers/input/misc/apanel.c
-@@ -346,5 +346,4 @@ MODULE_DESCRIPTION(APANEL_NAME " driver");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(APANEL_VERSION);
- 
--MODULE_ALIAS("dmi:*:svnFUJITSU:pnLifeBook*:pvr*:rvnFUJITSU:*");
- MODULE_ALIAS("dmi:*:svnFUJITSU:pnLifebook*:pvr*:rvnFUJITSU:*");
--- 
-1.7.5.4
+> Subject: [PATCH 8/9] um: fix strrchr problems
 
+What are the problems?
+
+On Mon, 29 Aug 2011 18:13:38 +0200
+Richard Weinberger <richard@nod.at> wrote:
+
+> From: Al Viro <viro@ftp.linux.org.uk>
+> 
+> Several years old patch, originally by jdike, I think...
+> 
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/um/Makefile |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/um/Makefile b/arch/um/Makefile
+> index fab8121..c0f712c 100644
+> --- a/arch/um/Makefile
+> +++ b/arch/um/Makefile
+> @@ -41,7 +41,7 @@ KBUILD_CPPFLAGS += -I$(srctree)/$(ARCH_DIR)/sys-$(SUBARCH)
+>  KBUILD_CFLAGS += $(CFLAGS) $(CFLAGS-y) -D__arch_um__ -DSUBARCH=\"$(SUBARCH)\" \
+>  	$(ARCH_INCLUDE) $(MODE_INCLUDE) -Dvmap=kernel_vmap	\
+>  	-Din6addr_loopback=kernel_in6addr_loopback \
+> -	-Din6addr_any=kernel_in6addr_any
+> +	-Din6addr_any=kernel_in6addr_any -Dstrrchr=kernel_strrchr
+>  
+>  KBUILD_AFLAGS += $(ARCH_INCLUDE)
+
+z:/usr/src/linux-3.1-rc4> grep -r kernel_strrchr .       
+z:/usr/src/linux-3.1-rc4> 
+
+ok, I give up.  How does this work?
