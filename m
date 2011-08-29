@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab1H2WDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 18:03:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53240 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753945Ab1H2WDa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 18:03:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E5BFD36.2090000@panasas.com>
-References: <4E56CE8F.8080501@panasas.com> <CA+55aFxNXK-AJdrHBBycM5W632qUBi4E=jangcdRoefQiHzbug@mail.gmail.com>
- <4E580830.4010305@panasas.com> <1314624752.2816.32.camel@twins> <4E5BFD36.2090000@panasas.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 29 Aug 2011 15:02:35 -0700
-Message-ID: <CA+55aFxB7mBByT9W4c0D6kELcZMZDD_j0_S2869nS4LV0mNTbA@mail.gmail.com>
-Subject: Re: [PATCH] .gitattributes: Enable cpp diff parsing for .[ch] files
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Git Mailing List <git@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Junio C Hamano <gitster@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755284Ab1H2WGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 18:06:07 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44039 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab1H2WGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 18:06:01 -0400
+Date: Mon, 29 Aug 2011 18:03:48 -0400 (EDT)
+Message-Id: <20110829.180348.1774953636752413432.davem@davemloft.net>
+To: bharrosh@panasas.com
+Cc: Trond.Myklebust@netapp.com, joe@perches.com, bfields@fieldses.org,
+        neilb@suse.de, linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/24] sunrpc: Remove unnecessary OOM logging messages
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E5C0AB3.90401@panasas.com>
+References: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430AEB4EE9@SACMVEXC2-PRD.hq.netapp.com>
+	<20110829.143751.1153162956919885670.davem@davemloft.net>
+	<4E5C0AB3.90401@panasas.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 29 Aug 2011 15:03:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 1:57 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
->
->  What are you guys afraid of? what possibly could be bad about this patch?
+From: Boaz Harrosh <bharrosh@panasas.com>
+Date: Mon, 29 Aug 2011 14:54:59 -0700
 
-I just detest filling the kernel tree with git stuff.
+> I have a question about that. Are the dprints going to show the stack backtrace?
 
-Right now, the only git-specific file we have in the kernel tree is
-the ".gitignore" files, afaik. And if you were to use some other SCM,
-the "ignore" model at least translates directly to just about anything
-else (with the problem that the .gitignore model tends to be more
-powerful than most other SCM's have, but whatever).
+Yes, OOMs give full stack backtraces.
 
-I'd hate to start populating the project with more stuff.
+> If yes above? then I'm not sure I like it either, because am I'll be getting a full
+> stack backtrace for every failed allocation?
 
-                     Linus
+They've been doing this for years, so obviously they haven't bothered you
+enough to care up to this point.
+
+All of this pushback is pure uneducated noise, please stop blocking progress
+with poorly informed objections.
