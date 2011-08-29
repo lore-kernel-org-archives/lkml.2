@@ -1,130 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab1H2Du7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 23:50:59 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35432 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab1H2Dt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 23:49:57 -0400
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Subject: [PATCH 5/6] Btrfs: convert to __bio_endio()
-Date: Mon, 29 Aug 2011 12:47:39 +0900
-Message-Id: <1314589660-2918-6-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1314589660-2918-1-git-send-email-namhyung@gmail.com>
-References: <1314589660-2918-1-git-send-email-namhyung@gmail.com>
+	id S1752633Ab1H2D5Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 23:57:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45068 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752368Ab1H2D5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 23:57:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,295,1312182000"; 
+   d="scan'208";a="43384114"
+Message-Id: <20110829034931.869901369@intel.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 29 Aug 2011 11:29:53 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+to: Ingo Molnar <mingo@elte.hu>
+cc: Mel Gorman <mgorman@suse.de>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Linux Memory Management List <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC][PATCH 2/7] tracing/mm: rename trigger file to dump-pfn
+References: <20110829032951.677220552@intel.com>
+Content-Disposition: inline; filename=0003-tracing-mm-rename-trigger-file-to-dump_range.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use untraced __bio_endio() for nested bio handling path to
-suppress duplicated trace event.
+From: Ingo Molnar <mingo@elte.hu>
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-btrfs@vger.kernel.org
+Wu Fengguang noted that /debug/tracing/objects/mm/pages/trigger was
+not very intuitively named - rename it to 'dump-pfn', which covers
+its functionality better.
+
+[ Impact: rename /debug/tracing file ]
+
+Reported-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/btrfs/compression.c |    4 ++--
- fs/btrfs/disk-io.c     |    2 +-
- fs/btrfs/inode.c       |    8 ++++----
- fs/btrfs/volumes.c     |    4 ++--
- 4 files changed, 9 insertions(+), 9 deletions(-)
+ include/trace/events/mm.h |    4 ++--
+ kernel/trace/trace_mm.c   |   26 +++++++++++++-------------
+ 2 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-index 8ec5d86f1734..864d3ad6dae7 100644
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -197,7 +197,7 @@ csum_failed:
+--- mmotm.orig/kernel/trace/trace_mm.c	2011-03-03 19:17:48.000000000 +0800
++++ mmotm/kernel/trace/trace_mm.c	2011-03-03 19:18:17.000000000 +0800
+@@ -15,8 +15,8 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/mm.h>
  
- 	/* do io completion on the original bio */
- 	if (cb->errors) {
--		bio_io_error(cb->orig_bio);
-+		__bio_io_error(cb->orig_bio);
- 	} else {
- 		int bio_index = 0;
- 		struct bio_vec *bvec = cb->orig_bio->bi_io_vec;
-@@ -211,7 +211,7 @@ csum_failed:
- 			bvec++;
- 			bio_index++;
- 		}
--		bio_endio(cb->orig_bio, 0);
-+		__bio_endio(cb->orig_bio, 0);
+-void trace_read_page_frames(unsigned long start, unsigned long end,
+-			    void (*trace)(unsigned long pfn, struct page *page))
++void trace_mm_page_frames(unsigned long start, unsigned long end,
++			  void (*trace)(unsigned long pfn, struct page *page))
+ {
+ 	unsigned long pfn = start;
+ 	struct page *page;
+@@ -37,22 +37,22 @@ void trace_read_page_frames(unsigned lon
  	}
- 
- 	/* finally free the cb struct */
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 07b3ac662e19..64ed856bdde6 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1490,7 +1490,7 @@ static void end_workqueue_fn(struct btrfs_work *work)
- 	bio->bi_private = end_io_wq->private;
- 	bio->bi_end_io = end_io_wq->end_io;
- 	kfree(end_io_wq);
--	bio_endio(bio, error);
-+	__bio_endio(bio, error);
  }
  
- static int cleaner_kthread(void *arg)
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 0ccc7438ad34..c98716474a57 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -5893,10 +5893,10 @@ static void btrfs_end_dio_bio(struct bio *bio, int err)
- 		goto out;
+-static void trace_do_dump_pages(unsigned long pfn, struct page *page)
++static void trace_mm_page_frame(unsigned long pfn, struct page *page)
+ {
+-	trace_dump_pages(pfn, page);
++	trace_dump_page_frame(pfn, page);
+ }
  
- 	if (dip->errors)
--		bio_io_error(dip->orig_bio);
-+		__bio_io_error(dip->orig_bio);
- 	else {
- 		set_bit(BIO_UPTODATE, &dip->orig_bio->bi_flags);
--		bio_endio(dip->orig_bio, 0);
-+		__bio_endio(dip->orig_bio, 0);
- 	}
- out:
- 	bio_put(bio);
-@@ -6059,7 +6059,7 @@ out_err:
- 	 */
- 	smp_mb__before_atomic_dec();
- 	if (atomic_dec_and_test(&dip->pending_bios))
--		bio_io_error(dip->orig_bio);
-+		__bio_io_error(dip->orig_bio);
+ static ssize_t
+-trace_mm_trigger_read(struct file *filp, char __user *ubuf, size_t cnt,
+-		 loff_t *ppos)
++trace_mm_pfn_range_read(struct file *filp, char __user *ubuf, size_t cnt,
++			loff_t *ppos)
+ {
+ 	return simple_read_from_buffer(ubuf, cnt, ppos, "0\n", 2);
+ }
  
- 	/* bio_end_io() will handle error, so we needn't return it */
+ 
+ static ssize_t
+-trace_mm_trigger_write(struct file *filp, const char __user *ubuf, size_t cnt,
+-		       loff_t *ppos)
++trace_mm_pfn_range_write(struct file *filp, const char __user *ubuf, size_t cnt,
++			 loff_t *ppos)
+ {
+ 	unsigned long val, start, end;
+ 	char buf[64];
+@@ -67,7 +67,7 @@ trace_mm_trigger_write(struct file *filp
+ 	if (tracing_update_buffers() < 0)
+ 		return -ENOMEM;
+ 
+-	if (trace_set_clr_event("mm", "dump_pages", 1))
++	if (trace_set_clr_event("mm", "dump_page_frame", 1))
+ 		return -EINVAL;
+ 
+ 	buf[cnt] = 0;
+@@ -82,7 +82,7 @@ trace_mm_trigger_write(struct file *filp
+ 	else
+ 		end = start + val;
+ 
+-	trace_read_page_frames(start, end, trace_do_dump_pages);
++	trace_mm_page_frames(start, end, trace_mm_page_frame);
+ 
+ 	*ppos += cnt;
+ 
+@@ -91,8 +91,8 @@ trace_mm_trigger_write(struct file *filp
+ 
+ static const struct file_operations trace_mm_fops = {
+ 	.open		= tracing_open_generic,
+-	.read		= trace_mm_trigger_read,
+-	.write		= trace_mm_trigger_write,
++	.read		= trace_mm_pfn_range_read,
++	.write		= trace_mm_pfn_range_write,
+ };
+ 
+ /* move this into trace_objects.c when that file is created */
+@@ -164,7 +164,7 @@ static __init int trace_objects_mm_init(
+ 	if (!d_pages)
+ 		return 0;
+ 
+-	trace_create_file("trigger", 0600, d_pages, NULL,
++	trace_create_file("dump-pfn", 0600, d_pages, NULL,
+ 			  &trace_mm_fops);
+ 
  	return 0;
-@@ -6133,7 +6133,7 @@ free_ordered:
- 		btrfs_put_ordered_extent(ordered);
- 		btrfs_put_ordered_extent(ordered);
- 	}
--	bio_endio(bio, ret);
-+	__bio_endio(bio, ret);
- }
+--- mmotm.orig/include/trace/events/mm.h	2011-03-03 19:18:02.000000000 +0800
++++ mmotm/include/trace/events/mm.h	2011-03-03 19:18:17.000000000 +0800
+@@ -8,14 +8,14 @@
+ #define TRACE_SYSTEM mm
  
- static ssize_t check_direct_IO(struct btrfs_root *root, int rw, struct kiocb *iocb,
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index f2a4cc79da61..0f745a97805d 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -3224,7 +3224,7 @@ static void end_bio_multi_stripe(struct bio *bio, int err)
- 		}
- 		kfree(multi);
+ /**
+- * dump_pages - called by the trace page dump trigger
++ * dump_page_frame - called by the trace page dump trigger
+  * @pfn: page frame number
+  * @page: pointer to the page frame
+  *
+  * This is a helper trace point into the dumping of the page frames.
+  * It will record various infromation about a page frame.
+  */
+-TRACE_EVENT(dump_pages,
++TRACE_EVENT(dump_page_frame,
  
--		bio_endio(bio, err);
-+		__bio_endio(bio, err);
- 	} else if (!is_orig_bio) {
- 		bio_put(bio);
- 	}
-@@ -3350,7 +3350,7 @@ int btrfs_map_bio(struct btrfs_root *root, int rw, struct bio *bio,
- 		} else {
- 			bio->bi_bdev = root->fs_info->fs_devices->latest_bdev;
- 			bio->bi_sector = logical >> 9;
--			bio_endio(bio, -EIO);
-+			__bio_io_error(bio);
- 		}
- 		dev_nr++;
- 	}
--- 
-1.7.6
+ 	TP_PROTO(unsigned long pfn, struct page *page),
+ 
+
 
