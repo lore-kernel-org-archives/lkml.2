@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab1H2PQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:16:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654Ab1H2PQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:16:16 -0400
-Date: Mon, 29 Aug 2011 17:16:06 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Lin Ming <lxy@ss.pku.edu.cn>
-cc: Lukas Czerner <lczerner@redhat.com>, Bart Van Assche <bvanassche@acm.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
- device is removed
-In-Reply-To: <CAF1ivSYu=0Xh3aXJGbuBUZjT_azLTO6Tq1gzhNRBWsHXCUMjiw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1108291712590.3904@dhcp-27-109.brq.redhat.com>
-References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com> <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com> <CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com> <alpine.LFD.2.00.1108291637470.3904@dhcp-27-109.brq.redhat.com>
- <CAF1ivSYu=0Xh3aXJGbuBUZjT_azLTO6Tq1gzhNRBWsHXCUMjiw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754014Ab1H2PRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:17:30 -0400
+Received: from mail.ss.pku.edu.cn ([211.101.48.138]:38612 "EHLO
+	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab1H2PR3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 11:17:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAH9JG2Xfh7JcdBdaCUuD9wFyNPTXg_0JbvVZkEWK5jT2=W3ybA@mail.gmail.com>
+References: <4E5B4AAF.2040101@samsung.com>
+	<CAF1ivSaveqVs8dGF+HZBytJpUpTJPysUox=qmHDTFQvqBmm+rw@mail.gmail.com>
+	<4E5B65C6.6070300@samsung.com>
+	<CAH9JG2Xfh7JcdBdaCUuD9wFyNPTXg_0JbvVZkEWK5jT2=W3ybA@mail.gmail.com>
+Date: Mon, 29 Aug 2011 23:17:25 +0800
+Message-ID: <CAF1ivSZxAuVaivJyoZ=gnMu-YY7AcnBwCWtD74DqPuYAASxTxA@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] support ioctl for tunable user request
+From: Lin Ming <lxy@ss.pku.edu.cn>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011, Lin Ming wrote:
+On Mon, Aug 29, 2011 at 10:01 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+> On Mon, Aug 29, 2011 at 7:11 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>> Hi
+>>
+>> Lin Ming wrote:
+>>> On Mon, Aug 29, 2011 at 4:15 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>>>> This patch is added the ioctl for tunable user request.
+>>>
+>>> Hi,
+>>>
+>>> What's the use case for this new ioctl?
+>
+> The below is the just mmc example.
+>
+> The main reason is that there's no way to know system or I/O idle, so
+> user provides the hint. Using user based I/O, device can TUNE the
+> device itself. In case of MMC, background operation can be used.
+>
+> and another difference from other user request, it's just trigger the
+> device tune request, no need to wait the request is done.
 
-> On Mon, Aug 29, 2011 at 10:42 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> > On Mon, 29 Aug 2011, Lin Ming wrote:
-> >
-> >> On Mon, Aug 29, 2011 at 7:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> >> >
-> >> > Regarding the atomic operations I do not think that implicit memory
-> >> > barriers are needed here as atomic_dec_and_test() implies memory
-> >>
-> >> Which implicit memory barrier you are talking about?
-> >
-> > smp_mb() at both side of the operation as documented here in
-> > Documentation/memory-barriers.txt
-> 
-> Thanks for the info.
-> 
-> But I don't follow you ... why that implicit memory barriers are NOT needed?
-> 
+OK.
 
-Oh, I am sorry I have actually wanted to say that *explicit* memory
-barriers are no needed in that case. Sorry for the confusion!
+After read the previous patch at:
+http://marc.info/?l=linux-mmc&m=131407402925988&w=2
 
-Thanks!
--Lukas
+I now get better understanding what "tunable user request" mean.
+
+Thanks.
+
+>
+> Thank you,
+> Kyungmin Park
