@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1H2NmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 09:42:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65277 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963Ab1H2NmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 09:42:04 -0400
-Date: Mon, 29 Aug 2011 15:41:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, a.p.zijlstra@chello.nl,
-        mingo@elte.hu, paulus@samba.org, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH] perf, tool, record: Fix the header generation for pipe
-Message-ID: <20110829134147.GD1918@jolsa.redhat.com>
-References: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
- <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110822145210.GA8694@jolsa.brq.redhat.com>
- <1314028266.2307.93.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110822160713.GA10134@jolsa.brq.redhat.com>
- <20110829132037.GB27261@ghostprotocols.net>
+	id S1752934Ab1H2Nn0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 09:43:26 -0400
+Received: from krak.alatek.krakow.pl ([46.170.108.42]:3994 "EHLO
+	krak.alatek.krakow.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1H2NnV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 09:43:21 -0400
+X-Greylist: delayed 1267 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Aug 2011 09:43:21 EDT
+From: Pawel Sikora <pluto@agmk.net>
+To: linux-kernel@vger.kernel.org
+Cc: kamal@canonical.com, keithp@keithp.com
+Subject: Re: Linux 3.1-rc4
+Date: Mon, 29 Aug 2011 15:22:10 +0200
+Message-ID: <2352775.A2sX9R5EWV@pawels>
+User-Agent: KMail/4.7.0  (Linux/2.6.38.8-3; KDE/4.7.0; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110829132037.GB27261@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 10:20:37AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Aug 22, 2011 at 06:07:13PM +0200, Jiri Olsa escreveu:
-> > On Mon, Aug 22, 2011 at 05:51:06PM +0200, Eric Dumazet wrote:
-> > > Le lundi 22 ao˚t 2011 ‡ 16:52 +0200, Jiri Olsa a Ècrit :
-> > > > - fd is always file.. the descriptor, which might be pipe, is in output_fd variable
-> > > >   but, maybe the die call is not necessary.. this should not fail
-> 
-> > > > - the record_file function is called only on debugfs or procfs files:
-> > > > 	events/header_page
-> > > > 	events/header_event
-> > > > 	events/**/format
-> > > > 	printk_formats
-> > > > 	/proc/kallsyms
-> 
-> > > > so I think I need to read the whole file as in current code.
-> 
-> > > You read the file twice. Is it the right fix ?
-> 
-> > > Once to compute the length to be able to write the output header, once
-> > > to process the content.
-> 
-> > > Are you sure length cannot change between the two phases ?
-> 
-> > > /proc/kallsyms can definitely change when a module is loaded.
-> 
-> > Right, better to store it to a temp file as you suggest, so we have
-> > consistent view.. I'll prepare new patch.
-> 
-> Hi Jiri, any news here?
-> 
-> I just stumbled in this bug while testing Neil's net_dropmonitor script
-> :-\
+Hi,
 
-well, I was thinking about taking files snapshot, so we dont read them
-twice and omit the reading for size.. but it'll be probably bigger
-change, I'll try to send out something by the end of the week
+the recent -rc4 fix ( Kamal Mostafa / i915: do not setup intel_backlight twice ) fixes an oops
+described in https://bugzilla.kernel.org/show_bug.cgi?id=40892#c1 but the core error
+"[drm:intel_dsm_platform_mux_info] *ERROR* MUX INFO call failed" still exists.
 
-if you need workaround, the initial patch should work
+moreover there's a next crash in framebuffer code:
 
-jirka
+(...)
+Aug 29 10:51:55 vmx kernel: [   30.385071] Console: switching to colour frame buffer device 80x30
+Aug 29 10:51:55 vmx kernel: [   30.385576] uvesafb: framebuffer at 0xb0000000, mapped to 0xffffc90006b00000, using 6144k, total 65472k
+Aug 29 10:51:55 vmx kernel: [   30.385578] fb0: VESA VGA frame buffer device
+Aug 29 15:10:54 vmx kernel: [22759.779325] [drm] Initialized drm 1.1.0 20060810
+Aug 29 15:10:54 vmx kernel: [22759.845909] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+Aug 29 15:10:54 vmx kernel: [22759.845914] i915 0000:00:02.0: setting latency timer to 64
+Aug 29 15:10:54 vmx kernel: [22759.945397] mtrr: type mismatch for b0000000,10000000 old: write-back new: write-combining
+Aug 29 15:10:54 vmx kernel: [22759.945401] [drm] MTRR allocation failed.  Graphics performance may suffer.
+Aug 29 15:10:54 vmx kernel: [22759.951892] i915 0000:00:02.0: irq 44 for MSI/MSI-X
+Aug 29 15:10:54 vmx kernel: [22759.951955] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+Aug 29 15:10:54 vmx kernel: [22759.951958] [drm] Driver supports precise vblank timestamp query.
+Aug 29 15:10:54 vmx kernel: [22759.953550] [drm:intel_dsm_platform_mux_info] *ERROR* MUX INFO call failed
+Aug 29 15:10:54 vmx kernel: [22759.955680] [drm:intel_dsm_platform_mux_info] *ERROR* MUX INFO call failed
+Aug 29 15:10:54 vmx kernel: [22759.955848] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=none:owns=io+mem
+Aug 29 15:10:54 vmx kernel: [22759.955851] vgaarb: transferring owner from PCI:0000:00:02.0 to PCI:0000:01:00.0
+Aug 29 15:10:54 vmx kernel: [22760.519819] fbcon: inteldrmfb (fb1) is primary device
+Aug 29 15:10:54 vmx kernel: [22760.519824] fbcon: Remapping primary device, fb1, to tty 1-63
+Aug 29 15:10:55 vmx kernel: [22761.103384] fb1: inteldrmfb frame buffer device
+Aug 29 15:10:55 vmx kernel: [22761.103385] drm: registered panic notifier
+Aug 29 15:10:55 vmx kernel: [22761.103401] BUG: unable to handle kernel paging request at 000000104a69c2f8
+Aug 29 15:10:55 vmx kernel: [22761.103403] IP: [<ffffffff81265d02>] fb_flashcursor+0x42/0x150
+Aug 29 15:10:55 vmx kernel: [22761.103409] PGD 332bca067 PUD 0
+Aug 29 15:10:55 vmx kernel: [22761.103412] Oops: 0000 [#1] SMP
+Aug 29 15:10:55 vmx kernel: [22761.103414] CPU 0
+Aug 29 15:10:55 vmx kernel: [22761.103415] Modules linked in: i915(+) drm_kms_helper drm i2c_algo_bit binfmt_misc uvesafb sch_sfq ext2 raid1 cryptd aes_x86_64 aes_generic ecb 
+uvcvideo videodev snd_hda_codec_hdmi v4l2_compat_ioctl32 media ath3k arc4 btusb bluetooth snd_hda_codec_realtek ath9k mac80211 asus_nb_wmi asus_wmi sparse_keymap pci_hotplug 
+ath9k_common ath9k_hw snd_hda_intel hwmon i2c_i801 joydev ath atl1c xhci_hcd ehci_hcd snd_hda_codec mxm_wmi i2c_core usbcore mei(C) iTCO_wdt wmi sr_mod sg ac psmouse intel_agp 
+intel_gtt cdrom iTCO_vendor_support processor battery button evdev snd_hwdep snd_pcm snd_timer cfg80211 snd soundcore pcspkr serio_raw rfkill snd_page_alloc video thermal ext4 
+jbd2 crc16 mbcache dm_mod sd_mod crc_t10dif raid10 md_mod ahci libahci libata scsi_mod [last unloaded: scsi_wait_scan]
+Aug 29 15:10:55 vmx kernel: [22761.103446]
+Aug 29 15:10:55 vmx kernel: [22761.103449] Pid: 11, comm: kworker/0:1 Tainted: G         C  3.1.0-rc4-dirty #3 ASUSTeK Computer Inc. N73SV/N73SV
+Aug 29 15:10:55 vmx kernel: [22761.103452] RIP: 0010:[<ffffffff81265d02>]  [<ffffffff81265d02>] fb_flashcursor+0x42/0x150
+Aug 29 15:10:55 vmx kernel: [22761.103456] RSP: 0018:ffff88033b7bddb0  EFLAGS: 00010217
+Aug 29 15:10:55 vmx kernel: [22761.103457] RAX: 0000000219191917 RBX: ffff8803430398f0 RCX: 0000000000000000
+Aug 29 15:10:55 vmx kernel: [22761.103459] RDX: 0000000000000000 RSI: 0000000000000282 RDI: ffffffff81815fb0
+Aug 29 15:10:55 vmx kernel: [22761.103461] RBP: ffff88033b7bde00 R08: ffff88033b7bc000 R09: ffff88034fa0f440
+Aug 29 15:10:55 vmx kernel: [22761.103463] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88034fa0c980
+Aug 29 15:10:55 vmx kernel: [22761.103464] R13: ffff880333e601d0 R14: ffffffff81265cc0 R15: ffff880339f137c8
+Aug 29 15:10:55 vmx kernel: [22761.103467] FS:  0000000000000000(0000) GS:ffff88034fa00000(0000) knlGS:0000000000000000
+Aug 29 15:10:55 vmx kernel: [22761.103469] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Aug 29 15:10:55 vmx kernel: [22761.103471] CR2: 000000104a69c2f8 CR3: 00000003369da000 CR4: 00000000000406f0
+
+BR,
+Pawe≈Ç.
+
