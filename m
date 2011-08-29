@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab1H2MVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 08:21:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61316 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab1H2MVN (ORCPT
+	id S1752877Ab1H2MXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 08:23:33 -0400
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:59478 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752455Ab1H2MXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 08:21:13 -0400
-Date: Mon, 29 Aug 2011 14:21:10 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@linux.intel.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH] dma: shdma: transfer based runtime PM
-In-Reply-To: <1314619909.1606.130.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1108291419410.31184@axis700.grange>
-References: <Pine.LNX.4.64.1108181650530.5245@axis700.grange> 
- <1314282386.1606.42.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108251636190.17190@axis700.grange>
-  <1314283286.1606.52.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
-  <1314292850.1606.88.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108260107550.17190@axis700.grange>
- <1314619909.1606.130.camel@vkoul-udesk3>
+	Mon, 29 Aug 2011 08:23:25 -0400
+Date: Mon, 29 Aug 2011 15:23:21 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Felipe Balbi <balbi@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] sound: usb: mixer: increase control transfer timeout
+Message-ID: <20110829122320.GX13925@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1314616226-15942-1-git-send-email-balbi@ti.com>
+ <4E5B7EE7.6070103@ladisch.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:3HNH4DUeZTBdLla2dZdDjHG5id3F7pvqrnvWPbHN2GZ
- G+me/Xqt9SauE/plt09j90vXcYSvFjp44HmTeTvgXBnH6JX4NU
- ZBojLZMfuD6iSZ5WmJIBig2F7/a6t+Vfc35xMa2PrnPPDIyALW
- Qq5gkRQJkTxSxlLlxb/AkiQBizT6x9W9x0O94IQZ7OhvlGUYd+
- wH0DoWlcMQgqJiTDc5x23Nu2Ihl/Ofx6ogIJ3wEn5g=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1ar0NSVY9gjTGNA2"
+Content-Disposition: inline
+In-Reply-To: <4E5B7EE7.6070103@ladisch.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011, Vinod Koul wrote:
 
-> On Fri, 2011-08-26 at 01:11 +0200, Guennadi Liakhovetski wrote:
-> > On Thu, 25 Aug 2011, Koul, Vinod wrote:
-> > > Wont it be easy to to do:
-> > > - pm_runtime_get() in each submit
-> > > - pm_runtime_put() in each callback
-> > > Normal case above would work just fine
-> > > - In terminate case, count the number of issued transactions, and call
-> > > pm_runtime_put() for each canceled transaction
-> > > (i am assuming that for each timeout error, the client will call
-> > > terminate)
-> > 
-> > As I said, this won't be very easy to do this in a robust way. You'd have 
-> > to scan your list of DMA blocks and see, which of them belong to one 
-> > descriptor, and once you reach the end of that descriptor, issue a put(). 
-> > Perhaps, this can be done, but my choice went to the currently presented 
-> > solution.
-> If you count the number of descriptor submitted in your submitted list
-> and call _put for each, I see no reason why it wont be simple and better
-> than current approach.
+--1ar0NSVY9gjTGNA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry, I thought, you wanted to avoid extra counting, because runtime-pm 
-counts by itself. Now you propose to count...
+Hi,
 
-> Something like:
-> /* since callback is set for last descriptor of chain, we call runtime
->  * put for that desc alone
->  */
-> list_for_each_entry_safe(desc, __desc, sh_chan->ld_queue, node) {
-> 	if (desc->async_tx.callback)
-> 		pm_runtime_put(device);
+On Mon, Aug 29, 2011 at 01:58:31PM +0200, Clemens Ladisch wrote:
+> Felipe Balbi wrote:
+> > 100ms might not be enough for slower devices. Increasing
+> > timeout to 1000ms doesn't seem like overkill.
+> >=20
+> > --- a/sound/usb/mixer.c
+> > +++ b/sound/usb/mixer.c
+> > @@ -296,7 +296,7 @@ static int get_ctl_value_v1(struct usb_mixer_elem_i=
+nfo *cval, int request, int v
+> >  		if (snd_usb_ctl_msg(chip->dev, usb_rcvctrlpipe(chip->dev, 0), reques=
+t,
+> >  				    USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_IN,
+> >  				    validx, snd_usb_ctrl_intf(chip) | (cval->id << 8),
+> > -				    buf, val_len, 100) >=3D val_len) {
+> > +				    buf, val_len, 1000) >=3D val_len) {
+>=20
+> If the timeout for reading values needs to be increased, writing (in
+> snd_usb_mixer_set_ctl_value) probably needs some attention too.
 
-Not all dma users have callbacks.
+Ok, I'll increase all 100ms delays to 1000. Is that ok ?
 
-> If i read shdma correctly, descriptors are put into ld_queue of channel
-> and any pending should be checked in this list alone.
-> For normal case again you check for the callback to decide if you need
-> to call pm_runtime_put() or not.
+--=20
+balbi
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+--1ar0NSVY9gjTGNA2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOW4S4AAoJEAv8Txj19kN1KskIAJ9kmecPs9hb4koinHmNoB+X
+adKJQU+1ZEGRICWRvbG7L/+TEv4RZJODDBH4nbwIgs+e4C9iK7SH/kkSmnV72Kun
+C55PdktrDeJFKk7XaBPPGw++M+kzfrFcuW0fA+dcsKcLooBMEwKn9ngahbaX/bDS
+W4oVTnf/rPGIQRMK3RyCIM6z3dS12mWUPoxYjeGfPaiuXVcf45qR2Rt3DQHd2rOh
+ffepFWiUrKzm4el0hScPC+/5VWaHee46CXHPyGhrpKmXMrYPam/FQiCkaZj9qfrd
+zOQc4rjuAf+QIp4wE2MN416hg5gWS/qvBxAGhU0aFmdRjca/yQxAgSLoReQbnok=
+=5AmT
+-----END PGP SIGNATURE-----
+
+--1ar0NSVY9gjTGNA2--
