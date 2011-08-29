@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab1H2DB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Aug 2011 23:01:27 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53164 "EHLO mga11.intel.com"
+	id S1752537Ab1H2Dcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Aug 2011 23:32:52 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41898 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055Ab1H2DBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Aug 2011 23:01:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,294,1312182000"; 
-   d="scan'208";a="45932100"
-Subject: Re: [patch 2/2]slub: add a type for slab partial list position
-From: "Alex,Shi" <alex.shi@intel.com>
-To: "Li, Shaohua" <shaohua.li@intel.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <1314147472.29510.25.camel@sli10-conroe>
-References: <1314059823.29510.19.camel@sli10-conroe>
-	 <alpine.DEB.2.00.1108231023470.21267@router.home>
-	 <1314147472.29510.25.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Aug 2011 11:06:27 +0800
-Message-ID: <1314587187.4523.55.camel@debian>
+	id S1752316Ab1H2Dcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Aug 2011 23:32:45 -0400
+Date: Mon, 29 Aug 2011 13:32:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Ohad Ben-Cohen" <ohad@wizery.com>
+Subject: linux-next: build failure after merge of the iommu tree
+Message-Id: <20110829133237.80467b5d54438ace53b324df@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__29_Aug_2011_13_32_37_+1000_5DGzXAklY+m+923x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-24 at 08:57 +0800, Li, Shaohua wrote:
-> On Tue, 2011-08-23 at 23:25 +0800, Christoph Lameter wrote:
-> > On Tue, 23 Aug 2011, Shaohua Li wrote:
-> > 
-> > > Adding slab to partial list head/tail is sensentive to performance.
-> > > So adding a type to document it to avoid we get it wrong.
-> > 
-> > I think that if you want to make it more descriptive then using the stats
-> > values (DEACTIVATE_TO_TAIL/HEAD) would avoid having to introduce an
-> > additional enum and it would also avoid the if statement in the stat call.
-> ok, that's better.
-> 
-> Subject: slub: explicitly document position of inserting slab to partial list
-> 
-> Adding slab to partial list head/tail is sensitive to performance.
-> So explicitly uses DEACTIVATE_TO_TAIL/DEACTIVATE_TO_HEAD to document
-> it to avoid we get it wrong.
+--Signature=_Mon__29_Aug_2011_13_32_37_+1000_5DGzXAklY+m+923x
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Frankly speaking, using DEACTIVATE_TO_TAIL/DEACTIVATE_TO_HEAD in
-slab_alloc, slab_free make code hard to understand. Just adding some
-comments will be more clear and understandable. like the following: 
-Do you think so? 
+Hi Joerg,
 
+After merging the iommu tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2377,6 +2377,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-                 */
-                if (unlikely(!prior)) {
-                        remove_full(s, page);
-+                       /* only one object left in the page, so add to partial tail */
-                        add_partial(n, page, 1);
-                        stat(s, FREE_ADD_PARTIAL);
-                }
+drivers/iommu/omap-iommu.c:27:24: fatal error: plat/iommu.h: No such file o=
+r directory
 
+Caused by commit fcf3a6ef4a58 ("omap: iommu/iovmm: move to dedicated
+iommu folder").  Presumably building of this code should be restricted to
+just some platforms only.
 
+I have dropped the iommu tree for today (since I have no older working
+version).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__29_Aug_2011_13_32_37_+1000_5DGzXAklY+m+923x
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOWwhVAAoJEDMEi1NhKgbsJ+wIAIcX8Did8JgO6PlQo+/4YshP
+P+W80in6quTM4gnQkIAGGBHylFw+m9PLLW3V9edJQxuCpappqpxgDYOQ+rAI5kzT
+WKFVuoNDhyHUrpumPuzhGeiwPBZFsSzMUgGKOyx50KKMwQo2YeN/eWVVafqROQMh
+Tabdo5vICCAzVSp3IoSHvkMQoP2lizcXQYbdB+Pk8B9+wqZzUDr7wELc+usiOwo1
+MSAkkeYP6oVvvp8vKww1j6muBc/h6nVgFZgQ094UQxHCZxKByEb27VSniHONZepJ
+r0cphZVXX3ilPunp9Y8SPNsDzy/elrnOO10avtm358NF6bSZO+uy4XxCrlG/gWY=
+=ex4L
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Aug_2011_13_32_37_+1000_5DGzXAklY+m+923x--
