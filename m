@@ -1,175 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1H2VFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:05:50 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57657 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754425Ab1H2VFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:05:46 -0400
-Date: Mon, 29 Aug 2011 23:05:09 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
-Message-ID: <20110829210508.GA1599@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
- <CALWz4iwChnacF061L9vWo7nEA7qaXNJrK=+jsEe9xBtvEBD9MA@mail.gmail.com>
- <20110811210914.GB31229@cmpxchg.org>
- <CALWz4iwJfyWRineMy+W02YBvS0Y=Pv1y8Rb=8i5R=vUCfrO+iQ@mail.gmail.com>
- <CALWz4iwRXBheXFND5zq3ze2PJDkeoxYHD1zOsTyzOe3XqY5apA@mail.gmail.com>
- <20110829190426.GC1434@cmpxchg.org>
- <CALWz4ix1X8=L0HzQpdGd=XVbjZuMCtYngzdG+hLMoeJJCUEjrg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALWz4ix1X8=L0HzQpdGd=XVbjZuMCtYngzdG+hLMoeJJCUEjrg@mail.gmail.com>
+	id S1754689Ab1H2VGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:06:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59518 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab1H2VFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:05:07 -0400
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 3/5] toshiba_acpi: Use handle for HCI calls
+Date: Mon, 29 Aug 2011 16:04:53 -0500
+Message-Id: <1314651895-24345-4-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314651895-24345-1-git-send-email-seth.forshee@canonical.com>
+References: <1314651895-24345-1-git-send-email-seth.forshee@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 01:36:48PM -0700, Ying Han wrote:
-> On Mon, Aug 29, 2011 at 12:04 PM, Johannes Weiner <hannes@cmpxchg.org>wrote:
-> > On Mon, Aug 29, 2011 at 12:22:02AM -0700, Ying Han wrote:
-> > > > @@ -888,19 +888,21 @@ void mem_cgroup_del_lru_list(struct page *page,
-> > > > enum lru_list lru)
-> > > >  {
-> > > >  >------struct page_cgroup *pc;
-> > > >  >------struct mem_cgroup_per_zone *mz;
-> > > > +>------struct mem_cgroup *mem;
-> > > > ·
-> > > >  >------if (mem_cgroup_disabled())
-> > > >  >------>-------return;
-> > > >  >------pc = lookup_page_cgroup(page);
-> > > > ->------/* can happen while we handle swapcache. */
-> > > > ->------if (!TestClearPageCgroupAcctLRU(pc))
-> > > > ->------>-------return;
-> > > > ->------VM_BUG_ON(!pc->mem_cgroup);
-> > > > ->------/*
-> > > > ->------ * We don't check PCG_USED bit. It's cleared when the "page" is
-> > finally
-> > > > ->------ * removed from global LRU.
-> > > > ->------ */
-> > > > ->------mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
-> > > > +
-> > > > +>------if (TestClearPageCgroupAcctLRU(pc) || PageCgroupUsed(pc)) {
-> >
-> > This PageCgroupUsed part confuses me.  A page that is being isolated
-> > shortly after being charged while on the LRU may reach here, and then
-> > it is unaccounted from pc->mem_cgroup, which it never was accounted
-> > to.
-> >
-> > Could you explain why you added it?
-> 
-> To be honest, i don't have very good reason for that. The PageCgroupUsed
-> check is put there after running some tests and some fixes seems help the
-> test, including this one.
-> 
-> The one case I can think of for page !AcctLRU | Used is in the pagevec.
-> However, we shouldn't get to the mem_cgroup_del_lru_list() for a page in
-> pagevec at the first place.
-> 
-> I now made it so that PageCgroupAcctLRU on the LRU means accounted
-> to pc->mem_cgroup,
-> 
-> this is the same logic currently.
-> 
-> > and !PageCgroupAcctLRU on the LRU means accounted to
-> > and babysitted by root_mem_cgroup.
-> 
-> this seems to be different from what it is now, especially for swapcache
-> page. So, the page here is linked to root cgroup LRU or not?
-> 
-> Anyway, the AcctLRU flags still seems confusing to me:
-> 
-> what this flag tells me is that whether or not the page is on a PRIVATE lru
-> and being accounted, i used private here to differentiate from the per zone
-> lru, where it also has PageLRU flag.  The two flags are separate since pages
-> could be on one lru not the other ( I guess ) , but this is changed after
-> having the root cgroup lru back. For example, AcctLRU is used to keep track
-> of the accounted lru pages, especially for root ( we didn't account the
-> !Used pages to root like readahead swapcache). Now we account the full size
-> of lru list of root including Used and !Used, but only mark the Used pages
-> w/ AcctLRU flag.
-> 
-> So in general, i am wondering we should be able to replace that eventually
-> with existing Used and LRU bit.  Sorry this seems to be something we like to
-> consider later, not necessarily now :)
+Now that we're using an acpi driver we already have a handle to
+the namespace of the HCI call, so there's no need to test various
+paths to the HCI call or even be aware of the path at all.
 
-I have now the following comment in mem_cgroup_lru_del_list():
+Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/platform/x86/toshiba_acpi.c |   55 +++++++++-------------------------
+ 1 files changed, 15 insertions(+), 40 deletions(-)
 
-        /*
-         * root_mem_cgroup babysits uncharged LRU pages, but
-         * PageCgroupUsed is cleared when the page is about to get
-         * freed.  PageCgroupAcctLRU remembers whether the
-         * LRU-accounting happened against pc->mem_cgroup or
-         * root_mem_cgroup.
-         */
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+index bb142e9..90018cf 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -62,11 +62,7 @@ MODULE_DESCRIPTION("Toshiba Laptop ACPI Extras Driver");
+ MODULE_LICENSE("GPL");
+ 
+ /* Toshiba ACPI method paths */
+-#define METHOD_LCD_BRIGHTNESS	"\\_SB_.PCI0.VGA_.LCD_._BCM"
+-#define TOSH_INTERFACE_1	"\\_SB_.VALD"
+-#define TOSH_INTERFACE_2	"\\_SB_.VALZ"
+ #define METHOD_VIDEO_OUT	"\\_SB_.VALX.DSSX"
+-#define GHCI_METHOD		".GHCI"
+ 
+ /* Toshiba HCI interface definitions
+  *
+@@ -121,7 +117,6 @@ struct toshiba_acpi_dev {
+ 	int force_fan;
+ 	int last_key_event;
+ 	int key_event_valid;
+-	acpi_handle handle;
+ 
+ 	struct mutex mutex;
+ };
+@@ -170,15 +165,6 @@ static __inline__ void _set_bit(u32 * word, u32 mask, int value)
+ /* acpi interface wrappers
+  */
+ 
+-static int is_valid_acpi_path(const char *methodName)
+-{
+-	acpi_handle handle;
+-	acpi_status status;
+-
+-	status = acpi_get_handle(NULL, (char *)methodName, &handle);
+-	return !ACPI_FAILURE(status);
+-}
+-
+ static int write_acpi_int(const char *methodName, int val)
+ {
+ 	struct acpi_object_list params;
+@@ -217,7 +203,8 @@ static acpi_status hci_raw(struct toshiba_acpi_dev *dev,
+ 	results.length = sizeof(out_objs);
+ 	results.pointer = out_objs;
+ 
+-	status = acpi_evaluate_object(NULL, (char *)dev->method_hci, &params,
++	status = acpi_evaluate_object(dev->acpi_dev->handle,
++				      (char *)dev->method_hci, &params,
+ 				      &results);
+ 	if ((status == AE_OK) && (out_objs->package.count <= HCI_WORDS)) {
+ 		for (i = 0; i < out_objs->package.count; ++i) {
+@@ -836,18 +823,11 @@ static const struct backlight_ops toshiba_backlight_data = {
+         .update_status  = set_lcd_status,
+ };
+ 
+-static int __devinit toshiba_acpi_setup_keyboard(struct toshiba_acpi_dev *dev,
+-						 char *device_path)
++static int __devinit toshiba_acpi_setup_keyboard(struct toshiba_acpi_dev *dev)
+ {
+ 	acpi_status status;
+ 	int error;
+ 
+-	status = acpi_get_handle(NULL, device_path, &dev->handle);
+-	if (ACPI_FAILURE(status)) {
+-		pr_info("Unable to get notification device\n");
+-		return -ENODEV;
+-	}
+-
+ 	dev->hotkey_dev = input_allocate_device();
+ 	if (!dev->hotkey_dev) {
+ 		pr_info("Unable to register input device\n");
+@@ -855,14 +835,14 @@ static int __devinit toshiba_acpi_setup_keyboard(struct toshiba_acpi_dev *dev,
+ 	}
+ 
+ 	dev->hotkey_dev->name = "Toshiba input device";
+-	dev->hotkey_dev->phys = device_path;
++	dev->hotkey_dev->phys = "toshiba_acpi/input0";
+ 	dev->hotkey_dev->id.bustype = BUS_HOST;
+ 
+ 	error = sparse_keymap_setup(dev->hotkey_dev, toshiba_acpi_keymap, NULL);
+ 	if (error)
+ 		goto err_free_dev;
+ 
+-	status = acpi_evaluate_object(dev->handle, "ENAB", NULL, NULL);
++	status = acpi_evaluate_object(dev->acpi_dev->handle, "ENAB", NULL, NULL);
+ 	if (ACPI_FAILURE(status)) {
+ 		pr_info("Unable to enable hotkeys\n");
+ 		error = -ENODEV;
+@@ -915,6 +895,8 @@ static int toshiba_acpi_remove(struct acpi_device *acpi_dev, int type)
+ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
+ {
+ 	struct toshiba_acpi_dev *dev;
++	acpi_status status;
++	acpi_handle handle;
+ 	u32 hci_result;
+ 	bool bt_present;
+ 	int ret = 0;
+@@ -923,27 +905,20 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
+ 	pr_info("Toshiba Laptop ACPI Extras version %s\n",
+ 	       TOSHIBA_ACPI_VERSION);
+ 
++	/* simple device detection: look for HCI method */
++	status = acpi_get_handle(acpi_dev->handle, "GHCI", &handle);
++	if (ACPI_FAILURE(status))
++		return -ENODEV;
++
+ 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+ 	if (!dev)
+ 		return -ENOMEM;
+ 	dev->acpi_dev = acpi_dev;
++	dev->method_hci = "GHCI";
+ 	acpi_dev->driver_data = dev;
+ 
+-	/* simple device detection: look for HCI method */
+-	if (is_valid_acpi_path(TOSH_INTERFACE_1 GHCI_METHOD)) {
+-		dev->method_hci = TOSH_INTERFACE_1 GHCI_METHOD;
+-		if (toshiba_acpi_setup_keyboard(dev, TOSH_INTERFACE_1))
+-			pr_info("Unable to activate hotkeys\n");
+-	} else if (is_valid_acpi_path(TOSH_INTERFACE_2 GHCI_METHOD)) {
+-		dev->method_hci = TOSH_INTERFACE_2 GHCI_METHOD;
+-		if (toshiba_acpi_setup_keyboard(dev, TOSH_INTERFACE_2))
+-			pr_info("Unable to activate hotkeys\n");
+-	} else {
+-		ret = -ENODEV;
+-		goto error;
+-	}
+-
+-	pr_info("HCI method: %s\n", dev->method_hci);
++	if (toshiba_acpi_setup_keyboard(dev))
++		pr_info("Unable to activate hotkeys\n");
+ 
+ 	mutex_init(&dev->mutex);
+ 
+-- 
+1.7.4.1
 
-Does that answer your question?  If not, please tell me, so I can fix
-the comment :-)
-
-> > Always.  Which also means that before_commit now ensures an LRU
-> > page is moved to root_mem_cgroup for babysitting during the
-> > charge, so that concurrent isolations/putbacks are always
-> > accounted correctly.  Is this what you had in mind?  Did I miss
-> > something?
-> 
-> In my tree, the before->commit->after protocol is folded into one function.
-> I didn't post it since I know you also have patch doing that.  So guess I
-> don't understand why we need to move the page to root while it is gonna be
-> charged to a memcg by commit_charge shortly after.
-
-It is a consequence of your fix that LRU-accounts unused pages to
-root_mem_cgroup upon lru-add, and thus deaccounts !PageCgroupAcctLRU
-from root_mem_cgroup unconditionally upon lru-del.
-
-Consider the following scenario:
-
-	1. page with multiple mappings swapped out.
-
-	2. one memcg faults the page, then unmaps it.  The page is
-	uncharged, but swap-freeing fails due to the other ptes, and
-	the page stays lru-accounted on the memcg it's no longer
-	charged to.
-
-	3. another memcg faults the page.  before_commit must
-	lru-unaccount from pc->mem_cgroup before pc->mem_cgroup is
-	overwritten.
-
-	4. the page is charged.  after_commit does the fixup.
-
-Between 3. and 4., a reclaimer can isolate the page.  The old
-lru-accounting is undone and mem_cgroup_lru_del() does this:
-
-        if (TestClearPageCgroupAcctLRU(pc)) {
-                VM_BUG_ON(!pc->mem_cgroup);
-                mem = pc->mem_cgroup;
-        } else
-                mem = root_mem_cgroup;
-       mz = page_cgroup_zoneinfo(mem, page);
-        /* huge page split is done under lru_lock. so, we have no races. */
-        MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
-
-The rule is that !PageCgroupAcctLRU means that the page is
-lru-accounted to root_mem_cgroup.  So when charging, the page has to
-be moved to root_mem_cgroup until a new memcg is responsible for it.
-
-> My understanding is that in before_commit, we uncharge the page from
-> previous memcg lru if AcctLRU was set, then in the commit_charge we update
-> the new owner of it. And in after_commit we update the memcg lru for the new
-> owner after linking the page in the lru.
-
-Exactly, just that between unaccounting from the old and accounting to
-the new, someone else may look at the page and has to find it in a
-sensible state.
