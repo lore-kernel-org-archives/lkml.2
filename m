@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab1H2Mn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 08:43:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53915 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab1H2Mnu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 08:43:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312913020-7508-1-git-send-email-linus.walleij@stericsson.com>
-References: <1312913020-7508-1-git-send-email-linus.walleij@stericsson.com>
-Date: Mon, 29 Aug 2011 14:43:48 +0200
-Message-ID: <CACRpkdZngg7mazP2XqdvyPXBRZs519a_R12Vss5K3oQhtMhv1w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] gpio/nomadik: remove pull-pinconfig and add SPI2
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Fredrik Svensson <fredrik.xk.svensson@stericsson.com>,
-        Daniel Willerud <daniel.willerud@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753489Ab1H2Mtu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 08:49:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32434 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037Ab1H2Mtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 08:49:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,296,1312182000"; 
+   d="scan'208";a="46007465"
+Subject: Re: [PATCH] dma: shdma: transfer based runtime PM
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <Pine.LNX.4.64.1108291419410.31184@axis700.grange>
+References: <Pine.LNX.4.64.1108181650530.5245@axis700.grange>
+	 <1314282386.1606.42.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108251636190.17190@axis700.grange>
+	 <1314283286.1606.52.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
+	 <1314292850.1606.88.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108260107550.17190@axis700.grange>
+	 <1314619909.1606.130.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108291419410.31184@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Aug 2011 18:18:33 +0530
+Message-ID: <1314622113.1606.134.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 9, 2011 at 8:03 PM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
+On Mon, 2011-08-29 at 14:21 +0200, Guennadi Liakhovetski wrote:
+> On Mon, 29 Aug 2011, Vinod Koul wrote:
+> 
+> > On Fri, 2011-08-26 at 01:11 +0200, Guennadi Liakhovetski wrote:
+> > > On Thu, 25 Aug 2011, Koul, Vinod wrote:
+> > > > Wont it be easy to to do:
+> > > > - pm_runtime_get() in each submit
+> > > > - pm_runtime_put() in each callback
+> > > > Normal case above would work just fine
+> > > > - In terminate case, count the number of issued transactions, and call
+> > > > pm_runtime_put() for each canceled transaction
+> > > > (i am assuming that for each timeout error, the client will call
+> > > > terminate)
+> > > 
+> > > As I said, this won't be very easy to do this in a robust way. You'd have 
+> > > to scan your list of DMA blocks and see, which of them belong to one 
+> > > descriptor, and once you reach the end of that descriptor, issue a put(). 
+> > > Perhaps, this can be done, but my choice went to the currently presented 
+> > > solution.
+> > If you count the number of descriptor submitted in your submitted list
+> > and call _put for each, I see no reason why it wont be simple and better
+> > than current approach.
+> 
+> Sorry, I thought, you wanted to avoid extra counting, because runtime-pm 
+> counts by itself. Now you propose to count...
+see below it doesn't count but iterate thru list
+> 
+> > Something like:
+> > /* since callback is set for last descriptor of chain, we call runtime
+> >  * put for that desc alone
+> >  */
+> > list_for_each_entry_safe(desc, __desc, sh_chan->ld_queue, node) {
+> > 	if (desc->async_tx.callback)
+> > 		pm_runtime_put(device);
+> 
+> Not all dma users have callbacks.
+Do you have such usage today, at least I dont :)
+Nevertheless, in tx_submit adding a simple flag in your drivers
+descriptor structure can tell you whether to call _put() or not. Agreed?
 
-> From: Fredrik Svensson <fredrik.xk.svensson@stericsson.com>
->
-> Remove PIN_CFG_PULL in pincfg.h for plat-nomadik, PIN_CFG_INPUT
-> already takes care of this. Added support for SPI2.
->
-> Signed-off-by: Fredrik Svensson <fredrik.xk.svensson@stericsson.com>
-> Signed-off-by: Daniel Willerud <daniel.willerud@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+--
+~Vinod 
+> 
+> > If i read shdma correctly, descriptors are put into ld_queue of channel
+> > and any pending should be checked in this list alone.
+> > For normal case again you check for the callback to decide if you need
+> > to call pm_runtime_put() or not.
+> 
+> Thanks
+> Guennadi
 > ---
->  arch/arm/mach-ux500/pins-db8500.h           |  142 ++++++++++++++-------------
->  arch/arm/plat-nomadik/include/plat/pincfg.h |    5 -
->  2 files changed, 73 insertions(+), 74 deletions(-)
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
 
-Since this one is only touching ux500 I'm picking it to the ux500-core
-tree now, with new subject "mach-ux500: remove pull-pinconfig and add SPI2.
 
-Makes for less conflicts anyway.
 
-Still would like 2/3 and 3/3 to go into the gpio tree, knock knock :-)
-
-Yours,
-Linus Walleij
