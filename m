@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab1H2X2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:28:45 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48469 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab1H2X1q (ORCPT
+	id S1755605Ab1H2X3k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:29:40 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:59546 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755323Ab1H2X3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:27:46 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
-        mtosatti@redhat.com, riel@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, aliguori@us.ibm.com, raharper@us.ibm.com,
-        kvm-ia64@vger.kernel.org, Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH 1/4] Add flag to indicate that a vm was stopped by the host
-Date: Mon, 29 Aug 2011 17:27:12 -0600
-Message-Id: <1314660435-23293-2-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314660435-23293-1-git-send-email-emunson@mgebm.net>
-References: <1314660435-23293-1-git-send-email-emunson@mgebm.net>
+	Mon, 29 Aug 2011 19:29:38 -0400
+Message-ID: <4E5C20A7.9040603@panasas.com>
+Date: Mon, 29 Aug 2011 16:28:39 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        <user-mode-linux-devel@lists.sourceforge.net>,
+        Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: [uml-devel] [PATCH 8/9] um: fix strrchr problems
+References: <1314634419-24766-1-git-send-email-richard@nod.at> <1314634419-24766-9-git-send-email-richard@nod.at> <20110829142705.5be82d7c.akpm@linux-foundation.org> <4E5C06DF.60508@nod.at> <20110829221230.GP2203@ZenIV.linux.org.uk> <4E5C0F9F.5000405@nod.at> <20110829221922.GQ2203@ZenIV.linux.org.uk> <4E5C11D5.4020404@nod.at>
+In-Reply-To: <4E5C11D5.4020404@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag will be used to check if the vm was stopped by the host when a soft
-lockup was detected.
+On 08/29/2011 03:25 PM, Richard Weinberger wrote:
+>>
+>> Try to build it static...
+> 
+> I'm building most of the time static.
+> Using defconfig and
+> CONFIG_STATIC_LINK=y
+> it builds fine here (x86_64 and i386)
+> 
+> Thanks,
+> //richard
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
----
- arch/x86/include/asm/pvclock-abi.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+With some switches and optimization gcc might turn strrchr
+into a built-in inline.
 
-diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-index 35f2d19..6167fd7 100644
---- a/arch/x86/include/asm/pvclock-abi.h
-+++ b/arch/x86/include/asm/pvclock-abi.h
-@@ -40,5 +40,6 @@ struct pvclock_wall_clock {
- } __attribute__((__packed__));
- 
- #define PVCLOCK_TSC_STABLE_BIT	(1 << 0)
-+#define PVCLOCK_GUEST_STOPPED	(1 << 1)
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_X86_PVCLOCK_ABI_H */
--- 
-1.7.4.1
+What option turns off all optimizations? It might fail then.
 
+Boaz
