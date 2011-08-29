@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1H2SAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:00:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45427 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174Ab1H2SAc convert rfc822-to-8bit (ORCPT
+	id S1754650Ab1H2SAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 14:00:38 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46830 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754559Ab1H2SAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:00:32 -0400
-Subject: Re: [PATCH 09/32] nohz: Move ts->idle_calls into strict idle logic
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 19:59:49 +0200
-In-Reply-To: <20110829173426.GE9748@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <1313423549-27093-10-git-send-email-fweisbec@gmail.com>
-	 <1314629267.2816.82.camel@twins>
-	 <20110829173426.GE9748@somewhere.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314640789.2816.122.camel@twins>
-Mime-Version: 1.0
+	Mon, 29 Aug 2011 14:00:33 -0400
+X-Sasl-enc: 6NmIt3Dsz5McI3cBu0nR+MsB2fpfoqUIZVDFMJN9v0qZ 1314640832
+Date: Mon, 29 Aug 2011 11:00:26 -0700
+From: Greg KH <greg@kroah.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 35/46] Staging: hv: Fix a bug in vmbus_match()
+Message-ID: <20110829180026.GA19668@kroah.com>
+References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
+ <1314469905-7058-1-git-send-email-kys@microsoft.com>
+ <1314469905-7058-35-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314469905-7058-35-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 19:34 +0200, Frederic Weisbecker wrote:
-> On Mon, Aug 29, 2011 at 04:47:47PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > > +static bool tick_nohz_can_stop_tick(int cpu, struct tick_sched *ts)
-> > > +{
-> > > +       /*
-> > > +        * If this cpu is offline and it is the one which updates
-> > > +        * jiffies, then give up the assignment and let it be taken by
-> > > +        * the cpu which runs the tick timer next. If we don't drop
-> > > +        * this here the jiffies might be stale and do_timer() never
-> > > +        * invoked.
-> > > +        */
-> > > +       if (unlikely(!cpu_online(cpu))) {
-> > > +               if (cpu == tick_do_timer_cpu)
-> > > +                       tick_do_timer_cpu = TICK_DO_TIMER_NONE;
-> > > +       }
-> > > +
-> > > +       if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
-> > > +               return false;
-> > > +
-> > > +       if (need_resched())
-> > > +               return false;
-> > > +
-> > > +       if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
-> > > +               static int ratelimit;
-> > > +
-> > > +               if (ratelimit < 10) {
-> > > +                       printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
-> > > +                              (unsigned int) local_softirq_pending());
-> > > +                       ratelimit++;
-> > > +               }
-> > > +               return false;
-> > > +       }
-> > > +
-> > > +       return true;
-> > > +} 
-> > 
-> > Why aren't rcu_needs_cpu(), printk_needs_cpu() and arch_needs_cpu() not
-> > in there?
-> > 
-> > That are typical 'can we go sleep now?' functions.
+On Sat, Aug 27, 2011 at 11:31:34AM -0700, K. Y. Srinivasan wrote:
+> The recent checkin that add a private pointer to hv_vmbus_device_id
+> introduced this bug in vmbus_match; fix it.
 > 
-> Because when one of these functions are positive, the ts->next_jiffies and
-> ts->last_jiffies stats are updated. Not with the above.
-> Also I start to think the above checks are only useful in the idle case.
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/staging/hv/vmbus_drv.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+> index be62b62..51002c0 100644
+> --- a/drivers/staging/hv/vmbus_drv.c
+> +++ b/drivers/staging/hv/vmbus_drv.c
+> @@ -273,7 +273,7 @@ static int vmbus_match(struct device *device, struct device_driver *driver)
+>  
+>  	for (; !is_null_guid(id_array->guid); id_array++)
+>  		if (!memcmp(&id_array->guid, &hv_dev->dev_type.b,
+> -				sizeof(struct hv_vmbus_device_id)))
+> +				sizeof(uuid_le)))
 
-Then call it tick_nohz_can_stop_tick_idle() or so, and create
-tick_nohz_can_stop_tick() to deal with all stuff.
+Ick, sorry about this, it was my fault.
 
-> We still want tick_nohz_stop_sched_tick() to have the *needs_cpu() checks
-> so that they can restore a HZ periodic behaviour on interrupt return if
-> needed.
-
-Well, no, on interrupt return you shouldn't do anything. If you've
-stopped the tick it stays stopped until you do something that needs it,
-then that action will re-enable it.
-
-> That said I wonder if some of the above conditions should restore a periodic
-> behaviour on interrupt return...
-
-I would expect the tick not to be stopped when tick_nohz_can_stop_tick()
-returns false. If it returns true, then I expect anything that needs it
-to re-enable it.
-
+greg k-h
