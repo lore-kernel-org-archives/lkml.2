@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab1H2VFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:05:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59524 "EHLO
+	id S1755158Ab1H2VFI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:05:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59515 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab1H2VFM (ORCPT
+	with ESMTP id S1754722Ab1H2VFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:05:12 -0400
+	Mon, 29 Aug 2011 17:05:05 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Matthew Garrett <mjg@redhat.com>
 Cc: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 5/5] toshiba_acpi: Don't add devices for unsupported features
-Date: Mon, 29 Aug 2011 16:04:55 -0500
-Message-Id: <1314651895-24345-6-git-send-email-seth.forshee@canonical.com>
+Subject: [RFC PATCH 2/5] toshiba_acpi: Fix up return codes
+Date: Mon, 29 Aug 2011 16:04:52 -0500
+Message-Id: <1314651895-24345-3-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314651895-24345-1-git-send-email-seth.forshee@canonical.com>
 References: <1314651895-24345-1-git-send-email-seth.forshee@canonical.com>
@@ -21,243 +21,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Test for features up-front to determine whether or not they are
-supported, and avoid creating devices and proc files for
-unsupported features.
+Many routines are returning success on failure, and those that are
+indicating failure frequently return incorrect error codes. Fix
+these up throughout the driver.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 ---
- drivers/platform/x86/toshiba_acpi.c |  102 +++++++++++++++++++++++------------
- 1 files changed, 67 insertions(+), 35 deletions(-)
+ drivers/platform/x86/toshiba_acpi.c |   45 +++++++++++++++-------------------
+ 1 files changed, 20 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 2772e0e..03f0f8c 100644
+index 604c666..bb142e9 100644
 --- a/drivers/platform/x86/toshiba_acpi.c
 +++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -113,11 +113,15 @@ struct toshiba_acpi_dev {
- 	struct input_dev *hotkey_dev;
- 	struct backlight_device *backlight_dev;
- 	struct led_classdev led_dev;
--	int illumination_installed;
-+
- 	int force_fan;
- 	int last_key_event;
- 	int key_event_valid;
+@@ -191,7 +191,7 @@ static int write_acpi_int(const char *methodName, int val)
+ 	in_objs[0].integer.value = val;
  
-+	int illumination_supported:1;
-+	int video_supported:1;
-+	int fan_supported:1;
-+
- 	struct mutex mutex;
- };
+ 	status = acpi_evaluate_object(NULL, (char *)methodName, &params, NULL);
+-	return (status == AE_OK);
++	return (status == AE_OK) ? 0 : -EIO;
+ }
  
-@@ -545,24 +549,31 @@ static const struct file_operations lcd_proc_fops = {
- 	.write		= lcd_proc_write,
- };
+ /* Perform a raw HCI call.  Here we don't care about input or output buffer
+@@ -419,7 +419,7 @@ static int bt_rfkill_set_block(void *data, bool blocked)
  
-+static int get_video_status(struct toshiba_acpi_dev *dev, u32 *status)
-+{
-+	u32 hci_result;
-+
-+	hci_read1(dev, HCI_VIDEO_OUT, status, &hci_result);
-+	return hci_result == HCI_SUCCESS ? 0 : -EIO;
-+}
-+
- static int video_proc_show(struct seq_file *m, void *v)
- {
- 	struct toshiba_acpi_dev *dev = m->private;
--	u32 hci_result;
+ 	mutex_lock(&dev->mutex);
+ 	if (hci_get_radio_state(dev, &radio_state) != HCI_SUCCESS) {
+-		err = -EBUSY;
++		err = -EIO;
+ 		goto out;
+ 	}
+ 
+@@ -432,7 +432,7 @@ static int bt_rfkill_set_block(void *data, bool blocked)
+ 	hci_write2(dev, HCI_WIRELESS, value, HCI_WIRELESS_BT_ATTACH, &result2);
+ 
+ 	if (result1 != HCI_SUCCESS || result2 != HCI_SUCCESS)
+-		err = -EBUSY;
++		err = -EIO;
+ 	else
+ 		err = 0;
+  out:
+@@ -478,10 +478,10 @@ static int get_lcd(struct backlight_device *bd)
  	u32 value;
-+	int ret;
  
--	hci_read1(dev, HCI_VIDEO_OUT, &value, &hci_result);
+ 	hci_read1(dev, HCI_LCD_BRIGHTNESS, &value, &hci_result);
 -	if (hci_result == HCI_SUCCESS) {
-+	ret = get_video_status(dev, &value);
-+	if (!ret) {
- 		int is_lcd = (value & HCI_VIDEO_OUT_LCD) ? 1 : 0;
- 		int is_crt = (value & HCI_VIDEO_OUT_CRT) ? 1 : 0;
- 		int is_tv = (value & HCI_VIDEO_OUT_TV) ? 1 : 0;
++	if (hci_result == HCI_SUCCESS)
+ 		return (value >> HCI_LCD_BRIGHTNESS_SHIFT);
+-	} else
+-		return -EFAULT;
++
++	return -EIO;
+ }
+ 
+ static int lcd_proc_show(struct seq_file *m, void *v)
+@@ -497,11 +497,11 @@ static int lcd_proc_show(struct seq_file *m, void *v)
+ 		seq_printf(m, "brightness:              %d\n", value);
+ 		seq_printf(m, "brightness_levels:       %d\n",
+ 			     HCI_LCD_BRIGHTNESS_LEVELS);
+-	} else {
+-		pr_err("Error reading LCD brightness\n");
++		return 0;
+ 	}
+ 
+-	return 0;
++	pr_err("Error reading LCD brightness\n");
++	return -EIO;
+ }
+ 
+ static int lcd_proc_open(struct inode *inode, struct file *file)
+@@ -515,10 +515,7 @@ static int set_lcd(struct toshiba_acpi_dev *dev, int value)
+ 
+ 	value = value << HCI_LCD_BRIGHTNESS_SHIFT;
+ 	hci_write1(dev, HCI_LCD_BRIGHTNESS, value, &hci_result);
+-	if (hci_result != HCI_SUCCESS)
+-		return -EFAULT;
+-
+-	return 0;
++	return hci_result == HCI_SUCCESS ? 0 : -EIO;
+ }
+ 
+ static int set_lcd_status(struct backlight_device *bd)
+@@ -575,11 +572,10 @@ static int video_proc_show(struct seq_file *m, void *v)
  		seq_printf(m, "lcd_out:                 %d\n", is_lcd);
  		seq_printf(m, "crt_out:                 %d\n", is_crt);
  		seq_printf(m, "tv_out:                  %d\n", is_tv);
--		return 0;
+-	} else {
+-		pr_err("Error reading video out status\n");
++		return 0;
  	}
  
--	return -EIO;
-+	return ret;
+-	return 0;
++	return -EIO;
  }
  
  static int video_proc_open(struct inode *inode, struct file *file)
-@@ -575,13 +586,12 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
+@@ -592,6 +588,7 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
  {
  	struct toshiba_acpi_dev *dev = PDE(file->f_path.dentry->d_inode)->data;
  	char *cmd, *buffer;
--	int ret = 0;
-+	int ret;
++	int ret = 0;
  	int value;
  	int remain = count;
  	int lcd_out = -1;
- 	int crt_out = -1;
- 	int tv_out = -1;
--	u32 hci_result;
- 	u32 video_out;
- 
- 	cmd = kmalloc(count + 1, GFP_KERNEL);
-@@ -616,8 +626,8 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
- 
- 	kfree(cmd);
- 
--	hci_read1(dev, HCI_VIDEO_OUT, &video_out, &hci_result);
--	if (hci_result == HCI_SUCCESS) {
-+	ret = get_video_status(dev, &video_out);
-+	if (!ret) {
- 		unsigned int new_video_out = video_out;
- 		if (lcd_out != -1)
- 			_set_bit(&new_video_out, HCI_VIDEO_OUT_LCD, lcd_out);
-@@ -629,8 +639,6 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
+@@ -644,12 +641,12 @@ static ssize_t video_proc_write(struct file *file, const char __user *buf,
+ 		/* To avoid unnecessary video disruption, only write the new
  		 * video setting if something changed. */
  		if (new_video_out != video_out)
- 			ret = write_acpi_int(METHOD_VIDEO_OUT, new_video_out);
--	} else {
--		ret = -EIO;
+-			write_acpi_int(METHOD_VIDEO_OUT, new_video_out);
++			ret = write_acpi_int(METHOD_VIDEO_OUT, new_video_out);
+ 	} else {
+-		return -EFAULT;
++		ret = -EIO;
  	}
  
- 	return ret ? ret : count;
-@@ -645,20 +653,27 @@ static const struct file_operations video_proc_fops = {
- 	.write		= video_proc_write,
- };
+-	return count;
++	return ret ? ret : count;
+ }
  
-+static int get_fan_status(struct toshiba_acpi_dev *dev, u32 *status)
-+{
-+	u32 hci_result;
-+
-+	hci_read1(dev, HCI_FAN, status, &hci_result);
-+	return hci_result == HCI_SUCCESS ? 0 : -EIO;
-+}
-+
- static int fan_proc_show(struct seq_file *m, void *v)
- {
- 	struct toshiba_acpi_dev *dev = m->private;
--	u32 hci_result;
-+	int ret;
- 	u32 value;
- 
--	hci_read1(dev, HCI_FAN, &value, &hci_result);
--	if (hci_result == HCI_SUCCESS) {
-+	ret = get_fan_status(dev, &value);
-+	if (!ret) {
+ static const struct file_operations video_proc_fops = {
+@@ -671,11 +668,10 @@ static int fan_proc_show(struct seq_file *m, void *v)
+ 	if (hci_result == HCI_SUCCESS) {
  		seq_printf(m, "running:                 %d\n", (value > 0));
  		seq_printf(m, "force_on:                %d\n", dev->force_fan);
--		return 0;
+-	} else {
+-		pr_err("Error reading fan status\n");
++		return 0;
  	}
  
--	return -EIO;
-+	return ret;
+-	return 0;
++	return -EIO;
  }
  
  static int fan_proc_open(struct inode *inode, struct file *file)
-@@ -797,24 +812,32 @@ static const struct file_operations version_proc_fops = {
- static void __devinit
- create_toshiba_proc_entries(struct toshiba_acpi_dev *dev)
- {
--	proc_create_data("lcd", S_IRUGO | S_IWUSR, toshiba_proc_dir,
--			 &lcd_proc_fops, dev);
--	proc_create_data("video", S_IRUGO | S_IWUSR, toshiba_proc_dir,
--			 &video_proc_fops, dev);
--	proc_create_data("fan", S_IRUGO | S_IWUSR, toshiba_proc_dir,
--			 &fan_proc_fops, dev);
--	proc_create_data("keys", S_IRUGO | S_IWUSR, toshiba_proc_dir,
--			 &keys_proc_fops, dev);
-+	if (dev->backlight_dev)
-+		proc_create_data("lcd", S_IRUGO | S_IWUSR, toshiba_proc_dir,
-+				 &lcd_proc_fops, dev);
-+	if (dev->video_supported)
-+		proc_create_data("video", S_IRUGO | S_IWUSR, toshiba_proc_dir,
-+				 &video_proc_fops, dev);
-+	if (dev->fan_supported)
-+		proc_create_data("fan", S_IRUGO | S_IWUSR, toshiba_proc_dir,
-+				 &fan_proc_fops, dev);
-+	if (dev->hotkey_dev)
-+		proc_create_data("keys", S_IRUGO | S_IWUSR, toshiba_proc_dir,
-+				 &keys_proc_fops, dev);
- 	proc_create_data("version", S_IRUGO, toshiba_proc_dir,
- 			 &version_proc_fops, dev);
- }
- 
--static void remove_toshiba_proc_entries(void)
-+static void remove_toshiba_proc_entries(struct toshiba_acpi_dev *dev)
- {
--	remove_proc_entry("lcd", toshiba_proc_dir);
--	remove_proc_entry("video", toshiba_proc_dir);
--	remove_proc_entry("fan", toshiba_proc_dir);
--	remove_proc_entry("keys", toshiba_proc_dir);
-+	if (dev->backlight_dev)
-+		remove_proc_entry("lcd", toshiba_proc_dir);
-+	if (dev->video_supported)
-+		remove_proc_entry("video", toshiba_proc_dir);
-+	if (dev->fan_supported)
-+		remove_proc_entry("fan", toshiba_proc_dir);
-+	if (dev->hotkey_dev)
-+		remove_proc_entry("keys", toshiba_proc_dir);
- 	remove_proc_entry("version", toshiba_proc_dir);
- }
- 
-@@ -869,7 +892,7 @@ static int toshiba_acpi_remove(struct acpi_device *acpi_dev, int type)
- {
- 	struct toshiba_acpi_dev *dev = acpi_driver_data(acpi_dev);
- 
--	remove_toshiba_proc_entries();
-+	remove_toshiba_proc_entries(dev);
- 
- 	if (dev->hotkey_dev) {
- 		input_unregister_device(dev->hotkey_dev);
-@@ -884,7 +907,7 @@ static int toshiba_acpi_remove(struct acpi_device *acpi_dev, int type)
- 	if (dev->backlight_dev)
- 		backlight_device_unregister(dev->backlight_dev);
- 
--	if (dev->illumination_installed)
-+	if (dev->illumination_supported)
- 		led_classdev_unregister(&dev->led_dev);
- 
- 	kfree(dev);
-@@ -913,6 +936,7 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
- 	struct toshiba_acpi_dev *dev;
- 	const char *hci_method;
- 	u32 hci_result;
-+	u32 dummy;
- 	bool bt_present;
- 	int ret = 0;
- 	struct backlight_properties props;
-@@ -941,8 +965,6 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
- 	/* enable event fifo */
- 	hci_write1(dev, HCI_SYSTEM_EVENT, 1, &hci_result);
- 
--	create_toshiba_proc_entries(dev);
--
- 	props.type = BACKLIGHT_PLATFORM;
- 	props.max_brightness = HCI_LCD_BRIGHTNESS_LEVELS - 1;
- 	dev->backlight_dev = backlight_device_register("toshiba",
-@@ -985,9 +1007,19 @@ static int __devinit toshiba_acpi_add(struct acpi_device *acpi_dev)
- 		dev->led_dev.brightness_set = toshiba_illumination_set;
- 		dev->led_dev.brightness_get = toshiba_illumination_get;
- 		if (!led_classdev_register(&acpi_dev->dev, &dev->led_dev))
--			dev->illumination_installed = 1;
-+			dev->illumination_supported = 1;
+@@ -701,7 +697,7 @@ static ssize_t fan_proc_write(struct file *file, const char __user *buf,
+ 	    value >= 0 && value <= 1) {
+ 		hci_write1(dev, HCI_FAN, value, &hci_result);
+ 		if (hci_result != HCI_SUCCESS)
+-			return -EFAULT;
++			return -EIO;
+ 		else
+ 			dev->force_fan = value;
+ 	} else {
+@@ -741,13 +737,12 @@ static int keys_proc_show(struct seq_file *m, void *v)
+ 			pr_notice("Re-enabled hotkeys\n");
+ 		} else {
+ 			pr_err("Error reading hotkey status\n");
+-			goto end;
++			return -EIO;
+ 		}
  	}
  
-+	/* Determine whether or not BIOS supports fan and video interfaces */
-+
-+	ret = get_video_status(dev, &dummy);
-+	dev->video_supported = !ret;
-+
-+	ret = get_fan_status(dev, &dummy);
-+	dev->fan_supported = !ret;
-+
-+	create_toshiba_proc_entries(dev);
-+
+ 	seq_printf(m, "hotkey_ready:            %d\n", dev->key_event_valid);
+ 	seq_printf(m, "hotkey:                  0x%04x\n", dev->last_key_event);
+-end:
  	return 0;
+ }
  
- error:
 -- 
 1.7.4.1
 
