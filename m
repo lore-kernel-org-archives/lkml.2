@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1H2POI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:14:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34029 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab1H2POD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:14:03 -0400
-Date: Mon, 29 Aug 2011 16:13:33 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>, nicolas.pitre@linaro.org,
-        arnd@arndb.de, tony@atomide.com, jochen@scram.de,
-        linux-kernel@vger.kernel.org, jamie@jamieiles.com, linux@maxim.org.za,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 00/18] Introduce a led trigger for CPU activity and
-	consolidate LED driver in ARM
-Message-ID: <20110829151333.GA17887@n2100.arm.linux.org.uk>
-References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com> <CACRpkda6-8dxSbF12N-Q32cOpogu-ZZmTApnvNBa03iOcEeqaQ@mail.gmail.com> <CAK5ve-JM=01vTqSi59R6ASyGU_2fVXzKtjNh42LKeF2HF3NzSA@mail.gmail.com>
+	id S1753998Ab1H2PQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:16:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11432 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab1H2PQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 11:16:16 -0400
+Date: Mon, 29 Aug 2011 17:16:06 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Lin Ming <lxy@ss.pku.edu.cn>
+cc: Lukas Czerner <lczerner@redhat.com>, Bart Van Assche <bvanassche@acm.org>,
+        Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
+ device is removed
+In-Reply-To: <CAF1ivSYu=0Xh3aXJGbuBUZjT_azLTO6Tq1gzhNRBWsHXCUMjiw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1108291712590.3904@dhcp-27-109.brq.redhat.com>
+References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com> <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com> <CAF1ivSY0NwdZTCQQ_BG5Vk8rnjiH=sS0V08ajxc8Gw5YBwD3qA@mail.gmail.com> <alpine.LFD.2.00.1108291637470.3904@dhcp-27-109.brq.redhat.com>
+ <CAF1ivSYu=0Xh3aXJGbuBUZjT_azLTO6Tq1gzhNRBWsHXCUMjiw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-JM=01vTqSi59R6ASyGU_2fVXzKtjNh42LKeF2HF3NzSA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 09:18:29PM +0800, Bryan Wu wrote:
-> On Mon, Aug 29, 2011 at 7:00 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Fri, Aug 26, 2011 at 11:03 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
+On Mon, 29 Aug 2011, Lin Ming wrote:
+
+> On Mon, Aug 29, 2011 at 10:42 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> > On Mon, 29 Aug 2011, Lin Ming wrote:
 > >
-> >> Based on Linus Walleij's ARM LED consolidation work, this patchset introduce a
-> >> new generic led trigger for CPU not only for ARM but also for others.
+> >> On Mon, Aug 29, 2011 at 7:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> >> >
+> >> > Regarding the atomic operations I do not think that implicit memory
+> >> > barriers are needed here as atomic_dec_and_test() implies memory
+> >>
+> >> Which implicit memory barrier you are talking about?
 > >
-> > I think Russell was pretty clear that he saw problems inside the "new LEDs"
-> > subsystem (drivers/leds) that need be fixed before we migrate this support
-> > to use the LED class devices.
-> >
-> > Can you see if you can address his comment on the earlier realview patch,
-> > i.e. this:
-> > http://marc.info/?l=linux-arm-kernel&m=131237280009775&w=2
-> >
+> > smp_mb() at both side of the operation as documented here in
+> > Documentation/memory-barriers.txt
 > 
-> Yeah, I replied that email with a patch to select LEDS_CLASS when
-> CONFIG_NEW_LEDS=y.
+> Thanks for the info.
+> 
+> But I don't follow you ... why that implicit memory barriers are NOT needed?
+> 
 
-I don't see any point to that:
+Oh, I am sorry I have actually wanted to say that *explicit* memory
+barriers are no needed in that case. Sorry for the confusion!
 
-menuconfig NEW_LEDS
-        bool "LED Support"
-	select LEDS_CLASS
-
-if NEW_LEDS
-
-config LEDS_CLASS
-        bool "LED Class Support"
-        help
-          This option enables the led sysfs class in /sys/class/leds.  You'll
-          need this to do anything useful with LEDs.  If unsure, say N.
-
-So, with that select there, you either have NEW_LEDS=y LEDS_CLASS=y
-or NEW_LEDS=n LEDS_CLASS=n.  To put it another way, you can't select
-LEDS_CLASS when NEW_LEDS=n, and you can't deselect LEDS_CLASS when
-NEW_LEDS=y.
-
-So, either the LEDS_CLASS option is completely pointless, which means
-it should be killed off, or LEDS_CLASS needs to be fixed so that it
-actually does what it says in its help text and controls whether we
-have a LEDS sysfs class _without_ affecting the ability to have
-triggers setup by platform code.
-
-What it can't do is stay as-is, because it's clearly broken and the
-options help texts don't match reality.
+Thanks!
+-Lukas
