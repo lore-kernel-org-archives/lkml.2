@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab1H2LTp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 07:19:45 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:55490 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752307Ab1H2LTj (ORCPT
+	id S1753128Ab1H2LUM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 07:20:12 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55662 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1H2LUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 07:19:39 -0400
-Date: Mon, 29 Aug 2011 14:19:32 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Felipe Balbi <balbi@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] sound: usb: mixer: increase control transfer timeout
-Message-ID: <20110829111931.GU13925@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1314616226-15942-1-git-send-email-balbi@ti.com>
- <20110829111607.GB21556@linutronix.de>
+	Mon, 29 Aug 2011 07:20:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] tpm: TCG_ATMEL should depend on HAS_IOPORT
+Date: Mon, 29 Aug 2011 13:19:53 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Debora Velarde <debora@linux.vnet.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        Jonas Bonn <jonas@southpole.se>, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+References: <1312801699-17474-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1312801699-17474-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sBvc846/5FzkyDmz"
-Content-Disposition: inline
-In-Reply-To: <20110829111607.GB21556@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201108291319.54170.arnd@arndb.de>
+X-Provags-ID: V02:K0:00zQo04a71QL82EUSCYQnIzhjLa+29g+G4F2vQR7TAc
+ 9WEDnrfIljcmBocPRqNbpf1/8p2QGPGMBK8NbBykyyAVy+IDiv
+ nMv6CyfYp5mgpFxBc3mlTH//cTDtklm76+JkwqWKviE8gnO4bT
+ qwHXxsnMG8f4JthSYMtdUOAVW53693V/t+gZobkKs1imvfI6as
+ bVoredW46xDCzsn6spY3A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 08 August 2011, Geert Uytterhoeven wrote:
+> drivers/char/tpm/tpm_atmel.h: In function ‘atmel_get_base_addr’:
+> drivers/char/tpm/tpm_atmel.h:129: error: implicit declaration of function ‘ioport_map’
+> drivers/char/tpm/tpm_atmel.h:129: warning: return makes pointer from integer without a cast
+> 
+> The code in tpm_atmel.h supports PPC64 (using the device tree and ioremap())
+> and "anything else" (using ioport_map()). However, ioportmap() is only
+> available on platforms that set HAS_IOPORT.
+> 
+> Although PC64 seems to have HAS_IOPORT, a "depends on HAS_IOPORT" should work,
+> but I think it's better to expose the special PPC64 handling explicit using
+> "depends on PPC64 || HAS_IOPORT".
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
---sBvc846/5FzkyDmz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Hi,
+FWIW, I've now got a first prototype of the HAS_IOPORT rework in
+http://git.kernel.org/?p=linux/kernel/git/arm/linux-arm-soc.git;a=shortlog;h=refs/heads/tmp/randconfig3
+along with a lot of bug fixes for ARM. Feel free to play with that on
+other architectures.
 
-On Mon, Aug 29, 2011 at 01:16:07PM +0200, Sebastian Andrzej Siewior wrote:
-> * Felipe Balbi | 2011-08-29 14:10:26 [+0300]:
->=20
-> >Not sure this information is valid on a commit log, but I
-> >have a FPGA-platform which I use to test my USB controller
-> >and when that's running on FS, this message fails because
-> >control message times out before controller has the opportunity
-> >to complete all three phases of the SETUP transaction.
->=20
-> Does it still happen if you remove all the debug output from your udc
-> driver?
+Since your patch adds another use of HAS_IOPORT, I will have to rename
+that as well to HAS_IOPORT_MAP as I do for all the other uses.
 
-I can try it out, but what's the point ? If we don't increase the
-timeout, then whenever we want to debug some other problem, we will have
-to keep a local patch on that file ?
-
---=20
-balbi
-
---sBvc846/5FzkyDmz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOW3XDAAoJEAv8Txj19kN1G6wH/RBB5V93bS68st7mY8fW2WUl
-QwVOl/ztpPCRGrVuNKw7e+dW3jL9R1BI0LlmjRDzc51dtTCZixs6//PqciwF1V+I
-fMj7olopOdIlU7DNwrA9lgFb2E0239XQBVVPw+spJX09XK8D/h7BLpKmDCZRNJOw
-yXnY9jF9tphy43UH/NLC1BkN3ql5L+JeN729jnOJ7Ymp2aqob/Rh0a0bg/cpfj/4
-4EMthpYP0AD9vfGJy4Pcl9VYibbsn1vSL/SbyfLbgHATHRIHiW2w/5vUwgrOqiAq
-i07Ng9YQ364pF5U7Gp1SlCODacZx2AWARHpOBB11mOhGtbs9KKk0rRuR8/QiyeE=
-=7At/
------END PGP SIGNATURE-----
-
---sBvc846/5FzkyDmz--
+	Arnd
