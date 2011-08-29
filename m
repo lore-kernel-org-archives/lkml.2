@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1H2Ftf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 01:49:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50879 "EHLO mail.skyhub.de"
+	id S1752753Ab1H2Fxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 01:53:38 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48631 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738Ab1H2Ftb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 01:49:31 -0400
-Date: Mon, 29 Aug 2011 07:49:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
-        dri-devel@lists.freedesktop.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-Message-ID: <20110829054926.GA7123@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Pavel Ivanov <paivanof@gmail.com>,
-	Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
-	dri-devel@lists.freedesktop.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <CAG1a4rs53RwkSxBvRQ5MrUbm7KEnpuEjw2fhSnT_1vqVPQrqgA@mail.gmail.com>
- <1314435638.2321.12.camel@thor.local>
- <CAG1a4rukteF+NmmTEhYT5yOmUYfDcbZ5qsghai1wm3ndpeiesg@mail.gmail.com>
- <20110828053624.GC12851@liondog.tnic>
- <CAG1a4rv8YirPpyYP735Zn3gpp-kcvvECd=-haZ-qx90_99x8aQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAG1a4rv8YirPpyYP735Zn3gpp-kcvvECd=-haZ-qx90_99x8aQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750738Ab1H2Fxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 01:53:33 -0400
+Date: Mon, 29 Aug 2011 15:53:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.1-rc4
+Message-Id: <20110829155328.0375a8d8d3776755c279e5ae@canb.auug.org.au>
+In-Reply-To: <CA+55aFwwtfLpmNS+Wm4DXgJsipPS8siF6Dur4rMDum7Zs=KqKw@mail.gmail.com>
+References: <CA+55aFwwtfLpmNS+Wm4DXgJsipPS8siF6Dur4rMDum7Zs=KqKw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__29_Aug_2011_15_53_28_+1000_zeuDWzFjWrWr1cnp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 28, 2011 at 05:47:59PM -0400, Pavel Ivanov wrote:
-> On Sun, Aug 28, 2011 at 1:36 AM, Borislav Petkov <bp@alien8.de> wrote:
-> >> > With CONFIG_DRM_RADEON=y, the microcode is needed before it can be
-> >> > loaded from userspace, so it needs to be built into the kernel as well.
-> >>
-> >> How should I do that? I've tried to set all "m"s to "y" in .config and
-> >> still saw this issue. Should I set some special parameter?
-> >
-> > You need to add "radeon/CEDAR_pfp.bin" to CONFIG_EXTRA_FIRMWARE when you
-> > configure your kernel and enable CONFIG_FIRMWARE_IN_KERNEL.
-> >
-> > The radeon/CEDAR_pfp.bin file (+ leading directory, mind you) should
-> > most probably be located in /lib/firmware or to whatever you have set
-> > CONFIG_EXTRA_FIRMWARE_DIR so that Kbuild can find it (if not, you'll get
-> > a warning at the end of the kernel build). This way, it works for both
-> > radeon being =m and =y.
-> 
-> Everything else in /lib/firmware/radeon is needed after user space
-> become available?
+--Signature=_Mon__29_Aug_2011_15_53_28_+1000_zeuDWzFjWrWr1cnp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You mean the other *.bin files? If so, not for your case, AFAICT - your
-driver is requesting CEDAR_pfp.bin only, correct? But I mean, it won't
-hurt if you leave them all there, they're under 1M.
+Hi Linus,
 
-You should recheck and add any other .bin files to the
-CONFIG_EXTRA_FIRMWARE string so that radeon.ko is satisfied :).
+On Sun, 28 Aug 2011 21:52:43 -0700 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+>       All Arch: remove linkage for sys_nfsservctl system call
 
-HTH.
+Unfortunately, this patch (which never made it to linux-next) broke three
+architectures :-(
 
--- 
-Regards/Gruss,
-    Boris.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__29_Aug_2011_15_53_28_+1000_zeuDWzFjWrWr1cnp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOWylYAAoJEDMEi1NhKgbsJO0H/jhHhIHjaEl8XSRRefEaA7MZ
+4wUNjiaJOd3Mfus4BI/Sk9R09sc6YWQofoQqz7/ig4+p58ck9GBTWQAf66Nqb+4Y
+AZhu4TDjDJ25F9R0PKhqQpz4GogeakYXnKy4XcFnxhOuARierIXDMqcVRiqXhQxe
+9Rtwv4A9pg2AGvPMYqYntfgi3P1mRFjj9HIIPPRlBTwUNmPzIhEZ7pdnsWONmorU
+OCDM3s+B43OKQTkdj+gt10cTOwBsfcBwWex0Em0pdXbnIQwGldEnuCBQrqaKHbCt
++ExM1bsFhScq6Wf/AXvYtpH4bkDJY6T6XW3tYB2aYZe6USDYtWDKpNVNAttD63Q=
+=+kwf
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Aug_2011_15_53_28_+1000_zeuDWzFjWrWr1cnp--
