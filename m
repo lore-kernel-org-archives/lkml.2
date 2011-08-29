@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab1H2Oud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:50:33 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47366 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab1H2Ou1 (ORCPT
+	id S1753797Ab1H2OyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:54:21 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:52619 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab1H2OyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:50:27 -0400
-Subject: [PATCH 2/2 RESEND] regulator: aat2870: Remove a redundant bitwise
- and operation
+	Mon, 29 Aug 2011 10:54:16 -0400
+Subject: [PATCH v2 RESEND] regulator: tps65023: Remove num_voltages array
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jin Park <jinyoungp@nvidia.com>
-In-Reply-To: <1314629299.2753.1.camel@phoenix>
-References: <1314629299.2753.1.camel@phoenix>
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Aug 2011 22:50:19 +0800
-Message-ID: <1314629419.2753.3.camel@phoenix>
+Date: Mon, 29 Aug 2011 22:54:09 +0800
+Message-ID: <1314629649.2753.4.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -26,28 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The implementation in aat2870_update() already did the bitwise and operation
-against mask parameter.
+We can get n_voltages for each regulator from table_len of struct tps_info.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/aat2870-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/regulator/tps65023-regulator.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/regulator/aat2870-regulator.c b/drivers/regulator/aat2870-regulator.c
-index 11d1ab4..c8ea28e 100644
---- a/drivers/regulator/aat2870-regulator.c
-+++ b/drivers/regulator/aat2870-regulator.c
-@@ -62,7 +62,7 @@ static int aat2870_ldo_set_voltage_sel(struct regulator_dev *rdev,
- 	struct aat2870_data *aat2870 = dev_get_drvdata(ri->pdev->dev.parent);
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index 701a590..3d2a81a 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -106,10 +106,6 @@ static const u16 LDO2_VSEL_table[] = {
+ 	2500, 2800, 3000, 3300,
+ };
  
- 	return aat2870->update(aat2870, ri->voltage_addr, ri->voltage_mask,
--			(selector << ri->voltage_shift) & ri->voltage_mask);
-+			selector << ri->voltage_shift);
- }
+-static unsigned int num_voltages[] = {ARRAY_SIZE(VDCDC1_VSEL_table),
+-				0, 0, ARRAY_SIZE(LDO1_VSEL_table),
+-				ARRAY_SIZE(LDO2_VSEL_table)};
+-
+ /* Regulator specific details */
+ struct tps_info {
+ 	const char *name;
+@@ -453,7 +449,7 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
  
- static int aat2870_ldo_get_voltage_sel(struct regulator_dev *rdev)
+ 		tps->desc[i].name = info->name;
+ 		tps->desc[i].id = i;
+-		tps->desc[i].n_voltages = num_voltages[i];
++		tps->desc[i].n_voltages = info->table_len;
+ 		tps->desc[i].ops = (i > TPS65023_DCDC_3 ?
+ 					&tps65023_ldo_ops : &tps65023_dcdc_ops);
+ 		tps->desc[i].type = REGULATOR_VOLTAGE;
 -- 
 1.7.4.1
 
