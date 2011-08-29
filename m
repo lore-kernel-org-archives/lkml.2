@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab1H2Vim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 17:38:42 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:45036 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754708Ab1H2Vil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 17:38:41 -0400
-Message-ID: <4E5C06DF.60508@nod.at>
-Date: Mon, 29 Aug 2011 23:38:39 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1755089Ab1H2Vjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 17:39:35 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:24399 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab1H2Vjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 17:39:32 -0400
+X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Aug 2011 17:39:32 EDT
+Message-ID: <4E5C04CD.8070902@hp.com>
+Date: Mon, 29 Aug 2011 17:29:49 -0400
+From: Vladislav Yasevich <vladislav.yasevich@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        Al Viro <viro@ftp.linux.org.uk>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 8/9] um: fix strrchr problems
-References: <1314634419-24766-1-git-send-email-richard@nod.at> <1314634419-24766-9-git-send-email-richard@nod.at> <20110829142705.5be82d7c.akpm@linux-foundation.org>
-In-Reply-To: <20110829142705.5be82d7c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Joe Perches <joe@perches.com>
+CC: Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/24] sctp: Remove unnecessary OOM logging messages
+References: <cover.1314650069.git.joe@perches.com> <21b4d996c8861373ac77d427914ec7882fe0c83e.1314650069.git.joe@perches.com>
+In-Reply-To: <21b4d996c8861373ac77d427914ec7882fe0c83e.1314650069.git.joe@perches.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.08.2011 23:27, schrieb Andrew Morton:
->
->> Subject: [PATCH 8/9] um: fix strrchr problems
->
-> What are the problems?
->
-> On Mon, 29 Aug 2011 18:13:38 +0200
-> Richard Weinberger<richard@nod.at>  wrote:
->
->> From: Al Viro<viro@ftp.linux.org.uk>
->>
->> Several years old patch, originally by jdike, I think...
->>
->> Signed-off-by: Al Viro<viro@zeniv.linux.org.uk>
->> Signed-off-by: Richard Weinberger<richard@nod.at>
->> ---
->>   arch/um/Makefile |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/um/Makefile b/arch/um/Makefile
->> index fab8121..c0f712c 100644
->> --- a/arch/um/Makefile
->> +++ b/arch/um/Makefile
->> @@ -41,7 +41,7 @@ KBUILD_CPPFLAGS += -I$(srctree)/$(ARCH_DIR)/sys-$(SUBARCH)
->>   KBUILD_CFLAGS += $(CFLAGS) $(CFLAGS-y) -D__arch_um__ -DSUBARCH=\"$(SUBARCH)\" \
->>   	$(ARCH_INCLUDE) $(MODE_INCLUDE) -Dvmap=kernel_vmap	\
->>   	-Din6addr_loopback=kernel_in6addr_loopback \
->> -	-Din6addr_any=kernel_in6addr_any
->> +	-Din6addr_any=kernel_in6addr_any -Dstrrchr=kernel_strrchr
->>
->>   KBUILD_AFLAGS += $(ARCH_INCLUDE)
->
-> z:/usr/src/linux-3.1-rc4>  grep -r kernel_strrchr .
-> z:/usr/src/linux-3.1-rc4>
->
-> ok, I give up.  How does this work?
+On 08/29/2011 05:17 PM, Joe Perches wrote:
+> Removing unnecessary messages saves code and text.
+> 
+> Site specific OOM messages are duplications of a generic MM
+> out of memory message and aren't really useful, so just
+> delete them.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-*grrr*, you can drop this patch.
-To my excuse, I've dropped it already from my queue but after pulling a 
-second time from Al's git branch it made it again into my queue and I 
-forgot about it, sorry!
+Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
 
-Thanks,
-//richard
+-vlad
+
+> ---
+>  net/sctp/protocol.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+> index 91784f4..0801444 100644
+> --- a/net/sctp/protocol.c
+> +++ b/net/sctp/protocol.c
+> @@ -1326,7 +1326,6 @@ SCTP_STATIC __init int sctp_init(void)
+>  			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
+>  	} while (!sctp_assoc_hashtable && --order > 0);
+>  	if (!sctp_assoc_hashtable) {
+> -		pr_err("Failed association hash alloc\n");
+>  		status = -ENOMEM;
+>  		goto err_ahash_alloc;
+>  	}
+> @@ -1340,7 +1339,6 @@ SCTP_STATIC __init int sctp_init(void)
+>  	sctp_ep_hashtable = (struct sctp_hashbucket *)
+>  		kmalloc(64 * sizeof(struct sctp_hashbucket), GFP_KERNEL);
+>  	if (!sctp_ep_hashtable) {
+> -		pr_err("Failed endpoint_hash alloc\n");
+>  		status = -ENOMEM;
+>  		goto err_ehash_alloc;
+>  	}
+> @@ -1359,7 +1357,6 @@ SCTP_STATIC __init int sctp_init(void)
+>  			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
+>  	} while (!sctp_port_hashtable && --order > 0);
+>  	if (!sctp_port_hashtable) {
+> -		pr_err("Failed bind hash alloc\n");
+>  		status = -ENOMEM;
+>  		goto err_bhash_alloc;
+>  	}
+
