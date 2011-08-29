@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab1H2OFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:05:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58263 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab1H2OFR (ORCPT
+	id S1753504Ab1H2OFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:05:36 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57007 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753329Ab1H2OFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:05:17 -0400
-Date: Mon, 29 Aug 2011 16:05:09 +0200
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Oleg Nesterov <oleg@redhat.com>,
-        Paul Menage <paul@paulmenage.org>
-Cc: containers@lists.linux-foundation.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH pm-freezer 2/4] freezer: set PF_NOFREEZE on a dying task
- right before TASK_DEAD
-Message-ID: <20110829140509.GC18871@mtj.dyndns.org>
-References: <20110829140418.GB18871@mtj.dyndns.org>
+	Mon, 29 Aug 2011 10:05:30 -0400
+X-Sasl-enc: dRhNKpgAxVVC9HnRUBDXainlizpw63Pfp7ve5r64Il9/ 1314626729
+Message-ID: <4E5B9CB0.4090708@ladisch.de>
+Date: Mon, 29 Aug 2011 16:05:36 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Jassi Brar <jassisinghbrar@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v2] sound: usb: mixer: increase control transfer timeout
+References: <20110829122320.GX13925@legolas.emea.dhcp.ti.com>	<1314621110-19367-1-git-send-email-balbi@ti.com> <CABb+yY15qrszsbJSGGFra7mrVRO_oQPUhNT=U7TNpyoYikABPw@mail.gmail.com>
+In-Reply-To: <CABb+yY15qrszsbJSGGFra7mrVRO_oQPUhNT=U7TNpyoYikABPw@mail.gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829140418.GB18871@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3fb45733df "freezer: make exiting tasks properly unfreezable" removed
-clear_freeze_flag() from exit path and set PF_NOFREEZE right after
-PTRACE_EVENT_EXIT; however, Oleg pointed out that following exit paths
-may cause interaction with device drivers after PM freezer consider
-the system frozen.
+Jassi Brar wrote:
+> On Mon, Aug 29, 2011 at 6:01 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > 100ms might not be enough for slower devices. Increasing
+> > timeout to 1000ms doesn't seem like overkill.
+> >
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > ---
+> >
+> > Changes since v1:
+> >  . Increase all 100ms timeout to 1000ms
+> >
+> >  sound/usb/mixer.c        |    4 ++--
+> >  sound/usb/mixer_quirks.c |   10 +++++-----
+> >  2 files changed, 7 insertions(+), 7 deletions(-)
 
-There's no try_to_freeze() call in the exit path and the only
-necessary guarantee is that freezer doesn't hang waiting for zombies.
-Set PF_NOFREEZE right before setting tsk->state to TASK_DEAD instead.
+The calls in mixer_quirks.c are device-specific and known to work, so
+none of them actually require a longer timeout. However, increasing
+their timeout doesn't hurt either, and ...
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
----
- kernel/exit.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+> > +                                   buf, val_len, 1000) >= val_len) {
+> > +                                   buf, val_len, 1000) >= 0) {
+> > +                             !value, 0, NULL, 0, 1000);
+> > +                             !value, 0, NULL, 0, 1000);
+> > +                             value, index + 2, NULL, 0, 1000);
+> > +                                     jacks[i].unitid << 8, buf, 3, 1000);
+> > +                             50, 0, &new_status, 1, 1000);
+> 
+> How about also converting to use a local define for timeout value ?
 
-Index: work/kernel/exit.c
-===================================================================
---- work.orig/kernel/exit.c
-+++ work/kernel/exit.c
-@@ -913,12 +913,6 @@ NORET_TYPE void do_exit(long code)
- 
- 	ptrace_event(PTRACE_EVENT_EXIT, code);
- 
--	/*
--	 * With ptrace notification done, there's no point in freezing from
--	 * here on.  Disallow freezing.
--	 */
--	current->flags |= PF_NOFREEZE;
--
- 	validate_creds_for_do_exit(tsk);
- 
- 	/*
-@@ -1044,6 +1038,10 @@ NORET_TYPE void do_exit(long code)
- 
- 	preempt_disable();
- 	exit_rcu();
-+
-+	/* this task is now dead and freezer should ignore it */
-+	current->flags |= PF_NOFREEZE;
-+
- 	/* causes final put_task_struct in finish_task_switch(). */
- 	tsk->state = TASK_DEAD;
- 	schedule();
+... now that _all_ calls to snd_usb_ctl_msg use the same timeout value,
+we could just as well drop this parameter.
+
+
+Regards,
+Clemens
