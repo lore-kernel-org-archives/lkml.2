@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab1H2SzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 14:55:04 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57538 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754821Ab1H2SzA (ORCPT
+	id S1754820Ab1H2TBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 15:01:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54892 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab1H2TBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 14:55:00 -0400
-X-Sasl-enc: lnCH58gem7EHMtSRLBO3/jsc3yFIXMoZ96/8viprlyxc 1314644099
-Date: Mon, 29 Aug 2011 11:54:03 -0700
-From: Greg KH <greg@kroah.com>
-To: "Emilio G. Cota" <cota@braap.org>
-Cc: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de, martyn.welch@ge.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging: vme: add functions for bridge module
- refcounting
-Message-ID: <20110829185403.GA20808@kroah.com>
-References: <1314608570-32766-1-git-send-email-manohar.vanga@cern.ch>
- <1314608570-32766-2-git-send-email-manohar.vanga@cern.ch>
- <20110829175104.GB10250@kroah.com>
- <20110829184012.GA19793@flamenco.cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829184012.GA19793@flamenco.cs.columbia.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Aug 2011 15:01:12 -0400
+Subject: [PATCH] x86, pci-nommu: fix potential NULL-ptr dereference in
+ check_addr()
+From: Arne Redlich <arne.redlich@googlemail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Aug 2011 21:01:00 +0200
+Message-ID: <1314644460.11636.2.camel@blackadder>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 02:40:12PM -0400, Emilio G. Cota wrote:
-> On Mon, Aug 29, 2011 at 10:51:04 -0700, Greg KH wrote:
-> > On Mon, Aug 29, 2011 at 11:02:48AM +0200, Manohar Vanga wrote:
-> > > This patch adds functions that allow for reference counting
-> > > bridge modules. The patch introduces the functions
-> > > 'vme_bridge_get()' and 'vme_bridge_put()'.
-> > > 
-> > > The functions are automatically called during .probe and .remove
-> > > for drivers.
-> > > 
-> > > This patch is based on the changes introduced by Emilio G. Cota
-> > > in the patch:
-> > > 
-> > >     https://lkml.org/lkml/2010/10/25/492
-> > 
-> > Generally do not try to couple a module reference count with a device
-> > count, you are locking code, not data, and we really don't want to lock
-> > code anymore now that we properly handle device reference counts.
-> 
-> (snip)
-> 
-> > > diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-> > > index 8959670..ef751a4 100644
-> > > --- a/drivers/staging/vme/vme_bridge.h
-> > > +++ b/drivers/staging/vme/vme_bridge.h
-> > > @@ -113,6 +113,7 @@ struct vme_bridge {
-> > >  	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
-> > >  	void *driver_priv;	/* Private pointer for the bridge driver */
-> > >  	struct list_head bus_list; /* list of VME buses */
-> > > +	struct module *owner;	/* module that owns the bridge */
-> > 
-> > Why?  When you register the device for this bridge, you should properly
-> > handle the module reference counting in the vme core for any open sysfs
-> > files.
-> > 
-> > Other than that, you shouldn't care about the module reference at all,
-> > right?
-> > 
-> > What am I missing here?  What is this solving?
-> > 
-> > confused,
-> 
-> AFAIK currently a vme bridge driver can be freely removed with rmmod
-> even if it has devices under it. The patch avoids this by increasing
-> the refcount of the bridge module every time a device is registered
-> under it.
-> 
-> What's the appropriate thing to do when rmmod tries to remove a bridge
-> module?
+check_addr() dereferences hwdev->dma_mask without first checking
+that it's actually non-NULL.
 
-Let it happen and remove all of the devices under it.
+Signed-off-by: Arne Redlich <arne.redlich@googlemail.com>
+---
+ arch/x86/kernel/pci-nommu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-That's the way all other bus drivers in the kernel work, why change this
-type of behavior?
+diff --git a/arch/x86/kernel/pci-nommu.c b/arch/x86/kernel/pci-nommu.c
+index 3af4af8..55b49c7 100644
+--- a/arch/x86/kernel/pci-nommu.c
++++ b/arch/x86/kernel/pci-nommu.c
+@@ -16,7 +16,7 @@ static int
+ check_addr(char *name, struct device *hwdev, dma_addr_t bus, size_t size)
+ {
+        if (hwdev && !dma_capable(hwdev, bus, size)) {
+-               if (*hwdev->dma_mask >= DMA_BIT_MASK(32))
++               if (hwdev->dma_mask && *hwdev->dma_mask >= DMA_BIT_MASK(32))
+                        printk(KERN_ERR
+                            "nommu_%s: overflow %Lx+%zu of device mask %Lx\n",
+                                name, (long long)bus, size,
+-- 
+1.7.4.1
 
-thanks,
 
-greg k-h
