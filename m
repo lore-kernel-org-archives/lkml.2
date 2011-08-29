@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab1H2JEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 05:04:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64040 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab1H2JEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 05:04:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,296,1312182000"; 
-   d="scan'208";a="43450636"
-From: "Ren, Yongjie" <yongjie.ren@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Date: Mon, 29 Aug 2011 17:03:16 +0800
-Subject: RE: [Bug #39412] Win Vista and Win2K8 guests' network breaks down
-Thread-Topic: [Bug #39412] Win Vista and Win2K8 guests' network breaks down
-Thread-Index: Acxlut0hb2+luX8wQbiZ/7XBOHKyMgAbhqKw
-Message-ID: <CE59C043D0EC3349B2BF41C0EC72229B12D24D15E8@shsmsx501.ccr.corp.intel.com>
-References: <Sm7qbRR0zn.A.yAG.LepWOB@chimera>
- <gUVi6eNP8RE.A.IBH.TfpWOB@chimera>
-In-Reply-To: <gUVi6eNP8RE.A.IBH.TfpWOB@chimera>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1753131Ab1H2JGa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 05:06:30 -0400
+Received: from cernmx30.cern.ch ([137.138.144.177]:48418 "EHLO
+	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab1H2JGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 05:06:24 -0400
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: <gregkh@suse.de>
+CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
+Subject: [PATCH 0/3] [RESEND v3] VME Driver Changes
+Date: Mon, 29 Aug 2011 11:02:47 +0200
+Message-ID: <1314608570-32766-1-git-send-email-manohar.vanga@cern.ch>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7T94iXS016653
 
-I've verified this bug in Linus' tree 3.1.0-rc4. It got fixed, so I closed the bug.
-The commit I tried is below.
-commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sun Aug 28 21:16:01 2011 -0700
+Hey Martyn,
 
-Best Regards,
-     Yongjie Ren  (Jay)
+These are the updated patches with the discussed issues resolved. Let
+me know if you spot anything else. A note on the changes:
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Monday, August 29, 2011 3:01 AM
-> To: Linux Kernel Mailing List
-> Cc: Kernel Testers List; Maciej Rutecki; Florian Mickler; Avi Kivity; Ren, Yongjie;
-> Marcelo Tosatti; Stefan Hajnoczi
-> Subject: [Bug #39412] Win Vista and Win2K8 guests' network breaks down
-> 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.39 and 3.0.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.39 and 3.0.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=39412
-> Subject		: Win Vista and Win2K8 guests' network breaks down
-> Submitter	: Jay Ren <yongjie.ren@intel.com>
-> Date		: 2011-07-15 15:31 (45 days old)
-> 
+* staging: vme: add functions for bridge module refcounting
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Fixed the parameter imbalance in vme_bridge_[get|put]. They both now
+take a struct vme_bridge * as their parameter. I used the vme_bridge *
+instead of vme_dev as it more coherent with the names of the functions.
+
+
+* staging: vme: add struct vme_dev for VME devices
+
+Fixes based on the above changes.
+
+
+* staging: vme: make match() driver specific to improve non-VME64x
+    support
+
+Cleaned up the loop in __vme_register_driver with a note on why there
+is no race involved.
+
+Thanks
+Manohar
+
+Manohar Vanga (3):
+  staging: vme: add functions for bridge module refcounting
+  staging: vme: add struct vme_dev for VME devices
+  staging: vme: make match() driver specific to improve non-VME64x
+    support
+
+ drivers/staging/vme/bridges/vme_ca91cx42.c |    2 +
+ drivers/staging/vme/bridges/vme_tsi148.c   |    2 +
+ drivers/staging/vme/devices/vme_user.c     |   67 +++----
+ drivers/staging/vme/devices/vme_user.h     |    2 +-
+ drivers/staging/vme/vme.c                  |  305 +++++++++++++++-------------
+ drivers/staging/vme/vme.h                  |   55 ++++--
+ drivers/staging/vme/vme_api.txt            |   79 +++++---
+ drivers/staging/vme/vme_bridge.h           |    6 +-
+ 8 files changed, 285 insertions(+), 233 deletions(-)
+
+-- 
+1.7.4.1
+
