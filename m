@@ -1,115 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab1H2IAJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 04:00:09 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:48776 "EHLO zene.cmpxchg.org"
+	id S1753140Ab1H2IBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 04:01:09 -0400
+Received: from linux-sh.org ([111.68.239.195]:38352 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026Ab1H2IAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 04:00:04 -0400
-Date: Mon, 29 Aug 2011 09:59:41 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [patch 7/8] vmscan: memcg-aware unevictable page rescue scanner
-Message-ID: <20110829075941.GB32114@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-8-git-send-email-hannes@cmpxchg.org>
- <CALWz4iwDGD8xoUbzi=9Sy7C-njcYqmka_25rQL8RhkN_ArLgDw@mail.gmail.com>
- <20110720003653.GA667@cmpxchg.org>
- <CALWz4iy-EXmRrwPGW=d=0iHGVvKfB1yQEQBb2QYGmPCKHZtE=g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1753026Ab1H2IBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 04:01:00 -0400
+Date: Mon, 29 Aug 2011 17:00:47 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only channel ID
+Message-ID: <20110829080047.GJ31809@linux-sh.org>
+References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange> <1308916071.1536.4.camel@vkoul-udesk3>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALWz4iy-EXmRrwPGW=d=0iHGVvKfB1yQEQBb2QYGmPCKHZtE=g@mail.gmail.com>
+In-Reply-To: <1308916071.1536.4.camel@vkoul-udesk3>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 12:28:22AM -0700, Ying Han wrote:
-> On Tue, Jul 19, 2011 at 5:36 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Tue, Jul 19, 2011 at 03:47:43PM -0700, Ying Han wrote:
-> >> On Tue, May 31, 2011 at 11:25 PM, Johannes Weiner <hannes@cmpxchg.org>wrote:
-> >>
-> >> > Once the per-memcg lru lists are exclusive, the unevictable page
-> >> > rescue scanner can no longer work on the global zone lru lists.
-> >> >
-> >> > This converts it to go through all memcgs and scan their respective
-> >> > unevictable lists instead.
-> >> >
-> >> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> >> > ---
-> >> >  include/linux/memcontrol.h |    2 +
-> >> >  mm/memcontrol.c            |   11 +++++++++
-> >> >  mm/vmscan.c                |   53
-> >> > +++++++++++++++++++++++++++----------------
-> >> >  3 files changed, 46 insertions(+), 20 deletions(-)
-> >> >
-> >> > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> >> > index cb02c00..56c1def 100644
-> >> > --- a/include/linux/memcontrol.h
-> >> > +++ b/include/linux/memcontrol.h
-> >> > @@ -60,6 +60,8 @@ extern void mem_cgroup_cancel_charge_swapin(struct
-> >> > mem_cgroup *ptr);
-> >> >
-> >> >  extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct
-> >> > *mm,
-> >> >                                        gfp_t gfp_mask);
-> >> > +struct page *mem_cgroup_lru_to_page(struct zone *, struct mem_cgroup *,
-> >> > +                                   enum lru_list);
-> >> >
-> >>
-> >> Did we miss a #ifdef case for this function? I got compile error by
-> >> disabling memcg.
-> >
-> > I assume it's because the call to it is not optimized away properly in
-> > the disabled case.  I'll have it fixed in the next round, thanks for
-> > letting me know.
-> >
-> 
-> Hi Johannes:
-> 
-> This is the change for the hierarchy_walk() sent on the other patch,
-> also including a fix. Please consider to fold in your patch:
-> 
-> Fix the hierarchy_walk() in the unevictable page rescue scanner
-> 
-> the patch including changes
-> 1. adjust the change in hierarchy_walk() which needs to hold the reference to
-> the first mem_cgroup.
-> 2. add stop_hierarchy_walk() at the end which is missed on the original patch.
-> 
-> Signed-off-by: Ying Han <yinghan@google.com>
-> 
-> Change-Id: I72fb5d351faf0f111c8c99edd90b6cfee6281d3f
-> ---
->  mm/memcontrol.c |    3 +++
->  mm/vmscan.c     |    7 ++++---
->  2 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9bcd429..426092b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1514,6 +1514,9 @@ void mem_cgroup_stop_hierarchy_walk(struct
-> mem_cgroup *target,
->  >------>------->------->-------    struct mem_cgroup *first,
->  >------>------->------->-------    struct mem_cgroup *mem)
->  {
-> +>------if (!target)
-> +>------>-------target = root_mem_cgroup;
+On Fri, Jun 24, 2011 at 05:17:51PM +0530, Koul, Vinod wrote:
+> On Fri, 2011-06-24 at 13:56 +0200, Guennadi Liakhovetski wrote:
+> > On some sh-mobile systems there are more than one DMA controllers, that
+> > can be used for serial ports. Specifying a DMA device in sh-sci platform
+> > data unnecessarily restricts the driver to only use one DMA controller.
+> > 
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > ---
+> >  drivers/tty/serial/sh-sci.c |   25 ++++++++-----------------
+> >  include/linux/serial_sci.h  |    2 --
+> >  2 files changed, 8 insertions(+), 19 deletions(-)
+> > 
+> > diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+> > index ebd8629..8711f4e 100644
+> > --- a/drivers/tty/serial/sh-sci.c
+> > +++ b/drivers/tty/serial/sh-sci.c
+> > @@ -1295,12 +1295,8 @@ static bool filter(struct dma_chan *chan, void *slave)
+> >  	dev_dbg(chan->device->dev, "%s: slave ID %d\n", __func__,
+> >  		param->slave_id);
+> >  
+> > -	if (param->dma_dev == chan->device->dev) {
+> > -		chan->private = param;
+> > -		return true;
+> > -	} else {
+> > -		return false;
+> > -	}
+> > +	chan->private = param;
+> > +	return true;
+> You should not assign chan->private. 
+> Please move this  to dma_slave_control API
 
-This is important and I have it already in my tree.
-
-After the changes to the iteration process as explained in my previous
-email, I don't think the rest of this patch is necessary.  Can you
-confirm?  Thanks!
+I haven't seen any reply to this comment and this patch seems to still be
+outstanding, is there an updated version of this patch that I've missed?
