@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab1H2K7a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 06:59:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46319 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab1H2K70 (ORCPT
+	id S1753118Ab1H2LAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 07:00:48 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54939 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1H2LAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 06:59:26 -0400
+	Mon, 29 Aug 2011 07:00:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110829101550.GT1923@amd.com>
-References: <1314364839-28492-1-git-send-email-joerg.roedel@amd.com>
- <CAK=WgbaiNxo_226Zp9BZpgUjYFajnvgPPCjCOYP2Tj4pkWTwVA@mail.gmail.com> <20110829101550.GT1923@amd.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 29 Aug 2011 13:59:05 +0300
-X-Google-Sender-Auth: zTUcEiJ4DFpsEMDjL4eQY_5jECA
-Message-ID: <CADMYwHwZPiH12HxOP952-Znm_+uMXKpj2M6ew8W-frZ7R8EcWg@mail.gmail.com>
-Subject: Re: [PATCH] iommu: Remove stub functions for !CONFIG_IOMMU_API
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Brown <davidb@codeaurora.org>
+In-Reply-To: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
+References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com>
+Date: Mon, 29 Aug 2011 13:00:42 +0200
+Message-ID: <CACRpkda6-8dxSbF12N-Q32cOpogu-ZZmTApnvNBa03iOcEeqaQ@mail.gmail.com>
+Subject: Re: [PATCH v4 00/18] Introduce a led trigger for CPU activity and
+ consolidate LED driver in ARM
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>
+Cc: linux@arm.linux.org.uk, tony@atomide.com, jochen@scram.de,
+        linux@maxim.org.za, nicolas.pitre@linaro.org, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, jamie@jamieiles.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 1:15 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> Isn't the abstraction that the drivers use the dma-api? There should be
-> an implementation that doesn't require the iommu-api for such devices,
-> no?
+On Fri, Aug 26, 2011 at 11:03 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
 
-Before we boot a remote processor device we often need to map it to
-some (specific) bus addresses (e.g. to allow the processor access to
-certain peripheral devices), and we're doing it directly with the
-IOMMU API.
+> Based on Linus Walleij's ARM LED consolidation work, this patchset introduce a
+> new generic led trigger for CPU not only for ARM but also for others.
 
-Do you think this kind of functionality should be added to the DMA API as well ?
+I think Russell was pretty clear that he saw problems inside the "new LEDs"
+subsystem (drivers/leds) that need be fixed before we migrate this support
+to use the LED class devices.
 
-IIRC, it was suggested awhile ago but you supported using the IOMMU
-API directly in this case.
+Can you see if you can address his comment on the earlier realview patch,
+i.e. this:
+http://marc.info/?l=linux-arm-kernel&m=131237280009775&w=2
+
+rpurdie: your comments on the state of the LEDs class?
+
+If I get time I will attempt to fix it, no clue when that will be though.
 
 Thanks,
-Ohad.
+Linus Walleij
