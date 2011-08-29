@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab1H2HUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 03:20:05 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58021 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab1H2HT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 03:19:59 -0400
-Date: Mon, 29 Aug 2011 17:19:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 29
-Message-Id: <20110829171946.4aaee92af22c1e1953358a78@canb.auug.org.au>
-In-Reply-To: <CA+icZUWHaVCaBwPm0+A9=2hfY8xOjRFM3XJ6_tOqSyKun-MOQA@mail.gmail.com>
-References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
-	<CA+icZUWHaVCaBwPm0+A9=2hfY8xOjRFM3XJ6_tOqSyKun-MOQA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r"
+	id S1752846Ab1H2HVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 03:21:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62646 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab1H2HVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 03:21:03 -0400
+Date: Mon, 29 Aug 2011 09:20:54 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 08/16] freezer: use dedicated lock instead of task_lock()
+ + memory barrier
+Message-ID: <20110829072054.GB16431@mtj.dyndns.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+ <1313763382-12341-9-git-send-email-tj@kernel.org>
+ <20110828175116.GA27032@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110828175116.GA27032@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Sedat,
+On Sun, Aug 28, 2011 at 07:51:16PM +0200, Oleg Nesterov wrote:
+> On 08/19, Tejun Heo wrote:
+> >
+> > it's by no means a
+> > hot path and the priority is staying unintrusive and safe.  This patch
+> > makes it simply use a dedicated lock
+> 
+> Agreed. but could you explain why it should be irq-safe? This is not
+> clear from the changelog.
 
-On Mon, 29 Aug 2011 08:52:29 +0200 Sedat Dilek <sedat.dilek@googlemail.com>=
- wrote:
->
-> Might be time to store next patch in .../v3.x/next/ or a new own
-> http://www.kernel.org/pub/linux/kernel/next/ upload-dir?
+It doesn't need to be.  cgroup_freezer assumes irq-safety so I didn't
+want to change it.  I was thinking about dropping irq-safety from all
+of them later on.
 
-I have already asked for a chnge, but not response :-(
+> Off-topic, but fake_signal_wake_up() is not safe if the caller
+> try_to_freeze_cgroup(). Unlike try_to_freeze_tasks() (which holds
+> tasklist) we can race with the exiting thread, ->sighand can be
+> NULL.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Indeed, guess we'll need to grab tasklist_lock around
+try_to_freeze_cgroup() too.
 
---Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOWz2SAAoJEDMEi1NhKgbs6zkH/iTlzgE1xr6m3UUSs4r7boNA
-1XzmRfj+mkDx1aL87WTPSlE0O+9grRXT4CNziHojjgztbbWe+umPQPAMmVzvEik2
-fDtoALrSw+23lWXQi0KB4IBkeiw0lwl1lgHR/IloaD9ais3d8Yulr3qW9dViqTlh
-c0/K5A8kuTcjScO1ExzOprq0HqmaDaOxtzQ6U7c9jgs5eG0NAO0Zj7dgZH7OmB+G
-YBHTeh3P4j5T7QYbRlP2Ks/VLEJbn0W+zgAvbbN4++7dzaMsREhzeenvorP2ulEI
-Pkh+61hF0+49Fx7GGjl6xQnWwBgohnX/WVFpjru42dtIQdMDZ3KnMtrcHkP6JME=
-=WWYm
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Aug_2011_17_19_46_+1000_T0qd5b8d=u+IiS1r--
+-- 
+tejun
