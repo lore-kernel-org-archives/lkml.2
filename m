@@ -1,32 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab1H2XFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 19:05:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57244 "EHLO
+	id S1755390Ab1H2XHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 19:07:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36952 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754103Ab1H2XFs (ORCPT
+	by vger.kernel.org with ESMTP id S1754103Ab1H2XHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 19:05:48 -0400
-Date: Mon, 29 Aug 2011 16:02:10 -0700
+	Mon, 29 Aug 2011 19:07:03 -0400
+Date: Mon, 29 Aug 2011 16:06:37 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH v3] proc: fix races against execve() of /proc/PID/fd**
-Message-Id: <20110829160210.f0f2ce99.akpm@linux-foundation.org>
-In-Reply-To: <20110829180011.GA8839@albatros>
-References: <20110804162009.GA2469@albatros>
-	<20110823144430.75315ce8.akpm@linux-foundation.org>
-	<20110826132909.GA8266@albatros>
-	<20110826124021.15f8e20c.akpm@linux-foundation.org>
-	<20110827190147.GA3015@albatros>
-	<20110828092520.GA8537@sun>
-	<20110828093156.GA6291@albatros>
-	<20110829180011.GA8839@albatros>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: fix page-faults detection in swap-token logic
+Message-Id: <20110829160637.bfc86e63.akpm@linux-foundation.org>
+In-Reply-To: <20110827083201.21854.56111.stgit@zurg>
+References: <20110827083201.21854.56111.stgit@zurg>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -35,13 +24,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011 22:00:11 +0400
-Vasiliy Kulikov <segoon@openwall.com> wrote:
+On Sat, 27 Aug 2011 12:32:01 +0300
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-> Used existing (un)lock_trace functions to check for ptrace_may_access(),
-> but instead of using EPERM return code from it use EACCES to be
-> consistent with existing proc_pid_follow_link()/proc_pid_readlink()
-> return code.  If they differ, attacker can guess what fds exist by
-> analyzing stat() return code.
+> After commit v2.6.36-5896-gd065bd8 "mm: retry page fault when blocking on disk transfer"
+> we usually wait in page-faults without mmap_sem held, so all swap-token logic was broken,
+> because it based on using rwsem_is_locked(&mm->mmap_sem) as sign of in progress page-faults.
 
-doh, I missed that bit.  Fair enough.
+If I'm interpreting this correctly, the thrash-handling logic has been
+effectively disabled for a year and nobody noticed.
+
+> This patch adds to mm_struct atomic counter of in progress page-faults for mm with swap-token.
+
+We desperately need to delete some code from mm/.  This seems like a
+great candidate.  Someone prove me wrong?
