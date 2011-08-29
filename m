@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273Ab1H2Eo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 00:44:56 -0400
-Received: from trent.utfs.org ([194.246.123.103]:52682 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933Ab1H2Eox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 00:44:53 -0400
-Date: Sun, 28 Aug 2011 21:44:50 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Trond.Myklebust@netapp.com
-Subject: undefined reference to `sys_nfsservctl'
-Message-ID: <alpine.DEB.2.01.1108282138020.9183@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1752214Ab1H2Esw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 00:48:52 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33194 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab1H2Esq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 00:48:46 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, grant.likely@secretlab.ca, lethal@linux-sh.org,
+        rpurdie@rpsys.net, Magnus Damm <magnus.damm@gmail.com>,
+        akpm@linux-foundation.org
+Date: Mon, 29 Aug 2011 13:50:18 +0900
+Message-Id: <20110829045018.23165.42899.sendpatchset@rxone.opensource.se>
+Subject: [PATCH] leds: Move Renesas TPU LED driver platform data
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying to compile 3.1-rc3 (git -c11a7e2), this happens after MODPOST:
+From: Magnus Damm <damm@opensource.se>
 
-  MODPOST vmlinux.o
-WARNING: modpost: Found 1 section mismatch(es).
-To see full details build your kernel with:
-'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-arch/powerpc/kernel/built-in.o: In function `sys_call_table':
-(.text+0x5be0): undefined reference to `sys_nfsservctl'
-make[1]: *** [.tmp_vmlinux1] Error 1
-make: *** [sub-make] Error 2
+Use the platform_data include directory for the
+TPU LED driver, as suggested by Paul Mundt.
 
-Full make.log and .config: http://nerdbynature.de/bits/3.1-rc3/nfs/
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
-This message can be found in an older thread, around 2.5.7:
+ drivers/leds/leds-renesas-tpu.c                |    2 +-
+ include/linux/leds-renesas-tpu.h               |   14 --------------
+ include/linux/platform_data/leds-renesas-tpu.h |   14 ++++++++++++++
+ 3 files changed, 15 insertions(+), 15 deletions(-)
 
-  http://lkml.indiana.edu/hypermail/linux/kernel/0203.2/1006.html
-
-In my .config I have set (from "make oldconfig")
-
-# CONFIG_NFS_FS is not set
-CONFIG_NFSD=y
-CONFIG_NFSD_V3=y
-# CONFIG_NFSD_V3_ACL is not set
-CONFIG_NFSD_V4=y
-CONFIG_NFS_COMMON=y
-
-Any ideas?
-
-Christian.
--- 
-BOFH excuse #332:
-
-suboptimal routing experience
+--- 0016/drivers/leds/leds-renesas-tpu.c
++++ work/drivers/leds/leds-renesas-tpu.c	2011-08-29 13:39:21.000000000 +0900
+@@ -26,7 +26,7 @@
+ #include <linux/io.h>
+ #include <linux/clk.h>
+ #include <linux/leds.h>
+-#include <linux/leds-renesas-tpu.h>
++#include <linux/platform_data/leds-renesas-tpu.h>
+ #include <linux/gpio.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
+--- 0015/include/linux/leds-renesas-tpu.h
++++ /dev/null	2011-08-29 11:06:11.184294567 +0900
+@@ -1,14 +0,0 @@
+-#ifndef __LEDS_RENESAS_TPU_H__
+-#define __LEDS_RENESAS_TPU_H__
+-
+-struct led_renesas_tpu_config {
+-	char *name;
+-	unsigned pin_gpio_fn;
+-	unsigned pin_gpio;
+-	unsigned int channel_offset;
+-	unsigned int timer_bit;
+-	unsigned int max_brightness;
+-	unsigned int refresh_rate;
+-};
+-
+-#endif /* __LEDS_RENESAS_TPU_H__ */
+--- /dev/null
++++ work/include/linux/platform_data/leds-renesas-tpu.h	2011-08-29 13:13:35.000000000 +0900
+@@ -0,0 +1,14 @@
++#ifndef __LEDS_RENESAS_TPU_H__
++#define __LEDS_RENESAS_TPU_H__
++
++struct led_renesas_tpu_config {
++	char *name;
++	unsigned pin_gpio_fn;
++	unsigned pin_gpio;
++	unsigned int channel_offset;
++	unsigned int timer_bit;
++	unsigned int max_brightness;
++	unsigned int refresh_rate;
++};
++
++#endif /* __LEDS_RENESAS_TPU_H__ */
