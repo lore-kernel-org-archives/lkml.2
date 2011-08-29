@@ -1,141 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab1H2TFC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 15:05:02 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60521 "EHLO zene.cmpxchg.org"
+	id S1754857Ab1H2TPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 15:15:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17091 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754332Ab1H2TE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 15:04:58 -0400
-Date: Mon, 29 Aug 2011 21:04:26 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
-Message-ID: <20110829190426.GC1434@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
- <CALWz4iwChnacF061L9vWo7nEA7qaXNJrK=+jsEe9xBtvEBD9MA@mail.gmail.com>
- <20110811210914.GB31229@cmpxchg.org>
- <CALWz4iwJfyWRineMy+W02YBvS0Y=Pv1y8Rb=8i5R=vUCfrO+iQ@mail.gmail.com>
- <CALWz4iwRXBheXFND5zq3ze2PJDkeoxYHD1zOsTyzOe3XqY5apA@mail.gmail.com>
+	id S1754655Ab1H2TPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 15:15:01 -0400
+Date: Mon, 29 Aug 2011 15:14:54 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: gregkh@suse.de, joe@perches.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] dynamic_debug: use a single printk() to emit msgs
+Message-ID: <20110829191453.GA3031@redhat.com>
+References: <cover.1314291909.git.jbaron@redhat.com>
+ <0ad5d75e1d238d186a3beadefd9de80316409867.1314291910.git.jbaron@redhat.com>
+ <CAJfuBxyyiGYJ-DmtJG2fy0HDZ6BbpYpXwnA02uetS_0RRuh+0w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALWz4iwRXBheXFND5zq3ze2PJDkeoxYHD1zOsTyzOe3XqY5apA@mail.gmail.com>
+In-Reply-To: <CAJfuBxyyiGYJ-DmtJG2fy0HDZ6BbpYpXwnA02uetS_0RRuh+0w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 12:22:02AM -0700, Ying Han wrote:
-> On Mon, Aug 29, 2011 at 12:15 AM, Ying Han <yinghan@google.com> wrote:
-> > On Thu, Aug 11, 2011 at 2:09 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >>
-> >> On Thu, Aug 11, 2011 at 01:39:45PM -0700, Ying Han wrote:
-> >> > Please consider including the following patch for the next post. It causes
-> >> > crash on some of the tests where sc->mem_cgroup is NULL (global kswapd).
-> >> >
-> >> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> >> > index b72a844..12ab25d 100644
-> >> > --- a/mm/vmscan.c
-> >> > +++ b/mm/vmscan.c
-> >> > @@ -2768,7 +2768,8 @@ loop_again:
-> >> >                          * Do some background aging of the anon list, to
-> >> > give
-> >> >                          * pages a chance to be referenced before
-> >> > reclaiming.
-> >> >                          */
-> >> > -                       if (inactive_anon_is_low(zone, &sc))
-> >> > +                       if (scanning_global_lru(&sc) &&
-> >> > +                                       inactive_anon_is_low(zone, &sc))
-> >> >                                 shrink_active_list(SWAP_CLUSTER_MAX, zone,
-> >> >                                                         &sc, priority, 0);
-> >>
-> >> Thanks!  I completely overlooked this one and only noticed it after
-> >> changing the arguments to shrink_active_list().
-> >>
-> >> On memcg configurations, scanning_global_lru() will essentially never
-> >> be true again, so I moved the anon pre-aging to a separate function
-> >> that also does a hierarchy loop to preage the per-memcg anon lists.
-> >>
-> >> I hope to send out the next revision soon.
-> >
-> > Also, please consider to fold in the following patch as well. It fixes
-> > the root cgroup lru accounting and we could easily trigger OOM while
-> > doing some swapoff test w/o it.
-> >
-> > mm:fix the lru accounting for root cgroup.
-> >
-> > This patch is applied on top of:
-> > "
-> > mm: memcg-aware global reclaim
-> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > "
-> >
-> > This patch fixes the lru accounting for root cgroup.
-> >
-> > After the "memcg-aware global reclaim" patch, one of the changes is to have
-> > lru pages linked back to root. Under the global memory pressure, we start from
-> > the root cgroup lru and walk through the memcg hierarchy of the system. For
-> > each memcg, we reclaim pages based on the its lru size.
-> >
-> > However for root cgroup, we used not having a seperate lru and only counting
-> > the pages charged to root as part of root lru size. Without this patch, all
-> > the pages which are linked to root lru but not charged to root like swapcache
-> > readahead are not visible to page reclaim code and we are easily to get OOM.
-> >
-> > After this patch, all the pages linked under root lru are counted in the lru
-> > size, including Used and !Used.
-> >
-> > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > Signed-off-by: Ying Han <yinghan@google.com>
-> >
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 5518f54..f6c5f29 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -888,19 +888,21 @@ void mem_cgroup_del_lru_list(struct page *page,
-> > enum lru_list lru)
-> >  {
-> >  >------struct page_cgroup *pc;
-> >  >------struct mem_cgroup_per_zone *mz;
-> > +>------struct mem_cgroup *mem;
-> > ·
-> >  >------if (mem_cgroup_disabled())
-> >  >------>-------return;
-> >  >------pc = lookup_page_cgroup(page);
-> > ->------/* can happen while we handle swapcache. */
-> > ->------if (!TestClearPageCgroupAcctLRU(pc))
-> > ->------>-------return;
-> > ->------VM_BUG_ON(!pc->mem_cgroup);
-> > ->------/*
-> > ->------ * We don't check PCG_USED bit. It's cleared when the "page" is finally
-> > ->------ * removed from global LRU.
-> > ->------ */
-> > ->------mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
-> > +
-> > +>------if (TestClearPageCgroupAcctLRU(pc) || PageCgroupUsed(pc)) {
+On Fri, Aug 26, 2011 at 03:47:49PM -0600, Jim Cromie wrote:
+> On Thu, Aug 25, 2011 at 11:34 AM, Jason Baron <jbaron@redhat.com> wrote:
+> 
+> > +       if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
+> > +               pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->modname);
+> > +       if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+> > +               pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
+> > +       if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
+> > +               pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
+> 
+> this inserts a space after lineno, but not otherwize.
+> 
+> I have patch to fix it, but maybe you want to fix it it here ?
+> 
 
-This PageCgroupUsed part confuses me.  A page that is being isolated
-shortly after being charged while on the LRU may reach here, and then
-it is unaccounted from pc->mem_cgroup, which it never was accounted
-to.
+Hi Jim,
 
-Could you explain why you added it?
+Thanks for your fix...since Greg hasn't taken the series yet...I guess
+I'll re-spin to include this fix. Probably wouldn't send it out until
+tomorrow due to my test systems being down atm...
 
-I now made it so that PageCgroupAcctLRU on the LRU means accounted to
-pc->mem_cgroup, and !PageCgroupAcctLRU on the LRU means accounted to
-and babysitted by root_mem_cgroup.  Always.  Which also means that
-before_commit now ensures an LRU page is moved to root_mem_cgroup for
-babysitting during the charge, so that concurrent isolations/putbacks
-are always accounted correctly.  Is this what you had in mind?  Did I
-miss something?
+thanks,
+
+-Jason
+
+
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> index 9c8e133..122246f 100644
+> --- a/lib/dynamic_debug.c
+> +++ b/lib/dynamic_debug.c
+> @@ -439,7 +439,9 @@ static char *dynamic_emit_prefix(const struct
+> _ddebug *desc, char *buf)
+>  	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+>  		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
+>  	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
+> -		pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
+> +		pos += snprintf(buf + pos, LEFT(pos), "%d:", desc->lineno);
+> +	if (pos - strlen(KERN_DEBUG))
+> +		pos += snprintf(buf + pos, LEFT(pos), " ");
+> 
+>  	return buf;
+>  }
+> -- 
+> 1.7.4.4
+> 
+> 
+> also attached.
+> If it doesnt apply, or you defer, I'll resend once Greg's accepted
+> your whole set.
+
+> From ec75cd50ba89bed1f0ad74b89c9a43e87b2bd767 Mon Sep 17 00:00:00 2001
+> From: Jim Cromie <jim.cromie@gmail.com>
+> Date: Tue, 2 Aug 2011 15:12:55 -0600
+> Subject: [PATCH 03/28] dynamic_debug: add space at end of non-null
+>  dynamic-prefix
+> 
+> dynamic_emit_prefix() currently adds a space after line-number,
+> but not otherwize.  For readability, add space whenever any prefix
+> (besides the "<7>" loglevel) has been written.
+> 
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> ---
+>  lib/dynamic_debug.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> index 9c8e133..122246f 100644
+> --- a/lib/dynamic_debug.c
+> +++ b/lib/dynamic_debug.c
+> @@ -439,7 +439,9 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
+>  	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+>  		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
+>  	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
+> -		pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
+> +		pos += snprintf(buf + pos, LEFT(pos), "%d:", desc->lineno);
+> +	if (pos - strlen(KERN_DEBUG))
+> +		pos += snprintf(buf + pos, LEFT(pos), " ");
+>  
+>  	return buf;
+>  }
+> -- 
+> 1.7.4.4
+> 
+
