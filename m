@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab1H2PLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 11:11:25 -0400
-Received: from trent.utfs.org ([194.246.123.103]:48556 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866Ab1H2PLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 11:11:23 -0400
-Date: Mon, 29 Aug 2011 08:11:20 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: LKML <linux-kernel@vger.kernel.org>, Trond.Myklebust@netapp.com,
-        neilb@suse.de, bfields@redhat.com
-Subject: Re: undefined reference to `sys_nfsservctl'
-In-Reply-To: <20110829161726.c980a80258fe714db49b425b@canb.auug.org.au>
-Message-ID: <alpine.DEB.2.01.1108290809260.9183@trent.utfs.org>
-References: <alpine.DEB.2.01.1108282138020.9183@trent.utfs.org> <20110829161726.c980a80258fe714db49b425b@canb.auug.org.au>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1753978Ab1H2POI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 11:14:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34029 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab1H2POD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 11:14:03 -0400
+Date: Mon, 29 Aug 2011 16:13:33 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Richard Purdie <rpurdie@rpsys.net>, nicolas.pitre@linaro.org,
+        arnd@arndb.de, tony@atomide.com, jochen@scram.de,
+        linux-kernel@vger.kernel.org, jamie@jamieiles.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/18] Introduce a led trigger for CPU activity and
+	consolidate LED driver in ARM
+Message-ID: <20110829151333.GA17887@n2100.arm.linux.org.uk>
+References: <1314349415-889-1-git-send-email-bryan.wu@canonical.com> <CACRpkda6-8dxSbF12N-Q32cOpogu-ZZmTApnvNBa03iOcEeqaQ@mail.gmail.com> <CAK5ve-JM=01vTqSi59R6ASyGU_2fVXzKtjNh42LKeF2HF3NzSA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK5ve-JM=01vTqSi59R6ASyGU_2fVXzKtjNh42LKeF2HF3NzSA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011 at 16:17, Stephen Rothwell wrote:
-> >   MODPOST vmlinux.o
-> > WARNING: modpost: Found 1 section mismatch(es).
-> > To see full details build your kernel with:
-> > 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-> >   GEN     .version
-> >   CHK     include/generated/compile.h
-> >   UPD     include/generated/compile.h
-> >   CC      init/version.o
-> >   LD      init/built-in.o
-> >   LD      .tmp_vmlinux1
-> > arch/powerpc/kernel/built-in.o: In function `sys_call_table':
-> > (.text+0x5be0): undefined reference to `sys_nfsservctl'
-> > make[1]: *** [.tmp_vmlinux1] Error 1
-> > make: *** [sub-make] Error 2
+On Mon, Aug 29, 2011 at 09:18:29PM +0800, Bryan Wu wrote:
+> On Mon, Aug 29, 2011 at 7:00 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Fri, Aug 26, 2011 at 11:03 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
+> >
+> >> Based on Linus Walleij's ARM LED consolidation work, this patchset introduce a
+> >> new generic led trigger for CPU not only for ARM but also for others.
+> >
+> > I think Russell was pretty clear that he saw problems inside the "new LEDs"
+> > subsystem (drivers/leds) that need be fixed before we migrate this support
+> > to use the LED class devices.
+> >
+> > Can you see if you can address his comment on the earlier realview patch,
+> > i.e. this:
+> > http://marc.info/?l=linux-arm-kernel&m=131237280009775&w=2
+> >
 > 
-> I posted a patch to Linus earlier today (subject of lkml message:
-> "linux-next: build failure in Linus' tree").
+> Yeah, I replied that email with a patch to select LEDS_CLASS when
+> CONFIG_NEW_LEDS=y.
 
-Ah, thanks. Will try. Meanwhile I've just reverted 
-f5b940997397229975ea073679b03967932a541b (All Arch: remove linkage for 
-sys_nfsservctl system call) and it compiled w/o errors too.
+I don't see any point to that:
 
-Christian.
--- 
-BOFH excuse #364:
+menuconfig NEW_LEDS
+        bool "LED Support"
+	select LEDS_CLASS
 
-Sand fleas eating the Internet cables
+if NEW_LEDS
+
+config LEDS_CLASS
+        bool "LED Class Support"
+        help
+          This option enables the led sysfs class in /sys/class/leds.  You'll
+          need this to do anything useful with LEDs.  If unsure, say N.
+
+So, with that select there, you either have NEW_LEDS=y LEDS_CLASS=y
+or NEW_LEDS=n LEDS_CLASS=n.  To put it another way, you can't select
+LEDS_CLASS when NEW_LEDS=n, and you can't deselect LEDS_CLASS when
+NEW_LEDS=y.
+
+So, either the LEDS_CLASS option is completely pointless, which means
+it should be killed off, or LEDS_CLASS needs to be fixed so that it
+actually does what it says in its help text and controls whether we
+have a LEDS sysfs class _without_ affecting the ability to have
+triggers setup by platform code.
+
+What it can't do is stay as-is, because it's clearly broken and the
+options help texts don't match reality.
