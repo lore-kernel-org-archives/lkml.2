@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab1H2USD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 16:18:03 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:53695 "EHLO smtp.ispras.ru"
+	id S1755063Ab1H2USM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 16:18:12 -0400
+Received: from tur.go2.pl ([193.17.41.50]:52419 "EHLO tur.go2.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755018Ab1H2USA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 16:18:00 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Jarod Wilson <jarod@wilsonet.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH] staging: lirc: fix mismatch in mutex lock-unlock in imon_probe
-Date: Tue, 30 Aug 2011 00:17:56 +0400
-Message-Id: <1314649076-28825-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755043Ab1H2USK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 16:18:10 -0400
+Message-ID: <4E5BF3F7.9090101@o2.pl>
+Date: Mon, 29 Aug 2011 22:17:59 +0200
+From: Maciej Szmigiero <mhej@o2.pl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110715 Thunderbird/5.0
+MIME-Version: 1.0
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [V4L2]decrement struct v4l2_device refcount on device urnegister
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-O2-Trust: 2, 65
+X-O2-SPF: neutral
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kzalloc failed for allocation of context, goto alloc_status_switch
-leads to unlock of unacquired driver_lock. The patch moves
-mutex_lock(&driver_lock) before allocation of context.
+commit bedf8bcf6b4f90a6e31add3721a2e71877289381 introduced reference counting
+for struct v4l2_device.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+In v4l2_device_register() a call to kref_init() initializes reference count to 1,
+but in v4l2_device_unregister() there is no corresponding decrement.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/staging/lirc/lirc_imon.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+End result is that reference count never reaches zero and v4l2_device_release()
+is never called, not even on videodev module unload.
 
-diff --git a/drivers/staging/lirc/lirc_imon.c b/drivers/staging/lirc/lirc_imon.c
-index 4a9e563..f5308d5 100644
---- a/drivers/staging/lirc/lirc_imon.c
-+++ b/drivers/staging/lirc/lirc_imon.c
-@@ -727,6 +727,9 @@ static int imon_probe(struct usb_interface *interface,
- 	int i;
- 	u16 vendor, product;
- 
-+	/* prevent races probing devices w/multiple interfaces */
-+	mutex_lock(&driver_lock);
+Fix this by adding reference counter decrement to v4l2_device_unregister().
+
+Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
+
+diff --git a/drivers/media/video/v4l2-device.c b/drivers/media/video/v4l2-device.c
+
+index c72856c..eb39af9 100644
+
+--- a/drivers/media/video/v4l2-device.c
+
++++ b/drivers/media/video/v4l2-device.c
+
+@@ -131,6 +131,8 @@ void v4l2_device_unregister(struct v4l2_device *v4l2_dev)
+
+         }
+
+ #endif
+
+     }
+
 +
- 	context = kzalloc(sizeof(struct imon_context), GFP_KERNEL);
- 	if (!context) {
- 		err("%s: kzalloc failed for context", __func__);
-@@ -753,9 +756,6 @@ static int imon_probe(struct usb_interface *interface,
- 	dev_dbg(dev, "%s: found iMON device (%04x:%04x, intf%d)\n",
- 		__func__, vendor, product, ifnum);
+
++    v4l2_device_put(v4l2_dev);
+
+ }
+
+ EXPORT_SYMBOL_GPL(v4l2_device_unregister);
+
  
--	/* prevent races probing devices w/multiple interfaces */
--	mutex_lock(&driver_lock);
--
- 	/*
- 	 * Scan the endpoint list and set:
- 	 *	first input endpoint = IR endpoint
--- 
-1.7.4.1
 
