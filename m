@@ -1,251 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1H2OOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 10:14:08 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59251 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab1H2OOC (ORCPT
+	id S1753582Ab1H2OOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 10:14:15 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:58119 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab1H2OOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 10:14:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
-References: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
-Date: Mon, 29 Aug 2011 10:14:00 -0400
-Message-ID: <CACqU3MVRY6TvSJMOHzKTaF+Y=m8EtH=vaBT-_aTNqvLtnPVmLg@mail.gmail.com>
-Subject: Re: [RFC] nconf bug fixes and improvements
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Cheng Renquan <crquan@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nir Tzachar <nir.tzachar@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 29 Aug 2011 10:14:08 -0400
+From: Ravishankarkm <ravi.shankar@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankarkm <ravi.shankar@greenturtles.in>
+Subject: [PATCH 1/3] Staging: comedi: fix printk issue in das1800.c
+Date: Mon, 29 Aug 2011 19:43:46 +0530
+Message-Id: <1314627226-14196-1-git-send-email-ravi.shankar@greenturtles.in>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi:fix printk warning issue in das1800.c>
+References: <[PATCH]Staging: comedi:fix printk warning issue in das1800.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7TEEFQZ018231
 
-Hi,
+From: Ravishankarkm <ravi.shankar@greenturtles.in>
 
-On Mon, Aug 29, 2011 at 5:09 AM, Cheng Renquan <crquan@gmail.com> wrote:
-> bug fixes:
->
-Please split diff in logical changes, one patch per issue. This is
-unreviewable in the current state. And please, use git.
+This is a patch to the das1800.c file that fixes up a pritnk warning found by the checkpatch.pl tool
 
-See `Documentation/SubmittingPatches' for further informations.
+Signed-off-by: Ravishankarkm <ravi.shankar@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/das1800.c |   41 +++++++++++++++--------------
+ 1 files changed, 21 insertions(+), 20 deletions(-)
 
-Thanks,
- - Arnaud
+diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
+index a6df30b..222232c 100644
+--- a/drivers/staging/comedi/drivers/das1800.c
++++ b/drivers/staging/comedi/drivers/das1800.c
+@@ -631,37 +631,36 @@ static int das1800_attach(struct comedi_device *dev,
+ 	if (alloc_private(dev, sizeof(struct das1800_private)) < 0)
+ 		return -ENOMEM;
+ 
+-	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_das1800.driver_name,
+-	       iobase);
++	pr_info("comedi%d: %s: io 0x%lx", dev->minor, driver_das1800.driver_name,
++			iobase);
+ 	if (irq) {
+-		printk(", irq %u", irq);
++		pr_cont(", irq %u", irq);
+ 		if (dma0) {
+-			printk(", dma %u", dma0);
++			pr_cont(", dma %u", dma0);
+ 			if (dma1)
+-				printk(" and %u", dma1);
++				pr_cont(" and %u", dma1);
+ 		}
+ 	}
+-	printk("\n");
++	pr_cont("\n");
+ 
+ 	if (iobase == 0) {
+-		printk(" io base address required\n");
++		pr_warn("comedi%d: %s: io base address required\n",
++				dev->minor, driver_das1800.driver_name);
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* check if io addresses are available */
+ 	if (!request_region(iobase, DAS1800_SIZE, driver_das1800.driver_name)) {
+-		printk
+-		    (" I/O port conflict: failed to allocate ports 0x%lx to 0x%lx\n",
+-		     iobase, iobase + DAS1800_SIZE - 1);
++		pr_err("comedi%d: I/O port conflict:failed to allocate ports "
++				"0x%lx to 0x%lx\n", dev->minor, iobase,
++				iobase + DAS1800_SIZE - 1);
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+ 
+ 	board = das1800_probe(dev);
+-	if (board < 0) {
+-		printk(" unable to determine board type\n");
++	if (board < 0)
+ 		return -ENODEV;
+-	}
+ 
+ 	dev->board_ptr = das1800_boards + board;
+ 	dev->board_name = thisboard->name;
+@@ -671,9 +670,9 @@ static int das1800_attach(struct comedi_device *dev,
+ 		iobase2 = iobase + IOBASE2;
+ 		if (!request_region(iobase2, DAS1800_SIZE,
+ 				    driver_das1800.driver_name)) {
+-			printk
+-			    (" I/O port conflict: failed to allocate ports 0x%lx to 0x%lx\n",
+-			     iobase2, iobase2 + DAS1800_SIZE - 1);
++			pr_err("comedi%d: I/O port conflict:failed to allocate ports "
++					"0x%lx to 0x%lx\n", dev->minor,	iobase2,
++					iobase2 + DAS1800_SIZE - 1);
+ 			return -EIO;
+ 		}
+ 		devpriv->iobase2 = iobase2;
+@@ -683,7 +682,8 @@ static int das1800_attach(struct comedi_device *dev,
+ 	if (irq) {
+ 		if (request_irq(irq, das1800_interrupt, 0,
+ 				driver_das1800.driver_name, dev)) {
+-			printk(" unable to allocate irq %u\n", irq);
++			pr_warn("comedi%d: %s: unable to allocate irq %u\n",
++					dev->minor, driver_das1800.driver_name, irq);
+ 			return -EINVAL;
+ 		}
+ 	}
+@@ -712,7 +712,8 @@ static int das1800_attach(struct comedi_device *dev,
+ 		devpriv->irq_dma_bits |= 0x38;
+ 		break;
+ 	default:
+-		printk(" irq out of range\n");
++		pr_warn("comedi%d: %s: irq out of range\n",
++				dev->minor, driver_das1800.driver_name);
+ 		return -EINVAL;
+ 		break;
+ 	}
+@@ -813,8 +814,8 @@ static int das1800_detach(struct comedi_device *dev)
+ 		kfree(devpriv->ai_buf1);
+ 	}
+ 
+-	printk("comedi%d: %s: remove\n", dev->minor,
+-	       driver_das1800.driver_name);
++	pr_info("comedi%d: %s: remove\n", dev->minor,
++			driver_das1800.driver_name);
+ 
+ 	return 0;
+ };
+-- 
+1.7.6
 
-> 1) char dialog_input_result[256]; is not enough for config item like:
->   CONFIG_EXTRA_FIRMWARE="iwlwifi-100-5.ucode iwlwifi-1000-3.ucode
-> iwlwifi-3945-2.ucode iwlwifi-4965-2.ucode iwlwifi-5000-1.ucode
-> iwlwifi-5000-2.ucode iwlwifi-5150-2.ucode iwlwifi-6000-4.ucode
-> iwlwifi-6000g2a-5.ucode iwlwifi-6000g2b-5.ucode iwlwifi-6050-4.ucode
-> iwlwifi-6050-5.ucode radeon/CEDAR_me.bin radeon/CEDAR_pfp.bin
-> radeon/CEDAR_rlc.bin radeon/CYPRESS_me.bin radeon/CYPRESS_pfp.bin
-> radeon/CYPRESS_rlc.bin radeon/JUNIPER_me.bin radeon/JUNIPER_pfp.bin
-> radeon/JUNIPER_rlc.bin radeon/R600_rlc.bin radeon/R700_rlc.bin
-> radeon/REDWOOD_me.bin radeon/REDWOOD_pfp.bin radeon/REDWOOD_rlc.bin"
->
->   the original nconf just stack overflow / crashed when dealing with
-> longer than 256 bytes strings; Since the original menuconfig also just
-> uses a fixed length buffer [MAX_LEN=2048] which works for the years,
-> here I just append a 0 make it work in the easiest way; if required,
-> it could also be changed to a dynamically allocated buffer;
->
->   char dialog_input_result[MAX_LEN + 1];
->
-> 2) memmove's 3rd argument should be len-cursor_position+1, the
-> original len+1 may cause segment fault in theory;
->                                memmove(&result[cursor_position+1],
->                                                &result[cursor_position],
-> -                                               len+1);
-> +                                               len-cursor_position+1);
->
-> 3) typo:
->
-> -                               mvprintw(0, 0, "unknow key: %d\n", res);
-> +                               mvprintw(0, 0, "unknown key: %d\n", res);
->
->
-> improvement:
-> 1) its original conf_string doesn't work with longer string values
-> (longer than its dialog box width), not at all
->   (or may work in an invisible way if anyone has tried that)
->   Here I added a new variable cursor_form_win to record that new state:
->   cursor of the input box; and make it fun:
->   when you move cursor to almost left/right edge, it auto adjust text
-> to center, by half prompt box width;
->
-> 2) Remove KEY_UP as RIGHT and KEY_DOWN as LEFT,
->   Add Home/End to locate the string begin/end;
->   Emacs-like key bind (C-a/C-e as Home/End, C-f/C-b as forward/backward);
->   this keybind I'd like but may be controversial, it could be
-> discussed and separated;
->
-> This is just [Request for Comments], it just works here on one of my
-> distributor kernels,
-> if anyone may think it's useful, please feedback and I would like to
-> split it into
-> patch series and rebase to linus latest branch;
->
-> Thanks,
->
-> --- /mnt/static/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.c     2011-07-21
-> 19:17:23.000000000 -0700
-> +++ /mnt/dynamic/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.c    2011-08-28
-> 18:08:05.699883340 -0700
-> @@ -1360,7 +1360,7 @@ static void conf_choice(struct menu *men
->  static void conf_string(struct menu *menu)
->  {
->        const char *prompt = menu_get_prompt(menu);
-> -       char dialog_input_result[256];
-> +       char dialog_input_result[2560];
->
->        while (1) {
->                int res;
-> --- /mnt/static/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.gui.c 2011-07-21
-> 19:17:23.000000000 -0700
-> +++ /mnt/dynamic/usr/src/linux-3.0-gentoo-r1/scripts/kconfig/nconf.gui.c        2011-08-28
-> 18:00:56.441862565 -0700
-> @@ -367,7 +367,15 @@ int dialog_inputbox(WINDOW *main_window,
->        int i, x, y;
->        int res = -1;
->        int cursor_position = strlen(init);
-> +       int cursor_form_win;
->
-> +       if (strlen(init) +80 > result_len) {
-> +               (void) attrset(attributes[FUNCTION_HIGHLIGHT] | A_BLINK);
-> +               mvprintw(0, 0, "result_len(%d) not enough to contain
-> init_strlen(%d) in %s:%d:%s\n",
-> +                        result_len, strlen(init),
-> +                        __FILE__, __LINE__, __func__);
-> +               flash();
-> +       }
->
->        /* find the widest line of msg: */
->        prompt_lines = get_line_no(prompt);
-> @@ -405,7 +413,11 @@ int dialog_inputbox(WINDOW *main_window,
->        fill_window(prompt_win, prompt);
->
->        mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
-> -       mvwprintw(form_win, 0, 0, "%s", result);
-> +       cursor_form_win = min(cursor_position, prompt_width-1);
-> +       mvwprintw(form_win, 0, 0, "%s",
-> +                 result + cursor_position-cursor_form_win);
-> +       mvprintw(0, 0, "cursor_position=%d, cursor_form_win=%d, prompt_width=%d\n",
-> +                cursor_position, cursor_form_win, prompt_width);
->
->        /* create panels */
->        panel = new_panel(win);
-> @@ -416,6 +428,8 @@ int dialog_inputbox(WINDOW *main_window,
->        touchwin(win);
->        refresh_all_windows(main_window);
->        while ((res = wgetch(form_win))) {
-> +               mvprintw(0, 0, "got key: %d\n", res);
-> +
->                int len = strlen(result);
->                switch (res) {
->                case 10: /* ENTER */
-> @@ -431,6 +445,13 @@ int dialog_inputbox(WINDOW *main_window,
->                                                &result[cursor_position],
->                                                len-cursor_position+1);
->                                cursor_position--;
-> +                               if (cursor_form_win < 5
-> +                                   && cursor_position > 5)
-> +                                       cursor_form_win += prompt_width/2;
-> +                               else
-> +                                       cursor_form_win--;
-> +                               if (cursor_form_win > cursor_position)
-> +                                       cursor_form_win = cursor_position;
->                        }
->                        break;
->                case KEY_DC:
-> @@ -440,16 +461,41 @@ int dialog_inputbox(WINDOW *main_window,
->                                                len-cursor_position+1);
->                        }
->                        break;
-> -               case KEY_UP:
-> +               case 6: /* Ctrl-F */
->                case KEY_RIGHT:
-> -                       if (cursor_position < len &&
-> -                           cursor_position < min(result_len, prompt_width))
-> +                       if (cursor_position < len) {
->                                cursor_position++;
-> +                               if (cursor_form_win > prompt_width-5
-> +                                   && cursor_position < len-5)
-> +                                       cursor_form_win -= prompt_width/2;
-> +                               else
-> +                                       cursor_form_win++;
-> +                               if (cursor_form_win < min(cursor_position, prompt_width-1) -
-> (len-cursor_position))
-> +                                       cursor_form_win = min(cursor_position, prompt_width-1) -
-> (len-cursor_position);
-> +                       }
->                        break;
-> -               case KEY_DOWN:
-> +               case 2: /* Ctrl-B */
->                case KEY_LEFT:
-> -                       if (cursor_position > 0)
-> +                       if (cursor_position > 0) {
->                                cursor_position--;
-> +                               if (cursor_form_win < 5
-> +                                   && cursor_position > 5)
-> +                                       cursor_form_win += prompt_width/2;
-> +                               else
-> +                                       cursor_form_win--;
-> +                               if (cursor_form_win > cursor_position)
-> +                                       cursor_form_win = cursor_position;
-> +                       }
-> +                       break;
-> +               case 1: /* Ctrl-A */
-> +               case KEY_HOME:
-> +                       cursor_position = 0;
-> +                       cursor_form_win = 0;
-> +                       break;
-> +               case 5: /* Ctrl-E */
-> +               case KEY_END:
-> +                       cursor_position = len;
-> +                       cursor_form_win = min(cursor_position, prompt_width-1);
->                        break;
->                default:
->                        if ((isgraph(res) || isspace(res)) &&
-> @@ -457,19 +503,24 @@ int dialog_inputbox(WINDOW *main_window,
->                                /* insert the char at the proper position */
->                                memmove(&result[cursor_position+1],
->                                                &result[cursor_position],
-> -                                               len+1);
-> +                                               len-cursor_position+1);
->                                result[cursor_position] = res;
->                                cursor_position++;
-> +                               if (cursor_form_win < prompt_width-1)
-> +                                       cursor_form_win++;
->                        } else {
-> -                               mvprintw(0, 0, "unknow key: %d\n", res);
-> +                               mvprintw(0, 0, "unknown key: %d\n", res);
->                        }
->                        break;
->                }
-> +               mvprintw(0, 0, "got key: %d, cursor_position=%d, cursor_form_win=%d\n",
-> +                        res, cursor_position, cursor_form_win);
->                wmove(form_win, 0, 0);
->                wclrtoeol(form_win);
->                mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
-> -               mvwprintw(form_win, 0, 0, "%s", result);
-> -               wmove(form_win, 0, cursor_position);
-> +               mvwprintw(form_win, 0, 0, "%s",
-> +                         result + cursor_position-cursor_form_win);
-> +               wmove(form_win, 0, cursor_form_win);
->                touchwin(win);
->                refresh_all_windows(main_window);
->
->
-> --
-> Cheng Renquan (程任全)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
