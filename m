@@ -1,127 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab1H3G2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 02:28:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54850 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab1H3G2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 02:28:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="43510999"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org
-Subject: [RFC 1/2] ACPI, APEI, EINJ, Fix resource conflict on some machine
-Date: Tue, 30 Aug 2011 14:28:28 +0800
-Message-Id: <1314685709-7280-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1314685709-7280-1-git-send-email-ying.huang@intel.com>
-References: <1314685709-7280-1-git-send-email-ying.huang@intel.com>
+	id S1751266Ab1H3Gfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 02:35:46 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:61551 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab1H3Gfp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 02:35:45 -0400
+Date: Tue, 30 Aug 2011 06:35:30 +0000
+From: Shen Canquan <shencanquan@huawei.com>
+Subject: [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
+X-Originating-IP: [10.166.80.171]
+To: "lenb@kernel.org" <lenb@kernel.org>,
+        "rui.zhao@intel.com" <rui.zhao@intel.com>,
+        "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>
+Cc: "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "i@vger.kernel.org" <i@vger.kernel.org>
+Message-id: <F1F5DF04259F1B4A82BD6BDE1C479F740981947A@szxeml527-mbs.china.huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-language: zh-CN
+Content-transfer-encoding: 7BIT
+Accept-Language: zh-CN, en-US
+Thread-topic: [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
+Thread-index: Acxm3pMuZngxJ3CxS9a2LSRB4DJDLg==
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some APEI firmware implementaiton will access injected address
-specified in param1 to trigger the error when injecting memory error.
-This will cause resource conflict with RAM.  So remove it from trigger
-table resources to avoid conflict.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
+In Xen virtualization environment, When I used xen tools (xm vcpu-set vcpu_number ) to test the vcpu add and remove, I found it is failure on vcpu remove, I found the reason is that nothing to do when cpu remove in acpi_processor_hotplug_notify function, so I add the code of send the OFFLINE message to udev and add the rule of udev. it is ok on vcpu remove.
+Signed-off-by: Shen canquan <shencanquan@huawei.com>
 ---
- drivers/acpi/apei/apei-base.c     |   11 +++++++++++
- drivers/acpi/apei/apei-internal.h |    3 +++
- drivers/acpi/apei/einj.c          |   24 ++++++++++++++++++++++--
- 3 files changed, 36 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index ac11aff..35a7a3a 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -421,6 +421,17 @@ static int apei_resources_merge(struct apei_resources *resources1,
- 	return 0;
- }
- 
-+int apei_resources_add(struct apei_resources *resources,
-+		       unsigned long start, unsigned long size,
-+		       bool iomem)
-+{
-+	if (iomem)
-+		return apei_res_add(&resources->iomem, start, size);
-+	else
-+		return apei_res_add(&resources->ioport, start, size);
-+}
-+EXPORT_SYMBOL_GPL(apei_resources_add);
+ drivers/acpi/processor_driver.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index a4e0f1b..a1c564f 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -677,6 +677,8 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+                                     "Driver data is NULL, dropping EJECT\n");
+                         return;
+                 }
 +
- /*
-  * EINJ has two groups of GARs (EINJ table entry and trigger table
-  * entry), so common resources are subtracted from the trigger table
-diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
-index f57050e..d778edd 100644
---- a/drivers/acpi/apei/apei-internal.h
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -95,6 +95,9 @@ static inline void apei_resources_init(struct apei_resources *resources)
- }
- 
- void apei_resources_fini(struct apei_resources *resources);
-+int apei_resources_add(struct apei_resources *resources,
-+		       unsigned long start, unsigned long size,
-+		       bool iomem);
- int apei_resources_sub(struct apei_resources *resources1,
- 		       struct apei_resources *resources2);
- int apei_resources_request(struct apei_resources *resources,
-diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
-index 3178521..a126c67 100644
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -195,7 +195,8 @@ static int einj_check_trigger_header(struct acpi_einj_trigger *trigger_tab)
- }
- 
- /* Execute instructions in trigger error action table */
--static int __einj_error_trigger(u64 trigger_paddr)
-+static int __einj_error_trigger(u64 trigger_paddr, u32 type,
-+				u64 param1, u64 param2)
- {
- 	struct acpi_einj_trigger *trigger_tab = NULL;
- 	struct apei_exec_context trigger_ctx;
-@@ -255,6 +256,25 @@ static int __einj_error_trigger(u64 trigger_paddr)
- 	rc = apei_resources_sub(&trigger_resources, &einj_resources);
- 	if (rc)
- 		goto out_fini;
-+	/*
-+	 * Some firmware will access target address specified in
-+	 * param1 to trigger the error when injecting memory error.
-+	 * This will cause resource conflict with regular memory.  So
-+	 * remove it from trigger table resources.
-+	 */
-+	if (param_extension && (type & 0x0038) && param2) {
-+		struct apei_resources addr_resources;
-+		apei_resources_init(&addr_resources);
-+		rc = apei_resources_add(&addr_resources,
-+					param1 & param2,
-+					~param2 + 1, true);
-+		if (rc)
-+			goto out_fini;
-+		rc = apei_resources_sub(&trigger_resources, &addr_resources);
-+		apei_resources_fini(&addr_resources);
-+		if (rc)
-+			goto out_fini;
-+	}
- 	rc = apei_resources_request(&trigger_resources, "APEI EINJ Trigger");
- 	if (rc)
- 		goto out_fini;
-@@ -324,7 +344,7 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
- 	if (rc)
- 		return rc;
- 	trigger_paddr = apei_exec_ctx_get_output(&ctx);
--	rc = __einj_error_trigger(trigger_paddr);
-+	rc = __einj_error_trigger(trigger_paddr, type, param1, param2);
- 	if (rc)
- 		return rc;
- 	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_END_OPERATION);
++               kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+                 break;
+         default:
+                 ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 -- 
-1.7.5.4
-
+1.7.6.msysgit.0
