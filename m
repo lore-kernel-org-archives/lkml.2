@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab1H3TLI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:11:08 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48919 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138Ab1H3TLF (ORCPT
+	id S1756166Ab1H3TOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:14:32 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42265 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756134Ab1H3TOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:11:05 -0400
-Subject: Re: [PATCH] perf symbols: Synthesize anonymous mmap events
-From: Pekka Enberg <penberg@kernel.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110830091506.60b51fe8@kryten>
-References: <20110830091506.60b51fe8@kryten>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 30 Aug 2011 22:11:02 +0300
-Message-ID: <1314731462.9659.3.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Aug 2011 15:14:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="113874865"
+Message-Id: <20110830190729.923334292@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 30 Aug 2011 14:07:29 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [patch v2 00/35] Hexagon: Add support for Qualcomm Hexagon architecture
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-30 at 09:15 +1000, Anton Blanchard wrote:
-> perf_event__synthesize_mmap_events does not create anonymous mmap
-> events even though the kernel does. As a result an already running
-> application with dynamically created code will not get profiled -
-> all samples end up in the unknown bucket.
-> 
-> This patch skips any entries with '[' in the name to avoid adding
-> events for special regions (eg the vsyscall page). All other
-> executable mmaps are assumed to be anonymous and an event is
-> synthesized.
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
+This is the second version of the patchset to the Linux kernel to support
+the Qualcomm Hexagon architecture.  These patches have been organized like
+the last time, in a somewhat logically grouped fashion.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+A summary of changes from the last patchset:
 
+* use Kbuild method for strictly asm-generic headers
+* clean up dma sync and implement clean/invalidate
+* bitops fl*/ff* cleanup
+* added inline assembly version of atomic_add_unless
+* removed deprecated syscalls/defines
+* call __vmyield for cpu_relax and fix cpu_idle
+* clean up thread_info; use arch allocator to allow kernel stack sizes
+  smaller than page size
+* implement read_timer_counter
+* changed checksum to pull non-asm functions from generic code
+* delete module functions which already have generic equivalents
+* cleaned up IO routines
+* reduced comet_defconfig
+* remove ugly platform code
+
+These patches are available on Code Aurora as well as git:
+
+https://www.codeaurora.org/patches/quic/hlk/hexagon-linux-20110830.tar.gz
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rkuo/linux-hexagon.git hexagon
+
+Thanks to everyone for their comments/feedback!  If I missed anything
+or there's something else that needs cleanup, please let me know.
+
+
+-Richard Kuo
+
+--
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
