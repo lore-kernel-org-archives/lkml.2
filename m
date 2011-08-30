@@ -1,58 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab1H3Lfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 07:35:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44655 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1H3Lf3 convert rfc822-to-8bit (ORCPT
+	id S1753490Ab1H3Lfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 07:35:43 -0400
+Received: from mx2.etf.rs ([147.91.14.170]:49047 "EHLO mx2.etf.bg.ac.rs"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752045Ab1H3Lfk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 07:35:29 -0400
-Subject: Re: [RFC PATCH] x86: perf: Clean up perf_event cpu code
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 30 Aug 2011 13:35:15 +0200
-In-Reply-To: <1314703291-3080-1-git-send-email-kjwinchester@gmail.com>
-References: <1314105839.8002.51.camel@twins>
-	 <1314703291-3080-1-git-send-email-kjwinchester@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 30 Aug 2011 07:35:40 -0400
+X-Greylist: delayed 1470 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 07:35:40 EDT
+Message-ID: <0f79c88be72b75d0526d3f3c2ebf826b.squirrel@kondor.etf.bg.ac.rs>
+Date: Tue, 30 Aug 2011 13:11:07 +0200
+Subject: [PATCH] cls_rsvp.h was outdated
+From: =?utf-8?B?Iklnb3IgTWFyYXZpxIci?= <igorm@etf.rs>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Reply-To: igorm@etf.rs
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
+X-Priority: 3 (Normal)
+Importance: Normal
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314704115.2799.12.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-30 at 08:21 -0300, Kevin Winchester wrote:
-> 
-> This is the first time I've attempted a patch this large.  Should I break it up
-> into smaller pieces?  
+File cls_rsvp.h in /net/sched was outdated. I'm sending you patch for this
+file.
+Patch was done against Linux 2.6.38-8
 
-Only if it makes sens, intermediate stages should still compile. I could
-imagine you creating the header file and moving stuff in there one thing
-at a time while keeping the whole thing compiling. Eventually resulting
-in the state where the #include hackery is superfluous and can be
-removed.
+Signed-off-by: Igor Maravić <igorm@etf.rs>
 
-If its worth spending a lot of time making that happen is another thing.
+--- linux-2.6.38.8/net/sched/cls_rsvp.h.orig	2011-08-30 12:46:42.663443918
++0200
++++ linux-2.6.38.8/net/sched/cls_rsvp.h	2011-08-30 10:06:01.000000000 +0200
+@@ -425,7 +425,7 @@ static int rsvp_change(struct tcf_proto
+ 	struct rsvp_filter *f, **fp;
+ 	struct rsvp_session *s, **sp;
+ 	struct tc_rsvp_pinfo *pinfo = NULL;
+-	struct nlattr *opt = tca[TCA_OPTIONS-1];
++	struct nlattr *opt = tca[TCA_OPTIONS];
+ 	struct nlattr *tb[TCA_RSVP_MAX + 1];
+ 	struct tcf_exts e;
+ 	unsigned h1, h2;
+@@ -439,7 +439,7 @@ static int rsvp_change(struct tcf_proto
+ 	if (err < 0)
+ 		return err;
 
-> Or does that requirement not really apply since it's just
-> a cleanup patch?
+-	err = tcf_exts_validate(tp, tb, tca[TCA_RATE-1], &e, &rsvp_ext_map);
++	err = tcf_exts_validate(tp, tb, tca[TCA_RATE], &e, &rsvp_ext_map);
+ 	if (err < 0)
+ 		return err;
 
-Cleanup isn't the criteria. The individual steps have to make sense.
+@@ -448,8 +448,8 @@ static int rsvp_change(struct tcf_proto
 
-Take for instance the uprobe patch set as an example of how not to split
-up things. The individual patches don't really stand on their own and
-you're constantly forced to switch back and forth while reviewing, a
-total pain.
+ 		if (f->handle != handle && handle)
+ 			goto errout2;
+-		if (tb[TCA_RSVP_CLASSID-1]) {
+-			f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID-1]);
++		if (tb[TCA_RSVP_CLASSID]) {
++			f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID]);
+ 			tcf_bind_filter(tp, &f->res, base);
+ 		}
 
-> Also, it is based on Linus' tree, should I base it on tip instead?
+@@ -461,7 +461,7 @@ static int rsvp_change(struct tcf_proto
+ 	err = -EINVAL;
+ 	if (handle)
+ 		goto errout2;
+-	if (tb[TCA_RSVP_DST-1] == NULL)
++	if (tb[TCA_RSVP_DST] == NULL)
+ 		goto errout2;
 
-Yes please. I don't think they differ a lot but tip is where it'll end
-up being applied to, so it helps if it does indeed apply ;-)
+ 	err = -ENOBUFS;
+@@ -470,19 +470,19 @@ static int rsvp_change(struct tcf_proto
+ 		goto errout2;
 
-Otherwise looks good, thanks a bunch!
+ 	h2 = 16;
+-	if (tb[TCA_RSVP_SRC-1]) {
+-		memcpy(f->src, nla_data(tb[TCA_RSVP_SRC-1]), sizeof(f->src));
++	if (tb[TCA_RSVP_SRC]) {
++		memcpy(f->src, nla_data(tb[TCA_RSVP_SRC]), sizeof(f->src));
+ 		h2 = hash_src(f->src);
+ 	}
+-	if (tb[TCA_RSVP_PINFO-1]) {
+-		pinfo = nla_data(tb[TCA_RSVP_PINFO-1]);
++	if (tb[TCA_RSVP_PINFO]) {
++		pinfo = nla_data(tb[TCA_RSVP_PINFO]);
+ 		f->spi = pinfo->spi;
+ 		f->tunnelhdr = pinfo->tunnelhdr;
+ 	}
+-	if (tb[TCA_RSVP_CLASSID-1])
+-		f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID-1]);
++	if (tb[TCA_RSVP_CLASSID])
++		f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID]);
+
+-	dst = nla_data(tb[TCA_RSVP_DST-1]);
++	dst = nla_data(tb[TCA_RSVP_DST]);
+ 	h1 = hash_dst(dst, pinfo ? pinfo->protocol : 0, pinfo ? pinfo->tunnelid
+: 0);
+
+ 	err = -ENOMEM;
+@@ -642,7 +642,7 @@ nla_put_failure:
+ }
+
+ static struct tcf_proto_ops RSVP_OPS = {
+-	.next		=	NULL,
++	//.next		=	NULL,
+ 	.kind		=	RSVP_ID,
+ 	.classify	=	rsvp_classify,
+ 	.init		=	rsvp_init,
+
+
+
