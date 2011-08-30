@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab1H3VFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 17:05:43 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60467 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756672Ab1H3VFk convert rfc822-to-8bit (ORCPT
+	id S1756768Ab1H3VHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 17:07:20 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:42197 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756730Ab1H3VHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 17:05:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPweEDwPD_v454sDtPqZNmpRs+gw4U9KQUHncuJ32gpd8uedYg@mail.gmail.com>
-References: <20110809181534.GR10171@einval.com>
-	<20110823161134.GV3053@linaro.org>
-	<efc47c3039402c1507d76f381a790115@mail.shatteredsilicon.net>
-	<CAPweEDwkVWH=r_moJj1_CKLxRUkkbBgHenZhwi8CzY9z3BO-Cw@mail.gmail.com>
-	<CADkCAuuaH5k2duuvUdmj1j9=6oaCKORN-NJGg4gt2ovEshHYmw@mail.gmail.com>
-	<alpine.DEB.2.02.1108241648360.29431@asgard.lang.hm>
-	<CADkCAut2sMMKcCLiG0g+Rwt5z4dXJgRZYyvUAzCQVTQQMPFJmA@mail.gmail.com>
-	<20110826163502.GB23469@n2100.arm.linux.org.uk>
-	<CAPweEDxJO0=tFOHhiiiDvucQYZ-0EJZZbsqWwc7BHrZQ2=a5sQ@mail.gmail.com>
-	<20110826213641.GA8671@www5.open-std.org>
-	<CAPweEDwPD_v454sDtPqZNmpRs+gw4U9KQUHncuJ32gpd8uedYg@mail.gmail.com>
-Date: Tue, 30 Aug 2011 22:05:39 +0100
-X-Google-Sender-Auth: 37Hj_CsAfrsd3KoercnZ3Z63QLA
-Message-ID: <CAPweEDzKDpMG_4gcRz4z3TeDUuDz5OPb61tT69u6NPGB79+giA@mail.gmail.com>
-Subject: Re: [lsb-discuss] [fedora-arm] ARM summit at Plumbers 2011
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: keld@keldix.com, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        david@lang.hm, cross-distro@lists.linaro.org,
-        Bill Gatliff <bgat@billgatliff.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bruce Perens <bruce@perens.com>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>,
-        torvalds@linux-foundation.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Aug 2011 17:07:17 -0400
+Date: Tue, 30 Aug 2011 14:07:13 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-input@vger.kernel.org
+Subject: Re: [PATCH] input: fix misc/twl6040-vibra.c warning
+Message-Id: <20110830140713.637b60f1.rdunlap@xenotime.net>
+In-Reply-To: <20110830065931.GA5791@core.coreip.homeip.net>
+References: <20110829125017.9337299c.rdunlap@xenotime.net>
+	<20110830065931.GA5791@core.coreip.homeip.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 7:55 PM, Luke Kenneth Casson Leighton
-<lkcl@lkcl.net> wrote:
-> On Fri, Aug 26, 2011 at 10:36 PM,  <keld@keldix.com> wrote:
->> I would relly like the dscussion to go on widely as it is now.
->> Otherwise I would probably not follow this interesting discussion.
->
->  keld, the encouragement is appreciated, and i do follow the reasoning
-> (which is that, given that gnu/linux distros are at such an
-> interesting threshold point, there's simply been no need for such a
-> large cross-posting before).
->
->  but, i have to keep my word, and i said i wouldn't interrupt people
-> on such a large scale, preferring instead that those people who are
-> *actively* interested participate.  if, however, *you* - or anybody
-> else feels that this topic still needs to reach a wider audience, in
-> order to help things reach critical mass, please do actively bring it
-> to their attention.
->
->  i have another write-up, done today, which brings together both the
-> software and this time hardware strategic design concepts that i
-> believe will help put control firmly back into the hands of Free
-> Software Developers:
->
->  http://lkcl.net/linux/modular.computing.architecture.html
+On Mon, 29 Aug 2011 23:59:31 -0700 Dmitry Torokhov wrote:
 
- ok, so: follow-up:
+> Hi Randy,
+> 
+> On Mon, Aug 29, 2011 at 12:50:17PM -0700, Randy Dunlap wrote:
+> > From: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > Fix warning from Geert's build summary emails by changing "if" to
+> > "ifdef".  Also handle the case of CONFIG_PM_SLEEP not enabled.
+> > 
+> > drivers/input/misc/twl6040-vibra.c:231:5: warning: "CONFIG_PM_SLEEP" is not defined
+> > 
+> > Builds cleanly with CONFIG_PM_SLEEP enabled or disabled.
+> > 
+> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> > ---
+> >  drivers/input/misc/twl6040-vibra.c |   11 +++++++----
+> >  1 file changed, 7 insertions(+), 4 deletions(-)
+> > 
+> > --- linux-next-20110829.orig/drivers/input/misc/twl6040-vibra.c
+> > +++ linux-next-20110829/drivers/input/misc/twl6040-vibra.c
+> > @@ -228,7 +228,7 @@ static void twl6040_vibra_close(struct i
+> >  	mutex_unlock(&info->mutex);
+> >  }
+> >  
+> > -#if CONFIG_PM_SLEEP
+> > +#ifdef CONFIG_PM_SLEEP
+> 
+> This is actually the only change that is needed. In case when
+> CONFIG_PM_SLEEP is not defined SIMPLE_DEV_PM_OPS() produces empty
+> 'struct dev_pm_ops' so no additional #ifdef-ing is needed.
 
- is anyone interested to know what the costs would be, of an
-engineering board conforming to the above strategy, using a low-end
-Cortex A9 CPU such as the AML-8726-M? (for reference, the 8726 is
-known to be between $13 to $15 depending on volume)
+Ah, I see.  Thanks for the info.
+Do I need to resend the patch?
 
- does anyone have any questions, comments or suggestions regarding the
-strategy to place cooperation and collaboration back at the heart of
-linux kernel development?
-
- any ideas on how to improve the software development tools (such as
-git) to help make that strategy easy to be part of the day-to-day
-development process?
-
- perhaps most importantly, does anyone have any _better_ ideas than
-what's being proposed?
-
- or, is everyone happy with the way that things are, and thinks that
-they should continue as-is (perhaps until russell quits completely, or
-linus bans ARM patches entirely from the mainline linux kernel)
-
- what is it going to take for people to engage on these issues?
-
- does anyone want to take responsibility for making sure that there is
-some progress?
-
-l.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
