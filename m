@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab1H3WGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 18:06:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35703 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab1H3WGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 18:06:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="43786136"
-Message-ID: <4E5D5EE6.3070708@linux.intel.com>
-Date: Tue, 30 Aug 2011 15:06:30 -0700
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1752451Ab1H3WG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 18:06:59 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:6805 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab1H3WG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 18:06:57 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=gGcT/818Up6hqvQHDGx9mJAC/HgF6riwnrHj20B32JhGeq+ESBng186O0ZwEI5TXG
+	xX3aEzUmd83hlJLD3rrJw==
+Date: Tue, 30 Aug 2011 15:06:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch 1/2] oom: remove oom_disable_count
+In-Reply-To: <20110830152856.GA22754@redhat.com>
+Message-ID: <alpine.DEB.2.00.1108301503510.2730@chino.kir.corp.google.com>
+References: <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com> <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com>
+ <4E369372.80105@jp.fujitsu.com> <20110829183743.GA15216@redhat.com> <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com> <alpine.DEB.2.00.1108300040490.21066@chino.kir.corp.google.com> <20110830152856.GA22754@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com
-Subject: Re: [PATCH 2/4] posix-timers: limit the number of posix timers per
- process
-References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>	<1314661157-22173-2-git-send-email-andi@firstfloor.org> <20110830144407.acdae071.akpm@linux-foundation.org>
-In-Reply-To: <20110830144407.acdae071.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 30 Aug 2011, Oleg Nesterov wrote:
 
-> Sorry, it should be an rlimit from day one, IMO.
->
+> > @@ -447,6 +431,9 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
+> >  	for_each_process(q)
+> >  		if (q->mm == mm && !same_thread_group(q, p) &&
+> >  		    !(q->flags & PF_KTHREAD)) {
+> 
+> (I guess this is on top of -mm patch)
+> 
 
-Ok.
+Yes, it's based on 
+oom-avoid-killing-kthreads-if-they-assume-the-oom-killed-threads-mm.patch 
+which I thought would be pushed for the 3.1 rc series, we certainly don't 
+want to SIGKILL kthreads :)
 
-> Partly because rlimits are a better implementation.
+> > +			if (q->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+> > +				continue;
+> > +
+> 
+> Afaics, this is the only change apart from "removes mm->oom_disable_count
+> entirely", looks reasonable to me.
+> 
 
-The reason I went with a sysctl is that rlimits are more intrusive for 
-user space,
-requires special tools or patching bash.
-
-> Partly because once rlimits are added, the /proc knob no longer has any
-> sane behaviour.  Does it only modify /sbin/init?  Does it do a global
-> process walk, modifying all threads?
-
-There's no way to modify: you would need to kill the process or randomly
-take timers away. The limit only applies to new timers.
-
--Andi
-
+Yeah, it's necessary because this loop in oom_kill_task() kills all 
+user threads in different thread groups unconditionally if they share the 
+same mm, so we need to ensure that we aren't sending a SIGKILL to anything 
+that is actually oom disabled.  Before, the check in oom_badness() would 
+have prevented the task (`p' in this function) from being chosen in the 
+first place.
