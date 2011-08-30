@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1H3IdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 04:33:23 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26531 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742Ab1H3IdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 04:33:21 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, avagin@openvz.org
-Subject: [PATCH] x86, perf: check that current->mm alive before getting user callchain
-Date: Tue, 30 Aug 2011 12:32:36 +0400
-Message-Id: <1314693156-24131-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752460Ab1H3Ihm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 04:37:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52914 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab1H3Ihj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 04:37:39 -0400
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+From: Peter Zijlstra <peterz@infradead.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Borislav Petkov <bp@alien8.de>, Arnaud Lacombe <lacombar@gmail.com>,
+        David Airlie <airlied@redhat.com>,
+        Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-kbuild@vger.kernel.org
+Date: Tue, 30 Aug 2011 10:37:22 +0200
+In-Reply-To: <20110830020828.GA14915@khazad-dum.debian.net>
+References: <20110829141612.GB2025@gere.osrc.amd.com>
+	 <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+	 <20110829155501.GC2025@gere.osrc.amd.com>
+	 <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
+	 <20110829171750.GD2025@gere.osrc.amd.com> <1314641813.2816.133.camel@twins>
+	 <20110829211439.GA4488@liondog.tnic>
+	 <20110830020828.GA14915@khazad-dum.debian.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314693442.2054.2.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An event may occurs when mm is already released.
-I added an event in dequeue_entity and caught panic with following backtrace:
+On Mon, 2011-08-29 at 23:08 -0300, Henrique de Moraes Holschuh wrote:
+> On Mon, 29 Aug 2011, Borislav Petkov wrote:
+> > So, hypothetically speaking, hpa suggested then that we could pass
+> > firmware blobs over the linked list setup_data thing in the real-mode
+> > kernel header and parse_setup_data() can look at them and map them
+> > somewhere later for the driver to find. This should be doable because
+> > you're only gonna need a handful of blobs for CPU ucode, network and GPU
+> > if the last is compiled in.
+> > 
+> > I wanted to take a serious look at that for the ucode loading, maybe I
+> > should try to shuffle some time for it...
+> 
+> It would be very useful, yes.
+> 
+> Alternatively, you could extend the initrd format to have a firmware
+> directory appended after the filesystem image.  ACPI is going to abuse
+> the initrd in just that way to override ACPI tables very soon (patches
+> have been already submitted to linux-acpi), so if a more structured and
+> extensible way to piggy-back early-init data in the initrd is needed, it
+> would be good to bring that to the table NOW.
 
-[  434.421110] BUG: unable to handle kernel NULL pointer dereference at
-0000000000000050
-[  434.421258] IP: [<ffffffff810464ac>] __get_user_pages_fast+0x9c/0x120
-...
-[  434.421258] Call Trace:
-[  434.421258]  [<ffffffff8101ae81>] copy_from_user_nmi+0x51/0xf0
-[  434.421258]  [<ffffffff8109a0d5>] ? sched_clock_local+0x25/0x90
-[  434.421258]  [<ffffffff8101b048>] perf_callchain_user+0x128/0x170
-[  434.421258]  [<ffffffff811154cd>] ? __perf_event_header__init_id+0xed/0x100
-[  434.421258]  [<ffffffff81116690>] perf_prepare_sample+0x200/0x280
-[  434.421258]  [<ffffffff81118da8>] __perf_event_overflow+0x1b8/0x290
-[  434.421258]  [<ffffffff81065240>] ? tg_shares_up+0x0/0x670
-[  434.421258]  [<ffffffff8104fe1a>] ? walk_tg_tree+0x6a/0xb0
-[  434.421258]  [<ffffffff81118f44>] perf_swevent_overflow+0xc4/0xf0
-[  434.421258]  [<ffffffff81119150>] do_perf_sw_event+0x1e0/0x250
-[  434.421258]  [<ffffffff81119204>] perf_tp_event+0x44/0x70
-[  434.421258]  [<ffffffff8105701f>] ftrace_profile_sched_block+0xdf/0x110
-[  434.421258]  [<ffffffff8106121d>] dequeue_entity+0x2ad/0x2d0
-[  434.421258]  [<ffffffff810614ec>] dequeue_task_fair+0x1c/0x60
-[  434.421258]  [<ffffffff8105818a>] dequeue_task+0x9a/0xb0
-[  434.421258]  [<ffffffff810581e2>] deactivate_task+0x42/0xe0
-[  434.421258]  [<ffffffff814bc019>] thread_return+0x191/0x808
-[  434.421258]  [<ffffffff81098a44>] ? switch_task_namespaces+0x24/0x60
-[  434.421258]  [<ffffffff8106f4c4>] do_exit+0x464/0x910
-[  434.421258]  [<ffffffff8106f9c8>] do_group_exit+0x58/0xd0
-[  434.421258]  [<ffffffff8106fa57>] sys_exit_group+0x17/0x20
-[  434.421258]  [<ffffffff8100b202>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- arch/x86/kernel/cpu/perf_event.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4ee3abf..cfa62ec 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1900,6 +1900,9 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 
- 	perf_callchain_store(entry, regs->ip);
- 
-+	if (!current->mm)
-+		return;
-+
- 	if (perf_callchain_user32(regs, entry))
- 		return;
- 
--- 
-1.7.3.4
-
+Uhm,.. does that mean that soon we can't boot kernels without initrd?
+That too is a massive regression in my eyes.
