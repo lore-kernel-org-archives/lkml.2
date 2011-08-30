@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab1H3Apn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 20:45:43 -0400
-Received: from nm16.bullet.mail.bf1.yahoo.com ([98.139.212.175]:26627 "HELO
-	nm16.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750799Ab1H3Apm (ORCPT
+	id S1751588Ab1H3Ar7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 20:47:59 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55484 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab1H3Ar5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 20:45:42 -0400
-X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Aug 2011 20:45:42 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 702469.90844.bm@omp1050.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=YNWpyRB47wEEaCx/cIWlyw1FQ3iH3e/iZ/d1VcaqA/hKdaFVgs4JWh47t886dqQLFQTEHnGiYg9x+35qhdDzC3sf3zEgLzh63tbhapZLCohR//SjKyumVWOcmLBhNL9ai6OB715xEFuFhd7GpIH3p0wfJVh1NrODBaB6Po/y8tA=;
-X-YMail-OSG: MUsIfS0VM1mmsH1ra4fCv9joFlUloZ._bOoyBzn1xGszhQt
- iVq_KqO3Wd1wwry__WGuJnAsDYjJtgmSS3gRBGWeRKDjBcFosrfu1vyHBHKm
- NG2qZQkNO9B433uobv9IRhFmrlwUf2kg5StpH2s0_4wwTOtuyCPy.NKzduQg
- T3KyMMuO4Nd98FeE865VgRRqxhUdevzTh4ken4DZNh8msJLtQ7B6cys6MkXZ
- rq_nI2HQyzimVLzG1U0nJfKOs.KIRsgNTAIPKE4svcyZbSpv8Xo3f0CB_8hO
- VDlXWv3GnYIBoediGV0oac7wxDFVciQmrQVVTiRy9QekmUcMElLL173lUzU4
- rXE01iqoPROladMPtoTRWn_p0.EE9IY7Ct3oWlISF9mrXTHaTKdkPJMKOVdo
- CqFNKTDajkekgP4GTmKd8_ClZcrIvFYjBAr0.OFSukJ4t36REOlXz
-X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.113.315625
-Message-ID: <1314664801.47724.YahooMailClassic@web161421.mail.bf1.yahoo.com>
-Date: Mon, 29 Aug 2011 17:40:01 -0700 (PDT)
-From: Darrell Anderson <humanreadable@yahoo.com>
-Subject: rpc.rwalld is broken in 2.6.33.16
-To: linux-kernel@vger.kernel.org
+	Mon, 29 Aug 2011 20:47:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1314269645-18607-1-git-send-email-w.sang@pengutronix.de>
+References: <1314269645-18607-1-git-send-email-w.sang@pengutronix.de>
+Date: Tue, 30 Aug 2011 09:47:56 +0900
+X-Google-Sender-Auth: scNlcKFOhiaFRcvntjs2YLM7EOM
+Message-ID: <CAH9JG2XD_8_Vj9t-yN57VsPtCgo84FDLD7VmVwTM3+cNzKvAug@mail.gmail.com>
+Subject: Re: [PATCH] misc: Remove obsolete cleanup for clientdata
+From: Kyungmin Park <kmpark@infradead.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Minkyu Kang <mk7.kang@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-I am using Slackware 13.1 and the 2.6.33.x kernel. Recently I compiled and installed the 2.6.33.18 kernel and noticed rpc.rwalld will not start or run. There are no error messages and the exit code when run directly from the command line is zero.
-
-rpc.rwalld runs fine under 2.6.33.15.
-
-Recompiling netkit-rwall against 2.6.33.18 made no difference.
-
-I'll take a wild guess this is where the breakage occurred (2.6.33.16 change log):
-
-commit 273f86df6960cfc9e6402f0eca7d5b77204c5dd8
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Fri Jun 17 10:14:59 2011 -0400
-SUNRPC: Ensure the RPC client only quits on fatal signals
-commit 5afa9133cfe67f1bfead6049a9640c9262a7101c upstream.
-Fix a couple of instances where we were exiting the RPC client on
-arbitrary signals. We should only do so on fatal signals.
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-I compiled and installed the 2.6.33.16 kernel and confirmed rpc.rwalld fails to run there. So the change occurred from 2.6.33.15 to 2.6.33.16.
-
-I am not a member of this list nor am I a kernel developer.
-
-Please contact me at this email address if I can help further or provide additional information.
-
-Thanks for all your great work and time.
-
-Darrell Anderson
+On Thu, Aug 25, 2011 at 7:54 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> A few new i2c-drivers came into the kernel which clear the clientdata-pointer
+> on exit or error. This is obsolete meanwhile, the core will do it.
+>
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Minkyu Kang <mk7.kang@samsung.com>
+> Cc: Donggeun Kim <dg77.kim@samsung.com>
+> ---
+>  drivers/misc/fsa9480.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/misc/fsa9480.c b/drivers/misc/fsa9480.c
+> index 5325a7e..22e22ad 100644
+> --- a/drivers/misc/fsa9480.c
+> +++ b/drivers/misc/fsa9480.c
+> @@ -457,7 +457,6 @@ fail2:
+>        if (client->irq)
+>                free_irq(client->irq, NULL);
+>  fail1:
+> -       i2c_set_clientdata(client, NULL);
+>        kfree(usbsw);
+>        return ret;
+>  }
+> @@ -467,7 +466,6 @@ static int __devexit fsa9480_remove(struct i2c_client *client)
+>        struct fsa9480_usbsw *usbsw = i2c_get_clientdata(client);
+>        if (client->irq)
+>                free_irq(client->irq, NULL);
+> -       i2c_set_clientdata(client, NULL);
+>
+>        sysfs_remove_group(&client->dev.kobj, &fsa9480_group);
+>        device_init_wakeup(&client->dev, 0);
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
