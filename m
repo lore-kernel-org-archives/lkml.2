@@ -1,34 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab1H3PVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 11:21:16 -0400
-Received: from ixia-3.edge2.lax012.pnap.net ([74.217.148.5]:6827 "EHLO
-	ixqw-mail-out.ixiacom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755031Ab1H3PVP (ORCPT
+	id S1755249Ab1H3PW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 11:22:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37272 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab1H3PW6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 11:21:15 -0400
-Message-ID: <4E5D0008.5090504@ixiacom.com>
-Date: Tue, 30 Aug 2011 08:21:44 -0700
-From: Earl Chew <echew@ixiacom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: <jslaby@suse.cz>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] coredump: escape / in hostname and comm
-In-Reply-To: <1307457010-7241-2-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Aug 2011 11:22:58 -0400
+Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to
+ idle enter/exit APIs
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Date: Tue, 30 Aug 2011 17:22:33 +0200
+In-Reply-To: <20110830142617.GN9748@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
+	 <1314627922.2816.65.camel@twins>
+	 <20110829171155.GD9748@somewhere.redhat.com>
+	 <1314640155.2816.117.camel@twins>
+	 <20110829175954.GF9748@somewhere.redhat.com>
+	 <1314641160.2816.128.camel@twins>
+	 <20110829233521.GK9748@somewhere.redhat.com>
+	 <1314703158.2799.3.camel@twins>
+	 <20110830142617.GN9748@somewhere.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314717753.5812.7.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri,
+On Tue, 2011-08-30 at 16:26 +0200, Frederic Weisbecker wrote:
+> On Tue, Aug 30, 2011 at 01:19:18PM +0200, Peter Zijlstra wrote:
+> > On Tue, 2011-08-30 at 01:35 +0200, Frederic Weisbecker wrote:
+> > > 
+> > > OTOH it is needed to find non-critical sections when asked to cooperate
+> > > in a grace period completion. But if no callback have been enqueued on
+> > > the whole system we are fine. 
+> > 
+> > Its that 'whole system' clause that I have a problem with. It would be
+> > perfectly fine to have a number of cpus very busy generating rcu
+> > callbacks, however this should not mean our adaptive nohz cpu should be
+> > bothered to complete grace periods.
+> > 
+> > Requiring it to participate in the grace period state machine is a fail,
+> > plain and simple.
+> 
+> We need those nohz CPUs to participate because they may use read side
+> critical section themselves. So we need them to delay running grace period
+> until the end of their running rcu read side critical sections, like any
+> other CPUs. Otherwise their supposed rcu read side critical section wouldn't
+> be effective.
+> 
+> Either that or we need to only stop the tick when we are in userspace.
+> I'm not sure it would be a good idea.
 
-I would like to suggest that both '%e' and '%E' use current->group_leader->comm
-instead of just current->comm.
+Well the simple fact is that rcu, when considered system-wide, is pretty
+much always busy, voiding any and all benefit you might want to gain.
 
-Using plain current->comm gets strange effects when threads within a process
-start naming themselves using PR_SET_NAME (or its pthread_setname_np() equivalent).
+> We discussed this problem, I believe the problem mostly resides in rcu sched.
+> Because finding quiescent states for rcu bh is easy, but rcu sched needs
+> the tick or context switches. (For rcu preempt I have no idea.)
+> So for now that's the sanest way we found amongst:
+> 
+> - Having explicit hooks in preempt_disable() and local_irq_restore()
+> to notice end of rcu sched critical section. So that we don't need the tick
+> anymore to find quiescent states. But that's going to be costly. And we may
+> miss some more implicitly non-preemptable code path.
+> 
+> - Rely on context switches only. I believe in practice it should be fine.
+> But in theory this delays the grace period completion for an unbounded
+> amount of time.
 
-Earl
+Right, so what we can do is keep a per-cpu context switch counter (I'm
+sure we have one someplace and we already have the
+rcu_note_context_switch() callback in case we need another) and have
+another cpu (outside of our extended nohz domain) drive our state
+machine.
 
+But I'm sure Paul can say more sensible things than me here.
