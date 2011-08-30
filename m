@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1H3JGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 05:06:31 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:38215 "EHLO
+	id S1752889Ab1H3JGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 05:06:34 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:38292 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab1H3JF5 (ORCPT
+	with ESMTP id S1752322Ab1H3JF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Aug 2011 05:05:57 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 13/15] drbd: new on-disk activity log transaction format
-Date: Tue, 30 Aug 2011 11:05:47 +0200
-Message-Id: <1314695149-387-14-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 12/15] lru_cache: allow multiple changes per transaction
+Date: Tue, 30 Aug 2011 11:05:46 +0200
+Message-Id: <1314695149-387-13-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314695149-387-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314695149-387-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,816 +22,754 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Use a new on-disk transaction format for the activity log, which allows
-for multiple changes to the active set per transaction.
-
-Using 4k transaction blocks, we can now get rid of the work-around code
-to deal with devices not supporting 512 byte logical block size.
+Allow multiple changes to the active set of elements in lru_cache.
+The only current user of lru_cache, drbd, is driving this generalisation.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_actlog.c |  403 +++++++++++++++++++++++---------------
- drivers/block/drbd/drbd_int.h    |   44 +++--
- drivers/block/drbd/drbd_main.c   |    4 -
- drivers/block/drbd/drbd_nl.c     |   42 +---
- include/linux/drbd.h             |    4 +
- include/linux/drbd_limits.h      |    8 +-
- 6 files changed, 294 insertions(+), 211 deletions(-)
+ drivers/block/drbd/drbd_actlog.c |   50 ++------
+ drivers/block/drbd/drbd_nl.c     |    4 +-
+ include/linux/lru_cache.h        |   68 +++++++----
+ lib/lru_cache.c                  |  243 ++++++++++++++++++++++++++------------
+ 4 files changed, 225 insertions(+), 140 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
-index 44097c8..55f5a7a 100644
+index 1ce3de6..44097c8 100644
 --- a/drivers/block/drbd/drbd_actlog.c
 +++ b/drivers/block/drbd/drbd_actlog.c
-@@ -24,21 +24,67 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/crc32c.h>
- #include <linux/drbd.h>
-+#include <linux/drbd_limits.h>
-+#include <linux/dynamic_debug.h>
- #include "drbd_int.h"
- #include "drbd_wrappers.h"
- 
--/* We maintain a trivial checksum in our on disk activity log.
-- * With that we can ensure correct operation even when the storage
-- * device might do a partial (last) sector write while losing power.
-- */
--struct __packed al_transaction {
--	u32       magic;
--	u32       tr_number;
--	struct __packed {
--		u32 pos;
--		u32 extent; } updates[1 + AL_EXTENTS_PT];
--	u32       xor_sum;
-+/* all fields on disc in big endian */
-+struct __packed al_transaction_on_disk {
-+	/* don't we all like magic */
-+	__be32	magic;
-+
-+	/* to identify the most recent transaction block
-+	 * in the on disk ring buffer */
-+	__be32	tr_number;
-+
-+	/* checksum on the full 4k block, with this field set to 0. */
-+	__be32	crc32c;
-+
-+	/* type of transaction, special transaction types like:
-+	 * purge-all, set-all-idle, set-all-active, ... to-be-defined */
-+	__be16	transaction_type;
-+
-+	/* we currently allow only a few thousand extents,
-+	 * so 16bit will be enough for the slot number. */
-+
-+	/* how many updates in this transaction */
-+	__be16	n_updates;
-+
-+	/* maximum slot number, "al-extents" in drbd.conf speak.
-+	 * Having this in each transaction should make reconfiguration
-+	 * of that parameter easier. */
-+	__be16	context_size;
-+
-+	/* slot number the context starts with */
-+	__be16	context_start_slot_nr;
-+
-+	/* Some reserved bytes.  Expected usage is a 64bit counter of
-+	 * sectors-written since device creation, and other data generation tag
-+	 * supporting usage */
-+	__be32	__reserved[4];
-+
-+	/* --- 36 byte used --- */
-+
-+	/* Reserve space for up to AL_UPDATES_PER_TRANSACTION changes
-+	 * in one transaction, then use the remaining byte in the 4k block for
-+	 * context information.  "Flexible" number of updates per transaction
-+	 * does not help, as we have to account for the case when all update
-+	 * slots are used anyways, so it would only complicate code without
-+	 * additional benefit.
-+	 */
-+	__be16	update_slot_nr[AL_UPDATES_PER_TRANSACTION];
-+
-+	/* but the extent number is 32bit, which at an extent size of 4 MiB
-+	 * allows to cover device sizes of up to 2**54 Byte (16 PiB) */
-+	__be32	update_extent_nr[AL_UPDATES_PER_TRANSACTION];
-+
-+	/* --- 420 bytes used (36 + 64*6) --- */
-+
-+	/* 4096 - 420 = 3676 = 919 * 4 */
-+	__be32	context[AL_CONTEXT_PER_TRANSACTION];
- };
- 
- struct update_odbm_work {
-@@ -48,11 +94,8 @@ struct update_odbm_work {
- 
- struct update_al_work {
- 	struct drbd_work w;
--	struct lc_element *al_ext;
- 	struct completion event;
--	unsigned int enr;
--	/* if old_enr != LC_FREE, write corresponding bitmap sector, too */
--	unsigned int old_enr;
-+	int err;
- };
- 
- struct drbd_atodb_wait {
-@@ -107,67 +150,30 @@ static int _drbd_md_sync_page_io(struct drbd_conf *mdev,
- int drbd_md_sync_page_io(struct drbd_conf *mdev, struct drbd_backing_dev *bdev,
- 			 sector_t sector, int rw)
+@@ -175,7 +175,6 @@ static struct lc_element *_al_get(struct drbd_conf *mdev, unsigned int enr)
  {
--	int logical_block_size, mask, ok;
--	int offset = 0;
-+	int ok;
- 	struct page *iop = mdev->md_io_page;
+ 	struct lc_element *al_ext;
+ 	struct lc_element *tmp;
+-	unsigned long     al_flags = 0;
+ 	int wake;
  
- 	D_ASSERT(mutex_is_locked(&mdev->md_io_mutex));
- 
- 	BUG_ON(!bdev->md_bdev);
- 
--	logical_block_size = bdev_logical_block_size(bdev->md_bdev);
--	if (logical_block_size == 0)
--		logical_block_size = MD_SECTOR_SIZE;
--
--	/* in case logical_block_size != 512 [ s390 only? ] */
--	if (logical_block_size != MD_SECTOR_SIZE) {
--		mask = (logical_block_size / MD_SECTOR_SIZE) - 1;
--		D_ASSERT(mask == 1 || mask == 3 || mask == 7);
--		D_ASSERT(logical_block_size == (mask+1) * MD_SECTOR_SIZE);
--		offset = sector & mask;
--		sector = sector & ~mask;
--		iop = mdev->md_io_tmpp;
--
--		if (rw & WRITE) {
--			/* these are GFP_KERNEL pages, pre-allocated
--			 * on device initialization */
--			void *p = page_address(mdev->md_io_page);
--			void *hp = page_address(mdev->md_io_tmpp);
--
--			ok = _drbd_md_sync_page_io(mdev, bdev, iop, sector,
--					READ, logical_block_size);
--
--			if (unlikely(!ok)) {
--				dev_err(DEV, "drbd_md_sync_page_io(,%llus,"
--				    "READ [logical_block_size!=512]) failed!\n",
--				    (unsigned long long)sector);
--				return 0;
--			}
--
--			memcpy(hp + offset*MD_SECTOR_SIZE, p, MD_SECTOR_SIZE);
--		}
--	}
-+	dev_dbg(DEV, "meta_data io: %s [%d]:%s(,%llus,%s)\n",
-+	     current->comm, current->pid, __func__,
-+	     (unsigned long long)sector, (rw & WRITE) ? "WRITE" : "READ");
- 
- 	if (sector < drbd_md_first_sector(bdev) ||
--	    sector > drbd_md_last_sector(bdev))
-+	    sector + 7 > drbd_md_last_sector(bdev))
- 		dev_alert(DEV, "%s [%d]:%s(,%llus,%s) out of range md access!\n",
- 		     current->comm, current->pid, __func__,
- 		     (unsigned long long)sector, (rw & WRITE) ? "WRITE" : "READ");
- 
--	ok = _drbd_md_sync_page_io(mdev, bdev, iop, sector, rw, logical_block_size);
-+	ok = _drbd_md_sync_page_io(mdev, bdev, iop, sector, rw, MD_BLOCK_SIZE);
- 	if (unlikely(!ok)) {
- 		dev_err(DEV, "drbd_md_sync_page_io(,%llus,%s) failed!\n",
- 		    (unsigned long long)sector, (rw & WRITE) ? "WRITE" : "READ");
- 		return 0;
+ 	spin_lock_irq(&mdev->al_lock);
+@@ -190,19 +189,8 @@ static struct lc_element *_al_get(struct drbd_conf *mdev, unsigned int enr)
+ 			return NULL;
+ 		}
  	}
- 
--	if (logical_block_size != MD_SECTOR_SIZE && !(rw & WRITE)) {
--		void *p = page_address(mdev->md_io_page);
--		void *hp = page_address(mdev->md_io_tmpp);
+-	al_ext   = lc_get(mdev->act_log, enr);
+-	al_flags = mdev->act_log->flags;
++	al_ext = lc_get(mdev->act_log, enr);
+ 	spin_unlock_irq(&mdev->al_lock);
 -
--		memcpy(p, hp + offset*MD_SECTOR_SIZE, MD_SECTOR_SIZE);
+-	/*
+-	if (!al_ext) {
+-		if (al_flags & LC_STARVING)
+-			dev_warn(DEV, "Have to wait for LRU element (AL too small?)\n");
+-		if (al_flags & LC_DIRTY)
+-			dev_warn(DEV, "Ongoing AL update (AL device too slow?)\n");
 -	}
+-	*/
 -
- 	return ok;
+ 	return al_ext;
  }
  
-@@ -211,20 +217,34 @@ void drbd_al_begin_io(struct drbd_conf *mdev, sector_t sector)
- 		 * current->bio_tail list now.
- 		 * we have to delegate updates to the activity log
- 		 * to the worker thread. */
--		init_completion(&al_work.event);
--		al_work.al_ext = al_ext;
--		al_work.enr = enr;
--		al_work.old_enr = al_ext->lc_number;
--		al_work.w.cb = w_al_write_transaction;
--		al_work.w.mdev = mdev;
--		drbd_queue_work_front(&mdev->tconn->data.work, &al_work.w);
--		wait_for_completion(&al_work.event);
+@@ -235,7 +223,7 @@ void drbd_al_begin_io(struct drbd_conf *mdev, sector_t sector)
+ 		mdev->al_writ_cnt++;
  
--		mdev->al_writ_cnt++;
-+		/* Serialize multiple transactions.
-+		 * This uses test_and_set_bit, memory barrier is implicit.
-+		 * Optimization potential:
-+		 * first check for transaction number > old transaction number,
-+		 * so not all waiters have to lock/unlock.  */
-+		wait_event(mdev->al_wait, lc_try_lock_for_transaction(mdev->act_log));
- 
--		spin_lock_irq(&mdev->al_lock);
--		lc_committed(mdev->act_log);
--		spin_unlock_irq(&mdev->al_lock);
-+		/* Double check: it may have been committed by someone else,
-+		 * while we have been waiting for the lock. */
-+		if (al_ext->lc_number != enr) {
-+			init_completion(&al_work.event);
-+			al_work.w.cb = w_al_write_transaction;
-+			al_work.w.mdev = mdev;
-+			drbd_queue_work_front(&mdev->tconn->data.work, &al_work.w);
-+			wait_for_completion(&al_work.event);
-+
-+			mdev->al_writ_cnt++;
-+
-+			spin_lock_irq(&mdev->al_lock);
-+			/* FIXME
-+			if (al_work.err)
-+				we need an "lc_cancel" here;
-+			*/
-+			lc_committed(mdev->act_log);
-+			spin_unlock_irq(&mdev->al_lock);
-+		}
-+		lc_unlock(mdev->act_log);
+ 		spin_lock_irq(&mdev->al_lock);
+-		lc_changed(mdev->act_log, al_ext);
++		lc_committed(mdev->act_log);
+ 		spin_unlock_irq(&mdev->al_lock);
  		wake_up(&mdev->al_wait);
  	}
- }
-@@ -283,95 +303,108 @@ w_al_write_transaction(struct drbd_work *w, int unused)
- {
- 	struct update_al_work *aw = container_of(w, struct update_al_work, w);
- 	struct drbd_conf *mdev = w->mdev;
--	struct lc_element *updated = aw->al_ext;
--	const unsigned int new_enr = aw->enr;
--	const unsigned int evicted = aw->old_enr;
--	struct al_transaction *buffer;
-+	struct al_transaction_on_disk *buffer;
-+	struct lc_element *e;
- 	sector_t sector;
--	int i, n, mx;
--	unsigned int extent_nr;
--	u32 xor_sum = 0;
-+	int i, mx;
-+	unsigned extent_nr;
-+	unsigned crc = 0;
- 
- 	if (!get_ldev(mdev)) {
--		dev_err(DEV,
--			"disk is %s, cannot start al transaction (-%d +%d)\n",
--			drbd_disk_str(mdev->state.disk), evicted, new_enr);
-+		dev_err(DEV, "disk is %s, cannot start al transaction\n",
-+			drbd_disk_str(mdev->state.disk));
-+		aw->err = -EIO;
- 		complete(&((struct update_al_work *)w)->event);
- 		return 1;
- 	}
--	/* do we have to do a bitmap write, first?
--	 * TODO reduce maximum latency:
--	 * submit both bios, then wait for both,
--	 * instead of doing two synchronous sector writes.
--	 * For now, we must not write the transaction,
--	 * if we cannot write out the bitmap of the evicted extent. */
--	if (mdev->state.conn < C_CONNECTED && evicted != LC_FREE)
--		drbd_bm_write_page(mdev, al_extent_to_bm_page(evicted));
- 
- 	/* The bitmap write may have failed, causing a state change. */
- 	if (mdev->state.disk < D_INCONSISTENT) {
- 		dev_err(DEV,
--			"disk is %s, cannot write al transaction (-%d +%d)\n",
--			drbd_disk_str(mdev->state.disk), evicted, new_enr);
-+			"disk is %s, cannot write al transaction\n",
-+			drbd_disk_str(mdev->state.disk));
-+		aw->err = -EIO;
- 		complete(&((struct update_al_work *)w)->event);
- 		put_ldev(mdev);
- 		return 1;
- 	}
- 
- 	mutex_lock(&mdev->md_io_mutex); /* protects md_io_buffer, al_tr_cycle, ... */
--	buffer = (struct al_transaction *)page_address(mdev->md_io_page);
-+	buffer = page_address(mdev->md_io_page);
- 
--	buffer->magic = __constant_cpu_to_be32(DRBD_MAGIC);
-+	memset(buffer, 0, sizeof(*buffer));
-+	buffer->magic = cpu_to_be32(DRBD_AL_MAGIC);
- 	buffer->tr_number = cpu_to_be32(mdev->al_tr_number);
- 
--	n = lc_index_of(mdev->act_log, updated);
--
--	buffer->updates[0].pos = cpu_to_be32(n);
--	buffer->updates[0].extent = cpu_to_be32(new_enr);
-+	i = 0;
-+	/* no need to grab any further lock, this list cannot change
-+	 * while we hold the "LC_LOCKED" bit. */
-+	list_for_each_entry(e, &mdev->act_log->to_be_changed, list) {
-+		BUG_ON(i >= AL_UPDATES_PER_TRANSACTION);
-+		buffer->update_slot_nr[i] = cpu_to_be16(e->lc_index);
-+		buffer->update_extent_nr[i] = cpu_to_be32(e->lc_new_number);
-+		if (e->lc_number != LC_FREE)
-+			drbd_bm_mark_for_writeout(mdev,
-+					al_extent_to_bm_page(e->lc_number));
-+		i++;
-+	}
-+	buffer->n_updates = cpu_to_be16(i);
-+	for ( ; i < AL_UPDATES_PER_TRANSACTION; i++) {
-+		buffer->update_slot_nr[i] = cpu_to_be16(-1);
-+		buffer->update_extent_nr[i] = cpu_to_be32(LC_FREE);
-+	}
- 
--	xor_sum ^= new_enr;
-+	buffer->context_size = cpu_to_be16(mdev->act_log->nr_elements);
-+	buffer->context_start_slot_nr = cpu_to_be16(mdev->al_tr_cycle);
- 
--	mx = min_t(int, AL_EXTENTS_PT,
-+	mx = min_t(int, AL_CONTEXT_PER_TRANSACTION,
- 		   mdev->act_log->nr_elements - mdev->al_tr_cycle);
- 	for (i = 0; i < mx; i++) {
- 		unsigned idx = mdev->al_tr_cycle + i;
- 		extent_nr = lc_element_by_index(mdev->act_log, idx)->lc_number;
--		buffer->updates[i+1].pos = cpu_to_be32(idx);
--		buffer->updates[i+1].extent = cpu_to_be32(extent_nr);
--		xor_sum ^= extent_nr;
--	}
--	for (; i < AL_EXTENTS_PT; i++) {
--		buffer->updates[i+1].pos = __constant_cpu_to_be32(-1);
--		buffer->updates[i+1].extent = __constant_cpu_to_be32(LC_FREE);
--		xor_sum ^= LC_FREE;
-+		buffer->context[i] = cpu_to_be32(extent_nr);
- 	}
--	mdev->al_tr_cycle += AL_EXTENTS_PT;
-+	for (; i < AL_CONTEXT_PER_TRANSACTION; i++)
-+		buffer->context[i] = cpu_to_be32(LC_FREE);
-+
-+	mdev->al_tr_cycle += AL_CONTEXT_PER_TRANSACTION;
- 	if (mdev->al_tr_cycle >= mdev->act_log->nr_elements)
- 		mdev->al_tr_cycle = 0;
- 
--	buffer->xor_sum = cpu_to_be32(xor_sum);
--
- 	sector =  mdev->ldev->md.md_offset
--		+ mdev->ldev->md.al_offset + mdev->al_tr_pos;
--
--	if (!drbd_md_sync_page_io(mdev, mdev->ldev, sector, WRITE))
--		drbd_chk_io_error(mdev, 1, true);
-+		+ mdev->ldev->md.al_offset
-+		+ mdev->al_tr_pos * (MD_BLOCK_SIZE>>9);
- 
--	if (++mdev->al_tr_pos >
--	    div_ceil(mdev->act_log->nr_elements, AL_EXTENTS_PT))
--		mdev->al_tr_pos = 0;
-+	crc = crc32c(0, buffer, 4096);
-+	buffer->crc32c = cpu_to_be32(crc);
- 
--	D_ASSERT(mdev->al_tr_pos < MD_AL_MAX_SIZE);
--	mdev->al_tr_number++;
-+	if (drbd_bm_write_hinted(mdev))
-+		aw->err = -EIO;
-+		/* drbd_chk_io_error done already */
-+	else if (!drbd_md_sync_page_io(mdev, mdev->ldev, sector, WRITE)) {
-+		aw->err = -EIO;
-+		drbd_chk_io_error(mdev, 1, true);
-+	} else {
-+		/* advance ringbuffer position and transaction counter */
-+		mdev->al_tr_pos = (mdev->al_tr_pos + 1) % (MD_AL_SECTORS*512/MD_BLOCK_SIZE);
-+		mdev->al_tr_number++;
-+	}
- 
- 	mutex_unlock(&mdev->md_io_mutex);
--
- 	complete(&((struct update_al_work *)w)->event);
- 	put_ldev(mdev);
- 
- 	return 1;
- }
- 
-+/* FIXME
-+ * reading of the activity log,
-+ * and potentially dirtying of the affected bitmap regions,
-+ * should be done from userland only.
-+ * DRBD would simply always attach with an empty activity log,
-+ * and refuse to attach to something that looks like a crashed primary.
-+ */
-+
- /**
-  * drbd_al_read_tr() - Read a single transaction from the on disk activity log
-  * @mdev:	DRBD device.
-@@ -383,27 +416,39 @@ w_al_write_transaction(struct drbd_work *w, int unused)
-  */
- static int drbd_al_read_tr(struct drbd_conf *mdev,
- 			   struct drbd_backing_dev *bdev,
--			   struct al_transaction *b,
- 			   int index)
- {
-+	struct al_transaction_on_disk *b = page_address(mdev->md_io_page);
- 	sector_t sector;
--	int rv, i;
--	u32 xor_sum = 0;
-+	u32 crc;
- 
--	sector = bdev->md.md_offset + bdev->md.al_offset + index;
-+	sector =  bdev->md.md_offset
-+		+ bdev->md.al_offset
-+		+ index * (MD_BLOCK_SIZE>>9);
- 
- 	/* Dont process error normally,
- 	 * as this is done before disk is attached! */
- 	if (!drbd_md_sync_page_io(mdev, bdev, sector, READ))
- 		return -1;
- 
--	rv = (b->magic == cpu_to_be32(DRBD_MAGIC));
-+	if (!expect(b->magic == cpu_to_be32(DRBD_AL_MAGIC)))
-+		return 0;
- 
--	for (i = 0; i < AL_EXTENTS_PT + 1; i++)
--		xor_sum ^= be32_to_cpu(b->updates[i].extent);
--	rv &= (xor_sum == be32_to_cpu(b->xor_sum));
-+	if (!expect(be16_to_cpu(b->n_updates) <= AL_UPDATES_PER_TRANSACTION))
-+		return 0;
- 
--	return rv;
-+	if (!expect(be16_to_cpu(b->context_size) <= DRBD_AL_EXTENTS_MAX))
-+		return 0;
-+
-+	if (!expect(be16_to_cpu(b->context_start_slot_nr) < DRBD_AL_EXTENTS_MAX))
-+		return 0;
-+
-+	crc = be32_to_cpu(b->crc32c);
-+	b->crc32c = 0;
-+	if (!expect(crc == crc32c(0, b, 4096)))
-+		return 0;
-+
-+	return 1;
- }
- 
- /**
-@@ -415,7 +460,7 @@ static int drbd_al_read_tr(struct drbd_conf *mdev,
-  */
- int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
- {
--	struct al_transaction *buffer;
-+	struct al_transaction_on_disk *b;
+@@ -601,7 +589,7 @@ void drbd_al_shrink(struct drbd_conf *mdev)
+ 	struct lc_element *al_ext;
  	int i;
- 	int rv;
- 	int mx;
-@@ -428,25 +473,36 @@ int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
- 	u32 to_tnr = 0;
- 	u32 cnr;
  
--	mx = div_ceil(mdev->act_log->nr_elements, AL_EXTENTS_PT);
-+	/* Note that this is expected to be called with a newly created,
-+	 * clean and all unused activity log of the "expected size".
-+	 */
+-	D_ASSERT(test_bit(__LC_DIRTY, &mdev->act_log->flags));
++	D_ASSERT(test_bit(__LC_LOCKED, &mdev->act_log->flags));
  
- 	/* lock out all other meta data io for now,
- 	 * and make sure the page is mapped.
- 	 */
- 	mutex_lock(&mdev->md_io_mutex);
--	buffer = page_address(mdev->md_io_page);
-+	b = page_address(mdev->md_io_page);
-+
-+	/* Always use the full ringbuffer space for now.
-+	 * possible optimization: read in all of it,
-+	 * then scan the in-memory pages. */
-+
-+	mx = (MD_AL_SECTORS*512/MD_BLOCK_SIZE);
- 
- 	/* Find the valid transaction in the log */
--	for (i = 0; i <= mx; i++) {
--		rv = drbd_al_read_tr(mdev, bdev, buffer, i);
-+	for (i = 0; i < mx; i++) {
-+		rv = drbd_al_read_tr(mdev, bdev, i);
-+		/* invalid data in that block */
- 		if (rv == 0)
- 			continue;
-+
-+		/* IO error */
- 		if (rv == -1) {
- 			mutex_unlock(&mdev->md_io_mutex);
- 			return 0;
+ 	for (i = 0; i < mdev->act_log->nr_elements; i++) {
+ 		al_ext = lc_element_by_index(mdev->act_log, i);
+@@ -708,7 +696,9 @@ static void drbd_try_clear_on_disk_bm(struct drbd_conf *mdev, sector_t sector,
+ 			}
+ 			ext->rs_left = rs_left;
+ 			ext->rs_failed = success ? 0 : count;
+-			lc_changed(mdev->resync, &ext->lce);
++			/* we don't keep a persistent log of the resync lru,
++			 * we can commit any change right away. */
++			lc_committed(mdev->resync);
  		}
--		cnr = be32_to_cpu(buffer->tr_number);
- 
-+		cnr = be32_to_cpu(b->tr_number);
- 		if (++found_valid == 1) {
- 			from = i;
- 			to = i;
-@@ -454,8 +510,11 @@ int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
- 			to_tnr = cnr;
- 			continue;
+ 		lc_put(mdev->resync, &ext->lce);
+ 		/* no race, we are within the al_lock! */
+@@ -892,7 +882,7 @@ struct bm_extent *_bme_get(struct drbd_conf *mdev, unsigned int enr)
+ 		if (bm_ext->lce.lc_number != enr) {
+ 			bm_ext->rs_left = drbd_bm_e_weight(mdev, enr);
+ 			bm_ext->rs_failed = 0;
+-			lc_changed(mdev->resync, &bm_ext->lce);
++			lc_committed(mdev->resync);
+ 			wakeup = 1;
  		}
-+
-+		D_ASSERT(cnr != to_tnr);
-+		D_ASSERT(cnr != from_tnr);
- 		if ((int)cnr - (int)from_tnr < 0) {
--			D_ASSERT(from_tnr - cnr + i - from == mx+1);
-+			D_ASSERT(from_tnr - cnr + i - from == mx);
- 			from = i;
- 			from_tnr = cnr;
- 		}
-@@ -476,11 +535,10 @@ int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
- 	 * dev_info(DEV, "Reading from %d to %d.\n",from,to); */
- 	i = from;
- 	while (1) {
--		int j, pos;
--		unsigned int extent_nr;
--		unsigned int trn;
-+		struct lc_element *e;
-+		unsigned j, n, slot, extent_nr;
- 
--		rv = drbd_al_read_tr(mdev, bdev, buffer, i);
-+		rv = drbd_al_read_tr(mdev, bdev, i);
- 		if (!expect(rv != 0))
- 			goto cancel;
- 		if (rv == -1) {
-@@ -488,23 +546,55 @@ int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
- 			return 0;
- 		}
- 
--		trn = be32_to_cpu(buffer->tr_number);
-+		/* deal with different transaction types.
-+		 * not yet implemented */
-+		if (!expect(b->transaction_type == 0))
-+			goto cancel;
- 
--		spin_lock_irq(&mdev->al_lock);
-+		/* on the fly re-create/resize activity log?
-+		 * will be a special transaction type flag. */
-+		if (!expect(be16_to_cpu(b->context_size) == mdev->act_log->nr_elements))
-+			goto cancel;
-+		if (!expect(be16_to_cpu(b->context_start_slot_nr) < mdev->act_log->nr_elements))
-+			goto cancel;
- 
--		/* This loop runs backwards because in the cyclic
--		   elements there might be an old version of the
--		   updated element (in slot 0). So the element in slot 0
--		   can overwrite old versions. */
--		for (j = AL_EXTENTS_PT; j >= 0; j--) {
--			pos = be32_to_cpu(buffer->updates[j].pos);
--			extent_nr = be32_to_cpu(buffer->updates[j].extent);
-+		/* We are the only user of the activity log right now,
-+		 * don't actually need to take that lock. */
-+		spin_lock_irq(&mdev->al_lock);
- 
--			if (extent_nr == LC_FREE)
--				continue;
-+		/* first, apply the context, ... */
-+		for (j = 0, slot = be16_to_cpu(b->context_start_slot_nr);
-+		     j < AL_CONTEXT_PER_TRANSACTION &&
-+		     slot < mdev->act_log->nr_elements; j++, slot++) {
-+			extent_nr = be32_to_cpu(b->context[j]);
-+			e = lc_element_by_index(mdev->act_log, slot);
-+			if (e->lc_number != extent_nr) {
-+				if (extent_nr != LC_FREE)
-+					active_extents++;
-+				else
-+					active_extents--;
-+			}
-+			lc_set(mdev->act_log, extent_nr, slot);
-+		}
- 
--			lc_set(mdev->act_log, extent_nr, pos);
--			active_extents++;
-+		/* ... then apply the updates,
-+		 * which override the context information.
-+		 * drbd_al_read_tr already did the rangecheck
-+		 * on n <= AL_UPDATES_PER_TRANSACTION */
-+		n = be16_to_cpu(b->n_updates);
-+		for (j = 0; j < n; j++) {
-+			slot = be16_to_cpu(b->update_slot_nr[j]);
-+			extent_nr = be32_to_cpu(b->update_extent_nr[j]);
-+			if (!expect(slot < mdev->act_log->nr_elements))
-+				break;
-+			e = lc_element_by_index(mdev->act_log, slot);
-+			if (e->lc_number != extent_nr) {
-+				if (extent_nr != LC_FREE)
-+					active_extents++;
-+				else
-+					active_extents--;
-+			}
-+			lc_set(mdev->act_log, extent_nr, slot);
- 		}
- 		spin_unlock_irq(&mdev->al_lock);
- 
-@@ -514,15 +604,12 @@ cancel:
- 		if (i == to)
- 			break;
- 		i++;
--		if (i > mx)
-+		if (i >= mx)
- 			i = 0;
+ 		if (bm_ext->lce.refcnt == 1)
+@@ -908,7 +898,7 @@ struct bm_extent *_bme_get(struct drbd_conf *mdev, unsigned int enr)
+ 		if (rs_flags & LC_STARVING)
+ 			dev_warn(DEV, "Have to wait for element"
+ 			     " (resync LRU too small?)\n");
+-		BUG_ON(rs_flags & LC_DIRTY);
++		BUG_ON(rs_flags & LC_LOCKED);
  	}
  
- 	mdev->al_tr_number = to_tnr+1;
--	mdev->al_tr_pos = to;
--	if (++mdev->al_tr_pos >
--	    div_ceil(mdev->act_log->nr_elements, AL_EXTENTS_PT))
--		mdev->al_tr_pos = 0;
-+	mdev->al_tr_pos = (to + 1) % (MD_AL_SECTORS*512/MD_BLOCK_SIZE);
+ 	return bm_ext;
+@@ -916,26 +906,12 @@ struct bm_extent *_bme_get(struct drbd_conf *mdev, unsigned int enr)
  
- 	/* ok, we are done with it */
- 	mutex_unlock(&mdev->md_io_mutex);
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index f125c0e..482bd7e 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1069,7 +1069,6 @@ struct drbd_conf {
- 	atomic_t pp_in_use_by_net;	/* sendpage()d, still referenced by tcp */
- 	wait_queue_head_t ee_wait;
- 	struct page *md_io_page;	/* one page buffer for md_io */
--	struct page *md_io_tmpp;	/* for logical_block_size != 512 */
- 	struct mutex md_io_mutex;	/* protects the md_io_buffer */
- 	spinlock_t al_lock;
- 	wait_queue_head_t al_wait;
-@@ -1259,22 +1258,39 @@ extern void drbd_ldev_destroy(struct drbd_conf *mdev);
-    * either at the end of the backing device
-    * or on a separate meta data device. */
+ static int _is_in_al(struct drbd_conf *mdev, unsigned int enr)
+ {
+-	struct lc_element *al_ext;
+-	int rv = 0;
++	int rv;
  
--#define MD_RESERVED_SECT (128LU << 11)  /* 128 MB, unit sectors */
- /* The following numbers are sectors */
--#define MD_AL_OFFSET 8	    /* 8 Sectors after start of meta area */
--#define MD_AL_MAX_SIZE 64   /* = 32 kb LOG  ~ 3776 extents ~ 14 GB Storage */
--/* Allows up to about 3.8TB */
--#define MD_BM_OFFSET (MD_AL_OFFSET + MD_AL_MAX_SIZE)
--
--/* Since the smalles IO unit is usually 512 byte */
--#define MD_SECTOR_SHIFT	 9
--#define MD_SECTOR_SIZE	 (1<<MD_SECTOR_SHIFT)
--
--/* activity log */
--#define AL_EXTENTS_PT ((MD_SECTOR_SIZE-12)/8-1) /* 61 ; Extents per 512B sector */
--#define AL_EXTENT_SHIFT 22		 /* One extent represents 4M Storage */
-+/* Allows up to about 3.8TB, so if you want more,
-+ * you need to use the "flexible" meta data format. */
-+#define MD_RESERVED_SECT (128LU << 11)  /* 128 MB, unit sectors */
-+#define MD_AL_OFFSET	8    /* 8 Sectors after start of meta area */
-+#define MD_AL_SECTORS	64   /* = 32 kB on disk activity log ring buffer */
-+#define MD_BM_OFFSET (MD_AL_OFFSET + MD_AL_SECTORS)
-+
-+/* we do all meta data IO in 4k blocks */
-+#define MD_BLOCK_SHIFT	12
-+#define MD_BLOCK_SIZE	(1<<MD_BLOCK_SHIFT)
-+
-+/* One activity log extent represents 4M of storage */
-+#define AL_EXTENT_SHIFT 22
- #define AL_EXTENT_SIZE (1<<AL_EXTENT_SHIFT)
- 
-+/* We could make these currently hardcoded constants configurable
-+ * variables at create-md time (or even re-configurable at runtime?).
-+ * Which will require some more changes to the DRBD "super block"
-+ * and attach code.
-+ *
-+ * updates per transaction:
-+ *   This many changes to the active set can be logged with one transaction.
-+ *   This number is arbitrary.
-+ * context per transaction:
-+ *   This many context extent numbers are logged with each transaction.
-+ *   This number is resulting from the transaction block size (4k), the layout
-+ *   of the transaction header, and the number of updates per transaction.
-+ *   See drbd_actlog.c:struct al_transaction_on_disk
-+ * */
-+#define AL_UPDATES_PER_TRANSACTION	 64	// arbitrary
-+#define AL_CONTEXT_PER_TRANSACTION	919	// (4096 - 36 - 6*64)/4
-+
- #if BITS_PER_LONG == 32
- #define LN2_BPL 5
- #define cpu_to_lel(A) cpu_to_le32(A)
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 75b092b..47c4bae 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2842,10 +2842,6 @@ void drbd_ldev_destroy(struct drbd_conf *mdev)
- 		drbd_free_bc(mdev->ldev);
- 		mdev->ldev = NULL;);
- 
--	if (mdev->md_io_tmpp) {
--		__free_page(mdev->md_io_tmpp);
--		mdev->md_io_tmpp = NULL;
+ 	spin_lock_irq(&mdev->al_lock);
+-	if (unlikely(enr == mdev->act_log->new_number))
+-		rv = 1;
+-	else {
+-		al_ext = lc_find(mdev->act_log, enr);
+-		if (al_ext) {
+-			if (al_ext->refcnt)
+-				rv = 1;
+-		}
 -	}
- 	clear_bit(GO_DISKLESS, &mdev->flags);
++	rv = lc_is_used(mdev->act_log, enr);
+ 	spin_unlock_irq(&mdev->al_lock);
+ 
+-	/*
+-	if (unlikely(rv)) {
+-		dev_info(DEV, "Delaying sync read until app's write is done\n");
+-	}
+-	*/
+ 	return rv;
  }
  
+@@ -1065,13 +1041,13 @@ int drbd_try_rs_begin_io(struct drbd_conf *mdev, sector_t sector)
+ 			if (rs_flags & LC_STARVING)
+ 				dev_warn(DEV, "Have to wait for element"
+ 				     " (resync LRU too small?)\n");
+-			BUG_ON(rs_flags & LC_DIRTY);
++			BUG_ON(rs_flags & LC_LOCKED);
+ 			goto try_again;
+ 		}
+ 		if (bm_ext->lce.lc_number != enr) {
+ 			bm_ext->rs_left = drbd_bm_e_weight(mdev, enr);
+ 			bm_ext->rs_failed = 0;
+-			lc_changed(mdev->resync, &bm_ext->lce);
++			lc_committed(mdev->resync);
+ 			wake_up(&mdev->al_wait);
+ 			D_ASSERT(test_bit(BME_LOCKED, &bm_ext->flags) == 0);
+ 		}
+@@ -1082,8 +1058,6 @@ int drbd_try_rs_begin_io(struct drbd_conf *mdev, sector_t sector)
+ 	}
+ check_al:
+ 	for (i = 0; i < AL_EXT_PER_BM_SECT; i++) {
+-		if (unlikely(al_enr+i == mdev->act_log->new_number))
+-			goto try_again;
+ 		if (lc_is_used(mdev->act_log, al_enr+i))
+ 			goto try_again;
+ 	}
 diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 0a92f52..90d7317 100644
+index ae8f42e..0a92f52 100644
 --- a/drivers/block/drbd/drbd_nl.c
 +++ b/drivers/block/drbd/drbd_nl.c
-@@ -527,7 +527,7 @@ static void drbd_md_set_sector_offsets(struct drbd_conf *mdev,
- 	case DRBD_MD_INDEX_FLEX_INT:
- 		bdev->md.md_offset = drbd_md_ss__(mdev, bdev);
- 		/* al size is still fixed */
--		bdev->md.al_offset = -MD_AL_MAX_SIZE;
-+		bdev->md.al_offset = -MD_AL_SECTORS;
- 		/* we need (slightly less than) ~ this much bitmap sectors: */
- 		md_size_sect = drbd_get_capacity(bdev->backing_bdev);
- 		md_size_sect = ALIGN(md_size_sect, BM_SECT_PER_EXT);
-@@ -751,8 +751,8 @@ static int drbd_check_al_size(struct drbd_conf *mdev)
- 	unsigned int in_use;
- 	int i;
- 
--	if (!expect(mdev->sync_conf.al_extents >= 7))
--		mdev->sync_conf.al_extents = 127;
-+	if (!expect(mdev->sync_conf.al_extents >= DRBD_AL_EXTENTS_MIN))
-+		mdev->sync_conf.al_extents = DRBD_AL_EXTENTS_MIN;
- 
- 	if (mdev->act_log &&
- 	    mdev->act_log->nr_elements == mdev->sync_conf.al_extents)
 @@ -760,7 +760,7 @@ static int drbd_check_al_size(struct drbd_conf *mdev)
  
  	in_use = 0;
  	t = mdev->act_log;
--	n = lc_create("act_log", drbd_al_ext_cache, 1,
-+	n = lc_create("act_log", drbd_al_ext_cache, AL_UPDATES_PER_TRANSACTION,
+-	n = lc_create("act_log", drbd_al_ext_cache,
++	n = lc_create("act_log", drbd_al_ext_cache, 1,
  		mdev->sync_conf.al_extents, sizeof(struct lc_element), 0);
  
  	if (n == NULL) {
-@@ -932,7 +932,6 @@ static int drbd_nl_disk_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *nlp
- 	union drbd_state ns, os;
- 	enum drbd_state_rv rv;
- 	int cp_discovered = 0;
--	int logical_block_size;
+@@ -1016,7 +1016,7 @@ static int drbd_nl_disk_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *nlp
+ 	}
  
- 	drbd_reconfig_start(mdev);
- 
-@@ -1087,25 +1086,6 @@ static int drbd_nl_disk_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *nlp
- 
- 	drbd_md_set_sector_offsets(mdev, nbc);
- 
--	/* allocate a second IO page if logical_block_size != 512 */
--	logical_block_size = bdev_logical_block_size(nbc->md_bdev);
--	if (logical_block_size == 0)
--		logical_block_size = MD_SECTOR_SIZE;
+ 	resync_lru = lc_create("resync", drbd_bm_ext_cache,
+-			61, sizeof(struct bm_extent),
++			1, 61, sizeof(struct bm_extent),
+ 			offsetof(struct bm_extent, lce));
+ 	if (!resync_lru) {
+ 		retcode = ERR_NOMEM;
+diff --git a/include/linux/lru_cache.h b/include/linux/lru_cache.h
+index 4cceafb..cbafae4 100644
+--- a/include/linux/lru_cache.h
++++ b/include/linux/lru_cache.h
+@@ -166,9 +166,11 @@ struct lc_element {
+ 	/* if we want to track a larger set of objects,
+ 	 * it needs to become arch independend u64 */
+ 	unsigned lc_number;
 -
--	if (logical_block_size != MD_SECTOR_SIZE) {
--		if (!mdev->md_io_tmpp) {
--			struct page *page = alloc_page(GFP_NOIO);
--			if (!page)
--				goto force_diskless_dec;
--
--			dev_warn(DEV, "Meta data's bdev logical_block_size = %d != %d\n",
--			     logical_block_size, MD_SECTOR_SIZE);
--			dev_warn(DEV, "Workaround engaged (has performance impact).\n");
--
--			mdev->md_io_tmpp = page;
--		}
--	}
--
- 	if (!mdev->bitmap) {
- 		if (drbd_bm_init(mdev)) {
- 			retcode = ERR_NOMEM;
-@@ -1804,14 +1784,12 @@ static int drbd_nl_syncer_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *n
- 
- 	if (!expect(sc.rate >= 1))
- 		sc.rate = 1;
--	if (!expect(sc.al_extents >= 7))
--		sc.al_extents = 127; /* arbitrary minimum */
--#define AL_MAX ((MD_AL_MAX_SIZE-1) * AL_EXTENTS_PT)
--	if (sc.al_extents > AL_MAX) {
--		dev_err(DEV, "sc.al_extents > %d\n", AL_MAX);
--		sc.al_extents = AL_MAX;
--	}
--#undef AL_MAX
+ 	/* special label when on free list */
+ #define LC_FREE (~0U)
 +
-+	/* clip to allowed range */
-+	if (!expect(sc.al_extents >= DRBD_AL_EXTENTS_MIN))
-+		sc.al_extents = DRBD_AL_EXTENTS_MIN;
-+	if (!expect(sc.al_extents <= DRBD_AL_EXTENTS_MAX))
-+		sc.al_extents = DRBD_AL_EXTENTS_MAX;
++	/* for pending changes */
++	unsigned lc_new_number;
+ };
  
- 	/* to avoid spurious errors when configuring minors before configuring
- 	 * the minors they depend on: if necessary, first create the minor we
-diff --git a/include/linux/drbd.h b/include/linux/drbd.h
-index 35fc08a..70a688b 100644
---- a/include/linux/drbd.h
-+++ b/include/linux/drbd.h
-@@ -336,6 +336,10 @@ enum drbd_timeout_flag {
- #define DRBD_MAGIC 0x83740267
- #define DRBD_MAGIC_BIG 0x835a
+ struct lru_cache {
+@@ -176,6 +178,7 @@ struct lru_cache {
+ 	struct list_head lru;
+ 	struct list_head free;
+ 	struct list_head in_use;
++	struct list_head to_be_changed;
  
-+/* how I came up with this magic?
-+ * base64 decode "actlog==" ;) */
-+#define DRBD_AL_MAGIC 0x69cb65a2
+ 	/* the pre-created kmem cache to allocate the objects from */
+ 	struct kmem_cache *lc_cache;
+@@ -186,7 +189,7 @@ struct lru_cache {
+ 	size_t element_off;
+ 
+ 	/* number of elements (indices) */
+-	unsigned int  nr_elements;
++	unsigned int nr_elements;
+ 	/* Arbitrary limit on maximum tracked objects. Practical limit is much
+ 	 * lower due to allocation failures, probably. For typical use cases,
+ 	 * nr_elements should be a few thousand at most.
+@@ -194,18 +197,19 @@ struct lru_cache {
+ 	 * 8 high bits of .lc_index to be overloaded with flags in the future. */
+ #define LC_MAX_ACTIVE	(1<<24)
+ 
++	/* allow to accumulate a few (index:label) changes,
++	 * but no more than max_pending_changes */
++	unsigned int max_pending_changes;
++	/* number of elements currently on to_be_changed list */
++	unsigned int pending_changes;
 +
- /* these are of type "int" */
- #define DRBD_MD_INDEX_INTERNAL -1
- #define DRBD_MD_INDEX_FLEX_EXT -2
-diff --git a/include/linux/drbd_limits.h b/include/linux/drbd_limits.h
-index 447c367..75f05af 100644
---- a/include/linux/drbd_limits.h
-+++ b/include/linux/drbd_limits.h
-@@ -102,10 +102,12 @@
- #define DRBD_RATE_DEF 250  /* kb/second */
+ 	/* statistics */
+-	unsigned used; /* number of lelements currently on in_use list */
+-	unsigned long hits, misses, starving, dirty, changed;
++	unsigned used; /* number of elements currently on in_use list */
++	unsigned long hits, misses, starving, locked, changed;
  
-   /* less than 7 would hit performance unnecessarily.
--   * 3833 is the largest prime that still does fit
--   * into 64 sectors of activity log */
-+   * 919 slots context information per transaction,
-+   * 32k activity log, 4k transaction size,
-+   * one transaction in flight:
-+   * 919 * 7 = 6433 */
- #define DRBD_AL_EXTENTS_MIN  7
--#define DRBD_AL_EXTENTS_MAX  3833
-+#define DRBD_AL_EXTENTS_MAX  6433
- #define DRBD_AL_EXTENTS_DEF  127
+ 	/* see below: flag-bits for lru_cache */
+ 	unsigned long flags;
  
- #define DRBD_AFTER_MIN  -1
+-	/* when changing the label of an index element */
+-	unsigned int  new_number;
+-
+-	/* for paranoia when changing the label of an index element */
+-	struct lc_element *changing_element;
+ 
+ 	void  *lc_private;
+ 	const char *name;
+@@ -221,10 +225,15 @@ enum {
+ 	/* debugging aid, to catch concurrent access early.
+ 	 * user needs to guarantee exclusive access by proper locking! */
+ 	__LC_PARANOIA,
+-	/* if we need to change the set, but currently there is a changing
+-	 * transaction pending, we are "dirty", and must deferr further
+-	 * changing requests */
++
++	/* annotate that the set is "dirty", possibly accumulating further
++	 * changes, until a transaction is finally triggered */
+ 	__LC_DIRTY,
++
++	/* Locked, no further changes allowed.
++	 * Also used to serialize changing transactions. */
++	__LC_LOCKED,
++
+ 	/* if we need to change the set, but currently there is no free nor
+ 	 * unused element available, we are "starving", and must not give out
+ 	 * further references, to guarantee that eventually some refcnt will
+@@ -236,9 +245,11 @@ enum {
+ };
+ #define LC_PARANOIA (1<<__LC_PARANOIA)
+ #define LC_DIRTY    (1<<__LC_DIRTY)
++#define LC_LOCKED   (1<<__LC_LOCKED)
+ #define LC_STARVING (1<<__LC_STARVING)
+ 
+ extern struct lru_cache *lc_create(const char *name, struct kmem_cache *cache,
++		unsigned max_pending_changes,
+ 		unsigned e_count, size_t e_size, size_t e_off);
+ extern void lc_reset(struct lru_cache *lc);
+ extern void lc_destroy(struct lru_cache *lc);
+@@ -249,7 +260,7 @@ extern struct lc_element *lc_try_get(struct lru_cache *lc, unsigned int enr);
+ extern struct lc_element *lc_find(struct lru_cache *lc, unsigned int enr);
+ extern struct lc_element *lc_get(struct lru_cache *lc, unsigned int enr);
+ extern unsigned int lc_put(struct lru_cache *lc, struct lc_element *e);
+-extern void lc_changed(struct lru_cache *lc, struct lc_element *e);
++extern void lc_committed(struct lru_cache *lc);
+ 
+ struct seq_file;
+ extern size_t lc_seq_printf_stats(struct seq_file *seq, struct lru_cache *lc);
+@@ -258,31 +269,40 @@ extern void lc_seq_dump_details(struct seq_file *seq, struct lru_cache *lc, char
+ 				void (*detail) (struct seq_file *, struct lc_element *));
+ 
+ /**
+- * lc_try_lock - can be used to stop lc_get() from changing the tracked set
++ * lc_try_lock_for_transaction - can be used to stop lc_get() from changing the tracked set
+  * @lc: the lru cache to operate on
+  *
+- * Note that the reference counts and order on the active and lru lists may
+- * still change.  Returns true if we acquired the lock.
++ * Allows (expects) the set to be "dirty".  Note that the reference counts and
++ * order on the active and lru lists may still change.  Used to serialize
++ * changing transactions.  Returns true if we aquired the lock.
+  */
+-static inline int lc_try_lock(struct lru_cache *lc)
++static inline int lc_try_lock_for_transaction(struct lru_cache *lc)
+ {
+-	return !test_and_set_bit(__LC_DIRTY, &lc->flags);
++	return !test_and_set_bit(__LC_LOCKED, &lc->flags);
+ }
+ 
+ /**
++ * lc_try_lock - variant to stop lc_get() from changing the tracked set
++ * @lc: the lru cache to operate on
++ *
++ * Note that the reference counts and order on the active and lru lists may
++ * still change.  Only works on a "clean" set.  Returns true if we aquired the
++ * lock, which means there are no pending changes, and any further attempt to
++ * change the set will not succeed until the next lc_unlock().
++ */
++extern int lc_try_lock(struct lru_cache *lc);
++
++/**
+  * lc_unlock - unlock @lc, allow lc_get() to change the set again
+  * @lc: the lru cache to operate on
+  */
+ static inline void lc_unlock(struct lru_cache *lc)
+ {
+-	clear_bit_unlock(__LC_DIRTY, &lc->flags);
++	clear_bit(__LC_DIRTY, &lc->flags);
++	clear_bit_unlock(__LC_LOCKED, &lc->flags);
+ }
+ 
+-static inline int lc_is_used(struct lru_cache *lc, unsigned int enr)
+-{
+-	struct lc_element *e = lc_find(lc, enr);
+-	return e && e->refcnt;
+-}
++extern bool lc_is_used(struct lru_cache *lc, unsigned int enr);
+ 
+ #define lc_entry(ptr, type, member) \
+ 	container_of(ptr, type, member)
+diff --git a/lib/lru_cache.c b/lib/lru_cache.c
+index 1762168..d71d894 100644
+--- a/lib/lru_cache.c
++++ b/lib/lru_cache.c
+@@ -55,9 +55,40 @@ MODULE_LICENSE("GPL");
+ 	BUG_ON(i >= lc_->nr_elements);	\
+ 	BUG_ON(lc_->lc_element[i] != e_); } while (0)
+ 
++
++/* We need to atomically
++ *  - try to grab the lock (set LC_LOCKED)
++ *  - only if there is no pending transaction
++ *    (neither LC_DIRTY nor LC_STARVING is set)
++ * Because of PARANOIA_ENTRY() above abusing lc->flags as well,
++ * it is not sufficient to just say
++ *	return 0 == cmpxchg(&lc->flags, 0, LC_LOCKED);
++ */
++int lc_try_lock(struct lru_cache *lc)
++{
++	unsigned long val;
++	do {
++		val = cmpxchg(&lc->flags, 0, LC_LOCKED);
++	} while (unlikely (val == LC_PARANOIA));
++	/* Spin until no-one is inside a PARANOIA_ENTRY()/RETURN() section. */
++	return 0 == val;
++#if 0
++	/* Alternative approach, spin in case someone enters or leaves a
++	 * PARANOIA_ENTRY()/RETURN() section. */
++	unsigned long old, new, val;
++	do {
++		old = lc->flags & LC_PARANOIA;
++		new = old | LC_LOCKED;
++		val = cmpxchg(&lc->flags, old, new);
++	} while (unlikely (val == (old ^ LC_PARANOIA)));
++	return old == val;
++#endif
++}
++
+ /**
+  * lc_create - prepares to track objects in an active set
+  * @name: descriptive name only used in lc_seq_printf_stats and lc_seq_dump_details
++ * @max_pending_changes: maximum changes to accumulate until a transaction is required
+  * @e_count: number of elements allowed to be active simultaneously
+  * @e_size: size of the tracked objects
+  * @e_off: offset to the &struct lc_element member in a tracked object
+@@ -66,6 +97,7 @@ MODULE_LICENSE("GPL");
+  * or NULL on (allocation) failure.
+  */
+ struct lru_cache *lc_create(const char *name, struct kmem_cache *cache,
++		unsigned max_pending_changes,
+ 		unsigned e_count, size_t e_size, size_t e_off)
+ {
+ 	struct hlist_head *slot = NULL;
+@@ -98,12 +130,13 @@ struct lru_cache *lc_create(const char *name, struct kmem_cache *cache,
+ 	INIT_LIST_HEAD(&lc->in_use);
+ 	INIT_LIST_HEAD(&lc->lru);
+ 	INIT_LIST_HEAD(&lc->free);
++	INIT_LIST_HEAD(&lc->to_be_changed);
+ 
+ 	lc->name = name;
+ 	lc->element_size = e_size;
+ 	lc->element_off = e_off;
+ 	lc->nr_elements = e_count;
+-	lc->new_number = LC_FREE;
++	lc->max_pending_changes = max_pending_changes;
+ 	lc->lc_cache = cache;
+ 	lc->lc_element = element;
+ 	lc->lc_slot = slot;
+@@ -117,6 +150,7 @@ struct lru_cache *lc_create(const char *name, struct kmem_cache *cache,
+ 		e = p + e_off;
+ 		e->lc_index = i;
+ 		e->lc_number = LC_FREE;
++		e->lc_new_number = LC_FREE;
+ 		list_add(&e->list, &lc->free);
+ 		element[i] = e;
+ 	}
+@@ -175,15 +209,15 @@ void lc_reset(struct lru_cache *lc)
+ 	INIT_LIST_HEAD(&lc->in_use);
+ 	INIT_LIST_HEAD(&lc->lru);
+ 	INIT_LIST_HEAD(&lc->free);
++	INIT_LIST_HEAD(&lc->to_be_changed);
+ 	lc->used = 0;
+ 	lc->hits = 0;
+ 	lc->misses = 0;
+ 	lc->starving = 0;
+-	lc->dirty = 0;
++	lc->locked = 0;
+ 	lc->changed = 0;
++	lc->pending_changes = 0;
+ 	lc->flags = 0;
+-	lc->changing_element = NULL;
+-	lc->new_number = LC_FREE;
+ 	memset(lc->lc_slot, 0, sizeof(struct hlist_head) * lc->nr_elements);
+ 
+ 	for (i = 0; i < lc->nr_elements; i++) {
+@@ -194,6 +228,7 @@ void lc_reset(struct lru_cache *lc)
+ 		/* re-init it */
+ 		e->lc_index = i;
+ 		e->lc_number = LC_FREE;
++		e->lc_new_number = LC_FREE;
+ 		list_add(&e->list, &lc->free);
+ 	}
+ }
+@@ -208,14 +243,14 @@ size_t lc_seq_printf_stats(struct seq_file *seq, struct lru_cache *lc)
+ 	/* NOTE:
+ 	 * total calls to lc_get are
+ 	 * (starving + hits + misses)
+-	 * misses include "dirty" count (update from an other thread in
++	 * misses include "locked" count (update from an other thread in
+ 	 * progress) and "changed", when this in fact lead to an successful
+ 	 * update of the cache.
+ 	 */
+ 	return seq_printf(seq, "\t%s: used:%u/%u "
+-		"hits:%lu misses:%lu starving:%lu dirty:%lu changed:%lu\n",
++		"hits:%lu misses:%lu starving:%lu locked:%lu changed:%lu\n",
+ 		lc->name, lc->used, lc->nr_elements,
+-		lc->hits, lc->misses, lc->starving, lc->dirty, lc->changed);
++		lc->hits, lc->misses, lc->starving, lc->locked, lc->changed);
+ }
+ 
+ static struct hlist_head *lc_hash_slot(struct lru_cache *lc, unsigned int enr)
+@@ -224,16 +259,8 @@ static struct hlist_head *lc_hash_slot(struct lru_cache *lc, unsigned int enr)
+ }
+ 
+ 
+-/**
+- * lc_find - find element by label, if present in the hash table
+- * @lc: The lru_cache object
+- * @enr: element number
+- *
+- * Returns the pointer to an element, if the element with the requested
+- * "label" or element number is present in the hash table,
+- * or NULL if not found. Does not change the refcnt.
+- */
+-struct lc_element *lc_find(struct lru_cache *lc, unsigned int enr)
++static struct lc_element *__lc_find(struct lru_cache *lc, unsigned int enr,
++		bool include_changing)
+ {
+ 	struct hlist_node *n;
+ 	struct lc_element *e;
+@@ -241,29 +268,48 @@ struct lc_element *lc_find(struct lru_cache *lc, unsigned int enr)
+ 	BUG_ON(!lc);
+ 	BUG_ON(!lc->nr_elements);
+ 	hlist_for_each_entry(e, n, lc_hash_slot(lc, enr), colision) {
+-		if (e->lc_number == enr)
++		/* "about to be changed" elements, pending transaction commit,
++		 * are hashed by their "new number". "Normal" elements have
++		 * lc_number == lc_new_number. */
++		if (e->lc_new_number != enr)
++			continue;
++		if (e->lc_new_number == e->lc_number || include_changing)
+ 			return e;
++		break;
+ 	}
+ 	return NULL;
+ }
+ 
+-/* returned element will be "recycled" immediately */
+-static struct lc_element *lc_evict(struct lru_cache *lc)
++/**
++ * lc_find - find element by label, if present in the hash table
++ * @lc: The lru_cache object
++ * @enr: element number
++ *
++ * Returns the pointer to an element, if the element with the requested
++ * "label" or element number is present in the hash table,
++ * or NULL if not found. Does not change the refcnt.
++ * Ignores elements that are "about to be used", i.e. not yet in the active
++ * set, but still pending transaction commit.
++ */
++struct lc_element *lc_find(struct lru_cache *lc, unsigned int enr)
+ {
+-	struct list_head  *n;
+-	struct lc_element *e;
+-
+-	if (list_empty(&lc->lru))
+-		return NULL;
+-
+-	n = lc->lru.prev;
+-	e = list_entry(n, struct lc_element, list);
+-
+-	PARANOIA_LC_ELEMENT(lc, e);
++	return __lc_find(lc, enr, 0);
++}
+ 
+-	list_del(&e->list);
+-	hlist_del(&e->colision);
+-	return e;
++/**
++ * lc_is_used - find element by label
++ * @lc: The lru_cache object
++ * @enr: element number
++ *
++ * Returns true, if the element with the requested "label" or element number is
++ * present in the hash table, and is used (refcnt > 0).
++ * Also finds elements that are not _currently_ used but only "about to be
++ * used", i.e. on the "to_be_changed" list, pending transaction commit.
++ */
++bool lc_is_used(struct lru_cache *lc, unsigned int enr)
++{
++	struct lc_element *e = __lc_find(lc, enr, 1);
++	return e && e->refcnt;
+ }
+ 
+ /**
+@@ -280,22 +326,34 @@ void lc_del(struct lru_cache *lc, struct lc_element *e)
+ 	PARANOIA_LC_ELEMENT(lc, e);
+ 	BUG_ON(e->refcnt);
+ 
+-	e->lc_number = LC_FREE;
++	e->lc_number = e->lc_new_number = LC_FREE;
+ 	hlist_del_init(&e->colision);
+ 	list_move(&e->list, &lc->free);
+ 	RETURN();
+ }
+ 
+-static struct lc_element *lc_get_unused_element(struct lru_cache *lc)
++static struct lc_element *lc_prepare_for_change(struct lru_cache *lc, unsigned new_number)
+ {
+ 	struct list_head *n;
++	struct lc_element *e;
++
++	if (!list_empty(&lc->free))
++		n = lc->free.next;
++	else if (!list_empty(&lc->lru))
++		n = lc->lru.prev;
++	else
++		return NULL;
++
++	e = list_entry(n, struct lc_element, list);
++	PARANOIA_LC_ELEMENT(lc, e);
+ 
+-	if (list_empty(&lc->free))
+-		return lc_evict(lc);
++	e->lc_new_number = new_number;
++	if (!hlist_unhashed(&e->colision))
++		__hlist_del(&e->colision);
++	hlist_add_head(&e->colision, lc_hash_slot(lc, new_number));
++	list_move(&e->list, &lc->to_be_changed);
+ 
+-	n = lc->free.next;
+-	list_del(n);
+-	return list_entry(n, struct lc_element, list);
++	return e;
+ }
+ 
+ static int lc_unused_element_available(struct lru_cache *lc)
+@@ -318,8 +376,12 @@ static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, bool
+ 		RETURN(NULL);
+ 	}
+ 
+-	e = lc_find(lc, enr);
+-	if (e) {
++	e = __lc_find(lc, enr, 1);
++	/* if lc_new_number != lc_number,
++	 * this enr is currently being pulled in already,
++	 * and will be available once the pending transaction
++	 * has been committed. */
++	if (e && e->lc_new_number == e->lc_number) {
+ 		++lc->hits;
+ 		if (e->refcnt++ == 0)
+ 			lc->used++;
+@@ -331,6 +393,24 @@ static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, bool
+ 	if (!may_change)
+ 		RETURN(NULL);
+ 
++	/* It has been found above, but on the "to_be_changed" list, not yet
++	 * committed.  Don't pull it in twice, wait for the transaction, then
++	 * try again */
++	if (e)
++		RETURN(NULL);
++
++	/* To avoid races with lc_try_lock(), first, mark us dirty
++	 * (using test_and_set_bit, as it implies memory barriers), ... */
++	test_and_set_bit(__LC_DIRTY, &lc->flags);
++
++	/* ... only then check if it is locked anyways. If lc_unlock clears
++	 * the dirty bit again, that's not a problem, we will come here again.
++	 */
++	if (test_bit(__LC_LOCKED, &lc->flags)) {
++		++lc->locked;
++		RETURN(NULL);
++	}
++
+ 	/* In case there is nothing available and we can not kick out
+ 	 * the LRU element, we have to wait ...
+ 	 */
+@@ -339,24 +419,19 @@ static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, bool
+ 		RETURN(NULL);
+ 	}
+ 
+-	/* it was not present in the active set.
+-	 * we are going to recycle an unused (or even "free") element.
+-	 * user may need to commit a transaction to record that change.
+-	 * we serialize on flags & LC_DIRTY */
+-	if (test_and_set_bit(__LC_DIRTY, &lc->flags)) {
+-		++lc->dirty;
++	/* It was not present in the active set.  We are going to recycle an
++	 * unused (or even "free") element, but we won't accumulate more than
++	 * max_pending_changes changes.  */
++	if (lc->pending_changes >= lc->max_pending_changes)
+ 		RETURN(NULL);
+-	}
+ 
+-	e = lc_get_unused_element(lc);
++	e = lc_prepare_for_change(lc, enr);
+ 	BUG_ON(!e);
+ 
+ 	clear_bit(__LC_STARVING, &lc->flags);
+ 	BUG_ON(++e->refcnt != 1);
+ 	lc->used++;
+-
+-	lc->changing_element = e;
+-	lc->new_number = enr;
++	lc->pending_changes++;
+ 
+ 	RETURN(e);
+ }
+@@ -388,12 +463,15 @@ static struct lc_element *__lc_get(struct lru_cache *lc, unsigned int enr, bool
+  *  pointer to an UNUSED element with some different element number,
+  *          where that different number may also be %LC_FREE.
+  *
+- *          In this case, the cache is marked %LC_DIRTY (blocking further changes),
+- *          and the returned element pointer is removed from the lru list and
+- *          hash collision chains.  The user now should do whatever housekeeping
+- *          is necessary.
+- *          Then he must call lc_changed(lc,element_pointer), to finish
+- *          the change.
++ *          In this case, the cache is marked %LC_DIRTY,
++ *          so lc_try_lock() will no longer succeed.
++ *          The returned element pointer is moved to the "to_be_changed" list,
++ *          and registered with the new element number on the hash collision chains,
++ *          so it is possible to pick it up from lc_is_used().
++ *          Up to "max_pending_changes" (see lc_create()) can be accumulated.
++ *          The user now should do whatever housekeeping is necessary,
++ *          typically serialize on lc_try_lock_for_transaction(), then call
++ *          lc_committed(lc) and lc_unlock(), to finish the change.
+  *
+  * NOTE: The user needs to check the lc_number on EACH use, so he recognizes
+  *       any cache set change.
+@@ -425,22 +503,25 @@ struct lc_element *lc_try_get(struct lru_cache *lc, unsigned int enr)
+ }
+ 
+ /**
+- * lc_changed - tell @lc that the change has been recorded
++ * lc_committed - tell @lc that pending changes have been recorded
+  * @lc: the lru cache to operate on
+- * @e: the element pending label change
++ *
++ * User is expected to serialize on explicit lc_try_lock_for_transaction()
++ * before the transaction is started, and later needs to lc_unlock() explicitly
++ * as well.
+  */
+-void lc_changed(struct lru_cache *lc, struct lc_element *e)
++void lc_committed(struct lru_cache *lc)
+ {
++	struct lc_element *e, *tmp;
++
+ 	PARANOIA_ENTRY();
+-	BUG_ON(e != lc->changing_element);
+-	PARANOIA_LC_ELEMENT(lc, e);
+-	++lc->changed;
+-	e->lc_number = lc->new_number;
+-	list_add(&e->list, &lc->in_use);
+-	hlist_add_head(&e->colision, lc_hash_slot(lc, lc->new_number));
+-	lc->changing_element = NULL;
+-	lc->new_number = LC_FREE;
+-	clear_bit_unlock(__LC_DIRTY, &lc->flags);
++	list_for_each_entry_safe(e, tmp, &lc->to_be_changed, list) {
++		/* count number of changes, not number of transactions */
++		++lc->changed;
++		e->lc_number = e->lc_new_number;
++		list_move(&e->list, &lc->in_use);
++	}
++	lc->pending_changes = 0;
+ 	RETURN();
+ }
+ 
+@@ -459,7 +540,7 @@ unsigned int lc_put(struct lru_cache *lc, struct lc_element *e)
+ 	PARANOIA_ENTRY();
+ 	PARANOIA_LC_ELEMENT(lc, e);
+ 	BUG_ON(e->refcnt == 0);
+-	BUG_ON(e == lc->changing_element);
++	BUG_ON(e->lc_number != e->lc_new_number);
+ 	if (--e->refcnt == 0) {
+ 		/* move it to the front of LRU. */
+ 		list_move(&e->list, &lc->lru);
+@@ -504,16 +585,24 @@ unsigned int lc_index_of(struct lru_cache *lc, struct lc_element *e)
+ void lc_set(struct lru_cache *lc, unsigned int enr, int index)
+ {
+ 	struct lc_element *e;
++	struct list_head *lh;
+ 
+ 	if (index < 0 || index >= lc->nr_elements)
+ 		return;
+ 
+ 	e = lc_element_by_index(lc, index);
+-	e->lc_number = enr;
++	BUG_ON(e->lc_number != e->lc_new_number);
++	BUG_ON(e->refcnt != 0);
+ 
++	e->lc_number = e->lc_new_number = enr;
+ 	hlist_del_init(&e->colision);
+-	hlist_add_head(&e->colision, lc_hash_slot(lc, enr));
+-	list_move(&e->list, e->refcnt ? &lc->in_use : &lc->lru);
++	if (enr == LC_FREE)
++		lh = &lc->free;
++	else {
++		hlist_add_head(&e->colision, lc_hash_slot(lc, enr));
++		lh = &lc->lru;
++	}
++	list_move(&e->list, lh);
+ }
+ 
+ /**
+@@ -553,8 +642,10 @@ EXPORT_SYMBOL(lc_try_get);
+ EXPORT_SYMBOL(lc_find);
+ EXPORT_SYMBOL(lc_get);
+ EXPORT_SYMBOL(lc_put);
+-EXPORT_SYMBOL(lc_changed);
++EXPORT_SYMBOL(lc_committed);
+ EXPORT_SYMBOL(lc_element_by_index);
+ EXPORT_SYMBOL(lc_index_of);
+ EXPORT_SYMBOL(lc_seq_printf_stats);
+ EXPORT_SYMBOL(lc_seq_dump_details);
++EXPORT_SYMBOL(lc_try_lock);
++EXPORT_SYMBOL(lc_is_used);
 -- 
 1.7.4.1
 
