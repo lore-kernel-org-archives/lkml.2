@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1H3MsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 08:48:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46797 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698Ab1H3MsL (ORCPT
+	id S1753791Ab1H3MtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 08:49:18 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:34592 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753632Ab1H3MtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 08:48:11 -0400
-Date: Tue, 30 Aug 2011 13:48:05 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, jdike@addtoit.com
-Subject: Re: [PATCH 8/9] um: fix strrchr problems
-Message-ID: <20110830124805.GU2203@ZenIV.linux.org.uk>
-References: <1314634419-24766-9-git-send-email-richard@nod.at>
- <20110829142705.5be82d7c.akpm@linux-foundation.org>
- <4E5C06DF.60508@nod.at>
- <20110829221230.GP2203@ZenIV.linux.org.uk>
- <4E5C0F9F.5000405@nod.at>
- <20110829221922.GQ2203@ZenIV.linux.org.uk>
- <4E5C11D5.4020404@nod.at>
- <20110830002330.GR2203@ZenIV.linux.org.uk>
- <20110830024853.GS2203@ZenIV.linux.org.uk>
- <4E5CBC3F.9030006@nod.at>
+	Tue, 30 Aug 2011 08:49:17 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjzYQEROTxg==
+X-RZG-CLASS-ID: mo00
+Date: Tue, 30 Aug 2011 14:48:56 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: Re: [PATCH 0000/0046] Staging: hv: Driver cleanup
+Message-ID: <20110830124856.GA17520@aepfle.de>
+References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4E5CBC3F.9030006@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1314469874-7017-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 12:32:31PM +0200, Richard Weinberger wrote:
+On Sat, Aug 27, K. Y. Srinivasan wrote:
 
-> defconfig + STATIC_LINK +  UML_NET_VDE builds fine for me.
-> 
-> Toolchain (openSUSE 11.4):
-> glibc: 2.11.3
-> vde2: 2.3.1
-> gcc: 4.5.3
-> binutils: 2.21.1
-> 
-> Is my vde too new?
-> BTW: Why is only strstr affected, what makes it so special?
+> 	2) Handle all block devices using the storvsc driver. I have modified
+> 	   the implementation here based on Christoph's feedback on my earlier
+> 	   implementation.
 
-What happens is that we end up with arch/um/drivers/vde.o having a reference
-to rindex().  It comes from libvdeplug.a:libvdeplug.o and we don't have
-rindex() in the kernel.  In libc we *do* have it - as an alias for strrchr.
-So libc.a:strrchr.o is pulled in by that and we end up with conflict since
-now two object files picked by linker define the same symbol.
+The upgrade path from hv_blkvsc to hv_storvsc is difficult.
 
-At a guess, newer vde stopped wanking with rindex(3) (perhaps switching
-to strrchr(3), as recommended by POSIX these days) and that has eliminated
-the problem.
+hv_storvsc does not provide the vmbus:hv_block modalias, so mkinitrd
+does not know what module to choose when mkinitrd is called in a
+previous kernel (like sles11sp1).
 
-So yes, probably it's your vde being newer.  Until other distros pick that
-version we are stuck with that problem, though...  Alternative solution
-would be to have rindex() in arch/um/drivers/vde_kern.c - that also works
-and might be a bit saner.  Defining it in lib/string.c is probably a bad
-idea, since its use is not a good practice - it duplicates a standard C
-equivalent (C89, at that) for no reason.
+
+In a guest with both SCSI and IDE controllers the IDE disks are
+discovered first, so the SCSI drives will also change their names.
+Thats not a problem for data partitions because they could be mounted by
+UUID or LABEL in fstab.
+But its difficult to adjust /boot/grub/device.map for example because
+the old  IDE drives do not provide an identifier. What is the best way
+to make sure the rename from hd* to sd* in such config files is done
+correctly? Is it safe to assume that all drives with a class_id of
+32412632-86cb-44a2-9b5c50d1417354f5 are connected to IDE ports?
+
+localhost:~ # head /sys/bus/vmbus/devices/vmbus_0_{1,2,3,10,11}/class_id
+==> /sys/bus/vmbus/devices/vmbus_0_1/class_id <==
+{32412632-86cb-44a2-9b5c50d1417354f5}
+
+==> /sys/bus/vmbus/devices/vmbus_0_2/class_id <==
+{32412632-86cb-44a2-9b5c50d1417354f5}
+
+==> /sys/bus/vmbus/devices/vmbus_0_3/class_id <==
+{32412632-86cb-44a2-9b5c50d1417354f5}
+
+==> /sys/bus/vmbus/devices/vmbus_0_10/class_id <==
+{ba6163d9-04a1-4d29-b60572e2ffb1dc7f}
+
+==> /sys/bus/vmbus/devices/vmbus_0_11/class_id <==
+{ba6163d9-04a1-4d29-b60572e2ffb1dc7f}
+
+
+In my test system, the IDE drives are now discovered twice, once by
+hv_storvsc and once by libata:
+
+localhost:~ # lsscsi 
+[0:0:0:0]    disk    Msft     Virtual Disk     1.0   /dev/sda 
+[1:0:1:0]    disk    Msft     Virtual Disk     1.0   /dev/sdb 
+[2:0:1:0]    disk    Msft     Virtual Disk     1.0   /dev/sdc 
+[3:0:0:0]    disk    Msft     Virtual Disk     1.0   /dev/sdd 
+[3:0:0:1]    disk    Msft     Virtual Disk     1.0   /dev/sde 
+[4:0:0:0]    disk    Msft     Virtual Disk     1.0   /dev/sdf 
+[4:0:0:1]    disk    Msft     Virtual Disk     1.0   /dev/sdg 
+[5:0:0:0]    disk    ATA      Virtual HD       1.1.  /dev/sdh 
+[5:0:1:0]    disk    ATA      Virtual HD       1.1.  /dev/sdi 
+[6:0:0:0]    cd/dvd  Msft     Virtual CD/ROM   1.0   /dev/sr0 
+[6:0:1:0]    disk    ATA      Virtual HD       1.1.  /dev/sdj 
+localhost:~ # blkid
+/dev/sda1: UUID="47aebbfb-13ee-49cc-b1e7-bc0c243fe3c0" TYPE="swap" 
+/dev/sda2: UUID="ed5a182b-da28-42f2-acff-5649a8fae247" TYPE="ext3" 
+/dev/sdh1: UUID="47aebbfb-13ee-49cc-b1e7-bc0c243fe3c0" TYPE="swap" 
+/dev/sdh2: UUID="ed5a182b-da28-42f2-acff-5649a8fae247" TYPE="ext3" 
+
+sda/sdh was hda.
+
+Olaf
