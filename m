@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1H3FZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 01:25:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48918 "EHLO hera.kernel.org"
+	id S1752579Ab1H3F0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 01:26:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48965 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab1H3FZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 01:25:23 -0400
-Date: Tue, 30 Aug 2011 05:24:54 GMT
+	id S1750842Ab1H3F0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 01:26:10 -0400
+Date: Tue, 30 Aug 2011 05:25:21 GMT
 From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Message-ID: <tip-8b8bc2f7311c3223213dbe346d9cc2e299fdb5eb@git.kernel.org>
+Message-ID: <tip-84eb950db13ca40a0572ce9957e14723500943d6@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         tglx@linutronix.de, hpa@linux.intel.com,
         jeremy.fitzhardinge@citrix.com
@@ -18,115 +18,151 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
 In-Reply-To: <4E5BCC40.3030501@goop.org>
 References: <4E5BCC40.3030501@goop.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] x86: Use xadd helper more widely
-Git-Commit-ID: 8b8bc2f7311c3223213dbe346d9cc2e299fdb5eb
+Subject: [tip:x86/spinlocks] x86, ticketlock: Clean up types and accessors
+Git-Commit-ID: 84eb950db13ca40a0572ce9957e14723500943d6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Tue, 30 Aug 2011 05:25:14 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Tue, 30 Aug 2011 05:26:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8b8bc2f7311c3223213dbe346d9cc2e299fdb5eb
-Gitweb:     http://git.kernel.org/tip/8b8bc2f7311c3223213dbe346d9cc2e299fdb5eb
+Commit-ID:  84eb950db13ca40a0572ce9957e14723500943d6
+Gitweb:     http://git.kernel.org/tip/84eb950db13ca40a0572ce9957e14723500943d6
 Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-AuthorDate: Tue, 23 Aug 2011 16:59:58 -0700
+AuthorDate: Fri, 2 Jul 2010 23:26:36 +0100
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 29 Aug 2011 13:44:12 -0700
+CommitDate: Mon, 29 Aug 2011 13:45:19 -0700
 
-x86: Use xadd helper more widely
+x86, ticketlock: Clean up types and accessors
 
-This covers the trivial cases from open-coded xadd to the xadd macros.
+A few cleanups to the way spinlocks are defined and accessed:
+ - define __ticket_t which is the size of a spinlock ticket (ie, enough
+   bits to hold all the cpus)
+ - Define struct arch_spinlock as a union containing plain slock and
+   the head and tail tickets
+ - Use head and tail to implement some of the spinlock predicates.
+ - Make all ticket variables unsigned.
+ - Use TICKET_SHIFT to form constants
+
+Most of this will be used in later patches.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Link: http://lkml.kernel.org/r/4E5BCC40.3030501@goop.org
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/atomic.h      |    8 ++------
- arch/x86/include/asm/atomic64_64.h |    6 +-----
- arch/x86/include/asm/rwsem.h       |    8 +-------
- arch/x86/include/asm/uv/uv_bau.h   |    6 +-----
- 4 files changed, 5 insertions(+), 23 deletions(-)
+ arch/x86/include/asm/spinlock.h       |   24 ++++++++++--------------
+ arch/x86/include/asm/spinlock_types.h |   20 ++++++++++++++++++--
+ 2 files changed, 28 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index 10572e3..58cb6d4 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -172,18 +172,14 @@ static inline int atomic_add_negative(int i, atomic_t *v)
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index ee67edf..ea2a04f 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -55,11 +55,9 @@
+  * much between them in performance though, especially as locks are out of line.
   */
- static inline int atomic_add_return(int i, atomic_t *v)
+ #if (NR_CPUS < 256)
+-#define TICKET_SHIFT 8
+-
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
  {
--	int __i;
- #ifdef CONFIG_M386
-+	int __i;
- 	unsigned long flags;
- 	if (unlikely(boot_cpu_data.x86 <= 3))
- 		goto no_xadd;
+-	short inc = 0x0100;
++	unsigned short inc = 1 << TICKET_SHIFT;
+ 
+ 	asm volatile (
+ 		LOCK_PREFIX "xaddw %w0, %1\n"
+@@ -78,7 +76,7 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ {
+-	int tmp, new;
++	unsigned int tmp, new;
+ 
+ 	asm volatile("movzwl %2, %0\n\t"
+ 		     "cmpb %h0,%b0\n\t"
+@@ -103,12 +101,10 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ 		     : "memory", "cc");
+ }
+ #else
+-#define TICKET_SHIFT 16
+-
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ {
+-	int inc = 0x00010000;
+-	int tmp;
++	unsigned inc = 1 << TICKET_SHIFT;
++	unsigned tmp;
+ 
+ 	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
+ 		     "movzwl %w0, %2\n\t"
+@@ -128,8 +124,8 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ {
+-	int tmp;
+-	int new;
++	unsigned tmp;
++	unsigned new;
+ 
+ 	asm volatile("movl %2,%0\n\t"
+ 		     "movl %0,%1\n\t"
+@@ -159,16 +155,16 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ 
+ static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
+ {
+-	int tmp = ACCESS_ONCE(lock->slock);
++	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+ 
+-	return !!(((tmp >> TICKET_SHIFT) ^ tmp) & ((1 << TICKET_SHIFT) - 1));
++	return !!(tmp.tail ^ tmp.head);
+ }
+ 
+ static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
+ {
+-	int tmp = ACCESS_ONCE(lock->slock);
++	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+ 
+-	return (((tmp >> TICKET_SHIFT) - tmp) & ((1 << TICKET_SHIFT) - 1)) > 1;
++	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
+ }
+ 
+ #ifndef CONFIG_PARAVIRT_SPINLOCKS
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index 7c7a486..1c51bd2 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -5,11 +5,27 @@
+ # error "please don't include this file directly"
  #endif
- 	/* Modern 486+ processor */
--	__i = i;
--	asm volatile(LOCK_PREFIX "xaddl %0, %1"
--		     : "+r" (i), "+m" (v->counter)
--		     : : "memory");
--	return i + __i;
-+	return i + xadd(&v->counter, i);
  
- #ifdef CONFIG_M386
- no_xadd: /* Legacy 386 processor */
-diff --git a/arch/x86/include/asm/atomic64_64.h b/arch/x86/include/asm/atomic64_64.h
-index 017594d..0e1cbfc 100644
---- a/arch/x86/include/asm/atomic64_64.h
-+++ b/arch/x86/include/asm/atomic64_64.h
-@@ -170,11 +170,7 @@ static inline int atomic64_add_negative(long i, atomic64_t *v)
-  */
- static inline long atomic64_add_return(long i, atomic64_t *v)
- {
--	long __i = i;
--	asm volatile(LOCK_PREFIX "xaddq %0, %1;"
--		     : "+r" (i), "+m" (v->counter)
--		     : : "memory");
--	return i + __i;
-+	return i + xadd(&v->counter, i);
- }
++#include <linux/types.h>
++
++#if (CONFIG_NR_CPUS < 256)
++typedef u8  __ticket_t;
++#else
++typedef u16 __ticket_t;
++#endif
++
++#define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
++#define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
++
+ typedef struct arch_spinlock {
+-	unsigned int slock;
++	union {
++		unsigned int slock;
++		struct __raw_tickets {
++			__ticket_t head, tail;
++		} tickets;
++	};
+ } arch_spinlock_t;
  
- static inline long atomic64_sub_return(long i, atomic64_t *v)
-diff --git a/arch/x86/include/asm/rwsem.h b/arch/x86/include/asm/rwsem.h
-index df4cd32..2dbe4a7 100644
---- a/arch/x86/include/asm/rwsem.h
-+++ b/arch/x86/include/asm/rwsem.h
-@@ -204,13 +204,7 @@ static inline void rwsem_atomic_add(long delta, struct rw_semaphore *sem)
-  */
- static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
- {
--	long tmp = delta;
--
--	asm volatile(LOCK_PREFIX "xadd %0,%1"
--		     : "+r" (tmp), "+m" (sem->count)
--		     : : "memory");
--
--	return tmp + delta;
-+	return delta + xadd(&sem->count, delta);
- }
+-#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
++#define __ARCH_SPIN_LOCK_UNLOCKED	{ { .slock = 0 } }
  
- #endif /* __KERNEL__ */
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index 37d3698..c568ccc 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -656,11 +656,7 @@ static inline int atomic_read_short(const struct atomic_short *v)
-  */
- static inline int atom_asr(short i, struct atomic_short *v)
- {
--	short __i = i;
--	asm volatile(LOCK_PREFIX "xaddw %0, %1"
--			: "+r" (i), "+m" (v->counter)
--			: : "memory");
--	return i + __i;
-+	return i + xadd(&v->counter, i);
- }
+ #include <asm/rwlock.h>
  
- /*
