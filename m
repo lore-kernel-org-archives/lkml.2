@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab1H3XMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 19:12:53 -0400
-Received: from fn.samba.org ([216.83.154.106]:54515 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab1H3XMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 19:12:50 -0400
-X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 19:12:50 EDT
-Date: Tue, 30 Aug 2011 16:03:42 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110830230342.GB16326@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
- <CAAK6Zt0Sh1GdEOb-tNf2FGXJs=e1Jbcqew13R_GdTqrv6vW97w@mail.gmail.com>
- <x49k49uk2ox.fsf@segfault.boston.devel.redhat.com>
- <4E5D5817.6040704@kernel.dk>
- <CAAK6Zt2C1646qwDiZ7sWheSWrnx2yrDtCE=+VTx7QNyh2bEz_g@mail.gmail.com>
- <4E5D64E8.7000102@kernel.dk>
- <20110830154157.d802d097.akpm@linux-foundation.org>
- <CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
- <20110830155438.bc31ab99.akpm@linux-foundation.org>
+	id S1753995Ab1H3XOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 19:14:15 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26647 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422Ab1H3XON convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 19:14:13 -0400
 MIME-Version: 1.0
+Message-ID: <4599ff4c-5273-4605-9a61-d26a9a6484fe@default>
+Date: Tue, 30 Aug 2011 14:51:39 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        akpm@linux-foundation.org, riel@redhat.com, hannes@cmpxchg.org,
+        matthew@wil.cx, Chris Mason <chris.mason@oracle.com>,
+        sjenning@linux.vnet.ibm.com, kamezawa.hiroyu@jp.fujitsu.com,
+        jackdachef@gmail.com, cyclonusj@gmail.com, levinsasha928@gmail.com
+Subject: RE: [PATCH V8 4/4] mm: frontswap: config and doc files
+References: <20110829164949.GA27238@ca-server1.us.oracle.com
+ 19213.1314737185@turing-police.cc.vt.edu>
+In-Reply-To: <19213.1314737185@turing-police.cc.vt.edu>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110830155438.bc31ab99.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4E5D6E6E.00A2,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 03:54:38PM -0700, Andrew Morton wrote:
+> From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
+> Subject: Re: [PATCH V8 4/4] mm: frontswap: config and doc files
 > 
-> Also, glibc has userspace for POSIX AIO.  A successful kernel-based
-> implementation would result in glibc migrating away from its current
-> implementation.  So we should work with the glibc developers on ensuring
-> that the migration can happen.
+> On Mon, 29 Aug 2011 09:49:49 PDT, Dan Magenheimer said:
+> 
+> > --- linux/mm/Kconfig	2011-08-08 08:19:26.303686905 -0600
+> > +++ frontswap/mm/Kconfig	2011-08-29 09:52:14.308745832 -0600
+> > @@ -370,3 +370,20 @@ config CLEANCACHE
+> >  	  in a negligible performance hit.
+> >
+> >  	  If unsure, say Y to enable cleancache
+> > +
+> > +config FRONTSWAP
+> > +	bool "Enable frontswap to cache swap pages if tmem is present"
+> > +	depends on SWAP
+> > +	default n
+> 
+> > +
+> > +	  If unsure, say Y to enable frontswap.
+> 
+> Am I the only guy who gets irked when the "default" doesn't match the
+> "If unsure" suggestion?  :)  (and yes, I know we have guidelines for
+> what the "default" should be...)
 
-Unfortunately the glibc userspace POSIX AIO limits asynchronicity to
-one outstanding request per file descriptor. From aio_misc.c in glibc:
+Hi Valdis --
 
-  if (runp != NULL
-      && runp->aiocbp->aiocb.aio_fildes == aiocbp->aiocb.aio_fildes)
-    {
-      /* The current file descriptor is worked on.  It makes no sense
-         to start another thread since this new thread would fight
-         with the running thread for the resources.  But we also cannot
-         say that the thread processing this desriptor shall immediately
-         after finishing the current job process this request if there
-         are other threads in the running queue which have a higher
-         priority.  */
+Thanks for the review!
 
-      /* Simply enqueue it after the running one according to the
-         priority.  */
+Count me as irked.  The default should be "y" because the
+overhead is extremely tiny when not enabled at runtime by
+a backend (though admittedly non-zero), but I got flamed by
+Linus last time I tried that (for cleancache), so I'm not
+going to try it for frontswap! :-)  The "if unsure" is the
+best I can do for now to encourage distros to enable it.
 
-I have often wondered if this is actually the case ? I created
-my own glibc with a patches AIO that removed this restriction
-(thus had multiple outstanding threads on a single fd). In testing
-I saw a dramatic increase in performance (2x speedup) but then
-testing with use in actual code (Samba smbd) it made the client
-throughput *worse*. I never got to the bottom of this and so
-didn't submit my fixes to glibc.
-
-Any ideas if this is still the case ? Or comments on why glibc
-insists on only one outstanding request per fd ? Is this really
-needed for kernel performance ?
-
-Jeremy.
+Dan
