@@ -1,285 +1,582 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab1H3AbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 20:31:18 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:33928 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab1H3AbQ convert rfc822-to-8bit (ORCPT
+	id S1751411Ab1H3AgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 20:36:22 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:37613 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab1H3AgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 20:31:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-Date: Mon, 29 Aug 2011 20:31:15 -0400
-Message-ID: <CACqU3MVrSV-Qp7mC4iN_viMHz=2-cGPaqNY04eokYkVoE_pSuw@mail.gmail.com>
-Subject: Re: [RFC] Kbuild: allow code re-use across different directories
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kbuild@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Aug 2011 20:36:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6453"; a="113845114"
+From: David Brown <davidb@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] ARM: msm: defconfigs for Qualcomm dev boards
+Date: Mon, 29 Aug 2011 17:36:13 -0700
+Message-Id: <1314664573-18432-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add default configs for the development boards for several Qualcomm
+MSM-family chips.
 
-On Fri, Aug 19, 2011 at 8:37 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi folks,
->
-> The attached patch modify Kbuild to allow to directly re-use code in multiple
-> directory without having to go through a copy. Technically, it changes Kbuild to
-> use by default the VPATH feature of GNU make and provides accessors for Makefile
-> to change it indirectly.
->
-> Considering:
->
-> arch/foo/lib:
-> fancy.c
->
-> We want to be able to build it with -DPANTS=32 in the kernel, but the
-> bootloader requires -DPANTS_SIZE=30.
->
-> Currently we would do, either:
->
-> arch/foo/lib/Makefile
-> LDFLAGS_fancy.o := -DPANTS=32
-> obj-y += fancy.o
->
-> and, either:
->
-> arch/foo/boot/Makefile:
-> LDFLAGS_fancy.o := -DPANTS=30
-> obj-y += fancy.o
-> $(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
->        $(call cmd,shipped)
->
-> or
->
-> arch/foo/boot/Makefile:
-> LDFLAGS_fancy.o := -DPANTS=30
-> obj-y += fancy.o
-> $(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
->        $(call cmd,cc_c_o)
->
-> The former implies an extra copy of the source file, the latter expose Kbuild
-> internal function.
->
-> With the attached patch, we would do:
->
-> arch/foo/boot/Makefile:
-> LDFLAGS_fancy.o := -DPANTS=30
-> obj-y += fancy.o
-> vpath-y += $(srctree)/arch/foo/lib
->
-> and let GNU make do the job.
->
-Nicolas, I guess you were the one who was interested for a generic way
-to do such code re-use, did you had any chance to test the quoted
-patch ?
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+These are my current defconfigs for these targets.  I'd like to get
+these into next so that the targets can get build tested.  I'm not
+sure if we want to push them to mainline, since devicetree would
+theoretically eliminate the need for all of them.
 
-Thanks,
- - Arnaud
+ arch/arm/configs/msm7x30_defconfig |   68 +++++++++
+ arch/arm/configs/msm8660_defconfig |   96 +++++++++++++
+ arch/arm/configs/msm8960_defconfig |  265 ++++++++++++++++++++++++++++++++++++
+ arch/arm/configs/qsd8x50_defconfig |   82 +++++++++++
+ 4 files changed, 511 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/configs/msm7x30_defconfig
+ create mode 100644 arch/arm/configs/msm8660_defconfig
+ create mode 100644 arch/arm/configs/msm8960_defconfig
+ create mode 100644 arch/arm/configs/qsd8x50_defconfig
 
+diff --git a/arch/arm/configs/msm7x30_defconfig b/arch/arm/configs/msm7x30_defconfig
+new file mode 100644
+index 0000000..659ec53
+--- /dev/null
++++ b/arch/arm/configs/msm7x30_defconfig
+@@ -0,0 +1,68 @@
++CONFIG_EXPERIMENTAL=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_SLAB=y
++CONFIG_MODULES=y
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_ARCH_MSM=y
++CONFIG_ARCH_MSM7X30=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++# CONFIG_OABI_COMPAT is not set
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_CMDLINE="mem=64M console=ttyMSM,115200n8"
++CONFIG_NET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_DIAG is not set
++# CONFIG_IPV6 is not set
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_CHAR=y
++CONFIG_MTD_BLOCK=y
++CONFIG_NETDEVICES=y
++CONFIG_DUMMY=y
++CONFIG_NET_ETHERNET=y
++CONFIG_SMC91X=y
++CONFIG_PPP=y
++CONFIG_PPP_ASYNC=y
++CONFIG_PPP_DEFLATE=y
++CONFIG_PPP_BSDCOMP=y
++# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
++CONFIG_INPUT_EVDEV=y
++# CONFIG_KEYBOARD_ATKBD is not set
++# CONFIG_INPUT_MOUSE is not set
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_INPUT_MISC=y
++# CONFIG_SERIO is not set
++CONFIG_VT_HW_CONSOLE_BINDING=y
++# CONFIG_LEGACY_PTYS is not set
++CONFIG_SERIAL_MSM=y
++CONFIG_SERIAL_MSM_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_I2C=y
++# CONFIG_HWMON is not set
++CONFIG_VIDEO_OUTPUT_CONTROL=y
++CONFIG_FB=y
++CONFIG_FB_MODE_HELPERS=y
++CONFIG_FB_TILEBLITTING=y
++CONFIG_FB_MSM=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_TMPFS=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_SCHEDSTATS=y
++CONFIG_DEBUG_MUTEXES=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_LL=y
+diff --git a/arch/arm/configs/msm8660_defconfig b/arch/arm/configs/msm8660_defconfig
+new file mode 100644
+index 0000000..92ee8a59
+--- /dev/null
++++ b/arch/arm/configs/msm8660_defconfig
+@@ -0,0 +1,96 @@
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_NAMESPACES=y
++# CONFIG_UTS_NS is not set
++# CONFIG_IPC_NS is not set
++# CONFIG_USER_NS is not set
++# CONFIG_PID_NS is not set
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_RD_BZIP2=y
++CONFIG_RD_LZMA=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_EMBEDDED=y
++CONFIG_PROFILING=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODULE_FORCE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++CONFIG_ARCH_MSM=y
++CONFIG_ARCH_MSM8X60=y
++CONFIG_MACH_MSM8X60_RUMI3=y
++CONFIG_MACH_MSM8X60_SURF=y
++CONFIG_MACH_MSM8X60_SIM=y
++CONFIG_MACH_MSM8X60_FFA=y
++# CONFIG_SWP_EMULATE is not set
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_SMP=y
++# CONFIG_SMP_ON_UP is not set
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++CONFIG_HIGHMEM=y
++CONFIG_USE_OF=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_PROC_DEVICETREE=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_SCSI=y
++CONFIG_SCSI_TGT=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_SG=y
++CONFIG_CHR_DEV_SCH=y
++CONFIG_SCSI_MULTI_LUN=y
++CONFIG_SCSI_CONSTANTS=y
++CONFIG_SCSI_LOGGING=y
++CONFIG_SCSI_SCAN_ASYNC=y
++# CONFIG_INPUT_MOUSEDEV is not set
++# CONFIG_INPUT_KEYBOARD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_SERIO is not set
++CONFIG_SERIAL_MSM=y
++CONFIG_SERIAL_MSM_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_DEBUG_GPIO=y
++CONFIG_GPIO_SYSFS=y
++# CONFIG_HWMON is not set
++# CONFIG_MFD_SUPPORT is not set
++CONFIG_FB=y
++CONFIG_FB_MSM=y
++CONFIG_BACKLIGHT_LCD_SUPPORT=y
++CONFIG_BACKLIGHT_CLASS_DEVICE=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++# CONFIG_HID_SUPPORT is not set
++# CONFIG_USB_SUPPORT is not set
++CONFIG_TMPFS=y
++# CONFIG_MISC_FILESYSTEMS is not set
++CONFIG_PARTITION_ADVANCED=y
++CONFIG_NLS=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ASCII=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_PRINTK_TIME=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_FS=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_TIMER_STATS=y
++# CONFIG_DEBUG_PREEMPT is not set
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_MEMORY_INIT=y
++CONFIG_DYNAMIC_DEBUG=y
++CONFIG_DEBUG_USER=y
++CONFIG_KEYS=y
++CONFIG_CRYPTO_AUTHENC=y
++CONFIG_CRYPTO_CBC=y
++CONFIG_CRYPTO_HMAC=y
++CONFIG_CRYPTO_MD5=y
++CONFIG_CRYPTO_SHA1=y
++CONFIG_CRYPTO_ARC4=y
++CONFIG_CRYPTO_DES=y
++CONFIG_CRYPTO_DEFLATE=y
++CONFIG_CRC_CCITT=y
++CONFIG_CRC16=y
++CONFIG_LIBCRC32C=y
+diff --git a/arch/arm/configs/msm8960_defconfig b/arch/arm/configs/msm8960_defconfig
+new file mode 100644
+index 0000000..2a75547
+--- /dev/null
++++ b/arch/arm/configs/msm8960_defconfig
+@@ -0,0 +1,265 @@
++CONFIG_EXPERIMENTAL=y
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SYSVIPC=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_CGROUPS=y
++CONFIG_CGROUP_DEBUG=y
++CONFIG_CGROUP_FREEZER=y
++CONFIG_CGROUP_CPUACCT=y
++CONFIG_RESOURCE_COUNTERS=y
++CONFIG_CGROUP_SCHED=y
++CONFIG_RT_GROUP_SCHED=y
++CONFIG_NAMESPACES=y
++# CONFIG_UTS_NS is not set
++# CONFIG_IPC_NS is not set
++# CONFIG_USER_NS is not set
++# CONFIG_PID_NS is not set
++# CONFIG_NET_NS is not set
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_RD_BZIP2=y
++CONFIG_RD_LZMA=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_EMBEDDED=y
++CONFIG_PROFILING=y
++CONFIG_OPROFILE=m
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODULE_FORCE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++CONFIG_ARCH_MSM=y
++CONFIG_ARCH_MSM8960=y
++CONFIG_MACH_MSM8960_SIM=y
++CONFIG_MACH_MSM8960_RUMI3=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_SMP=y
++# CONFIG_SMP_ON_UP is not set
++CONFIG_NR_CPUS=2
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++CONFIG_HIGHMEM=y
++CONFIG_CPU_IDLE=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_LRO is not set
++# CONFIG_INET_DIAG is not set
++CONFIG_IPV6=y
++CONFIG_IPV6_PRIVACY=y
++CONFIG_IPV6_ROUTER_PREF=y
++CONFIG_IPV6_ROUTE_INFO=y
++CONFIG_IPV6_OPTIMISTIC_DAD=y
++CONFIG_INET6_AH=y
++CONFIG_INET6_ESP=y
++CONFIG_INET6_IPCOMP=y
++CONFIG_IPV6_MIP6=y
++CONFIG_IPV6_MULTIPLE_TABLES=y
++CONFIG_IPV6_SUBTREES=y
++CONFIG_NETFILTER=y
++CONFIG_NETFILTER_NETLINK_LOG=y
++CONFIG_NF_CONNTRACK=y
++CONFIG_NF_CONNTRACK_EVENTS=y
++CONFIG_NF_CT_PROTO_DCCP=y
++CONFIG_NF_CT_PROTO_SCTP=y
++CONFIG_NF_CT_PROTO_UDPLITE=y
++CONFIG_NF_CONNTRACK_AMANDA=y
++CONFIG_NF_CONNTRACK_FTP=y
++CONFIG_NF_CONNTRACK_H323=y
++CONFIG_NF_CONNTRACK_IRC=y
++CONFIG_NF_CONNTRACK_NETBIOS_NS=y
++CONFIG_NF_CONNTRACK_PPTP=y
++CONFIG_NF_CONNTRACK_SANE=y
++CONFIG_NF_CONNTRACK_SIP=y
++CONFIG_NF_CONNTRACK_TFTP=y
++CONFIG_NF_CT_NETLINK=y
++CONFIG_NETFILTER_XT_TARGET_CLASSIFY=y
++CONFIG_NETFILTER_XT_TARGET_CONNMARK=y
++CONFIG_NETFILTER_XT_TARGET_MARK=y
++CONFIG_NETFILTER_XT_TARGET_NFQUEUE=y
++CONFIG_NETFILTER_XT_MATCH_COMMENT=y
++CONFIG_NETFILTER_XT_MATCH_CONNLIMIT=y
++CONFIG_NETFILTER_XT_MATCH_CONNMARK=y
++CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y
++CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=y
++CONFIG_NETFILTER_XT_MATCH_HELPER=y
++CONFIG_NETFILTER_XT_MATCH_IPRANGE=y
++CONFIG_NETFILTER_XT_MATCH_LENGTH=y
++CONFIG_NETFILTER_XT_MATCH_LIMIT=y
++CONFIG_NETFILTER_XT_MATCH_MAC=y
++CONFIG_NETFILTER_XT_MATCH_MARK=y
++CONFIG_NETFILTER_XT_MATCH_MULTIPORT=y
++CONFIG_NETFILTER_XT_MATCH_OWNER=y
++CONFIG_NETFILTER_XT_MATCH_POLICY=y
++CONFIG_NETFILTER_XT_MATCH_PKTTYPE=y
++CONFIG_NETFILTER_XT_MATCH_QUOTA=y
++CONFIG_NETFILTER_XT_MATCH_STATE=y
++CONFIG_NETFILTER_XT_MATCH_STATISTIC=y
++CONFIG_NETFILTER_XT_MATCH_STRING=y
++CONFIG_NETFILTER_XT_MATCH_TIME=y
++CONFIG_NETFILTER_XT_MATCH_U32=y
++CONFIG_NF_CONNTRACK_IPV4=y
++CONFIG_IP_NF_IPTABLES=y
++CONFIG_IP_NF_MATCH_AH=y
++CONFIG_IP_NF_MATCH_ECN=y
++CONFIG_IP_NF_MATCH_TTL=y
++CONFIG_IP_NF_FILTER=y
++CONFIG_IP_NF_TARGET_REJECT=y
++CONFIG_NF_NAT=y
++CONFIG_IP_NF_TARGET_MASQUERADE=y
++CONFIG_IP_NF_TARGET_NETMAP=y
++CONFIG_IP_NF_TARGET_REDIRECT=y
++CONFIG_IP_NF_MANGLE=y
++CONFIG_IP_NF_ARPTABLES=y
++CONFIG_IP_NF_ARPFILTER=y
++CONFIG_IP_NF_ARP_MANGLE=y
++CONFIG_IP6_NF_IPTABLES=y
++CONFIG_IP6_NF_FILTER=y
++CONFIG_IP6_NF_MANGLE=y
++CONFIG_NET_SCHED=y
++CONFIG_NET_SCH_HTB=y
++CONFIG_NET_CLS_U32=y
++CONFIG_CLS_U32_MARK=y
++CONFIG_NET_CLS_FLOW=y
++CONFIG_NET_EMATCH=y
++CONFIG_NET_EMATCH_CMP=y
++CONFIG_NET_EMATCH_NBYTE=y
++CONFIG_NET_EMATCH_U32=y
++CONFIG_NET_EMATCH_META=y
++CONFIG_NET_EMATCH_TEXT=y
++CONFIG_NET_CLS_ACT=y
++CONFIG_BT=y
++CONFIG_BT_L2CAP=y
++CONFIG_BT_SCO=y
++CONFIG_BT_RFCOMM=y
++CONFIG_BT_RFCOMM_TTY=y
++CONFIG_BT_BNEP=y
++CONFIG_BT_BNEP_MC_FILTER=y
++CONFIG_BT_BNEP_PROTO_FILTER=y
++CONFIG_BT_HIDP=y
++CONFIG_BT_HCIUART=y
++CONFIG_BT_HCIUART_H4=y
++CONFIG_RFKILL=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_MISC_DEVICES=y
++CONFIG_SCSI=y
++CONFIG_SCSI_TGT=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_SG=y
++CONFIG_CHR_DEV_SCH=y
++CONFIG_SCSI_MULTI_LUN=y
++CONFIG_SCSI_CONSTANTS=y
++CONFIG_SCSI_LOGGING=y
++CONFIG_SCSI_SCAN_ASYNC=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_DM=y
++CONFIG_DM_CRYPT=y
++CONFIG_NETDEVICES=y
++CONFIG_DUMMY=y
++CONFIG_NET_ETHERNET=y
++CONFIG_SMC91X=y
++CONFIG_SMC911X=y
++CONFIG_SMSC911X=y
++CONFIG_KS8851_MLL=y
++# CONFIG_NETDEV_1000 is not set
++# CONFIG_NETDEV_10000 is not set
++CONFIG_SLIP=y
++CONFIG_SLIP_COMPRESSED=y
++CONFIG_SLIP_MODE_SLIP6=y
++CONFIG_INPUT_EVDEV=y
++CONFIG_INPUT_EVBUG=m
++CONFIG_INPUT_JOYSTICK=y
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_INPUT_MISC=y
++CONFIG_INPUT_UINPUT=y
++CONFIG_SERIAL_MSM=y
++CONFIG_SERIAL_MSM_CONSOLE=y
++CONFIG_HVC_DCC=y
++CONFIG_HW_RANDOM=y
++CONFIG_I2C=y
++CONFIG_I2C_CHARDEV=y
++CONFIG_SPI=y
++CONFIG_SPI_SPIDEV=m
++CONFIG_DEBUG_GPIO=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_SX150X=y
++CONFIG_POWER_SUPPLY=y
++CONFIG_THERMAL=y
++CONFIG_REGULATOR=y
++CONFIG_MEDIA_SUPPORT=y
++CONFIG_VIDEO_DEV=y
++# CONFIG_MEDIA_TUNER_CUSTOMISE is not set
++CONFIG_USB_VIDEO_CLASS=y
++CONFIG_FB=y
++CONFIG_FB_MSM=y
++CONFIG_BACKLIGHT_LCD_SUPPORT=y
++CONFIG_BACKLIGHT_CLASS_DEVICE=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_USB_AUDIO=y
++CONFIG_SND_SOC=y
++CONFIG_HID_APPLE=y
++CONFIG_HID_WACOM=y
++CONFIG_USB=y
++CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
++CONFIG_USB_ACM=y
++CONFIG_USB_STORAGE=y
++CONFIG_USB_STORAGE_DATAFAB=y
++CONFIG_USB_STORAGE_FREECOM=y
++CONFIG_USB_STORAGE_ISD200=y
++CONFIG_USB_STORAGE_USBAT=y
++CONFIG_USB_STORAGE_SDDR09=y
++CONFIG_USB_STORAGE_SDDR55=y
++CONFIG_USB_STORAGE_JUMPSHOT=y
++CONFIG_USB_STORAGE_ALAUDA=y
++CONFIG_USB_STORAGE_ONETOUCH=y
++CONFIG_USB_STORAGE_KARMA=y
++CONFIG_USB_STORAGE_CYPRESS_ATACB=y
++CONFIG_USB_GADGET=y
++CONFIG_MMC=y
++CONFIG_MMC_UNSAFE_RESUME=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_GPIO=y
++CONFIG_RTC_CLASS=y
++CONFIG_STAGING=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++CONFIG_EXT4_FS=y
++CONFIG_VFAT_FS=y
++CONFIG_TMPFS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3=y
++CONFIG_NFS_V3_ACL=y
++CONFIG_NFS_V4=y
++CONFIG_CIFS=y
++CONFIG_PARTITION_ADVANCED=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ASCII=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_PRINTK_TIME=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_FS=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_TIMER_STATS=y
++# CONFIG_DEBUG_PREEMPT is not set
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_MEMORY_INIT=y
++CONFIG_DYNAMIC_DEBUG=y
++CONFIG_DEBUG_USER=y
++CONFIG_CRYPTO_TWOFISH=y
++CONFIG_CRC_CCITT=y
+diff --git a/arch/arm/configs/qsd8x50_defconfig b/arch/arm/configs/qsd8x50_defconfig
+new file mode 100644
+index 0000000..aecd5b0
+--- /dev/null
++++ b/arch/arm/configs/qsd8x50_defconfig
+@@ -0,0 +1,82 @@
++CONFIG_EXPERIMENTAL=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++# CONFIG_UTS_NS is not set
++# CONFIG_USER_NS is not set
++# CONFIG_PID_NS is not set
++# CONFIG_NET_NS is not set
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_SLAB=y
++CONFIG_MODULES=y
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_ARCH_MSM=y
++CONFIG_ARCH_QSD8X50=y
++CONFIG_MSM_DEBUG_UART3=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++# CONFIG_OABI_COMPAT is not set
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_CMDLINE="mem=64M console=ttyMSM,115200n8"
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_DIAG is not set
++# CONFIG_IPV6 is not set
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_CHAR=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MISC_DEVICES=y
++CONFIG_NETDEVICES=y
++CONFIG_DUMMY=y
++CONFIG_NET_ETHERNET=y
++CONFIG_SMC91X=y
++CONFIG_PPP=y
++CONFIG_PPP_ASYNC=y
++CONFIG_PPP_DEFLATE=y
++CONFIG_PPP_BSDCOMP=y
++# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
++CONFIG_INPUT_EVDEV=y
++# CONFIG_KEYBOARD_ATKBD is not set
++# CONFIG_INPUT_MOUSE is not set
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_INPUT_MISC=y
++# CONFIG_SERIO is not set
++CONFIG_VT_HW_CONSOLE_BINDING=y
++# CONFIG_LEGACY_PTYS is not set
++CONFIG_SERIAL_MSM=y
++CONFIG_SERIAL_MSM_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_I2C=y
++# CONFIG_HWMON is not set
++CONFIG_VIDEO_OUTPUT_CONTROL=y
++CONFIG_FB=y
++CONFIG_FB_MODE_HELPERS=y
++CONFIG_FB_TILEBLITTING=y
++CONFIG_FB_MSM=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_MMC=y
++CONFIG_MMC_MSM=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_EXT4_FS=y
++CONFIG_TMPFS=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_SCHEDSTATS=y
++CONFIG_DEBUG_MUTEXES=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_LL=y
++CONFIG_LIBCRC32C=y
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-> Comments welcome,
->  - Arnaud
->
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
->
-> ---
->  Makefile               |    5 +++--
->  scripts/Makefile.build |   24 +++++++++++++++---------
->  scripts/Makefile.lib   |   17 ++++++++++++-----
->  3 files changed, 30 insertions(+), 16 deletions(-)
->
-> diff --git a/Makefile b/Makefile
-> index b4ca4e1..db7f7f5 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -154,9 +154,10 @@ objtree            := $(CURDIR)
->  src            := $(srctree)
->  obj            := $(objtree)
->
-> -VPATH          := $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
-> +KBUILD_VPATH   := $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
-> +VPATH          := $(KBUILD_VPATH)
->
-> -export srctree objtree VPATH
-> +export srctree objtree KBUILD_VPATH
->
->
->  # SUBARCH tells the usermode build what the underlying arch is.  That is set
-> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> index a0fd502..ac539d7 100644
-> --- a/scripts/Makefile.build
-> +++ b/scripts/Makefile.build
-> @@ -18,6 +18,8 @@ always :=
->  targets :=
->  subdir-y :=
->  subdir-m :=
-> +vpath-y :=
-> +vpath-m :=
->  EXTRA_AFLAGS   :=
->  EXTRA_CFLAGS   :=
->  EXTRA_CPPFLAGS :=
-> @@ -37,6 +39,7 @@ include scripts/Kbuild.include
->
->  # For backward compatibility check that these variables do not change
->  save-cflags := $(CFLAGS)
-> +save-vpath := $(VPATH)
->
->  # The filename Kbuild has precedence over Makefile
->  kbuild-dir := $(if $(filter /%,$(src)),$(src),$(srctree)/$(src))
-> @@ -48,6 +51,9 @@ ifeq ($(KBUILD_NOPEDANTIC),)
->         ifneq ("$(save-cflags)","$(CFLAGS)")
->                 $(error CFLAGS was changed in "$(kbuild-file)". Fix it to use EXTRA_CFLAGS)
->         endif
-> +        ifneq ("$(save-vpath)","$(VPATH)")
-> +                $(error VPATH was changed in "$(kbuild-file)". Please uses vpath-y)
-> +        endif
->  endif
->
->  #
-> @@ -198,13 +204,13 @@ $(multi-objs-y:.o=.lst) : modname = $(modname-multi)
->  quiet_cmd_cc_s_c = CC $(quiet_modtag)  $@
->  cmd_cc_s_c       = $(CC) $(c_flags) -fverbose-asm -S -o $@ $<
->
-> -$(obj)/%.s: $(src)/%.c FORCE
-> +$(obj)/%.s: %.c FORCE
->        $(call if_changed_dep,cc_s_c)
->
->  quiet_cmd_cc_i_c = CPP $(quiet_modtag) $@
->  cmd_cc_i_c       = $(CPP) $(c_flags)   -o $@ $<
->
-> -$(obj)/%.i: $(src)/%.c FORCE
-> +$(obj)/%.i: %.c FORCE
->        $(call if_changed_dep,cc_i_c)
->
->  cmd_gensymtypes =                                                           \
-> @@ -219,7 +225,7 @@ cmd_cc_symtypes_c =                                                         \
->     $(call cmd_gensymtypes,true,$@) >/dev/null;                             \
->     test -s $@ || rm -f $@
->
-> -$(obj)/%.symtypes : $(src)/%.c FORCE
-> +$(obj)/%.symtypes : %.c FORCE
->        $(call cmd,cc_symtypes_c)
->
->  # C (.c) files
-> @@ -301,13 +307,13 @@ define rule_cc_o_c
->  endef
->
->  # Built-in and composite module parts
-> -$(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
-> +$(obj)/%.o: %.c $(recordmcount_source) FORCE
->        $(call cmd,force_checksrc)
->        $(call if_changed_rule,cc_o_c)
->
->  # Single-part modules are special since we need to mark them in $(MODVERDIR)
->
-> -$(single-used-m): $(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
-> +$(single-used-m): %.o: %.c $(recordmcount_source) FORCE
->        $(call cmd,force_checksrc)
->        $(call if_changed_rule,cc_o_c)
->        @{ echo $(@:.o=.ko); echo $@; } > $(MODVERDIR)/$(@F:.o=.mod)
-> @@ -317,7 +323,7 @@ quiet_cmd_cc_lst_c = MKLST   $@
->                     $(CONFIG_SHELL) $(srctree)/scripts/makelst $*.o \
->                                     System.map $(OBJDUMP) > $@
->
-> -$(obj)/%.lst: $(src)/%.c FORCE
-> +$(obj)/%.lst: %.c FORCE
->        $(call if_changed_dep,cc_lst_c)
->
->  # Compile assembler sources (.S)
-> @@ -331,13 +337,13 @@ $(real-objs-m:.o=.s): modkern_aflags := $(KBUILD_AFLAGS_MODULE) $(AFLAGS_MODULE)
->  quiet_cmd_as_s_S = CPP $(quiet_modtag) $@
->  cmd_as_s_S       = $(CPP) $(a_flags)   -o $@ $<
->
-> -$(obj)/%.s: $(src)/%.S FORCE
-> +$(obj)/%.s: %.S FORCE
->        $(call if_changed_dep,as_s_S)
->
->  quiet_cmd_as_o_S = AS $(quiet_modtag)  $@
->  cmd_as_o_S       = $(CC) $(a_flags) -c -o $@ $<
->
-> -$(obj)/%.o: $(src)/%.S FORCE
-> +$(obj)/%.o: %.S FORCE
->        $(call if_changed_dep,as_o_S)
->
->  targets += $(real-objs-y) $(real-objs-m) $(lib-y)
-> @@ -349,7 +355,7 @@ quiet_cmd_cpp_lds_S = LDS     $@
->       cmd_cpp_lds_S = $(CPP) $(cpp_flags) -P -C -U$(ARCH) \
->                             -D__ASSEMBLY__ -DLINKER_SCRIPT -o $@ $<
->
-> -$(obj)/%.lds: $(src)/%.lds.S FORCE
-> +$(obj)/%.lds: %.lds.S FORCE
->        $(call if_changed_dep,cpp_lds_S)
->
->  # Build the compiled-in targets
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index aeea84a..b57b621 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -46,6 +46,13 @@ obj-m                := $(filter-out %/, $(obj-m))
->
->  subdir-ym      := $(sort $(subdir-y) $(subdir-m))
->
-> +#
-> +vpath-ym       := $(vpath-y) $(vpath-m)
-> +VPATH          := $(KBUILD_VPATH)
-> +VPATH          += $(srctree)/$(src)
-> +VPATH          += $(obj)
-> +VPATH          += $(vpath-ym)
-> +
->  # if $(foo-objs) exists, foo.o is a composite object
->  multi-used-y := $(sort $(foreach m,$(obj-y), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))), $(m))))
->  multi-used-m := $(sort $(foreach m,$(obj-m), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))), $(m))))
-> @@ -167,7 +174,7 @@ ifdef REGENERATE_PARSERS
->  quiet_cmd_gperf = GPERF $@
->       cmd_gperf = gperf -t --output-file $@ -a -C -E -g -k 1,3,$$ -p -t $<
->
-> -$(src)/%.hash.c_shipped: $(src)/%.gperf
-> +$(src)/%.hash.c_shipped: %.gperf
->        $(call cmd,gperf)
->
->  # LEX
-> @@ -177,7 +184,7 @@ LEX_PREFIX = $(if $(LEX_PREFIX_${baseprereq}),$(LEX_PREFIX_${baseprereq}),yy)
->  quiet_cmd_flex = LEX     $@
->       cmd_flex = flex -o$@ -L -P $(LEX_PREFIX) $<
->
-> -$(src)/%.lex.c_shipped: $(src)/%.l
-> +$(src)/%.lex.c_shipped: %.l
->        $(call cmd,flex)
->
->  # YACC
-> @@ -187,13 +194,13 @@ YACC_PREFIX = $(if $(YACC_PREFIX_${baseprereq}),$(YACC_PREFIX_${baseprereq}),yy)
->  quiet_cmd_bison = YACC    $@
->       cmd_bison = bison -o$@ -t -l -p $(YACC_PREFIX) $<
->
-> -$(src)/%.tab.c_shipped: $(src)/%.y
-> +$(src)/%.tab.c_shipped: %.y
->        $(call cmd,bison)
->
->  quiet_cmd_bison_h = YACC    $@
->       cmd_bison_h = bison -o/dev/null --defines=$@ -t -l -p $(YACC_PREFIX) $<
->
-> -$(src)/%.tab.h_shipped: $(src)/%.y
-> +$(src)/%.tab.h_shipped: %.y
->        $(call cmd,bison_h)
->
->  endif
-> @@ -204,7 +211,7 @@ endif
->  quiet_cmd_shipped = SHIPPED $@
->  cmd_shipped = cat $< > $@
->
-> -$(obj)/%: $(src)/%_shipped
-> +$(obj)/%: %_shipped
->        $(call cmd,shipped)
->
->  # Commands useful for building a boot image
-> --
-> 1.7.6.153.g78432
->
->
