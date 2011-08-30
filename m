@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab1H3VpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 17:45:16 -0400
-Received: from dresden.studentenwerk.mhn.de ([141.84.225.229]:52911 "EHLO
-	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751520Ab1H3VpO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 17:45:14 -0400
-From: Wolfgang Walter <wolfgang.walter@stwm.de>
-Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
-To: Tim Gardner <tim.gardner@canonical.com>
-Subject: Re: linux 2.6.32.46 crashes
-Date: Tue, 30 Aug 2011 23:45:11 +0200
-User-Agent: KMail/1.9.9
-Cc: Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-References: <201108302231.47530.wolfgang.walter@stwm.de> <4E5D4E91.3070503@canonical.com>
-In-Reply-To: <4E5D4E91.3070503@canonical.com>
+	id S1751670Ab1H3VvJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 17:51:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:1974 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab1H3VvF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 17:51:05 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=nKB85/PcKc7jRYwTR8Z5sw9qKUwvzCK+qfxoxM6f+UkgxczFrxbE37rdh+Pbgdmzx
+	OYSJMOuUIaZFXmvTP22gw==
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-15"
+In-Reply-To: <20110830053231.GA1627@infradead.org>
+References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
+	<20110830053231.GA1627@infradead.org>
+Date: Tue, 30 Aug 2011 14:51:01 -0700
+Message-ID: <CAAK6Zt2P3jBPfeCPioK-ehpVAw0iQjikY0BujXfQmfozJ8GNvA@mail.gmail.com>
+Subject: Re: Approaches to making io_submit not block
+From: Daniel Ehrenberg <dehrenberg@google.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201108302345.12250.wolfgang.walter@stwm.de>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 30. August 2011 schrieb Tim Gardner:
-> On 08/30/2011 02:31 PM, Wolfgang Walter wrote:
-> > Hello,
-> >
-> > I upgraded several machines from 2.6.32.43 to 2.6.32.46 and
-> > they all crashed when the kernel boots.
-> >
-> > I bisected it to the following commit:
-> >
-> >
-> > 35ed3d0fb62804090a3f21a7ce84c538a6ff852f is the first bad commit
-> > commit 35ed3d0fb62804090a3f21a7ce84c538a6ff852f
-> > Author: Alexey Dobriyan<adobriyan@gmail.com>
-> > Date:   Tue Feb 16 09:05:04 2010 +0000
-> >
-> >      tunnels: fix netns vs proto registration ordering
-> >
-> >      commit d5aa407f59f5b83d2c50ec88f5bf56d40f1f8978 upstream.
-> >
-> >      Same stuff as in ip_gre patch: receive hook can be called before
-> > netns setup is done, oopsing in net_generic().
-> >
-> >      Signed-off-by: Alexey Dobriyan<adobriyan@gmail.com>
-> >      Signed-off-by: David S. Miller<davem@davemloft.net>
-> >      Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
-> >
-> > :040000 040000 6338c45b1372e7e3c5a5ef466dc365cc47a2e152
-> > : cde6b92bab403d860cca90e8232cb9c03090fc7e M      net
-> >
-> > Reverting it on top of 2.6.32.46 fixes the problem for me.
->
-> <snip>
->
-> Wolfgang - see if this patch fixes your problem.
->
+Thanks for getting back to me.
 
-> From e52d45fe5518e8447b54b440f41d318db146a19e Mon Sep 17 00:00:00 2001
-> From: Andy Whitcroft <apw@canonical.com>
-> Date: Tue, 30 Aug 2011 13:44:23 +0100
-> Subject: [PATCH] tunnels: fix netns vs proto registration ordering -- fix
-> stable backport
+On Mon, Aug 29, 2011 at 10:32 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Mon, Aug 29, 2011 at 10:33:24AM -0700, Daniel Ehrenberg wrote:
+>> - Blocking due to reading metadata.
+>> Proposed solution:
+>> Add a per-ioctx work queue to do metadata reads. It will be triggered
+>> from the dio code: if in async mode, then get_block will be called
+>> with an additional flag, meaning something like O_NONBLOCK on sockets.
+>> File systems' get_block functions can implement this flag and return
+>> -EAGAIN if a read from the underlying device would be necessary. (If
+>> we're worried that EAGAIN might be used for other purposes in the
+>> future, we could make a new errno for this purpose.) From a quick
+>> glance at the code, it looks like this would not be too difficult to
+>> add to ext4 for extent-based files, and support in other file systems
+>> could be added gradually. If -EAGAIN is returned, then the struct dio
+>> will be put on the work queue together with a description of what kind
+>> of processing it was doing. The work queue only serves the metadata
+>> request, and the rest of the request is served on the existing path.
 >
-> BugLink: http://bugs.launchpad.net/bugs/837421
->
-> As per Stratos Psomadakis the backport of the upstream commit below is
-> flawed and introduces crashes when using this ipv6 tunnel type:
->
->   commit a14a3f90745c4831a1437528706b38daa1db4885
->   Author: Alexey Dobriyan <adobriyan@gmail.com>
->   Date:   Tue Feb 16 09:05:04 2010 +0000
->
->     tunnels: fix netns vs proto registration ordering
->
-> Signed-off-by: Andy Whitcroft <apw@canonical.com>
-> Acked-by: Stefan Bader <stefan.bader@canonical.com>
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->  net/ipv6/ip6_tunnel.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-> index 7fb3e02..53e0d51 100644
-> --- a/net/ipv6/ip6_tunnel.c
-> +++ b/net/ipv6/ip6_tunnel.c
-> @@ -1466,7 +1466,7 @@ static int __init ip6_tunnel_init(void)
->  {
->  	int  err;
->
-> -	err = register_pernet_device(&ip6_tnl_net_ops);
-> +	err = register_pernet_gen_device(&ip6_tnl_net_id, &ip6_tnl_net_ops);
->  	if (err < 0)
->  		goto out_pernet;
->
-> --
-> 1.7.0.4
+> Let filesystems handle this.  I've actually prototyped it in XFS,
+> based on some pending work from Dave but at this point it's still butt
+> ugly.
 
+Great, would you be willing to let me see the draft code?
 
+Are you sure that there wouldn't be any benefit to having the code be
+in the aio/dio levels in terms of making it easier for file
+systems/reducing code duplication?
+>
+>> - Blocking for appends and writes to file holes due to the need for a
+>> metadata write after the data write
+>> Proposed solution:
+>> Maintain a work queue for all appends and writes to file holes, which
+>> executes the current code.
+>
+> No way.  I've fixed this for XFS, and it's trivial without the need to
+> queue them up.  The only thing preventing appending writes to work is
+> a flag to tell the dio layer to just do them, just like it already works
+> for holes.  (and more QA).
+>
+>
+Are you saying this is already fixed for XFS? Appends don't block,
+only reads to metadata do?
 
-
-Yes, it does.
-
-Regards,
--- 
-Wolfgang Walter
-Studentenwerk München
-Anstalt des öffentlichen Rechts
+Dan
