@@ -1,171 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab1H3JDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 05:03:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33842 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab1H3JDp (ORCPT
+	id S1752711Ab1H3JGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 05:06:01 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:38211 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab1H3JF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 05:03:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 30 Aug 2011 17:56:09 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Brestic <abrestic@google.com>, Ying Han <yinghan@google.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Revert "memcg: add memory.vmscan_stat"
-Message-Id: <20110830175609.4977ef7a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110830084245.GC13061@redhat.com>
-References: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110808124333.GA31739@redhat.com>
-	<20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110829155113.GA21661@redhat.com>
-	<20110830101233.ae416284.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110830070424.GA13061@redhat.com>
-	<20110830162050.f6c13c0c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110830084245.GC13061@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Aug 2011 05:05:56 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 11/15] drbd: allow to select specific bitmap pages for writeout
+Date: Tue, 30 Aug 2011 11:05:45 +0200
+Message-Id: <1314695149-387-12-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314695149-387-1-git-send-email-philipp.reisner@linbit.com>
+References: <1314695149-387-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 10:42:45 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-> On Tue, Aug 30, 2011 at 04:20:50PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Tue, 30 Aug 2011 09:04:24 +0200
-> > Johannes Weiner <jweiner@redhat.com> wrote:
-> > 
-> > > On Tue, Aug 30, 2011 at 10:12:33AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > > @@ -1710,11 +1711,18 @@ static void mem_cgroup_record_scanstat(s
-> > > >  	spin_lock(&memcg->scanstat.lock);
-> > > >  	__mem_cgroup_record_scanstat(memcg->scanstat.stats[context], rec);
-> > > >  	spin_unlock(&memcg->scanstat.lock);
-> > > > -
-> > > > -	memcg = rec->root;
-> > > > -	spin_lock(&memcg->scanstat.lock);
-> > > > -	__mem_cgroup_record_scanstat(memcg->scanstat.rootstats[context], rec);
-> > > > -	spin_unlock(&memcg->scanstat.lock);
-> > > > +	cgroup = memcg->css.cgroup;
-> > > > +	do {
-> > > > +		spin_lock(&memcg->scanstat.lock);
-> > > > +		__mem_cgroup_record_scanstat(
-> > > > +			memcg->scanstat.hierarchy_stats[context], rec);
-> > > > +		spin_unlock(&memcg->scanstat.lock);
-> > > > +		if (!cgroup->parent)
-> > > > +			break;
-> > > > +		cgroup = cgroup->parent;
-> > > > +		memcg = mem_cgroup_from_cont(cgroup);
-> > > > +	} while (memcg->use_hierarchy && memcg != rec->root);
-> > > 
-> > > Okay, so this looks correct, but it sums up all parents after each
-> > > memcg scanned, which could have a performance impact.  Usually,
-> > > hierarchy statistics are only summed up when a user reads them.
-> > > 
-> > Hmm. But sum-at-read doesn't work.
-> > 
-> > Assume 3 cgroups in a hierarchy.
-> > 
-> > 	A
-> >        /
-> >       B
-> >      /
-> >     C
-> > 
-> > C's scan contains 3 causes.
-> > 	C's scan caused by limit of A.
-> > 	C's scan caused by limit of B.
-> > 	C's scan caused by limit of C.
-> >
-> > If we make hierarchy sum at read, we think
-> > 	B's scan_stat = B's scan_stat + C's scan_stat
-> > But in precice, this is
-> > 
-> > 	B's scan_stat = B's scan_stat caused by B +
-> > 			B's scan_stat caused by A +
-> > 			C's scan_stat caused by C +
-> > 			C's scan_stat caused by B +
-> > 			C's scan_stat caused by A.
-> > 
-> > In orignal version.
-> > 	B's scan_stat = B's scan_stat caused by B +
-> > 			C's scan_stat caused by B +
-> > 
-> > After this patch,
-> > 	B's scan_stat = B's scan_stat caused by B +
-> > 			B's scan_stat caused by A +
-> > 			C's scan_stat caused by C +
-> > 			C's scan_stat caused by B +
-> > 			C's scan_stat caused by A.
-> > 
-> > Hmm...removing hierarchy part completely seems fine to me.
-> 
-> I see.
-> 
-> You want to look at A and see whether its limit was responsible for
-> reclaim scans in any children.  IMO, that is asking the question
-> backwards.  Instead, there is a cgroup under reclaim and one wants to
-> find out the cause for that.  Not the other way round.
-> 
-> In my original proposal I suggested differentiating reclaim caused by
-> internal pressure (due to own limit) and reclaim caused by
-> external/hierarchical pressure (due to limits from parents).
-> 
-> If you want to find out why C is under reclaim, look at its reclaim
-> statistics.  If the _limit numbers are high, C's limit is the problem.
-> If the _hierarchical numbers are high, the problem is B, A, or
-> physical memory, so you check B for _limit and _hierarchical as well,
-> then move on to A.
-> 
-> Implementing this would be as easy as passing not only the memcg to
-> scan (victim) to the reclaim code, but also the memcg /causing/ the
-> reclaim (root_mem):
-> 
-> 	root_mem == victim -> account to victim as _limit
-> 	root_mem != victim -> account to victim as _hierarchical
-> 
-> This would make things much simpler and more natural, both the code
-> and the way of tracking down a problem, IMO.
-> 
+We are about to allow several changes to the active set in one activity
+log transaction. We have to write out the corresponding bitmap pages as
+well, if changed.
 
-hmm. I have no strong opinion.
+Introduce drbd_bm_mark_for_writeout(), then re-use the existing bitmap
+writeout path to submit all marked pages in one go.
 
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_bitmap.c |   43 ++++++++++++++++++++++++++++++++-----
+ drivers/block/drbd/drbd_int.h    |   13 ++++++++---
+ 2 files changed, 46 insertions(+), 10 deletions(-)
 
-> > > I don't get why this has to be done completely different from the way
-> > > we usually do things, without any justification, whatsoever.
-> > > 
-> > > Why do you want to pass a recording structure down the reclaim stack?
-> > 
-> > Just for reducing number of passed variables.
-> 
-> It's still sitting on bottom of the reclaim stack the whole time.
-> 
-> With my proposal, you would only need to pass the extra root_mem
-> pointer.
-> 
-
-I'm sorry I miss something. Do you say to add a function like
-
-mem_cgroup_record_reclaim_stat(memcg, root_mem, anon_scan, anon_free, anon_rotate,
-                               file_scan, file_free, elapsed_ns)
-
-?
-
-I'll prepare a patch, tomorrow.
-
-Thanks,
--Kame
-
-
-
-
-
+diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
+index 4be7370..2d00a8f 100644
+--- a/drivers/block/drbd/drbd_bitmap.c
++++ b/drivers/block/drbd/drbd_bitmap.c
+@@ -188,6 +188,9 @@ void drbd_bm_unlock(struct drbd_conf *mdev)
+ /* to mark for lazy writeout once syncer cleared all clearable bits,
+  * we if bits have been cleared since last IO. */
+ #define BM_PAGE_LAZY_WRITEOUT	28
++/* pages marked with this "HINT" will be considered for writeout
++ * on activity log transactions */
++#define BM_PAGE_HINT_WRITEOUT	27
+ 
+ /* store_page_idx uses non-atomic assignment. It is only used directly after
+  * allocating the page.  All other bm_set_page_* and bm_clear_page_* need to
+@@ -237,6 +240,21 @@ static void bm_set_page_need_writeout(struct page *page)
+ 	set_bit(BM_PAGE_NEED_WRITEOUT, &page_private(page));
+ }
+ 
++/**
++ * drbd_bm_mark_for_writeout() - mark a page with a "hint" to be considered for writeout
++ * @mdev:	DRBD device.
++ * @page_nr:	the bitmap page to mark with the "hint" flag
++ *
++ * From within an activity log transaction, we mark a few pages with these
++ * hints, then call drbd_bm_write_hinted(), which will only write out changed
++ * pages which are flagged with this mark.
++ */
++void drbd_bm_mark_for_writeout(struct drbd_conf *mdev, int page_nr)
++{
++	struct page *page = mdev->bitmap->bm_pages[page_nr];
++	set_bit(BM_PAGE_HINT_WRITEOUT, &page_private(page));
++}
++
+ static int bm_test_page_unchanged(struct page *page)
+ {
+ 	volatile const unsigned long *addr = &page_private(page);
+@@ -897,6 +915,7 @@ struct bm_aio_ctx {
+ 	struct completion done;
+ 	unsigned flags;
+ #define BM_AIO_COPY_PAGES	1
++#define BM_AIO_WRITE_HINTED	2
+ 	int error;
+ };
+ 
+@@ -1007,13 +1026,13 @@ static void bm_page_io_async(struct bm_aio_ctx *ctx, int page_nr, int rw) __must
+ /*
+  * bm_rw: read/write the whole bitmap from/to its on disk location.
+  */
+-static int bm_rw(struct drbd_conf *mdev, int rw, unsigned lazy_writeout_upper_idx) __must_hold(local)
++static int bm_rw(struct drbd_conf *mdev, int rw, unsigned flags, unsigned lazy_writeout_upper_idx) __must_hold(local)
+ {
+ 	struct bm_aio_ctx ctx = {
+ 		.mdev = mdev,
+ 		.in_flight = ATOMIC_INIT(1),
+ 		.done = COMPLETION_INITIALIZER_ONSTACK(ctx.done),
+-		.flags = lazy_writeout_upper_idx ? BM_AIO_COPY_PAGES : 0,
++		.flags = flags,
+ 	};
+ 	struct drbd_bitmap *b = mdev->bitmap;
+ 	int num_pages, i, count = 0;
+@@ -1042,6 +1061,10 @@ static int bm_rw(struct drbd_conf *mdev, int rw, unsigned lazy_writeout_upper_id
+ 		if (lazy_writeout_upper_idx && i == lazy_writeout_upper_idx)
+ 			break;
+ 		if (rw & WRITE) {
++			if ((flags & BM_AIO_WRITE_HINTED) &&
++			    !test_and_clear_bit(BM_PAGE_HINT_WRITEOUT,
++				    &page_private(b->bm_pages[i])))
++				continue;
+ 			if (bm_test_page_unchanged(b->bm_pages[i])) {
+ 				dynamic_dev_dbg(DEV, "skipped bm write for idx %u\n", i);
+ 				continue;
+@@ -1099,7 +1122,7 @@ static int bm_rw(struct drbd_conf *mdev, int rw, unsigned lazy_writeout_upper_id
+  */
+ int drbd_bm_read(struct drbd_conf *mdev) __must_hold(local)
+ {
+-	return bm_rw(mdev, READ, 0);
++	return bm_rw(mdev, READ, 0, 0);
+ }
+ 
+ /**
+@@ -1110,7 +1133,7 @@ int drbd_bm_read(struct drbd_conf *mdev) __must_hold(local)
+  */
+ int drbd_bm_write(struct drbd_conf *mdev) __must_hold(local)
+ {
+-	return bm_rw(mdev, WRITE, 0);
++	return bm_rw(mdev, WRITE, 0, 0);
+ }
+ 
+ /**
+@@ -1120,12 +1143,20 @@ int drbd_bm_write(struct drbd_conf *mdev) __must_hold(local)
+  */
+ int drbd_bm_write_lazy(struct drbd_conf *mdev, unsigned upper_idx) __must_hold(local)
+ {
+-	return bm_rw(mdev, WRITE, upper_idx);
++	return bm_rw(mdev, WRITE, BM_AIO_COPY_PAGES, upper_idx);
+ }
+ 
++/**
++ * drbd_bm_write_hinted() - Write bitmap pages with "hint" marks, if they have changed.
++ * @mdev:	DRBD device.
++ */
++int drbd_bm_write_hinted(struct drbd_conf *mdev) __must_hold(local)
++{
++	return bm_rw(mdev, WRITE, BM_AIO_WRITE_HINTED | BM_AIO_COPY_PAGES, 0);
++}
+ 
+ /**
+- * drbd_bm_write_page: Writes a PAGE_SIZE aligned piece of bitmap
++ * drbd_bm_write_page() - Writes a PAGE_SIZE aligned piece of bitmap
+  * @mdev:	DRBD device.
+  * @idx:	bitmap page index
+  *
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index de92e8b..f125c0e 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1310,11 +1310,14 @@ struct bm_extent {
+ 
+ #define SLEEP_TIME (HZ/10)
+ 
+-#define BM_BLOCK_SHIFT  12			 /* 4k per bit */
++/* We do bitmap IO in units of 4k blocks.
++ * We also still have a hardcoded 4k per bit relation. */
++#define BM_BLOCK_SHIFT	12			 /* 4k per bit */
+ #define BM_BLOCK_SIZE	 (1<<BM_BLOCK_SHIFT)
+-/* (9+3) : 512 bytes @ 8 bits; representing 16M storage
+- * per sector of on disk bitmap */
+-#define BM_EXT_SHIFT	 (BM_BLOCK_SHIFT + MD_SECTOR_SHIFT + 3)  /* = 24 */
++/* mostly arbitrarily set the represented size of one bitmap extent,
++ * aka resync extent, to 16 MiB (which is also 512 Byte worth of bitmap
++ * at 4k per bit resolution) */
++#define BM_EXT_SHIFT	 24	/* 16 MiB per resync extent */
+ #define BM_EXT_SIZE	 (1<<BM_EXT_SHIFT)
+ 
+ #if (BM_EXT_SHIFT != 24) || (BM_BLOCK_SHIFT != 12)
+@@ -1408,7 +1411,9 @@ extern int  drbd_bm_test_bit(struct drbd_conf *mdev, unsigned long bitnr);
+ extern int  drbd_bm_e_weight(struct drbd_conf *mdev, unsigned long enr);
+ extern int  drbd_bm_write_page(struct drbd_conf *mdev, unsigned int idx) __must_hold(local);
+ extern int  drbd_bm_read(struct drbd_conf *mdev) __must_hold(local);
++extern void drbd_bm_mark_for_writeout(struct drbd_conf *mdev, int page_nr);
+ extern int  drbd_bm_write(struct drbd_conf *mdev) __must_hold(local);
++extern int  drbd_bm_write_hinted(struct drbd_conf *mdev) __must_hold(local);
+ extern unsigned long drbd_bm_ALe_set_all(struct drbd_conf *mdev,
+ 		unsigned long al_enr);
+ extern size_t	     drbd_bm_words(struct drbd_conf *mdev);
+-- 
+1.7.4.1
 
