@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab1H3S0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 14:26:43 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62028 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258Ab1H3S0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 14:26:41 -0400
-Message-ID: <4E5D2B5D.2070800@gmail.com>
-Date: Tue, 30 Aug 2011 20:26:37 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1756014Ab1H3S1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 14:27:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6502 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755958Ab1H3S1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 14:27:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,303,1312182000"; 
+   d="scan'208";a="46535401"
+Message-ID: <4E5D2B79.4040407@linux.intel.com>
+Date: Tue, 30 Aug 2011 11:27:05 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Vishnupradeep <intermedia.vishnu@gmail.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [stable] linux-3.0.4 compile error on file arch/x86/include/asm/unistd_64.h
-References: <CACk0-C9jZatg+v=7DPJtkp3G1k_eiZbwSPDAgqabMyedmKd9YA@mail.gmail.com> <4E5C8EA3.7060304@gmail.com> <CACk0-C8E2uaB-Ben5K0e7dzC9RC_WDoXx8mV4B-PN4LPYGs92g@mail.gmail.com> <20110830181639.GB24865@kroah.com>
-In-Reply-To: <20110830181639.GB24865@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Matt Fleming <matt@console-pimps.org>
+CC: Matthew Garrett <mjg@redhat.com>, Jan Beulich <JBeulich@novell.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Avi Kivity <avi@redhat.com>, MarceloTosatti <mtosatti@redhat.com>,
+        johnstultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>  <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>  <4E4009A50200007800050258@nat28.tlf.novell.com>  <20110810090330.GF26762@elte.hu>  <4E426D4702000078000508B5@nat28.tlf.novell.com>  <20110810095140.GB21059@elte.hu>  <4E429FE30200007800050910@nat28.tlf.novell.com>  <1313432283.3436.110.camel@mfleming-mobl1.ger.corp.intel.com>  <4E4A28AE0200007800051605@nat28.tlf.novell.com>  <1313486068.3436.116.camel@mfleming-mobl1.ger.corp.intel.com>  <20110830154530.GA28071@srcf.ucam.org> <1314720465.3649.2.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1314720465.3649.2.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2011 08:16 PM, Greg KH wrote:
-> On Tue, Aug 30, 2011 at 11:37:33PM +0530, Vishnupradeep wrote:
->> Yes, i am sure. I just downloaded from kernel.org and ran "make"
->
-> That's not how to properly configure and build a kernel.  Have you read
-> the documentation on how to do this?  Can you attach your .config file
-> that you used and ran into this error?
+On 08/30/2011 09:07 AM, Matt Fleming wrote:
+> On Tue, 2011-08-30 at 16:45 +0100, Matthew Garrett wrote:
+>> Could this be applied? 32-bit EFI boot is currently completely broken.
+> 
+> Thanks for the reminder Matthew, I'll resend this now.
 
-Well, there is nothing like "#Define" on that line:
-$ wget ftp://ftp.kernel.org/pub/linux/kernel/v3.0/linux-3.0.4.tar.bz2
-...
-2011-08-30 20:18:53 (8.88 MB/s) - `linux-3.0.4.tar.bz2' saved [76759291]
+Point me to the current version and I'll put it in.
 
-$ tar xf linux-3.0.4.tar.bz2
-$ sed -n '668 p' linux-3.0.4/arch/x86/include/asm/unistd_64.h
-#define __NR_fanotify_mark                      301
+	-hpa
 
 
-
-
-So my guess is that he has a failing memory. (Single bit flip in d->D.)
-
-regards,
--- 
-js
