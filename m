@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756454Ab1H3TPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:15:50 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:42495 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756407Ab1H3TPd (ORCPT
+	id S1756502Ab1H3TQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:16:12 -0400
+Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:37258
+	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756368Ab1H3TP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:15:33 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="113875278"
-Message-Id: <20110830190803.029001543@codeaurora.org>
-User-Agent: quilt/0.48-1
-Date: Tue, 30 Aug 2011 14:08:04 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch v2 35/35] Hexagon: Add self to MAINTAINERS
-References: <20110830190729.923334292@codeaurora.org>
-Content-Disposition: inline; filename=maintainer.diff
+	Tue, 30 Aug 2011 15:15:28 -0400
+Message-ID: <4E5D36C7.5020706@kernel.dk>
+Date: Tue, 30 Aug 2011 13:15:19 -0600
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] block: introduce __bio_endio()
+References: <1314589660-2918-1-git-send-email-namhyung@gmail.com> <1314589660-2918-3-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1314589660-2918-3-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+On 2011-08-28 21:47, Namhyung Kim wrote:
+> Currently, bio_endio() lacks its completion tracepoint in it,
+> so that the bio-based devices - except DM which inserted the
+> tracepoint explicitly - cannot send us such an event when using
+> blktrace. Adding the tracepoint in the function will fix this.
+> 
+> However, bio_endio() is also used for other ways like some
+> nested bio-handling path and request-based devices. Simply
+> adding will result in duplicated event for those cases. Thus
+> add new __bio_endio() function to do things as before but no
+> tracepoint. Similarly, __bio_io_error() helper was added too.
 
----
- MAINTAINERS |    6 ++++++
- 1 file changed, 6 insertions(+)
+Not crazy about this solution, it seems a little fragile. And it's hard
+to know what the difference between bio_endio() and __bio_endio() is
+without looking at the code.
 
-Index: linux-hexagon-kernel/MAINTAINERS
-===================================================================
---- linux-hexagon-kernel.orig/MAINTAINERS	2011-08-30 12:52:36.325009556 -0500
-+++ linux-hexagon-kernel/MAINTAINERS	2011-08-30 12:53:00.085050805 -0500
-@@ -5279,6 +5279,12 @@
- F:	include/linux/qnx4_fs.h
- F:	include/linux/qnxtypes.h
- 
-+QUALCOMM HEXAGON ARCHITECTURE
-+M:	Richard Kuo <rkuo@codeaurora.org>
-+L:	linux-hexagon@vger.kernel.org
-+S:	Supported
-+F:	arch/hexagon/
-+
- RADOS BLOCK DEVICE (RBD)
- F:	include/linux/qnxtypes.h
- M:	Yehuda Sadeh <yehuda@hq.newdream.net>
+I think it would be cleaner to mark a bio as going inflight, so that we
+can check this flag on completion. If it's never been in flight, don't
+trigger a completion event trace for it.
 
---
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-- 
+Jens Axboe
 
