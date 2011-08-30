@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1H3WnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 18:43:13 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:59724 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752446Ab1H3WnM (ORCPT
+	id S1753307Ab1H3WoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 18:44:13 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43139 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab1H3WoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 18:43:12 -0400
-X-Sasl-enc: XZyIN7fuRg1jPJBqsyv7szUxdOrLEcOs3xtZLisKFN9w 1314744191
-Date: Tue, 30 Aug 2011 15:38:29 -0700
-From: Greg KH <greg@kroah.com>
-To: Faidon Liambotis <paravoid@debian.org>
-Cc: linux-kernel@vger.kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        MINOURA Makoto <minoura@valinux.co.jp>, Ingo Molnar <mingo@elte.hu>,
-        stable@kernel.org,
-        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        john stultz <johnstul@us.ibm.com>, Rand@jasper.es,
-        Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>
-Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
-Message-ID: <20110830223829.GB17450@kroah.com>
-References: <20110712041938.GO27254@1wt.eu>
- <1310690138.3367.61.camel@work-vm>
- <1310724097.2586.296.camel@twins>
- <1310752795.2945.4.camel@work-vm>
- <20110721072256.GE9216@elte.hu>
- <1311251098.29152.130.camel@twins>
- <20110721125008.GF11246@pcnci.linuxbox.cz>
- <1311252799.29152.147.camel@twins>
- <20110721184524.GB381@elte.hu>
- <20110825185616.GA17078@faidon.noc.grnet.gr>
+	Tue, 30 Aug 2011 18:44:12 -0400
+Date: Wed, 31 Aug 2011 00:44:06 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 12/32] nohz: Try not to give the timekeeping duty to a
+ cpuset nohz cpu
+Message-ID: <20110830224404.GE15953@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-13-git-send-email-fweisbec@gmail.com>
+ <1314629745.2816.84.camel@twins>
+ <20110830151704.GV9748@somewhere.redhat.com>
+ <1314718648.5812.20.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110825185616.GA17078@faidon.noc.grnet.gr>
+In-Reply-To: <1314718648.5812.20.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 09:56:16PM +0300, Faidon Liambotis wrote:
-> On Thu, Jul 21, 2011 at 08:45:25PM +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
+On Tue, Aug 30, 2011 at 05:37:28PM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-08-30 at 17:17 +0200, Frederic Weisbecker wrote:
+> > On Mon, Aug 29, 2011 at 04:55:45PM +0200, Peter Zijlstra wrote:
+> > > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> > > > Try to give the timekeeing duty to a CPU that doesn't belong
+> > > > to any nohz cpuset when possible, so that we increase the chance
+> > > > for these nohz cpusets to run their CPUs out of periodic tick
+> > > > mode. 
+> > > 
+> > > You and Dmitiri might want to get together:
+> > > 
+> > > lkml.kernel.org/r/20110823195628.GB4533@sgi.com
 > > 
-> > > On Thu, 2011-07-21 at 14:50 +0200, Nikola Ciprich wrote:
-> > > > thanks for the patch! I'll put this on our testing boxes...
-> > > 
-> > > With a patch that frobs the starting value close to overflowing I hope,
-> > > otherwise we'll not hear from you in like 7 months ;-)
-> > > 
-> > > > Are You going to push this upstream so we can ask Greg to push this to
-> > > > -stable? 
-> > > 
-> > > Yeah, I think we want to commit this with a -stable tag, Ingo?
+> > Right!
 > > 
-> > yeah - and we also want a Reported-by tag and an explanation of how 
-> > it can crash and why it matters in practice. I can then stick it into 
-> > the urgent branch for Linus. (probably will only hit upstream in the 
-> > merge window though.)
+> > There is another missing piece in my patchset. If every non adaptive-nohz
+> > CPUs are sleeping, then none is handling the do_timer duty and adaptive nohz
+> > CPUs run with a stale jiffies and walltime.
 > 
-> Has this been pushed or has the problem been solved somehow? Time is
-> against us on this bug as more boxes will crash as they reach 200 days
-> of uptime...
-> 
-> In any case, feel free to use me as a Reported-by, my full report of the
-> problem being <20110430173905.GA25641@tty.gr>.
-> 
-> FWIW and if I understand correctly, my symptoms were caused by *two*
-> different bugs:
-> a) the 54 bits wraparound at 208 days that Peter fixed above,
-> b) a kernel crash at ~215 days related to RT tasks, fixed by
-> 305e6835e05513406fa12820e40e4a8ecb63743c (already in -stable).
+> Doesn't nohz already deal with the case of all cpus being idle? In that
+> case the cpu that wakes up first gets to play catch up on irq_enter() or
+> so.
 
-So, what do I do here as part of the .32-longterm kernel?  Is there a
-fix that is in Linus's tree that I need to apply here?
-
-confused,
-
-greg k-h
+Sure and that works for the nohz idle case. But that's not enough anymore
+in the case of adaptive nohz CPUs. They can run for a while without the tick
+and if nobody else maintains a tick either then jiffies and walltime are
+not maintained anymore.
