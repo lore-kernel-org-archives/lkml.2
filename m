@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab1H3WG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 18:06:59 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:6805 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab1H3WG5 (ORCPT
+	id S1752543Ab1H3WTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 18:19:44 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:53807 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab1H3WTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 18:06:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=gGcT/818Up6hqvQHDGx9mJAC/HgF6riwnrHj20B32JhGeq+ESBng186O0ZwEI5TXG
-	xX3aEzUmd83hlJLD3rrJw==
-Date: Tue, 30 Aug 2011 15:06:51 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch 1/2] oom: remove oom_disable_count
-In-Reply-To: <20110830152856.GA22754@redhat.com>
-Message-ID: <alpine.DEB.2.00.1108301503510.2730@chino.kir.corp.google.com>
-References: <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com> <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com>
- <4E369372.80105@jp.fujitsu.com> <20110829183743.GA15216@redhat.com> <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com> <alpine.DEB.2.00.1108300040490.21066@chino.kir.corp.google.com> <20110830152856.GA22754@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 30 Aug 2011 18:19:43 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb (v4l2_device_disconnect+0x11/0x30)
+Date: Wed, 31 Aug 2011 00:20:10 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.7.0; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <20110829204846.GA14699@sucs.org>
+In-Reply-To: <20110829204846.GA14699@sucs.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108310020.10493.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011, Oleg Nesterov wrote:
+Hi,
 
-> > @@ -447,6 +431,9 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
-> >  	for_each_process(q)
-> >  		if (q->mm == mm && !same_thread_group(q, p) &&
-> >  		    !(q->flags & PF_KTHREAD)) {
+On Monday 29 August 2011 22:48:46 Sitsofe Wheeler wrote:
+> Hi,
 > 
-> (I guess this is on top of -mm patch)
-> 
+> I managed to produce an oops in 3.1.0-rc3-00270-g7a54f5e by unplugging a
+> USB webcam.
 
-Yes, it's based on 
-oom-avoid-killing-kthreads-if-they-assume-the-oom-killed-threads-mm.patch 
-which I thought would be pushed for the 3.1 rc series, we certainly don't 
-want to SIGKILL kthreads :)
+Thanks for the report. Can you reproduce this on v3.0 ? What were the exact 
+steps that led to the crash ?
 
-> > +			if (q->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
-> > +				continue;
-> > +
-> 
-> Afaics, this is the only change apart from "removes mm->oom_disable_count
-> entirely", looks reasonable to me.
-> 
+-- 
+Regards,
 
-Yeah, it's necessary because this loop in oom_kill_task() kills all 
-user threads in different thread groups unconditionally if they share the 
-same mm, so we need to ensure that we aren't sending a SIGKILL to anything 
-that is actually oom disabled.  Before, the check in oom_badness() would 
-have prevented the task (`p' in this function) from being chosen in the 
-first place.
+Laurent Pinchart
