@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab1H3QVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 12:21:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39260 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab1H3QVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 12:21:43 -0400
-Date: Tue, 30 Aug 2011 18:17:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Ying Han <yinghan@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, roland@hack.frob.com,
-        tj@kernel.org, dvlasenk@redhat.com, matt.fleming@linux.intel.com,
-        linux-kernel@vger.kernel.org, avagin@openvz.org, fhrbata@redhat.com
-Subject: Re: mm->oom_disable_count is broken
-Message-ID: <20110830161743.GC22754@redhat.com>
-References: <20110727163610.GJ23793@redhat.com> <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com> <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com> <4E369372.80105@jp.fujitsu.com> <20110829183743.GA15216@redhat.com> <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com>
+	id S1755746Ab1H3QZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 12:25:53 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1961 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab1H3QZv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 12:25:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 30 Aug 2011 09:25:25 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dilan Lee <dilee@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@google.com>
+Date: Tue, 30 Aug 2011 09:25:24 -0700
+Subject: RE: [PATCH] i2c/tegra: I2C driver uses the
+ suspend_noirq/resume_noirq
+Thread-Topic: [PATCH] i2c/tegra: I2C driver uses the
+ suspend_noirq/resume_noirq
+Thread-Index: AcxipYooKUwOWBpMSfeE5QkubxGA9gEi65Qg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B3279D4F@HQMAIL01.nvidia.com>
+References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
+	<CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
+	<20110806084805.GA18098@sirena.org.uk>
+	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
+	<CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
+	<CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
+	<1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
+	<CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
+	<20110812031433.GE10218@opensource.wolfsonmicro.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
+ <CAMbhsRRRa_JV8_LHEvsM2h3e8Hbf1GAcpXz8gdU3wCc8Jgz5gw@mail.gmail.com>
+In-Reply-To: <CAMbhsRRRa_JV8_LHEvsM2h3e8Hbf1GAcpXz8gdU3wCc8Jgz5gw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29, David Rientjes wrote:
->
-> On Mon, 29 Aug 2011, Oleg Nesterov wrote:
->
-> > And. personally I dislike it because ->oom_disable_count is just another
-> > proof that ->oom_score_adj should be in ->mm, not per-process. IIRC,
-> > you already explained me why we can't do this, but - sorry - I forgot.
-> > May be something with vfork... Could you explain this again?
->
-> I actually really wanted oom_score_adj to be in the ->mm, it would
-> simplify a lot of the code :)  The problem was the inheritance property:
-> we expect a job scheduler that is OOM_DISABLE to be able to vfork, change
-> the oom_score_adj of the child, and then exec so that it is not oom
-> disabled before starting to allocate memory.
+Ben, Arnd,
 
-Ah, I see. Thanks.
+Could you please ack/nack the patch at the start of this thread for Colin;
+see below.
 
-And yes, now I recall this is what you already explained ;)
+Thanks.
 
-Damn.
+Colin Cross wrote at Wednesday, August 24, 2011 3:34 PM:
+> On Wed, Aug 24, 2011 at 2:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> > Mark Brown wrote at Thursday, August 11, 2011 9:15 PM:
+> >> On Thu, Aug 11, 2011 at 07:59:27PM -0700, Colin Cross wrote:
+> >> > On Thu, Aug 11, 2011 at 5:45 PM, Mark Brown
+> >>
+> >> > > For example with ASoC we'd sort all the components before the ASoC card
+> >> > > without regard for their bus dependencies or any other dependencies they
+> >> > > have (eg, their regulators). Since the ASoC card is a platform device
+> >> > > it's likely to have registered early with no regard for where the buses
+> >> > > the card needs are registered. I'd expect there's a reasonable chance
+> >> > > it'll actually make things worse in the short term.
+> >>
+> >> > You can't just move everything after the card, you have to move
+> >> > everything after the last device that was probed, and it only works if
+> >> > nothing depends on any of the devices that are moved.
+> >>
+> >> Sorry, I said that the wrong way round due to trying to reply quickly -
+> >> the card would be the thing that moves since that's the thing that
+> >> actually does the suspend but we've *no* idea which device we need to
+> >> move it after.  Since all the function does is a direct move after or
+> >> before a single device all we can do is pick one and pray that it's the
+> >> right device.
+> >
+> > Colin,
+> >
+> > This thread seems to have died down; how should we make progress?
+> >
+> > It sounds like the suspend_irq solution is the current de-facto standard;
+> > not optimal, but all we really have right now and already in use. I could
+> > certainly see avoiding this solution if it was the first time it was
+> > employed, but re-using it seems reasonable to me?
+> >
+> > Alternatively, are you attending either Linux Plumbers Conference or the
+> > Kernel Summit? Mark implied this topic might well come up for discussion
+> > there. Unfortunately, I won't be able to make LPC due to a conflict.
+> I don't think I'll be able to make it.
+> 
+> > (and you'd mentioned having the subsystem maintainers weigh in on this;
+> > which sub-system; IRQ, power, I2C, ...?)
+> 
+> If Ben says its OK, its fine with me.  Or maybe Arnd wants to weigh in?
 
-Oleg.
+-- 
+nvpublic
 
