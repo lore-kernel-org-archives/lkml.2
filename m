@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab1H3RsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 13:48:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40747 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab1H3RsG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 13:48:06 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Dave Jones <davej@redhat.com>
-Subject: Re: 3.1.0-rc2 block related lockdep report.
-Date: Tue, 30 Aug 2011 19:48:02 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.4; i686; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, jaxboe@fusionio.com
-References: <20110819215754.GA12746@redhat.com>
-In-Reply-To: <20110819215754.GA12746@redhat.com>
+	id S1755894Ab1H3Rwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 13:52:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36985 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755848Ab1H3Rwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 13:52:32 -0400
+Message-ID: <4E5D2336.50506@redhat.com>
+Date: Tue, 30 Aug 2011 13:51:50 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201108301948.02553.maciej.rutecki@gmail.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH 1/3] Correct isolate_mode_t bitwise type
+References: <cover.1321112552.git.minchan.kim@gmail.com> <e139175e938d94c0c977edd05ae07cbad7a72cc5.1321112552.git.minchan.kim@gmail.com>
+In-Reply-To: <e139175e938d94c0c977edd05ae07cbad7a72cc5.1321112552.git.minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 19 sierpnia 2011 o 23:57:54 Dave Jones wrote:
-> Just got this while running kvm. (this is from the host)
-> 
-> 	Dave
-> 
-> =================================
-> [ INFO: inconsistent lock state ]
-> 3.1.0-rc2+ #139
-> ---------------------------------
-[...]
+On 11/12/2011 11:37 AM, Minchan Kim wrote:
+> [c1e8b0ae8, mm-change-isolate-mode-from-define-to-bitwise-type]
+> made a mistake on the bitwise type.
+>
+> This patch corrects it.
+>
+> CC: Mel Gorman<mgorman@suse.de>
+> CC: Johannes Weiner<jweiner@redhat.com>
+> CC: Rik van Riel<riel@redhat.com>
+> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=42082
-for your bug report, please add your address to the CC list in there, thanks!
+Reviewed-by: Rik van Riel <riel@redhat.com>
+
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+All rights reversed
