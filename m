@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab1H3Ar7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 20:47:59 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55484 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab1H3Ar5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 20:47:57 -0400
+	id S1751626Ab1H3AzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 20:55:18 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63386 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799Ab1H3AzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 20:55:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,299,1312182000"; 
+   d="scan'208";a="43721132"
+Message-ID: <4E5C34F2.3030507@intel.com>
+Date: Tue, 30 Aug 2011 08:55:14 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
 MIME-Version: 1.0
-In-Reply-To: <1314269645-18607-1-git-send-email-w.sang@pengutronix.de>
-References: <1314269645-18607-1-git-send-email-w.sang@pengutronix.de>
-Date: Tue, 30 Aug 2011 09:47:56 +0900
-X-Google-Sender-Auth: scNlcKFOhiaFRcvntjs2YLM7EOM
-Message-ID: <CAH9JG2XD_8_Vj9t-yN57VsPtCgo84FDLD7VmVwTM3+cNzKvAug@mail.gmail.com>
-Subject: Re: [PATCH] misc: Remove obsolete cleanup for clientdata
-From: Kyungmin Park <kmpark@infradead.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Minkyu Kang <mk7.kang@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org
+To: Pavel Ivanov <paivanof@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: APEI: Can not request iomem region for GARs
+References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com> <4E520149.3010802@intel.com> <CAG1a4rtMnDXSGLkmwE+6N9smoghWp0W4b5-X_gogzJ9fDLTeBg@mail.gmail.com> <4E571D66.1070302@intel.com> <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com> <4E5AE82E.6000807@intel.com> <CAG1a4rsyQ5Ox_5i7K9tZT5q3YAnwRiG4uPkAkyY8JUZUjDkHpQ@mail.gmail.com> <4E5B221B.4080309@intel.com> <CAG1a4rv2EhRE6O_0MT5NMN1T=087AZs3kBgv3iBTMsMbOpU+vQ@mail.gmail.com>
+In-Reply-To: <CAG1a4rv2EhRE6O_0MT5NMN1T=087AZs3kBgv3iBTMsMbOpU+vQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+On 08/29/2011 10:43 PM, Pavel Ivanov wrote:
+> On Mon, Aug 29, 2011 at 1:22 AM, Huang Ying <ying.huang@intel.com> wrote:
+>> -ENOENT is returned for apei_exec_run(, ACPI_ERST_GET_ERROR_RANGE).
+>> That is there is no instructions for mandatory action
+>> ACPI_ERST_GET_ERROR_RANGE.  It should be a firmware bug, try raise it to
+>> firmware vendor?
+> 
+> Could you please advise me on how should I do that? Do I need to
+> report this issue to my motherboard vendor (which is Asus)? If yes
+> then should it be via the standard technical support channel (like
+> http://vip.asus.com/eservice/techserv.aspx) or something more special?
 
-On Thu, Aug 25, 2011 at 7:54 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> A few new i2c-drivers came into the kernel which clear the clientdata-pointer
-> on exit or error. This is obsolete meanwhile, the core will do it.
->
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Minkyu Kang <mk7.kang@samsung.com>
-> Cc: Donggeun Kim <dg77.kim@samsung.com>
-> ---
->  drivers/misc/fsa9480.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/misc/fsa9480.c b/drivers/misc/fsa9480.c
-> index 5325a7e..22e22ad 100644
-> --- a/drivers/misc/fsa9480.c
-> +++ b/drivers/misc/fsa9480.c
-> @@ -457,7 +457,6 @@ fail2:
->        if (client->irq)
->                free_irq(client->irq, NULL);
->  fail1:
-> -       i2c_set_clientdata(client, NULL);
->        kfree(usbsw);
->        return ret;
->  }
-> @@ -467,7 +466,6 @@ static int __devexit fsa9480_remove(struct i2c_client *client)
->        struct fsa9480_usbsw *usbsw = i2c_get_clientdata(client);
->        if (client->irq)
->                free_irq(client->irq, NULL);
-> -       i2c_set_clientdata(client, NULL);
->
->        sysfs_remove_group(&client->dev.kobj, &fsa9480_group);
->        device_init_wakeup(&client->dev, 0);
-> --
-> 1.7.5.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Sorry, I don't know how to do that too.
+
+Best Regards,
+Huang Ying
