@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab1H3CRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 22:17:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42326 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab1H3CRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 22:17:17 -0400
+	id S1751833Ab1H3CcA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 22:32:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63086 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193Ab1H3Cb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 22:31:57 -0400
+Message-ID: <4E5C4C20.3000403@cn.fujitsu.com>
+Date: Tue, 30 Aug 2011 10:34:08 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzuY+U0nf58-9P5CFaYAPKMQ3fQMGGUUkjbxRRCK7=A3Q@mail.gmail.com>
-References: <4E582577.2060805@zytor.com> <CA+55aFzkpt48EPdVrs3aoALXnqAwqHfUCeZOpvf874O8Y8+POQ@mail.gmail.com>
- <4E582EAA.1040108@zytor.com> <CA+55aFxdRMxWLh1B_8v29qFafM425uH7kbYRfqoPe3TpVwOx-w@mail.gmail.com>
- <CA+55aFyVmA_26LYaJH8dnFhwo7LWM6Ck7qFxCQvnROEHSuV_aA@mail.gmail.com>
- <4E584492.5090406@zytor.com> <CA+55aFw8+fkwjgAYOzxnO1HY3uCBCuf+N6z1XX2m=FhSjD5Wqg@mail.gmail.com>
- <CAMuHMdXhdg6GuJqSjK5SdKBrBzZwGYus2LH1yqgkSnSEp8ZXyg@mail.gmail.com> <CA+55aFzuY+U0nf58-9P5CFaYAPKMQ3fQMGGUUkjbxRRCK7=A3Q@mail.gmail.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Mon, 29 Aug 2011 22:16:56 -0400
-Message-ID: <CAGZ=bqKjnsEKz_CxcW+wRoCL_CY-kipedf2wB=BVUWRB0427tw@mail.gmail.com>
-Subject: Re: RFD: x32 ABI system call numbers
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 01/11] KVM: MMU: avoid pte_list_desc running out in kvm_mmu_pte_write
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-30 10:30:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-30 10:30:56,
+	Serialize complete at 2011-08-30 10:30:56
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 21:48, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Aug 29, 2011 at 12:01 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> Which will break all this non-portable 32-bit-only source code x32 was invented
->> for in the first place?
->
-> There are absolutely ZERO compatibility issues.
->
-> If you want compatibility, you run traditional 32-bit x86.
->
-> If you want full 64-bit, you run standard x86-64 binaries.
->
-> x32 is *not* about compatibility. It's about pure performance, and
-> perhaps smaller binaries. Nothing else. If you start blathering about
-> "compatibility", you're so on the wrong track that it isn't even
-> funny!
+kvm_mmu_pte_write is unsafe since we need to alloc pte_list_desc in the
+function when spte is prefetched, unfortunately, we can not know how many
+spte need to be prefetched on this path, that means we can use out of the
+free  pte_list_desc object in the cache, and BUG_ON() is triggered, also some
+path does not fill the cache, such as INS instruction emulated that does not
+trigger page fault
 
-I agree.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   25 ++++++++++++++++++++-----
+ 1 files changed, 20 insertions(+), 5 deletions(-)
 
-This is exactly the same reason that PowerPC64 systems are 99%+
-32-bit binaries.
-
-When "64-bit" doesn't magically mean "more registers" or "vector ops",
-then all it really does is chew up twice as much RAM for every pointer.
-
-The only programs which really care are those which map many gigs
-of stuff into memory (IE: big databases, etc).  Even "git" on some
-pretty outrageously large repositories can pretty easily page between
-pack files without much overhead.
-
-The goal of x32 as I understand it is to allow 32-bit x86 programs to
-use all the nifty extra registers and faster instructions (IE: syscall)
-without needing to deal with the 2x memory overhead of 64-bit
-pointers.
-
-Cheers,
-Kyle Moffett
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 5d7fbf0..b01afee 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -592,6 +592,11 @@ static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
+ 	return 0;
+ }
+ 
++static int mmu_memory_cache_free_objects(struct kvm_mmu_memory_cache *cache)
++{
++	return cache->nobjs;
++}
++
+ static void mmu_free_memory_cache(struct kvm_mmu_memory_cache *mc,
+ 				  struct kmem_cache *cache)
+ {
+@@ -969,6 +974,14 @@ static unsigned long *gfn_to_rmap(struct kvm *kvm, gfn_t gfn, int level)
+ 	return &linfo->rmap_pde;
+ }
+ 
++static bool rmap_can_add(struct kvm_vcpu *vcpu)
++{
++	struct kvm_mmu_memory_cache *cache;
++
++	cache = &vcpu->arch.mmu_pte_list_desc_cache;
++	return mmu_memory_cache_free_objects(cache);
++}
++
+ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+ {
+ 	struct kvm_mmu_page *sp;
+@@ -3585,6 +3598,12 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		break;
+ 	}
+ 
++	/*
++	 * No need to care whether allocation memory is successful
++	 * or not since pte prefetch is skiped if it does not have
++	 * enough objects in the cache.
++	 */
++	mmu_topup_memory_caches(vcpu);
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+ 		gentry = 0;
+@@ -3655,7 +3674,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 			mmu_page_zap_pte(vcpu->kvm, sp, spte);
+ 			if (gentry &&
+ 			      !((sp->role.word ^ vcpu->arch.mmu.base_role.word)
+-			      & mask.word))
++			      & mask.word) && rmap_can_add(vcpu))
+ 				mmu_pte_write_new_pte(vcpu, sp, spte, &gentry);
+ 			if (!remote_flush && need_remote_flush(entry, *spte))
+ 				remote_flush = true;
+@@ -3716,10 +3735,6 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
+ 		goto out;
+ 	}
+ 
+-	r = mmu_topup_memory_caches(vcpu);
+-	if (r)
+-		goto out;
+-
+ 	er = x86_emulate_instruction(vcpu, cr2, 0, insn, insn_len);
+ 
+ 	switch (er) {
+-- 
+1.7.5.4
