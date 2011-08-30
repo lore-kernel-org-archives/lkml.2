@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab1H3F17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 01:27:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49082 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568Ab1H3F15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 01:27:57 -0400
-Date: Tue, 30 Aug 2011 05:27:28 GMT
-From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Message-ID: <tip-61e2cd0acc248c14793cefd7e23e209be9e0b70d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        jeremy.fitzhardinge@citrix.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com,
-        jeremy.fitzhardinge@citrix.com
-In-Reply-To: <4E5BCC40.3030501@goop.org>
-References: <4E5BCC40.3030501@goop.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] x86, cmpxchg: Use __compiletime_error() to make usage messages a bit nicer
-Git-Commit-ID: 61e2cd0acc248c14793cefd7e23e209be9e0b70d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751702Ab1H3Fcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 01:32:35 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35085
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750842Ab1H3Fcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 01:32:32 -0400
+Date: Tue, 30 Aug 2011 01:32:31 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Daniel Ehrenberg <dehrenberg@google.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Approaches to making io_submit not block
+Message-ID: <20110830053231.GA1627@infradead.org>
+References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Tue, 30 Aug 2011 05:27:48 +0000 (UTC)
+In-Reply-To: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  61e2cd0acc248c14793cefd7e23e209be9e0b70d
-Gitweb:     http://git.kernel.org/tip/61e2cd0acc248c14793cefd7e23e209be9e0b70d
-Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-AuthorDate: Mon, 29 Aug 2011 14:47:58 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 29 Aug 2011 17:20:40 -0700
+On Mon, Aug 29, 2011 at 10:33:24AM -0700, Daniel Ehrenberg wrote:
+> - Blocking due to reading metadata.
+> Proposed solution:
+> Add a per-ioctx work queue to do metadata reads. It will be triggered
+> from the dio code: if in async mode, then get_block will be called
+> with an additional flag, meaning something like O_NONBLOCK on sockets.
+> File systems' get_block functions can implement this flag and return
+> -EAGAIN if a read from the underlying device would be necessary. (If
+> we're worried that EAGAIN might be used for other purposes in the
+> future, we could make a new errno for this purpose.) From a quick
+> glance at the code, it looks like this would not be too difficult to
+> add to ext4 for extent-based files, and support in other file systems
+> could be added gradually. If -EAGAIN is returned, then the struct dio
+> will be put on the work queue together with a description of what kind
+> of processing it was doing. The work queue only serves the metadata
+> request, and the rest of the request is served on the existing path.
 
-x86, cmpxchg: Use __compiletime_error() to make usage messages a bit nicer
+Let filesystems handle this.  I've actually prototyped it in XFS,
+based on some pending work from Dave but at this point it's still butt
+ugly.
 
-Use __compiletime_error() to produce a compile-time error rather than
-link-time, where available.
+> - Blocking for appends and writes to file holes due to the need for a
+> metadata write after the data write
+> Proposed solution:
+> Maintain a work queue for all appends and writes to file holes, which
+> executes the current code.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Link: http://lkml.kernel.org/r/4E5BCC40.3030501@goop.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/cmpxchg.h |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
+No way.  I've fixed this for XFS, and it's trivial without the need to
+queue them up.  The only thing preventing appending writes to work is
+a flag to tell the dio layer to just do them, just like it already works
+for holes.  (and more QA).
 
-diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index 0d0d9cd..5d3acdf 100644
---- a/arch/x86/include/asm/cmpxchg.h
-+++ b/arch/x86/include/asm/cmpxchg.h
-@@ -1,12 +1,19 @@
- #ifndef ASM_X86_CMPXCHG_H
- #define ASM_X86_CMPXCHG_H
- 
-+#include <linux/compiler.h>
- #include <asm/alternative.h> /* Provides LOCK_PREFIX */
- 
--/* Non-existant functions to indicate usage errors at link time. */
--extern void __xchg_wrong_size(void);
--extern void __cmpxchg_wrong_size(void);
--extern void __xadd_wrong_size(void);
-+/*
-+ * Non-existant functions to indicate usage errors at link time
-+ * (or compile-time if the compiler implements __compiletime_error().
-+ */
-+extern void __xchg_wrong_size(void)
-+	__compiletime_error("Bad argument size for xchg");
-+extern void __cmpxchg_wrong_size(void)
-+	__compiletime_error("Bad argument size for cmpxchg");
-+extern void __xadd_wrong_size(void)
-+	__compiletime_error("Bad argument size for xadd");
- 
- /*
-  * Constants for operation sizes. On 32-bit, the 64-bit size it set to
