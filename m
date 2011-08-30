@@ -1,153 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab1H3JRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 05:17:13 -0400
-Received: from krak.alatek.krakow.pl ([46.170.108.42]:1721 "EHLO
-	krak.alatek.krakow.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362Ab1H3JRK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 05:17:10 -0400
-From: Pawel Sikora <pluto@agmk.net>
-To: linux-kernel@vger.kernel.org
-Cc: arekm@pld-linux.org, gregkh@suse.de
-Subject: [3.0.2-stable] BUG: soft lockup - CPU#13 stuck for 22s! [kswapd2:1092]
-Date: Tue, 30 Aug 2011 11:17:07 +0200
-Message-ID: <2282318.Znj0vdeLmO@pawels>
-User-Agent: KMail/4.7.0  (Linux/2.6.38.8-3; KDE/4.7.0; x86_64; ; )
+	id S1753207Ab1H3JUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 05:20:05 -0400
+Received: from lucidpixels.com ([72.73.18.11]:41365 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751740Ab1H3JUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 05:20:01 -0400
+Date: Tue, 30 Aug 2011 05:20:00 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org,
+        netdev@vger.kernel.org
+cc: Alan Piszcz <ap@solarrain.com>
+Subject: 3.1-rc2: WARNING: at net/sched/sch_generic.c:255dev_watchdog+0x23f/0x250()
+ (with frame pointers enabled)
+Message-ID: <alpine.DEB.2.02.1108300516570.5636@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-during copying (cp -ar) ~100GB files from ext2(md1/raid0) to ext4(md2/raid0)
-i've noticed a problem in kernel log:
+While performing some rsyncs and dumps, the igb driver had a problem
+under kernel 3.1-rc2 / Debian Testing:
 
-(...)
-[ 5721.376582] BUG: soft lockup - CPU#13 stuck for 22s! [kswapd2:1092]
-[ 5721.376586] Modules linked in: ext4 jbd2 crc16 nfs fscache binfmt_misc nfsd lockd exportfs nfs_acl auth_rpcgss sunrpc ipmi_si ipmi_devintf ipmi_msghandler sch_sfq iptable_nat 
-nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter xt_TCPMSS xt_tcpudp iptable_mangle ip_tables ip6table_filter ip6_tables x_tables ext2 raid0 dm_mod autofs4 
-dummy usbhid hid ide_cd_mod cdrom ata_generic pata_acpi pata_atiixp sp5100_tco ide_pci_generic ohci_hcd ssb pcmcia igb i2c_piix4 ghes pcmcia_core i2c_core atiixp k10temp 
-ehci_hcd hwmon button hed processor ide_core sg usbcore dca mmc_core amd64_edac_mod edac_core pcspkr edac_mce_amd evdev sd_mod crc_t10dif raid1 md_mod ext3 jbd mbcache ahci 
-libahci libata scsi_mod [last unloaded: scsi_wait_scan]
-[ 5721.376644] CPU 13 
-[ 5721.376646] Modules linked in: ext4 jbd2 crc16 nfs fscache binfmt_misc nfsd lockd exportfs nfs_acl auth_rpcgss sunrpc ipmi_si ipmi_devintf ipmi_msghandler sch_sfq iptable_nat 
-nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter xt_TCPMSS xt_tcpudp iptable_mangle ip_tables ip6table_filter ip6_tables x_tables ext2 raid0 dm_mod autofs4 
-dummy usbhid hid ide_cd_mod cdrom ata_generic pata_acpi pata_atiixp sp5100_tco ide_pci_generic ohci_hcd ssb pcmcia igb i2c_piix4 ghes pcmcia_core i2c_core atiixp k10temp 
-ehci_hcd hwmon button hed processor ide_core sg usbcore dca mmc_core amd64_edac_mod edac_core pcspkr edac_mce_amd evdev sd_mod crc_t10dif raid1 md_mod ext3 jbd mbcache ahci 
-libahci libata scsi_mod [last unloaded: scsi_wait_scan]
-[ 5721.376685] 
-[ 5721.376688] Pid: 1092, comm: kswapd2 Not tainted 3.0.2 #4 Supermicro H8DGU/H8DGU
-[ 5721.376692] RIP: 0010:[<ffffffff810ded2e>]  [<ffffffff810ded2e>] find_get_pages+0x4e/0x130
-[ 5721.376702] RSP: 0018:ffff8804074fdb30  EFLAGS: 00000246
-[ 5721.376705] RAX: ffff8800645ada78 RBX: 0000000000000000 RCX: 0000000000000000
-[ 5721.376707] RDX: ffff8804074fdbd0 RSI: 000000000000000e RDI: ffffea000db458f8
-[ 5721.376709] RBP: ffff8804074fdb80 R08: 0000000000000000 R09: 0000000000000000
-[ 5721.376711] R10: ffffea000db45900 R11: ffff880353cc5178 R12: ffffffff8142194e
-[ 5721.376713] R13: ffff880322e92420 R14: 000000000000000e R15: ffffffff811626dc
-[ 5721.376716] FS:  00007f9576703700(0000) GS:ffff880c1fc40000(0000) knlGS:00000000ee14bb70
-[ 5721.376718] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 5721.376721] CR2: 00007f9576839000 CR3: 0000000001803000 CR4: 00000000000006e0
-[ 5721.376723] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 5721.376725] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 5721.376727] Process kswapd2 (pid: 1092, threadinfo ffff8804074fc000, task ffff880407ae2a00)
-[ 5721.376729] Stack:
-[ 5721.376825]  ffff880c1fc4d8e0 0000000000000005 ffff8803b9175a68 ffffea000db45888
-[ 5721.376833]  ffff8804074fdb80 ffff8804074fdbc0 000000000000010c ffffffffffffffff
-[ 5721.376837]  ffff8803b9175a68 ffffea000db45888 ffff8804074fdba0 ffffffff810e7aed
-[ 5721.376841] Call Trace:
-[ 5721.376935]  [<ffffffff810e7aed>] pagevec_lookup+0x1d/0x30
-[ 5721.376939]  [<ffffffff810e9abf>] invalidate_mapping_pages+0x5f/0x180
-[ 5721.376945]  [<ffffffff81150185>] shrink_icache_memory+0x2d5/0x320
-[ 5721.376950]  [<ffffffff810ec97d>] shrink_slab+0x11d/0x190
-[ 5721.376954]  [<ffffffff810f00fa>] balance_pgdat+0x51a/0x6e0
-[ 5721.376958]  [<ffffffff810f03c2>] kswapd+0x102/0x3e0
-[ 5721.376963]  [<ffffffff81068610>] ? abort_exclusive_wait+0xb0/0xb0
-[ 5721.376966]  [<ffffffff810f02c0>] ? balance_pgdat+0x6e0/0x6e0
-[ 5721.376970]  [<ffffffff81067d87>] kthread+0x87/0x90
-[ 5721.376976]  [<ffffffff81422094>] kernel_thread_helper+0x4/0x10
-[ 5721.376979]  [<ffffffff81067d00>] ? kthread_worker_fn+0x190/0x190
-[ 5721.376983]  [<ffffffff81422090>] ? gs_change+0xb/0xb
-[ 5721.376985] Code: f1 4c 89 e2 4c 89 ef e8 a1 fe 13 00 85 c0 89 c6 0f 84 c7 00 00 00 48 89 da 31 c9 45 31 ff 0f 1f 80 00 00 00 00 48 8b 02 48 8b 38 
-[ 5721.379415]  85 ff 74 3e 40 f6 c7 01 75 5f 44 8b 47 08 45 85 c0 74 ec 45 
-[ 5721.379432] Call Trace:
-[ 5721.379432]  [<ffffffff810e7aed>] pagevec_lookup+0x1d/0x30
-[ 5721.379432]  [<ffffffff810e9abf>] invalidate_mapping_pages+0x5f/0x180
-[ 5721.379432]  [<ffffffff81150185>] shrink_icache_memory+0x2d5/0x320
-[ 5721.379432]  [<ffffffff810ec97d>] shrink_slab+0x11d/0x190
-[ 5721.379432]  [<ffffffff810f00fa>] balance_pgdat+0x51a/0x6e0
-[ 5721.379432]  [<ffffffff810f03c2>] kswapd+0x102/0x3e0
-[ 5721.379432]  [<ffffffff81068610>] ? abort_exclusive_wait+0xb0/0xb0
-[ 5721.379432]  [<ffffffff810f02c0>] ? balance_pgdat+0x6e0/0x6e0
-[ 5721.379432]  [<ffffffff81067d87>] kthread+0x87/0x90
-[ 5721.379432]  [<ffffffff81422094>] kernel_thread_helper+0x4/0x10
-[ 5721.379432]  [<ffffffff81067d00>] ? kthread_worker_fn+0x190/0x190
-[ 5721.379432]  [<ffffffff81422090>] ? gs_change+0xb/0xb
-[ 5749.376580] BUG: soft lockup - CPU#13 stuck for 22s! [kswapd2:1092]
-[ 5749.376583] Modules linked in: ext4 jbd2 crc16 nfs fscache binfmt_misc nfsd lockd exportfs nfs_acl auth_rpcgss sunrpc ipmi_si ipmi_devintf ipmi_msghandler sch_sfq iptable_nat 
-nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter xt_TCPMSS xt_tcpudp iptable_mangle ip_tables ip6table_filter ip6_tables x_tables ext2 raid0 dm_mod autofs4 
-dummy usbhid hid ide_cd_mod cdrom ata_generic pata_acpi pata_atiixp sp5100_tco ide_pci_generic ohci_hcd ssb pcmcia igb i2c_piix4 ghes pcmcia_core i2c_core atiixp k10temp 
-ehci_hcd hwmon button hed processor ide_core sg usbcore dca mmc_core amd64_edac_mod edac_core pcspkr edac_mce_amd evdev sd_mod crc_t10dif raid1 md_mod ext3 jbd mbcache ahci 
-libahci libata scsi_mod [last unloaded: scsi_wait_scan]
-[ 5749.376627] CPU 13
-[ 5749.376628] Modules linked in: ext4 jbd2 crc16 nfs fscache binfmt_misc nfsd lockd exportfs nfs_acl auth_rpcgss sunrpc ipmi_si ipmi_devintf ipmi_msghandler sch_sfq iptable_nat 
-nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter xt_TCPMSS xt_tcpudp iptable_mangle ip_tables ip6table_filter ip6_tables x_tables ext2 raid0 dm_mod autofs4 
-dummy usbhid hid ide_cd_mod cdrom ata_generic pata_acpi pata_atiixp sp5100_tco ide_pci_generic ohci_hcd ssb pcmcia igb i2c_piix4 ghes pcmcia_core i2c_core atiixp k10temp 
-ehci_hcd hwmon button hed processor ide_core sg usbcore dca mmc_core amd64_edac_mod edac_core pcspkr edac_mce_amd evdev sd_mod crc_t10dif raid1 md_mod ext3 jbd mbcache ahci 
-libahci libata scsi_mod [last unloaded: scsi_wait_scan]
-[ 5749.376665]
-[ 5749.376668] Pid: 1092, comm: kswapd2 Not tainted 3.0.2 #4 Supermicro H8DGU/H8DGU
-[ 5749.376671] RIP: 0010:[<ffffffff810ded31>]  [<ffffffff810ded31>] find_get_pages+0x51/0x130
-[ 5749.376678] RSP: 0018:ffff8804074fdb30  EFLAGS: 00000282
-[ 5749.376680] RAX: ffff8800645ada78 RBX: 0000000000000000 RCX: 0000000000000000
-[ 5749.376682] RDX: ffff8804074fdbd0 RSI: 000000000000000e RDI: ffffea000db458f8
-[ 5749.376684] RBP: ffff8804074fdb80 R08: 0000000000000000 R09: 0000000000000000
-[ 5749.376686] R10: ffffea000db45900 R11: ffff880353cc5178 R12: ffffffff8142194e
-[ 5749.376688] R13: ffff880322e92420 R14: 000000000000000e R15: ffffffff811626dc
-[ 5749.376691] FS:  00007f9576703700(0000) GS:ffff880c1fc40000(0000) knlGS:00000000ee14bb70
-[ 5749.376693] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 5749.376696] CR2: 00007f9576839000 CR3: 0000000001803000 CR4: 00000000000006e0
-[ 5749.376698] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 5749.376700] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 5749.376702] Process kswapd2 (pid: 1092, threadinfo ffff8804074fc000, task ffff880407ae2a00)
-[ 5749.376704] Stack:
-[ 5749.376800]  ffff880c1fc4d8e0 0000000000000005 ffff8803b9175a68 ffffea000db45888
-[ 5749.376806]  ffff8804074fdb80 ffff8804074fdbc0 000000000000010c ffffffffffffffff
-[ 5749.376811]  ffff8803b9175a68 ffffea000db45888 ffff8804074fdba0 ffffffff810e7aed
-[ 5749.376815] Call Trace:
-[ 5749.376915]  [<ffffffff810e7aed>] pagevec_lookup+0x1d/0x30
-[ 5749.376919]  [<ffffffff810e9abf>] invalidate_mapping_pages+0x5f/0x180
-[ 5749.376923]  [<ffffffff81150185>] shrink_icache_memory+0x2d5/0x320
-[ 5749.376927]  [<ffffffff810ec97d>] shrink_slab+0x11d/0x190
-[ 5749.376931]  [<ffffffff810f00fa>] balance_pgdat+0x51a/0x6e0
-[ 5749.376935]  [<ffffffff810f03c2>] kswapd+0x102/0x3e0
-[ 5749.376939]  [<ffffffff81068610>] ? abort_exclusive_wait+0xb0/0xb0
-[ 5749.376942]  [<ffffffff810f02c0>] ? balance_pgdat+0x6e0/0x6e0
-[ 5749.376945]  [<ffffffff81067d87>] kthread+0x87/0x90
-[ 5749.376950]  [<ffffffff81422094>] kernel_thread_helper+0x4/0x10
-[ 5749.376953]  [<ffffffff81067d00>] ? kthread_worker_fn+0x190/0x190
-[ 5749.376957]  [<ffffffff81422090>] ? gs_change+0xb/0xb
-[ 5749.376958] Code: e2 4c 89 ef e8 a1 fe 13 00 85 c0 89 c6 0f 84 c7 00 00 00 48 89 da 31 c9 45 31 ff 0f 1f 80 00 00 00 00 48 8b 02 48 8b 38 48 85 ff
-[ 5749.379426]  3e 40 f6 c7 01 75 5f 44 8b 47 08 45 85 c0 74 ec 45 8d 48 01
-[ 5749.379426] Call Trace:
-[ 5749.379426]  [<ffffffff810e7aed>] pagevec_lookup+0x1d/0x30
-[ 5749.379426]  [<ffffffff810e9abf>] invalidate_mapping_pages+0x5f/0x180
-[ 5749.379426]  [<ffffffff81150185>] shrink_icache_memory+0x2d5/0x320
-[ 5749.379426]  [<ffffffff810ec97d>] shrink_slab+0x11d/0x190
-[ 5749.379426]  [<ffffffff810f00fa>] balance_pgdat+0x51a/0x6e0
-[ 5749.379426]  [<ffffffff810f03c2>] kswapd+0x102/0x3e0
-[ 5749.379426]  [<ffffffff81068610>] ? abort_exclusive_wait+0xb0/0xb0
-[ 5749.379426]  [<ffffffff810f02c0>] ? balance_pgdat+0x6e0/0x6e0
-[ 5749.379426]  [<ffffffff81067d87>] kthread+0x87/0x90
-[ 5749.379426]  [<ffffffff81422094>] kernel_thread_helper+0x4/0x10
-[ 5749.379426]  [<ffffffff81067d00>] ? kthread_worker_fn+0x190/0x190
-[ 5749.379426]  [<ffffffff81422090>] ? gs_change+0xb/0xb
+Any clue what is going on here?
 
-machine desc: 2x opteron 6128, 64GB ecc ram, 4x sata 500GB.
+[122150.696831] ------------[ cut here ]------------
+[122150.699843] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x23f/0x250()
+[122150.702625] Hardware name: X8DTH-i/6/iF/6F
+[122150.705397] NETDEV WATCHDOG: eth0 (igb): transmit queue 1 timed out
+[122150.708091] Modules linked in: dm_mod tcp_diag parport_pc ppdev lp parport inet_diag pl2303 ftdi_sio snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq snd_timer snd_seq_device snd soundcore ub cdc_acm usbserial joydev serio_raw nouveau ttm drm_kms_helper drm agpgart i2c_algo_bit mxm_wmi wmi i7core_edac edac_core video
+[122150.714350] Pid: 83, comm: ksoftirqd/19 Not tainted 3.1.0-rc2 #2
+[122150.717267] Call Trace:
+[122150.720173]  [<ffffffff8103798a>] warn_slowpath_common+0x7a/0xb0
+[122150.723076]  [<ffffffff81037a61>] warn_slowpath_fmt+0x41/0x50
+[122150.725999]  [<ffffffff815d55e4>] ? schedule+0x2e4/0x950
+[122150.728964]  [<ffffffff814e39af>] dev_watchdog+0x23f/0x250
+[122150.731735]  [<ffffffff81043832>] run_timer_softirq+0xf2/0x220
+[122150.734565]  [<ffffffff814e3770>] ? qdisc_reset+0x50/0x50
+[122150.737369]  [<ffffffff8103d1c8>] __do_softirq+0x98/0x120
+[122150.740115]  [<ffffffff8103d305>] run_ksoftirqd+0xb5/0x160
+[122150.742846]  [<ffffffff8103d250>] ? __do_softirq+0x120/0x120
+[122150.745611]  [<ffffffff81052277>] kthread+0x87/0x90
+[122150.748378]  [<ffffffff815d9b34>] kernel_thread_helper+0x4/0x10
+[122150.751308]  [<ffffffff810521f0>] ? kthread_worker_fn+0x130/0x130
+[122150.754089]  [<ffffffff815d9b30>] ? gs_change+0xb/0xb
+[122150.756810] ---[ end trace 1dba0c59497c20e3 ]---
+[122150.759653] igb 0000:01:00.0: eth0: Reset adapter
+[122151.388904] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 3 ret -110
+[122153.630957] igb: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX/TX
+[122155.392801] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 2 ret -110
+[122159.396797] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 2 ret -110
+[122163.400706] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 2 ret -110
+[122167.404632] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 2 ret -110
+[122168.417001] BUG: soft lockup - CPU#5 stuck for 23s! [dump:26074]
+[122168.419327] Modules linked in: dm_mod tcp_diag parport_pc ppdev lp parport inet_diag pl2303 ftdi_sio snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq snd_timer snd_seq_device snd soundcore ub cdc_acm usbserial joydev serio_raw nouveau ttm drm_kms_helper drm agpgart i2c_algo_bit mxm_wmi wmi i7core_edac edac_core video
+[122168.424566] CPU 5 
+[122168.424579] Modules linked in: dm_mod tcp_diag parport_pc ppdev lp parport inet_diag pl2303 ftdi_sio snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq snd_timer snd_seq_device snd soundcore ub cdc_acm usbserial joydev serio_raw nouveau ttm drm_kms_helper drm agpgart i2c_algo_bit mxm_wmi wmi i7core_edac edac_core video
+[122168.432567] 
+[122168.435238] Pid: 26074, comm: dump Tainted: G        W   3.1.0-rc2 #2 Supermicro X8DTH-i/6/iF/6F/X8DTH
+[122168.437973] RIP: 0010:[<ffffffff81084480>]  [<ffffffff81084480>] find_get_pages+0x60/0x130
+[122168.440752] RSP: 0018:ffff88036b821ce8  EFLAGS: 00000246
+[122168.443496] RAX: ffff88089a601760 RBX: 000000000000000d RCX: 0000000000000000
+[122168.446251] RDX: ffff88036b821d88 RSI: 000000000000000e RDI: ffffea0027b4da50
+[122168.448983] RBP: ffff88036b821d38 R08: 0000000000000000 R09: ffff88036b821ca8
+[122168.451784] R10: 00000000011801db R11: 000000000000000d R12: ffffffff8108a23d
+[122168.454561] R13: ffff88036b821c68 R14: dead000000100100 R15: ffff88036b821d88
+[122168.457319] FS:  00007f57b6572760(0000) GS:ffff88063fca0000(0000) knlGS:0000000000000000
+[122168.460087] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[122168.462851] CR2: 00007f694be73370 CR3: 00000004c8bf5000 CR4: 00000000000006e0
+[122168.465523] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[122168.468273] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[122168.470986] Process dump (pid: 26074, threadinfo ffff88036b820000, task ffff8800632191f0)
+[122168.473708] Stack:
+[122168.476427]  ffff88063fcad560 0000000000000005 ffff8806270baed8 ffffea0027ba06d8
+[122168.479163]  ffff88036b821d38 ffff88036b821d78 000000000000bbce ffffffffffffffff
+[122168.481883]  ffff8806270baed8 ffffea0027ba06d8 ffff88036b821d58 ffffffff8108c6ed
+[122168.484665] Call Trace:
+[122168.487449]  [<ffffffff8108c6ed>] pagevec_lookup+0x1d/0x30
+[122168.490247]  [<ffffffff8108e490>] invalidate_mapping_pages+0x70/0x1b0
+[122168.493074]  [<ffffffff810eca63>] invalidate_bdev+0x33/0x40
+[122168.495901]  [<ffffffff812daa41>] blkdev_ioctl+0x6c1/0x720
+[122168.498691]  [<ffffffff810f277b>] block_ioctl+0x3b/0x40
+[122168.501472]  [<ffffffff810d4afe>] do_vfs_ioctl+0x8e/0x4e0
+[122168.504249]  [<ffffffff810c390f>] ? do_sys_open+0x16f/0x1d0
+[122168.507009]  [<ffffffff810d4f9a>] sys_ioctl+0x4a/0x80
+[122168.509753]  [<ffffffff815d80bb>] system_call_fastpath+0x16/0x1b
+[122168.512521] Code: 0f 84 c5 00 00 00 48 89 da 31 c9 45 31 ff 0f 1f 44 00 00 48 8b 02 48 8b 38 48 85 ff 74 3e 40 f6 c7 03 75 5f 44 8b 47 1c 45 85 c0 
+[122168.512826]  ec 45 8d 48 01 44 89 c0 4c 8d 57 1c f0 44 0f b1 4f 1c 44 39 
+[122168.518570] Call Trace:
+[122168.521472]  [<ffffffff8108c6ed>] pagevec_lookup+0x1d/0x30
+[122168.524389]  [<ffffffff8108e490>] invalidate_mapping_pages+0x70/0x1b0
+[122168.527311]  [<ffffffff810eca63>] invalidate_bdev+0x33/0x40
+[122168.530208]  [<ffffffff812daa41>] blkdev_ioctl+0x6c1/0x720
+[122168.533034]  [<ffffffff810f277b>] block_ioctl+0x3b/0x40
+[122168.535935]  [<ffffffff810d4afe>] do_vfs_ioctl+0x8e/0x4e0
+[122168.538829]  [<ffffffff810c390f>] ? do_sys_open+0x16f/0x1d0
+[122168.541733]  [<ffffffff810d4f9a>] sys_ioctl+0x4a/0x80
+[122168.544652]  [<ffffffff815d80bb>] system_call_fastpath+0x16/0x1b
+[122168.704524] BUG: soft lockup - CPU#9 stuck for 22s! [dump:26073]
+[122168.708120] Modules linked in: dm_mod tcp_diag parport_pc ppdev lp parport inet_diag pl2303 ftdi_sio snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq snd_timer snd_seq_device snd soundcore ub cdc_acm usbserial joydev serio_raw nouveau ttm drm_kms_helper drm agpgart i2c_algo_bit mxm_wmi wmi i7core_edac edac_core video
+[122168.715998] CPU 9 
+[122168.716013] Modules linked in: dm_mod tcp_diag parport_pc ppdev lp parport inet_diag pl2303 ftdi_sio snd_usb_audio snd_pcm_oss snd_mixer_oss snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq snd_timer snd_seq_device snd soundcore ub cdc_acm usbserial joydev serio_raw nouveau ttm drm_kms_helper drm agpgart i2c_algo_bit mxm_wmi wmi i7core_edac edac_core video
+[122168.728349] 
+[122168.732359] Pid: 26073, comm: dump Tainted: G        W   3.1.0-rc2 #2 Supermicro X8DTH-i/6/iF/6F/X8DTH
+[122168.736393] RIP: 0010:[<ffffffff8108447d>]  [<ffffffff8108447d>] find_get_pages+0x5d/0x130
+[122168.740349] RSP: 0018:ffff880297ca9ce8  EFLAGS: 00000246
+[122168.744217] RAX: ffff880ad266b790 RBX: 000000000000000e RCX: 0000000000000000
+[122168.748065] RDX: ffff880297ca9d88 RSI: 000000000000000e RDI: ffffea0020aaa9f0
+[122168.751937] RBP: ffff880297ca9d38 R08: 0000000000000000 R09: ffff880297ca9ca8
+[122168.755955] R10: 0000000000f80b21 R11: 000000000000000d R12: ffffffff8108a23d
+[122168.759954] R13: ffff880297ca9c68 R14: dead000000100100 R15: ffff880297ca9d88
+[122168.763971] FS:  00007f57b6572760(0000) GS:ffff880c3fc60000(0000) knlGS:0000000000000000
+[122168.767978] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[122168.772030] CR2: ffffffffff600400 CR3: 000000012fce7000 CR4: 00000000000006e0
+[122168.776111] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[122168.780212] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[122168.784309] Process dump (pid: 26073, threadinfo ffff880297ca8000, task ffff8800a1f746f0)
+[122168.788426] Stack:
+[122168.792550]  ffff880c3fc6d560 0000000000000005 ffff8806270baed8 ffffea00229c7800
+[122168.796827]  ffff880297ca9d38 ffff880297ca9d78 000000000000192d ffffffffffffffff
+[122168.801015]  ffff8806270baed8 ffffea00229c7800 ffff880297ca9d58 ffffffff8108c6ed
+[122168.801019] Call Trace:
+[122168.801024]  [<ffffffff8108c6ed>] pagevec_lookup+0x1d/0x30
+[122168.801027]  [<ffffffff8108e490>] invalidate_mapping_pages+0x70/0x1b0
+[122168.801031]  [<ffffffff810eca63>] invalidate_bdev+0x33/0x40
+[122168.801034]  [<ffffffff812daa41>] blkdev_ioctl+0x6c1/0x720
+[122168.801037]  [<ffffffff810f277b>] block_ioctl+0x3b/0x40
+[122168.801041]  [<ffffffff810d4afe>] do_vfs_ioctl+0x8e/0x4e0
+[122168.801044]  [<ffffffff810c390f>] ? do_sys_open+0x16f/0x1d0
+[122168.801047]  [<ffffffff810d4f9a>] sys_ioctl+0x4a/0x80
+[122168.801051]  [<ffffffff815d80bb>] system_call_fastpath+0x16/0x1b
+[122168.801052] Code: c0 89 c6 0f 84 c5 00 00 00 48 89 da 31 c9 45 31 ff 0f 1f 44 00 00 48 8b 02 48 8b 38 48 85 ff 74 3e 40 f6 c7 03 75 5f 44 8b 47 1c 
+[122168.801059]  85 c0 74 ec 45 8d 48 01 44 89 c0 4c 8d 57 1c f0 44 0f b1 4f 
+[122168.801063] Call Trace:
+[122168.801065]  [<ffffffff8108c6ed>] pagevec_lookup+0x1d/0x30
+[122168.801068]  [<ffffffff8108e490>] invalidate_mapping_pages+0x70/0x1b0
+[122168.801070]  [<ffffffff810eca63>] invalidate_bdev+0x33/0x40
+[122168.801072]  [<ffffffff812daa41>] blkdev_ioctl+0x6c1/0x720
+[122168.801076]  [<ffffffff810f277b>] block_ioctl+0x3b/0x40
+[122168.801079]  [<ffffffff810d4afe>] do_vfs_ioctl+0x8e/0x4e0
+[122168.801081]  [<ffffffff810c390f>] ? do_sys_open+0x16f/0x1d0
+[122168.801084]  [<ffffffff810d4f9a>] sys_ioctl+0x4a/0x80
+[122168.801086]  [<ffffffff815d80bb>] system_call_fastpath+0x16/0x1b
+[122171.658213] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 2 ret -110
+[122175.662216] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 2 ret -110
+[122179.666176] usb 2-2.1: usbfs: USBDEVFS_CONTROL failed cmd usbhid-ups rqt 161 rq 1 len 7 ret -110
+[122181.658123] igb 0000:01:00.1: eth1: Reset adapter
+[122184.820779] igb: eth1 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX/TX
 
-BR,
-Paweł.
+Justin.
 
