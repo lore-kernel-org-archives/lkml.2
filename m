@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab1H3SEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 14:04:52 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:45173 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab1H3SEv (ORCPT
+	id S1755951Ab1H3SH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 14:07:56 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42363 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755848Ab1H3SHy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 14:04:51 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjzYQEROTxg==
-X-RZG-CLASS-ID: mo00
-Date: Tue, 30 Aug 2011 20:04:34 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: Greg KH <greg@kroah.com>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 0000/0046] Staging: hv: Driver cleanup
-Message-ID: <20110830180434.GA10090@aepfle.de>
-References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
- <20110830124856.GA17520@aepfle.de>
- <6E21E5352C11B742B20C142EB499E048081B5363@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20110830174330.GE22868@kroah.com>
+	Tue, 30 Aug 2011 14:07:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110830174330.GE22868@kroah.com>
-User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
+In-Reply-To: <4E5C8EA3.7060304@gmail.com>
+References: <CACk0-C9jZatg+v=7DPJtkp3G1k_eiZbwSPDAgqabMyedmKd9YA@mail.gmail.com>
+ <4E5C8EA3.7060304@gmail.com>
+From: Vishnupradeep <intermedia.vishnu@gmail.com>
+Date: Tue, 30 Aug 2011 23:37:33 +0530
+Message-ID: <CACk0-C8E2uaB-Ben5K0e7dzC9RC_WDoXx8mV4B-PN4LPYGs92g@mail.gmail.com>
+Subject: Re: linux-3.0.4 compile error on file arch/x86/include/asm/unistd_64.h
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, Greg KH wrote:
+Yes, i am sure. I just downloaded from kernel.org and ran "make"
 
-> > > In my test system, the IDE drives are now discovered twice, once by
-> > > hv_storvsc and once by libata:
-> > 
-> > This is a known (old problem). The way this was handled earlier was to have the 
-> > modprobe rules in place to setup a dependency that would force the load of the
-> > hyper-v driver (blk / stor) ahead of the native driver and if the load of the PV
-> > driver succeeded, we would not load the native driver. In sles11 sp1, we had a rule for 
-> > loading blkvsc. With the merge of blkvsc and storvsc, the only change we need to make
-> > is to have storvsc in the rule (instaed of blkvsc).
-> 
-> Why do we need a rule at all?  Shouldn't the module dependancy stuff
-> handle the autoloading of the drivers properly from the initrd now that
-> the hotplug logic is hooked up properly?
 
-There is no plan to load hv_vmbus (or xen-platform-pci) earlier than
-native drivers.  That was the purpose of the modprobe.conf files. Now
-that there is a vmbus, that fact could be checked before any other
-attempt to load drivers is made and hv_vmbus should be loaded and all of
-its devices have to be probed manually by modprobe `cat modulealias`.
-
-> Or is the hotplug code not working correctly?
-
-There is nothing to hotplug. hv_vmbus has to be loaded first so that it
-can take over the devices. But it seems that there is no shutdown of the
-emulated hardware, thats why the disk "sda" is shown twice.
-
-I spot a flaw here.
-KY, can hv_vmbus shutdown emulated hardware? At least the disks, because
-cdroms are appearently still be handled by native drivers?
-
-Olaf
+On Tue, Aug 30, 2011 at 12:47 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 08/30/2011 08:07 AM, Vishnupradeep wrote:
+>> CC      net/ipv4/ip_forward.o
+>> CC      net/ipv4/ip_options.o
+>> CC      net/ipv4/ip_output.o
+>> CC      net/ipv4/ip_sockglue.o
+>> In file included from
+>> /media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/unistd.h:5:0,
+>>                  from include/linux/unistd.h:7,
+>>                  from
+>> /media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/seccomp_64.h:4,
+>>                  from
+>> /media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/seccomp.h:4,
+>>                  from include/linux/seccomp.h:8,
+>>                  from include/linux/sched.h:80,
+>>                  from
+>> /media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/compat.h:8,
+>>                  from include/linux/compat.h:18,
+>>                  from include/linux/ethtool.h:17,
+>>                  from include/linux/netdevice.h:48,
+>>                  from include/linux/inetdevice.h:8,
+>>                  from net/ipv4/ip_sockglue.c:24:
+>> /media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/unistd_64.h:668:2:
+>> error: invalid preprocessing directive #Define
+>
+> There is nothing like "#Define" here. Are you sure you didn't modify the
+> file?
+>
+> --
+> js
+>
