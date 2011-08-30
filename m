@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab1H3MLa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 08:11:30 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:44098 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab1H3ML2 (ORCPT
+	id S1753543Ab1H3MMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 08:12:22 -0400
+Received: from mx1.etf.rs ([147.91.14.169]:59663 "EHLO mx1.etf.bg.ac.rs"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752569Ab1H3MMT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 08:11:28 -0400
+	Tue, 30 Aug 2011 08:12:19 -0400
+Message-ID: <eaff1e5628175fe1164bba159e64a735.squirrel@kondor.etf.bg.ac.rs>
+Date: Tue, 30 Aug 2011 14:12:15 +0200
+Subject: [PATCH] cls_rsvp.h was outdated
+From: =?utf-8?B?Iklnb3IgTWFyYXZpxIci?= <igorm@etf.rs>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Reply-To: igorm@etf.rs
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Date: Tue, 30 Aug 2011 20:11:28 +0800
-Message-ID: <CAFNq8R7dt03bXJUe4gVcZOGRSqJ7uPJHTFeXoaGTu2pKuNBCfw@mail.gmail.com>
-Subject: [PATCH] fix the outdated comment in ext2_nfs_get_inode()
-From: Li Haifeng <omycle@gmail.com>
-To: jack@suse.cz
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=utf-8
+X-Priority: 3 (Normal)
+Importance: Normal
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am sorry, the last patch "fix the outdated comment in
-ext2_nfs_get_inode()" has some " whitespace errors detected". So
-correct it and remake it.
+File cls_rsvp.h in /net/sched was outdated. I'm sending you patch for this
+file.
+Patch was done against Linux 2.6.38-8
 
-I will be more careful later.
+Signed-off-by: Igor Maravić <igorm@etf.rs>
 
-Signed-off-by: Li Haifeng <omycle@gmail.com>
 ---
- fs/ext2/super.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 1dd62ed..bda10cf 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -327,10 +327,9 @@ static struct inode *ext2_nfs_get_inode(struct
-super_block *sb,
-    if (ino > le32_to_cpu(EXT2_SB(sb)->s_es->s_inodes_count))
-        return ERR_PTR(-ESTALE);
+--- linux-2.6.38.8/net/sched/cls_rsvp.h.orig	2011-08-30 12:46:42.663443918
++0200
++++ linux-2.6.38.8/net/sched/cls_rsvp.h	2011-08-30 13:45:02.135445119 +0200
+@@ -425,7 +425,7 @@ static int rsvp_change(struct tcf_proto
+ 	struct rsvp_filter *f, **fp;
+ 	struct rsvp_session *s, **sp;
+ 	struct tc_rsvp_pinfo *pinfo = NULL;
+-	struct nlattr *opt = tca[TCA_OPTIONS-1];
++	struct nlattr *opt = tca[TCA_OPTIONS];
+ 	struct nlattr *tb[TCA_RSVP_MAX + 1];
+ 	struct tcf_exts e;
+ 	unsigned h1, h2;
+@@ -439,7 +439,7 @@ static int rsvp_change(struct tcf_proto
+ 	if (err < 0)
+ 		return err;
 
--   /* iget isn't really right if the inode is currently unallocated!!
--    * ext2_read_inode currently does appropriate checks, but
--    * it might be "neater" to call ext2_get_inode first and check
--    * if the inode is valid.....
-+   /*
-+    * ext2_iget isn't really right if the inode is currently unallocated!!
-+    * And it also does appropriate checks to handle the stale inode.
-     */
-    inode = ext2_iget(sb, ino);
-    if (IS_ERR(inode))
--- 
-1.7.4.1
+-	err = tcf_exts_validate(tp, tb, tca[TCA_RATE-1], &e, &rsvp_ext_map);
++	err = tcf_exts_validate(tp, tb, tca[TCA_RATE], &e, &rsvp_ext_map);
+ 	if (err < 0)
+ 		return err;
+
+@@ -448,8 +448,8 @@ static int rsvp_change(struct tcf_proto
+
+ 		if (f->handle != handle && handle)
+ 			goto errout2;
+-		if (tb[TCA_RSVP_CLASSID-1]) {
+-			f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID-1]);
++		if (tb[TCA_RSVP_CLASSID]) {
++			f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID]);
+ 			tcf_bind_filter(tp, &f->res, base);
+ 		}
+
+@@ -461,7 +461,7 @@ static int rsvp_change(struct tcf_proto
+ 	err = -EINVAL;
+ 	if (handle)
+ 		goto errout2;
+-	if (tb[TCA_RSVP_DST-1] == NULL)
++	if (tb[TCA_RSVP_DST] == NULL)
+ 		goto errout2;
+
+ 	err = -ENOBUFS;
+@@ -470,19 +470,19 @@ static int rsvp_change(struct tcf_proto
+ 		goto errout2;
+
+ 	h2 = 16;
+-	if (tb[TCA_RSVP_SRC-1]) {
+-		memcpy(f->src, nla_data(tb[TCA_RSVP_SRC-1]), sizeof(f->src));
++	if (tb[TCA_RSVP_SRC]) {
++		memcpy(f->src, nla_data(tb[TCA_RSVP_SRC]), sizeof(f->src));
+ 		h2 = hash_src(f->src);
+ 	}
+-	if (tb[TCA_RSVP_PINFO-1]) {
+-		pinfo = nla_data(tb[TCA_RSVP_PINFO-1]);
++	if (tb[TCA_RSVP_PINFO]) {
++		pinfo = nla_data(tb[TCA_RSVP_PINFO]);
+ 		f->spi = pinfo->spi;
+ 		f->tunnelhdr = pinfo->tunnelhdr;
+ 	}
+-	if (tb[TCA_RSVP_CLASSID-1])
+-		f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID-1]);
++	if (tb[TCA_RSVP_CLASSID])
++		f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID]);
+
+-	dst = nla_data(tb[TCA_RSVP_DST-1]);
++	dst = nla_data(tb[TCA_RSVP_DST]);
+ 	h1 = hash_dst(dst, pinfo ? pinfo->protocol : 0, pinfo ? pinfo->tunnelid
+: 0);
+
+ 	err = -ENOMEM;
+@@ -641,8 +641,7 @@ nla_put_failure:
+ 	return -1;
+ }
+
+-static struct tcf_proto_ops RSVP_OPS = {
+-	.next		=	NULL,
++static struct tcf_proto_ops RSVP_OPS __read_mostly = {
+ 	.kind		=	RSVP_ID,
+ 	.classify	=	rsvp_classify,
+ 	.init		=	rsvp_init,
+
