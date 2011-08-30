@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab1H3TP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:15:26 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:42362 "EHLO
+	id S1756515Ab1H3TQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:16:41 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42483 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756331Ab1H3TPQ (ORCPT
+	with ESMTP id S1756251Ab1H3TP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:15:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="113875059"
-Message-Id: <20110830190801.615083995@codeaurora.org>
+	Tue, 30 Aug 2011 15:15:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="113875262"
+Message-Id: <20110830190802.653408535@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Aug 2011 14:07:49 -0500
+Date: Tue, 30 Aug 2011 14:08:00 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
 Cc: Linas Vepstas <linas@codeaurora.org>
-Subject: [patch v2 20/35] Hexagon: Provide basic debugging and system trap support.
+Subject: [patch v2 31/35] Hexagon: kgdb support files
 References: <20110830190729.923334292@codeaurora.org>
-Content-Disposition: inline; filename=traps.diff
+Content-Disposition: inline; filename=kgdb.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
 ---
- arch/hexagon/include/asm/traps.h |   29 +++
- arch/hexagon/kernel/traps.c      |  356 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 385 insertions(+)
+ arch/hexagon/include/asm/kgdb.h |   39 ++++++
+ arch/hexagon/kernel/kgdb.c      |  241 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 280 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/traps.c
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/kgdb.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/traps.c	2011-08-24 18:45:48.253877210 -0500
-@@ -0,0 +1,356 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/kgdb.h	2011-08-25 19:24:03.628025356 -0500
+@@ -0,0 +1,39 @@
 +/*
-+ * Kernel traps/events for Hexagon processor
++ * arch/hexagon/include/asm/kgdb.h - Hexagon KGDB Support
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -54,376 +53,271 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/traps.c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/sched.h>
-+#include <linux/module.h>
-+#include <linux/kallsyms.h>
++#ifndef __HEXAGON_KGDB_H__
++#define __HEXAGON_KGDB_H__
++
++#define BREAK_INSTR_SIZE 4
++#define CACHE_FLUSH_IS_SAFE   1
++#define BUFMAX       ((NUMREGBYTES * 2) + 512)
++
++static inline void arch_kgdb_breakpoint(void)
++{
++	asm("trap0(#0xDB)");
++}
++
++/* Registers:
++ * 32 gpr + sa0/1 + lc0/1 + m0/1 + gp + ugp + pred + pc = 42 total.
++ */
++#define NUMREGBYTES  (42*4)
++#define DBG_MAX_REG_NUM 42
++
++#endif /* __HEXAGON_KGDB_H__ */
+Index: linux-hexagon-kernel/arch/hexagon/kernel/kgdb.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/kernel/kgdb.c	2011-08-27 20:20:07.085494269 -0500
+@@ -0,0 +1,241 @@
++/*
++ * arch/hexagon/kernel/kgdb.c - Hexagon KGDB Support
++ *
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
 +#include <linux/kdebug.h>
-+#include <linux/syscalls.h>
-+#include <linux/signal.h>
-+#include <linux/tracehook.h>
-+#include <asm/traps.h>
-+#include <asm/vm_fault.h>
-+#include <asm/syscall.h>
-+#include <asm/registers.h>
-+#include <asm/unistd.h>
-+#ifdef CONFIG_KGDB
-+# include <linux/kgdb.h>
-+#endif
++#include <linux/kgdb.h>
 +
-+#define TRAP_SYSCALL	1
-+#define TRAP_DEBUG	0xdb
++/* All registers are 4 bytes, for now */
++#define GDB_SIZEOF_REG 4
 +
-+void __init trap_init(void)
++/* The register names are used during printing of the regs;
++ * Keep these at three letters to pretty-print. */
++struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
++	{ " r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, r00)},
++	{ " r1", GDB_SIZEOF_REG, offsetof(struct pt_regs, r01)},
++	{ " r2", GDB_SIZEOF_REG, offsetof(struct pt_regs, r02)},
++	{ " r3", GDB_SIZEOF_REG, offsetof(struct pt_regs, r03)},
++	{ " r4", GDB_SIZEOF_REG, offsetof(struct pt_regs, r04)},
++	{ " r5", GDB_SIZEOF_REG, offsetof(struct pt_regs, r05)},
++	{ " r6", GDB_SIZEOF_REG, offsetof(struct pt_regs, r06)},
++	{ " r7", GDB_SIZEOF_REG, offsetof(struct pt_regs, r07)},
++	{ " r8", GDB_SIZEOF_REG, offsetof(struct pt_regs, r08)},
++	{ " r9", GDB_SIZEOF_REG, offsetof(struct pt_regs, r09)},
++	{ "r10", GDB_SIZEOF_REG, offsetof(struct pt_regs, r10)},
++	{ "r11", GDB_SIZEOF_REG, offsetof(struct pt_regs, r11)},
++	{ "r12", GDB_SIZEOF_REG, offsetof(struct pt_regs, r12)},
++	{ "r13", GDB_SIZEOF_REG, offsetof(struct pt_regs, r13)},
++	{ "r14", GDB_SIZEOF_REG, offsetof(struct pt_regs, r14)},
++	{ "r15", GDB_SIZEOF_REG, offsetof(struct pt_regs, r15)},
++	{ "r16", GDB_SIZEOF_REG, offsetof(struct pt_regs, r16)},
++	{ "r17", GDB_SIZEOF_REG, offsetof(struct pt_regs, r17)},
++	{ "r18", GDB_SIZEOF_REG, offsetof(struct pt_regs, r18)},
++	{ "r19", GDB_SIZEOF_REG, offsetof(struct pt_regs, r19)},
++	{ "r20", GDB_SIZEOF_REG, offsetof(struct pt_regs, r20)},
++	{ "r21", GDB_SIZEOF_REG, offsetof(struct pt_regs, r21)},
++	{ "r22", GDB_SIZEOF_REG, offsetof(struct pt_regs, r22)},
++	{ "r23", GDB_SIZEOF_REG, offsetof(struct pt_regs, r23)},
++	{ "r24", GDB_SIZEOF_REG, offsetof(struct pt_regs, r24)},
++	{ "r25", GDB_SIZEOF_REG, offsetof(struct pt_regs, r25)},
++	{ "r26", GDB_SIZEOF_REG, offsetof(struct pt_regs, r26)},
++	{ "r27", GDB_SIZEOF_REG, offsetof(struct pt_regs, r27)},
++	{ "r28", GDB_SIZEOF_REG, offsetof(struct pt_regs, r28)},
++	{ "r29", GDB_SIZEOF_REG, offsetof(struct pt_regs, r29)},
++	{ "r30", GDB_SIZEOF_REG, offsetof(struct pt_regs, r30)},
++	{ "r31", GDB_SIZEOF_REG, offsetof(struct pt_regs, r31)},
++
++	{ "usr", GDB_SIZEOF_REG, offsetof(struct pt_regs, usr)},
++	{ "preds", GDB_SIZEOF_REG, offsetof(struct pt_regs, preds)},
++	{ " m0", GDB_SIZEOF_REG, offsetof(struct pt_regs, m0)},
++	{ " m1", GDB_SIZEOF_REG, offsetof(struct pt_regs, m1)},
++	{ "sa0", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa0)},
++	{ "sa1", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa1)},
++	{ "lc0", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc0)},
++	{ "lc1", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc1)},
++	{ " gp", GDB_SIZEOF_REG, offsetof(struct pt_regs, gp)},
++	{ "ugp", GDB_SIZEOF_REG, offsetof(struct pt_regs, ugp)},
++};
++
++struct kgdb_arch arch_kgdb_ops = {
++	/* trap0(#0xDB) 0x0cdb0054 */
++	.gdb_bpt_instr = {0x54, 0x00, 0xdb, 0x0c},
++};
++
++char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
 +{
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
++		return NULL;
++
++	*((unsigned long *) mem) = *((unsigned long *) ((void *)regs +
++		dbg_reg_def[regno].offset));
++
++	return dbg_reg_def[regno].name;
 +}
 +
-+#ifdef CONFIG_GENERIC_BUG
-+/* Maybe should resemble arch/sh/kernel/traps.c ?? */
-+int is_valid_bugaddr(unsigned long addr)
++int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
 +{
-+	return 1;
-+}
-+#endif /* CONFIG_GENERIC_BUG */
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
++		return -EINVAL;
 +
-+void show_stack(struct task_struct *task, unsigned long *fp)
-+{
-+	int kstack_depth_to_print = 20;
-+	unsigned long offset, size;
-+	const char *name = NULL;
-+	unsigned long *newfp;
-+	unsigned long ip;
-+	char tmpstr[128];
-+	char *modname;
-+	int i;
++	*((unsigned long *) ((void *)regs + dbg_reg_def[regno].offset)) =
++		*((unsigned long *) mem);
 +
-+	if (task == NULL)
-+		task = current;
-+
-+	if (fp == NULL) {
-+		if (task == current) {
-+			asm("%0 = r30" : "=r" (fp));
-+		} else {
-+			fp = (unsigned long *)
-+			     ((struct hexagon_switch_stack *)
-+			     task->thread.switch_sp)->fp;
-+		}
-+	}
-+
-+	printk(KERN_INFO "CPU#%d, %s/%d, Call Trace:\n",
-+	       raw_smp_processor_id(), current->comm,
-+	       task_pid_nr(current));
-+	for (i = 0; i < kstack_depth_to_print; i++) {
-+		if (0 /* Check irq stack at some point */)
-+			printk(KERN_INFO " <EOI> ");
-+		else if (((long) fp & (THREAD_SIZE-1)) == 0)
-+			break;
-+
-+		newfp = (unsigned long *) *fp;
-+
-+		ip = *(unsigned long *)((char *)fp + sizeof(unsigned long));
-+		name = kallsyms_lookup(ip, &size, &offset, &modname, tmpstr);
-+
-+		printk(KERN_INFO "[%p] 0x%lx: %s + 0x%lx", fp, ip, name,
-+			offset);
-+		if (modname)
-+			printk(KERN_CONT " [%s] ", modname);
-+		if (i == 0)
-+			printk(KERN_CONT " (unreliable)");
-+		printk(KERN_CONT "\n");
-+
-+		/* If newfp isn't larger, we're tracing garbage */
-+		if (newfp > fp)
-+			fp = newfp;
-+		else
-+			break;
-+	}
-+}
-+
-+void dump_state(struct pt_regs *regs)
-+{
-+	show_regs(regs);
-+	show_stack(current, &regs->r30);
-+}
-+
-+void dump_stack(void)
-+{
-+	show_stack(current, NULL);
-+}
-+EXPORT_SYMBOL(dump_stack);
-+
-+int die(const char *str, struct pt_regs *regs, long err)
-+{
-+	static struct {
-+		spinlock_t lock;
-+		int counter;
-+	} die = {
-+		.lock = __SPIN_LOCK_UNLOCKED(die.lock),
-+		.counter = 0
-+	};
-+
-+	spin_lock_irq(&die.lock);
-+	bust_spinlocks(1);
-+	printk(KERN_INFO "%s[#%d]:\n", str, ++die.counter);
-+
-+	if (notify_die(DIE_OOPS, str, regs, err, pt_cause(regs), SIGSEGV) ==
-+	    NOTIFY_STOP)
-+		return 1;
-+
-+	print_modules();
-+	dump_state(regs);
-+
-+	do_exit(err);
 +	return 0;
 +}
 +
-+int die_if_kernel(char *str, struct pt_regs *regs, long err)
++void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long pc)
 +{
-+	if (!user_mode(regs))
-+		return die(str, regs, err);
-+	else
++	instruction_pointer(regs) = pc;
++}
++
++#ifdef CONFIG_SMP
++
++/**
++ * kgdb_roundup_cpus - Get other CPUs into a holding pattern
++ * @flags: Current IRQ state
++ *
++ * On SMP systems, we need to get the attention of the other CPUs
++ * and get them be in a known state.  This should do what is needed
++ * to get the other CPUs to call kgdb_wait(). Note that on some arches,
++ * the NMI approach is not used for rounding up all the CPUs. For example,
++ * in case of MIPS, smp_call_function() is used to roundup CPUs. In
++ * this case, we have to make sure that interrupts are enabled before
++ * calling smp_call_function(). The argument to this function is
++ * the flags that will be used when restoring the interrupts. There is
++ * local_irq_save() call before kgdb_roundup_cpus().
++ *
++ * On non-SMP systems, this is not called.
++ */
++
++static void hexagon_kgdb_nmi_hook(void *ignored)
++{
++	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
++}
++
++void kgdb_roundup_cpus(unsigned long flags)
++{
++	smp_call_function(hexagon_kgdb_nmi_hook, NULL, 0);
++}
++#endif
++
++
++/*  Not yet working  */
++void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs,
++				 struct task_struct *task)
++{
++	struct pt_regs *thread_regs;
++
++	if (task == NULL)
++		return;
++
++	/* Initialize to zero */
++	memset(gdb_regs, 0, NUMREGBYTES);
++
++	/* Otherwise, we have only some registers from switch_to() */
++	thread_regs = task_pt_regs(task);
++	gdb_regs[0] = thread_regs->r00;
++}
++
++/**
++ * kgdb_arch_handle_exception - Handle architecture specific GDB packets.
++ * @vector: The error vector of the exception that happened.
++ * @signo: The signal number of the exception that happened.
++ * @err_code: The error code of the exception that happened.
++ * @remcom_in_buffer: The buffer of the packet we have read.
++ * @remcom_out_buffer: The buffer of %BUFMAX bytes to write a packet into.
++ * @regs: The &struct pt_regs of the current process.
++ *
++ * This function MUST handle the 'c' and 's' command packets,
++ * as well packets to set / remove a hardware breakpoint, if used.
++ * If there are additional packets which the hardware needs to handle,
++ * they are handled here.  The code should return -1 if it wants to
++ * process more packets, and a %0 or %1 if it wants to exit from the
++ * kgdb callback.
++ *
++ * Not yet working.
++ */
++int kgdb_arch_handle_exception(int vector, int signo, int err_code,
++			       char *remcom_in_buffer, char *remcom_out_buffer,
++			       struct pt_regs *linux_regs)
++{
++	switch (remcom_in_buffer[0]) {
++	case 's':
++	case 'c':
 +		return 0;
++	}
++	/* Stay in the debugger. */
++	return -1;
 +}
 +
-+/*
-+ * It's not clear that misaligned fetches are ever recoverable.
-+ */
-+static void misaligned_instruction(struct pt_regs *regs)
++static int __kgdb_notify(struct die_args *args, unsigned long cmd)
 +{
-+	die_if_kernel("Misaligned Instruction", regs, 0);
-+	force_sig(SIGBUS, current);
++	struct pt_regs *regs = args->regs;
++#if 0
++	ret = kgdb_handle_exception(args->trapnr & 0xff, args->signr, args->err,
++				    regs);
++	if (ret)
++		return NOTIFY_DONE;
++#endif
++	return NOTIFY_STOP;
 +}
 +
-+/*
-+ * Misaligned loads and stores, on the other hand, can be
-+ * emulated, and probably should be, some day.  But for now
-+ * they will be considered fatal.
-+ */
-+static void misaligned_data_load(struct pt_regs *regs)
++static int
++kgdb_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
 +{
-+	die_if_kernel("Misaligned Data Load", regs, 0);
-+	force_sig(SIGBUS, current);
++	unsigned long flags;
++	int ret;
++
++	local_irq_save(flags);
++	ret = __kgdb_notify(ptr, cmd);
++	local_irq_restore(flags);
++
++	return ret;
 +}
 +
-+static void misaligned_data_store(struct pt_regs *regs)
-+{
-+	die_if_kernel("Misaligned Data Store", regs, 0);
-+	force_sig(SIGBUS, current);
-+}
-+
-+static void illegal_instruction(struct pt_regs *regs)
-+{
-+	die_if_kernel("Illegal Instruction", regs, 0);
-+	force_sig(SIGILL, current);
-+}
-+
-+/*
-+ * Precise bus errors may be recoverable with a a retry,
-+ * but for now, treat them as irrecoverable.
-+ */
-+static void precise_bus_error(struct pt_regs *regs)
-+{
-+	die_if_kernel("Precise Bus Error", regs, 0);
-+	force_sig(SIGBUS, current);
-+}
-+
-+/*
-+ * If anything is to be done here other than panic,
-+ * it will probably be complex and migrate to another
-+ * source module.  For now, just die.
-+ */
-+static void cache_error(struct pt_regs *regs)
-+{
-+	die("Cache Error", regs, 0);
-+}
-+
-+/*
-+ * General exception handler
-+ */
-+void do_genex(struct pt_regs *regs)
-+{
++static struct notifier_block kgdb_notifier = {
++	.notifier_call = kgdb_notify,
 +
 +	/*
-+	 * Decode Cause and Dispatch
++	 * Lowest-prio notifier priority, we want to be notified last:
 +	 */
-+	switch (pt_cause(regs)) {
-+	case HVM_GE_C_XPROT:
-+	case HVM_GE_C_XUSER:
-+		execute_protection_fault(regs);
-+		break;
-+	case HVM_GE_C_RPROT:
-+	case HVM_GE_C_RUSER:
-+		read_protection_fault(regs);
-+		break;
-+	case HVM_GE_C_WPROT:
-+	case HVM_GE_C_WUSER:
-+		write_protection_fault(regs);
-+		break;
-+	case HVM_GE_C_XMAL:
-+		misaligned_instruction(regs);
-+		break;
-+	case HVM_GE_C_RMAL:
-+		misaligned_data_load(regs);
-+		break;
-+	case HVM_GE_C_WMAL:
-+		misaligned_data_store(regs);
-+		break;
-+	case HVM_GE_C_INVI:
-+	case HVM_GE_C_PRIVI:
-+		illegal_instruction(regs);
-+		break;
-+	case HVM_GE_C_BUS:
-+		precise_bus_error(regs);
-+		break;
-+	case HVM_GE_C_CACHE:
-+		cache_error(regs);
-+		break;
-+	default:
-+		/* Halt and catch fire */
-+		panic("Unrecognized exception 0x%lx\n", pt_cause(regs));
-+		break;
-+	}
-+}
++	.priority = -INT_MAX,
++};
 +
-+/* Indirect system call dispatch */
-+long sys_syscall(void)
-+{
-+	printk(KERN_ERR "sys_syscall invoked!\n");
-+	return -ENOSYS;
-+}
-+
-+void do_trap0(struct pt_regs *regs)
-+{
-+	unsigned long syscallret = 0;
-+	syscall_fn syscall;
-+
-+	switch (pt_cause(regs)) {
-+	case TRAP_SYSCALL:
-+		/* System call is trap0 #1 */
-+
-+		/* allow strace to catch syscall args  */
-+		if (unlikely(test_thread_flag(TIF_SYSCALL_TRACE) &&
-+			tracehook_report_syscall_entry(regs)))
-+			return;  /*  return -ENOSYS somewhere?  */
-+
-+		/* Interrupts should be re-enabled for syscall processing */
-+		__vmsetie(VM_INT_ENABLE);
-+
-+		/*
-+		 * System call number is in r6, arguments in r0..r5.
-+		 * Fortunately, no Linux syscall has more than 6 arguments,
-+		 * and Hexagon ABI passes first 6 arguments in registers.
-+		 * 64-bit arguments are passed in odd/even register pairs.
-+		 * Fortunately, we have no system calls that take more
-+		 * than three arguments with more than one 64-bit value.
-+		 * Should that change, we'd need to redesign to copy
-+		 * between user and kernel stacks.
-+		 */
-+		regs->syscall_nr = regs->r06;
-+
-+		/*
-+		 * GPR R0 carries the first parameter, and is also used
-+		 * to report the return value.  We need a backup of
-+		 * the user's value in case we need to do a late restart
-+		 * of the system call.
-+		 */
-+		regs->restart_r0 = regs->r00;
-+
-+		if ((unsigned long) regs->syscall_nr >= __NR_syscalls) {
-+			regs->r00 = -1;
-+		} else {
-+			syscall = (syscall_fn)
-+				  (sys_call_table[regs->syscall_nr]);
-+			syscallret = syscall(regs->r00, regs->r01,
-+				   regs->r02, regs->r03,
-+				   regs->r04, regs->r05);
-+		}
-+
-+		/*
-+		 * If it was a sigreturn system call, don't overwrite
-+		 * r0 value in stack frame with return value.
-+		 *
-+		 * __NR_sigreturn doesn't seem to exist in new unistd.h
-+		 */
-+
-+		if (regs->syscall_nr != __NR_rt_sigreturn)
-+			regs->r00 = syscallret;
-+
-+		/* allow strace to get the syscall return state  */
-+		if (unlikely(test_thread_flag(TIF_SYSCALL_TRACE)))
-+			tracehook_report_syscall_exit(regs, 0);
-+
-+		break;
-+	case TRAP_DEBUG:
-+		/* Trap0 0xdb is debug breakpoint */
-+		if (user_mode(regs)) {
-+			struct siginfo info;
-+
-+			info.si_signo = SIGTRAP;
-+			info.si_errno = 0;
-+			/*
-+			 * Some architecures add some per-thread state
-+			 * to distinguish between breakpoint traps and
-+			 * trace traps.  We may want to do that, and
-+			 * set the si_code value appropriately, or we
-+			 * may want to use a different trap0 flavor.
-+			 */
-+			info.si_code = TRAP_BRKPT;
-+			info.si_addr = (void __user *) pt_elr(regs);
-+			send_sig_info(SIGTRAP, &info, current);
-+		} else {
-+#ifdef CONFIG_KGDB
-+			kgdb_handle_exception(pt_cause(regs), SIGTRAP,
-+					      TRAP_BRKPT, regs);
-+#endif
-+		}
-+		break;
-+	}
-+	/* Ignore other trap0 codes for now, especially 0 (Angel calls) */
-+}
-+
-+/*
-+ * Machine check exception handler
++/**
++ * kgdb_arch_init - Perform any architecture specific initalization.
++ *
++ * This function will handle the initalization of any architecture
++ * specific callbacks.
 + */
-+void do_machcheck(struct pt_regs *regs)
++int kgdb_arch_init(void)
 +{
-+	/* Halt and catch fire */
-+	__vmstop();
++	return register_die_notifier(&kgdb_notifier);
 +}
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/traps.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/traps.h	2011-08-24 18:45:48.253877210 -0500
-@@ -0,0 +1,29 @@
-+/*
-+ * Trap support for Hexagon
++
++/**
++ * kgdb_arch_exit - Perform any architecture specific uninitalization.
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * This function will handle the uninitalization of any architecture
++ * specific callbacks, for dynamic registration and unregistration.
 + */
++void kgdb_arch_exit(void)
++{
++	unregister_die_notifier(&kgdb_notifier);
++}
 +
-+#ifndef _ASM_HEXAGON_TRAPS_H
-+#define _ASM_HEXAGON_TRAPS_H
-+
-+#include <asm/registers.h>
-+
-+extern int die(const char *str, struct pt_regs *regs, long err);
-+extern int die_if_kernel(char *str, struct pt_regs *regs, long err);
-+
-+#endif /* _ASM_HEXAGON_TRAPS_H */
 
 --
 
