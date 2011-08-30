@@ -1,220 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab1H3HHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:07:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29793 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab1H3HHK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:07:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=VyqK+GV8yrZLXQEl5E7TOt0rzJbQKPiaezNSGvXEs0CoIeNHRZ/JsuvEnmuTrcmcD
-	3xqLJD4esHBjZrD0kN3CQ==
+	id S1752310Ab1H3HH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:07:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51536 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752245Ab1H3HHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 03:07:21 -0400
+Date: Tue, 30 Aug 2011 09:07:15 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.1-rc4
+Message-ID: <20110830070715.GA15134@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFwwtfLpmNS+Wm4DXgJsipPS8siF6Dur4rMDum7Zs=KqKw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110829210508.GA1599@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
-	<1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
-	<CALWz4iwChnacF061L9vWo7nEA7qaXNJrK=+jsEe9xBtvEBD9MA@mail.gmail.com>
-	<20110811210914.GB31229@cmpxchg.org>
-	<CALWz4iwJfyWRineMy+W02YBvS0Y=Pv1y8Rb=8i5R=vUCfrO+iQ@mail.gmail.com>
-	<CALWz4iwRXBheXFND5zq3ze2PJDkeoxYHD1zOsTyzOe3XqY5apA@mail.gmail.com>
-	<20110829190426.GC1434@cmpxchg.org>
-	<CALWz4ix1X8=L0HzQpdGd=XVbjZuMCtYngzdG+hLMoeJJCUEjrg@mail.gmail.com>
-	<20110829210508.GA1599@cmpxchg.org>
-Date: Tue, 30 Aug 2011 00:07:07 -0700
-Message-ID: <CALWz4ixH-7c-fEUAHiyf83KyO9SsRzdUm-u+wm2_Ty=xvU_NyA@mail.gmail.com>
-Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwwtfLpmNS+Wm4DXgJsipPS8siF6Dur4rMDum7Zs=KqKw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 2:05 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> On Mon, Aug 29, 2011 at 01:36:48PM -0700, Ying Han wrote:
->> On Mon, Aug 29, 2011 at 12:04 PM, Johannes Weiner <hannes@cmpxchg.org>wrote:
->> > On Mon, Aug 29, 2011 at 12:22:02AM -0700, Ying Han wrote:
->> > > > @@ -888,19 +888,21 @@ void mem_cgroup_del_lru_list(struct page *page,
->> > > > enum lru_list lru)
->> > > >  {
->> > > >  >------struct page_cgroup *pc;
->> > > >  >------struct mem_cgroup_per_zone *mz;
->> > > > +>------struct mem_cgroup *mem;
->> > > > ·
->> > > >  >------if (mem_cgroup_disabled())
->> > > >  >------>-------return;
->> > > >  >------pc = lookup_page_cgroup(page);
->> > > > ->------/* can happen while we handle swapcache. */
->> > > > ->------if (!TestClearPageCgroupAcctLRU(pc))
->> > > > ->------>-------return;
->> > > > ->------VM_BUG_ON(!pc->mem_cgroup);
->> > > > ->------/*
->> > > > ->------ * We don't check PCG_USED bit. It's cleared when the "page" is
->> > finally
->> > > > ->------ * removed from global LRU.
->> > > > ->------ */
->> > > > ->------mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
->> > > > +
->> > > > +>------if (TestClearPageCgroupAcctLRU(pc) || PageCgroupUsed(pc)) {
->> >
->> > This PageCgroupUsed part confuses me.  A page that is being isolated
->> > shortly after being charged while on the LRU may reach here, and then
->> > it is unaccounted from pc->mem_cgroup, which it never was accounted
->> > to.
->> >
->> > Could you explain why you added it?
->>
->> To be honest, i don't have very good reason for that. The PageCgroupUsed
->> check is put there after running some tests and some fixes seems help the
->> test, including this one.
->>
->> The one case I can think of for page !AcctLRU | Used is in the pagevec.
->> However, we shouldn't get to the mem_cgroup_del_lru_list() for a page in
->> pagevec at the first place.
->>
->> I now made it so that PageCgroupAcctLRU on the LRU means accounted
->> to pc->mem_cgroup,
->>
->> this is the same logic currently.
->>
->> > and !PageCgroupAcctLRU on the LRU means accounted to
->> > and babysitted by root_mem_cgroup.
->>
->> this seems to be different from what it is now, especially for swapcache
->> page. So, the page here is linked to root cgroup LRU or not?
->>
->> Anyway, the AcctLRU flags still seems confusing to me:
->>
->> what this flag tells me is that whether or not the page is on a PRIVATE lru
->> and being accounted, i used private here to differentiate from the per zone
->> lru, where it also has PageLRU flag.  The two flags are separate since pages
->> could be on one lru not the other ( I guess ) , but this is changed after
->> having the root cgroup lru back. For example, AcctLRU is used to keep track
->> of the accounted lru pages, especially for root ( we didn't account the
->> !Used pages to root like readahead swapcache). Now we account the full size
->> of lru list of root including Used and !Used, but only mark the Used pages
->> w/ AcctLRU flag.
->>
->> So in general, i am wondering we should be able to replace that eventually
->> with existing Used and LRU bit.  Sorry this seems to be something we like to
->> consider later, not necessarily now :)
->
-> I have now the following comment in mem_cgroup_lru_del_list():
->
->        /*
->         * root_mem_cgroup babysits uncharged LRU pages, but
->         * PageCgroupUsed is cleared when the page is about to get
->         * freed.  PageCgroupAcctLRU remembers whether the
->         * LRU-accounting happened against pc->mem_cgroup or
->         * root_mem_cgroup.
->         */
->
-> Does that answer your question?  If not, please tell me, so I can fix
-> the comment :-)
+On Sun, Aug 28, 2011 at 09:52:43PM -0700, Linus Torvalds wrote:
+> We're back on track on weekly -rc releases.
 
-Sorry, not clear to me yet :(
+Peter,
 
-Is this saying that we can not differentiate the page linked to root
-but not charged vs
-page linked to memcg which is about to be freed.
+I get the following lockdep splat on -rc4, it looks like load balancing
+something.
 
-If that is the case, isn't the page being removed from lru first
-before doing uncharge (ClearPageCgroupUsed) ?
+[ 5183.478132] ------------[ cut here ]------------
+[ 5183.478155] WARNING: at kernel/lockdep.c:690 __lock_acquire+0x189/0x916()
+[ 5183.478164] Hardware name: System Product Name
+[ 5183.478171] Modules linked in: tun cpufreq_powersave cpufreq_userspace cpufreq_conservative powernow_k8 mperf cpufreq_stats binfmt_misc fuse ipv6 kvm_amd kvm vfat fat radeon ttm drm_kms_helper cfbcopyarea cfbimgblt cfbfillrect 8250_pnp edac_core 8250 serial_core k10temp
+[ 5183.478256] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0-rc4 #37
+[ 5183.478263] Call Trace:
+[ 5183.478270]  <IRQ>  [<ffffffff813d1dee>] ? _raw_spin_unlock_irqrestore+0x38/0x69
+[ 5183.478297]  [<ffffffff81038dc2>] warn_slowpath_common+0x85/0x9d
+[ 5183.478310]  [<ffffffff81038df4>] warn_slowpath_null+0x1a/0x1c
+[ 5183.478321]  [<ffffffff8106e535>] __lock_acquire+0x189/0x916
+[ 5183.478332]  [<ffffffff8106ec5e>] ? __lock_acquire+0x8b2/0x916
+[ 5183.478344]  [<ffffffff8102ca4a>] ? double_rq_lock+0x4f/0x54
+[ 5183.478355]  [<ffffffff8106f32d>] lock_acquire+0x14e/0x193
+[ 5183.478364]  [<ffffffff8102ca4a>] ? double_rq_lock+0x4f/0x54
+[ 5183.478375]  [<ffffffff81069ba8>] ? put_lock_stats+0xe/0x29
+[ 5183.478387]  [<ffffffff813d11ee>] _raw_spin_lock_nested+0x44/0x79
+[ 5183.478396]  [<ffffffff8102ca4a>] ? double_rq_lock+0x4f/0x54
+[ 5183.478406]  [<ffffffff813d128f>] ? _raw_spin_lock+0x6c/0x73
+[ 5183.478416]  [<ffffffff8102ca2b>] ? double_rq_lock+0x30/0x54
+[ 5183.478425]  [<ffffffff8102ca4a>] double_rq_lock+0x4f/0x54
+[ 5183.478437]  [<ffffffff810334dc>] load_balance+0x1ca/0x4cb
+[ 5183.478447]  [<ffffffff810337dd>] ? load_balance+0x4cb/0x4cb
+[ 5183.478460]  [<ffffffff81033942>] rebalance_domains+0x165/0x1f4
+[ 5183.478470]  [<ffffffff810337dd>] ? load_balance+0x4cb/0x4cb
+[ 5183.478481]  [<ffffffff81033a9a>] run_rebalance_domains+0xc9/0x136
+[ 5183.478493]  [<ffffffff8103fd3a>] __do_softirq+0x172/0x2f2
+[ 5183.478507]  [<ffffffff810037e8>] ? do_softirq+0x2c/0x85
+[ 5183.478519]  [<ffffffff813d3d2c>] call_softirq+0x1c/0x30
+[ 5183.478530]  [<ffffffff810037f9>] do_softirq+0x3d/0x85
+[ 5183.478539]  [<ffffffff8103f928>] irq_exit+0x53/0xbd
+[ 5183.478552]  [<ffffffff81018bdc>] smp_call_function_single_interrupt+0x34/0x36
+[ 5183.478564]  [<ffffffff813d37b0>] call_function_single_interrupt+0x70/0x80
+[ 5183.478571]  <EOI>  [<ffffffff813d20a1>] ? retint_restore_args+0xe/0xe
+[ 5183.478591]  [<ffffffff81009402>] ? default_idle+0xef/0x1f5
+[ 5183.478602]  [<ffffffff81009400>] ? default_idle+0xed/0x1f5
+[ 5183.478612]  [<ffffffff81009651>] amd_e400_idle+0xcf/0xf6
+[ 5183.478624]  [<ffffffff810014de>] cpu_idle+0x6f/0xc2
+[ 5183.478636]  [<ffffffff813ca25c>] start_secondary+0x1ad/0x1b2
+[ 5183.478646] ---[ end trace 2434d22bc511873d ]---
 
->
->> > Always.  Which also means that before_commit now ensures an LRU
->> > page is moved to root_mem_cgroup for babysitting during the
->> > charge, so that concurrent isolations/putbacks are always
->> > accounted correctly.  Is this what you had in mind?  Did I miss
->> > something?
->>
->> In my tree, the before->commit->after protocol is folded into one function.
->> I didn't post it since I know you also have patch doing that.  So guess I
->> don't understand why we need to move the page to root while it is gonna be
->> charged to a memcg by commit_charge shortly after.
->
-> It is a consequence of your fix that LRU-accounts unused pages to
-> root_mem_cgroup upon lru-add, and thus deaccounts !PageCgroupAcctLRU
-> from root_mem_cgroup unconditionally upon lru-del.
->
-> Consider the following scenario:
->
->        1. page with multiple mappings swapped out.
->
->        2. one memcg faults the page, then unmaps it.  The page is
->        uncharged, but swap-freeing fails due to the other ptes, and
->        the page stays lru-accounted on the memcg it's no longer
->        charged to.
+Thanks.
 
-I agree that a page could be ending up on a memcg-lru (AcctLRU) but
-not charged (!Used). But not sure
-if the case above is true or not, since we don't uncharge a page which
-marked as SwapCache until the
-page is removed from the swapcache.
-
-One case which we might change the owner of a page while it is linked
-on lru is calling reuse_swap_page() under write fault, so the page is
-uncharged after removing from
-swapcache while linked in the old memcg lru. It will be adjust by
-commit_charge_swapin() later.
-
->
->        3. another memcg faults the page.  before_commit must
->        lru-unaccount from pc->mem_cgroup before pc->mem_cgroup is
->        overwritten.
->
->        4. the page is charged.  after_commit does the fixup.
->
-> Between 3. and 4., a reclaimer can isolate the page.  The old
-> lru-accounting is undone and mem_cgroup_lru_del() does this:
->
->        if (TestClearPageCgroupAcctLRU(pc)) {
->                VM_BUG_ON(!pc->mem_cgroup);
->                mem = pc->mem_cgroup;
->        } else
->                mem = root_mem_cgroup;
->       mz = page_cgroup_zoneinfo(mem, page);
->        /* huge page split is done under lru_lock. so, we have no races. */
->        MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
->
-> The rule is that !PageCgroupAcctLRU means that the page is
-> lru-accounted to root_mem_cgroup.  So when charging, the page has to
-> be moved to root_mem_cgroup until a new memcg is responsible for it.
-
-So here we are saying that isolating a page which has be
-mem_cgroup_lru_del().  Isn't the later one does lru-unaccount and also
-list_del(), so is that possible to isolate a page not on lru. Or is
-this caused by not clearing the LRU bit in before_commit?
-
->
->> My understanding is that in before_commit, we uncharge the page from
->> previous memcg lru if AcctLRU was set, then in the commit_charge we update
->> the new owner of it. And in after_commit we update the memcg lru for the new
->> owner after linking the page in the lru.
->
-> Exactly, just that between unaccounting from the old and accounting to
-> the new, someone else may look at the page and has to find it in a
-> sensible state.
-
-Wonder if clearing the PageLRU after before_commit is helpful here.
-
-Thanks
-
---Ying
->
+-- 
+Regards/Gruss,
+    Boris.
