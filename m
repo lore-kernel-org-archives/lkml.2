@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1H3Pjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 11:39:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60700 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755276Ab1H3Pjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 11:39:46 -0400
-Date: Tue, 30 Aug 2011 17:39:44 +0200
-From: Jan Kara <jack@suse.cz>
-To: Li Haifeng <omycle@gmail.com>
-Cc: jack@suse.cz, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] fix the outdated comment in ext2_nfs_get_inode()
-Message-ID: <20110830153944.GF16202@quack.suse.cz>
-References: <CAFNq8R7dt03bXJUe4gVcZOGRSqJ7uPJHTFeXoaGTu2pKuNBCfw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFNq8R7dt03bXJUe4gVcZOGRSqJ7uPJHTFeXoaGTu2pKuNBCfw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755497Ab1H3Pnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 11:43:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47667 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab1H3Pnj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 11:43:39 -0400
+Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to
+ idle enter/exit APIs
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Paul Menage <paul@paulmenage.org>
+Date: Tue, 30 Aug 2011 17:42:32 +0200
+In-Reply-To: <20110830153343.GW9748@somewhere.redhat.com>
+References: <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
+	 <1314627922.2816.65.camel@twins>
+	 <20110829171155.GD9748@somewhere.redhat.com>
+	 <1314640155.2816.117.camel@twins>
+	 <20110829175954.GF9748@somewhere.redhat.com>
+	 <1314641160.2816.128.camel@twins>
+	 <20110829233521.GK9748@somewhere.redhat.com>
+	 <1314703315.2799.5.camel@twins>
+	 <20110830143207.GP9748@somewhere.redhat.com>
+	 <1314717993.5812.11.camel@twins>
+	 <20110830153343.GW9748@somewhere.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314718952.5812.23.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30-08-11 20:11:28, Li Haifeng wrote:
-> I am sorry, the last patch "fix the outdated comment in
-> ext2_nfs_get_inode()" has some " whitespace errors detected". So
-> correct it and remake it.
+On Tue, 2011-08-30 at 17:33 +0200, Frederic Weisbecker wrote:
+> > See all that is still kernelspace ;-) I think I know what you mean to
+> > say though, but seeing as you note there is even now a known shortcoming
+> > I'm not very confident its a solid construction. What will help us find
+> > such holes?
 > 
-> I will be more careful later.
-  Hmm, your patch still has mangled whitespaces and wrapped long lines.
-Please make sure your mailer doesn't do it or use git send-email to send
-patches. Also the subject line misses "ext2:" in the beginning (after
-[PATCH]). Finally, I've further changed the text in the comment because
-"And" does not really make sense in that context to me. The patch I now
-carry in my tree is below.
+> This: https://lkml.org/lkml/2011/6/23/744
+> 
+> It's in one of Paul's branches and should make it for the next merge window.
+> This should detect any of such holes. I made that on purpose for the nohz cpusets
+> when I saw how much error prone that can be with rcu :)
 
-								Honza
+OK, good ;-)
 
->From 8e871fa6a2db8ec615614e547d95de21f9045a52 Mon Sep 17 00:00:00 2001
-From: Li Haifeng <omycle@gmail.com>
-Date: Tue, 30 Aug 2011 17:32:50 +0200
-Subject: [PATCH] ext2: fix the outdated comment in ext2_nfs_get_inode()
+> > I would much rather we not rely on such fragile things too much.. this
+> > RCU stuff wants way more thought, as it stands your patch-set doesn't do
+> > anything useful IMO.
+> 
+> Not sure what you mean. Well that Rcu thing for sure is fragile but we have
+> the tools ready to find the problems. 
 
-Signed-off-by: Li Haifeng <omycle@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/ext2/super.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 174782f..adf3cde 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -327,10 +327,10 @@ static struct inode *ext2_nfs_get_inode(struct super_block *sb,
- 	if (ino > le32_to_cpu(EXT2_SB(sb)->s_es->s_inodes_count))
- 		return ERR_PTR(-ESTALE);
- 
--	/* iget isn't really right if the inode is currently unallocated!!
--	 * ext2_read_inode currently does appropriate checks, but
--	 * it might be "neater" to call ext2_get_inode first and check
--	 * if the inode is valid.....
-+	/*
-+	 * ext2_iget isn't quite right if the inode is currently unallocated!
-+	 * However ext2_iget currently does appropriate checks to handle stale
-+	 * inodes so everything is OK.
- 	 */
- 	inode = ext2_iget(sb, ino);
- 	if (IS_ERR(inode))
--- 
-1.7.1
+Right that thing you linked above does catch abuse, still your current
+proposal means that due to RCU it will basically never disable the tick.
