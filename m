@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab1H3NKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 09:10:12 -0400
-Received: from mx2.etf.rs ([147.91.14.170]:42288 "EHLO mx2.etf.bg.ac.rs"
+	id S1753940Ab1H3NNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 09:13:01 -0400
+Received: from mx1.etf.rs ([147.91.14.169]:38363 "EHLO mx1.etf.bg.ac.rs"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752434Ab1H3NKJ convert rfc822-to-8bit (ORCPT
+	id S1752045Ab1H3NM6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 09:10:09 -0400
-Message-ID: <7a3117784cec420877750014a6cf20e2.squirrel@kondor.etf.bg.ac.rs>
-Date: Tue, 30 Aug 2011 15:10:06 +0200
+	Tue, 30 Aug 2011 09:12:58 -0400
+Message-ID: <59e0c7c0ba5282f35b101e7058fb27fa.squirrel@kondor.etf.bg.ac.rs>
+Date: Tue, 30 Aug 2011 15:12:55 +0200
 Subject: [PATCH] cls_rsvp.h was outdated
 From: =?utf-8?B?Iklnb3IgTWFyYXZpxIci?= <igorm@etf.rs>
 To: netdev@vger.kernel.org
@@ -33,8 +33,7 @@ Signed-off-by: Igor Maravić <igorm@etf.rs>
 
 ---
 
---- linux-2.6.38.8/net/sched/cls_rsvp.h.orig	2011-08-30 12:46:42.663443918
-+0200
+--- linux-2.6.38.8/net/sched/cls_rsvp.h.orig	2011-08-30 12:46:42.663443918 +0200
 +++ linux-2.6.38.8/net/sched/cls_rsvp.h	2011-08-30 13:45:02.135445119 +0200
 @@ -425,7 +425,7 @@ static int rsvp_change(struct tcf_proto
  	struct rsvp_filter *f, **fp;
@@ -98,8 +97,7 @@ Signed-off-by: Igor Maravić <igorm@etf.rs>
 
 -	dst = nla_data(tb[TCA_RSVP_DST-1]);
 +	dst = nla_data(tb[TCA_RSVP_DST]);
- 	h1 = hash_dst(dst, pinfo ? pinfo->protocol : 0, pinfo ? pinfo->tunnelid
-: 0);
+ 	h1 = hash_dst(dst, pinfo ? pinfo->protocol : 0, pinfo ? pinfo->tunnelid : 0);
 
  	err = -ENOMEM;
 @@ -641,8 +641,7 @@ nla_put_failure:
@@ -112,5 +110,6 @@ Signed-off-by: Igor Maravić <igorm@etf.rs>
  	.kind		=	RSVP_ID,
  	.classify	=	rsvp_classify,
  	.init		=	rsvp_init,
+
 
 
