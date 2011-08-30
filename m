@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1H3NRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 09:17:09 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:43714 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab1H3NRG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 09:17:06 -0400
-Date: Tue, 30 Aug 2011 15:17:03 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-cc: Greg Ungerer <gerg@uclinux.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: [PATCH] bitops: Move find_next_bit.o from lib-y to obj-y
-Message-ID: <alpine.DEB.2.00.1108301427170.10125@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754033Ab1H3NTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 09:19:20 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46802 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753722Ab1H3NTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 09:19:19 -0400
+Date: Tue, 30 Aug 2011 14:19:15 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/7] Reduce filesystem writeback from page reclaim v3
+Message-ID: <20110830131915.GB24629@csn.ul.ie>
+References: <1312973240-32576-1-git-send-email-mgorman@suse.de>
+ <20110818165420.0a7aabb5.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110818165420.0a7aabb5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there are no builtin users of find_next_bit_le() and
-find_next_zero_bit_le(), these functions are not present in the kernel
-image, causing m68k allmodconfig to fail with:
+On Thu, Aug 18, 2011 at 04:54:20PM -0700, Andrew Morton wrote:
+> On Wed, 10 Aug 2011 11:47:13 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > The new problem is that
+> > reclaim has very little control over how long before a page in a
+> > particular zone or container is cleaned which is discussed later.
+> 
+> Confused - where was this discussed?  Please tell us more about
+> this problem and how it was addressed.
+> 
 
-ERROR: "find_next_zero_bit_le" [fs/ufs/ufs.ko] undefined!
-ERROR: "find_next_bit_le" [fs/udf/udf.ko] undefined!
-ERROR: "find_next_zero_bit_le" [fs/reiserfs/reiserfs.ko] undefined!
-ERROR: "find_next_bit_le" [fs/ocfs2/ocfs2.ko] undefined!
-ERROR: "find_next_zero_bit_le" [fs/ocfs2/ocfs2.ko] undefined!
-ERROR: "find_next_zero_bit_le" [fs/nilfs2/nilfs2.ko] undefined!
-ERROR: "find_next_bit_le" [fs/ext4/ext4.ko] undefined!
-ERROR: "find_next_zero_bit_le" [fs/ext4/ext4.ko] undefined!
-ERROR: "find_next_zero_bit_le" [fs/ext3/ext3.ko] undefined!
-ERROR: "find_next_zero_bit_le" [fs/ext2/ext2.ko] undefined!
-ERROR: "find_next_zero_bit_le" [drivers/media/rc/ite-cir.ko] undefined!
-ERROR: "find_next_bit_le" [drivers/media/rc/ite-cir.ko] undefined!
-ERROR: "find_next_zero_bit_le" [drivers/md/dm-log.ko] undefined!
-ERROR: "find_next_bit_le" [drivers/block/drbd/drbd.ko] undefined!
-ERROR: "find_next_zero_bit_le" [drivers/block/drbd/drbd.ko] undefined!
+This text really referred to V2 of the series where kswapd was not
+writing back pages. This lead to problems on NUMA as described in
+https://lkml.org/lkml/2011/7/21/242 . I should have updated the text to
+read
 
-This started to happen after commit 171d809df1896c1022f9778cd2788be6c255a7dc
-("m68k: merge mmu and non-mmu bitops.h"), as m68k had its own inline
-versions before.
+"There is a potential new problem as reclaim has less control over
+how long before a page in a particularly zone or container is cleaned
+and direct reclaimers depend on kswapd or flusher threads to do
+the necessary work. However, as filesystems sometimes ignore direct
+reclaim requests already, it is not expected to be a serious issue"
 
-commit 63e424c84429903c92a0f1e9654c31ccaf6694d0 ("arch: remove
-CONFIG_GENERIC_FIND_{NEXT_BIT,BIT_LE,LAST_BIT}") added find_last_bit.o to
-obj-y (so it's always included), but find_next_bit.o to lib-y (so it gets
-removed by the linker if there are no builtin users).
+> Another (and somewhat interrelated) potential problem I see with this
+> work is that it throws a big dependency onto kswapd.  If kswapd gets
+> stuck somewhere for extended periods, there's nothing there to perform
+> direct writeback. 
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
-Sorry, I didn't notice it before, as m68k allmodconfig has been suffering
-from too many build breakages (for which patches are available) lately.
+In theory, this is true. In practice, btrfs and ext4 are already
+ignoring requests from direct reclaim and have been for some
+time. btrfs is particularly bad in that is also ignores requests
+from kswapd leading me to believe that we are eventually going to
+see stall-related bug reports on large NUMA machines with btrfs.
 
-Does it happen elsewhere, too?
+> This has happened in the past in weird situations
+> such as kswpad getting blocked on ext3 journal commits which are
+> themselves stuck for ages behind lots of writeout which itself is stuck
+> behind lots of reads.  That's an advantage of direct reclaim: more
+> threads available.
 
- lib/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I do not know what these situations were but was it possible that it was
+due to too many direct reclaimers starving kswapd of access to the
+journal?
 
-diff --git a/lib/Makefile b/lib/Makefile
-index d5d175c..3f5bc6d 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o find_next_bit.o
-+	 is_single_threaded.o plist.o decompress.o
- 
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-@@ -22,7 +22,7 @@ lib-y	+= kobject.o kref.o klist.o
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
- 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
- 	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o \
--	 bsearch.o find_last_bit.o
-+	 bsearch.o find_last_bit.o find_next_bit.o
- obj-y += kstrtox.o
- obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
- 
+> How forcefully has this stuff been tested with multiple disks per
+> kswapd? 
+
+As heavily as I could on the machine I had available. This was 4 disks
+for one kswapd instance. I did not spot major problems.
+
+> Where one disk is overloaded-ext3-on-usb-stick?
+> 
+
+I tested with ext4 on a USB stick, not ext3. It completed faster and the
+interactive performance felt roughly the same.
+
 -- 
-1.7.0.4
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Mel Gorman
+SUSE Labs
