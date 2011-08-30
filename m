@@ -1,116 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab1H3HXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:23:39 -0400
-Received: from swan.madduck.net ([80.68.90.58]:49815 "EHLO swan.madduck.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742Ab1H3HXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:23:37 -0400
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 03:23:37 EDT
-Date: Tue, 30 Aug 2011 09:14:07 +0200
-From: martin f krafft <madduck@madduck.net>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Abysmal I/O scheduling with dm-crypt
-Message-ID: <20110830071407.GA8165@albatross.gern.madduck.net>
-Mail-Followup-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
-Content-Disposition: inline
-X-Motto: Keep the good times rollin'
-X-OS: Debian GNU/Linux wheezy/sid kernel 3.0.0-1-amd64 x86_64
-X-Spamtrap: madduck.bogus@madduck.net
-X-Subliminal-Message: debian/rules!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752158Ab1H3H22 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:28:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44290 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1H3H21 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 03:28:27 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 30 Aug 2011 16:20:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Brestic <abrestic@google.com>, Ying Han <yinghan@google.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] Revert "memcg: add memory.vmscan_stat"
+Message-Id: <20110830162050.f6c13c0c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110830070424.GA13061@redhat.com>
+References: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110808124333.GA31739@redhat.com>
+	<20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110829155113.GA21661@redhat.com>
+	<20110830101233.ae416284.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110830070424.GA13061@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 30 Aug 2011 09:04:24 +0200
+Johannes Weiner <jweiner@redhat.com> wrote:
 
---5mCyUwZo2JvN/JJP
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Tue, Aug 30, 2011 at 10:12:33AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Mon, 29 Aug 2011 17:51:13 +0200
+> > Johannes Weiner <jweiner@redhat.com> wrote:
+> > 
+> > > On Tue, Aug 09, 2011 at 08:33:45AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > On Mon, 8 Aug 2011 14:43:33 +0200
+> > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > 
+> > > > > On Fri, Jul 22, 2011 at 05:15:40PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > > +When under_hierarchy is added in the tail, the number indicates the
+> > > > > > +total memcg scan of its children and itself.
+> > > > > 
+> > > > > In your implementation, statistics are only accounted to the memcg
+> > > > > triggering the limit and the respectively scanned memcgs.
+> > > > > 
+> > > > > Consider the following setup:
+> > > > > 
+> > > > >         A
+> > > > >        / \
+> > > > >       B   C
+> > > > >      /
+> > > > >     D
+> > > > > 
+> > > > > If D tries to charge but hits the limit of A, then B's hierarchy
+> > > > > counters do not reflect the reclaim activity resulting in D.
+> > > > > 
+> > > > yes, as I expected.
+> > > 
+> > > Andrew,
+> > > 
+> > > with a flawed design, the author unwilling to fix it, and two NAKs,
+> > > can we please revert this before the release?
+> > 
+> > How about this ?
+> 
+> > @@ -1710,11 +1711,18 @@ static void mem_cgroup_record_scanstat(s
+> >  	spin_lock(&memcg->scanstat.lock);
+> >  	__mem_cgroup_record_scanstat(memcg->scanstat.stats[context], rec);
+> >  	spin_unlock(&memcg->scanstat.lock);
+> > -
+> > -	memcg = rec->root;
+> > -	spin_lock(&memcg->scanstat.lock);
+> > -	__mem_cgroup_record_scanstat(memcg->scanstat.rootstats[context], rec);
+> > -	spin_unlock(&memcg->scanstat.lock);
+> > +	cgroup = memcg->css.cgroup;
+> > +	do {
+> > +		spin_lock(&memcg->scanstat.lock);
+> > +		__mem_cgroup_record_scanstat(
+> > +			memcg->scanstat.hierarchy_stats[context], rec);
+> > +		spin_unlock(&memcg->scanstat.lock);
+> > +		if (!cgroup->parent)
+> > +			break;
+> > +		cgroup = cgroup->parent;
+> > +		memcg = mem_cgroup_from_cont(cgroup);
+> > +	} while (memcg->use_hierarchy && memcg != rec->root);
+> 
+> Okay, so this looks correct, but it sums up all parents after each
+> memcg scanned, which could have a performance impact.  Usually,
+> hierarchy statistics are only summed up when a user reads them.
+> 
+Hmm. But sum-at-read doesn't work.
 
-Dear list,
+Assume 3 cgroups in a hierarchy.
 
-for years I have been plagued by the following problem, and it is
-almost out of last resort that I am turning to you. I have searched
-the web over the months. There is talk of dirty_ratios, of caches,
-and of write throttling, but I have not been able to find a way to
-fix the problem.
+	A
+       /
+      B
+     /
+    C
 
-I am using encrypted filesystems (dm-crypt) and the 3.0.0 kernel.
-Underneath might be a RAID1 or a fast SSD. On top is usually LVM
-with a few LVs holding the system.
+C's scan contains 3 causes.
+	C's scan caused by limit of A.
+	C's scan caused by limit of B.
+	C's scan caused by limit of C.
 
-Whenever an I/O-intensive task starts, such as:
+If we make hierarchy sum at read, we think
+	B's scan_stat = B's scan_stat + C's scan_stat
+But in precice, this is
 
-  - tar -c or -x
-  - dd
-  - rsync
-  - notmuch
-  - =E2=80=A6
+	B's scan_stat = B's scan_stat caused by B +
+			B's scan_stat caused by A +
+			C's scan_stat caused by C +
+			C's scan_stat caused by B +
+			C's scan_stat caused by A.
 
-the system becomes unusable for several seconds at a time, at least
-once or twice per minute. What seems to happen is that Vim or the
-Shell or Firefox or whatever else completely blocks, waiting for
-I/O, but Linux is not satisfying those I/O requests because it's
-busy servicing the aforementioned I/O-intensive task. As a result,
-Vim or the Shell or Firefox or whatever do not update, forcing me to
-wait for them to get an I/O service slot.
+In orignal version.
+	B's scan_stat = B's scan_stat caused by B +
+			C's scan_stat caused by B +
 
-People not running dm-crypt seem unable to reproduce this problem,
-making me think that it must be due to dm-crypt, and I wouldn't find
-it hard to imagine, because dm-crypt basically shields the
-I/O-scheduler of the kernel, doesn't it? Worse, it probably doesn't
-make any effort of scheduling I/O itself. Note: I know very little
-about the internals, so please correct me if I am wrong.
+After this patch,
+	B's scan_stat = B's scan_stat caused by B +
+			B's scan_stat caused by A +
+			C's scan_stat caused by C +
+			C's scan_stat caused by B +
+			C's scan_stat caused by A.
 
-I am wondering if this is the case, and if so, what could be done
-about it.
+Hmm...removing hierarchy part completely seems fine to me.
 
-Do you have any ideas and/or concrete suggestions?
 
-PS: http://bugs.debian.org/635768 was the latest incarnation of my
-    attempts to solve this problem (I accidentally wrote notmuch
-    when I mean to write awesome in that report=E2=80=A6).
+> I don't get why this has to be done completely different from the way
+> we usually do things, without any justification, whatsoever.
+> 
+> Why do you want to pass a recording structure down the reclaim stack?
 
---=20
-martin | http://madduck.net/ | http://two.sentenc.es/
-=20
-"gilmour's guitar sounds good
- whether you've got a bottle of cider in your hand
- or a keyboard and a mouse."
-                                                -- prof. bruce maxwell
-=20
-spamtraps: madduck.bogus@madduck.net
+Just for reducing number of passed variables.
 
---5mCyUwZo2JvN/JJP
-Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
-Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
+> Why not make it per-cpu counters that are only summed up, together
+> with the hierarchy values, when someone is actually interested in
+> them?  With an interface like mem_cgroup_count_vm_event(), or maybe
+> even an extension of that function?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+percpu counter seems overkill to me because there is no heavy lock contention.
 
-iQLvBAEBCgDZBQJOXI28wBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
-aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
-bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
-NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
-MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xInK
-EACpQlFs2QFBEyXAg5oIxRaAM1fdYMDhN6BlZhCDKrbR5GPjJ7Lo6s0Rx/CsG27f
-+DEzI1/VAxZc8YJIuxWDJ+EhYsb4UEnxaZSOduTlJ8ZSGzSfbMlbvVkc75bUBEym
-Jl9Bl4V0tmzbaGt1pETJDEnoTF5F8NsjevfZ33py98fEBPgE3nCnJNvp8ywd7/Nu
-CZHzebeFqyYrmhYnCwDOsXa9brTI7IDPcXPqaQBAVfeQab8AzLFCUpRQR+zO+nXH
-DiJqi3JO7s8/zWlx9DsloasdUa9rerwyzgCKHZc8PY+wZ55tSB9jiP2oQe1qgvAQ
-yjQickC5j8LJzvjUdwZANh/9MAHSgXphsxphfRujs/k4Fqhn/BJH+uhrWNeXmJM2
-Fi35PSAozaxtapFnwmn5LwHnBufgAofzvSQ76Tcbp8NPVg3ktmnRzCqZwtrdJtOL
-8SBf2UvYsetezUMe2dAfpWlC9KbSRupLBgddVJq8EHvOyLURucRcf07axIE6pyXa
-Z4Lk5SBMHPF0ZGtlWGKXfjodST3OnRR5HQkeONJmqR7Ap/xnHy+O9diresFIDy9q
-68XwP09MLPmn3eIw9fHJmxnfl2Wn0il4HgjPXEmLJBszhOKfoykgZOVsHLW/ZTxL
-NYJw5N7eZImvfRnd4gOxdqm3sWmIB6mNKOrsxQFV+j73oA==
-=99X1
------END PGP SIGNATURE-----
 
---5mCyUwZo2JvN/JJP--
+Thanks,
+-Kame
+
+
+
 
