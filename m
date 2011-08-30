@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab1H3TPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:15:11 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19460 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279Ab1H3TPG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756288Ab1H3TPG (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 30 Aug 2011 15:15:06 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068161"
-Message-Id: <20110830190801.159310885@codeaurora.org>
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42330 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756268Ab1H3TPC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 15:15:02 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="113875020"
+Message-Id: <20110830190800.882565453@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Aug 2011 14:07:44 -0500
+Date: Tue, 30 Aug 2011 14:07:41 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch v2 15/35] Hexagon: Add init_task and process functions
+Cc: Linas Vepstas <linas@codeaurora.org>
+Subject: [patch v2 12/35] Hexagon: Export ksyms defined in assembly files.
 References: <20110830190729.923334292@codeaurora.org>
-Content-Disposition: inline; filename=init-task.diff
+Content-Disposition: inline; filename=ksyms.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed potential race-to-sleep condition in cpu_idle().  I hope.
-
-If called with interrupts disabled, our __vmwait() actually just returns
-without servicing it.  Let me know if there's any other condition that
-I've missed...
-
-
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
 ---
- arch/hexagon/kernel/init_task.c |   54 +++++++
- arch/hexagon/kernel/process.c   |  278 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 332 insertions(+)
+ arch/hexagon/kernel/hexagon_ksyms.c |   42 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/init_task.c
+Index: linux-hexagon-kernel/arch/hexagon/kernel/hexagon_ksyms.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/init_task.c	2011-08-24 18:45:48.203877165 -0500
-@@ -0,0 +1,54 @@
++++ linux-hexagon-kernel/arch/hexagon/kernel/hexagon_ksyms.c	2011-08-24 18:45:48.173877140 -0500
+@@ -0,0 +1,42 @@
 +/*
-+ * Init task definition
++ * Export of symbols defined in assembly files and/or libgcc.
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -59,323 +52,28 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/init_task.c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/init_task.h>
-+#include <linux/fs.h>
-+#include <linux/mqueue.h>
-+#include <asm/thread_info.h>
++#include <asm/hexagon_vm.h>
 +#include <asm/uaccess.h>
-+#include <asm/pgtable.h>
 +
-+static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
-+static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
++EXPORT_SYMBOL(__copy_from_user_hexagon);
++EXPORT_SYMBOL(__copy_to_user_hexagon);
++EXPORT_SYMBOL(__vmgetie);
++EXPORT_SYMBOL(__vmsetie);
++EXPORT_SYMBOL(memcpy);
++EXPORT_SYMBOL(memset);
 +
-+/*
-+ * Initial thread structure.
-+ *
-+ * We need to make sure that this is 8192-byte aligned due to the
-+ * way process stacks are handled. This is done by making sure
-+ * the linker maps this in the .text segment right after head.S,
-+ * and making head.S ensure the proper alignment.
-+ */
-+union thread_union init_thread_union
-+	__attribute__((__section__(".data.init_task"),
-+		__aligned__(THREAD_SIZE))) = {
-+			INIT_THREAD_INFO(init_task)
-+		};
++#define DECLARE_EXPORT(name)     \
++	extern void name(void); EXPORT_SYMBOL(name)
 +
-+/*
-+ * Initial task structure.
-+ *
-+ * All other task structs will be allocated on slabs in fork.c
-+ */
-+struct task_struct init_task = INIT_TASK(init_task);
-+EXPORT_SYMBOL(init_task);
-Index: linux-hexagon-kernel/arch/hexagon/kernel/process.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/process.c	2011-08-24 18:45:48.203877165 -0500
-@@ -0,0 +1,278 @@
-+/*
-+ * Process creation support for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
++/* Symbols found in libgcc that assorted kernel modules need */
++DECLARE_EXPORT(__hexagon_memcpy_likely_aligned_min32bytes_mult8bytes);
 +
-+#include <linux/sched.h>
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/tick.h>
-+#include <linux/uaccess.h>
-+#include <linux/slab.h>
++DECLARE_EXPORT(__hexagon_divsi3);
++DECLARE_EXPORT(__hexagon_modsi3);
++DECLARE_EXPORT(__hexagon_udivsi3);
++DECLARE_EXPORT(__hexagon_umodsi3);
 +
-+/*
-+ * Kernel thread creation.  The desired kernel function is "wrapped"
-+ * in the kernel_thread_helper function, which does cleanup
-+ * afterwards.
-+ */
-+static void __noreturn kernel_thread_helper(void *arg, int (*fn)(void *))
-+{
-+	do_exit(fn(arg));
-+}
 +
-+int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
-+{
-+	struct pt_regs regs;
-+
-+	memset(&regs, 0, sizeof(regs));
-+	/*
-+	 * Yes, we're exploting illicit knowledge of the ABI here.
-+	 */
-+	regs.r00 = (unsigned long) arg;
-+	regs.r01 = (unsigned long) fn;
-+	pt_set_elr(&regs, (unsigned long)kernel_thread_helper);
-+	pt_set_kmode(&regs);
-+
-+	return do_fork(flags|CLONE_VM|CLONE_UNTRACED, 0, &regs, 0, NULL, NULL);
-+}
-+EXPORT_SYMBOL(kernel_thread);
-+
-+/*
-+ * Program thread launch.  Often defined as a macro in processor.h,
-+ * but we're shooting for a small footprint and it's not an inner-loop
-+ * performance-critical operation.
-+ *
-+ * The Hexagon ABI specifies that R28 is zero'ed before program launch,
-+ * so that gets automatically done here.  If we ever stop doing that here,
-+ * we'll probably want to define the ELF_PLAT_INIT macro.
-+ */
-+void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
-+{
-+	/* Set to run with user-mode data segmentation */
-+	set_fs(USER_DS);
-+	/* We want to zero all data-containing registers. Is this overkill? */
-+	memset(regs, 0, sizeof(*regs));
-+	/* We might want to also zero all Processor registers here */
-+	pt_set_usermode(regs);
-+	pt_set_elr(regs, pc);
-+	pt_set_rte_sp(regs, sp);
-+}
-+
-+/*
-+ *  Spin, or better still, do a hardware or VM wait instruction
-+ *  If hardware or VM offer wait termination even though interrupts
-+ *  are disabled.
-+ */
-+static void default_idle(void)
-+{
-+	__vmwait();
-+}
-+
-+void (*idle_sleep)(void) = default_idle;
-+
-+void cpu_idle(void)
-+{
-+	while (1) {
-+		tick_nohz_stop_sched_tick(1);
-+		local_irq_disable();
-+		while (!need_resched()) {
-+			idle_sleep();
-+			/*  interrupts wake us up, but aren't serviced  */
-+			local_irq_enable();	/* service interrupt   */
-+			local_irq_disable();
-+		}
-+		tick_nohz_restart_sched_tick();
-+		schedule();
-+	}
-+}
-+
-+/*
-+ *  Return saved PC of a blocked thread
-+ */
-+unsigned long thread_saved_pc(struct task_struct *tsk)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * Copy architecture-specific thread state
-+ */
-+int copy_thread(unsigned long clone_flags, unsigned long usp,
-+		unsigned long unused, struct task_struct *p,
-+		struct pt_regs *regs)
-+{
-+	struct thread_info *ti = task_thread_info(p);
-+	struct hexagon_switch_stack *ss;
-+	struct pt_regs *childregs;
-+	asmlinkage void ret_from_fork(void);
-+
-+	childregs = (struct pt_regs *) (((unsigned long) ti + THREAD_SIZE) -
-+					sizeof(*childregs));
-+
-+	memcpy(childregs, regs, sizeof(*childregs));
-+	ti->regs = childregs;
-+
-+	/*
-+	 * Establish kernel stack pointer and initial PC for new thread
-+	 */
-+	ss = (struct hexagon_switch_stack *) ((unsigned long) childregs -
-+						    sizeof(*ss));
-+	ss->lr = (unsigned long)ret_from_fork;
-+	p->thread.switch_sp = ss;
-+
-+	/* If User mode thread, set pt_reg stack pointer as per parameter */
-+	if (user_mode(childregs)) {
-+		pt_set_rte_sp(childregs, usp);
-+
-+		/* Child sees zero return value */
-+		childregs->r00 = 0;
-+
-+		/*
-+		 * The clone syscall has the C signature:
-+		 * int [r0] clone(int flags [r0],
-+		 *           void *child_frame [r1],
-+		 *           void *parent_tid [r2],
-+		 *           void *child_tid [r3],
-+		 *           void *thread_control_block [r4]);
-+		 * ugp is used to provide TLS support.
-+		 */
-+		if (clone_flags & CLONE_SETTLS)
-+			childregs->ugp = childregs->r04;
-+
-+		/*
-+		 * Parent sees new pid -- not necessary, not even possible at
-+		 * this point in the fork process
-+		 * Might also want to set things like ti->addr_limit
-+		 */
-+	} else {
-+		/*
-+		 * If kernel thread, resume stack is kernel stack base.
-+		 * Note that this is pointer arithmetic on pt_regs *
-+		 */
-+		pt_set_rte_sp(childregs, (unsigned long)(childregs + 1));
-+		/*
-+		 * We need the current thread_info fast path pointer
-+		 * set up in pt_regs.  The register to be used is
-+		 * parametric for assembler code, but the mechanism
-+		 * doesn't drop neatly into C.  Needs to be fixed.
-+		 */
-+		childregs->THREADINFO_REG = (unsigned long) ti;
-+	}
-+
-+	/*
-+	 * thread_info pointer is pulled out of task_struct "stack"
-+	 * field on switch_to.
-+	 */
-+	p->stack = (void *)ti;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Release any architecture-specific resources locked by thread
-+ */
-+void release_thread(struct task_struct *dead_task)
-+{
-+}
-+
-+/*
-+ * Free any architecture-specific thread data structures, etc.
-+ */
-+void exit_thread(void)
-+{
-+}
-+
-+/*
-+ * Some archs flush debug and FPU info here
-+ */
-+void flush_thread(void)
-+{
-+}
-+
-+/*
-+ * The "wait channel" terminology is archaic, but what we want
-+ * is an identification of the point at which the scheduler
-+ * was invoked by a blocked thread.
-+ */
-+unsigned long get_wchan(struct task_struct *p)
-+{
-+	unsigned long fp, pc;
-+	unsigned long stack_page;
-+	int count = 0;
-+	if (!p || p == current || p->state == TASK_RUNNING)
-+		return 0;
-+
-+	stack_page = (unsigned long)task_stack_page(p);
-+	fp = ((struct hexagon_switch_stack *)p->thread.switch_sp)->fp;
-+	do {
-+		if (fp < (stack_page + sizeof(struct thread_info)) ||
-+			fp >= (THREAD_SIZE - 8 + stack_page))
-+			return 0;
-+		pc = ((unsigned long *)fp)[1];
-+		if (!in_sched_functions(pc))
-+			return pc;
-+		fp = *(unsigned long *) fp;
-+	} while (count++ < 16);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Borrowed from PowerPC -- basically allow smaller kernel stacks if we
-+ * go crazy with the page sizes.
-+ */
-+#if THREAD_SHIFT < PAGE_SHIFT
-+
-+static struct kmem_cache *thread_info_cache;
-+
-+struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node)
-+{
-+	struct thread_info *ti;
-+
-+	ti = kmem_cache_alloc_node(thread_info_cache, GFP_KERNEL, node);
-+	if (unlikely(ti == NULL))
-+		return NULL;
-+#ifdef CONFIG_DEBUG_STACK_USAGE
-+	memset(ti, 0, THREAD_SIZE);
-+#endif
-+	return ti;
-+}
-+
-+void free_thread_info(struct thread_info *ti)
-+{
-+	kmem_cache_free(thread_info_cache, ti);
-+}
-+
-+/*  Weak symbol; called by init/main.c  */
-+
-+void thread_info_cache_init(void)
-+{
-+	thread_info_cache = kmem_cache_create("thread_info", THREAD_SIZE,
-+					      THREAD_SIZE, 0, NULL);
-+	BUG_ON(thread_info_cache == NULL);
-+}
-+
-+#endif /* THREAD_SHIFT < PAGE_SHIFT */
-+
-+/*
-+ * Required placeholder.
-+ */
-+int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
-+{
-+	return 0;
-+}
 
 --
 
