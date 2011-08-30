@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab1H3QNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 12:13:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41616 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755641Ab1H3QNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 12:13:40 -0400
-Subject: Re: [PATCH 06/24] netfilter: Remove unnecessary OOM logging
- messages
-From: Joe Perches <joe@perches.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Bart De Schuymer <bart.de.schuymer@pandora.be>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lvs-devel@vger.kernel.org
-In-Reply-To: <4E5CDBAA.6040001@trash.net>
-References: <cover.1314650069.git.joe@perches.com>
-	 <13c1c12486cae409dfa5254b1435e660f2b17e05.1314650069.git.joe@perches.com>
-	 <4E5CDBAA.6040001@trash.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Aug 2011 09:13:38 -0700
-Message-ID: <1314720818.14422.1.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755695Ab1H3QRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 12:17:46 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19510 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab1H3QRp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 12:17:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 30 Aug 2011 09:17:32 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Marc Dietich <marvin24@gmx.de>
+CC: Grant Likely <grant.likely@secretlab.ca>, Chris Ball <cjb@laptop.org>,
+        Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 30 Aug 2011 09:17:31 -0700
+Subject: RE: [PATCH 1/2] sdhci/tegra: Add Device Tree probing support
+Thread-Topic: [PATCH 1/2] sdhci/tegra: Add Device Tree probing support
+Thread-Index: Acxm6cVqaZrAQzhXRYuSo0H69MoFBgARkEag
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B3279D49@HQMAIL01.nvidia.com>
+References: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
+ <201108300952.02418.marvin24@gmx.de>
+In-Reply-To: <201108300952.02418.marvin24@gmx.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-30 at 14:46 +0200, Patrick McHardy wrote:
-> On 29.08.2011 23:17, Joe Perches wrote:
-> > Removing unnecessary messages saves code and text.
-> > Site specific OOM messages are duplications of a generic MM
-> > out of memory message and aren't really useful, so just
-> > delete them.
-> Looks good to me. Do you want me to apply this patch or are you
-> intending to have the entire series go through Dave?
+Marc Dietich wrote at Tuesday, August 30, 2011 1:52 AM:
+...
+> > diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+...
+> > @@ -95,12 +94,10 @@ static irqreturn_t carddetect_irq(int irq, void *data)
+> >
+> >  static int tegra_sdhci_8bit(struct sdhci_host *host, int bus_width)
+> >  {
+> > -	struct platform_device *pdev = to_platform_device(mmc_dev(host->mmc));
+> > -	struct tegra_sdhci_platform_data *plat;
+> > +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> > +	struct tegra_sdhci_platform_data *plat = pltfm_host->priv;
+> >  	u32 ctrl;
+> >
+> > -	plat = pdev->dev.platform_data;
+> > -
+> >  	ctrl = sdhci_readb(host, SDHCI_HOST_CONTROL);
+> >  	if (plat->is_8bit && bus_width == MMC_BUS_WIDTH_8) {
+> >  		ctrl &= ~SDHCI_CTRL_4BITBUS;
+> 
+> what about 8 bit support?
 
-It doesn't matter to me one way or another.
+I didn't understand the question at first; I assume you're asking about
+8-bit support in the device-tree binding/parsing.
 
-If you pick this one up, when I redo these
-to separate vmalloc from the the other alloc
-cases, I'll won't send netfilter again.
+Yes, that's a missing feature, and I should add it. Thanks for pointing
+that out.
 
-cheers, Joe
+(I'll also fix the binding docs issue that Shawn pointed out while I'm
+at it).
+
+-- 
+nvpublic
 
