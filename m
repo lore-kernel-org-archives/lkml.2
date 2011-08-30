@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1H3WFn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 18:05:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52673 "EHLO mail.zytor.com"
+	id S1752372Ab1H3WGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 18:06:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35703 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854Ab1H3WFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 18:05:41 -0400
-Message-ID: <4E5D5E50.2080809@zytor.com>
-Date: Tue, 30 Aug 2011 15:04:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1751859Ab1H3WGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 18:06:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="43786136"
+Message-ID: <4E5D5EE6.3070708@linux.intel.com>
+Date: Tue, 30 Aug 2011 15:06:30 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>, x86@kernel.org,
-        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v2 3/4] platform: (TS-5500) add LED support
-References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1314402027-11293-4-git-send-email-vivien.didelot@savoirfairelinux.com> <20110829221654.GD26846@sirena.org.uk> <4E5C7731.3080309@zytor.com> <20110830171424.71465472@v0nbox> <20110830211528.GU2061@opensource.wolfsonmicro.com> <4E5D535B.3050304@zytor.com> <20110830175644.2ff5d086@v0nbox>
-In-Reply-To: <20110830175644.2ff5d086@v0nbox>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com
+Subject: Re: [PATCH 2/4] posix-timers: limit the number of posix timers per
+ process
+References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>	<1314661157-22173-2-git-send-email-andi@firstfloor.org> <20110830144407.acdae071.akpm@linux-foundation.org>
+In-Reply-To: <20110830144407.acdae071.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30/2011 02:56 PM, Vivien Didelot wrote:
->>
-> I wrote the led_set function like:
-> 
->   static void ts5500_led_set(struct led_classdev *led_cdev,
->                              enum led_brightness value)
->   {
->           struct ts5500_led *led = container_of(led_cdev,
->                                                 struct ts5500_led,
->                                                 cdev);
->           mutex_lock(&led->lock);
->           led->new_brightness = (value == LED_OFF) ? LED_OFF : LED_FULL;
->           outb(value, led->ioaddr);
->           mutex_unlock(&led->lock);
->   }
-> 
-> I guess the wrong value could be read if we get preempted just before
-> the outb() call, am I wrong?
-> 
 
-And what happens if we do?
+> Sorry, it should be an rlimit from day one, IMO.
+>
 
-P.S. Your canonicalization of the value doesn't extend to outb().
+Ok.
 
-	-hpa
+> Partly because rlimits are a better implementation.
+
+The reason I went with a sysctl is that rlimits are more intrusive for 
+user space,
+requires special tools or patching bash.
+
+> Partly because once rlimits are added, the /proc knob no longer has any
+> sane behaviour.  Does it only modify /sbin/init?  Does it do a global
+> process walk, modifying all threads?
+
+There's no way to modify: you would need to kill the process or randomly
+take timers away. The limit only applies to new timers.
+
+-Andi
+
