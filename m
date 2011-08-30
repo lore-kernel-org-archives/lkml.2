@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab1H3VH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 17:07:26 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:46758 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756730Ab1H3VHV (ORCPT
+	id S1756764Ab1H3VLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 17:11:15 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56347 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab1H3VLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 17:07:21 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Deepthy Ravi <deepthy.ravi@ti.com>
-Subject: Re: [PATCH 1/2] omap3: ISP: Fix the failure of CCDC capture during suspend/resume
-Date: Tue, 30 Aug 2011 23:07:47 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.7.0; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mchehab@infradead.org, linux-omap@vger.kernel.org,
-        Abhilash K V <abhilash.kv@ti.com>
-References: <1312984992-19315-1-git-send-email-deepthy.ravi@ti.com>
-In-Reply-To: <1312984992-19315-1-git-send-email-deepthy.ravi@ti.com>
+	Tue, 30 Aug 2011 17:11:11 -0400
+Date: Tue, 30 Aug 2011 22:10:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: try_to_freeze() called with IRQs disabled on ARM
+Message-ID: <20110830211018.GB17887@n2100.arm.linux.org.uk>
+References: <20110823221314.GL3895@n2100.arm.linux.org.uk> <CAOS58YNtQEuke=Ko9J2oNGMECjabzxj=Nrg1o64X1JC3YRmJuw@mail.gmail.com> <20110825121416.GB8883@n2100.arm.linux.org.uk> <20110825121710.GK3286@htj.dyndns.org> <20110825122543.GC8883@n2100.arm.linux.org.uk> <20110825123542.GM3286@htj.dyndns.org> <20110825130414.GE8883@n2100.arm.linux.org.uk> <20110825130907.GO3286@htj.dyndns.org> <20110825145558.GF8883@n2100.arm.linux.org.uk> <20110830205802.GT2061@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108302307.47564.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110830205802.GT2061@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wednesday 10 August 2011 16:03:12 Deepthy Ravi wrote:
-> From: Abhilash K V <abhilash.kv@ti.com>
+On Tue, Aug 30, 2011 at 09:58:03PM +0100, Mark Brown wrote:
+> On Thu, Aug 25, 2011 at 03:55:58PM +0100, Russell King - ARM Linux wrote:
 > 
-> While resuming from the "suspended to memory" state,
-> occasionally CCDC fails to get enabled and thus fails
-> to capture frames any more till the next suspend/resume
-> is issued.
-> This is a race condition which happens only when a CCDC
-> frame-completion ISR is pending even as ISP device's
-> isp_pm_prepare() is getting called and only one buffer
-> is left on the DMA queue.
-> The DMA queue buffers are thus depleted which results in
-> its underrun.So when ISP resumes there are no buffers on
-> the queue (as the application which can issue buffers is
-> yet to resume) to start video capture.
-> This fix addresses this issue by dequeuing and enqueing
-> the last buffer in isp_pm_prepare() after its DMA gets
-> completed. Thus,when ISP resumes it always finds atleast
-> one buffer on the DMA queue - this is true if application
-> uses only 3 buffers.
+> > Here's the patch.  As the kernel I've run this against doesn't have the
+> > change to try_to_freeze(), I added a might_sleep() in do_signal() during
+> > my testing to verify that it fixes Mark's problem (which it does.)
+> 
+> > Mark, can you test this to make sure it fixes your problem please?
+> 
+> Yes, it resolves the problem for me - thanks!
+> 
+> Tested-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> Sorry about the delay, was away for the bank holiday weekend.
 
-How is that problem specific to the CCDC ? Can't it be reproduce at the 
-preview engine or resizer output as well ?
+That's good, thanks.
 
--- 
-Regards,
-
-Laurent Pinchart
+Just waiting for Ulrich Weigand to verify that his gdb test-case doesn't
+break with this patch.
