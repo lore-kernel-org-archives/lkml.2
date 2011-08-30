@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974Ab1H3DR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 23:17:27 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:45640 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab1H3DR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 23:17:26 -0400
-Date: Mon, 29 Aug 2011 20:17:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frank Rowand <frank.rowand@am.sony.com>
-Cc: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [ANNOUNCE] 3.0.1-rt11
-Message-ID: <20110830031720.GC2218@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1313232790.25267.7.camel@twins>
- <4E559039.8060209@am.sony.com>
- <20110826235507.GJ2342@linux.vnet.ibm.com>
- <4E5BEF21.6040908@am.sony.com>
+	id S1752152Ab1H3DcD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 23:32:03 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:19233
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751036Ab1H3DcA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 23:32:00 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zz14e0M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 30 Aug 2011 11:40:36 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Chris Ball <cjb@laptop.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] sdhci/tegra: Add Device Tree probing support
+Message-ID: <20110830034035.GC19294@S2100-06.ap.freescale.net>
+References: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4E5BEF21.6040908@am.sony.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 12:57:21PM -0700, Frank Rowand wrote:
-> On 08/26/11 16:55, Paul E. McKenney wrote:
-> > On Wed, Aug 24, 2011 at 04:58:49PM -0700, Frank Rowand wrote:
-> >> On 08/13/11 03:53, Peter Zijlstra wrote:
-> >>>
-> >>> Whee, I can skip release announcements too!
-> >>>
-> >>> So no the subject ain't no mistake its not, 3.0.1-rt11 is there for the
-> >>> grabs.
-> >>>
-> >>> Changes include (including the missing -rt10):
-> >>>
-> >>>   - hrtimer fix that should make RT_GROUP work again
-> >>>   - RCU fixes that should make the RCU stalls go away
-> >>>   - fixes SMP=n builds after breaking them in -rt9
-> >>
-> >> I have a consistent (every boot) hang on boot.  With a few
-> >> hacks to get console output, I get the
-> >>
-> >>   rcu_preempt_state detected stalls on CPUs/tasks
-> >>
-> >> messages in the attached console log.
+On Tue, Aug 23, 2011 at 12:15:33PM -0600, Stephen Warren wrote:
+> From: Grant Likely <grant.likely@secretlab.ca>
 > 
-> < snip >
+> Add hooks to read gpio configuration out of the device tree node.
 > 
-> > 
-> > Hmmm...  The last few that I have seen that looked like this were
-> > due to my messing up rcutorture so that the RCU-boost testing kthreads
-> > ran CPU-bound at real-time priority.
-> > 
-> > Is it possible that something similar is happening on your system?
-> > 
-> >                                                         Thanx, Paul
+> [grant.likely: Rewrite of original patch from John Bonesio]
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> [swarren: Fixed tegra_sdhci_get_ro() to retrieve pdata correctly]
+> [swarren: Reworked to avoid #ifdef CONFIG_OF]
+> [swarren: Reworked binding based on fsl-imx-esdhc.txt]
+> [swarren: Documented binding]
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Theoretically, these two patches should be merged in order in one place,
+> since the 2nd logically depends on the first. However, it's really just
+> a documentation dependency, so I think it's fine to merge them into the
+> MMC and DT trees separately and let them meet in linux-next.
 > 
-> I don't think so.  That would require CONFIG_RCU_TORTURE_TEST, correct?
-> And that is not set:
+>  .../devicetree/bindings/mmc/nvidia-sdhci.txt       |   25 ++++++++++
+>  drivers/mmc/host/sdhci-tegra.c                     |   51 +++++++++++++++----
+>  2 files changed, 65 insertions(+), 11 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
 > 
-> < way big snip >
-> 
-> >> # CONFIG_RCU_TORTURE_TEST is not set
-> >> CONFIG_RCU_CPU_STALL_TIMEOUT=60
-> >> CONFIG_RCU_CPU_STALL_VERBOSE=y
-> 
-> I'm finally getting back to this today, so I'm starting to learn about
-> the RCU stall detector, so maybe I can make some more sense of this.
+> diff --git a/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
+> new file mode 100644
+> index 0000000..c87f667
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
+> @@ -0,0 +1,25 @@
+> +* NVIDIA Tegra Secure Digital Host Controller
+> +
+> +This controller on Tegra family SoCs provides an interface for MMC, SD,
+> +and SDIO types of memory cards.
+> +
+> +Required properties:
+> +- compatible : Should be "nvidia,<chip>-sdhci"
+> +- reg : Should contain eSDHC registers location and length
+> +- interrupts : Should contain eSDHC interrupt
 
-This condition does not require CONFIG_RCU_TORTURE_TEST, rather, my
-bug in CONFIG_RCU_TORTURE_TEST was one way to make this happen.  Any
-condition that prevents RCU_SOFTIRQ from ever executing can cause these
-symptoms.
+You may want to replace eSDHC with something Tegra specific.
 
-							Thanx, Paul
+-- 
+Regards,
+Shawn
+
