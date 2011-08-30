@@ -1,104 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab1H3QZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 12:25:53 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1961 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab1H3QZv convert rfc822-to-8bit (ORCPT
+	id S1755778Ab1H3QbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 12:31:07 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53725 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755577Ab1H3QbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 12:25:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 30 Aug 2011 09:25:25 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben-linux@fluff.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dilan Lee <dilee@nvidia.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@google.com>
-Date: Tue, 30 Aug 2011 09:25:24 -0700
-Subject: RE: [PATCH] i2c/tegra: I2C driver uses the
- suspend_noirq/resume_noirq
-Thread-Topic: [PATCH] i2c/tegra: I2C driver uses the
- suspend_noirq/resume_noirq
-Thread-Index: AcxipYooKUwOWBpMSfeE5QkubxGA9gEi65Qg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B3279D4F@HQMAIL01.nvidia.com>
-References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
-	<CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
-	<20110806084805.GA18098@sirena.org.uk>
-	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
-	<CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
-	<CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
-	<1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
-	<CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
-	<20110812031433.GE10218@opensource.wolfsonmicro.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B24A3CA6@HQMAIL01.nvidia.com>
- <CAMbhsRRRa_JV8_LHEvsM2h3e8Hbf1GAcpXz8gdU3wCc8Jgz5gw@mail.gmail.com>
-In-Reply-To: <CAMbhsRRRa_JV8_LHEvsM2h3e8Hbf1GAcpXz8gdU3wCc8Jgz5gw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Aug 2011 12:31:04 -0400
+Message-ID: <4E5D102B.5010402@linux.vnet.ibm.com>
+Date: Tue, 30 Aug 2011 11:30:35 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Jan Kiszka <jan.kiszka@siemens.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: Broken pci_block_user_cfg_access interface
+References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <4E5BDEAB.5000405@siemens.com> <20110829191858.GA9415@redhat.com>
+In-Reply-To: <20110829191858.GA9415@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben, Arnd,
-
-Could you please ack/nack the patch at the start of this thread for Colin;
-see below.
-
-Thanks.
-
-Colin Cross wrote at Wednesday, August 24, 2011 3:34 PM:
-> On Wed, Aug 24, 2011 at 2:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> > Mark Brown wrote at Thursday, August 11, 2011 9:15 PM:
-> >> On Thu, Aug 11, 2011 at 07:59:27PM -0700, Colin Cross wrote:
-> >> > On Thu, Aug 11, 2011 at 5:45 PM, Mark Brown
-> >>
-> >> > > For example with ASoC we'd sort all the components before the ASoC card
-> >> > > without regard for their bus dependencies or any other dependencies they
-> >> > > have (eg, their regulators). Since the ASoC card is a platform device
-> >> > > it's likely to have registered early with no regard for where the buses
-> >> > > the card needs are registered. I'd expect there's a reasonable chance
-> >> > > it'll actually make things worse in the short term.
-> >>
-> >> > You can't just move everything after the card, you have to move
-> >> > everything after the last device that was probed, and it only works if
-> >> > nothing depends on any of the devices that are moved.
-> >>
-> >> Sorry, I said that the wrong way round due to trying to reply quickly -
-> >> the card would be the thing that moves since that's the thing that
-> >> actually does the suspend but we've *no* idea which device we need to
-> >> move it after.  Since all the function does is a direct move after or
-> >> before a single device all we can do is pick one and pray that it's the
-> >> right device.
-> >
-> > Colin,
-> >
-> > This thread seems to have died down; how should we make progress?
-> >
-> > It sounds like the suspend_irq solution is the current de-facto standard;
-> > not optimal, but all we really have right now and already in use. I could
-> > certainly see avoiding this solution if it was the first time it was
-> > employed, but re-using it seems reasonable to me?
-> >
-> > Alternatively, are you attending either Linux Plumbers Conference or the
-> > Kernel Summit? Mark implied this topic might well come up for discussion
-> > there. Unfortunately, I won't be able to make LPC due to a conflict.
-> I don't think I'll be able to make it.
+On 08/29/2011 02:18 PM, Michael S. Tsirkin wrote:
+> On Mon, Aug 29, 2011 at 08:47:07PM +0200, Jan Kiszka wrote:
+>> On 2011-08-29 17:42, Jan Kiszka wrote:
+>>> I still don't get what prevents converting ipr to allow plain mutex
+>>> synchronization. My vision is:
+>>>  - push reset-on-error of ipr into workqueue (or threaded IRQ?)
+>>
+>> I'm starting to like your proposal: I had a look at ipr, but it turned
+>> out to be anything but trivial to convert that driver. It runs its
+>> complete state machine under spin_lock_irq, and the functions calling
+>> pci_block/unblock_user_cfg_access are deep inside this thing. I have no
+>> hardware to test whatever change, and I feel a bit uncomfortable asking
+>> Brian to redesign his driver that massively.
+>>
+>> So back to your idea: I would generalize pci_block_user_cfg_access to
+>> pci_block_cfg_access. It should fail when some other site already holds
+>> the access lock, but it should remain non-blocking - for the sake of ipr.
 > 
-> > (and you'd mentioned having the subsystem maintainers weigh in on this;
-> > which sub-system; IRQ, power, I2C, ...?)
+> It would be easy to have blocking and non-blocking variants.
 > 
-> If Ben says its OK, its fine with me.  Or maybe Arnd wants to weigh in?
+> But
+> - I have no idea whether supporting sysfs config/reset access
+>   while ipr is active makes any sense - I know we need it for uio.
+
+I really don't think it makes sense. Ideally, I really think the driver
+should be able to override the PCI layer reset interface in sysfs. If a driver
+is loaded, the driver owns all the state of that device and resetting it without
+informing the driver is just nasty. Additionally, many devices may have
+much more complex logic to performing a reset than what PCI defines. With
+ipr, for example, it needs to get a shutdown command issued to it prior to the
+reset if at all possible so that the firmware quiesces any I/O it is performing.
+It also needs additional communication prior to resetting the chip to ensure
+the firmware is not modifying its persistent error log on the adapter's flash,
+since resetting the card while the flash segment is being updated will cause
+the adapter to lose the persistent error log. Post reset, ipr has a bunch
+of work to do to get the firmware back up and running to a state where it
+can handle I/O again.
+
+Different ipr chips also have different requirements as to what
+reset mechanisms defined by PCI actually work. Some chips require BIST to be
+run via PCI config space, while others require a PCI warm reset, otherwise
+the card ends up in an unusable state.
+
+So, here is my proposal to resolve this particular issue. Add a reset function
+to the pci_driver struct which would allow drivers to override the default reset
+action. Drivers that can tolerate the existing reset mechanism can simply point
+to a generic PCI function to perform the reset. Drivers which can't handle their
+device getting reset, will simply not have a reset function defined. In this case,
+anyone attempting to issue a reset via sysfs will get an error. If a driver
+is not loaded, then we can perform the default reset method and fix any device
+specific oddities with quirks.
+
+I like keeping pci_block_user_cfg_access a non blocking interface. If it can
+return a failure due to some other caller, it should be easy enough to modify
+the ipr driver to wait for access to get unblocked before resetting the adapter.
+
+Thanks,
+
+Brian
 
 -- 
-nvpublic
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
+
 
