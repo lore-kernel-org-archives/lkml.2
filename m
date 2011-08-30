@@ -1,139 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab1H3HcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:32:11 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:56075 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752460Ab1H3HcJ (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
-	Tue, 30 Aug 2011 03:32:09 -0400
-Message-Id: <4E5D1E950200002300030FF2@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 30 Aug 2011 01:32:05 -0600
-From: "Joey Lee" <jlee@suse.com>
-To: <trenn@suse.de>
-Cc: <devel@acpica.org>, <jnelson-suse@jamponi.net>, <lenb@kernel.org>,
-        <x86@kernel.org>, <eric.piel@tremplin-utc.net>,
-        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH 2/2] ACPI: Implement overriding of arbitrary ACPI
- tables via initrd
-References: <1314179290-31526-1-git-send-email-trenn@suse.de>
- <1314179290-31526-3-git-send-email-trenn@suse.de>
- <4E5BDB090200002300030F12@novprvlin0050.provo.novell.com>
- <4E5BDCFD0200002300030F1C@novprvlin0050.provo.novell.com>
-In-Reply-To: <4E5BDCFD0200002300030F1C@novprvlin0050.provo.novell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1752658Ab1H3Hc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:32:57 -0400
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:25205 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab1H3Hc4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 03:32:56 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArYAAMCRXE6Q/khR/2dsb2JhbABCmCyPXXeBQAEBAQEDEgFmEAsYLlcGNZ5+AZ9Phk0EhzeLbZEG
+X-IronPort-AV: E=Sophos;i="4.68,301,1312156800"; 
+   d="scan'208";a="52510690"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Can you review or ack this patch?
+Date: Tue, 30 Aug 2011 09:31:53 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-27-generic; KDE/4.6.1; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-media" <linux-media@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+References: <201108230833.25812.hverkuil@xs4all.nl> <20110823063535.GD2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110823063535.GD2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108300931.53139.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 一，2011-08-29 於 02:39 -0600，Joey Lee 提到：
-> 於 一，2011-08-29 於 02:31 -0600，Joey Lee 提到：
-> > 於 三，2011-08-24 於 11:48 +0200，Thomas Renninger 提到：
-> > > Details can be found in:
-> > > Documentation/acpi/initrd_table_override.txt
-> > > 
-> > > Additional dmesg output of a booted system with
-> > > FACP (FADT), DSDT and SSDT (the 9th dynamically loaded one)
-> > > tables overridden (with ### marked comments):
-> > > 
-> > > ### ACPI tables found glued to initrd
-> > > DSDT ACPI table found in initrd - size: 16234
-> > > FACP ACPI table found in initrd - size: 116
-> > > SSDT ACPI table found in initrd - size: 334
-> > > ### Re-printed e820 map via e820_update() with additionally created
-> > > ### ACPI data section at 0xcff55000 where the ACPI tables passed via
-> > > ### initrd where copied to
-> > > modified physical RAM map:
-> > > ...
-> > >   ### New ACPI data section:
-> > >   modified: 00000000cff55000 - 00000000cff5912c (ACPI data)
-> > >   ### BIOS e820 provided ACPI data section:
-> > >   modified: 00000000cff60000 - 00000000cff69000 (ACPI data)
-> > > ...
-> > > ### Total size of all ACPI tables glued to initrd
-> > > ### The address is initrd_start which gets updated to
-> > > ### initrd_start = initrd_start + "size of all ACPI tables glued to initrd"
-> > > Found acpi tables of size: 16684 at 0xffff8800374c4000
-> > > 
-> > > Disabling lock debugging due to kernel taint
-> > > ### initrd provided FACP and DSDT tables are used instead of BIOS provided ones
-> > > ACPI: FACP @ 0x00000000cff68dd8 Phys table override, replaced with:
-> > > ACPI: FACP 00000000cff58f6a 00074 (v01 INTEL  TUMWATER 06040000 PTL  00000003)
-> > > ACPI: DSDT @ 0x00000000cff649d4 Phys table override, replaced with:
-> > > ACPI: DSDT 00000000cff55000 04404 (v01  Intel BLAKFORD 06040000 MSFT 0100000E)
-> > > ...
-> > > ### Much later, the 9th (/sys/firmware/acpi/table/dynamic/SSDT9) dynamically
-> > > ### loaded ACPI table matches and gets overridden:
-> > > ACPI: SSDT @ 0x00000000cff64824 Phys table override, replaced with:
-> > > ACPI: SSDT 00000000cff58fde 0014E (v01  PmRef  Cpu7Ist 00003000 INTL 20110316)
-> > > ACPI: Dynamic OEM Table Load:
-> > > ACPI: SSDT           (null) 0014E (v01  PmRef  Cpu7Ist 00003000 INTL 20110316)
-> > > ...
-> > > 
-> > > If the initrd does not start with a valid ACPI table signature or the ACPI
-> > > table's checksum is wrong, there is no functional change.
-> > > 
-> > > Signed-off-by: Thomas Renninger <trenn@suse.de>
-> > > CC: linux-acpi@vger.kernel.org
-> > > CC: lenb@kernel.org
-> > > CC: linux-kernel@vger.kernel.org
-> > > CC: x86@kernel.org
-> > > ---
+On Tuesday, August 23, 2011 08:35:35 Al Viro wrote:
+> On Tue, Aug 23, 2011 at 08:33:25AM +0200, Hans Verkuil wrote:
+> > (and resent again, this time with the correct linux-fsdevel mail address)
+> > (Resent as requested by Andrew Morton since this is still stuck)
 > > 
-> > This patch works fine to me on Acer TravelMate 8572.
-> > I added a debug message to _BCM method in DSDT then override it in
-> > initrd by follow initrd_table_override.txt.
+> > Hi Al, Andrew,
 > > 
-> > The attached is my dmesg log.
-> > 
-> > > +3) How does it work
-> > > +-------------------
-> > > +
-> > > +# Extract the machine's ACPI tables:
-> > > +acpidump >acpidump
-> > > +acpixtract -a acpidump
-> > > +# Disassemble, modify and recompile them:
-> > > +iasl -d *.dat
-> > > +# For example add this statement into a _PRT (PCI Routing Table) function
-> > > +# of the DSDT:
-> > > +Store("Hello World", debug)
-> > > +iasl -sa *.dsl
-> > > +# glue them together with the initrd. ACPI tables go first, original initrd
-> > > +# goes on top:
-> > > +cat TBL1.dat >>instrumented_initrd
-> > > +cat TBL2.dat >>instrumented_initrd
-> > > +cat TBL3.dat >>instrumented_initrd
-> > 
-> > I suggest use TBL1.aml to replace TBL1.dat in initrd_table_override.txt,
-> > because iasl -sa default generate out *.aml file but not *.dat file, my
-> > iasl version is Intel 20110112-64 [Feb 27 2011].
-> > That will be more clear for the first time user to understand need cat
-> > *.aml file.
-> > 
-> > Tested-by: Lee, Chun-Yi <jlee@suse.com>
-> > 
-> > 
-> > Thank's
-> > Joey Lee
-> > 
+> > Can you take a look at this patch and send an Ack or review comments?
 > 
-> I applied the 2 patches on linux v3.0 kernel but not on the latest
-> linux-acpi-2.6 branch.
+> Not at the moment - I'm half-asleep and tired as hell.  Will do in the
+> morning...
 > 
-> I will also test it on linux-acpi-2.6.
-> 
-I applied the 2 initrd acpi table override patches on the newest
-linux-acpi-2.6 branch, those patches works fine on my Acer TravelMate
-8572.
 
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
+Any progress on this?
 
+Regards,
 
-Thank's a lot!
-Joey Lee
-
+	Hans
