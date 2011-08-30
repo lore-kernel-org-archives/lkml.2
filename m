@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab1H3TSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:18:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35524 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756497Ab1H3TR1 (ORCPT
+	id S1756571Ab1H3TSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:18:24 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19584 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756349Ab1H3TPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:17:27 -0400
-From: Stephen Warren <swarren@nvidia.com>
-To: Chris Ball <cjb@laptop.org>, Grant Likely <grant.likely@secretlab.ca>
-Cc: Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/3] mmc: sdhci-tegra: Add 8-bit support to device tree binding.
-Date: Tue, 30 Aug 2011 13:17:16 -0600
-Message-Id: <1314731837-6985-2-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1314731837-6985-1-git-send-email-swarren@nvidia.com>
-References: <1314731837-6985-1-git-send-email-swarren@nvidia.com>
+	Tue, 30 Aug 2011 15:15:20 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068343"
+Message-Id: <20110830190802.372848298@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 30 Aug 2011 14:07:57 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [patch v2 28/35] Hexagon: Add ioremap support
+References: <20110830190729.923334292@codeaurora.org>
+Content-Disposition: inline; filename=ioremap.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patch which implemented a DT binding for sdhci-tegra did not
-allow all platform data fields to be initialized from DT. The following
-were missing:
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
-is_8bit: Implemented by this patch.
-
-pm_flags: Not implemented yet. There are no mainline users of this field.
-  I'm not quite sure what it's for, and hence how to represent this
-  in DT; the value ends up being assigned to host->mmc->pm_caps.
-
-While we're at it, fix the binding documentation to refer to "SD/MMC"
-instead of "eSDHC", since that's the correct name; "eSDHC" was cut/paste
-from the Freescale binding docs.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-This should be able to go straight into the MMC -next branch
+ arch/hexagon/mm/ioremap.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
 
- .../devicetree/bindings/mmc/nvidia-sdhci.txt       |    6 ++++--
- drivers/mmc/host/sdhci-tegra.c                     |    3 +++
- 2 files changed, 7 insertions(+), 2 deletions(-)
+Index: linux-hexagon-kernel/arch/hexagon/mm/ioremap.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/mm/ioremap.c	2011-08-24 18:45:48.433877368 -0500
+@@ -0,0 +1,57 @@
++/*
++ * I/O remap functions for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/io.h>
++#include <linux/vmalloc.h>
++
++void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size)
++{
++	unsigned long last_addr, addr;
++	unsigned long offset = phys_addr & ~PAGE_MASK;
++	struct vm_struct *area;
++
++	pgprot_t prot = __pgprot(_PAGE_PRESENT|_PAGE_READ|_PAGE_WRITE
++					|(__HEXAGON_C_DEV << 6));
++
++	last_addr = phys_addr + size - 1;
++
++	/*  Wrapping not allowed  */
++	if (!size || (last_addr < phys_addr))
++		return NULL;
++
++	/*  Rounds up to next page size, including whole-page offset */
++	size = PAGE_ALIGN(offset + size);
++
++	area = get_vm_area(size, VM_IOREMAP);
++	addr = (unsigned long)area->addr;
++
++	if (ioremap_page_range(addr, addr+size, phys_addr, prot)) {
++		vunmap((void *)addr);
++		return NULL;
++	}
++
++	flush_cache_vmap(addr, addr+size);
++	return (void __iomem *) (offset + addr);
++}
++
++void __iounmap(const volatile void __iomem *addr)
++{
++	vunmap((void *) ((unsigned long) addr & PAGE_MASK));
++}
 
-diff --git a/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
-index c87f667..7e51154 100644
---- a/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
-+++ b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
-@@ -5,13 +5,14 @@ and SDIO types of memory cards.
- 
- Required properties:
- - compatible : Should be "nvidia,<chip>-sdhci"
--- reg : Should contain eSDHC registers location and length
--- interrupts : Should contain eSDHC interrupt
-+- reg : Should contain SD/MMC registers location and length
-+- interrupts : Should contain SD/MMC interrupt
- 
- Optional properties:
- - cd-gpios : Specify GPIOs for card detection
- - wp-gpios : Specify GPIOs for write protection
- - power-gpios : Specify GPIOs for power control
-+- support-8bit : Boolean, indicates if 8-bit mode should be used.
- 
- Example:
- 
-@@ -22,4 +23,5 @@ sdhci@c8000200 {
- 	cd-gpios = <&gpio 69 0>; /* gpio PI5 */
- 	wp-gpios = <&gpio 57 0>; /* gpio PH1 */
- 	power-gpios = <&gpio 155 0>; /* gpio PT3 */
-+	support-8bit;
- };
-diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-index 9ab18d6..67176af 100644
---- a/drivers/mmc/host/sdhci-tegra.c
-+++ b/drivers/mmc/host/sdhci-tegra.c
-@@ -17,6 +17,7 @@
- #include <linux/platform_device.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-+#include <linux/of.h>
- #include <linux/of_gpio.h>
- #include <linux/gpio.h>
- #include <linux/mmc/card.h>
-@@ -153,6 +154,8 @@ static struct tegra_sdhci_platform_data * __devinit sdhci_tegra_dt_parse_pdata(
- 	plat->cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
- 	plat->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
- 	plat->power_gpio = of_get_named_gpio(np, "power-gpios", 0);
-+	if (of_find_property(np, "support-8bit", NULL))
-+		plat->is_8bit = 1;
- 
- 	return plat;
- }
--- 
-1.7.0.4
+--
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
