@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab1H3XDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 19:03:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47887 "EHLO
+	id S1753931Ab1H3XM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 19:12:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47851 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753192Ab1H3XDQ (ORCPT
+	by vger.kernel.org with ESMTP id S1753893Ab1H3XMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 19:03:16 -0400
-Date: Tue, 30 Aug 2011 16:02:38 -0700
+	Tue, 30 Aug 2011 19:12:23 -0400
+Date: Tue, 30 Aug 2011 16:11:30 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 2/4] posix-timers: limit the number of posix timers per
- process
-Message-Id: <20110830160238.90eaa998.akpm@linux-foundation.org>
-In-Reply-To: <4E5D6893.5010505@linux.intel.com>
-References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
-	<1314661157-22173-2-git-send-email-andi@firstfloor.org>
-	<20110830144407.acdae071.akpm@linux-foundation.org>
-	<4E5D5EE6.3070708@linux.intel.com>
-	<20110830152216.dffd3cc3.akpm@linux-foundation.org>
-	<4E5D6893.5010505@linux.intel.com>
+To: Jeremy Allison <jra@samba.org>
+Cc: Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, Ulrich Drepper <drepper@akkadia.org>
+Subject: Re: Approaches to making io_submit not block
+Message-Id: <20110830161130.592df746.akpm@linux-foundation.org>
+In-Reply-To: <20110830230342.GB16326@samba2>
+References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
+	<CAAK6Zt0Sh1GdEOb-tNf2FGXJs=e1Jbcqew13R_GdTqrv6vW97w@mail.gmail.com>
+	<x49k49uk2ox.fsf@segfault.boston.devel.redhat.com>
+	<4E5D5817.6040704@kernel.dk>
+	<CAAK6Zt2C1646qwDiZ7sWheSWrnx2yrDtCE=+VTx7QNyh2bEz_g@mail.gmail.com>
+	<4E5D64E8.7000102@kernel.dk>
+	<20110830154157.d802d097.akpm@linux-foundation.org>
+	<CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
+	<20110830155438.bc31ab99.akpm@linux-foundation.org>
+	<20110830230342.GB16326@samba2>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,24 +34,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 15:47:47 -0700
-Andi Kleen <ak@linux.intel.com> wrote:
+On Tue, 30 Aug 2011 16:03:42 -0700
+Jeremy Allison <jra@samba.org> wrote:
 
+> On Tue, Aug 30, 2011 at 03:54:38PM -0700, Andrew Morton wrote:
+> > 
+> > Also, glibc has userspace for POSIX AIO.  A successful kernel-based
+> > implementation would result in glibc migrating away from its current
+> > implementation.  So we should work with the glibc developers on ensuring
+> > that the migration can happen.
 > 
-> > Yes, deployment for new rlimits is a big PITA.  It would be sensible to
-> > modify the shells to take some anonymous numeric argument, so you could
-> > do
-> >
-> > 	ulimit 42 1000
-> >
-> > to set rlimit number 42 if your shell version doesn't understand the
-> > symbolic representation of more recent additions.  Who do I call?
+> Unfortunately the glibc userspace POSIX AIO limits asynchronicity to
+> one outstanding request per file descriptor. From aio_misc.c in glibc:
 > 
-> I guess sending a patch to the bash maintainers?
+>   if (runp != NULL
+>       && runp->aiocbp->aiocb.aio_fildes == aiocbp->aiocb.aio_fildes)
+>     {
+>       /* The current file descriptor is worked on.  It makes no sense
+>          to start another thread since this new thread would fight
+>          with the running thread for the resources.  But we also cannot
+>          say that the thread processing this desriptor shall immediately
+>          after finishing the current job process this request if there
+>          are other threads in the running queue which have a higher
+>          priority.  */
+> 
+>       /* Simply enqueue it after the running one according to the
+>          priority.  */
+> 
+> I have often wondered if this is actually the case ? I created
+> my own glibc with a patches AIO that removed this restriction
+> (thus had multiple outstanding threads on a single fd). In testing
+> I saw a dramatic increase in performance (2x speedup) but then
+> testing with use in actual code (Samba smbd) it made the client
+> throughput *worse*. I never got to the bottom of this and so
+> didn't submit my fixes to glibc.
+> 
+> Any ideas if this is still the case ? Or comments on why glibc
+> insists on only one outstanding request per fd ? Is this really
+> needed for kernel performance ?
 > 
 
-That would help ;)  And all the other shells :(
-
-It would be worth going back and taking another look at the writable
-/proc/<pid>/limits patches (http://lwn.net/Articles/365732/).  Why
-didn't that work get merged?
+I don't know.  Uli cc'ed.
