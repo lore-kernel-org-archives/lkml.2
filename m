@@ -1,200 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab1H3HFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:05:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37635 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab1H3HFk (ORCPT
+	id S1752165Ab1H3HGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:06:34 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43014 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab1H3HGc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:05:40 -0400
-Date: Tue, 30 Aug 2011 00:05:33 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: riyer@nvidia.com
-Cc: rydberg@euromail.se, axel.lin@gmail.com, olof@lixom.net,
-        amartin@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH v1] Input: tegra-kbc - fix wakeup from suspend.
-Message-ID: <20110830070533.GB5791@core.coreip.homeip.net>
-References: <1314318587-31348-1-git-send-email-riyer@nvidia.com>
+	Tue, 30 Aug 2011 03:06:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314318587-31348-1-git-send-email-riyer@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E5C6ADA.3030409@zytor.com>
+References: <4E582577.2060805@zytor.com>
+	<CA+55aFzkpt48EPdVrs3aoALXnqAwqHfUCeZOpvf874O8Y8+POQ@mail.gmail.com>
+	<4E582EAA.1040108@zytor.com>
+	<CA+55aFxdRMxWLh1B_8v29qFafM425uH7kbYRfqoPe3TpVwOx-w@mail.gmail.com>
+	<CA+55aFyVmA_26LYaJH8dnFhwo7LWM6Ck7qFxCQvnROEHSuV_aA@mail.gmail.com>
+	<4E584492.5090406@zytor.com>
+	<CA+55aFw8+fkwjgAYOzxnO1HY3uCBCuf+N6z1XX2m=FhSjD5Wqg@mail.gmail.com>
+	<CAMuHMdXhdg6GuJqSjK5SdKBrBzZwGYus2LH1yqgkSnSEp8ZXyg@mail.gmail.com>
+	<CA+55aFzuY+U0nf58-9P5CFaYAPKMQ3fQMGGUUkjbxRRCK7=A3Q@mail.gmail.com>
+	<CAGZ=bqKjnsEKz_CxcW+wRoCL_CY-kipedf2wB=BVUWRB0427tw@mail.gmail.com>
+	<4E5C6ADA.3030409@zytor.com>
+Date: Tue, 30 Aug 2011 09:06:31 +0200
+X-Google-Sender-Auth: oCORIwKoU-bvTOBrJyKy5u7He6E
+Message-ID: <CAMuHMdUJVRNPcBW60UZ+cwV75T9+xmONzTrCuDCe_dDUzg2kKg@mail.gmail.com>
+Subject: Re: RFD: x32 ABI system call numbers
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rakesh,
+On Tue, Aug 30, 2011 at 06:45, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 08/29/2011 07:16 PM, Kyle Moffett wrote:
+>> The goal of x32 as I understand it is to allow 32-bit x86 programs to
+>> use all the nifty extra registers and faster instructions (IE: syscall)
+>> without needing to deal with the 2x memory overhead of 64-bit
+>> pointers.
 
-On Thu, Aug 25, 2011 at 05:29:47PM -0700, riyer@nvidia.com wrote:
-> From: Rakesh Iyer <riyer@nvidia.com>
-> 
-> For wakeup to be reliable, kbc needs to be in interrupt mode before suspend.
-> Created common routine to control the FIFO interrupt.
-> Added synchronization to ensure orderly suspend.
-> 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
-> ---
->  drivers/input/keyboard/tegra-kbc.c |   83 +++++++++++++++++++++++++++++-------
->  1 files changed, 67 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-> index a5a7791..41de11f 100644
-> --- a/drivers/input/keyboard/tegra-kbc.c
-> +++ b/drivers/input/keyboard/tegra-kbc.c
-> @@ -38,7 +38,7 @@
->  #define KBC_ROW_SCAN_DLY	5
->  
->  /* KBC uses a 32KHz clock so a cycle = 1/32Khz */
-> -#define KBC_CYCLE_MS	32
-> +#define KBC_CYCLES_PER_MS	32
+Good. IIRC, the PPC people were thinking about something similar back in 2007,
+but it hasn't materialized yet.
 
-This seems to be an unrelated change, can it be split out?
+> That is the major goal.  A minor goal is to bring x86-64 goodness to
+> those who have an (irrational) fear of 64 bits thinking it is a major
+> porting effort.  Thus, *source-level* porting effort matters, but it is
+> completely subordinate to the major goal.
 
->  
->  /* KBC Registers */
->  
-> @@ -55,6 +55,7 @@
->  
->  #define KBC_ROW_CFG0_0	0x8
->  #define KBC_COL_CFG0_0	0x18
-> +#define KBC_TO_CNT_0	0x24
->  #define KBC_INIT_DLY_0	0x28
->  #define KBC_RPT_DLY_0	0x2c
->  #define KBC_KP_ENT0_0	0x30
-> @@ -70,8 +71,10 @@ struct tegra_kbc {
->  	spinlock_t lock;
->  	unsigned int repoll_dly;
->  	unsigned long cp_dly_jiffies;
-> +	unsigned int cp_to_wkup_dly;
->  	bool use_fn_map;
->  	bool use_ghost_filter;
-> +	bool in_suspend;
->  	const struct tegra_kbc_platform_data *pdata;
->  	unsigned short keycode[KBC_MAX_KEY * 2];
->  	unsigned short current_keys[KBC_MAX_KPENT];
-> @@ -341,6 +344,18 @@ static void tegra_kbc_report_keys(struct tegra_kbc *kbc)
->  	kbc->num_pressed_keys = num_down;
->  }
->  
-> +static void tegra_kbc_set_fifo_interrupt(struct tegra_kbc *kbc, bool enable)
-> +{
-> +	u32 val;
-> +
-> +	val = readl(kbc->mmio + KBC_CONTROL_0);
-> +	if (enable)
-> +		val |= KBC_CONTROL_FIFO_CNT_INT_EN;
-> +	else
-> +		val &= ~KBC_CONTROL_FIFO_CNT_INT_EN;
-> +	writel(val, kbc->mmio + KBC_CONTROL_0);
-> +}
-> +
->  static void tegra_kbc_keypress_timer(unsigned long data)
->  {
->  	struct tegra_kbc *kbc = (struct tegra_kbc *)data;
-> @@ -348,6 +363,14 @@ static void tegra_kbc_keypress_timer(unsigned long data)
->  	u32 val;
->  	unsigned int i;
->  
-> +	/* Exit immediately if driver is trying to enter suspend. */
-> +	spin_lock_irqsave(&kbc->lock, flags);
-> +	if (kbc->in_suspend) {
-> +		tegra_kbc_set_fifo_interrupt(kbc, true);
-> +		spin_unlock_irqrestore(&kbc->lock, flags);
-> +		return;
-> +	}
-> +	spin_unlock_irqrestore(&kbc->lock, flags);
->  	val = (readl(kbc->mmio + KBC_INT_0) >> 4) & 0xf;
->  	if (val) {
->  		unsigned long dly;
-> @@ -370,9 +393,7 @@ static void tegra_kbc_keypress_timer(unsigned long data)
->  
->  		/* All keys are released so enable the keypress interrupt */
->  		spin_lock_irqsave(&kbc->lock, flags);
-> -		val = readl(kbc->mmio + KBC_CONTROL_0);
-> -		val |= KBC_CONTROL_FIFO_CNT_INT_EN;
-> -		writel(val, kbc->mmio + KBC_CONTROL_0);
-> +		tegra_kbc_set_fifo_interrupt(kbc, true);
->  		spin_unlock_irqrestore(&kbc->lock, flags);
->  	}
->  }
-> @@ -380,15 +401,14 @@ static void tegra_kbc_keypress_timer(unsigned long data)
->  static irqreturn_t tegra_kbc_isr(int irq, void *args)
->  {
->  	struct tegra_kbc *kbc = args;
-> -	u32 val, ctl;
-> +	unsigned long flags;
-> +	u32 val;
->  
->  	/*
->  	 * Until all keys are released, defer further processing to
->  	 * the polling loop in tegra_kbc_keypress_timer
->  	 */
-> -	ctl = readl(kbc->mmio + KBC_CONTROL_0);
-> -	ctl &= ~KBC_CONTROL_FIFO_CNT_INT_EN;
-> -	writel(ctl, kbc->mmio + KBC_CONTROL_0);
-> +	tegra_kbc_set_fifo_interrupt(kbc, false);
->  
->  	/*
->  	 * Quickly bail out & reenable interrupts if the fifo threshold
-> @@ -397,16 +417,18 @@ static irqreturn_t tegra_kbc_isr(int irq, void *args)
->  	val = readl(kbc->mmio + KBC_INT_0);
->  	writel(val, kbc->mmio + KBC_INT_0);
->  
-> -	if (val & KBC_INT_FIFO_CNT_INT_STATUS) {
-> +	/* Exit immediately if driver is trying to enter suspend. */
-> +	spin_lock_irqsave(&kbc->lock, flags);
-> +	if (!kbc->in_suspend && (val & KBC_INT_FIFO_CNT_INT_STATUS))
->  		/*
->  		 * Schedule timer to run when hardware is in continuous
->  		 * polling mode.
->  		 */
->  		mod_timer(&kbc->timer, jiffies + kbc->cp_dly_jiffies);
-> -	} else {
-> -		ctl |= KBC_CONTROL_FIFO_CNT_INT_EN;
-> -		writel(ctl, kbc->mmio + KBC_CONTROL_0);
-> -	}
-> +	else
-> +		tegra_kbc_set_fifo_interrupt(kbc, true);
-> +
-> +	spin_unlock_irqrestore(&kbc->lock, flags);
->  
->  	return IRQ_HANDLED;
->  }
-> @@ -648,7 +670,7 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
->  	debounce_cnt = min(pdata->debounce_cnt, KBC_MAX_DEBOUNCE_CNT);
->  	scan_time_rows = (KBC_ROW_SCAN_TIME + debounce_cnt) * num_rows;
->  	kbc->repoll_dly = KBC_ROW_SCAN_DLY + scan_time_rows + pdata->repeat_cnt;
-> -	kbc->repoll_dly = DIV_ROUND_UP(kbc->repoll_dly, KBC_CYCLE_MS);
-> +	kbc->repoll_dly = DIV_ROUND_UP(kbc->repoll_dly, KBC_CYCLES_PER_MS);
->  
->  	input_dev->name = pdev->name;
->  	input_dev->id.bustype = BUS_HOST;
-> @@ -735,10 +757,29 @@ static int tegra_kbc_suspend(struct device *dev)
->  	struct tegra_kbc *kbc = platform_get_drvdata(pdev);
->  
->  	if (device_may_wakeup(&pdev->dev)) {
-> -		tegra_kbc_setup_wakekeys(kbc, true);
-> -		enable_irq_wake(kbc->irq);
-> +		unsigned long flags;
-> +
-> +		spin_lock_irqsave(&kbc->lock, flags);
-> +		kbc->in_suspend = 1;
-> +		spin_unlock_irqrestore(&kbc->lock, flags);
-> +
-> +		del_timer(&kbc->timer);
+>From my experience, if the source code is not 64-bit clean, it will probably
+be a major hassle to make it cope with changed time_t and off_t and other traps
+of that kind...
 
-I'd expect this to be del_timer_sync().
+As a first step, gcc should start enabling -Wall by default ;-)
+And add a -Wcast option, as grepping for (C-style) casts is way too difficult...
 
-Overall I think this is quite complex, do we really need to keep
-interrupts enabled (as in enable_irq) for wakeup to work? It is my
-understanding that wakeup (enable_irq_wake/disable_irq_wake) control is
-separate from enable_irq/disable_irq control. If you can do
-disable_irq() while system goes to sleep then the code will be much
-simpler.
+Gr{oetje,eeting}s,
 
-Thanks.
+                        Geert
 
--- 
-Dmitry
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
