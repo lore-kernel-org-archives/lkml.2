@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab1H3TTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:19:08 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19578 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756340Ab1H3TPS (ORCPT
+	id S1756623Ab1H3TTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:19:19 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42353 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756315Ab1H3TPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:15:18 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068342"
-Message-Id: <20110830190802.279215705@codeaurora.org>
+	Tue, 30 Aug 2011 15:15:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="113875049"
+Message-Id: <20110830190801.448257740@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Aug 2011 14:07:56 -0500
+Date: Tue, 30 Aug 2011 14:07:47 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>
-Subject: [patch v2 27/35] Hexagon: Provide DMA implementation
+Subject: [patch v2 18/35] Hexagon: Add time and timer functions
 References: <20110830190729.923334292@codeaurora.org>
-Content-Disposition: inline; filename=dma.diff
+Content-Disposition: inline; filename=timer.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Basic DMA implementation for our architecture.
-
-Added sync_single_for_* routines; hexagon_map_page() still seems to be a
-convenient place to flush/invalidate.
-
-
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
 ---
- arch/hexagon/include/asm/dma-mapping.h |  101 +++++++++++++++
- arch/hexagon/include/asm/dma.h         |   29 ++++
- arch/hexagon/kernel/dma.c              |  220 +++++++++++++++++++++++++++++++++
- 3 files changed, 350 insertions(+)
+ arch/hexagon/include/asm/time.h       |   27 +++
+ arch/hexagon/include/asm/timer-regs.h |   39 ++++
+ arch/hexagon/kernel/time.c            |  283 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 349 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/time.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/dma.h	2011-08-24 20:03:49.500967008 -0500
-@@ -0,0 +1,29 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/time.h	2011-08-24 18:45:48.233877192 -0500
+@@ -0,0 +1,27 @@
 +/*
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -59,24 +51,22 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_DMA_H
-+#define _ASM_DMA_H
++#ifndef ASM_TIME_H
++#define ASM_TIME_H
 +
-+#include <asm/io.h>
-+
-+#define MAX_DMA_CHANNELS 1
-+#define MAX_DMA_ADDRESS  (PAGE_OFFSET)
-+
-+extern size_t hexagon_coherent_pool_size;
++#ifdef CONFIG_SMP
++void setup_percpu_clockdev(void);
++void ipi_timer(void);
++#endif
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma-mapping.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/timer-regs.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/dma-mapping.h	2011-08-24 20:03:49.500967008 -0500
-@@ -0,0 +1,101 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/timer-regs.h	2011-08-24 18:45:48.233877192 -0500
+@@ -0,0 +1,39 @@
 +/*
-+ * DMA operations for the Hexagon architecture
++ * Timer support for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -95,94 +85,32 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/dma-mapping.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_DMA_MAPPING_H
-+#define _ASM_DMA_MAPPING_H
++#ifndef _ASM_TIMER_REGS_H
++#define _ASM_TIMER_REGS_H
 +
-+#include <linux/types.h>
-+#include <linux/cache.h>
-+#include <linux/mm.h>
-+#include <linux/scatterlist.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/dma-debug.h>
-+#include <linux/dma-attrs.h>
-+#include <asm/io.h>
++/*  This stuff should go into a platform specific file  */
++#define TCX0_CLK_RATE		19200
++#define TIMER_ENABLE		0
++#define TIMER_CLR_ON_MATCH	1
 +
-+struct device;
-+extern int bad_dma_address;
-+
-+extern struct dma_map_ops *dma_ops;
-+
-+#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
-+#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
-+
-+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	if (unlikely(dev == NULL))
-+		return NULL;
-+
-+	return dma_ops;
-+}
-+
-+extern int dma_supported(struct device *dev, u64 mask);
-+extern int dma_set_mask(struct device *dev, u64 mask);
-+extern int dma_is_consistent(struct device *dev, dma_addr_t dma_handle);
-+extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
-+			   enum dma_data_direction direction);
-+
-+#include <asm-generic/dma-mapping-common.h>
-+
-+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-+{
-+	if (!dev->dma_mask)
-+		return 0;
-+	return addr + size - 1 <= *dev->dma_mask;
-+}
-+
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	if (dma_ops->mapping_error)
-+		return dma_ops->mapping_error(dev, dma_addr);
-+
-+	return (dma_addr == bad_dma_address);
-+}
-+
-+static inline void *dma_alloc_coherent(struct device *dev, size_t size,
-+				       dma_addr_t *dma_handle, gfp_t flag)
-+{
-+	void *ret;
-+	struct dma_map_ops *ops = get_dma_ops(dev);
-+
-+	BUG_ON(!dma_ops);
-+
-+	ret = ops->alloc_coherent(dev, size, dma_handle, flag);
-+
-+	debug_dma_alloc_coherent(dev, size, *dma_handle, ret);
-+
-+	return ret;
-+}
-+
-+static inline void dma_free_coherent(struct device *dev, size_t size,
-+				     void *cpu_addr, dma_addr_t dma_handle)
-+{
-+	struct dma_map_ops *dma_ops = get_dma_ops(dev);
-+
-+	BUG_ON(!dma_ops);
-+
-+	dma_ops->free_coherent(dev, size, cpu_addr, dma_handle);
-+
-+	debug_dma_free_coherent(dev, size, cpu_addr, dma_handle);
-+}
++/*
++ * 8x50 HDD Specs 5-8.  Simulator co-sim not fixed until
++ * release 1.1, and then it's "adjustable" and probably not defaulted.
++ */
++#define RTOS_TIMER_INT		3
++#ifdef CONFIG_HEXAGON_COMET
++#define RTOS_TIMER_REGS_ADDR	0xAB000000UL
++#endif
++#define SLEEP_CLK_RATE		32000
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/kernel/dma.c
+Index: linux-hexagon-kernel/arch/hexagon/kernel/time.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/dma.c	2011-08-24 20:04:08.161003344 -0500
-@@ -0,0 +1,220 @@
++++ linux-hexagon-kernel/arch/hexagon/kernel/time.c	2011-08-24 18:45:48.233877192 -0500
+@@ -0,0 +1,283 @@
 +/*
-+ * DMA implementation for Hexagon
++ * Time related functions for Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -201,206 +129,269 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/dma.c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/dma-mapping.h>
-+#include <linux/bootmem.h>
-+#include <linux/genalloc.h>
-+#include <asm/dma-mapping.h>
++#include <linux/init.h>
++#include <linux/clockchips.h>
++#include <linux/clocksource.h>
++#include <linux/interrupt.h>
++#include <linux/err.h>
++#include <linux/platform_device.h>
++#include <linux/ioport.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
 +
-+struct dma_map_ops *dma_ops;
-+EXPORT_SYMBOL(dma_ops);
-+
-+int bad_dma_address;  /*  globals are automatically initialized to zero  */
-+
-+int dma_supported(struct device *dev, u64 mask)
-+{
-+	if (mask == DMA_BIT_MASK(32))
-+		return 1;
-+	else
-+		return 0;
-+}
-+EXPORT_SYMBOL(dma_supported);
-+
-+int dma_set_mask(struct device *dev, u64 mask)
-+{
-+	if (!dev->dma_mask || !dma_supported(dev, mask))
-+		return -EIO;
-+
-+	*dev->dma_mask = mask;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(dma_set_mask);
-+
-+static struct gen_pool *coherent_pool;
-+
-+
-+/* Allocates from a pool of uncached memory that was reserved at boot time */
-+
-+void *hexagon_dma_alloc_coherent(struct device *dev, size_t size,
-+				 dma_addr_t *dma_addr, gfp_t flag)
-+{
-+	void *ret;
-+
-+	if (coherent_pool == NULL) {
-+		coherent_pool = gen_pool_create(PAGE_SHIFT, -1);
-+
-+		if (coherent_pool == NULL)
-+			panic("Can't create %s() memory pool!", __func__);
-+		else
-+			gen_pool_add(coherent_pool,
-+				(PAGE_OFFSET + (max_low_pfn << PAGE_SHIFT)),
-+				hexagon_coherent_pool_size, -1);
-+	}
-+
-+	ret = (void *) gen_pool_alloc(coherent_pool, size);
-+
-+	if (ret) {
-+		memset(ret, 0, size);
-+		*dma_addr = (dma_addr_t) (ret - PAGE_OFFSET);
-+	} else
-+		*dma_addr = ~0;
-+
-+	return ret;
-+}
-+
-+static void hexagon_free_coherent(struct device *dev, size_t size, void *vaddr,
-+				  dma_addr_t dma_addr)
-+{
-+	gen_pool_free(coherent_pool, (unsigned long) vaddr, size);
-+}
-+
-+static int check_addr(const char *name, struct device *hwdev,
-+		      dma_addr_t bus, size_t size)
-+{
-+	if (hwdev && hwdev->dma_mask && !dma_capable(hwdev, bus, size)) {
-+		if (*hwdev->dma_mask >= DMA_BIT_MASK(32))
-+			printk(KERN_ERR
-+				"%s: overflow %Lx+%zu of device mask %Lx\n",
-+				name, (long long)bus, size,
-+				(long long)*hwdev->dma_mask);
-+		return 0;
-+	}
-+	return 1;
-+}
-+
-+static int hexagon_map_sg(struct device *hwdev, struct scatterlist *sg,
-+			  int nents, enum dma_data_direction dir,
-+			  struct dma_attrs *attrs)
-+{
-+	struct scatterlist *s;
-+	int i;
-+
-+	WARN_ON(nents == 0 || sg[0].length == 0);
-+
-+	for_each_sg(sg, s, nents, i) {
-+		s->dma_address = sg_phys(s);
-+		if (!check_addr("map_sg", hwdev, s->dma_address, s->length))
-+			return 0;
-+
-+		s->dma_length = s->length;
-+
-+		flush_dcache_range(PAGE_OFFSET + s->dma_address,
-+				   PAGE_OFFSET + s->dma_address + s->length);
-+	}
-+
-+	return nents;
-+}
++#include <asm/timer-regs.h>
++#include <asm/hexagon_vm.h>
 +
 +/*
-+ * address is virtual
++ * For now, hard wire the simulated CPU/pcycle frequency.
++ * XXX TODO fish it out of device tree!
 + */
-+static inline void dma_sync(void *addr, size_t size,
-+			    enum dma_data_direction dir)
-+{
-+	switch (dir) {
-+	case DMA_TO_DEVICE:
-+		hexagon_clean_dcache_range((unsigned long) addr,
-+		(unsigned long) addr + size);
-+		break;
-+	case DMA_FROM_DEVICE:
-+		hexagon_inv_dcache_range((unsigned long) addr,
-+		(unsigned long) addr + size);
-+		break;
-+	case DMA_BIDIRECTIONAL:
-+		flush_dcache_range((unsigned long) addr,
-+		(unsigned long) addr + size);
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
++#define CPU_MHZ 600
 +
-+static inline void *dma_addr_to_virt(dma_addr_t dma_addr)
-+{
-+	return phys_to_virt((unsigned long) dma_addr);
-+}
-+
-+/**
-+ * hexagon_map_page() - maps an address for device DMA
-+ * @dev:	pointer to DMA device
-+ * @page:	pointer to page struct of DMA memory
-+ * @offset:	offset within page
-+ * @size:	size of memory to map
-+ * @dir:	transfer direction
-+ * @attrs:	pointer to DMA attrs (not used)
-+ *
-+ * Called to map a memory address to a DMA address prior
-+ * to accesses to/from device.
-+ *
-+ * We don't particularly have many hoops to jump through
-+ * so far.  Straight translation between phys and virtual.
-+ *
-+ * DMA is not cache coherent so sync is necessary; this
-+ * seems to be a convenient place to do it.
-+ *
-+ */
-+static dma_addr_t hexagon_map_page(struct device *dev, struct page *page,
-+				   unsigned long offset, size_t size,
-+				   enum dma_data_direction dir,
-+				   struct dma_attrs *attrs)
-+{
-+	dma_addr_t bus = page_to_phys(page) + offset;
-+	WARN_ON(size == 0);
-+
-+	if (!check_addr("map_single", dev, bus, size))
-+		return bad_dma_address;
-+
-+	dma_sync(dma_addr_to_virt(bus), size, dir);
-+
-+	return bus;
-+}
-+
-+static void hexagon_sync_single_for_cpu(struct device *dev,
-+					dma_addr_t dma_handle, size_t size,
-+					enum dma_data_direction dir)
-+{
-+	dma_sync(dma_addr_to_virt(dma_handle), size, dir);
-+}
-+
-+static void hexagon_sync_single_for_device(struct device *dev,
-+					dma_addr_t dma_handle, size_t size,
-+					enum dma_data_direction dir)
-+{
-+	dma_sync(dma_addr_to_virt(dma_handle), size, dir);
-+}
-+
-+struct dma_map_ops hexagon_dma_ops = {
-+	.alloc_coherent	= hexagon_dma_alloc_coherent,
-+	.free_coherent	= hexagon_free_coherent,
-+	.map_sg		= hexagon_map_sg,
-+	.map_page	= hexagon_map_page,
-+	.sync_single_for_cpu = hexagon_sync_single_for_cpu,
-+	.sync_single_for_device = hexagon_sync_single_for_device,
-+	.is_phys	= 1,
++static struct resource rtos_timer_resources[] = {
++	{
++		.start	= RTOS_TIMER_REGS_ADDR,
++		.end	= RTOS_TIMER_REGS_ADDR+PAGE_SIZE-1,
++		.flags	= IORESOURCE_MEM,
++	},
 +};
 +
-+void __init hexagon_dma_init(void)
-+{
-+	if (dma_ops)
-+		return;
++static struct platform_device rtos_timer_device = {
++	.name		= "rtos_timer",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(rtos_timer_resources),
++	.resource	= rtos_timer_resources,
++};
 +
-+	dma_ops = &hexagon_dma_ops;
++/*  A lot of this stuff should move into a platform specific section.  */
++struct adsp_hw_timer_struct {
++	unsigned int match;   /*  Match value  */
++	unsigned int count;
++	unsigned int enable;  /*  [1] - CLR_ON_MATCH_EN, [0] - EN  */
++	unsigned int clear;   /*  one-shot register that clears the count  */
++};
++
++/*  Look for "TCX0" for related constants.  */
++static volatile struct adsp_hw_timer_struct *rtos_timer = (void *) 0x0;
++
++void debug_adsp_timers(void)
++{
++	printk(KERN_INFO "rtos_timer->match=0x%08x\n", rtos_timer->match);
++	printk(KERN_INFO "rtos_timer->count=%d\n", rtos_timer->count);
++	printk(KERN_INFO "rtos_timer->enable=%d\n", rtos_timer->enable);
++	printk(KERN_INFO "rtos_timer->clear=%d\n", rtos_timer->clear);
 +}
++
++static cycle_t timer_get_cycles(struct clocksource *cs)
++{
++	return (cycle_t) __vmgettime();
++}
++
++static struct clocksource hexagon_clocksource = {
++	.name		= "pcycles",
++	.rating		= 250,
++	.shift		= 16,
++	.read		= timer_get_cycles,
++	.mask		= CLOCKSOURCE_MASK(64),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
++
++static int set_next_event(unsigned long delta, struct clock_event_device *evt)
++{
++	/*  Assuming the timer will be disabled when we enter here.  */
++	rtos_timer->clear = 1;
++	rtos_timer->clear = 0;
++
++	/*  Does this need massaging?  */
++	rtos_timer->match = delta;
++	rtos_timer->enable = 1 << TIMER_ENABLE;
++	return 0;
++}
++
++/*
++ * Sets the mode (periodic, shutdown, oneshot, etc) of a timer.
++ */
++static void set_mode(enum clock_event_mode mode,
++	struct clock_event_device *evt)
++{
++	switch (mode) {
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		/* XXX implement me */
++	default:
++		break;
++	}
++}
++
++#ifdef CONFIG_SMP
++/*  Broadcast mechanism  */
++static void broadcast(const struct cpumask *mask)
++{
++	send_ipi(mask, IPI_TIMER);
++}
++#endif
++
++static struct clock_event_device hexagon_clockevent_dev = {
++	.name		= "clockevent",
++	.features	= CLOCK_EVT_FEAT_ONESHOT,
++	.rating		= 400,
++	.shift		= 32,
++	.irq		= RTOS_TIMER_INT,
++	.set_next_event = set_next_event,
++	.set_mode	= set_mode,
++#ifdef CONFIG_SMP
++	.broadcast	= broadcast
++#endif
++};
++
++#ifdef CONFIG_SMP
++static DEFINE_PER_CPU(struct clock_event_device, clock_events);
++
++void setup_percpu_clockdev(void)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++	struct clock_event_device *dummy_clock_dev =
++		&per_cpu(clock_events, cpu);
++
++	memcpy(dummy_clock_dev, ce_dev, sizeof(*dummy_clock_dev));
++	INIT_LIST_HEAD(&dummy_clock_dev->list);
++
++	dummy_clock_dev->features = CLOCK_EVT_FEAT_DUMMY;
++	dummy_clock_dev->cpumask = cpumask_of(cpu);
++	dummy_clock_dev->mode = CLOCK_EVT_MODE_UNUSED;
++
++	clockevents_register_device(dummy_clock_dev);
++}
++
++/*  Called from smp.c for each CPU's timer ipi call  */
++void ipi_timer(void)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++
++	ce_dev = &per_cpu(clock_events, cpu);
++	ce_dev->event_handler(ce_dev);
++}
++#endif /* CONFIG_SMP */
++
++static irqreturn_t timer_interrupt(int irq, void *devid)
++{
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++
++	rtos_timer->enable = 0;
++	ce_dev->event_handler(ce_dev);
++
++	return IRQ_HANDLED;
++}
++
++/*  This should also be pulled from devtree  */
++static struct irqaction rtos_timer_intdesc = {
++	.handler = timer_interrupt,
++	.flags = IRQF_DISABLED | IRQF_TIMER | IRQF_TRIGGER_RISING,
++	.name = "rtos_timer"
++};
++
++void clocksource_debug(struct clocksource *cs)
++{
++	printk(KERN_DEBUG "cs->mult=0x%08x\n", cs->mult);
++	printk(KERN_DEBUG "cs->shift=%d\n", cs->shift);
++}
++
++void clockevent_debug(struct clock_event_device *ce)
++{
++	printk(KERN_DEBUG "ce->mult=0x%08x\n", ce->mult);
++	printk(KERN_DEBUG "ce->shift=%d\n", ce->shift);
++}
++
++/*
++ * time_init_deferred - called by start_kernel to set up timer/clock source
++ *
++ * Install the IRQ handler for the clock, setup timers.
++ * This is done late, as that way, we can use ioremap().
++ *
++ * This runs just before the delay loop is calibrated, and
++ * is used for delay calibration.
++ */
++void __init time_init_deferred(void)
++{
++	struct resource *resource = NULL;
++	struct clock_event_device *ce_dev = &hexagon_clockevent_dev;
++	struct device_node *dn;
++	struct resource r;
++	int err;
++
++#ifdef CONFIG_SMP
++	ce_dev->cpumask = cpu_all_mask;
++#else
++	ce_dev->cpumask = cpumask_of(0);
++#endif
++
++	if (!resource)
++		resource = rtos_timer_device.resource;
++
++	/*  ioremap here means this has to run later, after paging init  */
++	rtos_timer = ioremap(resource->start, resource->end
++		- resource->start + 1);
++
++	if (!rtos_timer) {
++		release_mem_region(resource->start, resource->end
++			- resource->start + 1);
++	}
++	/*  Change to clocksource_register_khz in newer kernels  */
++	hexagon_clocksource.mult = clocksource_hz2mult(CPU_MHZ * 1000000,
++		hexagon_clocksource.shift);
++	clocksource_register(&hexagon_clocksource);
++	clocksource_debug(&hexagon_clocksource);
++
++	/*  Note: the sim generic RTOS clock is apparently really 18750Hz  */
++	/*  Change to clockevents_calc_mult_shift()  */
++	/*  SLEEP_CLK_RATE should be pulled from devtree?  */
++	ce_dev->mult  = div_sc(SLEEP_CLK_RATE, NSEC_PER_SEC,
++			       ce_dev->shift);
++
++	ce_dev->max_delta_ns = clockevent_delta2ns(0x7fffffff, ce_dev);
++	ce_dev->min_delta_ns = clockevent_delta2ns(0xf, ce_dev);
++
++#ifdef CONFIG_SMP
++	setup_percpu_clockdev();
++#endif
++
++	clockevents_register_device(ce_dev);
++	setup_irq(ce_dev->irq, &rtos_timer_intdesc);
++}
++
++void __init time_init(void)
++{
++	late_time_init = time_init_deferred;
++}
++
++/*
++ * Some architectures inline this, which seems slightly insane.
++ * Why burn memory to speed up a delay function?
++ *
++ * Note that there are hooks for MP systems to have different
++ * delay values for different CPUs.  We should ultimately replace
++ * the CPU_MHZ constant below with a reference to whatever per-CPU
++ * state is dedicated to that role.
++ */
++
++/*
++ * This could become parametric or perhaps even computed at run-time,
++ * but for now we take the observed simulator jitter.
++ * XXX TODO fish this out of the device tree!
++ */
++static long long fudgefactor = 350;  /* Maybe lower if kernel optimized. */
++
++void __udelay(unsigned long usecs)
++{
++	unsigned long long start = __vmgettime();
++	unsigned long long finish = (CPU_MHZ * usecs) - fudgefactor;
++
++	while ((__vmgettime() - start) < finish)
++		; /*  not sure how this improves readability  */
++}
++EXPORT_SYMBOL(__udelay);
 
 --
 
