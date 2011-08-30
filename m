@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab1H3Oo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 10:44:28 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:48403 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753658Ab1H3Oo0 (ORCPT
+	id S1754724Ab1H3OpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 10:45:10 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36785 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab1H3OpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 10:44:26 -0400
-X-Sasl-enc: CP8Zmqzv0pgCw3I7lC4U2LUBneZYj88ZrWauwXQAdWUK 1314715463
-Date: Tue, 30 Aug 2011 11:44:21 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-Message-ID: <20110830144420.GA23963@khazad-dum.debian.net>
-References: <20110829141612.GB2025@gere.osrc.amd.com>
- <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
- <20110829155501.GC2025@gere.osrc.amd.com>
- <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
- <20110829171750.GD2025@gere.osrc.amd.com>
- <1314641813.2816.133.camel@twins>
- <20110829211439.GA4488@liondog.tnic>
- <20110830020828.GA14915@khazad-dum.debian.net>
- <20110830071755.GB15134@liondog.tnic>
+	Tue, 30 Aug 2011 10:45:08 -0400
+Date: Tue, 30 Aug 2011 16:45:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 09/32] nohz: Move ts->idle_calls into strict idle logic
+Message-ID: <20110830144500.GR9748@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-10-git-send-email-fweisbec@gmail.com>
+ <1314629267.2816.82.camel@twins>
+ <20110829173426.GE9748@somewhere.redhat.com>
+ <1314640789.2816.122.camel@twins>
+ <20110829182354.GH9748@somewhere.redhat.com>
+ <1314642803.2816.138.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110830071755.GB15134@liondog.tnic>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1314642803.2816.138.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011, Borislav Petkov wrote:
-> On Mon, Aug 29, 2011 at 11:08:28PM -0300, Henrique de Moraes Holschuh wrote:
-> > On Mon, 29 Aug 2011, Borislav Petkov wrote:
-> > > So, hypothetically speaking, hpa suggested then that we could pass
-> > > firmware blobs over the linked list setup_data thing in the real-mode
-> > > kernel header and parse_setup_data() can look at them and map them
-> > > somewhere later for the driver to find. This should be doable because
-> > > you're only gonna need a handful of blobs for CPU ucode, network and GPU
-> > > if the last is compiled in.
-> > > 
-> > > I wanted to take a serious look at that for the ucode loading, maybe I
-> > > should try to shuffle some time for it...
-> > 
-> > It would be very useful, yes.
-> > 
-> > Alternatively, you could extend the initrd format to have a firmware
-> > directory appended after the filesystem image.  ACPI is going to abuse
-> > the initrd in just that way to override ACPI tables very soon (patches
-> > have been already submitted to linux-acpi),
+On Mon, Aug 29, 2011 at 08:33:23PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-08-29 at 20:23 +0200, Frederic Weisbecker wrote:
 > 
-> .. lemme guess: they didn't put the correct tables in the BIOS in the
-> first place and now it is too late for a BIOS fix and want to shuffle in
-> all those "fixes" through initrd ontop of ACPI. Oh boy, do I love all
-> the ACPI crap stories :).
+> > > Well, no, on interrupt return you shouldn't do anything. If you've
+> > > stopped the tick it stays stopped until you do something that needs it,
+> > > then that action will re-enable it.
+> > 
+> > Sure, when something needs the tick in this mode, we usually
+> > receive an IPI and restart the tick from there but then
+> > tick_nohz_stop_sched_tick() handles the cases with *needs_cpu()
+> > very well on interrupt return (our IPI return) by doing a kind
+> > of "light" HZ mode by logically switching to nohz mode but
+> > with the next timer happening in HZ, assuming it's a matter
+> > of one tick and we will switch to a real nohz behaviour soon.
+> > 
+> > I don't see a good reason to duplicate that logic with a pure
+> > restart from the IPI.
+> 
+> That sounds like an optimization, and should thus be done later.
 
-Heh.
+The optimization is already there upstream. I can split the logic for
+non-idle case but I'm not sure about the point of that.
+ 
+> > > > That said I wonder if some of the above conditions should restore a periodic
+> > > > behaviour on interrupt return...
+> > > 
+> > > I would expect the tick not to be stopped when tick_nohz_can_stop_tick()
+> > > returns false. If it returns true, then I expect anything that needs it
+> > > to re-enable it.
+> > > 
+> > 
+> > Yeah. In the case of need_resched() in idle I believe the CPU doesn't
+> > really go to sleep later so it should be fine. But for the case of
+> > softirq pending or nohz_mode, I'm not sure...
+> 
+> softirqs shouldn't be pending when you go into nohz mode..
 
-Actually, the patches were created by a distro for debug purposes.  No
-vendor pushed for them.  But it is a safe bet that users will end up using
-them to work around ACPI vendor crap that will never get fixed properly
-through a BIOS update, etc.
+You mean it can't happen or we don't want that to happen?
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> 
+> That is, I'm really not seeing what's wrong with the very simple:
+> 
+> 
+>   if (tick_nohz_can_stop_tick())
+> 	tick_nohz_stop_tick();
+> 
+> 
+> and relying on everybody who invalidates tick_nohz_can_stop_tick(), to
+> do:
+> 
+>   tick_nohz_start_tick();
+
+May be for the non-idle case. But for the idle case I need to ensure
+this is necessary somewhere.
+
+> 
+> I'm also not quite sure why you always IPI, is that to avoid lock
+> inversions?
+
+Exactly! I think I wrote that to some changelog but I'm not sure. I'll
+check that.
