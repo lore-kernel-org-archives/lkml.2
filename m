@@ -1,53 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab1H3Tbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:31:41 -0400
-Received: from void.printf.net ([89.145.121.20]:54016 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756161Ab1H3Tbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:31:38 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Olof Johansson <olof@lixom.net>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linux-mmc\@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-tegra\@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss\@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] arm/dt: Tegra: Update SDHCI nodes to match bindings
-References: <1314731837-6985-1-git-send-email-swarren@nvidia.com>
-	<m2hb4yso44.fsf@bob.laptop.org>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B3279E01@HQMAIL01.nvidia.com>
-Date: Tue, 30 Aug 2011 15:31:28 -0400
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B3279E01@HQMAIL01.nvidia.com>
-	(Stephen Warren's message of "Tue, 30 Aug 2011 12:26:16 -0700")
-Message-ID: <m2d3fmsnlb.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756211Ab1H3Teu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:34:50 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42850 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754183Ab1H3Tes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 15:34:48 -0400
+Subject: Re: [patch v2 09/35] Hexagon: Add checksum functions
+From: Joe Perches <joe@perches.com>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+In-Reply-To: <20110830190800.574002538@codeaurora.org>
+References: <20110830190729.923334292@codeaurora.org>
+	 <20110830190800.574002538@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Aug 2011 12:34:47 -0700
+Message-ID: <1314732887.14422.10.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2011-08-30 at 14:07 -0500, Richard Kuo wrote:
+> Removed most non-assembly functions and use the generic ones instead.
+[]
+> +++ linux-hexagon-kernel/arch/hexagon/include/asm/checksum.h	2011-08-24 18:45:48.133877105 -0500
+[]
+> +#define do_csum	do_csum
 
-On Tue, Aug 30 2011, Stephen Warren wrote:
-> I don't think there's actually any need for that; initializing Tegra's
-> SDHCI from device-tree has never worked in mainline to date; it relies
-> on patch 1 being there. And if patch 2 was there without patch 3,
-> the worst that will happen is some port runs in 4-bit mode instead of
-> 8-bit, which evidently works fine since I didn't even notice 8-bit
-> support was missing...
+That looks pretty odd.
+I have a hard time believing that's useful or necessary.
 
-Ah, okay.  I've merged patch 2 to mmc-next for 3.2, then, and will keep
-an eye on what happens with the arch patches.
 
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
