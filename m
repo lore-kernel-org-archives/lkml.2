@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab1H3TPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:15:15 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19460 "EHLO
+	id S1756356Ab1H3TPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:15:21 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19578 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292Ab1H3TPH (ORCPT
+	with ESMTP id S1756279Ab1H3TPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:15:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068172"
-Message-Id: <20110830190801.353140948@codeaurora.org>
+	Tue, 30 Aug 2011 15:15:17 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068337"
+Message-Id: <20110830190802.185888808@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Aug 2011 14:07:46 -0500
+Date: Tue, 30 Aug 2011 14:07:55 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch v2 17/35] Hexagon: Add interrupts
+Subject: [patch v2 26/35] Hexagon: Implement basic TLB management routines for Hexagon.
 References: <20110830190729.923334292@codeaurora.org>
-Content-Disposition: inline; filename=interrupts.diff
+Content-Disposition: inline; filename=tlb.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mostly all stubs, as the TLB is managed by the hypervisor.
+
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
----
- arch/hexagon/include/asm/irq.h |   36 ++++++++++++++++
- arch/hexagon/kernel/irq.c      |   73 +++++++++++++++++++++++++++++++++
- arch/hexagon/kernel/irq_cpu.c  |   90 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 199 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/irq.h
+---
+ arch/hexagon/include/asm/tlb.h      |   39 +++++++++++++++
+ arch/hexagon/include/asm/tlbflush.h |   58 ++++++++++++++++++++++
+ arch/hexagon/mm/vm_tlb.c            |   93 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 190 insertions(+)
+
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/tlbflush.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/irq.h	2011-08-24 18:45:48.223877183 -0500
-@@ -0,0 +1,36 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/tlbflush.h	2011-08-24 18:45:48.383877324 -0500
+@@ -0,0 +1,58 @@
 +/*
++ * TLB flush support for Hexagon
++ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -51,31 +56,95 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/irq.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_IRQ_H_
-+#define _ASM_IRQ_H_
++#ifndef _ASM_TLBFLUSH_H
++#define _ASM_TLBFLUSH_H
 +
-+/* Number of first-level interrupts associated with the CPU core. */
-+#define HEXAGON_CPUINTS 32
++#include <linux/mm.h>
++#include <asm/processor.h>
 +
 +/*
-+ * XXX TODO FIXME this should be pulled from a platform file!
-+ * Must define NR_IRQS before including <asm-generic/irq.h>
-+ * 64 == the two SIRC's, 176 == the two gpio's
++ * TLB flushing -- in "SMP", these routines get defined to be the
++ * ones from smp.c, else they are some local flavors.
 + */
-+#define NR_IRQS (HEXAGON_CPUINTS + 64 + 176)
 +
-+#include <asm-generic/irq.h>
++/*
++ * These functions are commonly macros, but in the interests of
++ * VM vs. native implementation and code size, we simply declare
++ * the function prototypes here.
++ */
++extern void tlb_flush_all(void);
++extern void flush_tlb_mm(struct mm_struct *mm);
++extern void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr);
++extern void flush_tlb_range(struct vm_area_struct *vma,
++				unsigned long start, unsigned long end);
++extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++extern void flush_tlb_one(unsigned long);
 +
-+extern void __init hexagon_cpu_irq_init(void);
++/*
++ * "This is called in munmap when we have freed up some page-table pages.
++ * We don't need to do anything here..."
++ *
++ * The VM kernel doesn't walk page tables, and they are passed to the VMM
++ * by logical address. There doesn't seem to be any possibility that they
++ * could be referenced by the VM kernel based on a stale mapping, since
++ * they would only be located by consulting the mm structure, and they
++ * will have been purged from that structure by the munmap.  Seems like
++ * a noop on HVM as well.
++ */
++#define flush_tlb_pgtables(mm, start, end)
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/kernel/irq.c
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/tlb.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/irq.c	2011-08-24 18:45:48.223877183 -0500
-@@ -0,0 +1,73 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/tlb.h	2011-08-24 18:45:48.383877324 -0500
+@@ -0,0 +1,39 @@
 +/*
-+ * Interrupt support for Hexagon
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_TLB_H
++#define _ASM_TLB_H
++
++#include <linux/pagemap.h>
++#include <asm/tlbflush.h>
++
++/*
++ * We don't need any special per-pte or per-vma handling...
++ */
++#define tlb_start_vma(tlb, vma)				do { } while (0)
++#define tlb_end_vma(tlb, vma)				do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
++
++/*
++ * .. because we flush the whole mm when it fills up
++ */
++#define tlb_flush(tlb)		flush_tlb_mm((tlb)->mm)
++
++#include <asm-generic/tlb.h>
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/mm/vm_tlb.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/mm/vm_tlb.c	2011-08-24 18:45:48.383877324 -0500
+@@ -0,0 +1,93 @@
++/*
++ * Hexagon Virtual Machine TLB functions
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -94,153 +163,78 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/irq.c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/kernel_stat.h>
-+#include <linux/interrupt.h>
-+#include <linux/seq_file.h>
-+#include <linux/version.h>
-+
-+void __init init_IRQ(void)
-+{
-+	/* Set up core cpu irqs before platform secondaries. */
-+	hexagon_cpu_irq_init();
-+}
-+
-+int show_interrupts(struct seq_file *p, void *v)
-+{
-+	int i = *(loff_t *)v, cpu;
-+	struct irqaction *action;
-+	unsigned long flags;
-+
-+	if (i == 0) {
-+		seq_puts(p, "           ");
-+		for_each_online_cpu(cpu)
-+			seq_printf(p, "CPU%d       ", cpu);
-+		seq_putc(p, '\n');
-+	}
-+
-+	if (i < NR_IRQS) {
-+		struct irq_desc *desc = irq_to_desc(i);
-+
-+		raw_spin_lock_irqsave(&desc->lock, flags);
-+
-+		action = irq_desc[i].action;
-+		if (action) {
-+			seq_printf(p, "%3d: ", i);
-+			for_each_online_cpu(cpu) {
-+				seq_printf(p, "%10u ", kstat_irqs_cpu(i, cpu));
-+			}
-+			seq_printf(p, " %8s",
-+				   irq_desc_get_chip(&irq_desc[i])->name ?
-+				   : "-");
-+			seq_printf(p, "  %s", action->name);
-+			for (action = action->next; action;
-+			     action = action->next) {
-+				seq_printf(p, ", %s", action->name);
-+			}
-+
-+			seq_putc(p, '\n');
-+		}
-+		raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	}
-+
-+	return 0;
-+}
-Index: linux-hexagon-kernel/arch/hexagon/kernel/irq_cpu.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/irq_cpu.c	2011-08-24 18:45:48.223877183 -0500
-@@ -0,0 +1,90 @@
 +/*
-+ * First-level interrupt controller model for Hexagon.
-+ *
-+ * Copyright (c) 2010-2011 Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * The Hexagon Virtual Machine conceals the real workings of
++ * the TLB, but there are one or two functions that need to
++ * be instantiated for it, differently from a native build.
 + */
-+
-+#include <linux/interrupt.h>
-+#include <asm/irq.h>
++#include <linux/mm.h>
++#include <asm/page.h>
 +#include <asm/hexagon_vm.h>
 +
-+static void mask_irq(struct irq_data *data)
-+{
-+	__vmintop_locdis((long) data->irq);
-+}
-+
-+static void mask_irq_num(unsigned int irq)
-+{
-+	__vmintop_locdis((long) irq);
-+}
-+
-+static void unmask_irq(struct irq_data *data)
-+{
-+	__vmintop_locen((long) data->irq);
-+}
-+
-+/*  This is actually all we need for handle_fasteoi_irq  */
-+static void eoi_irq(struct irq_data *data)
-+{
-+	__vmintop_globen((long) data->irq);
-+}
-+
-+/* Power mamangement wake call. We don't need this, however,
-+ * if this is absent, then an -ENXIO error is returned to the
-+ * msm_serial driver, and it fails to correctly initialize.
-+ * This is a bug in the msm_serial driver, but, for now, we
-+ * work around it here, by providing this bogus handler.
-+ * XXX FIXME!!! remove this when msm_serial is fixed.
++/*
++ * Initial VM implementation has only one map active at a time, with
++ * TLB purgings on changes.  So either we're nuking the current map,
++ * or it's a no-op.  This operation is messy on true SMPs where other
++ * processors must be induced to flush the copies in their local TLBs,
++ * but Hexagon thread-based virtual processors share the same MMU.
 + */
-+static int set_wake(struct irq_data *data, unsigned int on)
++void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			unsigned long end)
 +{
-+	return 0;
++	struct mm_struct *mm = vma->vm_mm;
++
++	if (mm->context.ptbase == current->active_mm->context.ptbase)
++		__vmclrmap((void *)start, end - start);
 +}
 +
-+static struct irq_chip hexagon_irq_chip = {
-+	.name		= "HEXAGON",
-+	.irq_mask	= mask_irq,
-+	.irq_unmask	= unmask_irq,
-+	.irq_set_wake	= set_wake,
-+	.irq_eoi	= eoi_irq
-+};
-+
-+/**
-+ * The hexagon core comes with a first-level interrupt controller
-+ * with 32 total possible interrupts.  When the core is embedded
-+ * into different systems/platforms, it is typically wrapped by
-+ * macro cells that provide one or more second-level interrupt
-+ * controllers that are cascaded into one or more of the first-level
-+ * interrupts handled here. The precise wiring of these other
-+ * irqs varies from platform to platform, and are set up & configured
-+ * in the platform-specific files.
-+ *
-+ * The first-level interrupt controller is wrapped by the VM, which
-+ * virtualizes the interrupt controller for us.  It provides a very
-+ * simple, fast & efficient API, and so the fasteoi handler is
-+ * appropriate for this case.
++/*
++ * Flush a page from the kernel virtual map - used by highmem
 + */
-+void __init hexagon_cpu_irq_init(void)
++void flush_tlb_one(unsigned long vaddr)
 +{
-+	int irq;
++	__vmclrmap((void *)vaddr, PAGE_SIZE);
++}
 +
-+	for (irq = 0; irq < HEXAGON_CPUINTS; irq++) {
-+		mask_irq_num(irq);
-+		irq_set_chip_and_handler(irq, &hexagon_irq_chip,
-+						 handle_fasteoi_irq);
-+	}
++/*
++ * Flush all TLBs across all CPUs, virtual or real.
++ * A single Hexagon core has 6 thread contexts but
++ * only one TLB.
++ */
++void tlb_flush_all(void)
++{
++	/*  should probably use that fixaddr end or whateve label  */
++	__vmclrmap(0, 0xffff0000);
++}
++
++/*
++ * Flush TLB entries associated with a given mm_struct mapping.
++ */
++void flush_tlb_mm(struct mm_struct *mm)
++{
++	/* Current Virtual Machine has only one map active at a time */
++	if (current->active_mm->context.ptbase == mm->context.ptbase)
++		tlb_flush_all();
++}
++
++/*
++ * Flush TLB state associated with a page of a vma.
++ */
++void flush_tlb_page(struct vm_area_struct *vma, unsigned long vaddr)
++{
++	struct mm_struct *mm = vma->vm_mm;
++
++	if (mm->context.ptbase  == current->active_mm->context.ptbase)
++		__vmclrmap((void *)vaddr, PAGE_SIZE);
++}
++
++/*
++ * Flush TLB entries associated with a kernel address range.
++ * Like flush range, but without the check on the vma->vm_mm.
++ */
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++		__vmclrmap((void *)start, end - start);
 +}
 
 --
