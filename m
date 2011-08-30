@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab1H3BNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 21:13:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54209 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab1H3BN2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 21:13:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,299,1312182000"; 
-   d="scan'208";a="46268999"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-Date: Mon, 29 Aug 2011 18:12:11 -0700
-Subject: RE: [PATCH 1/3] x86, intel: Output microcode revision v4
-Thread-Topic: [PATCH 1/3] x86, intel: Output microcode revision v4
-Thread-Index: AcxmpgZll5faXVWQQdyLa7zJ5fBCHgAC66HA
-Message-ID: <493994B35A117E4F832F97C4719C4C040133090FB8@orsmsx505.amr.corp.intel.com>
-References: <1314661640-10991-1-git-send-email-andi@firstfloor.org>
- <1314661640-10991-3-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1314661640-10991-3-git-send-email-andi@firstfloor.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751834Ab1H3BRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 21:17:46 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:34030 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab1H3BRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 21:17:45 -0400
+Date: Mon, 29 Aug 2011 21:17:19 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFD: x32 ABI system call numbers
+Message-ID: <20110830011719.GB8505@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Geert Uytterhoeven <geert@linux-m68k.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <4E582577.2060805@zytor.com>
+ <CA+55aFzkpt48EPdVrs3aoALXnqAwqHfUCeZOpvf874O8Y8+POQ@mail.gmail.com>
+ <4E582EAA.1040108@zytor.com>
+ <CA+55aFxdRMxWLh1B_8v29qFafM425uH7kbYRfqoPe3TpVwOx-w@mail.gmail.com>
+ <CA+55aFyVmA_26LYaJH8dnFhwo7LWM6Ck7qFxCQvnROEHSuV_aA@mail.gmail.com>
+ <4E584492.5090406@zytor.com>
+ <CA+55aFw8+fkwjgAYOzxnO1HY3uCBCuf+N6z1XX2m=FhSjD5Wqg@mail.gmail.com>
+ <CAMuHMdXhdg6GuJqSjK5SdKBrBzZwGYus2LH1yqgkSnSEp8ZXyg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdXhdg6GuJqSjK5SdKBrBzZwGYus2LH1yqgkSnSEp8ZXyg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->--- a/arch/x86/kernel/cpu/intel.c
->+++ b/arch/x86/kernel/cpu/intel.c
->@@ -364,6 +364,15 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
->
->       early_init_intel(c);
->
->+       if (c->x86 >= 6 && !cpu_has(c, X86_FEATURE_IA64)) {
->+               unsigned lower_word;
->+
->+               wrmsr(MSR_IA32_UCODE_REV, 0, 0);
->+               /* The CPUID 1 fills in the MSR as documented in the SDM */
->+               cpuid_eax(1);
->+               rdmsr(MSR_IA32_UCODE_REV, lower_word, c->microcode);
->+       }
->+
+On Mon, Aug 29, 2011 at 09:01:37PM +0200, Geert Uytterhoeven wrote:
+> On Sat, Aug 27, 2011 at 03:42, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > time_t really *should* be 64-bit, the same way "off_t" should be. If
+> > it's not, there's something wrong.
+> 
+> Which will break all this non-portable 32-bit-only source code x32 was invented
+> for in the first place?
+> Someone will pass a time_t or off_t and an innocent pointer to a custom
+> printf-alike function to format it like "%u %s" and it will go bang...
 
-The patch initializes c->microcode AFTER it was used in early_init_intel(c) in your patch set [2/3].
+Well, for old static binaries, the old syscall ABI would still have to
+use 32-bit off_t's and time_t's.  And for dynamically linked binaries,
+glibc could deal with the compatibility issues with the old ABI,
+across the shared library interface, right?
 
-Thanks.
-
--Fenghua
+      	    	      	  		       	    - Ted
