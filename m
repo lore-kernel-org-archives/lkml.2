@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab1H3BHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 21:07:41 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:52422 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab1H3BHk convert rfc822-to-8bit (ORCPT
+	id S1751859Ab1H3BKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 21:10:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53289 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab1H3BKF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 21:07:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E59072A.5040108@gmail.com>
-References: <4E506DEA.1070601@gmail.com>
-	<20110821221602.GK25996@one.firstfloor.org>
-	<4E53EB01.7080905@gmail.com>
-	<987664A83D2D224EAE907B061CE93D5301EA5B717B@orsmsx505.amr.corp.intel.com>
-	<4E59072A.5040108@gmail.com>
-Date: Tue, 30 Aug 2011 09:07:39 +0800
-Message-ID: <CAC=cRTNJgRfYk9qpeX4=8FtPSr-c0_MGr48VnOBrp01-d3yhWQ@mail.gmail.com>
-Subject: Re: using mce_inject I get: RIP 10:<ffffffffa012c909>
- {ttm_bo_unref+0xf/0x45 [ttm]}
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+	Mon, 29 Aug 2011 21:10:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,299,1312182000"; 
+   d="scan'208";a="12302097"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Andi Kleen <andi@firstfloor.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        "jbeulich@novell.com" <jbeulich@novell.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+Date: Mon, 29 Aug 2011 18:08:46 -0700
+Subject: RE: [PATCH 2/3] x86, intel: Use cpu_update for Atom errata check
+Thread-Topic: [PATCH 2/3] x86, intel: Use cpu_update for Atom errata check
+Thread-Index: AcxmpgZll5faXVWQQdyLa7zJ5fBCHgACyVBw
+Message-ID: <493994B35A117E4F832F97C4719C4C040133090FB4@orsmsx505.amr.corp.intel.com>
+References: <1314661640-10991-1-git-send-email-andi@firstfloor.org>
+ <1314661640-10991-3-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1314661640-10991-3-git-send-email-andi@firstfloor.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 27, 2011 at 11:03 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 08/23/2011 01:15 PM, Luck, Tony wrote:
->>>
->>> its easily fixable, but not sure its a good idea due to bisect going
->>> through commits(afraid I might go astray with the bisect if I add any
->>> patches).
->>
->> Rather than fixing a bad build - you can try moving to a nearby commit
->> (use "gitk" to get a view of the structure around the commit that git
->> bisect suggested).  In the early stages of a bisection, it doesn't really
->> matter much if you build the mid-point that bisect provided, or some
->> nearby on - just be sure to mark good/bad the commit you actually built.
->>
->> -Tony
->>
->>
->
-> well.. after bisecting(with no results), I found that something in my
-> .config was causing this, so after looking through, I found that having
-> X86_MCE_INJECT = y causes the pauses when the timeouts occur
->
-> let me know if I need to supply any info.
+>--- a/arch/x86/kernel/cpu/intel.c
+>+++ b/arch/x86/kernel/cpu/intel.c
+>@@ -55,17 +55,10 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+>        * need the microcode to have already been loaded... so if it is
+>        * not, recommend a BIOS update and disable large pages.
+ >      */
+>-       if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
+>-               u32 ucode, junk;
+>-
+>-               wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+>-               sync_core();
+>-               rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
+>-
+>-               if (ucode < 0x20e) {
+>-                       printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
+>-                       clear_cpu_cap(c, X86_FEATURE_PSE);
+>-               }
+>+       if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2 &&
+>+           c->microcode < 0x20e) {
+>+               printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
+>+               clear_cpu_cap(c, X86_FEATURE_PSE); 
+>       }
 
-Which test case cause the pause?  Some test case with "timeout" in
-name may cause timeout between CPUs.  Or you can try boot system with
-kernel parameter "mce=3,0", which will disable timeout.
+c->microcode is used here BEFORE it's initialized in init_intel() in your patch set [1/3].
 
-Best Regards,
-Huang Ying
+Thanks.
+
+-Fenghua
