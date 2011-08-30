@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1H3JI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 05:08:27 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:38211 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab1H3JFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 05:05:53 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 05/15] drbd: simplify condition in drbd_may_do_local_read()
-Date: Tue, 30 Aug 2011 11:05:39 +0200
-Message-Id: <1314695149-387-6-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314695149-387-1-git-send-email-philipp.reisner@linbit.com>
-References: <1314695149-387-1-git-send-email-philipp.reisner@linbit.com>
+	id S1753181Ab1H3JIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 05:08:24 -0400
+Received: from smtp1.u-psud.fr ([129.175.33.41]:63132 "EHLO smtp1.u-psud.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753080Ab1H3JHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 05:07:50 -0400
+X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 05:07:50 EDT
+Message-ID: <4E5CA62E.8060304@free.fr>
+Date: Tue, 30 Aug 2011 10:58:22 +0200
+From: Duncan Sands <baldrick@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110826 Thunderbird/7.0
+MIME-Version: 1.0
+To: Zachary Amsden <zamsden@redhat.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH x86 kvm] Fix register corruption in pvclock_scale_delta
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
+Hi Zachary, this patch can cause a compile failure if the compiler chooses to
+use a memory location for mul_frac rather than a register (as allowed by the
+"m" in the constraints):
 
-fold
-	if (x >= (N+1))
-		return 0;
-	if (x < N)
-		return 0;
-into
-	if (x != N)
-		return 0;
+   pvclock.s:229: Error: no instruction mnemonic suffix given and no register 
+operands; can't size instruction
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_req.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+In this example the assembler is:
 
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 48d313d..7332198 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -663,9 +663,7 @@ static int drbd_may_do_local_read(struct drbd_conf *mdev, sector_t sector, int s
- 
- 	if (mdev->state.disk == D_UP_TO_DATE)
- 		return 1;
--	if (mdev->state.disk >= D_OUTDATED)
--		return 0;
--	if (mdev->state.disk <  D_INCONSISTENT)
-+	if (mdev->state.disk != D_INCONSISTENT)
- 		return 0;
- 	esector = sector + (size >> 9) - 1;
- 
--- 
-1.7.4.1
+         #APP
+         mul -48(%rbp) ; shrd $32, %rdx, %rax
+         #NO_APP
 
+A simple solution is to use mulq, as in the following patch:
+
+Signed-off-by: Duncan Sands <baldrick@free.fr>
+
+--- a/arch/x86/include/asm/pvclock.h
++++ b/arch/x86/include/asm/pvclock.h
+@@ -44,7 +44,7 @@ static inline u64 pvclock_scale_delta(u64 delta, u32 mul_frac, 
+int shift)
+                 : "a" ((u32)delta), "1" ((u32)(delta >> 32)), "2" (mul_frac) );
+  #elif defined(__x86_64__)
+         __asm__ (
+-               "mul %[mul_frac] ; shrd $32, %[hi], %[lo]"
++               "mulq %[mul_frac] ; shrd $32, %[hi], %[lo]"
+                 : [lo]"=a"(product),
+                   [hi]"=d"(tmp)
+                 : "0"(delta),
