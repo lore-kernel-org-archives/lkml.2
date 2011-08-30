@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab1H3VHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 17:07:20 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:42197 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756730Ab1H3VHR (ORCPT
+	id S1756785Ab1H3VH0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 17:07:26 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:46758 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730Ab1H3VHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 17:07:17 -0400
-Date: Tue, 30 Aug 2011 14:07:13 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-input@vger.kernel.org
-Subject: Re: [PATCH] input: fix misc/twl6040-vibra.c warning
-Message-Id: <20110830140713.637b60f1.rdunlap@xenotime.net>
-In-Reply-To: <20110830065931.GA5791@core.coreip.homeip.net>
-References: <20110829125017.9337299c.rdunlap@xenotime.net>
-	<20110830065931.GA5791@core.coreip.homeip.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 30 Aug 2011 17:07:21 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Deepthy Ravi <deepthy.ravi@ti.com>
+Subject: Re: [PATCH 1/2] omap3: ISP: Fix the failure of CCDC capture during suspend/resume
+Date: Tue, 30 Aug 2011 23:07:47 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.7.0; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mchehab@infradead.org, linux-omap@vger.kernel.org,
+        Abhilash K V <abhilash.kv@ti.com>
+References: <1312984992-19315-1-git-send-email-deepthy.ravi@ti.com>
+In-Reply-To: <1312984992-19315-1-git-send-email-deepthy.ravi@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201108302307.47564.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011 23:59:31 -0700 Dmitry Torokhov wrote:
+Hi,
 
-> Hi Randy,
+On Wednesday 10 August 2011 16:03:12 Deepthy Ravi wrote:
+> From: Abhilash K V <abhilash.kv@ti.com>
 > 
-> On Mon, Aug 29, 2011 at 12:50:17PM -0700, Randy Dunlap wrote:
-> > From: Randy Dunlap <rdunlap@xenotime.net>
-> > 
-> > Fix warning from Geert's build summary emails by changing "if" to
-> > "ifdef".  Also handle the case of CONFIG_PM_SLEEP not enabled.
-> > 
-> > drivers/input/misc/twl6040-vibra.c:231:5: warning: "CONFIG_PM_SLEEP" is not defined
-> > 
-> > Builds cleanly with CONFIG_PM_SLEEP enabled or disabled.
-> > 
-> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> > ---
-> >  drivers/input/misc/twl6040-vibra.c |   11 +++++++----
-> >  1 file changed, 7 insertions(+), 4 deletions(-)
-> > 
-> > --- linux-next-20110829.orig/drivers/input/misc/twl6040-vibra.c
-> > +++ linux-next-20110829/drivers/input/misc/twl6040-vibra.c
-> > @@ -228,7 +228,7 @@ static void twl6040_vibra_close(struct i
-> >  	mutex_unlock(&info->mutex);
-> >  }
-> >  
-> > -#if CONFIG_PM_SLEEP
-> > +#ifdef CONFIG_PM_SLEEP
-> 
-> This is actually the only change that is needed. In case when
-> CONFIG_PM_SLEEP is not defined SIMPLE_DEV_PM_OPS() produces empty
-> 'struct dev_pm_ops' so no additional #ifdef-ing is needed.
+> While resuming from the "suspended to memory" state,
+> occasionally CCDC fails to get enabled and thus fails
+> to capture frames any more till the next suspend/resume
+> is issued.
+> This is a race condition which happens only when a CCDC
+> frame-completion ISR is pending even as ISP device's
+> isp_pm_prepare() is getting called and only one buffer
+> is left on the DMA queue.
+> The DMA queue buffers are thus depleted which results in
+> its underrun.So when ISP resumes there are no buffers on
+> the queue (as the application which can issue buffers is
+> yet to resume) to start video capture.
+> This fix addresses this issue by dequeuing and enqueing
+> the last buffer in isp_pm_prepare() after its DMA gets
+> completed. Thus,when ISP resumes it always finds atleast
+> one buffer on the DMA queue - this is true if application
+> uses only 3 buffers.
 
-Ah, I see.  Thanks for the info.
-Do I need to resend the patch?
+How is that problem specific to the CCDC ? Can't it be reproduce at the 
+preview engine or resizer output as well ?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Regards,
+
+Laurent Pinchart
