@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab1H3LZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 07:25:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40539 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab1H3LZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 07:25:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="43325117"
-Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
- channel ID
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Magnus Damm <damm@opensource.se>
-In-Reply-To: <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
-References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
-	 <1308916071.1536.4.camel@vkoul-udesk3>
-	 <20110829080047.GJ31809@linux-sh.org>
-	 <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com>
-	 <1314618931.1606.114.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
-	 <1314698522.1606.164.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Aug 2011 16:53:46 +0530
-Message-ID: <1314703426.1606.167.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753192Ab1H3L3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 07:29:34 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61127 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab1H3L3a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 07:29:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110830103545.GA16202@quack.suse.cz>
+References: <CAFNq8R62+5dLbDV3b_rtFgMwTZ2abW+h+tg013L=pij60tTRdw@mail.gmail.com>
+	<20110830103545.GA16202@quack.suse.cz>
+Date: Tue, 30 Aug 2011 19:29:29 +0800
+Message-ID: <CAFNq8R7kgizxyZx4EGcno9apv0BDQEN6saz+Nusp5-x5PSz1Mg@mail.gmail.com>
+Subject: Re: [PATCH] fix the outdated comment in ext2_nfs_get_inode()
+From: Li Haifeng <omycle@gmail.com>
+To: linux-ext4@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-30 at 13:20 +0200, Guennadi Liakhovetski wrote:
-> On Tue, 30 Aug 2011, Vinod Koul wrote:
-> 
-> > On Tue, 2011-08-30 at 09:54 +0200, Guennadi Liakhovetski wrote:
-> > > On Mon, 29 Aug 2011, Vinod Koul wrote:
-> > > > > >> You should not assign chan->private.
-> > > > > >> Please move this  to dma_slave_control API
-> > > > > >
-> > > > > > I haven't seen any reply to this comment and this patch seems to still be
-> > > > > > outstanding, is there an updated version of this patch that I've missed?
-> > > > I don't recall seeing any updated version fixing this 
-> > > 
-> > > As a matter of fact, when you say "use dma_slave_control API," you 
-> > > actually mean the dma_slave_config, right? Then, how is one supposed to 
-> > > use it in this case? Shall we be issuing a DMA_SLAVE_CONFIG call inside of 
-> > > the filter and check the return code? The problem is, that not all DMA 
-> > > controllers on sh-mobile SoCs can service the same slave devices. So, if 
-> > > we don't check in the filter we might well get an unsuitable DMA channel.
-> > Here you are assigning to chan->private your specific values, which
-> > should be moved to the dma_slave_config. 
-> > But here you are removing the checks, and accepting the first channel
-> > you got, so how do you find channel is suitable or not.
-> 
-> That's done in the driver's .device_alloc_chan_resources() method. It 
-> checkx the .private pointer, tries to find a suitable channel, if it fails 
-> - it returns -EINVAL. See 
-> drivers/dma/shdma.c::sh_dmae_alloc_chan_resources():
-> 
-> 	if (param) {
-> 		const struct sh_dmae_slave_config *cfg;
-> 
-> 		cfg = sh_dmae_find_slave(sh_chan, param);
-> 		if (!cfg) {
-> 			ret = -EINVAL;
-> 			goto efindslave;
-> 		}
-Now am doubly confused. Are you saying that you are using
-alloc_chan_resources for doing filtering??
+Thanks for your point. I will remake this patch.
 
--- 
-~Vinod
-
+2011/8/30 Jan Kara <jack@suse.cz>
+>
+> On Tue 30-08-11 17:53:58, Li Haifeng wrote:
+> > The function iget  referred by the comment is replaced by ext2_iget .
+> > And the ext2_read_inode() is not exist, the ext2_iget is "neater". So
+> > the comment is fixed here.
+> >
+> > Signed-off-by: Li Haifeng <omycle@gmail.com>
+> > ---
+> >  fs/ext2/super.c |    6 ++----
+> >  1 files changed, 2 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+> > index 1dd62ed..994ced3 100644
+> > --- a/fs/ext2/super.c
+> > +++ b/fs/ext2/super.c
+> > @@ -327,10 +327,8 @@ static struct inode *ext2_nfs_get_inode(struct
+> > super_block *sb,
+> >     if (ino > le32_to_cpu(EXT2_SB(sb)->s_es->s_inodes_count))
+> >         return ERR_PTR(-ESTALE);
+> >
+> > -   /* iget isn't really right if the inode is currently unallocated!!
+> > -    * ext2_read_inode currently does appropriate checks, but
+> > -    * it might be "neater" to call ext2_get_inode first and check
+> > -    * if the inode is valid.....
+> > +   /*
+> > +    * ext2_iget isn't really right if the inode is currently unallocated!!
+>  OK, but we should keep there a note that ext2_iget() does appropriate
+> checks to handle stale inodes.
+>
+>                                                                        Honza
+> >      */
+> >     inode = ext2_iget(sb, ino);
+> >     if (IS_ERR(inode))
+> > --
+> > 1.7.4.1
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
