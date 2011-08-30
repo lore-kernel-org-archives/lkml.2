@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab1H3ERn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 00:17:43 -0400
+	id S1751186Ab1H3ER6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 00:17:58 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:49060 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab1H3ERk (ORCPT
+	with ESMTP id S1751074Ab1H3ER5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 00:17:40 -0400
+	Tue, 30 Aug 2011 00:17:57 -0400
 From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -18,51 +18,48 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org,
         "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH v3 00/18] Staging: cx25821: Fix style issues
-Date: Tue, 30 Aug 2011 12:16:55 +0800
-Message-Id: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
+Subject: [PATCH v3 01/18] Staging: cx25821: Get rid of typedef in cx25821.h
+Date: Tue, 30 Aug 2011 12:16:56 +0800
+Message-Id: <1314677833-4689-2-git-send-email-leonidsbox@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
+References: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series fixes some style issues in drivers/staging/cx25821
-I split my previous patches per logical change and combined them into
-one patch series.
+Get rid of typedef in cx25821.h
 
-Leonid V. Fedorenchik (18):
-  Staging: cx25821: Get rid of typedef in cx25821.h
-  Staging: cx25821: Delete file cx25821-gpio.h
-  Staging: cx25821: Move EXPORT_SYMBOL() to the right place
-  Staging: cx25821: Use DEFINE_PCI_DEVICE_TABLE for cx25821_pci_tbl
-  Staging: cx25821: Fix wrong brace placement in cx25821-cards.c
-  Staging: cx25821: Fix wrong brace placement in cx25821-core.c
-  Staging: cx25821: Fix wrong brace placement in cx25821-i2c.c
-  Staging: cx25821: Fix too long lines in cx25821-audio.h
-  Staging: cx25821: Fix obscure line endings in cx25821-audio-upstream.c
-  Staging: cx25821: Fix long lines in cx25821-audio-upstream.c
-  Staging: cx25821: Fix long lines in cx25821-audio-upstream.h
-  Staging: cx25821: Replace :? by if-else in cx25821-video-upstream-ch2.c
-  Staging: cx25821: Fix labels' placement in cx25821-video-upstream-ch2.c
-  Staging: cx25821: Fix wrong line endings in cx25821-video-upstream-ch2.c
-  Staging: cx25821: Fix long lines in cx25821-video-upstream-ch2.c
-  Staging: cx25821: Fix long lines in cx25821-video-upstream-ch2.h
-  Staging: cx25821: Fix long lines in cx25821-video-upstream.c
-  Staging: cx25821: Fix long lines in cx25821-video-upstream.h
+Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
+---
+ drivers/staging/cx25821/cx25821.h |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
- drivers/staging/cx25821/cx25821-audio-upstream.c   |   33 +++-----
- drivers/staging/cx25821/cx25821-audio-upstream.h   |    9 ++-
- drivers/staging/cx25821/cx25821-audio.h            |    6 +-
- drivers/staging/cx25821/cx25821-cards.c            |    6 +-
- drivers/staging/cx25821/cx25821-core.c             |   31 ++++----
- drivers/staging/cx25821/cx25821-gpio.c             |    1 +
- drivers/staging/cx25821/cx25821-gpio.h             |    2 -
- drivers/staging/cx25821/cx25821-i2c.c              |    6 +-
- .../staging/cx25821/cx25821-video-upstream-ch2.c   |   79 ++++++++-----------
- .../staging/cx25821/cx25821-video-upstream-ch2.h   |   83 ++++++++++++++------
- drivers/staging/cx25821/cx25821-video-upstream.c   |   16 ++---
- drivers/staging/cx25821/cx25821-video-upstream.h   |   78 +++++++++++++------
- drivers/staging/cx25821/cx25821.h                  |    8 +-
- 13 files changed, 204 insertions(+), 154 deletions(-)
- delete mode 100644 drivers/staging/cx25821/cx25821-gpio.h
+diff --git a/drivers/staging/cx25821/cx25821.h b/drivers/staging/cx25821/cx25821.h
+index 6230243..a282592 100644
+--- a/drivers/staging/cx25821/cx25821.h
++++ b/drivers/staging/cx25821/cx25821.h
+@@ -179,15 +179,17 @@ struct cx25821_input {
+ 	u32 gpio0, gpio1, gpio2, gpio3;
+ };
+ 
+-typedef enum {
++enum port {
+ 	CX25821_UNDEFINED = 0,
+ 	CX25821_RAW,
+ 	CX25821_264
+-} port_t;
++};
+ 
+ struct cx25821_board {
+ 	char *name;
+-	port_t porta, portb, portc;
++	enum port porta;
++	enum port portb;
++	enum port portc;
+ 	unsigned int tuner_type;
+ 	unsigned int radio_type;
+ 	unsigned char tuner_addr;
+-- 
+1.7.0.4
 
