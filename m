@@ -1,123 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab1H3CNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 22:13:00 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39525 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab1H3CM6 convert rfc822-to-8bit (ORCPT
+	id S1751766Ab1H3CNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 22:13:38 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:43339 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751075Ab1H3CNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 22:12:58 -0400
+	Mon, 29 Aug 2011 22:13:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aj0DAHBFXE55LIxDgWdsb2JhbABCqAYVAQEWJiWBQAEBBAEnExwjBQsIAw4KLhQlAyETh3IEuEwOhj8EpDo
+Date: Tue, 30 Aug 2011 12:13:33 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] shrinker: fix a bug when callback returns -1
+Message-ID: <20110830021333.GL3162@dastard>
+References: <Pine.LNX.4.64.1108291534140.19003@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACqU3MXup87LamKaNz1w8GXQdPvMedEjy_Y=TPsyLDYKQi4jwA@mail.gmail.com>
-References: <1313975049.2393.8.camel@offbook>
-	<CACqU3MXup87LamKaNz1w8GXQdPvMedEjy_Y=TPsyLDYKQi4jwA@mail.gmail.com>
-Date: Mon, 29 Aug 2011 22:12:57 -0400
-Message-ID: <CACqU3MUOxLYEsuVv5d=LSjNio5ZHg3E8K+i2ztQshttUfemsdA@mail.gmail.com>
-Subject: Re: [PATCH v2] kconfig: handle SIGINT in menuconfig
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: dave@gnu.org
-Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1108291534140.19003@hs20-bc2-1.build.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 29, 2011 at 03:36:48PM -0400, Mikulas Patocka wrote:
+> Hi
+> 
+> This patch fixes a lockup when shrinker callback returns -1.
 
-On Mon, Aug 29, 2011 at 9:55 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Sun, Aug 21, 2011 at 9:04 PM, Davidlohr Bueso <dave@gnu.org> wrote:
->> From: Davidlohr Bueso <dave@gnu.org>
->>
->> I recently got bitten in the ass when pressing Ctrl-C and lost all my current configuration changes. This patch captures SIGINT and allows the user to save any changes.
->> Some code refactoring was made in order to handle the exit behavior.
->>
->> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
->> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
->> ---
->>  scripts/kconfig/mconf.c |   86 ++++++++++++++++++++++++++++------------------
->>  1 files changed, 52 insertions(+), 34 deletions(-)
->>
->> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
->> index 820d2b6..19e200d 100644
->> --- a/scripts/kconfig/mconf.c
->> +++ b/scripts/kconfig/mconf.c
->> @@ -15,6 +15,7 @@
->>  #include <stdarg.h>
->>  #include <stdlib.h>
->>  #include <string.h>
->> +#include <signal.h>
->>  #include <unistd.h>
->>  #include <locale.h>
->>
->> @@ -272,6 +273,7 @@ static struct menu *current_menu;
->>  static int child_count;
->>  static int single_menu_mode;
->>  static int show_all_options;
->> +static int saved_x, saved_y;
->>
->>  static void conf(struct menu *menu);
->>  static void conf_choice(struct menu *menu);
->> @@ -792,9 +794,54 @@ static void conf_save(void)
->>        }
->>  }
->>
->> +static int handle_exit(void)
->> +{
->> +       int res;
->> +
->> +       dialog_clear();
->> +       if (conf_get_changed())
->> +               res = dialog_yesno(NULL,
->> +                                  _("Do you wish to save your new configuration ?\n"
->> +                                    "<ESC><ESC> to continue."),
->> +                                  6, 60);
->> +       else
->> +               res = -1;
->> +
->> +       end_dialog(saved_x, saved_y);
->> +
->> +       switch (res) {
->> +       case 0:
->> +               if (conf_write(filename)) {
->> +                       fprintf(stderr, _("\n\n"
->> +                                         "Error while writing of the configuration.\n"
->> +                                         "Your configuration changes were NOT saved."
->> +                                         "\n\n"));
->> +                       return 1;
->> +               }
->> +               /* fall through */
->> +       case -1:
->> +               printf(_("\n\n"
->> +                        "*** End of the configuration.\n"
->> +                        "*** Execute 'make' to start the build or try 'make help'."
->> +                        "\n\n"));
->> +               res = 0;
->> +               break;
->> +       default:
->> +               fprintf(stderr, _("\n\n"
->> +                                 "Your configuration changes were NOT saved."
->> +                                 "\n\n"));
->> +       }
->> +
->> +       return res;
->> +}
->> +
->> +static void sig_handler(int signo)
->> +{
->> +       exit(handle_exit());
->> +}
->> +
-> Actually, no matter what handle_exit() returns, the process will
-> return error code 130 and make will abort. I'd suggest to get rid of
-> the call to exit(), and only keep handle_exit().
->
-> any objection ?
->
-stupid me... we need the call to exit(2), but its argument do not seem
-to be used.
+What lockup is that? I haven't seen any bug reports, and this code
+has been like this for several years, so I'm kind of wondering why
+this is suddenly an issue....
 
- - Arnaud
+> BTW. shouldn't the value returned by callback be long instead of int? On 
+> 64-bit architectures, there may be more than 2^32 entries allocated.
+
+The API hasn't changed since the early 2.5 series, so that wasn't a
+consideration when it was originally written. As it is, I make this
+exact change in the shrinker API update patchset I proposed
+recently for exactly the reasons you suggest:
+
+http://thread.gmane.org/gmane.linux.kernel.mm/67326
+
+
+> Mikulas
+> 
+> ---
+> 
+> shrinker: fix a bug when callback returns -1
+> 
+> Shrinker callback can return -1 if it is at a risk of deadlock.
+> However, this is not tested at some places.
+> 
+> If do_shrinker_shrink returns -1 here
+> "max_pass = do_shrinker_shrink(shrinker, shrink, 0)",
+> it is converted to an unsigned long integer. This may result in excessive
+> total_scan value and a lockup due to code looping too much in
+> "while (total_scan >= batch_size)" cycle.
+
+> 
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> 
+> ---
+>  mm/vmscan.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> Index: linux-3.1-rc3-fast/mm/vmscan.c
+> ===================================================================
+> --- linux-3.1-rc3-fast.orig/mm/vmscan.c	2011-08-29 20:34:27.000000000 +0200
+> +++ linux-3.1-rc3-fast/mm/vmscan.c	2011-08-29 20:37:38.000000000 +0200
+> @@ -250,6 +250,7 @@ unsigned long shrink_slab(struct shrink_
+>  		unsigned long long delta;
+>  		unsigned long total_scan;
+>  		unsigned long max_pass;
+> +		int sr;
+>  		int shrink_ret = 0;
+>  		long nr;
+>  		long new_nr;
+> @@ -266,7 +267,10 @@ unsigned long shrink_slab(struct shrink_
+>  		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
+>  
+>  		total_scan = nr;
+> -		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+> +		sr = do_shrinker_shrink(shrinker, shrink, 0);
+> +		if (sr == -1)
+> +			continue;
+
+IIRC from my recent shrinker audit, none of the existing shrinkers
+return return -1 when nr_to_scan == 0, so this check has never been
+necessary.
+
+> +		max_pass = sr;
+>  		delta = (4 * nr_pages_scanned) / shrinker->seeks;
+>  		delta *= max_pass;
+>  		do_div(delta, lru_pages + 1);
+> @@ -309,6 +313,8 @@ unsigned long shrink_slab(struct shrink_
+>  			int nr_before;
+>  
+>  			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+> +			if (nr_before == -1)
+> +				break;
+
+Same here.
+
+>  			shrink_ret = do_shrinker_shrink(shrinker, shrink,
+>  							batch_size);
+>  			if (shrink_ret == -1)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
