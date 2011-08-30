@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab1H3CBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 22:01:08 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:50760 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751129Ab1H3CBF (ORCPT
+	id S1751278Ab1H3CIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 22:08:38 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45807 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750769Ab1H3CIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 22:01:05 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj0DAAVCXE55LIxDgWdsb2JhbABCqAYVAQEWJiWBQAEBBTIBIyMQCAMYLhQlAyETh3a4aw6GPwSbYohY
-Date: Tue, 30 Aug 2011 12:01:00 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Lukas Czerner <lczerner@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
- device is removed
-Message-ID: <20110830020100.GK3162@dastard>
-References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
- <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com>
- <CAO+b5-qBCBuROmqSPHofQ4A4xxpaUVJL8AzGDHfy7k8QcWYzWw@mail.gmail.com>
+	Mon, 29 Aug 2011 22:08:34 -0400
+X-Sasl-enc: cc0QZUMeTBPiL3Y+DkMvmg0JURCo/znIyzoqJoxZuT5V 1314670113
+Date: Mon, 29 Aug 2011 23:08:28 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
+        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
+Message-ID: <20110830020828.GA14915@khazad-dum.debian.net>
+References: <20110829141612.GB2025@gere.osrc.amd.com>
+ <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+ <20110829155501.GC2025@gere.osrc.amd.com>
+ <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
+ <20110829171750.GD2025@gere.osrc.amd.com>
+ <1314641813.2816.133.camel@twins>
+ <20110829211439.GA4488@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAO+b5-qBCBuROmqSPHofQ4A4xxpaUVJL8AzGDHfy7k8QcWYzWw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110829211439.GA4488@liondog.tnic>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 07:56:33PM +0200, Bart Van Assche wrote:
-> On Mon, Aug 29, 2011 at 1:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> > On Sat, 27 Aug 2011, Bart Van Assche wrote:
-> >
-> >> Apparently blkdev_issue_discard() never times out, not even if the
-> >> device has been removed. This is what appeared in the kernel log after
-> >> device removal (triggered by running mkfs.ext4 on an SRP SCSI device
-> >> node):
-> >>
-> >> sd 15:0:0:0: [sdb] Attached SCSI disk
-> >> scsi host15: SRP abort called
-> >> scsi host15: SRP reset_device called
-> >> scsi host15: ib_srp: SRP reset_host called
-> >> scsi host15: ib_srp: connection closed
-> >> scsi host15: ib_srp: Got failed path rec status -110
-> >> scsi host15: ib_srp: Path record query failed
-> >> scsi host15: ib_srp: reconnect failed (-110), removing target port.
-> >> sd 15:0:0:0: Device offlined - not ready after error recovery
-> >> INFO: task mkfs.ext4:4304 blocked for more than 120 seconds.
-> >> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> >> mkfs.ext4       D 0000000000000000     0 4304 3649 0x00000000
-> >>  ffff88006c313b98 0000000000000046 ffffffff813e3038 ffffffff81e6b580
-> >>  0000000000000082 000000010003cfdc ffff88006c313fd8 ffff880070fbcbc0
-> >>  00000000001d1f40 ffff88006c313fd8 ffff88006c312000 ffff88006c312000
-> >> Call Trace:
-> >>  [<ffffffff813e3038>] ? schedule+0x628/0x830
-> >>  [<ffffffff813e3835>] schedule_timeout+0x1d5/0x310
-> >>  [<ffffffff810805de>] ? put_lock_stats+0xe/0x40
-> >>  [<ffffffff81080e05>] ? lock_release_holdtime+0xb5/0x160
-> >>  [<ffffffff813e6ac0>] ? _raw_spin_unlock_irq+0x30/0x60
-> >>  [<ffffffff8103f7d9>] ? sub_preempt_count+0xa9/0xe0
-> >>  [<ffffffff813e28e0>] wait_for_common+0x110/0x160
-> >>  [<ffffffff810425f0>] ? try_to_wake_up+0x2c0/0x2c0
-> >>  [<ffffffff813e2a0d>] wait_for_completion+0x1d/0x20
-> >>  [<ffffffff811de93a>] blkdev_issue_discard+0x27a/0x2c0
-> >>  [<ffffffff813e2806>] ? wait_for_common+0x36/0x160
-> >>  [<ffffffff811df371>] blkdev_ioctl+0x701/0x760
-> >>  [<ffffffff8112b7bf>] ? kmem_cache_free+0x6f/0x160
-> >>  [<ffffffff811755b7>] block_ioctl+0x47/0x50
-> >>  [<ffffffff81151b78>] do_vfs_ioctl+0x98/0x570
-> >>  [<ffffffff813e76dc>] ? sysret_check+0x27/0x62
-> >>  [<ffffffff8115209f>] sys_ioctl+0x4f/0x80
-> >>  [<ffffffff813e76ab>] system_call_fastpath+0x16/0x1b
-> >> no locks held by mkfs.ext4/4304.
-> >>
-> >> The above message kept repeating forever until system reboot.
-> >>
-> >> Kernel version:
-> >> $ git show | head -n 1
-> >> commit ed8f37370d83e695c0a4fa5d5fc7a83ecb947526
-> >> $ git describe
-> >> v3.0-7216-ged8f373
-> >>
-> >> I'm considering this as a bug because the state described above makes it
-> >> impossible to kill the mkfs process and also makes it impossible to remove the
-> >> kernel module ib_srp. That's why I also reported this as
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=40472.
-> >
-> > I am trying to find some race condition that would cause the problem in
-> > blkdev_issue_discard(), however I can not see anything.
+On Mon, 29 Aug 2011, Borislav Petkov wrote:
+> So, hypothetically speaking, hpa suggested then that we could pass
+> firmware blobs over the linked list setup_data thing in the real-mode
+> kernel header and parse_setup_data() can look at them and map them
+> somewhere later for the driver to find. This should be doable because
+> you're only gonna need a handful of blobs for CPU ucode, network and GPU
+> if the last is compiled in.
 > 
-> I'm not sure why you are looking for a race condition - this looks
-> like a plain deadlock to me.
-> 
-> > The only reason for this to happen I can see is that the last bio was
-> > not completed yet (e.g. the bio_batch_end_io() callback has not been
-> > called by the last submitted bio). Does bios have some sort of timeout
-> > after it dies out? Is it possible that we can lose bio like that ?
-> 
-> A key fact here is that the block device to which the discard request
-> was issued is gone, so the discard request will never finish
-> successfully. Do all relevant error paths guarantee that
-> blkdev_issue_discard() will finish in a finite time ?
+> I wanted to take a serious look at that for the ucode loading, maybe I
+> should try to shuffle some time for it...
 
-The underlying block device driver is supposed to handle timing out
-of lost IOs and causcwinge them to be completed with an error.
-blkdev_issue_discard() is simply waiting for that error to be
-delivered.
+It would be very useful, yes.
 
-If the driver has not detected that an outstanding request has not
-completed then that is a driver bug, not a bug in
-blkdev_issue_discard(). IOWs, you should be asking the ib_srp people
-why the in flight bio was not timed out or errored out when the
-block device abort was run....
+Alternatively, you could extend the initrd format to have a firmware
+directory appended after the filesystem image.  ACPI is going to abuse
+the initrd in just that way to override ACPI tables very soon (patches
+have been already submitted to linux-acpi), so if a more structured and
+extensible way to piggy-back early-init data in the initrd is needed, it
+would be good to bring that to the table NOW.
 
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
