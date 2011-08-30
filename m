@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278Ab1H3CIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 22:08:38 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45807 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750769Ab1H3CIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 22:08:34 -0400
-X-Sasl-enc: cc0QZUMeTBPiL3Y+DkMvmg0JURCo/znIyzoqJoxZuT5V 1314670113
-Date: Mon, 29 Aug 2011 23:08:28 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaud Lacombe <lacombar@gmail.com>, David Airlie <airlied@redhat.com>,
-        Michel =?iso-8859-1?Q?D=E4nzer?= <michel@daenzer.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-Message-ID: <20110830020828.GA14915@khazad-dum.debian.net>
-References: <20110829141612.GB2025@gere.osrc.amd.com>
- <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
- <20110829155501.GC2025@gere.osrc.amd.com>
- <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
- <20110829171750.GD2025@gere.osrc.amd.com>
- <1314641813.2816.133.camel@twins>
- <20110829211439.GA4488@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829211439.GA4488@liondog.tnic>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751217Ab1H3CKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 22:10:36 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46783 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab1H3CKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 22:10:35 -0400
+Date: Tue, 30 Aug 2011 12:10:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: linux-next: manual merge of the s5p tree with the arm/arm-soc trees
+Message-Id: <20110830121027.e88cc4f789474be399171471@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011, Borislav Petkov wrote:
-> So, hypothetically speaking, hpa suggested then that we could pass
-> firmware blobs over the linked list setup_data thing in the real-mode
-> kernel header and parse_setup_data() can look at them and map them
-> somewhere later for the driver to find. This should be doable because
-> you're only gonna need a handful of blobs for CPU ucode, network and GPU
-> if the last is compiled in.
-> 
-> I wanted to take a serious look at that for the ucode loading, maybe I
-> should try to shuffle some time for it...
+Hi Kukjin,
 
-It would be very useful, yes.
+Today's linux-next merge of the s5p tree got a conflict in
+arch/arm/mach-exynos4/mach-smdkc210.c between commit 2be5a4a7da6e ("ARM:
+mach-exynos4: convert boot_params to atag_offset") from the arm and
+arm-soc trees and commit 42c0d26d2c32 ("ARM: EXYNOS4: Turn the
+mach-smdkc210.c into mach-smdv310.c") from the s5p tree.
 
-Alternatively, you could extend the initrd format to have a firmware
-directory appended after the filesystem image.  ACPI is going to abuse
-the initrd in just that way to override ACPI tables very soon (patches
-have been already submitted to linux-acpi), so if a more structured and
-extensible way to piggy-back early-init data in the initrd is needed, it
-would be good to bring that to the table NOW.
+The latter removed the file, so I did that and then applied the following
+patch to arch/arm/mach-exynos4/mach-smdkv310.c.  I can carry the fixes as
+necessary.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 30 Aug 2011 12:07:41 +1000
+Subject: [PATCH] s5p: merge fixup for atags_offset use
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/arm/mach-exynos4/mach-smdkv310.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-exynos4/mach-smdkv310.c b/arch/arm/mach-exynos4/mach-smdkv310.c
+index 1277d72..e479171 100644
+--- a/arch/arm/mach-exynos4/mach-smdkv310.c
++++ b/arch/arm/mach-exynos4/mach-smdkv310.c
+@@ -344,7 +344,7 @@ MACHINE_END
+ 
+ MACHINE_START(SMDKC210, "SMDKC210")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+-	.boot_params	= S5P_PA_SDRAM + 0x100,
++	.atag_offset	= 0x100,
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdkv310_map_io,
+ 	.init_machine	= smdkv310_machine_init,
+-- 
+1.7.5.4
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
