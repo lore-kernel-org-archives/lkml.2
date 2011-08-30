@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab1H3TV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:21:58 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:42334 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267Ab1H3TPC (ORCPT
+	id S1756386Ab1H3TWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:22:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19435 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756213Ab1H3TOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:15:02 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="113875026"
-Message-Id: <20110830190801.077449004@codeaurora.org>
+	Tue, 30 Aug 2011 15:14:47 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068145"
+Message-Id: <20110830190800.574002538@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Aug 2011 14:07:43 -0500
+Date: Tue, 30 Aug 2011 14:07:38 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>
-Subject: [patch v2 14/35] Hexagon: Add signal functions
+Subject: [patch v2 09/35] Hexagon: Add checksum functions
 References: <20110830190729.923334292@codeaurora.org>
-Content-Disposition: inline; filename=signals.diff
+Content-Disposition: inline; filename=checksum.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removed most non-assembly functions and use the generic ones instead.
+
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
 ---
- arch/hexagon/include/asm/sigcontext.h |   32 +++
- arch/hexagon/include/asm/signal.h     |   26 ++
- arch/hexagon/kernel/signal.c          |  325 ++++++++++++++++++++++++++++++++++
- arch/hexagon/kernel/trampoline.S      |   35 +++
- 4 files changed, 418 insertions(+)
+ arch/hexagon/include/asm/checksum.h   |   92 +++++++++++++++
+ arch/hexagon/include/asm/intrinsics.h |   26 ++++
+ arch/hexagon/lib/checksum.c           |  203 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 321 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/sigcontext.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/checksum.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/sigcontext.h	2011-08-24 18:45:48.193877157 -0500
-@@ -0,0 +1,32 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/checksum.h	2011-08-24 18:45:48.133877105 -0500
+@@ -0,0 +1,92 @@
 +/*
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -54,24 +53,84 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/sigcontext.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_SIGCONTEXT_H
-+#define _ASM_SIGCONTEXT_H
++#ifndef _ASM_CHECKSUM_H
++#define _ASM_CHECKSUM_H
 +
-+#include <asm/registers.h>
++#include <linux/in6.h>
++
++#define do_csum	do_csum
++
++unsigned int do_csum(const void *voidptr, int len);
 +
 +/*
-+ * Signal context structure - contains all info to do with the state
-+ * before the signal handler was invoked.
++ * computes the checksum of a memory block at buff, length len,
++ * and adds in "sum" (32-bit)
++ *
++ * returns a 32-bit number suitable for feeding into itself
++ * or csum_tcpudp_magic
++ *
++ * this function must be called with even lengths, except
++ * for the last fragment, which may be odd
++ *
++ * it's best to have buff aligned on a 32-bit boundary
 + */
-+struct sigcontext {
-+	struct pt_regs sc_regs;
-+};
++__wsum csum_partial(const void *buff, int len, __wsum sum);
++
++/*
++ * the same as csum_partial, but copies from src while it
++ * checksums
++ *
++ * here even more important to align src and dst on a 32-bit (or even
++ * better 64-bit) boundary
++ */
++__wsum csum_partial_copy_nocheck(const void *src, void *dst,
++					int len, __wsum sum);
++
++/*
++ * the same as csum_partial_copy, but copies from user space.
++ *
++ * here even more important to align src and dst on a 32-bit (or even
++ * better 64-bit) boundary
++ *
++ * Using generic version; strange this doesn't appear in header...
++ */
++__wsum csum_partial_copy_from_user(const void __user *src, void *dst,
++					int len, __wsum sum, int *csum_err);
++
++
++/*
++ *	This is a version of ip_compute_csum() optimized for IP headers,
++ *	which always checksum on 4 octet boundaries.
++ *
++ */
++__sum16 ip_fast_csum(const void *iph, unsigned int ihl);
++
++/*
++ *	Fold a partial checksum
++ */
++static inline __sum16 csum_fold(__wsum csum)
++{
++	u32 sum = (__force u32)csum;
++	sum = (sum & 0xffff) + (sum >> 16);
++	sum = (sum & 0xffff) + (sum >> 16);
++	return (__force __sum16)~sum;
++}
++
++/*
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented
++ */
++#define csum_tcpudp_nofold csum_tcpudp_nofold
++__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
++	unsigned short len, unsigned short proto, __wsum sum);
++__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
++	unsigned short len, unsigned short proto, __wsum sum);
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/signal.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/intrinsics.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/signal.h	2011-08-24 18:45:48.193877157 -0500
++++ linux-hexagon-kernel/arch/hexagon/include/asm/intrinsics.h	2011-08-24 18:45:48.133877105 -0500
 @@ -0,0 +1,26 @@
 +/*
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
@@ -91,21 +150,21 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/signal.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_SIGNAL_H
-+#define _ASM_SIGNAL_H
++#ifndef _ASM_HEXAGON_INTRINSICS_H
++#define _ASM_HEXAGON_INTRINSICS_H
 +
-+extern unsigned long __rt_sigtramp_template[2];
-+
-+#include <asm-generic/signal.h>
++#define HEXAGON_P_vrmpyhacc_PP	__builtin_HEXAGON_M2_vrmac_s0
++#define HEXAGON_P_vrmpyh_PP	__builtin_HEXAGON_M2_vrmpy_s0
++#define HEXAGON_R_cl0_R		__builtin_HEXAGON_S2_cl0
 +
 +#endif
-Index: linux-hexagon-kernel/arch/hexagon/kernel/signal.c
+Index: linux-hexagon-kernel/arch/hexagon/lib/checksum.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/signal.c	2011-08-24 18:45:48.193877157 -0500
-@@ -0,0 +1,325 @@
++++ linux-hexagon-kernel/arch/hexagon/lib/checksum.c	2011-08-24 18:45:48.133877105 -0500
+@@ -0,0 +1,203 @@
 +/*
-+ * Signal support for Hexagon processor
++ * Checksum functions for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -124,351 +183,189 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/signal.c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/linkage.h>
-+#include <linux/syscalls.h>
-+#include <linux/freezer.h>
-+#include <asm/registers.h>
-+#include <asm/thread_info.h>
-+#include <asm/unistd.h>
-+#include <asm/uaccess.h>
-+#include <asm/ucontext.h>
-+#include <asm/cacheflush.h>
-+#include <asm/signal.h>
++/*  This was derived from arch/alpha/lib/checksum.c  */
 +
-+#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
 +
-+struct sigframe {
-+	unsigned long tramp[2];
-+	struct sigcontext sc;
-+	sigset_t mask;
-+};
++#include <linux/module.h>
++#include <linux/string.h>
 +
-+struct rt_sigframe {
-+	unsigned long tramp[2];
-+	struct siginfo info;
-+	struct ucontext uc;
-+};
++#include <asm/byteorder.h>
++#include <net/checksum.h>
++#include <linux/uaccess.h>
++#include <asm/intrinsics.h>
 +
-+static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
-+			  size_t frame_size)
++
++/*  Vector value operations  */
++#define SIGN(x, y)	((0x8000ULL*x)<<y)
++#define CARRY(x, y)	((0x0002ULL*x)<<y)
++#define SELECT(x, y)	((0x0001ULL*x)<<y)
++
++#define VR_NEGATE(a, b, c, d)	(SIGN(a, 48) + SIGN(b, 32) + SIGN(c, 16) \
++	+ SIGN(d, 0))
++#define VR_CARRY(a, b, c, d)	(CARRY(a, 48) + CARRY(b, 32) + CARRY(c, 16) \
++	+ CARRY(d, 0))
++#define VR_SELECT(a, b, c, d)	(SELECT(a, 48) + SELECT(b, 32) + SELECT(c, 16) \
++	+ SELECT(d, 0))
++
++
++/* optimized HEXAGON V3 intrinsic version */
++static inline unsigned short from64to16(u64 x)
 +{
-+	unsigned long sp = regs->r29;
++	u64 sum;
 +
-+	/* Switch to signal stack if appropriate */
-+	if ((ka->sa.sa_flags & SA_ONSTACK) && (sas_ss_flags(sp) == 0))
-+		sp = current->sas_ss_sp + current->sas_ss_size;
++	sum = HEXAGON_P_vrmpyh_PP(x^VR_NEGATE(1, 1, 1, 1),
++			     VR_SELECT(1, 1, 1, 1));
++	sum += VR_CARRY(0, 0, 1, 0);
++	sum = HEXAGON_P_vrmpyh_PP(sum, VR_SELECT(0, 0, 1, 1));
 +
-+	return (void __user *)((sp - frame_size) & ~(sizeof(long long) - 1));
-+}
-+
-+static int setup_sigcontext(struct pt_regs *regs, struct sigcontext __user *sc)
-+{
-+	int err = 0;
-+
-+	/*
-+	 * Need to revisit if we're leaking anything inappropriate to user
-+	 * stack.
-+	 */
-+
-+	err |= copy_to_user(&sc->sc_regs, regs, sizeof(struct pt_regs));
-+	return err;
-+}
-+
-+static int restore_sigcontext(struct pt_regs *regs,
-+			      struct sigcontext __user *sc)
-+{
-+	int err = 0;
-+
-+	/*
-+	 * Should only restore vmel in case user stack is corrupted,
-+	 * bogus status shouldn't be used in the rte.
-+	 */
-+
-+	err |= copy_from_user(regs, &sc->sc_regs,
-+			      offsetof(struct pt_regs, hvmer.vmel)
-+			      + sizeof(unsigned long));
-+	return err;
++	return 0xFFFF & sum;
 +}
 +
 +/*
-+ * Setup signal stack frame with siginfo structure
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented.
 + */
-+static int setup_rt_frame(int signr, struct k_sigaction *ka, siginfo_t *info,
-+			  sigset_t *set,  struct pt_regs *regs)
++__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
++			  unsigned short len, unsigned short proto,
++			  __wsum sum)
 +{
-+	int err = 0;
-+	struct rt_sigframe __user *frame;
-+
-+	frame = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
-+
-+	if (!access_ok(VERIFY_WRITE, frame, sizeof(struct rt_sigframe)))
-+		goto	sigsegv;
-+
-+	if (copy_siginfo_to_user(&frame->info, info))
-+		goto	sigsegv;
-+
-+	err |= __put_user(__rt_sigtramp_template[0], &frame->tramp[0]);
-+	err |= __put_user(__rt_sigtramp_template[1], &frame->tramp[1]);
-+	flush_dcache_range((unsigned long)&frame->tramp[0],
-+			   (unsigned long)&frame->tramp[2]);
-+	flush_icache_range((unsigned long)&frame->tramp[0],
-+			   (unsigned long)&frame->tramp[2]);
-+	mb();
-+
-+	err |= setup_sigcontext(regs, &frame->uc.uc_mcontext);
-+	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
-+	if (err)
-+		goto sigsegv;
-+
-+	/* Load r0/r1 pair with signumber/siginfo pointer... */
-+	regs->r0100 = ((unsigned long long)((unsigned long)&frame->info) << 32)
-+		| (unsigned long long)signr;
-+	regs->r02 = (unsigned long) &frame->uc;
-+	regs->r31 = (unsigned long) frame->tramp;
-+	pt_psp(regs) = (unsigned long) frame;
-+	pt_set_elr(regs, (unsigned long)ka->sa.sa_handler);
-+
-+	return 0;
-+
-+sigsegv:
-+	force_sigsegv(signr, current);
-+	return -EFAULT;
++	return (__force __sum16)~from64to16(
++		(__force u64)saddr + (__force u64)daddr +
++		(__force u64)sum + ((len + proto) << 8));
 +}
 +
-+/*
-+ * Setup invocation of signal handler
-+ */
-+static int handle_signal(int sig, siginfo_t *info, struct k_sigaction *ka,
-+			 sigset_t *oldset, struct pt_regs *regs)
++__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
++			  unsigned short len, unsigned short proto,
++			  __wsum sum)
 +{
-+	int rc;
++	u64 result;
 +
-+	/*
-+	 * If we're handling a signal that aborted a system call,
-+	 * set up the error return value before adding the signal
-+	 * frame to the stack.
-+	 */
++	result = (__force u64)saddr + (__force u64)daddr +
++		 (__force u64)sum + ((len + proto) << 8);
 +
-+	if (regs->syscall_nr >= 0) {
-+		switch (regs->r00) {
-+		case -ERESTART_RESTARTBLOCK:
-+		case -ERESTARTNOHAND:
-+			regs->r00 = -EINTR;
-+			break;
-+		case -ERESTARTSYS:
-+			if (!(ka->sa.sa_flags & SA_RESTART)) {
-+				regs->r00 = -EINTR;
-+				break;
++	/* Fold down to 32-bits so we don't lose in the typedef-less
++	   network stack.  */
++	/* 64 to 33 */
++	result = (result & 0xffffffffUL) + (result >> 32);
++	/* 33 to 32 */
++	result = (result & 0xffffffffUL) + (result >> 32);
++	return (__force __wsum)result;
++}
++EXPORT_SYMBOL(csum_tcpudp_nofold);
++
++/*
++ * Do a 64-bit checksum on an arbitrary memory area..
++ *
++ * This isn't a great routine, but it's not _horrible_ either. The
++ * inner loop could be unrolled a bit further, and there are better
++ * ways to do the carry, but this is reasonable.
++ */
++
++/* optimized HEXAGON intrinsic version, with over read fixed */
++unsigned int do_csum(const void *voidptr, int len)
++{
++	u64 sum0, sum1, x0, x1, *ptr8_o, *ptr8_e, *ptr8;
++	int i, start, mid, end, mask;
++	const char *ptr = voidptr;
++	unsigned short *ptr2;
++	unsigned int *ptr4;
++
++	if (len <= 0)
++		return 0;
++
++	start = 0xF & (16-(((int) ptr) & 0xF)) ;
++	mask  = 0x7fffffffUL >> HEXAGON_R_cl0_R(len);
++	start = start & mask ;
++
++	mid = len - start;
++	end = mid & 0xF;
++	mid = mid>>4;
++	sum0 = mid << 18;
++	sum1 = 0;
++
++	if (start & 1)
++		sum0 += (u64) (ptr[0] << 8);
++	ptr2 = (unsigned short *) &ptr[start & 1];
++	if (start & 2)
++		sum1 += (u64) ptr2[0];
++	ptr4 = (unsigned int *) &ptr[start & 3];
++	if (start & 4) {
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
++			VR_SELECT(0, 0, 1, 1));
++		sum0 += VR_SELECT(0, 0, 1, 0);
++	}
++	ptr8 = (u64 *) &ptr[start & 7];
++	if (start & 8) {
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
++			VR_SELECT(1, 1, 1, 1));
++		sum1 += VR_CARRY(0, 0, 1, 0);
++	}
++	ptr8_o = (u64 *) (ptr + start);
++	ptr8_e = (u64 *) (ptr + start + 8);
++
++	if (mid) {
++		x0 = *ptr8_e; ptr8_e += 2;
++		x1 = *ptr8_o; ptr8_o += 2;
++		if (mid > 1)
++			for (i = 0; i < mid-1; i++) {
++				sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++					x0^VR_NEGATE(1, 1, 1, 1),
++					VR_SELECT(1, 1, 1, 1));
++				sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++					x1^VR_NEGATE(1, 1, 1, 1),
++					VR_SELECT(1, 1, 1, 1));
++				x0 = *ptr8_e; ptr8_e += 2;
++				x1 = *ptr8_o; ptr8_o += 2;
 +			}
-+			/* Fall through */
-+		case -ERESTARTNOINTR:
-+			regs->r06 = regs->syscall_nr;
-+			pt_set_elr(regs, pt_elr(regs) - 4);
-+			regs->r00 = regs->restart_r0;
-+			break;
-+		default:
-+			break;
-+		}
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0, x0^VR_NEGATE(1, 1, 1, 1),
++			VR_SELECT(1, 1, 1, 1));
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1, x1^VR_NEGATE(1, 1, 1, 1),
++			VR_SELECT(1, 1, 1, 1));
 +	}
 +
-+	/*
-+	 * Set up the stack frame; not doing the SA_SIGINFO thing.  We
-+	 * only set up the rt_frame flavor.
-+	 */
-+	rc = setup_rt_frame(sig, ka, info, oldset, regs);
++	ptr4 = (unsigned int *) &ptr[start + (mid * 16) + (end & 8)];
++	if (end & 4) {
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
++			VR_SELECT(0, 0, 1, 1));
++		sum1 += VR_SELECT(0, 0, 1, 0);
++	}
++	ptr2 = (unsigned short *) &ptr[start + (mid * 16) + (end & 12)];
++	if (end & 2)
++		sum0 += (u64) ptr2[0];
 +
-+	/* If there was an error on setup, no signal was delivered. */
-+	if (rc)
-+		return rc;
++	if (end & 1)
++		sum1 += (u64) ptr[start + (mid * 16) + (end & 14)];
 +
-+	spin_lock_irq(&current->sighand->siglock);
-+	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
-+		sigaddset(&current->blocked, sig);
-+	recalc_sigpending();
-+	spin_unlock_irq(&current->sighand->siglock);
++	ptr8 = (u64 *) &ptr[start + (mid * 16)];
++	if (end & 8) {
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
++			VR_SELECT(1, 1, 1, 1));
++		sum0 += VR_CARRY(0, 0, 1, 0);
++	}
++	sum0 = HEXAGON_P_vrmpyh_PP((sum0+sum1)^VR_NEGATE(0, 0, 0, 1),
++		VR_SELECT(0, 0, 1, 1));
++	sum0 += VR_NEGATE(0, 0, 0, 1);
++	sum0 = HEXAGON_P_vrmpyh_PP(sum0, VR_SELECT(0, 0, 1, 1));
 +
-+	return 0;
++	if (start & 1)
++		sum0 = (sum0 << 8) | (0xFF & (sum0 >> 8));
++
++	return 0xFFFF & sum0;
 +}
 +
 +/*
-+ * Called from return-from-event code.
++ * copy from ds while checksumming, otherwise like csum_partial
 + */
-+static void do_signal(struct pt_regs *regs)
++__wsum
++csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum)
 +{
-+	struct k_sigaction sigact;
-+	siginfo_t info;
-+	int signo;
-+
-+	if (!user_mode(regs))
-+		return;
-+
-+	if (try_to_freeze())
-+		goto no_signal;
-+
-+	signo = get_signal_to_deliver(&info, &sigact, regs, NULL);
-+
-+	if (signo > 0) {
-+		sigset_t *oldset;
-+
-+		if (test_thread_flag(TIF_RESTORE_SIGMASK))
-+			oldset = &current->saved_sigmask;
-+		else
-+			oldset = &current->blocked;
-+
-+		if (handle_signal(signo, &info, &sigact, oldset, regs) == 0) {
-+			/*
-+			 * Successful delivery case.  The saved sigmask is
-+			 * stored in the signal frame, and will be restored
-+			 * by sigreturn.  We can clear the TIF flag.
-+			 */
-+			clear_thread_flag(TIF_RESTORE_SIGMASK);
-+		}
-+		return;
-+	}
-+
-+no_signal:
-+	/*
-+	 * If we came from a system call, handle the restart.
-+	 */
-+	if (regs->syscall_nr >= 0) {
-+		switch (regs->r00) {
-+		case -ERESTARTNOHAND:
-+		case -ERESTARTSYS:
-+		case -ERESTARTNOINTR:
-+			regs->r06 = regs->syscall_nr;
-+			break;
-+		case -ERESTART_RESTARTBLOCK:
-+			regs->r06 = __NR_restart_syscall;
-+			break;
-+		default:
-+			goto no_restart;
-+		}
-+		pt_set_elr(regs, pt_elr(regs) - 4);
-+		regs->r00 = regs->restart_r0;
-+	}
-+
-+no_restart:
-+	/* If there's no signal to deliver, put the saved sigmask back */
-+	if (test_thread_flag(TIF_RESTORE_SIGMASK)) {
-+		clear_thread_flag(TIF_RESTORE_SIGMASK);
-+		sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
-+	}
++	memcpy(dst, src, len);
++	return csum_partial(dst, len, sum);
 +}
-+
-+void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
-+{
-+	if (thread_info_flags & _TIF_SIGPENDING)
-+		do_signal(regs);
-+
-+	if (thread_info_flags & _TIF_NOTIFY_RESUME) {
-+		clear_thread_flag(TIF_NOTIFY_RESUME);
-+		if (current->replacement_session_keyring)
-+			key_replace_session_keyring();
-+	}
-+}
-+
-+/*
-+ * Architecture-specific wrappers for signal-related system calls
-+ */
-+asmlinkage int sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss)
-+{
-+	struct pt_regs *regs = current_thread_info()->regs;
-+
-+	return do_sigaltstack(uss, uoss, regs->r29);
-+}
-+
-+asmlinkage int sys_rt_sigreturn(void)
-+{
-+	struct pt_regs *regs = current_thread_info()->regs;
-+	struct rt_sigframe __user *frame;
-+	sigset_t blocked;
-+
-+	frame = (struct rt_sigframe __user *)pt_psp(regs);
-+	if (!access_ok(VERIFY_READ, frame, sizeof(*frame)))
-+		goto badframe;
-+	if (__copy_from_user(&blocked, &frame->uc.uc_sigmask, sizeof(blocked)))
-+		goto badframe;
-+
-+	sigdelsetmask(&blocked, ~_BLOCKABLE);
-+	spin_lock_irq(&current->sighand->siglock);
-+	current->blocked = blocked;
-+	recalc_sigpending();
-+	spin_unlock_irq(&current->sighand->siglock);
-+
-+	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
-+		goto badframe;
-+
-+	/* Restore the user's stack as well */
-+	pt_psp(regs) = regs->r29;
-+
-+	/*
-+	 * Leave a trace in the stack frame that this was a sigreturn.
-+	 * If the system call is to replay, we've already restored the
-+	 * number in the GPR slot and it will be regenerated on the
-+	 * new system call trap entry. Note that if restore_sigcontext()
-+	 * did something other than a bulk copy of the pt_regs struct,
-+	 * we could avoid this assignment by simply not overwriting
-+	 * regs->syscall_nr.
-+	 */
-+	regs->syscall_nr = __NR_rt_sigreturn;
-+
-+	/*
-+	 * If we were meticulous, we'd only call this if we knew that
-+	 * we were actually going to use an alternate stack, and we'd
-+	 * consider any error to be fatal.  What we do here, in common
-+	 * with many other architectures, is call it blindly and only
-+	 * consider the -EFAULT return case to be proof of a problem.
-+	 */
-+	if (do_sigaltstack(&frame->uc.uc_stack, NULL, pt_psp(regs)) == -EFAULT)
-+		goto badframe;
-+
-+	return 0;
-+
-+badframe:
-+	force_sig(SIGSEGV, current);
-+	return 0;
-+}
-Index: linux-hexagon-kernel/arch/hexagon/kernel/trampoline.S
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/trampoline.S	2011-08-24 18:45:48.193877157 -0500
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/*
-+ * Trampoline sequences to be copied onto user stack.
-+ * This consumes a little more space than hand-assembling
-+ * immediate constants for use in C, but is more portable
-+ * to future tweaks to the Hexagon instruction set.
-+ */
-+
-+#include <asm/unistd.h>
-+
-+/*  Sig trampolines - call sys_sigreturn or sys_rt_sigreturn as appropriate */
-+
-+/*  plain sigreturn is gone.  */
-+
-+	.globl __rt_sigtramp_template
-+__rt_sigtramp_template:
-+	r6 = #__NR_rt_sigreturn;
-+	trap0(#1);
 
 --
 
