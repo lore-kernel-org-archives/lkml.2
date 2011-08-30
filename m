@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1H3PEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 11:04:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55699 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab1H3PEh (ORCPT
+	id S1754877Ab1H3PFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 11:05:53 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65166 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754760Ab1H3PFw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 11:04:37 -0400
-Date: Tue, 30 Aug 2011 17:04:33 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 15/32] nohz/cpuset: Restart tick when switching to idle
- task
-Message-ID: <20110830150430.GS9748@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-16-git-send-email-fweisbec@gmail.com>
- <1314632620.2816.100.camel@twins>
+	Tue, 30 Aug 2011 11:05:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314632620.2816.100.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110826120900.cdc6e4c3597c88ad45015a9b@canb.auug.org.au>
+References: <20110826120900.cdc6e4c3597c88ad45015a9b@canb.auug.org.au>
+Date: Tue, 30 Aug 2011 23:05:52 +0800
+Message-ID: <CAM_iQpV4JSnW_xbHQjG6Nn70yp9WKZ1+D2uq1J_LmM6KgcQL6A@mail.gmail.com>
+Subject: Re: [PATCH] bio: use a static inline function for bio_integrity_clone
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Christoph Hellwig <hch@lst.de>, LKML <linux-kernel@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 05:43:40PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > Ideally if we are in adaptive nohz mode and we switch to the
-> > the idle task, we shouldn't restart the tick since it's going
-> > to stop the tick soon anyway.
-> > 
-> > That optimization requires some minor tweaks here and there
-> > though, lets handle that later. 
-> 
-> You have a knack for confusing changelogs.. so basically you say:
-> 
->   Restart the tick when we switch to idle.
-> 
-> Now all that needs is an explanation of why..
+On Fri, Aug 26, 2011 at 10:09 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> When CONFIG_BLK_DEV_INTEGRITY is not set, we get these warnings:
+>
+> drivers/md/dm.c: In function 'split_bvec':
+> drivers/md/dm.c:1061:3: warning: statement with no effect
+> drivers/md/dm.c: In function 'clone_bio':
+> drivers/md/dm.c:1088:3: warning: statement with no effect
+>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  include/linux/bio.h |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/bio.h b/include/linux/bio.h
+> index ce33e68..c98ecc8 100644
+> --- a/include/linux/bio.h
+> +++ b/include/linux/bio.h
+> @@ -527,7 +527,11 @@ extern void bio_integrity_init(void);
+>  #define bioset_integrity_create(a, b)  (0)
+>  #define bio_integrity_prep(a)          (0)
+>  #define bio_integrity_enabled(a)       (0)
+> -#define bio_integrity_clone(a, b, c, d)        (0)
+> +static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+> +                                     gfp_t gfp_mask, struct bio_set *bs)
+> +{
+> +       return 0;
+> +}
 
-In the end we don't want to restart the tick when we switch to idle.
-But to support that I'll need to tweak various things on idle time
-accounting, otherwise the [cpu] time spent in idle is going to be
-accounted as system time.
+or
 
-That's definetly headed to be temporary.
-
-> Also, please drop the whole cpuset_nohz_ stuff, this really isn't about
-> cpusets, cpusets simly provide the interface, the functionality lives in
-> the tick_nohz_ namespace.
-
-Agreed this sucks.
+#define bio_integrity_clone(a, b, c, d)        ({0})
