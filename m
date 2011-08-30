@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab1H3IEx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 04:04:53 -0400
-Received: from lnx141.hrz.tu-darmstadt.de ([130.83.156.236]:46882 "EHLO
-	lnx141.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751218Ab1H3IEu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 04:04:50 -0400
-X-Greylist: delayed 30638 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 04:04:50 EDT
-Message-ID: <20110830013321.14423ey082ubjkjk@webmail.tu-darmstadt.de>
-Date: Tue, 30 Aug 2011 01:33:21 +0200
-From: "Rhys Williams" <rhymsw@email.com>
-Reply-to: david.churchill1@hotmail.co.uk
-To: undisclosed-recipients:;
-Subject: FYI
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
-X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.8.29.232414
-X-PMX-RELAY: outgoing
+	id S1752212Ab1H3IdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 04:33:23 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26531 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742Ab1H3IdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 04:33:21 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, avagin@openvz.org
+Subject: [PATCH] x86, perf: check that current->mm alive before getting user callchain
+Date: Tue, 30 Aug 2011 12:32:36 +0400
+Message-Id: <1314693156-24131-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+An event may occurs when mm is already released.
+I added an event in dequeue_entity and caught panic with following backtrace:
 
-FYI
+[  434.421110] BUG: unable to handle kernel NULL pointer dereference at
+0000000000000050
+[  434.421258] IP: [<ffffffff810464ac>] __get_user_pages_fast+0x9c/0x120
+...
+[  434.421258] Call Trace:
+[  434.421258]  [<ffffffff8101ae81>] copy_from_user_nmi+0x51/0xf0
+[  434.421258]  [<ffffffff8109a0d5>] ? sched_clock_local+0x25/0x90
+[  434.421258]  [<ffffffff8101b048>] perf_callchain_user+0x128/0x170
+[  434.421258]  [<ffffffff811154cd>] ? __perf_event_header__init_id+0xed/0x100
+[  434.421258]  [<ffffffff81116690>] perf_prepare_sample+0x200/0x280
+[  434.421258]  [<ffffffff81118da8>] __perf_event_overflow+0x1b8/0x290
+[  434.421258]  [<ffffffff81065240>] ? tg_shares_up+0x0/0x670
+[  434.421258]  [<ffffffff8104fe1a>] ? walk_tg_tree+0x6a/0xb0
+[  434.421258]  [<ffffffff81118f44>] perf_swevent_overflow+0xc4/0xf0
+[  434.421258]  [<ffffffff81119150>] do_perf_sw_event+0x1e0/0x250
+[  434.421258]  [<ffffffff81119204>] perf_tp_event+0x44/0x70
+[  434.421258]  [<ffffffff8105701f>] ftrace_profile_sched_block+0xdf/0x110
+[  434.421258]  [<ffffffff8106121d>] dequeue_entity+0x2ad/0x2d0
+[  434.421258]  [<ffffffff810614ec>] dequeue_task_fair+0x1c/0x60
+[  434.421258]  [<ffffffff8105818a>] dequeue_task+0x9a/0xb0
+[  434.421258]  [<ffffffff810581e2>] deactivate_task+0x42/0xe0
+[  434.421258]  [<ffffffff814bc019>] thread_return+0x191/0x808
+[  434.421258]  [<ffffffff81098a44>] ? switch_task_namespaces+0x24/0x60
+[  434.421258]  [<ffffffff8106f4c4>] do_exit+0x464/0x910
+[  434.421258]  [<ffffffff8106f9c8>] do_group_exit+0x58/0xd0
+[  434.421258]  [<ffffffff8106fa57>] sys_exit_group+0x17/0x20
+[  434.421258]  [<ffffffff8100b202>] system_call_fastpath+0x16/0x1b
 
-I have been waiting for you to pick up your Cashier Check of  
-$800,000.00 USD  EIGHT HUNDRED THOUSAND US DOLLARS  before I leave the  
-Federal Republic of Nigeria, but you did not show up as I did not hear  
-from you. I am writing to inform you that  I have deposited your  
-cashier check with UNITED PARCEL SERVICE there in Nigeria.For your  
-information, I'm now in Japan to resume my new job offer and will not  
-go back to Nigeria till next year. Please you have to contact the  
-United Parcel Service of Nigeria to know when they will deliver your  
-package to your resident address in your country.
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ arch/x86/kernel/cpu/perf_event.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Note that I have paid for the security keeping fee. The only money you  
-will have to pay is the shipping/handling fee which only cost $80.00  
-US Dollars to receive your check parcel as agreed with them.
-
-Don't be deceived by any body because I have paid for the security  
-keeping fee before they accepted the Cashier check.
-
-Please contact the company with their below details:
-
-Contact Person: David Churchill
-Tel:+234-818-627-9971
-E-mail:david.churchill1@hotmail.co.uk
-
-Thanks for your attention.
-
-Regards,
-Rhys Williams
-
-
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4ee3abf..cfa62ec 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1900,6 +1900,9 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 
+ 	perf_callchain_store(entry, regs->ip);
+ 
++	if (!current->mm)
++		return;
++
+ 	if (perf_callchain_user32(regs, entry))
+ 		return;
+ 
+-- 
+1.7.3.4
 
