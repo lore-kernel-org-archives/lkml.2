@@ -1,97 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab1H3QbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 12:31:07 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:53725 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577Ab1H3QbE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 12:31:04 -0400
-Message-ID: <4E5D102B.5010402@linux.vnet.ibm.com>
-Date: Tue, 30 Aug 2011 11:30:35 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1755771Ab1H3Qgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 12:36:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50711 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753955Ab1H3Qgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 12:36:37 -0400
+Message-ID: <4E5D1153.5030908@zytor.com>
+Date: Tue, 30 Aug 2011 09:35:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: Broken pci_block_user_cfg_access interface
-References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <4E5BDEAB.5000405@siemens.com> <20110829191858.GA9415@redhat.com>
-In-Reply-To: <20110829191858.GA9415@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFD: x32 ABI system call numbers
+References: <4E582577.2060805@zytor.com> <201108291704.08279.arnd@arndb.de> <4E5BDAF6.40000@zytor.com> <201108301409.27527.arnd@arndb.de>
+In-Reply-To: <201108301409.27527.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2011 02:18 PM, Michael S. Tsirkin wrote:
-> On Mon, Aug 29, 2011 at 08:47:07PM +0200, Jan Kiszka wrote:
->> On 2011-08-29 17:42, Jan Kiszka wrote:
->>> I still don't get what prevents converting ipr to allow plain mutex
->>> synchronization. My vision is:
->>>  - push reset-on-error of ipr into workqueue (or threaded IRQ?)
->>
->> I'm starting to like your proposal: I had a look at ipr, but it turned
->> out to be anything but trivial to convert that driver. It runs its
->> complete state machine under spin_lock_irq, and the functions calling
->> pci_block/unblock_user_cfg_access are deep inside this thing. I have no
->> hardware to test whatever change, and I feel a bit uncomfortable asking
->> Brian to redesign his driver that massively.
->>
->> So back to your idea: I would generalize pci_block_user_cfg_access to
->> pci_block_cfg_access. It should fail when some other site already holds
->> the access lock, but it should remain non-blocking - for the sake of ipr.
+On 08/30/2011 05:09 AM, Arnd Bergmann wrote:
 > 
-> It would be easy to have blocking and non-blocking variants.
+> I'm wondering about the time_t changes: given that we are still adding
+> new 32 bit architectures, should we change the asm-generic API as well
+> to use 64 bit time_t by default (with fallbacks for the existing ones)?
 > 
-> But
-> - I have no idea whether supporting sysfs config/reset access
->   while ipr is active makes any sense - I know we need it for uio.
+> If you are adding support for these in x32 already, we could use the
+> same code for regular 32 bit architectures.
+> 
 
-I really don't think it makes sense. Ideally, I really think the driver
-should be able to override the PCI layer reset interface in sysfs. If a driver
-is loaded, the driver owns all the state of that device and resetting it without
-informing the driver is just nasty. Additionally, many devices may have
-much more complex logic to performing a reset than what PCI defines. With
-ipr, for example, it needs to get a shutdown command issued to it prior to the
-reset if at all possible so that the firmware quiesces any I/O it is performing.
-It also needs additional communication prior to resetting the chip to ensure
-the firmware is not modifying its persistent error log on the adapter's flash,
-since resetting the card while the flash segment is being updated will cause
-the adapter to lose the persistent error log. Post reset, ipr has a bunch
-of work to do to get the firmware back up and running to a state where it
-can handle I/O again.
+It seems absolutely boggling insane that we're introducing new
+architectures with no legacy whatsoever and use 32-bit time_t on those.
 
-Different ipr chips also have different requirements as to what
-reset mechanisms defined by PCI actually work. Some chips require BIST to be
-run via PCI config space, while others require a PCI warm reset, otherwise
-the card ends up in an unusable state.
-
-So, here is my proposal to resolve this particular issue. Add a reset function
-to the pci_driver struct which would allow drivers to override the default reset
-action. Drivers that can tolerate the existing reset mechanism can simply point
-to a generic PCI function to perform the reset. Drivers which can't handle their
-device getting reset, will simply not have a reset function defined. In this case,
-anyone attempting to issue a reset via sysfs will get an error. If a driver
-is not loaded, then we can perform the default reset method and fix any device
-specific oddities with quirks.
-
-I like keeping pci_block_user_cfg_access a non blocking interface. If it can
-return a failure due to some other caller, it should be easy enough to modify
-the ipr driver to wait for access to get unblocked before resetting the adapter.
-
-Thanks,
-
-Brian
+	-hpa
 
 -- 
-Brian King
-Linux on Power Virtualization
-IBM Linux Technology Center
-
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
