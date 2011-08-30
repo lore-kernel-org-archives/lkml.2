@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab1H3TVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:21:41 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19447 "EHLO
+	id S1756242Ab1H3TOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:14:51 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19427 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193Ab1H3TPF (ORCPT
+	with ESMTP id S1756201Ab1H3TOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:15:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068153"
-Message-Id: <20110830190800.974918693@codeaurora.org>
+	Tue, 30 Aug 2011 15:14:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6454"; a="114068131"
+Message-Id: <20110830190800.097783373@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 30 Aug 2011 14:07:42 -0500
+Date: Tue, 30 Aug 2011 14:07:33 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>
-Subject: [patch v2 13/35] Hexagon: Support dynamic module loading.
+Subject: [patch v2 04/35] Hexagon: Add atomic ops support
 References: <20110830190729.923334292@codeaurora.org>
-Content-Disposition: inline; filename=module.diff
+Content-Disposition: inline; filename=atomic.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modules should be compiled as ordinary .o's; shared objects are not
-supported.
+Our architecture uses load locked/store conditional type semantics for atomic
+ops.
 
-Deleted module functions that already have generic equivalents.
+Added inline assembly version of atomic_add_unless.
 
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
 ---
- arch/hexagon/kernel/module.c |  162 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 162 insertions(+)
+ arch/hexagon/include/asm/atomic.h |  164 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 164 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/module.c
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/atomic.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/module.c	2011-08-24 18:45:48.183877148 -0500
-@@ -0,0 +1,162 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/atomic.h	2011-08-24 18:45:48.083877060 -0500
+@@ -0,0 +1,164 @@
 +/*
-+ * Kernel module loader for Hexagon
++ * Atomic operations for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -57,148 +57,149 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/module.c
 + * 02110-1301, USA.
 + */
 +
-+#include <asm/module.h>
-+#include <linux/elf.h>
-+#include <linux/module.h>
-+#include <linux/moduleloader.h>
-+#include <linux/vmalloc.h>
++#ifndef _ASM_ATOMIC_H
++#define _ASM_ATOMIC_H
 +
-+#if 0
-+#define DEBUGP printk
-+#else
-+#define DEBUGP(fmt , ...)
-+#endif
++#include <linux/types.h>
 +
-+/*
-+ * module_frob_arch_sections - tweak got/plt sections.
-+ * @hdr - pointer to elf header
-+ * @sechdrs - pointer to elf load section headers
-+ * @secstrings - symbol names
-+ * @mod - pointer to module
-+ */
-+int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
-+				char *secstrings,
-+				struct module *mod)
-+{
-+	unsigned int i;
-+	int found = 0;
++#define ATOMIC_INIT(i)		{ (i) }
++#define atomic_set(v, i)	((v)->counter = (i))
 +
-+	/* Look for .plt and/or .got.plt and/or .init.plt sections */
-+	for (i = 0; i < hdr->e_shnum; i++) {
-+		DEBUGP("Section %d is %s\n", i,
-+		       secstrings + sechdrs[i].sh_name);
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".plt") == 0)
-+			found = i+1;
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".got.plt") == 0)
-+			found = i+1;
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".rela.plt") == 0)
-+			found = i+1;
-+	}
-+
-+	/* At this time, we don't support modules comiled with -shared */
-+	if (found) {
-+		printk(KERN_WARNING
-+			"Module '%s' contains unexpected .plt/.got sections.\n",
-+			mod->name);
-+		/*  return -ENOEXEC;  */
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * apply_relocate_add - perform rela relocations.
-+ * @sechdrs - pointer to section headers
-+ * @strtab - some sort of start address?
-+ * @symindex - symbol index offset or something?
-+ * @relsec - address to relocate to?
-+ * @module - pointer to module
++/**
++ * atomic_read - reads a word, atomically
++ * @v: pointer to atomic value
 + *
-+ * Perform rela relocations.
++ * Assumes all word reads on our architecture are atomic.
 + */
-+int apply_relocate_add(Elf_Shdr *sechdrs, const char *strtab,
-+			unsigned int symindex, unsigned int relsec,
-+			struct module *module)
++#define atomic_read(v)		((v)->counter)
++
++/**
++ * atomic_xchg - atomic
++ * @v: pointer to memory to change
++ * @new: new value (technically passed in a register -- see xchg)
++ */
++#define atomic_xchg(v, new)	(xchg(&((v)->counter), (new)))
++
++
++/**
++ * atomic_cmpxchg - atomic compare-and-exchange values
++ * @v: pointer to value to change
++ * @old:  desired old value to match
++ * @new:  new value to put in
++ *
++ * Parameters are then pointer, value-in-register, value-in-register,
++ * and the output is the old value.
++ *
++ * Apparently this is complicated for archs that don't support
++ * the memw_locked like we do (or it's broken or whatever).
++ *
++ * Kind of the lynchpin of the rest of the generically defined routines.
++ * Remember V2 had that bug with dotnew predicate set by memw_locked.
++ *
++ * "old" is "expected" old val, __oldval is actual old value
++ */
++static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
 +{
-+	unsigned int i;
-+	Elf32_Sym *sym;
-+	uint32_t *location;
-+	uint32_t value;
-+	unsigned int nrelocs = sechdrs[relsec].sh_size / sizeof(Elf32_Rela);
-+	Elf32_Rela *rela = (void *)sechdrs[relsec].sh_addr;
-+	Elf32_Word sym_info = sechdrs[relsec].sh_info;
-+	Elf32_Sym *sym_base = (Elf32_Sym *) sechdrs[symindex].sh_addr;
-+	void *loc_base = (void *) sechdrs[sym_info].sh_addr;
++	int __oldval;
 +
-+	DEBUGP("Applying relocations in section %u to section %u base=%p\n",
-+	       relsec, sym_info, loc_base);
++	asm volatile(
++		"1:	%0 = memw_locked(%1);\n"
++		"	{ P0 = cmp.eq(%0,%2);\n"
++		"	  if (!P0.new) jump:nt 2f; }\n"
++		"	memw_locked(%1,P0) = %3;\n"
++		"	if (!P0) jump 1b;\n"
++		"2:\n"
++		: "=&r" (__oldval)
++		: "r" (&v->counter), "r" (old), "r" (new)
++		: "memory", "p0"
++	);
 +
-+	for (i = 0; i < nrelocs; i++) {
-+
-+		/* Symbol to relocate */
-+		sym = sym_base + ELF32_R_SYM(rela[i].r_info);
-+
-+		/* Where to make the change */
-+		location = loc_base + rela[i].r_offset;
-+
-+		/* `Everything is relative'. */
-+		value = sym->st_value + rela[i].r_addend;
-+
-+		DEBUGP("%d: value=%08x loc=%p reloc=%d symbol=%s\n",
-+		       i, value, location, ELF32_R_TYPE(rela[i].r_info),
-+		       sym->st_name ?
-+		       &strtab[sym->st_name] : "(anonymous)");
-+
-+		switch (ELF32_R_TYPE(rela[i].r_info)) {
-+		case R_HEXAGON_B22_PCREL: {
-+			int dist = (int)(value - (uint32_t)location);
-+			if ((dist < -0x00800000) ||
-+			    (dist >= 0x00800000)) {
-+				printk(KERN_ERR
-+				       "%s: %s: %08x=%08x-%08x %s\n",
-+				       module->name,
-+				       "R_HEXAGON_B22_PCREL reloc out of range",
-+				       dist, value, (uint32_t)location,
-+				       sym->st_name ?
-+				       &strtab[sym->st_name] : "(anonymous)");
-+				return -ENOEXEC;
-+			}
-+			DEBUGP("B22_PCREL contents: %08X.\n", *location);
-+			*location &= ~0x01ff3fff;
-+			*location |= 0x00003fff & dist;
-+			*location |= 0x01ff0000 & (dist<<2);
-+			DEBUGP("Contents after reloc: %08x\n", *location);
-+			break;
-+		}
-+		case R_HEXAGON_HI16:
-+			value = (value>>16) & 0xffff;
-+			/* fallthrough */
-+		case R_HEXAGON_LO16:
-+			*location &= ~0x00c03fff;
-+			*location |= value & 0x3fff;
-+			*location |= (value & 0xc000) << 8;
-+			break;
-+		case R_HEXAGON_32:
-+			*location = value;
-+			break;
-+		case R_HEXAGON_32_PCREL:
-+			*location = value - (uint32_t)location;
-+			break;
-+		case R_HEXAGON_PLT_B22_PCREL:
-+		case R_HEXAGON_GOTOFF_LO16:
-+		case R_HEXAGON_GOTOFF_HI16:
-+			printk(KERN_ERR "%s: GOT/PLT relocations unsupported\n",
-+			       module->name);
-+			return -ENOEXEC;
-+		default:
-+			printk(KERN_ERR "%s: unknown relocation: %u\n",
-+			       module->name,
-+			       ELF32_R_TYPE(rela[i].r_info));
-+			return -ENOEXEC;
-+		}
-+	}
-+	return 0;
++	return __oldval;
 +}
++
++static inline int atomic_add_return(int i, atomic_t *v)
++{
++	int output;
++
++	__asm__ __volatile__ (
++		"1:	%0 = memw_locked(%1);\n"
++		"	%0 = add(%0,%2);\n"
++		"	memw_locked(%1,P3)=%0;\n"
++		"	if !P3 jump 1b;\n"
++		: "=&r" (output)
++		: "r" (&v->counter), "r" (i)
++		: "memory", "p3"
++	);
++	return output;
++
++}
++
++#define atomic_add(i, v) atomic_add_return(i, (v))
++
++static inline int atomic_sub_return(int i, atomic_t *v)
++{
++	int output;
++	__asm__ __volatile__ (
++		"1:	%0 = memw_locked(%1);\n"
++		"	%0 = sub(%0,%2);\n"
++		"	memw_locked(%1,P3)=%0\n"
++		"	if !P3 jump 1b;\n"
++		: "=&r" (output)
++		: "r" (&v->counter), "r" (i)
++		: "memory", "p3"
++	);
++	return output;
++}
++
++#define atomic_sub(i, v) atomic_sub_return(i, (v))
++
++/**
++ * atomic_add_unless - add unless the number is a given value
++ * @v: pointer to value
++ * @a: amount to add
++ * @u: unless value is equal to u
++ *
++ * Returns 1 if the add happened, 0 if it didn't.
++ */
++static inline int __atomic_add_unless(atomic_t *v, int a, int u)
++{
++	int output;
++	asm volatile(
++		"1:	R15 = memw_locked(%1);"
++		"	{"
++		"		p3 = cmp.eq(R15, %3);"
++		"		if (p3.new) jump:nt 2f;"
++		"		R15 = add(R15,%2);"
++		"		%0 = #0;"
++		"	}"
++		"	memw_locked(%1,p3) = r15;"
++		"	{"
++		"		if !p3 jump 1b;"
++		"		%0 = #1;"
++		"	}"
++		"2:"
++		: "=&r" (output)
++		: "r" (v), "r" (a), "r" (u)
++		: "memory", "p3", "r15"
++	);
++	return output;
++}
++
++#define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
++
++#define atomic_inc(v) atomic_add(1, (v))
++#define atomic_dec(v) atomic_sub(1, (v))
++
++#define atomic_inc_and_test(v) (atomic_add_return(1, (v)) == 0)
++#define atomic_dec_and_test(v) (atomic_sub_return(1, (v)) == 0)
++#define atomic_sub_and_test(i, v) (atomic_sub_return(i, (v)) == 0)
++#define atomic_add_negative(i, v) (atomic_add_return(i, (v)) < 0)
++
++
++#define atomic_inc_return(v) (atomic_add_return(1, v))
++#define atomic_dec_return(v) (atomic_sub_return(1, v))
++
++#endif
 
 --
 
