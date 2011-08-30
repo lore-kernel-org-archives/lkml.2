@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab1H3EUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 00:20:06 -0400
+	id S1753016Ab1H3ETf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 00:19:35 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:49060 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab1H3ET7 (ORCPT
+	with ESMTP id S1752914Ab1H3ETb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 00:19:59 -0400
+	Tue, 30 Aug 2011 00:19:31 -0400
 From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -18,9 +18,9 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org,
         "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH v3 18/18] Staging: cx25821: Fix long lines in cx25821-video-upstream.h
-Date: Tue, 30 Aug 2011 12:17:13 +0800
-Message-Id: <1314677833-4689-19-git-send-email-leonidsbox@gmail.com>
+Subject: [PATCH v3 14/18] Staging: cx25821: Fix wrong line endings in cx25821-video-upstream-ch2.c
+Date: Tue, 30 Aug 2011 12:17:09 +0800
+Message-Id: <1314677833-4689-15-git-send-email-leonidsbox@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
 References: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
@@ -28,116 +28,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix long lines in cx25821-video-upstream.h
+Change obscure line endings to less obscure ones. Rationale: improve
+readability.
 
 Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
 ---
- drivers/staging/cx25821/cx25821-video-upstream.h |   78 +++++++++++++++-------
- 1 files changed, 54 insertions(+), 24 deletions(-)
+ .../staging/cx25821/cx25821-video-upstream-ch2.c   |   24 +++++++------------
+ 1 files changed, 9 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/cx25821/cx25821-video-upstream.h b/drivers/staging/cx25821/cx25821-video-upstream.h
-index f0b3ac0..268ec8a 100644
---- a/drivers/staging/cx25821/cx25821-video-upstream.h
-+++ b/drivers/staging/cx25821/cx25821-video-upstream.h
-@@ -66,44 +66,74 @@
- #define USE_RISC_NOOP_VIDEO   1
+diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+index b02dbe0..b281ced 100644
+--- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
++++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+@@ -179,17 +179,14 @@ int cx25821_risc_buffer_upstream_ch2(struct cx25821_dev *dev,
  
- #ifdef USE_RISC_NOOP_VIDEO
--#define PAL_US_VID_PROG_SIZE        ((PAL_FIELD_HEIGHT) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE +   \
--				      RISC_SYNC_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define PAL_US_VID_PROG_SIZE						\
-+	(PAL_FIELD_HEIGHT * 3 * DWORD_SIZE +				\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + RISC_SYNC_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
+ 	       /* Even field */
+ 		rp = cx25821_risc_field_upstream_ch2(dev, rp,
+-						     dev->
+-						     _data_buf_phys_addr_ch2 +
+-						     databuf_offset,
+-						     bottom_offset, 0x200, bpl,
+-						     singlefield_lines,
+-						     fifo_enable, EVEN_FIELD);
++				dev->_data_buf_phys_addr_ch2 + databuf_offset,
++				bottom_offset, 0x200, bpl, singlefield_lines,
++				fifo_enable, EVEN_FIELD);
  
- #define PAL_RISC_BUF_SIZE           (2 * PAL_US_VID_PROG_SIZE)
+ 		if (frame == 0) {
+ 			risc_flag = RISC_CNT_RESET;
+-			risc_phys_jump_addr =
+-			    dev->_dma_phys_start_addr_ch2 + risc_program_size;
++			risc_phys_jump_addr = dev->_dma_phys_start_addr_ch2 +
++					risc_program_size;
+ 		} else {
+ 			risc_flag = RISC_CNT_INC;
+ 			risc_phys_jump_addr = dev->_dma_phys_start_addr_ch2;
+@@ -511,9 +508,8 @@ static int cx25821_upstream_buffer_prepare_ch2(struct cx25821_dev *dev,
+ 		return ret;
  
--#define PAL_VID_PROG_SIZE           ((PAL_FIELD_HEIGHT*2) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				      RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE + 2*NUM_NO_OPS*DWORD_SIZE)
-+#define PAL_VID_PROG_SIZE						\
-+	((PAL_FIELD_HEIGHT * 2) * 3 * DWORD_SIZE +			\
-+	 2 * RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
-+	 JUMP_INSTRUCTION_SIZE + 2 * NUM_NO_OPS * DWORD_SIZE)
+ 	/* Creating RISC programs */
+-	ret =
+-	    cx25821_risc_buffer_upstream_ch2(dev, dev->pci, 0, bpl,
+-					     dev->_lines_count_ch2);
++	ret = cx25821_risc_buffer_upstream_ch2(dev, dev->pci, 0, bpl,
++						dev->_lines_count_ch2);
+ 	if (ret < 0) {
+ 		pr_info("Failed creating Video Upstream Risc programs!\n");
+ 		goto error;
+@@ -806,8 +802,7 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 		}
+ 	}
  
--#define ODD_FLD_PAL_PROG_SIZE       ((PAL_FIELD_HEIGHT) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + \
--				      RISC_WRITECR_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define ODD_FLD_PAL_PROG_SIZE						\
-+	(PAL_FIELD_HEIGHT * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
+-	retval =
+-	    cx25821_sram_channel_setup_upstream(dev, sram_ch,
++	retval = cx25821_sram_channel_setup_upstream(dev, sram_ch,
+ 						dev->_line_size_ch2, 0);
  
--#define ODD_FLD_NTSC_PROG_SIZE      ((NTSC_ODD_FLD_LINES) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + \
--				      RISC_WRITECR_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define ODD_FLD_NTSC_PROG_SIZE						\
-+	(NTSC_ODD_FLD_LINES * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
+ 	/* setup fifo + format */
+@@ -817,8 +812,7 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 	dev->upstream_databuf_size_ch2 = data_frame_size * 2;
  
--#define NTSC_US_VID_PROG_SIZE       ((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
--				      JUMP_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define NTSC_US_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE +			\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
- 
--#define NTSC_RISC_BUF_SIZE          (2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
-+#define NTSC_RISC_BUF_SIZE						\
-+	(2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
- 
--#define FRAME1_VID_PROG_SIZE        ((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				      RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE + 2*NUM_NO_OPS*DWORD_SIZE)
-+#define FRAME1_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) * 3 * DWORD_SIZE +	\
-+	 2 * RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
-+	 JUMP_INSTRUCTION_SIZE + 2 * NUM_NO_OPS * DWORD_SIZE)
- 
- #endif
- 
- #ifndef USE_RISC_NOOP_VIDEO
--#define PAL_US_VID_PROG_SIZE        ((PAL_FIELD_HEIGHT) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
--				      RISC_SYNC_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
-+#define PAL_US_VID_PROG_SIZE						\
-+	(PAL_FIELD_HEIGHT * 3 * DWORD_SIZE +				\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + RISC_SYNC_INSTRUCTION_SIZE +	\
-+	 JUMP_INSTRUCTION_SIZE)
- 
--#define PAL_RISC_BUF_SIZE           (2 * PAL_US_VID_PROG_SIZE)
-+#define PAL_RISC_BUF_SIZE		(2 * PAL_US_VID_PROG_SIZE)
-+
-+#define PAL_VID_PROG_SIZE						\
-+	((PAL_FIELD_HEIGHT * 2) * 3 * DWORD_SIZE +			\
-+	 2 * RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
-+	 JUMP_INSTRUCTION_SIZE)
-+
-+#define ODD_FLD_PAL_PROG_SIZE						\
-+	(PAL_FIELD_HEIGHT * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
-+
-+#define ODD_FLD_NTSC_PROG_SIZE						\
-+	(NTSC_ODD_FLD_LINES * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
-+
-+#define NTSC_US_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE +			\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
- 
--#define PAL_VID_PROG_SIZE           ((PAL_FIELD_HEIGHT*2) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				      RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
-+#define NTSC_RISC_BUF_SIZE						\
-+	(2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
- 
--#define ODD_FLD_PAL_PROG_SIZE       ((PAL_FIELD_HEIGHT) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
--#define ODD_FLD_NTSC_PROG_SIZE      ((NTSC_ODD_FLD_LINES) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
-+#define FRAME1_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) * 3 * DWORD_SIZE +	\
-+	 2 * RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
-+	 JUMP_INSTRUCTION_SIZE)
- 
--#define NTSC_US_VID_PROG_SIZE       ((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
--#define NTSC_RISC_BUF_SIZE          (2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
--#define FRAME1_VID_PROG_SIZE        ((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				      RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
- #endif
+ 	/* Allocating buffers and prepare RISC program */
+-	retval =
+-	    cx25821_upstream_buffer_prepare_ch2(dev, sram_ch,
++	retval = cx25821_upstream_buffer_prepare_ch2(dev, sram_ch,
+ 						dev->_line_size_ch2);
+ 	if (retval < 0) {
+ 		pr_err("%s: Failed to set up Video upstream buffers!\n",
 -- 
 1.7.0.4
 
