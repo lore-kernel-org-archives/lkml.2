@@ -1,140 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474Ab1H3Twz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:52:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12904 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756212Ab1H3Twy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:52:54 -0400
-Date: Tue, 30 Aug 2011 15:52:02 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Dave Chinner <david@fromorbit.com>
-cc: Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] shrinker: fix a bug when callback returns -1
-In-Reply-To: <20110830021333.GL3162@dastard>
-Message-ID: <Pine.LNX.4.64.1108301511110.9551@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1108291534140.19003@hs20-bc2-1.build.redhat.com>
- <20110830021333.GL3162@dastard>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756527Ab1H3UHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 16:07:18 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40299 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755937Ab1H3UHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 16:07:15 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James.Bottomley@HansenPartnership.com,
+        dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, kay.sievers@gmail.com
+Subject: Re: [-v3 PATCH 0/3] Persistent device name using alias
+In-Reply-To: Your message of "Sat, 27 Aug 2011 21:54:29 +0900."
+             <4E58E905.4020704@hitachi.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp> <20110825101602.GI3286@htj.dyndns.org> <4E58C3BD.3000609@hitachi.com> <20110827102655.GJ2632@htj.dyndns.org>
+            <4E58E905.4020704@hitachi.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1314734537_2796P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 30 Aug 2011 16:02:17 -0400
+Message-ID: <16628.1314734537@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4E5D41CC.0036,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011, Dave Chinner wrote:
+--==_Exmh_1314734537_2796P
+Content-Type: text/plain; charset=us-ascii
 
-> On Mon, Aug 29, 2011 at 03:36:48PM -0400, Mikulas Patocka wrote:
-> > Hi
-> > 
-> > This patch fixes a lockup when shrinker callback returns -1.
-> 
-> What lockup is that? I haven't seen any bug reports, and this code
-> has been like this for several years, so I'm kind of wondering why
-> this is suddenly an issue....
+On Sat, 27 Aug 2011 21:54:29 +0900, Nao Nishijima said:
 
-I got the lockups when modifying my own dm-bufio code to use the shrinker. 
-The reason for lockups was that the variable total_scan contained 
-extremely high values.
+> A kernel device names (e.g. sda) is not useful information because it
+> doesn't always point the same disk at each boot-up time.
 
-The only possible way how such extreme values could be stored in 
-total_scan was this:
+If this is important to you, can't you use a udev rule, similar to what most
+distros already stick in 70-persistent-net.rules and 70-persistent-cd.rules?
 
-max_pass = do_shrinker_shrink(shrinker, shrink, 0);
-delta = (4 * nr_pages_scanned) / shrinker->seeks;
-delta *= max_pass;
-do_div(delta, lru_pages + 1);
-total_scan += delta;
+(Yes, this *does* involve finding a UUID or label or  something on the disk
+that you can identify as "same entity as last time".
 
---- you don't test if do_shinker_shrink retuned -1 here. The variables are 
-unsigned long, so you end up adding extreme value (approximately 
-2^64/(lru_pages+1) to total_scan.
 
-Note that some existing shrinkers contain workaround for this (something 
-like "return nr_to_scan ? -1 : 0", while some can still return -1 when 
-nr_to_scan is 0 and trigger this bug (prune_super).
+--==_Exmh_1314734537_2796P
+Content-Type: application/pgp-signature
 
-> > BTW. shouldn't the value returned by callback be long instead of int? On 
-> > 64-bit architectures, there may be more than 2^32 entries allocated.
-> 
-> The API hasn't changed since the early 2.5 series, so that wasn't a
-> consideration when it was originally written. As it is, I make this
-> exact change in the shrinker API update patchset I proposed
-> recently for exactly the reasons you suggest:
-> 
-> http://thread.gmane.org/gmane.linux.kernel.mm/67326
-> 
-> 
-> > Mikulas
-> > 
-> > ---
-> > 
-> > shrinker: fix a bug when callback returns -1
-> > 
-> > Shrinker callback can return -1 if it is at a risk of deadlock.
-> > However, this is not tested at some places.
-> > 
-> > If do_shrinker_shrink returns -1 here
-> > "max_pass = do_shrinker_shrink(shrinker, shrink, 0)",
-> > it is converted to an unsigned long integer. This may result in excessive
-> > total_scan value and a lockup due to code looping too much in
-> > "while (total_scan >= batch_size)" cycle.
-> 
-> > 
-> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> > 
-> > ---
-> >  mm/vmscan.c |    8 +++++++-
-> >  1 file changed, 7 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-3.1-rc3-fast/mm/vmscan.c
-> > ===================================================================
-> > --- linux-3.1-rc3-fast.orig/mm/vmscan.c	2011-08-29 20:34:27.000000000 +0200
-> > +++ linux-3.1-rc3-fast/mm/vmscan.c	2011-08-29 20:37:38.000000000 +0200
-> > @@ -250,6 +250,7 @@ unsigned long shrink_slab(struct shrink_
-> >  		unsigned long long delta;
-> >  		unsigned long total_scan;
-> >  		unsigned long max_pass;
-> > +		int sr;
-> >  		int shrink_ret = 0;
-> >  		long nr;
-> >  		long new_nr;
-> > @@ -266,7 +267,10 @@ unsigned long shrink_slab(struct shrink_
-> >  		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
-> >  
-> >  		total_scan = nr;
-> > -		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
-> > +		sr = do_shrinker_shrink(shrinker, shrink, 0);
-> > +		if (sr == -1)
-> > +			continue;
-> 
-> IIRC from my recent shrinker audit, none of the existing shrinkers
-> return return -1 when nr_to_scan == 0, so this check has never been
-> necessary.
-> 
-> > +		max_pass = sr;
-> >  		delta = (4 * nr_pages_scanned) / shrinker->seeks;
-> >  		delta *= max_pass;
-> >  		do_div(delta, lru_pages + 1);
-> > @@ -309,6 +313,8 @@ unsigned long shrink_slab(struct shrink_
-> >  			int nr_before;
-> >  
-> >  			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
-> > +			if (nr_before == -1)
-> > +				break;
-> 
-> Same here.
-> 
-> >  			shrink_ret = do_shrinker_shrink(shrinker, shrink,
-> >  							batch_size);
-> >  			if (shrink_ret == -1)
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOXUHJcC3lWbTT17ARArGuAKC+725LVYwb/dYGXwY4YFM3659a3wCg3zqZ
+W/jiW7MSazRurJWosEVFpaY=
+=DGkn
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1314734537_2796P--
+
