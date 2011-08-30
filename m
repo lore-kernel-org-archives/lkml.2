@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab1H3HJD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:09:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27669 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab1H3HJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:09:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="43519071"
-From: Andi Kleen <andi@firstfloor.org>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RFD: x32 ABI system call numbers
-References: <4E582577.2060805@zytor.com>
-	<CA+55aFzkpt48EPdVrs3aoALXnqAwqHfUCeZOpvf874O8Y8+POQ@mail.gmail.com>
-	<4E582EAA.1040108@zytor.com>
-	<CA+55aFxdRMxWLh1B_8v29qFafM425uH7kbYRfqoPe3TpVwOx-w@mail.gmail.com>
-	<CA+55aFyVmA_26LYaJH8dnFhwo7LWM6Ck7qFxCQvnROEHSuV_aA@mail.gmail.com>
-	<4E584492.5090406@zytor.com>
-	<CA+55aFw8+fkwjgAYOzxnO1HY3uCBCuf+N6z1XX2m=FhSjD5Wqg@mail.gmail.com>
-	<CAMuHMdXhdg6GuJqSjK5SdKBrBzZwGYus2LH1yqgkSnSEp8ZXyg@mail.gmail.com>
-	<CA+55aFzuY+U0nf58-9P5CFaYAPKMQ3fQMGGUUkjbxRRCK7=A3Q@mail.gmail.com>
-	<CAGZ=bqKjnsEKz_CxcW+wRoCL_CY-kipedf2wB=BVUWRB0427tw@mail.gmail.com>
-Date: Tue, 30 Aug 2011 00:09:00 -0700
-In-Reply-To: <CAGZ=bqKjnsEKz_CxcW+wRoCL_CY-kipedf2wB=BVUWRB0427tw@mail.gmail.com>
-	(Kyle Moffett's message of "Mon, 29 Aug 2011 22:16:56 -0400")
-Message-ID: <m2ty8znzoz.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1752050Ab1H3HMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:12:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65180 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab1H3HML (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 03:12:11 -0400
+Date: Tue, 30 Aug 2011 09:12:07 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@linux.intel.com>
+cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH] dma: shdma: transfer based runtime PM
+In-Reply-To: <1314622113.1606.134.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1108300906590.19151@axis700.grange>
+References: <Pine.LNX.4.64.1108181650530.5245@axis700.grange> 
+ <1314282386.1606.42.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108251636190.17190@axis700.grange>
+  <1314283286.1606.52.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108251648100.17190@axis700.grange>
+  <1314292850.1606.88.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108260107550.17190@axis700.grange>
+  <1314619909.1606.130.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108291419410.31184@axis700.grange>
+ <1314622113.1606.134.camel@vkoul-udesk3>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:ziIlIFzrNdwfE/PvaTAz+FljZc+lwVn+lRjZOVoQLOq
+ UoAvkf7YghD5qqm4ypPKEzxt/wjG7TaK+OY8+YQ4O8Utx0U+HK
+ WGenveorpWPazLUVbIMfebueSGEy/YnVMQJuWH50zGEMUf+eaI
+ xsRdC5C0XOq5sNuJ6tSvXfPg6dWoVehKZSw+w/Svo3ioRLASr4
+ OQ5CdCweFtjub8WaJQ3CqwgdDwyrWKnyeZEF8JV0DCUHG5/2kI
+ 8ju1BYMK/0BwvtePBhhB9AbzKOlF6lfQmLC3B02Z3X36HCGQ/2
+ GmMwHtNGY5sW67ntKRAanAJKDcEFAQmG9mKlXVOyTCM9hprhtL
+ 1OaPafJN+VA6aXMoYdVRI8uxMW2irsjoCCLnN7+sf22vyHkpcc
+ 3H1qwtKIjtRQQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyle Moffett <kyle@moffetthome.net> writes:
+On Mon, 29 Aug 2011, Vinod Koul wrote:
 
-Old wisdom, as wrong as always.
+> On Mon, 2011-08-29 at 14:21 +0200, Guennadi Liakhovetski wrote:
+> > On Mon, 29 Aug 2011, Vinod Koul wrote:
+> > 
+> > > On Fri, 2011-08-26 at 01:11 +0200, Guennadi Liakhovetski wrote:
+> > > > On Thu, 25 Aug 2011, Koul, Vinod wrote:
+> > > > > Wont it be easy to to do:
+> > > > > - pm_runtime_get() in each submit
+> > > > > - pm_runtime_put() in each callback
+> > > > > Normal case above would work just fine
+> > > > > - In terminate case, count the number of issued transactions, and call
+> > > > > pm_runtime_put() for each canceled transaction
+> > > > > (i am assuming that for each timeout error, the client will call
+> > > > > terminate)
+> > > > 
+> > > > As I said, this won't be very easy to do this in a robust way. You'd have 
+> > > > to scan your list of DMA blocks and see, which of them belong to one 
+> > > > descriptor, and once you reach the end of that descriptor, issue a put(). 
+> > > > Perhaps, this can be done, but my choice went to the currently presented 
+> > > > solution.
+> > > If you count the number of descriptor submitted in your submitted list
+> > > and call _put for each, I see no reason why it wont be simple and better
+> > > than current approach.
+> > 
+> > Sorry, I thought, you wanted to avoid extra counting, because runtime-pm 
+> > counts by itself. Now you propose to count...
+> see below it doesn't count but iterate thru list
 
-> The only programs which really care are those which map many gigs
-> of stuff into memory (IE: big databases, etc). 
+Yes, sorry, iterating is a better word, but I actually meant "counting" in 
+a broad sense, of which "iterating" is a particular case:-)
 
-You mean anything that mmaps a file?
+> > > Something like:
+> > > /* since callback is set for last descriptor of chain, we call runtime
+> > >  * put for that desc alone
+> > >  */
+> > > list_for_each_entry_safe(desc, __desc, sh_chan->ld_queue, node) {
+> > > 	if (desc->async_tx.callback)
+> > > 		pm_runtime_put(device);
+> > 
+> > Not all dma users have callbacks.
+> Do you have such usage today, at least I dont :)
+> Nevertheless, in tx_submit adding a simple flag in your drivers
+> descriptor structure can tell you whether to call _put() or not. Agreed?
 
-2-3GB is not a whole lot these days.
+Yes, I agree, that one could make this work too. Still, I do not 
+understand how and why this is better to the extent, that I have to 
+reimplement my patch, retest and resubmit it. Maybe Dan or Paul have an 
+opinion on this?
 
-2Gb is a very similar thing as Linus y2038, just you're much more
-likely to hit it.
-
-IMHO the only excuse right now for 32bit is to use it in a JIT
-that can dynamically expand the pointer. Or for old binaries.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
