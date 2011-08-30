@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab1H3Sjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 14:39:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44854 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755840Ab1H3Sjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 14:39:31 -0400
-Date: Tue, 30 Aug 2011 15:36:13 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: avi@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, riel@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        kvm-ppc@vger.kernel.org, aliguori@us.ibm.com, raharper@us.ibm.com,
-        kvm-ia64@vger.kernel.org
-Subject: Re: [PATCH 0/4] Avoid soft lockup message when KVM is stopped by host
-Message-ID: <20110830183613.GB23897@amt.cnet>
-References: <1314660435-23293-1-git-send-email-emunson@mgebm.net>
- <20110830122630.GA19450@amt.cnet>
- <CAKu_SN2rYCgjCAydf0B_78QgYnT4yHTLZ3G7-qAXOUSgxXYkQA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKu_SN2rYCgjCAydf0B_78QgYnT4yHTLZ3G7-qAXOUSgxXYkQA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756087Ab1H3Sjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 14:39:51 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:50575 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756042Ab1H3Sjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 14:39:33 -0400
+Date: Tue, 30 Aug 2011 14:39:28 -0400
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: x86@kernel.org, Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [v2 2/4] platform: (TS-5500) add GPIO support
+Message-ID: <20110830143928.4696ec2a@v0nbox>
+In-Reply-To: <20110829221132.GB26846@sirena.org.uk>
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1314402027-11293-3-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<20110829221132.GB26846@sirena.org.uk>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 10:37:13AM -0600, Eric B Munson wrote:
-> On Tue, Aug 30, 2011 at 06:26, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > On Mon, Aug 29, 2011 at 05:27:11PM -0600, Eric B Munson wrote:
-> >> Currently, when qemu stops a guest kernel that guest will issue a soft lockup
-> >> message when it resumes.  This set provides the ability for qemu to comminucate
-> >> to the guest that it has been stopped.  When the guest hits the watchdog on
-> >> resume it will check if it was suspended before issuing the warning.
-> >>
-> >> Eric B Munson (4):
-> >>   Add flag to indicate that a vm was stopped by the host
-> >>   Add functions to check if the host has stopped the vm
-> >>   Add generic stubs for kvm stop check functions
-> >>   Add check for suspended vm in softlockup detector
-> >>
-> >>  arch/x86/include/asm/pvclock-abi.h |    1 +
-> >>  arch/x86/include/asm/pvclock.h     |    2 ++
-> >>  arch/x86/kernel/kvmclock.c         |   14 ++++++++++++++
-> >>  include/asm-generic/pvclock.h      |   14 ++++++++++++++
-> >>  kernel/watchdog.c                  |   12 ++++++++++++
-> >>  5 files changed, 43 insertions(+), 0 deletions(-)
-> >>  create mode 100644 include/asm-generic/pvclock.h
-> >>
-> >> --
-> >> 1.7.4.1
-> >
-> > How is the host supposed to set this flag?
+On Mon, 29 Aug 2011 23:11:33 +0100,
+Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Aug 26, 2011 at 07:40:25PM -0400, Vivien Didelot wrote:
+> > +	bitno = line_to_bit_map[offset];
+> > +
+> > +	mutex_lock(&drvdata->gpio_lock);
+> > +	byte = inb(ioaddr);
+> > +	mutex_unlock(&drvdata->gpio_lock);
 > 
-> The hypervisor will set the flag (the second bit in the struct
-> pvclock_vcpu_time_info.flags field) when it stops the guest.  I could
-> be reading pvclock-abi.h incorrectly, but the way I understand it is
-> that this structure is used to communicate between hypervisor and
-> guest.
+> Do you really need the lock to do a read?
 
-Yes, its awkward though (to have an interface to modify a bit in
-pvclock->flags from QEMU).
+Is there any chance for this function to be preempted before reading the
+register, allowing a call to ts5500_gpio_direction_output to occur
+before ts5500_gpio_get is completed?
 
-Anyway, it appears that all elements to fix this in QEMU without the
-need for a paravirt interface are available... did you look into my
-suggestion?
-
-> > As mentioned previously, if you save save/restore the offset added to
-> > kvmclock on stop/cont (and the TSC MSR, forgot to mention that), no
-> > paravirt infrastructure is required. Which means the issue is also fixed
-> > for older guests.
-> >
+	Vivien.
