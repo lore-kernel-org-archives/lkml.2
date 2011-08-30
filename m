@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab1H3TqZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 15:46:25 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38605 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163Ab1H3TqY convert rfc822-to-8bit (ORCPT
+	id S1756350Ab1H3TwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 15:52:16 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:22225 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756175Ab1H3TwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 15:46:24 -0400
+	Tue, 30 Aug 2011 15:52:13 -0400
+Date: Tue, 30 Aug 2011 21:52:11 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Joe Perches <joe@perches.com>
+Cc: Richard Kuo <rkuo@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-hexagon@vger.kernel.org
+Subject: Re: [patch v2 09/35] Hexagon: Add checksum functions
+Message-ID: <20110830195211.GA10415@merkur.ravnborg.org>
+References: <20110830190729.923334292@codeaurora.org> <20110830190800.574002538@codeaurora.org> <1314732887.14422.10.camel@Joe-Laptop>
 MIME-Version: 1.0
-In-Reply-To: <20110830191937.GA8689@suse.de>
-References: <1314731192-1960-1-git-send-email-rajan.aggarwal85@gmail.com>
-	<20110830191937.GA8689@suse.de>
-Date: Wed, 31 Aug 2011 01:16:24 +0530
-Message-ID: <CALN+fr1Nke3kgEpJbb8fbzAd=dB_KhKP71rZRpm7TjOmkE5Jwg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Free fw_priv in fw_create_instance
-From: Rajan Aggarwal <rajan.aggarwal85@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314732887.14422.10.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Aug 30, 2011 at 12:34:47PM -0700, Joe Perches wrote:
+> On Tue, 2011-08-30 at 14:07 -0500, Richard Kuo wrote:
+> > Removed most non-assembly functions and use the generic ones instead.
+> []
+> > +++ linux-hexagon-kernel/arch/hexagon/include/asm/checksum.h	2011-08-24 18:45:48.133877105 -0500
+> []
+> > +#define do_csum	do_csum
+> 
+> That looks pretty odd.
+> I have a hard time believing that's useful or necessary.
 
+This is "the new way" to tell that an arch supply an arch specific variant of a function.
+See lib/checksum.c.
 
-On Wed, Aug 31, 2011 at 12:49 AM, Greg KH <gregkh@suse.de> wrote:
-> On Wed, Aug 31, 2011 at 12:36:32AM +0530, Rajan Aggarwal wrote:
->> fw_priv is not being freed in some of the error scenarios in
->> fw_create_instance.
->
-> Not true.
->
->> This patch makes sure that this is kfreed properly in all error
->> situations in the fw_create_instance logic where it is required.
->
-> Nope, this will cause a double-free to happen.
+It does:
 
->From what you say, the only suspicious line seems to be the following
-assignment:
-f_dev = &fw_priv->dev;
-However, I cannot make out how this can be freed by device_del or
-put_device as I
-don't see the logic anywhere where f_dev is decremented to get the
-address of fw_priv.
+#ifndef do_csum
+...
+#endif
 
->
->> Signed-off-by: Rajan Aggarwal <rajan.aggarwal85@gmail.com>
->> ---
->>  drivers/base/firmware_class.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
->> index 06ed6b4..3ddbc48 100644
->> --- a/drivers/base/firmware_class.c
->> +++ b/drivers/base/firmware_class.c
->> @@ -497,6 +497,7 @@ err_del_dev:
->>       device_del(f_dev);
->>  err_put_dev:
->>       put_device(f_dev);
->> +     kfree(fw_priv);
->
-> Did you test this patch out?  What happened when you tested it?
->
-> How did you find this "problem"?
->
-> Care to look a bit closer at the code?
->
-> I'd give you a hint, but it's more sporting this way :)
->
+So archs that do not define do_csum will get a generic version of do_csum.
+And "do_csum" nicely shows up in grep - so it makes sense to do so.
 
-I was looking at some bluetooth code and went into the request_firmware API
-and saw this.
-I was browsing through this code and this looked like a problem.
-I have just started using git and decided to post this email.
-
-But I still don't see how the fw_priv can be freed. :)
-There might be some place in kobject where this decrementation is
-happening but I
-must be missing something.
-
-> thanks,
->
-> greg k-h
->
+	Sam
