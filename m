@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab1H3Pcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 11:32:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755235Ab1H3Pca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 11:32:30 -0400
-Date: Tue, 30 Aug 2011 17:28:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch 1/2] oom: remove oom_disable_count
-Message-ID: <20110830152856.GA22754@redhat.com>
-References: <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com> <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com> <4E369372.80105@jp.fujitsu.com> <20110829183743.GA15216@redhat.com> <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com> <alpine.DEB.2.00.1108300040490.21066@chino.kir.corp.google.com>
+	id S1755410Ab1H3Pdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 11:33:52 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:53333 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235Ab1H3Pdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 11:33:51 -0400
+Date: Tue, 30 Aug 2011 17:33:46 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to idle
+ enter/exit APIs
+Message-ID: <20110830153343.GW9748@somewhere.redhat.com>
+References: <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
+ <1314627922.2816.65.camel@twins>
+ <20110829171155.GD9748@somewhere.redhat.com>
+ <1314640155.2816.117.camel@twins>
+ <20110829175954.GF9748@somewhere.redhat.com>
+ <1314641160.2816.128.camel@twins>
+ <20110829233521.GK9748@somewhere.redhat.com>
+ <1314703315.2799.5.camel@twins>
+ <20110830143207.GP9748@somewhere.redhat.com>
+ <1314717993.5812.11.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1108300040490.21066@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1314717993.5812.11.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/30, David Rientjes wrote:
->
-> This removes mm->oom_disable_count entirely since it's unnecessary and
-> currently buggy.  The counter was intended to be per-process but it's
-> currently decremented in the exit path for each thread that exits, causing
-> it to underflow.
->
-> The count was originally intended to prevent oom killing threads that
-> share memory with threads that cannot be killed since it doesn't lead to
-> future memory freeing.  The counter could be fixed to represent all
-> threads sharing the same mm, but it's better to remove the count since:
->
->  - it is possible that the OOM_DISABLE thread sharing memory with the
->    victim is waiting on that thread to exit and will actually cause
->    future memory freeing, and
->
->  - there is no guarantee that a thread is disabled from oom killing just
->    because another thread sharing its mm is oom disabled.
+On Tue, Aug 30, 2011 at 05:26:33PM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-08-30 at 16:32 +0200, Frederic Weisbecker wrote:
+> > On Tue, Aug 30, 2011 at 01:21:55PM +0200, Peter Zijlstra wrote:
+> > > On Tue, 2011-08-30 at 01:35 +0200, Frederic Weisbecker wrote:
+> > > > > That means it has to be in an extended grace period when we stop the
+> > > > > tick.
+> > > > 
+> > > > You mean extended quiescent state?
+> > > 
+> > > Yeah that :-)
+> > > 
+> > > > As a summary here is what we do:
+> > > > 
+> > > > - if we are in the kernel, we can't run into extended quiescent state because
+> > > > we may make use of rcu anytime there. But if we run nohz we don't have the tick
+> > > > to notice quiescent states to the RCU machinery and help completing grace periods
+> > > > so as soon as we receive an rcu IPI from another CPU (due to the grace period
+> > > > beeing extended because our nohz CPU doesn't report quiescent states), we restart
+> > > > the tick. We are optimistic enough to consider that we may avoid a lot of ticks
+> > > > even if there are some risks to be disturbed in some random rates.
+> > > > So even with the IPI we consider it as an upside.
+> > > > 
+> > > > - if we are in userspace we can run in extended quiescent state.
+> > > 
+> > > But you can only disable the tick/enter extended quiescent state while
+> > > in kernel-space. Thus the second clause is precluded from ever being
+> > > true.
+> > 
+> > No, we have a specific stacking in the irq:
+> > 
+> > 	rcu_irq_enter()
+> > 
+> > 	disable tick...
+> > 	if (user)
+> > 		rcu_enter_nohz();
+> > 
+> > 	rcu_irq_exit() <-- extended quiescent state entry effective only there
+> > 
+> > And by the time we call rcu_irq_exit() and we resume to userspace, we are
+> > not supposed to have rcu read side critical section (minus the case of
+> > a signal with do_notify_resume() which I have yet to handle).
+> 
+> See all that is still kernelspace ;-) I think I know what you mean to
+> say though, but seeing as you note there is even now a known shortcoming
+> I'm not very confident its a solid construction. What will help us find
+> such holes?
 
-Great, thanks.
+This: https://lkml.org/lkml/2011/6/23/744
 
-Even _if_ (I hope not) we decide to re-introduce this counter later,
-I think it will be much more simple to start from the very beginning
-and make the correct patch.
+It's in one of Paul's branches and should make it for the next merge window.
+This should detect any of such holes. I made that on purpose for the nohz cpusets
+when I saw how much error prone that can be with rcu :)
 
-> @@ -447,6 +431,9 @@ static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
->  	for_each_process(q)
->  		if (q->mm == mm && !same_thread_group(q, p) &&
->  		    !(q->flags & PF_KTHREAD)) {
+> I would much rather we not rely on such fragile things too much.. this
+> RCU stuff wants way more thought, as it stands your patch-set doesn't do
+> anything useful IMO.
 
-(I guess this is on top of -mm patch)
-
-> +			if (q->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
-> +				continue;
-> +
-
-Afaics, this is the only change apart from "removes mm->oom_disable_count
-entirely", looks reasonable to me.
-
-Oleg.
-
+Not sure what you mean. Well that Rcu thing for sure is fragile but we have
+the tools ready to find the problems.
