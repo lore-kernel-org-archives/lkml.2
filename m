@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab1H3FsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 01:48:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45503 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987Ab1H3FsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 01:48:17 -0400
-Date: Tue, 30 Aug 2011 15:48:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vasu Dev <vasu.dev@intel.com>
-Subject: linux-next: manual merge of the moduleh tree with the scsi-rc-fixes
- tree
-Message-Id: <20110830154814.bdef02710090d10263d1e047@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752790Ab1H3GHh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 02:07:37 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:38195 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab1H3GHg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 02:07:36 -0400
+MIME-Version: 1.0
+From: Vishnupradeep <intermedia.vishnu@gmail.com>
+Date: Tue, 30 Aug 2011 11:37:15 +0530
+Message-ID: <CACk0-C9jZatg+v=7DPJtkp3G1k_eiZbwSPDAgqabMyedmKd9YA@mail.gmail.com>
+Subject: linux-3.0.4 compile error on file arch/x86/include/asm/unistd_64.h
+To: linux-kernel@vger.kernel.org
+Cc: Vishnu Pradeep <intermedia.vishnu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-
-Today's linux-next merge of the moduleh tree got a conflict in
-drivers/scsi/libfc/fc_lport.c between commit 77a2b73a7805 ("[SCSI] libfc:
-fix fc_eh_host_reset") from the scsi-rc-fixes tree and commit
-84211284f18e ("scsi: Add module.h to drivers/scsi users who really need
-it") from the moduleh tree.
-
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/scsi/libfc/fc_lport.c
-index 628f347,f4e4885..0000000
---- a/drivers/scsi/libfc/fc_lport.c
-+++ b/drivers/scsi/libfc/fc_lport.c
-@@@ -88,7 -88,7 +88,8 @@@
-   */
-  
-  #include <linux/timer.h>
- +#include <linux/delay.h>
-+ #include <linux/module.h>
-  #include <linux/slab.h>
-  #include <asm/unaligned.h>
-  
+CC      net/ipv4/ip_forward.o
+CC      net/ipv4/ip_options.o
+CC      net/ipv4/ip_output.o
+CC      net/ipv4/ip_sockglue.o
+In file included from
+/media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/unistd.h:5:0,
+                 from include/linux/unistd.h:7,
+                 from
+/media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/seccomp_64.h:4,
+                 from
+/media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/seccomp.h:4,
+                 from include/linux/seccomp.h:8,
+                 from include/linux/sched.h:80,
+                 from
+/media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/compat.h:8,
+                 from include/linux/compat.h:18,
+                 from include/linux/ethtool.h:17,
+                 from include/linux/netdevice.h:48,
+                 from include/linux/inetdevice.h:8,
+                 from net/ipv4/ip_sockglue.c:24:
+/media/Portable/linux-kernel/linux-3.0.4/arch/x86/include/asm/unistd_64.h:668:2:
+error: invalid preprocessing directive #Define
+make[2]: *** [net/ipv4/ip_sockglue.o] Error 1
+make[1]: ***
+make: *** [net] Error 2
+[vishnu@localhost linux-3.0.4]$
