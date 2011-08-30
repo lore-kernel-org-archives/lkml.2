@@ -1,71 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab1H3B7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 21:59:37 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41768 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751775Ab1H3B7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 21:59:35 -0400
-Date: Tue, 30 Aug 2011 11:59:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: netdev <netdev@vger.kernel.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, davem@davemloft.net
-Subject: Re: [PATCH -next] net: fix Makefile typos & build errors
-Message-Id: <20110830115925.45984bb8eeb73401dd5d289f@canb.auug.org.au>
-In-Reply-To: <20110829114940.4d29febc.rdunlap@xenotime.net>
-References: <20110829161907.19232776e65389dea1caa7e8@canb.auug.org.au>
-	<20110829114940.4d29febc.rdunlap@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__30_Aug_2011_11_59_25_+1000_Nyg/YomqZxbT3nSF"
+	id S1752143Ab1H3CBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 22:01:08 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:50760 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751129Ab1H3CBF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 22:01:05 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aj0DAAVCXE55LIxDgWdsb2JhbABCqAYVAQEWJiWBQAEBBTIBIyMQCAMYLhQlAyETh3a4aw6GPwSbYohY
+Date: Tue, 30 Aug 2011 12:01:00 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Lukas Czerner <lczerner@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        Mike Snitzer <snitzer@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: blkdev_issue_discard() hangs forever if the underlying storage
+ device is removed
+Message-ID: <20110830020100.GK3162@dastard>
+References: <CAO+b5-pAY9Qn4OXKnxAHaBSrJi_6nTPOGZ+QgVg9iRdTCmequA@mail.gmail.com>
+ <alpine.LFD.2.00.1108291342110.3904@dhcp-27-109.brq.redhat.com>
+ <CAO+b5-qBCBuROmqSPHofQ4A4xxpaUVJL8AzGDHfy7k8QcWYzWw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAO+b5-qBCBuROmqSPHofQ4A4xxpaUVJL8AzGDHfy7k8QcWYzWw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__30_Aug_2011_11_59_25_+1000_Nyg/YomqZxbT3nSF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 29, 2011 at 07:56:33PM +0200, Bart Van Assche wrote:
+> On Mon, Aug 29, 2011 at 1:56 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> > On Sat, 27 Aug 2011, Bart Van Assche wrote:
+> >
+> >> Apparently blkdev_issue_discard() never times out, not even if the
+> >> device has been removed. This is what appeared in the kernel log after
+> >> device removal (triggered by running mkfs.ext4 on an SRP SCSI device
+> >> node):
+> >>
+> >> sd 15:0:0:0: [sdb] Attached SCSI disk
+> >> scsi host15: SRP abort called
+> >> scsi host15: SRP reset_device called
+> >> scsi host15: ib_srp: SRP reset_host called
+> >> scsi host15: ib_srp: connection closed
+> >> scsi host15: ib_srp: Got failed path rec status -110
+> >> scsi host15: ib_srp: Path record query failed
+> >> scsi host15: ib_srp: reconnect failed (-110), removing target port.
+> >> sd 15:0:0:0: Device offlined - not ready after error recovery
+> >> INFO: task mkfs.ext4:4304 blocked for more than 120 seconds.
+> >> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> >> mkfs.ext4       D 0000000000000000     0 4304 3649 0x00000000
+> >>  ffff88006c313b98 0000000000000046 ffffffff813e3038 ffffffff81e6b580
+> >>  0000000000000082 000000010003cfdc ffff88006c313fd8 ffff880070fbcbc0
+> >>  00000000001d1f40 ffff88006c313fd8 ffff88006c312000 ffff88006c312000
+> >> Call Trace:
+> >>  [<ffffffff813e3038>] ? schedule+0x628/0x830
+> >>  [<ffffffff813e3835>] schedule_timeout+0x1d5/0x310
+> >>  [<ffffffff810805de>] ? put_lock_stats+0xe/0x40
+> >>  [<ffffffff81080e05>] ? lock_release_holdtime+0xb5/0x160
+> >>  [<ffffffff813e6ac0>] ? _raw_spin_unlock_irq+0x30/0x60
+> >>  [<ffffffff8103f7d9>] ? sub_preempt_count+0xa9/0xe0
+> >>  [<ffffffff813e28e0>] wait_for_common+0x110/0x160
+> >>  [<ffffffff810425f0>] ? try_to_wake_up+0x2c0/0x2c0
+> >>  [<ffffffff813e2a0d>] wait_for_completion+0x1d/0x20
+> >>  [<ffffffff811de93a>] blkdev_issue_discard+0x27a/0x2c0
+> >>  [<ffffffff813e2806>] ? wait_for_common+0x36/0x160
+> >>  [<ffffffff811df371>] blkdev_ioctl+0x701/0x760
+> >>  [<ffffffff8112b7bf>] ? kmem_cache_free+0x6f/0x160
+> >>  [<ffffffff811755b7>] block_ioctl+0x47/0x50
+> >>  [<ffffffff81151b78>] do_vfs_ioctl+0x98/0x570
+> >>  [<ffffffff813e76dc>] ? sysret_check+0x27/0x62
+> >>  [<ffffffff8115209f>] sys_ioctl+0x4f/0x80
+> >>  [<ffffffff813e76ab>] system_call_fastpath+0x16/0x1b
+> >> no locks held by mkfs.ext4/4304.
+> >>
+> >> The above message kept repeating forever until system reboot.
+> >>
+> >> Kernel version:
+> >> $ git show | head -n 1
+> >> commit ed8f37370d83e695c0a4fa5d5fc7a83ecb947526
+> >> $ git describe
+> >> v3.0-7216-ged8f373
+> >>
+> >> I'm considering this as a bug because the state described above makes it
+> >> impossible to kill the mkfs process and also makes it impossible to remove the
+> >> kernel module ib_srp. That's why I also reported this as
+> >> https://bugzilla.kernel.org/show_bug.cgi?id=40472.
+> >
+> > I am trying to find some race condition that would cause the problem in
+> > blkdev_issue_discard(), however I can not see anything.
+> 
+> I'm not sure why you are looking for a race condition - this looks
+> like a plain deadlock to me.
+> 
+> > The only reason for this to happen I can see is that the last bio was
+> > not completed yet (e.g. the bio_batch_end_io() callback has not been
+> > called by the last submitted bio). Does bios have some sort of timeout
+> > after it dies out? Is it possible that we can lose bio like that ?
+> 
+> A key fact here is that the block device to which the discard request
+> was issued is gone, so the discard request will never finish
+> successfully. Do all relevant error paths guarantee that
+> blkdev_issue_discard() will finish in a finite time ?
 
-Hi all,
+The underlying block device driver is supposed to handle timing out
+of lost IOs and causcwinge them to be completed with an error.
+blkdev_issue_discard() is simply waiting for that error to be
+delivered.
 
-On Mon, 29 Aug 2011 11:49:40 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
-e:
->
-> @@ -44,10 +44,10 @@ obj-$(CONFIG_PPP_SYNC_TTY) +=3D ppp/
->  obj-$(CONFIG_PPPOE) +=3D ppp/
->  obj-$(CONFIG_PPPOL2TP) +=3D ppp/
->  obj-$(CONFIG_PPTP) +=3D ppp/
-> -onj-$(CONFIG_SLIP) +=3D slip/
-> +obj-$(CONFIG_SLIP) +=3D slip/
->  obj-$(CONFIG_SLHC) +=3D slip/
->  obj-$(CONFIG_NET_SB1000) +=3D sb1000.o
-> -onj-$(CONFIG_SLIP) +=3D slip/
-> +obj-$(CONFIG_SLIP) +=3D slip/
+If the driver has not detected that an outstanding request has not
+completed then that is a driver bug, not a bug in
+blkdev_issue_discard(). IOWs, you should be asking the ib_srp people
+why the in flight bio was not timed out or errored out when the
+block device abort was run....
 
-It may be my old(er) eyes, but isn't that CONFIG_SLIP line repeated?
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__30_Aug_2011_11_59_25_+1000_Nyg/YomqZxbT3nSF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOXEP9AAoJEDMEi1NhKgbsi0IH/ApkE+VVuc7zKPWNrotpX1ov
-o91AJ24Vr/PTY+z475vKYlr5JpMIroUjnmd8rvnAI4d0upSSxp+ODXOpqQC+1UcX
-uszINsYeIOt9mAAvaLKgkdHR24vDMdJNnhqWp0dWGejGxEtF19txcpeaeg6jGwFp
-J43Kv/h7uKXbq0M4Nc6scDkGoz9EGm9NzWJj0+4/KtxxN7hIJEQfw0Xh5GcMWb1N
-+SoGS+1pQOiiH7clUI+Nhv2uINMUyssI2KovHEnnjwiQ0mp6sYrhGhCW7aCQvtK4
-OloLn7Co/VIdbXxRRSUJ/jc1BdcAKdF3b5XIVRz76U679PtBPUE+NKQRAYf8R7g=
-=EKgZ
------END PGP SIGNATURE-----
-
---Signature=_Tue__30_Aug_2011_11_59_25_+1000_Nyg/YomqZxbT3nSF--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
