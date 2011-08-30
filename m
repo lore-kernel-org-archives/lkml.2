@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab1H3EMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 00:12:33 -0400
-Received: from haydn2007.u-bourgogne.fr ([193.50.50.67]:38876 "EHLO
-	haydn2007.u-bourgogne.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab1H3EMa (ORCPT
+	id S1751265Ab1H3ERn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 00:17:43 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:49060 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab1H3ERk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 00:12:30 -0400
-X-Greylist: delayed 966 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 00:12:30 EDT
-Message-ID: <20110830054151.1114106dg4cqch6o@webmail.u-bourgogne.fr>
-Date: Tue, 30 Aug 2011 05:41:51 +0200
-From: "Mr.Vincent Cheng Choi" <Yves.Richar@u-bourgogne.fr>
-Reply-to: vincentcheng211@yahoo.co.jp
-To: undisclosed-recipients:;
-Subject: 
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
+	Tue, 30 Aug 2011 00:17:40 -0400
+From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ruslan Pisarev <ruslan@rpisarev.org.ua>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, Ilya Gorskin <Revent82@gmail.com>,
+        Joe Perches <joe@perches.com>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Arnd Bergmann <arnd@arndb.de>,
+        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org,
+        "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+Subject: [PATCH v3 00/18] Staging: cx25821: Fix style issues
+Date: Tue, 30 Aug 2011 12:16:55 +0800
+Message-Id: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series fixes some style issues in drivers/staging/cx25821
+I split my previous patches per logical change and combined them into
+one patch series.
 
-Good Day,
+Leonid V. Fedorenchik (18):
+  Staging: cx25821: Get rid of typedef in cx25821.h
+  Staging: cx25821: Delete file cx25821-gpio.h
+  Staging: cx25821: Move EXPORT_SYMBOL() to the right place
+  Staging: cx25821: Use DEFINE_PCI_DEVICE_TABLE for cx25821_pci_tbl
+  Staging: cx25821: Fix wrong brace placement in cx25821-cards.c
+  Staging: cx25821: Fix wrong brace placement in cx25821-core.c
+  Staging: cx25821: Fix wrong brace placement in cx25821-i2c.c
+  Staging: cx25821: Fix too long lines in cx25821-audio.h
+  Staging: cx25821: Fix obscure line endings in cx25821-audio-upstream.c
+  Staging: cx25821: Fix long lines in cx25821-audio-upstream.c
+  Staging: cx25821: Fix long lines in cx25821-audio-upstream.h
+  Staging: cx25821: Replace :? by if-else in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix labels' placement in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix wrong line endings in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix long lines in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix long lines in cx25821-video-upstream-ch2.h
+  Staging: cx25821: Fix long lines in cx25821-video-upstream.c
+  Staging: cx25821: Fix long lines in cx25821-video-upstream.h
 
-I have a business proposal of USD $22,500,000.00 only for you to transact
-with me from my bank to your country.
-Reply to address: vincentcheng211@yahoo.co.jp and I will let you know what is
-required of you.
-
-Best Regards,
-Mr.Vincent Cheng Choi.
-
-
-
+ drivers/staging/cx25821/cx25821-audio-upstream.c   |   33 +++-----
+ drivers/staging/cx25821/cx25821-audio-upstream.h   |    9 ++-
+ drivers/staging/cx25821/cx25821-audio.h            |    6 +-
+ drivers/staging/cx25821/cx25821-cards.c            |    6 +-
+ drivers/staging/cx25821/cx25821-core.c             |   31 ++++----
+ drivers/staging/cx25821/cx25821-gpio.c             |    1 +
+ drivers/staging/cx25821/cx25821-gpio.h             |    2 -
+ drivers/staging/cx25821/cx25821-i2c.c              |    6 +-
+ .../staging/cx25821/cx25821-video-upstream-ch2.c   |   79 ++++++++-----------
+ .../staging/cx25821/cx25821-video-upstream-ch2.h   |   83 ++++++++++++++------
+ drivers/staging/cx25821/cx25821-video-upstream.c   |   16 ++---
+ drivers/staging/cx25821/cx25821-video-upstream.h   |   78 +++++++++++++------
+ drivers/staging/cx25821/cx25821.h                  |    8 +-
+ 13 files changed, 204 insertions(+), 154 deletions(-)
+ delete mode 100644 drivers/staging/cx25821/cx25821-gpio.h
 
