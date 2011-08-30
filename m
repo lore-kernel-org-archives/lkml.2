@@ -1,114 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab1H3MMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 08:12:22 -0400
-Received: from mx1.etf.rs ([147.91.14.169]:59663 "EHLO mx1.etf.bg.ac.rs"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab1H3MMT convert rfc822-to-8bit (ORCPT
+	id S1753573Ab1H3MNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 08:13:08 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:52246 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab1H3MNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 08:12:19 -0400
-Message-ID: <eaff1e5628175fe1164bba159e64a735.squirrel@kondor.etf.bg.ac.rs>
-Date: Tue, 30 Aug 2011 14:12:15 +0200
-Subject: [PATCH] cls_rsvp.h was outdated
-From: =?utf-8?B?Iklnb3IgTWFyYXZpxIci?= <igorm@etf.rs>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Reply-To: igorm@etf.rs
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-X-Priority: 3 (Normal)
-Importance: Normal
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Aug 2011 08:13:06 -0400
+X-Greylist: delayed 1173 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 08:13:06 EDT
+Subject: Re: [Bug #41102] BUG dentry: Poison overwritten / BUG buffer_head:
+ Poison overwritten
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+In-Reply-To: <gUVi6eNP8RE.A.yOG.depWOB@chimera>
+References: <Sm7qbRR0zn.A.yAG.LepWOB@chimera>
+	 <gUVi6eNP8RE.A.yOG.depWOB@chimera>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Aug 2011 14:13:00 +0200
+Message-ID: <1314706380.1989.8.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File cls_rsvp.h in /net/sched was outdated. I'm sending you patch for this
-file.
-Patch was done against Linux 2.6.38-8
+On Sun, 2011-08-28 at 21:01 +0200, Rafael J. Wysocki wrote:
+> Please verify if it still should
+> be listed and let the tracking team know (either way).
 
-Signed-off-by: Igor Maravić <igorm@etf.rs>
+>From comment #2:
+> [...] please note that the 3.0.1 kernel I
+> triggered this issue with seems to be the first I ran on this machine that has
+> CONFIG_SLUB_DEBUG_ON set. So on this machine this issue - if it's more than a
+> one time goof - would never have showed up in the logs unless I manually booted
+> with "slub_debug" on the command line. And I can't remember booting with
+> "slub_debug".
 
----
+At this moment I see little reason to track this bug entry as a
+regression.
 
---- linux-2.6.38.8/net/sched/cls_rsvp.h.orig	2011-08-30 12:46:42.663443918
-+0200
-+++ linux-2.6.38.8/net/sched/cls_rsvp.h	2011-08-30 13:45:02.135445119 +0200
-@@ -425,7 +425,7 @@ static int rsvp_change(struct tcf_proto
- 	struct rsvp_filter *f, **fp;
- 	struct rsvp_session *s, **sp;
- 	struct tc_rsvp_pinfo *pinfo = NULL;
--	struct nlattr *opt = tca[TCA_OPTIONS-1];
-+	struct nlattr *opt = tca[TCA_OPTIONS];
- 	struct nlattr *tb[TCA_RSVP_MAX + 1];
- 	struct tcf_exts e;
- 	unsigned h1, h2;
-@@ -439,7 +439,7 @@ static int rsvp_change(struct tcf_proto
- 	if (err < 0)
- 		return err;
 
--	err = tcf_exts_validate(tp, tb, tca[TCA_RATE-1], &e, &rsvp_ext_map);
-+	err = tcf_exts_validate(tp, tb, tca[TCA_RATE], &e, &rsvp_ext_map);
- 	if (err < 0)
- 		return err;
-
-@@ -448,8 +448,8 @@ static int rsvp_change(struct tcf_proto
-
- 		if (f->handle != handle && handle)
- 			goto errout2;
--		if (tb[TCA_RSVP_CLASSID-1]) {
--			f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID-1]);
-+		if (tb[TCA_RSVP_CLASSID]) {
-+			f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID]);
- 			tcf_bind_filter(tp, &f->res, base);
- 		}
-
-@@ -461,7 +461,7 @@ static int rsvp_change(struct tcf_proto
- 	err = -EINVAL;
- 	if (handle)
- 		goto errout2;
--	if (tb[TCA_RSVP_DST-1] == NULL)
-+	if (tb[TCA_RSVP_DST] == NULL)
- 		goto errout2;
-
- 	err = -ENOBUFS;
-@@ -470,19 +470,19 @@ static int rsvp_change(struct tcf_proto
- 		goto errout2;
-
- 	h2 = 16;
--	if (tb[TCA_RSVP_SRC-1]) {
--		memcpy(f->src, nla_data(tb[TCA_RSVP_SRC-1]), sizeof(f->src));
-+	if (tb[TCA_RSVP_SRC]) {
-+		memcpy(f->src, nla_data(tb[TCA_RSVP_SRC]), sizeof(f->src));
- 		h2 = hash_src(f->src);
- 	}
--	if (tb[TCA_RSVP_PINFO-1]) {
--		pinfo = nla_data(tb[TCA_RSVP_PINFO-1]);
-+	if (tb[TCA_RSVP_PINFO]) {
-+		pinfo = nla_data(tb[TCA_RSVP_PINFO]);
- 		f->spi = pinfo->spi;
- 		f->tunnelhdr = pinfo->tunnelhdr;
- 	}
--	if (tb[TCA_RSVP_CLASSID-1])
--		f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID-1]);
-+	if (tb[TCA_RSVP_CLASSID])
-+		f->res.classid = nla_get_u32(tb[TCA_RSVP_CLASSID]);
-
--	dst = nla_data(tb[TCA_RSVP_DST-1]);
-+	dst = nla_data(tb[TCA_RSVP_DST]);
- 	h1 = hash_dst(dst, pinfo ? pinfo->protocol : 0, pinfo ? pinfo->tunnelid
-: 0);
-
- 	err = -ENOMEM;
-@@ -641,8 +641,7 @@ nla_put_failure:
- 	return -1;
- }
-
--static struct tcf_proto_ops RSVP_OPS = {
--	.next		=	NULL,
-+static struct tcf_proto_ops RSVP_OPS __read_mostly = {
- 	.kind		=	RSVP_ID,
- 	.classify	=	rsvp_classify,
- 	.init		=	rsvp_init,
+Paul Bolle
 
