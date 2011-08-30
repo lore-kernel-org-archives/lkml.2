@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1H3K7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 06:59:00 -0400
-Received: from nm5.bullet.mail.ukl.yahoo.com ([217.146.182.226]:20406 "HELO
-	nm5.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753193Ab1H3K66 (ORCPT
+	id S1753422Ab1H3LAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 07:00:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51456 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753021Ab1H3LAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 06:58:58 -0400
-X-Yahoo-Newman-Id: 646206.57629.bm@omp1013.mail.ukl.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.de;
-  h=DKIM-Signature:X-Yahoo-Newman-Property:X-YMail-OSG:X-Yahoo-SMTP:Received:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
-  b=hnsIE/MbwX6X+zMHjuizKZB4BnoiZgO1zGkZVBf1Llr8vzLA5jfMZ0uDbu1+izQcojivKyGIXn5Hx7DWzjJt9rJDfNypxvqYMK1v3QyvRK757y7TyymB310FtaUXgjrvVZgq9w1OekhX4WtYOgwO4EVb6TyGBD40r2GvM2L/TUs=  ;
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ORNBAKsVM1mO1tXcisc6YghWPkHHB4MSboXtAkk0vGzbsZt
- VMkO7J1DLRRXUyMYVIz7p72g4zcGKbU31sCyzwSlJIe2wwOvCFFUOd6W1x6_
- .ajXu057QIqEGtUqCwp9f4Qn7ZK7aVZdZbJ_J6Goyyo8BStlOEZ.Wnfhrpi2
- GTEAfVioWKyuy_VGKzUyohXgeXUl7WO2pvfQ6n.6YPQzauOqgatgSwnILpkS
- 8zPlq2UFThQjLnhgIQRhipwT.PShibRrddGfEwTmOjVdCAy.lIMj._gB0Ohg
- AmmwTVXRFluDMEFEmI5IFP9iLJU1tZaNZmxzAGMx.w_293dgLre3ahm7woEx
- myhoiMMpT.NM1jaqlLeazPll.Mr71xFR2SVGREKg5yKNPibJd
-X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
-From: Marek Lindner <lindner_marek@yahoo.de>
-To: b.a.t.m.a.n@lists.open-mesh.org
-Subject: Re: [B.A.T.M.A.N.] [PATCH 05/24] batman-adv: Remove unnecessary OOM logging messages
-Date: Tue, 30 Aug 2011 12:58:41 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-1-amd64; KDE/4.6.3; x86_64; ; )
-Cc: Joe Perches <joe@perches.com>, Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+	Tue, 30 Aug 2011 07:00:22 -0400
+Date: Tue, 30 Aug 2011 12:00:20 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>, x86@kernel.org,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         linux-kernel@vger.kernel.org
-References: <cover.1314650069.git.joe@perches.com> <c469b9fb57fb75547e3e9092ebfdb3a79480b28f.1314650069.git.joe@perches.com>
-In-Reply-To: <c469b9fb57fb75547e3e9092ebfdb3a79480b28f.1314650069.git.joe@perches.com>
+Subject: Re: [v2 2/4] platform: (TS-5500) add GPIO support
+Message-ID: <20110830110020.GE2061@opensource.wolfsonmicro.com>
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <1314402027-11293-3-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <20110829221132.GB26846@sirena.org.uk>
+ <4E5C76E0.4000008@zytor.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108301258.41945.lindner_marek@yahoo.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5C76E0.4000008@zytor.com>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 29, 2011 23:17:24 Joe Perches wrote:
-> Removing unnecessary messages saves code and text.
-> 
-> Site specific OOM messages are duplications of a generic MM
-> out of memory message and aren't really useful, so just
-> delete them.
+On Mon, Aug 29, 2011 at 10:36:32PM -0700, H. Peter Anvin wrote:
+> On 08/29/2011 03:11 PM, Mark Brown wrote:
 
-Applied in our tree.
+> > New GPIO drivers should really go under drivers/gpiolib and be called
+> > gpio-foo.c.
 
-Thanks,
-Marek
+> Should they?  It seems a lot more reasonable to have them collected by
+> platform than by type of device (GPIO), *unless* they are shared.
+
+There was some discussion of this, mostly for ARM, the general
+conclusion being that sharing the code improves visibility of things for
+the subsystem maintainer, ensures that the code gets reviewed (and
+updated if things change) by subsystem experts and makes it more likely
+that where there are things that can be shared someone will notice.
