@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab1H3WVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 18:21:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49750 "EHLO ogre.sisk.pl"
+	id S1752950Ab1H3WVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 18:21:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49758 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752276Ab1H3WVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 18:21:12 -0400
+	id S1752655Ab1H3WVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 18:21:13 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [RFC][PATCH 4/5] PM / Domains: Add device stop governor function
-Date: Wed, 31 Aug 2011 00:21:59 +0200
+Subject: [PATCH 3/5] PM / QoS: Add function dev_pm_qos_read_value()
+Date: Wed, 31 Aug 2011 00:21:13 +0200
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Linux-sh list" <linux-sh@vger.kernel.org>,
@@ -21,283 +21,386 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108310021.59324.rjw@sisk.pl>
+Message-Id: <201108310021.13800.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Add a function deciding whether or not devices should be
-stopped in pm_genpd_runtime_suspend() depending on their
-PM QoS values.
+To read the current PM QoS value for a given device we need to
+make sure that the device's power.constraints object won't be
+removed while we're doing that.  For this reason, put the
+operation under dev->power.lock and acquire the lock
+around the initialization and removal of power.constraints.
 
+Moreover, since we're using the value of power.constraints to
+determine whether or not the object is present, the
+power.constraints_state field isn't necessary any more and may be
+removed.  However, dev_pm_qos_add_request() needs to check if the
+device is being removed from the system before allocating a new
+PM QoS constraints object for it, so it has to use device_pm_lock()
+and the device PM QoS initialization and destruction should be done
+under device_pm_lock() as well.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/arm/mach-shmobile/pm-sh7372.c   |    2 -
- drivers/base/power/Makefile          |    2 -
- drivers/base/power/domain.c          |   35 ++++++++++++++++++-----
- drivers/base/power/domain_governor.c |   40 ++++++++++++++++++++++++++
- include/linux/pm_domain.h            |   52 ++++++++++++++++++++++++++++++-----
- 5 files changed, 115 insertions(+), 16 deletions(-)
+ drivers/base/power/main.c |    4 -
+ drivers/base/power/qos.c  |  167 ++++++++++++++++++++++++++--------------------
+ include/linux/pm.h        |    8 --
+ include/linux/pm_qos.h    |    3 
+ 4 files changed, 101 insertions(+), 81 deletions(-)
 
-Index: linux/include/linux/pm_domain.h
+Index: linux/drivers/base/power/qos.c
 ===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -21,6 +21,7 @@ enum gpd_status {
+--- linux.orig/drivers/base/power/qos.c
++++ linux/drivers/base/power/qos.c
+@@ -30,15 +30,6 @@
+  * . To minimize the data usage by the per-device constraints, the data struct
+  *   is only allocated at the first call to dev_pm_qos_add_request.
+  * . The data is later free'd when the device is removed from the system.
+- * . The constraints_state variable from dev_pm_info tracks the data struct
+- *    allocation state:
+- *    DEV_PM_QOS_NO_DEVICE: No device present or device removed, no data
+- *     allocated,
+- *    DEV_PM_QOS_DEVICE_PRESENT: Device present, data not allocated and will be
+- *     allocated at the first call to dev_pm_qos_add_request,
+- *    DEV_PM_QOS_ALLOCATED: Device present, data allocated. The per-device
+- *     PM QoS constraints framework is operational and constraints can be
+- *     added, updated or removed using the dev_pm_qos_* API.
+  *  . A global mutex protects the constraints users from the data being
+  *     allocated and free'd.
+  */
+@@ -51,8 +42,30 @@
  
- struct dev_power_governor {
- 	bool (*power_down_ok)(struct dev_pm_domain *domain);
-+	bool (*stop_ok)(struct device *dev);
- };
  
- struct generic_pm_domain {
-@@ -62,8 +63,13 @@ struct gpd_link {
- 	struct list_head slave_node;
- };
+ static DEFINE_MUTEX(dev_pm_qos_mtx);
++
+ static BLOCKING_NOTIFIER_HEAD(dev_pm_notifiers);
  
-+struct gpd_gov_dev_data {
-+	s64 break_even_ns;
-+};
-+
- struct generic_pm_domain_data {
- 	struct pm_domain_data base;
-+	struct gpd_gov_dev_data *gov_data;
- 	bool need_restore;
- };
- 
-@@ -73,18 +79,47 @@ static inline struct generic_pm_domain_d
- }
- 
- #ifdef CONFIG_PM_GENERIC_DOMAINS
--extern int pm_genpd_add_device(struct generic_pm_domain *genpd,
--			       struct device *dev);
-+extern struct dev_power_governor default_qos_governor;
-+
-+extern struct generic_pm_domain *dev_to_genpd(struct device *dev);
-+extern int __pm_genpd_add_device(struct generic_pm_domain *genpd,
-+				 struct device *dev,
-+				 struct gpd_gov_dev_data *gov_data);
-+
-+static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
-+				      struct device *dev)
-+{
-+	return __pm_genpd_add_device(genpd, dev, NULL);
-+}
-+
- extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- 				  struct device *dev);
- extern int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 				  struct generic_pm_domain *new_subdomain);
- extern int pm_genpd_remove_subdomain(struct generic_pm_domain *genpd,
- 				     struct generic_pm_domain *target);
--extern void pm_genpd_init(struct generic_pm_domain *genpd,
--			  struct dev_power_governor *gov, bool is_off);
-+extern void __pm_genpd_init(struct generic_pm_domain *genpd,
-+			    struct dev_power_governor *gov, bool is_off);
-+
-+static inline void pm_genpd_init(struct generic_pm_domain *genpd, bool is_off)
-+{
-+	__pm_genpd_init(genpd, &default_qos_governor, is_off);
-+}
-+
- extern int pm_genpd_poweron(struct generic_pm_domain *genpd);
-+
- #else
-+
-+static inline struct generic_pm_domain *dev_to_genpd(struct device *dev)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
-+static inline int __pm_genpd_add_device(struct generic_pm_domain *genpd,
-+					struct device *dev,
-+					struct gpd_gov_dev_data *gov_data)
-+{
-+	return -ENOSYS;
-+}
- static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
- 				      struct device *dev)
- {
-@@ -105,8 +140,13 @@ static inline int pm_genpd_remove_subdom
- {
- 	return -ENOSYS;
- }
--static inline void pm_genpd_init(struct generic_pm_domain *genpd,
--				 struct dev_power_governor *gov, bool is_off) {}
-+static inline void __pm_genpd_init(struct generic_pm_domain *genpd,
-+				   struct dev_power_governor *gov, bool is_off)
-+{
-+}
-+static inline void pm_genpd_init(struct generic_pm_domain *genpd, bool is_off)
-+{
-+}
- static inline int pm_genpd_poweron(struct generic_pm_domain *genpd)
- {
- 	return -ENOSYS;
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -21,7 +21,7 @@ static DEFINE_MUTEX(gpd_list_lock);
- 
- #ifdef CONFIG_PM
- 
--static struct generic_pm_domain *dev_to_genpd(struct device *dev)
-+struct generic_pm_domain *dev_to_genpd(struct device *dev)
- {
- 	if (IS_ERR_OR_NULL(dev->pm_domain))
- 		return ERR_PTR(-EINVAL);
-@@ -403,6 +403,22 @@ static void genpd_power_off_work_fn(stru
- }
- 
- /**
-+ * genpd_stop_dev - Stop a given device if that's beneficial.
-+ * @genpd: PM domain the device belongs to.
-+ * @dev: Device to stop.
-+ */
-+static int genpd_stop_dev(struct generic_pm_domain *genpd, struct device *dev)
-+{
-+	bool (*stop_ok)(struct device *dev);
-+
-+	stop_ok = genpd->gov ? genpd->gov->stop_ok : NULL;
-+	if (stop_ok && !stop_ok(dev))
-+		return -EBUSY;
-+
-+	return genpd->stop_device(dev);
-+}
-+
 +/**
-  * pm_genpd_runtime_suspend - Suspend a device belonging to I/O PM domain.
-  * @dev: Device to suspend.
-  *
-@@ -423,7 +439,7 @@ static int pm_genpd_runtime_suspend(stru
- 	might_sleep_if(!genpd->dev_irq_safe);
- 
- 	if (genpd->stop_device) {
--		int ret = genpd->stop_device(dev);
-+		int ret = genpd_stop_dev(genpd, dev);
- 		if (ret)
- 			return ret;
++ * dev_pm_qos_read_value - Get PM QoS constraint for a given device.
++ * @dev: Device to get the PM QoS constraint value for.
++ */
++s32 dev_pm_qos_read_value(struct device *dev)
++{
++	struct pm_qos_constraints *c;
++	unsigned long flags;
++	s32 ret = 0;
++
++	spin_lock_irqsave(&dev->power.lock, flags);
++
++	c = dev->power.constraints;
++	if (c)
++		ret = pm_qos_read_value(c);
++
++	spin_unlock_irqrestore(&dev->power.lock, flags);
++
++	return ret;
++}
++
+ /*
+  * apply_constraint
+  * @req: constraint request to apply
+@@ -105,27 +118,37 @@ static int dev_pm_qos_constraints_alloca
  	}
-@@ -495,7 +511,7 @@ static int pm_genpd_runtime_resume(struc
- 		mutex_lock(&genpd->lock);
- 	}
- 	finish_wait(&genpd->status_wait_queue, &wait);
--	__pm_genpd_restore_device(dev->power.subsys_data->domain_data, genpd);
-+	__pm_genpd_restore_device(dev_to_psd(dev)->domain_data, genpd);
- 	genpd->resume_count--;
- 	genpd_set_active(genpd);
- 	wake_up_all(&genpd->status_wait_queue);
-@@ -1076,11 +1092,13 @@ static void pm_genpd_complete(struct dev
- #endif /* CONFIG_PM_SLEEP */
+ 	BLOCKING_INIT_NOTIFIER_HEAD(n);
  
++	plist_head_init(&c->list);
++	c->target_value = PM_QOS_DEV_LAT_DEFAULT_VALUE;
++	c->default_value = PM_QOS_DEV_LAT_DEFAULT_VALUE;
++	c->type = PM_QOS_MIN;
++	c->notifiers = n;
++
++	spin_lock_irq(&dev->power.lock);
+ 	dev->power.constraints = c;
+-	plist_head_init(&dev->power.constraints->list);
+-	dev->power.constraints->target_value = PM_QOS_DEV_LAT_DEFAULT_VALUE;
+-	dev->power.constraints->default_value =	PM_QOS_DEV_LAT_DEFAULT_VALUE;
+-	dev->power.constraints->type = PM_QOS_MIN;
+-	dev->power.constraints->notifiers = n;
+-	dev->power.constraints_state = DEV_PM_QOS_ALLOCATED;
++	spin_unlock_irq(&dev->power.lock);
+ 
+ 	return 0;
+ }
+ 
++static void __dev_pm_qos_constraints_init(struct device *dev)
++{
++	spin_lock_irq(&dev->power.lock);
++	dev->power.constraints = NULL;
++	spin_unlock_irq(&dev->power.lock);
++}
++
  /**
-- * pm_genpd_add_device - Add a device to an I/O PM domain.
-+ * __pm_genpd_add_device - Add a device to an I/O PM domain.
-  * @genpd: PM domain to add the device to.
-  * @dev: Device to be added.
-+ * @gov_data: Set of PM QoS parameters to attach to the device.
+- * dev_pm_qos_constraints_init
++ * dev_pm_qos_constraints_init - Initalize device's PM QoS constraints pointer.
+  * @dev: target device
+  *
+- * Called from the device PM subsystem at device insertion
++ * Called from the device PM subsystem at device insertion under
++ * device_pm_lock().
   */
--int pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev)
-+int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
-+			  struct gpd_gov_dev_data *gov_data)
+ void dev_pm_qos_constraints_init(struct device *dev)
  {
- 	struct generic_pm_domain_data *gpd_data;
- 	struct pm_domain_data *pdd;
-@@ -1123,6 +1141,7 @@ int pm_genpd_add_device(struct generic_p
- 	gpd_data->base.dev = dev;
- 	gpd_data->need_restore = false;
- 	list_add_tail(&gpd_data->base.list_node, &genpd->dev_list);
-+	gpd_data->gov_data = gov_data;
+ 	mutex_lock(&dev_pm_qos_mtx);
+-	dev->power.constraints_state = DEV_PM_QOS_DEVICE_PRESENT;
++	dev->power.constraints = NULL;
+ 	mutex_unlock(&dev_pm_qos_mtx);
+ }
  
-  out:
- 	genpd_release_lock(genpd);
-@@ -1280,13 +1299,13 @@ int pm_genpd_remove_subdomain(struct gen
+@@ -133,34 +156,35 @@ void dev_pm_qos_constraints_init(struct
+  * dev_pm_qos_constraints_destroy
+  * @dev: target device
+  *
+- * Called from the device PM subsystem at device removal
++ * Called from the device PM subsystem at device removal under device_pm_lock().
+  */
+ void dev_pm_qos_constraints_destroy(struct device *dev)
+ {
+ 	struct dev_pm_qos_request *req, *tmp;
++	struct pm_qos_constraints *c;
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (dev->power.constraints_state == DEV_PM_QOS_ALLOCATED) {
+-		/* Flush the constraints list for the device */
+-		plist_for_each_entry_safe(req, tmp,
+-					  &dev->power.constraints->list,
+-					  node) {
+-			/*
+-			 * Update constraints list and call the notification
+-			 * callbacks if needed
+-			 */
+-			apply_constraint(req, PM_QOS_REMOVE_REQ,
+-					 PM_QOS_DEFAULT_VALUE);
+-			memset(req, 0, sizeof(*req));
+-		}
++	c = dev->power.constraints;
++	if (!c)
++		goto out;
+ 
+-		kfree(dev->power.constraints->notifiers);
+-		kfree(dev->power.constraints);
+-		dev->power.constraints = NULL;
++	/* Flush the constraints list for the device */
++	plist_for_each_entry_safe(req, tmp, &c->list, node) {
++		/*
++		 * Update constraints list and call the notification
++		 * callbacks if needed
++		 */
++		apply_constraint(req, PM_QOS_REMOVE_REQ, PM_QOS_DEFAULT_VALUE);
++		memset(req, 0, sizeof(*req));
+ 	}
+-	dev->power.constraints_state = DEV_PM_QOS_NO_DEVICE;
+ 
++	__dev_pm_qos_constraints_init(dev);
++
++	kfree(c->notifiers);
++	kfree(c);
++
++ out:
+ 	mutex_unlock(&dev_pm_qos_mtx);
+ }
+ 
+@@ -178,8 +202,8 @@ void dev_pm_qos_constraints_destroy(stru
+  *
+  * Returns 1 if the aggregated constraint value has changed,
+  * 0 if the aggregated constraint value has not changed,
+- * -EINVAL in case of wrong parameters, -ENODEV if the device has been
+- * removed from the system
++ * -EINVAL in case of wrong parameters, -ENOMEM if there's not enough memory
++ * to allocate for data structures.
+  */
+ int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+ 			   s32 value)
+@@ -195,28 +219,35 @@ int dev_pm_qos_add_request(struct device
+ 		return -EINVAL;
+ 	}
+ 
+-	mutex_lock(&dev_pm_qos_mtx);
+ 	req->dev = dev;
+ 
+-	/* Return if the device has been removed */
+-	if (req->dev->power.constraints_state == DEV_PM_QOS_NO_DEVICE) {
+-		ret = -ENODEV;
+-		goto out;
+-	}
++	device_pm_lock();
++	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	/*
+-	 * Allocate the constraints data on the first call to add_request,
+-	 * i.e. only if the data is not already allocated and if the device has
+-	 * not been removed
+-	 */
+-	if (dev->power.constraints_state == DEV_PM_QOS_DEVICE_PRESENT)
+-		ret = dev_pm_qos_constraints_allocate(dev);
++	if (dev->power.constraints) {
++		device_pm_unlock();
++	} else {
++		if (list_empty(&dev->power.entry)) {
++			/* The device has been removed from the system. */
++			device_pm_unlock();
++			goto out;
++		} else {
++			device_pm_unlock();
++			/*
++			 * Allocate the constraints data on the first call to
++			 * add_request, i.e. only if the data is not already
++			 * allocated and if the device has not been removed.
++			 */
++			ret = dev_pm_qos_constraints_allocate(dev);
++		}
++	}
+ 
+ 	if (!ret)
+ 		ret = apply_constraint(req, PM_QOS_ADD_REQ, value);
+ 
+-out:
++ out:
+ 	mutex_unlock(&dev_pm_qos_mtx);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(dev_pm_qos_add_request);
+@@ -252,13 +283,13 @@ int dev_pm_qos_update_request(struct dev
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (req->dev->power.constraints_state == DEV_PM_QOS_ALLOCATED) {
++	if (req->dev->power.constraints) {
+ 		if (new_value != req->node.prio)
+ 			ret = apply_constraint(req, PM_QOS_UPDATE_REQ,
+ 					       new_value);
+ 	} else {
+ 		/* Return if the device has been removed */
+-		ret = -ENODEV;
++		ret = -EINVAL;
+ 	}
+ 
+ 	mutex_unlock(&dev_pm_qos_mtx);
+@@ -293,7 +324,7 @@ int dev_pm_qos_remove_request(struct dev
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	if (req->dev->power.constraints_state == DEV_PM_QOS_ALLOCATED) {
++	if (req->dev->power.constraints) {
+ 		ret = apply_constraint(req, PM_QOS_REMOVE_REQ,
+ 				       PM_QOS_DEFAULT_VALUE);
+ 		memset(req, 0, sizeof(*req));
+@@ -323,15 +354,12 @@ int dev_pm_qos_add_notifier(struct devic
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	/* Silently return if the device has been removed */
+-	if (dev->power.constraints_state != DEV_PM_QOS_ALLOCATED)
+-		goto out;
+-
+-	retval = blocking_notifier_chain_register(
+-			dev->power.constraints->notifiers,
+-			notifier);
++	/* Silently return if the constraints object is not present. */
++	if (dev->power.constraints)
++		retval = blocking_notifier_chain_register(
++				dev->power.constraints->notifiers,
++				notifier);
+ 
+-out:
+ 	mutex_unlock(&dev_pm_qos_mtx);
+ 	return retval;
+ }
+@@ -354,15 +382,12 @@ int dev_pm_qos_remove_notifier(struct de
+ 
+ 	mutex_lock(&dev_pm_qos_mtx);
+ 
+-	/* Silently return if the device has been removed */
+-	if (dev->power.constraints_state != DEV_PM_QOS_ALLOCATED)
+-		goto out;
+-
+-	retval = blocking_notifier_chain_unregister(
+-			dev->power.constraints->notifiers,
+-			notifier);
++	/* Silently return if the constraints object is not present. */
++	if (dev->power.constraints)
++		retval = blocking_notifier_chain_unregister(
++				dev->power.constraints->notifiers,
++				notifier);
+ 
+-out:
+ 	mutex_unlock(&dev_pm_qos_mtx);
+ 	return retval;
+ }
+Index: linux/include/linux/pm_qos.h
+===================================================================
+--- linux.orig/include/linux/pm_qos.h
++++ linux/include/linux/pm_qos.h
+@@ -77,6 +77,7 @@ int pm_qos_remove_notifier(int pm_qos_cl
+ int pm_qos_request_active(struct pm_qos_request *req);
+ s32 pm_qos_read_value(struct pm_qos_constraints *c);
+ 
++s32 dev_pm_qos_read_value(struct device *dev);
+ int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+ 			   s32 value);
+ int dev_pm_qos_update_request(struct dev_pm_qos_request *req, s32 new_value);
+@@ -117,6 +118,8 @@ static inline int pm_qos_request_active(
+ static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
+ 			{ return 0; }
+ 
++static inline s32 dev_pm_qos_read_value(struct device *dev)
++			{ return 0; }
+ static inline int dev_pm_qos_add_request(struct device *dev,
+ 					 struct dev_pm_qos_request *req,
+ 					 s32 value)
+Index: linux/drivers/base/power/main.c
+===================================================================
+--- linux.orig/drivers/base/power/main.c
++++ linux/drivers/base/power/main.c
+@@ -98,8 +98,8 @@ void device_pm_add(struct device *dev)
+ 		dev_warn(dev, "parent %s should not be sleeping\n",
+ 			dev_name(dev->parent));
+ 	list_add_tail(&dev->power.entry, &dpm_list);
+-	mutex_unlock(&dpm_list_mtx);
+ 	dev_pm_qos_constraints_init(dev);
++	mutex_unlock(&dpm_list_mtx);
  }
  
  /**
-- * pm_genpd_init - Initialize a generic I/O PM domain object.
-+ * __pm_genpd_init - Initialize a generic I/O PM domain object.
-  * @genpd: PM domain object to initialize.
-  * @gov: PM domain governor to associate with the domain (may be NULL).
-  * @is_off: Initial value of the domain's power_is_off field.
-  */
--void pm_genpd_init(struct generic_pm_domain *genpd,
--		   struct dev_power_governor *gov, bool is_off)
-+void __pm_genpd_init(struct generic_pm_domain *genpd,
-+		     struct dev_power_governor *gov, bool is_off)
+@@ -110,9 +110,9 @@ void device_pm_remove(struct device *dev
  {
- 	if (IS_ERR_OR_NULL(genpd))
- 		return;
-Index: linux/drivers/base/power/Makefile
+ 	pr_debug("PM: Removing info for %s:%s\n",
+ 		 dev->bus ? dev->bus->name : "No Bus", dev_name(dev));
+-	dev_pm_qos_constraints_destroy(dev);
+ 	complete_all(&dev->power.completion);
+ 	mutex_lock(&dpm_list_mtx);
++	dev_pm_qos_constraints_destroy(dev);
+ 	list_del_init(&dev->power.entry);
+ 	mutex_unlock(&dpm_list_mtx);
+ 	device_wakeup_disable(dev);
+Index: linux/include/linux/pm.h
 ===================================================================
---- linux.orig/drivers/base/power/Makefile
-+++ linux/drivers/base/power/Makefile
-@@ -3,7 +3,7 @@ obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.
- obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
- obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
- obj-$(CONFIG_PM_OPP)	+= opp.o
--obj-$(CONFIG_PM_GENERIC_DOMAINS)	+=  domain.o
-+obj-$(CONFIG_PM_GENERIC_DOMAINS)	+=  domain.o domain_governor.o
- obj-$(CONFIG_HAVE_CLK)	+= clock_ops.o
+--- linux.orig/include/linux/pm.h
++++ linux/include/linux/pm.h
+@@ -421,13 +421,6 @@ enum rpm_request {
+ 	RPM_REQ_RESUME,
+ };
  
- ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
-Index: linux/drivers/base/power/domain_governor.c
-===================================================================
---- /dev/null
-+++ linux/drivers/base/power/domain_governor.c
-@@ -0,0 +1,40 @@
-+/*
-+ * drivers/base/power/domain_governor.c - Governors for device PM domains.
-+ *
-+ * Copyright (C) 2011 Rafael J. Wysocki <rjw@sisk.pl>, Renesas Electronics Corp.
-+ *
-+ * This file is released under the GPLv2.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/pm_domain.h>
-+#include <linux/pm_qos.h>
-+
-+static bool default_stop_ok(struct device *dev)
-+{
-+	struct gpd_gov_dev_data *gov_data;
-+	s64 constraint_ns;
-+	s32 constraint;
-+
-+	dev_dbg(dev, "%s()\n", __func__);
-+
-+	gov_data = to_gpd_data(dev_to_psd(dev)->domain_data)->gov_data;
-+	if (!gov_data)
-+		return true;
-+
-+	constraint = dev_pm_qos_read_value(dev);
-+	if (constraint < 0)
-+		return false;
-+	else if (constraint == 0) /* 0 means "don't care" */
-+		return true;
-+
-+	constraint_ns = constraint;
-+	constraint_ns *= NSEC_PER_USEC;
-+
-+	return constraint_ns > gov_data->break_even_ns;
-+}
-+
-+struct dev_power_governor default_qos_governor = {
-+	.stop_ok = default_stop_ok,
-+};
-Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
-+++ linux/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -100,7 +100,7 @@ void sh7372_init_pm_domain(struct sh7372
- {
- 	struct generic_pm_domain *genpd = &sh7372_pd->genpd;
+-/* Per-device PM QoS constraints data struct state */
+-enum dev_pm_qos_state {
+-	DEV_PM_QOS_NO_DEVICE,		/* No device present */
+-	DEV_PM_QOS_DEVICE_PRESENT,	/* Device present, data not allocated */
+-	DEV_PM_QOS_ALLOCATED,		/* Device present, data allocated */
+-};
+-
+ struct wakeup_source;
  
--	pm_genpd_init(genpd, NULL, false);
-+	pm_genpd_init(genpd, false);
- 	genpd->stop_device = pm_clk_suspend;
- 	genpd->start_device = pm_clk_resume;
- 	genpd->dev_irq_safe = true;
+ struct pm_domain_data {
+@@ -489,7 +482,6 @@ struct dev_pm_info {
+ #endif
+ 	struct pm_subsys_data	*subsys_data;  /* Owned by the subsystem. */
+ 	struct pm_qos_constraints *constraints;
+-	enum dev_pm_qos_state	constraints_state;
+ };
+ 
+ extern void update_pm_runtime_accounting(struct device *dev);
 
