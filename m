@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882Ab1H3Vxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 17:53:51 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:39962 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751127Ab1H3Vxt (ORCPT
+	id S1751938Ab1H3V4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 17:56:50 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:38365 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442Ab1H3V4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 17:53:49 -0400
-X-Sasl-enc: /qhyErIyzXylY0nwyk8Jp+w65AiASgvtXlHff9F1eiBz 1314741228
-Message-ID: <4E5D5BE8.1020002@fastmail.fm>
-Date: Tue, 30 Aug 2011 23:53:44 +0200
-From: Bernd Schubert <bernd.schubert@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Tejun Heo <tj@kernel.org>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, James.Bottomley@hansenpartnership.com,
-        dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, kay.sievers@gmail.com
-Subject: Re: [-v3 PATCH 0/3] Persistent device name using alias
-References: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp> <20110825101602.GI3286@htj.dyndns.org> <4E58C3BD.3000609@hitachi.com> <20110827102655.GJ2632@htj.dyndns.org> <4E58E905.4020704@hitachi.com> <20110827132044.GN2632@htj.dyndns.org> <CAPXgP12Qn2s5ZS5jHCR-Nw_E9FWkX6E3MXhQ5gy6YEq4Zm8S0g@mail.gmail.com>
-In-Reply-To: <CAPXgP12Qn2s5ZS5jHCR-Nw_E9FWkX6E3MXhQ5gy6YEq4Zm8S0g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 30 Aug 2011 17:56:49 -0400
+Date: Tue, 30 Aug 2011 17:56:44 -0400
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, x86@kernel.org,
+        Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v2 3/4] platform: (TS-5500) add LED support
+Message-ID: <20110830175644.2ff5d086@v0nbox>
+In-Reply-To: <4E5D535B.3050304@zytor.com>
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1314402027-11293-4-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<20110829221654.GD26846@sirena.org.uk>
+	<4E5C7731.3080309@zytor.com>
+	<20110830171424.71465472@v0nbox>
+	<20110830211528.GU2061@opensource.wolfsonmicro.com>
+	<4E5D535B.3050304@zytor.com>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/28/2011 08:07 PM, Kay Sievers wrote:
-> On Sat, Aug 27, 2011 at 15:20, Tejun Heo<tj@kernel.org>  wrote:
->> On Sat, Aug 27, 2011 at 09:54:29PM +0900, Nao Nishijima wrote:
->>>> Hmm... I don't follow.  Why wouldn't it be able to?  All the
->>>> informations are in the log.  It is messy but it's there.  If you want
->>>
->>> In many cases, the script is able to convert the name. However there is
->>> the special case that the logs do not exist in memory and disk due to
->>> the crash except console.
->>
->> Sorry but I still don't get it.  If you can extract the log, the
->> information is there and w/ remote logging (be it via serial or
->> network), the information always has to be there.  Are you talking
->> about the case where somehow only the video console somehow succeeds
->> to print out oops?  I don't think that's a common case as serial (also
->> on IPMI) tends to be pretty robust, often more robust than vide
->> output, and even when such case occurs, the only thing you want is
->> mapping kernel device name to more recognizable information, which
->> isn't difficult at all.  If you wanna do it in a really simple manner,
->> just save udisks --dump output after boot and each hotplug event and
->> write a simple script to search it.
->>
->>>> more structured information, u{dev|disks} already maintain device
->>>> libarary - what maps to what, connected how with what attributes and
->>>> so on.  Sending them off to the log machine as device hotplug events
->>>> occur and consulting it when post-processing log message would work
->>>> fine.  All you need is just some python scripting.  I don't really see
->>>> much point in messing with device names directly.  The only thing is
->>>> that the raw log would be prettier.  I don't think that is useful
->>>> enough to justify changing kernel device names.
->>>
->>> A kernel device names (e.g. sda) is not useful information because it
->>> doesn't always point the same disk at each boot-up time.
->>
->> Eh?  What difference does that make?  Just make the target machines
->> send up-to-date disk config info to the log server.
->>
->>> An alias is just an option and provides the ability to give all
->>> kernel devices a "preferred name".
->>>
->>> By default, dev_printk's will show a kernel device name. They show an
->>> alias only when the user assigns a "preferred name" to an alias.
->>> Even if the persistend device name is used, the device names in logs are
->>> different from the name that the users are using. So, an alias helps the
->>> user identify the disk.
->>
->> Yes, I do understand what it's doing and can see there can be cases it
->> can be somewhat useful but I still think it's too adhoc an approach
->> which doesn't really justify itself.  It just does too little to solve
->> the actual problem and even that 'little' part isn't very trivial - it
->> adds whole lot of policy decisions to make and I'm pretty sure it will
->> cause good amount of havoc w/ all the system tools which currently
->> don't expect block device names to change to some admin determined
->> free format string on the fly.
->
-> My take on this in short again:
-> The very same thing that needs to store the 'pretty name' in the
-> kernel here, can instead just log that name along with the kernel name
-> to /dev/kmsg. It ends up in the kernel log buffer and is the marker to
-> safely match all later log entries.
->
-> This can be done today, even on many years old distros, with a single
-> udev rule and a tiny program. It needs no kernel or tool changes and
-> gives almost all the benefits of the 'pretty name' infrastructure.
+On Tue, 30 Aug 2011 14:17:15 -0700,
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Could you please explain exactly how? Simply replace sd{X} by the 
-preferred name in /dev/kmsg? How do make make sure you do not replace 
-something that is not supposed to be replaced? I think unless you plan 
-to modify existing kernel device message you cannot, as sd{X} is too 
-general.
-And how does /dev/kmsg solve the serial console problem?
+> On 08/30/2011 02:15 PM, Mark Brown wrote:
+> > On Tue, Aug 30, 2011 at 05:14:24PM -0400, Vivien Didelot wrote:
+> >> "H. Peter Anvin" <hpa@zytor.com> wrote:
+> >>> On 08/29/2011 03:16 PM, Mark Brown wrote:
+> > 
+> >>>> Can you not do outb() from atomic context?  The reason lots of
+> >>>> LED drivers update the hardware in a workqueue is that they
+> >>>> communicate with the hardware over buses that can't be used in
+> >>>> atomic context like I2C or SPI but if that's not an issue then
+> >>>> the workqueue is not required and the code can be simplified.
+> > 
+> >>> outb() can definitely be executed from atomic context.
+> > 
+> >> Good to know, thanks. I removed the work_struct and instead lock a
+> >> mutex before setting led->new_brightness and calling outb().
+> > 
+> > You can't take a mutex in atomic context...
+> 
+> OK, so what is the potential race that this mutex is called for?  If
+> it just means that the brightness can be redundantly set to the same
+> value more than once, no atomicity is needed.
+> 
+> 	-hpa
+> 
+I wrote the led_set function like:
 
-However, I think a real technical issue with any udev device name rules 
-remains - it often does not work well with multipath devices. Alua 
-partly solves that problem, but only if there is a direct connection to 
-each of the alua controllers. But if there is a switch in between, there 
-are often several devices with the same alua score. And the situation is 
-even worse with multipath hardware that does not know alua at all.
-So for many multipath devices it probably would not make sense to set 
-alias names. But especially on those system you often would like to have 
-suitable alias names, as it gets a bit chaotic without (I had to deal 
-with 30 or even 60 devices x 8 paths in the past...).
+  static void ts5500_led_set(struct led_classdev *led_cdev,
+                             enum led_brightness value)
+  {
+          struct ts5500_led *led = container_of(led_cdev,
+                                                struct ts5500_led,
+                                                cdev);
+          mutex_lock(&led->lock);
+          led->new_brightness = (value == LED_OFF) ? LED_OFF : LED_FULL;
+          outb(value, led->ioaddr);
+          mutex_unlock(&led->lock);
+  }
 
-Cheers,
-Bernd
+I guess the wrong value could be read if we get preempted just before
+the outb() call, am I wrong?
+
+	Vivien
