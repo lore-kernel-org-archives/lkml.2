@@ -1,48 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1H3OBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 10:01:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46135 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab1H3OBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 10:01:41 -0400
-From: Keshava Munegowda <keshava_mgowda@ti.com>
-To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
-        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
-        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
-        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
-        Keshava Munegowda <Keshava_mgowda@ti.com>
-Subject: [PATCH 0/2] omap: usb: I/O pads initialization to ehci and ohci hwmods
-Date: Tue, 30 Aug 2011 19:27:25 +0530
-Message-ID: <1314712647-30008-1-git-send-email-keshava_mgowda@ti.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1753232Ab1H3OHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 10:07:00 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35592 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab1H3OG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 10:06:58 -0400
+Date: Tue, 30 Aug 2011 16:06:53 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 00/32] Nohz cpusets (was: Nohz Tasks)
+Message-ID: <20110830140648.GL9748@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <CAOtvUMdgPoL_gnOTq8DwS9RxSFagQN_kAze3guD8O3xFHfnfHg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOtvUMdgPoL_gnOTq8DwS9RxSFagQN_kAze3guD8O3xFHfnfHg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On Wed, Aug 24, 2011 at 05:41:05PM +0300, Gilad Ben-Yossef wrote:
+> Hi,
+> 
+> On Mon, Aug 15, 2011 at 6:51 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >
+> > For those who want to play:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> >        nohz/cpuset-v1
+> 
+> 
+> You caught me in playful mood, so I took it for a spin... :-)
+> 
+> I know this is far from being production ready, but I hope you'll find
+> the feedback useful.
+> 
+> First a short description of my testing setup is in order, I believe:
+> 
+> I've set up a small x86 VM with 4 CPUs running your git tree and a
+> minimal buildroot system. I've created 2 cpusets: sys and nohz, and
+> then assigned every task I could to the sys cpuset and set
+> adaptive_nohz on the nohz set.
+> 
+> To make double sure I have no task on my nohz cpuset CPU, I've booted
+> the system with the isolcpus command line isolating the same cpu I've
+> assigned to the nohz set. This shouldn't be needed of course, but just
+> in case.
 
-These two patches performs the I/O pad mux initialization 
-to ehci and ohci hwmods for both omap3 and omap4 SOCs.
-This patch series is based on 
-1.	Runtime PM support of usbhs of omap3 and omap4
-	These patches are avilable at branch kmg-usbhs-pm
-	code repository : git://gitorious.org/~kmg/mirrors/kmg-usbhs-pm.git
-2. 	Kevin's pm branch
+Ah I haven't tested with that isolcpus especially as it's headed toward
+removal.
+
+> 
+> I then ran a silly program I've written that basically eats CPU cycles
+> (https://github.com/gby/cpueat) and assigned it to the nohz set and
+> monitored the number of interrupts using /proc/interrupts
+> 
+> Now, for the things I've noticed -
+> 
+> 1. Before I turn adaptive_nohz to 1, when no task is running on the
+> nohz cpuset cpu, the tick is indeed idle (regular nohz case) and very
+> few function call IPIs are seen. However, when I turn adaptive_nohz to
+> 1 (but still with no task running on the CPU), the tick remains idle,
+> but I get an IPI function call interrupt almost in the rate the tick
+> would have been.
+
+Yeah I believe this is due to RCU that tries to wake up our nohz CPU.
+I need to have a deeper look there.
+
+> 2. When I run my little cpueat program on the nohz CPU, the tick does
+> not actually goes off. Instead it ticks away as usual. I know it is
+> the only legible task to run, since as soon as I kill it  the tick
+> turns off (regular nohz mode again). I've tinkered around and found
+> out that what stops the tick going away is the check for rcu_pending()
+> in cpuset_nohz_can_stop_tick(). It seems to always be true. When I
+> removed that check experimentally and repeat the test, the tick indeed
+> stops with my cpueat task running. Of course, I don't suggest this is
+> the sane thing to do - I just wondered if that what stopped the tick
+> going away and it seems that it is.
+
+Are you sure the tick never goes off?
+But yeah may be there is something that constantly requires RCU grace
+periods to complete in your system. I should drop the rcu_pending()
+check as long as we want to stop the tick from userspace because
+there we are off the RCU state machine.
 
 
-Keshava Munegowda (1):
-  arm: omap: usb: Add mux initialization to ehci and ohci hwmods for
-    omap3
+> 3. My little cpueat program tries to fork a child process after 100k
+> iteration of some CPU bound loop. It usually takes a few seconds to
+> happen. The idea is to make sure that the tick resumes when nr_running
+> > 1. In my case, I got a kernel panic. Since it happened with some
+> debug code I added and with aforementioned experimental removal of
+> rcu_pending check, I'm assuming for now it's all my fault but will
+> look into verifying it further and will send panic logs if it proves
+> useful.
 
-Kishon Vijay Abraham (1):
-  arm: omap: usb: Add mux initialization to ehci and ohci hwmods for
-    omap4
+I got some panic too but haven't seen any for some time. I made a
+lot of changes since then though so I thought the condition to trigger
+it just went away.
 
- arch/arm/mach-omap2/usb-host.c | 1234 ++++++++++++++++++++++++++++++----------
- 1 files changed, 933 insertions(+), 301 deletions(-)
-
+IIRC, it was a locking inversion against the rq lock and some other lock.
+Very nice condition for a cool lockup ;)
