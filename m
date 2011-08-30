@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226Ab1H3C7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 22:59:19 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48534 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab1H3C7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 22:59:17 -0400
-Date: Mon, 29 Aug 2011 22:57:11 -0400 (EDT)
-Message-Id: <20110829.225711.920800080995518716.davem@davemloft.net>
-To: rdunlap@xenotime.net
-Cc: dmitry@broadcom.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eilong@broadcom.com
-Subject: Re: linux-next: Tree for Aug 29 (bnx2x)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110829155618.01a73cce.rdunlap@xenotime.net>
-References: <20110829132800.f7174f2e.rdunlap@xenotime.net>
-	<1314653744.3085.2.camel@lb-tlvb-dmitry>
-	<20110829155618.01a73cce.rdunlap@xenotime.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 29 Aug 2011 19:57:14 -0700 (PDT)
+	id S1751974Ab1H3DR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 23:17:27 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:45640 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036Ab1H3DR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 23:17:26 -0400
+Date: Mon, 29 Aug 2011 20:17:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+Message-ID: <20110830031720.GC2218@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1313232790.25267.7.camel@twins>
+ <4E559039.8060209@am.sony.com>
+ <20110826235507.GJ2342@linux.vnet.ibm.com>
+ <4E5BEF21.6040908@am.sony.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5BEF21.6040908@am.sony.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
-Date: Mon, 29 Aug 2011 15:56:18 -0700
-
-> On Tue, 30 Aug 2011 00:35:44 +0300 Dmitry Kravkov wrote:
+On Mon, Aug 29, 2011 at 12:57:21PM -0700, Frank Rowand wrote:
+> On 08/26/11 16:55, Paul E. McKenney wrote:
+> > On Wed, Aug 24, 2011 at 04:58:49PM -0700, Frank Rowand wrote:
+> >> On 08/13/11 03:53, Peter Zijlstra wrote:
+> >>>
+> >>> Whee, I can skip release announcements too!
+> >>>
+> >>> So no the subject ain't no mistake its not, 3.0.1-rt11 is there for the
+> >>> grabs.
+> >>>
+> >>> Changes include (including the missing -rt10):
+> >>>
+> >>>   - hrtimer fix that should make RT_GROUP work again
+> >>>   - RCU fixes that should make the RCU stalls go away
+> >>>   - fixes SMP=n builds after breaking them in -rt9
+> >>
+> >> I have a consistent (every boot) hang on boot.  With a few
+> >> hacks to get console output, I get the
+> >>
+> >>   rcu_preempt_state detected stalls on CPUs/tasks
+> >>
+> >> messages in the attached console log.
 > 
->> On Mon, 2011-08-29 at 13:28 -0700, Randy Dunlap wrote:
->> > On Mon, 29 Aug 2011 16:19:07 +1000 Stephen Rothwell wrote:
->> > 
->> > > Hi all,
->> > 
->> > (on i386 or x86_64)
->> > 
->> > drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:10148: error: 'bnx2x_fcoe_get_wwn' undeclared here (not in a function)
->> > 
->> > 
->> > Full randconfig file is attached.
->> > 
->> > ---
->> > ~Randy
->> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
->> This should sync #define structures between definition and declaration
->> ---
->> 
->> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
->> Signed-off-by: Dmitry Kravkov <dmitry@broadcom.com>
+> < snip >
 > 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > Hmmm...  The last few that I have seen that looked like this were
+> > due to my messing up rcutorture so that the RCU-boost testing kthreads
+> > ran CPU-bound at real-time priority.
+> > 
+> > Is it possible that something similar is happening on your system?
+> > 
+> >                                                         Thanx, Paul
+> 
+> I don't think so.  That would require CONFIG_RCU_TORTURE_TEST, correct?
+> And that is not set:
+> 
+> < way big snip >
+> 
+> >> # CONFIG_RCU_TORTURE_TEST is not set
+> >> CONFIG_RCU_CPU_STALL_TIMEOUT=60
+> >> CONFIG_RCU_CPU_STALL_VERBOSE=y
+> 
+> I'm finally getting back to this today, so I'm starting to learn about
+> the RCU stall detector, so maybe I can make some more sense of this.
 
-Applied, thanks everyone.
+This condition does not require CONFIG_RCU_TORTURE_TEST, rather, my
+bug in CONFIG_RCU_TORTURE_TEST was one way to make this happen.  Any
+condition that prevents RCU_SOFTIRQ from ever executing can cause these
+symptoms.
+
+							Thanx, Paul
