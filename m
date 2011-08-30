@@ -1,127 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1H3Hnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:43:40 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43869 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153Ab1H3Hnh (ORCPT
+	id S1752647Ab1H3Hwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:52:39 -0400
+Received: from merkurneu.hrz.uni-giessen.de ([134.176.2.3]:60765 "EHLO
+	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752191Ab1H3Hwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:43:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=jQZvwGOGfe2eIrcsJj0m6KqjACNtvc6+4a/jXAMSnbVdxM5gsIClJEfiQ9LdbOHlh
-	py0z1/9/ejdpCZDSO1lUw==
-Date: Tue, 30 Aug 2011 00:43:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Ying Han <yinghan@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch 2/2] oom: fix race while temporarily setting current's
- oom_score_adj
-In-Reply-To: <alpine.DEB.2.00.1108300040490.21066@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1108300041330.21066@chino.kir.corp.google.com>
-References: <20110727163159.GA23785@redhat.com> <20110727163610.GJ23793@redhat.com> <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com>
- <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com> <4E369372.80105@jp.fujitsu.com> <20110829183743.GA15216@redhat.com> <alpine.DEB.2.00.1108291611070.32495@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1108300040490.21066@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 30 Aug 2011 03:52:38 -0400
+From: Marc Dietich <marvin24@gmx.de>
+To: Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 1/2] sdhci/tegra: Add Device Tree probing support
+Date: Tue, 30 Aug 2011 09:52:01 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc3+; KDE/4.6.5; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, Chris Ball <cjb@laptop.org>,
+        Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+References: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108300952.02418.marvin24@gmx.de>
+X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
+X-HRZ-JLUG-MailScanner: No virus found
+X-Envelope-From: marvin24@gmx.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-test_set_oom_score_adj() was introduced in 72788c385604 (oom: replace
-PF_OOM_ORIGIN with toggling oom_score_adj) to temporarily elevate
-current's oom_score_adj for ksm and swapoff without requiring an
-additional per-process flag.
+Hi,
 
-Using that function to both set oom_score_adj to OOM_SCORE_ADJ_MAX and
-then reinstate the previous value is racy since it's possible that
-userspace can set the value to something else itself before the old value
-is reinstated.  That results in userspace setting current's oom_score_adj
-to a different value and then the kernel immediately setting it back to
-its previous value without notification.
+just a small question,
 
-To fix this, a new compare_swap_oom_score_adj() function is introduced
-with the same semantics as the compare and swap CAS instruction, or
-CMPXCHG on x86.  It is used to reinstate the previous value of
-oom_score_adj if and only if the present value is the same as the old
-value.
+> From: Grant Likely <grant.likely@secretlab.ca>
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/linux/oom.h |    1 +
- mm/ksm.c            |    3 ++-
- mm/oom_kill.c       |   19 +++++++++++++++++++
- mm/swapfile.c       |    2 +-
- 4 files changed, 23 insertions(+), 2 deletions(-)
+[...]
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -40,6 +40,7 @@ enum oom_constraint {
- 	CONSTRAINT_MEMCG,
- };
- 
-+extern void compare_swap_oom_score_adj(int old_val, int new_val);
- extern int test_set_oom_score_adj(int new_val);
- 
- extern unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
-diff --git a/mm/ksm.c b/mm/ksm.c
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1905,7 +1905,8 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
- 
- 			oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
- 			err = unmerge_and_remove_all_rmap_items();
--			test_set_oom_score_adj(oom_score_adj);
-+			compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX,
-+								oom_score_adj);
- 			if (err) {
- 				ksm_run = KSM_RUN_STOP;
- 				count = err;
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -38,6 +38,25 @@ int sysctl_oom_kill_allocating_task;
- int sysctl_oom_dump_tasks = 1;
- static DEFINE_SPINLOCK(zone_scan_lock);
- 
-+/*
-+ * compare_swap_oom_score_adj() - compare and swap current's oom_score_adj
-+ * @old_val: old oom_score_adj for compare
-+ * @new_val: new oom_score_adj for swap
-+ *
-+ * Sets the oom_score_adj value for current to @new_val iff its present value is
-+ * @old_val.  Usually used to reinstate a previous value to prevent racing with
-+ * userspacing tuning the value in the interim.
-+ */
-+void compare_swap_oom_score_adj(int old_val, int new_val)
-+{
-+	struct sighand_struct *sighand = current->sighand;
-+
-+	spin_lock_irq(&sighand->siglock);
-+	if (current->signal->oom_score_adj == old_val)
-+		current->signal->oom_score_adj = new_val;
-+	spin_unlock_irq(&sighand->siglock);
-+}
-+
- /**
-  * test_set_oom_score_adj() - set current's oom_score_adj and return old value
-  * @new_val: new oom_score_adj value
-diff --git a/mm/swapfile.c b/mm/swapfile.c
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1617,7 +1617,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
- 
- 	oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
- 	err = try_to_unuse(type);
--	test_set_oom_score_adj(oom_score_adj);
-+	compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX, oom_score_adj);
- 
- 	if (err) {
- 		/*
+> diff --git a/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
+> b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt new file mode
+> 100644
+> index 0000000..c87f667
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
+> @@ -0,0 +1,25 @@
+> +* NVIDIA Tegra Secure Digital Host Controller
+> +
+> +This controller on Tegra family SoCs provides an interface for MMC, SD,
+> +and SDIO types of memory cards.
+> +
+> +Required properties:
+> +- compatible : Should be "nvidia,<chip>-sdhci"
+> +- reg : Should contain eSDHC registers location and length
+> +- interrupts : Should contain eSDHC interrupt
+> +
+> +Optional properties:
+> +- cd-gpios : Specify GPIOs for card detection
+> +- wp-gpios : Specify GPIOs for write protection
+> +- power-gpios : Specify GPIOs for power control
+> +
+> +Example:
+> +
+> +sdhci@c8000200 {
+> +	compatible = "nvidia,tegra20-sdhci";
+> +	reg = <0xc8000200 0x200>;
+> +	interrupts = <47>;
+> +	cd-gpios = <&gpio 69 0>; /* gpio PI5 */
+> +	wp-gpios = <&gpio 57 0>; /* gpio PH1 */
+> +	power-gpios = <&gpio 155 0>; /* gpio PT3 */
+> +};
+> diff --git a/drivers/mmc/host/sdhci-tegra.c
+> b/drivers/mmc/host/sdhci-tegra.c index a5a9a97..9ab18d6 100644
+> --- a/drivers/mmc/host/sdhci-tegra.c
+> +++ b/drivers/mmc/host/sdhci-tegra.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/clk.h>
+>  #include <linux/io.h>
+> +#include <linux/of_gpio.h>
+>  #include <linux/gpio.h>
+>  #include <linux/mmc/card.h>
+>  #include <linux/mmc/host.h>
+> @@ -74,10 +75,8 @@ static void tegra_sdhci_writel(struct sdhci_host *host,
+> u32 val, int reg)
+> 
+>  static unsigned int tegra_sdhci_get_ro(struct sdhci_host *sdhci)
+>  {
+> -	struct platform_device *pdev = to_platform_device(mmc_dev(sdhci->mmc));
+> -	struct tegra_sdhci_platform_data *plat;
+> -
+> -	plat = pdev->dev.platform_data;
+> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
+> +	struct tegra_sdhci_platform_data *plat = pltfm_host->priv;
+> 
+>  	if (!gpio_is_valid(plat->wp_gpio))
+>  		return -1;
+> @@ -95,12 +94,10 @@ static irqreturn_t carddetect_irq(int irq, void *data)
+> 
+>  static int tegra_sdhci_8bit(struct sdhci_host *host, int bus_width)
+>  {
+> -	struct platform_device *pdev = to_platform_device(mmc_dev(host->mmc));
+> -	struct tegra_sdhci_platform_data *plat;
+> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +	struct tegra_sdhci_platform_data *plat = pltfm_host->priv;
+>  	u32 ctrl;
+> 
+> -	plat = pdev->dev.platform_data;
+> -
+>  	ctrl = sdhci_readb(host, SDHCI_HOST_CONTROL);
+>  	if (plat->is_8bit && bus_width == MMC_BUS_WIDTH_8) {
+>  		ctrl &= ~SDHCI_CTRL_4BITBUS;
+
+what about 8 bit support? 
+
+> @@ -132,6 +129,34 @@ static struct sdhci_pltfm_data sdhci_tegra_pdata = {
+>  	.ops  = &tegra_sdhci_ops,
+>  };
+> 
+> +static const struct of_device_id sdhci_tegra_dt_match[] __devinitdata = {
+> +	{ .compatible = "nvidia,tegra20-sdhci", },
+> +	{}
+> +};
+> +MODULE_DEVICE_TABLE(of, sdhci_dt_ids);
+> +
+> +static struct tegra_sdhci_platform_data * __devinit
+> sdhci_tegra_dt_parse_pdata( +						struct platform_device *pdev)
+> +{
+> +	struct tegra_sdhci_platform_data *plat;
+> +	struct device_node *np = pdev->dev.of_node;
+> +
+> +	if (!np)
+> +		return NULL;
+> +
+> +	plat = devm_kzalloc(&pdev->dev, sizeof(*plat), GFP_KERNEL);
+> +	if (!plat) {
+> +		dev_err(&pdev->dev, "Can't allocate platform data\n");
+> +		return NULL;
+> +	}
+> +
+> +	plat->cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
+> +	plat->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
+> +	plat->power_gpio = of_get_named_gpio(np, "power-gpios", 0);
+> +
+> +	return plat;
+> +}
+
+[...]
