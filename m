@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab1H3Fgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 01:36:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50233 "EHLO gate.crashing.org"
+	id S1752269Ab1H3FiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 01:38:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47353 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab1H3Fgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 01:36:49 -0400
-Subject: Re: [PATCH v9 11/13] powerpc: select HAVE_SECCOMP_FILTER and
- provide seccomp_execve
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        djm@mindrot.org, segoon@openwall.com, kees.cook@canonical.com,
-        mingo@elte.hu, rostedt@goodmis.org, jmorris@namei.org,
-        fweisbec@gmail.com, tglx@linutronix.de, scarybeasts@gmail.com,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <1308875813-20122-11-git-send-email-wad@chromium.org>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org>
-	 <1308875813-20122-11-git-send-email-wad@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Aug 2011 15:28:03 +1000
-Message-ID: <1314682083.2488.73.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1750987Ab1H3FiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 01:38:05 -0400
+Message-ID: <4E5C76E0.4000008@zytor.com>
+Date: Mon, 29 Aug 2011 22:36:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Vivien Didelot <vivien.didelot@savoirfairelinux.com>, x86@kernel.org,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v2 2/4] platform: (TS-5500) add GPIO support
+References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1314402027-11293-3-git-send-email-vivien.didelot@savoirfairelinux.com> <20110829221132.GB26846@sirena.org.uk>
+In-Reply-To: <20110829221132.GB26846@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 19:36 -0500, Will Drewry wrote:
-> Facilitate the use of CONFIG_SECCOMP_FILTER by wrapping compatibility
-> system call numbering for execve and selecting HAVE_SECCOMP_FILTER.
+On 08/29/2011 03:11 PM, Mark Brown wrote:
+> On Fri, Aug 26, 2011 at 07:40:25PM -0400, Vivien Didelot wrote:
 > 
-> v9: rebase on to bccaeafd7c117acee36e90d37c7e05c19be9e7bf
+>>  arch/x86/platform/ts5500/ts5500_gpio.c |  421 ++++++++++++++++++++++++++++++++
+>>  arch/x86/platform/ts5500/ts5500_gpio.h |   60 +++++
 > 
-> Signed-off-by: Will Drewry <wad@chromium.org>
-
-Seen these around for a while ... :-)
-
-I don't see a harm in the patches per-se tho I haven't reviewed the
-actual seccomp filter stuff and it's good (or bad) behaviour on ppc.
-
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-
-Cheers,
-Ben.
-
-> ---
->  arch/powerpc/Kconfig               |    1 +
->  arch/powerpc/include/asm/seccomp.h |    2 ++
->  2 files changed, 3 insertions(+), 0 deletions(-)
+> New GPIO drivers should really go under drivers/gpiolib and be called
+> gpio-foo.c.
 > 
-> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> index 2729c66..030d392 100644
-> --- a/arch/powerpc/Kconfig
-> +++ b/arch/powerpc/Kconfig
-> @@ -129,6 +129,7 @@ config PPC
->  	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
->  	select HAVE_GENERIC_HARDIRQS
->  	select HAVE_SPARSE_IRQ
-> +	select HAVE_SECCOMP_FILTER
->  	select IRQ_PER_CPU
->  	select GENERIC_IRQ_SHOW
->  	select GENERIC_IRQ_SHOW_LEVEL
-> diff --git a/arch/powerpc/include/asm/seccomp.h b/arch/powerpc/include/asm/seccomp.h
-> index 00c1d91..3cb9cc1 100644
-> --- a/arch/powerpc/include/asm/seccomp.h
-> +++ b/arch/powerpc/include/asm/seccomp.h
-> @@ -7,10 +7,12 @@
->  #define __NR_seccomp_write __NR_write
->  #define __NR_seccomp_exit __NR_exit
->  #define __NR_seccomp_sigreturn __NR_rt_sigreturn
-> +#define __NR_seccomp_execve __NR_execve
->  
->  #define __NR_seccomp_read_32 __NR_read
->  #define __NR_seccomp_write_32 __NR_write
->  #define __NR_seccomp_exit_32 __NR_exit
->  #define __NR_seccomp_sigreturn_32 __NR_sigreturn
-> +#define __NR_seccomp_execve_32 __NR_execve
->  
->  #endif	/* _ASM_POWERPC_SECCOMP_H */
 
+Should they?  It seems a lot more reasonable to have them collected by
+platform than by type of device (GPIO), *unless* they are shared.
 
+	-hpa
