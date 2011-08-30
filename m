@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab1H3WoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 18:44:13 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43139 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab1H3WoM (ORCPT
+	id S1753328Ab1H3Wpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 18:45:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34003 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594Ab1H3Wpi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 18:44:12 -0400
-Date: Wed, 31 Aug 2011 00:44:06 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        Dimitri Sivanich <sivanich@sgi.com>, Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 12/32] nohz: Try not to give the timekeeping duty to a
- cpuset nohz cpu
-Message-ID: <20110830224404.GE15953@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-13-git-send-email-fweisbec@gmail.com>
- <1314629745.2816.84.camel@twins>
- <20110830151704.GV9748@somewhere.redhat.com>
- <1314718648.5812.20.camel@twins>
+	Tue, 30 Aug 2011 18:45:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=fJpFi7bRlqNFjBRlkmYqmZqzWVErn80ItjW6znnVeJ3HBtqo63fZINlz3zZCQFINI
+	CSsCGCnA9gFp1GZo0xUWA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314718648.5812.20.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110830154157.d802d097.akpm@linux-foundation.org>
+References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
+	<CAAK6Zt0Sh1GdEOb-tNf2FGXJs=e1Jbcqew13R_GdTqrv6vW97w@mail.gmail.com>
+	<x49k49uk2ox.fsf@segfault.boston.devel.redhat.com>
+	<4E5D5817.6040704@kernel.dk>
+	<CAAK6Zt2C1646qwDiZ7sWheSWrnx2yrDtCE=+VTx7QNyh2bEz_g@mail.gmail.com>
+	<4E5D64E8.7000102@kernel.dk>
+	<20110830154157.d802d097.akpm@linux-foundation.org>
+Date: Tue, 30 Aug 2011 15:45:35 -0700
+Message-ID: <CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
+Subject: Re: Approaches to making io_submit not block
+From: Daniel Ehrenberg <dehrenberg@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-aio@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 05:37:28PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-08-30 at 17:17 +0200, Frederic Weisbecker wrote:
-> > On Mon, Aug 29, 2011 at 04:55:45PM +0200, Peter Zijlstra wrote:
-> > > On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
-> > > > Try to give the timekeeing duty to a CPU that doesn't belong
-> > > > to any nohz cpuset when possible, so that we increase the chance
-> > > > for these nohz cpusets to run their CPUs out of periodic tick
-> > > > mode. 
-> > > 
-> > > You and Dmitiri might want to get together:
-> > > 
-> > > lkml.kernel.org/r/20110823195628.GB4533@sgi.com
-> > 
-> > Right!
-> > 
-> > There is another missing piece in my patchset. If every non adaptive-nohz
-> > CPUs are sleeping, then none is handling the do_timer duty and adaptive nohz
-> > CPUs run with a stale jiffies and walltime.
-> 
-> Doesn't nohz already deal with the case of all cpus being idle? In that
-> case the cpu that wakes up first gets to play catch up on irq_enter() or
-> so.
+On Tue, Aug 30, 2011 at 3:41 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 30 Aug 2011 16:32:08 -0600
+> Jens Axboe <axboe@kernel.dk> wrote:
+>
+>> On 2011-08-30 16:19, Daniel Ehrenberg wrote:
+>> > On Tue, Aug 30, 2011 at 2:37 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> >> On 2011-08-30 15:30, Jeff Moyer wrote:
+>> >>> Daniel Ehrenberg <dehrenberg@google.com> writes:
+>> >>>
+>> >>>> Hi Jens, Jeff,
+>> >>>>
+>> >>>> I just sent a letter to LKML wondering about changes to io_submit that
+>> >>>> I'm thinking of working on. Based on your past contributions to this
+>> >>>> area, I'd really like to know what you think of this plan--how well it
+>> >>>> matches with the existing design, the potential for inclusion in
+>> >>>> upstream Linux, if you see problems.
+>> >>>
+>> >>> Hi, Dan,
+>> >>>
+>> >>> Thanks for taking the time to make AIO better!  There is a mailing list
+>> >>> for aio discussions: linux-aio@kvack.org, so please CC that in the
+>> >>> future (I don't read lkml anymore).
+>> >>>
+>> >>> Right now I'm a bit inundated, so I can't give this a proper review.
+>> >>> I should be able to free up some time in the next two weeks, though.
+>> >>>
+>> >>> In the mean time, you can google for suparna's retry-based aio patches.
+>> >>> Specifically, take a look at how she used prepare_to_wait/finish_wait.
+>> >>> If you haven't done any empirical tests to see where io_submit blocks,
+>> >>> there is a sample systemtap script for that:
+>> >>>   http://sourceware.org/systemtap/examples/io/io_submit.stp
+>> >>> Other attempts at non-blocking aio were off the deep end: fibrils and
+>> >>> syslets.  Fibrils didn't go anywhere because Ingo didn't like them (for
+>> >>> good reason, they essentially introduced another scheduling layer).
+>> >>> Syslets didn't go anywhere b/c they were insane (returned to the
+>> >>> user-space process with a different PID, among other things!).
+>> >>>
+>> >>> If you do go forward in the meantime, you can likely use EIOCBRETRY
+>> >>> instead of EAGAIN.
+>> >>>
+>> >>> I hope that helps!
+>> >>
+>> >> FWIW, I updated the buffered AIO retry patches some time after Suparna
+>> >> droped them. By the date stamp in my branch, they are now 23 months
+>> >> old... Anyway, at least it's more recent, you can find them here:
+>> >>
+>> >> http://git.kernel.dk/?p=linux-block.git;a=shortlog;h=refs/heads/aio-buffered
+>> >>
+>> >> --
+>> >> Jens Axboe
+>> >>
+>> >>
+>> > Thanks! Do you know why the patches weren't merged? I can't find much
+>> > discussion about them.
+>>
+>> Not quite sure, and after working on them and fixing thing up, I don't
+>> even think they are that complex or intrusive (which I think otherwise
+>> would've been the main objection). Andrew may know/remember.
+>
+> Boy, that was a long time ago.  I was always unhappy with the patches
+> because of the amount of additional code/complexity they added.
+>
+> Then the great syslets/threadlets design session happened and it was
+> expected that such a facility would make special async handling for AIO
+> unnecessary.  Then syslets/threadlets didn't happen.
 
-Sure and that works for the nohz idle case. But that's not enough anymore
-in the case of adaptive nohz CPUs. They can run for a while without the tick
-and if nobody else maintains a tick either then jiffies and walltime are
-not maintained anymore.
+Do you think we could accomplish the goals with less additional
+code/complexity? It looks like the latest version of the patch set
+wasn't so invasive.
+
+If syslets/threadlets aren't happening, should these patches be
+reconsidered for inclusion in the kernel?
+
+Thanks,
+Dan
