@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab1H3BVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 21:21:25 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46379 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751775Ab1H3BVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 21:21:23 -0400
-Subject: Re: [PATCH 18/24] sctp: Remove unnecessary OOM logging messages
-From: Joe Perches <joe@perches.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1314654209.2563.7.camel@edumazet-laptop>
-References: <cover.1314650069.git.joe@perches.com>
-	 <21b4d996c8861373ac77d427914ec7882fe0c83e.1314650069.git.joe@perches.com>
-	 <1314654209.2563.7.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Aug 2011 18:21:21 -0700
-Message-ID: <1314667281.6852.47.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751926Ab1H3BsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 21:48:13 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41739 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab1H3BsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 21:48:07 -0400
+Content-Type: text/plain; charset=UTF-8
+Subject: [PATCH][Resend][Trivial] tags, powerpc: Update tags.sh to support _GLOBAL symbols
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        trivial <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Tue, 30 Aug 2011 11:47:58 +1000
+Message-Id: <1314668427-sup-1740@au1.ibm.com>
+User-Agent: Sup/0.11
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 23:43 +0200, Eric Dumazet wrote:
-> Le lundi 29 août 2011 à 14:17 -0700, Joe Perches a écrit :
-> > Removing unnecessary messages saves code and text.
-> > Site specific OOM messages are duplications of a generic MM
-> > out of memory message and aren't really useful, so just
-> > delete them.
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  net/sctp/protocol.c |    3 ---
-> >  1 files changed, 0 insertions(+), 3 deletions(-)
-> > diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-[]
-> > @@ -1326,7 +1326,6 @@ SCTP_STATIC __init int sctp_init(void)
-> >  			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
-> >  	} while (!sctp_assoc_hashtable && --order > 0);
-> >  	if (!sctp_assoc_hashtable) {
-> > -		pr_err("Failed association hash alloc\n");
-> >  		status = -ENOMEM;
-> >  		goto err_ahash_alloc;
-> >  	}
-[]
-> > @@ -1359,7 +1357,6 @@ SCTP_STATIC __init int sctp_init(void)
-> >  			__get_free_pages(GFP_ATOMIC|__GFP_NOWARN, order);
-> >  	} while (!sctp_port_hashtable && --order > 0);
-> >  	if (!sctp_port_hashtable) {
-> > -		pr_err("Failed bind hash alloc\n");
-> >  		status = -ENOMEM;
-> >  		goto err_bhash_alloc;
-> >  	}
-> It would be nice if you could avoid all these patches, that you dont
-> even read.
+On PowerPC we use _GLOBAL throughout the assembly to define symbols, but
+currently these symbols are missing from the tags generated with
+ARCH=powerpc make tags. This patch modifies the tags.sh script to
+recognise _GLOBAL(.*) so that these symbols will be in the tags.
 
-Didn't read is not the same thing as didn't notice.
+This is almost (but not quite) PowerPC specific and this change should
+not affect anyone else:
 
-> As I already told you in the past, __GFP_NOWARN dont print generic OOM
-> messages.
+$ git grep -E '^_GLOBAL\(([^)]*)\).*' |sed 's/^\([^/]*\/[^/]*\)\/.*$/\1/'|uniq -c
+    627 arch/powerpc
+      2 arch/um
 
-I didn't notice those had GFP_NOWARN.
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+I've had no (online) response to this so far - hoping that this can be
+picked up by someone.
 
-> Its not because I told Wang Shaoyan not adding a useless "pr_err("Out of
-> memory\n");" in last gianfar patch, that you have to remove all
-> messages, with one hundred or more patches.
+ scripts/tags.sh |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> If I remember well, you even disagreed at that time.
-
-No, what I said was that it'd be better to get agreement
-to delete them before deleting them.
-
-https://lkml.org/lkml/2011/8/9/379
-
-So I submitted an RFC and cc'd you.
-You did not reply.
-
-https://lkml.org/lkml/2011/8/25/580
-
-> Furthermore, a failed vmalloc() is not guaranteed to emit an OOM
-> message, is it ?
-
-Doesn't seem to be, perhaps it should be
-when __GFP_NOWARN is not set...
-
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 75c5d24f1..38f6617 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -129,7 +129,7 @@ exuberant()
+ 	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
+ 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
+ 	--extra=+f --c-kinds=+px                                \
+-	--regex-asm='/^ENTRY\(([^)]*)\).*/\1/'                  \
++	--regex-asm='/^(ENTRY|_GLOBAL)\(([^)]*)\).*/\2/'        \
+ 	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
+ 	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
+ 	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'
+@@ -151,7 +151,7 @@ exuberant()
+ emacs()
+ {
+ 	all_sources | xargs $1 -a                               \
+-	--regex='/^ENTRY(\([^)]*\)).*/\1/'                      \
++	--regex='/^(ENTRY|_GLOBAL)(\([^)]*\)).*/\2/'            \
+ 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
+ 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
+ 	--regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/'
+-- 
+1.7.2.5
