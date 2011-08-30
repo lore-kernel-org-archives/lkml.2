@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1H3Fcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 01:32:35 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35085
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750842Ab1H3Fcc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 01:32:32 -0400
-Date: Tue, 30 Aug 2011 01:32:31 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Daniel Ehrenberg <dehrenberg@google.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110830053231.GA1627@infradead.org>
-References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1751883Ab1H3Fgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 01:36:50 -0400
+Received: from gate.crashing.org ([63.228.1.57]:50233 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab1H3Fgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 01:36:49 -0400
+Subject: Re: [PATCH v9 11/13] powerpc: select HAVE_SECCOMP_FILTER and
+ provide seccomp_execve
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        djm@mindrot.org, segoon@openwall.com, kees.cook@canonical.com,
+        mingo@elte.hu, rostedt@goodmis.org, jmorris@namei.org,
+        fweisbec@gmail.com, tglx@linutronix.de, scarybeasts@gmail.com,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <1308875813-20122-11-git-send-email-wad@chromium.org>
+References: <1308875813-20122-1-git-send-email-wad@chromium.org>
+	 <1308875813-20122-11-git-send-email-wad@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Aug 2011 15:28:03 +1000
+Message-ID: <1314682083.2488.73.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 10:33:24AM -0700, Daniel Ehrenberg wrote:
-> - Blocking due to reading metadata.
-> Proposed solution:
-> Add a per-ioctx work queue to do metadata reads. It will be triggered
-> from the dio code: if in async mode, then get_block will be called
-> with an additional flag, meaning something like O_NONBLOCK on sockets.
-> File systems' get_block functions can implement this flag and return
-> -EAGAIN if a read from the underlying device would be necessary. (If
-> we're worried that EAGAIN might be used for other purposes in the
-> future, we could make a new errno for this purpose.) From a quick
-> glance at the code, it looks like this would not be too difficult to
-> add to ext4 for extent-based files, and support in other file systems
-> could be added gradually. If -EAGAIN is returned, then the struct dio
-> will be put on the work queue together with a description of what kind
-> of processing it was doing. The work queue only serves the metadata
-> request, and the rest of the request is served on the existing path.
+On Thu, 2011-06-23 at 19:36 -0500, Will Drewry wrote:
+> Facilitate the use of CONFIG_SECCOMP_FILTER by wrapping compatibility
+> system call numbering for execve and selecting HAVE_SECCOMP_FILTER.
+> 
+> v9: rebase on to bccaeafd7c117acee36e90d37c7e05c19be9e7bf
+> 
+> Signed-off-by: Will Drewry <wad@chromium.org>
 
-Let filesystems handle this.  I've actually prototyped it in XFS,
-based on some pending work from Dave but at this point it's still butt
-ugly.
+Seen these around for a while ... :-)
 
-> - Blocking for appends and writes to file holes due to the need for a
-> metadata write after the data write
-> Proposed solution:
-> Maintain a work queue for all appends and writes to file holes, which
-> executes the current code.
+I don't see a harm in the patches per-se tho I haven't reviewed the
+actual seccomp filter stuff and it's good (or bad) behaviour on ppc.
 
-No way.  I've fixed this for XFS, and it's trivial without the need to
-queue them up.  The only thing preventing appending writes to work is
-a flag to tell the dio layer to just do them, just like it already works
-for holes.  (and more QA).
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+
+Cheers,
+Ben.
+
+> ---
+>  arch/powerpc/Kconfig               |    1 +
+>  arch/powerpc/include/asm/seccomp.h |    2 ++
+>  2 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index 2729c66..030d392 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -129,6 +129,7 @@ config PPC
+>  	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
+>  	select HAVE_GENERIC_HARDIRQS
+>  	select HAVE_SPARSE_IRQ
+> +	select HAVE_SECCOMP_FILTER
+>  	select IRQ_PER_CPU
+>  	select GENERIC_IRQ_SHOW
+>  	select GENERIC_IRQ_SHOW_LEVEL
+> diff --git a/arch/powerpc/include/asm/seccomp.h b/arch/powerpc/include/asm/seccomp.h
+> index 00c1d91..3cb9cc1 100644
+> --- a/arch/powerpc/include/asm/seccomp.h
+> +++ b/arch/powerpc/include/asm/seccomp.h
+> @@ -7,10 +7,12 @@
+>  #define __NR_seccomp_write __NR_write
+>  #define __NR_seccomp_exit __NR_exit
+>  #define __NR_seccomp_sigreturn __NR_rt_sigreturn
+> +#define __NR_seccomp_execve __NR_execve
+>  
+>  #define __NR_seccomp_read_32 __NR_read
+>  #define __NR_seccomp_write_32 __NR_write
+>  #define __NR_seccomp_exit_32 __NR_exit
+>  #define __NR_seccomp_sigreturn_32 __NR_sigreturn
+> +#define __NR_seccomp_execve_32 __NR_execve
+>  
+>  #endif	/* _ASM_POWERPC_SECCOMP_H */
+
 
