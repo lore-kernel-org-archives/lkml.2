@@ -1,82 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795Ab1H3CMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Aug 2011 22:12:47 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56147 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750769Ab1H3CMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Aug 2011 22:12:46 -0400
-Subject: [PATCH] kernel.h/checkpatch: Mark strict_strto<foo> and
- simple_strto<foo> as obsolete
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110829152034.cb5d2c28.akpm@linux-foundation.org>
-References: <20110829032951.677220552@intel.com>
-	 <20110829034931.736694692@intel.com>
-	 <20110829152034.cb5d2c28.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Aug 2011 19:12:45 -0700
-Message-ID: <1314670365.6852.50.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752077Ab1H3CNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Aug 2011 22:13:00 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:39525 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab1H3CM6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Aug 2011 22:12:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACqU3MXup87LamKaNz1w8GXQdPvMedEjy_Y=TPsyLDYKQi4jwA@mail.gmail.com>
+References: <1313975049.2393.8.camel@offbook>
+	<CACqU3MXup87LamKaNz1w8GXQdPvMedEjy_Y=TPsyLDYKQi4jwA@mail.gmail.com>
+Date: Mon, 29 Aug 2011 22:12:57 -0400
+Message-ID: <CACqU3MUOxLYEsuVv5d=LSjNio5ZHg3E8K+i2ztQshttUfemsdA@mail.gmail.com>
+Subject: Re: [PATCH v2] kconfig: handle SIGINT in menuconfig
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: dave@gnu.org
+Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark obsolete/deprecated strict_strto<foo> and simple_strto<foo>
-functions and macros as obsolete.
+Hi,
 
-Update checkpatch to warn about their use.
+On Mon, Aug 29, 2011 at 9:55 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Sun, Aug 21, 2011 at 9:04 PM, Davidlohr Bueso <dave@gnu.org> wrote:
+>> From: Davidlohr Bueso <dave@gnu.org>
+>>
+>> I recently got bitten in the ass when pressing Ctrl-C and lost all my current configuration changes. This patch captures SIGINT and allows the user to save any changes.
+>> Some code refactoring was made in order to handle the exit behavior.
+>>
+>> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+>> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+>> ---
+>>  scripts/kconfig/mconf.c |   86 ++++++++++++++++++++++++++++------------------
+>>  1 files changed, 52 insertions(+), 34 deletions(-)
+>>
+>> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+>> index 820d2b6..19e200d 100644
+>> --- a/scripts/kconfig/mconf.c
+>> +++ b/scripts/kconfig/mconf.c
+>> @@ -15,6 +15,7 @@
+>>  #include <stdarg.h>
+>>  #include <stdlib.h>
+>>  #include <string.h>
+>> +#include <signal.h>
+>>  #include <unistd.h>
+>>  #include <locale.h>
+>>
+>> @@ -272,6 +273,7 @@ static struct menu *current_menu;
+>>  static int child_count;
+>>  static int single_menu_mode;
+>>  static int show_all_options;
+>> +static int saved_x, saved_y;
+>>
+>>  static void conf(struct menu *menu);
+>>  static void conf_choice(struct menu *menu);
+>> @@ -792,9 +794,54 @@ static void conf_save(void)
+>>        }
+>>  }
+>>
+>> +static int handle_exit(void)
+>> +{
+>> +       int res;
+>> +
+>> +       dialog_clear();
+>> +       if (conf_get_changed())
+>> +               res = dialog_yesno(NULL,
+>> +                                  _("Do you wish to save your new configuration ?\n"
+>> +                                    "<ESC><ESC> to continue."),
+>> +                                  6, 60);
+>> +       else
+>> +               res = -1;
+>> +
+>> +       end_dialog(saved_x, saved_y);
+>> +
+>> +       switch (res) {
+>> +       case 0:
+>> +               if (conf_write(filename)) {
+>> +                       fprintf(stderr, _("\n\n"
+>> +                                         "Error while writing of the configuration.\n"
+>> +                                         "Your configuration changes were NOT saved."
+>> +                                         "\n\n"));
+>> +                       return 1;
+>> +               }
+>> +               /* fall through */
+>> +       case -1:
+>> +               printf(_("\n\n"
+>> +                        "*** End of the configuration.\n"
+>> +                        "*** Execute 'make' to start the build or try 'make help'."
+>> +                        "\n\n"));
+>> +               res = 0;
+>> +               break;
+>> +       default:
+>> +               fprintf(stderr, _("\n\n"
+>> +                                 "Your configuration changes were NOT saved."
+>> +                                 "\n\n"));
+>> +       }
+>> +
+>> +       return res;
+>> +}
+>> +
+>> +static void sig_handler(int signo)
+>> +{
+>> +       exit(handle_exit());
+>> +}
+>> +
+> Actually, no matter what handle_exit() returns, the process will
+> return error code 130 and make will abort. I'd suggest to get rid of
+> the call to exit(), and only keep handle_exit().
+>
+> any objection ?
+>
+stupid me... we need the call to exit(2), but its argument do not seem
+to be used.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-
----
-
- include/linux/kernel.h |    4 ++++
- scripts/checkpatch.pl  |    6 +++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 46ac9a5..1f9bc02 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -287,6 +287,8 @@ static inline int __must_check kstrtos32_from_user(const char __user *s, size_t
- 	return kstrtoint_from_user(s, count, base, res);
- }
- 
-+/* Obsolete, do not use.  Use kstrto<foo> instead */
-+
- extern unsigned long simple_strtoul(const char *,char **,unsigned int);
- extern long simple_strtol(const char *,char **,unsigned int);
- extern unsigned long long simple_strtoull(const char *,char **,unsigned int);
-@@ -296,6 +298,8 @@ extern long long simple_strtoll(const char *,char **,unsigned int);
- #define strict_strtoull	kstrtoull
- #define strict_strtoll	kstrtoll
- 
-+/* lib/printf utilities */
-+
- extern int sprintf(char * buf, const char * fmt, ...)
- 	__attribute__ ((format (printf, 2, 3)));
- extern int vsprintf(char *buf, const char *, va_list)
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9d761c9..bf1734a 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3150,10 +3150,10 @@ sub process {
- 			     "consider using a completion\n" . $herecurr);
- 
- 		}
--# recommend kstrto* over simple_strto*
--		if ($line =~ /\bsimple_(strto.*?)\s*\(/) {
-+# recommend kstrto* over simple_strto* and strict_strto*
-+		if ($line =~ /\b((simple|strict)_(strto(l|ll|ul|ull)))\s*\(/) {
- 			WARN("CONSIDER_KSTRTO",
--			     "consider using kstrto* in preference to simple_$1\n" . $herecurr);
-+			     "$1 is obsolete, use k$3 instead\n" . $herecurr);
- 		}
- # check for __initcall(), use device_initcall() explicitly please
- 		if ($line =~ /^.\s*__initcall\s*\(/) {
-
-
+ - Arnaud
