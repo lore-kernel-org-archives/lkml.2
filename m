@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab1H3LAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 07:00:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51456 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753021Ab1H3LAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 07:00:22 -0400
-Date: Tue, 30 Aug 2011 12:00:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>, x86@kernel.org,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v2 2/4] platform: (TS-5500) add GPIO support
-Message-ID: <20110830110020.GE2061@opensource.wolfsonmicro.com>
-References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <1314402027-11293-3-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20110829221132.GB26846@sirena.org.uk>
- <4E5C76E0.4000008@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5C76E0.4000008@zytor.com>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753384Ab1H3LEV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 07:04:21 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:55145 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752139Ab1H3LET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 07:04:19 -0400
+From: Richard Weinberger <richard@nod.at>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        Al Viro <viro@ftp.linux.org.uk>, jdike@addtoit.com,
+        Al Viro <viro@zeniv.linux.org.uk>, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] um: fix strrchr problems
+Date: Tue, 30 Aug 2011 13:04:04 +0200
+Message-Id: <1314702244-3948-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 10:36:32PM -0700, H. Peter Anvin wrote:
-> On 08/29/2011 03:11 PM, Mark Brown wrote:
+From: Al Viro <viro@ftp.linux.org.uk>
 
-> > New GPIO drivers should really go under drivers/gpiolib and be called
-> > gpio-foo.c.
+[richard@nod.at:
+Fixes:
+/usr/lib/gcc/x86_64-linux-gnu/4.4.5/../../../../lib/libc.a(strrchr.o): In function `rindex':
+(.text+0x0): multiple definition of `strrchr'
 
-> Should they?  It seems a lot more reasonable to have them collected by
-> platform than by type of device (GPIO), *unless* they are shared.
+If both STATIC_LINK and UML_NET_VDE are set to "y" libc's strstr
+may clash with the kernel implementation.
 
-There was some discussion of this, mostly for ARM, the general
-conclusion being that sharing the code improves visibility of things for
-the subsystem maintainer, ensures that the code gets reviewed (and
-updated if things change) by subsystem experts and makes it more likely
-that where there are things that can be shared someone will notice.
+This workaround comes originally from Jeff Dike:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=494995#35
+]
+
+CC: jdike@addtoit.com
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/um/Makefile b/arch/um/Makefile
+index fab8121..c0f712c 100644
+--- a/arch/um/Makefile
++++ b/arch/um/Makefile
+@@ -41,7 +41,7 @@ KBUILD_CPPFLAGS += -I$(srctree)/$(ARCH_DIR)/sys-$(SUBARCH)
+ KBUILD_CFLAGS += $(CFLAGS) $(CFLAGS-y) -D__arch_um__ -DSUBARCH=\"$(SUBARCH)\" \
+ 	$(ARCH_INCLUDE) $(MODE_INCLUDE) -Dvmap=kernel_vmap	\
+ 	-Din6addr_loopback=kernel_in6addr_loopback \
+-	-Din6addr_any=kernel_in6addr_any
++	-Din6addr_any=kernel_in6addr_any -Dstrrchr=kernel_strrchr
+ 
+ KBUILD_AFLAGS += $(ARCH_INCLUDE)
+ 
+-- 
+1.7.6.1
+
