@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1H3K4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 06:56:00 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36381 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab1H3Kz7 (ORCPT
+	id S1753411Ab1H3K7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 06:59:00 -0400
+Received: from nm5.bullet.mail.ukl.yahoo.com ([217.146.182.226]:20406 "HELO
+	nm5.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753193Ab1H3K66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 06:55:59 -0400
+	Tue, 30 Aug 2011 06:58:58 -0400
+X-Yahoo-Newman-Id: 646206.57629.bm@omp1013.mail.ukl.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.de;
+  h=DKIM-Signature:X-Yahoo-Newman-Property:X-YMail-OSG:X-Yahoo-SMTP:Received:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
+  b=hnsIE/MbwX6X+zMHjuizKZB4BnoiZgO1zGkZVBf1Llr8vzLA5jfMZ0uDbu1+izQcojivKyGIXn5Hx7DWzjJt9rJDfNypxvqYMK1v3QyvRK757y7TyymB310FtaUXgjrvVZgq9w1OekhX4WtYOgwO4EVb6TyGBD40r2GvM2L/TUs=  ;
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ORNBAKsVM1mO1tXcisc6YghWPkHHB4MSboXtAkk0vGzbsZt
+ VMkO7J1DLRRXUyMYVIz7p72g4zcGKbU31sCyzwSlJIe2wwOvCFFUOd6W1x6_
+ .ajXu057QIqEGtUqCwp9f4Qn7ZK7aVZdZbJ_J6Goyyo8BStlOEZ.Wnfhrpi2
+ GTEAfVioWKyuy_VGKzUyohXgeXUl7WO2pvfQ6n.6YPQzauOqgatgSwnILpkS
+ 8zPlq2UFThQjLnhgIQRhipwT.PShibRrddGfEwTmOjVdCAy.lIMj._gB0Ohg
+ AmmwTVXRFluDMEFEmI5IFP9iLJU1tZaNZmxzAGMx.w_293dgLre3ahm7woEx
+ myhoiMMpT.NM1jaqlLeazPll.Mr71xFR2SVGREKg5yKNPibJd
+X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
+From: Marek Lindner <lindner_marek@yahoo.de>
+To: b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [B.A.T.M.A.N.] [PATCH 05/24] batman-adv: Remove unnecessary OOM logging messages
+Date: Tue, 30 Aug 2011 12:58:41 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.39-1-amd64; KDE/4.6.3; x86_64; ; )
+Cc: Joe Perches <joe@perches.com>, Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org
+References: <cover.1314650069.git.joe@perches.com> <c469b9fb57fb75547e3e9092ebfdb3a79480b28f.1314650069.git.joe@perches.com>
+In-Reply-To: <c469b9fb57fb75547e3e9092ebfdb3a79480b28f.1314650069.git.joe@perches.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <4E5CAD18.1020907@tao.ma>
-References: <CABqxG0e6EXfDUEeno6e70Orgye+0EGq6x7qsFJ2q8Og3vt+aiA@mail.gmail.com>
-	<4E5CAD18.1020907@tao.ma>
-Date: Tue, 30 Aug 2011 12:55:58 +0200
-Message-ID: <CA+icZUWoEEBQke2moQpr_XQNQ-wySSuN9-bssS8yAt2yBJT0bg@mail.gmail.com>
-Subject: Re: lockdep warnings - possible circular locking
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Tao Ma <tm@tao.ma>
-Cc: Dave Young <hidave.darkstar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108301258.41945.lindner_marek@yahoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 11:27 AM, Tao Ma <tm@tao.ma> wrote:
-> Hi Dave,
-> On 08/30/2011 05:09 PM, Dave Young wrote:
->> Hi,
->>
->> I got following lockdep warnings, ext4 related?
-> This is already reported by many guys. Ted has a fix for it.
-> Please search the mail with subject
-> [URGENT PATCH] ext4: fix potential deadlock in ext4_evict_inode()
->
-> Thanks
-> Tao
->>
+On Monday, August 29, 2011 23:17:24 Joe Perches wrote:
+> Removing unnecessary messages saves code and text.
+> 
+> Site specific OOM messages are duplications of a generic MM
+> out of memory message and aren't really useful, so just
+> delete them.
 
-[ CC Theodore Ts'o ]
+Applied in our tree.
 
-Updated Kernel Bug #41682 with your informations.
-
-- Sedat -
-
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=41682
+Thanks,
+Marek
