@@ -1,82 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab1H3HSD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:18:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33377 "EHLO mail.skyhub.de"
+	id S1751938Ab1H3HXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:23:39 -0400
+Received: from swan.madduck.net ([80.68.90.58]:49815 "EHLO swan.madduck.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab1H3HR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:17:59 -0400
-Date: Tue, 30 Aug 2011 09:17:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Peter Zijlstra <peterz@infradead.org>, Arnaud Lacombe <lacombar@gmail.com>,
-        David Airlie <airlied@redhat.com>,
-        Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: Kernel almost hangs when CONFIG_DRM_RADEON=y
-Message-ID: <20110830071755.GB15134@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Arnaud Lacombe <lacombar@gmail.com>,
-	David Airlie <airlied@redhat.com>,
-	Michel =?utf-8?Q?D=C3=A4nzer?= <michel@daenzer.net>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org, Pavel Ivanov <paivanof@gmail.com>,
-	Alex Deucher <alexdeucher@gmail.com>,
-	Dave Airlie <airlied@gmail.com>, linux-kbuild@vger.kernel.org
-References: <20110829141612.GB2025@gere.osrc.amd.com>
- <1790021880.1347470.1314632844694.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
- <20110829155501.GC2025@gere.osrc.amd.com>
- <CACqU3MVZek9TCcZEAbJXZqy9JZs3cbzNVJpwjOhS8OoKqH_YZQ@mail.gmail.com>
- <20110829171750.GD2025@gere.osrc.amd.com>
- <1314641813.2816.133.camel@twins>
- <20110829211439.GA4488@liondog.tnic>
- <20110830020828.GA14915@khazad-dum.debian.net>
+	id S1750742Ab1H3HXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 03:23:37 -0400
+X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 03:23:37 EDT
+Date: Tue, 30 Aug 2011 09:14:07 +0200
+From: martin f krafft <madduck@madduck.net>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Abysmal I/O scheduling with dm-crypt
+Message-ID: <20110830071407.GA8165@albatross.gern.madduck.net>
+Mail-Followup-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
 Content-Disposition: inline
-In-Reply-To: <20110830020828.GA14915@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Motto: Keep the good times rollin'
+X-OS: Debian GNU/Linux wheezy/sid kernel 3.0.0-1-amd64 x86_64
+X-Spamtrap: madduck.bogus@madduck.net
+X-Subliminal-Message: debian/rules!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 11:08:28PM -0300, Henrique de Moraes Holschuh wrote:
-> On Mon, 29 Aug 2011, Borislav Petkov wrote:
-> > So, hypothetically speaking, hpa suggested then that we could pass
-> > firmware blobs over the linked list setup_data thing in the real-mode
-> > kernel header and parse_setup_data() can look at them and map them
-> > somewhere later for the driver to find. This should be doable because
-> > you're only gonna need a handful of blobs for CPU ucode, network and GPU
-> > if the last is compiled in.
-> > 
-> > I wanted to take a serious look at that for the ucode loading, maybe I
-> > should try to shuffle some time for it...
-> 
-> It would be very useful, yes.
-> 
-> Alternatively, you could extend the initrd format to have a firmware
-> directory appended after the filesystem image.  ACPI is going to abuse
-> the initrd in just that way to override ACPI tables very soon (patches
-> have been already submitted to linux-acpi),
 
-.. lemme guess: they didn't put the correct tables in the BIOS in the
-first place and now it is too late for a BIOS fix and want to shuffle in
-all those "fixes" through initrd ontop of ACPI. Oh boy, do I love all
-the ACPI crap stories :).
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> so if a more structured and extensible way to piggy-back early-init
-> data in the initrd is needed, it would be good to bring that to the
-> table NOW.
+Dear list,
 
-Yeah, that's not more than an idea right now, I haven't even started
-playing with it. If it turns out to be more superior, it could be reused
-for other things too but right now it's too early to tell.
+for years I have been plagued by the following problem, and it is
+almost out of last resort that I am turning to you. I have searched
+the web over the months. There is talk of dirty_ratios, of caches,
+and of write throttling, but I have not been able to find a way to
+fix the problem.
 
--- 
-Regards/Gruss,
-    Boris.
+I am using encrypted filesystems (dm-crypt) and the 3.0.0 kernel.
+Underneath might be a RAID1 or a fast SSD. On top is usually LVM
+with a few LVs holding the system.
+
+Whenever an I/O-intensive task starts, such as:
+
+  - tar -c or -x
+  - dd
+  - rsync
+  - notmuch
+  - =E2=80=A6
+
+the system becomes unusable for several seconds at a time, at least
+once or twice per minute. What seems to happen is that Vim or the
+Shell or Firefox or whatever else completely blocks, waiting for
+I/O, but Linux is not satisfying those I/O requests because it's
+busy servicing the aforementioned I/O-intensive task. As a result,
+Vim or the Shell or Firefox or whatever do not update, forcing me to
+wait for them to get an I/O service slot.
+
+People not running dm-crypt seem unable to reproduce this problem,
+making me think that it must be due to dm-crypt, and I wouldn't find
+it hard to imagine, because dm-crypt basically shields the
+I/O-scheduler of the kernel, doesn't it? Worse, it probably doesn't
+make any effort of scheduling I/O itself. Note: I know very little
+about the internals, so please correct me if I am wrong.
+
+I am wondering if this is the case, and if so, what could be done
+about it.
+
+Do you have any ideas and/or concrete suggestions?
+
+PS: http://bugs.debian.org/635768 was the latest incarnation of my
+    attempts to solve this problem (I accidentally wrote notmuch
+    when I mean to write awesome in that report=E2=80=A6).
+
+--=20
+martin | http://madduck.net/ | http://two.sentenc.es/
+=20
+"gilmour's guitar sounds good
+ whether you've got a bottle of cider in your hand
+ or a keyboard and a mouse."
+                                                -- prof. bruce maxwell
+=20
+spamtraps: madduck.bogus@madduck.net
+
+--5mCyUwZo2JvN/JJP
+Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
+Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQLvBAEBCgDZBQJOXI28wBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
+aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
+bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
+NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
+MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xInK
+EACpQlFs2QFBEyXAg5oIxRaAM1fdYMDhN6BlZhCDKrbR5GPjJ7Lo6s0Rx/CsG27f
++DEzI1/VAxZc8YJIuxWDJ+EhYsb4UEnxaZSOduTlJ8ZSGzSfbMlbvVkc75bUBEym
+Jl9Bl4V0tmzbaGt1pETJDEnoTF5F8NsjevfZ33py98fEBPgE3nCnJNvp8ywd7/Nu
+CZHzebeFqyYrmhYnCwDOsXa9brTI7IDPcXPqaQBAVfeQab8AzLFCUpRQR+zO+nXH
+DiJqi3JO7s8/zWlx9DsloasdUa9rerwyzgCKHZc8PY+wZ55tSB9jiP2oQe1qgvAQ
+yjQickC5j8LJzvjUdwZANh/9MAHSgXphsxphfRujs/k4Fqhn/BJH+uhrWNeXmJM2
+Fi35PSAozaxtapFnwmn5LwHnBufgAofzvSQ76Tcbp8NPVg3ktmnRzCqZwtrdJtOL
+8SBf2UvYsetezUMe2dAfpWlC9KbSRupLBgddVJq8EHvOyLURucRcf07axIE6pyXa
+Z4Lk5SBMHPF0ZGtlWGKXfjodST3OnRR5HQkeONJmqR7Ap/xnHy+O9diresFIDy9q
+68XwP09MLPmn3eIw9fHJmxnfl2Wn0il4HgjPXEmLJBszhOKfoykgZOVsHLW/ZTxL
+NYJw5N7eZImvfRnd4gOxdqm3sWmIB6mNKOrsxQFV+j73oA==
+=99X1
+-----END PGP SIGNATURE-----
+
+--5mCyUwZo2JvN/JJP--
+
