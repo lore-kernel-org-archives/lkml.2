@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab1H3Sjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 14:39:51 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:50575 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab1H3Sjd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 14:39:33 -0400
-Date: Tue, 30 Aug 2011 14:39:28 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: x86@kernel.org, Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [v2 2/4] platform: (TS-5500) add GPIO support
-Message-ID: <20110830143928.4696ec2a@v0nbox>
-In-Reply-To: <20110829221132.GB26846@sirena.org.uk>
-References: <1314402027-11293-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1314402027-11293-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<20110829221132.GB26846@sirena.org.uk>
-Organization: Savoir-faire Linux Inc.
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756081Ab1H3Slb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 14:41:31 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49249 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756023Ab1H3Sl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 14:41:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [Bug #41092] INFO: trying to register non-static key (sync_inodes_sb)
+Date: Tue, 30 Aug 2011 20:43:18 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <Sm7qbRR0zn.A.yAG.LepWOB@chimera> <gUVi6eNP8RE.A.nQG.fepWOB@chimera> <1314705207.1989.6.camel@x61.thuisdomein>
+In-Reply-To: <1314705207.1989.6.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201108302043.18394.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011 23:11:33 +0100,
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Aug 26, 2011 at 07:40:25PM -0400, Vivien Didelot wrote:
-> > +	bitno = line_to_bit_map[offset];
-> > +
-> > +	mutex_lock(&drvdata->gpio_lock);
-> > +	byte = inb(ioaddr);
-> > +	mutex_unlock(&drvdata->gpio_lock);
+On Tuesday, August 30, 2011, Paul Bolle wrote:
+> On Sun, 2011-08-28 at 21:01 +0200, Rafael J. Wysocki wrote:
+> > Please verify if it still should
+> > be listed and let the tracking team know (either way).
 > 
-> Do you really need the lock to do a read?
+> From comment #2:
+> > [...] please note that the 3.0.1 kernel I
+> > triggered this issue with seems to be the first I ran on this machine that has
+> > CONFIG_LOCKDEP set. So on this machine this issue - if it's more than a one
+> > time goof - would never have showed up in the logs [...].
+> 
+> At this moment I see little reason to track this bug entry as a
+> regression.
 
-Is there any chance for this function to be preempted before reading the
-register, allowing a call to ts5500_gpio_direction_output to occur
-before ts5500_gpio_get is completed?
+OK, I'll drop it from the list, then (sorry for the misplaced message BTW).
 
-	Vivien.
+Thanks,
+Rafael
