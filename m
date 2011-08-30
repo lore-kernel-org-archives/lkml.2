@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1H3Klj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 06:41:39 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53107 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab1H3Kli (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 06:41:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 30 Aug 2011 19:34:06 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Brestic <abrestic@google.com>, Ying Han <yinghan@google.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Revert "memcg: add memory.vmscan_stat"
-Message-Id: <20110830193406.361d758a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110830101726.GD13061@redhat.com>
-References: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110808124333.GA31739@redhat.com>
-	<20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110829155113.GA21661@redhat.com>
-	<20110830101233.ae416284.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110830070424.GA13061@redhat.com>
-	<20110830162050.f6c13c0c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110830084245.GC13061@redhat.com>
-	<20110830175609.4977ef7a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110830101726.GD13061@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753239Ab1H3Kmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 06:42:44 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:57215 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750768Ab1H3Kml convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 06:42:41 -0400
+From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+To: Julia Lawall <julia@diku.dk>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 30 Aug 2011 16:12:31 +0530
+Subject: RE: [PATCH] drivers/scsi/mpt2sas/mpt2sas_transport.c: add missing
+ sas_phy_free
+Thread-Topic: [PATCH] drivers/scsi/mpt2sas/mpt2sas_transport.c: add missing
+ sas_phy_free
+Thread-Index: AcxXUUiSii7sTcqcRJOcXtfwg8N1FwPsCYkQ
+Message-ID: <A6888A6805518E4EA4AF7072A28264A6042AD54391@inbmail02.lsi.com>
+References: <1312975933-18277-1-git-send-email-julia@diku.dk>
+In-Reply-To: <1312975933-18277-1-git-send-email-julia@diku.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 12:17:26 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+The patch seem to be fine. Please consider this patch as Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
 
-> On Tue, Aug 30, 2011 at 05:56:09PM +0900, KAMEZAWA Hiroyuki wrote:
-
-> > > > > I don't get why this has to be done completely different from the way
-> > > > > we usually do things, without any justification, whatsoever.
-> > > > > 
-> > > > > Why do you want to pass a recording structure down the reclaim stack?
-> > > > 
-> > > > Just for reducing number of passed variables.
-> > > 
-> > > It's still sitting on bottom of the reclaim stack the whole time.
-> > > 
-> > > With my proposal, you would only need to pass the extra root_mem
-> > > pointer.
-> > 
-> > I'm sorry I miss something. Do you say to add a function like
-> > 
-> > mem_cgroup_record_reclaim_stat(memcg, root_mem, anon_scan, anon_free, anon_rotate,
-> >                                file_scan, file_free, elapsed_ns)
-> > 
-> > ?
-> 
-> Exactly, though passing it a stat item index and a delta would
-> probably be closer to our other statistics accounting, i.e.:
-> 
-> 	mem_cgroup_record_reclaim_stat(sc->mem_cgroup, sc->root_mem_cgroup,
-> 				       MEM_CGROUP_SCAN_ANON, *nr_anon);
-> 
-> where sc->mem_cgroup is `victim' and sc->root_mem_cgroup is `root_mem'
-> from hierarchical_reclaim.  ->root_mem_cgroup might be confusing,
-> though.  I named it ->target_mem_cgroup in my patch set but I don't
-> feel too strongly about that.
-> 
-> Even better would be to reuse enum vm_event_item and at one point
-> merge all the accounting stuff into a single function and have one
-> single set of events that makes sense on a global level as well as on
-> a per-memcg level.
-> 
-> There is deviation and implementing similar things twice with slight
-> variations and I don't see any justification for all that extra code
-> that needs maintaining.  Or counters that have similar names globally
-> and on a per-memcg level but with different meanings, like the rotated
-> counter.  Globally, a rotated page (PGROTATED) is one that is moved
-> back to the inactive list after writeback finishes.  Per-memcg, the
-> rotated counter is our internal heuristics value to balance pressure
-> between LRUs and means either rotated on the inactive list, activated,
-> not activated but countes as activated because of VM_EXEC etc.
-> 
-> I am still for reverting this patch before the release until we have
-> this all sorted out.  I feel rather strongly that these statistics are
-> in no way ready to make them part of the ABI and export them to
-> userspace as they are now.
-> 
-
-How about fixing interface first ? 1st version of this patch was 
-in April and no big change since then.
-I don't want to be starved more.
-
-Thanks,
--Kame
+Regards,
+Nagalakshmi
 
 
+-----Original Message-----
+From: Julia Lawall [mailto:julia@diku.dk] 
+Sent: Wednesday, August 10, 2011 5:02 PM
+To: James E.J. Bottomley
+Cc: kernel-janitors@vger.kernel.org; Desai, Kashyap; James Bottomley; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/scsi/mpt2sas/mpt2sas_transport.c: add missing sas_phy_free
+
+From: Julia Lawall <julia@diku.dk>
+
+In each case, sas_phy_add has not yet been successfully applied, so use
+sas_phy_free to free phy.
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/scsi/mpt2sas/mpt2sas_transport.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+index 15c7980..762f05e 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+@@ -857,6 +857,7 @@ mpt2sas_transport_add_host_phy(struct MPT2SAS_ADAPTER *ioc, struct _sas_phy
+ 	    &mpt2sas_phy->identify))) {
+ 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
+ 		    ioc->name, __FILE__, __LINE__, __func__);
++		sas_phy_free(phy);
+ 		return -1;
+ 	}
+ 	phy->identify = mpt2sas_phy->identify;
+@@ -923,6 +924,7 @@ mpt2sas_transport_add_expander_phy(struct MPT2SAS_ADAPTER *ioc, struct _sas_phy
+ 	    &mpt2sas_phy->identify))) {
+ 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
+ 		    ioc->name, __FILE__, __LINE__, __func__);
++		sas_phy_free(phy);
+ 		return -1;
+ 	}
+ 	phy->identify = mpt2sas_phy->identify;
 
