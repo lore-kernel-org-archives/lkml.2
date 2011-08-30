@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab1H3NtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 09:49:08 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:48263 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754174Ab1H3NtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 09:49:02 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: LESPajcVM1njou.hFQMvueaumMJJOJb7agiy4RanTSERrZv
- Uncx7tM4IJTvs3UfxhauMZhMrXai3Xzo7X1oqpYXLX9lcBFvqeUy.h_gQXzg
- N4Qd5oT5YobaZlYFU5JmT_vmAYuH8wQMuDd9T2xcPAoCX41zcTWIkrdpR_C6
- MWWd88WrRsHUxs0Bn_q3b1NqMlgeVsEnKgyz3.D2LfvNHBz6WePHorYDL3q6
- mPRnU7TQ5MS2LIDR2YkPWSTZnlLVd7F3n3fVVnd5sooxJjDeSm94B1m74lbG
- CQRf8p85AyfAUrsy.im_QkJ9DhZpLntDAKyiAwk7TP53bayU0tCbGKHmcN.Y
- x5J1PsGpcuMoVo08T3Nu9zqNg5wnVaotOXqFDrRlHjsqw9iwxZwv66frhut9
- nGAYWz0yQYJCmEKRPGhCLIJWjmQ--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 30 Aug 2011 08:48:59 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jason Liu <jason.hui@linaro.org>
-cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH] slub: doc: update the slabinfo.c file path
-In-Reply-To: <1314687126-23252-1-git-send-email-jason.hui@linaro.org>
-Message-ID: <alpine.DEB.2.00.1108300848480.19226@router.home>
-References: <1314687126-23252-1-git-send-email-jason.hui@linaro.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754282Ab1H3NtP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 09:49:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51534 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754229Ab1H3NtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 09:49:10 -0400
+Date: Tue, 30 Aug 2011 14:49:00 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 6/7] mm: vmscan: Throttle reclaim if encountering too
+ many dirty pages under writeback
+Message-ID: <20110830134900.GC14369@suse.de>
+References: <1312973240-32576-1-git-send-email-mgorman@suse.de>
+ <1312973240-32576-7-git-send-email-mgorman@suse.de>
+ <20110818165428.4f01a1b9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110818165428.4f01a1b9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011, Jason Liu wrote:
+On Thu, Aug 18, 2011 at 04:54:28PM -0700, Andrew Morton wrote:
+> On Wed, 10 Aug 2011 11:47:19 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > The percentage that must be in writeback depends on the priority. At
+> > default priority, all of them must be dirty. At DEF_PRIORITY-1, 50%
+> > of them must be, DEF_PRIORITY-2, 25% etc. i.e. as pressure increases
+> > the greater the likelihood the process will get throttled to allow
+> > the flusher threads to make some progress.
+> 
+> It'd be nice if the code comment were to capture this piece of implicit
+> arithmetic.  After all, it's a magic number and magic numbers should
+> stick out like sore thumbs.
+> 
+> And.. how do we know that the chosen magic numbers were optimal?
 
-> slabinfo.c has been moved from Documentaion/vm/ to
-> tools/slub/ by commit:0d24db337e6d81c0c620ab65cc6947bd6553f742
+Good question. The short answer "we don't know but it's not important
+to get this particular decision perfect because the real throttling
+should happen earlier".
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Now the long answer;
 
+For the value to be used, pages under writeback must be reaching the
+end of the LRU. This implies that the rate of page consumption is
+exceeding the writing speed of the backing storage. Regardless of
+what decision is made, the rate of page allocation must be reduced
+as the the system is already in a sub-optimal state of requiring more
+resources than are available.
+
+The values are based on a simple expontial backoff function with useful
+ranges of DEF_PRIORITY to DEF_PRIORITY-2 which is the point where
+"kswapd is getting into trouble". However, any decreasing function
+within that range is sufficient because while there might be an optimal
+choice, it makes little difference overall as the decision is made
+too late with no guarantee the process doing the dirtying is throttled.
+
+The truly optimal decision is to throttle writers to slow storage
+earlier in balance_dirty_pages() and have dirty_ratio scaled
+proportional to the estimate writeback speed of the underlying storage
+but we do not have that yet. This patches throttling decision is
+fairly close to the best we can do from reclaim context.
+
+-- 
+Mel Gorman
+SUSE Labs
