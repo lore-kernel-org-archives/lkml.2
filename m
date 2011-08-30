@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab1H3SBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 14:01:25 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53931 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab1H3SBW (ORCPT
+	id S1755941Ab1H3SEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 14:04:52 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:45173 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab1H3SEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 14:01:22 -0400
-Date: Tue, 30 Aug 2011 13:55:02 -0400 (EDT)
-Message-Id: <20110830.135502.179848097213434762.davem@davemloft.net>
-To: kaber@trash.net
-Cc: joe@perches.com, bart.de.schuymer@pandora.be, wensong@linux-vs.org,
-        horms@verge.net.au, ja@ssi.bg, shemminger@linux-foundation.org,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lvs-devel@vger.kernel.org
-Subject: Re: [PATCH 06/24] netfilter: Remove unnecessary OOM logging
- messages
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4E5CDBAA.6040001@trash.net>
-References: <cover.1314650069.git.joe@perches.com>
-	<13c1c12486cae409dfa5254b1435e660f2b17e05.1314650069.git.joe@perches.com>
-	<4E5CDBAA.6040001@trash.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 30 Aug 2011 10:55:11 -0700 (PDT)
+	Tue, 30 Aug 2011 14:04:51 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjzYQEROTxg==
+X-RZG-CLASS-ID: mo00
+Date: Tue, 30 Aug 2011 20:04:34 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Greg KH <greg@kroah.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 0000/0046] Staging: hv: Driver cleanup
+Message-ID: <20110830180434.GA10090@aepfle.de>
+References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
+ <20110830124856.GA17520@aepfle.de>
+ <6E21E5352C11B742B20C142EB499E048081B5363@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110830174330.GE22868@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110830174330.GE22868@kroah.com>
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick McHardy <kaber@trash.net>
-Date: Tue, 30 Aug 2011 14:46:34 +0200
+On Tue, Aug 30, Greg KH wrote:
 
-> On 29.08.2011 23:17, Joe Perches wrote:
->> Removing unnecessary messages saves code and text.
->> 
->> Site specific OOM messages are duplications of a generic MM
->> out of memory message and aren't really useful, so just
->> delete them.
+> > > In my test system, the IDE drives are now discovered twice, once by
+> > > hv_storvsc and once by libata:
+> > 
+> > This is a known (old problem). The way this was handled earlier was to have the 
+> > modprobe rules in place to setup a dependency that would force the load of the
+> > hyper-v driver (blk / stor) ahead of the native driver and if the load of the PV
+> > driver succeeded, we would not load the native driver. In sles11 sp1, we had a rule for 
+> > loading blkvsc. With the merge of blkvsc and storvsc, the only change we need to make
+> > is to have storvsc in the rule (instaed of blkvsc).
 > 
-> Looks good to me. Do you want me to apply this patch or are you
-> intending to have the entire series go through Dave?
+> Why do we need a rule at all?  Shouldn't the module dependancy stuff
+> handle the autoloading of the drivers properly from the initrd now that
+> the hotplug logic is hooked up properly?
 
-I'm happy with subsystem folks taking things in if they want, the
-B.A.T.M.A.N. guys did this earlier today for example.
+There is no plan to load hv_vmbus (or xen-platform-pci) earlier than
+native drivers.  That was the purpose of the modprobe.conf files. Now
+that there is a vmbus, that fact could be checked before any other
+attempt to load drivers is made and hv_vmbus should be loaded and all of
+its devices have to be probed manually by modprobe `cat modulealias`.
+
+> Or is the hotplug code not working correctly?
+
+There is nothing to hotplug. hv_vmbus has to be loaded first so that it
+can take over the devices. But it seems that there is no shutdown of the
+emulated hardware, thats why the disk "sda" is shown twice.
+
+I spot a flaw here.
+KY, can hv_vmbus shutdown emulated hardware? At least the disks, because
+cdroms are appearently still be handled by native drivers?
+
+Olaf
