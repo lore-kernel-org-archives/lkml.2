@@ -1,70 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab1H3HGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:06:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43014 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab1H3HGc convert rfc822-to-8bit (ORCPT
+	id S1752222Ab1H3HHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:07:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:29793 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab1H3HHK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:06:32 -0400
+	Tue, 30 Aug 2011 03:07:10 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=VyqK+GV8yrZLXQEl5E7TOt0rzJbQKPiaezNSGvXEs0CoIeNHRZ/JsuvEnmuTrcmcD
+	3xqLJD4esHBjZrD0kN3CQ==
 MIME-Version: 1.0
-In-Reply-To: <4E5C6ADA.3030409@zytor.com>
-References: <4E582577.2060805@zytor.com>
-	<CA+55aFzkpt48EPdVrs3aoALXnqAwqHfUCeZOpvf874O8Y8+POQ@mail.gmail.com>
-	<4E582EAA.1040108@zytor.com>
-	<CA+55aFxdRMxWLh1B_8v29qFafM425uH7kbYRfqoPe3TpVwOx-w@mail.gmail.com>
-	<CA+55aFyVmA_26LYaJH8dnFhwo7LWM6Ck7qFxCQvnROEHSuV_aA@mail.gmail.com>
-	<4E584492.5090406@zytor.com>
-	<CA+55aFw8+fkwjgAYOzxnO1HY3uCBCuf+N6z1XX2m=FhSjD5Wqg@mail.gmail.com>
-	<CAMuHMdXhdg6GuJqSjK5SdKBrBzZwGYus2LH1yqgkSnSEp8ZXyg@mail.gmail.com>
-	<CA+55aFzuY+U0nf58-9P5CFaYAPKMQ3fQMGGUUkjbxRRCK7=A3Q@mail.gmail.com>
-	<CAGZ=bqKjnsEKz_CxcW+wRoCL_CY-kipedf2wB=BVUWRB0427tw@mail.gmail.com>
-	<4E5C6ADA.3030409@zytor.com>
-Date: Tue, 30 Aug 2011 09:06:31 +0200
-X-Google-Sender-Auth: oCORIwKoU-bvTOBrJyKy5u7He6E
-Message-ID: <CAMuHMdUJVRNPcBW60UZ+cwV75T9+xmONzTrCuDCe_dDUzg2kKg@mail.gmail.com>
-Subject: Re: RFD: x32 ABI system call numbers
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kyle Moffett <kyle@moffetthome.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110829210508.GA1599@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+	<1306909519-7286-3-git-send-email-hannes@cmpxchg.org>
+	<CALWz4iwChnacF061L9vWo7nEA7qaXNJrK=+jsEe9xBtvEBD9MA@mail.gmail.com>
+	<20110811210914.GB31229@cmpxchg.org>
+	<CALWz4iwJfyWRineMy+W02YBvS0Y=Pv1y8Rb=8i5R=vUCfrO+iQ@mail.gmail.com>
+	<CALWz4iwRXBheXFND5zq3ze2PJDkeoxYHD1zOsTyzOe3XqY5apA@mail.gmail.com>
+	<20110829190426.GC1434@cmpxchg.org>
+	<CALWz4ix1X8=L0HzQpdGd=XVbjZuMCtYngzdG+hLMoeJJCUEjrg@mail.gmail.com>
+	<20110829210508.GA1599@cmpxchg.org>
+Date: Tue, 30 Aug 2011 00:07:07 -0700
+Message-ID: <CALWz4ixH-7c-fEUAHiyf83KyO9SsRzdUm-u+wm2_Ty=xvU_NyA@mail.gmail.com>
+Subject: Re: [patch 2/8] mm: memcg-aware global reclaim
+From: Ying Han <yinghan@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 06:45, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/29/2011 07:16 PM, Kyle Moffett wrote:
->> The goal of x32 as I understand it is to allow 32-bit x86 programs to
->> use all the nifty extra registers and faster instructions (IE: syscall)
->> without needing to deal with the 2x memory overhead of 64-bit
->> pointers.
+On Mon, Aug 29, 2011 at 2:05 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> On Mon, Aug 29, 2011 at 01:36:48PM -0700, Ying Han wrote:
+>> On Mon, Aug 29, 2011 at 12:04 PM, Johannes Weiner <hannes@cmpxchg.org>wrote:
+>> > On Mon, Aug 29, 2011 at 12:22:02AM -0700, Ying Han wrote:
+>> > > > @@ -888,19 +888,21 @@ void mem_cgroup_del_lru_list(struct page *page,
+>> > > > enum lru_list lru)
+>> > > >  {
+>> > > >  >------struct page_cgroup *pc;
+>> > > >  >------struct mem_cgroup_per_zone *mz;
+>> > > > +>------struct mem_cgroup *mem;
+>> > > > ·
+>> > > >  >------if (mem_cgroup_disabled())
+>> > > >  >------>-------return;
+>> > > >  >------pc = lookup_page_cgroup(page);
+>> > > > ->------/* can happen while we handle swapcache. */
+>> > > > ->------if (!TestClearPageCgroupAcctLRU(pc))
+>> > > > ->------>-------return;
+>> > > > ->------VM_BUG_ON(!pc->mem_cgroup);
+>> > > > ->------/*
+>> > > > ->------ * We don't check PCG_USED bit. It's cleared when the "page" is
+>> > finally
+>> > > > ->------ * removed from global LRU.
+>> > > > ->------ */
+>> > > > ->------mz = page_cgroup_zoneinfo(pc->mem_cgroup, page);
+>> > > > +
+>> > > > +>------if (TestClearPageCgroupAcctLRU(pc) || PageCgroupUsed(pc)) {
+>> >
+>> > This PageCgroupUsed part confuses me.  A page that is being isolated
+>> > shortly after being charged while on the LRU may reach here, and then
+>> > it is unaccounted from pc->mem_cgroup, which it never was accounted
+>> > to.
+>> >
+>> > Could you explain why you added it?
+>>
+>> To be honest, i don't have very good reason for that. The PageCgroupUsed
+>> check is put there after running some tests and some fixes seems help the
+>> test, including this one.
+>>
+>> The one case I can think of for page !AcctLRU | Used is in the pagevec.
+>> However, we shouldn't get to the mem_cgroup_del_lru_list() for a page in
+>> pagevec at the first place.
+>>
+>> I now made it so that PageCgroupAcctLRU on the LRU means accounted
+>> to pc->mem_cgroup,
+>>
+>> this is the same logic currently.
+>>
+>> > and !PageCgroupAcctLRU on the LRU means accounted to
+>> > and babysitted by root_mem_cgroup.
+>>
+>> this seems to be different from what it is now, especially for swapcache
+>> page. So, the page here is linked to root cgroup LRU or not?
+>>
+>> Anyway, the AcctLRU flags still seems confusing to me:
+>>
+>> what this flag tells me is that whether or not the page is on a PRIVATE lru
+>> and being accounted, i used private here to differentiate from the per zone
+>> lru, where it also has PageLRU flag.  The two flags are separate since pages
+>> could be on one lru not the other ( I guess ) , but this is changed after
+>> having the root cgroup lru back. For example, AcctLRU is used to keep track
+>> of the accounted lru pages, especially for root ( we didn't account the
+>> !Used pages to root like readahead swapcache). Now we account the full size
+>> of lru list of root including Used and !Used, but only mark the Used pages
+>> w/ AcctLRU flag.
+>>
+>> So in general, i am wondering we should be able to replace that eventually
+>> with existing Used and LRU bit.  Sorry this seems to be something we like to
+>> consider later, not necessarily now :)
+>
+> I have now the following comment in mem_cgroup_lru_del_list():
+>
+>        /*
+>         * root_mem_cgroup babysits uncharged LRU pages, but
+>         * PageCgroupUsed is cleared when the page is about to get
+>         * freed.  PageCgroupAcctLRU remembers whether the
+>         * LRU-accounting happened against pc->mem_cgroup or
+>         * root_mem_cgroup.
+>         */
+>
+> Does that answer your question?  If not, please tell me, so I can fix
+> the comment :-)
 
-Good. IIRC, the PPC people were thinking about something similar back in 2007,
-but it hasn't materialized yet.
+Sorry, not clear to me yet :(
 
-> That is the major goal. Â A minor goal is to bring x86-64 goodness to
-> those who have an (irrational) fear of 64 bits thinking it is a major
-> porting effort. Â Thus, *source-level* porting effort matters, but it is
-> completely subordinate to the major goal.
+Is this saying that we can not differentiate the page linked to root
+but not charged vs
+page linked to memcg which is about to be freed.
 
->From my experience, if the source code is not 64-bit clean, it will probably
-be a major hassle to make it cope with changed time_t and off_t and other traps
-of that kind...
+If that is the case, isn't the page being removed from lru first
+before doing uncharge (ClearPageCgroupUsed) ?
 
-As a first step, gcc should start enabling -Wall by default ;-)
-And add a -Wcast option, as grepping for (C-style) casts is way too difficult...
+>
+>> > Always.  Which also means that before_commit now ensures an LRU
+>> > page is moved to root_mem_cgroup for babysitting during the
+>> > charge, so that concurrent isolations/putbacks are always
+>> > accounted correctly.  Is this what you had in mind?  Did I miss
+>> > something?
+>>
+>> In my tree, the before->commit->after protocol is folded into one function.
+>> I didn't post it since I know you also have patch doing that.  So guess I
+>> don't understand why we need to move the page to root while it is gonna be
+>> charged to a memcg by commit_charge shortly after.
+>
+> It is a consequence of your fix that LRU-accounts unused pages to
+> root_mem_cgroup upon lru-add, and thus deaccounts !PageCgroupAcctLRU
+> from root_mem_cgroup unconditionally upon lru-del.
+>
+> Consider the following scenario:
+>
+>        1. page with multiple mappings swapped out.
+>
+>        2. one memcg faults the page, then unmaps it.  The page is
+>        uncharged, but swap-freeing fails due to the other ptes, and
+>        the page stays lru-accounted on the memcg it's no longer
+>        charged to.
 
-Gr{oetje,eeting}s,
+I agree that a page could be ending up on a memcg-lru (AcctLRU) but
+not charged (!Used). But not sure
+if the case above is true or not, since we don't uncharge a page which
+marked as SwapCache until the
+page is removed from the swapcache.
 
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
+One case which we might change the owner of a page while it is linked
+on lru is calling reuse_swap_page() under write fault, so the page is
+uncharged after removing from
+swapcache while linked in the old memcg lru. It will be adjust by
+commit_charge_swapin() later.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+>        3. another memcg faults the page.  before_commit must
+>        lru-unaccount from pc->mem_cgroup before pc->mem_cgroup is
+>        overwritten.
+>
+>        4. the page is charged.  after_commit does the fixup.
+>
+> Between 3. and 4., a reclaimer can isolate the page.  The old
+> lru-accounting is undone and mem_cgroup_lru_del() does this:
+>
+>        if (TestClearPageCgroupAcctLRU(pc)) {
+>                VM_BUG_ON(!pc->mem_cgroup);
+>                mem = pc->mem_cgroup;
+>        } else
+>                mem = root_mem_cgroup;
+>       mz = page_cgroup_zoneinfo(mem, page);
+>        /* huge page split is done under lru_lock. so, we have no races. */
+>        MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+>
+> The rule is that !PageCgroupAcctLRU means that the page is
+> lru-accounted to root_mem_cgroup.  So when charging, the page has to
+> be moved to root_mem_cgroup until a new memcg is responsible for it.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
+So here we are saying that isolating a page which has be
+mem_cgroup_lru_del().  Isn't the later one does lru-unaccount and also
+list_del(), so is that possible to isolate a page not on lru. Or is
+this caused by not clearing the LRU bit in before_commit?
+
+>
+>> My understanding is that in before_commit, we uncharge the page from
+>> previous memcg lru if AcctLRU was set, then in the commit_charge we update
+>> the new owner of it. And in after_commit we update the memcg lru for the new
+>> owner after linking the page in the lru.
+>
+> Exactly, just that between unaccounting from the old and accounting to
+> the new, someone else may look at the page and has to find it in a
+> sensible state.
+
+Wonder if clearing the PageLRU after before_commit is helpful here.
+
+Thanks
+
+--Ying
+>
