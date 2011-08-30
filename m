@@ -1,119 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab1H3SAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 14:00:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755842Ab1H3SAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 14:00:35 -0400
-Date: Tue, 30 Aug 2011 21:01:04 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Brian King <brking@linux.vnet.ibm.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: Broken pci_block_user_cfg_access interface
-Message-ID: <20110830180104.GA21336@redhat.com>
-References: <20110829150552.GA6851@redhat.com>
- <4E5BB358.3060705@siemens.com>
- <4E5BDEAB.5000405@siemens.com>
- <20110829191858.GA9415@redhat.com>
- <4E5D102B.5010402@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5D102B.5010402@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755963Ab1H3SBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 14:01:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53931 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab1H3SBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 14:01:22 -0400
+Date: Tue, 30 Aug 2011 13:55:02 -0400 (EDT)
+Message-Id: <20110830.135502.179848097213434762.davem@davemloft.net>
+To: kaber@trash.net
+Cc: joe@perches.com, bart.de.schuymer@pandora.be, wensong@linux-vs.org,
+        horms@verge.net.au, ja@ssi.bg, shemminger@linux-foundation.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lvs-devel@vger.kernel.org
+Subject: Re: [PATCH 06/24] netfilter: Remove unnecessary OOM logging
+ messages
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E5CDBAA.6040001@trash.net>
+References: <cover.1314650069.git.joe@perches.com>
+	<13c1c12486cae409dfa5254b1435e660f2b17e05.1314650069.git.joe@perches.com>
+	<4E5CDBAA.6040001@trash.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 30 Aug 2011 10:55:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 11:30:35AM -0500, Brian King wrote:
-> On 08/29/2011 02:18 PM, Michael S. Tsirkin wrote:
-> > On Mon, Aug 29, 2011 at 08:47:07PM +0200, Jan Kiszka wrote:
-> >> On 2011-08-29 17:42, Jan Kiszka wrote:
-> >>> I still don't get what prevents converting ipr to allow plain mutex
-> >>> synchronization. My vision is:
-> >>>  - push reset-on-error of ipr into workqueue (or threaded IRQ?)
-> >>
-> >> I'm starting to like your proposal: I had a look at ipr, but it turned
-> >> out to be anything but trivial to convert that driver. It runs its
-> >> complete state machine under spin_lock_irq, and the functions calling
-> >> pci_block/unblock_user_cfg_access are deep inside this thing. I have no
-> >> hardware to test whatever change, and I feel a bit uncomfortable asking
-> >> Brian to redesign his driver that massively.
-> >>
-> >> So back to your idea: I would generalize pci_block_user_cfg_access to
-> >> pci_block_cfg_access. It should fail when some other site already holds
-> >> the access lock, but it should remain non-blocking - for the sake of ipr.
-> > 
-> > It would be easy to have blocking and non-blocking variants.
-> > 
-> > But
-> > - I have no idea whether supporting sysfs config/reset access
-> >   while ipr is active makes any sense - I know we need it for uio.
+From: Patrick McHardy <kaber@trash.net>
+Date: Tue, 30 Aug 2011 14:46:34 +0200
+
+> On 29.08.2011 23:17, Joe Perches wrote:
+>> Removing unnecessary messages saves code and text.
+>> 
+>> Site specific OOM messages are duplications of a generic MM
+>> out of memory message and aren't really useful, so just
+>> delete them.
 > 
-> I really don't think it makes sense. Ideally, I really think the driver
-> should be able to override the PCI layer reset interface in sysfs.
+> Looks good to me. Do you want me to apply this patch or are you
+> intending to have the entire series go through Dave?
 
-Well, it's always possible for root to do silly things
-like reset the device from userspace using sysfs config
-access. So I don't really see this blocking as necessary:
-broken application with access to a physical device will lead
-to problems.
-
-
-> If a driver
-> is loaded, the driver owns all the state of that device and resetting it without
-> informing the driver is just nasty. Additionally, many devices may have
-> much more complex logic to performing a reset than what PCI defines. With
-> ipr, for example, it needs to get a shutdown command issued to it prior to the
-> reset if at all possible so that the firmware quiesces any I/O it is performing.
-> It also needs additional communication prior to resetting the chip to ensure
-> the firmware is not modifying its persistent error log on the adapter's flash,
-> since resetting the card while the flash segment is being updated will cause
-> the adapter to lose the persistent error log. Post reset, ipr has a bunch
-> of work to do to get the firmware back up and running to a state where it
-> can handle I/O again.
-> 
-> Different ipr chips also have different requirements as to what
-> reset mechanisms defined by PCI actually work. Some chips require BIST to be
-> run via PCI config space, while others require a PCI warm reset, otherwise
-> the card ends up in an unusable state.
-> 
-> So, here is my proposal to resolve this particular issue.
-
-As userspace has no place touching the device while
-ipr is active, there's no issue with ipr at all, is there?
-
-
-> Add a reset function
-> to the pci_driver struct which would allow drivers to override the default reset
-> action. Drivers that can tolerate the existing reset mechanism can simply point
-> to a generic PCI function to perform the reset. Drivers which can't handle their
-> device getting reset, will simply not have a reset function defined. In this case,
-> anyone attempting to issue a reset via sysfs will get an error. If a driver
-> is not loaded, then we can perform the default reset method and fix any device
-> specific oddities with quirks.
-> 
-> I like keeping pci_block_user_cfg_access a non blocking interface. If it can
-> return a failure due to some other caller, it should be easy enough to modify
-> the ipr driver to wait for access to get unblocked before resetting the adapter.
-> 
-> Thanks,
-> 
-> Brian
-
-There shouldn't be other callers though, should there?
-So it might be enough to fail gracefully (to make debugging
-easier) rather than retry.
-
-> -- 
-> Brian King
-> Linux on Power Virtualization
-> IBM Linux Technology Center
-> 
+I'm happy with subsystem folks taking things in if they want, the
+B.A.T.M.A.N. guys did this earlier today for example.
