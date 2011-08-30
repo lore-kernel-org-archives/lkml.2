@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab1H3ESO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 00:18:14 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49060 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab1H3ESJ (ORCPT
+	id S1752312Ab1H3EcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 00:32:25 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:30512 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab1H3EcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 00:18:09 -0400
-From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ruslan Pisarev <ruslan@rpisarev.org.ua>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ilya Gorskin <Revent82@gmail.com>,
-        Joe Perches <joe@perches.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Arnd Bergmann <arnd@arndb.de>,
-        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org,
-        "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH v3 03/18] Staging: cx25821: Move EXPORT_SYMBOL() to the right place
-Date: Tue, 30 Aug 2011 12:16:58 +0800
-Message-Id: <1314677833-4689-4-git-send-email-leonidsbox@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
-References: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
+	Tue, 30 Aug 2011 00:32:24 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Tue, 30 Aug 2011 00:32:23 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] Kbuild: allow code re-use across different directories
+In-reply-to: <CACqU3MVrSV-Qp7mC4iN_viMHz=2-cGPaqNY04eokYkVoE_pSuw@mail.gmail.com>
+Message-id: <alpine.LFD.2.00.1108300028470.20358@xanadu.home>
+References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+ <CACqU3MVrSV-Qp7mC4iN_viMHz=2-cGPaqNY04eokYkVoE_pSuw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move EXPORT_SYMBOL(cx25821_set_gpiopin_direction) to the right place.
+On Mon, 29 Aug 2011, Arnaud Lacombe wrote:
 
-Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
----
- drivers/staging/cx25821/cx25821-core.c |    1 -
- drivers/staging/cx25821/cx25821-gpio.c |    1 +
- 2 files changed, 1 insertions(+), 1 deletions(-)
+> On Fri, Aug 19, 2011 at 8:37 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> > With the attached patch, we would do:
+> >
+> > arch/foo/boot/Makefile:
+> > LDFLAGS_fancy.o := -DPANTS=30
+> > obj-y += fancy.o
+> > vpath-y += $(srctree)/arch/foo/lib
+> >
+> > and let GNU make do the job.
+> >
+> Nicolas, I guess you were the one who was interested for a generic way
+> to do such code re-use, did you had any chance to test the quoted
+> patch ?
 
-diff --git a/drivers/staging/cx25821/cx25821-core.c b/drivers/staging/cx25821/cx25821-core.c
-index 523ac5e..8e8a56d 100644
---- a/drivers/staging/cx25821/cx25821-core.c
-+++ b/drivers/staging/cx25821/cx25821-core.c
-@@ -1512,7 +1512,6 @@ static void __exit cx25821_fini(void)
- 	pci_unregister_driver(&cx25821_pci_driver);
- }
- 
--EXPORT_SYMBOL(cx25821_set_gpiopin_direction);
- 
- module_init(cx25821_init);
- module_exit(cx25821_fini);
-diff --git a/drivers/staging/cx25821/cx25821-gpio.c b/drivers/staging/cx25821/cx25821-gpio.c
-index 2f154b3..29e43b0 100644
---- a/drivers/staging/cx25821/cx25821-gpio.c
-+++ b/drivers/staging/cx25821/cx25821-gpio.c
-@@ -50,6 +50,7 @@ void cx25821_set_gpiopin_direction(struct cx25821_dev *dev,
- 
- 	cx_write(gpio_oe_reg, value);
- }
-+EXPORT_SYMBOL(cx25821_set_gpiopin_direction);
- 
- static void cx25821_set_gpiopin_logicvalue(struct cx25821_dev *dev,
- 					   int pin_number, int pin_logic_value)
--- 
-1.7.0.4
+I actually missed the original post (I wasn't in CC) so I didn't test it. 
+Will try to do so ASAP.
 
+
+Nicolas
