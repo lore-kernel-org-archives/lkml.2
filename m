@@ -1,150 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab1H3Hwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 03:52:39 -0400
-Received: from merkurneu.hrz.uni-giessen.de ([134.176.2.3]:60765 "EHLO
-	merkurneu.hrz.uni-giessen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752191Ab1H3Hwi (ORCPT
+	id S1752693Ab1H3HyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 03:54:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49733 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab1H3HyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 03:52:38 -0400
-From: Marc Dietich <marvin24@gmx.de>
-To: Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 1/2] sdhci/tegra: Add Device Tree probing support
-Date: Tue, 30 Aug 2011 09:52:01 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc3+; KDE/4.6.5; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, Chris Ball <cjb@laptop.org>,
-        Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-References: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
-In-Reply-To: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
+	Tue, 30 Aug 2011 03:54:14 -0400
+Date: Tue, 30 Aug 2011 09:54:04 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@linux.intel.com>
+cc: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
+ channel ID
+In-Reply-To: <1314618931.1606.114.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
+References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange> 
+ <1308916071.1536.4.camel@vkoul-udesk3>  <20110829080047.GJ31809@linux-sh.org>
+  <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com>
+ <1314618931.1606.114.camel@vkoul-udesk3>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108300952.02418.marvin24@gmx.de>
-X-HRZ-JLUG-MailScanner-Information: Passed JLUG virus check
-X-HRZ-JLUG-MailScanner: No virus found
-X-Envelope-From: marvin24@gmx.de
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:ZfYdztCmjFLgh4wwwhr7bK69TN/KRH59a56egujEQVL
+ U03MSGJS2LtzJHje5YDW3Dw5OvvSk077vPaIfnSMcfRBtklLZI
+ 1rufy5XJANl02j9cq8Lb0+vus2xsBdYRuV43EuRwUELYBWkAg3
+ l7W5C6CtCYEEucSI+1U1vCY6ogvLwGQdbe6yAsilmhsCV+x8t3
+ 293l3VrfPVHYq6w9sWwo0i+485cA5hwbNwt4gNPDFB1vGiy+XG
+ Kw0eXFXUIbTtr/ONLfGJz5pXkyOIH+SVfAknDWQgyxb1iVUVZ/
+ QrR/KIrYWQab4uqpEfPYI0HOkeC8k9qKSAY4m0woYKHBO0Ht9L
+ tIXjsWLm3O/NW48gL6d/meaZb5rjRn4JpLcGCUlqLQLDcr/uWj
+ Ag7cjQQLUxzrw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 29 Aug 2011, Vinod Koul wrote:
 
-just a small question,
+> On Mon, 2011-08-29 at 17:16 +0900, Magnus Damm wrote:
+> > On Mon, Aug 29, 2011 at 5:00 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> > > On Fri, Jun 24, 2011 at 05:17:51PM +0530, Koul, Vinod wrote:
+> > >> On Fri, 2011-06-24 at 13:56 +0200, Guennadi Liakhovetski wrote:
+> > >> > On some sh-mobile systems there are more than one DMA controllers, that
+> > >> > can be used for serial ports. Specifying a DMA device in sh-sci platform
+> > >> > data unnecessarily restricts the driver to only use one DMA controller.
+> > >> >
+> > >> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > >> > ---
+> > >> >  drivers/tty/serial/sh-sci.c |   25 ++++++++-----------------
+> > >> >  include/linux/serial_sci.h  |    2 --
+> > >> >  2 files changed, 8 insertions(+), 19 deletions(-)
+> > >> >
+> > >> > diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+> > >> > index ebd8629..8711f4e 100644
+> > >> > --- a/drivers/tty/serial/sh-sci.c
+> > >> > +++ b/drivers/tty/serial/sh-sci.c
+> > >> > @@ -1295,12 +1295,8 @@ static bool filter(struct dma_chan *chan, void *slave)
+> > >> >     dev_dbg(chan->device->dev, "%s: slave ID %d\n", __func__,
+> > >> >             param->slave_id);
+> > >> >
+> > >> > -   if (param->dma_dev == chan->device->dev) {
+> > >> > -           chan->private = param;
+> > >> > -           return true;
+> > >> > -   } else {
+> > >> > -           return false;
+> > >> > -   }
+> > >> > +   chan->private = param;
+> > >> > +   return true;
+> > >> You should not assign chan->private.
+> > >> Please move this  to dma_slave_control API
+> > >
+> > > I haven't seen any reply to this comment and this patch seems to still be
+> > > outstanding, is there an updated version of this patch that I've missed?
+> I don't recall seeing any updated version fixing this 
 
-> From: Grant Likely <grant.likely@secretlab.ca>
+As a matter of fact, when you say "use dma_slave_control API," you 
+actually mean the dma_slave_config, right? Then, how is one supposed to 
+use it in this case? Shall we be issuing a DMA_SLAVE_CONFIG call inside of 
+the filter and check the return code? The problem is, that not all DMA 
+controllers on sh-mobile SoCs can service the same slave devices. So, if 
+we don't check in the filter we might well get an unsuitable DMA channel.
 
-[...]
-
-> diff --git a/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
-> b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt new file mode
-> 100644
-> index 0000000..c87f667
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
-> @@ -0,0 +1,25 @@
-> +* NVIDIA Tegra Secure Digital Host Controller
-> +
-> +This controller on Tegra family SoCs provides an interface for MMC, SD,
-> +and SDIO types of memory cards.
-> +
-> +Required properties:
-> +- compatible : Should be "nvidia,<chip>-sdhci"
-> +- reg : Should contain eSDHC registers location and length
-> +- interrupts : Should contain eSDHC interrupt
-> +
-> +Optional properties:
-> +- cd-gpios : Specify GPIOs for card detection
-> +- wp-gpios : Specify GPIOs for write protection
-> +- power-gpios : Specify GPIOs for power control
-> +
-> +Example:
-> +
-> +sdhci@c8000200 {
-> +	compatible = "nvidia,tegra20-sdhci";
-> +	reg = <0xc8000200 0x200>;
-> +	interrupts = <47>;
-> +	cd-gpios = <&gpio 69 0>; /* gpio PI5 */
-> +	wp-gpios = <&gpio 57 0>; /* gpio PH1 */
-> +	power-gpios = <&gpio 155 0>; /* gpio PT3 */
-> +};
-> diff --git a/drivers/mmc/host/sdhci-tegra.c
-> b/drivers/mmc/host/sdhci-tegra.c index a5a9a97..9ab18d6 100644
-> --- a/drivers/mmc/host/sdhci-tegra.c
-> +++ b/drivers/mmc/host/sdhci-tegra.c
-> @@ -17,6 +17,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/clk.h>
->  #include <linux/io.h>
-> +#include <linux/of_gpio.h>
->  #include <linux/gpio.h>
->  #include <linux/mmc/card.h>
->  #include <linux/mmc/host.h>
-> @@ -74,10 +75,8 @@ static void tegra_sdhci_writel(struct sdhci_host *host,
-> u32 val, int reg)
-> 
->  static unsigned int tegra_sdhci_get_ro(struct sdhci_host *sdhci)
->  {
-> -	struct platform_device *pdev = to_platform_device(mmc_dev(sdhci->mmc));
-> -	struct tegra_sdhci_platform_data *plat;
-> -
-> -	plat = pdev->dev.platform_data;
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
-> +	struct tegra_sdhci_platform_data *plat = pltfm_host->priv;
-> 
->  	if (!gpio_is_valid(plat->wp_gpio))
->  		return -1;
-> @@ -95,12 +94,10 @@ static irqreturn_t carddetect_irq(int irq, void *data)
-> 
->  static int tegra_sdhci_8bit(struct sdhci_host *host, int bus_width)
->  {
-> -	struct platform_device *pdev = to_platform_device(mmc_dev(host->mmc));
-> -	struct tegra_sdhci_platform_data *plat;
-> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +	struct tegra_sdhci_platform_data *plat = pltfm_host->priv;
->  	u32 ctrl;
-> 
-> -	plat = pdev->dev.platform_data;
-> -
->  	ctrl = sdhci_readb(host, SDHCI_HOST_CONTROL);
->  	if (plat->is_8bit && bus_width == MMC_BUS_WIDTH_8) {
->  		ctrl &= ~SDHCI_CTRL_4BITBUS;
-
-what about 8 bit support? 
-
-> @@ -132,6 +129,34 @@ static struct sdhci_pltfm_data sdhci_tegra_pdata = {
->  	.ops  = &tegra_sdhci_ops,
->  };
-> 
-> +static const struct of_device_id sdhci_tegra_dt_match[] __devinitdata = {
-> +	{ .compatible = "nvidia,tegra20-sdhci", },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, sdhci_dt_ids);
-> +
-> +static struct tegra_sdhci_platform_data * __devinit
-> sdhci_tegra_dt_parse_pdata( +						struct platform_device *pdev)
-> +{
-> +	struct tegra_sdhci_platform_data *plat;
-> +	struct device_node *np = pdev->dev.of_node;
-> +
-> +	if (!np)
-> +		return NULL;
-> +
-> +	plat = devm_kzalloc(&pdev->dev, sizeof(*plat), GFP_KERNEL);
-> +	if (!plat) {
-> +		dev_err(&pdev->dev, "Can't allocate platform data\n");
-> +		return NULL;
-> +	}
-> +
-> +	plat->cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
-> +	plat->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
-> +	plat->power_gpio = of_get_named_gpio(np, "power-gpios", 0);
-> +
-> +	return plat;
-> +}
-
-[...]
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
