@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1HaJ0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 05:26:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab1HaJ0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 05:26:16 -0400
-From: Jiaju Zhang <jjzhang@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Jiaju Zhang <jjzhang@suse.de>
-Subject: [PATCH] Kconfig: Fix help message for DEFAULT_HUNG_TASK_TIMEOUT
-Date: Wed, 31 Aug 2011 17:23:46 +0800
-Message-Id: <1314782626-19270-1-git-send-email-jjzhang@suse.de>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754375Ab1HaJ2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 05:28:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51368 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab1HaJ2s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 05:28:48 -0400
+Subject: Re: [RFC PATCH 00/32] Nohz cpusets (was: Nohz Tasks)
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Date: Wed, 31 Aug 2011 11:28:07 +0200
+In-Reply-To: <1314762442.4653.5.camel@marge.simson.net>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <CAOtvUMdgPoL_gnOTq8DwS9RxSFagQN_kAze3guD8O3xFHfnfHg@mail.gmail.com>
+	 <20110830140648.GL9748@somewhere.redhat.com>
+	 <1314762442.4653.5.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314782887.23993.12.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added missing _secs in the help message of config DEFAULT_HUNG_TASK_TIMEOUT.
+On Wed, 2011-08-31 at 05:47 +0200, Mike Galbraith wrote:
+> On Tue, 2011-08-30 at 16:06 +0200, Frederic Weisbecker wrote:
+> 
+> > Ah I haven't tested with that isolcpus especially as it's headed toward
+> > removal.
+> 
+> It is?  Is it being replaced by something?  (I find it useful)
 
-Signed-off-by: Jiaju Zhang <jjzhang@suse.de>
----
- lib/Kconfig.debug |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+cpusets? Afaict all it does is not include a number of cpus in the sched
+domains, creating a bunch of independent scheduling cpus. You can use
+cpusets to get to the same state.
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c0cb9c4..f285553 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -248,8 +248,9 @@ config DEFAULT_HUNG_TASK_TIMEOUT
- 	  to determine when a task has become non-responsive and should
- 	  be considered hung.
- 
--	  It can be adjusted at runtime via the kernel.hung_task_timeout
--	  sysctl or by writing a value to /proc/sys/kernel/hung_task_timeout.
-+	  It can be adjusted at runtime via the kernel.hung_task_timeout_secs
-+	  sysctl or by writing a value to
-+	  /proc/sys/kernel/hung_task_timeout_secs.
- 
- 	  A timeout of 0 disables the check.  The default is two minutes.
- 	  Keeping the default should be fine in most cases.
--- 
-1.6.0.2
 
+[cpuisol seems to already be broken for SCHED_FIFO tasks, since they
+share the def_root_domain]
