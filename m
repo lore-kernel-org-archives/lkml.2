@@ -1,324 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab1HaV2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 17:28:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29918 "EHLO mx1.redhat.com"
+	id S1756007Ab1HaV2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:28:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17217 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab1HaV2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 17:28:00 -0400
+	id S1755613Ab1HaV2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 17:28:10 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, ming.lei@canonical.com,
         stern@rowland.harvard.edu, Mark Salter <msalter@redhat.com>
-Subject: [PATCH v2 00/24] C6X: New architecture patch set
-Date: Wed, 31 Aug 2011 17:26:35 -0400
-Message-Id: <1314826019-22330-1-git-send-email-msalter@redhat.com>
+Subject: [PATCH 10/24] C6X: time management
+Date: Wed, 31 Aug 2011 17:26:45 -0400
+Message-Id: <1314826019-22330-11-git-send-email-msalter@redhat.com>
+In-Reply-To: <1314826019-22330-1-git-send-email-msalter@redhat.com>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is v2 of the C6X architecture patch series.
+The C6X architecture includes a 64-bit free running core clock counter which
+is used as the clocksource. The SoCs have a number of 64-bit programmable
+timers. One of these is used as the clockevent timer.
 
-Changes from the previous patchset are:
-
- * Replaced 64-by-64 divides (two places) with do_div
-
- * Parse device tree for base address of some miscellaneous SoC registers.
-   The clkdev code still has a hard-coded address but that will go away when
-   device tree clock bindings are settled.
-
- * Tweaked the DTS files to more closely match the actual hardware.
-
- * Removed all board-specific files by making better use of device tree.
-
- * Removed CONFIG_NR_IRQS and replaced with hard-coded number which is large
-   enough for all supported SoCs with room to spare.
-
- * Removed GENERIC_FIND_* references.
-
- * Cleaned up Makefiles and Kconfig files.
-
- * Removed VMLINUX_SYMBOL usage in linker script (not needed for C6X).
-
- * Cleaned up show_cpuinfo.
-
- * Added __HEAD to head.S
-
- * Use generic asm/dma.h
-
- * Added cpu_relax() to busy wait loops in cache code.
-
- * Dropped unneeded module support routines (handled in generic code)
-
- * Cleaned up DMA support.
-
- * Removed deprecated syscalls.
-
- * Removed PTRACE_PEEKUSR and PTRACE_POKEUSR.
-
- * Cleaned up sparse warnings.
-
-This latest patchset is available in the 'upstream-v2' branch of the git repo
-at:
-
-       git@linux-c6x.org:/git/projects/linux-c6x-upstreaming
-
-Mark Salter (24):
-  fix default __strnlen_user macro
-  fixed generic page.h for non-zero PAGE_OFFSET
-  add ELF machine define for TI C6X DSPs
-  C6X: build infrastructure
-  C6X: early boot code
-  C6X: devicetree
-  C6X: memory management and DMA support
-  C6X: process management
-  C6X: signal management
-  C6X: time management
-  C6X: interrupt handling
-  C6X: syscalls
-  C6X: traps
-  C6X: clocks
-  C6X: cache control
-  C6X: loadable module support
-  C6X: ptrace support
-  C6X: headers
-  C6X: library code
-  C6X: general SoC support
-  C6X: specific SoC support
-  C6X: EMIF - External Memory Interface
-  C6X: Power and Sleep Controller
-  C6X: MAINTAINERS
-
- MAINTAINERS                         |    8 +
- arch/c6x/Kconfig                    |  179 ++++++++
- arch/c6x/Makefile                   |   56 +++
- arch/c6x/boot/Makefile              |   22 +
- arch/c6x/boot/dts/dsk6455.dts       |  128 ++++++
- arch/c6x/boot/dts/evmc6457.dts      |  106 +++++
- arch/c6x/boot/dts/evmc6472.dts      |  176 ++++++++
- arch/c6x/boot/dts/evmc6474.dts      |  133 ++++++
- arch/c6x/boot/install-dtb.c         |  333 +++++++++++++++
- arch/c6x/configs/dsk6455_defconfig  |   43 ++
- arch/c6x/configs/evmc6457_defconfig |   40 ++
- arch/c6x/configs/evmc6472_defconfig |   41 ++
- arch/c6x/configs/evmc6474_defconfig |   41 ++
- arch/c6x/include/asm/Kbuild         |   55 +++
- arch/c6x/include/asm/asm-offsets.h  |    1 +
- arch/c6x/include/asm/bitops.h       |  105 +++++
- arch/c6x/include/asm/byteorder.h    |   12 +
- arch/c6x/include/asm/cache.h        |   90 ++++
- arch/c6x/include/asm/cacheflush.h   |   65 +++
- arch/c6x/include/asm/checksum.h     |  115 +++++
- arch/c6x/include/asm/clkdev.h       |   22 +
- arch/c6x/include/asm/clock.h        |  148 +++++++
- arch/c6x/include/asm/delay.h        |   67 +++
- arch/c6x/include/asm/dma-mapping.h  |   91 ++++
- arch/c6x/include/asm/elf.h          |  113 +++++
- arch/c6x/include/asm/ftrace.h       |    6 +
- arch/c6x/include/asm/hardirq.h      |   20 +
- arch/c6x/include/asm/irq.h          |  302 +++++++++++++
- arch/c6x/include/asm/irqflags.h     |   72 ++++
- arch/c6x/include/asm/linkage.h      |   30 ++
- arch/c6x/include/asm/memblock.h     |    4 +
- arch/c6x/include/asm/mmu.h          |   18 +
- arch/c6x/include/asm/module.h       |   33 ++
- arch/c6x/include/asm/mutex.h        |    6 +
- arch/c6x/include/asm/page.h         |   11 +
- arch/c6x/include/asm/pgtable.h      |   81 ++++
- arch/c6x/include/asm/processor.h    |  132 ++++++
- arch/c6x/include/asm/procinfo.h     |   28 ++
- arch/c6x/include/asm/prom.h         |    1 +
- arch/c6x/include/asm/ptrace.h       |  181 ++++++++
- arch/c6x/include/asm/sections.h     |   12 +
- arch/c6x/include/asm/setup.h        |   29 ++
- arch/c6x/include/asm/sigcontext.h   |   80 ++++
- arch/c6x/include/asm/signal.h       |   17 +
- arch/c6x/include/asm/soc.h          |  126 ++++++
- arch/c6x/include/asm/string.h       |   21 +
- arch/c6x/include/asm/syscalls.h     |   55 +++
- arch/c6x/include/asm/system.h       |  197 +++++++++
- arch/c6x/include/asm/thread_info.h  |  121 ++++++
- arch/c6x/include/asm/timex.h        |   41 ++
- arch/c6x/include/asm/tlb.h          |    8 +
- arch/c6x/include/asm/traps.h        |   39 ++
- arch/c6x/include/asm/uaccess.h      |  107 +++++
- arch/c6x/include/asm/unaligned.h    |  288 +++++++++++++
- arch/c6x/include/asm/unistd.h       |   26 ++
- arch/c6x/kernel/Makefile            |   12 +
- arch/c6x/kernel/asm-offsets.c       |  123 ++++++
- arch/c6x/kernel/c6x_ksyms.c         |   68 +++
- arch/c6x/kernel/devicetree.c        |   53 +++
- arch/c6x/kernel/dma.c               |  168 ++++++++
- arch/c6x/kernel/entry.S             |  803 +++++++++++++++++++++++++++++++++++
- arch/c6x/kernel/head.S              |   84 ++++
- arch/c6x/kernel/irq.c               |  732 +++++++++++++++++++++++++++++++
- arch/c6x/kernel/module.c            |  196 +++++++++
- arch/c6x/kernel/process.c           |  260 +++++++++++
- arch/c6x/kernel/ptrace.c            |  207 +++++++++
- arch/c6x/kernel/setup.c             |  488 +++++++++++++++++++++
- arch/c6x/kernel/signal.c            |  377 ++++++++++++++++
- arch/c6x/kernel/soc.c               |  168 ++++++++
- arch/c6x/kernel/switch_to.S         |   74 ++++
- arch/c6x/kernel/sys_c6x.c           |   82 ++++
- arch/c6x/kernel/time.c              |   64 +++
- arch/c6x/kernel/traps.c             |  423 ++++++++++++++++++
- arch/c6x/kernel/vectors.S           |   81 ++++
- arch/c6x/kernel/vmlinux.lds.S       |  170 ++++++++
- arch/c6x/lib/Makefile               |    8 +
- arch/c6x/lib/csum_64plus.S          |  404 ++++++++++++++++++
- arch/c6x/lib/divi.S                 |   53 +++
- arch/c6x/lib/divremi.S              |   46 ++
- arch/c6x/lib/divremu.S              |   87 ++++
- arch/c6x/lib/divu.S                 |   98 +++++
- arch/c6x/lib/llshl.S                |   37 ++
- arch/c6x/lib/llshr.S                |   38 ++
- arch/c6x/lib/llshru.S               |   38 ++
- arch/c6x/lib/memcpy_64plus.S        |   46 ++
- arch/c6x/lib/mpyll.S                |   49 +++
- arch/c6x/lib/negll.S                |   31 ++
- arch/c6x/lib/pop_rts.S              |   32 ++
- arch/c6x/lib/push_rts.S             |   31 ++
- arch/c6x/lib/remi.S                 |   64 +++
- arch/c6x/lib/remu.S                 |   82 ++++
- arch/c6x/lib/strasgi.S              |   89 ++++
- arch/c6x/lib/strasgi_64plus.S       |   39 ++
- arch/c6x/mm/Makefile                |    5 +
- arch/c6x/mm/dma-coherent.c          |  142 ++++++
- arch/c6x/mm/init.c                  |  112 +++++
- arch/c6x/platforms/Kconfig          |   45 ++
- arch/c6x/platforms/Makefile         |   13 +
- arch/c6x/platforms/cache.c          |  445 +++++++++++++++++++
- arch/c6x/platforms/emif.c           |   77 ++++
- arch/c6x/platforms/megamod-pic.c    |  336 +++++++++++++++
- arch/c6x/platforms/megamod-pic.h    |    9 +
- arch/c6x/platforms/platform.c       |   23 +
- arch/c6x/platforms/pll.c            |  471 ++++++++++++++++++++
- arch/c6x/platforms/plldata.c        |  151 +++++++
- arch/c6x/platforms/psc.c            |  181 ++++++++
- arch/c6x/platforms/psc.h            |   25 ++
- arch/c6x/platforms/soc-6455.c       |  389 +++++++++++++++++
- arch/c6x/platforms/soc-6457.c       |  187 ++++++++
- arch/c6x/platforms/soc-6472.c       |  428 +++++++++++++++++++
- arch/c6x/platforms/soc-6474.c       |  244 +++++++++++
- arch/c6x/platforms/timer64.c        |  191 +++++++++
- arch/c6x/platforms/timer64.h        |    6 +
- include/asm-generic/page.h          |   10 +-
- include/asm-generic/uaccess.h       |    2 +-
- include/linux/elf-em.h              |    1 +
- 116 files changed, 13676 insertions(+), 4 deletions(-)
- create mode 100644 arch/c6x/Kconfig
- create mode 100644 arch/c6x/Makefile
- create mode 100644 arch/c6x/boot/Makefile
- create mode 100644 arch/c6x/boot/dts/dsk6455.dts
- create mode 100644 arch/c6x/boot/dts/evmc6457.dts
- create mode 100644 arch/c6x/boot/dts/evmc6472.dts
- create mode 100644 arch/c6x/boot/dts/evmc6474.dts
- create mode 100644 arch/c6x/boot/install-dtb.c
- create mode 100644 arch/c6x/configs/dsk6455_defconfig
- create mode 100644 arch/c6x/configs/evmc6457_defconfig
- create mode 100644 arch/c6x/configs/evmc6472_defconfig
- create mode 100644 arch/c6x/configs/evmc6474_defconfig
- create mode 100644 arch/c6x/include/asm/Kbuild
- create mode 100644 arch/c6x/include/asm/asm-offsets.h
- create mode 100644 arch/c6x/include/asm/bitops.h
- create mode 100644 arch/c6x/include/asm/byteorder.h
- create mode 100644 arch/c6x/include/asm/cache.h
- create mode 100644 arch/c6x/include/asm/cacheflush.h
- create mode 100644 arch/c6x/include/asm/checksum.h
- create mode 100644 arch/c6x/include/asm/clkdev.h
- create mode 100644 arch/c6x/include/asm/clock.h
- create mode 100644 arch/c6x/include/asm/delay.h
- create mode 100644 arch/c6x/include/asm/dma-mapping.h
- create mode 100644 arch/c6x/include/asm/elf.h
- create mode 100644 arch/c6x/include/asm/ftrace.h
- create mode 100644 arch/c6x/include/asm/hardirq.h
- create mode 100644 arch/c6x/include/asm/irq.h
- create mode 100644 arch/c6x/include/asm/irqflags.h
- create mode 100644 arch/c6x/include/asm/linkage.h
- create mode 100644 arch/c6x/include/asm/memblock.h
- create mode 100644 arch/c6x/include/asm/mmu.h
- create mode 100644 arch/c6x/include/asm/module.h
- create mode 100644 arch/c6x/include/asm/mutex.h
- create mode 100644 arch/c6x/include/asm/page.h
- create mode 100644 arch/c6x/include/asm/pgtable.h
- create mode 100644 arch/c6x/include/asm/processor.h
- create mode 100644 arch/c6x/include/asm/procinfo.h
- create mode 100644 arch/c6x/include/asm/prom.h
- create mode 100644 arch/c6x/include/asm/ptrace.h
- create mode 100644 arch/c6x/include/asm/sections.h
- create mode 100644 arch/c6x/include/asm/setup.h
- create mode 100644 arch/c6x/include/asm/sigcontext.h
- create mode 100644 arch/c6x/include/asm/signal.h
- create mode 100644 arch/c6x/include/asm/soc.h
- create mode 100644 arch/c6x/include/asm/string.h
- create mode 100644 arch/c6x/include/asm/syscalls.h
- create mode 100644 arch/c6x/include/asm/system.h
- create mode 100644 arch/c6x/include/asm/thread_info.h
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/c6x/include/asm/timex.h |   41 +++++++++
+ arch/c6x/kernel/time.c       |   64 ++++++++++++++
+ arch/c6x/platforms/timer64.c |  191 ++++++++++++++++++++++++++++++++++++++++++
+ arch/c6x/platforms/timer64.h |    6 ++
+ 4 files changed, 302 insertions(+), 0 deletions(-)
  create mode 100644 arch/c6x/include/asm/timex.h
- create mode 100644 arch/c6x/include/asm/tlb.h
- create mode 100644 arch/c6x/include/asm/traps.h
- create mode 100644 arch/c6x/include/asm/uaccess.h
- create mode 100644 arch/c6x/include/asm/unaligned.h
- create mode 100644 arch/c6x/include/asm/unistd.h
- create mode 100644 arch/c6x/kernel/Makefile
- create mode 100644 arch/c6x/kernel/asm-offsets.c
- create mode 100644 arch/c6x/kernel/c6x_ksyms.c
- create mode 100644 arch/c6x/kernel/devicetree.c
- create mode 100644 arch/c6x/kernel/dma.c
- create mode 100644 arch/c6x/kernel/entry.S
- create mode 100644 arch/c6x/kernel/head.S
- create mode 100644 arch/c6x/kernel/irq.c
- create mode 100644 arch/c6x/kernel/module.c
- create mode 100644 arch/c6x/kernel/process.c
- create mode 100644 arch/c6x/kernel/ptrace.c
- create mode 100644 arch/c6x/kernel/setup.c
- create mode 100644 arch/c6x/kernel/signal.c
- create mode 100644 arch/c6x/kernel/soc.c
- create mode 100644 arch/c6x/kernel/switch_to.S
- create mode 100644 arch/c6x/kernel/sys_c6x.c
  create mode 100644 arch/c6x/kernel/time.c
- create mode 100644 arch/c6x/kernel/traps.c
- create mode 100644 arch/c6x/kernel/vectors.S
- create mode 100644 arch/c6x/kernel/vmlinux.lds.S
- create mode 100644 arch/c6x/lib/Makefile
- create mode 100644 arch/c6x/lib/csum_64plus.S
- create mode 100644 arch/c6x/lib/divi.S
- create mode 100644 arch/c6x/lib/divremi.S
- create mode 100644 arch/c6x/lib/divremu.S
- create mode 100644 arch/c6x/lib/divu.S
- create mode 100644 arch/c6x/lib/llshl.S
- create mode 100644 arch/c6x/lib/llshr.S
- create mode 100644 arch/c6x/lib/llshru.S
- create mode 100644 arch/c6x/lib/memcpy_64plus.S
- create mode 100644 arch/c6x/lib/mpyll.S
- create mode 100644 arch/c6x/lib/negll.S
- create mode 100644 arch/c6x/lib/pop_rts.S
- create mode 100644 arch/c6x/lib/push_rts.S
- create mode 100644 arch/c6x/lib/remi.S
- create mode 100644 arch/c6x/lib/remu.S
- create mode 100644 arch/c6x/lib/strasgi.S
- create mode 100644 arch/c6x/lib/strasgi_64plus.S
- create mode 100644 arch/c6x/mm/Makefile
- create mode 100644 arch/c6x/mm/dma-coherent.c
- create mode 100644 arch/c6x/mm/init.c
- create mode 100644 arch/c6x/platforms/Kconfig
- create mode 100644 arch/c6x/platforms/Makefile
- create mode 100644 arch/c6x/platforms/cache.c
- create mode 100644 arch/c6x/platforms/emif.c
- create mode 100644 arch/c6x/platforms/megamod-pic.c
- create mode 100644 arch/c6x/platforms/megamod-pic.h
- create mode 100644 arch/c6x/platforms/platform.c
- create mode 100644 arch/c6x/platforms/pll.c
- create mode 100644 arch/c6x/platforms/plldata.c
- create mode 100644 arch/c6x/platforms/psc.c
- create mode 100644 arch/c6x/platforms/psc.h
- create mode 100644 arch/c6x/platforms/soc-6455.c
- create mode 100644 arch/c6x/platforms/soc-6457.c
- create mode 100644 arch/c6x/platforms/soc-6472.c
- create mode 100644 arch/c6x/platforms/soc-6474.c
  create mode 100644 arch/c6x/platforms/timer64.c
  create mode 100644 arch/c6x/platforms/timer64.h
 
+diff --git a/arch/c6x/include/asm/timex.h b/arch/c6x/include/asm/timex.h
+new file mode 100644
+index 0000000..0741648
+--- /dev/null
++++ b/arch/c6x/include/asm/timex.h
+@@ -0,0 +1,41 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Modified for 2.6.34: Mark Salter <msalter@redhat.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_TIMEX_H
++#define _ASM_C6X_TIMEX_H
++
++/*
++ * This should be close enough...
++ */
++#define CLOCK_TICK_RATE ((1000 * 1000000UL) / 6)
++
++/* 64-bit timestamp */
++typedef unsigned long long cycles_t;
++
++extern cycles_t cacheflush_time;
++
++static inline cycles_t get_cycles(void)
++{
++	unsigned l, h;
++
++	asm volatile (" dint\n"
++		      " mvc .s2 TSCL,%0\n"
++		      " mvc .s2 TSCH,%1\n"
++		      " rint\n"
++		      : "=b"(l), "=b"(h));
++	return ((cycles_t)h << 32) | l;
++}
++
++extern int init_tsc_clocksource(void);
++extern int init_timer64_clocksource(void);
++
++#endif /* _ASM_C6X_TIMEX_H */
+diff --git a/arch/c6x/kernel/time.c b/arch/c6x/kernel/time.c
+new file mode 100644
+index 0000000..5f0868f
+--- /dev/null
++++ b/arch/c6x/kernel/time.c
+@@ -0,0 +1,64 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/clocksource.h>
++#include <linux/errno.h>
++#include <linux/sched.h>
++#include <linux/param.h>
++#include <linux/string.h>
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++#include <linux/timex.h>
++#include <linux/profile.h>
++
++#include <asm/soc.h>
++
++static u32 sched_clock_multiplier;
++#define SCHED_CLOCK_SHIFT 16
++
++static cycle_t tsc_read(struct clocksource *cs)
++{
++	return get_cycles();
++}
++
++static struct clocksource clocksource_tsc = {
++	.name		= "timestamp",
++	.rating		= 300,
++	.read		= tsc_read,
++	.mask		= CLOCKSOURCE_MASK(64),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
++};
++
++/*
++ * scheduler clock - returns current time in nanoseconds.
++ */
++u64 sched_clock(void)
++{
++	u64 tsc = get_cycles();
++
++	return (tsc * sched_clock_multiplier) >> SCHED_CLOCK_SHIFT;
++}
++
++void time_init(void)
++{
++	u64 tmp = (u64)NSEC_PER_SEC << SCHED_CLOCK_SHIFT;
++
++	do_div(tmp, c6x_core_freq);
++	sched_clock_multiplier = tmp;
++
++	clocksource_register_hz(&clocksource_tsc, c6x_core_freq);
++
++	/* write anything into TSCL to enable counting */
++	set_creg(TSCL, 0);
++
++	soc_time_init();
++}
+diff --git a/arch/c6x/platforms/timer64.c b/arch/c6x/platforms/timer64.c
+new file mode 100644
+index 0000000..d74ac4a
+--- /dev/null
++++ b/arch/c6x/platforms/timer64.c
+@@ -0,0 +1,191 @@
++/*
++ *  Copyright (C) 2010, 2011 Texas Instruments Incorporated
++ *  Contributed by: Mark Salter (msalter@redhat.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++
++#include <linux/clockchips.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
++#include <asm/soc.h>
++#include "timer64.h"
++
++struct timer_regs {
++	u32	reserved0;
++	u32	emumgt;
++	u32	reserved1;
++	u32	reserved2;
++	u32	cntlo;
++	u32	cnthi;
++	u32	prdlo;
++	u32	prdhi;
++	u32	tcr;
++	u32	tgcr;
++	u32	wdtcr;
++};
++
++static struct timer_regs __iomem *timer;
++
++static struct clock_event_device t64_clockevent_device;
++
++#define TCR_TSTATLO	     0x001
++#define TCR_INVOUTPLO	     0x002
++#define TCR_INVINPLO	     0x004
++#define TCR_CPLO	     0x008
++#define TCR_ENAMODELO_ONCE   0x040
++#define TCR_ENAMODELO_CONT   0x080
++#define TCR_ENAMODELO_MASK   0x0c0
++#define TCR_PWIDLO_MASK      0x030
++#define TCR_CLKSRCLO	     0x100
++#define TCR_TIENLO	     0x200
++#define TCR_TSTATHI	     (0x001 << 16)
++#define TCR_INVOUTPHI	     (0x002 << 16)
++#define TCR_CPHI	     (0x008 << 16)
++#define TCR_PWIDHI_MASK      (0x030 << 16)
++#define TCR_ENAMODEHI_ONCE   (0x040 << 16)
++#define TCR_ENAMODEHI_CONT   (0x080 << 16)
++#define TCR_ENAMODEHI_MASK   (0x0c0 << 16)
++
++#define TGCR_TIMLORS	     0x001
++#define TGCR_TIMHIRS	     0x002
++#define TGCR_TIMMODE_UD32    0x004
++#define TGCR_TIMMODE_WDT64   0x008
++#define TGCR_TIMMODE_CD32    0x00c
++#define TGCR_TIMMODE_MASK    0x00c
++#define TGCR_PSCHI_MASK      (0x00f << 8)
++#define TGCR_TDDRHI_MASK     (0x00f << 12)
++
++/*
++ * Timer clocks are divided down from the CPU clock
++ * The divisor is in the EMUMGTCLKSPD register
++ */
++#define TIMER_DIVISOR \
++	((soc_readl(&timer->emumgt) & (0xf << 16)) >> 16)
++
++#define timer_period(f, d)	      (((f) * 1000000) / ((d) * HZ))
++#define ticks2usecs(f, d, x)	      (((x) * (d)) / (f))
++
++
++static int next_event(unsigned long delta,
++		      struct clock_event_device *evt)
++{
++	soc_writel(soc_readl(&timer->tcr) & ~TCR_ENAMODELO_MASK, &timer->tcr);
++	soc_writel(delta - 1, &timer->prdlo);
++	soc_writel(0, &timer->cntlo);
++	soc_writel(soc_readl(&timer->tcr) | TCR_ENAMODELO_ONCE, &timer->tcr);
++
++	return 0;
++}
++
++static void set_clock_mode(enum clock_event_mode mode,
++			   struct clock_event_device *evt)
++{
++}
++
++static void event_handler(struct clock_event_device *dev)
++{
++}
++
++static irqreturn_t timer_interrupt(int irq, void *dev_id)
++{
++	struct clock_event_device *cd = &t64_clockevent_device;
++
++	cd->event_handler(cd);
++
++	return IRQ_HANDLED;
++}
++
++
++void __init timer64_init(void)
++{
++	struct clock_event_device *cd = &t64_clockevent_device;
++	struct device_node *np, *node = NULL;
++	const __be32 *p;
++	int coremask_len;
++	u64 temp;
++	u32 val, shift;
++
++	for_each_compatible_node(np, NULL, "ti,c64x+timer64") {
++		p = of_get_property(np, "ti,core-mask", &coremask_len);
++		if (p && coremask_len == sizeof(*p)) {
++			val = be32_to_cpup(p);
++			if (val & (1 << get_coreid())) {
++				node = np;
++				break;
++			}
++		} else {
++			node = np;
++			break;
++		}
++	}
++	if (!node) {
++		pr_debug("Cannot find ti,c64x+timer64 timer.\n");
++		return;
++	}
++	np = node;
++
++	timer = of_iomap(np, 0);
++	if (!timer) {
++		pr_debug("%s: Cannot map timer registers.\n", np->full_name);
++		of_node_put(np);
++		return;
++	}
++	pr_debug("%s: Timer registers=%p.\n", np->full_name, timer);
++
++	/* disable timer, reset count */
++	soc_writel(soc_readl(&timer->tcr) & ~TCR_ENAMODELO_MASK, &timer->tcr);
++	soc_writel(0, &timer->prdlo);
++
++	/* use internal clock and 1 cycle pulse width */
++	val = soc_readl(&timer->tcr);
++	soc_writel(val & ~(TCR_CLKSRCLO | TCR_PWIDLO_MASK), &timer->tcr);
++
++	/* dual 32-bit unchained mode */
++	val = soc_readl(&timer->tgcr) & ~TGCR_TIMMODE_MASK;
++	soc_writel(val, &timer->tgcr);
++	soc_writel(val | (TGCR_TIMLORS | TGCR_TIMMODE_UD32), &timer->tgcr);
++
++	cd->irq	= irq_of_parse_and_map(np, 0);
++	pr_debug("%s: Timer irq=%d.\n", np->full_name, cd->irq);
++
++	cd->name	= "TIMER64_EVT32_TIMER";
++	cd->features	= CLOCK_EVT_FEAT_ONESHOT;
++
++	/* Calculate the min / max delta */
++	/* Find a shift value */
++	for (shift = 32; shift > 0; shift--) {
++		temp = (u64)(c6x_core_freq / TIMER_DIVISOR);
++		temp <<=  shift;
++
++		do_div(temp, NSEC_PER_SEC);
++		if ((temp >> 32) == 0)
++			break;
++	}
++	cd->shift = shift;
++	cd->mult = (u32) temp;
++
++	cd->max_delta_ns	= clockevent_delta2ns(0x7fffffff, cd);
++	cd->min_delta_ns	= clockevent_delta2ns(250, cd);
++
++	cd->rating		= 200;
++	cd->set_mode		= set_clock_mode;
++	cd->event_handler	= event_handler;
++	cd->set_next_event	= next_event;
++	cd->cpumask		= cpumask_of(smp_processor_id());
++
++	clockevents_register_device(cd);
++
++	/* Set handler */
++	if (cd->irq != NO_IRQ)
++		request_irq(cd->irq, timer_interrupt,
++			    IRQF_DISABLED | IRQF_TIMER, "timer", NULL);
++
++	of_node_put(np);
++	return;
++}
+diff --git a/arch/c6x/platforms/timer64.h b/arch/c6x/platforms/timer64.h
+new file mode 100644
+index 0000000..11f53d6
+--- /dev/null
++++ b/arch/c6x/platforms/timer64.h
+@@ -0,0 +1,6 @@
++#ifndef _C6X_TIMER64_PIC_H
++#define _C6X_TIMER64_PIC_H
++
++extern void __init timer64_init(void);
++
++#endif /* _C6X_TIMER64_PIC_H */
 -- 
 1.7.6
 
