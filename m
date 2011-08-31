@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab1HaNrE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:47:04 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5192 "EHLO mga14.intel.com"
+	id S1756487Ab1HaNrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:47:10 -0400
+Received: from fieldses.org ([174.143.236.118]:41828 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756050Ab1HaNoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:44:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,307,1312182000"; 
-   d="scan'208";a="44294830"
-From: Oren Weil <oren.jer.weil@intel.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
-        tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 02/12] staging: mei: fix register access function comments
-Date: Wed, 31 Aug 2011 16:42:38 +0300
-Message-Id: <1314798168-15613-3-git-send-email-oren.jer.weil@intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
-References: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
+	id S1756414Ab1HaNrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 09:47:06 -0400
+Date: Wed, 31 Aug 2011 09:46:52 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
+Message-ID: <20110831134652.GA16897@fieldses.org>
+References: <1312810169.2591.1153.camel@deadeye>
+ <20110808155538.GB904@fieldses.org>
+ <20110808180658.GC29924@decadent.org.uk>
+ <20110826220311.GA18140@fieldses.org>
+ <20110830085752.6db1ffa600f4c82135b3f3eb@canb.auug.org.au>
+ <20110830091150.176cd08c@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110830091150.176cd08c@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
-Acked-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/staging/mei/mei_dev.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Tue, Aug 30, 2011 at 09:11:50AM +1000, NeilBrown wrote:
+> On Tue, 30 Aug 2011 08:57:52 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
+> wrote:
+> 
+> > Hi Bruce,
+> > 
+> > On Fri, 26 Aug 2011 18:03:11 -0400 "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > >
+> > > From: NeilBrown <neilb@suse.de>
+> > > 
+> > > The nfsservctl system call is now gone, so we should remove all
+> > > linkage for it.
+> > > 
+> > > Signed-off-by: NeilBrown <neilb@suse.de>
+> > > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> > > ---
+> > > 
+> > > I don't normally have to deal with this kind of cross-architecture
+> > > patch; is this the right etiquette for it?
+> > 
+> > It turns out (with hindsight) that my reaction to this patch should have
+> > been:
+> > 
+> > If you haven't built this on all architectures (an noone expects you to
+> > actually do that), then it should spend a day or two in linux-next before
+> > being sent to Linus.
+> > 
+> 
+> Hi Stephen,
+>  Thanks for your help in sorting this out.  I have no idea how I missed those
+>  few nfsservctl references but I clearly did and you and -next have proved
+>  valuable yet again.
+> 
+>  And really *everything* should spend a few days in linux-next before going
+>  to Linus.  We all know that but it sometimes seem hard to *do* that ....
+>  until we have learnt the hard way a couple of times :-(
 
-diff --git a/drivers/staging/mei/mei_dev.h b/drivers/staging/mei/mei_dev.h
-index d7bc10c..2e11077 100644
---- a/drivers/staging/mei/mei_dev.h
-+++ b/drivers/staging/mei/mei_dev.h
-@@ -356,7 +356,7 @@ int mei_find_me_client_index(const struct mei_device *dev, uuid_le cuuid);
-  * @dev: the device structure
-  * @offset: offset from which to read the data
-  *
-- * returns the byte read.
-+ * returns register value (u32)
-  */
- static inline u32 mei_reg_read(struct mei_device *dev, unsigned long offset)
- {
-@@ -368,7 +368,7 @@ static inline u32 mei_reg_read(struct mei_device *dev, unsigned long offset)
-  *
-  * @dev: the device structure
-  * @offset: offset from which to write the data
-- * @value: the byte to write
-+ * @value: register value to write (u32)
-  */
- static inline void mei_reg_write(struct mei_device *dev,
- 				unsigned long offset, u32 value)
--- 
-1.7.4.1
+Yes, sorry, I'll know not to skip -next, next time....
 
+(My excuse: I've been advertising to -next only stuff that I've done
+with and committed, and this was something I wasn't even sure I should
+take.
+
+But I could have either mailed it out labelled as [RFC], or stuck it in
+a throwaway branch to merge into my -next branch.)
+
+Apologies again, and thanks for dealing with it so promptly.
+
+--b.
