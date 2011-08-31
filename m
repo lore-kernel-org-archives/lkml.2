@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab1HaNC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:02:58 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36145 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755479Ab1HaNCz (ORCPT
+	id S1755637Ab1HaNEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:04:30 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:50083
+	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755605Ab1HaNE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:02:55 -0400
+	Wed, 31 Aug 2011 09:04:28 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zz9371K1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LQSMX4-02-0O3-02
+X-M-MSG: 
+Date: Wed, 31 Aug 2011 15:03:04 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH] iommu: Remove stub functions for !CONFIG_IOMMU_API
+Message-ID: <20110831130304.GP12940@amd.com>
+References: <1314364839-28492-1-git-send-email-joerg.roedel@amd.com>
+ <CAK=WgbaiNxo_226Zp9BZpgUjYFajnvgPPCjCOYP2Tj4pkWTwVA@mail.gmail.com>
+ <20110829101550.GT1923@amd.com>
+ <CADMYwHwZPiH12HxOP952-Znm_+uMXKpj2M6ew8W-frZ7R8EcWg@mail.gmail.com>
+ <20110829122516.GB9730@amd.com>
+ <CAK=WgbbqCL60uf9gWhLYbkJo44Sva3BwQuZk2R--ER4M+yDV2w@mail.gmail.com>
+ <20110829130552.GA10422@amd.com>
+ <CAK=WgbagTUqZhPkg8OnVEvF2EB=AnpgfV5Fs0g95+o1mVU47YQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87oc2si3l7.fsf@devron.myhome.or.jp>
-References: <20110328103431.GA22323@july>
-	<201103301620.50263.arnd@arndb.de>
-	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
-	<201103301706.36214.arnd@arndb.de>
-	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
-	<87wrhgk8lp.fsf@devron.myhome.or.jp>
-	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
-	<87r57ok3fp.fsf@devron.myhome.or.jp>
-	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
-	<87mxick0zj.fsf@devron.myhome.or.jp>
-	<alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
-	<874o4kjtsy.fsf@devron.myhome.or.jp>
-	<alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com>
-	<87y61wic4h.fsf@devron.myhome.or.jp>
-	<alpine.LFD.2.00.1105241319340.4028@dhcp-27-109.brq.redhat.com>
-	<87sjs4i93w.fsf@devron.myhome.or.jp>
-	<alpine.LFD.2.00.1105241520260.4028@dhcp-27-109.brq.redhat.com>
-	<87oc2si3l7.fsf@devron.myhome.or.jp>
-Date: Wed, 31 Aug 2011 22:02:53 +0900
-X-Google-Sender-Auth: wSZneqRVg7YICY_PrgpfqvWs5lg
-Message-ID: <CAH9JG2UDKD-tZPo-OiQmiheNvPqPE2o_cTEbc9M9Uu02HB6hcw@mail.gmail.com>
-Subject: Re: [PATCH v6] fat: Batched discard support for fat
-From: Kyungmin Park <kmpark@infradead.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Lukas Czerner <lczerner@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbagTUqZhPkg8OnVEvF2EB=AnpgfV5Fs0g95+o1mVU47YQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ogawa,
+On Mon, Aug 29, 2011 at 09:21:54AM -0400, Ohad Ben-Cohen wrote:
+> On Mon, Aug 29, 2011 at 4:05 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> > So in this case you can skip this whole part when CONFIG_IOMMU_API is
+> > disabled
+> 
+> Sure, we can do something like this in the driver:
+> 
+> #ifdef CONFIG_IOMMU_API
+> 
+> int do_the_iommu_thing(..)
+> {
+>    ... call the IOMMU API as needed...
+> }
+> 
+> #else
+> 
+> int do_the_iommu_thing(..)
+> {
+>     return 0;
+> }
+> 
+> #endif
+> 
+> Essentially, this means implementing the !CONFIG_IOMMU_API stubs in the driver.
 
-Do you still object to merge batched discard support on fat?
+I expect only very few drivers need that. Most drivers (like KVM and the
+upcoming VFIO) rely on the iommu-api and I expect most other drivers
+using the directly will also rely on an iommu. So this change makes
+still sense to me.
 
-If the current batched discard concept doesn't changed, it can't merge it?
+> Possible of course, but I think it's a bit neater to have that in one
+> place, where all drivers can use. Similar to !CONFIG_HWSPINLOCK,
+> !CONFIG_DEBUG_FS, ...
+> 
+> > This saves you even more .text size, no?
+> 
+> Not sure; I expect the code to be compiled out today when the IOMMU
+> API is called and CONFIG_IOMMU_API is not set.
 
-BTW please consider that it's not functional feature at fat
-filesystem. it's hint for device which reduce the merge operational
-internally and it doesn't effect the filesystem operation itself.
+But you even save all code that would use the iommu-api in your driver.
+This change forces you to compile out this code too leading to smaller
+.text-size.
 
-Thank you,
-Kyungmin Park
+	Joerg
 
-On Tue, May 24, 2011 at 11:19 PM, OGAWA Hirofumi
-<hirofumi@mail.parknet.co.jp> wrote:
-> Lukas Czerner <lczerner@redhat.com> writes:
->
->>> What is size of file system or underlying devices? You force to find the
->>> device which target FS is using? Even if you can get size of underlying
->>> devices, you force to user to insane loop in size of devices?
->>
->> Look, I do not have time to argue with you forever and I do not even
->> understand what is your point. Just go and read other filesystems
->> implementation of FITRIM (ext4,ext3,xfs,btrfs?) and you'll see what you
->> need to do.
->>
->> If you do not want to get the file system size, then FINE! just pass the
->> damn UULONG_MAX as length. I have no clue what insane loop are you
->> talking about! It is *easy* just discard the whole thing (with
->> UULONG_MAX) or, if you want to do it per-partes, then do it as long as
->> it does not return EINVAL, once it does you know that your "start" is
->> out of the filesystem and you are done!
->
-> You are not even understanding current implementations. See
-> ext3_trim_fs(), and ext4_trim_fs().
->
-> What happen if "start" was outside of max_blks:
->
-> ext3 returns 0
-> ext4 returns EINVAL
->
-> What means "start" is 0
->
-> ext3 maps to 1
-> ext4 just remove 0 from request
->
-> I missing something?
->
->>> Why can you guarantee it's not big deal in design? Why can't you admit
->>> userland can't make optimized loop?
->>
->> And what do you mean by that ?
->>
->> -Lukas
->
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
