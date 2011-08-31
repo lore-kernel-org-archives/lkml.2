@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab1HaS2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 14:28:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10645 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794Ab1HaS2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 14:28:13 -0400
-Message-ID: <4E5E7D16.4070805@redhat.com>
-Date: Wed, 31 Aug 2011 14:27:34 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S1751977Ab1HaSkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 14:40:42 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35287 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab1HaSkj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 14:40:39 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [BUG] Soft-lockup during cpu-hotplug in VFS callpaths
+Date: Wed, 31 Aug 2011 20:40:32 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+References: <4E550057.9070609@linux.vnet.ibm.com>
+In-Reply-To: <4E550057.9070609@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Johannes Weiner <jweiner@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] memcg: skip scanning active lists based on individual
- size
-References: <20110831090850.GA27345@redhat.com>
-In-Reply-To: <20110831090850.GA27345@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201108312040.32531.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2011 05:08 AM, Johannes Weiner wrote:
-> Reclaim decides to skip scanning an active list when the corresponding
-> inactive list is above a certain size in comparison to leave the
-> assumed working set alone while there are still enough reclaim
-> candidates around.
->
-> The memcg implementation of comparing those lists instead reports
-> whether the whole memcg is low on the requested type of inactive
-> pages, considering all nodes and zones.
->
-> This can lead to an oversized active list not being scanned because of
-> the state of the other lists in the memcg, as well as an active list
-> being scanned while its corresponding inactive list has enough pages.
->
-> Not only is this wrong, it's also a scalability hazard, because the
-> global memory state over all nodes and zones has to be gathered for
-> each memcg and zone scanned.
->
-> Make these calculations purely based on the size of the two LRU lists
-> that are actually affected by the outcome of the decision.
->
-> Signed-off-by: Johannes Weiner<jweiner@redhat.com>
-> Cc: Rik van Riel<riel@redhat.com>
-> Cc: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Daisuke Nishimura<nishimura@mxp.nes.nec.co.jp>
-> Cc: Balbir Singh<bsingharora@gmail.com>
+On środa, 24 sierpnia 2011 o 15:44:55 Srivatsa S. Bhat wrote:
+> Hi,
+> 
+> While running stressful cpu hotplug tests along with kernel compilation
+> running in background, soft-lockups are detected on multiple CPUs.
+> Sometimes this also leads to hard lockups and kernel panic.
+> All the soft-lockups seem to occur at vfsmount_lock_local_cpu() or other
+> VFS callpaths.
+> 
+> 
+> [37108.410813] BUG: soft lockup - CPU#5 stuck for 22s! [cc1:29669]
+> <snip>
+> [37108.694781] Call Trace:
+> [37108.697306]  [<ffffffff81199e70>] ?
+> vfsmount_lock_local_lock_cpu+0x70/0x70 [37108.704258] 
+> [<ffffffff81187cb5>] path_init+0x315/0x400
+> [37108.709558]  [<ffffffff8127c398>] ? __raw_spin_lock_init+0x38/0x70
+> [37108.715812]  [<ffffffff8118961c>] path_openat+0x8c/0x3f0
+> [37108.721203]  [<ffffffff81012129>] ? sched_clock+0x9/0x10
+> [37108.726597]  [<ffffffff8109416d>] ? sched_clock_cpu+0xcd/0x110
+> [37108.732508]  [<ffffffff810a178d>] ? trace_hardirqs_off+0xd/0x10
+> [37108.738498]  [<ffffffff8109421f>] ? local_clock+0x6f/0x80
+> [37108.743970]  [<ffffffff81189a99>] do_filp_open+0x49/0xa0
+> [37108.749362]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
+> [37108.754665]  [<ffffffff8152584b>] ? _raw_spin_unlock+0x2b/0x40
+> [37108.760575]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
+> [37108.765875]  [<ffffffff81179607>] do_sys_open+0x107/0x1e0
+> [37108.771352]  [<ffffffff810d610f>] ? audit_syscall_entry+0x1bf/0x1f0
+> [37108.777695]  [<ffffffff81179720>] sys_open+0x20/0x30
+> [37108.782741]  [<ffffffff8152e202>] system_call_fastpath+0x16/0x1b
+> 
+> Kernel version: 3.0.1, 3.0.3
+> Hardware: Dual socket quad-core hyper-threaded Intel x86 machine
+> Scenario:
+> (a) Stressful cpu hotplug tests + kernel compilation
+> 
+> (b) IRQ balancing had been disabled and all the IRQs  were made to be
+>     routed to CPU 0 (except the ones that couldn't be routed).
+> 
+> (c) Lockdep was enabled during kernel configuration.
+> 
+> Steps (b) and (c) were done to dig deeper into the issue. However the same
+> issue was observed by just doing step (a).
+> 
+> Definitely there seems to be a race condition occurring here, because this
+> issue is hit after sometime, after starting the tests. And the time it
+> takes to hit the issue increases as we increase the number of debug print
+> statements. In some cases (especially when the number of debug print
+> statements were quite high), the stress on the machine had to be increased
+> in order to hit the issue within measurable time. In my tests, a maximum
+> of about 2 to 2.5 hours was sufficient, to hit this bug.
+> 
+> Please find the console log attached with this mail.
+> 
+> Any ideas on how to go about fixing this bug?
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+It is a regression?
 
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
