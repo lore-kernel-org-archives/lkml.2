@@ -1,92 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab1HaL5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 07:57:15 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:47002 "EHLO
+	id S1755279Ab1HaL76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 07:59:58 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:47440 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755001Ab1HaL5O (ORCPT
+	with ESMTP id S1755001Ab1HaL7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 07:57:14 -0400
+	Wed, 31 Aug 2011 07:59:55 -0400
 From: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-Subject: [PATCH 2/2] Staging: comedi: fix line over 80 character issue in cb_pcidda.c
-Date: Wed, 31 Aug 2011 17:27:00 +0530
-Message-Id: <1314791820-2780-1-git-send-email-ravishankar.km@greenturtles.in>
+        Ravishankar Karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 1/3] Staging: comedi: fix printk issue in cb_pcidas64.c
+Date: Wed, 31 Aug 2011 17:29:40 +0530
+Message-Id: <1314791980-2841-1-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH 2/2]Staging: comedi:fix line over 80 character issue in cb_pcidda.c>
-References: <[PATCH 2/2]Staging: comedi:fix line over 80 character issue in cb_pcidda.c>
+In-Reply-To: <[PATCH 1/3]Staging : comedi:fix printk issue in cb_pcidas64.c>
+References: <[PATCH 1/3]Staging : comedi:fix printk issue in cb_pcidas64.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidda.c file that fixes up a line over 80 character warning found by the checkpatch.pl tool
+From: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 
-Signed-off-by: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+This is a patch to the cb_pcidas64.c file that fixes up a printk warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcidda.c |   21 +++++++++++++++------
- 1 files changed, 15 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidas64.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-index 661e945..847b5be 100644
---- a/drivers/staging/comedi/drivers/cb_pcidda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-@@ -51,9 +51,11 @@ Please report success/failure with other different cards to
- #include "comedi_pci.h"
- #include "8255.h"
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index 1e32419..a64889b 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -1739,7 +1739,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	uint32_t local_range, local_decode;
+ 	int retval;
  
--#define PCI_VENDOR_ID_CB	0x1307	/*  PCI vendor number of ComputerBoards */
-+/* PCI vendor number of ComputerBoards */
-+#define PCI_VENDOR_ID_CB        0x1307
- #define EEPROM_SIZE	128	/*  number of entries in eeprom */
--#define MAX_AO_CHANNELS 8	/*  maximum number of ao channels for supported boards */
-+#define MAX_AO_CHANNELS 8	/*  maximum number of ao channels for supported
-+				 *  boards */
+-	printk("comedi%d: cb_pcidas64\n", dev->minor);
++	printk(KERN_INFO "comedi%d: cb_pcidas64\n", dev->minor);
  
- /* PCI-DDA base addresses */
- #define DIGITALIO_BADRINDEX	2
-@@ -214,7 +216,8 @@ MODULE_DEVICE_TABLE(pci, cb_pcidda_pci_table);
+ /*
+  * Allocate the private structure area.
+@@ -1776,13 +1776,13 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	}
  
- /* this structure is for data unique to this hardware driver.  If
-    several hardware drivers keep similar information in this structure,
--   feel free to suggest moving the variable to the struct comedi_device struct.  */
-+   feel free to suggest moving the variable to the struct comedi_device
-+   struct.  */
- struct cb_pcidda_private {
- 	int data;
+ 	if (dev->board_ptr == NULL) {
+-		printk
+-		    ("No supported ComputerBoards/MeasurementComputing card found\n");
++		printk(KERN_WARNING
++				"No supported ComputerBoards/MeasurementComputing card found\n");
+ 		return -EIO;
+ 	}
  
-@@ -241,13 +244,17 @@ struct cb_pcidda_private {
- static int cb_pcidda_attach(struct comedi_device *dev,
- 			    struct comedi_devconfig *it);
- static int cb_pcidda_detach(struct comedi_device *dev);
--/* static int cb_pcidda_ai_rinsn(struct comedi_device *dev,struct comedi_subdevice *s,struct comedi_insn *insn,unsigned int *data); */
-+/* static int cb_pcidda_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
-+ * struct comedi_insn *insn, unsigned int *data);
-+ */
- static int cb_pcidda_ao_winsn(struct comedi_device *dev,
- 			      struct comedi_subdevice *s,
- 			      struct comedi_insn *insn, unsigned int *data);
+-	printk("Found %s on bus %i, slot %i\n", board(dev)->name,
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
++	printk(KERN_INFO "Found %s on bus %i, slot %i\n", board(dev)->name,
++			pcidev->bus->number, PCI_SLOT(pcidev->devfn));
  
- /* static int cb_pcidda_ai_cmd(struct comedi_device *dev, struct *comedi_subdevice *s);*/
--/* static int cb_pcidda_ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s, struct comedi_cmd *cmd); */
-+/* static int cb_pcidda_ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
-+ * struct comedi_cmd *cmd);
-+ */
- /* static int cb_pcidda_ns_to_timer(unsigned int *ns,int *round); */
+ 	if (comedi_pci_enable(pcidev, driver_cb_pcidas.driver_name)) {
+ 		printk(KERN_WARNING
+@@ -1814,7 +1814,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- static unsigned int cb_pcidda_serial_in(struct comedi_device *dev);
-@@ -491,7 +498,9 @@ static int cb_pcidda_ai_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 1;
+ 	if (!priv(dev)->plx9080_iobase || !priv(dev)->main_iobase
+ 	    || !priv(dev)->dio_counter_iobase) {
+-		printk(" failed to remap io memory\n");
++		printk(KERN_WARNING " failed to remap io memory\n");
+ 		return -ENOMEM;
+ 	}
  
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/* step 2: make sure trigger sources are unique and mutually
-+	 * compatible
-+	 */
+@@ -1850,17 +1850,17 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- 	/* note that mutual compatibility is not an issue here */
- 	if (cmd->scan_begin_src != TRIG_TIMER
+ 	priv(dev)->hw_revision =
+ 	    hw_revision(dev, readw(priv(dev)->main_iobase + HW_STATUS_REG));
+-	printk(" stc hardware revision %i\n", priv(dev)->hw_revision);
++	printk(KERN_DEBUG " stc hardware revision %i\n", priv(dev)->hw_revision);
+ 	init_plx9080(dev);
+ 	init_stc_registers(dev);
+ 	/*  get irq */
+ 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
+ 			"cb_pcidas64", dev)) {
+-		printk(" unable to allocate irq %u\n", pcidev->irq);
++		printk(KERN_DEBUG " unable to allocate irq %u\n", pcidev->irq);
+ 		return -EINVAL;
+ 	}
+ 	dev->irq = pcidev->irq;
+-	printk(" irq %u\n", dev->irq);
++	printk(KERN_DEBUG " irq %u\n", dev->irq);
+ 
+ 	retval = setup_subdevices(dev);
+ 	if (retval < 0)
+@@ -1882,7 +1882,7 @@ static int detach(struct comedi_device *dev)
+ {
+ 	unsigned int i;
+ 
+-	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
++	printk(KERN_INFO "comedi%d: cb_pcidas: remove\n", dev->minor);
+ 
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
 -- 
 1.6.5.2
 
