@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502Ab1HaNp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:45:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5192 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756264Ab1HaNoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:44:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,307,1312182000"; 
-   d="scan'208";a="44294997"
-From: Oren Weil <oren.jer.weil@intel.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
-        tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 08/12] staging: mei: resuming timer regardless of the watchdog timeout value.
-Date: Wed, 31 Aug 2011 16:42:44 +0300
-Message-Id: <1314798168-15613-9-git-send-email-oren.jer.weil@intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
-References: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
+	id S1756532Ab1HaNpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:45:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53294 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756072Ab1HaNpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 09:45:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: [patch v2 15/35] Hexagon: Add init_task and process functions
+Date: Wed, 31 Aug 2011 15:45:14 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+References: <20110830190729.923334292@codeaurora.org> <20110830190801.159310885@codeaurora.org>
+In-Reply-To: <20110830190801.159310885@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108311545.14797.arnd@arndb.de>
+X-Provags-ID: V02:K0:be13LbqM9o/VnkN07Gzj6ksTswTcB0YbgFENfTZ46ZC
+ UjGKOV5OIfybOYCPEOj105kFCpYCndIkZFDtw0621Y+Y67LVDM
+ FBEwipWrAMV3R8iG0/+XhlN4A7qhKq5HCYzKwJ+NU66UiygT3+
+ 9/FLfFvUeuUVAijTPZ7xN/bJd7LoyJEYVySR4Y72RQhEdELYQL
+ gtCCFjxB4dZjTFS0bV2KgCLPgOe/ZXG0yqcEnz4JXgbnklFMHn
+ 277BX9Vj436BgYwkKE0clX6RChcjuhEwPWeqmvuxUNBsMQxftY
+ hhdWBzU/MdmBPaN9W+1QxZEoDZ8zh5NUFeLiqv7u/79jXQ2yTn
+ BpNfmYneSrzbAEeMweuY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the timer_work does not only handle watchdog but also handles mei timeouts.
+On Tuesday 30 August 2011, Richard Kuo wrote:
+> Fixed potential race-to-sleep condition in cpu_idle().  I hope.
+> 
+> If called with interrupts disabled, our __vmwait() actually just returns
+> without servicing it.  Let me know if there's any other condition that
+> I've missed...
 
-Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
-Acked-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/staging/mei/main.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+The race should be gone now, but
 
-diff --git a/drivers/staging/mei/main.c b/drivers/staging/mei/main.c
-index 7009937..3b0b703 100644
---- a/drivers/staging/mei/main.c
-+++ b/drivers/staging/mei/main.c
-@@ -1151,11 +1151,9 @@ static int mei_pci_resume(struct device *device)
- 	mei_reset(dev, 1);
- 	mutex_unlock(&dev->device_lock);
- 
--	/* Start watchdog if stopped in suspend */
--	if (dev->wd_timeout) {
--		dev->wd_due_counter = 1;
--		schedule_delayed_work(&dev->timer_work, HZ);
--	}
-+	/* Start timer if stopped in suspend */
-+	schedule_delayed_work(&dev->timer_work, HZ);
-+
- 	return err;
- }
- static SIMPLE_DEV_PM_OPS(mei_pm_ops, mei_pci_suspend, mei_pci_resume);
--- 
-1.7.4.1
+> +void cpu_idle(void)
+> +{
+> +	while (1) {
+> +		tick_nohz_stop_sched_tick(1);
+> +		local_irq_disable();
+> +		while (!need_resched()) {
+> +			idle_sleep();
+> +			/*  interrupts wake us up, but aren't serviced  */
+> +			local_irq_enable();	/* service interrupt   */
+> +			local_irq_disable();
+> +		}
+> +		tick_nohz_restart_sched_tick();
+> +		schedule();
+> +	}
+> +}
 
+you now call schedule() with interrupts disabled, which isn't strictly
+allowed.
+
+I think it should all be fine if you write it as
+
+	while (1) {
+		tick_nohz_stop_sched_tick(1);
+		local_irq_disable();
+		while (!need_resched()) {
+			idle_sleep();
+		}
+		local_irq_enable();
+		tick_nohz_restart_sched_tick();
+		schedule();
+	}
+
+
+	Arnd
