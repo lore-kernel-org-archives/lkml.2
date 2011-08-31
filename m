@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab1HaLFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 07:05:35 -0400
-Received: from 207-126-122-235.ip.openhosting.com ([207.126.122.235]:36724
-	"EHLO drepperk.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754787Ab1HaLFb (ORCPT
+	id S1754210Ab1HaLNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 07:13:04 -0400
+Received: from nskntqsrv01p.mx.bigpond.com ([61.9.168.231]:22822 "EHLO
+	nskntqsrv01p.mx.bigpond.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750845Ab1HaLNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 07:05:31 -0400
-Message-ID: <4E5E152A.9050804@akkadia.org>
-Date: Wed, 31 Aug 2011 07:04:10 -0400
-From: Ulrich Drepper <drepper@akkadia.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.11
+	Wed, 31 Aug 2011 07:13:01 -0400
+Date: Wed, 31 Aug 2011 17:22:54 +1000
+From: Shaun Kluzek <g0del@bigpond.com>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] USB GADGET: u_serial.c: fixed a brace and whitespace coding
+ style issue
+Message-ID: <20110831072254.GA9706@epione>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jeremy Allison <jra@samba.org>, Daniel Ehrenberg <dehrenberg@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org
-Subject: Re: Approaches to making io_submit not block
-References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>	<CAAK6Zt0Sh1GdEOb-tNf2FGXJs=e1Jbcqew13R_GdTqrv6vW97w@mail.gmail.com>	<x49k49uk2ox.fsf@segfault.boston.devel.redhat.com>	<4E5D5817.6040704@kernel.dk>	<CAAK6Zt2C1646qwDiZ7sWheSWrnx2yrDtCE=+VTx7QNyh2bEz_g@mail.gmail.com>	<4E5D64E8.7000102@kernel.dk>	<20110830154157.d802d097.akpm@linux-foundation.org>	<CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>	<20110830155438.bc31ab99.akpm@linux-foundation.org>	<20110830230342.GB16326@samba2> <20110830161130.592df746.akpm@linux-foundation.org>
-In-Reply-To: <20110830161130.592df746.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigF18CB5BF271D70C8C34D945B"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authentication-Info: Submitted using SMTP AUTH LOGIN at nskntotgx04p.mx.bigpond.com from [120.147.37.27] using ID g0del at Wed, 31 Aug 2011 07:23:10 +0000
+X-SIH-MSG-ID: rhAyE93/TAD0zmZ50TewOwQiyAzmqyN+8Z4QW81lrR0GT0Hdu8bOJJ/3Y9IElp7l1S5MMRCHPWshY7zmXY7QiA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigF18CB5BF271D70C8C34D945B
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On 08/30/2011 07:11 PM, Andrew Morton wrote:
-> I don't know.  Uli cc'ed.
+Signed-off-by: Shaun Kluzek <g0del@bigpond.com>
+---
+ drivers/usb/gadget/u_serial.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-glibc has to create the parallelism of the operations through threads.
-More threads mean more overhead.  There are insane people out there who
-wrote code which pushed the number of helper threads into the hundreds
-(at that time a high number, today this would be in the thousands).
-Anyway, any scheme which is worth changing the code for would be in the
-kernel.  Only the kernel knows which requests can actually be handled
-concurrently.
+diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+index a8aa469..b86022f 100644
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -552,11 +552,8 @@ recycle:
+ 	/* Push from tty to ldisc; without low_latency set this is handled by
+ 	 * a workqueue, so we won't get callbacks and can hold port_lock
+ 	 */
+-	if (tty && do_push) {
++	if (tty && do_push)
+ 		tty_flip_buffer_push(tty);
+-	}
+-
+-
+ 	/* We want our data queue to become empty ASAP, keeping data
+ 	 * in the tty and ldisc (not here).  If we couldn't push any
+ 	 * this time around, there may be trouble unless there's an
+-- 
+1.7.3.4
 
-
---------------enigF18CB5BF271D70C8C34D945B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEARECAAYFAk5eFSoACgkQ2ijCOnn/RHSPYACfVO1UwifSPGbzkVN2XW/WonFA
-FU4AoMuf9HHPXIAEGN0CzPQqB6y5vGLk
-=eJ+H
------END PGP SIGNATURE-----
-
---------------enigF18CB5BF271D70C8C34D945B--
