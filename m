@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab1HaNCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:02:50 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:53878 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755479Ab1HaNCt (ORCPT
+	id S1755584Ab1HaNC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:02:58 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36145 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab1HaNCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:02:49 -0400
-Subject: Re: [PATCH 2/2] Staging: comedi: fix line over 80 character issue
- in cb_pcidda.c
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1314791820-2780-1-git-send-email-ravishankar.km@greenturtles.in>
-References: <[PATCH 2/2]Staging: comedi:fix line over 80 character issue in cb_pcidda.c>
-	 <1314791820-2780-1-git-send-email-ravishankar.km@greenturtles.in>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 31 Aug 2011 16:02:42 +0300
-Message-ID: <1314795762.14150.2.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Aug 2011 09:02:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <87oc2si3l7.fsf@devron.myhome.or.jp>
+References: <20110328103431.GA22323@july>
+	<201103301620.50263.arnd@arndb.de>
+	<AANLkTi=QVe0UK3Q_xKG17_aHH7g4Y=miWu7UT7ogisyP@mail.gmail.com>
+	<201103301706.36214.arnd@arndb.de>
+	<BANLkTi=DizSrow6hW6QGZcP=ios7BDshUQ@mail.gmail.com>
+	<87wrhgk8lp.fsf@devron.myhome.or.jp>
+	<BANLkTi=7C3Lv2WkPoZzBCh2S87cVFcbp3Q@mail.gmail.com>
+	<87r57ok3fp.fsf@devron.myhome.or.jp>
+	<BANLkTi=i5S1Pj6xOm1cY1XSUxx0jByq+JQ@mail.gmail.com>
+	<87mxick0zj.fsf@devron.myhome.or.jp>
+	<alpine.LFD.2.00.1105241102200.5457@dhcp-27-109.brq.redhat.com>
+	<874o4kjtsy.fsf@devron.myhome.or.jp>
+	<alpine.LFD.2.00.1105241211100.4028@dhcp-27-109.brq.redhat.com>
+	<87y61wic4h.fsf@devron.myhome.or.jp>
+	<alpine.LFD.2.00.1105241319340.4028@dhcp-27-109.brq.redhat.com>
+	<87sjs4i93w.fsf@devron.myhome.or.jp>
+	<alpine.LFD.2.00.1105241520260.4028@dhcp-27-109.brq.redhat.com>
+	<87oc2si3l7.fsf@devron.myhome.or.jp>
+Date: Wed, 31 Aug 2011 22:02:53 +0900
+X-Google-Sender-Auth: wSZneqRVg7YICY_PrgpfqvWs5lg
+Message-ID: <CAH9JG2UDKD-tZPo-OiQmiheNvPqPE2o_cTEbc9M9Uu02HB6hcw@mail.gmail.com>
+Subject: Re: [PATCH v6] fat: Batched discard support for fat
+From: Kyungmin Park <kmpark@infradead.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Lukas Czerner <lczerner@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-31 at 17:27 +0530, Ravishankar K Mallikarjunayya wrote:
-> This is a patch to the cb_pcidda.c file that fixes up a line over 80 character warning found by the checkpatch.pl tool
-> 
-> Signed-off-by: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-> ---
+Hi Ogawa,
 
-If you already bother fixing checkpatch warnings, please follow the
-coding style guide (/Documentation/CodingStyle):
+Do you still object to merge batched discard support on fat?
 
-	The preferred style for long (multi-line) comments is:
+If the current batched discard concept doesn't changed, it can't merge it?
 
-		/*
-		 * This is the preferred style for multi-line
-		 * comments in the Linux kernel source code.
-		 * Please use it consistently.
-		 *
-		 * Description:  A column of asterisks on the left side,
-		 * with beginning and ending almost-blank lines.
-		 */
+BTW please consider that it's not functional feature at fat
+filesystem. it's hint for device which reduce the merge operational
+internally and it doesn't effect the filesystem operation itself.
 
->  drivers/staging/comedi/drivers/cb_pcidda.c |   21 +++++++++++++++------
->  1 files changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-> index 661e945..847b5be 100644
-> --- a/drivers/staging/comedi/drivers/cb_pcidda.c
-> +++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-> @@ -51,9 +51,11 @@ Please report success/failure with other different cards to
->  #include "comedi_pci.h"
->  #include "8255.h"
->  
-> -#define PCI_VENDOR_ID_CB	0x1307	/*  PCI vendor number of ComputerBoards */
-> +/* PCI vendor number of ComputerBoards */
-> +#define PCI_VENDOR_ID_CB        0x1307
->  #define EEPROM_SIZE	128	/*  number of entries in eeprom */
-> -#define MAX_AO_CHANNELS 8	/*  maximum number of ao channels for supported boards */
-> +#define MAX_AO_CHANNELS 8	/*  maximum number of ao channels for supported
-> +				 *  boards */
->  
->  /* PCI-DDA base addresses */
->  #define DIGITALIO_BADRINDEX	2
-> @@ -214,7 +216,8 @@ MODULE_DEVICE_TABLE(pci, cb_pcidda_pci_table);
->  
->  /* this structure is for data unique to this hardware driver.  If
->     several hardware drivers keep similar information in this structure,
-> -   feel free to suggest moving the variable to the struct comedi_device struct.  */
-> +   feel free to suggest moving the variable to the struct comedi_device
-> +   struct.  */
->  struct cb_pcidda_private {
->  	int data;
->  
-> @@ -241,13 +244,17 @@ struct cb_pcidda_private {
->  static int cb_pcidda_attach(struct comedi_device *dev,
->  			    struct comedi_devconfig *it);
->  static int cb_pcidda_detach(struct comedi_device *dev);
-> -/* static int cb_pcidda_ai_rinsn(struct comedi_device *dev,struct comedi_subdevice *s,struct comedi_insn *insn,unsigned int *data); */
-> +/* static int cb_pcidda_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
-> + * struct comedi_insn *insn, unsigned int *data);
-> + */
->  static int cb_pcidda_ao_winsn(struct comedi_device *dev,
->  			      struct comedi_subdevice *s,
->  			      struct comedi_insn *insn, unsigned int *data);
->  
->  /* static int cb_pcidda_ai_cmd(struct comedi_device *dev, struct *comedi_subdevice *s);*/
-> -/* static int cb_pcidda_ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s, struct comedi_cmd *cmd); */
-> +/* static int cb_pcidda_ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
-> + * struct comedi_cmd *cmd);
-> + */
->  /* static int cb_pcidda_ns_to_timer(unsigned int *ns,int *round); */
->  
->  static unsigned int cb_pcidda_serial_in(struct comedi_device *dev);
-> @@ -491,7 +498,9 @@ static int cb_pcidda_ai_cmdtest(struct comedi_device *dev,
->  	if (err)
->  		return 1;
->  
-> -	/* step 2: make sure trigger sources are unique and mutually compatible */
-> +	/* step 2: make sure trigger sources are unique and mutually
-> +	 * compatible
-> +	 */
->  
->  	/* note that mutual compatibility is not an issue here */
->  	if (cmd->scan_begin_src != TRIG_TIMER
+Thank you,
+Kyungmin Park
 
--- 
-
-Sasha.
-
+On Tue, May 24, 2011 at 11:19 PM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+> Lukas Czerner <lczerner@redhat.com> writes:
+>
+>>> What is size of file system or underlying devices? You force to find the
+>>> device which target FS is using? Even if you can get size of underlying
+>>> devices, you force to user to insane loop in size of devices?
+>>
+>> Look, I do not have time to argue with you forever and I do not even
+>> understand what is your point. Just go and read other filesystems
+>> implementation of FITRIM (ext4,ext3,xfs,btrfs?) and you'll see what you
+>> need to do.
+>>
+>> If you do not want to get the file system size, then FINE! just pass the
+>> damn UULONG_MAX as length. I have no clue what insane loop are you
+>> talking about! It is *easy* just discard the whole thing (with
+>> UULONG_MAX) or, if you want to do it per-partes, then do it as long as
+>> it does not return EINVAL, once it does you know that your "start" is
+>> out of the filesystem and you are done!
+>
+> You are not even understanding current implementations. See
+> ext3_trim_fs(), and ext4_trim_fs().
+>
+> What happen if "start" was outside of max_blks:
+>
+> ext3 returns 0
+> ext4 returns EINVAL
+>
+> What means "start" is 0
+>
+> ext3 maps to 1
+> ext4 just remove 0 from request
+>
+> I missing something?
+>
+>>> Why can you guarantee it's not big deal in design? Why can't you admit
+>>> userland can't make optimized loop?
+>>
+>> And what do you mean by that ?
+>>
+>> -Lukas
+>
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
