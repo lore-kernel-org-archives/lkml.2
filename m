@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab1HaEkC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 00:40:02 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52371 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab1HaEj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 00:39:58 -0400
-Subject: Re: undefined reference to `sys_nfsservctl'
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <alpine.DEB.2.01.1108290809260.9183@trent.utfs.org>
-Date: Tue, 30 Aug 2011 23:38:48 -0500
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        lkml list <linux-kernel@vger.kernel.org>, Trond.Myklebust@netapp.com,
-        neilb@suse.de, bfields@redhat.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	id S1752449Ab1HaEoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 00:44:14 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30719 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab1HaEoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 00:44:10 -0400
+Message-ID: <4E5DBBFD.5020202@oracle.com>
+Date: Tue, 30 Aug 2011 21:43:41 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Andreas Dilger <adilger@dilger.ca>, Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk, dchinner@redhat.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110825060632.GA9933@infradead.org> <20110825064039.GO3162@dastard> <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca> <20110826013528.GW3162@dastard> <4E5D8B8E.8030401@oracle.com> <20110831032932.GI32358@dastard>
+In-Reply-To: <20110831032932.GI32358@dastard>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <6C86E8D5-E93C-4D37-8D86-03F88309CD44@kernel.crashing.org>
-References: <alpine.DEB.2.01.1108282138020.9183@trent.utfs.org> <20110829161726.c980a80258fe714db49b425b@canb.auug.org.au> <alpine.DEB.2.01.1108290809260.9183@trent.utfs.org>
-To: Christian Kujau <lists@nerdbynature.de>
-X-Mailer: Apple Mail (2.1084)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4E5DBC0A.0089,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/30/2011 8:29 PM, Dave Chinner wrote:
+> And that's -exactly- the ambiguous, vague definition that has raised
+> all these questions in the first place. I was in doubt about whether
+> unwritten extents can be considered a hole, and by your definition
+> that means it should be data. But Andreas seems to be in no doubt it
+> should be considered a hole.
 
-On Aug 29, 2011, at 10:11 AM, Christian Kujau wrote:
+Fair enough. Let me rephrase.
 
-> On Mon, 29 Aug 2011 at 16:17, Stephen Rothwell wrote:
->>>  MODPOST vmlinux.o
->>> WARNING: modpost: Found 1 section mismatch(es).
->>> To see full details build your kernel with:
->>> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
->>>  GEN     .version
->>>  CHK     include/generated/compile.h
->>>  UPD     include/generated/compile.h
->>>  CC      init/version.o
->>>  LD      init/built-in.o
->>>  LD      .tmp_vmlinux1
->>> arch/powerpc/kernel/built-in.o: In function `sys_call_table':
->>> (.text+0x5be0): undefined reference to `sys_nfsservctl'
->>> make[1]: *** [.tmp_vmlinux1] Error 1
->>> make: *** [sub-make] Error 2
->> 
->> I posted a patch to Linus earlier today (subject of lkml message:
->> "linux-next: build failure in Linus' tree").
-> 
-> Ah, thanks. Will try. Meanwhile I've just reverted 
-> f5b940997397229975ea073679b03967932a541b (All Arch: remove linkage for 
-> sys_nfsservctl system call) and it compiled w/o errors too.
-> 
-> Christian.
+Data:
+A range in a file when read could return something other than nulls.
 
-Posted patch to fix this on PPC.  Hopefully BenH will notice ;)
+Hole:
+A range in a file when read only returns nulls.
 
-- k
+Considering preallocated extents only return null, they should
+be considered holes.
+
+
