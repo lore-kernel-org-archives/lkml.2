@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab1HaOmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 10:42:10 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:58557 "EHLO e4.ny.us.ibm.com"
+	id S1755547Ab1HaOnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 10:43:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52358 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755633Ab1HaOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 10:42:08 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, dan.magenheimer@oracle.com, ngupta@vflare.org,
-        cascardo@holoscopio.com, rdunlap@xenotime.net,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH 0/3] staging: zcache: xcfmalloc support
-Date: Wed, 31 Aug 2011 09:40:38 -0500
-Message-Id: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754621Ab1HaOnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 10:43:13 -0400
+Date: Wed, 31 Aug 2011 16:43:12 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 10/11] scripts/Makefile.build: do not reference
+ EXTRA_CFLAGS as CFLAGS replacement
+Message-ID: <20110831144312.GC30387@sepie.suse.cz>
+References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
+ <1313384834-24433-11-git-send-email-lacombar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313384834-24433-11-git-send-email-lacombar@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset introduces a new memory allocator for persistent
-pages for zcache.  The current allocator is xvmalloc.  xvmalloc
-has two notable limitations:
-* High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
-* No compaction support which reduces page reclaimation
+On Mon, Aug 15, 2011 at 01:07:13AM -0400, Arnaud Lacombe wrote:
+> Usage of these flags has been deprecated for nearly 4 years by:
+> 
+>     commit f77bf01425b11947eeb3b5b54685212c302741b8
+>     Author: Sam Ravnborg <sam@neptun.(none)>
+>     Date:   Mon Oct 15 22:25:06 2007 +0200
+> 
+>         kbuild: introduce ccflags-y, asflags-y and ldflags-y
+> 
+> Moreover, these flags (at least EXTRA_CFLAGS) have been documented for command
+> line use. By default, gmake(1) do not override command line setting, so this is
+> likely to result in build failure or unexpected behavior.
+> 
+> Do not advertise for its usage.
+> 
+> Cc: Sam Ravnborg <sam@ravnborg.org>
+> Cc: linux-kbuild@vger.kernel.org
 
-xcfmalloc seeks to fix these issues by using scatter-gather model that
-allows for cross-page allocations and relocatable data blocks.
+Thanks, I applied this to kbuild-2.6.git#kbuild with your signoff
+assumed.
 
-In tests, with pages that only compress to 75% of their original
-size, xvmalloc had an effective compression (pages stored / pages used by the
-compressed memory pool) of ~95% (~20% lost to fragmentation). Almost nothing
-was gained by the compression in this case. xcfmalloc had an effective
-compression of ~77% (about ~2% lost to fragmentation and metadata overhead).
-
-xcfmalloc uses the same locking scheme as xvmalloc; a single pool-level
-spinlock.  This can lead to some contention.  However, in my tests on a 4
-way SMP system, the contention was minimal (200 contentions out of 600k
-aquisitions).  The locking scheme may be able to be improved in the future.
-In tests, xcfmalloc and xvmalloc had identical throughputs.
-
-While the xcfmalloc design lends itself to compaction, this is not yet
-implemented.  Support will be added in a follow-on patch.
-
-Based on 3.1-rc4.
-
-Seth Jennings (3):
-  staging: zcache: xcfmalloc memory allocator for zcache
-  staging: zcache: replace xvmalloc with xcfmalloc
-  staging: zcache: add zv_page_count and zv_desc_count
-
- drivers/staging/zcache/Makefile      |    2 +-
- drivers/staging/zcache/xcfmalloc.c   |  653 ++++++++++++++++++++++++++++++++++
- drivers/staging/zcache/xcfmalloc.h   |   29 ++
- drivers/staging/zcache/zcache-main.c |  154 ++++++---
- 4 files changed, 791 insertions(+), 47 deletions(-)
- create mode 100644 drivers/staging/zcache/xcfmalloc.c
- create mode 100644 drivers/staging/zcache/xcfmalloc.h
-
--- 
-1.7.4.1
-
+Michal
