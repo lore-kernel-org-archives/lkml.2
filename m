@@ -1,97 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab1HaTbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 15:31:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47656 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab1HaTbm (ORCPT
+	id S1753068Ab1HaTha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 15:37:30 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:41704 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598Ab1HaTh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 15:31:42 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Paul Slootman <paul@wurtel.net>, linux-btrfs@vger.kernel.org,
-        chris.mason@oracle.com
-Subject: Re: linux 3.0: kernel BUG at fs/btrfs/inode.c:1584!
-Date: Wed, 31 Aug 2011 21:31:36 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20110825093242.GA8450@msgid.wurtel.net>
-In-Reply-To: <20110825093242.GA8450@msgid.wurtel.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108312131.36670.maciej.rutecki@gmail.com>
+	Wed, 31 Aug 2011 15:37:29 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [PATCH "find-renames version" 4/4] TTY: serial, move 68360 driver to staging
+Date: Wed, 31 Aug 2011 21:37:24 +0200
+Message-Id: <1314819444-11864-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1314819086.30506.3.camel@lappy>
+References: <1314819086.30506.3.camel@lappy>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 25 sierpnia 2011 o 11:32:42 Paul Slootman wrote:
-> I got the following message just now:
-> 
-> Aug 25 09:53:14 duimalot kernel: kernel BUG at fs/btrfs/inode.c:1584!
-> Aug 25 09:53:14 duimalot kernel: invalid opcode: 0000 [#1] SMP
-> Aug 25 09:53:14 duimalot kernel: CPU 1
-> Aug 25 09:53:14 duimalot kernel: Modules linked in: loop 8021q acpi_cpufreq
-> mperf e1000 sg sr_mod e1000e cdrom processor container button evdev
-> thermal_sys i3000_edac arcmsr edac_core Aug 25 09:53:14 duimalot kernel:
-> Aug 25 09:53:14 duimalot kernel: Pid: 12162, comm: btrfs-fixup-0 Tainted: G
->        W   3.0.0-vs2.3.1-pre8 #2 Supermicro PDSM4+/PDSM4+ Aug 25 09:53:14
-> duimalot kernel: RIP: 0010:[<ffffffff812220e8>]  [<ffffffff812220e8>]
-> btrfs_writepage_fixup_worker+0x158/0x160 Aug 25 09:53:14 duimalot kernel:
-> RSP: 0018:ffff880117f13df0  EFLAGS: 00010246 Aug 25 09:53:14 duimalot
-> kernel: RAX: 0000000000000000 RBX: 000000000a45b000 RCX: 0000000000000000
-> Aug 25 09:53:14 duimalot kernel: RDX: 000000025a32b7f4 RSI:
-> 000000000a45b000 RDI: ffff880016ca90a0 Aug 25 09:53:14 duimalot kernel:
-> RBP: ffffea00038a4058 R08: ffffea00002c30a8 R09: ffffffff8124290f Aug 25
-> 09:53:14 duimalot kernel: R10: 0000000000000010 R11: 0000000000000000 R12:
-> 000000000a45bfff Aug 25 09:53:14 duimalot kernel: R13: ffff880016ca9178
-> R14: ffff880016ca9010 R15: 0000000000000000 Aug 25 09:53:14 duimalot
-> kernel: FS:  0000000000000000(0000) GS:ffff88011fd00000(0000)
-> knlGS:0000000000000000 Aug 25 09:53:14 duimalot kernel: CS:  0010 DS: 0000
-> ES: 0000 CR0: 000000008005003b Aug 25 09:53:14 duimalot kernel: CR2:
-> 000000001b0a62f8 CR3: 0000000025608000 CR4: 00000000000006e0 Aug 25
-> 09:53:14 duimalot kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000 Aug 25 09:53:14 duimalot kernel: DR3: 0000000000000000
-> DR6: 00000000ffff0ff0 DR7: 0000000000000400 Aug 25 09:53:14 duimalot
-> kernel: Process btrfs-fixup-0 (pid: 12162, threadinfo ffff880117f12000,
-> task ffff880118920760) Aug 25 09:53:14 duimalot kernel: Stack:
-> Aug 25 09:53:14 duimalot kernel:  ffff880056cbb420 0000000000000000
-> ffff8800748aec00 ffff880056cbb428 Aug 25 09:53:14 duimalot kernel: 
-> ffff880056cbb450 ffff8801064aa840 ffff8801064aa890 ffff8801064aa858 Aug 25
-> 09:53:14 duimalot kernel:  ffff8801064aa848 ffffffff8124d419
-> ffff880117f13e90 ffff880117f13e80 Aug 25 09:53:14 duimalot kernel: Call
-> Trace:
-> Aug 25 09:53:14 duimalot kernel:  [<ffffffff8124d419>] ?
-> worker_loop+0x169/0x520 Aug 25 09:53:14 duimalot kernel: 
-> [<ffffffff8124d2b0>] ? btrfs_queue_worker+0x2f0/0x2f0 Aug 25 09:53:14
-> duimalot kernel:  [<ffffffff81065956>] ? kthread+0x96/0xb0 Aug 25 09:53:14
-> duimalot kernel:  [<ffffffff81495394>] ? kernel_thread_helper+0x4/0x10 Aug
-> 25 09:53:14 duimalot kernel:  [<ffffffff810658c0>] ?
-> kthread_worker_fn+0x180/0x180 Aug 25 09:53:14 duimalot kernel: 
-> [<ffffffff81495390>] ? gs_change+0xb/0xb Aug 25 09:53:14 duimalot kernel:
-> Code: 5c 41 5d 41 5e 41 5f c3 0f 1f 00 41 b8 50 00 00 00 48 8d 4c 24 10 4c
-> 89 e2 48 89 de 4c 89 f7 e8 7f 1e 02 00 eb ba 0f 1f 44 00 00 <0f> 0b eb fe
-> 0f 1f 40 00 41 56 49 89 fe 41 55 41 54 55 53 48 83 Aug 25 09:53:14
-> duimalot kernel: RIP  [<ffffffff812220e8>]
-> btrfs_writepage_fixup_worker+0x158/0x160 Aug 25 09:53:14 duimalot kernel: 
-> RSP <ffff880117f13df0>
-> Aug 25 09:53:14 duimalot kernel: ---[ end trace 948b88b1d8dd7dc8 ]---
-> 
-> The system has been running previously just fine for more than a year
-> before I upgraded it to linux 3.0 and added a btrfs filesystem.
-> This is a storage system, and the btrfs filesystem is 41TB in size.
-> Currently it's 17% full.
-> 
-> If any other info is needed, let me know.
-> 
-> 
+This driver has been broken at least since 2008. At that time,
+a88487c79b (Fix compile errors in SGI console drivers) broke this
+driver completely.
 
-Cany you check that eg 2.6.39 works OK and/or try bisecton?
+And since nobody noticed for the past 3 years, move it into staging. I
+think this will rot there and we will throw it away completely after
+some time. Or maybe someone will volunteer to fix it ;).
 
-(add CCs)
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Alan Cox <alan@linux.intel.com>
+---
 
-Regards
+ *********
+ Just attaching with --find-renames for clarity...
+ *********
+
+ drivers/staging/Kconfig                       |    2 ++
+ drivers/staging/Makefile                      |    1 +
+ drivers/{tty => staging}/serial/68360serial.c |    0
+ drivers/staging/serial/Kconfig                |   16 ++++++++++++++++
+ drivers/staging/serial/Makefile               |    1 +
+ drivers/staging/serial/TODO                   |    6 ++++++
+ drivers/tty/serial/Kconfig                    |   17 -----------------
+ drivers/tty/serial/Makefile                   |    1 -
+ 8 files changed, 26 insertions(+), 18 deletions(-)
+ rename drivers/{tty => staging}/serial/68360serial.c (100%)
+ create mode 100644 drivers/staging/serial/Kconfig
+ create mode 100644 drivers/staging/serial/Makefile
+ create mode 100644 drivers/staging/serial/TODO
+
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index eac0a7f..cb3b60d 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -24,6 +24,8 @@ menuconfig STAGING
+ 
+ if STAGING
+ 
++source "drivers/staging/serial/Kconfig"
++
+ source "drivers/staging/et131x/Kconfig"
+ 
+ source "drivers/staging/slicoss/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index 20be112..1d865d2 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -3,6 +3,7 @@
+ # fix for build system bug...
+ obj-$(CONFIG_STAGING)		+= staging.o
+ 
++obj-y				+= serial/
+ obj-$(CONFIG_ET131X)		+= et131x/
+ obj-$(CONFIG_SLICOSS)		+= slicoss/
+ obj-$(CONFIG_VIDEO_GO7007)	+= go7007/
+diff --git a/drivers/tty/serial/68360serial.c b/drivers/staging/serial/68360serial.c
+similarity index 100%
+rename from drivers/tty/serial/68360serial.c
+rename to drivers/staging/serial/68360serial.c
+diff --git a/drivers/staging/serial/Kconfig b/drivers/staging/serial/Kconfig
+new file mode 100644
+index 0000000..9489688
+--- /dev/null
++++ b/drivers/staging/serial/Kconfig
+@@ -0,0 +1,16 @@
++config SERIAL_68360_SMC
++	bool "68360 SMC uart support"
++	depends on M68360
++	help
++	  This driver supports the SMC serial ports of the Motorola 68360 CPU.
++
++config SERIAL_68360_SCC
++	bool "68360 SCC uart support"
++	depends on M68360
++	help
++	  This driver supports the SCC serial ports of the Motorola 68360 CPU.
++
++config SERIAL_68360
++	bool
++	depends on SERIAL_68360_SMC || SERIAL_68360_SCC
++	default y
+diff --git a/drivers/staging/serial/Makefile b/drivers/staging/serial/Makefile
+new file mode 100644
+index 0000000..37a6a0b
+--- /dev/null
++++ b/drivers/staging/serial/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_SERIAL_68360) += 68360serial.o
+diff --git a/drivers/staging/serial/TODO b/drivers/staging/serial/TODO
+new file mode 100644
+index 0000000..a19cda8
+--- /dev/null
++++ b/drivers/staging/serial/TODO
+@@ -0,0 +1,6 @@
++These are a few serial drivers that either do not build, or do not work if they
++do build, or if they seem to work, are for obsolete hardware, or are full of
++unfixable races and no one uses them anymore.
++
++If no one steps up to adopt any of these drivers, they will be removed
++in the 3.4 release.
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 10babe2..4cbb5a5 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1035,23 +1035,6 @@ config SERIAL_MCF_CONSOLE
+ 	help
+ 	  Enable a ColdFire internal serial port to be the system console.
+ 
+-config SERIAL_68360_SMC
+-	bool "68360 SMC uart support"
+-	depends on M68360
+-	help
+-	  This driver supports the SMC serial ports of the Motorola 68360 CPU.
+-
+-config SERIAL_68360_SCC
+-	bool "68360 SCC uart support"
+-	depends on M68360
+-	help
+-	  This driver supports the SCC serial ports of the Motorola 68360 CPU.
+-
+-config SERIAL_68360
+-	bool
+-	depends on SERIAL_68360_SMC || SERIAL_68360_SCC
+-	default y
+-
+ config SERIAL_PMACZILOG
+ 	tristate "Mac or PowerMac z85c30 ESCC support"
+ 	depends on (M68K && MAC) || (PPC_OF && PPC_PMAC)
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index 7874813..3644de5 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -49,7 +49,6 @@ obj-$(CONFIG_SERIAL_MAX3107_AAVA) += max3107-aava.o
+ obj-$(CONFIG_SERIAL_IP22_ZILOG) += ip22zilog.o
+ obj-$(CONFIG_SERIAL_MUX) += mux.o
+ obj-$(CONFIG_SERIAL_68328) += 68328serial.o
+-obj-$(CONFIG_SERIAL_68360) += 68360serial.o
+ obj-$(CONFIG_SERIAL_MCF) += mcf.o
+ obj-$(CONFIG_SERIAL_PMACZILOG) += pmac_zilog.o
+ obj-$(CONFIG_SERIAL_DZ) += dz.o
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+1.7.6.1
+
+
