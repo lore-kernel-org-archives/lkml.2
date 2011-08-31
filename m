@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750847Ab1HaEF1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 00:05:27 -0400
-Received: from abington.k12.pa.us ([216.162.93.130]:31956 "EHLO
-	SPAM.admin.Abington.k12.pa.us" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750717Ab1HaEF0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 00:05:26 -0400
-X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 00:05:26 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
+	id S1751000Ab1HaELi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 00:11:38 -0400
+Received: from ozlabs.org ([203.10.76.45]:37608 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab1HaELh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 00:11:37 -0400
+Date: Wed, 31 Aug 2011 14:11:34 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Milton Miller <miltonm@bga.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC PATCH 02/10] fadump: Reserve the memory for firmware
+ assisted dump.
+Message-ID: <20110831141134.590c4f4e@kryten>
+In-Reply-To: <20110713180648.6210.39530.stgit@mars.in.ibm.com>
+References: <20110713180252.6210.34810.stgit@mars.in.ibm.com>
+	<20110713180648.6210.39530.stgit@mars.in.ibm.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: RE: Prize Won
-Date: Tue, 30 Aug 2011 23:56:02 -0400
-Message-ID: <0D776A994E098343B75BEEA27DC1454B40045F@EXCH.admin.Abington.k12.pa.us>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Prize Won
-Thread-Index: Acxnj9rttgelQaihTheAtHDLtHE+jgAAguB6
-References: <0D776A994E098343B75BEEA27DC1454B4003D1@EXCH.admin.Abington.k12.pa.us>
-From: "Lodewick, James R." <JamesLodewick@Abington.k12.pa.us>
-To: "Lodewick, James R." <JamesLodewick@Abington.k12.pa.us>
-X-OriginalArrivalTime: 31 Aug 2011 03:57:49.0182 (UTC) FILETIME=[2644A1E0:01CC6792]
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
 
-________________________________
+Hi Mahesh,
 
-From: Lodewick, James R.
-Sent: Tue 8/30/2011 11:41 PM
-To: Lodewick, James R.
-Subject: Prize Won
+Just a few comments.
 
+> +#define RMR_START	0x0
+> +#define RMR_END		(0x1UL << 28)	/* 256 MB */
 
+What if the RMO is bigger than 256MB? Should we be using ppc64_rma_size?
 
-This is a confidential message from the Microsoft/Yahoo Office, You have been approved by the Microsoft/Yahoo Foundation Payment Board to receive a cash grant of $552,000.00 Dollars E-mail us on: agt-wilsonh@hotmail.com
- 
-Contact Secertary- Mr. Wilson Harlings 
-Email: agt-wilsonh@hotmail.com
+> +#ifdef DEBUG
+> +#define PREFIX		"fadump: "
+> +#define DBG(fmt...)	printk(KERN_ERR PREFIX fmt)
+> +#else
+> +#define DBG(fmt...)
+> +#endif
 
-Tel:(+44)7035964694 
+We should use the standard debug macros (pr_debug etc).
 
+> +/* Global variable to hold firmware assisted dump configuration info. */
+> +static struct fw_dump fw_dump;
 
-Provide him With 
-1. Full Name:  
-2. Address:  
-3. Tel/Mobile:  
-4. Occupation:     
-5. Date of Birth:   
-6. Payment number: G-900-94
+You can remove this comment, especially because the variable isn't global :)
 
-Note: All response and Queries concerning your claims should be sent via email to :(agt-wilsonh@hotmail.com)
+> +	sections = of_get_flat_dt_prop(node, "ibm,configure-kernel-dump-sizes",
+> +					NULL);
+> +
+> +	if (!sections)
+> +		return 0;
+> +
+> +	for (i = 0; i < FW_DUMP_NUM_SECTIONS; i++) {
+> +		switch (sections[i].dump_section) {
+> +		case FADUMP_CPU_STATE_DATA:
+> +			fw_dump.cpu_state_data_size =
+> sections[i].section_size;
+> +			break;
+> +		case FADUMP_HPTE_REGION:
+> +			fw_dump.hpte_region_size =
+> sections[i].section_size;
+> +			break;
+> +		}
+> +	}
+> +	return 1;
+> +}
 
-Microsoft/Yahoo Office- Announcer
+This makes me a bit nervous. We should really get the size of the property
+and use it to iterate through the array. I saw no requirement in the PAPR
+that the array had to be 2 entries long.
 
+> +static inline unsigned long calculate_reserve_size(void)
+> +{
+> +	unsigned long size;
+> +
+> +	/* divide by 20 to get 5% of value */
+> +	size = memblock_end_of_DRAM();
+> +	do_div(size, 20);
+> +
+> +	/* round it down in multiples of 256 */
+> +	size = size & ~0x0FFFFFFFUL;
+> +
+> +	/* Truncate to memory_limit. We don't want to over reserve
+> the memory.*/
+> +	if (memory_limit && size > memory_limit)
+> +		size = memory_limit;
+> +
+> +	return (size > RMR_END ? size : RMR_END);
+> +}
 
+5% is pretty aribitrary, that's 400GB on an 8TB box. Also our experience
+with kdump is that 256MB is too small. Is there any reason to scale it
+with memory size? Can we do what kdump does and set it to a single
+value (eg 512MB)?
 
-___________________________
+We could override the default with a boot option, which is similar to
+how kdump specifies the region to reserve.
 
-Abington School District
-
-Excellence is Our Standard
-Achievement is the Result
-
-The information contained in this e-mail transmission is privileged and confidential and intended only for the use of the individual(s) and or entity(ies) named above.  If you are not the intended recipient, you are hereby notified that any unauthorized disclosure, copying, distribution or taking of any action in reliance on the contents of the e-mail is strictly prohibited.  The review of this material by any individual other than the intended recipient shall not constitute voluntary disclosure of the information.  If you have received this e-mail transmission in error, please immediately notify the sender.
- 
-
-
+Anton
