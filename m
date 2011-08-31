@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab1HaRIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 13:08:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26790 "EHLO mga11.intel.com"
+	id S932176Ab1HaRKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 13:10:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56785 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932118Ab1HaRIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 13:08:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,308,1312182000"; 
-   d="scan'208";a="46877148"
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Daniel Ehrenberg <dehrenberg@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: Approaches to making io_submit not block
-References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
-	<20110830053231.GA1627@infradead.org>
-	<CAAK6Zt2P3jBPfeCPioK-ehpVAw0iQjikY0BujXfQmfozJ8GNvA@mail.gmail.com>
-	<20110831052627.GA5338@infradead.org>
-Date: Wed, 31 Aug 2011 10:08:50 -0700
-In-Reply-To: <20110831052627.GA5338@infradead.org> (Christoph Hellwig's
-	message of "Wed, 31 Aug 2011 01:26:27 -0400")
-Message-ID: <m2pqjlo6e5.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753736Ab1HaRK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 13:10:29 -0400
+Message-ID: <4E5E6AC0.60000@zytor.com>
+Date: Wed, 31 Aug 2011 10:09:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: RFD: x32 ABI system call numbers
+References: <4E582577.2060805@zytor.com> <201108301409.27527.arnd@arndb.de> <4E5D1153.5030908@zytor.com> <201108311814.54906.arnd@arndb.de> <CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com>
+In-Reply-To: <CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
->
-> I'll get it polished up and send it out for RFC once Dave sends out
-> the updated allocation workqueue patch.  With this he moves all
-> allocator calls in XFS into a workqueue.  My direct I/O patch uses that
-> fact to use that workqueue for the allocator call
+On 08/31/2011 09:46 AM, Linus Torvalds wrote:
+> On Wed, Aug 31, 2011 at 9:14 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>
+>> * padding in struct timespec when you have a long long tv_sec and
+>>  32-bit long tv_nsec. This might cause kernel stack data leakage
+>>  in some kernel interfaces when they don't clear the padding.
+> 
+> I suspect only sane solution to this (having thought about it some
+> more) is to just say "POSIX is f*^&ing wrong".
+> 
 
-Is that really a good direction? The problem when you push operations
-from multiple threads all into a single resource (per cpu workqueue)
-is that the CPU scheduler loses control over that because they
-are all mixed up.
+Urk.  Someone had the bright idea of defining tv_nsec as "long" in the
+standard, whereas tv_usec is suseconds_t.  F**** brilliant, and more
+than a little bit stupid.
 
-So if one guy submits a lot and another very little the "a lot" guy
-can overwhelm the queue for the very little guy.
+Logically one could work around it by having "struct timespec" contain a
+padding member in the endian-appropriate place I guess, and make sure to
+clear it in the kernel, but it's rather ugly.  It might have performance
+advantages to doing it that way, though.
 
-We also have similar problems with the IO schedulers, which also
-rely on process context to make fairness decisions. If you remove
-the process context they do badly.
+> I really think that "x32" should try to aim *VERY* hard at using the
+> 64-bit system calls, and seeing itself as being a "32-bit application
+> in a 64-bit world".  That's not just true for time_t (which I think
+> should be 64-bit on anything new that expects to survive for any
+> amount of time), but in general.
 
--Andi
+We're trying for it.  The things we're trying to avoid is to muck (too
+much) with the compat layer for the mega-multiplex system calls like
+ioctl.  We can't just use the 64-bit ioctl because ioctl structures
+generally contain pointers.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+	-hpa
+
