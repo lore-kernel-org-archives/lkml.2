@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab1HaNsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:48:45 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:5929 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755790Ab1HaNsk convert rfc822-to-8bit (ORCPT
+	id S1756114Ab1HaNua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:50:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59288 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755790Ab1HaNu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:48:40 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=gkv/aiwSMz5xDx50TXFWA8HSQOJ2DGyD4v8G8HKKERsGSotU2Gbv8bonowI763fSn
-	MZdVfaxg49XiaD7hWL+Tg==
+	Wed, 31 Aug 2011 09:50:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: [patch v2 17/35] Hexagon: Add interrupts
+Date: Wed, 31 Aug 2011 15:50:23 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+References: <20110830190729.923334292@codeaurora.org> <20110830190801.353140948@codeaurora.org>
+In-Reply-To: <20110830190801.353140948@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <4E5DBDB0.4070505@mips.com>
-References: <1314349633-13155-1-git-send-email-dczhu@mips.com>
- <CAErSpo5PgXs4tuihh_JZCePzD8FWWzwp=-VHxFGCCuRKRKOYFQ@mail.gmail.com>
- <CAErSpo506Mz3QSxxdpbxyCUuZvqMTNL+fT5R81ivoj7cDTFyJg@mail.gmail.com> <4E5DBDB0.4070505@mips.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 31 Aug 2011 07:48:16 -0600
-Message-ID: <CAErSpo69wROKy-4jtFteeSTUSWXiX+qk7YQTvcotstCL=cjUdA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] Pass resources to pci_create_bus() and fix MIPS
- PCI resources
-To: Deng-Cheng Zhu <dczhu@mips.com>
-Cc: jbarnes@virtuousgeek.org, ralf@linux-mips.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
-        zenon@mips.com, dengcheng.zhu@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108311550.23240.arnd@arndb.de>
+X-Provags-ID: V02:K0:7/lVmxozXYPAYcq/xgkUynQ7UusZ+i/c5JhSOrhcofJ
+ Lghm7dKMc5jT7hIgtA80mOvc7ntHxxR8ye40Zf18IF81Cza0Vx
+ BTaceLIW46SQZtJS57ID90Rou/XdbSGfgCfos7Oyn+wWXv1xUa
+ J3b+yI3FYEwLnE+T8R1bAgcrHGO/BwfqCu5gVRtWDsAADMpE1B
+ rf5zxJGoJWeR+4JWxkn+dw+0loIp2FbO6kL7dD7eVyDk5i1LMA
+ b3noIQfVO6suUhk7tSEpiMmpAxZuj+LBZUGRGZsag8xCXOrVDJ
+ c1SJlfS//2AmXjTrm3SO+qla12zU94DcjLbNjZu+wL7sbqXbq4
+ JPbFAWz1QzozNbuxztfE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 10:50 PM, Deng-Cheng Zhu <dczhu@mips.com> wrote:
-> Hi, Bjorn
->
->
-> Thanks for your constructive review.
->
->> One logistical issue here is that the first patch touches several
->> architectures at once, which puts Jesse in a bit of a pinch.  If he
->> applies it, there's always the possibility that an arch patch will
->> conflict with it, which makes merging harder.
->
-> In case the conflicts happen, the effort to resolve them should be
-> trivial (a matter of an extra NULL argument), I suppose. Also, the odds
-> of other incoming arch patches making a reference to pci_create_bus()
-> should not be great.
->
->> It might be easier if, instead of changing the pci_create_bus()
->> interface, you added a new one (it could call pci_create_bus() then
->> replace the resources, so the implementation could still be mostly
->> shared.)  We already have a plethora of "create bus" methods
->> (pci_create_bus(), pci_scan_bus_parented(), pci_scan_bus()), but if
->> you added a pci_create_root_bus() or something similar, maybe we could
->> try to converge on it and obsolete the others.
->>
->> Then the first patch would touch only the PCI core, and the second
->> would touch only MIPS, which would make merging more straightforward.
->>
->
-> Hmm.. Adding a wrapper of pci_create_bus() does leave other
-> architectures alone for this merging. But before all of them converge on
-> it (a long way to go), the wrapper is adding naming confusion to the
-> PCI core. Personally I think the current low-level transparent change to
-> pci_create_bus() is appropriate enough. Does anybody have comments?
->
->
-> Deng-Cheng
+On Tuesday 30 August 2011, Richard Kuo wrote:
+> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
-Just to be clear, I'm fine with it either way, as long as Jesse and
-the arch maintainers are OK with it.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+> +
+> +/* Number of first-level interrupts associated with the CPU core. */
+> +#define HEXAGON_CPUINTS 32
+> +
+> +/*
+> + * XXX TODO FIXME this should be pulled from a platform file!
+> + * Must define NR_IRQS before including <asm-generic/irq.h>
+> + * 64 == the two SIRC's, 176 == the two gpio's
+> + */
+> +#define NR_IRQS (HEXAGON_CPUINTS + 64 + 176)
+
+I disagree with that comment: NR_IRQS is a constant and should
+not be platform specific. There should be no compile-time settings
+that are strictly specific to one platform, otherwise you are not
+able to run the same kernel on multiple platforms, which is very
+valuable for testing purposes.
+
+Just make the constant large enough to always fit. Use sparse IRQs
+if necessary.
+
+> +#include <asm-generic/irq.h>
+> +
+> +extern void __init hexagon_cpu_irq_init(void);
+> +
+
+I don't think you actually need to declare hexagon_cpu_irq_init(), just
+rename that function to init_IRQ() and remove the wrapper.
+
+	Arnd
