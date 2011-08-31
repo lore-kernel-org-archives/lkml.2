@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab1HaW0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 18:26:14 -0400
+	id S1757042Ab1HaW0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 18:26:08 -0400
 Received: from mga02.intel.com ([134.134.136.20]:24286 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756882Ab1HaW0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 18:26:10 -0400
+	id S1757022Ab1HaW0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 18:26:05 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="43927820"
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="44161582"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>
 In-Reply-To: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
 Subject: [PATCH 4/5] mce: remove TIF_MCE_NOTIFY
-Date: Wed, 31 Aug 2011 15:26:10 -0700
-Message-Id: <4e5eb502210599ba11@agluck-desktop.sc.intel.com>
+Date: Wed, 31 Aug 2011 15:26:05 -0700
+Message-Id: <4e5eb4fd21057689fc@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From:	"Luck, Tony" <tony.luck@intel.com>
 
 From: Tony Luck <tony.luck@intel.com>
 
