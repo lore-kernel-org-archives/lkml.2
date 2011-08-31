@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab1HaLhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 07:37:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1039 "EHLO mx1.redhat.com"
+	id S1755211Ab1HaLqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 07:46:55 -0400
+Received: from lo.gmane.org ([80.91.229.12]:44404 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754824Ab1HaLhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 07:37:46 -0400
-Date: Wed, 31 Aug 2011 13:37:10 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 3/3] compaction accouting fix
-Message-ID: <20110831113710.GC17512@redhat.com>
-References: <cover.1321112552.git.minchan.kim@gmail.com>
- <282a4531f23c5e35cfddf089f93559130b4bb660.1321112552.git.minchan.kim@gmail.com>
-MIME-Version: 1.0
+	id S1754732Ab1HaLqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 07:46:52 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: el es <el.es.cr@gmail.com>
+Subject: [OT] Re: [stable] linux-3.0.4 compile error on file =?utf-8?b?YXJjaC94ODYvaW5jbHVkZS9hc20vdW5pc3RkXzY0Lmg=?=
+Date: Wed, 31 Aug 2011 11:46:35 +0000 (UTC)
+Message-ID: <loom.20110831T134002-212@post.gmane.org>
+References: <CACk0-C9jZatg+v=7DPJtkp3G1k_eiZbwSPDAgqabMyedmKd9YA@mail.gmail.com> <4E5C8EA3.7060304@gmail.com> <CACk0-C8E2uaB-Ben5K0e7dzC9RC_WDoXx8mV4B-PN4LPYGs92g@mail.gmail.com> <20110830181639.GB24865@kroah.com> <CACk0-C-zwNOJOY0t7_vQqVBJR9TzKehv+0GTvHxuDiOtSvV0qA@mail.gmail.com> <20110830190629.GA5638@kroah.com> <CACk0-C_CKkf=xt6QMLe+=nr2P5mTQThreRann5HFe66M7T+SvA@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <282a4531f23c5e35cfddf089f93559130b4bb660.1321112552.git.minchan.kim@gmail.com>
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 81.139.81.4 (Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20100101 Firefox/6.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 13, 2011 at 01:37:43AM +0900, Minchan Kim wrote:
-> I saw the following accouting of compaction during test of the series.
+Vishnupradeep <intermedia.vishnu <at> gmail.com> writes:
+
 > 
-> compact_blocks_moved 251
-> compact_pages_moved 44
-> 
-> It's very awkward to me although it's possbile because it means we try to compact 251 blocks
-> but it just migrated 44 pages. As further investigation, I found isolate_migratepages doesn't
-> isolate any pages but it returns ISOLATE_SUCCESS and then, it just increases compact_blocks_moved
-> but doesn't increased compact_pages_moved.
-> 
-> This patch makes accouting of compaction works only in case of success of isolation.
-> 
-> CC: Mel Gorman <mgorman@suse.de>
-> CC: Johannes Weiner <jweiner@redhat.com>
-> CC: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> --------------
+> When you do something right, people wont notice you've 
+> done anything at all.
 
-Acked-by: Johannes Weiner <jweiner@redhat.com>
+People will notice if you format it right and also - 
+people sometimes need refreshing on the flow of the
+issue re-reading it - keeping the flow from top to 
+bottom and trimming (no longer) (un)necessary information helps.
 
-It's a teensy-bit awkward that isolate_migratepages() can return
-success without actually isolating any new pages, just because there
-are still some pages left from a previous run (cc->nr_migratepages is
-maintained across isolation calls).
+On 'corporate' emails people do top-post because the 
+addressee is 'on top of things' /by definition/;
 
-Maybe isolate_migratepages() should just return an error if compaction
-should really be aborted and 0 otherwise, and have compact_zone()
-always check for cc->nr_migratepages itself?
+THIS is not your corporate network, people have their own
+errands BEFORE yours.
 
-	if (isolate_migratepages(zone, cc) < 0) {
-		ret = COMPACT_PARTIAL;
-		goto out;
-	}
+(http://lmgtfy.com/?q=netiquette)
 
-	if (!cc->nr_migratepages)
-		continue;
+Kind Regards
+Lukasz
 
-	...
 
-Just a nit-pick, though.  If you don't agree, just leave it as is.
