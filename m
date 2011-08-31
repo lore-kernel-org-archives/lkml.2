@@ -1,70 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab1HaKNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 06:13:36 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:36017 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab1HaKNf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 06:13:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110831090850.GA27345@redhat.com>
-References: <20110831090850.GA27345@redhat.com>
-Date: Wed, 31 Aug 2011 19:13:34 +0900
-Message-ID: <CAEwNFnBSg71QoLZbOqZbXK3fGEGneituU3PmiYTAw1VM3KcwcQ@mail.gmail.com>
-Subject: Re: [patch] memcg: skip scanning active lists based on individual size
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1753034Ab1HaKP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 06:15:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752073Ab1HaKPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 06:15:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110826220311.GA18140@fieldses.org>
+References: <20110826220311.GA18140@fieldses.org> <1312810169.2591.1153.camel@deadeye> <20110808155538.GB904@fieldses.org> <20110808180658.GC29924@decadent.org.uk>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Neil Brown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
+Date: Wed, 31 Aug 2011 11:15:04 +0100
+Message-ID: <27331.1314785704@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 6:08 PM, Johannes Weiner <jweiner@redhat.com> wrote:
-> Reclaim decides to skip scanning an active list when the corresponding
-> inactive list is above a certain size in comparison to leave the
-> assumed working set alone while there are still enough reclaim
-> candidates around.
->
-> The memcg implementation of comparing those lists instead reports
-> whether the whole memcg is low on the requested type of inactive
-> pages, considering all nodes and zones.
->
-> This can lead to an oversized active list not being scanned because of
-> the state of the other lists in the memcg, as well as an active list
-> being scanned while its corresponding inactive list has enough pages.
->
-> Not only is this wrong, it's also a scalability hazard, because the
-> global memory state over all nodes and zones has to be gathered for
-> each memcg and zone scanned.
->
-> Make these calculations purely based on the size of the two LRU lists
-> that are actually affected by the outcome of the decision.
->
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: Balbir Singh <bsingharora@gmail.com>
+J. Bruce Fields <bfields@fieldses.org> wrote:
 
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> From: NeilBrown <neilb@suse.de>
+> 
+> The nfsservctl system call is now gone, so we should remove all
+> linkage for it.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
-I can't understand why memcg is designed for considering all nodes and zones.
-Is it a mistake or on purpose?
-Maybe Kame or Balbir can answer it.
-
-Anyway, this change does make sense to me.
-
-Nitpick: Please remove inactive_ratio in Documentation/cgroups/memory.txt.
-I think it would be better to separate it into another patch.
-
--- 
-Kind regards,
-Minchan Kim
+Acked-by: David Howells <dhowells@redhat.com> [FRV/MN10300]
