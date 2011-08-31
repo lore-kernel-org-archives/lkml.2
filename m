@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab1HaOrt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 10:47:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:54402 "EHLO
+	id S1755842Ab1HaOr4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 10:47:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58488 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab1HaOrq (ORCPT
+	with ESMTP id S1755816Ab1HaOrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 10:47:46 -0400
+	Wed, 31 Aug 2011 10:47:52 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Richard Kuo <rkuo@codeaurora.org>
 Subject: Re: [patch v2 24/35] Hexagon: Provide basic implementation and/or stubs for I/O routines.
-Date: Wed, 31 Aug 2011 16:28:52 +0200
+Date: Wed, 31 Aug 2011 16:47:41 +0200
 User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
 Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org,
         Linas Vepstas <linas@codeaurora.org>
@@ -20,15 +20,15 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108311628.53309.arnd@arndb.de>
-X-Provags-ID: V02:K0:4pa4oi9jjHYjJrQq0HfzS/buKZB/CSNhrmDzofhOjxQ
- DfssNiKkJUq9em5c/knhxkv/FP+gjn5duWcck7+VPHlkVtInLZ
- NFMaTBBYvnjG6LSVQMRUNIG+L8J9a4kVC1LWQEFGBHI82ha2iy
- NFyqHMlpOdp13XQWwdp5gFrIZZT5svgi0TG5pxEf7diOKFJp0w
- +TlhIbbI1G809jnvCBQVa+GopOh9d+ONoxOf/KQ2pfdmp47aE5
- HiZFowRIpudh/rZPNF/iSEkxWVAl3x2L13S+qtfggy1AqjfRzG
- Q/G+1R9OvBMNhVhe4PEm6z/ME/ox08Xzwdumlr8ufZ0pgtEATF
- oZdzdZFwjU/LJFg1/F14=
+Message-Id: <201108311647.42017.arnd@arndb.de>
+X-Provags-ID: V02:K0:Nd5r3jxDWZsmc5dR1nYKwn6cDH+1pilx9udyX1j4ODh
+ Pao4V7QuQ4Avu1EFEiSBiOPmadZTv31D0DqWBKrL6Egd01IVtF
+ mu8s6/FaypbLukTY78dzLXs6DAGOkMzfZbt5f8sWPtii5uGqLx
+ L9k/hyVwmW+Wybn+UMDy7oIXD3bN+X/l72FfSgbP1cmHgYE1oT
+ nloSLoSdTYBQ2NZSX/j1ry6B0D0z45dcCUvLos/SA02ay/lIsr
+ GuOBZGCuTDOnmYnHMzDY+ljViMgxgA+IH10BkqRl7A6jbdgsT/
+ vO4mNqOCf2818oJxT4PcT4R5MuuR6pYX8QwIF8fS2y7oevj/9/
+ xgJ+OVrB5OGbr8Vcrj4g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
