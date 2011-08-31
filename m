@@ -1,92 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab1HaLts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 07:49:48 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:50665 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755001Ab1HaLtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 07:49:47 -0400
-Subject: Re: [PATCH] leds: kill CONFIG_LEDS_CLASS option
-From: Richard Purdie <rpurdie@rpsys.net>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-In-Reply-To: <CAK5ve-+J3hzVB=_b0AOJ-Q1LYewahVraMti=y=6AaQy3+iy+rg@mail.gmail.com>
-References: <1314647628-21707-1-git-send-email-bryan.wu@canonical.com>
-	 <alpine.LFD.2.00.1108291630020.20358@xanadu.home>
-	 <1314653699.5939.299.camel@rex>
-	 <CAK5ve-+J3hzVB=_b0AOJ-Q1LYewahVraMti=y=6AaQy3+iy+rg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Aug 2011 12:49:01 +0100
-Message-ID: <1314791341.5939.464.camel@rex>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755222Ab1HaLx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 07:53:56 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63463 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab1HaLxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 07:53:55 -0400
+From: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+Subject: [PATCH 1/2] Staging: comedi: fix printk issue in cb_pcidda.c
+Date: Wed, 31 Aug 2011 17:23:32 +0530
+Message-Id: <1314791612-2724-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH 1/2]Staging: comedi: fix printk issue in cb_pcidda.c>
+References: <[PATCH 1/2]Staging: comedi: fix printk issue in cb_pcidda.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-31 at 10:45 +0800, Bryan Wu wrote:
-> On Tue, Aug 30, 2011 at 5:34 AM, Richard Purdie <rpurdie@rpsys.net> wrote:
-> > On Mon, 2011-08-29 at 16:34 -0400, Nicolas Pitre wrote:
-> >> On Tue, 30 Aug 2011, Bryan Wu wrote:
-> >>
-> >> > Almost all the new leds driver and trigger driver are depends on
-> >> > CONFIG_LED_CLASS, so there is no such user with CONFIG_NEW_LEDS=y
-> >> > and CONFIG_LED_CLASS=n. Moreover, lots of API functions in led-class.c
-> >> > are very common and should be built-in when CONFIG_NEW_LEDS=y.
-> >> >
-> >> > Obviously, CONFIG_LEDS_CLASS is pointless. This patch kills it and
-> >> > also updates defconfigs which contains CONFIG_LEDS_CLASS.
-> >> >
-> >> > Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-> >> > ---
-> >
-> > Looking at the code I'm a little concerned to see the direction this is
-> > going. There was originally a reason that there were two options, it was
-> > related to being able to compile as much of the LED code as a module as
-> > possible.
-> >
-> 
-> I quite understand the original reason for 2 options, but I failed to
-> see any user of CONFIG_NEW_LEDS=y and CONFIG_LEDS_CLASS=n.
+This is a patch to the cb_pcidda.c file that fixes up a printk warning found by the checkpatch.pl tool
 
-Right, the intent was to support CONFIG_NEW_LEDS=y and
-CONFIG_LEDS_CLASS=m and I believe that still should be possible.
+Signed-off-by: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/cb_pcidda.c |   23 ++++++++++++-----------
+ 1 files changed, 12 insertions(+), 11 deletions(-)
 
-> > It looks like commit 5ada28bf76752e33dce3d807bf0dfbe6d1b943ad changed
-> > the tristate to a bool at which point the separate option obviously
-> > becomes pointless.
-> 
-> Exactly, this patch added some function API which are used very widely
-> as default LEDS driver behavior in some drivers.
-
-Looking at that commit, its adds the code to leds-class.c and shouldn't
-have needed to change the tristate to a bool. I know we discussed that
-at the time and I think that part might have been unnecessary and just
-accidentally committed. It could well be we can just revert that piece
-of the patch.
-
-> > Rather than accept the current direction and force everything builtin,
-> > I'd much rather this code became modular capable again. There is no good
-> > reason we should be forced to build everything into a kernel.
-> >
-> 
-> OK, cool. I'd like to help and could you please also give some
-> comments about my ledtrig-cpu driver in this patchset?
-
-I looked at that code and in summary, I like it.
-
-My main concerns are just around being able to build things as modules
-and that cpu trigger effectively forces all of led triggers as being
-built in. It would be possible to avoid that by having a function
-pointer for the cpu activity function and only calling it when its not
-NULL. The module removal would need to be a little careful but it
-shouldn't be that difficult.
-
-Cheers,
-
-Richard
+diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
+index 49102b3..661e945 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidda.c
++++ b/drivers/staging/comedi/drivers/cb_pcidda.c
+@@ -282,7 +282,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
+ 	struct pci_dev *pcidev = NULL;
+ 	int index;
+ 
+-	printk("comedi%d: cb_pcidda: ", dev->minor);
++	pr_info("comedi%d: cb_pcidda: ", dev->minor);
+ 
+ /*
+  * Allocate the private structure area.
+@@ -293,7 +293,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
+ /*
+  * Probe the device to determine what device in the series it is.
+  */
+-	printk("\n");
++	pr_cont("\n");
+ 
+ 	for_each_pci_dev(pcidev) {
+ 		if (pcidev->vendor == PCI_VENDOR_ID_CB) {
+@@ -312,22 +312,23 @@ static int cb_pcidda_attach(struct comedi_device *dev,
+ 		}
+ 	}
+ 	if (!pcidev) {
+-		printk
+-		    ("Not a ComputerBoards/MeasurementComputing card on requested position\n");
++		pr_warn("comedi%d: cb_pcidda: Not a ComputerBoards/MeasurementComputing "
++				"card on requested position\n", dev->minor);
+ 		return -EIO;
+ 	}
+ found:
+ 	devpriv->pci_dev = pcidev;
+ 	dev->board_ptr = cb_pcidda_boards + index;
+ 	/*  "thisboard" macro can be used from here. */
+-	printk("Found %s at requested position\n", thisboard->name);
++	pr_info("comedi%d: cb_pcidda: Found %s at requested position\n",
++			dev->minor, thisboard->name);
+ 
+ 	/*
+ 	 * Enable PCI device and request regions.
+ 	 */
+ 	if (comedi_pci_enable(pcidev, thisboard->name)) {
+-		printk
+-		    ("cb_pcidda: failed to enable PCI device and request regions\n");
++		pr_warn("comedi%d: cb_pcidda: failed to enable "
++				"PCI device and request regions\n", dev->minor);
+ 		return -EIO;
+ 	}
+ 
+@@ -377,12 +378,12 @@ found:
+ 	s = dev->subdevices + 2;
+ 	subdev_8255_init(dev, s, NULL, devpriv->digitalio + PORT2A);
+ 
+-	printk(" eeprom:");
++	pr_debug("comedi%d: cb_pcidda: eeprom: ", dev->minor);
+ 	for (index = 0; index < EEPROM_SIZE; index++) {
+ 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
+-		printk(" %i:0x%x ", index, devpriv->eeprom_data[index]);
++		pr_cont(" %i:0x%x ", index, devpriv->eeprom_data[index]);
+ 	}
+-	printk("\n");
++	pr_cont("\n");
+ 
+ 	/*  set calibrations dacs */
+ 	for (index = 0; index < thisboard->ao_chans; index++)
+@@ -417,7 +418,7 @@ static int cb_pcidda_detach(struct comedi_device *dev)
+ 		subdev_8255_cleanup(dev, dev->subdevices + 2);
+ 	}
+ 
+-	printk("comedi%d: cb_pcidda: remove\n", dev->minor);
++	pr_info("comedi%d: cb_pcidda: remove\n", dev->minor);
+ 
+ 	return 0;
+ }
+-- 
+1.6.5.2
 
