@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab1HaGKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 02:10:49 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36831 "EHLO gate.crashing.org"
+	id S1753710Ab1HaGUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 02:20:08 -0400
+Received: from sa3.bezeqint.net ([192.115.104.17]:35908 "EHLO sa3.bezeqint.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241Ab1HaGKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 02:10:47 -0400
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
+	id S1753518Ab1HaGUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 02:20:05 -0400
+X-Greylist: delayed 1213 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 02:20:04 EDT
+Subject: Re: Approaches to making io_submit not block
+From: guy keren <choo@actcom.co.il>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org
+In-Reply-To: <20110830155438.bc31ab99.akpm@linux-foundation.org>
+References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
+	 <CAAK6Zt0Sh1GdEOb-tNf2FGXJs=e1Jbcqew13R_GdTqrv6vW97w@mail.gmail.com>
+	 <x49k49uk2ox.fsf@segfault.boston.devel.redhat.com>
+	 <4E5D5817.6040704@kernel.dk>
+	 <CAAK6Zt2C1646qwDiZ7sWheSWrnx2yrDtCE=+VTx7QNyh2bEz_g@mail.gmail.com>
+	 <4E5D64E8.7000102@kernel.dk>
+	 <20110830154157.d802d097.akpm@linux-foundation.org>
+	 <CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
+	 <20110830155438.bc31ab99.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Aug 2011 16:10:02 +1000
-Message-ID: <1314771002.2488.138.camel@pasglop>
+Date: Wed, 31 Aug 2011 09:04:15 +0300
+Message-ID: <1314770655.5738.512.camel@simey>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Tue, 2011-08-30 at 15:54 -0700, Andrew Morton wrote:
+> On Tue, 30 Aug 2011 15:45:35 -0700
+> Daniel Ehrenberg <dehrenberg@google.com> wrote:
+> 
+> > >> Not quite sure, and after working on them and fixing thing up, I don't
+> > >> even think they are that complex or intrusive (which I think otherwise
+> > >> would've been the main objection). Andrew may know/remember.
+> > >
+> > > Boy, that was a long time ago. __I was always unhappy with the patches
+> > > because of the amount of additional code/complexity they added.
+> > >
+> > > Then the great syslets/threadlets design session happened and it was
+> > > expected that such a facility would make special async handling for AIO
+> > > unnecessary. __Then syslets/threadlets didn't happen.
+> > 
+> > Do you think we could accomplish the goals with less additional
+> > code/complexity? It looks like the latest version of the patch set
+> > wasn't so invasive.
+> > 
+> > If syslets/threadlets aren't happening, should these patches be
+> > reconsidered for inclusion in the kernel?
+> 
+> I haven't seen any demand at all for the feature in many years.  That
+> doesn't mean that there _isn't_ any demand - perhaps everyone got
+> exhausted.
 
-Here are some minor defconfig updates and a device tree fix from
-Kumar for 3.1.
+you should consider the emerging enterprise-grade SSD devices - which
+can serve several tens of thousands of I/O requests per device actually
+controller). These devices could be better utilized by better
+interfaces. further more, in our company we had to resort to using
+windows for IOPS benchmarking (using iometer) against storage systems
+using these (and similar) devices, because it manages to generate higher
+IOPS then linux can (i don't remember the exact numbers, but we are
+talking about an order of several hundred thousands IOPS).
 
-Cheers,
-Ben.
+It could be that we are currently an esoteric use-case - but the
+high-end performance market seems to be stepping in that direction.
 
-The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
+> If there is demand then that should be described and circulated, see
+> how much interest there is in resurrecting the effort.
+> 
+> And, of course, the patches should be dragged out and looked at - it's
+> been a number of years now.
+> 
+> Also, glibc has userspace for POSIX AIO.  A successful kernel-based
+> implementation would result in glibc migrating away from its current
+> implementation.  So we should work with the glibc developers on ensuring
+> that the migration can happen.
 
-  Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
+glibc's userspace implementation doesn't scale to fast devices. It could
+make sense when working with slower disk devices - not when you're
+working with solid-state storage devices.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-Chunhe Lan (1):
-      powerpc/p1023rds: Fix the error of bank-width of nor flash
-
-Kim Phillips (1):
-      powerpc/85xx: enable caam crypto driver by default
-
-Timur Tabi (1):
-      powerpc/85xx: enable the audio drivers in the defconfigs
-
- arch/powerpc/boot/dts/p1023rds.dts           |    2 +-
- arch/powerpc/configs/85xx/p1023rds_defconfig |    1 +
- arch/powerpc/configs/corenet32_smp_defconfig |    1 +
- arch/powerpc/configs/corenet64_smp_defconfig |    5 ++++-
- arch/powerpc/configs/mpc85xx_defconfig       |    1 +
- arch/powerpc/configs/mpc85xx_smp_defconfig   |    1 +
- 6 files changed, 9 insertions(+), 2 deletions(-)
-
+--guy
 
