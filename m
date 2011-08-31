@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1HaGUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 02:20:08 -0400
-Received: from sa3.bezeqint.net ([192.115.104.17]:35908 "EHLO sa3.bezeqint.net"
+	id S1753780Ab1HaGWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 02:22:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43274 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753518Ab1HaGUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 02:20:05 -0400
-X-Greylist: delayed 1213 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 02:20:04 EDT
-Subject: Re: Approaches to making io_submit not block
-From: guy keren <choo@actcom.co.il>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-In-Reply-To: <20110830155438.bc31ab99.akpm@linux-foundation.org>
-References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
-	 <CAAK6Zt0Sh1GdEOb-tNf2FGXJs=e1Jbcqew13R_GdTqrv6vW97w@mail.gmail.com>
-	 <x49k49uk2ox.fsf@segfault.boston.devel.redhat.com>
-	 <4E5D5817.6040704@kernel.dk>
-	 <CAAK6Zt2C1646qwDiZ7sWheSWrnx2yrDtCE=+VTx7QNyh2bEz_g@mail.gmail.com>
-	 <4E5D64E8.7000102@kernel.dk>
-	 <20110830154157.d802d097.akpm@linux-foundation.org>
-	 <CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
-	 <20110830155438.bc31ab99.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Aug 2011 09:04:15 +0300
-Message-ID: <1314770655.5738.512.camel@simey>
+	id S1753518Ab1HaGWX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 02:22:23 -0400
+Date: Wed, 31 Aug 2011 16:22:11 +1000
+From: NeilBrown <neilb@suse.de>
+To: Christoph Hellwig <hch@lst.de>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: md related oops triggered in bdev_inode_switch_bdi
+Message-ID: <20110831162211.2a1fe3fb@notabene.brown>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-30 at 15:54 -0700, Andrew Morton wrote:
-> On Tue, 30 Aug 2011 15:45:35 -0700
-> Daniel Ehrenberg <dehrenberg@google.com> wrote:
-> 
-> > >> Not quite sure, and after working on them and fixing thing up, I don't
-> > >> even think they are that complex or intrusive (which I think otherwise
-> > >> would've been the main objection). Andrew may know/remember.
-> > >
-> > > Boy, that was a long time ago. __I was always unhappy with the patches
-> > > because of the amount of additional code/complexity they added.
-> > >
-> > > Then the great syslets/threadlets design session happened and it was
-> > > expected that such a facility would make special async handling for AIO
-> > > unnecessary. __Then syslets/threadlets didn't happen.
-> > 
-> > Do you think we could accomplish the goals with less additional
-> > code/complexity? It looks like the latest version of the patch set
-> > wasn't so invasive.
-> > 
-> > If syslets/threadlets aren't happening, should these patches be
-> > reconsidered for inclusion in the kernel?
-> 
-> I haven't seen any demand at all for the feature in many years.  That
-> doesn't mean that there _isn't_ any demand - perhaps everyone got
-> exhausted.
 
-you should consider the emerging enterprise-grade SSD devices - which
-can serve several tens of thousands of I/O requests per device actually
-controller). These devices could be better utilized by better
-interfaces. further more, in our company we had to resort to using
-windows for IOPS benchmarking (using iometer) against storage systems
-using these (and similar) devices, because it manages to generate higher
-IOPS then linux can (i don't remember the exact numbers, but we are
-talking about an order of several hundred thousands IOPS).
+Hi Christoph et. al.,
 
-It could be that we are currently an esoteric use-case - but the
-high-end performance market seems to be stepping in that direction.
+ My testing recently triggered an oops in bdi_lock_two called from
+ bdev_inode_switch_bdi.
+ The bdi and the request_queue that contains it had been freed.
 
-> If there is demand then that should be described and circulated, see
-> how much interest there is in resurrecting the effort.
-> 
-> And, of course, the patches should be dragged out and looked at - it's
-> been a number of years now.
-> 
-> Also, glibc has userspace for POSIX AIO.  A successful kernel-based
-> implementation would result in glibc migrating away from its current
-> implementation.  So we should work with the glibc developers on ensuring
-> that the migration can happen.
+ This happens with md which can free the md device and request queue
+ immediately after last close.
 
-glibc's userspace implementation doesn't scale to fast devices. It could
-make sense when working with slower disk devices - not when you're
-working with solid-state storage devices.
+ It seems that this is caused by your patch f758eeabeb96f8.
+ Prior to that the 'old' bdi was never dereferenced in
+ bdev_inode_switch_bdi.  Now it is.
 
---guy
+ I think we can fix that by simply moving the call to bdev_inode_switch_bdi
+ before the call to ->release as in the patch below.
 
+ Do you see any problem with this patch?
+
+Thanks,
+NeilBrown
+
+
+>From bcc5851cbb6876c97cce214feddd0ec092f7d71c Mon Sep 17 00:00:00 2001
+From: NeilBrown <neilb@suse.de>
+Date: Wed, 31 Aug 2011 15:37:22 +1000
+Subject: [PATCH] Avoid dereferencing a 'request_queue' after last close.
+
+On the last close of an 'md' device which as been stopped, the device
+is destroyed and in particular the request_queue is freed.  The free
+is done in a separate thread so it might happen a short time later.
+
+__blkdev_put calls bdev_inode_switch_bdi *after* ->release has been
+called.
+
+Since commit f758eeabeb96f878c860e8f110f94ec8820822a9
+bdev_inode_switch_bdi will dereference the 'old' bdi, which lives
+inside a request_queue, to get a spin lock.  This causes the last
+close on an md device to sometime take a spin_lock which lives in
+freed memory - which results in an oops.
+
+So move the called to bdev_inode_switch_bdi before the call to
+->release.
+
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: stable@kernel.org
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index ff77262..d8a753f 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1430,6 +1430,12 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		sync_blockdev(bdev);
+ 		kill_bdev(bdev);
+ 	}
++	if (!bdev->bd_openers)
++		/* ->release can cause the old bdi to disappear,
++		 * so must switch it out first
++		 */
++		bdev_inode_switch_bdi(bdev->bd_inode,
++					&default_backing_dev_info);
+ 	if (bdev->bd_contains == bdev) {
+ 		if (disk->fops->release)
+ 			ret = disk->fops->release(disk, mode);
+@@ -1442,8 +1448,6 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+-		bdev_inode_switch_bdi(bdev->bd_inode,
+-					&default_backing_dev_info);
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
