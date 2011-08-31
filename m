@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab1HaVBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 17:01:54 -0400
-Received: from mail.ispras.ru ([83.149.199.43]:52997 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752429Ab1HaVBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 17:01:53 -0400
-Message-ID: <45954.91.79.112.141.1314824511.squirrel@mail.ispras.ru>
-In-Reply-To: <4E5E9D95.2050601@opengridcomputing.com>
-References: <1314823410-12621-1-git-send-email-khoroshilov@ispras.ru>
-    <4E5E9D95.2050601@opengridcomputing.com>
-Date: Thu, 1 Sep 2011 01:01:51 +0400 (MSD)
-Subject: Re: [PATCH] RDMA/cxgb4: remove accidentally left 
-     mutex_unlock(&dev_mutex)
-From: "Alexey Khoroshilov" <khoroshilov@ispras.ru>
-To: "Steve Wise" <swise@opengridcomputing.com>
-Cc: "Steve Wise" <swise@chelsio.com>, "Roland Dreier" <roland@kernel.org>,
-        "Sean Hefty" <sean.hefty@intel.com>,
-        "Hal Rosenstock" <hal.rosenstock@gmail.com>,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Reply-To: khoroshilov@ispras.ru
-User-Agent: SquirrelMail/1.4.8-5.el5_3.7
+	id S1755515Ab1HaVId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:08:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60035 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab1HaVIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 17:08:32 -0400
+Date: Wed, 31 Aug 2011 14:08:26 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Marcel Korpel <marcel.lists@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Changes to include/linux/input.h are no longer taken into account
+Message-ID: <20110831210825.GA32646@core.coreip.homeip.net>
+References: <CAJuji_EeLBCB4qpbCQLGFgqAqsWJ97qKYPK8b7hDa91Xr50Tmg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJuji_EeLBCB4qpbCQLGFgqAqsWJ97qKYPK8b7hDa91Xr50Tmg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01 Sep 2011, 00:46 Steve Wise wrote:
-> On 08/31/2011 03:43 PM, Alexey Khoroshilov wrote:
->> The patch "RDMA/cxgb4: EEH errors can hang the driver" removes
->> mutex lock/unlock from c4iw_alloc() except for error path.
->> This patch removes the remained mutex_unlock(&dev_mutex).
->>
->> Found by Linux Driver Verification project (linuxtesting.org).
->>
->> Signed-off-by: Alexey Khoroshilov<khoroshilov@ispras.ru>
->> ---
->>   drivers/infiniband/hw/cxgb4/device.c |    1 -
->>   1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/infiniband/hw/cxgb4/device.c
->> b/drivers/infiniband/hw/cxgb4/device.c
->> index 40a13cc..35896ff 100644
->> --- a/drivers/infiniband/hw/cxgb4/device.c
->> +++ b/drivers/infiniband/hw/cxgb4/device.c
->> @@ -414,7 +414,6 @@ static struct c4iw_dev *c4iw_alloc(const struct
->> cxgb4_lld_info *infop)
->>
->>   	ret = c4iw_rdev_open(&devp->rdev);
->>   	if (ret) {
->> -		mutex_unlock(&dev_mutex);
->>   		printk(KERN_ERR MOD "Unable to open CXIO rdev err %d\n", ret);
->>   		ib_dealloc_device(&devp->ibdev);
->>   		return ERR_PTR(ret);
->
-> This is actually included in my previously submitted patch:
->
-> https://patchwork.kernel.org/patch/1026942/
->
-> Steve.
+Hi Marcel,
 
-Great.
+On Sat, Aug 27, 2011 at 10:44:30PM +0200, Marcel Korpel wrote:
+> Hi,
+> 
+> Up until recently, in order to be able to use the zoom slider on my MS
+> Natural Ergonomic Keyboard 4000 I used a patched version of
+> include/linux/input.h, in which a few definitions were changed so
+> several special keys produced keycodes <= 255, like
+> 
+> #define KEY_ZOOMIN		0x0f6	/* AC Zoom In == 246 */
+> #define KEY_ZOOMOUT		0x0f7	/* AC Zoom Out == 247  */
+> 
+> Now X is able to process these keycodes.
+> 
+> Earlier this month, I upgraded the kernel and made sure that input.h
+> still contained these changed values. However, when I use showkey I
+> get the following output
+> 
+> keycode 418 press
+> keycode 418 release
+> keycode 419 press
+> keycode 419 release
+> 
+> instead of the lower values I provided. I flipped through the latest
+> kernel changes, but was not able to find a change that might have
+> influenced the keycodes, only one change about the inclusion order
+> inside linux/input.h [1]. I am currently using commit
+> d31bf2883542cd3414674238f94123bd1d9c0b9f.
+> 
+> I know that the actual problem resides in the way how X handles
+> keycodes [2] and it can (also) be circumvented using a patched
+> xf86-input-evdev [3], but I still think this case is a bug.
+> 
 
---
-Alexey
+Make sure udev does not load a custom map for this device for you.
 
+Thanks.
+
+-- 
+Dmitry
