@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab1HaDya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 23:54:30 -0400
-Received: from mail.lang.hm ([64.81.33.126]:39586 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362Ab1HaDy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 23:54:26 -0400
-Date: Tue, 30 Aug 2011 20:53:29 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Dave Chinner <david@fromorbit.com>
-cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Andreas Dilger <adilger@dilger.ca>,
-        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@ZenIV.linux.org.uk,
-        dchinner@redhat.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-In-Reply-To: <20110831032932.GI32358@dastard>
-Message-ID: <alpine.DEB.2.02.1108302049480.26762@asgard.lang.hm>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110825060632.GA9933@infradead.org> <20110825064039.GO3162@dastard> <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca> <20110826013528.GW3162@dastard>
- <4E5D8B8E.8030401@oracle.com> <20110831032932.GI32358@dastard>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1750847Ab1HaEF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 00:05:27 -0400
+Received: from abington.k12.pa.us ([216.162.93.130]:31956 "EHLO
+	SPAM.admin.Abington.k12.pa.us" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750717Ab1HaEF0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 00:05:26 -0400
+X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 00:05:26 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Subject: RE: Prize Won
+Date: Tue, 30 Aug 2011 23:56:02 -0400
+Message-ID: <0D776A994E098343B75BEEA27DC1454B40045F@EXCH.admin.Abington.k12.pa.us>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Prize Won
+Thread-Index: Acxnj9rttgelQaihTheAtHDLtHE+jgAAguB6
+References: <0D776A994E098343B75BEEA27DC1454B4003D1@EXCH.admin.Abington.k12.pa.us>
+From: "Lodewick, James R." <JamesLodewick@Abington.k12.pa.us>
+To: "Lodewick, James R." <JamesLodewick@Abington.k12.pa.us>
+X-OriginalArrivalTime: 31 Aug 2011 03:57:49.0182 (UTC) FILETIME=[2644A1E0:01CC6792]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Aug 2011, Dave Chinner wrote:
+ 
 
-> On Tue, Aug 30, 2011 at 06:17:02PM -0700, Sunil Mushran wrote:
->> On 08/25/2011 06:35 PM, Dave Chinner wrote:
->>> Agreed, that's the way I'd interpret it, too. So perhaps we need to
->>> ensure that this interpretation is actually tested by this test?
->>>
->>> How about some definitions to work by:
->>>
->>> Data: a range of the file that contains valid data, regardless of
->>> whether it exists in memory or on disk. The valid data can be
->>> preceeded and/or followed by an arbitrary number of zero bytes
->>> dependent on the underlying implementation of hole detection.
->>>
->>> Hole: a range of the file that contains no data or is made up
->>> entirely of  NULL (zero) data. Holes include preallocated ranges of
->>> files that have not had actual data written to them.
->>>
->>> Does that make sense? It has sufficient flexibility in it for the
->>> existing generic "non-implementation", allows for filesystems to
->>> define their own hole detection boundaries (e.g. filesystem block
->>> size), and effectively defines how preallocated ranges from
->>> fallocate() should be treated (i.e. as holes). If we can agree on
->>> those definitions, I think that we should document them in both the
->>> kernel and the man page that defines SEEK_HOLE/SEEK_DATA so everyone
->>> is on the same page...
->>
->> We should not tie in the definition to existing fs technologies.
->
-> Such as? If we don't use well known, well defined terminology, we
-> end up with ambiguous, vague functionality and inconsistent
-> implementations.
->
->> Instead
->> we should let the fs weigh the cost of providing accurate information
->> with the possible gain in performance.
->>
->> Data:
->> A range in a file that could contain something other than nulls.
->> If in doubt, it is data.
->>
->> Hole:
->> A range in a file that only contains nulls.
->
-> And that's -exactly- the ambiguous, vague definition that has raised
-> all these questions in the first place. I was in doubt about whether
-> unwritten extents can be considered a hole, and by your definition
-> that means it should be data. But Andreas seems to be in no doubt it
-> should be considered a hole.
->
-> Hence if I implement XFS support and Andreas implements ext4 support
-> by your defintion, we end with vastly different behaviour even
-> though the two filesystems use the same underlying technology for
-> preallocated ranges. That's exactly the inconsistency in
-> implementation that I'd like us to avoid.
->
-> IOWs, the definition needs to be clear enough to prevent these
-> inconsistencies from occurring. Indeed, the phrase "preallocated
-> ranges that have not had data written to them" is as independent of
-> filesystem implementation or technologies as possible. However,
-> because Linux supports preallocation (unlike our reference
-> platform), and we encourage developers to use it where appropriate,
-> it is best that we define how we expect such ranges to behave
-> clearly. That makes life easier for everyone.
+________________________________
 
-Since a sparse file has the holes filled by nulls by definition, it seems 
-fairly clear that they chould count as holes. In fact, I would not be 
-surprised to see some filesystem _only_ report the unwritten pieces of 
-sparse files as holes (not any other ranges of nulls)
+From: Lodewick, James R.
+Sent: Tue 8/30/2011 11:41 PM
+To: Lodewick, James R.
+Subject: Prize Won
 
-the question I have is how large does the range of nulls need to be before 
-it's reported as a hole? disk sectors, filesystem blocks, other?
 
-David Lang
+
+This is a confidential message from the Microsoft/Yahoo Office, You have been approved by the Microsoft/Yahoo Foundation Payment Board to receive a cash grant of $552,000.00 Dollars E-mail us on: agt-wilsonh@hotmail.com
+ 
+Contact Secertary- Mr. Wilson Harlings 
+Email: agt-wilsonh@hotmail.com
+
+Tel:(+44)7035964694 
+
+
+Provide him With 
+1. Full Name:  
+2. Address:  
+3. Tel/Mobile:  
+4. Occupation:     
+5. Date of Birth:   
+6. Payment number: G-900-94
+
+Note: All response and Queries concerning your claims should be sent via email to :(agt-wilsonh@hotmail.com)
+
+Microsoft/Yahoo Office- Announcer
+
+
+
+___________________________
+
+Abington School District
+
+Excellence is Our Standard
+Achievement is the Result
+
+The information contained in this e-mail transmission is privileged and confidential and intended only for the use of the individual(s) and or entity(ies) named above.  If you are not the intended recipient, you are hereby notified that any unauthorized disclosure, copying, distribution or taking of any action in reliance on the contents of the e-mail is strictly prohibited.  The review of this material by any individual other than the intended recipient shall not constitute voluntary disclosure of the information.  If you have received this e-mail transmission in error, please immediately notify the sender.
+ 
+
+
