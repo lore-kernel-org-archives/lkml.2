@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab1H3KTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 06:19:17 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34123 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752160Ab1H3KTQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 06:19:16 -0400
-Date: Tue, 30 Aug 2011 11:17:52 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Mark Einon <mark.einon@gmail.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        o.hartmann@telovital.com
-Subject: Re: [PATCH 4/6] staging: et131x: Remove redundant replica loopback
- code
-Message-ID: <20110830111752.0ad76a0d@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110830100834.GC3705@shale.localdomain>
-References: <1314639761-4947-1-git-send-email-mark.einon@gmail.com>
-	<1314639761-4947-4-git-send-email-mark.einon@gmail.com>
-	<20110830100834.GC3705@shale.localdomain>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756070Ab1HaVsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:48:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755751Ab1HaVsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 17:48:23 -0400
+From: Igor Mammedov <imammedo@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com, jeremy@goop.org, konrad.wilk@oracle.com
+Subject: [PATCH] xen: x86_32: do not enable iterrupts when returning from exception in interrupt context
+Date: Thu,  1 Sep 2011 01:47:18 +0200
+Message-Id: <1314834438-3181-1-git-send-email-imammedo@redhat.com>
+In-Reply-To: <20110829194633.GB16530@dumpdata.com>
+References: <20110829194633.GB16530@dumpdata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 13:08:34 +0300
-Dan Carpenter <error27@gmail.com> wrote:
+If vmalloc page_fault happens inside of interrupt handler with interrupts
+disabled then on exit path from exception handler when there is no pending
+interrupts, the following code (arch/x86/xen/xen-asm_32.S:112):
 
-> This patch was sent with git-send-email but it's in base64 encoding.
-> 
-> Content-Type: text/plain; charset="utf-8"
-> Content-Transfer-Encoding: base64
-> 
-> Why did that happen?
+	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
+	sete XEN_vcpu_info_mask(%eax)
 
-Presumably it got re-encoded because a mail system in the path between
-him and you decided it was traversing a 7bit path and helpfully
-reprocessed it to avoid corruption.
+will enable interrupts even if they has been previously disabled according to
+eflags from the bounce frame (arch/x86/xen/xen-asm_32.S:99)
 
-If your mailer can't automatically handle utf-8/base64 perhaps you need a
-better one ;)
+	testb $X86_EFLAGS_IF>>8, 8+1+ESP_OFFSET(%esp)
+	setz XEN_vcpu_info_mask(%eax)
 
-Alan
+Solution is in setting XEN_vcpu_info_mask only when it should be set
+according to
+	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
+but not clearing it if there isn't any pending events.
+
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+---
+ arch/x86/xen/xen-asm_32.S |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
+index 22a2093..313dca7 100644
+--- a/arch/x86/xen/xen-asm_32.S
++++ b/arch/x86/xen/xen-asm_32.S
+@@ -113,10 +113,14 @@ xen_iret_start_crit:
+ 
+ 	/*
+ 	 * If there's something pending, mask events again so we can
+-	 * jump back into xen_hypervisor_callback
++	 * jump back into xen_hypervisor_callback. Otherwise do not
++	 * touch XEN_vcpu_info_mask.
+ 	 */
++	jne ignore_vcpu_info_mask
+ 	sete XEN_vcpu_info_mask(%eax)
+ 
++ignore_vcpu_info_mask:
++
+ 	popl %eax
+ 
+ 	/*
+-- 
+1.7.1
+
