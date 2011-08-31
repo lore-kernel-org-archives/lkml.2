@@ -1,136 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab1HaWZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 18:25:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31220 "EHLO mga02.intel.com"
+	id S1756961Ab1HaWZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 18:25:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44436 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756714Ab1HaWZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 18:25:40 -0400
+	id S1756907Ab1HaWZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 18:25:50 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="43927663"
+X-IronPort-AV: E=Sophos;i="4.68,309,1312182000"; 
+   d="scan'208";a="47278074"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>
 In-Reply-To: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
-Subject: [PATCH 1/5] x86, mce: rework use of TIF_MCE_NOTIFY
-Date: Wed, 31 Aug 2011 15:25:39 -0700
-Message-Id: <4e5eb4e321047bd8bd@agluck-desktop.sc.intel.com>
+Subject: [PATCH 2/5] mce: mask out undefined bits from MCi_ADDR
+Date: Wed, 31 Aug 2011 15:25:49 -0700
+Message-Id: <4e5eb4ed21051e7a15@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From:	"Luck, Tony" <tony.luck@intel.com>
 
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+From: Tony Luck <tony.luck@intel.com>
 
-The basic flow of MCE handler is summarized as follows:
- 1) from NMI context:
-	check hardware error registers, determine error severity,
-	and then panic or request non-NMI context by irq_work() to
-	continue the system.
- 2) from (irq) context:
-	call non-NMI safe functions,
-	wake up loggers and schedule work if required
- 3) from worker thread:
-	process some time-consuming works like memory poisoning.
+Move duplicate copies of the code that reads ADDR/MISC registers
+to a function. Add masking code for systems that have undefined
+low-order bits in the MCi_ADDR register.
 
-TIF_MCE_NOTIFY flag is relatively legacy and have used to do tasks of
-2) and 3) on the thread context that interrupted by MCE.  However now
-use of irq_work() and work-queue is enough for these tasks, so this
-patch removes duplicated tasks in mce_notify_process().
+Based on original code by Andi Kleen
 
-As the result there is no task to be done in the interrupted context,
-but soon if SRAR is supported there would be some thread-specific thing
-for action required.  So keep the flag for such possible future use,
-until better mechanism is introduced.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
 
-This is the combination of two patches by Seto-san - with Boris'
-suggestion to not create a 2-line function mce_memory_failure_process()
-but to leave those inline.
-Message-ID: <4DFB1476.40804@jp.fujitsu.com>
-[PATCH 6/8] x86, mce: introduce mce_memory_failure_process()
-Message-ID: <4DFB1509.7020402@jp.fujitsu.com>
-[PATCH 7/8] x86, mce: rework use of TIF_MCE_NOTIFY
+Andi originally posted this as two patches - one to move the common
+code to the new function "mce_read_aux()", the second to add the
+masking.
+Seto-san objected to the masking on the grounds that the bits might
+contain something useful - but after some thought, I agree with Andi
+that it is better to drop undefined bits.
 
- arch/x86/kernel/cpu/mcheck/mce.c |   35 ++++++++++++++++-------------------
- 1 files changed, 16 insertions(+), 19 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |   31 +++++++++++++++++++++++--------
+ 1 files changed, 23 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 08363b0..91bb983 100644
+index 91bb983..1ce64c3 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1037,8 +1037,9 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	if (kill_it && tolerant < 3)
- 		force_sig(SIGBUS, current);
- 
--	/* notify userspace ASAP */
--	set_thread_flag(TIF_MCE_NOTIFY);
-+	/* Trap this thread before returning to user, for action required */
-+	if (worst == MCE_AR_SEVERITY)
-+		set_thread_flag(TIF_MCE_NOTIFY);
- 
- 	if (worst > 0)
- 		mce_report_event(regs);
-@@ -1052,31 +1053,29 @@ EXPORT_SYMBOL_GPL(do_machine_check);
- /* dummy to break dependency. actual code is in mm/memory-failure.c */
- void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
- {
--	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
-+	pr_err("Action optional memory failure at %lx ignored\n", pfn);
+@@ -490,6 +490,27 @@ static void mce_report_event(struct pt_regs *regs)
+ 	irq_work_queue(&__get_cpu_var(mce_irq_work));
  }
+ 
++/*
++ * Read ADDR and MISC registers.
++ */
++static void mce_read_aux(struct mce *m, int i)
++{
++	if (m->status & MCI_STATUS_MISCV)
++		m->misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
++	if (m->status & MCI_STATUS_ADDRV) {
++		m->addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
++
++		/*
++		 * Mask the reported address by the reported granuality.
++		 */
++		if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
++			u8 shift = m->misc & 0x1f;
++			m->addr >>= shift;
++			m->addr <<= shift;
++		}
++	}
++}
++
+ DEFINE_PER_CPU(unsigned, mce_poll_count);
  
  /*
-- * Called after mce notification in process context. This code
-- * is allowed to sleep. Call the high level VM handler to process
-- * any corrupted pages.
-- * Assume that the work queue code only calls this one at a time
-- * per CPU.
-- * Note we don't disable preemption, so this code might run on the wrong
-- * CPU. In this case the event is picked up by the scheduled work queue.
-- * This is merely a fast path to expedite processing in some common
-- * cases.
-+ * Called in process context that interrupted by MCE and marked with
-+ * TIF_MCE_NOTFY, just before returning to errorneous userland.
-+ * This code is allowed to sleep.
-+ * Attempt possible recovery such as calling the high level VM handler to
-+ * process any corrupted pages, and kill/signal current process if required.
-  */
- void mce_notify_process(void)
- {
--	unsigned long pfn;
--	mce_notify_irq();
--	while (mce_ring_get(&pfn))
--		memory_failure(pfn, MCE_VECTOR);
-+	clear_thread_flag(TIF_MCE_NOTIFY);
-+
-+	/* TBD: do recovery for action required event */
- }
+@@ -540,10 +561,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		    (m.status & (mce_ser ? MCI_STATUS_S : MCI_STATUS_UC)))
+ 			continue;
  
- static void mce_process_work(struct work_struct *dummy)
- {
--	mce_notify_process();
-+	unsigned long pfn;
-+
-+	while (mce_ring_get(&pfn))
-+		memory_failure(pfn, MCE_VECTOR);
- }
+-		if (m.status & MCI_STATUS_MISCV)
+-			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
+-		if (m.status & MCI_STATUS_ADDRV)
+-			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
++		mce_read_aux(&m, i);
  
- #ifdef CONFIG_X86_MCE_INTEL
-@@ -1157,8 +1156,6 @@ int mce_notify_irq(void)
- 	/* Not more than two messages every minute */
- 	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
+ 		if (!(flags & MCP_TIMESTAMP))
+ 			m.tsc = 0;
+@@ -984,10 +1002,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		if (severity == MCE_AR_SEVERITY)
+ 			kill_it = 1;
  
--	clear_thread_flag(TIF_MCE_NOTIFY);
--
- 	if (test_and_clear_bit(0, &mce_need_notify)) {
- 		/* wake processes polling /dev/mcelog */
- 		wake_up_interruptible(&mce_chrdev_wait);
+-		if (m.status & MCI_STATUS_MISCV)
+-			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
+-		if (m.status & MCI_STATUS_ADDRV)
+-			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
++		mce_read_aux(&m, i);
+ 
+ 		/*
+ 		 * Action optional error. Queue address for later processing.
 -- 
 1.7.3.1
 
