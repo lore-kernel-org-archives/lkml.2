@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab1HaAfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 20:35:47 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51728 "EHLO smtps.tip.net.au"
+	id S1754313Ab1HaApR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 20:45:17 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37404 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab1HaAfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 20:35:45 -0400
-Date: Wed, 31 Aug 2011 10:35:32 +1000
+	id S1754194Ab1HaApO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 20:45:14 -0400
+Date: Wed, 31 Aug 2011 10:45:06 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Removing msm tree from direct linux-next
-Message-Id: <20110831103532.0aa0fb4ba8bc446c19b205a8@canb.auug.org.au>
-In-Reply-To: <20110830225433.GA7138@huya.qualcomm.com>
-References: <20110830225433.GA7138@huya.qualcomm.com>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: error trying to fetch the squashfs tree
+Message-Id: <20110831104506.c459b8677f13541fad300b58@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2"
+ boundary="Signature=_Wed__31_Aug_2011_10_45_06_+1000_o3BYbcu2fGXfKa18"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2
+--Signature=_Wed__31_Aug_2011_10_45_06_+1000_o3BYbcu2fGXfKa18
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi David,
+Hi Phillip,
 
-On Tue, 30 Aug 2011 15:54:33 -0700 David Brown <davidb@codeaurora.org> wrot=
-e:
->
-> Stephen, now that the MSM tree is going through Arnd's ARM SOC tree,
-> it doesn't need to be pulled directly into linux-next.  You can remove
-> this tree:
->=20
-> msm git://codeaurora.org/quic/kernel/davidb/linux-msm.git#for-next
+While trying to fetch the squashfs tree today, I get this error:
 
-OK, I have removed it.  Thanks for letting me know.
+fatal: '/pub/scm/linux/kernel/git/pkl/squashfs-linus.git' does not appear t=
+o be a git repository
 
+I will use the version of the tree that I last fetched for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2
+--Signature=_Wed__31_Aug_2011_10_45_06_+1000_o3BYbcu2fGXfKa18
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOXYHUAAoJEDMEi1NhKgbsb7cH/0qcavoZhqtqcLNhF8RxAy1B
-r0cPf4p1ScpHZur9qHt8S8NnkUVXISgw9P69kHf51rHIKn6E0q0Tr3/72LPY/6ad
-Jb08+b2xVZ026zJ00+Ig/6ui5ifo0pcUb6mzEIdXiwhLlYjnDeN68fX12qh2ogm0
-ZpW3CdKQz0qzzxpJCTQNR6l8mhs9ukgXREv+J1UHktUD9vlWPTznRlQnGieetEyx
-tbivdDqNVqFV/1NxnnkGyFIbAXxGFyKgXUQKRkuGqokykb+7CgzdhTQ4OLX4e7mk
-lEfJqXrAOtYcd1tVRvWVVUu56g6d9ot1TWNeNTI2WtV/UCXASne+XaArfQE6+7c=
-=oEhO
+iQEcBAEBAgAGBQJOXYQSAAoJEDMEi1NhKgbs5LsH/3MkPvDEWYqtwhDdhaeYGRvZ
+oBC9BqBiLkYqM2g/EnmVXebu+Nl5OwMcA9fRoespW086IGUgYbpaSGPtuiHeapf0
+hVf8jhxCAfPprUO3ln/U10S9uqPPXPs4mdJiZ/ccLIaC0f6PRjgz2idMfspcJzzD
+4be/8DoL0r3YTcaPK+kQBEtyAxY0bqiaQ9rppME3sG/5EwstC/wJo0TMeuNv1xmA
+/4qvisZO0THaAql3ss63UEP6A86cyQtNurfhB2O+ZMJ7vmyGQexh5pKETEedsiFm
+ZYkZOCxMQKwfy8eFYZwmhvG9C+vtEBGuHrCKXHRD2/Gf5ZTqaLgbUs9JqLE8F08=
+=2LWN
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2--
+--Signature=_Wed__31_Aug_2011_10_45_06_+1000_o3BYbcu2fGXfKa18--
