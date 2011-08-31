@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766Ab1HaDRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 23:17:21 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:51326 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218Ab1HaDRU (ORCPT
+	id S1751835Ab1HaD3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 23:29:39 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:54726 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751217Ab1HaD3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 23:17:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: thellstrom@vmware.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
-        j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
-        airlied@linux.ie, alexdeucher@gmail.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 7/7] nouveau/radeon: Set coherent DMA mask
-Date: Tue, 30 Aug 2011 22:41:52 -0400
-Message-Id: <1314758512-19285-8-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314758512-19285-1-git-send-email-konrad.wilk@oracle.com>
-References: <1314758512-19285-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4E5DA799.0022:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Tue, 30 Aug 2011 23:29:37 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhoDAKCpXU55LIxDgWdsb2JhbABCqEQVAQEWJiWBQAEBBAE6HBYKAwULCAMYLhQlAyETGYdZt3kOhkYEm2OIWQ
+Date: Wed, 31 Aug 2011 13:29:32 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Sunil Mushran <sunil.mushran@oracle.com>
+Cc: Andreas Dilger <adilger@dilger.ca>, Christoph Hellwig <hch@infradead.org>,
+        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk, dchinner@redhat.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+Message-ID: <20110831032932.GI32358@dastard>
+References: <1309275199-10801-1-git-send-email-josef@redhat.com>
+ <1309275199-10801-5-git-send-email-josef@redhat.com>
+ <20110825060632.GA9933@infradead.org>
+ <20110825064039.GO3162@dastard>
+ <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca>
+ <20110826013528.GW3162@dastard>
+ <4E5D8B8E.8030401@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5D8B8E.8030401@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the storage devices that use the dmapool set the coherent DMA
-mask so they can properly use the dmapool. Since the TTM DMA pool
-code is based on that and dma_alloc_coherent checks the
-'coherent_dma_mask' and not 'dma_mask' we want to set it.
+On Tue, Aug 30, 2011 at 06:17:02PM -0700, Sunil Mushran wrote:
+> On 08/25/2011 06:35 PM, Dave Chinner wrote:
+> >Agreed, that's the way I'd interpret it, too. So perhaps we need to
+> >ensure that this interpretation is actually tested by this test?
+> >
+> >How about some definitions to work by:
+> >
+> >Data: a range of the file that contains valid data, regardless of
+> >whether it exists in memory or on disk. The valid data can be
+> >preceeded and/or followed by an arbitrary number of zero bytes
+> >dependent on the underlying implementation of hole detection.
+> >
+> >Hole: a range of the file that contains no data or is made up
+> >entirely of  NULL (zero) data. Holes include preallocated ranges of
+> >files that have not had actual data written to them.
+> >
+> >Does that make sense? It has sufficient flexibility in it for the
+> >existing generic "non-implementation", allows for filesystems to
+> >define their own hole detection boundaries (e.g. filesystem block
+> >size), and effectively defines how preallocated ranges from
+> >fallocate() should be treated (i.e. as holes). If we can agree on
+> >those definitions, I think that we should document them in both the
+> >kernel and the man page that defines SEEK_HOLE/SEEK_DATA so everyone
+> >is on the same page...
+> 
+> We should not tie in the definition to existing fs technologies.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/nouveau/nouveau_mem.c  |    5 +++++
- drivers/gpu/drm/radeon/radeon_device.c |    6 ++++++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+Such as? If we don't use well known, well defined terminology, we
+end up with ambiguous, vague functionality and inconsistent
+implementations.
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_mem.c b/drivers/gpu/drm/nouveau/nouveau_mem.c
-index a2d7e35..bb6ccbd 100644
---- a/drivers/gpu/drm/nouveau/nouveau_mem.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_mem.c
-@@ -408,6 +408,11 @@ nouveau_mem_vram_init(struct drm_device *dev)
- 	if (ret)
- 		return ret;
- 
-+	ret = pci_set_consistent_dma_mask(dev->pdev, DMA_BIT_MASK(dma_bits));
-+	if (ret) {
-+		/* Reset to default value. */
-+		pci_set_consistent_dma_mask(dev->pdev, DMA_BIT_MASK(32));
-+	}
- 	dev_priv->fb_phys = pci_resource_start(dev->pdev, 1);
- 
- 	ret = nouveau_ttm_global_init(dev_priv);
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
-index 7cfaa7e..0c0a970 100644
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -757,8 +757,14 @@ int radeon_device_init(struct radeon_device *rdev,
- 	r = pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
- 	if (r) {
- 		rdev->need_dma32 = true;
-+		dma_bits = 32;
- 		printk(KERN_WARNING "radeon: No suitable DMA available.\n");
- 	}
-+	r = pci_set_consistent_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
-+	if (r) {
-+		pci_set_consistent_dma_mask(rdev->pdev, DMA_BIT_MASK(32));
-+		printk(KERN_WARNING "radeon: No coherent DMA available.\n");
-+	}
- 
- 	/* Registers mapping */
- 	/* TODO: block userspace mapping of io register */
+> Instead
+> we should let the fs weigh the cost of providing accurate information
+> with the possible gain in performance.
+> 
+> Data:
+> A range in a file that could contain something other than nulls.
+> If in doubt, it is data.
+> 
+> Hole:
+> A range in a file that only contains nulls.
+
+And that's -exactly- the ambiguous, vague definition that has raised
+all these questions in the first place. I was in doubt about whether
+unwritten extents can be considered a hole, and by your definition
+that means it should be data. But Andreas seems to be in no doubt it
+should be considered a hole.
+
+Hence if I implement XFS support and Andreas implements ext4 support
+by your defintion, we end with vastly different behaviour even
+though the two filesystems use the same underlying technology for
+preallocated ranges. That's exactly the inconsistency in
+implementation that I'd like us to avoid.
+
+IOWs, the definition needs to be clear enough to prevent these
+inconsistencies from occurring. Indeed, the phrase "preallocated
+ranges that have not had data written to them" is as independent of
+filesystem implementation or technologies as possible. However,
+because Linux supports preallocation (unlike our reference
+platform), and we encourage developers to use it where appropriate,
+it is best that we define how we expect such ranges to behave
+clearly. That makes life easier for everyone.
+
+Cheers,
+
+Dave.
 -- 
-1.7.4.1
-
+Dave Chinner
+david@fromorbit.com
