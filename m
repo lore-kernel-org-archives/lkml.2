@@ -1,118 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab1HaKJp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 06:09:45 -0400
-Received: from cernmx31.cern.ch ([137.138.144.179]:3402 "EHLO CERNMX31.cern.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab1HaKJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 06:09:12 -0400
-From: Manohar Vanga <manohar.vanga@cern.ch>
-To: <gregkh@suse.de>
-CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
-Subject: [PATCH 1/3] staging: vme: change static device array to pointers
-Date: Wed, 31 Aug 2011 12:05:44 +0200
-Message-ID: <1314785146-19163-2-git-send-email-manohar.vanga@cern.ch>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314785146-19163-1-git-send-email-manohar.vanga@cern.ch>
-References: <1314785146-19163-1-git-send-email-manohar.vanga@cern.ch>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [137.138.192.18]
-Keywords: CERN SpamKiller Note: -50
+	id S1753484Ab1HaKKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 06:10:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57113 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1HaKKQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 06:10:16 -0400
+Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Date: Wed, 31 Aug 2011 12:10:05 +0200
+In-Reply-To: <1314681384-20881-2-git-send-email-ying.huang@intel.com>
+References: <1314681384-20881-1-git-send-email-ying.huang@intel.com>
+	 <1314681384-20881-2-git-send-email-ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314785405.23993.21.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the static array of 'struct device''s in struct vme_bridge
-to instead use an array of pointers. This is in accordance with the
-requirement that all kobjects be dynamically allocated (see
-Documentation/kobject.txt) and never be statically allocated.
+On Tue, 2011-08-30 at 13:16 +0800, Huang Ying wrote:
+> Use llist in irq_work instead of the lock-less linked list
+> implementation in irq_work to avoid the code duplication.
 
-Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
----
- drivers/staging/vme/vme.c        |   21 +++++++++++++++++----
- drivers/staging/vme/vme_bridge.h |    2 +-
- 2 files changed, 18 insertions(+), 5 deletions(-)
+Except you make code horrid as well.. both this and xlist don't have
+additional function calls, whereas you do.
 
-diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index feb2d00..810fe1f 100644
---- a/drivers/staging/vme/vme.c
-+++ b/drivers/staging/vme/vme.c
-@@ -1338,6 +1338,11 @@ static void vme_remove_bus(struct vme_bridge *bridge)
- 	mutex_unlock(&vme_buses_lock);
- }
+Also, WTFH do you have unconditinoal cpu_relax() calls inside the
+cmpxchg() loops, that's just bloody insane.
+
+Move all of lib/llist.c inline, create a new macro for the
+
+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG                                                    
+        BUG_ON(in_nmi());                                                                    
+#endif 
+
+blurb and loose the LLIST Kconfig.
+
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  include/linux/irq_work.h |   15 ++++---
+>  init/Kconfig             |    1 
+>  kernel/irq_work.c        |   92 ++++++++++++++++++-----------------------------
+>  3 files changed, 47 insertions(+), 61 deletions(-)
+> 
+> --- a/include/linux/irq_work.h
+> +++ b/include/linux/irq_work.h
+> @@ -1,20 +1,23 @@
+>  #ifndef _LINUX_IRQ_WORK_H
+>  #define _LINUX_IRQ_WORK_H
+>  
+> +#include <linux/llist.h>
+> +
+>  struct irq_work {
+> -	struct irq_work *next;
+> +	unsigned long flags;
+> +	struct llist_node llnode;
+>  	void (*func)(struct irq_work *);
+>  };
+
+Separating out the flags is unfortunate, but ok.
+
+
+> +#define LIST_NONEMPTY_BIT	0
+
+This is just sad, see below.
  
-+static void vme_dev_release(struct device *dev)
-+{
-+	kfree(dev);
-+}
-+
- int vme_register_bridge(struct vme_bridge *bridge)
- {
- 	struct device *dev;
-@@ -1353,11 +1358,17 @@ int vme_register_bridge(struct vme_bridge *bridge)
- 	 * specification.
- 	 */
- 	for (i = 0; i < VME_SLOTS_MAX; i++) {
--		dev = &bridge->dev[i];
-+		bridge->dev[i] = kzalloc(sizeof(struct device), GFP_KERNEL);
-+		if (!bridge->dev[i]) {
-+			retval = -ENOMEM;
-+			goto err_devalloc;
-+		}
-+		dev = bridge->dev[i];
- 		memset(dev, 0, sizeof(struct device));
- 
- 		dev->parent = bridge->parent;
- 		dev->bus = &vme_bus_type;
-+		dev->release = vme_dev_release;
- 		/*
- 		 * We save a pointer to the bridge in platform_data so that we
- 		 * can get to it later. We keep driver_data for use by the
-@@ -1374,8 +1385,10 @@ int vme_register_bridge(struct vme_bridge *bridge)
- 	return retval;
- 
- err_reg:
-+	kfree(dev);
-+err_devalloc:
- 	while (--i >= 0) {
--		dev = &bridge->dev[i];
-+		dev = bridge->dev[i];
- 		device_unregister(dev);
- 	}
- 	vme_remove_bus(bridge);
-@@ -1390,7 +1403,7 @@ void vme_unregister_bridge(struct vme_bridge *bridge)
- 
- 
- 	for (i = 0; i < VME_SLOTS_MAX; i++) {
--		dev = &bridge->dev[i];
-+		dev = bridge->dev[i];
- 		device_unregister(dev);
- 	}
- 	vme_remove_bus(bridge);
-@@ -1427,7 +1440,7 @@ static int vme_calc_slot(struct device *dev)
- 	/* Determine slot number */
- 	num = 0;
- 	while (num < VME_SLOTS_MAX) {
--		if (&bridge->dev[num] == dev)
-+		if (bridge->dev[num] == dev)
- 			break;
- 
- 		num++;
-diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-index 8959670..4b8566e 100644
---- a/drivers/staging/vme/vme_bridge.h
-+++ b/drivers/staging/vme/vme_bridge.h
-@@ -114,7 +114,7 @@ struct vme_bridge {
- 	void *driver_priv;	/* Private pointer for the bridge driver */
- 	struct list_head bus_list; /* list of VME buses */
- 
--	struct device dev[VME_SLOTS_MAX];	/* Device registered with
-+	struct device *dev[VME_SLOTS_MAX];	/* Device registered with
- 						 * device model on VME bus
- 						 */
- 
--- 
-1.7.4.1
+> -static inline struct irq_work *next_flags(struct irq_work *entry, int flags)
+> -{
+> -	unsigned long next = (unsigned long)entry;
+> -	next |= flags;
+> -	return (struct irq_work *)next;
+> -}
+> +struct irq_work_list {
+> +	unsigned long flags;
+> +	struct llist_head llist;
+> +};
+
+which is superfluous
+
+
+> @@ -77,23 +62,19 @@ void __weak arch_irq_work_raise(void)
+>  /*
+>   * Queue the entry and raise the IPI if needed.
+>   */
+> -static void __irq_work_queue(struct irq_work *entry)
+> +static void __irq_work_queue(struct irq_work *work)
+>  {
+> -	struct irq_work *next;
+> +	struct irq_work_list *irq_work_list;
+>  
+> -	preempt_disable();
+> +	irq_work_list = &get_cpu_var(irq_work_lists);
+>  
+> -	do {
+> -		next = __this_cpu_read(irq_work_list);
+> -		/* Can assign non-atomic because we keep the flags set. */
+> -		entry->next = next_flags(next, IRQ_WORK_FLAGS);
+> -	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
+> +	llist_add(&work->llnode, &irq_work_list->llist);
+>  
+>  	/* The list was empty, raise self-interrupt to start processing. */
+> -	if (!irq_work_next(entry))
+> +	if (!test_and_set_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags))
+>  		arch_irq_work_raise();
+
+So why can't you simply test work->llnode->next? and loose the get/put
+cpu muck? The existing preempt_disable/enable() are already superfluous
+and could be removed, you just made all this way more horrid than need
+be.
+
+>  
+> -	preempt_enable();
+> +	put_cpu_var(irq_work_list);
+>  }
 
