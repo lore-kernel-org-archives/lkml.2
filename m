@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148Ab1HaNoG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:44:06 -0400
+	id S1756277Ab1HaNoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:44:21 -0400
 Received: from mga14.intel.com ([143.182.124.37]:5192 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755985Ab1HaNoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:44:00 -0400
+	id S1756249Ab1HaNoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 09:44:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,307,1312182000"; 
-   d="scan'208";a="44294821"
+   d="scan'208";a="44294988"
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
         tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 01/12] staging: mei: removing dependency between WD and AMTHI init function.
-Date: Wed, 31 Aug 2011 16:42:37 +0300
-Message-Id: <1314798168-15613-2-git-send-email-oren.jer.weil@intel.com>
+Subject: [PATCH 07/12] staging: mei: renaming delayed work field and function to a meaningful name.
+Date: Wed, 31 Aug 2011 16:42:43 +0300
+Message-Id: <1314798168-15613-8-git-send-email-oren.jer.weil@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
 References: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
@@ -24,101 +24,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMTHI need to be initialized after WD Client was initialized, moving the AMTHI outside
-of the WD initialization function.
-in order to remove the coupling between the initialization of those clients.
+the wd_work and mei_wd_timer() function was not just for watchdog.
+mei managing the AMT watchdog going to be replace by the kernel watchdog
+interface.
 
-AMTHI is getting initialized (getting connected to the FW feature/client) in two ways:
- 1) if mei driver fails to send connect message to watchdog client (WD initialization), then
-    immediately the AMTHI client getting initialized right after the watchdog initialization function.
- 2) if Watchdog client success to send connect message to watchdog client, then only after
-    the driver is getting the connect response message the AMTHI client is getting initialized
+the mei_timer() will still manage the mei driver timeouts.
 
 Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
 Acked-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/staging/mei/init.c      |    8 +++++++-
- drivers/staging/mei/interface.h |    2 +-
- drivers/staging/mei/wd.c        |   16 ++++++++++++----
- 3 files changed, 20 insertions(+), 6 deletions(-)
+ drivers/staging/mei/interrupt.c |    6 +++---
+ drivers/staging/mei/main.c      |    6 +++---
+ drivers/staging/mei/mei_dev.h   |    4 ++--
+ drivers/staging/mei/wd.c        |    2 +-
+ 4 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/mei/init.c b/drivers/staging/mei/init.c
-index 0fa8216..69a57e7 100644
---- a/drivers/staging/mei/init.c
-+++ b/drivers/staging/mei/init.c
-@@ -521,7 +521,13 @@ void mei_host_client_properties(struct mei_device *dev)
- 	bitmap_set(dev->host_clients_map, 0, 3);
- 	dev->mei_state = MEI_ENABLED;
+diff --git a/drivers/staging/mei/interrupt.c b/drivers/staging/mei/interrupt.c
+index 62b8001..d1da3aa 100644
+--- a/drivers/staging/mei/interrupt.c
++++ b/drivers/staging/mei/interrupt.c
+@@ -1393,7 +1393,7 @@ static int mei_irq_thread_write_handler(struct mei_io_list *cmpl_list,
+  *
+  * NOTE: This function is called by timer interrupt work
+  */
+-void mei_wd_timer(struct work_struct *work)
++void mei_timer(struct work_struct *work)
+ {
+ 	unsigned long timeout;
+ 	struct mei_cl *cl_pos = NULL;
+@@ -1403,7 +1403,7 @@ void mei_wd_timer(struct work_struct *work)
+ 	struct mei_cl_cb  *cb_next = NULL;
  
--	mei_wd_host_init(dev);
-+	/* if wd initialization fails, initialization the AMTHI client,
-+	 * otherwise the AMTHI client will be initialized after the WD client connect response
-+	 * will be received
-+	 */
-+	if (mei_wd_host_init(dev))
-+		mei_host_init_iamthif(dev);
-+
- 	return;
+ 	struct mei_device *dev = container_of(work,
+-					struct mei_device, wd_work.work);
++					struct mei_device, timer_work.work);
+ 
+ 
+ 	mutex_lock(&dev->device_lock);
+@@ -1495,7 +1495,7 @@ void mei_wd_timer(struct work_struct *work)
+ 		}
+ 	}
+ out:
+-	 schedule_delayed_work(&dev->wd_work, 2 * HZ);
++	 schedule_delayed_work(&dev->timer_work, 2 * HZ);
+ 	 mutex_unlock(&dev->device_lock);
  }
  
-diff --git a/drivers/staging/mei/interface.h b/drivers/staging/mei/interface.h
-index d0bf5cf..7bcf096 100644
---- a/drivers/staging/mei/interface.h
-+++ b/drivers/staging/mei/interface.h
-@@ -48,7 +48,7 @@ int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl);
+diff --git a/drivers/staging/mei/main.c b/drivers/staging/mei/main.c
+index 8d124724..7009937 100644
+--- a/drivers/staging/mei/main.c
++++ b/drivers/staging/mei/main.c
+@@ -170,7 +170,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
+ 		       pdev->irq);
+ 		goto unmap_memory;
+ 	}
+-	INIT_DELAYED_WORK(&dev->wd_work, mei_wd_timer);
++	INIT_DELAYED_WORK(&dev->timer_work, mei_timer);
+ 	if (mei_hw_init(dev)) {
+ 		printk(KERN_ERR "mei: Init hw failure.\n");
+ 		err = -ENODEV;
+@@ -178,7 +178,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
+ 	}
+ 	mei_device = pdev;
+ 	pci_set_drvdata(pdev, dev);
+-	schedule_delayed_work(&dev->wd_work, HZ);
++	schedule_delayed_work(&dev->timer_work, HZ);
  
- int mei_wd_send(struct mei_device *dev);
- int mei_wd_stop(struct mei_device *dev, bool preserve);
--void mei_wd_host_init(struct mei_device *dev);
-+bool mei_wd_host_init(struct mei_device *dev);
- void mei_wd_start_setup(struct mei_device *dev);
+ 	mutex_unlock(&mei_mutex);
  
- int mei_flow_ctrl_reduce(struct mei_device *dev, struct mei_cl *cl);
+@@ -1154,7 +1154,7 @@ static int mei_pci_resume(struct device *device)
+ 	/* Start watchdog if stopped in suspend */
+ 	if (dev->wd_timeout) {
+ 		dev->wd_due_counter = 1;
+-		schedule_delayed_work(&dev->wd_work, HZ);
++		schedule_delayed_work(&dev->timer_work, HZ);
+ 	}
+ 	return err;
+ }
+diff --git a/drivers/staging/mei/mei_dev.h b/drivers/staging/mei/mei_dev.h
+index 43d7e1c..6487be1 100644
+--- a/drivers/staging/mei/mei_dev.h
++++ b/drivers/staging/mei/mei_dev.h
+@@ -209,7 +209,7 @@ struct mei_device {
+ 	 * lock for the device
+ 	 */
+ 	struct mutex device_lock; /* device lock */
+-	struct delayed_work wd_work;	/* watch dog deleye work */
++	struct delayed_work timer_work;	/* MEI timer delayed work (timeouts) */
+ 	bool recvd_msg;
+ 	/*
+ 	 * hw states of host and fw(ME)
+@@ -336,7 +336,7 @@ void mei_host_client_properties(struct mei_device *dev);
+  */
+ irqreturn_t mei_interrupt_quick_handler(int irq, void *dev_id);
+ irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id);
+-void mei_wd_timer(struct work_struct *work);
++void mei_timer(struct work_struct *work);
+ 
+ /*
+  *  MEI input output function prototype
 diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
-index 42f04ef..721487d 100644
+index 322f80d..bb19dfe 100644
 --- a/drivers/staging/mei/wd.c
 +++ b/drivers/staging/mei/wd.c
-@@ -63,8 +63,10 @@ void mei_wd_start_setup(struct mei_device *dev)
-  *
-  * @dev: the device structure
-  */
--void mei_wd_host_init(struct mei_device *dev)
-+bool mei_wd_host_init(struct mei_device *dev)
- {
-+	bool ret = false;
-+
- 	mei_cl_init(&dev->wd_cl, dev);
+@@ -142,7 +142,7 @@ int mei_wd_stop(struct mei_device *dev, bool preserve)
+ 	int ret;
+ 	u16 wd_timeout = dev->wd_timeout;
  
- 	/* look for WD client and connect to it */
-@@ -83,19 +85,25 @@ void mei_wd_host_init(struct mei_device *dev)
- 				dev_dbg(&dev->pdev->dev, "Failed to connect to WD client\n");
- 				dev->wd_cl.state = MEI_FILE_DISCONNECTED;
- 				dev->wd_cl.host_client_id = 0;
--				mei_host_init_iamthif(dev) ;
-+				ret = false;
-+				goto end;
- 			} else {
- 				dev->wd_cl.timer_count = CONNECT_TIMEOUT;
- 			}
- 		} else {
- 			dev_dbg(&dev->pdev->dev, "Failed to find WD client\n");
--			mei_host_init_iamthif(dev) ;
-+			ret = false;
-+			goto end;
- 		}
- 	} else {
- 		dev->wd_bypass = true;
- 		dev_dbg(&dev->pdev->dev, "WD requested to be disabled\n");
--		mei_host_init_iamthif(dev) ;
-+		ret = false;
-+		goto end;
- 	}
-+
-+end:
-+	return ret;
- }
+-	cancel_delayed_work(&dev->wd_work);
++	cancel_delayed_work(&dev->timer_work);
+ 	if (dev->wd_cl.state != MEI_FILE_CONNECTED || !dev->wd_timeout)
+ 		return 0;
  
- /**
 -- 
 1.7.4.1
 
