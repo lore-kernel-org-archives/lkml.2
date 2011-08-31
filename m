@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1HaP2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 11:28:35 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:42207 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756658Ab1HaP2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 11:28:32 -0400
-Subject: Re: [PATCH v2] hwmon: (pmbus) Fix the logic of checking if no id
- is matched
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: "axel.lin@gmail.com" <axel.lin@gmail.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-In-Reply-To: <CAF+7xWnDSTOJh9cs9tUJdF=k=TD56JN1cMvfNM_ng4vw5Gntyg@mail.gmail.com>
-References: <1314766699.3960.1.camel@phoenix>
-	 <20110831120513.31bb62ee@endymion.delvare>
-	 <CAF+7xWnDSTOJh9cs9tUJdF=k=TD56JN1cMvfNM_ng4vw5Gntyg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Wed, 31 Aug 2011 08:27:55 -0700
-Message-ID: <1314804475.2455.17.camel@groeck-laptop>
+	id S1756584Ab1HaPf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 11:35:59 -0400
+Received: from eastrmfepi201.cox.net ([68.230.241.205]:55036 "EHLO
+	eastrmfepi201.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756269Ab1HaPf5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 11:35:57 -0400
+X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 11:35:56 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020203.4E5E531E.000C,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=vWikg9PSJH5eWPsfInVwkFcjRsjcbcFZH9bro1lAIgk=
+ c=1 sm=1 a=Dyoqhi_TatcA:10 a=vYbi2SD7W5AA:10 a=Cfj4BQAnxiAA:10
+ a=YFGPWYeX5QgtDK+OvpAJKw==:17 a=FcA7n_SX96hxycATfrQA:9
+ a=81oWxvCw10Cma9bZgogA:7 a=Ft8UYL4EG9YA:10 a=YFGPWYeX5QgtDK+OvpAJKw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=wwmjkjkow@cox.net
+Reply-To: <upgradeaccout@qatar.io>
+From: "Acount update" <infocontact@fuse.net>
+Subject: mailbox exceed limit
+Date: Wed, 31 Aug 2011 20:58:26 +0530
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 110831-0, 08/31/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20110831152830.RJJR32702.eastrmfepo203.cox.net@eastrmimpo03.cox.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-31 at 10:30 -0400, Axel Lin wrote:
-> 2011/8/31 Jean Delvare <khali@linux-fr.org>:
-> > Hi Alex,
-> It's Axel.
-> 
-> >
-> > On Wed, 31 Aug 2011 12:58:19 +0800, Axel Lin wrote:
-> >> If no id is matched, the mid pointer is not NULL in current implementation.
-> >
-> > The NULL check is presumably there to catch the (impossible) case
-> > ARRAY_SIZE(ucd9000_id) == 0 (array of ids is empty), not the case "no
-> > id is matched". The initialization of mid to NULL is for the same
-> > reason. Both should be unnecessary but may have been motivated by a
-> > compiler warning (although I would think gcc is smart enough to not
-> > emit these when it can check that the array isn't empty.) Guenter
-> > should be able to tell more.
-> >
-Yes, that was the idea, and as far as I recall I did get a compiler
-warning at the time. The loop aborts at the last entry due to the
-strncasecmp() match on the zero length string. Axel's patch won't work,
-since i == ARRAY_SIZE(ucd9000_id) is never true for the same reason.
+Your Email Account has reached the limit which is 20GB as set by your
+Administrator, you are currently running on 20GB, you may not be able to
+send or receive new mails until you re-activate your mailbox.
 
-> > The check for "no id is matched" is !strlen(mid->name), which works as
-> > intended as far as I can see. Did you actually hit a bug with the
-> > current code? I bet not.
-> No, I didn't hit the bug. Just reading the code.
-> 
-Finally someone else looking into that code ... thanks, I really
-appreciate that.
+To re-validate your mailbox please
+Enter Username and Password in the column given below to Validate your
+mailbox
 
-> >
-> > Now I would agree that the current code is somewhat misleading because
-> > mixing null-terminated arrays with ARRAY_SIZE() is unusual (and
-> > inefficient - the last iteration always fails.) Also, strlen() is
-> > relatively slow and would rather be avoided when only testing if a
-> > string is empty or not: it's faster to test for mid->name[0].
-> >
-> > So if anything I would propose the following changes (for performance
-> > and readability, NOT bug fix), untested:
-> Your fix looks good to me. ( Although I don't have the h/w for testing ).
-> 
-I like it too. I'll dig out my test boards and test it. Jean, care to
-submit complete patches ? Otherwise I'll create a set myself and send it
-out for review once I tested it.
 
+Username...............................Password...............................Date of Birth.......................................
 Thanks,
-Guenter
-
-
+ADMIN DESK
