@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab1HaVmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 17:42:39 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:44593 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755244Ab1HaVmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 17:42:36 -0400
-Date: Wed, 31 Aug 2011 17:42:33 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 fixes for 3.1-rc5
-Message-ID: <20110831214233.GA6666@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <E1Qyos7-0001in-99@tytso-glaptop.cam.corp.google.com>
- <CA+55aFzFRo0vmuED2wbab6ZU9oH4Rriav6R13zGNtUnS2UStMA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzFRo0vmuED2wbab6ZU9oH4Rriav6R13zGNtUnS2UStMA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1755991Ab1HaVos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:44:48 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:19174 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab1HaVor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 17:44:47 -0400
+From: David Daney <david.daney@cavium.com>
+To: khali@linux-fr.org, ben-linux@fluff.org, peter.korsgaard@barco.com,
+        guenter.roeck@ericsson.com, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH 0/2] i2c/of: Populate multiplexed i2c busses from the device tree.
+Date: Wed, 31 Aug 2011 14:44:37 -0700
+Message-Id: <1314827079-21245-1-git-send-email-david.daney@cavium.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 31 Aug 2011 21:44:47.0071 (UTC) FILETIME=[33E746F0:01CC6827]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 11:25:58AM -0700, Linus Torvalds wrote:
-> On Wed, Aug 31, 2011 at 10:46 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> >
-> > Please pull from:
-> >
-> >        git://github.com/tytso/ext4.git for_linus-20110831 # 8c0bec2151a
-> >
-> > to get the following bug fix.  It address a lockdep warning which a lot
-> > of people have been complaining about.
-> 
-> So what's up? Bad English and a github address makes me unhappy.
-> 
-> I can imagine that you decided not to use kernel.org due to hera being
-> down, but this still makes me want to say "please more references".
+Unchanged from the original RFC where I said:
 
-Yes, I decided to use github because master.kernel.org is down.
-for_linus-20110831 is a signed tag, which you can verify.
+  We need to populate our I2C devices from the device tree, but some
+  of our systems have multiplexers which currently break this process.
 
-Sorry for the bad english, I was doing too many other things at the
-same time when I was composing the pull request.  The pull should
-consist of a single commit to fix a Lockddep complain; see:
+  The basic idea is to have the generic i2c-mux framework propagate
+  the device_node for the child bus into the corresponding
+  i2c_adapter, and then call of_i2c_register_devices().  This means
+  that the device tree bindings for *all* i2c muxes must have some
+  common properties.  I try to document these in mux.txt.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=41682
+This is now tested against 3.1.0-rc3 and seems to be working well.
 
-I just realized I forgot to include the BZ URL in the commit
-description; sigh, sorry about that.  Would you prefer that I ammend
-the commit and send you a new pull request?
+David Daney (2):
+  i2c: Add a struct device * parameter to i2c_add_mux_adapter()
+  i2c/of: Automatically populate i2c mux busses from device tree data.
 
-					- Ted
+ Documentation/devicetree/bindings/i2c/mux.txt |   54 +++++++++++++++++++++++++
+ drivers/i2c/i2c-mux.c                         |   44 ++++++++++++++++----
+ drivers/i2c/muxes/gpio-i2cmux.c               |    3 +-
+ drivers/i2c/muxes/pca9541.c                   |    3 +-
+ drivers/i2c/muxes/pca954x.c                   |    2 +-
+ include/linux/i2c-mux.h                       |    3 +-
+ 6 files changed, 96 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/mux.txt
+
+-- 
+1.7.2.3
 
