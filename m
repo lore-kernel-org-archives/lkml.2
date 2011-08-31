@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab1HaNqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:46:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53864 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097Ab1HaNqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:46:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Kuo <rkuo@codeaurora.org>
-Subject: Re: [patch v2 16/35] Hexagon: Add startup code
-Date: Wed, 31 Aug 2011 15:46:25 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-References: <20110830190729.923334292@codeaurora.org> <20110830190801.249053803@codeaurora.org>
-In-Reply-To: <20110830190801.249053803@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108311546.26003.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZF4VdCzI6jRx/MjyQXT788TAwGtYDURmfLCC+9cfHD1
- JmlQpaPRBZAoARrDo0yCHM5Lw7JndNzRV6Fho9Vfh/JR9Gwe9S
- uBs2aY97O/2gTn4Eeouzb0qMi7VVRNEVn8/RRwZob9X9XjcqLB
- U9MtsSV5t1gUhu33BsarrSGI1es4lGhGFhyBM/EdmetRi9QRrc
- 2of+fkp2b4lhqDrkBS6A/OcQZRPLJbBWflM7uEiXWEAYWihP1E
- gdX5fuMkRHpD088T/+U1XuW5+pdh+4EmupiT02sq9J0okke3QW
- bc39JR3Yhv5BFPyn4CEI0KST4Sbk/QvXV2PrVATSWWeEnH5iox
- TBlFoRz1LAEqyT6tsmnc=
+	id S1756392Ab1HaNrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:47:04 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5192 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756050Ab1HaNoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 09:44:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,307,1312182000"; 
+   d="scan'208";a="44294830"
+From: Oren Weil <oren.jer.weil@intel.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
+        tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
+Subject: [PATCH 02/12] staging: mei: fix register access function comments
+Date: Wed, 31 Aug 2011 16:42:38 +0300
+Message-Id: <1314798168-15613-3-git-send-email-oren.jer.weil@intel.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
+References: <1314798168-15613-1-git-send-email-oren.jer.weil@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 August 2011, Richard Kuo wrote:
-> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
+Acked-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/staging/mei/mei_dev.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+diff --git a/drivers/staging/mei/mei_dev.h b/drivers/staging/mei/mei_dev.h
+index d7bc10c..2e11077 100644
+--- a/drivers/staging/mei/mei_dev.h
++++ b/drivers/staging/mei/mei_dev.h
+@@ -356,7 +356,7 @@ int mei_find_me_client_index(const struct mei_device *dev, uuid_le cuuid);
+  * @dev: the device structure
+  * @offset: offset from which to read the data
+  *
+- * returns the byte read.
++ * returns register value (u32)
+  */
+ static inline u32 mei_reg_read(struct mei_device *dev, unsigned long offset)
+ {
+@@ -368,7 +368,7 @@ static inline u32 mei_reg_read(struct mei_device *dev, unsigned long offset)
+  *
+  * @dev: the device structure
+  * @offset: offset from which to write the data
+- * @value: the byte to write
++ * @value: register value to write (u32)
+  */
+ static inline void mei_reg_write(struct mei_device *dev,
+ 				unsigned long offset, u32 value)
+-- 
+1.7.4.1
+
