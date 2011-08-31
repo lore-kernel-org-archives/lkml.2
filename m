@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab1HaNYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:24:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52878 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757Ab1HaNYr (ORCPT
+	id S1755876Ab1HaNZg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:25:36 -0400
+Received: from mta0.cl.cam.ac.uk ([128.232.25.20]:43090 "EHLO
+	mta0.cl.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755818Ab1HaNZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:24:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Kuo <rkuo@codeaurora.org>
-Subject: Re: [patch v2 01/35] Hexagon: Add generic headers
-Date: Wed, 31 Aug 2011 15:24:42 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-References: <20110830190729.923334292@codeaurora.org> <20110830190759.813984525@codeaurora.org>
-In-Reply-To: <20110830190759.813984525@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108311524.42373.arnd@arndb.de>
-X-Provags-ID: V02:K0:K+xGF3iIhrsTC6F4tbVPRlFPGD0f9g+IIY781aUTD2F
- o09e5E8NogtcXm2r/NIHgV341LIH/JVTH8QeHQ9/FRcFWOtLZ4
- 4RXIsPvY4GZy48kEslSVvfjqMOtM3Hrse5dI+L4eEpIJLFEb6h
- 8w4i3qnQ4ePfv+n9YIDxzxZNg61i5Iewp86/Nk/PYgwT5w/9AI
- 9Erq16CQJ7BVLt7fF/rkgZE+xgVRRoX3j36C+LDNOi0vQIkgfJ
- lHmGAsfoxqniRSY2gol7yjgvm7AXpAw7jscMFET8t/7y0AOf7H
- 50HJf1RsPz4NC3dG2WDKEvrQ5ErYrnKtfqrC1xOTjKhoMh894Z
- QkK+aETDsiTwh4evev4Y=
+	Wed, 31 Aug 2011 09:25:34 -0400
+X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 09:25:34 EDT
+From: Ripduman Sohan <ripduman.sohan@cl.cam.ac.uk>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, Ripduman Sohan <ripduman.sohan@cl.cam.ac.uk>
+Subject: [PATCH] workqueue: Restore cpus_allowed mask for sleeping workqueue rescue threads
+Date: Wed, 31 Aug 2011 14:17:43 +0100
+Message-Id: <1314796663-4215-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 August 2011, Richard Kuo wrote:
-> Reworked to use the Kbuild generic headers mechanism.
-> 
-> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Rescuer threads may be migrated (and are bound) to particular CPUs when
+active.  However, the allowed_cpus mask is not restored when they return
+to sleep rendering inconsistent the presented and actual set of CPUs the
+process may potentially run on.  This patch fixes this oversight by
+recording the allowed_cpus mask for rescuer threads when it enters the
+rescuer_thread() main loop and restoring it every time the thread sleeps.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Ripduman Sohan <ripduman.sohan@cl.cam.ac.uk>
+---
+ kernel/workqueue.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 25fb1b0..0a4e785 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2031,6 +2031,7 @@ static int rescuer_thread(void *__wq)
+ 	struct list_head *scheduled = &rescuer->scheduled;
+ 	bool is_unbound = wq->flags & WQ_UNBOUND;
+ 	unsigned int cpu;
++        cpumask_t allowed_cpus = current->cpus_allowed;
+ 
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
+ repeat:
+@@ -2078,6 +2079,8 @@ repeat:
+ 		spin_unlock_irq(&gcwq->lock);
+ 	}
+ 
++        set_cpus_allowed_ptr(current, &allowed_cpus);
++
+ 	schedule();
+ 	goto repeat;
+ }
+-- 
+1.7.1
+
