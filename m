@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab1HaOFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 10:05:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64448 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab1HaOFF convert rfc822-to-8bit (ORCPT
+	id S1752546Ab1HaOHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 10:07:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64255 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab1HaOHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 10:05:05 -0400
+	Wed, 31 Aug 2011 10:07:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: [patch v2 19/35] Hexagon: Add ptrace support
+Date: Wed, 31 Aug 2011 16:07:41 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+References: <20110830190729.923334292@codeaurora.org> <20110830190801.540467107@codeaurora.org>
+In-Reply-To: <20110830190801.540467107@codeaurora.org>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1314786377.4653.19.camel@marge.simson.net>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	<CAOtvUMdgPoL_gnOTq8DwS9RxSFagQN_kAze3guD8O3xFHfnfHg@mail.gmail.com>
-	<20110830140648.GL9748@somewhere.redhat.com>
-	<1314762442.4653.5.camel@marge.simson.net>
-	<1314782887.23993.12.camel@twins>
-	<1314786377.4653.19.camel@marge.simson.net>
-Date: Wed, 31 Aug 2011 17:05:02 +0300
-Message-ID: <CAOtvUMdWu9KUk+ZxOcwEucJ2DHqKEQLuJFpMj1qYkuOeCb=OEQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/32] Nohz cpusets (was: Nohz Tasks)
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108311607.41445.arnd@arndb.de>
+X-Provags-ID: V02:K0:gO0JhYEMBI7LOu58fY2Jo6hIkkndE4K4fZLZ4mSe8mv
+ dNuFsWUot5I9fiOsu4M6LGEqkgxhWzw/JLn11GxDfeSVXEcoSr
+ unrWWlm8Igcgb2q/mcKtiOSCK5UHsK8tt1+h9qpqGbPwhiLRlB
+ /Meog+JHSExsuPnQI58mx5t1DxmDbOViiQeZwjL4lSzgRG4SXL
+ wQD7yJcfTd14tom4xnkcL6Pbk88+QRjnmiureZ9IYqGSjfT5wm
+ GO1kvd1ny44zLD1cJaLL19SruN8EliITTnvdIU/sh6NFn1TMuE
+ D7xxDkZzoslWcfZLs3MVq+qn0Um6k5U+hVA5K4yDYE4QT4OKMN
+ lWbhr1Fs5Cn65RowJ59I=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Guess I'll have to try creating a cpuset per cpu, and see how it
-> compares to isolcpus.  cset shield --cpu 4-63 didn't work well enough.
+On Tuesday 30 August 2011, Richard Kuo wrote:
+> +
+> +       switch (request) {
+> +       case PTRACE_POKETEXT:   /* write the word at location addr. */
+> +       case PTRACE_POKEDATA:
+> +               return generic_ptrace_pokedata(child, addr, data);
+> +       case PTRACE_POKEUSR:    /* write register specified by addr. */
+> +               return ptrace_pokeusr(child, addr, data);
+> +       case PTRACE_GETREGS:
+> +               return copy_regset_to_user(child, &hexagon_user_view,
+> +                                          REGSET_GPR, 0,
+> +                                          sizeof(struct user_regs_struct),
+> +                                          udata);
+> +       case PTRACE_SETREGS:
+> +               return copy_regset_from_user(child, &hexagon_user_view,
+> +                                            REGSET_GPR, 0,
+> +                                            sizeof(struct user_regs_struct),
+> +                                            udata);
 
-Try adding:
+I don't remember if I commented on this or if it was for the c6x architecture
+submission. Anyway, I think you should let all of this be handled through
+the generic ptrace support like openrisc does.
 
-# cset shield --kthread on
-
-It will try to move non bound kernel threads to the system set from
-the root set.
-
-The results seems to vary from introducing system instability, via
-doing nothing at all, all the way to actually achieving better
-isolation, depending on the specific kernel threads you have running
-and your kernel version. Sometime more then one of the results at the
-same time. It's really like Russian roulette in a way, only way more
-geekier...
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-"Dance like no one is watching, love like you'll never be hurt, sing
-like no one is listening... but for BEEP sake you better code like
-you're going to maintain it for years!"
+	Arnd
