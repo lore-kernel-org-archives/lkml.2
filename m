@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1HaI52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 04:57:28 -0400
-Received: from ns2.gothnet.se ([82.193.160.251]:2245 "EHLO
-	GOTHNET-SMTP2.gothnet.se" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750779Ab1HaI5Z (ORCPT
+	id S1753375Ab1HaJF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 05:05:26 -0400
+Received: from mail3.vodafone.ie ([213.233.128.45]:11222 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1HaJFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 04:57:25 -0400
-X-Greylist: delayed 986 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 04:57:25 EDT
-Message-ID: <4E5DF323.9020509@shipmail.org>
-Date: Wed, 31 Aug 2011 10:38:59 +0200
-From: Thomas Hellstrom <thomas@shipmail.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
+	Wed, 31 Aug 2011 05:05:25 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAKj4XU5tThVO/2dsb2JhbAAMNqp+AQEFMgFGEAsNCwkWDwkDAgECAUUGDQEHAQG+RYZVBJhRgxKISg
+Message-ID: <4E5DF951.4010804@draigBrady.com>
+Date: Wed, 31 Aug 2011 10:05:21 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-To: Inki Dae <inki.dae@samsung.com>
-CC: airlied@linux.ie, dri-devel@lists.freedesktop.org, sw0312.kim@samsung.com,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC][PATCH v3] DRM: add DRM Driver for Samsung SoC EXYNOS4210.
-References: <1314359274-21585-1-git-send-email-inki.dae@samsung.com>
-In-Reply-To: <1314359274-21585-1-git-send-email-inki.dae@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-BitDefender-Scanner: Mail not scanned due to license constraints
+To: Sunil Mushran <sunil.mushran@oracle.com>
+CC: Dave Chinner <david@fromorbit.com>, Andreas Dilger <adilger@dilger.ca>,
+        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@ZenIV.linux.org.uk,
+        dchinner@redhat.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110825060632.GA9933@infradead.org> <20110825064039.GO3162@dastard> <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca> <20110826013528.GW3162@dastard> <4E5D8B8E.8030401@oracle.com> <20110831032932.GI32358@dastard> <4E5DBBFD.5020202@oracle.com>
+In-Reply-To: <4E5DBBFD.5020202@oracle.com>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/26/2011 01:47 PM, Inki Dae wrote:
-> This patch is a DRM Driver for Samsung SoC Exynos4210 and now enables only FIMD yet
-> but we will add HDMI support also in the future.
->
-> this patch is based on git repository below:
-> git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git,
-> branch name: drm-next
-> commit-id: bcc65fd8e929a9d9d34d814d6efc1d2793546922
->
-> you can refer to our working repository below:
-> http://git.infradead.org/users/kmpark/linux-2.6-samsung
-> branch name: samsung-drm
->
-> We tried to re-use lowlevel codes of the FIMD driver(s3c-fb.c
-> based on Linux framebuffer) but couldn't so because lowlevel codes
-> of s3c-fb.c are included internally and so FIMD module of this driver has
-> its own lowlevel codes.
->
-> We used GEM framework for buffer management and DMA APIs(dma_alloc_*)
-> for buffer allocation. by using DMA API, we could use CMA later.
->
-> Refer to this link for CMA(Continuous Memory Allocator):
-> http://lkml.org/lkml/2011/7/20/45
->
-> this driver supports only physically continuous memory(non-iommu).
->
-> Links to previous versions of the patchset:
-> v1:<  https://lwn.net/Articles/454380/>
-> v2:<  http://www.spinics.net/lists/kernel/msg1224275.html>
->
-> Changelog v2:
-> DRM: add DRM_IOCTL_SAMSUNG_GEM_MMAP ioctl command.
->
->       this feature maps user address space to physical memory region
->       once user application requests DRM_IOCTL_SAMSUNG_GEM_MMAP ioctl.
->
-> DRM: code clean and add exception codes.
->
-> Changelog v3:
-> DRM: Support multiple irq.
->
->       FIMD and HDMI have their own irq handler but DRM Framework can regiter only one irq handler
->       this patch supports mutiple irq for Samsung SoC.
->
-> DRM: Consider modularization.
->
->       each DRM, FIMD could be built as a module.
->
-> DRM: Have indenpendent crtc object.
->
->       crtc isn't specific to SoC Platform so this patch gets a crtc to be used as common object.
->       created crtc could be attached to any encoder object.
->
-> DRM: code clean and add exception codes.
->
-> S
->    
+On 08/31/2011 05:43 AM, Sunil Mushran wrote:
+> On 8/30/2011 8:29 PM, Dave Chinner wrote:
+>> And that's -exactly- the ambiguous, vague definition that has raised
+>> all these questions in the first place. I was in doubt about whether
+>> unwritten extents can be considered a hole, and by your definition
+>> that means it should be data. But Andreas seems to be in no doubt it
+>> should be considered a hole.
+> 
+> Fair enough. Let me rephrase.
+> 
+> Data:
+> A range in a file when read could return something other than nulls.
+> 
+> Hole:
+> A range in a file when read only returns nulls.
+> 
+> Considering preallocated extents only return null, they should
+> be considered holes.
 
-...
+I would concur with this.
+Treating preallocated extents as holes will allow them to be
+processed quickly by `cp` etc.
 
-> +static struct drm_ioctl_desc samsung_ioctls[] = {
-> +	DRM_IOCTL_DEF_DRV(SAMSUNG_GEM_CREATE, samsung_drm_gem_create_ioctl,
-> +			DRM_UNLOCKED),
-> +	DRM_IOCTL_DEF_DRV(SAMSUNG_GEM_MAP_OFFSET,
-> +			samsung_drm_gem_map_offset_ioctl, DRM_UNLOCKED),
-> +	DRM_IOCTL_DEF_DRV(SAMSUNG_GEM_MMAP,
-> +			samsung_drm_gem_mmap_ioctl, DRM_UNLOCKED),
-> +};
->    
+What we lose is the ability to copy the allocation from src to dst.
+But that's less important in comparison, and could probably be done
+on a per file rather than per extent basis anyway.
+Note preallocation would be good for disk layout and timely ENOSPC.
 
-What about security here? It looks to me like *any* user-space process 
-can create a gem object and quickly exhaust available DMA memory space, 
-potentially bringing the system down?
+Note fiemap gives us greater control by distinguishing
+holes and empty extents, thus allowing us to both
+efficiently copy and maintain allocation.  But that
+interface currently requires a sync of the file on some
+file systems, which we couldn't enable for performance
+reasons in cp.
 
-Likewise, there seems to be no owner check in the SAMSUNG_GEM_MMAP 
-ioctl, allowing any user-space process unlimited graphics buffer access?
-
-/Thomas
-
-
-
+cheers,
+Pádraig.
