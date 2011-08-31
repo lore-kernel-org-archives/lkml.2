@@ -1,321 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab1HaOq7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 10:46:59 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:46490 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab1HaOq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 10:46:58 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, dan.magenheimer@oracle.com, ngupta@vflare.org,
-        cascardo@holoscopio.com, rdunlap@xenotime.net,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] staging: zcache: replace xvmalloc with xcfmalloc
-Date: Wed, 31 Aug 2011 09:40:40 -0500
-Message-Id: <1314801641-15059-3-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
-x-cbid: 11083114-6078-0000-0000-0000003ADFA0
+	id S1755797Ab1HaOrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 10:47:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54402 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab1HaOrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 10:47:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: [patch v2 24/35] Hexagon: Provide basic implementation and/or stubs for I/O routines.
+Date: Wed, 31 Aug 2011 16:28:52 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        Linas Vepstas <linas@codeaurora.org>
+References: <20110830190729.923334292@codeaurora.org> <20110830190801.995980546@codeaurora.org>
+In-Reply-To: <20110830190801.995980546@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108311628.53309.arnd@arndb.de>
+X-Provags-ID: V02:K0:4pa4oi9jjHYjJrQq0HfzS/buKZB/CSNhrmDzofhOjxQ
+ DfssNiKkJUq9em5c/knhxkv/FP+gjn5duWcck7+VPHlkVtInLZ
+ NFMaTBBYvnjG6LSVQMRUNIG+L8J9a4kVC1LWQEFGBHI82ha2iy
+ NFyqHMlpOdp13XQWwdp5gFrIZZT5svgi0TG5pxEf7diOKFJp0w
+ +TlhIbbI1G809jnvCBQVa+GopOh9d+ONoxOf/KQ2pfdmp47aE5
+ HiZFowRIpudh/rZPNF/iSEkxWVAl3x2L13S+qtfggy1AqjfRzG
+ Q/G+1R9OvBMNhVhe4PEm6z/ME/ox08Xzwdumlr8ufZ0pgtEATF
+ oZdzdZFwjU/LJFg1/F14=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces xvmalloc with xcfmalloc as the persistent page
-allocator for zcache.
+On Tuesday 30 August 2011, Richard Kuo wrote:
+> Changed read/write to use inline assembly.
+> 
+> Rearranged the file and put all the ioport stuff at the bottom.  For now
+> I'd like to just leave the stubs in there in case they need to be
+> filled out later; plus things don't compile.
+> 
+> We still seem to need IO_SPACE_LIMIT to be defined, particularly to something
+> large, as we have drivers that request resources with IORESOURCE_IO that
+> are memory mapped IO.  The ioread/iowrites work as they select the correct
+> routine to use.
 
-Because the API is not the same between xvmalloc and xcfmalloc, the
-changes are not a simple find/replace on the function names.
+Which drivers? If the drivers are buggy, better fix them than working around
+in the architecture.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |  130 ++++++++++++++++++++++------------
- 1 files changed, 84 insertions(+), 46 deletions(-)
+I have experimental patches in the tmp/randconfig3 branch of the arm-soc.git
+tree to remove the need for PIO functions in ARM. Please have a look there
+if you are interested.
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index a3f5162..b07377b 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -8,7 +8,7 @@
-  * and, thus indirectly, for cleancache and frontswap.  Zcache includes two
-  * page-accessible memory [1] interfaces, both utilizing lzo1x compression:
-  * 1) "compression buddies" ("zbud") is used for ephemeral pages
-- * 2) xvmalloc is used for persistent pages.
-+ * 2) xcfmalloc is used for persistent pages.
-  * Xvmalloc (based on the TLSF allocator) has very low fragmentation
-  * so maximizes space efficiency, while zbud allows pairs (and potentially,
-  * in the future, more than a pair of) compressed pages to be closely linked
-@@ -31,7 +31,7 @@
- #include <linux/math64.h>
- #include "tmem.h"
- 
--#include "../zram/xvmalloc.h" /* if built in drivers/staging */
-+#include "xcfmalloc.h"
- 
- #if (!defined(CONFIG_CLEANCACHE) && !defined(CONFIG_FRONTSWAP))
- #error "zcache is useless without CONFIG_CLEANCACHE or CONFIG_FRONTSWAP"
-@@ -60,7 +60,7 @@ MODULE_LICENSE("GPL");
- 
- struct zcache_client {
- 	struct tmem_pool *tmem_pools[MAX_POOLS_PER_CLIENT];
--	struct xv_pool *xvpool;
-+	struct xcf_pool *xcfmpool;
- 	bool allocated;
- 	atomic_t refcount;
- };
-@@ -623,9 +623,8 @@ static int zbud_show_cumul_chunk_counts(char *buf)
- #endif
- 
- /**********
-- * This "zv" PAM implementation combines the TLSF-based xvMalloc
-- * with lzo1x compression to maximize the amount of data that can
-- * be packed into a physical page.
-+ * This "zv" PAM implementation combines xcfmalloc with lzo1x compression
-+ * to maximize the amount of data that can be packed into a physical page.
-  *
-  * Zv represents a PAM page with the index and object (plus a "size" value
-  * necessary for decompression) immediately preceding the compressed data.
-@@ -658,71 +657,97 @@ static unsigned int zv_max_mean_zsize = (PAGE_SIZE / 8) * 5;
- static unsigned long zv_curr_dist_counts[NCHUNKS];
- static unsigned long zv_cumul_dist_counts[NCHUNKS];
- 
--static struct zv_hdr *zv_create(struct xv_pool *xvpool, uint32_t pool_id,
-+static DEFINE_PER_CPU(unsigned char *, zv_cbuf); /* zv create buffer */
-+static DEFINE_PER_CPU(unsigned char *, zv_dbuf); /* zv decompress buffer */
-+
-+static int zv_cpu_notifier(struct notifier_block *nb,
-+				unsigned long action, void *pcpu)
-+{
-+	int cpu = (long)pcpu;
-+
-+	switch (action) {
-+	case CPU_UP_PREPARE:
-+		per_cpu(zv_cbuf, cpu) = (void *)__get_free_page(
-+			GFP_KERNEL | __GFP_REPEAT);
-+		per_cpu(zv_dbuf, cpu) = (void *)__get_free_page(
-+			GFP_KERNEL | __GFP_REPEAT);
-+		break;
-+	case CPU_DEAD:
-+	case CPU_UP_CANCELED:
-+		free_page((unsigned long)per_cpu(zv_cbuf, cpu));
-+		per_cpu(zv_cbuf, cpu) = NULL;
-+		free_page((unsigned long)per_cpu(zv_dbuf, cpu));
-+		per_cpu(zv_dbuf, cpu) = NULL;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+
-+static void **zv_create(struct xcf_pool *xcfmpool, uint32_t pool_id,
- 				struct tmem_oid *oid, uint32_t index,
- 				void *cdata, unsigned clen)
- {
--	struct page *page;
--	struct zv_hdr *zv = NULL;
--	uint32_t offset;
--	int alloc_size = clen + sizeof(struct zv_hdr);
--	int chunks = (alloc_size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
--	int ret;
-+	struct zv_hdr *zv;
-+	u32 size = clen + sizeof(struct zv_hdr);
-+	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
-+	void *handle;
- 
- 	BUG_ON(!irqs_disabled());
- 	BUG_ON(chunks >= NCHUNKS);
--	ret = xv_malloc(xvpool, alloc_size,
--			&page, &offset, ZCACHE_GFP_MASK);
--	if (unlikely(ret))
--		goto out;
-+
-+	handle = xcf_malloc(xcfmpool, size, ZCACHE_GFP_MASK);
-+	if (!handle)
-+		return NULL;
-+
- 	zv_curr_dist_counts[chunks]++;
- 	zv_cumul_dist_counts[chunks]++;
--	zv = kmap_atomic(page, KM_USER0) + offset;
-+
-+	zv = (struct zv_hdr *)((char *)cdata - sizeof(*zv));
- 	zv->index = index;
- 	zv->oid = *oid;
- 	zv->pool_id = pool_id;
- 	SET_SENTINEL(zv, ZVH);
--	memcpy((char *)zv + sizeof(struct zv_hdr), cdata, clen);
--	kunmap_atomic(zv, KM_USER0);
--out:
--	return zv;
-+	xcf_write(handle, zv);
-+
-+	return handle;
- }
- 
--static void zv_free(struct xv_pool *xvpool, struct zv_hdr *zv)
-+static void zv_free(struct xcf_pool *xcfmpool, void *handle)
- {
- 	unsigned long flags;
--	struct page *page;
--	uint32_t offset;
--	uint16_t size = xv_get_object_size(zv);
-+	u32 size = xcf_get_alloc_size(handle);
- 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
- 
--	ASSERT_SENTINEL(zv, ZVH);
- 	BUG_ON(chunks >= NCHUNKS);
- 	zv_curr_dist_counts[chunks]--;
--	size -= sizeof(*zv);
--	BUG_ON(size == 0);
--	INVERT_SENTINEL(zv, ZVH);
--	page = virt_to_page(zv);
--	offset = (unsigned long)zv & ~PAGE_MASK;
-+
- 	local_irq_save(flags);
--	xv_free(xvpool, page, offset);
-+	xcf_free(xcfmpool, handle);
- 	local_irq_restore(flags);
- }
- 
--static void zv_decompress(struct page *page, struct zv_hdr *zv)
-+static void zv_decompress(struct page *page, void *handle)
- {
- 	size_t clen = PAGE_SIZE;
- 	char *to_va;
- 	unsigned size;
- 	int ret;
-+	struct zv_hdr *zv;
- 
--	ASSERT_SENTINEL(zv, ZVH);
--	size = xv_get_object_size(zv) - sizeof(*zv);
-+	size = xcf_get_alloc_size(handle) - sizeof(*zv);
- 	BUG_ON(size == 0);
-+	zv = (struct zv_hdr *)(get_cpu_var(zv_dbuf));
-+	xcf_read(handle, zv);
-+	ASSERT_SENTINEL(zv, ZVH);
- 	to_va = kmap_atomic(page, KM_USER0);
- 	ret = lzo1x_decompress_safe((char *)zv + sizeof(*zv),
- 					size, to_va, &clen);
- 	kunmap_atomic(to_va, KM_USER0);
-+	put_cpu_var(zv_dbuf);
- 	BUG_ON(ret != LZO_E_OK);
- 	BUG_ON(clen != PAGE_SIZE);
- }
-@@ -949,8 +974,9 @@ int zcache_new_client(uint16_t cli_id)
- 		goto out;
- 	cli->allocated = 1;
- #ifdef CONFIG_FRONTSWAP
--	cli->xvpool = xv_create_pool();
--	if (cli->xvpool == NULL)
-+	cli->xcfmpool =
-+		xcf_create_pool(ZCACHE_GFP_MASK);
-+	if (cli->xcfmpool == NULL)
- 		goto out;
- #endif
- 	ret = 0;
-@@ -1154,7 +1180,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
- 				struct tmem_pool *pool, struct tmem_oid *oid,
- 				 uint32_t index)
- {
--	void *pampd = NULL, *cdata;
-+	void *pampd = NULL, *cdata = NULL;
- 	size_t clen;
- 	int ret;
- 	unsigned long count;
-@@ -1186,26 +1212,30 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
- 		if (curr_pers_pampd_count >
- 		    (zv_page_count_policy_percent * totalram_pages) / 100)
- 			goto out;
-+		cdata = get_cpu_var(zv_cbuf) + sizeof(struct zv_hdr);
- 		ret = zcache_compress(page, &cdata, &clen);
- 		if (ret == 0)
- 			goto out;
- 		/* reject if compression is too poor */
- 		if (clen > zv_max_zsize) {
- 			zcache_compress_poor++;
-+			put_cpu_var(zv_cbuf);
- 			goto out;
- 		}
- 		/* reject if mean compression is too poor */
- 		if ((clen > zv_max_mean_zsize) && (curr_pers_pampd_count > 0)) {
--			total_zsize = xv_get_total_size_bytes(cli->xvpool);
-+			total_zsize = xcf_get_total_size_bytes(cli->xcfmpool);
- 			zv_mean_zsize = div_u64(total_zsize,
- 						curr_pers_pampd_count);
- 			if (zv_mean_zsize > zv_max_mean_zsize) {
- 				zcache_mean_compress_poor++;
-+				put_cpu_var(zv_cbuf);
- 				goto out;
- 			}
- 		}
--		pampd = (void *)zv_create(cli->xvpool, pool->pool_id,
-+		pampd = (void *)zv_create(cli->xcfmpool, pool->pool_id,
- 						oid, index, cdata, clen);
-+		put_cpu_var(zv_cbuf);
- 		if (pampd == NULL)
- 			goto out;
- 		count = atomic_inc_return(&zcache_curr_pers_pampd_count);
-@@ -1262,7 +1292,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- 		atomic_dec(&zcache_curr_eph_pampd_count);
- 		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
- 	} else {
--		zv_free(cli->xvpool, (struct zv_hdr *)pampd);
-+		zv_free(cli->xcfmpool, pampd);
- 		atomic_dec(&zcache_curr_pers_pampd_count);
- 		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
- 	}
-@@ -1309,11 +1339,16 @@ static DEFINE_PER_CPU(unsigned char *, zcache_dstmem);
- static int zcache_compress(struct page *from, void **out_va, size_t *out_len)
- {
- 	int ret = 0;
--	unsigned char *dmem = __get_cpu_var(zcache_dstmem);
-+	unsigned char *dmem;
- 	unsigned char *wmem = __get_cpu_var(zcache_workmem);
- 	char *from_va;
- 
- 	BUG_ON(!irqs_disabled());
-+	if (out_va && *out_va)
-+		dmem = *out_va;
-+	else
-+		dmem = __get_cpu_var(zcache_dstmem);
-+
- 	if (unlikely(dmem == NULL || wmem == NULL))
- 		goto out;  /* no buffer, so can't compress */
- 	from_va = kmap_atomic(from, KM_USER0);
-@@ -1331,7 +1366,7 @@ out:
- static int zcache_cpu_notifier(struct notifier_block *nb,
- 				unsigned long action, void *pcpu)
- {
--	int cpu = (long)pcpu;
-+	int ret, cpu = (long)pcpu;
- 	struct zcache_preload *kp;
- 
- 	switch (action) {
-@@ -1363,7 +1398,10 @@ static int zcache_cpu_notifier(struct notifier_block *nb,
- 	default:
- 		break;
- 	}
--	return NOTIFY_OK;
-+
-+	ret = zv_cpu_notifier(nb, action, pcpu);
-+
-+	return ret;
- }
- 
- static struct notifier_block zcache_cpu_notifier_block = {
-@@ -1991,7 +2029,7 @@ static int __init zcache_init(void)
- 
- 		old_ops = zcache_frontswap_register_ops();
- 		pr_info("zcache: frontswap enabled using kernel "
--			"transcendent memory and xvmalloc\n");
-+			"transcendent memory and xcfmalloc\n");
- 		if (old_ops.init != NULL)
- 			pr_warning("ktmem: frontswap_ops overridden");
- 	}
--- 
-1.7.4.1
+> +/*
+> + * We don't have PCI yet.
+> + */
+> +#define IO_SPACE_LIMIT 0xffffffff
+> +#define _IO_BASE 0x0
 
+If you absolutely insist on defining these, at least make them meaningful,
+e.g. defining _IO_BASE to an unused location in the virtual address space,
+and IO_SPACE_LIMIT small enough to be harmless, at most 0xffff.
+
+If you ever gain PCI support, you can then map the PCI I/O space into that
+area.
+
+> +static inline void memcpy_fromio(void *dst, const volatile void __iomem *src,
+> +	int count)
+> +{
+> +	memcpy(dst, (void *) src, count);
+> +}
+> +
+> +static inline void memcpy_toio(volatile void __iomem *dst, const void *src,
+> +	int count)
+> +{
+> +	memcpy((void *) dst, src, count);
+> +}
+
+This will need __force in order to build with sparse.
+
+> +#define PCI_IO_ADDR	volatile void __iomem *
+
+Better make _IO_BASE have the right type to start with, like
+
+#define _IO_BASE ((void __iomem *)0xefff0000)
+static inline u8 inb(unsigned long port)
+{
+	return readb(_IO_BASE + (port & IO_SPACE_LIMIT));
+}
+
+static inline void outb(u8 data, unsigned long port)
+{
+	writeb(data, _IO_BASE + (port & IO_SPACE_LIMIT));
+}
+
+> +/*  _p means "pause until the I/O completes"  */
+> +#define outb_p outb
+> +#define outw_p outw
+> +#define outl_p outl
+> +
+> +#define inb_p inb
+> +#define inw_p inw
+> +#define inl_p inl
+
+It doesn't actually mean that. It means 'pause for a bit longer'. The inb/outb
+family of functions is already required to wait for the I/O to complete,
+unlike readb/writeb, which only needs to wait for inbound data, while
+outbound writes are posted to the bus without waiting for the data to arrive.
+
+> +static inline void insb(unsigned long addr, void *buffer, int count)
+> +{
+> +	printk(KERN_INFO "insb not implemented\n");
+> +}
+> +
+> +static inline void insw(unsigned long addr, void *buffer, int count)
+> +{
+> +	printk(KERN_INFO "insw not implemented\n");
+> +}
+> +
+> +static inline void insl(unsigned long addr, void *buffer, int count)
+> +{
+> +	printk(KERN_INFO "insl not implemented\n");
+> +}
+> +
+> +static inline void outsb(unsigned long addr, const void *buffer, int count)
+> +{
+> +	printk(KERN_INFO "outsb not implemented\n");
+> +}
+> +
+> +static inline void outsw(unsigned long addr, const void *buffer, int count)
+> +{
+> +	printk(KERN_INFO "outsw not implemented\n");
+> +}
+> +
+> +static inline void outsl(unsigned long addr, const void *buffer, int count)
+> +{
+> +	printk(KERN_INFO "outsl not implemented\n");
+> +}
+
+Either just add the obvious implementations adding _IO_BASE as above
+or stub these out to create a link time error in drivers using them.
+If a driver relies on these functions, it won't work anyway, so it's
+better to not even build it.
+
+> +/*  generic versions defined in lib/iomap.c  */
+> +extern void __iomem *ioport_map(unsigned long port, unsigned int nr);
+> +extern void ioport_unmap(void __iomem *addr);
+
+
+You can also just set CONFIG_NO_IOPORT (CONFIG_NO_IOPORT_MAP once my
+patches went in) to remove support for ioport_map.
+
+	Arnd
