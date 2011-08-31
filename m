@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab1HaRbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 13:31:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753736Ab1HaRbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 13:31:15 -0400
-Date: Wed, 31 Aug 2011 19:30:31 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] vmscan: Do reclaim stall in case of mlocked page.
-Message-ID: <20110831173031.GA21571@redhat.com>
-References: <1321285043-3470-1-git-send-email-minchan.kim@gmail.com>
+	id S1756932Ab1HaRhG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 13:37:06 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9600 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756889Ab1HaRhD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 13:37:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 31 Aug 2011 10:36:59 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Olof Johansson <olof@lixom.net>, Shawn Guo <shawn.guo@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>
+Date: Wed, 31 Aug 2011 10:36:57 -0700
+Subject: RE: [PATCH 3/3] arm/dt: Tegra: Add support-bit to SDHCI nodes
+Thread-Topic: [PATCH 3/3] arm/dt: Tegra: Add support-bit to SDHCI nodes
+Thread-Index: AcxnSXX71eWKx1WmSQ2TXXqBuJ2JlgAuvD5Q
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B327A03A@HQMAIL01.nvidia.com>
+References: <1314731837-6985-1-git-send-email-swarren@nvidia.com>
+ <1314731837-6985-3-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1314731837-6985-3-git-send-email-swarren@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321285043-3470-1-git-send-email-minchan.kim@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 15, 2011 at 12:37:23AM +0900, Minchan Kim wrote:
-> [1] made avoid unnecessary reclaim stall when second shrink_page_list(ie, synchronous
-> shrink_page_list) try to reclaim page_list which has not-dirty pages.
-> But it seems rather awkawrd on unevictable page.
-> The unevictable page in shrink_page_list would be moved into unevictable lru from page_list.
-> So it would be not on page_list when shrink_page_list returns.
-> Nevertheless it skips reclaim stall.
->
-> This patch fixes it so that it can do reclaim stall in case of mixing mlocked pages
-> and writeback pages on page_list.
+Stephen Warren wrote at Tuesday, August 30, 2011 1:17 PM:
+> For Seaboard's internal eMMC, this makes the difference between a
+> 5.5MB/s and 10.2MB/s transfer rate. On Harmony, there wasn't any
+> measurable difference on my cheap/slow ~2MB/s card.
 > 
-> [1] 7d3579e,vmscan: narrow the scenarios in whcih lumpy reclaim uses synchrounous reclaim
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-Lumpy isolates physically contiguous in the hope to free a bunch of
-pages that can be merged to a bigger page.  If an unevictable page is
-encountered, the chance of that is gone.  Why invest the allocation
-latency when we know it won't pay off anymore?
+Grant, when applying this patch, could you possibly fix the typo in the
+patch subject; s/support-bit/support-8bit/. Thanks!
+
+-- 
+nvpublic
+
