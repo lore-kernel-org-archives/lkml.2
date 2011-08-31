@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab1HaN0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:26:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58336 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870Ab1HaN0h (ORCPT
+	id S1755933Ab1HaN0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:26:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33656 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab1HaN0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Aug 2011 09:26:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Kuo <rkuo@codeaurora.org>
-Subject: Re: [patch v2 04/35] Hexagon: Add atomic ops support
-Date: Wed, 31 Aug 2011 15:26:32 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-References: <20110830190729.923334292@codeaurora.org> <20110830190800.097783373@codeaurora.org>
-In-Reply-To: <20110830190800.097783373@codeaurora.org>
+Message-ID: <4E5E3684.8030307@ti.com>
+Date: Wed, 31 Aug 2011 14:26:28 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jin Park <jinyoungp@nvidia.com>
+Subject: Re: [PATCH 1/2 RESEND] regulator: aat2870: Fix the logic of checking
+ if no id is matched in aat2870_get_regulator
+References: <1314629299.2753.1.camel@phoenix>
+In-Reply-To: <1314629299.2753.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108311526.32953.arnd@arndb.de>
-X-Provags-ID: V02:K0:cqoX8NnIygLJbE5ezduSXhUvNK2ZP4pJPAAO6FQEVwF
- NdJKmGP1Z4kYPcaL3rK9WpFlKMN+ah3qhl7QyzKqsPYsXKu+H9
- yVVituu6y48zy8JSkPnxVV1HSBRxdmLEWuYooWhNGsIVZONsp6
- lbj2hgRz6wwqQgBXo025/gXHmtYchTBRFiQiA27Ns6CrOk7mZA
- DDBC8XNBcROUQObvS5sO3ZzACXQZk4jHzlX8ftM5GNmAMj2Ret
- KA3jvnr51IX4ZgUkQYhBdloWSPzMr2ioQ011nfHzYhN8xjkntL
- mGuHDnjZB1DE1kWsW2G48OTTIl4LYjeOQM/vq0LCuuPCoRRUmu
- Ujk+YG052hY9ZqaOUnwA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 August 2011, Richard Kuo wrote:
+On 29/08/11 15:48, Axel Lin wrote:
+> In current implementation, the pointer ri is not NULL if no id is matched.
+> Fix it by checking i == ARRAY_SIZE(aat2870_regulators) if no id is matched.
 > 
-> Our architecture uses load locked/store conditional type semantics for atomic
-> ops.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/regulator/aat2870-regulator.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Added inline assembly version of atomic_add_unless.
-> 
-> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+> diff --git a/drivers/regulator/aat2870-regulator.c b/drivers/regulator/aat2870-regulator.c
+> index cd41045..11d1ab4 100644
+> --- a/drivers/regulator/aat2870-regulator.c
+> +++ b/drivers/regulator/aat2870-regulator.c
+> @@ -159,7 +159,7 @@ static struct aat2870_regulator *aat2870_get_regulator(int id)
+>  			break;
+>  	}
+>  
+> -	if (!ri)
+> +	if (i == ARRAY_SIZE(aat2870_regulators))
+>  		return NULL;
+>  
+>  	ri->enable_addr = AAT2870_LDO_EN;
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Both applied.
+
+Thanks
+
+Liam
