@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1HaAfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 20:35:17 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:61156 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754068Ab1HaAfN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 20:35:13 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhsDAHV/XU55LIxDgWdsb2JhbAAoGhaoLBUBARYmJYFAAQEFOhwjEAgDGC4UJQMhE4d2I7hFDoZGBJtjiFlZ
-Date: Wed, 31 Aug 2011 10:35:08 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>, Josef Bacik <josef@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
-Message-ID: <20110831003508.GW3162@dastard>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>
- <4E4F814B.5070202@gmail.com>
- <4E4F865B.2010608@gmail.com>
- <4E4FD48B.8030101@oracle.com>
- <4E4FE1B1.7010601@gmail.com>
- <4E51F24F.1050503@oracle.com>
- <CANGUGtCi85Sgrr5R0E8iuN75ubbMX9txZMwnsvp4Wv3Xh+938g@mail.gmail.com>
- <4E527C7F.9040807@oracle.com>
- <4E52984F.8050702@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E52984F.8050702@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754282Ab1HaAfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 20:35:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51728 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754226Ab1HaAfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 20:35:45 -0400
+Date: Wed, 31 Aug 2011 10:35:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Removing msm tree from direct linux-next
+Message-Id: <20110831103532.0aa0fb4ba8bc446c19b205a8@canb.auug.org.au>
+In-Reply-To: <20110830225433.GA7138@huya.qualcomm.com>
+References: <20110830225433.GA7138@huya.qualcomm.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 07:56:31PM +0200, Marco Stornelli wrote:
-> Il 22/08/2011 17:57, Sunil Mushran ha scritto:
-> >>>Any proposal that differentiates between holes is wrong. It should not
-> >>>matter where the hole is.
-> >>>
-> >>>Think of it from the usage-pov.
-> >>>
-> >>>doff = 0;
-> >>>while ((doff = lseek(SEEK_DATA, doff)) != -ENXIO) {
-> >>>hoff = lseek(SEEK_HOLE, doff);
-> >>>read_offset = doff;
-> >>>read_len = hoff -doff;
-> >>>process();
-> >>>doff = hoff;
-> >>>}
-> >>>
-> >>>The goal is to make this as efficient as follows. Treating the last
-> >>>hole differently adds more code for no benefit.
-> >>>
-> >>Mmmm.....It seems that Josef has to be clear in this point. However I
-> >>looked for the seek hole test in xfs test suite, but I didn't find
-> >>anything. Btrfs guys, how have you got tested the implementation? What
-> >>do you think about this corner case? Al, what do you think about it?
-> >
-> >
-> >The following test was used to test the early implementations.
-> >http://oss.oracle.com/~smushran/seek_data/
-> >
-> 
-> Thank you very much!! I found another point. Your test fails with my
-> implementation because here
-> (http://www.austingroupbugs.net/view.php?id=415) says: "If whence is
-> SEEK_DATA, the file offset shall be set to the smallest location of
-> a byte not within a hole and not less than offset. It shall be an
-> error if no such byte exists." So in this case I return ENXIO but
-> the test expects another value. I have to say that there is a bit of
-> confusion about the real behavior of this new feature :)
+--Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Which is exactly why I'm trying to get the definitions clarified
-first, then the behaviour codified in a single test suite we can
-call the 'authoritive test'.
+Hi David,
 
+On Tue, 30 Aug 2011 15:54:33 -0700 David Brown <davidb@codeaurora.org> wrot=
+e:
+>
+> Stephen, now that the MSM tree is going through Arnd's ARM SOC tree,
+> it doesn't need to be pulled directly into linux-next.  You can remove
+> this tree:
+>=20
+> msm git://codeaurora.org/quic/kernel/davidb/linux-msm.git#for-next
+
+OK, I have removed it.  Thanks for letting me know.
+
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOXYHUAAoJEDMEi1NhKgbsb7cH/0qcavoZhqtqcLNhF8RxAy1B
+r0cPf4p1ScpHZur9qHt8S8NnkUVXISgw9P69kHf51rHIKn6E0q0Tr3/72LPY/6ad
+Jb08+b2xVZ026zJ00+Ig/6ui5ifo0pcUb6mzEIdXiwhLlYjnDeN68fX12qh2ogm0
+ZpW3CdKQz0qzzxpJCTQNR6l8mhs9ukgXREv+J1UHktUD9vlWPTznRlQnGieetEyx
+tbivdDqNVqFV/1NxnnkGyFIbAXxGFyKgXUQKRkuGqokykb+7CgzdhTQ4OLX4e7mk
+lEfJqXrAOtYcd1tVRvWVVUu56g6d9ot1TWNeNTI2WtV/UCXASne+XaArfQE6+7c=
+=oEhO
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__31_Aug_2011_10_35_32_+1000_T2+SoEsV1najs7i2--
