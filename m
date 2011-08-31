@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab1HaUD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 16:03:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57700 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753930Ab1HaUD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 16:03:27 -0400
-Message-ID: <4E5E9347.4010503@zytor.com>
-Date: Wed, 31 Aug 2011 13:02:15 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-Subject: Re: RFD: x32 ABI system call numbers
-References: <4E582577.2060805@zytor.com> <201108311839.52863.arnd@arndb.de> <CA+55aFwVJ71=cLsUqMaJ-eGP0doPGBhrse9r++hkbiNYNx5Zjg@mail.gmail.com> <1397886.AAh13B9r2H@wuerfel> <4E5E8F04.9030303@zytor.com> <20110831205439.1a0c94da@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110831205439.1a0c94da@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754734Ab1HaUIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 16:08:47 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:46240 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab1HaUIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 16:08:45 -0400
+From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+To: davej@codemonkey.org.uk
+Cc: Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        stable@kernel.org
+Message-Id: <20110831200910.27633.20372.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+Subject: [PATCH] cpufreq: pcc-cpufreq: sanity check to prevent a NULL pointer dereference
+Date: Wed, 31 Aug 2011 20:08:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2011 12:54 PM, Alan Cox wrote:
->>
->> The only reason I mentioned redefining 32-bit time_t as unsigned was for
->> *legacy ABIs*.
-> 
-> But if you redefine it then it's not a legacy ABI any more - its a new
-> ABI.
+If, for whatever reason, "pr" ends up being NULL we would end up in a PANIC 
+as seen below:
 
-Only sort-of-kind of.  It's like hacking around the Y2K problem by date
-windowing; it technically it is an ABI change but when it is going to
-break anyway...
+Loading CPUFreq modules[  437.661360] BUG: unable to handle kernel NULL pointer
+dereference at (null)
+IP: [<ffffffffa0434314>] pcc_cpufreq_cpu_init+0x74/0x220 [pcc_cpufreq]
 
-	-hpa
+It's better to prevent the PANIC by failing the driver, and allowing the system to boot.
+
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Cc: stable@kernel.org
+
+diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
+index 7b0603e..cdc02ac 100644
+--- a/drivers/cpufreq/pcc-cpufreq.c
++++ b/drivers/cpufreq/pcc-cpufreq.c
+@@ -261,6 +261,9 @@ static int pcc_get_offset(int cpu)
+ 	pr = per_cpu(processors, cpu);
+ 	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
+ 
++	if (!pr)
++		return -ENODEV;
++
+ 	status = acpi_evaluate_object(pr->handle, "PCCP", NULL, &buffer);
+ 	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
