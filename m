@@ -1,137 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab1HaGpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 02:45:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44609 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab1HaGpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 02:45:17 -0400
-Date: Wed, 31 Aug 2011 16:45:07 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PULL REQUEST] md fixes for 3.1
-Message-ID: <20110831164507.02d6f787@notabene.brown>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754134Ab1HaGpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 02:45:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59754 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735Ab1HaGpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 02:45:39 -0400
+Message-ID: <4E5DD88D.8050007@suse.cz>
+Date: Wed, 31 Aug 2011 08:45:33 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH 2/4] posix-timers: limit the number of posix timers per
+ process
+References: <1314661157-22173-1-git-send-email-andi@firstfloor.org> <1314661157-22173-2-git-send-email-andi@firstfloor.org> <20110830144407.acdae071.akpm@linux-foundation.org> <4E5D5EE6.3070708@linux.intel.com> <20110830152216.dffd3cc3.akpm@linux-foundation.org> <4E5D6893.5010505@linux.intel.com> <20110830160238.90eaa998.akpm@linux-foundation.org>
+In-Reply-To: <20110830160238.90eaa998.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/31/2011 01:02 AM, Andrew Morton wrote:
+> On Tue, 30 Aug 2011 15:47:47 -0700
+> Andi Kleen<ak@linux.intel.com>  wrote:
+>
+>>
+>>> Yes, deployment for new rlimits is a big PITA.  It would be sensible to
+>>> modify the shells to take some anonymous numeric argument, so you could
+>>> do
+>>>
+>>> 	ulimit 42 1000
+>>>
+>>> to set rlimit number 42 if your shell version doesn't understand the
+>>> symbolic representation of more recent additions.  Who do I call?
+>>
+>> I guess sending a patch to the bash maintainers?
+>>
+>
+> That would help ;)  And all the other shells :(
+>
+> It would be worth going back and taking another look at the writable
+> /proc/<pid>/limits patches (http://lwn.net/Articles/365732/).  Why
+> didn't that work get merged?
 
-Hi Linus,
- please pull assorted small md fixes as follows.
+This turned out to be too heavy-weight. We ended up having prlimit64 
+syscall. I.e. most of the pull request was merged. But not the 2 patches 
+for writable /proc/.../limits.
 
-Thanks,
-NeilBrown
+With that syscall we might augment coreutils (or better kernel/tools to 
+be updated properly) by a tool such as `prlimit', I think. Actually 
+something I had when I was testing the syscall:
+https://github.com/jirislaby/collected_sources/blob/master/lim/lim.c#L1
 
-
-The following changes since commit 14c62e78dc1379185515be41903c4a667efc6d54:
-
-  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-08-23 18:09:08 -0700)
-
-are available in the git repository at:
-
-  git://neil.brown.name/md for-linus
-
-Namhyung Kim (1):
-      md: use REQ_NOIDLE flag in md_super_write()
-
-NeilBrown (5):
-      md: report failure if a 'set faulty' request doesn't.
-      md: ensure changes to 'write-mostly' are reflected in metadata.
-      md/linear: avoid corrupting structure while waiting for rcu_free to complete.
-      md: fix clearing of 'blocked' flag in the presence of bad blocks.
-      md/raid5: fix a hang on device failure.
-
- drivers/md/linear.h |    2 +-
- drivers/md/md.c     |   16 +++++++++++++---
- drivers/md/raid5.c  |    2 +-
- 3 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/md/linear.h b/drivers/md/linear.h
-index 0ce29b6..2f2da05 100644
---- a/drivers/md/linear.h
-+++ b/drivers/md/linear.h
-@@ -10,9 +10,9 @@ typedef struct dev_info dev_info_t;
- 
- struct linear_private_data
- {
-+	struct rcu_head		rcu;
- 	sector_t		array_sectors;
- 	dev_info_t		disks[0];
--	struct rcu_head		rcu;
- };
- 
- 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 8e221a2..3742ce8 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -848,7 +848,7 @@ void md_super_write(mddev_t *mddev, mdk_rdev_t *rdev,
- 	bio->bi_end_io = super_written;
- 
- 	atomic_inc(&mddev->pending_writes);
--	submit_bio(REQ_WRITE | REQ_SYNC | REQ_FLUSH | REQ_FUA, bio);
-+	submit_bio(WRITE_FLUSH_FUA, bio);
- }
- 
- void md_super_wait(mddev_t *mddev)
-@@ -1738,6 +1738,11 @@ static void super_1_sync(mddev_t *mddev, mdk_rdev_t *rdev)
- 	sb->level = cpu_to_le32(mddev->level);
- 	sb->layout = cpu_to_le32(mddev->layout);
- 
-+	if (test_bit(WriteMostly, &rdev->flags))
-+		sb->devflags |= WriteMostly1;
-+	else
-+		sb->devflags &= ~WriteMostly1;
-+
- 	if (mddev->bitmap && mddev->bitmap_info.file == NULL) {
- 		sb->bitmap_offset = cpu_to_le32((__u32)mddev->bitmap_info.offset);
- 		sb->feature_map = cpu_to_le32(MD_FEATURE_BITMAP_OFFSET);
-@@ -2561,7 +2566,10 @@ state_store(mdk_rdev_t *rdev, const char *buf, size_t len)
- 	int err = -EINVAL;
- 	if (cmd_match(buf, "faulty") && rdev->mddev->pers) {
- 		md_error(rdev->mddev, rdev);
--		err = 0;
-+		if (test_bit(Faulty, &rdev->flags))
-+			err = 0;
-+		else
-+			err = -EBUSY;
- 	} else if (cmd_match(buf, "remove")) {
- 		if (rdev->raid_disk >= 0)
- 			err = -EBUSY;
-@@ -2584,7 +2592,7 @@ state_store(mdk_rdev_t *rdev, const char *buf, size_t len)
- 		err = 0;
- 	} else if (cmd_match(buf, "-blocked")) {
- 		if (!test_bit(Faulty, &rdev->flags) &&
--		    test_bit(BlockedBadBlocks, &rdev->flags)) {
-+		    rdev->badblocks.unacked_exist) {
- 			/* metadata handler doesn't understand badblocks,
- 			 * so we need to fail the device
- 			 */
-@@ -5983,6 +5991,8 @@ static int set_disk_faulty(mddev_t *mddev, dev_t dev)
- 		return -ENODEV;
- 
- 	md_error(mddev, rdev);
-+	if (!test_bit(Faulty, &rdev->flags))
-+		return -EBUSY;
- 	return 0;
- }
- 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index dbae459..43709fa 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3336,7 +3336,7 @@ static void handle_stripe(struct stripe_head *sh)
- 
- finish:
- 	/* wait for this device to become unblocked */
--	if (unlikely(s.blocked_rdev))
-+	if (conf->mddev->external && unlikely(s.blocked_rdev))
- 		md_wait_for_blocked_rdev(s.blocked_rdev, conf->mddev);
- 
- 	if (s.handle_bad_blocks)
+regards,
+-- 
+js
+suse labs
