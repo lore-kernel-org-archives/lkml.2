@@ -1,38 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab1HaKP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 06:15:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752073Ab1HaKPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 06:15:54 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20110826220311.GA18140@fieldses.org>
-References: <20110826220311.GA18140@fieldses.org> <1312810169.2591.1153.camel@deadeye> <20110808155538.GB904@fieldses.org> <20110808180658.GC29924@decadent.org.uk>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH] All Arch: remove linkage for sys_nfsservctl system call
-Date: Wed, 31 Aug 2011 11:15:04 +0100
-Message-ID: <27331.1314785704@redhat.com>
+	id S1753603Ab1HaKVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 06:21:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35072 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab1HaKVQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 06:21:16 -0400
+Date: Wed, 31 Aug 2011 12:21:07 +0200
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Menage <paul@paulmenage.org>
+Cc: containers@lists.linux-foundation.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH pm-freezer 1/4] cgroup_freezer: fix freezer->state setting
+ bug in freezer_change_state()
+Message-ID: <20110831102100.GA2828@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-J. Bruce Fields <bfields@fieldses.org> wrote:
+d02f52811d0e "cgroup_freezer: prepare for removal of TIF_FREEZE" moved
+setting of freezer->state into freezer_change_state(); unfortunately,
+while doing so, when it's beginning to freeze tasks, it sets the state
+to CGROUP_FROZEN instead of CGROUP_FREEZING ending up skipping the
+whole freezing state.  Fix it.
 
-> From: NeilBrown <neilb@suse.de>
-> 
-> The nfsservctl system call is now gone, so we should remove all
-> linkage for it.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+-v2: Oleg pointed out that re-freezing FROZEN cgroup could increment
+     system_freezing_cnt.  Fixed.
 
-Acked-by: David Howells <dhowells@redhat.com> [FRV/MN10300]
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+---
+I'm in the process of moving and can only use a quite old laptop.  I
+tested compile but couldn't really do much else, so please proceed
+with caution.  Oleg, can you please ack the patches if you agree with
+the updated versions?
+
+Thanks.
+
+ kernel/cgroup_freezer.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+Index: work/kernel/cgroup_freezer.c
+===================================================================
+--- work.orig/kernel/cgroup_freezer.c
++++ work/kernel/cgroup_freezer.c
+@@ -308,24 +308,26 @@ static int freezer_change_state(struct c
+ 	spin_lock_irq(&freezer->lock);
+ 
+ 	update_if_frozen(cgroup, freezer);
+-	if (goal_state == freezer->state)
+-		goto out;
+-
+-	freezer->state = goal_state;
+ 
+ 	switch (goal_state) {
+ 	case CGROUP_THAWED:
+-		atomic_dec(&system_freezing_cnt);
+-		unfreeze_cgroup(cgroup, freezer);
++		if (freezer->state != CGROUP_THAWED) {
++			freezer->state = CGROUP_THAWED;
++			atomic_dec(&system_freezing_cnt);
++			unfreeze_cgroup(cgroup, freezer);
++		}
+ 		break;
+ 	case CGROUP_FROZEN:
+-		atomic_inc(&system_freezing_cnt);
+-		retval = try_to_freeze_cgroup(cgroup, freezer);
++		if (freezer->state == CGROUP_THAWED) {
++			freezer->state = CGROUP_FREEZING;
++			atomic_inc(&system_freezing_cnt);
++			retval = try_to_freeze_cgroup(cgroup, freezer);
++		}
+ 		break;
+ 	default:
+ 		BUG();
+ 	}
+-out:
++
+ 	spin_unlock_irq(&freezer->lock);
+ 
+ 	return retval;
