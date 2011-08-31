@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab1HaPLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 11:11:22 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:59852 "EHLO
+	id S1756384Ab1HaPLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 11:11:25 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:59927 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab1HaPLN (ORCPT
+	with ESMTP id S1756118Ab1HaPLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 11:11:13 -0400
+	Wed, 31 Aug 2011 11:11:15 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 03/16] drbd: Use ping-timeout when waiting for missing ack packets
-Date: Wed, 31 Aug 2011 17:10:55 +0200
-Message-Id: <1314803468-1201-4-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 07/16] drbd: Replace get_asender_cmd() with its implementation
+Date: Wed, 31 Aug 2011 17:10:59 +0200
+Message-Id: <1314803468-1201-8-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314803468-1201-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314803468-1201-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,36 +22,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@linbit.com>
 
-When the node with the discard flag resolves write conflicts in
-dual-primary mode, it may determine that its peer has sent ack packets
-on the metadata socket which did not arrive, yet.  Wait for the next ack
-with ping-timeout instead of a hard-coded 30 seconds.
-
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |   66 +++++++++++++++--------------------
+ 1 files changed, 28 insertions(+), 38 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 987af1a..07fc7c1 100644
+index 9b29348..d78ab6e 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1713,11 +1713,12 @@ static int drbd_wait_peer_seq(struct drbd_conf *mdev, const u32 packet_seq)
- 		}
- 		p_seq = mdev->peer_seq;
- 		spin_unlock(&mdev->peer_seq_lock);
--		timeout = schedule_timeout(30*HZ);
-+		timeout = mdev->tconn->net_conf->ping_timeo*HZ/10;
-+		timeout = schedule_timeout(timeout);
- 		spin_lock(&mdev->peer_seq_lock);
- 		if (timeout == 0 && p_seq == mdev->peer_seq) {
- 			ret = -ETIMEDOUT;
--			dev_err(DEV, "ASSERT FAILED waited 30 seconds for sequence update, forcing reconnect\n");
-+			dev_err(DEV, "Timed out waiting for missing ack packets; disconnecting\n");
- 			break;
- 		}
- 	}
+@@ -4651,41 +4651,6 @@ static int got_skip(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-struct asender_cmd {
+-	size_t pkt_size;
+-	int (*process)(struct drbd_conf *mdev, enum drbd_packet cmd);
+-};
+-
+-static struct asender_cmd *get_asender_cmd(int cmd)
+-{
+-	static struct asender_cmd asender_tbl[] = {
+-		/* anything missing from this table is in
+-		 * the drbd_cmd_handler (drbd_default_handler) table,
+-		 * see the beginning of drbdd() */
+-	[P_PING]	    = { sizeof(struct p_header), got_Ping },
+-	[P_PING_ACK]	    = { sizeof(struct p_header), got_PingAck },
+-	[P_RECV_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_WRITE_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_RS_WRITE_ACK]    = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_DISCARD_WRITE]   = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_NEG_ACK]	    = { sizeof(struct p_block_ack), got_NegAck },
+-	[P_NEG_DREPLY]	    = { sizeof(struct p_block_ack), got_NegDReply },
+-	[P_NEG_RS_DREPLY]   = { sizeof(struct p_block_ack), got_NegRSDReply},
+-	[P_OV_RESULT]	    = { sizeof(struct p_block_ack), got_OVResult },
+-	[P_BARRIER_ACK]	    = { sizeof(struct p_barrier_ack), got_BarrierAck },
+-	[P_STATE_CHG_REPLY] = { sizeof(struct p_req_state_reply), got_RqSReply },
+-	[P_RS_IS_IN_SYNC]   = { sizeof(struct p_block_ack), got_IsInSync },
+-	[P_DELAY_PROBE]     = { sizeof(struct p_delay_probe93), got_skip },
+-	[P_RS_CANCEL]       = { sizeof(struct p_block_ack), got_NegRSDReply},
+-	[P_CONN_ST_CHG_REPLY]={ sizeof(struct p_req_state_reply), got_RqSReply },
+-	[P_RETRY_WRITE]	    = { sizeof(struct p_block_ack), got_BlockAck },
+-	};
+-
+-	if (cmd >= ARRAY_SIZE(asender_tbl) || !asender_tbl[cmd].process)
+-		return NULL;
+-	return &asender_tbl[cmd];
+-}
+-
+ static int _drbd_process_done_ee(int vnr, void *p, void *data)
+ {
+ 	struct drbd_conf *mdev = (struct drbd_conf *)p;
+@@ -4722,6 +4687,31 @@ static int tconn_process_done_ee(struct drbd_tconn *tconn)
+ 	return 0;
+ }
+ 
++struct asender_cmd {
++	size_t pkt_size;
++	int (*process)(struct drbd_conf *, enum drbd_packet);
++};
++
++static struct asender_cmd asender_tbl[] = {
++	[P_PING]	    = { sizeof(struct p_header), got_Ping },
++	[P_PING_ACK]	    = { sizeof(struct p_header), got_PingAck },
++	[P_RECV_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
++	[P_WRITE_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
++	[P_RS_WRITE_ACK]    = { sizeof(struct p_block_ack), got_BlockAck },
++	[P_DISCARD_WRITE]   = { sizeof(struct p_block_ack), got_BlockAck },
++	[P_NEG_ACK]	    = { sizeof(struct p_block_ack), got_NegAck },
++	[P_NEG_DREPLY]	    = { sizeof(struct p_block_ack), got_NegDReply },
++	[P_NEG_RS_DREPLY]   = { sizeof(struct p_block_ack), got_NegRSDReply},
++	[P_OV_RESULT]	    = { sizeof(struct p_block_ack), got_OVResult },
++	[P_BARRIER_ACK]	    = { sizeof(struct p_barrier_ack), got_BarrierAck },
++	[P_STATE_CHG_REPLY] = { sizeof(struct p_req_state_reply), got_RqSReply },
++	[P_RS_IS_IN_SYNC]   = { sizeof(struct p_block_ack), got_IsInSync },
++	[P_DELAY_PROBE]     = { sizeof(struct p_delay_probe93), got_skip },
++	[P_RS_CANCEL]       = { sizeof(struct p_block_ack), got_NegRSDReply},
++	[P_CONN_ST_CHG_REPLY]={ sizeof(struct p_req_state_reply), got_RqSReply },
++	[P_RETRY_WRITE]	    = { sizeof(struct p_block_ack), got_BlockAck },
++};
++
+ int drbd_asender(struct drbd_thread *thi)
+ {
+ 	struct drbd_tconn *tconn = thi->tconn;
+@@ -4806,8 +4796,8 @@ int drbd_asender(struct drbd_thread *thi)
+ 		if (received == expect && cmd == NULL) {
+ 			if (!decode_header(tconn, h, &pi))
+ 				goto reconnect;
+-			cmd = get_asender_cmd(pi.cmd);
+-			if (unlikely(cmd == NULL)) {
++			cmd = &asender_tbl[pi.cmd];
++			if (pi.cmd >= ARRAY_SIZE(asender_tbl) || !cmd) {
+ 				conn_err(tconn, "unknown command %d on meta (l: %d)\n",
+ 					pi.cmd, pi.size);
+ 				goto disconnect;
+@@ -4826,7 +4816,7 @@ int drbd_asender(struct drbd_thread *thi)
+ 
+ 			/* the idle_timeout (ping-int)
+ 			 * has been restored in got_PingAck() */
+-			if (cmd == get_asender_cmd(P_PING_ACK))
++			if (cmd == &asender_tbl[P_PING_ACK])
+ 				ping_timeout_active = 0;
+ 
+ 			buf	 = h;
 -- 
 1.7.4.1
 
