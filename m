@@ -1,116 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab1HaOiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 10:38:08 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38710 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab1HaOiE (ORCPT
+	id S1755404Ab1HaOiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 10:38:24 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49196 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab1HaOiU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 10:38:04 -0400
-From: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>,
-        Ravishankar K Mallikarjunayya 
-	<ravishankar.km@greenturtles.in.com>
-Subject: [PATCH v1 2/2] Staging: comedi: fix line over 80 charcter issue in cb_pcidda.c
-Date: Wed, 31 Aug 2011 20:07:51 +0530
-Message-Id: <1314801471-3821-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH V1 2/2]Staging: comedi: fix line over 80 character issue in cb_pcidda.c>
-References: <[PATCH V1 2/2]Staging: comedi: fix line over 80 character issue in cb_pcidda.c>
+	Wed, 31 Aug 2011 10:38:20 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20110831120513.31bb62ee@endymion.delvare>
+References: <1314766699.3960.1.camel@phoenix> <20110831120513.31bb62ee@endymion.delvare>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Wed, 31 Aug 2011 22:30:51 +0800
+Message-ID: <CAF+7xWnDSTOJh9cs9tUJdF=k=TD56JN1cMvfNM_ng4vw5Gntyg@mail.gmail.com>
+Subject: Re: [PATCH v2] hwmon: (pmbus) Fix the logic of checking if no id is matched
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <guenter.roeck@ericsson.com>,
+        lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidda.c file that fixes up a line over 80 charcter warning found by the checkpatch.pl tool
+2011/8/31 Jean Delvare <khali@linux-fr.org>:
+> Hi Alex,
+It's Axel.
 
-Signed-off-by: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in.com>
----
- long (multi-line)comments is fixed.
- drivers/staging/comedi/drivers/cb_pcidda.c |   38 +++++++++++++++++++++------
- 1 files changed, 29 insertions(+), 9 deletions(-)
+>
+> On Wed, 31 Aug 2011 12:58:19 +0800, Axel Lin wrote:
+>> If no id is matched, the mid pointer is not NULL in current implementation.
+>
+> The NULL check is presumably there to catch the (impossible) case
+> ARRAY_SIZE(ucd9000_id) == 0 (array of ids is empty), not the case "no
+> id is matched". The initialization of mid to NULL is for the same
+> reason. Both should be unnecessary but may have been motivated by a
+> compiler warning (although I would think gcc is smart enough to not
+> emit these when it can check that the array isn't empty.) Guenter
+> should be able to tell more.
+>
+> The check for "no id is matched" is !strlen(mid->name), which works as
+> intended as far as I can see. Did you actually hit a bug with the
+> current code? I bet not.
+No, I didn't hit the bug. Just reading the code.
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-index 49102b3..44e797d 100644
---- a/drivers/staging/comedi/drivers/cb_pcidda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-@@ -212,9 +212,11 @@ MODULE_DEVICE_TABLE(pci, cb_pcidda_pci_table);
-  */
- #define thisboard ((const struct cb_pcidda_board *)dev->board_ptr)
- 
--/* this structure is for data unique to this hardware driver.  If
--   several hardware drivers keep similar information in this structure,
--   feel free to suggest moving the variable to the struct comedi_device struct.  */
-+/*
-+ * this structure is for data unique to this hardware driver. If
-+ * several hardware drivers keep similar information in this structure,
-+ * feel free to suggest moving the variable to the struct comedi_device struct.
-+ */
- struct cb_pcidda_private {
- 	int data;
- 
-@@ -241,13 +243,23 @@ struct cb_pcidda_private {
- static int cb_pcidda_attach(struct comedi_device *dev,
- 			    struct comedi_devconfig *it);
- static int cb_pcidda_detach(struct comedi_device *dev);
--/* static int cb_pcidda_ai_rinsn(struct comedi_device *dev,struct comedi_subdevice *s,struct comedi_insn *insn,unsigned int *data); */
-+/*
-+ * static int cb_pcidda_ai_rinsn(struct comedi_device *dev,
-+ * struct comedi_subdevice *s, struct comedi_insn *insn,
-+ * unsigned int *data);
-+ */
- static int cb_pcidda_ao_winsn(struct comedi_device *dev,
- 			      struct comedi_subdevice *s,
- 			      struct comedi_insn *insn, unsigned int *data);
- 
--/* static int cb_pcidda_ai_cmd(struct comedi_device *dev, struct *comedi_subdevice *s);*/
--/* static int cb_pcidda_ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s, struct comedi_cmd *cmd); */
-+/*
-+ * static int cb_pcidda_ai_cmd(struct comedi_device *dev,
-+ * struct *comedi_subdevice *s);
-+ */
-+/*
-+ * static int cb_pcidda_ai_cmdtest(struct comedi_device *dev,
-+ * struct comedi_subdevice *s, struct comedi_cmd *cmd);
-+ */
- /* static int cb_pcidda_ns_to_timer(unsigned int *ns,int *round); */
- 
- static unsigned int cb_pcidda_serial_in(struct comedi_device *dev);
-@@ -796,14 +808,20 @@ static unsigned int offset_eeprom_address(unsigned int ao_channel,
- 	return 0x7 + 2 * range + 12 * ao_channel;
- }
- 
--/* returns eeprom address that provides gain calibration for given ao channel and range */
-+/*
-+ * returns eeprom address that provides gain calibration
-+ * for given ao channel and range
-+ */
- static unsigned int gain_eeprom_address(unsigned int ao_channel,
- 					unsigned int range)
- {
- 	return 0x8 + 2 * range + 12 * ao_channel;
- }
- 
--/* returns upper byte of eeprom entry, which gives the coarse adjustment values */
-+/*
-+ * returns upper byte of eeprom entry, which gives the coarse
-+ * adjustment values
-+ */
- static unsigned int eeprom_coarse_byte(unsigned int word)
- {
- 	return (word >> 8) & 0xff;
-@@ -821,7 +839,9 @@ static void cb_pcidda_calibrate(struct comedi_device *dev, unsigned int channel,
- {
- 	unsigned int coarse_offset, fine_offset, coarse_gain, fine_gain;
- 
--	/*  remember range so we can tell when we need to readjust calibration */
-+	/*
-+	 * remember range so we can tell when we need to readjust calibration
-+	 */
- 	devpriv->ao_range[channel] = range;
- 
- 	/*  get values from eeprom data */
--- 
-1.6.5.2
+>
+> Now I would agree that the current code is somewhat misleading because
+> mixing null-terminated arrays with ARRAY_SIZE() is unusual (and
+> inefficient - the last iteration always fails.) Also, strlen() is
+> relatively slow and would rather be avoided when only testing if a
+> string is empty or not: it's faster to test for mid->name[0].
+>
+> So if anything I would propose the following changes (for performance
+> and readability, NOT bug fix), untested:
+Your fix looks good to me. ( Although I don't have the h/w for testing ).
 
+>
+> --- linux-3.1-rc4.orig/drivers/hwmon/pmbus/ucd9000.c    2011-08-30 13:41:32.000000000 +0200
+> +++ linux-3.1-rc4/drivers/hwmon/pmbus/ucd9000.c 2011-08-31 11:53:28.000000000 +0200
+> @@ -141,13 +141,11 @@ static int ucd9000_probe(struct i2c_clie
+>        block_buffer[ret] = '\0';
+>        dev_info(&client->dev, "Device ID %s\n", block_buffer);
+>
+> -       mid = NULL;
+> -       for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
+> -               mid = &ucd9000_id[i];
+> +       for (mid = ucd9000_id; mid->name[0]; mid++) {
+>                if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+>                        break;
+>        }
+> -       if (!mid || !strlen(mid->name)) {
+> +       if (!mid->name[0]) {
+>                dev_err(&client->dev, "Unsupported device\n");
+>                return -ENODEV;
+>        }
+> --- linux-3.1-rc4.orig/drivers/hwmon/pmbus/ucd9200.c    2011-08-30 13:41:32.000000000 +0200
+> +++ linux-3.1-rc4/drivers/hwmon/pmbus/ucd9200.c 2011-08-31 11:53:20.000000000 +0200
+> @@ -68,13 +68,11 @@ static int ucd9200_probe(struct i2c_clie
+>        block_buffer[ret] = '\0';
+>        dev_info(&client->dev, "Device ID %s\n", block_buffer);
+>
+> -       mid = NULL;
+> -       for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
+> -               mid = &ucd9200_id[i];
+> +       for (mid = ucd9200_id; mid->name[0]; mid++) {
+>                if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+>                        break;
+>        }
+> -       if (!mid || !strlen(mid->name)) {
+> +       if (!mid->name[0]) {
+>                dev_err(&client->dev, "Unsupported device\n");
+>                return -ENODEV;
+>        }
+>
+>
+>>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> ---
+>> v2:
+>> It seems we don't need to check strlen(mid->name) here.
+>> If there is a match, strlen(mid->name) is always not 0.
+>> If ther is no match, comparing variable i with ARRAY_SIZE(ucd9000_id)
+>> or ARRAY_SIZE(ucd9200_id) is enough.
+>>
+>>  drivers/hwmon/pmbus/ucd9000.c |    3 +--
+>>  drivers/hwmon/pmbus/ucd9200.c |    3 +--
+>>  2 files changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/hwmon/pmbus/ucd9000.c b/drivers/hwmon/pmbus/ucd9000.c
+>> index 285bb15..a2d4a72 100644
+>> --- a/drivers/hwmon/pmbus/ucd9000.c
+>> +++ b/drivers/hwmon/pmbus/ucd9000.c
+>> @@ -141,13 +141,12 @@ static int ucd9000_probe(struct i2c_client *client,
+>>       block_buffer[ret] = '\0';
+>>       dev_info(&client->dev, "Device ID %s\n", block_buffer);
+>>
+>> -     mid = NULL;
+>>       for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
+>>               mid = &ucd9000_id[i];
+>>               if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+>>                       break;
+>>       }
+>> -     if (!mid || !strlen(mid->name)) {
+>> +     if (i == ARRAY_SIZE(ucd9000_id)) {
+>>               dev_err(&client->dev, "Unsupported device\n");
+>>               return -ENODEV;
+>>       }
+>> diff --git a/drivers/hwmon/pmbus/ucd9200.c b/drivers/hwmon/pmbus/ucd9200.c
+>> index 786f6cd..a72e55e 100644
+>> --- a/drivers/hwmon/pmbus/ucd9200.c
+>> +++ b/drivers/hwmon/pmbus/ucd9200.c
+>> @@ -68,13 +68,12 @@ static int ucd9200_probe(struct i2c_client *client,
+>>       block_buffer[ret] = '\0';
+>>       dev_info(&client->dev, "Device ID %s\n", block_buffer);
+>>
+>> -     mid = NULL;
+>>       for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
+>>               mid = &ucd9200_id[i];
+>>               if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+>>                       break;
+>>       }
+>> -     if (!mid || !strlen(mid->name)) {
+>> +     if (i == ARRAY_SIZE(ucd9200_id)) {
+>>               dev_err(&client->dev, "Unsupported device\n");
+>>               return -ENODEV;
+>>       }
+>
+>
+> --
+> Jean Delvare
+>
