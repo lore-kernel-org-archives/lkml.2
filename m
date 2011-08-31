@@ -1,96 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab1HaJmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 05:42:00 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:2237 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab1HaJl5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 05:41:57 -0400
-From: JJ Ding <jj_ding@emc.com.tw>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        =?utf-8?Q?=C3=89r?= =?utf-8?Q?ic?= Piel <E.A.B.Piel@tudelft.nl>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/8] Input: elantech: add support for newer hardware
-In-Reply-To: <1314606539-24722-1-git-send-email-jj_ding@emc.com.tw>
-References: <1314606539-24722-1-git-send-email-jj_ding@emc.com.tw>
-User-Agent: Notmuch/0.7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Wed, 31 Aug 2011 17:43:59 +0800
-Message-ID: <874o0xdig0.fsf@emc.com.tw>
+	id S1755122Ab1HaJmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 05:42:52 -0400
+Received: from vuizook.err.no ([85.19.221.46]:37086 "EHLO vuizook.err.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752772Ab1HaJmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 05:42:51 -0400
+X-Greylist: delayed 2728 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 05:42:51 EDT
+Date: Wed, 31 Aug 2011 10:57:18 +0200
+From: Mike Hommey <mh@glandium.org>
+To: linux-kernel@vger.kernel.org
+Subject: Problem with perf hardware counters grouping
+Message-ID: <20110831085718.GB13884@glandium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Fingerprint: A479 A824 265C B2A5 FC54  8D1E DE4B DA2C 54FD 2A58
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Hi,
 
-What do you think about the series?
-Do you think these patches all right for upstream?
-Or do you have any other concerns about the chages?
-Please let me know and I will fix it.
-Thnak you.
+I'm having two different problems with perf hardware counters with a
+group leader:
+- perf_event_open()ing more than 3 makes all of them always return a
+  value of 0;
+- perf_event_open()ing more than 4 fails with ENOSPC.
 
-jj
+This doesn't happen with software counters.
 
-On Mon, 29 Aug 2011 16:28:51 +0800, JJ Ding <jj_ding@emc.com.tw> wrote:
-> Hi Lists,
-> 
-> This is a series of patches to add support for newer generations of ELAN
-> touchpad.
-> 
-> Patches #1~#6 are essentially fixes and cleanups that pave the way for
-> patch #7 and patch #8, which really adds code for v3 and v4 hardware.
-> 
-> Any comments, suggestoins are welcome.
-> 
-> Note:
-> Please review patch #8, which adds support for the latest touchpads from ELAN.
-> This is a true multi-touch capable touchpad that can track up to 5 fingers.
-> Support is implemented using MT-B protocol. I used synaptics and multitouch X
-> driver to test this driver, both worked fine.
-> 
-> Thank you very much.
-> 
-> Changes since v1:
-> - drop EC workaround patch.
-> - add patch #2, make ST and MT have the same range, as Dmitry suggested.
-> - add patch #4, remove ETP_EDGE_FUZZ_V2, as Éric suggested.
-> - rename all packet checking functions so they are consistent.
-> - some code cleanup, and don't report ABS_[XY] when fingers == 0, as Seth suggested.
-> - add document for v3 debounce, and now check debounce in elantech_packet_check_v3.
-> 
-> Changes since v2:
-> - fix v3 hardware packet checking (reported by Seth and fix by Dmitry.)
-> 
-> Changes since v3:
-> - fix a tiny style problem (useless space on end-of-line, reported by Seth)
-> - v3 hardware can track 2 fingers well, so do not set INPUT_PROP_SEMI_MT on v3
->   (As suggested earlier by Éric.)
-> - add patch #8, which adds support for v4 hardware.
-> 
-> JJ Ding (8):
->   Input: elantech - correct x, y value range for v2 hardware
->   Input: elantech - get rid of ETP_2FT_* in elantech.h
->   Input: elantech - use firmware provided x, y ranges
->   Input: elantech - remove ETP_EDGE_FUZZ_V2
->   Input: elantech - packet checking for v2 hardware
->   Input: elantech - clean up elantech_init
->   Input: elantech - add v3 hardware support
->   Input: elantech - add v4 hardware support
-> 
->  Documentation/input/elantech.txt |  295 +++++++++++++++++-
->  drivers/input/mouse/elantech.c   |  614 ++++++++++++++++++++++++++++++++-----
->  drivers/input/mouse/elantech.h   |   56 +++-
->  3 files changed, 849 insertions(+), 116 deletions(-)
-> 
-> -- 
-> 1.7.4.1
-> 
+The source at the end of this message exhibits the problem:
+$ gcc -o test test.c
+$ strace -eperf_event_open ./test
+perf_event_open(0x7fff7aeb3e00, 0, 0xffffffff, 0xffffffff, 0) = 3
+perf_event_open(0x7fff7aeb3e00, 0, 0xffffffff, 0x3, 0) = 4
+perf_event_open(0x7fff7aeb3e00, 0, 0xffffffff, 0x3, 0) = 5
+Count: 10857
+$ gcc -o test test.c -DN=4
+$ strace -eperf_event_open ./test
+perf_event_open(0x7fff13a16bd0, 0, 0xffffffff, 0xffffffff, 0) = 3
+perf_event_open(0x7fff13a16bd0, 0, 0xffffffff, 0x3, 0) = 4
+perf_event_open(0x7fff13a16bd0, 0, 0xffffffff, 0x3, 0) = 5
+perf_event_open(0x7fff13a16bd0, 0, 0xffffffff, 0x3, 0) = 6
+Count: 0
+$ gcc -o test test.c -DN=5
+$ strace -eperf_event_open ./test
+perf_event_open(0x7fff64700c60, 0, 0xffffffff, 0xffffffff, 0) = 3
+perf_event_open(0x7fff64700c60, 0, 0xffffffff, 0x3, 0) = 4
+perf_event_open(0x7fff64700c60, 0, 0xffffffff, 0x3, 0) = 5
+perf_event_open(0x7fff64700c60, 0, 0xffffffff, 0x3, 0) = 6
+perf_event_open(0x7fff64700c60, 0, 0xffffffff, 0x3, 0) = -1 ENOSPC (No
+space left on device)
+Count: 0
+
+I think the latter is due to the hard limit of 4 for the number of slots
+for hardware breakpoints. No idea about the former.
+
+Mike
+
+----------------8<-------------------
+#define _GNU_SOURCE 1
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
+#include <linux/perf_event.h>
+
+int perf_event_open(struct perf_event_attr *hw_event_uptr,
+		    pid_t pid, int cpu, int group_fd, unsigned long flags) {
+   return syscall(__NR_perf_event_open, hw_event_uptr, pid, cpu, group_fd,flags);
+}
+
+int group_leader = -1;
+
+int _perf_event_open(uint64_t config) {
+  struct perf_event_attr pe;
+  int fd;
+
+  memset(&pe,0,sizeof(struct perf_event_attr));
+  pe.type = PERF_TYPE_HARDWARE;
+  pe.size = sizeof(struct perf_event_attr);
+  pe.config = config;
+  if (group_leader == -1)
+    pe.disabled = 1;
+  pe.mmap = 1;
+  pe.comm = 1;
+  
+  fd = perf_event_open(&pe, 0, -1, group_leader, 0);
+  if (fd >= 0 && group_leader == -1)
+    group_leader = fd;
+
+  return fd;
+}
+
+int main(int argc, char** argv) {
+   uint64_t c;
+   int fd = _perf_event_open(PERF_COUNT_HW_CPU_CYCLES);
+   _perf_event_open(PERF_COUNT_HW_INSTRUCTIONS);
+   _perf_event_open(PERF_COUNT_HW_CACHE_REFERENCES);
+#if N > 3
+   _perf_event_open(PERF_COUNT_HW_CACHE_MISSES);
+#endif
+#if N > 4
+   _perf_event_open(PERF_COUNT_HW_BRANCH_INSTRUCTIONS);
+#endif
+   ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);   
+   ioctl(fd, PERF_EVENT_IOC_DISABLE,0);
+
+   read(fd, &c, sizeof(c));
+
+   printf("Count: %ld\n",c);
+
+   return 0;
+}
