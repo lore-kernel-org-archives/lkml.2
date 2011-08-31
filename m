@@ -1,202 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1HaJJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 05:09:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752665Ab1HaJJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 05:09:31 -0400
-Date: Wed, 31 Aug 2011 11:08:50 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] memcg: skip scanning active lists based on individual size
-Message-ID: <20110831090850.GA27345@redhat.com>
+	id S1754855Ab1HaJMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 05:12:00 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:43750 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab1HaJL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 05:11:59 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFJhy0GFrI=
+X-RZG-CLASS-ID: mo00
+Date: Wed, 31 Aug 2011 11:11:56 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Greg KH <greg@kroah.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 0000/0046] Staging: hv: Driver cleanup
+Message-ID: <20110831091156.GA16104@aepfle.de>
+References: <1314469874-7017-1-git-send-email-kys@microsoft.com>
+ <20110830124856.GA17520@aepfle.de>
+ <6E21E5352C11B742B20C142EB499E048081B5363@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110830174330.GE22868@kroah.com>
+ <20110830180434.GA10090@aepfle.de>
+ <20110830181945.GC24865@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <20110830181945.GC24865@kroah.com>
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reclaim decides to skip scanning an active list when the corresponding
-inactive list is above a certain size in comparison to leave the
-assumed working set alone while there are still enough reclaim
-candidates around.
+On Tue, Aug 30, Greg KH wrote:
 
-The memcg implementation of comparing those lists instead reports
-whether the whole memcg is low on the requested type of inactive
-pages, considering all nodes and zones.
+> On Tue, Aug 30, 2011 at 08:04:34PM +0200, Olaf Hering wrote:
+> > On Tue, Aug 30, Greg KH wrote:
+> > 
+> > > > > In my test system, the IDE drives are now discovered twice, once by
+> > > > > hv_storvsc and once by libata:
+> > > > 
+> > > > This is a known (old problem). The way this was handled earlier was to have the 
+> > > > modprobe rules in place to setup a dependency that would force the load of the
+> > > > hyper-v driver (blk / stor) ahead of the native driver and if the load of the PV
+> > > > driver succeeded, we would not load the native driver. In sles11 sp1, we had a rule for 
+> > > > loading blkvsc. With the merge of blkvsc and storvsc, the only change we need to make
+> > > > is to have storvsc in the rule (instaed of blkvsc).
+> > > 
+> > > Why do we need a rule at all?  Shouldn't the module dependancy stuff
+> > > handle the autoloading of the drivers properly from the initrd now that
+> > > the hotplug logic is hooked up properly?
+> > 
+> > There is no plan to load hv_vmbus (or xen-platform-pci) earlier than
+> > native drivers.
+> 
+> Wait, what do you mean by "native drivers"?
 
-This can lead to an oversized active list not being scanned because of
-the state of the other lists in the memcg, as well as an active list
-being scanned while its corresponding inactive list has enough pages.
+native means drivers for emulated hardware: ata_piix, piix.
 
-Not only is this wrong, it's also a scalability hazard, because the
-global memory state over all nodes and zones has to be gathered for
-each memcg and zone scanned.
+> Isn't the hv_vmbus drivers the "native drivers" happening here?
+> Or are you referring to the "emulated-slow-as-hell drivers" that are
+> used to boot the machine?
 
-Make these calculations purely based on the size of the two LRU lists
-that are actually affected by the outcome of the decision.
+Not really. The virtual IDE controllers are emulated hardware, while the
+virtual SCSI controllers are paravirtualized hardware. KY, correct my if
+I'm wrong here.
 
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Balbir Singh <bsingharora@gmail.com>
----
- include/linux/memcontrol.h |   10 +++++---
- mm/memcontrol.c            |   51 ++++++++++++++-----------------------------
- mm/vmscan.c                |    4 +-
- 3 files changed, 25 insertions(+), 40 deletions(-)
+> > That was the purpose of the modprobe.conf files. Now
+> > that there is a vmbus, that fact could be checked before any other
+> > attempt to load drivers is made and hv_vmbus should be loaded and all of
+> > its devices have to be probed manually by modprobe `cat modulealias`.
+> 
+> I agree with the first part, but no modprobe should ever need to be
+> done, the hotplug boot process should properly load those modules when
+> the vmbus devices are seen by the vmbus core and the hotplug events
+> generated, which in turn calls modprobe, right?
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 343bd76..cbb45ce 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -105,8 +105,10 @@ extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
- /*
-  * For memory reclaim.
-  */
--int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
--int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
-+int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg,
-+				    struct zone *zone);
-+int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg,
-+				    struct zone *zone);
- int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
- unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
- 					int nid, int zid, unsigned int lrumask);
-@@ -292,13 +294,13 @@ static inline bool mem_cgroup_disabled(void)
- }
+With the IDE disks, the module loading order matters because both
+ata_piix/piix and hv_storvsc will bind to them. 
+With the SCSI disks, only hv_storvsc will bind to them.
  
- static inline int
--mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg)
-+mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
- {
- 	return 1;
- }
- 
- static inline int
--mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg)
-+mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
- {
- 	return 1;
- }
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3508777..d63dfb2 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1101,15 +1101,19 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem)
- 	return ret;
- }
- 
--static int calc_inactive_ratio(struct mem_cgroup *memcg, unsigned long *present_pages)
-+int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
- {
--	unsigned long active;
-+	unsigned long inactive_ratio;
-+	int nid = zone_to_nid(zone);
-+	int zid = zone_idx(zone);
- 	unsigned long inactive;
-+	unsigned long active;
- 	unsigned long gb;
--	unsigned long inactive_ratio;
- 
--	inactive = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_ANON));
--	active = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_ACTIVE_ANON));
-+	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-+						BIT(LRU_INACTIVE_ANON));
-+	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-+					      BIT(LRU_ACTIVE_ANON));
- 
- 	gb = (inactive + active) >> (30 - PAGE_SHIFT);
- 	if (gb)
-@@ -1117,39 +1121,20 @@ static int calc_inactive_ratio(struct mem_cgroup *memcg, unsigned long *present_
- 	else
- 		inactive_ratio = 1;
- 
--	if (present_pages) {
--		present_pages[0] = inactive;
--		present_pages[1] = active;
--	}
--
--	return inactive_ratio;
-+	return inactive * inactive_ratio < active;
- }
- 
--int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg)
--{
--	unsigned long active;
--	unsigned long inactive;
--	unsigned long present_pages[2];
--	unsigned long inactive_ratio;
--
--	inactive_ratio = calc_inactive_ratio(memcg, present_pages);
--
--	inactive = present_pages[0];
--	active = present_pages[1];
--
--	if (inactive * inactive_ratio < active)
--		return 1;
--
--	return 0;
--}
--
--int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg)
-+int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
- {
- 	unsigned long active;
- 	unsigned long inactive;
-+	int zid = zone_idx(zone);
-+	int nid = zone_to_nid(zone);
- 
--	inactive = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_INACTIVE_FILE));
--	active = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_ACTIVE_FILE));
-+	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-+						BIT(LRU_INACTIVE_FILE));
-+	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
-+					      BIT(LRU_ACTIVE_FILE));
- 
- 	return (active > inactive);
- }
-@@ -4188,8 +4173,6 @@ static int mem_control_stat_show(struct cgroup *cont, struct cftype *cft,
- 	}
- 
- #ifdef CONFIG_DEBUG_VM
--	cb->fill(cb, "inactive_ratio", calc_inactive_ratio(mem_cont, NULL));
--
- 	{
- 		int nid, zid;
- 		struct mem_cgroup_per_zone *mz;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6588746..a023778 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1699,7 +1699,7 @@ static int inactive_anon_is_low(struct zone *zone, struct scan_control *sc)
- 	if (scanning_global_lru(sc))
- 		low = inactive_anon_is_low_global(zone);
- 	else
--		low = mem_cgroup_inactive_anon_is_low(sc->mem_cgroup);
-+		low = mem_cgroup_inactive_anon_is_low(sc->mem_cgroup, zone);
- 	return low;
- }
- #else
-@@ -1742,7 +1742,7 @@ static int inactive_file_is_low(struct zone *zone, struct scan_control *sc)
- 	if (scanning_global_lru(sc))
- 		low = inactive_file_is_low_global(zone);
- 	else
--		low = mem_cgroup_inactive_file_is_low(sc->mem_cgroup);
-+		low = mem_cgroup_inactive_file_is_low(sc->mem_cgroup, zone);
- 	return low;
- }
- 
--- 
-1.7.6
+> So there should not need to be any special module.conf file changes for
+> hv systems, with the exception that the "emulated" drivers should be
+> added to the blacklist.
 
+I agree, the modprobe.conf rules for hv should be removed. With this
+patchset a rule to prevent ata_piix loading would hide all cdrom devices.
+
+> > KY, can hv_vmbus shutdown emulated hardware? At least the disks, because
+> > cdroms are appearently still be handled by native drivers?
+> 
+> They are?  Ick, why can't the vmbus storage driver see a cdrom device?
+> It's just a scsi device, right?
+
+The GUI does not seem to offer a way to attach an iso to a virtual SCSI
+controller. It looks like one can add up to 4 SCSI controllers, each one
+can have up to 64 disk images.
+DVD devices can only be attached to the 2 virtual IDE controllers, one
+can either attach iso images or physical hardware.
+
+
+After some more testing it looks like the hv_blkvsc driver claimed the
+ide major #3, so the ide_core could not bind to the emulated IDE
+hardware. The modprobe.conf rules prevented that ata_piix gets loaded.
+If I force a module load order of 'ata_piix ;hv_blkvsc' both ata_piix
+and hv_blkvsc will bind to the same drive, just as shown in my previous
+mail. So there is appearently no way to shutdown the IDE ports like it
+is done with xen_emul_unplug= option for Xen guests.
+
+Maybe some hack is needed for a hyper-v specific unplug if Windows does
+indeed lack that feature. Now that ata_piix is compiled into the kernel,
+there is nothing to a modprobe.conf rule can "fix".
+
+
+Olaf
