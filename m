@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab1HaCp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 22:45:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47913 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab1HaCpX convert rfc822-to-8bit (ORCPT
+	id S1751757Ab1HaDKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 23:10:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:30698 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1HaDK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 22:45:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1314653699.5939.299.camel@rex>
-References: <1314647628-21707-1-git-send-email-bryan.wu@canonical.com>
- <alpine.LFD.2.00.1108291630020.20358@xanadu.home> <1314653699.5939.299.camel@rex>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Wed, 31 Aug 2011 10:45:03 +0800
-X-Google-Sender-Auth: FAV9pauZnVlNCS0IpxoWdy-0Ngc
-Message-ID: <CAK5ve-+J3hzVB=_b0AOJ-Q1LYewahVraMti=y=6AaQy3+iy+rg@mail.gmail.com>
-Subject: Re: [PATCH] leds: kill CONFIG_LEDS_CLASS option
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, linux@arm.linux.org.uk,
-        linus.walleij@linaro.org, arnd@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Aug 2011 23:10:26 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: thellstrom@vmware.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
+        j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
+        airlied@linux.ie, alexdeucher@gmail.com
+Subject: [PATCH] TTM DMA pool v1.7
+Date: Tue, 30 Aug 2011 22:41:45 -0400
+Message-Id: <1314758512-19285-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090203.4E5DA616.0091,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 5:34 AM, Richard Purdie <rpurdie@rpsys.net> wrote:
-> On Mon, 2011-08-29 at 16:34 -0400, Nicolas Pitre wrote:
->> On Tue, 30 Aug 2011, Bryan Wu wrote:
->>
->> > Almost all the new leds driver and trigger driver are depends on
->> > CONFIG_LED_CLASS, so there is no such user with CONFIG_NEW_LEDS=y
->> > and CONFIG_LED_CLASS=n. Moreover, lots of API functions in led-class.c
->> > are very common and should be built-in when CONFIG_NEW_LEDS=y.
->> >
->> > Obviously, CONFIG_LEDS_CLASS is pointless. This patch kills it and
->> > also updates defconfigs which contains CONFIG_LEDS_CLASS.
->> >
->> > Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
->> > ---
->
-> Looking at the code I'm a little concerned to see the direction this is
-> going. There was originally a reason that there were two options, it was
-> related to being able to compile as much of the LED code as a module as
-> possible.
->
+Since v1: [http://lwn.net/Articles/456246/]
+ - Ran it through the gauntlet of SubmitChecklist and fixed issues
+ - Made radeon/nouveau driver set coherent_dma (which is required for dmapool)
 
-I quite understand the original reason for 2 options, but I failed to
-see any user of CONFIG_NEW_LEDS=y and CONFIG_LEDS_CLASS=n.
+[.. and this is what I said in v1 post]:
 
-> It looks like commit 5ada28bf76752e33dce3d807bf0dfbe6d1b943ad changed
-> the tristate to a bool at which point the separate option obviously
-> becomes pointless.
->
+Way back in January this patchset:
+http://lists.freedesktop.org/archives/dri-devel/2011-January/006905.html
+was merged in, but pieces of it had to be reverted b/c they did not
+work properly under PowerPC, ARM, and when swapping out pages to disk.
 
-Exactly, this patch added some function API which are used very widely
-as default LEDS driver behavior in some drivers.
+After a bit of discussion on the mailing list
+http://marc.info/?i=4D769726.2030307@shipmail.org I started working on it, but
+got waylaid by other things .. and finally I am able to post the RFC patches.
 
-> Rather than accept the current direction and force everything builtin,
-> I'd much rather this code became modular capable again. There is no good
-> reason we should be forced to build everything into a kernel.
->
+There was a lot of discussion about it and I am not sure if I captured
+everybody's thoughts - if I did not - that is _not_ intentional - it has just
+been quite some time..
 
-OK, cool. I'd like to help and could you please also give some
-comments about my ledtrig-cpu driver in this patchset?
+Anyhow .. the patches explore what the "lib/dmapool.c" does - which is to have a
+DMA pool that the device has associated with. I kind of married that code
+along with drivers/gpu/drm/ttm/ttm_page_alloc.c to create a TTM DMA pool code.
+The end result is DMA pool with extra features: can do write-combine, uncached,
+writeback (and tracks them and sets back to WB when freed); tracks "cached"
+pages that don't really need to be returned to a pool; and hooks up to
+the shrinker code so that the pools can be shrunk.
 
-Thanks a lot,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.138-1617-6545 Mobile
-Ubuntu Kernel Team
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+If you guys think this set of patches make sense  - my future plans were
+ 1) Get this in large crowd of testing .. and if it works for a kernel release
+ 2) to move a bulk of this in the lib/dmapool.c (I spoke with Matthew Wilcox
+    about it and he is OK as long as I don't introduce performance regressions).
+
+But before I do any of that a second set of eyes taking a look at these
+patches would be most welcome.
+
+In regards to testing, I've been running them non-stop for the last two weeks
+(and found some issues which I've fixed up) - and been quite happy with how
+they work. I finally got my Intel VT-d box online so will test that shortly.
+
+Michel (thanks!) took a spin off the patches on his PowerPC and they did not
+cause any regressions (wheew).
+
+The patches are also located in a git tree:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/ttm.dma_pool.v1.7
+
+And the full diffstat is:
+
+ drivers/gpu/drm/nouveau/nouveau_mem.c    |    8 +-
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c  |    3 +-
+ drivers/gpu/drm/radeon/radeon_device.c   |    6 +
+ drivers/gpu/drm/radeon/radeon_gart.c     |    4 +-
+ drivers/gpu/drm/radeon/radeon_ttm.c      |    3 +-
+ drivers/gpu/drm/ttm/Makefile             |    3 +
+ drivers/gpu/drm/ttm/ttm_bo.c             |    4 +-
+ drivers/gpu/drm/ttm/ttm_memory.c         |    5 +
+ drivers/gpu/drm/ttm/ttm_page_alloc.c     |   63 ++-
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 1317 ++++++++++++++++++++++++++++++
+ drivers/gpu/drm/ttm/ttm_tt.c             |    5 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c      |    4 +-
+ drivers/xen/swiotlb-xen.c                |    2 +-
+ include/drm/ttm/ttm_bo_driver.h          |    7 +-
+ include/drm/ttm/ttm_page_alloc.h         |  100 +++-
+ include/linux/swiotlb.h                  |    7 +-
+ lib/swiotlb.c                            |    5 +-
+ 17 files changed, 1516 insertions(+), 30 deletions(-)
