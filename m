@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab1HaQYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 12:24:45 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42871 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756610Ab1HaQYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 12:24:43 -0400
-Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-In-Reply-To: <20110822083613.GA18556@redhat.com>
-References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
-	 <20110819152335.GA19489@redhat.com> <87hb5a5m3x.fsf@rustcorp.com.au>
-	 <20110822083613.GA18556@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 31 Aug 2011 19:24:36 +0300
-Message-ID: <1314807876.14150.13.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1756851Ab1HaQ0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 12:26:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56585 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756321Ab1HaQ0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 12:26:35 -0400
+Message-ID: <4E5E6075.6060209@zytor.com>
+Date: Wed, 31 Aug 2011 09:25:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: RFD: x32 ABI system call numbers
+References: <4E582577.2060805@zytor.com> <201108301409.27527.arnd@arndb.de> <4E5D1153.5030908@zytor.com> <201108311814.54906.arnd@arndb.de>
+In-Reply-To: <201108311814.54906.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm wondering if we can switch to using a linked list 'capabilities'
-structure similar to whats being done with PCI capabilities.
-
-Here are the pros and the cons as I see them:
-
-Pros:
- * Simpler code - currently before each access to the virtio config
-space we have to check whether MSI-X is on and whether the device has
-64bit features. This isn't necessarily slow, but it complicates the
-code.
-
- * Future proof - code will be a mess once 5-6 features can change the
-config space.
-
- * 'Concept reuse' - using same concepts in virtio-pci as the ones used
-in PCI ('PCI Capabilities list') would make it easier to understand, and
-would implement the same method to use optional features as in the layer
-above.
-
-
-Cons:
- * MSI-X is already moving the config space, we'll need to keep
-supporting it for a while, but it would mean that it's the only thing we
-need to keep backwards compatible.
-
- * 64bit features also move config space, but they're brand new in the
-spec and aren't implemented in the kernel yet - I doubt anyone
-implemented it anywhere else yet.
-
-On Mon, 2011-08-22 at 11:36 +0300, Michael S. Tsirkin wrote:
-> On Mon, Aug 22, 2011 at 09:54:50AM +0930, Rusty Russell wrote:
-> > On Fri, 19 Aug 2011 18:23:35 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > On Sat, Aug 13, 2011 at 11:51:01AM +0300, Sasha Levin wrote:
-> > > > The MAC of a virtio-net device is located at the first field of the device
-> > > > specific header. This header is located at offset 20 if the device doesn't
-> > > > support MSI-X or offset 24 if it does.
-> > > > 
-> > > > Current code in virtnet_probe() used to probe the MAC before checking for
-> > > > MSI-X, which means that the read was always made from offset 20 regardless
-> > > > of whether MSI-X in enabled or not.
-> > > > 
-> > > > This patch moves the MAC probe to after the detection of whether MSI-X is
-> > > > enabled. This way the MAC will be read from offset 24 if the device indeed
-> > > > supports MSI-X.
-> > > > 
-> > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > > Cc: virtualization@lists.linux-foundation.org
-> > > > Cc: netdev@vger.kernel.org
-> > > > Cc: kvm@vger.kernel.org
-> > > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > > 
-> > > I am not sure I see a bug in virtio: the config pace layout simply
-> > > changes as msix is enabled and disabled (and if you look at the latest
-> > > draft, also on whether 64 bit features are enabled).
-> > > It doesn't depend on msix capability being present in device.
-> > > 
-> > > The spec seems to be explicit enough:
-> > > 	If MSI-X is enabled for the device, two additional fields immediately
-> > > 	follow this header.
-> > > 
-> > > So I'm guessing the bug is in kvm tools which assume
-> > > same layout for when msix is enabled and disabled.
-> > > qemu-kvm seems to do the right thing so the device
-> > > seems to get the correct mac.
-> > 
-> > So, the config space moves once MSI-X is enabled?  In which case, it
-> > should say "ONCE MSI-X is enabled..."
-> > 
-> > Thanks,
-> > Rusty.
+On 08/31/2011 09:14 AM, Arnd Bergmann wrote:
 > 
-> Yes. Or maybe 'WHEN' - since if MSI-X is disabled again, it moves back.
-> Let's update the spec to make it clearer?
+> Ok, but I think we do need to consider the potential problems in this.
+> I would expect a number of things to break if we just define it to
+> 'long long' on new architectures, including:
 > 
+> * pre-c99 C compilers or programs that rely on --std=c89
 
--- 
+This is a very long time ago by now.  Pre-C99 compilers without the long
+long extension probably don't exist for these new architectures;
+applications is a little bit messier, but still.
 
-Sasha.
+> * padding in struct timespec when you have a long long tv_sec and
+>   32-bit long tv_nsec. This might cause kernel stack data leakage
+>   in some kernel interfaces when they don't clear the padding.
 
+Don't to that then.  For what it's worth, I think we currently use the
+same size for both fields.
+
+> * random broken applications assuming that timespec/timeval has
+>   two 'long' members, instead of using the proper header files.
+> 
+> Obviously these are all fixable for any new ABI, but will cause
+> some annoyance.
+> 
+> I've added a few people to Cc who are in various stages of the
+> process to finalize their upstream kernel ports. It's clearly
+> the right decision to have time_t 64-bit eventually, the question
+> is how much work is everyone willing to spend in the short run,
+> and who is going to test it. In particular, openrisc has just
+> been merged, so we should not be changing it any more unless
+> there is a serious problem, but if there is not much legacy user
+> space with the current ABI yet, it may still be worth switching
+> over.
+
+Either way, all of this applies to x32 even more, sadly.
+
+The other thing is that we probably need to do is to set a date when we
+redefine legacy 32-bit time_t to be unsigned.  A good time might be some
+time around (time_t)0x60000000 = Thu Jan 14 08:25:36 UTC 2021 if not sooner.
+
+	-hpa
