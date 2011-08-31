@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab1HaW00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 18:26:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1988 "EHLO mga11.intel.com"
+	id S1757082Ab1HaW0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 18:26:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43975 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757064Ab1HaW0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 18:26:18 -0400
+	id S1757068Ab1HaW0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 18:26:22 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,309,1312182000"; 
-   d="scan'208";a="46968143"
+   d="scan'208";a="44474675"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>
 In-Reply-To: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
 Subject: [PATCH 5/5] mce: recover from "action required" errors reported in data path in usermode
-Date: Wed, 31 Aug 2011 15:26:15 -0700
-Message-Id: <4e5eb50721061dbb1b@agluck-desktop.sc.intel.com>
+Date: Wed, 31 Aug 2011 15:26:21 -0700
+Message-Id: <4e5eb50d2106324a55@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+From:	"Luck, Tony" <tony.luck@intel.com>
 
 From: Tony Luck <tony.luck@intel.com>
 
