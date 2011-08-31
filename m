@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1HaDLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 23:11:00 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31851 "EHLO
+	id S1752344Ab1HaDKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 23:10:44 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:31788 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab1HaDK5 (ORCPT
+	with ESMTP id S1751670Ab1HaDKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 23:10:57 -0400
+	Tue, 30 Aug 2011 23:10:42 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: thellstrom@vmware.com, linux-kernel@vger.kernel.org,
         dri-devel@lists.freedesktop.org, bskeggs@redhat.com,
         j.glisse@redhat.com, thomas@shipmail.org, airlied@redhat.com,
         airlied@linux.ie, alexdeucher@gmail.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/7] ttm/radeon/nouveau: Check the DMA address from TTM against known value.
-Date: Tue, 30 Aug 2011 22:41:46 -0400
-Message-Id: <1314758512-19285-2-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH 4/7] swiotlb: Expose swiotlb_nr_tlb function to modules as swiotlb_enabled
+Date: Tue, 30 Aug 2011 22:41:49 -0400
+Message-Id: <1314758512-19285-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314758512-19285-1-git-send-email-konrad.wilk@oracle.com>
 References: <1314758512-19285-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4E5DA616.0092,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E5DA61C.005E:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. instead of checking against the DMA_ERROR_CODE value which is
-per-platform specific. The zero value is a known invalid value
-that the TTM layer sets on the dma_address array if it is not
-used (ttm_tt_alloc_page_directory calls drm_calloc_large which
-creates a page with GFP_ZERO).
+As a mechanism to detect whether SWIOTLB is enabled or not.
+And as such, we might as well wrap it within an 'swiotlb_enabled()'
+function that will call the swiotlb_nr_tlb.
 
-We can't use pci_dma_mapping_error as that is IOMMU
-specific (some check for a specific physical address, some
-for ranges, some just do a check against zero).
+We also fix the spelling - it was swioltb instead of
+swiotlb.
 
-Also update the comments in the header about the true state
-of that parameter.
-
+CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_sgdma.c |    3 +--
- drivers/gpu/drm/radeon/radeon_gart.c    |    4 +---
- include/drm/ttm/ttm_page_alloc.h        |    4 ++--
- 3 files changed, 4 insertions(+), 7 deletions(-)
+ drivers/xen/swiotlb-xen.c |    2 +-
+ include/linux/swiotlb.h   |    7 ++++++-
+ lib/swiotlb.c             |    5 +++--
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-index 82fad91..624e2db 100644
---- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-@@ -42,8 +42,7 @@ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 6e8c15a..cbcd8cc 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -149,7 +149,7 @@ void __init xen_swiotlb_init(int verbose)
+ 	int rc;
+ 	unsigned long nr_tbl;
  
- 	nvbe->nr_pages = 0;
- 	while (num_pages--) {
--		/* this code path isn't called and is incorrect anyways */
--		if (0) { /*dma_addrs[nvbe->nr_pages] != DMA_ERROR_CODE)*/
-+		if (dev->pdev, dma_addrs[nvbe->nr_pages] != 0) {
- 			nvbe->pages[nvbe->nr_pages] =
- 					dma_addrs[nvbe->nr_pages];
- 		 	nvbe->ttm_alloced[nvbe->nr_pages] = true;
-diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
-index a533f52..41f7e51 100644
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -181,9 +181,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
- 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
+-	nr_tbl = swioltb_nr_tbl();
++	nr_tbl = swiotlb_nr_tbl();
+ 	if (nr_tbl)
+ 		xen_io_tlb_nslabs = nr_tbl;
+ 	else {
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 445702c..014ff53 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -24,7 +24,12 @@ extern int swiotlb_force;
  
- 	for (i = 0; i < pages; i++, p++) {
--		/* we reverted the patch using dma_addr in TTM for now but this
--		 * code stops building on alpha so just comment it out for now */
--		if (0) { /*dma_addr[i] != DMA_ERROR_CODE) */
-+		if (rdev->pdev, dma_addr[i] != 0) {
- 			rdev->gart.ttm_alloced[p] = true;
- 			rdev->gart.pages_addr[p] = dma_addr[i];
- 		} else {
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 8062890..0017b17 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -36,7 +36,7 @@
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages - (by default zero).
-  */
- int ttm_get_pages(struct list_head *pages,
- 		  int flags,
-@@ -51,7 +51,7 @@ int ttm_get_pages(struct list_head *pages,
-  * count.
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages (by default zero).
-  */
- void ttm_put_pages(struct list_head *pages,
- 		   unsigned page_count,
+ extern void swiotlb_init(int verbose);
+ extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+-extern unsigned long swioltb_nr_tbl(void);
++extern unsigned long swiotlb_nr_tbl(void);
++
++static inline bool swiotlb_enabled(void)
++{
++	return !!swiotlb_nr_tbl();
++}
+ 
+ /*
+  * Enumeration for sync targets
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 99093b3..058935e 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -110,11 +110,11 @@ setup_io_tlb_npages(char *str)
+ __setup("swiotlb=", setup_io_tlb_npages);
+ /* make io_tlb_overflow tunable too? */
+ 
+-unsigned long swioltb_nr_tbl(void)
++unsigned long swiotlb_nr_tbl(void)
+ {
+ 	return io_tlb_nslabs;
+ }
+-
++EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
+ /* Note that this doesn't work with highmem page */
+ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+ 				      volatile void *address)
+@@ -321,6 +321,7 @@ void __init swiotlb_free(void)
+ 		free_bootmem_late(__pa(io_tlb_start),
+ 				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	}
++	io_tlb_nslabs = 0;
+ }
+ 
+ static int is_swiotlb_buffer(phys_addr_t paddr)
 -- 
 1.7.4.1
 
