@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab1HaNZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:25:36 -0400
-Received: from mta0.cl.cam.ac.uk ([128.232.25.20]:43090 "EHLO
-	mta0.cl.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab1HaNZe (ORCPT
+	id S1755891Ab1HaNZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:25:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55467 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755818Ab1HaNZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:25:34 -0400
-X-Greylist: delayed 467 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 09:25:34 EDT
-From: Ripduman Sohan <ripduman.sohan@cl.cam.ac.uk>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, Ripduman Sohan <ripduman.sohan@cl.cam.ac.uk>
-Subject: [PATCH] workqueue: Restore cpus_allowed mask for sleeping workqueue rescue threads
-Date: Wed, 31 Aug 2011 14:17:43 +0100
-Message-Id: <1314796663-4215-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
-X-Mailer: git-send-email 1.7.1
+	Wed, 31 Aug 2011 09:25:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Kuo <rkuo@codeaurora.org>
+Subject: Re: [patch v2 02/35] Hexagon: Core arch-specific header files
+Date: Wed, 31 Aug 2011 15:25:33 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        Linas Vepstas <linas@codeaurora.org>
+References: <20110830190729.923334292@codeaurora.org> <20110830190759.910117438@codeaurora.org>
+In-Reply-To: <20110830190759.910117438@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108311525.33812.arnd@arndb.de>
+X-Provags-ID: V02:K0:oW5/Z1hnLGc8W/iTEuFeDGWcmXzVLMSRBv6ffma+aBZ
+ BxPJvUQ5VMKr98SAIGhm+19vBX2EXD7BS13o73xtWM66uBeD7a
+ Ba6FBoAjA7B7yPi0H1r09Qr9uUjcc8B9wdD+OLCGzxe8EH5/zJ
+ GIcAu3MrY/MI+l3f3uz5vXJ2N1uVOhTCLzdhvL7Mos8O6taRzA
+ EGsrqrpSGHb4dR0LENL0h5bQSWMcP6AoPHvyOHZXZr7WyZbSzd
+ pEdgjDHElYB8mgNc6YBbSZYrbo8VVKnC89rAMREk0mtG0RliDO
+ i1QXGtYGKevDyvSK1RDsnsUtPSvEF0tT9mp++fhYvLG865GIAb
+ u2AwNVKC5CeCHW3S4wyU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rescuer threads may be migrated (and are bound) to particular CPUs when
-active.  However, the allowed_cpus mask is not restored when they return
-to sleep rendering inconsistent the presented and actual set of CPUs the
-process may potentially run on.  This patch fixes this oversight by
-recording the allowed_cpus mask for rescuer threads when it enters the
-rescuer_thread() main loop and restoring it every time the thread sleeps.
+On Tuesday 30 August 2011, Richard Kuo wrote:
+> Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+> Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
-Signed-off-by: Ripduman Sohan <ripduman.sohan@cl.cam.ac.uk>
----
- kernel/workqueue.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 25fb1b0..0a4e785 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2031,6 +2031,7 @@ static int rescuer_thread(void *__wq)
- 	struct list_head *scheduled = &rescuer->scheduled;
- 	bool is_unbound = wq->flags & WQ_UNBOUND;
- 	unsigned int cpu;
-+        cpumask_t allowed_cpus = current->cpus_allowed;
- 
- 	set_user_nice(current, RESCUER_NICE_LEVEL);
- repeat:
-@@ -2078,6 +2079,8 @@ repeat:
- 		spin_unlock_irq(&gcwq->lock);
- 	}
- 
-+        set_cpus_allowed_ptr(current, &allowed_cpus);
-+
- 	schedule();
- 	goto repeat;
- }
--- 
-1.7.1
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
