@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab1HaDrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 23:47:36 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:43004 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751417Ab1HaDrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 23:47:33 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+v09Z8pD2vt5aH6xMY0nbkLgdQUeCFaC6ilDOe0V
-	9VA9OrSQiJbAXx
-Subject: Re: [RFC PATCH 00/32] Nohz cpusets (was: Nohz Tasks)
-From: Mike Galbraith <efault@gmx.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-In-Reply-To: <20110830140648.GL9748@somewhere.redhat.com>
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
-	 <CAOtvUMdgPoL_gnOTq8DwS9RxSFagQN_kAze3guD8O3xFHfnfHg@mail.gmail.com>
-	 <20110830140648.GL9748@somewhere.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Aug 2011 05:47:22 +0200
-Message-ID: <1314762442.4653.5.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1752615Ab1HaDya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 23:54:30 -0400
+Received: from mail.lang.hm ([64.81.33.126]:39586 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752362Ab1HaDy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 23:54:26 -0400
+Date: Tue, 30 Aug 2011 20:53:29 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Dave Chinner <david@fromorbit.com>
+cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Andreas Dilger <adilger@dilger.ca>,
+        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@ZenIV.linux.org.uk,
+        dchinner@redhat.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+In-Reply-To: <20110831032932.GI32358@dastard>
+Message-ID: <alpine.DEB.2.02.1108302049480.26762@asgard.lang.hm>
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110825060632.GA9933@infradead.org> <20110825064039.GO3162@dastard> <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca> <20110826013528.GW3162@dastard>
+ <4E5D8B8E.8030401@oracle.com> <20110831032932.GI32358@dastard>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-30 at 16:06 +0200, Frederic Weisbecker wrote:
+On Wed, 31 Aug 2011, Dave Chinner wrote:
 
-> Ah I haven't tested with that isolcpus especially as it's headed toward
-> removal.
+> On Tue, Aug 30, 2011 at 06:17:02PM -0700, Sunil Mushran wrote:
+>> On 08/25/2011 06:35 PM, Dave Chinner wrote:
+>>> Agreed, that's the way I'd interpret it, too. So perhaps we need to
+>>> ensure that this interpretation is actually tested by this test?
+>>>
+>>> How about some definitions to work by:
+>>>
+>>> Data: a range of the file that contains valid data, regardless of
+>>> whether it exists in memory or on disk. The valid data can be
+>>> preceeded and/or followed by an arbitrary number of zero bytes
+>>> dependent on the underlying implementation of hole detection.
+>>>
+>>> Hole: a range of the file that contains no data or is made up
+>>> entirely of  NULL (zero) data. Holes include preallocated ranges of
+>>> files that have not had actual data written to them.
+>>>
+>>> Does that make sense? It has sufficient flexibility in it for the
+>>> existing generic "non-implementation", allows for filesystems to
+>>> define their own hole detection boundaries (e.g. filesystem block
+>>> size), and effectively defines how preallocated ranges from
+>>> fallocate() should be treated (i.e. as holes). If we can agree on
+>>> those definitions, I think that we should document them in both the
+>>> kernel and the man page that defines SEEK_HOLE/SEEK_DATA so everyone
+>>> is on the same page...
+>>
+>> We should not tie in the definition to existing fs technologies.
+>
+> Such as? If we don't use well known, well defined terminology, we
+> end up with ambiguous, vague functionality and inconsistent
+> implementations.
+>
+>> Instead
+>> we should let the fs weigh the cost of providing accurate information
+>> with the possible gain in performance.
+>>
+>> Data:
+>> A range in a file that could contain something other than nulls.
+>> If in doubt, it is data.
+>>
+>> Hole:
+>> A range in a file that only contains nulls.
+>
+> And that's -exactly- the ambiguous, vague definition that has raised
+> all these questions in the first place. I was in doubt about whether
+> unwritten extents can be considered a hole, and by your definition
+> that means it should be data. But Andreas seems to be in no doubt it
+> should be considered a hole.
+>
+> Hence if I implement XFS support and Andreas implements ext4 support
+> by your defintion, we end with vastly different behaviour even
+> though the two filesystems use the same underlying technology for
+> preallocated ranges. That's exactly the inconsistency in
+> implementation that I'd like us to avoid.
+>
+> IOWs, the definition needs to be clear enough to prevent these
+> inconsistencies from occurring. Indeed, the phrase "preallocated
+> ranges that have not had data written to them" is as independent of
+> filesystem implementation or technologies as possible. However,
+> because Linux supports preallocation (unlike our reference
+> platform), and we encourage developers to use it where appropriate,
+> it is best that we define how we expect such ranges to behave
+> clearly. That makes life easier for everyone.
 
-It is?  Is it being replaced by something?  (I find it useful)
+Since a sparse file has the holes filled by nulls by definition, it seems 
+fairly clear that they chould count as holes. In fact, I would not be 
+surprised to see some filesystem _only_ report the unwritten pieces of 
+sparse files as holes (not any other ranges of nulls)
 
-	-Mike
+the question I have is how large does the range of nulls need to be before 
+it's reported as a hole? disk sectors, filesystem blocks, other?
 
-
+David Lang
