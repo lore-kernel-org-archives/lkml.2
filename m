@@ -1,647 +1,578 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab1HaVcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 17:32:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59657 "EHLO mx1.redhat.com"
+	id S1756730Ab1HaVct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:32:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45528 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755884Ab1HaV2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755603Ab1HaV2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Aug 2011 17:28:12 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, ming.lei@canonical.com,
         stern@rowland.harvard.edu, Mark Salter <msalter@redhat.com>
-Subject: [PATCH 08/24] C6X: process management
-Date: Wed, 31 Aug 2011 17:26:43 -0400
-Message-Id: <1314826019-22330-9-git-send-email-msalter@redhat.com>
+Subject: [PATCH 07/24] C6X: memory management and DMA support
+Date: Wed, 31 Aug 2011 17:26:42 -0400
+Message-Id: <1314826019-22330-8-git-send-email-msalter@redhat.com>
 In-Reply-To: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The C6X architecture currently lacks an MMU so memory management is relatively
+simple. There is no bus snooping between L2 and main memory but coherent DMA
+memory is supported by making regions of main memory uncached. If such a region
+is desired, it can be specified on the commandline with a "memdma=" argument.
+
 Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- arch/c6x/include/asm/processor.h   |  132 ++++++++++++++++++
- arch/c6x/include/asm/thread_info.h |  121 +++++++++++++++++
- arch/c6x/kernel/process.c          |  260 ++++++++++++++++++++++++++++++++++++
- arch/c6x/kernel/switch_to.S        |   74 ++++++++++
- 4 files changed, 587 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/include/asm/processor.h
- create mode 100644 arch/c6x/include/asm/thread_info.h
- create mode 100644 arch/c6x/kernel/process.c
- create mode 100644 arch/c6x/kernel/switch_to.S
+ arch/c6x/include/asm/dma-mapping.h |   91 +++++++++++++++++++
+ arch/c6x/kernel/dma.c              |  168 ++++++++++++++++++++++++++++++++++++
+ arch/c6x/mm/dma-coherent.c         |  142 ++++++++++++++++++++++++++++++
+ arch/c6x/mm/init.c                 |  112 ++++++++++++++++++++++++
+ 4 files changed, 513 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/dma-mapping.h
+ create mode 100644 arch/c6x/kernel/dma.c
+ create mode 100644 arch/c6x/mm/dma-coherent.c
+ create mode 100644 arch/c6x/mm/init.c
 
-diff --git a/arch/c6x/include/asm/processor.h b/arch/c6x/include/asm/processor.h
+diff --git a/arch/c6x/include/asm/dma-mapping.h b/arch/c6x/include/asm/dma-mapping.h
 new file mode 100644
-index 0000000..8154c4e
+index 0000000..03579fd
 --- /dev/null
-+++ b/arch/c6x/include/asm/processor.h
-@@ -0,0 +1,132 @@
++++ b/arch/c6x/include/asm/dma-mapping.h
+@@ -0,0 +1,91 @@
 +/*
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
 + *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PROCESSOR_H
-+#define _ASM_C6X_PROCESSOR_H
-+
-+#include <asm/ptrace.h>
-+#include <asm/page.h>
-+#include <asm/current.h>
-+
-+/*
-+ * Default implementation of macro that returns current
-+ * instruction pointer ("program counter").
-+ */
-+#define current_text_addr()			\
-+({						\
-+	void *__pc;				\
-+	asm("mvc .S2 pce1,%0\n" : "=b"(__pc));	\
-+	__pc;					\
-+})
-+
-+/*
-+ * User space process size. This is mostly meaningless for NOMMU
-+ * but some C6X processors may have RAM addresses up to 0xFFFFFFFF.
-+ * Since calls like mmap() can return an address or an error, we
-+ * have to allow room for error returns when code does something
-+ * like:
-+ *
-+ *       addr = do_mmap(...)
-+ *       if ((unsigned long)addr >= TASK_SIZE)
-+ *            ... its an error code, not an address ...
-+ *
-+ * Here, we allow for 4096 error codes which means we really can't
-+ * use the last 4K page on systems with RAM extending all the way
-+ * to the end of the 32-bit address space.
-+ */
-+#define TASK_SIZE	0xFFFFF000
-+
-+/*
-+ * This decides where the kernel will search for a free chunk of vm
-+ * space during mmap's. We won't be using it
-+ */
-+#define TASK_UNMAPPED_BASE	0
-+
-+struct thread_struct {
-+	unsigned long long b15_14;
-+	unsigned long long a15_14;
-+	unsigned long long b13_12;
-+	unsigned long long a13_12;
-+	unsigned long long b11_10;
-+	unsigned long long a11_10;
-+	unsigned long long ricl_icl;
-+	unsigned long  usp;		/* user stack pointer */
-+	unsigned long  pc;		/* kernel pc */
-+	unsigned long  wchan;
-+};
-+
-+#define INIT_THREAD					\
-+{							\
-+	.usp = 0,					\
-+	.wchan = 0,					\
-+}
-+
-+#define INIT_MMAP { \
-+	&init_mm, 0, 0, NULL, PAGE_SHARED, VM_READ | VM_WRITE | VM_EXEC, 1, \
-+	NULL, NULL }
-+
-+#define task_pt_regs(task) \
-+	((struct pt_regs *)(THREAD_START_SP + task_stack_page(task)) - 1)
-+
-+#define alloc_kernel_stack()	__get_free_page(GFP_KERNEL)
-+#define free_kernel_stack(page) free_page((page))
-+
-+
-+/* Forward declaration, a strange C thing */
-+struct task_struct;
-+
-+extern void start_thread(struct pt_regs *regs, unsigned int pc,
-+			 unsigned long usp);
-+
-+/* Free all resources held by a thread. */
-+static inline void release_thread(struct task_struct *dead_task)
-+{
-+}
-+
-+/* Prepare to copy thread state - unlazy all lazy status */
-+#define prepare_to_copy(tsk)	do { } while (0)
-+
-+extern int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags);
-+
-+#define copy_segments(tsk, mm)		do { } while (0)
-+#define release_segments(mm)		do { } while (0)
-+
-+/*
-+ * saved PC of a blocked thread.
-+ */
-+#define thread_saved_pc(tsk) (task_pt_regs(tsk)->pc)
-+
-+/*
-+ * saved kernel SP and DP of a blocked thread.
-+ */
-+#ifdef _BIG_ENDIAN
-+#define thread_saved_ksp(tsk) \
-+	(*(unsigned long *)&(tsk)->thread.b15_14)
-+#define thread_saved_dp(tsk) \
-+	(*(((unsigned long *)&(tsk)->thread.b15_14) + 1))
-+#else
-+#define thread_saved_ksp(tsk) \
-+	(*(((unsigned long *)&(tsk)->thread.b15_14) + 1))
-+#define thread_saved_dp(tsk) \
-+	(*(unsigned long *)&(tsk)->thread.b15_14)
-+#endif
-+
-+extern unsigned long get_wchan(struct task_struct *p);
-+
-+#define KSTK_EIP(tsk)	(task_pt_regs(task)->pc)
-+#define	KSTK_ESP(tsk)	(task_pt_regs(task)->sp)
-+
-+#define cpu_relax()		do { } while (0)
-+
-+extern const struct seq_operations cpuinfo_op;
-+
-+#endif /* ASM_C6X_PROCESSOR_H */
-diff --git a/arch/c6x/include/asm/thread_info.h b/arch/c6x/include/asm/thread_info.h
-new file mode 100644
-index 0000000..fd99148
---- /dev/null
-+++ b/arch/c6x/include/asm/thread_info.h
-@@ -0,0 +1,121 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  Updated for 2.6.3x: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_THREAD_INFO_H
-+#define _ASM_C6X_THREAD_INFO_H
-+
-+#ifdef __KERNEL__
-+
-+#include <asm/page.h>
-+
-+#ifdef CONFIG_4KSTACKS
-+#define THREAD_SIZE		4096
-+#define THREAD_SHIFT		12
-+#define THREAD_ORDER		0
-+#else
-+#define THREAD_SIZE		8192
-+#define THREAD_SHIFT		13
-+#define THREAD_ORDER		1
-+#endif
-+
-+#define THREAD_START_SP		(THREAD_SIZE - 8)
-+
-+#ifndef __ASSEMBLY__
-+
-+typedef struct {
-+	unsigned long seg;
-+} mm_segment_t;
-+
-+/*
-+ * low level task data.
-+ */
-+struct thread_info {
-+	struct task_struct	*task;		/* main task structure */
-+	struct exec_domain	*exec_domain;	/* execution domain */
-+	unsigned long		flags;		/* low level flags */
-+	int			cpu;		/* cpu we're on */
-+	int			preempt_count;	/* 0 = preemptable, <0 = BUG */
-+	mm_segment_t		addr_limit;	/* thread address space */
-+	struct restart_block	restart_block;
-+};
-+
-+/*
-+ * macros/functions for gaining access to the thread information structure
-+ *
-+ * preempt_count needs to be 1 initially, until the scheduler is functional.
-+ */
-+#define INIT_THREAD_INFO(tsk)			\
-+{						\
-+	.task		= &tsk,			\
-+	.exec_domain	= &default_exec_domain,	\
-+	.flags		= 0,			\
-+	.cpu		= 0,			\
-+	.preempt_count	= INIT_PREEMPT_COUNT,	\
-+	.addr_limit	= KERNEL_DS,		\
-+	.restart_block	= {			\
-+		.fn = do_no_restart_syscall,	\
-+	},					\
-+}
-+
-+#define init_thread_info	(init_thread_union.thread_info)
-+#define init_stack		(init_thread_union.stack)
-+
-+/* get the thread information struct of current task */
-+static inline __attribute__((const))
-+struct thread_info *current_thread_info(void)
-+{
-+	struct thread_info *ti;
-+	asm volatile (" clr   .s2 B15,0,%1,%0\n"
-+		      : "=b" (ti)
-+		      : "Iu5" (THREAD_SHIFT - 1));
-+	return ti;
-+}
-+
-+#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
-+
-+/* thread information allocation */
-+#ifdef CONFIG_DEBUG_STACK_USAGE
-+#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO)
-+#else
-+#define THREAD_FLAGS (GFP_KERNEL | __GFP_NOTRACK)
-+#endif
-+
-+#define alloc_thread_info_node(tsk, node)	\
-+	((struct thread_info *)__get_free_pages(THREAD_FLAGS, THREAD_ORDER))
-+
-+#define free_thread_info(ti)	free_pages((unsigned long) (ti), THREAD_ORDER)
-+#define get_thread_info(ti)	get_task_struct((ti)->task)
-+#define put_thread_info(ti)	put_task_struct((ti)->task)
-+#endif /* __ASSEMBLY__ */
-+
-+#define	PREEMPT_ACTIVE	0x10000000
-+
-+/*
-+ * thread information flag bit numbers
-+ * - pending work-to-be-done flags are in LSW
-+ * - other flags in MSW
-+ */
-+#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
-+#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
-+#define TIF_SIGPENDING		2	/* signal pending */
-+#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
-+#define TIF_RESTORE_SIGMASK	4	/* restore signal mask in do_signal() */
-+
-+#define TIF_POLLING_NRFLAG	16	/* true if polling TIF_NEED_RESCHED */
-+#define TIF_MEMDIE		17	/* OOM killer killed process */
-+
-+#define TIF_WORK_MASK		0x00007FFE /* work on irq/exception return */
-+#define TIF_ALLWORK_MASK	0x00007FFF /* work on any return to u-space */
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* _ASM_C6X_THREAD_INFO_H */
-diff --git a/arch/c6x/kernel/process.c b/arch/c6x/kernel/process.c
-new file mode 100644
-index 0000000..d7bc66f
---- /dev/null
-+++ b/arch/c6x/kernel/process.c
-@@ -0,0 +1,260 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *  Author: Aurelien Jacquiot <aurelien.jacquiot@ti.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + *
 + */
-+#include <linux/module.h>
-+#include <linux/unistd.h>
-+#include <linux/ptrace.h>
-+#include <linux/init_task.h>
-+#include <linux/tick.h>
-+#include <linux/mqueue.h>
-+#include <linux/syscalls.h>
-+#include <linux/reboot.h>
++#ifndef _ASM_C6X_DMA_MAPPING_H
++#define _ASM_C6X_DMA_MAPPING_H
 +
-+#include <asm/syscalls.h>
++#include <linux/dma-debug.h>
++#include <asm-generic/dma-coherent.h>
 +
-+/* hooks for board specific support */
-+void	(*c6x_restart)(void);
-+void	(*c6x_halt)(void);
-+void	(*c6x_power_off)(void);
++#define dma_supported(d, m)	1
 +
-+extern asmlinkage void ret_from_fork(void);
-+
-+static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
-+static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
-+
-+/*
-+ * Initial thread structure.
-+ */
-+union thread_union init_thread_union __init_task_data =	{
-+	INIT_THREAD_INFO(init_task)
-+};
-+
-+/*
-+ * Initial task structure.
-+ */
-+struct task_struct init_task = INIT_TASK(init_task);
-+EXPORT_SYMBOL(init_task);
-+
-+/*
-+ * power off function, if any
-+ */
-+void (*pm_power_off)(void);
-+EXPORT_SYMBOL(pm_power_off);
-+
-+/*
-+ * power management idle function, if any..
-+ */
-+void (*pm_idle)(void);
-+EXPORT_SYMBOL(pm_idle);
-+
-+static void default_idle(void)
++static inline int dma_set_mask(struct device *dev, u64 dma_mask)
 +{
-+	asm volatile ("IDLE\n");
-+}
++	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
++		return -EIO;
 +
-+/*
-+ * The idle loop for C64x
-+ */
-+void cpu_idle(void)
-+{
-+	/* endless idle loop with no priority at all */
-+	while (1) {
-+		tick_nohz_stop_sched_tick(1);
-+		while (!need_resched()) {
-+			void (*idle)(void);
++	*dev->dma_mask = dma_mask;
 +
-+			smp_rmb();
-+			idle = pm_idle;
-+			if (!idle)
-+				idle = default_idle;
-+			idle();
-+		}
-+		tick_nohz_restart_sched_tick();
-+
-+		preempt_enable_no_resched();
-+		schedule();
-+		preempt_disable();
-+	}
-+}
-+
-+static void halt_loop(void)
-+{
-+	printk(KERN_EMERG "System Halted, OK to turn off power\n");
-+	local_irq_disable();
-+	while (1)
-+		default_idle();
-+}
-+
-+void machine_restart(char *__unused)
-+{
-+	if (c6x_restart)
-+		c6x_restart();
-+	halt_loop();
-+}
-+
-+void machine_halt(void)
-+{
-+	if (c6x_halt)
-+		c6x_halt();
-+	halt_loop();
-+}
-+
-+void machine_power_off(void)
-+{
-+	if (c6x_power_off)
-+		c6x_power_off();
-+	halt_loop();
-+}
-+
-+static void kernel_thread_helper(int dummy, void *arg, int (*fn)(void *))
-+{
-+	do_exit(fn(arg));
-+}
-+
-+/*
-+ * Create a kernel thread
-+ */
-+int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags)
-+{
-+	struct pt_regs regs;
-+
-+	/*
-+	 * copy_thread sets a4 to zero (child return from fork)
-+	 * so we can't just set things up to directly return to
-+	 * fn.
-+	 */
-+	memset(&regs, 0, sizeof(regs));
-+	regs.b4 = (unsigned long) arg;
-+	regs.a6 = (unsigned long) fn;
-+	regs.pc = (unsigned long) kernel_thread_helper;
-+	local_save_flags(regs.csr);
-+	regs.csr |= 1;
-+	regs.tsr = 5; /* Set GEE and GIE in TSR */
-+
-+	/* Ok, create the new process.. */
-+	return do_fork(flags | CLONE_VM | CLONE_UNTRACED, -1, &regs,
-+		       0, NULL, NULL);
-+}
-+EXPORT_SYMBOL(kernel_thread);
-+
-+void flush_thread(void)
-+{
-+}
-+
-+void exit_thread(void)
-+{
-+}
-+
-+SYSCALL_DEFINE1(c6x_clone, struct pt_regs *, regs)
-+{
-+	unsigned long clone_flags;
-+	unsigned long newsp;
-+
-+	/* syscall puts clone_flags in A4 and usp in B4 */
-+	clone_flags = regs->orig_a4;
-+	if (regs->b4)
-+		newsp = regs->b4;
-+	else
-+		newsp = regs->sp;
-+
-+	return do_fork(clone_flags, newsp, regs, 0, (int __user *)regs->a6,
-+		       (int __user *)regs->b6);
-+}
-+
-+/*
-+ * Do necessary setup to start up a newly executed thread.
-+ */
-+void start_thread(struct pt_regs *regs, unsigned int pc, unsigned long usp)
-+{
-+	/*
-+	 * The binfmt loader will setup a "full" stack, but the C6X
-+	 * operates an "empty" stack. So we adjust the usp so that
-+	 * argc doesn't get destroyed if an interrupt is taken before
-+	 * it is read from the stack.
-+	 *
-+	 * NB: Library startup code needs to match this.
-+	 */
-+	usp -= 8;
-+
-+	set_fs(USER_DS);
-+	regs->pc  = pc;
-+	regs->sp  = usp;
-+	regs->tsr |= 0x40; /* set user mode */
-+	current->thread.usp = usp;
-+}
-+
-+/*
-+ * Copy a new thread context in its stack.
-+ */
-+int copy_thread(unsigned long clone_flags, unsigned long usp,
-+		unsigned long ustk_size,
-+		struct task_struct *p, struct pt_regs *regs)
-+{
-+	struct pt_regs *childregs;
-+
-+	childregs = task_pt_regs(p);
-+
-+	*childregs = *regs;
-+	childregs->a4 = 0;
-+
-+	if (usp == -1)
-+		/* case of  __kernel_thread: we return to supervisor space */
-+		childregs->sp = (unsigned long)(childregs + 1);
-+	else
-+		/* Otherwise use the given stack */
-+		childregs->sp = usp;
-+
-+	/* Set usp/ksp */
-+	p->thread.usp = childregs->sp;
-+	/* switch_to uses stack to save/restore 14 callee-saved regs */
-+	thread_saved_ksp(p) = (unsigned long)childregs - 8;
-+	p->thread.pc = (unsigned int) ret_from_fork;
-+	p->thread.wchan	= (unsigned long) ret_from_fork;
-+#ifdef __DSBT__
-+	{
-+		unsigned long dp;
-+
-+		asm volatile ("mv .S2 b14,%0\n" : "=b"(dp));
-+
-+		thread_saved_dp(p) = dp;
-+		if (usp == -1)
-+			childregs->dp = dp;
-+	}
-+#endif
 +	return 0;
 +}
 +
 +/*
-+ * c6x_execve() executes a new program.
++ * DMA errors are defined by all-bits-set in the DMA address.
 + */
-+SYSCALL_DEFINE4(c6x_execve, const char __user *, name,
-+		const char __user *const __user *, argv,
-+		const char __user *const __user *, envp,
-+		struct pt_regs *, regs)
++static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
 +{
-+	int error;
-+	char *filename;
-+
-+	filename = getname(name);
-+	error = PTR_ERR(filename);
-+	if (IS_ERR(filename))
-+		goto out;
-+
-+	error = do_execve(filename, argv, envp, regs);
-+	putname(filename);
-+out:
-+	return error;
++	return dma_addr == ~0;
 +}
 +
-+unsigned long get_wchan(struct task_struct *p)
++extern dma_addr_t dma_map_single(struct device *dev, void *cpu_addr,
++				 size_t size, enum dma_data_direction dir);
++
++extern void dma_unmap_single(struct device *dev, dma_addr_t handle,
++			     size_t size, enum dma_data_direction dir);
++
++extern int dma_map_sg(struct device *dev, struct scatterlist *sglist,
++		      int nents, enum dma_data_direction direction);
++
++extern void dma_unmap_sg(struct device *dev, struct scatterlist *sglist,
++			 int nents, enum dma_data_direction direction);
++
++static inline dma_addr_t dma_map_page(struct device *dev, struct page *page,
++				      unsigned long offset, size_t size,
++				      enum dma_data_direction dir)
 +{
-+	return p->thread.wchan;
++	dma_addr_t handle;
++
++	handle = dma_map_single(dev, page_address(page) + offset, size, dir);
++
++	debug_dma_map_page(dev, page, offset, size, dir, handle, false);
++
++	return handle;
 +}
-diff --git a/arch/c6x/kernel/switch_to.S b/arch/c6x/kernel/switch_to.S
++
++static inline void dma_unmap_page(struct device *dev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir)
++{
++	dma_unmap_single(dev, handle, size, dir);
++
++	debug_dma_unmap_page(dev, handle, size, dir, false);
++}
++
++extern void dma_sync_single_for_cpu(struct device *dev, dma_addr_t handle,
++				    size_t size, enum dma_data_direction dir);
++
++extern void dma_sync_single_for_device(struct device *dev, dma_addr_t handle,
++				       size_t size,
++				       enum dma_data_direction dir);
++
++extern void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
++				int nents, enum dma_data_direction dir);
++
++extern void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
++				   int nents, enum dma_data_direction dir);
++
++extern void coherent_mem_init(u32 start, u32 size);
++extern void *dma_alloc_coherent(struct device *, size_t, dma_addr_t *, gfp_t);
++extern void dma_free_coherent(struct device *, size_t, void *, dma_addr_t);
++
++#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent((d), (s), (h), (f))
++#define dma_free_noncoherent(d, s, v, h)  dma_free_coherent((d), (s), (v), (h))
++
++#endif	/* _ASM_C6X_DMA_MAPPING_H */
+diff --git a/arch/c6x/kernel/dma.c b/arch/c6x/kernel/dma.c
 new file mode 100644
-index 0000000..09177ed
+index 0000000..4120de0
 --- /dev/null
-+++ b/arch/c6x/kernel/switch_to.S
-@@ -0,0 +1,74 @@
++++ b/arch/c6x/kernel/dma.c
+@@ -0,0 +1,168 @@
 +/*
 + *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter (msalter@redhat.com)
++ *  Author: Mark Salter <msalter@redhat.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
++#include <linux/dma-mapping.h>
++#include <linux/mm.h>
++#include <linux/mm_types.h>
++#include <linux/scatterlist.h>
 +
-+#include <linux/linkage.h>
-+#include <asm/asm-offsets.h>
++#include <asm/cacheflush.h>
 +
-+#define SP	B15
++dma_addr_t dma_map_single(struct device *dev, void *ptr, size_t size,
++			  enum dma_data_direction dir)
++{
++	dma_addr_t addr = virt_to_phys(ptr);
++
++	BUG_ON(!valid_dma_direction(dir));
++
++	switch (dir) {
++	case DMA_FROM_DEVICE:
++		L2_cache_block_invalidate(addr, addr + size);
++		break;
++	case DMA_TO_DEVICE:
++		L2_cache_block_writeback(addr, addr + size);
++		break;
++	case DMA_BIDIRECTIONAL:
++		/*
++		 * If area will be used bidirectionally, syncing will
++		 * take place manually in the driver.
++		 */
++	default:
++		break;
++	}
++
++	debug_dma_map_page(dev, virt_to_page(ptr),
++			   (unsigned long)ptr & ~PAGE_MASK, size,
++			   dir, addr, true);
++	return addr;
++}
++EXPORT_SYMBOL(dma_map_single);
++
++
++void dma_unmap_single(struct device *dev, dma_addr_t handle,
++		      size_t size, enum dma_data_direction dir)
++{
++	/* nothing to do here */
++	debug_dma_unmap_page(dev, handle, size, dir, true);
++}
++EXPORT_SYMBOL(dma_unmap_single);
++
++
++int dma_map_sg(struct device *dev, struct scatterlist *sglist,
++	       int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		sg->dma_address = dma_map_single(dev, sg_virt(sg), sg->length,
++						 dir);
++
++	debug_dma_map_sg(dev, sglist, nents, nents, dir);
++
++	return nents;
++}
++EXPORT_SYMBOL(dma_map_sg);
++
++
++void dma_unmap_sg(struct device *dev, struct scatterlist *sglist,
++		  int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		dma_unmap_single(dev, sg_dma_address(sg), sg->length, dir);
++
++	debug_dma_unmap_sg(dev, sglist,	nents, dir);
++}
++EXPORT_SYMBOL(dma_unmap_sg);
++
++
++void dma_sync_single_for_cpu(struct device *dev, dma_addr_t handle,
++			     size_t size, enum dma_data_direction dir)
++{
++	unsigned long paddr = handle;
++
++	BUG_ON(!valid_dma_direction(dir));
++
++	switch (dir) {
++	case DMA_FROM_DEVICE:
++		L2_cache_block_invalidate(paddr, paddr + size);
++		break;
++	case DMA_TO_DEVICE:
++		L2_cache_block_writeback(paddr, paddr + size);
++		break;
++	case DMA_BIDIRECTIONAL:
++		L2_cache_block_writeback_invalidate(paddr, paddr + size);
++		break;
++	default:
++		break;
++	}
++
++	debug_dma_sync_single_for_cpu(dev, handle, size, dir);
++}
++EXPORT_SYMBOL(dma_sync_single_for_cpu);
++
++
++void dma_sync_single_for_device(struct device *dev, dma_addr_t handle,
++				size_t size, enum dma_data_direction dir)
++{
++	unsigned long paddr = handle;
++
++	BUG_ON(!valid_dma_direction(dir));
++
++	/* don't bother invalidating if DMA to device */
++	if (dir != DMA_TO_DEVICE)
++		L2_cache_block_invalidate(paddr, paddr + size);
++
++	debug_dma_sync_single_for_device(dev, handle, size, dir);
++}
++EXPORT_SYMBOL(dma_sync_single_for_device);
++
++
++void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sglist,
++			 int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		dma_sync_single_for_cpu(dev, sg_dma_address(sg),
++					sg->length, dir);
++
++	debug_dma_sync_sg_for_cpu(dev, sglist, nents, dir);
++}
++EXPORT_SYMBOL(dma_sync_sg_for_cpu);
++
++
++void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sglist,
++			    int nents, enum dma_data_direction dir)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sglist, sg, nents, i)
++		dma_sync_single_for_device(dev, sg_dma_address(sg),
++					   sg->length, dir);
++
++	debug_dma_sync_sg_for_device(dev, sglist, nents, dir);
++}
++EXPORT_SYMBOL(dma_sync_sg_for_device);
++
++
++/* Number of entries preallocated for DMA-API debugging */
++#define PREALLOC_DMA_DEBUG_ENTRIES (1 << 16)
++
++static int __init dma_init(void)
++{
++	dma_debug_init(PREALLOC_DMA_DEBUG_ENTRIES);
++
++	return 0;
++}
++fs_initcall(dma_init);
+diff --git a/arch/c6x/mm/dma-coherent.c b/arch/c6x/mm/dma-coherent.c
+new file mode 100644
+index 0000000..98ef9e1
+--- /dev/null
++++ b/arch/c6x/mm/dma-coherent.c
+@@ -0,0 +1,142 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot <aurelien.jacquiot@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  DMA uncached mapping support.
++ *
++ *  Using code pulled from ARM
++ *  Copyright (C) 2000-2004 Russell King
++ *
++ */
++#include <linux/slab.h>
++#include <linux/bitmap.h>
++#include <linux/bitops.h>
++#include <linux/interrupt.h>
++#include <linux/dma-mapping.h>
++#include <linux/memblock.h>
++
++#include <asm/page.h>
++
++/*
++ * DMA coherent memory management, can be redefined using the memdma=
++ * kernel command line
++ */
++
++/* none by default */
++static phys_addr_t dma_base;
++static u32 dma_size;
++static u32 dma_pages;
++
++static unsigned long *dma_bitmap;
++
++/* bitmap lock */
++static DEFINE_SPINLOCK(dma_lock);
++
++/*
++ * Return a DMA coherent and contiguous memory chunk from the DMA memory
++ */
++static inline u32 __alloc_dma_pages(int order)
++{
++	unsigned long flags;
++	u32 pos;
++
++	spin_lock_irqsave(&dma_lock, flags);
++	pos = bitmap_find_free_region(dma_bitmap, dma_pages, order);
++	spin_unlock_irqrestore(&dma_lock, flags);
++
++	return dma_base + (pos << PAGE_SHIFT);
++}
++
++static void __free_dma_pages(u32 addr, int order)
++{
++	unsigned long flags;
++	u32 pos = (addr - dma_base) >> PAGE_SHIFT;
++
++	if (addr < dma_base || (pos + (1 << order)) >= dma_pages) {
++		printk(KERN_ERR "%s: freeing outside range.\n", __func__);
++		BUG();
++	}
++
++	spin_lock_irqsave(&dma_lock, flags);
++	bitmap_release_region(dma_bitmap, pos, order);
++	spin_unlock_irqrestore(&dma_lock, flags);
++}
++
++/*
++ * Allocate DMA coherent memory space and return both the kernel
++ * virtual and DMA address for that space.
++ */
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *handle, gfp_t gfp)
++{
++	u32 paddr;
++	int order;
++
++	if (!dma_size || !size)
++		return NULL;
++
++	order = get_count_order(((size - 1) >> PAGE_SHIFT) + 1);
++
++	paddr = __alloc_dma_pages(order);
++
++	if (handle)
++		*handle = paddr;
++
++	if (!paddr)
++		return NULL;
++
++	return phys_to_virt(paddr);
++}
++EXPORT_SYMBOL(dma_alloc_coherent);
++
++/*
++ * Free DMA coherent memory as defined by the above mapping.
++ */
++void dma_free_coherent(struct device *dev, size_t size, void *vaddr,
++		       dma_addr_t dma_handle)
++{
++	int order;
++
++	if (!dma_size || !size)
++		return;
++
++	order = get_count_order(((size - 1) >> PAGE_SHIFT) + 1);
++
++	__free_dma_pages(virt_to_phys(vaddr), order);
++}
++EXPORT_SYMBOL(dma_free_coherent);
++
++/*
++ * Initialise the coherent DMA memory allocator using the given uncached region.
++ */
++void __init coherent_mem_init(phys_addr_t start, u32 size)
++{
++	phys_addr_t bitmap_phys;
++
++	if (!size)
++		return;
++
++	printk(KERN_INFO
++	       "Coherent memory (DMA) region start=0x%x size=0x%x\n",
++	       start, size);
++
++	dma_base = start;
++	dma_size = size;
++
++	/* allocate bitmap */
++	dma_pages = dma_size >> PAGE_SHIFT;
++	if (dma_size & (PAGE_SIZE - 1))
++		++dma_pages;
++
++	bitmap_phys = memblock_alloc(BITS_TO_LONGS(dma_pages) * sizeof(long),
++				     sizeof(long));
++
++	dma_bitmap = phys_to_virt(bitmap_phys);
++	memset(dma_bitmap, 0, dma_pages * PAGE_SIZE);
++}
+diff --git a/arch/c6x/mm/init.c b/arch/c6x/mm/init.c
+new file mode 100644
+index 0000000..6b4d396
+--- /dev/null
++++ b/arch/c6x/mm/init.c
+@@ -0,0 +1,112 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#include <linux/mm.h>
++#include <linux/swap.h>
++#include <linux/bootmem.h>
++#ifdef CONFIG_BLK_DEV_RAM
++#include <linux/blkdev.h>
++#endif
++#include <linux/initrd.h>
++
++#include <asm/sections.h>
++
++/*
++ * ZERO_PAGE is a special page that is used for zero-initialized
++ * data and COW.
++ */
++unsigned long empty_zero_page;
++EXPORT_SYMBOL(empty_zero_page);
++
++/*
++ * paging_init() continues the virtual memory environment setup which
++ * was begun by the code in arch/head.S.
++ * The parameters are pointers to where to stick the starting and ending
++ * addresses  of available kernel virtual memory.
++ */
++void __init paging_init(void)
++{
++	struct pglist_data *pgdat = NODE_DATA(0);
++	unsigned long zones_size[MAX_NR_ZONES] = {0, };
++
++	empty_zero_page      = (unsigned long) alloc_bootmem_pages(PAGE_SIZE);
++	memset((void *)empty_zero_page, 0, PAGE_SIZE);
 +
 +	/*
-+	 * void __switch_to(struct thread_info *prev,
-+	 *      	    struct thread_info *next,
-+	 *		    struct task_struct *tsk) ;
++	 * Set up user data space
 +	 */
-+ENTRY(__switch_to)
-+	LDDW	.D2T2	*+B4(THREAD_B15_14),B7:B6
-+ ||	MV	.L2X	A4,B5	; prev
-+ ||	MV	.L1X	B4,A5	; next
-+ ||	MVC	.S2	RILC,B1
++	set_fs(KERNEL_DS);
 +
-+	STW	.D2T2	B3,*+B5(THREAD_PC)
-+ ||	STDW	.D1T1	A13:A12,*+A4(THREAD_A13_12)
-+ ||	MVC	.S2	ILC,B0
++	/*
++	 * Define zones
++	 */
++	zones_size[ZONE_NORMAL] = (memory_end - PAGE_OFFSET) >> PAGE_SHIFT;
++	pgdat->node_zones[ZONE_NORMAL].zone_start_pfn =
++		__pa(PAGE_OFFSET) >> PAGE_SHIFT;
 +
-+	LDW	.D2T2	*+B4(THREAD_PC),B3
-+ ||	LDDW	.D1T1	*+A5(THREAD_A13_12),A13:A12
++	free_area_init(zones_size);
++}
 +
-+	STDW	.D1T1	A11:A10,*+A4(THREAD_A11_10)
-+ ||	STDW	.D2T2	B1:B0,*+B5(THREAD_RICL_ICL)
-+#ifndef __DSBT__
-+ ||	MVKL	.S2	current_ksp,B1
++void __init mem_init(void)
++{
++	int codek, datak;
++	unsigned long tmp;
++	unsigned long len = memory_end - memory_start;
++
++	high_memory = (void *)(memory_end & PAGE_MASK);
++
++	/* this will put all memory onto the freelists */
++	totalram_pages = free_all_bootmem();
++
++	codek = (_etext - _stext) >> 10;
++	datak = (_end - _sdata) >> 10;
++
++	tmp = nr_free_pages() << PAGE_SHIFT;
++	printk(KERN_INFO "Memory: %luk/%luk RAM (%dk kernel code, %dk data)\n",
++	       tmp >> 10, len >> 10, codek, datak);
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init free_initrd_mem(unsigned long start, unsigned long end)
++{
++	int pages = 0;
++	for (; start < end; start += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(start));
++		init_page_count(virt_to_page(start));
++		free_page(start);
++		totalram_pages++;
++		pages++;
++	}
++	printk(KERN_INFO "Freeing initrd memory: %luk freed\n",
++	       (pages * PAGE_SIZE) >> 10);
++}
 +#endif
 +
-+	STDW	.D2T2	B15:B14,*+B5(THREAD_B15_14)
-+ ||	STDW	.D1T1	A15:A14,*+A4(THREAD_A15_14)
-+#ifndef __DSBT__
-+ ||	MVKH	.S2	current_ksp,B1
-+#endif
++void __init free_initmem(void)
++{
++	unsigned long addr;
 +
-+	;; Switch to next SP
-+	MV	.S2	B7,SP
-+#ifdef __DSBT__
-+ ||	STW	.D2T2	B7,*+B14(current_ksp)
-+#else
-+ ||	STW	.D2T2	B7,*B1
-+ ||	MV	.L2	B6,B14
-+#endif
-+ ||	LDDW	.D1T1	*+A5(THREAD_RICL_ICL),A1:A0
++	/*
++	 * The following code should be cool even if these sections
++	 * are not page aligned.
++	 */
++	addr = PAGE_ALIGN((unsigned long)(__init_begin));
 +
-+	STDW	.D2T2	B11:B10,*+B5(THREAD_B11_10)
-+ ||	LDDW	.D1T1	*+A5(THREAD_A15_14),A15:A14
-+
-+	STDW	.D2T2	B13:B12,*+B5(THREAD_B13_12)
-+ ||	LDDW	.D1T1	*+A5(THREAD_A11_10),A11:A10
-+
-+	B	.S2	B3		; return in next E1
-+ ||	LDDW	.D2T2	*+B4(THREAD_B13_12),B13:B12
-+
-+	LDDW	.D2T2	*+B4(THREAD_B11_10),B11:B10
-+	NOP
-+
-+	MV	.L2X	A0,B0
-+ ||	MV	.S1	A6,A4
-+
-+	MVC	.S2	B0,ILC
-+ ||	MV	.L2X	A1,B1
-+
-+	MVC	.S2	B1,RILC
-+ENDPROC(__switch_to)
++	/* next to check that the page we free is not a partial page */
++	for (; addr + PAGE_SIZE < (unsigned long)(__init_end);
++	     addr += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(addr));
++		init_page_count(virt_to_page(addr));
++		free_page(addr);
++		totalram_pages++;
++	}
++	printk(KERN_INFO "Freeing unused kernel memory: %dK freed\n",
++	       (int) ((addr - PAGE_ALIGN((long) &__init_begin)) >> 10));
++}
 -- 
 1.7.6
 
