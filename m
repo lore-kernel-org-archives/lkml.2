@@ -1,50 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab1HaIWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 04:22:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39279 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab1HaIWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 04:22:42 -0400
-Date: Wed, 31 Aug 2011 03:22:30 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Kevin Tian <kevin.tian@intel.com>, mingo@redhat.com, hpa@zytor.com,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>, JBeulich@novell.com,
-        xen-devel@lists.xensource.com, Lars Boegild Thomsen <lth@cow.dk>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend (Re:
- [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating them)
-Message-ID: <20110831082230.GA4539@elie.gateway.2wire.net>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
- <20110829041532.GA22087@elie.gateway.2wire.net>
- <1314752662.6411.26.camel@nimitz>
+	id S1752942Ab1HaId7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 04:33:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41800 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752029Ab1HaId6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 04:33:58 -0400
+Date: Wed, 31 Aug 2011 10:33:32 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Brestic <abrestic@google.com>, Ying Han <yinghan@google.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] Revert "memcg: add memory.vmscan_stat"
+Message-ID: <20110831083332.GA27125@redhat.com>
+References: <20110830070424.GA13061@redhat.com>
+ <20110830162050.f6c13c0c.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110830084245.GC13061@redhat.com>
+ <20110830175609.4977ef7a.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110830101726.GD13061@redhat.com>
+ <20110830193839.cf0fc597.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110830113221.GF13061@redhat.com>
+ <20110831082924.f9b20959.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110831062354.GA355@redhat.com>
+ <20110831153025.895997bf.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314752662.6411.26.camel@nimitz>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+In-Reply-To: <20110831153025.895997bf.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Wed, Aug 31, 2011 at 03:30:25PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 31 Aug 2011 08:23:54 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
+> 
+> > On Wed, Aug 31, 2011 at 08:29:24AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Tue, 30 Aug 2011 13:32:21 +0200
+> > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > 
+> > > > On Tue, Aug 30, 2011 at 07:38:39PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > On Tue, 30 Aug 2011 12:17:26 +0200
+> > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > > 
+> > > > > > On Tue, Aug 30, 2011 at 05:56:09PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > > > On Tue, 30 Aug 2011 10:42:45 +0200
+> > > > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> >
+> > > I'm confused. 
+> > > 
+> > > If vmscan is scanning in C's LRU,
+> > > 	(memcg == root) : C_scan_internal ++
+> > > 	(memcg != root) : C_scan_external ++
+> > 
+> > Yes.
+> > 
+> > > Why A_scan_external exists ? It's 0 ?
+> > > 
+> > > I think we can never get numbers.
+> > 
+> > Kswapd/direct reclaim should probably be accounted as A_external,
+> > since A has no limit, so reclaim pressure can not be internal.
+> > 
+> 
+> hmm, ok. All memory pressure from memcg/system other than the memcg itsef
+> is all external.
+>
+> > On the other hand, one could see the amount of physical memory in the
+> > machine as A's limit and account global reclaim as A_internal.
+> > 
+> > I think the former may be more natural.
+> > 
+> > That aside, all memcgs should have the same statistics, obviously.
+> > Scripts can easily deal with counters being zero.  If items differ
+> > between cgroups, that would suck a lot.
+> 
+> So, when I improve direct-reclaim path, I need to see score in scan_internal.
 
-Dave Hansen wrote:
+Direct reclaim because of the limit or because of global pressure?  I
+am going to assume because of the limit because global reclaim is not
+yet accounted to memcgs even though their pages are scanned.  Please
+correct me if I'm wrong.
 
-> I'm seeing the exact same symptoms on my S10-3, fwiw.  They definitely
-> don't happen when intel_idle is compiled out or when
-> intel_idle.max_cstate=0 is specified on the kernel command-line.
+        A
+       /
+      B
+     /
+    C
 
-Lars reminds me[1] that the kernel he was testing already had the
-intel_idle driver compiled out, so you're probably seeing a different
-(possibly related) bug.  (By the way, Lars, it is fine to communicate
-with lkml directly. :)  The people there don't bite.)
+If A hits the limit and does direct reclaim in A, B, and C, then the
+scans in A get accounted as internal while the scans in B and C get
+accounted as external.
 
-Over and out,
-Jonathan
+> How do you think about background-reclaim-per-memcg ?
+> Should be counted into scan_internal ?
 
-[1] http://bugs.debian.org/635575#42
-(.config attached to that bug in a later comment)
+Background reclaim is still triggered by the limit, just that the
+condition is 'close to limit' instead of 'reached limit'.
+
+So when per-memcg background reclaim goes off because A is close to
+its limit, then it will scan A (internal) and B + C (external).
+
+It's always the same code:
+
+	record_reclaim_stat(culprit, victim, item, delta)
+
+In direct limit reclaim, the culprit is the one hitting its limit.  In
+background reclaim, the culprit is the one getting close to its limit.
+
+And then again the accounting is
+
+	culprit == victim -> victim_internal++ (own fault)
+	culprit != victim -> victim_external++ (parent's fault)
+
