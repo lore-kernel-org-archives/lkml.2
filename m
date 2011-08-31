@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab1HaWZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 18:25:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37883 "EHLO mga09.intel.com"
+	id S1756891Ab1HaWZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 18:25:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31220 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756714Ab1HaWZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 18:25:35 -0400
+	id S1756714Ab1HaWZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 18:25:40 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="44161506"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="43927663"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>
 In-Reply-To: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
 Subject: [PATCH 1/5] x86, mce: rework use of TIF_MCE_NOTIFY
-Date: Wed, 31 Aug 2011 15:25:34 -0700
-Message-Id: <4e5eb4de21045898f1@agluck-desktop.sc.intel.com>
+Date: Wed, 31 Aug 2011 15:25:39 -0700
+Message-Id: <4e5eb4e321047bd8bd@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+From:	"Luck, Tony" <tony.luck@intel.com>
 
 From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
