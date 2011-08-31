@@ -1,174 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab1HaW0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 18:26:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43975 "EHLO mga03.intel.com"
+	id S1757003Ab1HaW0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 18:26:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20468 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757068Ab1HaW0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 18:26:22 -0400
+	id S1756964Ab1HaWZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 18:25:55 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,309,1312182000"; 
-   d="scan'208";a="44474675"
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="44161560"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>
 In-Reply-To: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
-Subject: [PATCH 5/5] mce: recover from "action required" errors reported in data path in usermode
-Date: Wed, 31 Aug 2011 15:26:21 -0700
-Message-Id: <4e5eb50d2106324a55@agluck-desktop.sc.intel.com>
+Subject: [PATCH 3/5] HWPOISON: Handle hwpoison in current process
+Date: Wed, 31 Aug 2011 15:25:55 -0700
+Message-Id: <4e5eb4f3210531eb0c@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From:	"Luck, Tony" <tony.luck@intel.com>
+From: Andi Kleen <andi@firstfloor.org>
 
-From: Tony Luck <tony.luck@intel.com>
+When hardware poison handles the current process use
+a forced signal with _AR severity.
 
-Two new entries in the mce severity table - one notes that data errors
-observed by innocent bystanders (who happen to share a machine check
-bank with the cpu experiencing the error) should be left alone by using
-the "KEEP" severity.
+[Tony: changed some function names .. the "_ao" suffix was no longer meaningful]
 
-Then inline in the do_machine_check() handler we process the user-mode
-data error that was marked at MCE_AR_SEVERITY.  Even though we are in
-"machine check context" it is almost safe to do so. We have already
-released all the other cpus from rendezvous and we know that the cpu
-with the error was executing user code - so it cannot have interrupts
-locked out, or hold any locks. I.e. this is almost equivalent to a
-page fault. Only difference (and risk) is that on x86_64 we are still
-on the machine check stack - so if another machine check arrives, we
-are toast (we didn't clear MCG_STATUS - yet, so cpu will reset rather
-than taking a nested machine check on the same stack).
-
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
+ mm/memory-failure.c |   39 ++++++++++++++++++++++-----------------
+ 1 files changed, 22 insertions(+), 17 deletions(-)
 
-Using the "KEEP" state avoids the complexity of my earlier solution
-that sorted the cpus by severity and ran the more serious ones first.
-
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   14 ++++++++++-
- arch/x86/kernel/cpu/mcheck/mce.c          |   35 ++++++++++++++++++++--------
- 2 files changed, 38 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index 7395d5f..c4d8b24 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -54,6 +54,7 @@ static struct severity {
- #define  MASK(x, y)	.mask = x, .result = y
- #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
- #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
-+#define	MCI_ADDR (MCI_STATUS_ADDRV|MCI_STATUS_MISCV)
- #define MCACOD 0xffff
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2b43ba0..6ccb8a6 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -186,33 +186,38 @@ int hwpoison_filter(struct page *p)
+ EXPORT_SYMBOL_GPL(hwpoison_filter);
  
- 	MCESEV(
-@@ -102,11 +103,22 @@ static struct severity {
- 		SER, BITCLR(MCI_STATUS_S)
- 		),
+ /*
+- * Send all the processes who have the page mapped an ``action optional''
+- * signal.
++ * Send one process who has the page mapped a SIGBUS. It might
++ * be able to catch it and initiate its own task level recovery.
+  */
+-static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
++static int user_recovery(struct task_struct *t, unsigned long addr, int trapno,
+ 			unsigned long pfn, struct page *page)
+ {
+ 	struct siginfo si;
+ 	int ret;
  
--	/* AR add known MCACODs here */
- 	MCESEV(
- 		PANIC, "Action required with lost events",
- 		SER, BITSET(MCI_STATUS_OVER|MCI_UC_SAR)
- 		),
-+
-+	/* known AR MCACODs: */
-+	MCESEV(
-+		KEEP, "HT thread notices Action required: data load error",
-+		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
-+		MCGMASK(MCG_STATUS_EIPV, 0)
-+		),
-+	MCESEV(
-+		AR, "Action required: data load error",
-+		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
-+		USER
-+		),
- 	MCESEV(
- 		PANIC, "Action required: unknown MCACOD",
- 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR)
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 135e12d..2c59a34 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -996,12 +996,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 			continue;
- 		}
- 
--		/*
--		 * Kill on action required.
--		 */
--		if (severity == MCE_AR_SEVERITY)
--			kill_it = 1;
--
- 		mce_read_aux(&m, i);
- 
- 		/*
-@@ -1022,6 +1016,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		}
- 	}
- 
-+	m = *final;
-+
- 	if (!no_way_out)
- 		mce_clear_state(toclear);
- 
-@@ -1040,7 +1036,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	 * support MCE broadcasting or it has been disabled.
- 	 */
- 	if (no_way_out && tolerant < 3)
--		mce_panic("Fatal machine check on current CPU", final, msg);
-+		mce_panic("Fatal machine check on current CPU", &m, msg);
- 
- 	/*
- 	 * If the error seems to be unrecoverable, something should be
-@@ -1049,11 +1045,24 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	 * high, don't try to do anything at all.
- 	 */
- 
--	if (kill_it && tolerant < 3)
-+	if (worst != MCE_AR_SEVERITY && kill_it && tolerant < 3)
- 		force_sig(SIGBUS, current);
- 
- 	if (worst > 0)
- 		mce_report_event(regs);
-+
-+	if (worst == MCE_AR_SEVERITY) {
-+		unsigned long pfn = m.addr >> PAGE_SHIFT;
-+
-+		pr_err("Uncorrected hardware memory error in user-access at %llx",
-+			m.addr);
-+		if (__memory_failure(pfn, MCE_VECTOR, 0) < 0) {
-+			pr_err("Memory error not recovered");
-+			force_sig(SIGBUS, current);
-+		} else
-+			pr_err("Memory error recovered");
+ 	printk(KERN_ERR
+-		"MCE %#lx: Killing %s:%d early due to hardware memory corruption\n",
+-		pfn, t->comm, t->pid);
++		"MCE %#lx: Killing %s:%d due to hardware memory corruption\n",
++	       pfn, t->comm, t->pid);
+ 	si.si_signo = SIGBUS;
+ 	si.si_errno = 0;
+-	si.si_code = BUS_MCEERR_AO;
+ 	si.si_addr = (void *)addr;
+ #ifdef __ARCH_SI_TRAPNO
+ 	si.si_trapno = trapno;
+ #endif
+ 	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
+-	/*
+-	 * Don't use force here, it's convenient if the signal
+-	 * can be temporarily blocked.
+-	 * This could cause a loop when the user sets SIGBUS
+-	 * to SIG_IGN, but hopefully no one will do that?
+-	 */
+-	ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
++	if (t == current) {
++		si.si_code = BUS_MCEERR_AR;
++		ret = force_sig_info(SIGBUS, &si, t);
++	} else {
++		/*
++		 * Don't use force here, it's convenient if the signal
++		 * can be temporarily blocked.
++		 * This could cause a loop when the user sets SIGBUS
++		 * to SIG_IGN, but hopefully noone will do that?
++		 */
++		si.si_code = BUS_MCEERR_AO;
++		ret = send_sig_info(SIGBUS, &si, t);
 +	}
-+
- 	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
- out:
- 	atomic_dec(&mce_entry);
-@@ -1061,12 +1070,18 @@ out:
- }
- EXPORT_SYMBOL_GPL(do_machine_check);
- 
--/* dummy to break dependency. actual code is in mm/memory-failure.c */
--void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
-+#ifndef CONFIG_MEMORY_FAILURE
-+void memory_failure(unsigned long pfn, int vector)
- {
- 	pr_err("Action optional memory failure at %lx ignored\n", pfn);
+ 	if (ret < 0)
+ 		printk(KERN_INFO "MCE: Error sending signal to %s:%d: %d\n",
+ 		       t->comm, t->pid, ret);
+@@ -330,14 +335,14 @@ static void add_to_kill(struct task_struct *tsk, struct page *p,
  }
  
-+int __memory_failure(unsigned long pfn, int trapno, int flags)
-+{
-+	return -ENXIO;
-+}
-+#endif
-+
- static void mce_process_work(struct work_struct *dummy)
+ /*
+- * Kill the processes that have been collected earlier.
++ * Signal the processes that have been collected earlier.
+  *
+  * Only do anything when DOIT is set, otherwise just free the list
+  * (this is used for clean pages which do not need killing)
+  * Also when FAIL is set do a force kill because something went
+  * wrong earlier.
+  */
+-static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
++static void kill_procs(struct list_head *to_kill, int doit, int trapno,
+ 			  int fail, struct page *page, unsigned long pfn)
  {
- 	unsigned long pfn;
+ 	struct to_kill *tk, *next;
+@@ -362,7 +367,7 @@ static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
+ 			 * check for that, but we need to tell the
+ 			 * process anyways.
+ 			 */
+-			else if (kill_proc_ao(tk->tsk, tk->addr, trapno,
++			else if (user_recovery(tk->tsk, tk->addr, trapno,
+ 					      pfn, page) < 0)
+ 				printk(KERN_ERR
+ 		"MCE %#lx: Cannot send advisory machine check signal to %s:%d\n",
+@@ -961,7 +966,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * use a more force-full uncatchable kill to prevent
+ 	 * any accesses to the poisoned memory.
+ 	 */
+-	kill_procs_ao(&tokill, !!PageDirty(ppage), trapno,
++	kill_procs(&tokill, !!PageDirty(ppage), trapno,
+ 		      ret != SWAP_SUCCESS, p, pfn);
+ 
+ 	return ret;
 -- 
 1.7.3.1
 
