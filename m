@@ -1,64 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab1HaN0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 09:26:41 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45714 "EHLO arroyo.ext.ti.com"
+	id S1755818Ab1HaNbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 09:31:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755866Ab1HaN0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 09:26:35 -0400
-Message-ID: <4E5E3681.9040206@ti.com>
-Date: Wed, 31 Aug 2011 14:26:25 +0100
-From: Liam Girdwood <lrg@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1755567Ab1HaNbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 09:31:49 -0400
+Date: Wed, 31 Aug 2011 09:31:29 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Dave Chinner <david@fromorbit.com>
+cc: Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] shrinker: fix a bug when callback returns -1
+In-Reply-To: <20110830223711.GU3162@dastard>
+Message-ID: <Pine.LNX.4.64.1108310923320.22628@hs20-bc2-1.build.redhat.com>
+References: <Pine.LNX.4.64.1108291534140.19003@hs20-bc2-1.build.redhat.com>
+ <20110830021333.GL3162@dastard> <Pine.LNX.4.64.1108301511110.9551@hs20-bc2-1.build.redhat.com>
+ <20110830223711.GU3162@dastard>
 MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3 v2] regulator: tps65910: verify dcdc regulator ids
-References: <1313405127-2724-3-git-send-email-jhovold@gmail.com> <1314720426-23007-1-git-send-email-jhovold@gmail.com>
-In-Reply-To: <1314720426-23007-1-git-send-email-jhovold@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/08/11 17:07, Johan Hovold wrote:
-> Add default case to switches in dcdc voltage functions.
+
+
+On Wed, 31 Aug 2011, Dave Chinner wrote:
+
+> On Tue, Aug 30, 2011 at 03:52:02PM -0400, Mikulas Patocka wrote:
+> > On Tue, 30 Aug 2011, Dave Chinner wrote:
+> > 
+> > > On Mon, Aug 29, 2011 at 03:36:48PM -0400, Mikulas Patocka wrote:
+> > > > Hi
+> > > > 
+> > > > This patch fixes a lockup when shrinker callback returns -1.
+> > > 
+> > > What lockup is that? I haven't seen any bug reports, and this code
+> > > has been like this for several years, so I'm kind of wondering why
+> > > this is suddenly an issue....
+> > 
+> > I got the lockups when modifying my own dm-bufio code to use the shrinker. 
+> > The reason for lockups was that the variable total_scan contained 
+> > extremely high values.
 > 
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
->  drivers/regulator/tps65910-regulator.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
+> Your new shrinker was returning -1 when nr_to_scan == 0? That's not
+> correct - you should be returning the count of objects (regardless
+> of the specified gfp_mask) or 0 if you can't get one for whatever
+> reason....
 > 
-> diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-> index 66d2d60..633ecd4 100644
-> --- a/drivers/regulator/tps65910-regulator.c
-> +++ b/drivers/regulator/tps65910-regulator.c
-> @@ -534,6 +534,8 @@ static int tps65910_get_voltage_dcdc(struct regulator_dev *dev)
->  		srvsel &= VDDCTRL_SR_SEL_MASK;
->  		vselmax = 64;
->  		break;
-> +	default:
-> +		return -EINVAL;
->  	}
->  
->  	/* multiplier 0 == 1 but 2,3 normal */
-> @@ -688,6 +690,9 @@ static int tps65910_set_voltage_dcdc(struct regulator_dev *dev,
->  	case TPS65911_REG_VDDCTRL:
->  		vsel = selector;
->  		tps65910_reg_write(pmic, TPS65911_VDDCTRL_OP, vsel);
-> +		break;
-> +	default:
-> +		return -EINVAL;
->  	}
->  
->  	return 0;
+> > The only possible way how such extreme values could be stored in 
+> > total_scan was this:
+> > 
+> > max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+> > delta = (4 * nr_pages_scanned) / shrinker->seeks;
+> > delta *= max_pass;
+> > do_div(delta, lru_pages + 1);
+> > total_scan += delta;
+> > 
+> > --- you don't test if do_shinker_shrink retuned -1 here. The variables are 
+> > unsigned long, so you end up adding extreme value (approximately 
+> > 2^64/(lru_pages+1) to total_scan.
+> 
+> That's not the only way to get large values in total scan. If
+> you do any amount of GFP_NOFS/GFP_NOIO allocation and the shrinker
+> aborts when it sees this, the shrinker->nr total will aggregate
+> until it becomes large. total_scan contains that aggregation because
+> it starts from the current value of shrinker->nr.
+> 
+> > Note that some existing shrinkers contain workaround for this (something 
+> > like "return nr_to_scan ? -1 : 0",
+> 
+> That's not a workaround - that is exactly how the current API
+> expects them to operate. That is, when counting objects, you return
+> the count of objects. If you can't get the count, you return 0.
 
-Applied.
+So apply this patch, that mentions this requirement in the specification 
+and fixes the bug in fs/super.c.
 
-Thanks
+> Did I mention I was rewriting the API to make it more sane, obvious
+> and simple to implement correctly?
+> 
+> > while some can still return -1 when 
+> > nr_to_scan is 0 and trigger this bug (prune_super).
+> 
+> prune_super() will only return -1 if grab_super_passive() fails,
+> which indicates that something serious is happening on the
+> superblock (like unmount, remount or freeze) in which case the
+> caches are about to or already undergoing significant change anyway.
+>
+> It could be seen as a bug, but it's really a "don't care" case - it
+> doesn't matter what the calculated value is because it doesn't
+> matter what the shrinker does after such a failure - the next call
+> is going to fail to grab the superblock, too.
 
-Liam
+It is a bug, because the shrinker will loop for 
+2^64/(lru_pages+1)/batch_size times if that "-1" is returned at certain 
+place --- in "max_pass = do_shrinker_shrink(shrinker, shrink, 0)".
+
+Mikulas
+
+> And FWIW, that wart also goes away with the shrinker API rework.
+> 
+> Cheers,
+> 
+> Dave.
+
+---
+
+Fix shrinker callback bug in fs/super.c
+
+The callback must not return -1 when nr_to_scan is zero. Fix the bug in
+fs/super.c and add this requirement to the callback specification.
+
+CC: stable@kernel.org
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+
+---
+ fs/super.c               |    2 +-
+ include/linux/shrinker.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux-3.1-rc3-fast/fs/super.c
+===================================================================
+--- linux-3.1-rc3-fast.orig/fs/super.c	2011-08-31 15:21:01.000000000 +0200
++++ linux-3.1-rc3-fast/fs/super.c	2011-08-31 15:21:21.000000000 +0200
+@@ -61,7 +61,7 @@ static int prune_super(struct shrinker *
+ 		return -1;
+ 
+ 	if (!grab_super_passive(sb))
+-		return -1;
++		return !sc->nr_to_scan ? 0 : -1;
+ 
+ 	if (sb->s_op && sb->s_op->nr_cached_objects)
+ 		fs_objects = sb->s_op->nr_cached_objects(sb);
+Index: linux-3.1-rc3-fast/include/linux/shrinker.h
+===================================================================
+--- linux-3.1-rc3-fast.orig/include/linux/shrinker.h	2011-08-31 15:21:28.000000000 +0200
++++ linux-3.1-rc3-fast/include/linux/shrinker.h	2011-08-31 15:21:58.000000000 +0200
+@@ -20,6 +20,7 @@ struct shrink_control {
+  * 'nr_to_scan' entries and attempt to free them up.  It should return
+  * the number of objects which remain in the cache.  If it returns -1, it means
+  * it cannot do any scanning at this time (eg. there is a risk of deadlock).
++ * The callback must not return -1 if nr_to_scan is zero.
+  *
+  * The 'gfpmask' refers to the allocation we are currently trying to
+  * fulfil.
