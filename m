@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1HaBtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 21:49:50 -0400
-Received: from ozlabs.org ([203.10.76.45]:51255 "EHLO ozlabs.org"
+	id S1754762Ab1HaBvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 21:51:51 -0400
+Received: from ozlabs.org ([203.10.76.45]:35123 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754395Ab1HaBtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 21:49:47 -0400
-Date: Wed, 31 Aug 2011 11:49:44 +1000
+	id S1754680Ab1HaBvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 21:51:49 -0400
+Date: Wed, 31 Aug 2011 11:51:45 +1000
 From: Anton Blanchard <anton@samba.org>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@elte.hu>,
@@ -14,9 +14,9 @@ To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, emunson@mgebm.net,
         imunsie@au1.ibm.com
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] perf sort: Improve dso sort output by separating
+Subject: [PATCH 2/2] perf sort: Improve symbol sort output by separating
  unresolved samples by type
-Message-ID: <20110831114944.25df45df@kryten>
+Message-ID: <20110831115145.4f598ab2@kryten>
 X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,53 +26,102 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-We currently roll up all unresolved kernel, user, hypervisor and guest
-samples into the one bucket:
+I took a profile that suggested 60% of total CPU time was in the
+hypervisor:
 
-    59.64%  [unknown]         
-    22.71%  [kernel.kallsyms] 
-     9.40%  libj9jit26.so     
+# perf report --sort symbol
+...
+    60.20%  [H] 0x33d43c        
+     4.43%  [k] ._spin_lock_irqsave
+     1.07%  [k] ._spin_lock
 
-We can get a much better high level view by separating these unresolved
-samples by symbol type:
+Using perf stat to get the user/kernel/hypervisor breakdown contradicted
+this.
 
-    56.64%  [unknown:.]       
-    22.71%  [kernel.kallsyms] 
-     9.40%  libj9jit26.so     
-     2.81%  [unknown:H]       
+The problem is we merge all unresolved samples into the one unknown
+bucket. If add a comparison by sample type to sort__sym_cmp we get the
+real picture:
+
+# perf report --sort symbol
+...
+    57.11%  [.] 0x80fbf63c
+     4.43%  [k] ._spin_lock_irqsave 
+     1.07%  [k] ._spin_lock
+     0.65%  [H] 0x33d43c
+
+So it was almost all userspace, not hypervisor as the initial profile
+suggested.
+
+I found another issue while adding this. Symbol sorting sometimes shows
+multiple entries for the unknown bucket:
+
+# perf report --sort symbol
+...
+    16.65%  [.] 0x6cd3a8        
+     7.25%  [.] 0x422460
+     5.37%  [.] yylex
+     4.79%  [.] malloc
+     4.78%  [.] _int_malloc
+     4.03%  [.] _int_free
+     3.95%  [.] hash_source_code_string
+     2.82%  [.] 0x532908
+     2.64%  [.] 0x36b538
+     0.94%  [H] 0x8000000000e132a4
+     0.82%  [H] 0x800000000000e8b0
+
+This happens because we aren't consistent with our sorting. On
+one hand we check to see if both symbols match and for two unresolved
+samples sym is NULL so we match:
+
+        if (left->ms.sym == right->ms.sym)
+                return 0;
+
+On the other hand we use sample IP for unresolved samples when
+comparing against a symbol:
+
+       ip_l = left->ms.sym ? left->ms.sym->start : left->ip;
+       ip_r = right->ms.sym ? right->ms.sym->start : right->ip;
+
+This means unresolved samples end up spread across the rbtree and we
+can't merge them all.
+
+If we use cmp_null all unresolved samples will end up in the one bucket
+and the output makes more sense:
+
+# perf report --sort symbol
+...
+    39.12%  [.] 0x36b538        
+     5.37%  [.] yylex
+     4.79%  [.] malloc
+     4.78%  [.] _int_malloc
+     4.03%  [.] _int_free
+     3.95%  [.] hash_source_code_string
+     2.26%  [H] 0x800000000000e8b0
 
 Signed-off-by: Anton Blanchard <anton@samba.org>
 ---
 
 Index: linux-2.6-tip/tools/perf/util/sort.c
 ===================================================================
---- linux-2.6-tip.orig/tools/perf/util/sort.c	2011-08-31 11:34:53.070439428 +1000
-+++ linux-2.6-tip/tools/perf/util/sort.c	2011-08-31 11:37:57.543628167 +1000
-@@ -111,6 +111,9 @@ sort__dso_cmp(struct hist_entry *left, s
- 	struct dso *dso_r = right->ms.map ? right->ms.map->dso : NULL;
- 	const char *dso_name_l, *dso_name_r;
+--- linux-2.6-tip.orig/tools/perf/util/sort.c	2011-08-31 10:26:17.296618713 +1000
++++ linux-2.6-tip/tools/perf/util/sort.c	2011-08-31 10:32:12.703212452 +1000
+@@ -157,11 +157,17 @@ sort__sym_cmp(struct hist_entry *left, s
+ {
+ 	u64 ip_l, ip_r;
  
-+	if (!dso_l && !dso_r)
++	if (!left->ms.sym && !right->ms.sym)
 +		return right->level - left->level;
 +
- 	if (!dso_l || !dso_r)
- 		return cmp_null(dso_l, dso_r);
- 
-@@ -128,13 +131,16 @@ sort__dso_cmp(struct hist_entry *left, s
- static int hist_entry__dso_snprintf(struct hist_entry *self, char *bf,
- 				    size_t size, unsigned int width)
- {
-+	char unknown[] = "[unknown:.]";
++	if (!left->ms.sym || !right->ms.sym)
++		return cmp_null(left->ms.sym, right->ms.sym);
 +
- 	if (self->ms.map && self->ms.map->dso) {
- 		const char *dso_name = !verbose ? self->ms.map->dso->short_name :
- 						  self->ms.map->dso->long_name;
- 		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
- 	}
+ 	if (left->ms.sym == right->ms.sym)
+ 		return 0;
  
--	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
-+	unknown[strlen(unknown) - 2] = self->level;
-+	return repsep_snprintf(bf, size, "%-*s", width, unknown);
+-	ip_l = left->ms.sym ? left->ms.sym->start : left->ip;
+-	ip_r = right->ms.sym ? right->ms.sym->start : right->ip;
++	ip_l = left->ms.sym->start;
++	ip_r = right->ms.sym->start;
+ 
+ 	return (int64_t)(ip_r - ip_l);
  }
- 
- struct sort_entry sort_dso = {
