@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab1HaD3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 23:29:39 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:54726 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751217Ab1HaD3h (ORCPT
+	id S1752135Ab1HaDoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 23:44:44 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46958 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab1HaDon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 23:29:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhoDAKCpXU55LIxDgWdsb2JhbABCqEQVAQEWJiWBQAEBBAE6HBYKAwULCAMYLhQlAyETGYdZt3kOhkYEm2OIWQ
-Date: Wed, 31 Aug 2011 13:29:32 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Sunil Mushran <sunil.mushran@oracle.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, Christoph Hellwig <hch@infradead.org>,
-        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk, dchinner@redhat.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-Message-ID: <20110831032932.GI32358@dastard>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>
- <1309275199-10801-5-git-send-email-josef@redhat.com>
- <20110825060632.GA9933@infradead.org>
- <20110825064039.GO3162@dastard>
- <0A267E55-7772-438D-B6A7-89B73020F311@dilger.ca>
- <20110826013528.GW3162@dastard>
- <4E5D8B8E.8030401@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5D8B8E.8030401@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Aug 2011 23:44:43 -0400
+Subject: [PATCH] hwmon: (pmbus) Fix the logic of checking if no id is
+ matched
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 31 Aug 2011 11:44:32 +0800
+Message-ID: <1314762272.3189.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 30, 2011 at 06:17:02PM -0700, Sunil Mushran wrote:
-> On 08/25/2011 06:35 PM, Dave Chinner wrote:
-> >Agreed, that's the way I'd interpret it, too. So perhaps we need to
-> >ensure that this interpretation is actually tested by this test?
-> >
-> >How about some definitions to work by:
-> >
-> >Data: a range of the file that contains valid data, regardless of
-> >whether it exists in memory or on disk. The valid data can be
-> >preceeded and/or followed by an arbitrary number of zero bytes
-> >dependent on the underlying implementation of hole detection.
-> >
-> >Hole: a range of the file that contains no data or is made up
-> >entirely of  NULL (zero) data. Holes include preallocated ranges of
-> >files that have not had actual data written to them.
-> >
-> >Does that make sense? It has sufficient flexibility in it for the
-> >existing generic "non-implementation", allows for filesystems to
-> >define their own hole detection boundaries (e.g. filesystem block
-> >size), and effectively defines how preallocated ranges from
-> >fallocate() should be treated (i.e. as holes). If we can agree on
-> >those definitions, I think that we should document them in both the
-> >kernel and the man page that defines SEEK_HOLE/SEEK_DATA so everyone
-> >is on the same page...
-> 
-> We should not tie in the definition to existing fs technologies.
+If no id is matched, the mid pointer is not NULL in current implementation.
 
-Such as? If we don't use well known, well defined terminology, we
-end up with ambiguous, vague functionality and inconsistent
-implementations.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/hwmon/pmbus/ucd9000.c |    3 +--
+ drivers/hwmon/pmbus/ucd9200.c |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-> Instead
-> we should let the fs weigh the cost of providing accurate information
-> with the possible gain in performance.
-> 
-> Data:
-> A range in a file that could contain something other than nulls.
-> If in doubt, it is data.
-> 
-> Hole:
-> A range in a file that only contains nulls.
-
-And that's -exactly- the ambiguous, vague definition that has raised
-all these questions in the first place. I was in doubt about whether
-unwritten extents can be considered a hole, and by your definition
-that means it should be data. But Andreas seems to be in no doubt it
-should be considered a hole.
-
-Hence if I implement XFS support and Andreas implements ext4 support
-by your defintion, we end with vastly different behaviour even
-though the two filesystems use the same underlying technology for
-preallocated ranges. That's exactly the inconsistency in
-implementation that I'd like us to avoid.
-
-IOWs, the definition needs to be clear enough to prevent these
-inconsistencies from occurring. Indeed, the phrase "preallocated
-ranges that have not had data written to them" is as independent of
-filesystem implementation or technologies as possible. However,
-because Linux supports preallocation (unlike our reference
-platform), and we encourage developers to use it where appropriate,
-it is best that we define how we expect such ranges to behave
-clearly. That makes life easier for everyone.
-
-Cheers,
-
-Dave.
+diff --git a/drivers/hwmon/pmbus/ucd9000.c b/drivers/hwmon/pmbus/ucd9000.c
+index 285bb15..4aa8701 100644
+--- a/drivers/hwmon/pmbus/ucd9000.c
++++ b/drivers/hwmon/pmbus/ucd9000.c
+@@ -141,13 +141,12 @@ static int ucd9000_probe(struct i2c_client *client,
+ 	block_buffer[ret] = '\0';
+ 	dev_info(&client->dev, "Device ID %s\n", block_buffer);
+ 
+-	mid = NULL;
+ 	for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
+ 		mid = &ucd9000_id[i];
+ 		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+ 			break;
+ 	}
+-	if (!mid || !strlen(mid->name)) {
++	if ((i == ARRAY_SIZE(ucd9000_id)) || !strlen(mid->name)) {
+ 		dev_err(&client->dev, "Unsupported device\n");
+ 		return -ENODEV;
+ 	}
+diff --git a/drivers/hwmon/pmbus/ucd9200.c b/drivers/hwmon/pmbus/ucd9200.c
+index 786f6cd..826cc8f 100644
+--- a/drivers/hwmon/pmbus/ucd9200.c
++++ b/drivers/hwmon/pmbus/ucd9200.c
+@@ -68,13 +68,12 @@ static int ucd9200_probe(struct i2c_client *client,
+ 	block_buffer[ret] = '\0';
+ 	dev_info(&client->dev, "Device ID %s\n", block_buffer);
+ 
+-	mid = NULL;
+ 	for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
+ 		mid = &ucd9200_id[i];
+ 		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+ 			break;
+ 	}
+-	if (!mid || !strlen(mid->name)) {
++	if ((i == ARRAY_SIZE(ucd9200_id)) || !strlen(mid->name)) {
+ 		dev_err(&client->dev, "Unsupported device\n");
+ 		return -ENODEV;
+ 	}
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.4.1
+
+
+
