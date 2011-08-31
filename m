@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab1HaVbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 17:31:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41998 "EHLO mx1.redhat.com"
+	id S1756615Ab1HaVbi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:31:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39590 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756109Ab1HaV2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 17:28:24 -0400
+	id S1756100Ab1HaV2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 17:28:23 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, ming.lei@canonical.com,
         stern@rowland.harvard.edu, Mark Salter <msalter@redhat.com>
-Subject: [PATCH 16/24] C6X: loadable module support
-Date: Wed, 31 Aug 2011 17:26:51 -0400
-Message-Id: <1314826019-22330-17-git-send-email-msalter@redhat.com>
+Subject: [PATCH 17/24] C6X: ptrace support
+Date: Wed, 31 Aug 2011 17:26:52 -0400
+Message-Id: <1314826019-22330-18-git-send-email-msalter@redhat.com>
 In-Reply-To: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,328 +21,411 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- arch/c6x/include/asm/module.h |   33 +++++++
- arch/c6x/kernel/c6x_ksyms.c   |   68 ++++++++++++++
- arch/c6x/kernel/module.c      |  196 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 297 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/include/asm/module.h
- create mode 100644 arch/c6x/kernel/c6x_ksyms.c
- create mode 100644 arch/c6x/kernel/module.c
+ arch/c6x/include/asm/ptrace.h |  181 +++++++++++++++++++++++++++++++++++
+ arch/c6x/kernel/ptrace.c      |  207 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 388 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/ptrace.h
+ create mode 100644 arch/c6x/kernel/ptrace.c
 
-diff --git a/arch/c6x/include/asm/module.h b/arch/c6x/include/asm/module.h
+diff --git a/arch/c6x/include/asm/ptrace.h b/arch/c6x/include/asm/ptrace.h
 new file mode 100644
-index 0000000..a453f97
+index 0000000..347f2ed
 --- /dev/null
-+++ b/arch/c6x/include/asm/module.h
-@@ -0,0 +1,33 @@
++++ b/arch/c6x/include/asm/ptrace.h
+@@ -0,0 +1,181 @@
 +/*
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
++ *  Copyright (C) 2004, 2006, 2009, 2010 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
-+ *  Updated for 2.6.34 by: Mark Salter (msalter@redhat.com)
++ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#ifndef _ASM_C6X_MODULE_H
-+#define _ASM_C6X_MODULE_H
++#ifndef _ASM_C6X_PTRACE_H
++#define _ASM_C6X_PTRACE_H
 +
-+#define Elf_Shdr	Elf32_Shdr
-+#define Elf_Sym		Elf32_Sym
-+#define Elf_Ehdr	Elf32_Ehdr
-+#define Elf_Addr	Elf32_Addr
-+#define Elf_Word	Elf32_Word
-+
-+/*
-+ * This file contains the C6x architecture specific module code.
-+ */
-+struct mod_arch_specific {
-+};
-+
-+struct loaded_sections {
-+	unsigned int new_vaddr;
-+	unsigned int loaded;
-+};
-+
-+#endif /* _ASM_C6X_MODULE_H */
-diff --git a/arch/c6x/kernel/c6x_ksyms.c b/arch/c6x/kernel/c6x_ksyms.c
-new file mode 100644
-index 0000000..358d097
---- /dev/null
-+++ b/arch/c6x/kernel/c6x_ksyms.c
-@@ -0,0 +1,68 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/module.h>
-+#include <asm/checksum.h>
-+#include <linux/io.h>
-+
-+/*
-+ * libgcc functions - used internally by the compiler...
-+ */
-+extern int __c6xabi_divi(int dividend, int divisor);
-+EXPORT_SYMBOL(__c6xabi_divi);
-+
-+extern unsigned __c6xabi_divu(unsigned	dividend, unsigned divisor);
-+EXPORT_SYMBOL(__c6xabi_divu);
-+
-+extern int __c6xabi_remi(int dividend, int divisor);
-+EXPORT_SYMBOL(__c6xabi_remi);
-+
-+extern unsigned __c6xabi_remu(unsigned	dividend, unsigned divisor);
-+EXPORT_SYMBOL(__c6xabi_remu);
-+
-+extern int __c6xabi_divremi(int dividend, int divisor);
-+EXPORT_SYMBOL(__c6xabi_divremi);
-+
-+extern unsigned __c6xabi_divremu(unsigned  dividend, unsigned divisor);
-+EXPORT_SYMBOL(__c6xabi_divremu);
-+
-+extern unsigned long long __c6xabi_mpyll(unsigned long long src1,
-+					 unsigned long long src2);
-+EXPORT_SYMBOL(__c6xabi_mpyll);
-+
-+extern long long __c6xabi_negll(long long src);
-+EXPORT_SYMBOL(__c6xabi_negll);
-+
-+extern unsigned long long __c6xabi_llshl(unsigned long long src1, uint src2);
-+EXPORT_SYMBOL(__c6xabi_llshl);
-+
-+extern long long __c6xabi_llshr(long long src1, uint src2);
-+EXPORT_SYMBOL(__c6xabi_llshr);
-+
-+extern unsigned long long __c6xabi_llshru(unsigned long long src1, uint src2);
-+EXPORT_SYMBOL(__c6xabi_llshru);
-+
-+extern void __c6xabi_strasgi(int *dst, const int *src, unsigned cnt);
-+EXPORT_SYMBOL(__c6xabi_strasgi);
-+
-+extern void __c6xabi_push_rts(void);
-+EXPORT_SYMBOL(__c6xabi_push_rts);
-+
-+extern void __c6xabi_pop_rts(void);
-+EXPORT_SYMBOL(__c6xabi_pop_rts);
-+
-+extern void __c6xabi_strasgi_64plus(int *dst, const int *src, unsigned cnt);
-+EXPORT_SYMBOL(__c6xabi_strasgi_64plus);
-+
-+/* lib functions */
-+EXPORT_SYMBOL(memcpy);
-+EXPORT_SYMBOL(csum_partial);
-+EXPORT_SYMBOL(ip_fast_csum);
-diff --git a/arch/c6x/kernel/module.c b/arch/c6x/kernel/module.c
-new file mode 100644
-index 0000000..477fab8
---- /dev/null
-+++ b/arch/c6x/kernel/module.c
-@@ -0,0 +1,196 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2005, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Thomas Charleux (thomas.charleux@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/moduleloader.h>
-+#include <linux/elf.h>
-+#include <linux/vmalloc.h>
-+#include <linux/kernel.h>
-+
-+#ifdef DEBUG
-+#define DBG(fmt...) pr_debug(fmt)
++#if defined(__TMS320C6XPLUS__) || defined(_TMS320C6400_PLUS)
++#define BKPT_OPCODE	   0x56454314	    /* illegal opcode */
 +#else
-+#define DBG(fmt...)
++#define BKPT_OPCODE	   0x0000a122	    /* BNOP .S2 0,5 */
 +#endif
 +
-+static inline int fixup_pcr(u32 *ip, Elf32_Addr dest, u32 maskbits, int shift)
++#ifdef _BIG_ENDIAN
++#define PT_LO(odd, even)  odd
++#define PT_HI(odd, even)  even
++#else
++#define PT_LO(odd, even)  even
++#define PT_HI(odd, even)  odd
++#endif
++
++#define PT_A4_ORG  PT_LO(1, 0)
++#define PT_TSR	   PT_HI(1, 0)
++#define PT_ILC	   PT_LO(3, 2)
++#define PT_RILC    PT_HI(3, 2)
++#define PT_CSR	   PT_LO(5, 4)
++#define PT_PC	   PT_HI(5, 4)
++#define PT_B16	   PT_LO(7, 6)
++#define PT_B17	   PT_HI(7, 6)
++#define PT_B18	   PT_LO(9, 8)
++#define PT_B19	   PT_HI(9, 8)
++#define PT_B20	   PT_LO(11, 10)
++#define PT_B21	   PT_HI(11, 10)
++#define PT_B22	   PT_LO(13, 12)
++#define PT_B23	   PT_HI(13, 12)
++#define PT_B24	   PT_LO(15, 14)
++#define PT_B25	   PT_HI(15, 14)
++#define PT_B26	   PT_LO(17, 16)
++#define PT_B27	   PT_HI(17, 16)
++#define PT_B28	   PT_LO(19, 18)
++#define PT_B29	   PT_HI(19, 18)
++#define PT_B30	   PT_LO(21, 20)
++#define PT_B31	   PT_HI(21, 20)
++#define PT_B0	   PT_LO(23, 22)
++#define PT_B1	   PT_HI(23, 22)
++#define PT_B2	   PT_LO(25, 24)
++#define PT_B3	   PT_HI(25, 24)
++#define PT_B4	   PT_LO(27, 26)
++#define PT_B5	   PT_HI(27, 26)
++#define PT_B6	   PT_LO(29, 28)
++#define PT_B7	   PT_HI(29, 28)
++#define PT_B8	   PT_LO(31, 30)
++#define PT_B9	   PT_HI(31, 30)
++#define PT_B10	   PT_LO(33, 32)
++#define PT_B11	   PT_HI(33, 32)
++#define PT_B12	   PT_LO(35, 34)
++#define PT_B13	   PT_HI(35, 34)
++#define PT_A16	   PT_LO(37, 36)
++#define PT_A17	   PT_HI(37, 36)
++#define PT_A18	   PT_LO(39, 38)
++#define PT_A19	   PT_HI(39, 38)
++#define PT_A20	   PT_LO(41, 40)
++#define PT_A21	   PT_HI(41, 40)
++#define PT_A22	   PT_LO(43, 42)
++#define PT_A23	   PT_HI(43, 42)
++#define PT_A24	   PT_LO(45, 44)
++#define PT_A25	   PT_HI(45, 44)
++#define PT_A26	   PT_LO(47, 46)
++#define PT_A27	   PT_HI(47, 46)
++#define PT_A28	   PT_LO(49, 48)
++#define PT_A29	   PT_HI(49, 48)
++#define PT_A30	   PT_LO(51, 50)
++#define PT_A31	   PT_HI(51, 50)
++#define PT_A0	   PT_LO(53, 52)
++#define PT_A1	   PT_HI(53, 52)
++#define PT_A2	   PT_LO(55, 54)
++#define PT_A3	   PT_HI(55, 54)
++#define PT_A4	   PT_LO(57, 56)
++#define PT_A5	   PT_HI(57, 56)
++#define PT_A6	   PT_LO(59, 58)
++#define PT_A7	   PT_HI(59, 58)
++#define PT_A8	   PT_LO(61, 60)
++#define PT_A9	   PT_HI(61, 60)
++#define PT_A10	   PT_LO(63, 62)
++#define PT_A11	   PT_HI(63, 62)
++#define PT_A12	   PT_LO(65, 64)
++#define PT_A13	   PT_HI(65, 64)
++#define PT_A14	   PT_LO(67, 66)
++#define PT_A15	   PT_HI(67, 66)
++#define PT_B14	   PT_LO(69, 68)
++#define PT_B15	   PT_HI(69, 68)
++
++#define NR_PTREGS  70
++
++#define PT_DP	   PT_B14  /* Data Segment Pointer (B14) */
++#define PT_SP	   PT_B15  /* Stack Pointer (B15)  */
++
++#ifndef __ASSEMBLY__
++
++#ifdef _BIG_ENDIAN
++#define REG_PAIR(odd, even) unsigned long odd; unsigned long even
++#else
++#define REG_PAIR(odd, even) unsigned long even; unsigned long odd
++#endif
++
++/*
++ * this struct defines the way the registers are stored on the
++ * stack during a system call. fields defined with REG_PAIR
++ * are saved and restored using double-word memory operations
++ * which means the word ordering of the pair depends on endianess.
++ */
++struct pt_regs {
++	REG_PAIR(tsr, orig_a4);
++	REG_PAIR(rilc, ilc);
++	REG_PAIR(pc, csr);
++
++	REG_PAIR(b17, b16);
++	REG_PAIR(b19, b18);
++	REG_PAIR(b21, b20);
++	REG_PAIR(b23, b22);
++	REG_PAIR(b25, b24);
++	REG_PAIR(b27, b26);
++	REG_PAIR(b29, b28);
++	REG_PAIR(b31, b30);
++
++	REG_PAIR(b1, b0);
++	REG_PAIR(b3, b2);
++	REG_PAIR(b5, b4);
++	REG_PAIR(b7, b6);
++	REG_PAIR(b9, b8);
++	REG_PAIR(b11, b10);
++	REG_PAIR(b13, b12);
++
++	REG_PAIR(a17, a16);
++	REG_PAIR(a19, a18);
++	REG_PAIR(a21, a20);
++	REG_PAIR(a23, a22);
++	REG_PAIR(a25, a24);
++	REG_PAIR(a27, a26);
++	REG_PAIR(a29, a28);
++	REG_PAIR(a31, a30);
++
++	REG_PAIR(a1, a0);
++	REG_PAIR(a3, a2);
++	REG_PAIR(a5, a4);
++	REG_PAIR(a7, a6);
++	REG_PAIR(a9, a8);
++	REG_PAIR(a11, a10);
++	REG_PAIR(a13, a12);
++
++	REG_PAIR(a15, a14);
++	REG_PAIR(sp, dp);
++};
++
++#define PTRACE_GETREGS		  12
++#define PTRACE_SETREGS		  13
++#define PTRACE_GETFPREGS	  14
++#define PTRACE_SETFPREGS	  15
++
++#ifdef __KERNEL__
++
++#include <linux/linkage.h>
++
++#define user_mode(regs)	((((regs)->tsr) & 0x40) != 0)
++
++#define instruction_pointer(regs) ((regs)->pc)
++#define profile_pc(regs) instruction_pointer(regs)
++extern void show_regs(struct pt_regs *);
++
++extern asmlinkage unsigned long syscall_trace_entry(struct pt_regs *regs);
++extern asmlinkage void syscall_trace_exit(struct pt_regs *regs);
++
++#endif /* __KERNEL__ */
++#endif /* __ASSEMBLY__ */
++#endif /* _ASM_C6X_PTRACE_H */
+diff --git a/arch/c6x/kernel/ptrace.c b/arch/c6x/kernel/ptrace.c
+new file mode 100644
+index 0000000..96fd4a5
+--- /dev/null
++++ b/arch/c6x/kernel/ptrace.c
+@@ -0,0 +1,207 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Updated for 2.6.34: Mark Salter <msalter@redhat.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#include <linux/ptrace.h>
++#include <linux/tracehook.h>
++#include <linux/regset.h>
++#include <linux/elf.h>
++
++#include <asm/cacheflush.h>
++
++#define PT_REG_SIZE	  (sizeof(struct pt_regs))
++
++/*
++ * Called by kernel/ptrace.c when detaching.
++ */
++void ptrace_disable(struct task_struct *child)
 +{
-+	u32 opcode;
-+	long ep = (long)ip & ~31;
-+	long delta = ((long)dest - ep) >> 2;
-+	long mask = (1 << maskbits) - 1;
++	/* nothing to do */
++}
 +
-+	if ((delta >> (maskbits - 1)) == 0 ||
-+	    (delta >> (maskbits - 1)) == -1) {
-+		opcode = *ip;
-+		opcode &= ~(mask << shift);
-+		opcode |= ((delta & mask) << shift);
-+		*ip = opcode;
++/*
++ * Get a register number from live pt_regs for the specified task.
++ */
++static inline long get_reg(struct task_struct *task, int regno)
++{
++	long *addr = (long *)task_pt_regs(task);
 +
-+		DBG("REL PCR_S%d[%p] dest[0p] opcode[%08x]\n",
-+		    maskbits, ip, (void *)dest, opcode);
-+
++	if (regno == PT_TSR || regno == PT_CSR)
 +		return 0;
-+	}
-+	pr_err("PCR_S%d reloc %p -> %p out of range!\n",
-+	       maskbits, ip, (void *)dest);
 +
-+	return -1;
++	return addr[regno];
 +}
 +
 +/*
-+ * apply a REL relocation
++ * Write contents of register REGNO in task TASK.
 + */
-+int apply_relocate(Elf32_Shdr *sechdrs,
-+		   const char *strtab,
-+		   unsigned int symindex,
-+		   unsigned int relsec,
-+		   struct module *me)
++static inline int put_reg(struct task_struct *task,
++			  int regno,
++			  unsigned long data)
 +{
-+	Elf32_Rel *rel = (void *) sechdrs[relsec].sh_addr;
-+	Elf_Sym *sym;
-+	u32 *location;
-+	unsigned int i;
-+	Elf32_Addr v;
-+	Elf_Addr offset = 0;
++	unsigned long *addr = (unsigned long *)task_pt_regs(task);
 +
-+	DBG("Applying relocate section %u to %u with offset[0x%x]\n", relsec,
-+	    sechdrs[relsec].sh_info, offset);
-+
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
-+		/* This is where to make the change */
-+		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-+			+ rel[i].r_offset - offset;
-+
-+		/* This is the symbol it is referring to.  Note that all
-+		   undefined symbols have been resolved.  */
-+		sym = (Elf_Sym *)sechdrs[symindex].sh_addr
-+			+ ELF32_R_SYM(rel[i].r_info);
-+
-+		/* this is the adjustment to be made */
-+		v = sym->st_value;
-+
-+		switch (ELF32_R_TYPE(rel[i].r_info)) {
-+		case R_C6000_ABS32:
-+			DBG("REL ABS32: [%p] = 0x%x\n", location, v);
-+			*location = v;
-+			break;
-+		case R_C6000_ABS16:
-+			DBG("REL ABS16: [%p] = 0x%x\n", location, v);
-+			*(u16 *)location = v;
-+			break;
-+		case R_C6000_ABS8:
-+			DBG("REL ABS8: [%p] = 0x%x\n", location, v);
-+			*(u8 *)location = v;
-+			break;
-+		case R_C6000_PCR_S21:
-+			if (fixup_pcr(location, v, 21, 7))
-+				return -ENOEXEC;
-+			break;
-+		case R_C6000_PCR_S12:
-+			if (fixup_pcr(location, v, 12, 16))
-+				return -ENOEXEC;
-+			break;
-+		case R_C6000_PCR_S10:
-+			if (fixup_pcr(location, v, 10, 13))
-+				return -ENOEXEC;
-+			break;
-+		default:
-+			pr_err("module %s: Unknown REL relocation: %u\n",
-+			       me->name, ELF32_R_TYPE(rel[i].r_info));
-+			return -ENOEXEC;
-+		}
-+	}
++	if (regno != PT_TSR && regno != PT_CSR)
++		addr[regno] = data;
 +
 +	return 0;
 +}
 +
-+/*
-+ * apply a RELA relocation
-+ */
-+int apply_relocate_add(Elf32_Shdr *sechdrs,
-+		       const char *strtab,
-+		       unsigned int symindex,
-+		       unsigned int relsec,
-+		       struct module *me)
++/* regset get/set implementations */
++
++static int gpr_get(struct task_struct *target,
++		   const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   void *kbuf, void __user *ubuf)
 +{
-+	Elf32_Rela *rel = (void *) sechdrs[relsec].sh_addr;
-+	Elf_Sym *sym;
-+	u32 *location, opcode;
-+	unsigned int i;
-+	Elf32_Addr v;
-+	Elf_Addr offset = 0;
++	struct pt_regs *regs = task_pt_regs(target);
 +
-+	DBG("Applying relocate section %u to %u with offset 0x%x\n", relsec,
-+	    sechdrs[relsec].sh_info, offset);
++	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
++				   regs,
++				   0, sizeof(*regs));
++}
 +
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
-+		/* This is where to make the change */
-+		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-+			+ rel[i].r_offset - offset;
++static int gpr_set(struct task_struct *target,
++		   const struct user_regset *regset,
++		   unsigned int pos, unsigned int count,
++		   const void *kbuf, const void __user *ubuf)
++{
++	int ret;
++	struct pt_regs *regs = task_pt_regs(target);
 +
-+		/* This is the symbol it is referring to.  Note that all
-+		   undefined symbols have been resolved.  */
-+		sym = (Elf_Sym *)sechdrs[symindex].sh_addr
-+			+ ELF32_R_SYM(rel[i].r_info);
++	/* Don't copyin TSR or CSR */
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++				 &regs,
++				 0, PT_TSR * sizeof(long));
++	if (ret)
++		return ret;
 +
-+		/* this is the adjustment to be made */
-+		v = sym->st_value + rel[i].r_addend;
++	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
++					PT_TSR * sizeof(long),
++					(PT_TSR + 1) * sizeof(long));
++	if (ret)
++		return ret;
 +
-+		switch (ELF32_R_TYPE(rel[i].r_info)) {
-+		case R_C6000_ABS32:
-+			DBG("RELA ABS32: [%p] = 0x%x\n", location, v);
-+			*location = v;
-+			break;
-+		case R_C6000_ABS16:
-+			DBG("RELA ABS16: [%p] = 0x%x\n", location, v);
-+			*(u16 *)location = v;
-+			break;
-+		case R_C6000_ABS8:
-+			DBG("RELA ABS8: [%p] = 0x%x\n", location, v);
-+			*(u8 *)location = v;
-+			break;
-+		case R_C6000_ABS_L16:
-+			opcode = *location;
-+			opcode &= ~0x7fff80;
-+			opcode |= ((v & 0xffff) << 7);
-+			DBG("RELA ABS_L16[%p] v[0x%x] opcode[0x%x]\n",
-+			    location, v, opcode);
-+			*location = opcode;
-+			break;
-+		case R_C6000_ABS_H16:
-+			opcode = *location;
-+			opcode &= ~0x7fff80;
-+			opcode |= ((v >> 9) & 0x7fff80);
-+			DBG("RELA ABS_H16[%p] v[0x%x] opcode[0x%x]\n",
-+			    location, v, opcode);
-+			*location = opcode;
-+			break;
-+		case R_C6000_PCR_S21:
-+			if (fixup_pcr(location, v, 21, 7))
-+				return -ENOEXEC;
-+			break;
-+		case R_C6000_PCR_S12:
-+			if (fixup_pcr(location, v, 12, 16))
-+				return -ENOEXEC;
-+			break;
-+		case R_C6000_PCR_S10:
-+			if (fixup_pcr(location, v, 10, 13))
-+				return -ENOEXEC;
-+			break;
-+		default:
-+			pr_err("module %s: Unknown RELA relocation: %u\n",
-+			       me->name, ELF32_R_TYPE(rel[i].r_info));
-+			return -ENOEXEC;
-+		}
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++				 &regs,
++				 (PT_TSR + 1) * sizeof(long),
++				 PT_CSR * sizeof(long));
++	if (ret)
++		return ret;
++
++	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
++					PT_CSR * sizeof(long),
++					(PT_CSR + 1) * sizeof(long));
++	if (ret)
++		return ret;
++
++	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
++				 &regs,
++				 (PT_CSR + 1) * sizeof(long), -1);
++	return ret;
++}
++
++enum c6x_regset {
++	REGSET_GPR,
++};
++
++static const struct user_regset c6x_regsets[] = {
++	[REGSET_GPR] = {
++		.core_note_type = NT_PRSTATUS,
++		.n = ELF_NGREG,
++		.size = sizeof(u32),
++		.align = sizeof(u32),
++		.get = gpr_get,
++		.set = gpr_set
++	},
++};
++
++static const struct user_regset_view user_c6x_native_view = {
++	.name		= "tic6x",
++	.e_machine	= EM_TI_C6000,
++	.regsets	= c6x_regsets,
++	.n		= ARRAY_SIZE(c6x_regsets),
++};
++
++const struct user_regset_view *task_user_regset_view(struct task_struct *task)
++{
++	return &user_c6x_native_view;
++}
++
++/*
++ * Perform ptrace request
++ */
++long arch_ptrace(struct task_struct *child, long request,
++		 unsigned long addr, unsigned long data)
++{
++	unsigned long __user *datap = (unsigned long __user *) data;
++	int ret = 0;
++
++	switch (request) {
++		/*
++		 * write the word at location addr.
++		 */
++	case PTRACE_POKETEXT:
++		ret = generic_ptrace_pokedata(child, addr, data);
++		if (ret == 0 && request == PTRACE_POKETEXT)
++			flush_icache_range(addr, addr + 4);
++		break;
++
++		/*
++		 * get all gp regs from the child.
++		 */
++	case PTRACE_GETREGS:
++		return copy_regset_to_user(child, &user_c6x_native_view,
++					   REGSET_GPR,
++					   0, NR_PTREGS * sizeof(long),
++					   datap);
++
++		/*
++		 * set all gp regs in the child.
++		 */
++	case PTRACE_SETREGS:
++		return copy_regset_from_user(child, &user_c6x_native_view,
++					     REGSET_GPR,
++					     0, NR_PTREGS * sizeof(long),
++					     datap);
++
++	default:
++		ret = ptrace_request(child, request, addr, data);
++		break;
 +	}
 +
-+	return 0;
++	return ret;
++}
++
++/*
++ * handle tracing of system call entry
++ * - return the revised system call number or ULONG_MAX to cause ENOSYS
++ */
++asmlinkage unsigned long syscall_trace_entry(struct pt_regs *regs)
++{
++	if (tracehook_report_syscall_entry(regs))
++		/* tracing decided this syscall should not happen, so
++		 * We'll return a bogus call number to get an ENOSYS
++		 * error, but leave the original number in
++		 * regs->orig_a4
++		 */
++		return ULONG_MAX;
++
++	return regs->b0;
++}
++
++/*
++ * handle tracing of system call exit
++ */
++asmlinkage void syscall_trace_exit(struct pt_regs *regs)
++{
++	tracehook_report_syscall_exit(regs, 0);
 +}
 -- 
 1.7.6
