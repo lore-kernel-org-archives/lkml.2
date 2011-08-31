@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab1HaTlv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 15:41:51 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:50272 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752628Ab1HaTlp (ORCPT
+	id S1753666Ab1HaTp3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 15:45:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9071 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab1HaTp0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 15:41:45 -0400
-X-Sasl-enc: XgGucrEfixwRN+14v5DDyS+f6Z7aIPL7k+K98F7mQMJO 1314819704
-Date: Wed, 31 Aug 2011 12:41:31 -0700
-From: Greg KH <greg@kroah.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Alan Cox <alan@linux.intel.com>, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 4/4] TTY: serial, move 68360 driver to staging
-Message-ID: <20110831194131.GB14091@kroah.com>
-References: <1314818699-10873-1-git-send-email-jslaby@suse.cz>
- <1314818699-10873-4-git-send-email-jslaby@suse.cz>
- <1314819086.30506.3.camel@lappy>
+	Wed, 31 Aug 2011 15:45:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 31 Aug 2011 12:45:10 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Date: Wed, 31 Aug 2011 12:45:09 -0700
+Subject: RE: [PATCH 1/3] staging:iio:magnetometer:ak8975 Don't use
+ irq_to_gpio()
+Thread-Topic: [PATCH 1/3] staging:iio:magnetometer:ak8975 Don't use
+ irq_to_gpio()
+Thread-Index: AcxoFfStaq2eTeWwQUWLOq4nCpySlAAAF0Sw
+Message-ID: <643E69AA4436674C8F39DCC2C05F76383CF3C784A3@HQMAIL03.nvidia.com>
+References: <1314819657-828-1-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1314819657-828-1-git-send-email-swarren@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314819086.30506.3.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 10:31:26PM +0300, Sasha Levin wrote:
-> On Wed, 2011-08-31 at 21:24 +0200, Jiri Slaby wrote:
-> > This driver has been broken at least since 2008. At that time,
-> > a88487c79b (Fix compile errors in SGI console drivers) broke this
-> > driver completely.
-> > 
-> > And since nobody noticed for the past 3 years, move it into staging. I
-> > think this will rot there and we will throw it away completely after
-> > some time. Or maybe someone will volunteer to fix it ;).
-> > 
-> > Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> > Cc: Alan Cox <alan@linux.intel.com>
-> > ---
-> > Cc: linux-m68k@lists.linux-m68k.org
-> >  drivers/staging/Kconfig              |    2 +
-> >  drivers/staging/Makefile             |    1 +
-> >  drivers/staging/serial/68360serial.c | 2979 ++++++++++++++++++++++++++++++++++
-> >  drivers/staging/serial/Kconfig       |   16 +
-> >  drivers/staging/serial/Makefile      |    1 +
-> >  drivers/staging/serial/TODO          |    6 +
-> >  drivers/tty/serial/68360serial.c     | 2979 ----------------------------------
-> >  drivers/tty/serial/Kconfig           |   17 -
-> >  drivers/tty/serial/Makefile          |    1 -
-> >  9 files changed, 3005 insertions(+), 2997 deletions(-)
-> >  create mode 100644 drivers/staging/serial/68360serial.c
-> >  create mode 100644 drivers/staging/serial/Kconfig
-> >  create mode 100644 drivers/staging/serial/Makefile
-> >  create mode 100644 drivers/staging/serial/TODO
-> >  delete mode 100644 drivers/tty/serial/68360serial.c
+> Subject: [PATCH 1/3] staging:iio:magnetometer:ak8975 Don't 
+> use irq_to_gpio()
 > 
-> 'git mv' and 'git format-patch --find-renames' would make this patch so
-> much nicer.
+> Tegra doesn't have irq_to_gpio() any more, and ak8975 is included in
+> tegra_defconfig. This causes a build failure. Solve this with 
+> a heavy-handed
+> method for now.
+> 
+> I suspect the long-term solution is to pass both the IRQ and GPIO IDs
+> to the driver; the GPIO ID coming from either platform data, 
+> or perhaps
+> enhancing struct i2c_client to add a gpio field alongside irq.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
 
-That will happen automatically when I apply the patch, so don't worry
-about it.
+The three patches in this set LGTM.
 
-greg k-h
+Acked-by: Andrew Chew <achew@nvidia.com> 
