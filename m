@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab1HaDoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 23:44:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46958 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab1HaDon (ORCPT
+	id S1752310Ab1HaDrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 23:47:36 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:43004 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751417Ab1HaDrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 23:44:43 -0400
-Subject: [PATCH] hwmon: (pmbus) Fix the logic of checking if no id is
- matched
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org
+	Tue, 30 Aug 2011 23:47:33 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+v09Z8pD2vt5aH6xMY0nbkLgdQUeCFaC6ilDOe0V
+	9VA9OrSQiJbAXx
+Subject: Re: [RFC PATCH 00/32] Nohz cpusets (was: Nohz Tasks)
+From: Mike Galbraith <efault@gmx.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+In-Reply-To: <20110830140648.GL9748@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+	 <CAOtvUMdgPoL_gnOTq8DwS9RxSFagQN_kAze3guD8O3xFHfnfHg@mail.gmail.com>
+	 <20110830140648.GL9748@somewhere.redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Aug 2011 11:44:32 +0800
-Message-ID: <1314762272.3189.1.camel@phoenix>
+Date: Wed, 31 Aug 2011 05:47:22 +0200
+Message-ID: <1314762442.4653.5.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If no id is matched, the mid pointer is not NULL in current implementation.
+On Tue, 2011-08-30 at 16:06 +0200, Frederic Weisbecker wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/hwmon/pmbus/ucd9000.c |    3 +--
- drivers/hwmon/pmbus/ucd9200.c |    3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+> Ah I haven't tested with that isolcpus especially as it's headed toward
+> removal.
 
-diff --git a/drivers/hwmon/pmbus/ucd9000.c b/drivers/hwmon/pmbus/ucd9000.c
-index 285bb15..4aa8701 100644
---- a/drivers/hwmon/pmbus/ucd9000.c
-+++ b/drivers/hwmon/pmbus/ucd9000.c
-@@ -141,13 +141,12 @@ static int ucd9000_probe(struct i2c_client *client,
- 	block_buffer[ret] = '\0';
- 	dev_info(&client->dev, "Device ID %s\n", block_buffer);
- 
--	mid = NULL;
- 	for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
- 		mid = &ucd9000_id[i];
- 		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
- 			break;
- 	}
--	if (!mid || !strlen(mid->name)) {
-+	if ((i == ARRAY_SIZE(ucd9000_id)) || !strlen(mid->name)) {
- 		dev_err(&client->dev, "Unsupported device\n");
- 		return -ENODEV;
- 	}
-diff --git a/drivers/hwmon/pmbus/ucd9200.c b/drivers/hwmon/pmbus/ucd9200.c
-index 786f6cd..826cc8f 100644
---- a/drivers/hwmon/pmbus/ucd9200.c
-+++ b/drivers/hwmon/pmbus/ucd9200.c
-@@ -68,13 +68,12 @@ static int ucd9200_probe(struct i2c_client *client,
- 	block_buffer[ret] = '\0';
- 	dev_info(&client->dev, "Device ID %s\n", block_buffer);
- 
--	mid = NULL;
- 	for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
- 		mid = &ucd9200_id[i];
- 		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
- 			break;
- 	}
--	if (!mid || !strlen(mid->name)) {
-+	if ((i == ARRAY_SIZE(ucd9200_id)) || !strlen(mid->name)) {
- 		dev_err(&client->dev, "Unsupported device\n");
- 		return -ENODEV;
- 	}
--- 
-1.7.4.1
+It is?  Is it being replaced by something?  (I find it useful)
 
+	-Mike
 
 
