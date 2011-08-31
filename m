@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1HaFsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 01:48:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:51646 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753402Ab1HaFsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 01:48:12 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wang Sheng-Hui <shhuiw@gmail.com>
-Subject: Re: linux-next: build failure after merge of the rr tree
-In-Reply-To: <20110830140325.7af8d5d4e88d907aed45780e@canb.auug.org.au>
-References: <20110830140325.7af8d5d4e88d907aed45780e@canb.auug.org.au>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Wed, 31 Aug 2011 14:06:27 +0930
-Message-ID: <87zkiq5h9w.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753606Ab1HaFui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 01:50:38 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:44562 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab1HaFuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 01:50:35 -0400
+Subject: [PATCH] ASoC: Remove unused variable 'card' in imx_pcm_fiq_new
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 31 Aug 2011 13:50:25 +0800
+Message-ID: <1314769825.28750.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 14:03:25 +1000, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Rusty,
-> 
-> After merging the rr tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
+Fix below build warning:
 
-Gah, I took a trivial replacement and didn't actually compile-check it
-myself.
+  CC      sound/soc/imx/imx-pcm-fiq.o
+sound/soc/imx/imx-pcm-fiq.c: In function 'imx_pcm_fiq_new':
+sound/soc/imx/imx-pcm-fiq.c:243: warning: unused variable 'card'
 
-Fixed with the obvious addition, thanks.
-Rusty.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/imx/imx-pcm-fiq.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/sound/soc/imx/imx-pcm-fiq.c b/sound/soc/imx/imx-pcm-fiq.c
+index 309c59e..7945625 100644
+--- a/sound/soc/imx/imx-pcm-fiq.c
++++ b/sound/soc/imx/imx-pcm-fiq.c
+@@ -240,7 +240,6 @@ static int ssi_irq = 0;
+ 
+ static int imx_pcm_fiq_new(struct snd_soc_pcm_runtime *rtd)
+ {
+-	struct snd_card *card = rtd->card->snd_card;
+ 	struct snd_soc_dai *dai = rtd->cpu_dai;
+ 	struct snd_pcm *pcm = rtd->pcm;
+ 	int ret;
+-- 
+1.7.4.1
+
+
+
