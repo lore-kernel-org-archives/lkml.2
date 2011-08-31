@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab1HaJpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 05:45:22 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57891 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab1HaJpV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 05:45:21 -0400
+	id S1755114Ab1HaJxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 05:53:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58674 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754862Ab1HaJxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 05:53:32 -0400
+Date: Wed, 31 Aug 2011 10:53:26 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 6/7] mm: vmscan: Throttle reclaim if encountering too
+ many dirty pages under writeback
+Message-ID: <20110831095326.GD14369@suse.de>
+References: <1312973240-32576-1-git-send-email-mgorman@suse.de>
+ <1312973240-32576-7-git-send-email-mgorman@suse.de>
+ <20110818165428.4f01a1b9.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1314609001-28052-1-git-send-email-linus.walleij@stericsson.com>
-References: <1314609001-28052-1-git-send-email-linus.walleij@stericsson.com>
-Date: Wed, 31 Aug 2011 17:45:20 +0800
-Message-ID: <CAGsJ_4yc+chiSh0wf_5sZk-Eh0vm-HSDZv+gFQi86LhCAUXTvw@mail.gmail.com>
-Subject: Re: [PATCH 1/4 v5] drivers: create a pin control subsystem v5
-From: Barry Song <21cnbao@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>, Lee Jones <lee.jones@linaro.org>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110818165428.4f01a1b9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +Interaction with the GPIO subsystem
-> +===================================
-> +
-> +The GPIO drivers may want to perform operations of various types on the
-> same
-> +physical pins that are also registered as GPIO pins.
-> +
-> +Since the pin controller subsystem have its pinspace local to the pin
-> +controller we need a mapping so that the pin control subsystem can figure
-> out
-> +which pin controller handles control of a certain GPIO pin. Since a single
-> +pin controller may be muxing several GPIO ranges (typically SoCs that have
-> +one set of pins but internally several GPIO silicon blocks, each modeled as
-> +a struct gpio_chip) any number of GPIO ranges can be added to a pin
-> controller
-> +instance like this:
-> +
-> +struct gpio_chip chip_a;
-> +struct gpio_chip chip_b;
-> +
-> +static struct pinctrl_gpio_range gpio_range_a = {
-> +	.name = "chip a",
-> +	.id = 0,
-> +	.base = 32,
-> +	.npins = 16,
-> +	.gc = &chip_a;
-> +};
-> +
-> +static struct pinctrl_gpio_range gpio_range_a = {
-> +	.name = "chip b",
-> +	.id = 0,
-> +	.base = 48,
-> +	.npins = 8,
-> +	.gc = &chip_b;
-> +};
-> +
-> +
-> +{
-> +	struct pinctrl_dev *pctl;
-> +	...
-> +	pinctrl_add_gpio_range(pctl, &gpio_range_a);
-> +	pinctrl_add_gpio_range(pctl, &gpio_range_b);
+On Thu, Aug 18, 2011 at 04:54:28PM -0700, Andrew Morton wrote:
+> On Wed, 10 Aug 2011 11:47:19 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > The percentage that must be in writeback depends on the priority. At
+> > default priority, all of them must be dirty. At DEF_PRIORITY-1, 50%
+> > of them must be, DEF_PRIORITY-2, 25% etc. i.e. as pressure increases
+> > the greater the likelihood the process will get throttled to allow
+> > the flusher threads to make some progress.
+> 
+> It'd be nice if the code comment were to capture this piece of implicit
+> arithmetic.
 
-people might like a pinctrl_add_gpio_range*s* too.
+How about this?
 
--barry
+==== CUT HERE ====
+mm: vmscan: Throttle reclaim if encountering too many dirty pages under writeback -fix1
+
+This patch expands on a comment on how we throttle from reclaim context.
+It should be merged with
+mm-vmscan-throttle-reclaim-if-encountering-too-many-dirty-pages-under-writeback.patch
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |   26 +++++++++++++++++++++-----
+ 1 files changed, 21 insertions(+), 5 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 33882a3..5ff3e26 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1491,11 +1491,27 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
+ 
+ 	/*
+-	 * If we have encountered a high number of dirty pages under writeback
+-	 * then we are reaching the end of the LRU too quickly and global
+-	 * limits are not enough to throttle processes due to the page
+-	 * distribution throughout zones. Scale the number of dirty pages that
+-	 * must be under writeback before being throttled to priority.
++	 * If reclaim is isolating dirty pages under writeback, it implies
++	 * that the long-lived page allocation rate is exceeding the page
++	 * laundering rate. Either the global limits are not being effective
++	 * at throttling processes due to the page distribution throughout
++	 * zones or there is heavy usage of a slow backing device. The
++	 * only option is to throttle from reclaim context which is not ideal
++	 * as there is no guarantee the dirtying process is throttled in the
++	 * same way balance_dirty_pages() manages.
++	 *
++	 * This scales the number of dirty pages that must be under writeback
++	 * before throttling depending on priority. It is a simple backoff
++	 * function that has the most effect in the range DEF_PRIORITY to
++	 * DEF_PRIORITY-2 which is the priority reclaim is considered to be
++	 * in trouble and reclaim is considered to be in trouble.
++	 *
++	 * DEF_PRIORITY   100% isolated pages must be PageWriteback to throttle
++	 * DEF_PRIORITY-1  50% must be PageWriteback
++	 * DEF_PRIORITY-2  25% must be PageWriteback, kswapd in trouble
++	 * ...
++	 * DEF_PRIORITY-6 For SWAP_CLUSTER_MAX isolated pages, throttle if any
++	 *                     isolated page is PageWriteback
+ 	 */
+ 	if (nr_writeback && nr_writeback >= (nr_taken >> (DEF_PRIORITY-priority)))
+ 		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
