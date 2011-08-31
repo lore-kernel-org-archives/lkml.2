@@ -1,153 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab1HaOiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 10:38:24 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49196 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab1HaOiU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 10:38:20 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20110831120513.31bb62ee@endymion.delvare>
-References: <1314766699.3960.1.camel@phoenix> <20110831120513.31bb62ee@endymion.delvare>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Wed, 31 Aug 2011 22:30:51 +0800
-Message-ID: <CAF+7xWnDSTOJh9cs9tUJdF=k=TD56JN1cMvfNM_ng4vw5Gntyg@mail.gmail.com>
-Subject: Re: [PATCH v2] hwmon: (pmbus) Fix the logic of checking if no id is matched
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <guenter.roeck@ericsson.com>,
-        lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755428Ab1HaOlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 10:41:17 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60972 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753224Ab1HaOlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 10:41:12 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, dan.magenheimer@oracle.com, ngupta@vflare.org,
+        cascardo@holoscopio.com, rdunlap@xenotime.net,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: [PATCH 3/3] staging: zcache: add zv_page_count and zv_desc_count
+Date: Wed, 31 Aug 2011 09:40:41 -0500
+Message-Id: <1314801641-15059-4-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/31 Jean Delvare <khali@linux-fr.org>:
-> Hi Alex,
-It's Axel.
+This patch adds the zv_page_count and zv_desc_count attributes
+to the zcache sysfs.  They are read-only attributes and return
+the number of pages and the number of block descriptors in use
+by the pool respectively.
 
->
-> On Wed, 31 Aug 2011 12:58:19 +0800, Axel Lin wrote:
->> If no id is matched, the mid pointer is not NULL in current implementation.
->
-> The NULL check is presumably there to catch the (impossible) case
-> ARRAY_SIZE(ucd9000_id) == 0 (array of ids is empty), not the case "no
-> id is matched". The initialization of mid to NULL is for the same
-> reason. Both should be unnecessary but may have been motivated by a
-> compiler warning (although I would think gcc is smart enough to not
-> emit these when it can check that the array isn't empty.) Guenter
-> should be able to tell more.
->
-> The check for "no id is matched" is !strlen(mid->name), which works as
-> intended as far as I can see. Did you actually hit a bug with the
-> current code? I bet not.
-No, I didn't hit the bug. Just reading the code.
+These statistics can be used to calculate effective compression
+and block descriptor overhead for the xcfmalloc allocator.
 
->
-> Now I would agree that the current code is somewhat misleading because
-> mixing null-terminated arrays with ARRAY_SIZE() is unusual (and
-> inefficient - the last iteration always fails.) Also, strlen() is
-> relatively slow and would rather be avoided when only testing if a
-> string is empty or not: it's faster to test for mid->name[0].
->
-> So if anything I would propose the following changes (for performance
-> and readability, NOT bug fix), untested:
-Your fix looks good to me. ( Although I don't have the h/w for testing ).
+Using the frontswap curr_pages attribute, effective compression
+is: zv_page_count / curr_pages
 
->
-> --- linux-3.1-rc4.orig/drivers/hwmon/pmbus/ucd9000.c    2011-08-30 13:41:32.000000000 +0200
-> +++ linux-3.1-rc4/drivers/hwmon/pmbus/ucd9000.c 2011-08-31 11:53:28.000000000 +0200
-> @@ -141,13 +141,11 @@ static int ucd9000_probe(struct i2c_clie
->        block_buffer[ret] = '\0';
->        dev_info(&client->dev, "Device ID %s\n", block_buffer);
->
-> -       mid = NULL;
-> -       for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
-> -               mid = &ucd9000_id[i];
-> +       for (mid = ucd9000_id; mid->name[0]; mid++) {
->                if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
->                        break;
->        }
-> -       if (!mid || !strlen(mid->name)) {
-> +       if (!mid->name[0]) {
->                dev_err(&client->dev, "Unsupported device\n");
->                return -ENODEV;
->        }
-> --- linux-3.1-rc4.orig/drivers/hwmon/pmbus/ucd9200.c    2011-08-30 13:41:32.000000000 +0200
-> +++ linux-3.1-rc4/drivers/hwmon/pmbus/ucd9200.c 2011-08-31 11:53:20.000000000 +0200
-> @@ -68,13 +68,11 @@ static int ucd9200_probe(struct i2c_clie
->        block_buffer[ret] = '\0';
->        dev_info(&client->dev, "Device ID %s\n", block_buffer);
->
-> -       mid = NULL;
-> -       for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
-> -               mid = &ucd9200_id[i];
-> +       for (mid = ucd9200_id; mid->name[0]; mid++) {
->                if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
->                        break;
->        }
-> -       if (!mid || !strlen(mid->name)) {
-> +       if (!mid->name[0]) {
->                dev_err(&client->dev, "Unsupported device\n");
->                return -ENODEV;
->        }
->
->
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> ---
->> v2:
->> It seems we don't need to check strlen(mid->name) here.
->> If there is a match, strlen(mid->name) is always not 0.
->> If ther is no match, comparing variable i with ARRAY_SIZE(ucd9000_id)
->> or ARRAY_SIZE(ucd9200_id) is enough.
->>
->>  drivers/hwmon/pmbus/ucd9000.c |    3 +--
->>  drivers/hwmon/pmbus/ucd9200.c |    3 +--
->>  2 files changed, 2 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/hwmon/pmbus/ucd9000.c b/drivers/hwmon/pmbus/ucd9000.c
->> index 285bb15..a2d4a72 100644
->> --- a/drivers/hwmon/pmbus/ucd9000.c
->> +++ b/drivers/hwmon/pmbus/ucd9000.c
->> @@ -141,13 +141,12 @@ static int ucd9000_probe(struct i2c_client *client,
->>       block_buffer[ret] = '\0';
->>       dev_info(&client->dev, "Device ID %s\n", block_buffer);
->>
->> -     mid = NULL;
->>       for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
->>               mid = &ucd9000_id[i];
->>               if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
->>                       break;
->>       }
->> -     if (!mid || !strlen(mid->name)) {
->> +     if (i == ARRAY_SIZE(ucd9000_id)) {
->>               dev_err(&client->dev, "Unsupported device\n");
->>               return -ENODEV;
->>       }
->> diff --git a/drivers/hwmon/pmbus/ucd9200.c b/drivers/hwmon/pmbus/ucd9200.c
->> index 786f6cd..a72e55e 100644
->> --- a/drivers/hwmon/pmbus/ucd9200.c
->> +++ b/drivers/hwmon/pmbus/ucd9200.c
->> @@ -68,13 +68,12 @@ static int ucd9200_probe(struct i2c_client *client,
->>       block_buffer[ret] = '\0';
->>       dev_info(&client->dev, "Device ID %s\n", block_buffer);
->>
->> -     mid = NULL;
->>       for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
->>               mid = &ucd9200_id[i];
->>               if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
->>                       break;
->>       }
->> -     if (!mid || !strlen(mid->name)) {
->> +     if (i == ARRAY_SIZE(ucd9200_id)) {
->>               dev_err(&client->dev, "Unsupported device\n");
->>               return -ENODEV;
->>       }
->
->
-> --
-> Jean Delvare
->
+Using /proc/slabinfo to get the objsize for a xcf_desc_cache
+object, descriptor overhead is: zv_desc_count * objsize
+
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index b07377b..6adbbbe 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -789,6 +789,24 @@ static int zv_cumul_dist_counts_show(char *buf)
+ 	return p - buf;
+ }
+ 
++static int zv_page_count_show(char *buf)
++{
++	char *p = buf;
++	unsigned long count;
++	count = xcf_get_total_size_bytes(zcache_host.xcfmpool) >> PAGE_SHIFT;
++	p += sprintf(p, "%lu\n", count);
++	return p - buf;
++}
++
++static int zv_desc_count_show(char *buf)
++{
++	char *p = buf;
++	unsigned long count;
++	count = xcf_get_desc_count(zcache_host.xcfmpool);
++	p += sprintf(p, "%lu\n", count);
++	return p - buf;
++}
++
+ /*
+  * setting zv_max_zsize via sysfs causes all persistent (e.g. swap)
+  * pages that don't compress to less than this value (including metadata
+@@ -1477,6 +1495,10 @@ ZCACHE_SYSFS_RO_CUSTOM(zv_curr_dist_counts,
+ 			zv_curr_dist_counts_show);
+ ZCACHE_SYSFS_RO_CUSTOM(zv_cumul_dist_counts,
+ 			zv_cumul_dist_counts_show);
++ZCACHE_SYSFS_RO_CUSTOM(zv_page_count,
++			zv_page_count_show);
++ZCACHE_SYSFS_RO_CUSTOM(zv_desc_count,
++			zv_desc_count_show);
+ 
+ static struct attribute *zcache_attrs[] = {
+ 	&zcache_curr_obj_count_attr.attr,
+@@ -1513,6 +1535,8 @@ static struct attribute *zcache_attrs[] = {
+ 	&zcache_zv_max_zsize_attr.attr,
+ 	&zcache_zv_max_mean_zsize_attr.attr,
+ 	&zcache_zv_page_count_policy_percent_attr.attr,
++	&zcache_zv_page_count_attr.attr,
++	&zcache_zv_desc_count_attr.attr,
+ 	NULL,
+ };
+ 
+-- 
+1.7.4.1
+
