@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab1HaUBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 16:01:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61107 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab1HaUBa (ORCPT
+	id S1754976Ab1HaUBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 16:01:54 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15600 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab1HaUBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 16:01:30 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Brown <davidb@codeaurora.org>
-Cc: Richard Kuo <rkuo@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [patch v2 01/35] Hexagon: Add generic headers
-Date: Wed, 31 Aug 2011 22:00:41 +0200
-Message-ID: <1400760.2CJ9v55MlQ@wuerfel>
-User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <20110831195111.GA29918@huya.qualcomm.com>
-References: <20110830190729.923334292@codeaurora.org> <201108311524.42373.arnd@arndb.de> <20110831195111.GA29918@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:n51jltfxEKnN39oVpH13Hc9wZxnJR5PHPIg5HbLO7z3
- uBwMbtQrIXs+fYhu1SCsIzkB6PGa+14ffV9vCd/ytDQK0CEn5p
- mhRtGPJ7Mq/j/Zpt0BJm/kwGISmZkNTaQE/XyL3Vd+E7WgZneK
- ymTM8HUIlSacTqb3wjnPFkreg7PqDoRIyqcxpfHC2EWo2Y/o0t
- 7teTOH+zXysR59ozH67e2qv/TPjbcrfSMP2KCKjOQzc+mE5+BP
- g2LAJgHCgttoeopf27ld50iqh4E65R032LEYCWQfjVfCwS9zuz
- ucWWzreP41Hr9ErsAJ618qVqpHew+j8KT7tHiN+Dam62TzM0g2
- 4mc6tDbZ7FZXpRmIv2eg=
+	Wed, 31 Aug 2011 16:01:52 -0400
+From: David Daney <david.daney@cavium.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: David Daney <david.daney@cavium.com>
+Subject: [PATCH 0/3] netdev/of/phy: MDIO bus multiplexer support.
+Date: Wed, 31 Aug 2011 13:01:43 -0700
+Message-Id: <1314820906-14004-1-git-send-email-david.daney@cavium.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 31 Aug 2011 20:01:52.0172 (UTC) FILETIME=[D36076C0:01CC6818]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 August 2011 12:51:11 David Brown wrote:
-> On Wed, Aug 31, 2011 at 03:24:42PM +0200, Arnd Bergmann wrote:
-> > On Tuesday 30 August 2011, Richard Kuo wrote:
-> > > Reworked to use the Kbuild generic headers mechanism.
-> > > 
-> > > Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> Any suggestions on what path this code should flow to get into the
-> kernel?
+We have several different boards with a multiplexer in the MDIO bus.
+There is an MDIO bus controller connected to a switching device with
+several child MDIO busses.
 
-It should get into linux-next now and then get submitted directly to
-Linus at the start of the merge window.
+Everything is wired up using device tree bindings.
 
-I'm happy to take anything that concerns hexagon and arm likewise into
-the arm-soc tree.
+ 1/3 - New of_mdio_find_bus() function used to help configuring the
+       driver topology.
 
-While I am the de-facto gatekeeper for new architectures, I have not
-seen a reason to start a consolidated minor-architectures tree to collect
-these.
+ 2/3 - MDIO bus multiplexer framework.
 
-	Arnd
+ 3/3 - A driver for a GPIO controlled multiplexer.
+
+I have an additional patch I am working on for an I2C controlled
+multiplexer that I will follow up with once this reaches a mergable
+state.
+
+David Daney (3):
+  netdev/of/phy: New function: of_mdio_find_bus().
+  netdev/of/phy: Add MDIO bus multiplexer support.
+  netdev/of/phy: Add MDIO bus multiplexer driven by GPIO lines.
+
+ .../devicetree/bindings/net/mdio-mux-gpio.txt      |  127 ++++++++++++++
+ Documentation/devicetree/bindings/net/mdio-mux.txt |  132 ++++++++++++++
+ drivers/net/phy/Kconfig                            |   17 ++
+ drivers/net/phy/Makefile                           |    2 +
+ drivers/net/phy/mdio-mux-gpio.c                    |  143 +++++++++++++++
+ drivers/net/phy/mdio-mux.c                         |  182 ++++++++++++++++++++
+ drivers/net/phy/mdio_bus.c                         |    3 +-
+ drivers/of/of_mdio.c                               |   26 +++
+ include/linux/mdio-mux.h                           |   18 ++
+ include/linux/of_mdio.h                            |    2 +
+ include/linux/phy.h                                |    1 +
+ 11 files changed, 652 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/mdio-mux-gpio.txt
+ create mode 100644 Documentation/devicetree/bindings/net/mdio-mux.txt
+ create mode 100644 drivers/net/phy/mdio-mux-gpio.c
+ create mode 100644 drivers/net/phy/mdio-mux.c
+ create mode 100644 include/linux/mdio-mux.h
+
+-- 
+1.7.2.3
+
