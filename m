@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab1HaV2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 17:28:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6033 "EHLO mx1.redhat.com"
+	id S1756337Ab1HaV2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:28:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23190 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755613Ab1HaV2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 17:28:41 -0400
+	id S1756130Ab1HaV2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 17:28:42 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, ming.lei@canonical.com,
         stern@rowland.harvard.edu, Mark Salter <msalter@redhat.com>
-Subject: [PATCH 18/24] C6X: headers
-Date: Wed, 31 Aug 2011 17:26:53 -0400
-Message-Id: <1314826019-22330-19-git-send-email-msalter@redhat.com>
+Subject: [PATCH 11/24] C6X: interrupt handling
+Date: Wed, 31 Aug 2011 17:26:46 -0400
+Message-Id: <1314826019-22330-12-git-send-email-msalter@redhat.com>
 In-Reply-To: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The C6X core includes an interrupt controller with 12 inputs of fixed priority.
+Each core is contained within a core "megamodule" which includes another
+interrupt controller which cascades into the prioritized core controller. The
+megamodule PIC has four interrupt combiners; each with up to 32 inputs which
+are combined into one interrupt. The megamodule contains a set of MUX registers
+which are used map megamodule interrupt sources to one of 12 core interrupts.
+Any one of these 12 MUX outputs feeding into the core interrupt controller may
+be the output from one of the four interrupt combiners or an individual
+megamodule interrupt source. An individual megamodule interrupt source will
+bypass the combiners if the MUX registers are set up such that the individual
+interrupt feeds directly to one of the 12 core interrupts. This priority
+mapping of interrupts is supported in the devicetree by means of a
+"ti,priority-map" property in the megamodule interrupt controller node.
+
+Most of the code in arch/c6x/kernel/irq.c which supports mapping of hardware
+interrupts to virtual kernel interrupts was taken as-is from powerpc. Very
+few changes were necessary for C6X, so separating that out into the generic
+kernel interrupt code may be worthwhile for cases where other architectures
+may want to use it.
+
 Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- arch/c6x/include/asm/asm-offsets.h |    1 +
- arch/c6x/include/asm/bitops.h      |  105 +++++++++++++
- arch/c6x/include/asm/byteorder.h   |   12 ++
- arch/c6x/include/asm/delay.h       |   67 +++++++++
- arch/c6x/include/asm/elf.h         |  113 ++++++++++++++
- arch/c6x/include/asm/ftrace.h      |    6 +
- arch/c6x/include/asm/linkage.h     |   30 ++++
- arch/c6x/include/asm/memblock.h    |    4 +
- arch/c6x/include/asm/mmu.h         |   18 +++
- arch/c6x/include/asm/mutex.h       |    6 +
- arch/c6x/include/asm/page.h        |   11 ++
- arch/c6x/include/asm/pgtable.h     |   81 ++++++++++
- arch/c6x/include/asm/procinfo.h    |   28 ++++
- arch/c6x/include/asm/prom.h        |    1 +
- arch/c6x/include/asm/sections.h    |   12 ++
- arch/c6x/include/asm/setup.h       |   29 ++++
- arch/c6x/include/asm/string.h      |   21 +++
- arch/c6x/include/asm/system.h      |  197 ++++++++++++++++++++++++
- arch/c6x/include/asm/tlb.h         |    8 +
- arch/c6x/include/asm/uaccess.h     |  107 +++++++++++++
- arch/c6x/include/asm/unaligned.h   |  288 ++++++++++++++++++++++++++++++++++++
- 21 files changed, 1145 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/include/asm/asm-offsets.h
- create mode 100644 arch/c6x/include/asm/bitops.h
- create mode 100644 arch/c6x/include/asm/byteorder.h
- create mode 100644 arch/c6x/include/asm/delay.h
- create mode 100644 arch/c6x/include/asm/elf.h
- create mode 100644 arch/c6x/include/asm/ftrace.h
- create mode 100644 arch/c6x/include/asm/linkage.h
- create mode 100644 arch/c6x/include/asm/memblock.h
- create mode 100644 arch/c6x/include/asm/mmu.h
- create mode 100644 arch/c6x/include/asm/mutex.h
- create mode 100644 arch/c6x/include/asm/page.h
- create mode 100644 arch/c6x/include/asm/pgtable.h
- create mode 100644 arch/c6x/include/asm/procinfo.h
- create mode 100644 arch/c6x/include/asm/prom.h
- create mode 100644 arch/c6x/include/asm/sections.h
- create mode 100644 arch/c6x/include/asm/setup.h
- create mode 100644 arch/c6x/include/asm/string.h
- create mode 100644 arch/c6x/include/asm/system.h
- create mode 100644 arch/c6x/include/asm/tlb.h
- create mode 100644 arch/c6x/include/asm/uaccess.h
- create mode 100644 arch/c6x/include/asm/unaligned.h
+ arch/c6x/include/asm/hardirq.h   |   20 +
+ arch/c6x/include/asm/irq.h       |  302 ++++++++++++++++
+ arch/c6x/include/asm/irqflags.h  |   72 ++++
+ arch/c6x/kernel/irq.c            |  732 ++++++++++++++++++++++++++++++++++++++
+ arch/c6x/platforms/megamod-pic.c |  336 +++++++++++++++++
+ arch/c6x/platforms/megamod-pic.h |    9 +
+ 6 files changed, 1471 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/hardirq.h
+ create mode 100644 arch/c6x/include/asm/irq.h
+ create mode 100644 arch/c6x/include/asm/irqflags.h
+ create mode 100644 arch/c6x/kernel/irq.c
+ create mode 100644 arch/c6x/platforms/megamod-pic.c
+ create mode 100644 arch/c6x/platforms/megamod-pic.h
 
-diff --git a/arch/c6x/include/asm/asm-offsets.h b/arch/c6x/include/asm/asm-offsets.h
+diff --git a/arch/c6x/include/asm/hardirq.h b/arch/c6x/include/asm/hardirq.h
 new file mode 100644
-index 0000000..d370ee3
+index 0000000..9621954
 --- /dev/null
-+++ b/arch/c6x/include/asm/asm-offsets.h
-@@ -0,0 +1 @@
-+#include <generated/asm-offsets.h>
-diff --git a/arch/c6x/include/asm/bitops.h b/arch/c6x/include/asm/bitops.h
-new file mode 100644
-index 0000000..39ab7e8
---- /dev/null
-+++ b/arch/c6x/include/asm/bitops.h
-@@ -0,0 +1,105 @@
++++ b/arch/c6x/include/asm/hardirq.h
+@@ -0,0 +1,20 @@
 +/*
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
@@ -88,1254 +71,1497 @@ index 0000000..39ab7e8
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#ifndef _ASM_C6X_BITOPS_H
-+#define _ASM_C6X_BITOPS_H
 +
-+#ifdef __KERNEL__
++#ifndef _ASM_C6X_HARDIRQ_H
++#define _ASM_C6X_HARDIRQ_H
 +
-+#include <linux/bitops.h>
++extern void ack_bad_irq(int irq);
++#define ack_bad_irq ack_bad_irq
 +
-+#include <asm/system.h>
-+#include <asm/byteorder.h>
++#include <asm-generic/hardirq.h>
 +
-+/*
-+ * clear_bit() doesn't provide any barrier for the compiler.
-+ */
-+#define smp_mb__before_clear_bit() barrier()
-+#define smp_mb__after_clear_bit()  barrier()
-+
-+/*
-+ * We are lucky, DSP is perfect for bitops: do it in 3 cycles
-+ */
-+
-+/**
-+ * __ffs - find first bit in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no bit exists, so code should check against 0 first.
-+ * Note __ffs(0) = undef, __ffs(1) = 0, __ffs(0x80000000) = 31.
-+ *
-+ */
-+static inline unsigned long __ffs(unsigned long x)
-+{
-+	asm (" bitr  .M1  %0,%0\n"
-+	     " nop\n"
-+	     " lmbd  .L1  1,%0,%0\n"
-+	     : "+a"(x));
-+
-+	return x;
-+}
-+
-+/*
-+ * ffz - find first zero in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no zero exists, so code should check against ~0UL first.
-+ */
-+#define ffz(x) __ffs(~(x))
-+
-+/**
-+ * fls - find last (most-significant) bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as ffs.
-+ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
-+ */
-+static inline int fls(int x)
-+{
-+	if (!x)
-+		return 0;
-+
-+	asm (" lmbd  .L1  1,%0,%0\n" : "+a"(x));
-+
-+	return 32 - x;
-+}
-+
-+/**
-+ * ffs - find first bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as
-+ * the libc and compiler builtin ffs routines, therefore
-+ * differs in spirit from the above ffz (man ffs).
-+ * Note ffs(0) = 0, ffs(1) = 1, ffs(0x80000000) = 32.
-+ */
-+static inline int ffs(int x)
-+{
-+	if (!x)
-+		return 0;
-+
-+	return __ffs(x) + 1;
-+}
-+
-+#include <asm-generic/bitops/__fls.h>
-+#include <asm-generic/bitops/fls64.h>
-+#include <asm-generic/bitops/find.h>
-+
-+#include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/hweight.h>
-+#include <asm-generic/bitops/lock.h>
-+
-+#include <asm-generic/bitops/atomic.h>
-+#include <asm-generic/bitops/non-atomic.h>
-+#include <asm-generic/bitops/le.h>
-+#include <asm-generic/bitops/ext2-atomic.h>
-+
-+#endif /* __KERNEL__ */
-+#endif /* _ASM_C6X_BITOPS_H */
-diff --git a/arch/c6x/include/asm/byteorder.h b/arch/c6x/include/asm/byteorder.h
++#endif /* _ASM_C6X_HARDIRQ_H */
+diff --git a/arch/c6x/include/asm/irq.h b/arch/c6x/include/asm/irq.h
 new file mode 100644
-index 0000000..166038d
+index 0000000..a6ae3c9
 --- /dev/null
-+++ b/arch/c6x/include/asm/byteorder.h
-@@ -0,0 +1,12 @@
-+#ifndef _ASM_C6X_BYTEORDER_H
-+#define _ASM_C6X_BYTEORDER_H
-+
-+#include <asm/types.h>
-+
-+#ifdef _BIG_ENDIAN
-+#include <linux/byteorder/big_endian.h>
-+#else /* _BIG_ENDIAN */
-+#include <linux/byteorder/little_endian.h>
-+#endif /* _BIG_ENDIAN */
-+
-+#endif /* _ASM_BYTEORDER_H */
-diff --git a/arch/c6x/include/asm/delay.h b/arch/c6x/include/asm/delay.h
-new file mode 100644
-index 0000000..f314c2e
---- /dev/null
-+++ b/arch/c6x/include/asm/delay.h
-@@ -0,0 +1,67 @@
++++ b/arch/c6x/include/asm/irq.h
+@@ -0,0 +1,302 @@
 +/*
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Copyright (C) 2004, 2006, 2009, 2010, 2011 Texas Instruments Incorporated
 + *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  Large parts taken directly from powerpc.
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#ifndef _ASM_C6X_DELAY_H
-+#define _ASM_C6X_DELAY_H
++#ifndef _ASM_C6X_IRQ_H
++#define _ASM_C6X_IRQ_H
 +
-+#include <linux/kernel.h>
++#include <linux/threads.h>
++#include <linux/list.h>
++#include <linux/radix-tree.h>
++#include <asm/percpu.h>
 +
-+extern unsigned int ticks_per_ns_scaled;
++#define irq_canonicalize(irq)  (irq)
 +
-+static inline void __delay(unsigned long loops)
-+{
-+	uint32_t tmp;
-+
-+	/* 6 cycles per loop */
-+	asm volatile ("        mv    .s1  %0,%1\n"
-+		      "0: [%1] b     .s1  0b\n"
-+		      "        add   .l1  -6,%0,%0\n"
-+		      "        cmplt .l1  1,%0,%1\n"
-+		      "        nop   3\n"
-+		      : "+a"(loops), "=A"(tmp));
-+}
-+
-+static inline void _c6x_tickdelay(unsigned int x)
-+{
-+	uint32_t cnt, endcnt;
-+
-+	asm volatile ("        mvc   .s2   TSCL,%0\n"
-+		      "        add   .s2x  %0,%1,%2\n"
-+		      " ||     mvk   .l2   1,B0\n"
-+		      "0: [B0] b     .s2   0b\n"
-+		      "        mvc   .s2   TSCL,%0\n"
-+		      "        sub   .s2   %0,%2,%0\n"
-+		      "        cmpgt .l2   0,%0,B0\n"
-+		      "        nop   2\n"
-+		      : "=b"(cnt), "+a"(x), "=b"(endcnt) : : "B0");
-+}
-+
-+/* use scaled math to avoid slow division */
-+#define C6X_NDELAY_SCALE 10
-+
-+static inline void _ndelay(unsigned int n)
-+{
-+	_c6x_tickdelay((ticks_per_ns_scaled * n) >> C6X_NDELAY_SCALE);
-+}
-+
-+static inline void _udelay(unsigned int n)
-+{
-+	while (n >= 10) {
-+		_ndelay(10000);
-+		n -= 10;
-+	}
-+	while (n-- > 0)
-+		_ndelay(1000);
-+}
-+
-+#define udelay(x) _udelay((unsigned int)(x))
-+#define ndelay(x) _ndelay((unsigned int)(x))
-+
-+#endif /* _ASM_C6X_DELAY_H */
-diff --git a/arch/c6x/include/asm/elf.h b/arch/c6x/include/asm/elf.h
-new file mode 100644
-index 0000000..d57865b
---- /dev/null
-+++ b/arch/c6x/include/asm/elf.h
-@@ -0,0 +1,113 @@
 +/*
-+ *  Port on Texas Instruments TMS320C6x architecture
++ * The C64X+ core has 16 IRQ vectors. One each is used by Reset and NMI. Two
++ * are reserved. The remaining 12 vectors are used to route SoC interrupts.
++ * These interrupt vectors are prioritized with IRQ 4 having the highest
++ * priority and IRQ 15 having the lowest.
 + *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ * The C64x+ megamodule provides a PIC which combines SoC IRQ sources into a
++ * single core IRQ vector. There are four combined sources, each of which
++ * feed into one of the 12 general interrupt vectors. The remaining 8 vectors
++ * can each route a single SoC interrupt directly.
++ */
++#define NR_PRIORITY_IRQS 16
++
++#define NR_IRQS_LEGACY	NR_PRIORITY_IRQS
++
++/* Total number of virq in the platform */
++#define NR_IRQS		256
++
++/* This number is used when no interrupt has been assigned */
++#define NO_IRQ		0
++
++/* This type is the placeholder for a hardware interrupt number. It has to
++ * be big enough to enclose whatever representation is used by a given
++ * platform.
++ */
++typedef unsigned long irq_hw_number_t;
++
++/* Interrupt controller "host" data structure. This could be defined as a
++ * irq domain controller. That is, it handles the mapping between hardware
++ * and virtual interrupt numbers for a given interrupt domain. The host
++ * structure is generally created by the PIC code for a given PIC instance
++ * (though a host can cover more than one PIC if they have a flat number
++ * model). It's the host callbacks that are responsible for setting the
++ * irq_chip on a given irq_desc after it's been mapped.
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
++ * The host code and data structures are fairly agnostic to the fact that
++ * we use an open firmware device-tree. We do have references to struct
++ * device_node in two places: in irq_find_host() to find the host matching
++ * a given interrupt controller node, and of course as an argument to its
++ * counterpart host->ops->match() callback. However, those are treated as
++ * generic pointers by the core and the fact that it's actually a device-node
++ * pointer is purely a convention between callers and implementation. This
++ * code could thus be used on other architectures by replacing those two
++ * by some sort of arch-specific void * "token" used to identify interrupt
++ * controllers.
 + */
-+#ifndef _ASM_C6X_ELF_H
-+#define _ASM_C6X_ELF_H
++struct irq_host;
++struct radix_tree_root;
++struct device_node;
 +
-+/*
-+ * ELF register definitions..
++/* Functions below are provided by the host and called whenever a new mapping
++ * is created or an old mapping is disposed. The host can then proceed to
++ * whatever internal data structures management is required. It also needs
++ * to setup the irq_desc when returning from map().
 + */
-+#include <asm/ptrace.h>
++struct irq_host_ops {
++	/* Match an interrupt controller device node to a host, returns
++	 * 1 on a match
++	 */
++	int (*match)(struct irq_host *h, struct device_node *node);
 +
-+typedef unsigned long elf_greg_t;
-+typedef unsigned long elf_fpreg_t;
++	/* Create or update a mapping between a virtual irq number and a hw
++	 * irq number. This is called only once for a given mapping.
++	 */
++	int (*map)(struct irq_host *h, unsigned int virq, irq_hw_number_t hw);
 +
-+#define ELF_NGREG  58
-+#define ELF_NFPREG 1
++	/* Dispose of such a mapping */
++	void (*unmap)(struct irq_host *h, unsigned int virq);
 +
-+typedef elf_greg_t elf_gregset_t[ELF_NGREG];
-+typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
-+
-+/*
-+ * This is used to ensure we don't load something for the wrong architecture.
-+ */
-+#define elf_check_arch(x) ((x)->e_machine == EM_TI_C6000)
-+
-+#define elf_check_const_displacement(x) (1)
-+
-+/*
-+ * These are used to set parameters in the core dumps.
-+ */
-+#ifdef __LITTLE_ENDIAN__
-+#define ELF_DATA	ELFDATA2LSB
-+#else
-+#define ELF_DATA	ELFDATA2MSB
-+#endif
-+
-+#define ELF_CLASS	ELFCLASS32
-+#define ELF_ARCH	EM_TI_C6000
-+
-+/* Nothing for now. Need to setup DP... */
-+#define ELF_PLAT_INIT(_r)
-+
-+#define USE_ELF_CORE_DUMP
-+#define ELF_EXEC_PAGESIZE	4096
-+
-+#define ELF_CORE_COPY_REGS(_dest, _regs)		\
-+	memcpy((char *) &_dest, (char *) _regs,		\
-+	sizeof(struct pt_regs));
-+
-+/* This yields a mask that user programs can use to figure out what
-+   instruction set this cpu supports.  */
-+
-+#define ELF_HWCAP	(0)
-+
-+/* This yields a string that ld.so will use to load implementation
-+   specific libraries for optimization.  This is more specific in
-+   intent than poking at uname or /proc/cpuinfo.  */
-+
-+#define ELF_PLATFORM  (NULL)
-+
-+#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-+
-+/* C6X specific section types */
-+#define SHT_C6000_UNWIND	0x70000001
-+#define SHT_C6000_PREEMPTMAP	0x70000002
-+#define SHT_C6000_ATTRIBUTES	0x70000003
-+
-+/* C6X specific DT_ tags */
-+#define DT_C6000_DSBT_BASE	0x70000000
-+#define DT_C6000_DSBT_SIZE	0x70000001
-+#define DT_C6000_PREEMPTMAP	0x70000002
-+#define DT_C6000_DSBT_INDEX	0x70000003
-+
-+/* C6X specific relocs */
-+#define R_C6000_NONE		0
-+#define R_C6000_ABS32		1
-+#define R_C6000_ABS16		2
-+#define R_C6000_ABS8		3
-+#define R_C6000_PCR_S21		4
-+#define R_C6000_PCR_S12		5
-+#define R_C6000_PCR_S10		6
-+#define R_C6000_PCR_S7		7
-+#define R_C6000_ABS_S16		8
-+#define R_C6000_ABS_L16		9
-+#define R_C6000_ABS_H16		10
-+#define R_C6000_SBR_U15_B	11
-+#define R_C6000_SBR_U15_H	12
-+#define R_C6000_SBR_U15_W	13
-+#define R_C6000_SBR_S16		14
-+#define R_C6000_SBR_L16_B	15
-+#define R_C6000_SBR_L16_H	16
-+#define R_C6000_SBR_L16_W	17
-+#define R_C6000_SBR_H16_B	18
-+#define R_C6000_SBR_H16_H	19
-+#define R_C6000_SBR_H16_W	20
-+#define R_C6000_SBR_GOT_U15_W	21
-+#define R_C6000_SBR_GOT_L16_W	22
-+#define R_C6000_SBR_GOT_H16_W	23
-+#define R_C6000_DSBT_INDEX	24
-+#define R_C6000_PREL31		25
-+#define R_C6000_COPY		26
-+#define R_C6000_ALIGN		253
-+#define R_C6000_FPHEAD		254
-+#define R_C6000_NOCMP		255
-+
-+#endif /*_ASM_C6X_ELF_H */
-diff --git a/arch/c6x/include/asm/ftrace.h b/arch/c6x/include/asm/ftrace.h
-new file mode 100644
-index 0000000..3701958
---- /dev/null
-+++ b/arch/c6x/include/asm/ftrace.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_FTRACE_H
-+#define _ASM_C6X_FTRACE_H
-+
-+/* empty */
-+
-+#endif /* _ASM_C6X_FTRACE_H */
-diff --git a/arch/c6x/include/asm/linkage.h b/arch/c6x/include/asm/linkage.h
-new file mode 100644
-index 0000000..376925c
---- /dev/null
-+++ b/arch/c6x/include/asm/linkage.h
-@@ -0,0 +1,30 @@
-+#ifndef _ASM_C6X_LINKAGE_H
-+#define _ASM_C6X_LINKAGE_H
-+
-+#ifdef __ASSEMBLER__
-+
-+#define __ALIGN		.align 2
-+#define __ALIGN_STR	".align 2"
-+
-+#ifndef __DSBT__
-+#define ENTRY(name)		\
-+	.global name @		\
-+	__ALIGN @		\
-+name:
-+#else
-+#define ENTRY(name)		\
-+	.global name @		\
-+	.hidden name @		\
-+	__ALIGN @		\
-+name:
-+#endif
-+
-+#define ENDPROC(name)		\
-+	.type name, @function @	\
-+	.size name, . - name
-+
-+#endif
-+
-+#include <asm-generic/linkage.h>
-+
-+#endif /* _ASM_C6X_LINKAGE_H */
-diff --git a/arch/c6x/include/asm/memblock.h b/arch/c6x/include/asm/memblock.h
-new file mode 100644
-index 0000000..1181a97
---- /dev/null
-+++ b/arch/c6x/include/asm/memblock.h
-@@ -0,0 +1,4 @@
-+#ifndef _ASM_C6X_MEMBLOCK_H
-+#define _ASM_C6X_MEMBLOCK_H
-+
-+#endif /* _ASM_C6X_MEMBLOCK_H */
-diff --git a/arch/c6x/include/asm/mmu.h b/arch/c6x/include/asm/mmu.h
-new file mode 100644
-index 0000000..41592bf
---- /dev/null
-+++ b/arch/c6x/include/asm/mmu.h
-@@ -0,0 +1,18 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_MMU_H
-+#define _ASM_C6X_MMU_H
-+
-+typedef struct {
-+	unsigned long		end_brk;
-+} mm_context_t;
-+
-+#endif /* _ASM_C6X_MMU_H */
-diff --git a/arch/c6x/include/asm/mutex.h b/arch/c6x/include/asm/mutex.h
-new file mode 100644
-index 0000000..7a7248e
---- /dev/null
-+++ b/arch/c6x/include/asm/mutex.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_C6X_MUTEX_H
-+#define _ASM_C6X_MUTEX_H
-+
-+#include <asm-generic/mutex-null.h>
-+
-+#endif /* _ASM_C6X_MUTEX_H */
-diff --git a/arch/c6x/include/asm/page.h b/arch/c6x/include/asm/page.h
-new file mode 100644
-index 0000000..d18e2b0
---- /dev/null
-+++ b/arch/c6x/include/asm/page.h
-@@ -0,0 +1,11 @@
-+#ifndef _ASM_C6X_PAGE_H
-+#define _ASM_C6X_PAGE_H
-+
-+#define VM_DATA_DEFAULT_FLAGS \
-+	(VM_READ | VM_WRITE | \
-+	((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0) | \
-+		 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+
-+#include <asm-generic/page.h>
-+
-+#endif /* _ASM_C6X_PAGE_H */
-diff --git a/arch/c6x/include/asm/pgtable.h b/arch/c6x/include/asm/pgtable.h
-new file mode 100644
-index 0000000..68c8af4
---- /dev/null
-+++ b/arch/c6x/include/asm/pgtable.h
-@@ -0,0 +1,81 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PGTABLE_H
-+#define _ASM_C6X_PGTABLE_H
-+
-+#include <asm-generic/4level-fixup.h>
-+
-+#include <asm/setup.h>
-+#include <asm/page.h>
-+
-+/*
-+ * All 32bit addresses are effectively valid for vmalloc...
-+ * Sort of meaningless for non-VM targets.
-+ */
-+#define	VMALLOC_START	0
-+#define	VMALLOC_END	0xffffffff
-+
-+#define pgd_present(pgd)	(1)
-+#define pgd_none(pgd)		(0)
-+#define pgd_bad(pgd)		(0)
-+#define pgd_clear(pgdp)
-+#define kern_addr_valid(addr) (1)
-+
-+#define pmd_offset(a, b)	((void *)0)
-+#define pmd_none(x)		(!pmd_val(x))
-+#define pmd_present(x)		(pmd_val(x))
-+#define pmd_clear(xp)		do { set_pmd(xp, __pmd(0)); } while (0)
-+#define pmd_bad(x)		(pmd_val(x) & ~PAGE_MASK)
-+
-+#define PAGE_NONE		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_SHARED		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_COPY		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_READONLY	        __pgprot(0)    /* these mean nothing to NO_MM */
-+#define PAGE_KERNEL		__pgprot(0)    /* these mean nothing to NO_MM */
-+#define pgprot_noncached(prot)	(prot)
-+
-+extern void paging_init(void);
-+
-+#define __swp_type(x)		(0)
-+#define __swp_offset(x)		(0)
-+#define __swp_entry(typ, off)	((swp_entry_t) { ((typ) | ((off) << 7)) })
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+#define __swp_entry_to_pte(x)	((pte_t) { (x).val })
-+
-+static inline int pte_file(pte_t pte)
-+{
-+	return 0;
-+}
-+
-+#define set_pte(pteptr, pteval) (*(pteptr) = pteval)
-+#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
-+
-+/*
-+ * ZERO_PAGE is a global shared page that is always zero: used
-+ * for zero-mapped memory areas etc..
-+ */
-+#define ZERO_PAGE(vaddr)	virt_to_page(empty_zero_page)
-+extern unsigned long empty_zero_page;
-+
-+#define swapper_pg_dir ((pgd_t *) 0)
-+
-+/*
-+ * No page table caches to initialise
-+ */
-+#define pgtable_cache_init()   do { } while (0)
-+#define io_remap_pfn_range      remap_pfn_range
-+
-+#define io_remap_page_range(vma, vaddr, paddr, size, prot)		\
-+		remap_pfn_range(vma, vaddr, (paddr) >> PAGE_SHIFT, size, prot)
-+
-+#include <asm-generic/pgtable.h>
-+
-+#endif /* _ASM_C6X_PGTABLE_H */
-diff --git a/arch/c6x/include/asm/procinfo.h b/arch/c6x/include/asm/procinfo.h
-new file mode 100644
-index 0000000..c139d1e
---- /dev/null
-+++ b/arch/c6x/include/asm/procinfo.h
-@@ -0,0 +1,28 @@
-+/*
-+ *  Copyright (C) 2010 Texas Instruments Incorporated
-+ *  Author: Mark Salter (msalter@redhat.com)
-+ *
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_C6X_PROCINFO_H
-+#define _ASM_C6X_PROCINFO_H
-+
-+#ifdef __KERNEL__
-+
-+struct proc_info_list {
-+	unsigned int		cpu_val;
-+	unsigned int		cpu_mask;
-+	const char		*arch_name;
-+	const char		*elf_name;
-+	unsigned int		elf_hwcap;
++	/* Translate device-tree interrupt specifier from raw format coming
++	 * from the firmware to a irq_hw_number_t (interrupt line number) and
++	 * type (sense) that can be passed to set_irq_type(). In the absence
++	 * of this callback, irq_create_of_mapping() and irq_of_parse_and_map()
++	 * will return the hw number in the first cell and IRQ_TYPE_NONE for
++	 * the type (which amount to keeping whatever default value the
++	 * interrupt controller has for that line)
++	 */
++	int (*xlate)(struct irq_host *h, struct device_node *ctrler,
++		     const u32 *intspec, unsigned int intsize,
++		     irq_hw_number_t *out_hwirq, unsigned int *out_type);
 +};
 +
-+#else	/* __KERNEL__ */
-+#include <asm/elf.h>
-+#warning "Please include asm/elf.h instead"
-+#endif	/* __KERNEL__ */
++struct irq_host {
++	struct list_head	link;
 +
-+#endif	/* _ASM_C6X_PROCINFO_H */
-diff --git a/arch/c6x/include/asm/prom.h b/arch/c6x/include/asm/prom.h
-new file mode 100644
-index 0000000..b4ec95f
---- /dev/null
-+++ b/arch/c6x/include/asm/prom.h
-@@ -0,0 +1 @@
-+/* dummy prom.h; here to make linux/of.h's #includes happy */
-diff --git a/arch/c6x/include/asm/sections.h b/arch/c6x/include/asm/sections.h
-new file mode 100644
-index 0000000..f703989
---- /dev/null
-+++ b/arch/c6x/include/asm/sections.h
-@@ -0,0 +1,12 @@
-+#ifndef _ASM_C6X_SECTIONS_H
-+#define _ASM_C6X_SECTIONS_H
++	/* type of reverse mapping technique */
++	unsigned int		revmap_type;
++#define IRQ_HOST_MAP_PRIORITY   0 /* core priority irqs, get irqs 1..15 */
++#define IRQ_HOST_MAP_NOMAP	1 /* no fast reverse mapping */
++#define IRQ_HOST_MAP_LINEAR	2 /* linear map of interrupts */
++#define IRQ_HOST_MAP_TREE	3 /* radix tree */
++	union {
++		struct {
++			unsigned int size;
++			unsigned int *revmap;
++		} linear;
++		struct radix_tree_root tree;
++	} revmap_data;
++	struct irq_host_ops	*ops;
++	void			*host_data;
++	irq_hw_number_t		inval_irq;
 +
-+#include <asm-generic/sections.h>
++	/* Optional device node pointer */
++	struct device_node	*of_node;
++};
 +
-+extern char _vectors_start[];
-+extern char _vectors_end[];
++struct irq_data;
++extern irq_hw_number_t irqd_to_hwirq(struct irq_data *d);
++extern irq_hw_number_t virq_to_hw(unsigned int virq);
++extern bool virq_is_host(unsigned int virq, struct irq_host *host);
 +
-+extern char _data_lma[];
-+extern char _fdt_start[], _fdt_end[];
-+
-+#endif /* _ASM_C6X_SECTIONS_H */
-diff --git a/arch/c6x/include/asm/setup.h b/arch/c6x/include/asm/setup.h
-new file mode 100644
-index 0000000..ee3188d
---- /dev/null
-+++ b/arch/c6x/include/asm/setup.h
-@@ -0,0 +1,29 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
++/**
++ * irq_alloc_host - Allocate a new irq_host data structure
++ * @of_node: optional device-tree node of the interrupt controller
++ * @revmap_type: type of reverse mapping to use
++ * @revmap_arg: for IRQ_HOST_MAP_LINEAR linear only: size of the map
++ * @ops: map/unmap host callbacks
++ * @inval_irq: provide a hw number in that host space that is always invalid
 + *
-+ *  Copyright (C) 2004, 2009, 2010 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ * Allocates and initialize and irq_host structure. Note that in the case of
++ * IRQ_HOST_MAP_LEGACY, the map() callback will be called before this returns
++ * for all legacy interrupts except 0 (which is always the invalid irq for
++ * a legacy controller). For a IRQ_HOST_MAP_LINEAR, the map is allocated by
++ * this call as well. For a IRQ_HOST_MAP_TREE, the radix tree will be allocated
++ * later during boot automatically (the reverse mapping will use the slow path
++ * until that happens).
++ */
++extern struct irq_host *irq_alloc_host(struct device_node *of_node,
++				       unsigned int revmap_type,
++				       unsigned int revmap_arg,
++				       struct irq_host_ops *ops,
++				       irq_hw_number_t inval_irq);
++
++
++/**
++ * irq_find_host - Locates a host for a given device node
++ * @node: device-tree node of the interrupt controller
++ */
++extern struct irq_host *irq_find_host(struct device_node *node);
++
++
++/**
++ * irq_set_default_host - Set a "default" host
++ * @host: default host pointer
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
++ * For convenience, it's possible to set a "default" host that will be used
++ * whenever NULL is passed to irq_create_mapping(). It makes life easier for
++ * platforms that want to manipulate a few hard coded interrupt numbers that
++ * aren't properly represented in the device-tree.
 + */
-+#ifndef _ASM_C6X_SETUP_H
-+#define _ASM_C6X_SETUP_H
++extern void irq_set_default_host(struct irq_host *host);
 +
-+#define COMMAND_LINE_SIZE   1024
 +
-+#ifndef __ASSEMBLY__
-+extern char c6x_command_line[COMMAND_LINE_SIZE];
-+
-+extern int c6x_add_memory(phys_addr_t start, unsigned long size);
-+
-+extern unsigned long ram_start;
-+extern unsigned long ram_end;
-+
-+extern int c6x_num_cores;
-+
-+extern void machine_init(unsigned long dt_ptr);
-+
-+#endif /* !__ASSEMBLY__ */
-+#endif /* _ASM_C6X_SETUP_H */
-diff --git a/arch/c6x/include/asm/string.h b/arch/c6x/include/asm/string.h
-new file mode 100644
-index 0000000..b21517c
---- /dev/null
-+++ b/arch/c6x/include/asm/string.h
-@@ -0,0 +1,21 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
++/**
++ * irq_set_virq_count - Set the maximum number of virt irqs
++ * @count: number of linux virtual irqs, capped with NR_IRQS
 + *
-+ *  Copyright (C) 2004, 2009, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ * This is mainly for use by platforms like iSeries who want to program
++ * the virtual irq number in the controller to avoid the reverse mapping
++ */
++extern void irq_set_virq_count(unsigned int count);
++
++
++/**
++ * irq_create_mapping - Map a hardware interrupt into linux virq space
++ * @host: host owning this hardware interrupt or NULL for default host
++ * @hwirq: hardware irq number in that host space
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
++ * Only one mapping per hardware interrupt is permitted. Returns a linux
++ * virq number.
++ * If the sense/trigger is to be specified, set_irq_type() should be called
++ * on the number returned from that call.
 + */
-+#ifndef _ASM_C6X_STRING_H
-+#define _ASM_C6X_STRING_H
++extern unsigned int irq_create_mapping(struct irq_host *host,
++				       irq_hw_number_t hwirq);
 +
-+#include <asm/page.h>
-+#include <linux/linkage.h>
 +
-+asmlinkage extern void *memcpy(void *to, const void *from, size_t n);
++/**
++ * irq_dispose_mapping - Unmap an interrupt
++ * @virq: linux virq number of the interrupt to unmap
++ */
++extern void irq_dispose_mapping(unsigned int virq);
 +
-+#define __HAVE_ARCH_MEMCPY
-+
-+#endif /* _ASM_C6X_STRING_H */
-diff --git a/arch/c6x/include/asm/system.h b/arch/c6x/include/asm/system.h
-new file mode 100644
-index 0000000..e783096
---- /dev/null
-+++ b/arch/c6x/include/asm/system.h
-@@ -0,0 +1,197 @@
-+/*
-+ *  Port on Texas Instruments TMS320C6x architecture
++/**
++ * irq_find_mapping - Find a linux virq from an hw irq number.
++ * @host: host owning this hardware interrupt
++ * @hwirq: hardware irq number in that host space
 + *
-+ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ * This is a slow path, for use by generic code. It's expected that an
++ * irq controller implementation directly calls the appropriate low level
++ * mapping function.
++ */
++extern unsigned int irq_find_mapping(struct irq_host *host,
++				     irq_hw_number_t hwirq);
++
++/**
++ * irq_create_direct_mapping - Allocate a virq for direct mapping
++ * @host: host to allocate the virq for or NULL for default host
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
++ * This routine is used for irq controllers which can choose the hardware
++ * interrupt numbers they generate. In such a case it's simplest to use
++ * the linux virq as the hardware interrupt number.
 + */
-+#ifndef _ASM_C6X_SYSTEM_H
-+#define _ASM_C6X_SYSTEM_H
++extern unsigned int irq_create_direct_mapping(struct irq_host *host);
 +
-+#include <linux/linkage.h>
-+#include <linux/irqflags.h>
++/**
++ * irq_radix_revmap_insert - Insert a hw irq to linux virq number mapping.
++ * @host: host owning this hardware interrupt
++ * @virq: linux irq number
++ * @hwirq: hardware irq number in that host space
++ *
++ * This is for use by irq controllers that use a radix tree reverse
++ * mapping for fast lookup.
++ */
++extern void irq_radix_revmap_insert(struct irq_host *host, unsigned int virq,
++				    irq_hw_number_t hwirq);
 +
-+#define prepare_to_switch()    do { } while (0)
++/**
++ * irq_radix_revmap_lookup - Find a linux virq from a hw irq number.
++ * @host: host owning this hardware interrupt
++ * @hwirq: hardware irq number in that host space
++ *
++ * This is a fast path, for use by irq controller code that uses radix tree
++ * revmaps
++ */
++extern unsigned int irq_radix_revmap_lookup(struct irq_host *host,
++					    irq_hw_number_t hwirq);
 +
-+struct task_struct;
-+struct thread_struct;
-+asmlinkage void *__switch_to(struct thread_struct *prev,
-+			     struct thread_struct *next,
-+			     struct task_struct *tsk);
-+
-+#define switch_to(prev, next, last)				\
-+	do {							\
-+		current->thread.wchan = (u_long) __builtin_return_address(0); \
-+		(last) = __switch_to(&(prev)->thread,		\
-+				     &(next)->thread, (prev));	\
-+		mb();						\
-+		current->thread.wchan = 0;			\
-+	} while (0)
-+
-+/* Reset the board */
-+#define HARD_RESET_NOW()
-+
-+#define get_creg(reg) \
-+	({ unsigned int __x; \
-+	   asm volatile ("mvc .s2 " #reg ",%0\n" : "=b"(__x)); __x; })
-+
-+#define set_creg(reg, v) \
-+	do { unsigned int __x = (unsigned int)(v); \
-+		asm volatile ("mvc .s2 %0," #reg "\n" : : "b"(__x)); \
-+	} while (0)
-+
-+#define or_creg(reg, n) \
-+	do { unsigned __x, __n = (unsigned)(n);		  \
-+		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
-+			      "or  .l2 %1,%0,%0\n"	  \
-+			      "mvc .s2 %0," #reg "\n"	  \
-+			      "nop\n"			  \
-+			      : "=&b"(__x) : "b"(__n));	  \
-+	} while (0)
-+
-+#define and_creg(reg, n) \
-+	do { unsigned __x, __n = (unsigned)(n);		  \
-+		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
-+			      "and .l2 %1,%0,%0\n"	  \
-+			      "mvc .s2 %0," #reg "\n"	  \
-+			      "nop\n"    \
-+			      : "=&b"(__x) : "b"(__n));	  \
-+	} while (0)
-+
-+#define get_coreid() (get_creg(DNUM) & 0xff)
-+
-+/*
-+ * Interrupt management
++/**
++ * irq_linear_revmap - Find a linux virq from a hw irq number.
++ * @host: host owning this hardware interrupt
++ * @hwirq: hardware irq number in that host space
++ *
++ * This is a fast path, for use by irq controller code that uses linear
++ * revmaps. It does fallback to the slow path if the revmap doesn't exist
++ * yet and will create the revmap entry with appropriate locking
 + */
 +
-+/* Return from interrupt function */
-+#define iret()	  asm volatile("B   .S2 IRP\n" \
-+			       "NOP 5\n")
++extern unsigned int irq_linear_revmap(struct irq_host *host,
++				      irq_hw_number_t hwirq);
 +
-+/* Set/get IST */
-+#define set_ist(x)	set_creg(ISTP, x)
-+#define get_ist()       get_creg(ISTP)
 +
-+#ifdef __TMS320C6XPLUS__
-+#define __dint()                 asm volatile ("DINT\n")
-+#define __rint()                 asm volatile ("RINT\n")
-+#endif
 +
-+/*
-+ * Exception management
++/**
++ * irq_alloc_virt - Allocate virtual irq numbers
++ * @host: host owning these new virtual irqs
++ * @count: number of consecutive numbers to allocate
++ * @hint: pass a hint number, the allocator will try to use a 1:1 mapping
++ *
++ * This is a low level function that is used internally by irq_create_mapping()
++ * and that can be used by some irq controllers implementations for things
++ * like allocating ranges of numbers for MSIs. The revmaps are left untouched.
 + */
++extern unsigned int irq_alloc_virt(struct irq_host *host,
++				   unsigned int count,
++				   unsigned int hint);
 +
-+#ifdef __TMS320C6XPLUS__
-+asmlinkage void enable_exception(void);
-+#define disable_exception()
-+#define get_except_type()        get_creg(EFR)
-+#define ack_exception(type)      set_creg(ECR, 1 << (type))
-+#define get_iexcept()            get_creg(IERR)
-+#define set_iexcept(mask)        set_creg(IERR, (mask))
-+#else
-+#define enable_exception()
-+#define disable_exception()
-+#define get_except_type()
-+#define ack_exception(type)
-+#define get_iexcept()
-+#define set_iexcept(mask)
-+#endif
-+
-+/*
-+ * Misc. functions
++/**
++ * irq_free_virt - Free virtual irq numbers
++ * @virq: virtual irq number of the first interrupt to free
++ * @count: number of interrupts to free
++ *
++ * This function is the opposite of irq_alloc_virt. It will not clear reverse
++ * maps, this should be done previously by unmap'ing the interrupt. In fact,
++ * all interrupts covered by the range being freed should have been unmapped
++ * prior to calling this.
 + */
++extern void irq_free_virt(unsigned int virq, unsigned int count);
 +
-+/* Return from exception function */
-+#define eret()			 { asm("B   .S2 NRP\n"); \
-+				   asm("NOP  5\n"); }
++extern void __init init_pic_c64xplus(void);
 +
-+#define nop()                    asm("NOP\n");
-+#define mb()                     barrier()
-+#define rmb()                    barrier()
-+#define wmb()                    barrier()
-+#define set_mb(var, value)       do { var = value;  mb(); } while (0)
-+#define set_wmb(var, value)      do { var = value; wmb(); } while (0)
-+
-+#define smp_mb()	         barrier()
-+#define smp_rmb()	         barrier()
-+#define smp_wmb()	         barrier()
-+#define smp_read_barrier_depends()	do { } while (0)
-+
-+#define xchg(ptr, x) \
-+	((__typeof__(*(ptr)))__xchg((unsigned int)(x), (void *) (ptr), \
-+				    sizeof(*(ptr))))
-+#define tas(ptr)    xchg((ptr), 1)
-+
-+unsigned int _lmbd(unsigned int, unsigned int);
-+unsigned int _bitr(unsigned int);
-+
-+struct __xchg_dummy { unsigned int a[100]; };
-+#define __xg(x) ((volatile struct __xchg_dummy *)(x))
-+
-+static inline unsigned int __xchg(unsigned int x, volatile void *ptr, int size)
-+{
-+	unsigned int tmp;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+
-+	switch (size) {
-+	case 1:
-+		tmp = 0;
-+		tmp = *((unsigned char *) ptr);
-+		*((unsigned char *) ptr) = (unsigned char) x;
-+		break;
-+	case 2:
-+		tmp = 0;
-+		tmp = *((unsigned short *) ptr);
-+		*((unsigned short *) ptr) = x;
-+		break;
-+	case 4:
-+		tmp = 0;
-+		tmp = *((unsigned int *) ptr);
-+		*((unsigned int *) ptr) = x;
-+		break;
-+	}
-+	local_irq_restore(flags);
-+	return tmp;
-+}
-+
-+#include <asm-generic/cmpxchg-local.h>
-+
-+/*
-+ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
-+ * them available.
-+ */
-+#define cmpxchg_local(ptr, o, n)					\
-+	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),		\
-+						     (unsigned long)(o), \
-+						     (unsigned long)(n), \
-+						     sizeof(*(ptr))))
-+#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
-+
-+#include <asm-generic/cmpxchg.h>
-+
-+#define _extu(x, s, e)							\
-+	({      unsigned int __x;					\
-+		asm volatile ("extu .S2 %3,%1,%2,%0\n" :		\
-+			      "=b"(__x) : "n"(s), "n"(e), "b"(x));	\
-+	       __x; })
-+
-+
-+extern unsigned int c6x_core_freq;
++extern void init_IRQ(void);
 +
 +struct pt_regs;
 +
-+extern void die(char *str, struct pt_regs *fp, int nr);
-+extern asmlinkage int process_exception(struct pt_regs *regs);
-+extern void time_init(void);
-+extern void free_initmem(void);
++extern asmlinkage void c6x_do_IRQ(unsigned int prio, struct pt_regs *regs);
 +
-+extern void (*c6x_restart)(void);
-+extern void (*c6x_halt)(void);
-+extern void (*c6x_power_off)(void);
++extern unsigned long irq_err_count;
 +
-+#endif /* _ASM_C6X_SYSTEM_H */
-diff --git a/arch/c6x/include/asm/tlb.h b/arch/c6x/include/asm/tlb.h
++#endif /* _ASM_C6X_IRQ_H */
+diff --git a/arch/c6x/include/asm/irqflags.h b/arch/c6x/include/asm/irqflags.h
 new file mode 100644
-index 0000000..8709e5e
+index 0000000..cf78e09
 --- /dev/null
-+++ b/arch/c6x/include/asm/tlb.h
-@@ -0,0 +1,8 @@
-+#ifndef _ASM_C6X_TLB_H
-+#define _ASM_C6X_TLB_H
++++ b/arch/c6x/include/asm/irqflags.h
+@@ -0,0 +1,72 @@
++/*
++ *  C6X IRQ flag handling
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated
++ * Written by Mark Salter (msalter@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
 +
-+#define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
++#ifndef _ASM_IRQFLAGS_H
++#define _ASM_IRQFLAGS_H
 +
-+#include <asm-generic/tlb.h>
++#ifndef __ASSEMBLY__
 +
-+#endif /* _ASM_C6X_TLB_H */
-diff --git a/arch/c6x/include/asm/uaccess.h b/arch/c6x/include/asm/uaccess.h
++/* read interrupt enabled status */
++static inline unsigned long arch_local_save_flags(void)
++{
++	unsigned long flags;
++
++	asm volatile (" mvc .s2 CSR,%0\n" : "=b"(flags));
++	return flags;
++}
++
++/* set interrupt enabled status */
++static inline void arch_local_irq_restore(unsigned long flags)
++{
++	asm volatile (" mvc .s2 %0,CSR\n" : : "b"(flags));
++}
++
++/* unconditionally enable interrupts */
++static inline void arch_local_irq_enable(void)
++{
++	unsigned long flags = arch_local_save_flags();
++	flags |= 1;
++	arch_local_irq_restore(flags);
++}
++
++/* unconditionally disable interrupts */
++static inline void arch_local_irq_disable(void)
++{
++	unsigned long flags = arch_local_save_flags();
++	flags &= ~1;
++	arch_local_irq_restore(flags);
++}
++
++/* get status and disable interrupts */
++static inline unsigned long arch_local_irq_save(void)
++{
++	unsigned long flags;
++
++	flags = arch_local_save_flags();
++	arch_local_irq_restore(flags & ~1);
++	return flags;
++}
++
++/* test flags */
++static inline int arch_irqs_disabled_flags(unsigned long flags)
++{
++	return (flags & 1) == 0;
++}
++
++/* test hardware interrupt enable bit */
++static inline int arch_irqs_disabled(void)
++{
++	return arch_irqs_disabled_flags(arch_local_save_flags());
++}
++
++#endif /* __ASSEMBLY__ */
++#endif /* __ASM_IRQFLAGS_H */
+diff --git a/arch/c6x/kernel/irq.c b/arch/c6x/kernel/irq.c
 new file mode 100644
-index 0000000..453dd26
+index 0000000..d62a983
 --- /dev/null
-+++ b/arch/c6x/include/asm/uaccess.h
-@@ -0,0 +1,107 @@
++++ b/arch/c6x/kernel/irq.c
+@@ -0,0 +1,732 @@
 +/*
 + *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
++ *  This borrows heavily from powerpc version, which is:
++ *
++ *  Derived from arch/i386/kernel/irq.c
++ *    Copyright (C) 1992 Linus Torvalds
++ *  Adapted from arch/i386 by Gary Thomas
++ *    Copyright (C) 1995-1996 Gary Thomas (gdt@linuxppc.org)
++ *  Updated and modified by Cort Dougan <cort@fsmlabs.com>
++ *    Copyright (C) 1996-2001 Cort Dougan
++ *  Adapted for Power Macintosh by Paul Mackerras
++ *    Copyright (C) 1996 Paul Mackerras (paulus@cs.anu.edu.au)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
-+#ifndef _ASM_C6X_UACCESS_H
-+#define _ASM_C6X_UACCESS_H
++#include <linux/slab.h>
++#include <linux/seq_file.h>
++#include <linux/radix-tree.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/interrupt.h>
++#include <linux/kernel_stat.h>
 +
-+#include <linux/types.h>
-+#include <linux/compiler.h>
-+#include <linux/string.h>
++#include <asm/soc.h>
 +
-+#ifdef CONFIG_ACCESS_CHECK
-+#define __access_ok _access_ok
-+#endif
++unsigned long irq_err_count;
++
++static spinlock_t core_irq_lock;
++
++static void mask_core_irq(struct irq_data *data)
++{
++	unsigned int prio = data->irq;
++	unsigned long flags;
++
++	BUG_ON(prio < 4 || prio >= NR_PRIORITY_IRQS);
++
++	spin_lock_irqsave(&core_irq_lock, flags);
++	and_creg(IER, ~(1 << prio));
++	spin_unlock_irqrestore(&core_irq_lock, flags);
++}
++
++static void unmask_core_irq(struct irq_data *data)
++{
++	unsigned int prio = data->irq;
++	unsigned long flags;
++
++	spin_lock_irqsave(&core_irq_lock, flags);
++	or_creg(IER, 1 << prio);
++	spin_unlock_irqrestore(&core_irq_lock, flags);
++}
++
++static struct irq_chip core_chip = {
++	.name		= "core",
++	.irq_mask	= mask_core_irq,
++	.irq_unmask	= unmask_core_irq,
++};
++
++asmlinkage void c6x_do_IRQ(unsigned int prio, struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
++
++	irq_enter();
++
++	BUG_ON(prio < 4 || prio >= NR_PRIORITY_IRQS);
++
++	generic_handle_irq(prio);
++
++	irq_exit();
++
++	set_irq_regs(old_regs);
++}
++
++static struct irq_host *core_host;
++
++static int core_host_map(struct irq_host *h, unsigned int virq,
++			 irq_hw_number_t hw)
++{
++	if (hw < 4 || hw >= NR_PRIORITY_IRQS)
++		return -1;
++
++	irq_set_status_flags(virq, IRQ_LEVEL);
++	irq_set_chip_and_handler(virq, &core_chip, handle_level_irq);
++	return 0;
++}
++
++static struct irq_host_ops core_host_ops = {
++	.map = core_host_map,
++};
++
++void __init init_IRQ(void)
++{
++	struct device_node *np;
++
++	spin_lock_init(&core_irq_lock);
++
++	/* Mask all priority IRQs */
++	and_creg(IER, ~0xfff0);
++
++	np = of_find_compatible_node(NULL, NULL, "ti,c64x+core-pic");
++	if (np != NULL) {
++		/* create the core host */
++		core_host = irq_alloc_host(np, IRQ_HOST_MAP_PRIORITY, 0,
++					   &core_host_ops, 0);
++		if (core_host)
++			irq_set_default_host(core_host);
++		of_node_put(np);
++	}
++
++	printk(KERN_INFO "Core interrupt controller initialized\n");
++
++	/* now we're ready for other SoC controllers */
++	soc_init_IRQ();
++
++	/* Clear all general IRQ flags */
++	set_creg(ICR, 0xfff0);
++}
++
++void ack_bad_irq(int irq)
++{
++	printk(KERN_ERR "IRQ: spurious interrupt %d\n", irq);
++	irq_err_count++;
++}
++
++int arch_show_interrupts(struct seq_file *p, int prec)
++{
++	seq_printf(p, "%*s: %10lu\n", prec, "Err", irq_err_count);
++	return 0;
++}
 +
 +/*
-+ * __copy_from_user/copy_to_user are based on ones in asm-generic/uaccess.h
-+ *
-+ * C6X supports unaligned 32 and 64 bit loads and stores.
++ * IRQ controller and virtual interrupts
 + */
-+static inline __must_check long __copy_from_user(void *to,
-+		const void __user *from, unsigned long n)
-+{
-+	u32 tmp32;
-+	u64 tmp64;
 +
-+	if (__builtin_constant_p(n)) {
-+		switch (n) {
-+		case 1:
-+			*(u8 *)to = *(u8 __force *)from;
-+			return 0;
-+		case 4:
-+			asm volatile ("ldnw .d1t1 *%2,%0\n"
-+				      "nop  4\n"
-+				      "stnw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp32)
-+				      : "A"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		case 8:
-+			asm volatile ("ldndw .d1t1 *%2,%0\n"
-+				      "nop   4\n"
-+				      "stndw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp64)
-+				      : "a"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		default:
++/* The main irq map itself is an array of NR_IRQ entries containing the
++ * associate host and irq number. An entry with a host of NULL is free.
++ * An entry can be allocated if it's free, the allocator always then sets
++ * hwirq first to the host's invalid irq number and then fills ops.
++ */
++struct irq_map_entry {
++	irq_hw_number_t	hwirq;
++	struct irq_host	*host;
++};
++
++static LIST_HEAD(irq_hosts);
++static DEFINE_RAW_SPINLOCK(irq_big_lock);
++static DEFINE_MUTEX(revmap_trees_mutex);
++static struct irq_map_entry irq_map[NR_IRQS];
++static unsigned int irq_virq_count = NR_IRQS;
++static struct irq_host *irq_default_host;
++
++irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
++{
++	return irq_map[d->irq].hwirq;
++}
++EXPORT_SYMBOL_GPL(irqd_to_hwirq);
++
++irq_hw_number_t virq_to_hw(unsigned int virq)
++{
++	return irq_map[virq].hwirq;
++}
++EXPORT_SYMBOL_GPL(virq_to_hw);
++
++bool virq_is_host(unsigned int virq, struct irq_host *host)
++{
++	return irq_map[virq].host == host;
++}
++EXPORT_SYMBOL_GPL(virq_is_host);
++
++static int default_irq_host_match(struct irq_host *h, struct device_node *np)
++{
++	return h->of_node != NULL && h->of_node == np;
++}
++
++struct irq_host *irq_alloc_host(struct device_node *of_node,
++				unsigned int revmap_type,
++				unsigned int revmap_arg,
++				struct irq_host_ops *ops,
++				irq_hw_number_t inval_irq)
++{
++	struct irq_host *host;
++	unsigned int size = sizeof(struct irq_host);
++	unsigned int i;
++	unsigned int *rmap;
++	unsigned long flags;
++
++	/* Allocate structure and revmap table if using linear mapping */
++	if (revmap_type == IRQ_HOST_MAP_LINEAR)
++		size += revmap_arg * sizeof(unsigned int);
++	host = kzalloc(size, GFP_KERNEL);
++	if (host == NULL)
++		return NULL;
++
++	/* Fill structure */
++	host->revmap_type = revmap_type;
++	host->inval_irq = inval_irq;
++	host->ops = ops;
++	host->of_node = of_node_get(of_node);
++
++	if (host->ops->match == NULL)
++		host->ops->match = default_irq_host_match;
++
++	raw_spin_lock_irqsave(&irq_big_lock, flags);
++
++	/* Check for the priority controller. */
++	if (revmap_type == IRQ_HOST_MAP_PRIORITY) {
++		if (irq_map[0].host != NULL) {
++			raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++			of_node_put(host->of_node);
++			kfree(host);
++			return NULL;
++		}
++		irq_map[0].host = host;
++	}
++
++	list_add(&host->link, &irq_hosts);
++	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++
++	/* Additional setups per revmap type */
++	switch (revmap_type) {
++	case IRQ_HOST_MAP_PRIORITY:
++		/* 0 is always the invalid number for priority */
++		host->inval_irq = 0;
++		/* setup us as the host for all priority interrupts */
++		for (i = 1; i < NR_PRIORITY_IRQS; i++) {
++			irq_map[i].hwirq = i;
++			smp_wmb();
++			irq_map[i].host = host;
++			smp_wmb();
++
++			ops->map(host, i, i);
++		}
++		break;
++	case IRQ_HOST_MAP_LINEAR:
++		rmap = (unsigned int *)(host + 1);
++		for (i = 0; i < revmap_arg; i++)
++			rmap[i] = NO_IRQ;
++		host->revmap_data.linear.size = revmap_arg;
++		smp_wmb();
++		host->revmap_data.linear.revmap = rmap;
++		break;
++	case IRQ_HOST_MAP_TREE:
++		INIT_RADIX_TREE(&host->revmap_data.tree, GFP_KERNEL);
++		break;
++	default:
++		break;
++	}
++
++	pr_debug("irq: Allocated host of type %d @0x%p\n", revmap_type, host);
++
++	return host;
++}
++
++struct irq_host *irq_find_host(struct device_node *node)
++{
++	struct irq_host *h, *found = NULL;
++	unsigned long flags;
++
++	/* We might want to match the legacy controller last since
++	 * it might potentially be set to match all interrupts in
++	 * the absence of a device node. This isn't a problem so far
++	 * yet though...
++	 */
++	raw_spin_lock_irqsave(&irq_big_lock, flags);
++	list_for_each_entry(h, &irq_hosts, link)
++		if (h->ops->match(h, node)) {
++			found = h;
++			break;
++		}
++	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++	return found;
++}
++EXPORT_SYMBOL_GPL(irq_find_host);
++
++void irq_set_default_host(struct irq_host *host)
++{
++	pr_debug("irq: Default host set to @0x%p\n", host);
++
++	irq_default_host = host;
++}
++
++void irq_set_virq_count(unsigned int count)
++{
++	pr_debug("irq: Trying to set virq count to %d\n", count);
++
++	BUG_ON(count < NR_PRIORITY_IRQS);
++	if (count < NR_IRQS)
++		irq_virq_count = count;
++}
++
++static int irq_setup_virq(struct irq_host *host, unsigned int virq,
++			    irq_hw_number_t hwirq)
++{
++	int res;
++
++	res = irq_alloc_desc_at(virq, 0);
++	if (res != virq) {
++		pr_debug("irq: -> allocating desc failed\n");
++		goto error;
++	}
++
++	/* map it */
++	smp_wmb();
++	irq_map[virq].hwirq = hwirq;
++	smp_mb();
++
++	if (host->ops->map(host, virq, hwirq)) {
++		pr_debug("irq: -> mapping failed, freeing\n");
++		goto errdesc;
++	}
++
++	irq_clear_status_flags(virq, IRQ_NOREQUEST);
++
++	return 0;
++
++errdesc:
++	irq_free_descs(virq, 1);
++error:
++	irq_free_virt(virq, 1);
++	return -1;
++}
++
++unsigned int irq_create_direct_mapping(struct irq_host *host)
++{
++	unsigned int virq;
++
++	if (host == NULL)
++		host = irq_default_host;
++
++	BUG_ON(host == NULL);
++	WARN_ON(host->revmap_type != IRQ_HOST_MAP_NOMAP);
++
++	virq = irq_alloc_virt(host, 1, 0);
++	if (virq == NO_IRQ) {
++		pr_debug("irq: create_direct virq allocation failed\n");
++		return NO_IRQ;
++	}
++
++	pr_debug("irq: create_direct obtained virq %d\n", virq);
++
++	if (irq_setup_virq(host, virq, virq))
++		return NO_IRQ;
++
++	return virq;
++}
++
++unsigned int irq_create_mapping(struct irq_host *host,
++				irq_hw_number_t hwirq)
++{
++	unsigned int virq, hint;
++
++	pr_debug("irq: irq_create_mapping(0x%p, 0x%lx)\n", host, hwirq);
++
++	/* Look for default host if nececssary */
++	if (host == NULL)
++		host = irq_default_host;
++	if (host == NULL) {
++		printk(KERN_WARNING "irq_create_mapping called for"
++		       " NULL host, hwirq=%lx\n", hwirq);
++		WARN_ON(1);
++		return NO_IRQ;
++	}
++	pr_debug("irq: -> using host @%p\n", host);
++
++	/* Check if mapping already exists */
++	virq = irq_find_mapping(host, hwirq);
++	if (virq != NO_IRQ) {
++		pr_debug("irq: -> existing mapping on virq %d\n", virq);
++		return virq;
++	}
++
++	/* Allocate a virtual interrupt number */
++	hint = hwirq % irq_virq_count;
++	virq = irq_alloc_virt(host, 1, hint);
++	if (virq == NO_IRQ) {
++		pr_debug("irq: -> virq allocation failed\n");
++		return NO_IRQ;
++	}
++
++	if (irq_setup_virq(host, virq, hwirq))
++		return NO_IRQ;
++
++	pr_debug("irq: irq %lu on host %s mapped to virtual irq %u\n",
++		hwirq, host->of_node ? host->of_node->full_name : "null", virq);
++
++	return virq;
++}
++EXPORT_SYMBOL_GPL(irq_create_mapping);
++
++unsigned int irq_create_of_mapping(struct device_node *controller,
++				   const u32 *intspec, unsigned int intsize)
++{
++	struct irq_host *host;
++	irq_hw_number_t hwirq;
++	unsigned int type = IRQ_TYPE_NONE;
++	unsigned int virq;
++
++	if (controller == NULL)
++		host = irq_default_host;
++	else
++		host = irq_find_host(controller);
++	if (host == NULL) {
++		printk(KERN_WARNING "irq: no irq host found for %s !\n",
++		       controller->full_name);
++		return NO_IRQ;
++	}
++
++	/* If host has no translation, then we assume interrupt line */
++	if (host->ops->xlate == NULL)
++		hwirq = intspec[0];
++	else {
++		if (host->ops->xlate(host, controller, intspec, intsize,
++				     &hwirq, &type))
++			return NO_IRQ;
++	}
++
++	/* Create mapping */
++	virq = irq_create_mapping(host, hwirq);
++	if (virq == NO_IRQ)
++		return virq;
++
++	/* Set type if specified and different than the current one */
++	if (type != IRQ_TYPE_NONE &&
++	    type != (irqd_get_trigger_type(irq_get_irq_data(virq))))
++		irq_set_irq_type(virq, type);
++	return virq;
++}
++EXPORT_SYMBOL_GPL(irq_create_of_mapping);
++
++void irq_dispose_mapping(unsigned int virq)
++{
++	struct irq_host *host;
++	irq_hw_number_t hwirq;
++
++	if (virq == NO_IRQ)
++		return;
++
++	/* Never unmap priority interrupts */
++	if (virq < NR_PRIORITY_IRQS)
++		return;
++
++	host = irq_map[virq].host;
++	if (WARN_ON(host == NULL))
++		return;
++
++	irq_set_status_flags(virq, IRQ_NOREQUEST);
++
++	/* remove chip and handler */
++	irq_set_chip_and_handler(virq, NULL, NULL);
++
++	/* Make sure it's completed */
++	synchronize_irq(virq);
++
++	/* Tell the PIC about it */
++	if (host->ops->unmap)
++		host->ops->unmap(host, virq);
++	smp_mb();
++
++	/* Clear reverse map */
++	hwirq = irq_map[virq].hwirq;
++	switch (host->revmap_type) {
++	case IRQ_HOST_MAP_LINEAR:
++		if (hwirq < host->revmap_data.linear.size)
++			host->revmap_data.linear.revmap[hwirq] = NO_IRQ;
++		break;
++	case IRQ_HOST_MAP_TREE:
++		mutex_lock(&revmap_trees_mutex);
++		radix_tree_delete(&host->revmap_data.tree, hwirq);
++		mutex_unlock(&revmap_trees_mutex);
++		break;
++	}
++
++	/* Destroy map */
++	smp_mb();
++	irq_map[virq].hwirq = host->inval_irq;
++
++	irq_free_descs(virq, 1);
++	/* Free it */
++	irq_free_virt(virq, 1);
++}
++EXPORT_SYMBOL_GPL(irq_dispose_mapping);
++
++unsigned int irq_find_mapping(struct irq_host *host,
++			      irq_hw_number_t hwirq)
++{
++	unsigned int i;
++	unsigned int hint = hwirq % irq_virq_count;
++
++	/* Look for default host if nececssary */
++	if (host == NULL)
++		host = irq_default_host;
++	if (host == NULL)
++		return NO_IRQ;
++
++	/* Slow path does a linear search of the map */
++	i = hint;
++	do  {
++		if (irq_map[i].host == host &&
++		    irq_map[i].hwirq == hwirq)
++			return i;
++		i++;
++		if (i >= irq_virq_count)
++			i = 4;
++	} while (i != hint);
++	return NO_IRQ;
++}
++EXPORT_SYMBOL_GPL(irq_find_mapping);
++
++unsigned int irq_radix_revmap_lookup(struct irq_host *host,
++				     irq_hw_number_t hwirq)
++{
++	struct irq_map_entry *ptr;
++	unsigned int virq;
++
++	if (WARN_ON_ONCE(host->revmap_type != IRQ_HOST_MAP_TREE))
++		return irq_find_mapping(host, hwirq);
++
++	/*
++	 * The ptr returned references the static global irq_map.
++	 * but freeing an irq can delete nodes along the path to
++	 * do the lookup via call_rcu.
++	 */
++	rcu_read_lock();
++	ptr = radix_tree_lookup(&host->revmap_data.tree, hwirq);
++	rcu_read_unlock();
++
++	/*
++	 * If found in radix tree, then fine.
++	 * Else fallback to linear lookup - this should not happen in practice
++	 * as it means that we failed to insert the node in the radix tree.
++	 */
++	if (ptr)
++		virq = ptr - irq_map;
++	else
++		virq = irq_find_mapping(host, hwirq);
++
++	return virq;
++}
++
++void irq_radix_revmap_insert(struct irq_host *host, unsigned int virq,
++			     irq_hw_number_t hwirq)
++{
++	if (WARN_ON(host->revmap_type != IRQ_HOST_MAP_TREE))
++		return;
++
++	if (virq != NO_IRQ) {
++		mutex_lock(&revmap_trees_mutex);
++		radix_tree_insert(&host->revmap_data.tree, hwirq,
++				  &irq_map[virq]);
++		mutex_unlock(&revmap_trees_mutex);
++	}
++}
++
++unsigned int irq_linear_revmap(struct irq_host *host,
++			       irq_hw_number_t hwirq)
++{
++	unsigned int *revmap;
++
++	if (WARN_ON_ONCE(host->revmap_type != IRQ_HOST_MAP_LINEAR))
++		return irq_find_mapping(host, hwirq);
++
++	/* Check revmap bounds */
++	if (unlikely(hwirq >= host->revmap_data.linear.size))
++		return irq_find_mapping(host, hwirq);
++
++	/* Check if revmap was allocated */
++	revmap = host->revmap_data.linear.revmap;
++	if (unlikely(revmap == NULL))
++		return irq_find_mapping(host, hwirq);
++
++	/* Fill up revmap with slow path if no mapping found */
++	if (unlikely(revmap[hwirq] == NO_IRQ))
++		revmap[hwirq] = irq_find_mapping(host, hwirq);
++
++	return revmap[hwirq];
++}
++
++unsigned int irq_alloc_virt(struct irq_host *host,
++			    unsigned int count,
++			    unsigned int hint)
++{
++	unsigned long flags;
++	unsigned int i, j, found = NO_IRQ;
++
++	if (count == 0 || count > (irq_virq_count - NR_PRIORITY_IRQS))
++		return NO_IRQ;
++
++	raw_spin_lock_irqsave(&irq_big_lock, flags);
++
++	/* Use hint for 1 interrupt if any */
++	if (count == 1 && hint >= NR_PRIORITY_IRQS &&
++	    hint < irq_virq_count && irq_map[hint].host == NULL) {
++		found = hint;
++		goto hint_found;
++	}
++
++	/* Look for count consecutive numbers in the allocatable
++	 * (non-legacy) space
++	 */
++	for (i = NR_PRIORITY_IRQS, j = 0; i < irq_virq_count; i++) {
++		if (irq_map[i].host != NULL)
++			j = 0;
++		else
++			j++;
++
++		if (j == count) {
++			found = i - count + 1;
 +			break;
 +		}
 +	}
-+
-+	memcpy(to, (const void __force *)from, n);
-+	return 0;
++	if (found == NO_IRQ) {
++		raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++		return NO_IRQ;
++	}
++ hint_found:
++	for (i = found; i < (found + count); i++) {
++		irq_map[i].hwirq = host->inval_irq;
++		smp_wmb();
++		irq_map[i].host = host;
++	}
++	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++	return found;
 +}
 +
-+static inline __must_check long __copy_to_user(void __user *to,
-+		const void *from, unsigned long n)
++void irq_free_virt(unsigned int virq, unsigned int count)
 +{
-+	u32 tmp32;
-+	u64 tmp64;
++	unsigned long flags;
++	unsigned int i;
 +
-+	if (__builtin_constant_p(n)) {
-+		switch (n) {
-+		case 1:
-+			*(u8 __force *)to = *(u8 *)from;
-+			return 0;
-+		case 4:
-+			asm volatile ("ldnw .d1t1 *%2,%0\n"
-+				      "nop  4\n"
-+				      "stnw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp32)
-+				      : "a"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		case 8:
-+			asm volatile ("ldndw .d1t1 *%2,%0\n"
-+				      "nop   4\n"
-+				      "stndw .d1t1 %0,*%1\n"
-+				      : "=&a"(tmp64)
-+				      : "a"(to), "a"(from)
-+				      : "memory");
-+			return 0;
-+		default:
-+			break;
-+		}
++	WARN_ON(virq < NR_PRIORITY_IRQS);
++	WARN_ON(count == 0 || (virq + count) > irq_virq_count);
++
++	if (virq < NR_PRIORITY_IRQS) {
++		if (virq + count < NR_PRIORITY_IRQS)
++			return;
++		count  -= NR_PRIORITY_IRQS - virq;
++		virq = NR_PRIORITY_IRQS;
 +	}
 +
-+	memcpy((void __force *)to, from, n);
++	if (count > irq_virq_count || virq > irq_virq_count - count) {
++		if (virq > irq_virq_count)
++			return;
++		count = irq_virq_count - virq;
++	}
++
++	raw_spin_lock_irqsave(&irq_big_lock, flags);
++	for (i = virq; i < (virq + count); i++) {
++		struct irq_host *host;
++
++		host = irq_map[i].host;
++		irq_map[i].hwirq = host->inval_irq;
++		smp_wmb();
++		irq_map[i].host = NULL;
++	}
++	raw_spin_unlock_irqrestore(&irq_big_lock, flags);
++}
++
++#ifdef CONFIG_VIRQ_DEBUG
++static int virq_debug_show(struct seq_file *m, void *private)
++{
++	unsigned long flags;
++	struct irq_desc *desc;
++	const char *p;
++	static const char none[] = "none";
++	void *data;
++	int i;
++
++	seq_printf(m, "%-5s  %-7s  %-15s  %-18s  %s\n", "virq", "hwirq",
++		      "chip name", "chip data", "host name");
++
++	for (i = 1; i < nr_irqs; i++) {
++		desc = irq_to_desc(i);
++		if (!desc)
++			continue;
++
++		raw_spin_lock_irqsave(&desc->lock, flags);
++
++		if (desc->action && desc->action->handler) {
++			struct irq_chip *chip;
++
++			seq_printf(m, "%5d  ", i);
++			seq_printf(m, "0x%05lx  ", irq_map[i].hwirq);
++
++			chip = irq_desc_get_chip(desc);
++			if (chip && chip->name)
++				p = chip->name;
++			else
++				p = none;
++			seq_printf(m, "%-15s  ", p);
++
++			data = irq_desc_get_chip_data(desc);
++			seq_printf(m, "0x%16p  ", data);
++
++			if (irq_map[i].host && irq_map[i].host->of_node)
++				p = irq_map[i].host->of_node->full_name;
++			else
++				p = none;
++			seq_printf(m, "%s\n", p);
++		}
++
++		raw_spin_unlock_irqrestore(&desc->lock, flags);
++	}
++
 +	return 0;
 +}
 +
-+#define __copy_to_user   __copy_to_user
-+#define __copy_from_user __copy_from_user
++static int virq_debug_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, virq_debug_show, inode->i_private);
++}
 +
-+extern int _access_ok(unsigned long addr, unsigned long size);
-+#ifdef CONFIG_ACCESS_CHECK
-+#define __access_ok _access_ok
-+#endif
++static const struct file_operations virq_debug_fops = {
++	.open = virq_debug_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
 +
-+#include <asm-generic/uaccess.h>
++static int __init irq_debugfs_init(void)
++{
++	if (debugfs_create_file("virq_mapping", S_IRUGO, powerpc_debugfs_root,
++				 NULL, &virq_debug_fops) == NULL)
++		return -ENOMEM;
 +
-+#endif /* _ASM_C6X_UACCESS_H */
-diff --git a/arch/c6x/include/asm/unaligned.h b/arch/c6x/include/asm/unaligned.h
++	return 0;
++}
++device_initcall(irq_debugfs_init);
++#endif /* CONFIG_VIRQ_DEBUG */
+diff --git a/arch/c6x/platforms/megamod-pic.c b/arch/c6x/platforms/megamod-pic.c
 new file mode 100644
-index 0000000..1dcb006
+index 0000000..ff83b16
 --- /dev/null
-+++ b/arch/c6x/include/asm/unaligned.h
-@@ -0,0 +1,288 @@
++++ b/arch/c6x/platforms/megamod-pic.c
+@@ -0,0 +1,336 @@
 +/*
-+ *  Port on Texas Instruments TMS320C6x architecture
++ *  Support for C64x+ Megamodule Interrupt Controller
 + *
-+ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
-+ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
-+ *  Rewritten for 2.6.3x: Mark Salter <msalter@redhat.com>
++ *  Copyright (C) 2010, 2011 Texas Instruments Incorporated
++ *  Contributed by: Mark Salter <msalter@redhat.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#ifndef _ASM_C6X_UNALIGNED_H
-+#define _ASM_C6X_UNALIGNED_H
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_address.h>
++#include <linux/slab.h>
++#include <asm/soc.h>
++#include "megamod-pic.h"
++
++#define NR_COMBINERS	4
++#define NR_MUX_OUTPUTS  16
++
++#define IRQ_UNMAPPED 0xffff
 +
 +/*
-+ * The C64x+ can do unaligned word and dword accesses in hardware
-+ * using special load/store instructions.
++ * Megamodule Interrupt Controller register layout
 + */
++struct megamod_regs {
++	u32	evtflag[8];
++	u32	evtset[8];
++	u32	evtclr[8];
++	u32	reserved0[8];
++	u32	evtmask[8];
++	u32	mevtflag[8];
++	u32	expmask[8];
++	u32	mexpflag[8];
++	u32	intmux[8];
++	u32	reserved1[8];
++	u32	aegmux[2];
++	u32	reserved2[14];
++	u32	intxstat;
++	u32	intxclr;
++	u32	intdmask;
++	u32	reserved3[13];
++	u32	evtasrt;
++};
 +
-+static inline u16 __get_unaligned_le16(const u8 *p)
++struct megamod_pic {
++	struct irq_host	*irqhost;
++	struct megamod_regs __iomem *regs;
++	spinlock_t lock;
++
++	/* hw mux mapping */
++	unsigned int output_to_irq[NR_MUX_OUTPUTS];
++};
++
++static struct megamod_pic *mm_pic;
++
++struct megamod_cascade_data {
++	struct megamod_pic *pic;
++	int index;
++};
++
++static struct megamod_cascade_data cascade_data[NR_COMBINERS];
++
++static void mask_megamod(struct irq_data *data)
 +{
-+	return p[0] | p[1] << 8;
++	struct megamod_pic *pic = irq_data_get_irq_chip_data(data);
++	irq_hw_number_t src = irqd_to_hwirq(data);
++	unsigned long flags;
++	u32 __iomem *evtmask = &pic->regs->evtmask[src / 32];
++
++	spin_lock_irqsave(&pic->lock, flags);
++	soc_writel(soc_readl(evtmask) | (1 << (src & 31)), evtmask);
++	spin_unlock_irqrestore(&pic->lock, flags);
 +}
 +
-+static inline u16 __get_unaligned_be16(const u8 *p)
++static void unmask_megamod(struct irq_data *data)
 +{
-+	return p[0] << 8 | p[1];
++	struct megamod_pic *pic = irq_data_get_irq_chip_data(data);
++	irq_hw_number_t src = irqd_to_hwirq(data);
++	unsigned long flags;
++	u32 __iomem *evtmask = &pic->regs->evtmask[src / 32];
++
++	spin_lock_irqsave(&pic->lock, flags);
++	soc_writel(soc_readl(evtmask) & ~(1 << (src & 31)), evtmask);
++	spin_unlock_irqrestore(&pic->lock, flags);
 +}
 +
-+static inline void __put_unaligned_le16(u16 val, u8 *p)
++static struct irq_chip megamod_chip = {
++	.name		= "megamod",
++	.irq_mask	= mask_megamod,
++	.irq_unmask	= unmask_megamod,
++};
++
++static void megamod_irq_cascade(unsigned int irq, struct irq_desc *desc)
 +{
-+	*p++ = val;
-+	*p++ = val >> 8;
++	struct irq_chip *chip = irq_desc_get_chip(desc);
++	struct irq_data *idata = irq_desc_get_irq_data(desc);
++	struct megamod_cascade_data *cascade;
++	struct megamod_pic *pic;
++	u32 events;
++	int n, idx;
++
++	cascade = irq_desc_get_handler_data(desc);
++
++	pic = cascade->pic;
++
++	raw_spin_lock(&desc->lock);
++
++	chip->irq_mask(idata);
++
++	if (unlikely(irqd_irq_inprogress(idata)))
++		goto unlock;
++
++	idx = cascade->index;
++
++	irqd_set_chained_irq_inprogress(idata);
++	while ((events = soc_readl(&pic->regs->mevtflag[idx])) != 0) {
++		n = __ffs(events);
++
++		irq = irq_linear_revmap(pic->irqhost, idx * 32 + n);
++
++		soc_writel(1 << n, &pic->regs->evtclr[idx]);
++
++		generic_handle_irq(irq);
++	}
++	irqd_clr_chained_irq_inprogress(idata);
++	chip->irq_unmask(idata);
++unlock:
++	raw_spin_unlock(&desc->lock);
 +}
 +
-+static inline void __put_unaligned_be16(u16 val, u8 *p)
++static int megamod_map(struct irq_host *h, unsigned int virq,
++		       irq_hw_number_t hw)
 +{
-+	*p++ = val >> 8;
-+	*p++ = val;
++	struct megamod_pic *pic = h->host_data;
++	int i;
++
++	/* We shouldn't see a hwirq which is muxed to core controller */
++	for (i = 0; i < NR_MUX_OUTPUTS; i++)
++		if (pic->output_to_irq[i] == hw)
++			return -1;
++
++	irq_set_chip_data(virq, pic);
++	irq_set_chip_and_handler(virq, &megamod_chip, handle_level_irq);
++
++	/* Set default irq type */
++	irq_set_irq_type(virq, IRQ_TYPE_NONE);
++
++	return 0;
 +}
 +
-+static inline u32 __get_unaligned32_swab(const u8 *p)
++static int megamod_xlate(struct irq_host *h, struct device_node *ct,
++			 const u32 *intspec, unsigned int intsize,
++			 irq_hw_number_t *out_hwirq, unsigned int *out_type)
++
 +{
-+	u32 val = (u32) p;
-+	asm volatile (" ldnw	.d1t1	*%0,%0\n"
-+		      " nop	4\n"
-+		      " swap2	.s1	%0,%0\n"
-+		      " swap4	.l1	%0,%0\n"
-+		      : "+a"(val));
-+	return val;
++	/* megamod intspecs must have 1 cell */
++	BUG_ON(intsize != 1);
++	*out_hwirq = intspec[0];
++	*out_type = IRQ_TYPE_NONE;
++	return 0;
 +}
 +
-+static inline u32 __get_unaligned32(const u8 *p)
++static struct irq_host_ops megamod_host_ops = {
++	.map	= megamod_map,
++	.xlate	= megamod_xlate,
++};
++
++
++static void __init parse_priority_map(struct megamod_pic *pic,
++				      int *mapping, int size)
 +{
-+	u32 val = (u32) p;
-+	asm volatile (" ldnw	.d1t1	*%0,%0\n"
-+		      " nop     4\n"
-+		      : "+a"(val));
-+	return val;
++	struct device_node *np = pic->irqhost->of_node;
++	const __be32 *map;
++	int i, maplen, index, offset, src;
++	u32 val;
++
++	map = of_get_property(np, "ti,priority-map", &maplen);
++	if (map) {
++		maplen /= 4;
++		if (maplen > size)
++			maplen = size;
++
++		for (i = 0; i < maplen; i++) {
++			mapping[i] = be32_to_cpup(map);
++			++map;
++		}
++	}
++
++	for (i = 4; i < NR_MUX_OUTPUTS; i++) {
++		src = mapping[i];
++
++		if (src < 0 || src >= (NR_COMBINERS * 32)) {
++			pic->output_to_irq[i] = IRQ_UNMAPPED;
++			continue;
++		}
++
++		/* four mappings per register */
++		index = i / 4;
++		offset = (i & 3) * 8;
++
++		val = soc_readl(&pic->regs->intmux[index]);
++		val &= ~(0xff << offset);
++		val |= src << offset;
++		soc_writel(val, &pic->regs->intmux[index]);
++
++		pic->output_to_irq[i] = src;
++	}
 +}
 +
-+static inline void __put_unaligned32_swab(u32 val, u8 *p)
++static struct megamod_pic * __init init_megamod_pic(struct device_node *np)
 +{
-+	asm volatile (" swap2	.s1	%0,%0\n"
-+		      " swap4	.l1	%0,%0\n"
-+		      " stnw	.d2t1	%0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
++	struct megamod_pic *pic;
++	int i, idx, irq;
++	int mapping[16];
 +
-+static inline void __put_unaligned32(u32 val, u8 *p)
-+{
-+	asm volatile (" stnw	.d2t1	%0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
++	pic = kzalloc(sizeof(struct megamod_pic), GFP_KERNEL);
++	if (!pic) {
++		pr_err("%s: Could not alloc PIC structure.\n", np->full_name);
++		return NULL;
++	}
 +
-+static inline u64 __get_unaligned64_swab(const u8 *p)
-+{
-+	u64 val;
++	pic->irqhost = irq_alloc_host(np, IRQ_HOST_MAP_LINEAR,
++				      NR_COMBINERS * 32, &megamod_host_ops,
++				      IRQ_UNMAPPED);
 +
-+	asm volatile ("    ldndw   .d2t1  *%1,%0\n"
-+		      "    nop	   4\n"
-+		      "    swap2   .s1	  %p0,%P0\n"
-+		      " || swap2   .l1    %P0,%p0\n"
-+		      "    swap4   .l1    %p0,%p0\n"
-+		      "    swap4   .l1    %P0,%P0\n"
-+		      : "=a"(val) : "b"(p));
-+	return val;
-+}
++	if (!pic->irqhost) {
++		pr_err("%s: Could not alloc host.\n", np->full_name);
++		goto error_free;
++	}
 +
-+static inline u64 __get_unaligned64(const u8 *p)
-+{
-+	u64 val;
-+	asm volatile (" ldndw	.d1t1	*%1,%0\n"
-+		      " nop     4\n"
-+		      : "=a"(val) : "a"(p));
-+	return val;
-+}
++	pic->irqhost->host_data = pic;
 +
-+static inline void __put_unaligned64_swab(u64 val, u8 *p)
-+{
-+	asm volatile ("    swap2  .s1     %p0,%P0\n"
-+		      " || swap2  .l1	  %P0,%p0\n"
-+		      "	   swap4  .l1	  %p0,%p0\n"
-+		      "	   swap4  .l1	  %P0,%P0\n"
-+		      "	   stndw  .d2t1	  %0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
++	spin_lock_init(&pic->lock);
 +
-+static inline void __put_unaligned64(u64 val, u8 *p)
-+{
-+	asm volatile (" stndw	.d2t1	%0,*%1\n"
-+		      : : "a"(val), "b"(p) : "memory");
-+}
++	pic->regs = of_iomap(np, 0);
++	if (!pic->regs) {
++		pr_err("%s: Could not map registers.\n", np->full_name);
++		goto error_free;
++	}
 +
++	/* default is to map combiners to lowest priority */
++	for (i = 0; i < ARRAY_SIZE(mapping); i++)
++		mapping[i] = IRQ_UNMAPPED;
 +
-+static inline u16 get_unaligned_le16(const void *p)
-+{
-+	return __get_unaligned_le16((const u8 *)p);
-+}
++	mapping[12] = 0;
++	mapping[13] = 1;
++	mapping[14] = 2;
++	mapping[15] = 3;
 +
-+static inline u16 get_unaligned_be16(const void *p)
-+{
-+	return __get_unaligned_be16((const u8 *)p);
-+}
++	parse_priority_map(pic, mapping, ARRAY_SIZE(mapping));
 +
-+static inline void put_unaligned_le16(u16 val, void *p)
-+{
-+	__put_unaligned_le16(val, p);
-+}
++	/*
++	 * We can have up to 12 interrupts cascading to the core controller.
++	 * These cascades can be for the combined interrupt sources or for
++	 * individual interrupt sources. The "interrupts" property Only
++	 * deals with the cascaded combined interrupts. The individual
++	 * interrupts muxed to the core controller use the core controller
++	 * as their host.
++	 */
++	for (i = 0; i < NR_COMBINERS; i++) {
 +
-+static inline void put_unaligned_be16(u16 val, void *p)
-+{
-+	__put_unaligned_be16(val, p);
-+}
++		irq = irq_of_parse_and_map(np, i);
++		if (irq == NO_IRQ)
++			break;
 +
++		idx = pic->output_to_irq[irq];
++		if (idx < 0 || idx >= NR_COMBINERS) {
++			pr_debug("%s: i=%d coreirq=%d hwirq %d out of range\n",
++				 np->full_name, i, irq, idx);
++			continue;
++		}
 +
-+static inline u32 get_unaligned_le32(const void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned32_swab((const u8 *)p);
-+#else
-+	return __get_unaligned32((const u8 *)p);
-+#endif
-+}
++		cascade_data[idx].pic = pic;
++		cascade_data[idx].index = idx;
 +
-+static inline u32 get_unaligned_be32(const void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned32((const u8 *)p);
-+#else
-+	return __get_unaligned32_swab((const u8 *)p);
-+#endif
-+}
++		/* mask and clear all events in combiner */
++		soc_writel(~0, &pic->regs->evtmask[idx]);
++		soc_writel(~0, &pic->regs->evtclr[idx]);
 +
-+static inline void put_unaligned_le32(u32 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned32_swab(val, p);
-+#else
-+	__put_unaligned32(val, p);
-+#endif
-+}
++		irq_set_handler_data(irq, &cascade_data[idx]);
++		irq_set_chained_handler(irq, megamod_irq_cascade);
++	}
 +
-+static inline void put_unaligned_be32(u32 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned32(val, p);
-+#else
-+	__put_unaligned32_swab(val, p);
-+#endif
-+}
++	return pic;
 +
-+static inline u64 get_unaligned_le64(const void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned64_swab((const u8 *)p);
-+#else
-+	return __get_unaligned64((const u8 *)p);
-+#endif
-+}
++error_free:
++	kfree(pic);
 +
-+static inline u64 get_unaligned_be64(const void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	return __get_unaligned64((const u8 *)p);
-+#else
-+	return __get_unaligned64_swab((const u8 *)p);
-+#endif
-+}
-+
-+static inline void put_unaligned_le64(u64 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned64_swab(val, p);
-+#else
-+	__put_unaligned64(val, p);
-+#endif
-+}
-+
-+static inline void put_unaligned_be64(u64 val, void *p)
-+{
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+	__put_unaligned64(val, p);
-+#else
-+	__put_unaligned64_swab(val, p);
-+#endif
++	return NULL;
 +}
 +
 +/*
-+ * Cause a link-time error if we try an unaligned access other than
-+ * 1,2,4 or 8 bytes long
++ * Return next active event after ACK'ing it.
++ * Return -1 if no events active.
 + */
-+extern int __bad_unaligned_access_size(void);
++static int get_exception(void)
++{
++	int i, bit;
++	u32 mask;
 +
-+#define __get_unaligned_le(ptr) (typeof(*(ptr)))({			\
-+	sizeof(*(ptr)) == 1 ? *(ptr) :					\
-+	  (sizeof(*(ptr)) == 2 ? get_unaligned_le16((ptr)) :		\
-+	     (sizeof(*(ptr)) == 4 ? get_unaligned_le32((ptr)) :		\
-+		(sizeof(*(ptr)) == 8 ? get_unaligned_le64((ptr)) :	\
-+		   __bad_unaligned_access_size())));			\
-+	})
++	for (i = 0; i < NR_COMBINERS; i++) {
++		mask = soc_readl(&mm_pic->regs->mexpflag[i]);
++		if (mask) {
++			bit = __ffs(mask);
++			soc_writel(1 << bit, &mm_pic->regs->evtclr[i]);
++			return (i * 32) + bit;
++		}
++	}
++	return -1;
++}
 +
-+#define __get_unaligned_be(ptr) (__force typeof(*(ptr)))({	\
-+	sizeof(*(ptr)) == 1 ? *(ptr) :					\
-+	  (sizeof(*(ptr)) == 2 ? get_unaligned_be16((ptr)) :		\
-+	     (sizeof(*(ptr)) == 4 ? get_unaligned_be32((ptr)) :		\
-+		(sizeof(*(ptr)) == 8 ? get_unaligned_be64((ptr)) :	\
-+		   __bad_unaligned_access_size())));			\
-+	})
++static void assert_event(unsigned int val)
++{
++	soc_writel(val, &mm_pic->regs->evtasrt);
++}
 +
-+#define __put_unaligned_le(val, ptr) ({					\
-+	void *__gu_p = (ptr);						\
-+	switch (sizeof(*(ptr))) {					\
-+	case 1:								\
-+		*(u8 *)__gu_p = (__force u8)(val);			\
-+		break;							\
-+	case 2:								\
-+		put_unaligned_le16((__force u16)(val), __gu_p);		\
-+		break;							\
-+	case 4:								\
-+		put_unaligned_le32((__force u32)(val), __gu_p);		\
-+		break;							\
-+	case 8:								\
-+		put_unaligned_le64((__force u64)(val), __gu_p);		\
-+		break;							\
-+	default:							\
-+		__bad_unaligned_access_size();				\
-+		break;							\
-+	}								\
-+	(void)0; })
++void __init megamod_pic_init(void)
++{
++	struct device_node *np;
 +
-+#define __put_unaligned_be(val, ptr) ({					\
-+	void *__gu_p = (ptr);						\
-+	switch (sizeof(*(ptr))) {					\
-+	case 1:								\
-+		*(u8 *)__gu_p = (__force u8)(val);			\
-+		break;							\
-+	case 2:								\
-+		put_unaligned_be16((__force u16)(val), __gu_p);		\
-+		break;							\
-+	case 4:								\
-+		put_unaligned_be32((__force u32)(val), __gu_p);		\
-+		break;							\
-+	case 8:								\
-+		put_unaligned_be64((__force u64)(val), __gu_p);		\
-+		break;							\
-+	default:							\
-+		__bad_unaligned_access_size();				\
-+		break;							\
-+	}								\
-+	(void)0; })
++	np = of_find_compatible_node(NULL, NULL, "ti,c64x+megamod-pic");
++	if (!np)
++		return;
 +
++	mm_pic = init_megamod_pic(np);
++	of_node_put(np);
 +
-+#ifdef _BIG_ENDIAN
-+#define get_unaligned	__get_unaligned_be
-+#define put_unaligned	__put_unaligned_be
-+#define get_unaligned16	get_unaligned_be16
-+#define get_unaligned32	get_unaligned_be32
-+#define get_unaligned64	get_unaligned_be64
-+#else
-+#define get_unaligned	__get_unaligned_le
-+#define put_unaligned	__put_unaligned_le
-+#define get_unaligned16	get_unaligned_le16
-+#define get_unaligned32	get_unaligned_le32
-+#define get_unaligned64	get_unaligned_le64
-+#endif
++	soc_ops.get_exception = get_exception;
++	soc_ops.assert_event = assert_event;
 +
-+#endif /* _ASM_C6X_UNALIGNED_H */
++	return;
++}
+diff --git a/arch/c6x/platforms/megamod-pic.h b/arch/c6x/platforms/megamod-pic.h
+new file mode 100644
+index 0000000..eca0a86
+--- /dev/null
++++ b/arch/c6x/platforms/megamod-pic.h
+@@ -0,0 +1,9 @@
++#ifndef _C6X_MEGAMOD_PIC_H
++#define _C6X_MEGAMOD_PIC_H
++
++#ifdef __KERNEL__
++
++extern void __init megamod_pic_init(void);
++
++#endif /* __KERNEL__ */
++#endif /* _C6X_MEGAMOD_PIC_H */
 -- 
 1.7.6
 
