@@ -1,296 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab1HaQSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 12:18:53 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:40802 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794Ab1HaQSO (ORCPT
+	id S932111Ab1HaQSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 12:18:34 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:35416 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab1HaQSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 12:18:14 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p7VGI9Ed013226, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 3/3] r8169: support new chips of RTL8111F
-Date: Thu, 1 Sep 2011 00:17:59 +0800
-X-BOX-Message-Id: p7VGI9Ed013226
-Message-ID: <1314807479-1552-3-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1314807479-1552-1-git-send-email-hayeswang@realtek.com>
-References: <1314807479-1552-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 31 Aug 2011 12:18:30 -0400
+Date: Wed, 31 Aug 2011 18:18:07 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Luciano Coelho <coelho@ti.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, matti.j.aaltonen@nokia.com,
+        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, mchehab@infradead.org,
+        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] mfd: Combine MFD_SUPPORT and MFD_CORE
+Message-ID: <20110831181807.4be09f72@endymion.delvare>
+In-Reply-To: <1314643307-17780-1-git-send-email-coelho@ti.com>
+References: <20110829102732.03f0f05d.rdunlap@xenotime.net>
+	<1314643307-17780-1-git-send-email-coelho@ti.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support new chips of RTL8111F.
+Hi Luciano,
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |  178 +++++++++++++++++++++++++++++++++-
- 1 files changed, 176 insertions(+), 2 deletions(-)
+On Mon, 29 Aug 2011 21:41:47 +0300, Luciano Coelho wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> Combine MFD_SUPPORT (which only enabled the remainder of the MFD
+> menu) and MFD_CORE.  This allows other drivers to select MFD_CORE
+> without needing to also select MFD_SUPPORT, which fixes some
+> kconfig unmet dependency warnings.  Modeled after I2C kconfig.
+> 
+> [Forward-ported to 3.1-rc4.  This fixes a warning when some drivers,
+> such as RADIO_WL1273, are selected, but MFD_SUPPORT is not. -- Luca]
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 68f1e2f..c04fbc0 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -42,6 +42,8 @@
- #define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-1.fw"
- #define FIRMWARE_8168E_2	"rtl_nic/rtl8168e-2.fw"
- #define FIRMWARE_8168E_3	"rtl_nic/rtl8168e-3.fw"
-+#define FIRMWARE_8168F_1	"rtl_nic/rtl8168f-1.fw"
-+#define FIRMWARE_8168F_2	"rtl_nic/rtl8168f-2.fw"
- #define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
+I like the idea in general, this makes things much simpler.
+
+There is at least one issue with your current implementation though.
+"make oldconfig" has this to complain about:
+
+drivers/mfd/Kconfig:5:error: recursive dependency detected!
+drivers/mfd/Kconfig:5:	symbol MFD_CORE is selected by OLPC_XO1_PM
+arch/x86/Kconfig:2028:	symbol OLPC_XO1_PM depends on MFD_CS5535
+drivers/mfd/Kconfig:613:	symbol MFD_CS5535 depends on MFD_CORE
+
+Not sure if it is really caused by your patch or only revealed by it,
+but it should be fixed anyway. The following should fix it, please
+consider folding in your patch:
+
+--- linux-3.1-rc4.orig/arch/x86/Kconfig	2011-08-16 11:49:42.000000000 +0200
++++ linux-3.1-rc4/arch/x86/Kconfig	2011-08-31 16:54:09.000000000 +0200
+@@ -2028,7 +2028,6 @@ config OLPC
+ config OLPC_XO1_PM
+ 	bool "OLPC XO-1 Power Management"
+ 	depends on OLPC && MFD_CS5535 && PM_SLEEP
+-	select MFD_CORE
+ 	---help---
+ 	  Add support for poweroff and suspend of the OLPC XO-1 laptop.
  
- #ifdef RTL8169_DEBUG
-@@ -133,6 +135,8 @@ enum mac_version {
- 	RTL_GIGA_MAC_VER_32,
- 	RTL_GIGA_MAC_VER_33,
- 	RTL_GIGA_MAC_VER_34,
-+	RTL_GIGA_MAC_VER_35,
-+	RTL_GIGA_MAC_VER_36,
- 	RTL_GIGA_MAC_NONE   = 0xff,
- };
- 
-@@ -218,7 +222,11 @@ static const struct {
- 	[RTL_GIGA_MAC_VER_33] =
- 		_R("RTL8168e/8111e",	RTL_TD_1, FIRMWARE_8168E_2),
- 	[RTL_GIGA_MAC_VER_34] =
--		_R("RTL8168evl/8111evl",RTL_TD_1, FIRMWARE_8168E_3)
-+		_R("RTL8168evl/8111evl",RTL_TD_1, FIRMWARE_8168E_3),
-+	[RTL_GIGA_MAC_VER_35] =
-+		_R("RTL8168f/8111f",	RTL_TD_1, FIRMWARE_8168F_1),
-+	[RTL_GIGA_MAC_VER_36] =
-+		_R("RTL8168f/8111f",	RTL_TD_1, FIRMWARE_8168F_2)
- };
- #undef _R
- 
-@@ -1199,6 +1207,19 @@ static void rtl_link_chg_patch(struct rtl8169_private *tp)
- 			     ERIAR_EXGMAC);
- 		rtl_w1w0_eri(ioaddr, 0xdc, ERIAR_MASK_0001, 0x01, 0x00,
- 			     ERIAR_EXGMAC);
-+	} else if (tp->mac_version == RTL_GIGA_MAC_VER_35 ||
-+		   tp->mac_version == RTL_GIGA_MAC_VER_36) {
-+		if (RTL_R8(PHYstatus) & _1000bpsF) {
-+			rtl_eri_write(ioaddr, 0x1bc, ERIAR_MASK_1111,
-+				      0x00000011, ERIAR_EXGMAC);
-+			rtl_eri_write(ioaddr, 0x1dc, ERIAR_MASK_1111,
-+				      0x00000005, ERIAR_EXGMAC);
-+		} else {
-+			rtl_eri_write(ioaddr, 0x1bc, ERIAR_MASK_1111,
-+				      0x0000001f, ERIAR_EXGMAC);
-+			rtl_eri_write(ioaddr, 0x1dc, ERIAR_MASK_1111,
-+				      0x0000003f, ERIAR_EXGMAC);
-+		}
- 	}
- }
- 
-@@ -1738,6 +1759,10 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
- 		u32 val;
- 		int mac_version;
- 	} mac_info[] = {
-+		/* 8168F family. */
-+		{ 0x7cf00000, 0x48100000,	RTL_GIGA_MAC_VER_36 },
-+		{ 0x7cf00000, 0x48000000,	RTL_GIGA_MAC_VER_35 },
-+
- 		/* 8168E family. */
- 		{ 0x7c800000, 0x2c800000,	RTL_GIGA_MAC_VER_34 },
- 		{ 0x7cf00000, 0x2c200000,	RTL_GIGA_MAC_VER_33 },
-@@ -2872,6 +2897,97 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-+static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	static const struct phy_reg phy_reg_init[] = {
-+		/* Channel estimation fine tune */
-+		{ 0x1f, 0x0003 },
-+		{ 0x09, 0xa20f },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Modify green table for giga & fnet */
-+		{ 0x1f, 0x0005 },
-+		{ 0x05, 0x8b55 },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b5e },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b67 },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b70 },
-+		{ 0x06, 0x0000 },
-+		{ 0x1f, 0x0000 },
-+		{ 0x1f, 0x0007 },
-+		{ 0x1e, 0x0078 },
-+		{ 0x17, 0x0000 },
-+		{ 0x19, 0x00fb },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Modify green table for 10M */
-+		{ 0x1f, 0x0005 },
-+		{ 0x05, 0x8b79 },
-+		{ 0x06, 0xaa00 },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Disable hiimpedance detection (RTCT) */
-+		{ 0x1f, 0x0003 },
-+		{ 0x01, 0x328a },
-+		{ 0x1f, 0x0000 }
-+	};
-+
-+	rtl_apply_firmware(tp);
-+
-+	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
-+
-+	/* For 4-corner performance improve */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b80);
-+	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* PHY auto speed down */
-+	rtl_writephy(tp, 0x1f, 0x0007);
-+	rtl_writephy(tp, 0x1e, 0x002d);
-+	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	/* improve 10M EEE waveform */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b86);
-+	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* Improve 2-pair detection performance */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b85);
-+	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+}
-+
-+static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	rtl_apply_firmware(tp);
-+
-+	/* For 4-corner performance improve */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b80);
-+	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* PHY auto speed down */
-+	rtl_writephy(tp, 0x1f, 0x0007);
-+	rtl_writephy(tp, 0x1e, 0x002d);
-+	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	/* improve 10M EEE waveform */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b86);
-+	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+}
-+
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -2996,6 +3112,12 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 	case RTL_GIGA_MAC_VER_34:
- 		rtl8168e_2_hw_phy_config(tp);
- 		break;
-+	case RTL_GIGA_MAC_VER_35:
-+		rtl8168f_1_hw_phy_config(tp);
-+		break;
-+	case RTL_GIGA_MAC_VER_36:
-+		rtl8168f_2_hw_phy_config(tp);
-+		break;
- 
- 	default:
- 		break;
-@@ -3518,6 +3640,8 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_32:
- 	case RTL_GIGA_MAC_VER_33:
- 	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
- 		ops->down	= r8168_pll_power_down;
- 		ops->up		= r8168_pll_power_up;
- 		break;
-@@ -3990,7 +4114,9 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
- 	    tp->mac_version == RTL_GIGA_MAC_VER_31) {
- 		while (RTL_R8(TxPoll) & NPQ)
- 			udelay(20);
--	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
-+	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34 ||
-+		   tp->mac_version == RTL_GIGA_MAC_VER_35 ||
-+		   tp->mac_version == RTL_GIGA_MAC_VER_36) {
- 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
- 		while (!(RTL_R32(TxConfig) & TXCFG_EMPTY))
- 			udelay(100);
-@@ -4476,6 +4602,49 @@ static void rtl_hw_start_8168e_2(void __iomem *ioaddr, struct pci_dev *pdev)
- 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
- }
- 
-+static void rtl_hw_start_8168f_1(void __iomem *ioaddr, struct pci_dev *pdev)
-+{
-+	static const struct ephy_info e_info_8168f_1[] = {
-+		{ 0x06, 0x00c0,	0x0020 },
-+		{ 0x08, 0x0001,	0x0002 },
-+		{ 0x09, 0x0000,	0x0080 },
-+		{ 0x19, 0x0000,	0x0224 }
-+	};
-+
-+	rtl_csi_access_enable_1(ioaddr);
-+
-+	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
-+
-+	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
-+
-+	rtl_eri_write(ioaddr, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xc8, ERIAR_MASK_1111, 0x00100002, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xe8, ERIAR_MASK_1111, 0x00100006, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0x1b0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0x1d0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xcc, ERIAR_MASK_1111, 0x00000050, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xd0, ERIAR_MASK_1111, 0x00000060, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
-+		     ERIAR_EXGMAC);
-+
-+	RTL_W8(MaxTxPacketSize, 0x27);
-+
-+	rtl_disable_clock_request(pdev);
-+
-+	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
-+	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
-+
-+	/* Adjust EEE LED frequency */
-+	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
-+
-+	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
-+	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
-+	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
-+}
-+
- static void rtl_hw_start_8168(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -4570,6 +4739,11 @@ static void rtl_hw_start_8168(struct net_device *dev)
- 		rtl_hw_start_8168e_2(ioaddr, pdev);
- 		break;
- 
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
-+		rtl_hw_start_8168f_1(ioaddr, pdev);
-+		break;
-+
- 	default:
- 		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
- 			dev->name, tp->mac_version);
+@@ -2044,7 +2043,6 @@ config OLPC_XO1_SCI
+ 	depends on OLPC && OLPC_XO1_PM
+ 	select POWER_SUPPLY
+ 	select GPIO_CS5535
+-	select MFD_CORE
+ 	---help---
+ 	  Add support for SCI-based features of the OLPC XO-1 laptop:
+ 	   - EC-driven system wakeups
+
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Reported-by: Johannes Berg <johannes@sipsolutions.net>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
+> ---
+> 
+> I guess this should fix the problem.  I've simple forward-ported
+> Randy's patch to the latest mainline kernel.  I don't know via which
+> tree this should go in, though.
+
+Samuel Ortiz is the maintainer of the mfd subsystem, so his tree would
+be an obvious choice.
+
+> NOTE: I have *not* tested this very thoroughly.  But at least
+> omap2plus stuff seems to work okay with this change.  MFD_SUPPORT is
+> also selected by a couple of "tile" platforms defconfigs, but I guess
+> the Kconfig system should take care of it.
+
+I can't test it either, but it looks sane to me. If you merge the
+proposed changes above, you can add:
+
+Acked-by: Jean Delvare <khali@linux-fr.org>
+
 -- 
-1.7.6
-
+Jean Delvare
