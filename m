@@ -1,155 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab1HaJ6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 05:58:41 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:45654 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab1HaJ6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 05:58:39 -0400
-Date: Wed, 31 Aug 2011 11:58:25 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Jan Altenberg <jan@linutronix.de>
-Cc: linux-mm@kvack.org, "Hans J. Koch" <hjk@hansjkoch.de>,
-        b.spranger@linutronix.de, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: bade page state while calling munmap() for kmalloc'ed UIO memory
-Message-ID: <20110831095825.GC4769@local>
-References: <1314630347.2258.150.camel@bender.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314630347.2258.150.camel@bender.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751933Ab1HaKFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 06:05:25 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:22538 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab1HaKFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 06:05:24 -0400
+Date: Wed, 31 Aug 2011 12:05:13 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <guenter.roeck@ericsson.com>,
+        lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v2] hwmon: (pmbus) Fix the logic of checking if no id is
+  matched
+Message-ID: <20110831120513.31bb62ee@endymion.delvare>
+In-Reply-To: <1314766699.3960.1.camel@phoenix>
+References: <1314766699.3960.1.camel@phoenix>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 05:05:47PM +0200, Jan Altenberg wrote:
+Hi Alex,
 
-[Since we got no reply on linux-mm, I added lkml and Andrew to Cc: (mm doesn't
-seem to have a maintainer...)]
+On Wed, 31 Aug 2011 12:58:19 +0800, Axel Lin wrote:
+> If no id is matched, the mid pointer is not NULL in current implementation.
 
-> Hi,
-> 
-> I'm currently analysing a problem similar to some mmap() issue reported
-> in the past: https://lkml.org/lkml/2010/7/11/140
+The NULL check is presumably there to catch the (impossible) case
+ARRAY_SIZE(ucd9000_id) == 0 (array of ids is empty), not the case "no
+id is matched". The initialization of mid to NULL is for the same
+reason. Both should be unnecessary but may have been motivated by a
+compiler warning (although I would think gcc is smart enough to not
+emit these when it can check that the array isn't empty.) Guenter
+should be able to tell more.
 
-The arch there was microblaze, and you are working on arm. That means
-the problem appears on at least to archs.
+The check for "no id is matched" is !strlen(mid->name), which works as
+intended as far as I can see. Did you actually hit a bug with the
+current code? I bet not.
 
-> 
-> So, what I'm trying to do is mapping some physically continuous memory
-> (allocated by kmalloc) to userspace, using a trivial UIO driver (the
-> idea is that a device can directly DMA to that buffer):
-> 
-> [...]
-> #define MEM_SIZE (4 * PAGE_SIZE)
-> 
-> addr = kmalloc(MEM_SIZE, GFP_KERNEL)
-> [...]
-> info.mem[0].addr = (unsigned long) addr;
-> info.mem[0].internal_addr = addr;
-> info.mem[0].size = MEM_SIZE;
-> info.mem[0].memtype = UIO_MEM_LOGICAL;
-> [...]
-> ret = uio_register_device(&pdev->dev, &info);
-> 
-> Userspace maps that memory range and writes its contents to a file:
-> 
-> [...]
-> 
-> fd = open("/dev/uio0", O_RDWR);
-> if (fd < 0) {
->            perror("Can't open UIO device\n");
->            exit(1);
-> }
-> 
-> mem_map = mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE,
->                   MAP_PRIVATE, fd, 0);
-> 
-> if(mem_map == MAP_FAILED) {
->            perror("Can't map UIO memory\n");
->            ret = -ENOMEM;
->            goto out_file;
-> }
-> [...]
-> bytes_written = write(fd_file, mem_map, MAP_SIZE)
-> [...]
-> 
-> munmap(mem_map);
+Now I would agree that the current code is somewhat misleading because
+mixing null-terminated arrays with ARRAY_SIZE() is unusual (and
+inefficient - the last iteration always fails.) Also, strlen() is
+relatively slow and would rather be avoided when only testing if a
+string is empty or not: it's faster to test for mid->name[0].
 
->From my point of view (I've got Jan's full test case code), this
-is a completely correct UIO use case.
+So if anything I would propose the following changes (for performance
+and readability, NOT bug fix), untested:
 
-> 
-> So, what happens is (I'm currently testing with 3.0.3 on ARM
-> VersatilePB): When I do the munmap(), I run into the following error:
-> 
-> BUG: Bad page state in process uio_test  pfn:078ed
-> page:c0409154 count:0 mapcount:0 mapping:  (null) index:0x0
-> page flags: 0x284(referenced|slab|arch_1)
-> [<c0033e50>] (unwind_backtrace+0x0/0xe4) from [<c0079938>] (bad_page+0xcc/0xf8)
-> [<c0079938>] (bad_page+0xcc/0xf8) from [<c007a5f0>] (free_pages_prepare+0x6c/0xcc)
-> [<c007a5f0>] (free_pages_prepare+0x6c/0xcc) from [<c007a778>] (free_hot_cold_page+0x20/0x18c)
-> [<c007a778>] (free_hot_cold_page+0x20/0x18c) from [<c008ccb4>] (unmap_vmas+0x338/0x564)
-> [<c008ccb4>] (unmap_vmas+0x338/0x564) from [<c008f0f4>] (unmap_region+0xa4/0x1e0)
-> [<c008f0f4>] (unmap_region+0xa4/0x1e0) from [<c0090428>] (do_munmap+0x20c/0x274)
-> [<c0090428>] (do_munmap+0x20c/0x274) from [<c00904cc>] (sys_munmap+0x3c/0x50)
-> [<c00904cc>] (sys_munmap+0x3c/0x50) from [<c002e680>] (ret_fast_syscall+0x0/0x2c)
-> Disabling lock debugging due to kernel taint
-> BUG: Bad page state in process uio_test  pfn:078ee
-> page:c0409178 count:0 mapcount:0 mapping:  (null) index:0x0
-> page flags: 0x284(referenced|slab|arch_1)
-> [<c0033e50>] (unwind_backtrace+0x0/0xe4) from [<c0079938>] (bad_page+0xcc/0xf8)
-> [<c0079938>] (bad_page+0xcc/0xf8) from [<c007a5f0>] (free_pages_prepare+0x6c/0xcc)
-> [<c007a5f0>] (free_pages_prepare+0x6c/0xcc) from [<c007a778>] (free_hot_cold_page+0x20/0x18c)
-> [<c007a778>] (free_hot_cold_page+0x20/0x18c) from [<c008ccb4>] (unmap_vmas+0x338/0x564)
-> [<c008ccb4>] (unmap_vmas+0x338/0x564) from [<c008f0f4>] (unmap_region+0xa4/0x1e0)
-> [<c008f0f4>] (unmap_region+0xa4/0x1e0) from [<c0090428>] (do_munmap+0x20c/0x274)
-> [<c0090428>] (do_munmap+0x20c/0x274) from [<c00904cc>] (sys_munmap+0x3c/0x50)
-> [<c00904cc>] (sys_munmap+0x3c/0x50) from [<c002e680>] (ret_fast_syscall+0x0/0x2c)
-> BUG: Bad page state in process uio_test  pfn:078ef
-> page:c040919c count:0 mapcount:0 mapping:  (null) index:0x0
-> page flags: 0x284(referenced|slab|arch_1)
-> [<c0033e50>] (unwind_backtrace+0x0/0xe4) from [<c0079938>] (bad_page+0xcc/0xf8)
-> [<c0079938>] (bad_page+0xcc/0xf8) from [<c007a5f0>] (free_pages_prepare+0x6c/0xcc)
-> [<c007a5f0>] (free_pages_prepare+0x6c/0xcc) from [<c007a778>] (free_hot_cold_page+0x20/0x18c)
-> [<c007a778>] (free_hot_cold_page+0x20/0x18c) from [<c008ccb4>] (unmap_vmas+0x338/0x564)
-> [<c008ccb4>] (unmap_vmas+0x338/0x564) from [<c008f0f4>] (unmap_region+0xa4/0x1e0)
-> [<c008f0f4>] (unmap_region+0xa4/0x1e0) from [<c0090428>] (do_munmap+0x20c/0x274)
-> [<c0090428>] (do_munmap+0x20c/0x274) from [<c00904cc>] (sys_munmap+0x3c/0x50)
-> [<c00904cc>] (sys_munmap+0x3c/0x50) from [<c002e680>] (ret_fast_syscall+0x0/0x2c)
+--- linux-3.1-rc4.orig/drivers/hwmon/pmbus/ucd9000.c	2011-08-30 13:41:32.000000000 +0200
++++ linux-3.1-rc4/drivers/hwmon/pmbus/ucd9000.c	2011-08-31 11:53:28.000000000 +0200
+@@ -141,13 +141,11 @@ static int ucd9000_probe(struct i2c_clie
+ 	block_buffer[ret] = '\0';
+ 	dev_info(&client->dev, "Device ID %s\n", block_buffer);
+ 
+-	mid = NULL;
+-	for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
+-		mid = &ucd9000_id[i];
++	for (mid = ucd9000_id; mid->name[0]; mid++) {
+ 		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+ 			break;
+ 	}
+-	if (!mid || !strlen(mid->name)) {
++	if (!mid->name[0]) {
+ 		dev_err(&client->dev, "Unsupported device\n");
+ 		return -ENODEV;
+ 	}
+--- linux-3.1-rc4.orig/drivers/hwmon/pmbus/ucd9200.c	2011-08-30 13:41:32.000000000 +0200
++++ linux-3.1-rc4/drivers/hwmon/pmbus/ucd9200.c	2011-08-31 11:53:20.000000000 +0200
+@@ -68,13 +68,11 @@ static int ucd9200_probe(struct i2c_clie
+ 	block_buffer[ret] = '\0';
+ 	dev_info(&client->dev, "Device ID %s\n", block_buffer);
+ 
+-	mid = NULL;
+-	for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
+-		mid = &ucd9200_id[i];
++	for (mid = ucd9200_id; mid->name[0]; mid++) {
+ 		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+ 			break;
+ 	}
+-	if (!mid || !strlen(mid->name)) {
++	if (!mid->name[0]) {
+ 		dev_err(&client->dev, "Unsupported device\n");
+ 		return -ENODEV;
+ 	}
 
-Quite strange that memory that could be mapped with mmap() cannot be
-unmapped with munmap().
 
 > 
-> This happens for every page except the first one.
-
-...which is the next strange thing.
-
-> If I change the code
-> and just touch the first page, everything's working fine. As soon as I
-> touch one of the other pages, I can see the "bad page state error" for
-> that page.
-
-The pages are mapped when you access them through the UIO core page fault
-handler.
-
-> The kernel is currently built using CONFIG_SLAB (my .config
-> is based on the versatile_defconfig); if I change to CONFIG_SLUB,
-> munmap() seems to be happy and I can't see the "bad page state" error.
-
-That is more than strange, that points to some things going really wrong.
-
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> v2:
+> It seems we don't need to check strlen(mid->name) here.
+> If there is a match, strlen(mid->name) is always not 0.
+> If ther is no match, comparing variable i with ARRAY_SIZE(ucd9000_id)
+> or ARRAY_SIZE(ucd9200_id) is enough. 
 > 
-> Any idea what might be wrong here? Am I missing something obvious? (I've
-> prepared some brown paperbags for that case ;-))
+>  drivers/hwmon/pmbus/ucd9000.c |    3 +--
+>  drivers/hwmon/pmbus/ucd9200.c |    3 +--
+>  2 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> Thanks,
-> 	Jan
-> 
+> diff --git a/drivers/hwmon/pmbus/ucd9000.c b/drivers/hwmon/pmbus/ucd9000.c
+> index 285bb15..a2d4a72 100644
+> --- a/drivers/hwmon/pmbus/ucd9000.c
+> +++ b/drivers/hwmon/pmbus/ucd9000.c
+> @@ -141,13 +141,12 @@ static int ucd9000_probe(struct i2c_client *client,
+>  	block_buffer[ret] = '\0';
+>  	dev_info(&client->dev, "Device ID %s\n", block_buffer);
+>  
+> -	mid = NULL;
+>  	for (i = 0; i < ARRAY_SIZE(ucd9000_id); i++) {
+>  		mid = &ucd9000_id[i];
+>  		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+>  			break;
+>  	}
+> -	if (!mid || !strlen(mid->name)) {
+> +	if (i == ARRAY_SIZE(ucd9000_id)) {
+>  		dev_err(&client->dev, "Unsupported device\n");
+>  		return -ENODEV;
+>  	}
+> diff --git a/drivers/hwmon/pmbus/ucd9200.c b/drivers/hwmon/pmbus/ucd9200.c
+> index 786f6cd..a72e55e 100644
+> --- a/drivers/hwmon/pmbus/ucd9200.c
+> +++ b/drivers/hwmon/pmbus/ucd9200.c
+> @@ -68,13 +68,12 @@ static int ucd9200_probe(struct i2c_client *client,
+>  	block_buffer[ret] = '\0';
+>  	dev_info(&client->dev, "Device ID %s\n", block_buffer);
+>  
+> -	mid = NULL;
+>  	for (i = 0; i < ARRAY_SIZE(ucd9200_id); i++) {
+>  		mid = &ucd9200_id[i];
+>  		if (!strncasecmp(mid->name, block_buffer, strlen(mid->name)))
+>  			break;
+>  	}
+> -	if (!mid || !strlen(mid->name)) {
+> +	if (i == ARRAY_SIZE(ucd9200_id)) {
+>  		dev_err(&client->dev, "Unsupported device\n");
+>  		return -ENODEV;
+>  	}
 
-Thanks, Jan, for reporting this!
 
-Hans
+-- 
+Jean Delvare
