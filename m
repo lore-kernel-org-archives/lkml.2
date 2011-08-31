@@ -1,123 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab1HaW0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 18:26:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24286 "EHLO mga02.intel.com"
+	id S1757095Ab1HaW00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 18:26:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1988 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757022Ab1HaW0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 18:26:05 -0400
+	id S1757064Ab1HaW0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 18:26:18 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="44161582"
+X-IronPort-AV: E=Sophos;i="4.68,309,1312182000"; 
+   d="scan'208";a="46968143"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>
 In-Reply-To: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
-Subject: [PATCH 4/5] mce: remove TIF_MCE_NOTIFY
-Date: Wed, 31 Aug 2011 15:26:05 -0700
-Message-Id: <4e5eb4fd21057689fc@agluck-desktop.sc.intel.com>
+Subject: [PATCH 5/5] mce: recover from "action required" errors reported in data path in usermode
+Date: Wed, 31 Aug 2011 15:26:15 -0700
+Message-Id: <4e5eb50721061dbb1b@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tony Luck <tony.luck@intel.com>
 
-Hidetoshi Seto has re-worked the notification code to use a
-worker thread for propagating notifications. So TIF_MCE_NOTIFY
-is unused. Previous plans to use this to somehow switch from
-"machine check context" to a more friendly environment to
-deal with immediate errors look like they will never pan out.
+Two new entries in the mce severity table - one notes that data errors
+observed by innocent bystanders (who happen to share a machine check
+bank with the cpu experiencing the error) should be left alone by using
+the "KEEP" severity.
+
+Then inline in the do_machine_check() handler we process the user-mode
+data error that was marked at MCE_AR_SEVERITY.  Even though we are in
+"machine check context" it is almost safe to do so. We have already
+released all the other cpus from rendezvous and we know that the cpu
+with the error was executing user code - so it cannot have interrupts
+locked out, or hold any locks. I.e. this is almost equivalent to a
+page fault. Only difference (and risk) is that on x86_64 we are still
+on the machine check stack - so if another machine check arrives, we
+are toast (we didn't clear MCG_STATUS - yet, so cpu will reset rather
+than taking a nested machine check on the same stack).
 
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/include/asm/thread_info.h |    4 +---
- arch/x86/kernel/cpu/mcheck/mce.c   |   18 ------------------
- arch/x86/kernel/signal.c           |    6 ------
- 3 files changed, 1 insertions(+), 27 deletions(-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index a1fe5c1..9cfde9f 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -82,7 +82,6 @@ struct thread_info {
- #define TIF_SYSCALL_EMU		6	/* syscall emulation active */
- #define TIF_SYSCALL_AUDIT	7	/* syscall auditing active */
- #define TIF_SECCOMP		8	/* secure computing */
--#define TIF_MCE_NOTIFY		10	/* notify userspace of an MCE */
- #define TIF_USER_RETURN_NOTIFY	11	/* notify kernel of userspace return */
- #define TIF_NOTSC		16	/* TSC is not accessible in userland */
- #define TIF_IA32		17	/* 32bit process */
-@@ -105,7 +104,6 @@ struct thread_info {
- #define _TIF_SYSCALL_EMU	(1 << TIF_SYSCALL_EMU)
- #define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
- #define _TIF_SECCOMP		(1 << TIF_SECCOMP)
--#define _TIF_MCE_NOTIFY		(1 << TIF_MCE_NOTIFY)
- #define _TIF_USER_RETURN_NOTIFY	(1 << TIF_USER_RETURN_NOTIFY)
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
-@@ -140,7 +138,7 @@ struct thread_info {
+Using the "KEEP" state avoids the complexity of my earlier solution
+that sorted the cpus by severity and ran the more serious ones first.
+
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   14 ++++++++++-
+ arch/x86/kernel/cpu/mcheck/mce.c          |   35 ++++++++++++++++++++--------
+ 2 files changed, 38 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 7395d5f..c4d8b24 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -54,6 +54,7 @@ static struct severity {
+ #define  MASK(x, y)	.mask = x, .result = y
+ #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
+ #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
++#define	MCI_ADDR (MCI_STATUS_ADDRV|MCI_STATUS_MISCV)
+ #define MCACOD 0xffff
  
- /* Only used for 64 bit */
- #define _TIF_DO_NOTIFY_MASK						\
--	(_TIF_SIGPENDING | _TIF_MCE_NOTIFY | _TIF_NOTIFY_RESUME |	\
-+	(_TIF_SIGPENDING | _TIF_NOTIFY_RESUME |				\
- 	 _TIF_USER_RETURN_NOTIFY)
+ 	MCESEV(
+@@ -102,11 +103,22 @@ static struct severity {
+ 		SER, BITCLR(MCI_STATUS_S)
+ 		),
  
- /* flags to check in __switch_to() */
+-	/* AR add known MCACODs here */
+ 	MCESEV(
+ 		PANIC, "Action required with lost events",
+ 		SER, BITSET(MCI_STATUS_OVER|MCI_UC_SAR)
+ 		),
++
++	/* known AR MCACODs: */
++	MCESEV(
++		KEEP, "HT thread notices Action required: data load error",
++		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
++		MCGMASK(MCG_STATUS_EIPV, 0)
++		),
++	MCESEV(
++		AR, "Action required: data load error",
++		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
++		USER
++		),
+ 	MCESEV(
+ 		PANIC, "Action required: unknown MCACOD",
+ 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR)
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 1ce64c3..135e12d 100644
+index 135e12d..2c59a34 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1052,10 +1052,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	if (kill_it && tolerant < 3)
+@@ -996,12 +996,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 			continue;
+ 		}
+ 
+-		/*
+-		 * Kill on action required.
+-		 */
+-		if (severity == MCE_AR_SEVERITY)
+-			kill_it = 1;
+-
+ 		mce_read_aux(&m, i);
+ 
+ 		/*
+@@ -1022,6 +1016,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		}
+ 	}
+ 
++	m = *final;
++
+ 	if (!no_way_out)
+ 		mce_clear_state(toclear);
+ 
+@@ -1040,7 +1036,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	 * support MCE broadcasting or it has been disabled.
+ 	 */
+ 	if (no_way_out && tolerant < 3)
+-		mce_panic("Fatal machine check on current CPU", final, msg);
++		mce_panic("Fatal machine check on current CPU", &m, msg);
+ 
+ 	/*
+ 	 * If the error seems to be unrecoverable, something should be
+@@ -1049,11 +1045,24 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	 * high, don't try to do anything at all.
+ 	 */
+ 
+-	if (kill_it && tolerant < 3)
++	if (worst != MCE_AR_SEVERITY && kill_it && tolerant < 3)
  		force_sig(SIGBUS, current);
  
--	/* Trap this thread before returning to user, for action required */
--	if (worst == MCE_AR_SEVERITY)
--		set_thread_flag(TIF_MCE_NOTIFY);
--
  	if (worst > 0)
  		mce_report_event(regs);
++
++	if (worst == MCE_AR_SEVERITY) {
++		unsigned long pfn = m.addr >> PAGE_SHIFT;
++
++		pr_err("Uncorrected hardware memory error in user-access at %llx",
++			m.addr);
++		if (__memory_failure(pfn, MCE_VECTOR, 0) < 0) {
++			pr_err("Memory error not recovered");
++			force_sig(SIGBUS, current);
++		} else
++			pr_err("Memory error recovered");
++	}
++
  	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
-@@ -1071,20 +1067,6 @@ void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
+ out:
+ 	atomic_dec(&mce_entry);
+@@ -1061,12 +1070,18 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(do_machine_check);
+ 
+-/* dummy to break dependency. actual code is in mm/memory-failure.c */
+-void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
++#ifndef CONFIG_MEMORY_FAILURE
++void memory_failure(unsigned long pfn, int vector)
+ {
  	pr_err("Action optional memory failure at %lx ignored\n", pfn);
  }
  
--/*
-- * Called in process context that interrupted by MCE and marked with
-- * TIF_MCE_NOTFY, just before returning to errorneous userland.
-- * This code is allowed to sleep.
-- * Attempt possible recovery such as calling the high level VM handler to
-- * process any corrupted pages, and kill/signal current process if required.
-- */
--void mce_notify_process(void)
--{
--	clear_thread_flag(TIF_MCE_NOTIFY);
--
--	/* TBD: do recovery for action required event */
--}
--
++int __memory_failure(unsigned long pfn, int trapno, int flags)
++{
++	return -ENXIO;
++}
++#endif
++
  static void mce_process_work(struct work_struct *dummy)
  {
  	unsigned long pfn;
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 54ddaeb2..306fd6d 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -814,12 +814,6 @@ static void do_signal(struct pt_regs *regs)
- void
- do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- {
--#ifdef CONFIG_X86_MCE
--	/* notify userspace of pending MCEs */
--	if (thread_info_flags & _TIF_MCE_NOTIFY)
--		mce_notify_process();
--#endif /* CONFIG_X86_64 && CONFIG_X86_MCE */
--
- 	/* deal with pending signal delivery */
- 	if (thread_info_flags & _TIF_SIGPENDING)
- 		do_signal(regs);
 -- 
 1.7.3.1
 
