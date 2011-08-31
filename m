@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab1HaPf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 11:35:59 -0400
-Received: from eastrmfepi201.cox.net ([68.230.241.205]:55036 "EHLO
-	eastrmfepi201.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269Ab1HaPf5 (ORCPT
+	id S1756677Ab1HaPk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 11:40:26 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36264 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756627Ab1HaPkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 11:35:57 -0400
-X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 11:35:56 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020203.4E5E531E.000C,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=vWikg9PSJH5eWPsfInVwkFcjRsjcbcFZH9bro1lAIgk=
- c=1 sm=1 a=Dyoqhi_TatcA:10 a=vYbi2SD7W5AA:10 a=Cfj4BQAnxiAA:10
- a=YFGPWYeX5QgtDK+OvpAJKw==:17 a=FcA7n_SX96hxycATfrQA:9
- a=81oWxvCw10Cma9bZgogA:7 a=Ft8UYL4EG9YA:10 a=YFGPWYeX5QgtDK+OvpAJKw==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=wwmjkjkow@cox.net
-Reply-To: <upgradeaccout@qatar.io>
-From: "Acount update" <infocontact@fuse.net>
-Subject: mailbox exceed limit
-Date: Wed, 31 Aug 2011 20:58:26 +0530
+	Wed, 31 Aug 2011 11:40:18 -0400
+X-Sasl-enc: ae0XbXehnXk6k+YUmnYRb3C7NOmgCP60KfG7EYkX8EcQ 1314805217
+Date: Wed, 31 Aug 2011 08:38:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Vishnupradeep <intermedia.vishnu@gmail.com>
+Cc: stable@kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [stable] linux-3.0.4 compile error on file
+ arch/x86/include/asm/unistd_64.h
+Message-ID: <20110831153818.GD8618@kroah.com>
+References: <CACk0-C9jZatg+v=7DPJtkp3G1k_eiZbwSPDAgqabMyedmKd9YA@mail.gmail.com>
+ <4E5C8EA3.7060304@gmail.com>
+ <CACk0-C8E2uaB-Ben5K0e7dzC9RC_WDoXx8mV4B-PN4LPYGs92g@mail.gmail.com>
+ <20110830181639.GB24865@kroah.com>
+ <CACk0-C-zwNOJOY0t7_vQqVBJR9TzKehv+0GTvHxuDiOtSvV0qA@mail.gmail.com>
+ <20110830190629.GA5638@kroah.com>
+ <CACk0-C_CKkf=xt6QMLe+=nr2P5mTQThreRann5HFe66M7T+SvA@mail.gmail.com>
+ <CACk0-C9guZzZEc29--vc8HZm6iB6-==0uC17_UiDKYdqZUzU5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110831-0, 08/31/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20110831152830.RJJR32702.eastrmfepo203.cox.net@eastrmimpo03.cox.net>
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACk0-C9guZzZEc29--vc8HZm6iB6-==0uC17_UiDKYdqZUzU5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Email Account has reached the limit which is 20GB as set by your
-Administrator, you are currently running on 20GB, you may not be able to
-send or receive new mails until you re-activate your mailbox.
+On Wed, Aug 31, 2011 at 10:17:45AM +0530, Vishnupradeep wrote:
+> compiled without error. but..
+> 
+> [vishnu@localhost linux-3.0.4]$ sudo make modules_install install
+> [sudo] password for vishnu:
+>   INSTALL arch/x86/kernel/test_nx.ko
+>   INSTALL drivers/scsi/scsi_wait_scan.ko
+>   INSTALL net/netfilter/xt_mark.ko
+>   DEPMOD  3.0.4-vish
+> sh /media/Portable/linux-kernel/tar_packs/redown/linux-3.0.4/arch/x86/boot/install.sh
+> 3.0.4-vish arch/x86/boot/bzImage \
+> 	System.map "/boot"
 
-To re-validate your mailbox please
-Enter Username and Password in the column given below to Validate your
-mailbox
+Glad your build is working now.
 
+I fail to see any error in the above line.  If you are having problems
+building and installing a kernel, please try asking on the kernelnewbies
+mailing list after reading the documentation on how to do this properly.
 
-Username...............................Password...............................Date of Birth.......................................
-Thanks,
-ADMIN DESK
+good luck,
+
+greg k-h
