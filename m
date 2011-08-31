@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab1HaQ77 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 12:59:59 -0400
-Received: from fn.samba.org ([216.83.154.106]:41993 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117Ab1HaQ75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 12:59:57 -0400
-Date: Wed, 31 Aug 2011 09:59:54 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Ulrich Drepper <drepper@akkadia.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jeremy Allison <jra@samba.org>,
-        Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110831165954.GC1611@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <x49k49uk2ox.fsf@segfault.boston.devel.redhat.com>
- <4E5D5817.6040704@kernel.dk>
- <CAAK6Zt2C1646qwDiZ7sWheSWrnx2yrDtCE=+VTx7QNyh2bEz_g@mail.gmail.com>
- <4E5D64E8.7000102@kernel.dk>
- <20110830154157.d802d097.akpm@linux-foundation.org>
- <CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
- <20110830155438.bc31ab99.akpm@linux-foundation.org>
- <20110830230342.GB16326@samba2>
- <20110830161130.592df746.akpm@linux-foundation.org>
- <4E5E152A.9050804@akkadia.org>
+	id S932169Ab1HaRFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 13:05:52 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:65251 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158Ab1HaRFu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 13:05:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5E152A.9050804@akkadia.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com>
+References: <4E582577.2060805@zytor.com>
+	<201108301409.27527.arnd@arndb.de>
+	<4E5D1153.5030908@zytor.com>
+	<201108311814.54906.arnd@arndb.de>
+	<CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com>
+Date: Wed, 31 Aug 2011 10:05:49 -0700
+Message-ID: <CAMe9rOpGxNWD=gdvyVpi7V7BrwwWrpLTWdkmTjPqJ1+SUvhA0A@mail.gmail.com>
+Subject: Re: RFD: x32 ABI system call numbers
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 07:04:10AM -0400, Ulrich Drepper wrote:
-> On 08/30/2011 07:11 PM, Andrew Morton wrote:
-> > I don't know.  Uli cc'ed.
-> 
-> glibc has to create the parallelism of the operations through threads.
-> More threads mean more overhead.  There are insane people out there who
-> wrote code which pushed the number of helper threads into the hundreds
-> (at that time a high number, today this would be in the thousands).
-> Anyway, any scheme which is worth changing the code for would be in the
-> kernel.  Only the kernel knows which requests can actually be handled
-> concurrently.
+On Wed, Aug 31, 2011 at 9:46 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I really think that "x32" should try to aim *VERY* hard at using the
+> 64-bit system calls, and seeing itself as being a "32-bit application
+> in a 64-bit world".  That's not just true for time_t (which I think
+> should be 64-bit on anything new that expects to survive for any
+> amount of time), but in general.
+>
 
-I get that, but isn't that what the aio_init(const struct aioinit *init) call is meant to
-solve ?
+I have been making x32 to use 64bit system calls as much as possible.
+Hopefully, I will get it to work in a week or 2.
 
-After all:
-
-struct aioinit
-  {
-    int aio_threads;            /* Maximal number of threads.  */
-    int aio_num;                /* Number of expected simultanious requests. */
-    int aio_locks;              /* Not used.  */
-    int aio_usedba;             /* Not used.  */
-    int aio_debug;              /* Not used.  */
-    int aio_numusers;           /* Not used.  */
-    int aio_idle_time;          /* Number of seconds before idle thread
-                                   terminates.  */
-    int aio_reserved;
-  };
-
-Would seem to be the existing way to limit this. What I don't understand
-is why you restrict the pthread aio implementation to only allow
-*one* outstanding request per file descriptor ?
-
-Surely it doesn't matter what fd the requests are outstanding on, isn't
-it the total number of outstanding threads that really matter ?
-
-By limiting this to one outstanding request per fd, this prevents
-any parallelization for requests on a single file for a file server
-written to use the aio interface in glibc. Windows SMB2 client issue
-multiple simultaneous asynchronous requests on a single file, and
-the current glibc implementation throttles them to be linear.
-
-Volker had to create a vfs_aio_fork Samba VFS module that uses
-forked processes and shared memory communication to get around
-this exact problem. It does improve performance for SMB2 clients,
-but means we have many more processes than we'd otherwise need
-if we didn't have the restriction.
-
-Do you have benchmark data that shows that limiting outstanding requests
-to one per fd is a performance win ?
-
-Do you want to see my patch to glibc that removes this restriction
-so we can test this on any benchmarks you used to decide on the
-one-request-per-fd restriction ?
-
-Jeremy.
+-- 
+H.J.
