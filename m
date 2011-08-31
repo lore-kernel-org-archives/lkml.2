@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab1HaRLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 13:11:24 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:32115 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab1HaRLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 13:11:21 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzEuK2RGvY=
-X-RZG-CLASS-ID: mo00
-Message-ID: <4E5E6B32.8040902@hartkopp.net>
-Date: Wed, 31 Aug 2011 19:11:14 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110820 Icedove/3.1.12
+	id S1756927Ab1HaRUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 13:20:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38049 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756914Ab1HaRUR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 13:20:17 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Urs Thuermann <urs.thuermann@volkswagen.de>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/24] can: Remove unnecessary OOM logging messages
-References: <cover.1314650069.git.joe@perches.com> <d2773db0709a09bfe6d43a28ba1323c5d3f9a76b.1314650069.git.joe@perches.com>
-In-Reply-To: <d2773db0709a09bfe6d43a28ba1323c5d3f9a76b.1314650069.git.joe@perches.com>
+In-Reply-To: <4E5E6AC0.60000@zytor.com>
+References: <4E582577.2060805@zytor.com> <201108301409.27527.arnd@arndb.de>
+ <4E5D1153.5030908@zytor.com> <201108311814.54906.arnd@arndb.de>
+ <CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com> <4E5E6AC0.60000@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 31 Aug 2011 10:19:23 -0700
+Message-ID: <CA+55aFzEnGb3G2WeVNoS5e2D4poY5O6gJucnVnFRF51NUYkW8A@mail.gmail.com>
+Subject: Re: RFD: x32 ABI system call numbers
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.08.2011 23:17, Joe Perches wrote:
+On Wed, Aug 31, 2011 at 10:09 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> I suspect only sane solution to this (having thought about it some
+>> more) is to just say "POSIX is f*^&ing wrong".
+>
+> Urk.  Someone had the bright idea of defining tv_nsec as "long" in the
+> standard, whereas tv_usec is suseconds_t.  F**** brilliant, and more
+> than a little bit stupid.
 
-> Removing unnecessary messages saves code and text.
-> 
-> Site specific OOM messages are duplications of a generic MM
-> out of memory message and aren't really useful, so just
-> delete them.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+I think tv_nsec was just overlooked, and people thought "it has no
+legacy users that were 'int', so we'll just leave it at 'long', which
+is guaranteed to be enough for nanoseconds that only needs a range of
+32 bits".
 
+In contrast, tv_usec probably *does* have legacy users that are "int".
 
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+So POSIX almost certainly only looked backwards, and never thought
+about users who would need to make it "long long" for compatibility
+reasons.
 
-Tnx Joe.
+The fact that *every*other*related*field* in POSIX/SuS has a typedef
+exactly for these kinds of reasons just shows how stupid that "long
+tv_nsec" thing is.
 
-> ---
->  net/can/af_can.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/can/af_can.c b/net/can/af_can.c
-> index b9efa94..11300be 100644
-> --- a/net/can/af_can.c
-> +++ b/net/can/af_can.c
-> @@ -770,11 +770,9 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
->  
->  		/* create new dev_rcv_lists for this device */
->  		d = kzalloc(sizeof(*d), GFP_KERNEL);
-> -		if (!d) {
-> -			printk(KERN_ERR
-> -			       "can: allocation of receive list failed\n");
-> +		if (!d)
->  			return NOTIFY_DONE;
-> -		}
-> +
->  		BUG_ON(dev->ml_priv);
->  		dev->ml_priv = d;
->  
+I suspect that on Linux we can just say "tv_nsec" is suseconds_t too.
+Then we can make time_t and suseconds_t just match, and be "__s64" on
+all new platforms.
 
-
+                           Linus
