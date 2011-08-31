@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab1HaTpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 15:45:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57571 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab1HaTp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 15:45:28 -0400
-Message-ID: <4E5E8F04.9030303@zytor.com>
-Date: Wed, 31 Aug 2011 12:44:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1753809Ab1HaTrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 15:47:06 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39836 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab1HaTrC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 15:47:02 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-Subject: Re: RFD: x32 ABI system call numbers
-References: <4E582577.2060805@zytor.com> <201108311839.52863.arnd@arndb.de> <CA+55aFwVJ71=cLsUqMaJ-eGP0doPGBhrse9r++hkbiNYNx5Zjg@mail.gmail.com> <1397886.AAh13B9r2H@wuerfel>
-In-Reply-To: <1397886.AAh13B9r2H@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <6e0e7950-0c91-4bb3-929b-3853fa95e63d@default>
+Date: Wed, 31 Aug 2011 12:46:43 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>, gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, ngupta@vflare.org, cascardo@holoscopio.com,
+        rdunlap@xenotime.net, linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 0/3] staging: zcache: xcfmalloc support
+References: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090202.4E5E8FAF.017B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2011 12:18 PM, Arnd Bergmann wrote:
->>
->> You do realize that there are probably quite a lot of programs that
->> depend on signed time_t because they really do care about dates before
->> 1970?
+> This patchset introduces a new memory allocator for persistent
+> pages for zcache.  The current allocator is xvmalloc.  xvmalloc
+> has two notable limitations:
+> * High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
+> * No compaction support which reduces page reclaimation
 > 
-> Yes, it already occurred to me after I had written the above that we
-> really want it to be signed, especially to allow a meaningful conversion
-> at least one-way between 32 and 64 bit time_t values.
+> xcfmalloc seeks to fix these issues by using scatter-gather model that
+> allows for cross-page allocations and relocatable data blocks.
 > 
+> In tests, with pages that only compress to 75% of their original
+> size, xvmalloc had an effective compression (pages stored / pages used by the
+> compressed memory pool) of ~95% (~20% lost to fragmentation). Almost nothing
+> was gained by the compression in this case. xcfmalloc had an effective
+> compression of ~77% (about ~2% lost to fragmentation and metadata overhead).
 
-The only reason I mentioned redefining 32-bit time_t as unsigned was for
-*legacy ABIs*.
+Hi Seth --
 
-	-hpa
+Do you have any data comparing xcfmalloc vs xvmalloc for
+compression ratio and/or performance (cycles to compress
+or decompress different pages) on a wide(r) range of data?
+Assuming xcfmalloc isn't "always better", maybe it would
+be best to allow the algorithm to be selectable?  (And
+then we would also need to decide the default.)
 
+(Hopefully Nitin will have a chance to comment, since he
+has much more expertise in compression than I do.)
 
+Thanks,
+Dan
