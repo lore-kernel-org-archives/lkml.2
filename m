@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1HaKMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 06:12:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39127 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab1HaKMf (ORCPT
+	id S1753422Ab1HaKNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 06:13:08 -0400
+Received: from stinky.trash.net ([213.144.137.162]:43086 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab1HaKNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 06:12:35 -0400
-Date: Wed, 31 Aug 2011 14:12:26 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: containers@lists.osdl.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110831101226.GB25465@sun>
-References: <20110831075814.003575573@openvz.org>
- <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros>
+	Wed, 31 Aug 2011 06:13:04 -0400
+Message-ID: <4E5E092E.80507@trash.net>
+Date: Wed, 31 Aug 2011 12:13:02 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110831090612.GA3253@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: joe@perches.com, bart.de.schuymer@pandora.be, wensong@linux-vs.org,
+        horms@verge.net.au, ja@ssi.bg, shemminger@linux-foundation.org,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lvs-devel@vger.kernel.org
+Subject: Re: [PATCH 06/24] netfilter: Remove unnecessary OOM logging messages
+References: <cover.1314650069.git.joe@perches.com>	<13c1c12486cae409dfa5254b1435e660f2b17e05.1314650069.git.joe@perches.com>	<4E5CDBAA.6040001@trash.net> <20110830.135502.179848097213434762.davem@davemloft.net>
+In-Reply-To: <20110830.135502.179848097213434762.davem@davemloft.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 01:06:12PM +0400, Vasiliy Kulikov wrote:
-> Hi,
+On 30.08.2011 19:55, David Miller wrote:
+> From: Patrick McHardy <kaber@trash.net>
+> Date: Tue, 30 Aug 2011 14:46:34 +0200
 > 
-> On Wed, Aug 31, 2011 at 11:58 +0400, Cyrill Gorcunov wrote:
-> > From: Pavel Emelyanov <xemul@parallels.com>
-> > 
-> > This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-> > one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
-> > the target is the file. Opening a symlink results in a file that point exactly
-> > to the same inode as them vma's one.
+>> On 29.08.2011 23:17, Joe Perches wrote:
+>>> Removing unnecessary messages saves code and text.
+>>>
+>>> Site specific OOM messages are duplications of a generic MM
+>>> out of memory message and aren't really useful, so just
+>>> delete them.
+>>
+>> Looks good to me. Do you want me to apply this patch or are you
+>> intending to have the entire series go through Dave?
 > 
-> I'm late noting it before the RFCv6 :)  Besides checking
-> ptrace_may_access() on ->lookup and ->readdir you also should define
-> ->stat, otherwise you can bypass ptrace checks if there is a
-> corresponding dentry in the cache.  The same issue existed in fd* handlers:
-> 
-> http://www.openwall.com/lists/kernel-hardening/2011/08/29/1
-> 
+> I'm happy with subsystem folks taking things in if they want, the
+> B.A.T.M.A.N. guys did this earlier today for example.
 
-Yeah, good point, thanks Vasiliy.
+OK, thanks.
 
-	Cyrill
+Applied after fixing up some minor rejects in nf_nat_snmp_basic.c,
+thanks Joe.
