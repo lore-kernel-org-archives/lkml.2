@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab1HaBIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 21:08:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21358 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395Ab1HaBIS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 21:08:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=w1ZCcsVGzDLfgcobH+86cKZCML2PRyDaPol3xvO71zt3USdm4qntFt8x6+OOaR5wR
-	bpiDkeQHSep3UxtA+Xv6Q==
+	id S1754581Ab1HaBKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 21:10:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754368Ab1HaBKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 21:10:35 -0400
+Message-ID: <4E5D89E3.6020008@redhat.com>
+Date: Tue, 30 Aug 2011 21:09:55 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <1311210299-12607-1-git-send-email-vnagarnaik@google.com>
-References: <1311210299-12607-1-git-send-email-vnagarnaik@google.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Tue, 30 Aug 2011 18:07:45 -0700
-Message-ID: <CAL26m8KPDHPbad5y5ZYm4vY6i5TcgJ+tZSsT=r709dS9jX290Q@mail.gmail.com>
-Subject: Re: [PATCH] trace: change CPU ring buffer state from tracing_cpumask
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH 2/3] compaction: compact unevictable page
+References: <cover.1321112552.git.minchan.kim@gmail.com> <8ef02605a7a76b176167d90a285033afa8513326.1321112552.git.minchan.kim@gmail.com>
+In-Reply-To: <8ef02605a7a76b176167d90a285033afa8513326.1321112552.git.minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 6:04 PM, Vaibhav Nagarnaik
-<vnagarnaik@google.com> wrote:
-> According to Documentation/trace/ftrace.txt:
+On 11/12/2011 11:37 AM, Minchan Kim wrote:
+> Now compaction doesn't handle mlocked page as it uses __isolate_lru_page
+> which doesn't consider unevicatable page. It has been used by just lumpy so
+> it was pointless that it isolates unevictable page. But the situation is
+> changed. Compaction could handle unevictable page and it can help getting
+> big contiguos pages in fragment memory by many pinned page with mlock.
 >
-> tracing_cpumask:
+> I tested this patch with following scenario.
 >
->        This is a mask that lets the user only trace
->        on specified CPUS. The format is a hex string
->        representing the CPUS.
+> 1. A : allocate 80% anon pages in system
+> 2. B : allocate 20% mlocked page in system
+> /* Maybe, mlocked pages are located in low pfn address */
+> 3. kill A /* high pfn address are free */
+> 4. echo 1>  /proc/sys/vm/compact_memory
 >
-> The tracing_cpumask currently doesn't affect the tracing state of
-> per-CPU ring buffers.
+> old:
 >
-> This patch enables/disables CPU recording as its corresponding bit in
-> tracing_cpumask is set/unset.
+> compact_blocks_moved 251
+> compact_pages_moved 44
 >
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-> ---
->  kernel/trace/trace.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> new:
 >
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index e8aa324..d8ed798 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -2433,10 +2433,12 @@ tracing_cpumask_write(struct file *filp, const char __user *ubuf,
->                if (cpumask_test_cpu(cpu, tracing_cpumask) &&
->                                !cpumask_test_cpu(cpu, tracing_cpumask_new)) {
->                        atomic_inc(&global_trace.data[cpu]->disabled);
-> +                       ring_buffer_record_disable_cpu(global_trace.buffer, cpu);
->                }
->                if (!cpumask_test_cpu(cpu, tracing_cpumask) &&
->                                cpumask_test_cpu(cpu, tracing_cpumask_new)) {
->                        atomic_dec(&global_trace.data[cpu]->disabled);
-> +                       ring_buffer_record_enable_cpu(global_trace.buffer, cpu);
->                }
->        }
->        arch_spin_unlock(&ftrace_max_lock);
+> compact_blocks_moved 258
+> compact_pages_moved 412
+>
+> CC: Mel Gorman<mgorman@suse.de>
+> CC: Johannes Weiner<jweiner@redhat.com>
+> CC: Rik van Riel<riel@redhat.com>
+> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
 
-Hi Steve
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-What do you think about this patch?
 
-Vaibhav Nagarnaik
+-- 
+All rights reversed
