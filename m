@@ -1,46 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab1HaTvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 15:51:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:63457 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab1HaTvN (ORCPT
+	id S1754621Ab1HaTvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 15:51:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53653 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab1HaTvx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 15:51:13 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6455"; a="114409904"
-Date: Wed, 31 Aug 2011 12:51:11 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Kuo <rkuo@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [patch v2 01/35] Hexagon: Add generic headers
-Message-ID: <20110831195111.GA29918@huya.qualcomm.com>
-References: <20110830190729.923334292@codeaurora.org>
- <20110830190759.813984525@codeaurora.org>
- <201108311524.42373.arnd@arndb.de>
+	Wed, 31 Aug 2011 15:51:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108311524.42373.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdUBYarp4V_k_8Skr8T-Ow2fc69EpJGi3wm-M_UZNxDLeA@mail.gmail.com>
+References: <1314818699-10873-1-git-send-email-jslaby@suse.cz>
+	<1314818699-10873-2-git-send-email-jslaby@suse.cz>
+	<CAMuHMdUBYarp4V_k_8Skr8T-Ow2fc69EpJGi3wm-M_UZNxDLeA@mail.gmail.com>
+Date: Wed, 31 Aug 2011 21:51:52 +0200
+X-Google-Sender-Auth: bgWwEGIw_ZYqM5Io5Q9V0Rrn6og
+Message-ID: <CAMuHMdXQCXj_y+JzP-opYq+EioR6mp1bPF903GWOAtEjYqr4Dw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] TTY: serial, remove dead code from 68328
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>,
+        linux-m68k@vger.kernel.org,
+        uClinux development list <uclinux-dev@uclinux.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 03:24:42PM +0200, Arnd Bergmann wrote:
-> On Tuesday 30 August 2011, Richard Kuo wrote:
-> > Reworked to use the Kbuild generic headers mechanism.
-> > 
-> > Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-> 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Wed, Aug 31, 2011 at 21:51, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Wed, Aug 31, 2011 at 21:24, Jiri Slaby <jslaby@suse.cz> wrote:
+>> The code is dead at least since 2002. So remove it to not distort git
+>> grep output (about port.tty usage).
+>>
+>> Remove the whole do_softirq tasklet as it's noop now.
+>>
+>> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+>> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Cc: Alan Cox <alan@linux.intel.com>
+>> ---
+>> Cc: linux-m68k@lists.linux-m68k.org
+>
+> This is a uClinux driver.
 
-Any suggestions on what path this code should flow to get into the
-kernel?
+So I really wanted to cc the uClinux list...
 
-Thanks,
-David
+>>  drivers/tty/serial/68328serial.c |   35 -----------------------------------
+>>  drivers/tty/serial/68328serial.h |    1 -
+>>  2 files changed, 0 insertions(+), 36 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/68328serial.c b/drivers/tty/serial/68328serial.c
+>> index e0a7754..f549231 100644
+>> --- a/drivers/tty/serial/68328serial.c
+>> +++ b/drivers/tty/serial/68328serial.c
+>> @@ -235,22 +235,6 @@ static void batten_down_hatches(void)
+>>
+>>  static void status_handle(struct m68k_serial *info, unsigned short status)
+>>  {
+>> -#if 0
+>> -       if(status & DCD) {
+>> -               if((info->port.tty->termios->c_cflag & CRTSCTS) &&
+>> -                  ((info->curregs[3] & AUTO_ENAB)==0)) {
+>> -                       info->curregs[3] |= AUTO_ENAB;
+>> -                       info->pendregs[3] |= AUTO_ENAB;
+>> -                       write_zsreg(info->m68k_channel, 3, info->curregs[3]);
+>> -               }
+>> -       } else {
+>> -               if((info->curregs[3] & AUTO_ENAB)) {
+>> -                       info->curregs[3] &= ~AUTO_ENAB;
+>> -                       info->pendregs[3] &= ~AUTO_ENAB;
+>> -                       write_zsreg(info->m68k_channel, 3, info->curregs[3]);
+>> -               }
+>> -       }
+>> -#endif
+>>        /* If this is console input and this is a
+>>         * 'break asserted' status change interrupt
+>>         * see if we can drop into the debugger
+>> @@ -340,9 +324,6 @@ static void transmit_chars(struct m68k_serial *info)
+>>        info->xmit_tail = info->xmit_tail & (SERIAL_XMIT_SIZE-1);
+>>        info->xmit_cnt--;
+>>
+>> -       if (info->xmit_cnt < WAKEUP_CHARS)
+>> -               schedule_work(&info->tqueue);
+>> -
+>>        if(info->xmit_cnt <= 0) {
+>>                /* All done for now... TX ints off */
+>>                uart->ustcnt &= ~USTCNT_TX_INTR_MASK;
+>> @@ -378,21 +359,6 @@ irqreturn_t rs_interrupt(int irq, void *dev_id)
+>>        return IRQ_HANDLED;
+>>  }
+>>
+>> -static void do_softint(struct work_struct *work)
+>> -{
+>> -       struct m68k_serial      *info = container_of(work, struct m68k_serial, tqueue);
+>> -       struct tty_struct       *tty;
+>> -
+>> -       tty = info->tty;
+>> -       if (!tty)
+>> -               return;
+>> -#if 0
+>> -       if (clear_bit(RS_EVENT_WRITE_WAKEUP, &info->event)) {
+>> -               tty_wakeup(tty);
+>> -       }
+>> -#endif
+>> -}
+>> -
+>>  static int startup(struct m68k_serial * info)
+>>  {
+>>        m68328_uart *uart = &uart_addr[info->line];
+>> @@ -1324,7 +1290,6 @@ rs68328_init(void)
+>>            info->event = 0;
+>>            info->count = 0;
+>>            info->blocked_open = 0;
+>> -           INIT_WORK(&info->tqueue, do_softint);
+>>            init_waitqueue_head(&info->open_wait);
+>>            init_waitqueue_head(&info->close_wait);
+>>            info->line = i;
+>> diff --git a/drivers/tty/serial/68328serial.h b/drivers/tty/serial/68328serial.h
+>> index 8c9c3c0..3d2faab 100644
+>> --- a/drivers/tty/serial/68328serial.h
+>> +++ b/drivers/tty/serial/68328serial.h
+>> @@ -158,7 +158,6 @@ struct m68k_serial {
+>>        int                     xmit_head;
+>>        int                     xmit_tail;
+>>        int                     xmit_cnt;
+>> -       struct work_struct      tqueue;
+>>        wait_queue_head_t       open_wait;
+>>        wait_queue_head_t       close_wait;
+>>  };
+>> --
+>> 1.7.6.1
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
