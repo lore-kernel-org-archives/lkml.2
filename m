@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab1HaAtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Aug 2011 20:49:21 -0400
-Received: from mail.cis.rv.ua ([193.108.129.50]:65165 "EHLO mail.cis.rv.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754474Ab1HaAtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Aug 2011 20:49:19 -0400
-X-Greylist: delayed 1145 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Aug 2011 20:49:18 EDT
-Message-ID: <4140.82.128.15.221.1314750495.squirrel@mail.cis.rv.ua>
-Date: Wed, 31 Aug 2011 03:28:15 +0300 (EEST)
-Subject: Jackpot Joy!
-From: "Microsoft Award." <info@ma.net>
-Reply-To: microclaimsprocessinguint@hotmail.co.uk
-User-Agent: SquirrelMail/1.4.13
-MIME-Version: 1.0
-Content-Type: text/plain;charset=windows-1251
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: info@ma.net
-X-SA-Exim-Scanned: No (on mail.cis.rv.ua); SAEximRunCond expanded to false
-To: unlisted-recipients:; (no To-header on input)
+	id S1754398Ab1HaAwh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Aug 2011 20:52:37 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48565 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab1HaAwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Aug 2011 20:52:36 -0400
+Subject: Re: Question with "container_of(ptr, type, member)"
+From: peter <lifulong2c2i2c@gmail.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4E5D6EF3.3000908@gmail.com>
+References: <1314701099.1728.6.camel@peter-2ci2c>
+	 <4E5D6EF3.3000908@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 31 Aug 2011 08:52:20 +0800
+Message-ID: <1314751940.1593.2.camel@peter-2ci2c>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulations You have just won(five Hundred Thousand Pounds)Ticket
-Number 56475600545 188,in the ongoing Microsoft Award.UK Edition A
-blackberry Phone and Apple Laptop. A winning draft will be  issued,Contact
-Mrs.Ana Louis at, microclaimsprocessinguint@hotmail.co.uk
-,Tel+44-702-402-9332.
+I see now, It can gives an waring:  "warning: initialization from
+incompatible pointer type", when give it an wrong type.
+thanks for your answer!
+On Wed, 2011-08-31 at 09:14 +1000, Ryan Mallon wrote:
+> On 30/08/11 20:44, peter wrote:
+> > I have a question about the macro " container_of(ptr, type, member) "
+> > I can write it as this,
+> >   #define container_of(ptr, type, member) ({ \
+> > 	(type *) ((char *) ptr - offset_of(type, member)); \
+> > 	})
+> > It can act the same as
+> > #define container_of(ptr, type, member) ({            \
+> > 	 const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+> > 	 (type *)( (char *)__mptr - offsetof(type,member) );})
+> > So why we don't use the first one ?
+> > Thanks for your answer.
+> > (I am a kernel newbie ,and sorry for my poor english~)
+> 
+> The version used by the Linux kernel does type checking.
+> 
+> ~Ryan
+> 
 
-Form Claims Full Names:
-Address:
-Phone Number:
-Sex:
-Age:
-Occupation:
-Country of Residence:
 
