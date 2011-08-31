@@ -1,130 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab1HaW0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 18:26:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20468 "EHLO mga09.intel.com"
+	id S1756925Ab1HaWZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 18:25:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44436 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756964Ab1HaWZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 18:25:55 -0400
+	id S1756900Ab1HaWZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 18:25:49 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="44161560"
+X-IronPort-AV: E=Sophos;i="4.68,309,1312182000"; 
+   d="scan'208";a="46968024"
 From: "Luck, Tony" <tony.luck@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Ingo Molnar" <mingo@elte.hu>, "Borislav Petkov" <bp@amd64.org>,
         "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>
 In-Reply-To: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
-Subject: [PATCH 3/5] HWPOISON: Handle hwpoison in current process
-Date: Wed, 31 Aug 2011 15:25:55 -0700
-Message-Id: <4e5eb4f3210531eb0c@agluck-desktop.sc.intel.com>
+Subject: [PATCH 2/5] mce: mask out undefined bits from MCi_ADDR
+Date: Wed, 31 Aug 2011 15:25:44 -0700
+Message-Id: <4e5eb4e821049d6d79@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Tony Luck <tony.luck@intel.com>
 
-When hardware poison handles the current process use
-a forced signal with _AR severity.
+Move duplicate copies of the code that reads ADDR/MISC registers
+to a function. Add masking code for systems that have undefined
+low-order bits in the MCi_ADDR register.
 
-[Tony: changed some function names .. the "_ao" suffix was no longer meaningful]
+Based on original code by Andi Kleen
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- mm/memory-failure.c |   39 ++++++++++++++++++++++-----------------
- 1 files changed, 22 insertions(+), 17 deletions(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 2b43ba0..6ccb8a6 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -186,33 +186,38 @@ int hwpoison_filter(struct page *p)
- EXPORT_SYMBOL_GPL(hwpoison_filter);
- 
- /*
-- * Send all the processes who have the page mapped an ``action optional''
-- * signal.
-+ * Send one process who has the page mapped a SIGBUS. It might
-+ * be able to catch it and initiate its own task level recovery.
-  */
--static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
-+static int user_recovery(struct task_struct *t, unsigned long addr, int trapno,
- 			unsigned long pfn, struct page *page)
- {
- 	struct siginfo si;
- 	int ret;
- 
- 	printk(KERN_ERR
--		"MCE %#lx: Killing %s:%d early due to hardware memory corruption\n",
--		pfn, t->comm, t->pid);
-+		"MCE %#lx: Killing %s:%d due to hardware memory corruption\n",
-+	       pfn, t->comm, t->pid);
- 	si.si_signo = SIGBUS;
- 	si.si_errno = 0;
--	si.si_code = BUS_MCEERR_AO;
- 	si.si_addr = (void *)addr;
- #ifdef __ARCH_SI_TRAPNO
- 	si.si_trapno = trapno;
- #endif
- 	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
--	/*
--	 * Don't use force here, it's convenient if the signal
--	 * can be temporarily blocked.
--	 * This could cause a loop when the user sets SIGBUS
--	 * to SIG_IGN, but hopefully no one will do that?
--	 */
--	ret = send_sig_info(SIGBUS, &si, t);  /* synchronous? */
-+	if (t == current) {
-+		si.si_code = BUS_MCEERR_AR;
-+		ret = force_sig_info(SIGBUS, &si, t);
-+	} else {
-+		/*
-+		 * Don't use force here, it's convenient if the signal
-+		 * can be temporarily blocked.
-+		 * This could cause a loop when the user sets SIGBUS
-+		 * to SIG_IGN, but hopefully noone will do that?
-+		 */
-+		si.si_code = BUS_MCEERR_AO;
-+		ret = send_sig_info(SIGBUS, &si, t);
-+	}
- 	if (ret < 0)
- 		printk(KERN_INFO "MCE: Error sending signal to %s:%d: %d\n",
- 		       t->comm, t->pid, ret);
-@@ -330,14 +335,14 @@ static void add_to_kill(struct task_struct *tsk, struct page *p,
+Andi originally posted this as two patches - one to move the common
+code to the new function "mce_read_aux()", the second to add the
+masking.
+Seto-san objected to the masking on the grounds that the bits might
+contain something useful - but after some thought, I agree with Andi
+that it is better to drop undefined bits.
+
+ arch/x86/kernel/cpu/mcheck/mce.c |   31 +++++++++++++++++++++++--------
+ 1 files changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 91bb983..1ce64c3 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -490,6 +490,27 @@ static void mce_report_event(struct pt_regs *regs)
+ 	irq_work_queue(&__get_cpu_var(mce_irq_work));
  }
  
- /*
-- * Kill the processes that have been collected earlier.
-+ * Signal the processes that have been collected earlier.
-  *
-  * Only do anything when DOIT is set, otherwise just free the list
-  * (this is used for clean pages which do not need killing)
-  * Also when FAIL is set do a force kill because something went
-  * wrong earlier.
-  */
--static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
-+static void kill_procs(struct list_head *to_kill, int doit, int trapno,
- 			  int fail, struct page *page, unsigned long pfn)
- {
- 	struct to_kill *tk, *next;
-@@ -362,7 +367,7 @@ static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
- 			 * check for that, but we need to tell the
- 			 * process anyways.
- 			 */
--			else if (kill_proc_ao(tk->tsk, tk->addr, trapno,
-+			else if (user_recovery(tk->tsk, tk->addr, trapno,
- 					      pfn, page) < 0)
- 				printk(KERN_ERR
- 		"MCE %#lx: Cannot send advisory machine check signal to %s:%d\n",
-@@ -961,7 +966,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * use a more force-full uncatchable kill to prevent
- 	 * any accesses to the poisoned memory.
- 	 */
--	kill_procs_ao(&tokill, !!PageDirty(ppage), trapno,
-+	kill_procs(&tokill, !!PageDirty(ppage), trapno,
- 		      ret != SWAP_SUCCESS, p, pfn);
++/*
++ * Read ADDR and MISC registers.
++ */
++static void mce_read_aux(struct mce *m, int i)
++{
++	if (m->status & MCI_STATUS_MISCV)
++		m->misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
++	if (m->status & MCI_STATUS_ADDRV) {
++		m->addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
++
++		/*
++		 * Mask the reported address by the reported granuality.
++		 */
++		if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
++			u8 shift = m->misc & 0x1f;
++			m->addr >>= shift;
++			m->addr <<= shift;
++		}
++	}
++}
++
+ DEFINE_PER_CPU(unsigned, mce_poll_count);
  
- 	return ret;
+ /*
+@@ -540,10 +561,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		    (m.status & (mce_ser ? MCI_STATUS_S : MCI_STATUS_UC)))
+ 			continue;
+ 
+-		if (m.status & MCI_STATUS_MISCV)
+-			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
+-		if (m.status & MCI_STATUS_ADDRV)
+-			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
++		mce_read_aux(&m, i);
+ 
+ 		if (!(flags & MCP_TIMESTAMP))
+ 			m.tsc = 0;
+@@ -984,10 +1002,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 		if (severity == MCE_AR_SEVERITY)
+ 			kill_it = 1;
+ 
+-		if (m.status & MCI_STATUS_MISCV)
+-			m.misc = mce_rdmsrl(MSR_IA32_MCx_MISC(i));
+-		if (m.status & MCI_STATUS_ADDRV)
+-			m.addr = mce_rdmsrl(MSR_IA32_MCx_ADDR(i));
++		mce_read_aux(&m, i);
+ 
+ 		/*
+ 		 * Action optional error. Queue address for later processing.
 -- 
 1.7.3.1
 
