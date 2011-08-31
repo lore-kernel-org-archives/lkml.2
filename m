@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab1HaQQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 12:16:29 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:61959 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab1HaQQZ (ORCPT
+	id S1756830Ab1HaQSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 12:18:15 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:40801 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab1HaQSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 12:16:25 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6455"; a="114141868"
-Date: Wed, 31 Aug 2011 11:16:16 -0500
-From: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Kuo <rkuo@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [patch v2 17/35] Hexagon: Add interrupts
-Message-ID: <20110831161616.GA11117@codeaurora.org>
-References: <20110830190729.923334292@codeaurora.org>
- <20110830190801.353140948@codeaurora.org>
- <201108311550.23240.arnd@arndb.de>
+	Wed, 31 Aug 2011 12:18:13 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p7VGI8au013209
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 2/3] r8169: fix the reset setting for 8111evl
+Date: Thu, 1 Sep 2011 00:17:58 +0800
+X-BOX-Message-Id: p7VGI8au013209
+Message-ID: <1314807479-1552-2-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1314807479-1552-1-git-send-email-hayeswang@realtek.com>
+References: <1314807479-1552-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108311550.23240.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 03:50:23PM +0200, Arnd Bergmann wrote:
-> > +/*
-> > + * XXX TODO FIXME this should be pulled from a platform file!
-> > + * Must define NR_IRQS before including <asm-generic/irq.h>
-> > + * 64 == the two SIRC's, 176 == the two gpio's
-> > + */
-> > +#define NR_IRQS (HEXAGON_CPUINTS + 64 + 176)
-> 
-> I disagree with that comment: NR_IRQS is a constant and should
-> not be platform specific. There should be no compile-time settings
-> that are strictly specific to one platform, otherwise you are not
+8111evl should stop any TLP requirement before resetting by enabling
+IO 0x37 bit 7.
 
-OK.  The interrupt handling on hexagon really is under construction:
-not only do we need to finish support for the device tree, but there's
-also a bunch of nasty ugliness in how the second & third-level
-interrupt cntrollers are handled.  Some of the difficulties are due
-the fact that we are re-cycling some of the msm drivers in the 
-arm platform directories. The hexagon and the arm are on the same
-chip, and see the same controllers, more or less, just with 
-different address ranges and sometimes with different permissions,
-different pin numberings, etc. 
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Some of these patches are missing Signed-off-by-me lines, I take
-full responsibility for all triple-X's that are lingering.
-
--- Linas
-
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 96e003a..68f1e2f 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3991,6 +3991,7 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
+ 		while (RTL_R8(TxPoll) & NPQ)
+ 			udelay(20);
+ 	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
++		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
+ 		while (!(RTL_R32(TxConfig) & TXCFG_EMPTY))
+ 			udelay(100);
+ 	} else {
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.6
+
