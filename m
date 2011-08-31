@@ -1,1317 +1,1554 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab1HaV24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 17:28:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25771 "EHLO mx1.redhat.com"
+	id S1756469Ab1HaV25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 17:28:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10409 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756263Ab1HaV2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 17:28:47 -0400
+	id S1756309Ab1HaV2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 17:28:49 -0400
 From: Mark Salter <msalter@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, ming.lei@canonical.com,
         stern@rowland.harvard.edu, Mark Salter <msalter@redhat.com>
-Subject: [PATCH 21/24] C6X: specific SoC support
-Date: Wed, 31 Aug 2011 17:26:56 -0400
-Message-Id: <1314826019-22330-22-git-send-email-msalter@redhat.com>
+Subject: [PATCH 19/24] C6X: library code
+Date: Wed, 31 Aug 2011 17:26:54 -0400
+Message-Id: <1314826019-22330-20-git-send-email-msalter@redhat.com>
 In-Reply-To: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides the code for the four currently supported SoCs. Each SoC
-provides a struct soc_ops which contains hooks for miscellaneous functionality
-which does not fit well in any drivers. At setup_arch time, the device tree is
-probed to find the correct soc_ops struct to use.
-
-Most SoCs provide one or more sets of MMIO registers for various SoC-specific
-low-level device setup and control. the device tree is parsed at setup_arch
-time to find the base address of these registers.
+The C6X library code contains an optimized memcpy, optimized csum, and
+various libgcc support routines.
 
 Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- arch/c6x/platforms/soc-6455.c |  389 +++++++++++++++++++++++++++++++++++++
- arch/c6x/platforms/soc-6457.c |  187 ++++++++++++++++++
- arch/c6x/platforms/soc-6472.c |  428 +++++++++++++++++++++++++++++++++++++++++
- arch/c6x/platforms/soc-6474.c |  244 +++++++++++++++++++++++
- 4 files changed, 1248 insertions(+), 0 deletions(-)
- create mode 100644 arch/c6x/platforms/soc-6455.c
- create mode 100644 arch/c6x/platforms/soc-6457.c
- create mode 100644 arch/c6x/platforms/soc-6472.c
- create mode 100644 arch/c6x/platforms/soc-6474.c
+ arch/c6x/include/asm/checksum.h |  115 +++++++++++
+ arch/c6x/lib/csum_64plus.S      |  404 +++++++++++++++++++++++++++++++++++++++
+ arch/c6x/lib/divi.S             |   53 +++++
+ arch/c6x/lib/divremi.S          |   46 +++++
+ arch/c6x/lib/divremu.S          |   87 +++++++++
+ arch/c6x/lib/divu.S             |   98 ++++++++++
+ arch/c6x/lib/llshl.S            |   37 ++++
+ arch/c6x/lib/llshr.S            |   38 ++++
+ arch/c6x/lib/llshru.S           |   38 ++++
+ arch/c6x/lib/memcpy_64plus.S    |   46 +++++
+ arch/c6x/lib/mpyll.S            |   49 +++++
+ arch/c6x/lib/negll.S            |   31 +++
+ arch/c6x/lib/pop_rts.S          |   32 +++
+ arch/c6x/lib/push_rts.S         |   31 +++
+ arch/c6x/lib/remi.S             |   64 ++++++
+ arch/c6x/lib/remu.S             |   82 ++++++++
+ arch/c6x/lib/strasgi.S          |   89 +++++++++
+ arch/c6x/lib/strasgi_64plus.S   |   39 ++++
+ 18 files changed, 1379 insertions(+), 0 deletions(-)
+ create mode 100644 arch/c6x/include/asm/checksum.h
+ create mode 100644 arch/c6x/lib/csum_64plus.S
+ create mode 100644 arch/c6x/lib/divi.S
+ create mode 100644 arch/c6x/lib/divremi.S
+ create mode 100644 arch/c6x/lib/divremu.S
+ create mode 100644 arch/c6x/lib/divu.S
+ create mode 100644 arch/c6x/lib/llshl.S
+ create mode 100644 arch/c6x/lib/llshr.S
+ create mode 100644 arch/c6x/lib/llshru.S
+ create mode 100644 arch/c6x/lib/memcpy_64plus.S
+ create mode 100644 arch/c6x/lib/mpyll.S
+ create mode 100644 arch/c6x/lib/negll.S
+ create mode 100644 arch/c6x/lib/pop_rts.S
+ create mode 100644 arch/c6x/lib/push_rts.S
+ create mode 100644 arch/c6x/lib/remi.S
+ create mode 100644 arch/c6x/lib/remu.S
+ create mode 100644 arch/c6x/lib/strasgi.S
+ create mode 100644 arch/c6x/lib/strasgi_64plus.S
 
-diff --git a/arch/c6x/platforms/soc-6455.c b/arch/c6x/platforms/soc-6455.c
+diff --git a/arch/c6x/include/asm/checksum.h b/arch/c6x/include/asm/checksum.h
 new file mode 100644
-index 0000000..03fb618
+index 0000000..9bb2845
 --- /dev/null
-+++ b/arch/c6x/platforms/soc-6455.c
-@@ -0,0 +1,389 @@
++++ b/arch/c6x/include/asm/checksum.h
+@@ -0,0 +1,115 @@
 +/*
-+ *  Miscellaneous SoC specific code
-+ *
 + *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
++ *  Copyright (C) 2004, 2009, 2010 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation.
 + */
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <asm/clock.h>
-+#include <asm/soc.h>
-+#include "megamod-pic.h"
-+#include "timer64.h"
++#ifndef _ASM_C6X_CHECKSUM_H
++#define _ASM_C6X_CHECKSUM_H
 +
-+static struct clk_lookup c6455_clks[] = {
-+	CLK(NULL, "pll1", &c6x_soc_pll1.sysclks[0]),
-+	CLK(NULL, "pll1_sysclk2", &c6x_soc_pll1.sysclks[2]),
-+	CLK(NULL, "pll1_sysclk3", &c6x_soc_pll1.sysclks[3]),
-+	CLK(NULL, "pll1_sysclk4", &c6x_soc_pll1.sysclks[4]),
-+	CLK(NULL, "pll1_sysclk5", &c6x_soc_pll1.sysclks[5]),
-+	CLK(NULL, "core", &c6x_core_clk),
-+	CLK("i2c_davinci.1", NULL, &c6x_i2c_clk),
-+	CLK("watchdog", NULL, &c6x_watchdog_clk),
-+	CLK("2c81800.mdio", NULL, &c6x_mdio_clk),
-+	CLK("", NULL, NULL)
-+};
++#include <asm/byteorder.h>
 +
++/*
++ * Computes the checksum of a memory block at buff, length len,
++ * and adds in "sum" (32-bit)
++ *
++ * returns a 32-bit number suitable for feeding into itself
++ * or csum_tcpudp_magic
++ *
++ * this function must be called with even lengths, except
++ * for the last fragment, which may be odd
++ *
++ * it's best to have buff aligned on a 32-bit boundary
++ */
++extern __wsum csum_partial(const void *buff, int len, __wsum sum);
 +
-+/* assumptions used for delay loop calculations */
-+#define MIN_CLKIN1_KHz 10000
-+#define MAX_CORE_KHz   1200000
-+#define MIN_PLLOUT_KHz (MIN_CLKIN1_KHz/3)
++/*
++ * The same as csum_partial, but copies from src while it checksums
++ *
++ * here even more important to align src and dst on a 32-bit (or even
++ * better 64-bit) boundary
++ */
++extern __wsum csum_partial_copy(const void *src, void *dst,
++				int len, __wsum sum);
 +
-+static void __init __setup_clocks(void)
++/*
++ * This is a new version of the above that records errors it finds in *errp,
++ * but continues and zeros the rest of the buffer.
++ */
++#define csum_partial_copy_nocheck csum_partial_copy
++
++/*
++ * The same as csum_partial_copy, but copies from user space.
++ *
++ * here even more important to align src and dst on a 32-bit (or even
++ * better 64-bit) boundary
++ */
++#define csum_partial_copy_from_user(src, dst, len, sum, err_ptr) \
++	csum_partial_copy(src, dst, len, sum)
++
++/*
++ * This is a version of ip_compute_csum() optimized for IP headers,
++ * which always checksum on 4 octet boundaries.
++ *
++ */
++extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
++
++/*
++ * Fold a partial checksum
++ */
++static inline __sum16 csum_fold(__wsum csum)
 +{
-+	struct pll_data *pll = &c6x_soc_pll1;
-+	struct clk *sysclks = pll->sysclks;
-+
-+	pll->flags = PLL_HAS_PRE | PLL_HAS_MUL;
-+
-+	pll->bypass_delay = 4 * (MAX_CORE_KHz/MIN_PLLOUT_KHz);
-+	pll->reset_delay = 128 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
-+	pll->lock_delay = 2000 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
-+
-+	sysclks[2].flags |= FIXED_DIV_PLL;
-+	sysclks[2].div = 3;
-+	sysclks[3].flags |= FIXED_DIV_PLL;
-+	sysclks[3].div = 6;
-+	sysclks[4].div = PLLDIV4;
-+	sysclks[5].div = PLLDIV5;
-+
-+	c6x_core_clk.parent = &sysclks[0];
-+	c6x_i2c_clk.parent = &sysclks[3];
-+	c6x_watchdog_clk.parent = &sysclks[3];
-+	c6x_mdio_clk.parent = &sysclks[3];
-+
-+	c6x_clks_init(c6455_clks);
++	u32 sum = (u32)csum;
++	sum = (sum & 0xffff) + (sum >> 16);
++	sum = (sum & 0xffff) + (sum >> 16);
++	return (__sum16)~sum;
 +}
 +
 +/*
-+ * Chip Level (SoC) Registers
++ * Computes the checksum of the TCP/UDP pseudo-header
 + */
-+#define CHIP_DEVSTAT	0x00
-+#define CHIP_PRI_ALLOC	0x04
-+#define CHIP_JTAGID	0x08
-+
-+/*
-+ * Device State Controller Registers
-+ */
-+#define DSCR_PERLOCK	0x04
-+#define DSCR_PERCFG0	0x08
-+#define DSCR_PERSTAT0	0x14
-+#define DSCR_PERSTAT1	0x18
-+#define DSCR_EMACCFG	0x20
-+#define DSCR_PERCFG1	0x2C
-+#define DSCR_EMUBUFPD	0x54
-+
-+#define DSCR_LOCKVAL	0x0f0a0b00
-+
-+/* device IDs passed to dscr_enable() and dscr_disable() */
-+#define DSCR_TCP	0
-+#define DSCR_VCP	1
-+#define DSCR_EMAC	2
-+#define DSCR_TIMER0	3
-+#define DSCR_TIMER1	4
-+#define DSCR_GPIO	5
-+#define DSCR_I2C	6
-+#define DSCR_BSP0	7
-+#define DSCR_BSP1	8
-+#define DSCR_HPI	9
-+#define DSCR_PCI	10
-+#define DSCR_UTOPIA	11
-+#define DSCR_SRIO	15
-+#define DSCR_EMIFA	16
-+#define DSCR_DDR2	17
-+
-+#define PERSTAT_DISABLED	0
-+#define PERSTAT_ENABLED		1
-+#define PERSTAT_PWRDOWN		3
-+#define PERSTAT_INPROGRESS	5
-+
-+static void __iomem *chip_base;
-+static void __iomem *dscr_base;
-+
-+static inline void dscr_write(int offset, unsigned int val)
++static inline __wsum
++csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
++		  unsigned short proto, __wsum sum)
 +{
-+	soc_writel(val, dscr_base + offset);
-+}
++	unsigned long long s = (__force u32)sum;
 +
-+static inline unsigned int dscr_read(int offset)
-+{
-+	return soc_readl(dscr_base + offset);
-+}
-+
-+static inline void chip_write(int offset, unsigned int val)
-+{
-+	soc_writel(val, chip_base + offset);
-+}
-+
-+static inline unsigned int chip_read(int offset)
-+{
-+	return soc_readl(chip_base + offset);
-+}
-+
-+static inline void __write_percfg0(unsigned int val)
-+{
-+	void __iomem *_base = dscr_base;
-+	int _key = DSCR_LOCKVAL;
-+
-+	/*
-+	 * We need to ensure write to lock register and write to PERCFG0 are
-+	 * in same fetch packet and that an interrupt doesn't occur between
-+	 * them. The .align makes sure they're in the same packet and putting
-+	 * them in the delay slots of the second branch ensures they are not
-+	 * interrupted.
-+	 */
-+	asm volatile ("b	.s2	0f\n"
-+		      "nop	5\n"
-+		      "    .align 5\n"
-+		      "0:\n"
-+		      "b	.s2	0f\n"
-+		      "stw	.D1T1	%2,*+%1(%4)\n"
-+		      "stw	.D1T1	%0,*+%1(%3)\n"
-+		      "nop\n"
-+		      "nop\n"
-+		      "nop\n"
-+		      "0:\n"
-+		      :
-+		      : "a"(val), "a"(_base), "a"(_key),
-+		      "Iu5"(DSCR_PERCFG0), "Iu5"(DSCR_PERLOCK)
-+		);
-+}
-+
-+/*
-+ * Enable a peripheral through PERCFG registers.
-+ */
-+static void dscr_enable(int id)
-+{
-+	unsigned int val;
-+	int shift;
-+
-+	if (id < 16) {
-+		int status_reg;
-+
-+		shift = id * 2;
-+
-+		val = dscr_read(DSCR_PERCFG0);
-+		val &= ~(3 << shift);
-+		if (id == DSCR_SRIO) {
-+			/* SRIO is handled differently than the others */
-+			val |= (3 << shift);
-+			__write_percfg0(val);
-+			return;
-+		}
-+		val |= (1 << shift);
-+		__write_percfg0(val);
-+		/* wait for completion */
-+		if (id < 10) {
-+			status_reg = DSCR_PERSTAT0;
-+			shift = id * 3;
-+		} else {
-+			status_reg = DSCR_PERSTAT1;
-+			shift = (id - 10) * 3;
-+		}
-+		do {
-+			val = dscr_read(status_reg);
-+			val >>= shift;
-+			val &= 7;
-+		} while (val != PERSTAT_ENABLED);
-+	} else {
-+		shift = id - 16;
-+		val = dscr_read(DSCR_PERCFG1);
-+		dscr_write(DSCR_PERCFG1, val | (1 << shift));
-+		__delay(100);
-+	}
-+}
-+
-+/*
-+ * Disable a peripheral through PERCFG registers.
-+ */
-+static void dscr_disable(int id)
-+{
-+	unsigned int val;
-+	int shift;
-+
-+	if (id < 16) {
-+		shift = id * 2;
-+
-+		val = dscr_read(DSCR_PERCFG0);
-+		val &= ~(3 << shift);
-+		__write_percfg0(val);
-+	}
-+}
-+
-+static void __dev_enable(int id, unsigned int index, int enable)
-+{
-+	switch (id) {
-+	case DSCR_TIMER0:
-+		if (index == 1)
-+			id = DSCR_TIMER1;
-+		else if (index)
-+			return;
-+		break;
-+	case DSCR_BSP0:
-+		if (index == 1)
-+			id = DSCR_BSP1;
-+		else if (index)
-+			return;
-+		break;
-+	default:
-+		if (index)
-+			return;
-+		break;
-+	}
-+	if (enable)
-+		dscr_enable(id);
-+	else
-+		dscr_disable(id);
-+}
-+
-+static void c6455_dev_enable(enum soc_device_id id, int index)
-+{
-+	__dev_enable(id, index, 1);
-+}
-+
-+static void c6455_dev_disable(enum soc_device_id id, int index)
-+{
-+	__dev_enable(id, index, 0);
-+}
-+
-+static void __init __setup_dscr(void)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "ti,tms320c6455-dscr");
-+	if (!node)
-+		return;
-+
-+	dscr_base = of_iomap(node, 0);
-+	of_node_put(node);
-+	if (!dscr_base)
-+		return;
-+
-+	node = of_find_node_by_type(NULL, "soc");
-+	if (node) {
-+		chip_base = of_iomap(node, 0);
-+		of_node_put(node);
-+
-+		pr_info("DEVSTAT=%08x  PERCFG0=%08x PERCFG1=%08x\n",
-+			 chip_read(CHIP_DEVSTAT), dscr_read(DSCR_PERCFG0),
-+			 dscr_read(DSCR_PERCFG1));
-+	}
-+
-+	SOC_DEVCONFIG_SUPPORT(TCP, DSCR_TCP);
-+	SOC_DEVCONFIG_SUPPORT(VCP, DSCR_VCP);
-+	SOC_DEVCONFIG_SUPPORT(EMAC, DSCR_EMAC);
-+	SOC_DEVCONFIG_SUPPORT(TIMER, DSCR_TIMER0);
-+	SOC_DEVCONFIG_SUPPORT(GPIO, DSCR_GPIO);
-+	SOC_DEVCONFIG_SUPPORT(I2C, DSCR_I2C);
-+	SOC_DEVCONFIG_SUPPORT(MCBSP, DSCR_BSP0);
-+	SOC_DEVCONFIG_SUPPORT(HPI, DSCR_HPI);
-+	SOC_DEVCONFIG_SUPPORT(PCI, DSCR_PCI);
-+	SOC_DEVCONFIG_SUPPORT(UTOPIA, DSCR_UTOPIA);
-+	SOC_DEVCONFIG_SUPPORT(SRIO, DSCR_SRIO);
-+	SOC_DEVCONFIG_SUPPORT(EMIF, DSCR_EMIFA);
-+	SOC_DEVCONFIG_SUPPORT(DDR2, DSCR_DDR2);
-+
-+	c6455_dev_enable(SOC_DEV_TIMER, 0);
-+	c6455_dev_enable(SOC_DEV_TIMER, 1);
-+
-+#ifdef CONFIG_I2C
-+	c6455_dev_enable(SOC_DEV_I2C, 0);
++	s += (__force u32)saddr;
++	s += (__force u32)daddr;
++#ifdef _BIG_ENDIAN
++	s += proto + len;
++#else
++	s += (proto + len) << 8;
 +#endif
-+#ifdef CONFIG_GENERIC_GPIO
-+	c6455_dev_enable(SOC_DEV_GPIO, 0);
++	s += (s >> 32);
++
++	return (__force __wsum)s;
++}
++
++/*
++ * Computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented
++ */
++static inline __sum16
++csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
++		  unsigned short proto, __wsum sum)
++{
++	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
++}
++
++/*
++ * This routine is used for miscellaneous IP-like checksums, mainly
++ * in icmp.c
++ */
++static inline __sum16
++ip_compute_csum(const void *buff, int len)
++{
++	extern unsigned int do_csum(const unsigned char *, size_t);
++	return (__force __sum16)~do_csum(buff, len);
++}
++
++#endif /* _ASM_C6X_CHECKSUM_H */
+diff --git a/arch/c6x/lib/csum_64plus.S b/arch/c6x/lib/csum_64plus.S
+new file mode 100644
+index 0000000..da9b5ff
+--- /dev/null
++++ b/arch/c6x/lib/csum_64plus.S
+@@ -0,0 +1,404 @@
++;
++;  linux/arch/c6x/lib/csum_64plus.s
++;
++;  Port on Texas Instruments TMS320C6x architecture
++;
++;  Copyright (C) 2006, 2009, 2010 Texas Instruments Incorporated
++;  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++;
++;  This program is free software; you can redistribute it and/or modify
++;  it under the terms of the GNU General Public License version 2 as
++;  published by the Free Software Foundation.
++;
++#include <linux/linkage.h>
++
++;
++;unsigned int csum_partial_copy(const char *src, char * dst,
++;				int len, int sum)
++;
++; A4:	src
++; B4:	dst
++; A6:	len
++; B6:	sum
++; return csum in A4
++;
++
++	.text
++ENTRY(csum_partial_copy)
++	MVC	.S2	ILC,B30
++
++	MV	.D1X	B6,A31		; given csum
++	ZERO	.D1	A9		; csum (a side)
++||	ZERO	.D2	B9		; csum (b side)
++||	SHRU	.S2X	A6,2,B5		; len / 4
++
++	;; Check alignment and size
++	AND	.S1	3,A4,A1
++||	AND	.S2	3,B4,B0
++	OR	.L2X	B0,A1,B0	; non aligned condition
++||	MVC	.S2	B5,ILC
++||	MVK	.D2	1,B2
++||	MV	.D1X	B5,A1		; words condition
++  [!A1]	B	.S1	L8
++   [B0] BNOP	.S1	L6,5
++
++	SPLOOP		1
++
++	;; Main loop for aligned words
++	LDW	.D1T1	*A4++,A7
++	NOP	4
++	MV	.S2X	A7,B7
++||	EXTU	.S1	A7,0,16,A16
++	STW	.D2T2	B7,*B4++
++||	MPYU	.M2	B7,B2,B8
++||	ADD	.L1	A16,A9,A9
++	NOP
++	SPKERNEL	8,0
++||	ADD	.L2	B8,B9,B9
++
++	ZERO	.D1	A1
++||	ADD	.L1X	A9,B9,A9	;  add csum from a and b sides
++
++L6:
++  [!A1]	BNOP	.S1	L8,5
++
++	;; Main loop for non-aligned words
++	SPLOOP		2
++ ||	MVK	.L1	1,A2
++
++	LDNW	.D1T1	*A4++,A7
++	NOP		3
++
++	NOP
++	MV	.S2X	A7,B7
++ ||	EXTU	.S1	A7,0,16,A16
++ ||	MPYU	.M1	A7,A2,A8
++
++	ADD	.L1	A16,A9,A9
++	SPKERNEL	6,0
++ ||	STNW	.D2T2	B7,*B4++
++ ||	ADD	.L1	A8,A9,A9
++
++L8:	AND	.S2X	2,A6,B5
++	CMPGT	.L2	B5,0,B0
++  [!B0]	BNOP	.S1	L82,4
++
++	;; Manage half-word
++	ZERO	.L1	A7
++||	ZERO	.D1	A8
++
++#ifdef CONFIG_CPU_BIG_ENDIAN
++
++	LDBU	.D1T1	*A4++,A7
++	LDBU	.D1T1	*A4++,A8
++	NOP		3
++	SHL	.S1	A7,8,A0
++	ADD	.S1	A8,A9,A9
++	STB	.D2T1	A7,*B4++
++||	ADD	.S1	A0,A9,A9
++	STB	.D2T1	A8,*B4++
++
++#else
++
++	LDBU	.D1T1	*A4++,A7
++	LDBU	.D1T1	*A4++,A8
++	NOP		3
++	ADD	.S1	A7,A9,A9
++	SHL	.S1	A8,8,A0
++
++	STB	.D2T1	A7,*B4++
++||	ADD	.S1	A0,A9,A9
++	STB	.D2T1	A8,*B4++
++
 +#endif
-+#ifdef CONFIG_TMS320C64X_GEMAC
-+	c6455_dev_enable(SOC_DEV_EMAC, 0);
++
++	;; Manage eventually the last byte
++L82:	AND	.S2X	1,A6,B0
++  [!B0]	BNOP	.S1	L9,5
++
++||	ZERO	.L1	A7
++
++L83:	LDBU	.D1T1	*A4++,A7
++	NOP		4
++
++	MV	.L2X	A7,B7
++
++#ifdef CONFIG_CPU_BIG_ENDIAN
++
++	STB	.D2T2	B7,*B4++
++||	SHL	.S1	A7,8,A7
++	ADD	.S1	A7,A9,A9
++
++#else
++
++	STB	.D2T2	B7,*B4++
++||	ADD	.S1	A7,A9,A9
++
 +#endif
-+}
 +
-+static unsigned int c6455_silicon_rev(char **strp)
-+{
-+	u32 jtagid = chip_read(CHIP_JTAGID);
-+	u32 silicon_rev = (jtagid >> 28) & 0xf;
++	;; Fold the csum
++L9:	SHRU	.S2X	A9,16,B0
++  [!B0]	BNOP	.S1	L10,5
 +
-+	if (strp) {
-+		switch (silicon_rev) {
-+		case 0:
-+			*strp = "1.1";
-+			break;
-+		case 1:
-+			*strp = "2.0";
-+			break;
-+		case 2:
-+			*strp = "2.1";
-+			break;
-+		case 4:
-+			*strp = "3.1";
-+			break;
-+		default:
-+			*strp = "unknown";
-+			break;
-+		}
-+	}
-+	return silicon_rev;
-+}
++L91:	SHRU	.S2X	A9,16,B4
++||	EXTU	.S1	A9,16,16,A3
++	ADD	.D1X	A3,B4,A9
 +
-+static int macsel_ids[] = {
-+	[0] = MACSEL_MII,
-+	[1] = MACSEL_RMII,
-+	[2] = MACSEL_GMII,
-+	[3] = MACSEL_RGMII,
-+};
++	SHRU	.S1	A9,16,A0
++   [A0]	BNOP	.S1	L91,5
 +
-+static int c6455_macsel(unsigned int index)
-+{
-+	u32 devstat = chip_read(CHIP_DEVSTAT);
-+	if (index > 0)
-+		return MACSEL_UNKNOWN;
++L10:	ADD	.D1	A31,A9,A9
++	MV	.D1	A9,A4
 +
-+	return macsel_ids[(devstat >> 9) & 3];
-+}
++	BNOP	.S2	B3,4
++	MVC	.S2	B30,ILC
++ENDPROC(csum_partial_copy)
 +
-+static void c6455_rmii_reset_ctl(int index, int assert)
-+{
-+	u32 val;
++;
++;unsigned short
++;ip_fast_csum(unsigned char *iph, unsigned int ihl)
++;{
++;	unsigned int checksum = 0;
++;	unsigned short *tosum = (unsigned short *) iph;
++;	int len;
++;
++;	len = ihl*4;
++;
++;	if (len <= 0)
++;		return 0;
++;
++;	while(len) {
++;		len -= 2;
++;		checksum += *tosum++;
++;	}
++;	if (len & 1)
++;		checksum += *(unsigned char*) tosum;
++;
++;	while(checksum >> 16)
++;		checksum = (checksum & 0xffff) + (checksum >> 16);
++;
++;	return ~checksum;
++;}
++;
++; A4:	iph
++; B4:	ihl
++; return checksum in A4
++;
++	.text
 +
-+	if (index)
-+		return;
++ENTRY(ip_fast_csum)
++	ZERO	.D1	A5
++ ||	MVC	.S2	ILC,B30
++	SHL	.S2	B4,2,B0
++	CMPGT	.L2	B0,0,B1
++  [!B1] BNOP	.S1	L15,4
++  [!B1]	ZERO	.D1	A3
 +
-+	val = dscr_read(DSCR_EMACCFG);
-+	if (assert)
-+		dscr_write(DSCR_EMACCFG, val | (1 << 18));
-+	else
-+		dscr_write(DSCR_EMACCFG, val & ~(1 << 18));
-+}
++  [!B0]	B	.S1	L12
++	SHRU	.S2	B0,1,B0
++	MVC	.S2	B0,ILC
++	NOP	3
 +
-+static void __init c6455_setup_arch(void)
-+{
-+	/* so we won't get called twice */
-+	soc_ops.setup_arch = NULL;
++	SPLOOP	1
++	LDHU	.D1T1	*A4++,A3
++	NOP	3
++	NOP
++	SPKERNEL	5,0
++ ||	ADD	.L1	A3,A5,A5
 +
-+	c6x_num_cores = 1;
-+	__setup_dscr();
-+	__setup_clocks();
-+}
++L12:	SHRU	.S1	A5,16,A0
++  [!A0]	BNOP	.S1	L14,5
 +
-+define_soc(tms320c6455) {
-+	.compat		= "ti,tms320c6455",
-+	.name		= "TMS320C6455",
-+	.setup_arch	= c6455_setup_arch,
-+	.silicon_rev	= c6455_silicon_rev,
-+	.init_IRQ	= megamod_pic_init,
-+	.time_init	= timer64_init,
-+	.macsel		= c6455_macsel,
-+	.dev_enable	= c6455_dev_enable,
-+	.dev_disable	= c6455_dev_disable,
-+	.rmii_reset_ctl	= c6455_rmii_reset_ctl,
-+};
-diff --git a/arch/c6x/platforms/soc-6457.c b/arch/c6x/platforms/soc-6457.c
++L13:	SHRU	.S2X	A5,16,B4
++	EXTU	.S1	A5,16,16,A3
++	ADD	.D1X	A3,B4,A5
++	SHRU	.S1	A5,16,A0
++  [A0]	BNOP	.S1	L13,5
++
++L14:	NOT	.D1	A5,A3
++	EXTU	.S1	A3,16,16,A3
++
++L15:	BNOP	.S2	B3,3
++	MVC	.S2	B30,ILC
++	MV	.D1	A3,A4
++ENDPROC(ip_fast_csum)
++
++;
++;unsigned short
++;do_csum(unsigned char *buff, unsigned int len)
++;{
++;	int odd, count;
++;	unsigned int result = 0;
++;
++;	if (len <= 0)
++;		goto out;
++;	odd = 1 & (unsigned long) buff;
++;	if (odd) {
++;#ifdef __LITTLE_ENDIAN
++;		result += (*buff << 8);
++;#else
++;		result = *buff;
++;#endif
++;		len--;
++;		buff++;
++;	}
++;	count = len >> 1;		/* nr of 16-bit words.. */
++;	if (count) {
++;		if (2 & (unsigned long) buff) {
++;			result += *(unsigned short *) buff;
++;			count--;
++;			len -= 2;
++;			buff += 2;
++;		}
++;		count >>= 1;		/* nr of 32-bit words.. */
++;		if (count) {
++;			unsigned int carry = 0;
++;			do {
++;				unsigned int w = *(unsigned int *) buff;
++;				count--;
++;				buff += 4;
++;				result += carry;
++;				result += w;
++;				carry = (w > result);
++;			} while (count);
++;			result += carry;
++;			result = (result & 0xffff) + (result >> 16);
++;		}
++;		if (len & 2) {
++;			result += *(unsigned short *) buff;
++;			buff += 2;
++;		}
++;	}
++;	if (len & 1)
++;#ifdef __LITTLE_ENDIAN
++;		result += *buff;
++;#else
++;		result += (*buff << 8);
++;#endif
++;	result = (result & 0xffff) + (result >> 16);
++;	/* add up carry.. */
++;	result = (result & 0xffff) + (result >> 16);
++;	if (odd)
++;		result = ((result >> 8) & 0xff) | ((result & 0xff) << 8);
++;out:
++;	return result;
++;}
++;
++; A4:	buff
++; B4:	len
++; return checksum in A4
++;
++
++ENTRY(do_csum)
++	   CMPGT   .L2	   B4,0,B0
++   [!B0]   BNOP    .S1	   L26,3
++	   EXTU    .S1	   A4,31,31,A0
++
++	   MV	   .L1	   A0,A3
++||	   MV	   .S1X    B3,A5
++||	   MV	   .L2	   B4,B3
++||	   ZERO    .D1	   A1
++
++#ifdef CONFIG_CPU_BIG_ENDIAN
++   [A0]    SUB	   .L2	   B3,1,B3
++|| [A0]    LDBU    .D1T1   *A4++,A1
++#else
++   [!A0]   BNOP    .S1	   L21,5
++|| [A0]    LDBU    .D1T1   *A4++,A0
++	   SUB	   .L2	   B3,1,B3
++||	   SHL	   .S1	   A0,8,A1
++L21:
++#endif
++	   SHR	   .S2	   B3,1,B0
++   [!B0]   BNOP    .S1	   L24,3
++	   MVK	   .L1	   2,A0
++	   AND	   .L1	   A4,A0,A0
++
++   [!A0]   BNOP    .S1	   L22,5
++|| [A0]    LDHU    .D1T1   *A4++,A0
++	   SUB	   .L2	   B0,1,B0
++||	   SUB	   .S2	   B3,2,B3
++||	   ADD	   .L1	   A0,A1,A1
++L22:
++	   SHR	   .S2	   B0,1,B0
++||	   ZERO    .L1	   A0
++
++   [!B0]   BNOP    .S1	   L23,5
++|| [B0]    MVC	   .S2	   B0,ILC
++
++	   SPLOOP  3
++	   SPMASK  L1
++||	   MV	   .L1	   A1,A2
++||	   LDW	   .D1T1   *A4++,A1
++
++	   NOP	   4
++	   ADD	   .L1	   A0,A1,A0
++	   ADD	   .L1	   A2,A0,A2
++
++	   SPKERNEL 1,2
++||	   CMPGTU  .L1	   A1,A2,A0
++
++	   ADD	   .L1	   A0,A2,A6
++	   EXTU    .S1	   A6,16,16,A7
++	   SHRU    .S2X    A6,16,B0
++	   NOP		   1
++	   ADD	   .L1X    A7,B0,A1
++L23:
++	   MVK	   .L2	   2,B0
++	   AND	   .L2	   B3,B0,B0
++   [B0]    LDHU    .D1T1   *A4++,A0
++	   NOP	   4
++   [B0]    ADD	   .L1	   A0,A1,A1
++L24:
++	   EXTU    .S2	   B3,31,31,B0
++#ifdef CONFIG_CPU_BIG_ENDIAN
++   [!B0]   BNOP    .S1	   L25,4
++|| [B0]    LDBU    .D1T1   *A4,A0
++	   SHL	   .S1	   A0,8,A0
++	   ADD	   .L1	   A0,A1,A1
++L25:
++#else
++   [B0]    LDBU    .D1T1   *A4,A0
++	   NOP	   4
++   [B0]    ADD	   .L1	   A0,A1,A1
++#endif
++	   EXTU    .S1	   A1,16,16,A0
++	   SHRU    .S2X    A1,16,B0
++	   NOP	   1
++	   ADD	   .L1X    A0,B0,A0
++	   SHRU    .S1	   A0,16,A1
++	   ADD	   .L1	   A0,A1,A0
++	   EXTU    .S1	   A0,16,16,A1
++	   EXTU    .S1	   A1,16,24,A2
++
++	   EXTU    .S1	   A1,24,16,A0
++||	   MV	   .L2X    A3,B0
++
++   [B0]    OR	   .L1	   A0,A2,A1
++L26:
++	   NOP	   1
++	   BNOP    .S2X    A5,4
++	   MV	   .L1	   A1,A4
++ENDPROC(do_csum)
++
++;__wsum csum_partial(const void *buff, int len, __wsum wsum)
++;{
++;	unsigned int sum = (__force unsigned int)wsum;
++;	unsigned int result = do_csum(buff, len);
++;
++;	/* add in old sum, and carry.. */
++;	result += sum;
++;	if (sum > result)
++;		result += 1;
++;	return (__force __wsum)result;
++;}
++;
++ENTRY(csum_partial)
++	   MV	   .L1X    B3,A9
++||	   CALLP   .S2	   do_csum,B3
++||	   MV	   .S1	   A6,A8
++	   BNOP    .S2X    A9,2
++	   ADD	   .L1	   A8,A4,A1
++	   CMPGTU  .L1	   A8,A1,A0
++	   ADD	   .L1	   A1,A0,A4
++ENDPROC(csum_partial)
+diff --git a/arch/c6x/lib/divi.S b/arch/c6x/lib/divi.S
 new file mode 100644
-index 0000000..b6b5f7b
+index 0000000..4bde924
 --- /dev/null
-+++ b/arch/c6x/platforms/soc-6457.c
-@@ -0,0 +1,187 @@
-+/*
-+ *  Miscellaneous SoC specific code
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <asm/clock.h>
-+#include <asm/soc.h>
-+#include "psc.h"
-+#include "megamod-pic.h"
-+#include "timer64.h"
++++ b/arch/c6x/lib/divi.S
+@@ -0,0 +1,53 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+static struct clk_lookup c6457_clks[] = {
-+	CLK(NULL, "pll1", &c6x_soc_pll1.sysclks[0]),
-+	CLK(NULL, "pll1_sysclk1", &c6x_soc_pll1.sysclks[1]),
-+	CLK(NULL, "pll1_sysclk2", &c6x_soc_pll1.sysclks[2]),
-+	CLK(NULL, "pll1_sysclk3", &c6x_soc_pll1.sysclks[3]),
-+	CLK(NULL, "pll1_sysclk4", &c6x_soc_pll1.sysclks[4]),
-+	CLK(NULL, "pll1_sysclk5", &c6x_soc_pll1.sysclks[5]),
-+	CLK(NULL, "core", &c6x_core_clk),
-+	CLK("i2c_davinci.1", NULL, &c6x_i2c_clk),
-+	CLK("watchdog", NULL, &c6x_watchdog_clk),
-+	CLK("2c81800.mdio", NULL, &c6x_mdio_clk),
-+	CLK("", NULL, NULL)
-+};
++#include <linux/linkage.h>
 +
-+/* assumptions used for delay loop calculations */
-+#define MIN_CLKIN1_KHz 50000
-+#define MAX_CORE_KHz   1200000
-+#define MIN_PLLOUT_KHz (MIN_CLKIN1_KHz/3)
++	;; ABI considerations for the divide functions
++	;; The following registers are call-used:
++	;; __c6xabi_divi A0,A1,A2,A4,A6,B0,B1,B2,B4,B5
++	;; __c6xabi_divu A0,A1,A2,A4,A6,B0,B1,B2,B4
++	;; __c6xabi_remi A1,A2,A4,A5,A6,B0,B1,B2,B4
++	;; __c6xabi_remu A1,A4,A5,A7,B0,B1,B2,B4
++	;;
++	;; In our implementation, divu and remu are leaf functions,
++	;; while both divi and remi call into divu.
++	;; A0 is not clobbered by any of the functions.
++	;; divu does not clobber B2 either, which is taken advantage of
++	;; in remi.
++	;; divi uses B5 to hold the original return address during
++	;; the call to divu.
++	;; remi uses B2 and A5 to hold the input values during the
++	;; call to divu.  It stores B3 in on the stack.
 +
-+static void __init __setup_clocks(void)
-+{
-+	struct pll_data *pll = &c6x_soc_pll1;
-+	struct clk *sysclks = pll->sysclks;
++	.text
++ENTRY(__c6xabi_divi)
++	call	.s2	__c6xabi_divu
++||	mv	.d2	B3, B5
++||	cmpgt	.l1	0, A4, A1
++||	cmpgt	.l2	0, B4, B1
 +
-+	pll->flags = PLL_HAS_MUL | PLL_HAS_POST;
-+
-+	pll->bypass_delay = 4 * (MAX_CORE_KHz/MIN_PLLOUT_KHz);
-+	pll->reset_delay = 1000 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
-+	pll->lock_delay = 2000 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
-+
-+	sysclks[1].flags |= FIXED_DIV_PLL;
-+	sysclks[1].div = 1;
-+	sysclks[2].flags |= FIXED_DIV_PLL;
-+	sysclks[2].div = 3;
-+	sysclks[3].flags |= FIXED_DIV_PLL;
-+	sysclks[3].div = 6;
-+	sysclks[4].div = PLLDIV4;
-+	sysclks[5].div = PLLDIV5;
-+
-+	c6x_core_clk.parent = &sysclks[1];
-+	c6x_i2c_clk.parent = &sysclks[3];
-+	c6x_watchdog_clk.parent = &sysclks[5];
-+	c6x_mdio_clk.parent = &sysclks[5];
-+
-+	c6x_clks_init(c6457_clks);
-+}
-+
-+#define DSCR_JTAGID	0x018
-+#define DSCR_DEVSTAT	0x020
-+#define DSCR_KICK0	0x038
-+#define DSCR_KICK1	0x03c
-+#define DSCR_BOOTADDR	0x040
-+#define DSCR_DEVCFG	0x110
-+#define DSCR_MACID1	0x114
-+#define DSCR_MACID2	0x118
-+#define DSCR_PRI_ALLOC	0x11c
-+#define DSCR_WDRSTSEL	0x120
-+
-+#define DSCR_KICK0_KEY		     0x83E70B13
-+#define DSCR_KICK1_KEY		     0x95A4F1E0
-+
-+static void __iomem *dscr_base;
-+
-+static inline void dscr_write(int offset, unsigned int val)
-+{
-+	soc_writel(val, dscr_base + offset);
-+}
-+
-+static inline unsigned int dscr_read(int offset)
-+{
-+	return soc_readl(dscr_base + offset);
-+}
-+
-+static void __init __setup_dscr(void)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "ti,tms320c6457-dscr");
-+	if (!node)
-+		return;
-+
-+	dscr_base = of_iomap(node, 0);
-+	of_node_put(node);
-+	if (!dscr_base)
-+		return;
-+
-+	printk(KERN_INFO "DEVSTAT=%08x  DEVCFG=%08x\n",
-+	       dscr_read(DSCR_DEVSTAT), dscr_read(DSCR_DEVCFG));
-+}
-+
-+static unsigned int c6457_silicon_rev(char **strp)
-+{
-+	u32 jtagid = dscr_read(DSCR_JTAGID);
-+	u32 silicon_rev = (jtagid >> 28) & 0xf;
-+
-+	if (strp) {
-+		switch (silicon_rev) {
-+		case 0:
-+			*strp = "1.1";
-+			break;
-+		case 1:
-+			*strp = "1.2";
-+			break;
-+		case 2:
-+			*strp = "1.3";
-+			break;
-+		case 3:
-+			*strp = "1.4";
-+			break;
-+		default:
-+			*strp = "unknown";
-+			break;
-+		}
-+	}
-+	return silicon_rev;
-+}
-+
-+static int c6457_macsel(unsigned int index)
-+{
-+	/* all sgmii, all the time */
-+	return MACSEL_SGMII;
-+}
-+
-+static int c6457_mac_addr(unsigned int index, u8 *addr)
-+{
-+	unsigned int fuse0, fuse1;
-+
-+	if (index)
-+		return 0;
-+
-+	fuse0 = dscr_read(DSCR_MACID1);
-+	fuse1 = dscr_read(DSCR_MACID2);
-+
-+	addr[0] = fuse1 >> 8;
-+	addr[1] = fuse1 >> 0;
-+	addr[2] = fuse0 >> 24;
-+	addr[3] = fuse0 >> 16;
-+	addr[4] = fuse0 >> 8;
-+	addr[5] = fuse0 >> 0;
-+
-+	return 1;
-+}
-+
-+static void __init c6457_setup_arch(void)
-+{
-+	/* so we won't get called twice */
-+	soc_ops.setup_arch = NULL;
-+
-+	c6x_num_cores = 1;
-+	psc_init();
-+	__setup_dscr();
-+	__setup_clocks();
-+}
-+
-+define_soc(tms320c6457) {
-+	.compat		= "ti,tms320c6457",
-+	.name		= "TMS320C6457",
-+	.setup_arch	= c6457_setup_arch,
-+	.silicon_rev	= c6457_silicon_rev,
-+	.init_IRQ	= megamod_pic_init,
-+	.time_init	= timer64_init,
-+	.macsel		= c6457_macsel,
-+	.mac_addr	= c6457_mac_addr,
-+};
-diff --git a/arch/c6x/platforms/soc-6472.c b/arch/c6x/platforms/soc-6472.c
++   [A1]	neg	.l1	A4, A4
++|| [B1]	neg	.l2	B4, B4
++||	xor	.s1x	A1, B1, A1
++   [A1] addkpc	.s2	_divu_ret, B3, 4
++_divu_ret:
++	neg	.l1	A4, A4
++||	mv	.l2	B3,B5
++||	ret	.s2	B5
++	nop		5
++ENDPROC(__c6xabi_divi)
+diff --git a/arch/c6x/lib/divremi.S b/arch/c6x/lib/divremi.S
 new file mode 100644
-index 0000000..0fce934
+index 0000000..64bc5aa
 --- /dev/null
-+++ b/arch/c6x/platforms/soc-6472.c
-@@ -0,0 +1,428 @@
-+/*
-+ *  Miscellaneous SoC specific code
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/delay.h>
-+#include <asm/clock.h>
-+#include <asm/soc.h>
-+#include "psc.h"
-+#include "megamod-pic.h"
-+#include "timer64.h"
-+
-+static struct clk_lookup c6472_clks[] = {
-+	CLK(NULL, "pll1", &c6x_soc_pll1.sysclks[0]),
-+	CLK(NULL, "pll1_sysclk1", &c6x_soc_pll1.sysclks[1]),
-+	CLK(NULL, "pll1_sysclk2", &c6x_soc_pll1.sysclks[2]),
-+	CLK(NULL, "pll1_sysclk3", &c6x_soc_pll1.sysclks[3]),
-+	CLK(NULL, "pll1_sysclk4", &c6x_soc_pll1.sysclks[4]),
-+	CLK(NULL, "pll1_sysclk5", &c6x_soc_pll1.sysclks[5]),
-+	CLK(NULL, "pll1_sysclk6", &c6x_soc_pll1.sysclks[6]),
-+	CLK(NULL, "pll1_sysclk7", &c6x_soc_pll1.sysclks[7]),
-+	CLK(NULL, "pll1_sysclk8", &c6x_soc_pll1.sysclks[8]),
-+	CLK(NULL, "pll1_sysclk9", &c6x_soc_pll1.sysclks[9]),
-+	CLK(NULL, "pll1_sysclk10", &c6x_soc_pll1.sysclks[10]),
-+	CLK(NULL, "core", &c6x_core_clk),
-+	CLK("i2c_davinci.1", NULL, &c6x_i2c_clk),
-+	CLK("watchdog", NULL, &c6x_watchdog_clk),
-+	CLK("2c81800.mdio", NULL, &c6x_mdio_clk),
-+	CLK("", NULL, NULL)
-+};
-+
-+/* assumptions used for delay loop calculations */
-+#define MIN_CLKIN1_KHz 15625
-+#define MAX_CORE_KHz   700000
-+#define MIN_PLLOUT_KHz MIN_CLKIN1_KHz
-+
-+static void __init __setup_clocks(void)
-+{
-+	struct pll_data *pll = &c6x_soc_pll1;
-+	struct clk *sysclks = pll->sysclks;
-+	int i;
-+
-+	pll->flags = PLL_HAS_MUL;
-+
-+	pll->bypass_delay = 4 * (MAX_CORE_KHz/MIN_PLLOUT_KHz);
-+	pll->reset_delay = 256 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
-+	pll->lock_delay = 2000 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
-+
-+	for (i = 1; i <= 6; i++) {
-+		sysclks[i].flags |= FIXED_DIV_PLL;
-+		sysclks[i].div = 1;
-+	}
-+
-+	sysclks[7].flags |= FIXED_DIV_PLL;
-+	sysclks[7].div = 3;
-+	sysclks[8].flags |= FIXED_DIV_PLL;
-+	sysclks[8].div = 6;
-+	sysclks[9].flags |= FIXED_DIV_PLL;
-+	sysclks[9].div = 2;
-+	sysclks[10].div = PLLDIV10;
-+
-+	c6x_core_clk.parent = &sysclks[get_coreid() + 1];
-+	c6x_i2c_clk.parent = &sysclks[8];
-+	c6x_watchdog_clk.parent = &sysclks[8];
-+	c6x_mdio_clk.parent = &sysclks[5];
-+
-+	c6x_clks_init(c6472_clks);
-+}
-+
-+#define DSCR_BASE_ADDR	0x2a80000
-+#define DSCR_SIZE	0x1000
-+
-+#define DSCR_DEVSTAT	0x000
-+#define DSCR_PRIALLOC	0x004
-+#define DSCR_DEVID	0x008
-+#define DSCR_DEVCTL	0x200
-+#define DSCR_DEVCTL_KEY	0x204
-+#define DSCR_RMIIRESET0	0x208
-+#define DSCR_RMIIRESET1	0x20c
-+
-+#define DSCR_HOSTPRIV	0x40c
-+#define DSCR_PRIVPERM	0x41c
-+#define DSCR_PRIVKEY	0x420
-+
-+#define DSCR_NMIGR0	0x500
-+#define DSCR_NMIGR1	0x504
-+#define DSCR_NMIGR2	0x508
-+#define DSCR_NMIGR3	0x50c
-+#define DSCR_NMIGR4	0x510
-+#define DSCR_NMIGR5	0x514
-+
-+#define DSCR_IPCGR0	0x540
-+#define DSCR_IPCGR1	0x544
-+#define DSCR_IPCGR2	0x548
-+#define DSCR_IPCGR3	0x54c
-+#define DSCR_IPCGR4	0x550
-+#define DSCR_IPCGR5	0x554
-+#define DSCR_IPCGRH	0x57c
-+
-+#define DSCR_IPCAR0	0x580
-+#define DSCR_IPCAR1	0x584
-+#define DSCR_IPCAR2	0x588
-+#define DSCR_IPCAR3	0x58c
-+#define DSCR_IPCAR4	0x590
-+#define DSCR_IPCAR5	0x594
-+#define DSCR_IPCARH	0x5bc
-+
-+#define DSCR_EFUSE0	0x700
-+#define DSCR_EFUSE1	0x704
-+#define DSCR_SILICON_ID	0x70c
-+
-+#define DSCR_TPMGR	0x714
-+
-+#define DSCR_RSTMUX0	0x718
-+#define DSCR_RSTMUX1	0x71c
-+#define DSCR_RSTMUX2	0x720
-+#define DSCR_RSTMUX3	0x724
-+#define DSCR_RSTMUX4	0x728
-+#define DSCR_RSTMUX5	0x72c
-+
-+#define DSCR_LOCKVAL		     0xa1e183a
-+
-+/* device IDs (actually bit masks) passed to dscr_enable() and dscr_disable() */
-+#define DSCR_HPI	BIT(0)
-+#define DSCR_UTOPIA	(BIT(1) | BIT(2))
-+#define DSCR_TSIP0	(BIT(3) | BIT(4) | BIT(5))
-+#define DSCR_TSIP1	(BIT(6) | BIT(7) | BIT(8))
-+#define DSCR_TSIP2	(BIT(9) | BIT(10) | BIT(11))
-+#define DSCR_EMAC1	BIT(12)
-+
-+static void __iomem *dscr_base;
-+
-+static inline void dscr_write(int offset, unsigned int val)
-+{
-+	soc_writel(val, dscr_base + offset);
-+}
-+
-+static inline unsigned int dscr_read(int offset)
-+{
-+	return soc_readl(dscr_base + offset);
-+}
-+
-+static inline void __write_devctl(unsigned int val)
-+{
-+	int _base = DSCR_BASE_ADDR + DSCR_DEVCTL;
-+	int _key = DSCR_LOCKVAL;
-+
-+	/*
-+	 * We need to ensure write to lock register and write to DEVCTL are
-+	 * not interrupted. Putting them both in the delay slots of a branch
-+	 * ensures they are not interrupted.
-+	 */
-+	asm volatile ("b	.s2	0f\n"
-+		      "stw	.D1T1	%2,*+%1(%3)\n"
-+		      "stw	.D1T1	%0,*%1\n"
-+		      "nop\n"
-+		      "nop\n"
-+		      "nop\n"
-+		      "0:\n"
-+		      :
-+		      : "a"(val), "a"(_base), "a"(_key),
-+		      "Iu5"(DSCR_DEVCTL_KEY - DSCR_DEVCTL)
-+		);
-+}
-+
-+/*
-+ * Enable a peripheral through PERCFG registers.
-+ */
-+void dscr_enable(int mask)
-+{
-+	unsigned int val;
-+
-+	val = dscr_read(DSCR_DEVCTL);
-+
-+	/* only need to enable ones that are currently disabled */
-+	mask &= ~val;
-+	if (mask == 0)
-+		return;
-+
-+	__write_devctl(val | mask);
-+}
-+
-+/*
-+ * Disable a peripheral through PERCFG registers.
-+ */
-+static void dscr_disable(int mask)
-+{
-+	u32 val;
-+
-+	val = dscr_read(DSCR_DEVCTL);
-+
-+	/* only need to disable ones that are currently enabled */
-+	mask &= val;
-+	if (mask == 0)
-+		return;
-+
-+	__write_devctl(val & ~mask);
-+}
-+
-+static void __dev_enable(int id, unsigned int index, int enable)
-+{
-+	switch (id) {
-+	case DSCR_EMAC1:
-+		if (index != 1)
-+			return;
-+		break;
-+	case DSCR_TSIP0:
-+		if (index == 1)
-+			id = DSCR_TSIP1;
-+		else if (index == 2)
-+			id = DSCR_TSIP2;
-+		else if (index)
-+			return;
-+		break;
-+	default:
-+		if (index)
-+			return;
-+		break;
-+	}
-+	if (enable)
-+		dscr_enable(id);
-+	else
-+		dscr_disable(id);
-+}
-+
-+static void c6472_dev_enable(enum soc_device_id id, int index)
-+{
-+	__dev_enable(id, index, 1);
-+}
-+
-+static void c6472_dev_disable(enum soc_device_id id, int index)
-+{
-+	__dev_enable(id, index, 0);
-+}
-+
-+static void __init __setup_dscr(void)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "ti,tms320c6472-dscr");
-+	if (!node)
-+		return;
-+
-+	dscr_base = of_iomap(node, 0);
-+	of_node_put(node);
-+	if (!dscr_base)
-+		return;
-+
-+	SOC_DEVCONFIG_SUPPORT(HPI, DSCR_HPI);
-+	SOC_DEVCONFIG_SUPPORT(UTOPIA, DSCR_UTOPIA);
-+	SOC_DEVCONFIG_SUPPORT(EMAC, DSCR_EMAC1);
-+	SOC_DEVCONFIG_SUPPORT(TSIP, DSCR_TSIP0);
-+
-+	pr_info("DEVSTAT=%08x  DEVCTL=%08x\n",
-+		dscr_read(DSCR_DEVSTAT), dscr_read(DSCR_DEVCTL));
-+
-+	/* Do not allow user mode to access SoC device I/O */
-+	dscr_write(DSCR_PRIVKEY, 0xbea7);
-+	dscr_write(DSCR_PRIVPERM, 0xaaaaaaaa);
-+	dscr_write(DSCR_PRIVKEY, 0);
-+}
-+
-+static unsigned int c6472_silicon_rev(char **strp)
-+{
-+	u32 silicon_rev = dscr_read(DSCR_SILICON_ID);
-+	int major, minor;
-+	static char __str[6];
-+
-+	major = (silicon_rev >> 20) & 0xf;
-+	minor = (silicon_rev >> 16) & 0xf;
-+	if (strp) {
-+		sprintf(__str, "%d.%d", major, minor);
-+		*strp = __str;
-+	}
-+	return (major << 4) | minor;
-+}
-+
-+static int macsel0_ids[] = {
-+	[0] = MACSEL_MII,
-+	[1] = MACSEL_RMII,
-+	[2] = MACSEL_GMII,
-+	[3] = MACSEL_RGMII,
-+	[4] = MACSEL_UNKNOWN,
-+	[5] = MACSEL_S3MII,
-+	[6] = MACSEL_UNKNOWN,
-+	[7] = MACSEL_DISABLED,
-+};
-+
-+static int macsel1_ids[] = {
-+	[0] = MACSEL_UNKNOWN,
-+	[1] = MACSEL_S3MII,
-+	[2] = MACSEL_RGMII,
-+	[3] = MACSEL_RMII,
-+};
-+
-+
-+#define RESET_STATUS	0x0000
-+#define BOOT_COMPLETE	0x0004
-+#define BOOT_PROGRESS	0x0008
-+
-+static void __iomem *boot_base;
-+
-+static inline void boot_write(int offset, unsigned int val)
-+{
-+	soc_writel(val, boot_base + offset);
-+}
-+
-+void __setup_boot_control(void)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL,
-+				       "ti,tms320c6472-boot-controller");
-+	if (!node)
-+		return;
-+
-+	boot_base = of_iomap(node, 0);
-+	of_node_put(node);
-+}
-+
-+static int c6472_macsel(unsigned int index)
-+{
-+	u32 devstat = dscr_read(DSCR_DEVSTAT);
-+
-+	if (index == 0)
-+		return macsel0_ids[(devstat >> 8) & 7];
-+	if (index == 1)
-+		return macsel1_ids[(devstat >> 22) & 3];
-+	return MACSEL_UNKNOWN;
-+}
-+
-+static int c6472_mac_addr(unsigned int index, u8 *addr)
-+{
-+	unsigned int fuse0, fuse1;
-+
-+	if (index)
-+		return 0;
-+
-+	fuse0 = dscr_read(DSCR_EFUSE0);
-+	fuse1 = dscr_read(DSCR_EFUSE1);
-+
-+	addr[0] = fuse0 >> 24;
-+	addr[1] = fuse0 >> 16;
-+	addr[2] = fuse0 >> 8;
-+	addr[3] = fuse0 >> 0;
-+	addr[4] = fuse1 >> 24;
-+	addr[5] = fuse1 >> 16;
-+
-+	return 1;
-+}
-+
-+static void c6472_boot_core(int corenum)
-+{
-+	psc_module_reset_release(corenum);
-+	boot_write(BOOT_COMPLETE, 0x3f);
-+}
-+
-+static void c6472_reset_core(int corenum)
-+{
-+	psc_module_reset(corenum);
-+}
-+
-+static void c6472_rmii_reset_ctl(int index, int assert)
-+{
-+	u32 reg;
-+
-+	if (index == 0)
-+		reg = DSCR_RMIIRESET0;
-+	else if (index == 1)
-+		reg = DSCR_RMIIRESET1;
-+	else
-+		return;
-+
-+	dscr_write(reg, assert ? 1 : 0);
-+}
-+
-+static void __init c6472_setup_arch(void)
-+{
-+	/* so we won't get called twice */
-+	soc_ops.setup_arch = NULL;
-+
-+	c6x_num_cores = 6;
-+	__setup_dscr();
-+
-+	psc_init();
-+
-+	/* EMAC 0 */
-+	psc_module_reset_release(7);
-+	psc_module_on(7);
-+
-+	/* EMAC 1 */
-+	psc_module_reset_release(8);
-+	psc_module_on(8);
-+
-+	psc_transition_domains(1);
-+
-+	dscr_enable(DSCR_EMAC1);
-+
-+	__setup_clocks();
-+}
-+
-+define_soc(tms320c6472) {
-+	.compat		= "ti,tms320c6472",
-+	.name		= "TMS320C6472",
-+	.setup_arch	= c6472_setup_arch,
-+	.init_IRQ	= megamod_pic_init,
-+	.time_init	= timer64_init,
-+	.silicon_rev	= c6472_silicon_rev,
-+	.macsel		= c6472_macsel,
-+	.mac_addr	= c6472_mac_addr,
-+	.boot_core	= c6472_boot_core,
-+	.reset_core	= c6472_reset_core,
-+	.dev_enable	= c6472_dev_enable,
-+	.dev_disable	= c6472_dev_disable,
-+	.rmii_reset_ctl	= c6472_rmii_reset_ctl,
-+};
-diff --git a/arch/c6x/platforms/soc-6474.c b/arch/c6x/platforms/soc-6474.c
++++ b/arch/c6x/lib/divremi.S
+@@ -0,0 +1,46 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++
++#include <linux/linkage.h>
++
++	.text
++ENTRY(__c6xabi_divremi)
++	stw	.d2t2	B3, *B15--[2]
++||	cmpgt	.l1	0, A4, A1
++||	cmpgt	.l2	0, B4, B2
++||	mv	.s1	A4, A5
++||	call	.s2	__c6xabi_divu
++
++   [A1]	neg	.l1	A4, A4
++|| [B2]	neg	.l2	B4, B4
++||	xor	.s2x	B2, A1, B0
++||	mv	.d2	B4, B2
++
++   [B0]	addkpc	.s2	_divu_ret_1, B3, 1
++  [!B0] addkpc	.s2	_divu_ret_2, B3, 1
++	nop	2
++_divu_ret_1:
++	neg	.l1	A4, A4
++_divu_ret_2:
++	ldw	.d2t2	*++B15[2], B3
++
++	mpy32	.m1x	A4, B2, A6
++	nop		3
++	ret	.s2	B3
++	sub	.l1	A5, A6, A5
++	nop	4
++ENDPROC(__c6xabi_divremi)
+diff --git a/arch/c6x/lib/divremu.S b/arch/c6x/lib/divremu.S
 new file mode 100644
-index 0000000..e3d0f9a
+index 0000000..caa9f23
 --- /dev/null
-+++ b/arch/c6x/platforms/soc-6474.c
-@@ -0,0 +1,244 @@
-+/*
-+ *  Miscellaneous SoC specific code
-+ *
-+ *  Port on Texas Instruments TMS320C6x architecture
-+ *
-+ *  Copyright (C) 2011 Texas Instruments Incorporated
-+ *  Author: Mark Salter <msalter@redhat.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/delay.h>
-+#include <asm/clock.h>
-+#include <asm/soc.h>
-+#include "megamod-pic.h"
-+#include "timer64.h"
-+#include "psc.h"
++++ b/arch/c6x/lib/divremu.S
+@@ -0,0 +1,87 @@
++;;  Copyright 2011  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+static struct clk_lookup c6474_clks[] = {
-+	CLK(NULL, "pll1", &c6x_soc_pll1.sysclks[0]),
-+	CLK(NULL, "pll1_sysclk7", &c6x_soc_pll1.sysclks[7]),
-+	CLK(NULL, "pll1_sysclk9", &c6x_soc_pll1.sysclks[9]),
-+	CLK(NULL, "pll1_sysclk10", &c6x_soc_pll1.sysclks[10]),
-+	CLK(NULL, "pll1_sysclk11", &c6x_soc_pll1.sysclks[11]),
-+	CLK(NULL, "pll1_sysclk12", &c6x_soc_pll1.sysclks[12]),
-+	CLK(NULL, "pll1_sysclk13", &c6x_soc_pll1.sysclks[13]),
-+	CLK(NULL, "core", &c6x_core_clk),
-+	CLK("i2c_davinci.1", NULL, &c6x_i2c_clk),
-+	CLK("mcbsp.1", NULL, &c6x_mcbsp1_clk),
-+	CLK("mcbsp.2", NULL, &c6x_mcbsp2_clk),
-+	CLK("watchdog", NULL, &c6x_watchdog_clk),
-+	CLK("2c81800.mdio", NULL, &c6x_mdio_clk),
-+	CLK("", NULL, NULL)
-+};
++#include <linux/linkage.h>
 +
-+/* assumptions used for delay loop calculations */
-+#define MIN_CLKIN1_KHz 40000
-+#define MAX_CORE_KHz   1200000
-+#define MIN_PLLOUT_KHz MIN_CLKIN1_KHz
++	.text
++ENTRY(__c6xabi_divremu)
++	;; We use a series of up to 31 subc instructions.  First, we find
++	;; out how many leading zero bits there are in the divisor.  This
++	;; gives us both a shift count for aligning (shifting) the divisor
++	;; to the, and the number of times we have to execute subc.
 +
-+static void __init __setup_clocks(void)
-+{
-+	struct pll_data *pll = &c6x_soc_pll1;
-+	struct clk *sysclks = pll->sysclks;
++	;; At the end, we have both the remainder and most of the quotient
++	;; in A4.  The top bit of the quotient is computed first and is
++	;; placed in A2.
 +
-+	pll->flags = PLL_HAS_MUL;
++	;; Return immediately if the dividend is zero.	Setting B4 to 1
++	;; is a trick to allow us to leave the following insns in the jump
++	;; delay slot without affecting the result.
++	mv	.s2x	A4, B1
 +
-+	pll->bypass_delay = 4 * (MAX_CORE_KHz/MIN_PLLOUT_KHz);
-+	pll->reset_delay = 1000 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
-+	pll->lock_delay = 2000 * (MAX_CORE_KHz/MIN_CLKIN1_KHz);
++  [b1]	lmbd	.l2	1, B4, B1
++||[!b1] b	.s2	B3	; RETURN A
++||[!b1] mvk	.d2	1, B4
 +
-+	sysclks[7].flags |= FIXED_DIV_PLL;
-+	sysclks[7].div = 1;
-+	sysclks[9].flags |= FIXED_DIV_PLL;
-+	sysclks[9].div = 3;
-+	sysclks[10].flags |= FIXED_DIV_PLL;
-+	sysclks[10].div = 6;
++||[!b1] zero	.s1	A5
++	mv	.l1x	B1, A6
++||	shl	.s2	B4, B1, B4
 +
-+	sysclks[11].div = PLLDIV11;
++	;; The loop performs a maximum of 28 steps, so we do the
++	;; first 3 here.
++	cmpltu	.l1x	A4, B4, A2
++  [!A2]	sub	.l1x	A4, B4, A4
++||	shru	.s2	B4, 1, B4
++||	xor	.s1	1, A2, A2
 +
-+	sysclks[12].flags |= FIXED_DIV_PLL;
-+	sysclks[12].div = 2;
++	shl	.s1	A2, 31, A2
++|| [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++   [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
 +
-+	sysclks[13].div = PLLDIV13;
++	;; RETURN A may happen here (note: must happen before the next branch)
++__divremu0:
++	cmpgt	.l2	B1, 7, B0
++|| [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++   [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++|| [b0] b	.s1	__divremu0
++   [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++   [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++   [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++   [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++   [b1]	subc	.l1x	A4,B4,A4
++|| [b1]	add	.s2	-1, B1, B1
++	;; loop backwards branch happens here
 +
-+	c6x_core_clk.parent = &sysclks[7];
-+	c6x_i2c_clk.parent = &sysclks[10];
-+	c6x_watchdog_clk.parent = &sysclks[10];
-+	c6x_mcbsp1_clk.parent = &sysclks[10];
-+	c6x_mcbsp2_clk.parent = &sysclks[10];
++	ret	.s2	B3
++||	mvk	.s1	32, A1
++	sub	.l1	A1, A6, A6
++||	extu	.s1	A4, A6, A5
++	shl	.s1	A4, A6, A4
++	shru	.s1	A4, 1, A4
++||	sub	.l1	A6, 1, A6
++	or	.l1	A2, A4, A4
++	shru	.s1	A4, A6, A4
++	nop
++ENDPROC(__c6xabi_divremu)
+diff --git a/arch/c6x/lib/divu.S b/arch/c6x/lib/divu.S
+new file mode 100644
+index 0000000..64af3c0
+--- /dev/null
++++ b/arch/c6x/lib/divu.S
+@@ -0,0 +1,98 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+	c6x_clks_init(c6474_clks);
-+}
++#include <linux/linkage.h>
 +
-+#define DSCR_DEVCFG1	0x000
-+#define DSCR_DEVSTAT	0x004
-+#define DSCR_BOOTADDR0	0x008
-+#define DSCR_BOOTADDR1	0x00c
-+#define DSCR_BOOTADDR2	0x010
-+#define DSCR_JTAGID	0x014
-+#define DSCR_EFUSE0	0x034
-+#define DSCR_EFUSE1	0x038
-+#define DSCR_PRI_ALLOC	0x03c
-+#define DSCR_IPCGR0	0x100
-+#define DSCR_IPCGR1	0x104
-+#define DSCR_IPCGR2	0x108
-+#define DSCR_IPCAR0	0x140
-+#define DSCR_IPCAR1	0x144
-+#define DSCR_IPCAR2	0x148
++	;; ABI considerations for the divide functions
++	;; The following registers are call-used:
++	;; __c6xabi_divi A0,A1,A2,A4,A6,B0,B1,B2,B4,B5
++	;; __c6xabi_divu A0,A1,A2,A4,A6,B0,B1,B2,B4
++	;; __c6xabi_remi A1,A2,A4,A5,A6,B0,B1,B2,B4
++	;; __c6xabi_remu A1,A4,A5,A7,B0,B1,B2,B4
++	;;
++	;; In our implementation, divu and remu are leaf functions,
++	;; while both divi and remi call into divu.
++	;; A0 is not clobbered by any of the functions.
++	;; divu does not clobber B2 either, which is taken advantage of
++	;; in remi.
++	;; divi uses B5 to hold the original return address during
++	;; the call to divu.
++	;; remi uses B2 and A5 to hold the input values during the
++	;; call to divu.  It stores B3 in on the stack.
 +
-+static void __iomem *dscr_base;
++	.text
++ENTRY(__c6xabi_divu)
++	;; We use a series of up to 31 subc instructions.  First, we find
++	;; out how many leading zero bits there are in the divisor.  This
++	;; gives us both a shift count for aligning (shifting) the divisor
++	;; to the, and the number of times we have to execute subc.
 +
-+static inline void dscr_write(int offset, unsigned int val)
-+{
-+	soc_writel(val, dscr_base + offset);
-+}
++	;; At the end, we have both the remainder and most of the quotient
++	;; in A4.  The top bit of the quotient is computed first and is
++	;; placed in A2.
 +
-+static inline unsigned int dscr_read(int offset)
-+{
-+	return soc_readl(dscr_base + offset);
-+}
++	;; Return immediately if the dividend is zero.
++	 mv	.s2x	A4, B1
++   [B1]	 lmbd	.l2	1, B4, B1
++|| [!B1] b	.s2	B3	; RETURN A
++|| [!B1] mvk	.d2	1, B4
++	 mv	.l1x	B1, A6
++||	 shl	.s2	B4, B1, B4
 +
-+static void __init __setup_dscr(void)
-+{
-+	struct device_node *node;
++	;; The loop performs a maximum of 28 steps, so we do the
++	;; first 3 here.
++	 cmpltu	.l1x	A4, B4, A2
++   [!A2] sub	.l1x	A4, B4, A4
++||	 shru	.s2	B4, 1, B4
++||	 xor	.s1	1, A2, A2
 +
-+	node = of_find_compatible_node(NULL, NULL, "ti,tms320c6474-dscr");
-+	if (!node)
-+		return;
++	 shl	.s1	A2, 31, A2
++|| [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
 +
-+	dscr_base = of_iomap(node, 0);
-+	of_node_put(node);
-+	if (!dscr_base)
-+		return;
++	;; RETURN A may happen here (note: must happen before the next branch)
++_divu_loop:
++	 cmpgt	.l2	B1, 7, B0
++|| [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++|| [B0]  b	.s1	_divu_loop
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++	;; loop backwards branch happens here
 +
-+	printk(KERN_INFO "DEVSTAT=%08x  DEVCFG=%08x\n",
-+	       dscr_read(DSCR_DEVSTAT), dscr_read(DSCR_DEVCFG1));
-+}
++	 ret	.s2	B3
++||	 mvk	.s1	32, A1
++	 sub	.l1	A1, A6, A6
++	 shl	.s1	A4, A6, A4
++	 shru	.s1	A4, 1, A4
++||	 sub	.l1	A6, 1, A6
++	 or	.l1	A2, A4, A4
++	 shru	.s1	A4, A6, A4
++	 nop
++ENDPROC(__c6xabi_divu)
+diff --git a/arch/c6x/lib/llshl.S b/arch/c6x/lib/llshl.S
+new file mode 100644
+index 0000000..7b105e2
+--- /dev/null
++++ b/arch/c6x/lib/llshl.S
+@@ -0,0 +1,37 @@
++;;  Copyright (C) 2010 Texas Instruments Incorporated
++;;  Contributed by Mark Salter <msalter@redhat.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+static unsigned int c6474_silicon_rev(char **strp)
-+{
-+	u32   jtagid_val  = dscr_read(DSCR_JTAGID);
-+	u32   silicon_rev = (jtagid_val >> 28) & 0xf;
-+	char *str;
++;;  uint64_t __c6xabi_llshl(uint64_t val, uint shift)
 +
-+	if (strp) {
-+		switch (silicon_rev) {
-+		case 0x1:
-+			str = "1.2";
-+			break;
-+		case 0x2:
-+			str = "1.3";
-+			break;
-+		case 0x3:
-+			str = "2.0";
-+			break;
-+		case 0x4:
-+			str = "2.1";
-+			break;
-+		default:
-+			str = "unknown";
-+			break;
-+		}
-+		*strp = str;
-+	}
-+	return silicon_rev;
-+}
++#include <linux/linkage.h>
 +
-+static int c6474_macsel(unsigned int index)
-+{
-+	/* all sgmii, all the time */
-+	return MACSEL_SGMII;
-+}
++	.text
++ENTRY(__c6xabi_llshl)
++	 mv	.l1x	B4,A1
++   [!A1] b	.s2	B3		; just return if zero shift
++	 mvk	.s1	32,A0
++	 sub	.d1	A0,A1,A0
++	 cmplt	.l1	0,A0,A2
++   [A2]	 shru	.s1	A4,A0,A0
++   [!A2] neg	.l1	A0,A5
++|| [A2]  shl	.s1	A5,A1,A5
++   [!A2] shl	.s1	A4,A5,A5
++|| [A2]  or	.d1	A5,A0,A5
++|| [!A2] mvk	.l1	0,A4
++   [A2]	 shl	.s1	A4,A1,A4
++	 bnop	.s2	B3,5
++ENDPROC(__c6xabi_llshl)
+diff --git a/arch/c6x/lib/llshr.S b/arch/c6x/lib/llshr.S
+new file mode 100644
+index 0000000..fde1bec
+--- /dev/null
++++ b/arch/c6x/lib/llshr.S
+@@ -0,0 +1,38 @@
++;;  Copyright (C) 2010 Texas Instruments Incorporated
++;;  Contributed by Mark Salter <msalter@redhat.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+static int c6474_mac_addr(unsigned int index, u8 *addr)
-+{
-+	unsigned int fuse0, fuse1;
++;;  uint64_t __c6xabi_llshr(uint64_t val, uint shift)
 +
-+	if (index)
-+		return 0;
++#include <linux/linkage.h>
 +
-+	fuse0 = dscr_read(DSCR_EFUSE0);
-+	fuse1 = dscr_read(DSCR_EFUSE1);
++	.text
++ENTRY(__c6xabi_llshr)
++	 mv	.l1x	B4,A1
++   [!A1] b	.s2	B3		; return if zero shift count
++	 mvk	.s1	32,A0
++	 sub	.d1	A0,A1,A0
++	 cmplt	.l1	0,A0,A2
++   [A2]  shl	.s1	A5,A0,A0
++	 nop
++   [!A2] neg	.l1	A0,A4
++|| [A2]  shru	.s1	A4,A1,A4
++   [!A2] shr	.s1	A5,A4,A4
++|| [A2]  or	.d1	A4,A0,A4
++   [!A2] shr	.s1	A5,0x1f,A5
++   [A2]  shr	.s1	A5,A1,A5
++	 bnop	.s2	B3,5
++ENDPROC(__c6xabi_llshr)
+diff --git a/arch/c6x/lib/llshru.S b/arch/c6x/lib/llshru.S
+new file mode 100644
+index 0000000..596ae3f
+--- /dev/null
++++ b/arch/c6x/lib/llshru.S
+@@ -0,0 +1,38 @@
++;;  Copyright (C) 2010 Texas Instruments Incorporated
++;;  Contributed by Mark Salter <msalter@redhat.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+	addr[0] = fuse1 >> 8;
-+	addr[1] = fuse1 >> 0;
-+	addr[2] = fuse0 >> 24;
-+	addr[3] = fuse0 >> 16;
-+	addr[4] = fuse0 >> 8;
-+	addr[5] = fuse0 >> 0;
++;;  uint64_t __c6xabi_llshru(uint64_t val, uint shift)
 +
-+	return 1;
-+}
++#include <linux/linkage.h>
 +
-+static void c6474_boot_core(int corenum)
-+{
-+	static int first_time = 1;
++	.text
++ENTRY(__c6xabi_llshru)
++	 mv	.l1x	B4,A1
++   [!A1] b	.s2	B3		; return if zero shift count
++	 mvk	.s1	32,A0
++	 sub	.d1	A0,A1,A0
++	 cmplt	.l1	0,A0,A2
++   [A2]  shl	.s1	A5,A0,A0
++	 nop
++   [!A2] neg	.l1	A0,A4
++|| [A2]  shru	.s1	A4,A1,A4
++   [!A2] shru	.s1	A5,A4,A4
++|| [A2]  or	.d1	A4,A0,A4
++|| [!A2] mvk	.l1	0,A5
++   [A2]  shru	.s1	A5,A1,A5
++	 bnop	.s2	B3,5
++ENDPROC(__c6xabi_llshru)
+diff --git a/arch/c6x/lib/memcpy_64plus.S b/arch/c6x/lib/memcpy_64plus.S
+new file mode 100644
+index 0000000..0bbc2cb
+--- /dev/null
++++ b/arch/c6x/lib/memcpy_64plus.S
+@@ -0,0 +1,46 @@
++;  Port on Texas Instruments TMS320C6x architecture
++;
++;  Copyright (C) 2006, 2009, 2010 Texas Instruments Incorporated
++;  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++;
++;  This program is free software; you can redistribute it and/or modify
++;  it under the terms of the GNU General Public License version 2 as
++;  published by the Free Software Foundation.
++;
 +
-+	if (first_time) {
-+		soc_assert_event(1 << 4);
-+		first_time = 0;
-+	}
-+	psc_module_reset_release(3 + corenum);
-+}
++#include <linux/linkage.h>
 +
-+static void c6474_reset_core(int corenum)
-+{
-+	psc_module_reset(3 + corenum);
-+}
++	.text
 +
-+static void __init c6474_setup_arch(void)
-+{
-+	/* so we won't get called twice */
-+	soc_ops.setup_arch = NULL;
++ENTRY(memcpy)
++	AND	.L1	0x1,A6,A0
++ ||	AND	.S1	0x2,A6,A1
++ ||	AND	.L2X	0x4,A6,B0
++ ||	MV	.D1	A4,A3
++ ||	MVC	.S2	ILC,B2
 +
-+	c6x_num_cores = 3;
++   [A0] LDB	.D2T1	*B4++,A5
++   [A1] LDB	.D2T1	*B4++,A7
++   [A1] LDB	.D2T1	*B4++,A8
++   [B0] LDNW	.D2T1	*B4++,A9
++ ||	SHRU	.S2X	A6,0x3,B1
++  [!B1] BNOP	.S2	B3,1
 +
-+	/* setup power registers */
-+	psc_init();
-+	__setup_dscr();
++   [A0] STB	.D1T1	A5,*A3++
++ ||[B1] MVC	.S2	B1,ILC
++   [A1] STB	.D1T1	A7,*A3++
++   [A1] STB	.D1T1	A8,*A3++
++   [B0] STNW	.D1T1	A9,*A3++	; return when len < 8
 +
-+	/* AIF */
-+	psc_domain_on(1);
-+	psc_module_on(6);
++	SPLOOP	2
 +
-+	/* SRIO */
-+	psc_domain_on(2);
-+	psc_module_on(7);
++	LDNDW	.D2T1	*B4++,A9:A8
++	NOP	3
 +
-+	/* reserved */
-+	psc_domain_on(3);
-+	psc_module_on(8);
++	NOP
++	SPKERNEL	0,0
++ ||	STNDW	.D1T1	A9:A8,*A3++
 +
-+	/* TCP */
-+	psc_domain_on(4);
-+	psc_module_on(9);
++	BNOP	.S2	B3,4
++	MVC	.S2	B2,ILC
++ENDPROC(memcpy)
+diff --git a/arch/c6x/lib/mpyll.S b/arch/c6x/lib/mpyll.S
+new file mode 100644
+index 0000000..f103441
+--- /dev/null
++++ b/arch/c6x/lib/mpyll.S
+@@ -0,0 +1,49 @@
++;;  Copyright (C) 2010 Texas Instruments Incorporated
++;;  Contributed by Mark Salter <msalter@redhat.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+	/* VCP */
-+	psc_domain_on(5);
-+	psc_module_on(10);
++#include <linux/linkage.h>
 +
-+	psc_transition_domains(0x3f);
++	;; uint64_t __c6xabi_mpyll(uint64_t x, uint64_t y)
++	;;
++	;; 64x64 multiply
++	;; First compute partial results using 32-bit parts of x and y:
++	;;
++	;;   b63	 b32 b31	  b0
++	;;    -----------------------------
++	;;    |      1	    |	   0	  |
++	;;    -----------------------------
++	;;
++	;;   P0 = X0*Y0
++	;;   P1 = X0*Y1 + X1*Y0
++	;;   P2 = X1*Y1
++	;;
++	;;   result = (P2 << 64) + (P1 << 32) + P0
++	;;
++	;; Since the result is also 64-bit, we can skip the P2 term.
 +
-+	__setup_clocks();
-+}
++	.text
++ENTRY(__c6xabi_mpyll)
++	mpy32u	.m1x	A4,B4,A1:A0	; X0*Y0
++	b	.s2	B3
++ ||	mpy32u	.m2x	B5,A4,B1:B0	; X0*Y1 (don't need upper 32-bits)
++ ||	mpy32u	.m1x	A5,B4,A3:A2	; X1*Y0 (don't need upper 32-bits)
++	nop
++	nop
++	mv	.s1	A0,A4
++	add	.l1x	A2,B0,A5
++	add	.s1	A1,A5,A5
++ENDPROC(__c6xabi_mpyll)
+diff --git a/arch/c6x/lib/negll.S b/arch/c6x/lib/negll.S
+new file mode 100644
+index 0000000..82f4bce
+--- /dev/null
++++ b/arch/c6x/lib/negll.S
+@@ -0,0 +1,31 @@
++;;  Copyright (C) 2010 Texas Instruments Incorporated
++;;  Contributed by Mark Salter <msalter@redhat.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 +
-+define_soc(tms320c6474) {
-+	.compat		= "ti,tms320c6474",
-+	.name		= "TMS320C6474",
-+	.setup_arch	= c6474_setup_arch,
-+	.init_IRQ	= megamod_pic_init,
-+	.time_init	= timer64_init,
-+	.silicon_rev	= c6474_silicon_rev,
-+	.macsel		= c6474_macsel,
-+	.mac_addr	= c6474_mac_addr,
-+	.boot_core	= c6474_boot_core,
-+	.reset_core	= c6474_reset_core,
-+};
++;;  int64_t __c6xabi_negll(int64_t val)
++
++#include <linux/linkage.h>
++
++	.text
++ENTRY(__c6xabi_negll)
++	b	.s2	B3
++	mvk	.l1	0,A0
++	subu	.l1	A0,A4,A3:A2
++	sub	.l1	A0,A5,A0
++||	ext	.s1	A3,24,24,A5
++	add	.l1	A5,A0,A5
++	mv	.s1	A2,A4
++ENDPROC(__c6xabi_negll)
+diff --git a/arch/c6x/lib/pop_rts.S b/arch/c6x/lib/pop_rts.S
+new file mode 100644
+index 0000000..d7d96c7
+--- /dev/null
++++ b/arch/c6x/lib/pop_rts.S
+@@ -0,0 +1,32 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++
++#include <linux/linkage.h>
++
++	.text
++
++ENTRY(__c6xabi_pop_rts)
++	lddw	.d2t2	*++B15, B3:B2
++	lddw	.d2t1	*++B15, A11:A10
++	lddw	.d2t2	*++B15, B11:B10
++	lddw	.d2t1	*++B15, A13:A12
++	lddw	.d2t2	*++B15, B13:B12
++	lddw	.d2t1	*++B15, A15:A14
++||	b	.s2	B3
++	ldw	.d2t2	*++B15[2], B14
++	nop	4
++ENDPROC(__c6xabi_pop_rts)
+diff --git a/arch/c6x/lib/push_rts.S b/arch/c6x/lib/push_rts.S
+new file mode 100644
+index 0000000..f6e3db3
+--- /dev/null
++++ b/arch/c6x/lib/push_rts.S
+@@ -0,0 +1,31 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++
++#include <linux/linkage.h>
++
++	.text
++
++ENTRY(__c6xabi_push_rts)
++	stw	.d2t2	B14, *B15--[2]
++	stdw	.d2t1	A15:A14, *B15--
++||	b	.s2x	A3
++	stdw	.d2t2	B13:B12, *B15--
++	stdw	.d2t1	A13:A12, *B15--
++	stdw	.d2t2	B11:B10, *B15--
++	stdw	.d2t1	A11:A10, *B15--
++	stdw	.d2t2	B3:B2, *B15--
++ENDPROC(__c6xabi_push_rts)
+diff --git a/arch/c6x/lib/remi.S b/arch/c6x/lib/remi.S
+new file mode 100644
+index 0000000..6f2ca18
+--- /dev/null
++++ b/arch/c6x/lib/remi.S
+@@ -0,0 +1,64 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++
++#include <linux/linkage.h>
++
++	;; ABI considerations for the divide functions
++	;; The following registers are call-used:
++	;; __c6xabi_divi A0,A1,A2,A4,A6,B0,B1,B2,B4,B5
++	;; __c6xabi_divu A0,A1,A2,A4,A6,B0,B1,B2,B4
++	;; __c6xabi_remi A1,A2,A4,A5,A6,B0,B1,B2,B4
++	;; __c6xabi_remu A1,A4,A5,A7,B0,B1,B2,B4
++	;;
++	;; In our implementation, divu and remu are leaf functions,
++	;; while both divi and remi call into divu.
++	;; A0 is not clobbered by any of the functions.
++	;; divu does not clobber B2 either, which is taken advantage of
++	;; in remi.
++	;; divi uses B5 to hold the original return address during
++	;; the call to divu.
++	;; remi uses B2 and A5 to hold the input values during the
++	;; call to divu.  It stores B3 in on the stack.
++
++	.text
++
++ENTRY(__c6xabi_remi)
++	stw	.d2t2	B3, *B15--[2]
++||	cmpgt	.l1	0, A4, A1
++||	cmpgt	.l2	0, B4, B2
++||	mv	.s1	A4, A5
++||	call	.s2	__c6xabi_divu
++
++   [A1]	neg	.l1	A4, A4
++|| [B2]	neg	.l2	B4, B4
++||	xor	.s2x	B2, A1, B0
++||	mv	.d2	B4, B2
++
++   [B0]	addkpc	.s2	_divu_ret_1, B3, 1
++  [!B0] addkpc	.s2	_divu_ret_2, B3, 1
++	nop	2
++_divu_ret_1:
++	neg	.l1	A4, A4
++_divu_ret_2:
++	ldw	.d2t2	*++B15[2], B3
++
++	mpy32	.m1x	A4, B2, A6
++	nop		3
++	ret	.s2	B3
++	sub	.l1	A5, A6, A4
++	nop	4
++ENDPROC(__c6xabi_remi)
+diff --git a/arch/c6x/lib/remu.S b/arch/c6x/lib/remu.S
+new file mode 100644
+index 0000000..3fae719
+--- /dev/null
++++ b/arch/c6x/lib/remu.S
+@@ -0,0 +1,82 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++
++#include <linux/linkage.h>
++
++	;; ABI considerations for the divide functions
++	;; The following registers are call-used:
++	;; __c6xabi_divi A0,A1,A2,A4,A6,B0,B1,B2,B4,B5
++	;; __c6xabi_divu A0,A1,A2,A4,A6,B0,B1,B2,B4
++	;; __c6xabi_remi A1,A2,A4,A5,A6,B0,B1,B2,B4
++	;; __c6xabi_remu A1,A4,A5,A7,B0,B1,B2,B4
++	;;
++	;; In our implementation, divu and remu are leaf functions,
++	;; while both divi and remi call into divu.
++	;; A0 is not clobbered by any of the functions.
++	;; divu does not clobber B2 either, which is taken advantage of
++	;; in remi.
++	;; divi uses B5 to hold the original return address during
++	;; the call to divu.
++	;; remi uses B2 and A5 to hold the input values during the
++	;; call to divu.  It stores B3 in on the stack.
++
++
++	.text
++
++ENTRY(__c6xabi_remu)
++	;; The ABI seems designed to prevent these functions calling each other,
++	;; so we duplicate most of the divsi3 code here.
++	 mv	.s2x	A4, B1
++	 lmbd	.l2	1, B4, B1
++|| [!B1] b	.s2	B3	; RETURN A
++|| [!B1] mvk	.d2	1, B4
++
++	 mv	.l1x	B1, A7
++||	 shl	.s2	B4, B1, B4
++
++	 cmpltu	.l1x	A4, B4, A1
++   [!A1] sub	.l1x	A4, B4, A4
++	 shru	.s2	B4, 1, B4
++
++_remu_loop:
++	 cmpgt	.l2	B1, 7, B0
++|| [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++	;; RETURN A may happen here (note: must happen before the next branch)
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++|| [B0]	 b	.s1	_remu_loop
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++	;; loop backwards branch happens here
++
++	 ret	.s2	B3
++   [B1]	 subc	.l1x	A4,B4,A4
++|| [B1]	 add	.s2	-1, B1, B1
++   [B1]	 subc	.l1x	A4,B4,A4
++
++	 extu	.s1	A4, A7, A4
++	 nop	2
++ENDPROC(__c6xabi_remu)
+diff --git a/arch/c6x/lib/strasgi.S b/arch/c6x/lib/strasgi.S
+new file mode 100644
+index 0000000..de274076
+--- /dev/null
++++ b/arch/c6x/lib/strasgi.S
+@@ -0,0 +1,89 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++
++#include <linux/linkage.h>
++
++	.text
++
++ENTRY(__c6xabi_strasgi)
++	;; This is essentially memcpy, with alignment known to be at least
++	;; 4, and the size a multiple of 4 greater than or equal to 28.
++	 ldw	.d2t1	*B4++, A0
++||	 mvk	.s2	16, B1
++	 ldw	.d2t1	*B4++, A1
++||	 mvk	.s2	20, B2
++||	 sub	.d1	A6, 24, A6
++	 ldw	.d2t1	*B4++, A5
++	 ldw	.d2t1	*B4++, A7
++||	 mv	.l2x	A6, B7
++	 ldw	.d2t1	*B4++, A8
++	 ldw	.d2t1	*B4++, A9
++||	 mv	.s2x	A0, B5
++||	 cmpltu	.l2	B2, B7, B0
++
++_strasgi_loop:
++	 stw	.d1t2	B5, *A4++
++|| [B0]	 ldw	.d2t1	*B4++, A0
++||	 mv	.s2x	A1, B5
++||	 mv	.l2	B7, B6
++
++   [B0]	 sub	.d2	B6, 24, B7
++|| [B0]	 b	.s2	_strasgi_loop
++||	 cmpltu	.l2	B1, B6, B0
++
++   [B0]	 ldw	.d2t1	*B4++, A1
++||	 stw	.d1t2	B5, *A4++
++||	 mv	.s2x	A5, B5
++||	 cmpltu	.l2	12, B6, B0
++
++   [B0]	 ldw	.d2t1	*B4++, A5
++||	 stw	.d1t2	B5, *A4++
++||	 mv	.s2x	A7, B5
++||	 cmpltu	.l2	8, B6, B0
++
++   [B0]	 ldw	.d2t1	*B4++, A7
++||	 stw	.d1t2	B5, *A4++
++||	 mv	.s2x	A8, B5
++||	 cmpltu	.l2	4, B6, B0
++
++   [B0]	 ldw	.d2t1	*B4++, A8
++||	 stw	.d1t2	B5, *A4++
++||	 mv	.s2x	A9, B5
++||	 cmpltu	.l2	0, B6, B0
++
++   [B0]	 ldw	.d2t1	*B4++, A9
++||	 stw	.d1t2	B5, *A4++
++||	 mv	.s2x	A0, B5
++||	 cmpltu	.l2	B2, B7, B0
++
++	;; loop back branch happens here
++
++	 cmpltu	.l2	B1, B6, B0
++||	 ret	.s2	b3
++
++   [B0]	 stw	.d1t1	A1, *A4++
++||	 cmpltu	.l2	12, B6, B0
++   [B0]	 stw	.d1t1	A5, *A4++
++||	 cmpltu	.l2	8, B6, B0
++   [B0]	 stw	.d1t1	A7, *A4++
++||	 cmpltu	.l2	4, B6, B0
++   [B0]	 stw	.d1t1	A8, *A4++
++||	 cmpltu	.l2	0, B6, B0
++   [B0]	 stw	.d1t1	A9, *A4++
++
++	;; return happens here
++ENDPROC(__c6xabi_strasgi)
+diff --git a/arch/c6x/lib/strasgi_64plus.S b/arch/c6x/lib/strasgi_64plus.S
+new file mode 100644
+index 0000000..c9fd159
+--- /dev/null
++++ b/arch/c6x/lib/strasgi_64plus.S
+@@ -0,0 +1,39 @@
++;;  Copyright 2010  Free Software Foundation, Inc.
++;;  Contributed by Bernd Schmidt <bernds@codesourcery.com>.
++;;
++;; This program is free software; you can redistribute it and/or modify
++;; it under the terms of the GNU General Public License as published by
++;; the Free Software Foundation; either version 2 of the License, or
++;; (at your option) any later version.
++;;
++;; This program is distributed in the hope that it will be useful,
++;; but WITHOUT ANY WARRANTY; without even the implied warranty of
++;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++;; GNU General Public License for more details.
++;;
++;; You should have received a copy of the GNU General Public License
++;; along with this program; if not, write to the Free Software
++;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++
++#include <linux/linkage.h>
++
++	.text
++
++ENTRY(__c6xabi_strasgi_64plus)
++	shru	.s2x	a6, 2, b31
++||	mv	.s1	a4, a30
++||	mv	.d2	b4, b30
++
++	add	.s2	-4, b31, b31
++
++	sploopd		1
++||	mvc	.s2	b31, ilc
++	ldw	.d2t2	*b30++, b31
++	nop	4
++	mv	.s1x	b31,a31
++	spkernel	6, 0
++||	stw	.d1t1	a31, *a30++
++
++	ret	.s2	b3
++	nop 5
++ENDPROC(__c6xabi_strasgi_64plus)
 -- 
 1.7.6
 
