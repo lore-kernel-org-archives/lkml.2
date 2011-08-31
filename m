@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab1HaG4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 02:56:52 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:51798 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab1HaG4v (ORCPT
+	id S1754393Ab1HaG5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 02:57:30 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:48599 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754209Ab1HaG53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 02:56:51 -0400
-Date: Wed, 31 Aug 2011 14:56:30 +0800
-From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Youquan Song <youquan.song@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Ruslan Pisarev <ruslan@rpisarev.org.ua>, devel@linuxdriverproject.org,
-        Joe Perches <joe@perches.com>, Ilya Gorskin <Revent82@gmail.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>
-Subject: Re: [PATCH v3 10/18] Staging: cx25821: Fix long lines in
- cx25821-audio-upstream.c
-Message-ID: <20110831145630.7950a105@inspire>
-In-Reply-To: <20110830141250.GM3705@shale.localdomain>
-References: <1314677833-4689-1-git-send-email-leonidsbox@gmail.com>
-	<1314677833-4689-11-git-send-email-leonidsbox@gmail.com>
-	<20110830141250.GM3705@shale.localdomain>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Aug 2011 02:57:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+O4pCKteFZBT0UMetuk4-gsUf4wG3DXnOooW47GWD7o=dgpQQ@mail.gmail.com>
+References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
+	<201108171914.52257.oliver@neukum.org>
+	<CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
+	<201108190823.06638.oliver@neukum.org>
+	<CA+O4pCKteFZBT0UMetuk4-gsUf4wG3DXnOooW47GWD7o=dgpQQ@mail.gmail.com>
+Date: Wed, 31 Aug 2011 08:57:28 +0200
+Message-ID: <CA+O4pC+gxbLaHDyAUB-ro1Z-jTGdMfey9yJht1Ux4jWhanKbkg@mail.gmail.com>
+Subject: Re: [PATCH] Increase usbfs bulk buffer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Aug 2011 17:12:50 +0300
-Dan Carpenter <error27@gmail.com> wrote:
+Greg, Oliver,
 
-> On Tue, Aug 30, 2011 at 12:17:05PM +0800, Leonid V. Fedorenchik wrote:
-> > @@ -603,7 +599,8 @@ static irqreturn_t cx25821_upstream_irq_audio(int irq, void *dev_id)
-> >  	if (!dev)
-> >  		return -1;
-> >  
-> > -	sram_ch = dev->channels[dev->_audio_upstream_channel_select].sram_channels;
-> > +	sram_ch = dev->channels[dev->_audio_upstream_channel_select].
-> > +			sram_channels;
-> 
-> $ echo -n "_audio_upstream_channel_select" | wc -c 
-> 30
-> 
-> I think I may have found the problem.  (Don't use variable names that
-> are a 30 zillion chars long).
-Yes, it's long, but I don't really know how to make it shorter. Is
-_audio_upstream_channel OK?
+can you justify why 190K is acceptable for Isochronous (which has been
+in the kernel for a long long time now) but less than 50k is suddenly
+not acceptable for bulk when using USBFS? Especially while the wild
+out there already approved that 190K is okay even on embedded systems?
+That's the only thing I would like to know :-)
 
-> 
-> regards,
-> dan carpenter
-> 
+We made many tests here (and have many more customers using Isoc 190k
+buffers) and memory allocation has a much better performance instead
+of pushing ioctls forward/backward for reading those small packets.
+I do understand your concern but from my point and experience with it
+(we've been using it for 3 years so far) it does not cause any
+problem. We reached the 1k amount of users using 190k Isoc buffers a
+long time ago, those are pushing 170 Mbit a second. The bulk purpose
+is for 80mbit a second only.
+I would just like to have all supported modes with performance and not
+too many changes. Currently we only get good performance with
+isochronous, bulk USBFS performance could just be better with Linux,
+our software works well enough with Mac, Solaris and FreeBSD with Bulk
+and Iso.
 
+BR,
+Markus
 
-
-Leonid V. Fedorenchik
+On Fri, Aug 19, 2011 at 12:45 PM, Markus Rechberger
+<mrechberger@gmail.com> wrote:
+> On Fri, Aug 19, 2011 at 8:23 AM, Oliver Neukum <oliver@neukum.org> wrote:
+>> Am Mittwoch, 17. August 2011, 19:44:16 schrieb Markus Rechberger:
+>>> I understand that USBFS is not 100% optimized, although we are already
+>>> using 3-4 times that much buffer with isochronous and it was working
+>>> fine for years so far as long as the system doesn't run out of memory
+>>> .. but even kerneldrivers would have issues with it in such a
+>>> situation.
+>>
+>> The problem is not what happens on your test system dedicated to this use.
+>> There it'll work. But you allowed everybody else to make the kernel request
+>> the second largest chunk of memory there is. On a otherwise busy system
+>> with fragmented memory this is not good.
+>>
+>> As I said, you want scatter/gather if you need this.
+>> There still would be the problem with the API, but if this is really a problem,
+>> you could define a new ioctl()
+>>
+>
+> let's say there are a few thousand users of the 190k isochronous implementation.
+> I don't want to add more complex code to the kernel, if it's not
+> accepted I'm okay with it,
+> since I know the performance impact I can recommend it to those who
+> are interested in it.
+> Our software works without it anyway, and Bulk is just for special use
+> in our case.
+>
+> Best Regards,
+> Markus
+>
