@@ -1,46 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab1IAIKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 04:10:45 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34502 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756018Ab1IAIKk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 04:10:40 -0400
-Date: Thu, 1 Sep 2011 09:09:30 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Alan Cox <alan@linux.intel.com>, linux-cris-kernel@axis.com,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] cris: lower the printk level in cris serial driver
-Message-ID: <20110901090930.064c2775@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAMuHMdWSm2bQQpdM1OM=6+17CeNikn9RYm_BpFmEV7jD4sAPig@mail.gmail.com>
-References: <1314857640-6623-1-git-send-email-xiyou.wangcong@gmail.com>
-	<CAMuHMdWSm2bQQpdM1OM=6+17CeNikn9RYm_BpFmEV7jD4sAPig@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1756137Ab1IAIPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 04:15:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20070 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755569Ab1IAIO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 04:14:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="44055502"
+Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of
+ an ioremapped memory range
+From: Zhang Rui <rui.zhang@intel.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+In-Reply-To: <1314860114.32522.3.camel@rui>
+References: <1314860114.32522.3.camel@rui>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Sep 2011 16:14:49 +0800
+Message-ID: <1314864889.13161.4.camel@rui>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >        if (info->recv_cnt + recvl > 65536) {
-> > -               printk(KERN_CRIT
-> > +               printk(KERN_INFO
-> >                       "%s: Too much pending incoming serial data! Dropping %u bytes.\n", __func__, recvl);
-> >                return 0;
-> >        }
+On Thu, 2011-09-01 at 14:55 +0800, Zhang, Rui wrote: 
+> From: Zhang Rui <rui.zhang@intel.com>
+> Date: Wed, 31 Aug 2011 09:59:01 +0800
+> Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
 > 
-> I think dropped data warrants KERN_WARN.
+> set_memory_uc uses __pa() to translate the virtual address to the physical address.
+> This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
+> 
+oops, wrong patch was attached.
 
-If you have an overflow you want to push the relevant tty flag into the
-queue. I'm not sure a printk is that useful - end users of embedded
-devices (or even PC desktops) won't see it anyway and if you have serial
-console it can actually make things worse
+here is the correct patch.
 
-Plus of course it's not rate limited here so its a log wiping vector ...
+From: Zhang Rui <rui.zhang@intel.com>
+Date: Wed, 31 Aug 2011 09:59:01 +0800
+Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
+
+set_memory_uc uses __pa() to translate the virtual address to the physical address.
+This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
+
+<1>[    0.029956] BUG: unable to handle kernel paging request at f7f22280
+<1>[    0.042049] IP: [<c10257b9>] reserve_ram_pages_type+0x89/0x210
+<4>[    0.053465] *pdpt = 0000000001978001 *pde = 0000000001ffb067 *pte = 0000000000000000
+<0>[    0.068781] Oops: 0000 [#1] PREEMPT SMP
+<4>[    0.076441] Modules linked in:
+<4>[    0.082399]
+<4>[    0.085304] Pid: 0, comm: swapper Not tainted 3.0.0-acpi-efi-0805 #3
+<4>[    0.098067] EIP: 0060:[<c10257b9>] EFLAGS: 00010202 CPU: 0
+<4>[    0.108810] EIP is at reserve_ram_pages_type+0x89/0x210
+<4>[    0.119022] EAX: 0070e280 EBX: 38714000 ECX: f7814000 EDX: 00000000
+<4>[    0.131284] ESI: 00000000 EDI: 38715000 EBP: c189fef0 ESP: c189fea8
+<4>[    0.143543]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+<0>[    0.154099] Process swapper (pid: 0, ti=c189e000 task=c18bbe60 task.ti=c189e000)
+<0>[    0.168576] Stack:
+<4>[    0.172475]  80000200 ff108000 00000000 c189ff00 00038714 00000000 00000000 c189fed0
+<4>[    0.187623]  c104f8ca 00038714 00000000 00038715 00000000 00000000 00038715 00000000
+<4>[    0.202777]  00000010 38715000 c189ff48 c1025aff 38715000 00000000 00000010 00000000
+<0>[    0.217930] Call Trace:
+<4>[    0.222722]  [<c104f8ca>] ? page_is_ram+0x1a/0x40
+<4>[    0.231916]  [<c1025aff>] reserve_memtype+0xdf/0x2f0
+<4>[    0.241622]  [<c1024dc9>] set_memory_uc+0x49/0xa0
+<4>[    0.250818]  [<c19334d0>] efi_enter_virtual_mode+0x1c2/0x3aa
+<4>[    0.261887]  [<c19216d4>] start_kernel+0x291/0x2f2
+<4>[    0.271245]  [<c19211c7>] ? loglevel+0x1b/0x1b
+<4>[    0.279929]  [<c19210bf>] i386_start_kernel+0xbf/0xc8
+---
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 3ae4128..89586fe 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -44,6 +44,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/tlbflush.h>
+ #include <asm/x86_init.h>
++#include <asm/pat.h>
+ 
+ #define EFI_DEBUG	1
+ #define PFX 		"EFI: "
+@@ -687,7 +688,13 @@ void __init efi_enter_virtual_mode(void)
+ 			addr = md->virt_addr;
+ 			npages = md->num_pages;
+ 			memrange_efi_to_native(&addr, &npages);
+-			set_memory_uc(addr, npages);
++			if (reserve_memtype(md->phys_addr, md->phys_addr + npages * PAGE_SIZE,
++					_PAGE_CACHE_UC_MINUS, NULL)) {
++				printk(KERN_ERR PFX "failed to reserve region as uncacheable\n");
++			} else if (_set_memory_uc(addr, npages)) {
++				printk(KERN_ERR PFX "failed to set region to uncacheable\n");
++				free_memtype(md->phys_addr, md->phys_addr + npages * PAGE_SIZE);
++			}
+ 		}
+ 
+ 		systab = (u64) (unsigned long) efi_phys.systab;
+
+
+
+
+
+
