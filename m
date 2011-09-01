@@ -1,149 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab1IARNs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:13:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45554 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab1IARNr convert rfc822-to-8bit (ORCPT
+	id S1756005Ab1IAROF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:14:05 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51967 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755895Ab1IAROD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:13:47 -0400
-Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to
- idle enter/exit APIs
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>
-Date: Thu, 01 Sep 2011 19:13:00 +0200
-In-Reply-To: <20110901164040.GC2286@linux.vnet.ibm.com>
-References: <20110829233521.GK9748@somewhere.redhat.com>
-	 <1314703315.2799.5.camel@twins>
-	 <20110830143207.GP9748@somewhere.redhat.com>
-	 <1314717993.5812.11.camel@twins>
-	 <20110830153343.GW9748@somewhere.redhat.com>
-	 <1314737918.19586.8.camel@twins>
-	 <20110830222432.GD15953@somewhere.redhat.com>
-	 <1314782245.23993.9.camel@twins> <20110831133754.GA20598@somewhere>
-	 <1314801660.3578.41.camel@twins> <20110901164040.GC2286@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314897180.1485.12.camel@twins>
-Mime-Version: 1.0
+	Thu, 1 Sep 2011 13:14:03 -0400
+Date: Fri, 2 Sep 2011 02:13:55 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-ID: <20110901171355.GC2752@htj.dyndns.org>
+References: <20110831075814.003575573@openvz.org>
+ <20110831080229.100652529@openvz.org>
+ <20110831090612.GA3253@albatros>
+ <20110831112642.GI25465@sun>
+ <20110831140416.GA17626@shutemov.name>
+ <20110831142622.GB30615@sun>
+ <20110831151023.5b7e12da.akpm@linux-foundation.org>
+ <4E5F3B25.9030701@parallels.com>
+ <20110901115006.GB2752@htj.dyndns.org>
+ <4E5F7702.2070808@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5F7702.2070808@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 09:40 -0700, Paul E. McKenney wrote:
-> On Wed, Aug 31, 2011 at 04:41:00PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2011-08-31 at 15:37 +0200, Frederic Weisbecker wrote:
-> > > > Why? rcu-sched can use a context-switch counter, rcu-preempt doesn't
-> > > > even need that. Remote cpus can notice those just fine.
-> > > 
-> > > If that's fine to only rely on context switches, which don't happen in
-> > > a bounded time in theory, then ok.
-> > 
-> > But (!PREEMPT) rcu already depends on that, and suffers this lack of
-> > time-bounds. What it does to expedite matters is force context switches,
-> > but nowhere is it written the GP is bounded by anything sane.
+Hello,
+
+On Thu, Sep 01, 2011 at 04:13:54PM +0400, Pavel Emelyanov wrote:
+> Because with the handler restore process looks very natural and simple - each
+> task does the following steps
 > 
-> Ah, but it really is written, among other things, by the OOM killer.  ;-)
+> 1. restore task resources (open files, set IDs, restore connections, wire back timers, etc.)
+> 2. call execve() to jump into new memory+registers context which is
+>    a. unmap all the user memory
+>    b. map required mappings
+>    c. populate them with data
+>    d. restore registers
+>    e. restore IP
 
-Well there is that of course :-) But I think the below argument relies
-on what we already have without requiring more.
+But what about multiple threads?  exec is already scary enough as it
+is and I don't think it would be wise to overload it for this.
 
-> > > > But you then also start the tick again..
-> > > 
-> > > When we enter kernel? (minus interrupts)
-> > > No we only call rcu_exit_nohz(). 
-> > 
-> > So thinking more about all this:
-> > 
-> > rcu_exit_nohz() will make remote cpus wait for us, this is exactly what
-> > is needed because we might have looked at pointers. Lacking a tick we
-> > don't progress our own state but that is fine, !PREEMPT RCU wouldn't
-> > have been able to progress our state anyway since we haven't scheduled
-> > (there's nothing to schedule to except idle, see below).
-> 
-> Lacking a tick, the CPU also fails to respond to state updates from
-> other CPUs.
+I don't really think binfmt handler would be able to achieve
+completeness without ending up with full de-serializer in kernel.
+There are a lot of states which already have API to manipulate from
+the userland thread itself and they all will need to be replicated in
+the binfmt handler.  It really has to be full de-serializer if it
+wants to function like you described.
 
-I'm sure I'll have to go re-read your documents, but does that matter?
-If we would have had a tick we still couldn't have progressed since we
-wouldn't have scheduled etc.. so we would hold up GP completion any way.
+And if we're gonna have interventions anyway, I can't see much point
+in implementing something which seems simpler - it's not gonna be
+actually simpler.
 
-> > Then when we leave the kernel (or go idle) we re-enter rcu_nohz state,
-> > and the other cpus will ignore our contribution (since we have entered a
-> > QS and can't be holding any pointers) the other CPUs can continue and
-> > complete the GP and run the callbacks.
-> 
-> This is true.
+Thanks.
 
-So suppose all other CPUs completed the GP and our CPU is the one
-holding things up, now I don't see rcu_enter_nohz() doing anything much
-at all, who is responsible for GP completion?
-
-> > I haven't fully considered PREEMPT RCU quite yet, but I'm thinking we
-> > can get away with something similar.
-> 
-> All the ways I know of to make PREEMPT_RCU live without a scheduling
-> clock tick while not in some form of dyntick-idle mode require either
-> IPIs or read-side memory barriers.  The special case where all CPUs
-> are in dyntick-idle mode and something needs to happen also needs to
-> be handled correctly.
-> 
-> Or are you saying that PREEMPT_RCU does not need a CPU to take
-> scheduling-clock interrupts while that CPU is in dyntick-idle mode?
-> That is true enough.
-
-I'm not saying anything much about PREEMPT_RCU, I voiced an
-ill-considered suspicion :-)
-
-So in the nr_running=[0,1] case we're in rcu_nohz state when idle or
-when in userspace. The only interesting part is being in kernel space
-where we cannot be in rcu_nohz state because we might actually use
-pointers and thus have to stop callbacks from destroying state etc..
-
-The only PREEMPT_RCU implementation I can recall is the counting one,
-and that one does indeed want a tick, because even in kernel space it
-could move things forward if the 'old' index counter reaches 0.
-
-Now we could possibly add magic to rcu_read_unlock_special() to restart
-the tick in that case.
-
-Now clearly all that might be non-applicable to the current one, will
-have to wrap my head around the current PREEMPT_RCU implementation some
-more.
-
-> > So per the above we don't need the tick at all (for the case of
-> > nr_running=[0,1]), RCU will sort itself out.
-> > 
-> > Now I forgot where all you send IPIs from, and I'll go look at these
-> > patches once more.
-> > 
-> > As for call_rcu() for that we can indeed wake the tick (on leaving
-> > kernel space or entering idle, no need to IPI since we can't process
-> > anything before that anyway) or we could hand off our call list to a
-> > 'willing' victim.
-> > 
-> > But yeah, input from Paul would be nice...
-> 
-> In the call_rcu() case, I do have some code in preparation that allows
-> CPUs to have non-empty callback queues and still be tickless.  There
-> are some tricky corner cases, but it does look possible.  (Famous last
-> words...)
-
-Hand your callback to someone else is one solution, but I'm not overly
-worried about re-starting the tick if we do call_rcu().
-
-> The reason for doing this is that people are enabling
-> CONFIG_RCU_FAST_NO_HZ on systems that have no business enabling it.
-> Bad choice of names on my part.
-
-hehe :-)
+-- 
+tejun
