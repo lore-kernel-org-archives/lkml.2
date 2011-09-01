@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab1IAOMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 10:12:34 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:24376 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757420Ab1IAOMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 10:12:31 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzz8275dhz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LQUKSQ-01-5NN-02
-X-M-MSG: 
-Date: Thu, 1 Sep 2011 16:12:19 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
- overlapping counters
-Message-ID: <20110901141219.GA13447@erda.amd.com>
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
- <1302913676-14352-5-git-send-email-robert.richter@amd.com>
- <20110419102600.GU31407@erda.amd.com>
- <1305753398.2466.7180.camel@twins>
- <20110518212054.GC28476@elte.hu>
- <1305754613.2466.7190.camel@twins>
- <20110519180650.GC6139@elte.hu>
- <20110520031855.GA17196@erda.amd.com>
- <1314881807.11566.23.camel@twins>
+	id S1757597Ab1IAOOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 10:14:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36007 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757420Ab1IAOOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 10:14:52 -0400
+Message-ID: <4E5F930A.6070006@zytor.com>
+Date: Thu, 01 Sep 2011 07:13:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1314881807.11566.23.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Avi Kivity <avi@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: RFD: x32 ABI system call numbers
+References: <4E582577.2060805@zytor.com> <201108301409.27527.arnd@arndb.de> <4E5D1153.5030908@zytor.com> <201108311814.54906.arnd@arndb.de> <CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com> <4E5E6AC0.60000@zytor.com> <4E5F88F8.2040008@redhat.com>
+In-Reply-To: <4E5F88F8.2040008@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.09.11 08:56:46, Peter Zijlstra wrote:
-> On Fri, 2011-05-20 at 05:18 +0200, Robert Richter wrote:
-> > On 19.05.11 14:06:50, Ingo Molnar wrote:
-> > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > 
-> > > > On Wed, 2011-05-18 at 23:20 +0200, Ingo Molnar wrote:
-> > > > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > > > 
-> > > > > > >                         if (c->weight != w)
-> > > > > > >                                 continue;
-> > > > > > >  
-> > > > > > > -                       for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
-> > > > > > > -                               if (!test_bit(j, used_mask))
-> > > > > > > +                       /* for each bit in idxmsk starting from idx */
-> > > > > > > +                       while (idx < X86_PMC_IDX_MAX) {
-> > > > > > > +                               idx = find_next_bit(c->idxmsk, X86_PMC_IDX_MAX,
-> > > > > > > +                                                   idx);
-> > > > > > 
-> > > > > > I'd be mighty tempted to ignore that 80 column rule here ;-)
-> > > > > 
-> > > > > Please put the body of the loop into a helper function, the function is large 
-> > > > > and there are countless col80 uglinesses in it!
-> > > > 
-> > > > I just tried that, its real ugly due to the amount of state you need to
-> > > > pass around.
-> > > 
-> > > Does it help if you put that state into a helper structure?
-> > 
-> > Yes, this is what I have in mind too. We could iterate on such a state
-> > stucture instead of a couple of single variables. Storing and
-> > restoring the state will then just copying the structure.
+On 09/01/2011 06:30 AM, Avi Kivity wrote:
+> On 08/31/2011 08:09 PM, H. Peter Anvin wrote:
+>>>  I really think that "x32" should try to aim *VERY* hard at using the
+>>>  64-bit system calls, and seeing itself as being a "32-bit application
+>>>  in a 64-bit world".  That's not just true for time_t (which I think
+>>>  should be 64-bit on anything new that expects to survive for any
+>>>  amount of time), but in general.
+>>
+>> We're trying for it.  The things we're trying to avoid is to muck (too
+>> much) with the compat layer for the mega-multiplex system calls like
+>> ioctl.  We can't just use the 64-bit ioctl because ioctl structures
+>> generally contain pointers.
+>>
 > 
-> Any word on this work? I just noticed we actually need this for Intel
-> too, the fixed purpose events have overlapping but non-identical
-> constraint masks.
+>      struct iovec
+>      {
+>          void __user *iov_base;    /* BSD uses caddr_t (1003.1g requires 
+> void *) */
+>          __kernel_size_t iov_len; /* Must be size_t (1003.1g) */
+>      } __attribute__((x32_abi_64));
 > 
-> Now we could optimize the Intel case by always iterating from the top
-> down, but it won't cure all cases. For example, suppose one counter
-> (that could be on a FP reg) previously got scheduled on a GP register
-> and we take the fast-path, in that case we would still end up
-> under-utilized.
+>      typedef long time_t __attribute__((x32_abi_64));
+> 
+> The x32_abi_64 attribute converts pointers and longs back to 64-bit and 
+> adjusts the alignment accordingly.  If we tag all userspace visible 
+> structures with this attribute, we can use the 64-bit ABI without changes.
+> 
+> Issues:
+> &my_iovec->iov_base yields something that is not a void ** (reads of a 
+> 64-bit pointer decay to a 32-bit pointer, writes zero extend).
+>    printf formats will break
+>    if someone embeds an iovec in a structure, it will occupy more space 
+> than expected
+> 
 
-Yes, I had this patch in mind too. Will try to post an updated version
-next week. Ok?
+Yes, the idea of a compiler extension was floated... however, we'd
+prefer not to go there if at all possible.
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+	-hpa
