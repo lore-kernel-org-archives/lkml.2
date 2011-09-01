@@ -1,52 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab1IALxk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 07:53:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56420 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab1IALxj convert rfc822-to-8bit (ORCPT
+	id S1757297Ab1IALxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 07:53:54 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:56561 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab1IALxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 07:53:39 -0400
-Subject: Re: Problem with perf hardware counters grouping
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Hommey <mh@glandium.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 01 Sep 2011 13:53:32 +0200
-In-Reply-To: <20110831085718.GB13884@glandium.org>
-References: <20110831085718.GB13884@glandium.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314878012.11566.7.camel@twins>
-Mime-Version: 1.0
+	Thu, 1 Sep 2011 07:53:51 -0400
+X-AuditID: b753bd60-a0a78ba0000050a4-89-4e5f724c774c
+X-AuditID: b753bd60-a0a78ba0000050a4-89-4e5f724c774c
+Message-ID: <4E5F7249.8020408@hitachi.com>
+Date: Thu, 01 Sep 2011 20:53:45 +0900
+From: HAYASAKA Mitsuo <mitsuo.hayasaka.hu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        =?UTF-8?B?TWljaGHFgk1pcm9zxYJhdw==?= <mirq-linux@rere.qmqm.pl>,
+        Tom Herbert <therbert@google.com>, Jesse Gross <jesse@nicira.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH net-next] net: linkwatch: allow vlans to get carrier changes
+ faster
+References: <20110826060257.5304.62723.stgit@ltc219.sdl.hitachi.co.jp>  <20110825230859.11b2b132@nehalam.ftrdhcpuser.net>  <20110826064553.GA5874@gondor.apana.org.au>  <4E5A40A9.2000404@hitachi.com>  <1314540589.3036.12.camel@edumazet-laptop> <1314783118.2801.13.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1314783118.2801.13.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-31 at 10:57 +0200, Mike Hommey wrote:
-> I'm having two different problems with perf hardware counters with a
-> group leader:
-> - perf_event_open()ing more than 3 makes all of them always return a
->   value of 0;
-> - perf_event_open()ing more than 4 fails with ENOSPC. 
+Hi Eric,
+
+I checked this patch solves the time-lag of IFF_RUNNING flag consistency
+between vlan and real devices. 
+
+Cheers.
+
+Tested-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
 
 
-I'm guessing you're running on something x86, either AMD-Fam10-12 or
-Intel-NHM+.
+(2011/08/31 18:31), Eric Dumazet wrote:
+> There is a time-lag of IFF_RUNNING flag consistency between vlan and
+> real devices when the real devices are in problem such as link or cable
+> broken.
+> 
+> This leads to a degradation of Availability such as a delay of failover
+> in HA systems using vlan since the detection of the problem at real
+> device is delayed.
+> 
+> We can avoid the linkwatch delay (~1 sec) for devices linked to another
+> ones, since delay is already done for the realdev.
+> 
+> Based on a previous patch from Mitsuo Hayasaka
+> 
+> Reported-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Cc: "Michał Mirosław" <mirq-linux@rere.qmqm.pl>
+> Cc: Tom Herbert <therbert@google.com>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Jesse Gross <jesse@nicira.com>
+> ---
+>  net/core/link_watch.c |    9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/core/link_watch.c b/net/core/link_watch.c
+> index 357bd4e..c3519c6 100644
+> --- a/net/core/link_watch.c
+> +++ b/net/core/link_watch.c
+> @@ -78,8 +78,13 @@ static void rfc2863_policy(struct net_device *dev)
+>  
+>  static bool linkwatch_urgent_event(struct net_device *dev)
+>  {
+> -	return netif_running(dev) && netif_carrier_ok(dev) &&
+> -		qdisc_tx_changing(dev);
+> +	if (!netif_running(dev))
+> +		return false;
+> +
+> +	if (dev->ifindex != dev->iflink)
+> +		return true;
+> +
+> +	return netif_carrier_ok(dev) &&	qdisc_tx_changing(dev);
+>  }
+>  
+>  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Both those have 4 generic hardware counters, but x86 defaults to
-enabling the NMI watchdog which takes one, leaving you with 3 (try: echo
-0 > /proc/sys/kernel/nmi_watchdog). If you had looked at your dmesg
-output you'd have found lines like:
-
-  NMI watchdog enabled, takes one hw-pmu counter.
-
-The code can only check if the group as a whole could possibly fit on a
-PMU, which is where your failure on >4 comes from.
-
-What happens with your >3 case is that while the group is valid and
-could fit on the PMU, it won't fit at runtime because the NMI watchdog
-is taking one and won't budge (cpu-pinned counter have precedence over
-any other kind), effectively starving your group of pmu runtime.
-
-Also, we should fix that return to say -EINVAL or so.
