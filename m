@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab1IABhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 21:37:35 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:27020 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756900Ab1IABhb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 21:37:31 -0400
-From: JJ Ding <jj_ding@emc.com.tw>
-To: =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH v4 0/8] Input: elantech: add support for newer hardware
-In-Reply-To: <4E5E2EEF.8050405@tudelft.nl>
-References: <1314606539-24722-1-git-send-email-jj_ding@emc.com.tw> <4E5E2EEF.8050405@tudelft.nl>
-User-Agent: Notmuch/0.7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Thu, 01 Sep 2011 09:39:40 +0800
-Message-ID: <87obz53usj.fsf@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S932109Ab1IABiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 21:38:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63752 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756900Ab1IABiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 21:38:07 -0400
+Subject: Re: [PATCH 01/24] fix default __strnlen_user macro
+From: Mark Salter <msalter@redhat.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 31 Aug 2011 21:38:03 -0400
+In-Reply-To: <4E5EC3FE.10307@gmail.com>
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
+	 <1314826019-22330-2-git-send-email-msalter@redhat.com>
+	 <4E5EC3FE.10307@gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1314841084.2344.113.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Éric,
+On Thu, 2011-09-01 at 09:30 +1000, Ryan Mallon wrote:
+> On 01/09/11 07:26, Mark Salter wrote:
+> > The existing __strnlen_user macro simply resolved to strnlen. However, the
+> > count returned by strnlen_user should include the NULL byte. This patch
+> > fixes the __strnlen_user macro to include the NULL byte in the count.
+> >
+> > Signed-off-by: Mark Salter<msalter@redhat.com>
+> > ---
+> >   include/asm-generic/uaccess.h |    2 +-
+> >   1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
+> > index ac68c99..1d0fdf8 100644
+> > --- a/include/asm-generic/uaccess.h
+> > +++ b/include/asm-generic/uaccess.h
+> > @@ -289,7 +289,7 @@ strncpy_from_user(char *dst, const char __user *src, long count)
+> >    * Return 0 on exception, a value greater than N if too long
+> >    */
+> >   #ifndef __strnlen_user
+> > -#define __strnlen_user strnlen
+> > +#define __strnlen_user(s, n) (strnlen((s), (n)) + 1)
+> >   #endif
+> 
+> I don't think this is correct because if you hit maxlen you will add one 
+> to it. e.g. __strnlen_user("abcd\0", 3) would return 4 instead of 3.
 
-Thnaks for the reviewing and testing.
+Yes, one would think so, but that doesn't seem to be the case. Looking
+at various places that call strnlen_user, you'll find checks for that.
+For one example, mm/util.c:
 
-jj
+    char *strndup_user(const char __user *s, long n)
+    {
+	char *p;
+	long length;
 
-On Wed, 31 Aug 2011 14:54:07 +0200, Éric Piel <E.A.B.Piel@tudelft.nl> wrote:
-> Op 29-08-11 10:28, JJ Ding schreef:
-> > Hi Lists,
-> >
-> > This is a series of patches to add support for newer generations of ELAN
-> > touchpad.
-> >
-> > Patches #1~#6 are essentially fixes and cleanups that pave the way for
-> > patch #7 and patch #8, which really adds code for v3 and v4 hardware.
-> >
-> > Any comments, suggestoins are welcome.
-> >
-> Hello,
-> IMHO, this patch series is starting to look really good.
+	length = strnlen_user(s, n);
+
+	if (!length)
+		return ERR_PTR(-EFAULT);
+
+	if (length > n)
+		return ERR_PTR(-EINVAL);
+
 > 
-> For patches 1-7 you have my:
+> It should probably be something like this:
 > 
-> Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
+> #define __strnlen_user(s, n) ({		\
+> 	size_t k = strnlen(s, n);	\
+> 	k<  n ? k + 1 : n; })
 > 
-> I've just some little comments on patch 8.
 > 
-> I'll try find the time to test on my laptop (with touchpad firmware 
-> version 2) this weekend.
-> 
-> Cheers,
-> Éric
+> I wonder if this change will break anything since it has been incorrect 
+> (according to the comment in uaccess.h at least) for a while. Why does 
+> __strnlen_user have different semantics to strnlen anway?
+
+I think the C6X port I'm in the process of pushing upstream is the only
+port to actually use the definition in asm-generic/uaccess.h and I can
+assure you that the existing definition causes a failure to boot as it
+stands. No idea why the semantics are different, but you're not the
+first to note that fact. I thought briefly about changing the kernel to
+make the strnlen_user have the same semantics as strnlen, but that means
+touching every arch, every one of which defines their own. Kinda makes
+me feel inadequate for wanting to use the generic one. :)
+
+--Mark
+
+
