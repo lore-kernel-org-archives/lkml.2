@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab1IAM5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:57:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40516 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab1IAM5N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:57:13 -0400
-Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
- overlapping counters
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 01 Sep 2011 14:56:46 +0200
-In-Reply-To: <20110520031855.GA17196@erda.amd.com>
-References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
-	 <1302913676-14352-5-git-send-email-robert.richter@amd.com>
-	 <20110419102600.GU31407@erda.amd.com> <1305753398.2466.7180.camel@twins>
-	 <20110518212054.GC28476@elte.hu> <1305754613.2466.7190.camel@twins>
-	 <20110519180650.GC6139@elte.hu> <20110520031855.GA17196@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314881807.11566.23.camel@twins>
-Mime-Version: 1.0
+	id S932273Ab1IAM51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 08:57:27 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35790 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932107Ab1IAM5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 08:57:24 -0400
+Date: Thu, 1 Sep 2011 13:57:20 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
+        Zhu Yanhai <zhu.yanhai@gmail.com>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: slow performance on disk/network i/o full speed after drop_caches
+Message-ID: <20110901125720.GC24629@csn.ul.ie>
+References: <4E560F2A.1030801@profihost.ag>
+ <20110826021648.GA19529@localhost>
+ <4E570AEB.1040703@profihost.ag>
+ <20110826030313.GA24058@localhost>
+ <D299D0AE-2F3C-42E2-9723-A3D7C0108C40@profihost.ag>
+ <20110826032601.GA26282@localhost>
+ <CAC8teKXqZktBK7+GbLgHn-2k+zjjf8uieRM_q_V7JK7ePAk9Lg@mail.gmail.com>
+ <4E573A99.4060309@profihost.ag>
+ <4E5DDE86.3040202@profihost.ag>
+ <20110901041458.GA30123@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110901041458.GA30123@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-05-20 at 05:18 +0200, Robert Richter wrote:
-> On 19.05.11 14:06:50, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Wed, 2011-05-18 at 23:20 +0200, Ingo Molnar wrote:
-> > > > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > > > 
-> > > > > >                         if (c->weight != w)
-> > > > > >                                 continue;
-> > > > > >  
-> > > > > > -                       for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
-> > > > > > -                               if (!test_bit(j, used_mask))
-> > > > > > +                       /* for each bit in idxmsk starting from idx */
-> > > > > > +                       while (idx < X86_PMC_IDX_MAX) {
-> > > > > > +                               idx = find_next_bit(c->idxmsk, X86_PMC_IDX_MAX,
-> > > > > > +                                                   idx);
-> > > > > 
-> > > > > I'd be mighty tempted to ignore that 80 column rule here ;-)
-> > > > 
-> > > > Please put the body of the loop into a helper function, the function is large 
-> > > > and there are countless col80 uglinesses in it!
-> > > 
-> > > I just tried that, its real ugly due to the amount of state you need to
-> > > pass around.
-> > 
-> > Does it help if you put that state into a helper structure?
+On Thu, Sep 01, 2011 at 12:14:58PM +0800, Wu Fengguang wrote:
+> Hi Stefan,
 > 
-> Yes, this is what I have in mind too. We could iterate on such a state
-> stucture instead of a couple of single variables. Storing and
-> restoring the state will then just copying the structure.
+> On Wed, Aug 31, 2011 at 03:11:02PM +0800, Stefan Priebe - Profihost AG wrote:
+> > Hi Fengguang,
+> > Hi Yanhai,
+> > 
+> > > you're abssolutely corect zone_reclaim_mode is on - but why?
+> > > There must be some linux software which switches it on.
+> > >
+> > > ~# grep 'zone_reclaim_mode' /etc/sysctl.* -r -i
+> > > ~#
+> > >
+> > > also
+> > > ~# grep 'zone_reclaim_mode' /etc/sysctl.* -r -i
+> > > ~#
+> > >
+> > > tells us nothing.
+> > >
+> > > I've then read this:
+> > >
+> > > "zone_reclaim_mode is set during bootup to 1 if it is determined that
+> > > pages from remote zones will cause a measurable performance reduction.
+> > > The page allocator will then reclaim easily reusable pages (those page
+> > > cache pages that are currently not used) before allocating off node pages."
+> > >
+> > > Why does the kernel do that here in our case on these machines.
+> > 
+> > Can nobody help why the kernel in this case set it to 1?
+> 
+> It's determined by RECLAIM_DISTANCE.
+> 
+> build_zonelists():
+> 
+>                 /*
+>                  * If another node is sufficiently far away then it is better
+>                  * to reclaim pages in a zone before going off node.
+>                  */
+>                 if (distance > RECLAIM_DISTANCE)
+>                         zone_reclaim_mode = 1;
+> 
+> Since Linux v3.0 RECLAIM_DISTANCE is increased from 20 to 30 by this commit.
+> It may well help your case, too.
+> 
 
-Any word on this work? I just noticed we actually need this for Intel
-too, the fixed purpose events have overlapping but non-identical
-constraint masks.
+Even with that, it's known that zone_reclaim() can be a disaster when
+it runs into problems. This should be fixed in 3.1 by the following
+commits;
 
-Now we could optimize the Intel case by always iterating from the top
-down, but it won't cure all cases. For example, suppose one counter
-(that could be on a FP reg) previously got scheduled on a GP register
-and we take the fast-path, in that case we would still end up
-under-utilized.
+[cd38b115 mm: page allocator: initialise ZLC for first zone eligible for zone_reclaim]
+[76d3fbf8 mm: page allocator: reconsider zones for allocation after direct reclaim]
 
+The description in cd38b115 has the interesting details.
 
+-- 
+Mel Gorman
+SUSE Labs
