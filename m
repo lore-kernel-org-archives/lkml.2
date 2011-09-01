@@ -1,84 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272Ab1IARcX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:32:23 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48022 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756056Ab1IARcW (ORCPT
+	id S1756556Ab1IARhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:37:13 -0400
+Received: from peace.netnation.com ([204.174.223.2]:40140 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756192Ab1IARhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:32:22 -0400
-Date: Thu, 1 Sep 2011 18:31:49 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <ming.lei@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH 0/3] RFC: addition to DMA API
-Message-ID: <20110901173149.GE2803@e102144-lin.cambridge.arm.com>
-References: <CACVXFVOT9FZexiZhuJtvyFP8qOPYUKg0JqGarBJgT4R8SN7p5Q@mail.gmail.com>
- <Pine.LNX.4.44L0.1109011127080.1896-100000@iolanthe.rowland.org>
- <20110901160429.GA15814@n2100.arm.linux.org.uk>
+	Thu, 1 Sep 2011 13:37:11 -0400
+X-Greylist: delayed 1240 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Sep 2011 13:37:11 EDT
+Date: Thu, 1 Sep 2011 10:16:26 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>
+Cc: Terry Loftin <terry.loftin@hp.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Bob Montgomery <bob.montgomery@hp.com>
+Subject: Re: [PATCH 1/2] sched: Fix "divide error: 0000" in
+	find_busiest_group
+Message-ID: <20110901171626.GA1629@hostway.ca>
+References: <4E25F006.2010205@hp.com> <1311110224.2617.1.camel@laptop> <1311128780.7789.12.camel@marge.simson.net> <1311128991.5345.0.camel@twins> <1311132728.7789.29.camel@marge.simson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110901160429.GA15814@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1311132728.7789.29.camel@marge.simson.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Wed, Jul 20, 2011 at 05:32:08AM +0200, Mike Galbraith wrote:
 
-On Thu, Sep 01, 2011 at 05:04:29PM +0100, Russell King - ARM Linux wrote:
-> DMA coherent memory on ARM is implemented on ARMv5 and below by using
-> 'noncacheable nonbufferable' memory.  There is no weak memory model to
-> worry about, and this memory type is seen as 'strongly ordered' - the
-> CPU stalls until the read or write has completed.  So no problem there.
+> On Wed, 2011-07-20 at 04:29 +0200, Peter Zijlstra wrote:
+> > On Wed, 2011-07-20 at 04:26 +0200, Mike Galbraith wrote:
+> > > On Tue, 2011-07-19 at 23:17 +0200, Peter Zijlstra wrote:
+> > > > On Tue, 2011-07-19 at 14:58 -0600, Terry Loftin wrote:
+> > > > > Correct the protection expression in update_cpu_power() to avoid setting
+> > > > > rq->cpu_power to zero.
+> > > > 
+> > > > Firstly you fail to mention what kernel this is again, secondly this
+> > > > should never happen in the first place, so this fix is wrong. At best it
+> > > > papers over another bug.
+> > > > 
+> > > > > Signed-off-by: Terry Loftin <terry.loftin@hp.com>
+> > > > > Signed-off-by: Bob Montgomery <bob.montgomery@hp.com>
+> > > > > ---
+> > > > > diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> > > > > index 0c26e2d..9c50020 100644
+> > > > > --- a/kernel/sched_fair.c
+> > > > > +++ b/kernel/sched_fair.c
+> > > > > @@ -2549,7 +2549,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+> > > > >  	power *= scale_rt_power(cpu);
+> > > > >  	power >>= SCHED_LOAD_SHIFT;
+> > > > > 
+> > > > > -	if (!power)
+> > > > > +	if ((u32)power == 0)
+> > > > >  		power = 1;
+> > > > > 
+> > > > >  	cpu_rq(cpu)->cpu_power = power;
+> > > 
+> > > I put that (and a bunch more protection+warnings) in an enterprise
+> > > kernel so it would not explode, but would gather some data.  The entire
+> > > world has been utterly silent, except for a gaggle of POWER7 boxen,
+> > > which manage to convince scale_rt_power() to return negative values.
+> > > 
+> > > Turning on PRINTK_TIME made these boxen go silent.  A printk with
+> > > timestamps, which doesn't happen, hides the problem.  Tilt.
+> > 
+> > Did those kernels contain the scale_rt_power() hunk from commit
+> > aa483808516ca5cacfa0e5849691f64fec25828e? Venki thought that might cure
+> > sure woes, but since we never could reproduce...
 > 
-> On ARMv6 and above, the attributes change:
-> 
-> 1. Memory type: [Normal, Device, Strongly ordered]
->    All mappings of a physical address space are absolutely required to be
->    of the same memory type, otherwise the result is unpredictable.  There
->    is no mitigation against this.
-> 
-> 2. For "normal memory", a variety of options are available to adjust the
->    hints to the cache and memory subsystem - the options here are
->    [Non-cacheable, write-back write alloc, write-through non-write alloc,
->     write-back, non-write alloc.]
-> 
->    Strictly to the ARM ARM, all mappings must, again, have the same
->    attributes to avoid unpredictable behaviour.  There is a _temporary_
->    architectural relaxation of this requirement provided certain conditions
->    are met - which may become permanent.
+> Yeah, that commit is present.
 
-This looks set to appear in revision C of the ARM ARM.
+We just hit what seems to be this bug on a box running 2.6.36 since
+around the time it was built (Nov 8, 2010). It's a 16 core box (dual quad
+with HT) and runs all sorts of stuff all day long, and suddenly hit this
+divide error.
 
-> It _is_ possible that "unpredictable" means that we may hit cache lines in
-> the [VP]IPT cache via the non-cacheable mapping which have been created
-> by speculative loads via the cacheable mapping - and this is something
-> that has been worrying me for a long time.
+Commit aa483808516ca5cacfa0e5849691f64fec25828e is present.
 
-Whilst this can happen, this will only cause problems for reads performed
-by the CPU (as these may hit a line speculatively loaded via the cacheable
-alias). Setting bit 22 in the auxillary control register gets arounds this:
+find_busiest_group() seems to have been inlined into load_balance():
 
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6529/1
+   0xffffffff8104d55f <+1151>:  jne    0xffffffff8104d568 <load_balance+1160>
+   0xffffffff8104d561 <+1153>:  mov    $0x1,%cl
+   0xffffffff8104d563 <+1155>:  mov    $0x1,%esi
+   0xffffffff8104d568 <+1160>:  movslq -0x16c(%rbp),%rdx
+   0xffffffff8104d56f <+1167>:  mov    $0x14bc0,%rax
+   0xffffffff8104d576 <+1174>:  mov    -0x7e601720(,%rdx,8),%rdx
+   0xffffffff8104d57e <+1182>:  mov    %rcx,0x7e0(%rax,%rdx,1)
+   0xffffffff8104d586 <+1190>:  mov    %esi,0x8(%r8)
+   0xffffffff8104d58a <+1194>:  nopw   0x0(%rax,%rax,1)
+   0xffffffff8104d590 <+1200>:  mov    -0x138(%rbp),%rcx
+   0xffffffff8104d597 <+1207>:  mov    -0x68(%rbp),%rsi
+   0xffffffff8104d59b <+1211>:  xor    %edx,%edx
+   0xffffffff8104d59d <+1213>:  mov    0x8(%rcx),%edi
+   0xffffffff8104d5a0 <+1216>:  mov    %rsi,%rax
+   0xffffffff8104d5a3 <+1219>:  mov    -0x60(%rbp),%rcx
+   0xffffffff8104d5a7 <+1223>:  shl    $0xa,%rax
+   0xffffffff8104d5ab <+1227>:  div    %rdi                    <--------------
+   0xffffffff8104d5ae <+1230>:  mov    %rax,-0x70(%rbp)
+   0xffffffff8104d5b2 <+1234>:  xor    %eax,%eax
+   0xffffffff8104d5b4 <+1236>:  test   %rcx,%rcx
+   0xffffffff8104d5b7 <+1239>:  je     0xffffffff8104d5c5 <load_balance+1253>
 
-Given that I believe our coherent DMA memory is `cacheable, bufferable, do
-not allocate' in terms of AXI attributes, then writes will go straight to
-the write buffer on the PL310.
+rax, rdx, and rdi were 0 here. Fuzzy picture available on request.
 
-> So, in summary what I'm saying is that _in theory_ our DMA coherent memory
-> on ARMv6+ should have nothing more than write buffering to contend with,
-> but that doesn't stop this being the first real concrete report proving
-> that what I've been going on about regarding the architectural requirements
-> over the last few years is actually very real and valid.
+Other than some indirection, I don't see any changes in this area that
+would fix this bug since 2.6.36, either. Perhaps the !power test in
+update_cpu_power() should be copied to update_group_power()? This still
+seems like papering over another issue, though...
 
-I don't think what we're seeing in this case is caused by mismatched memory
-attributes, especially as passing `nosmp' on the command-line makes the
-performance issue disappear.
+Perhaps this might discover something:
 
-Will
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index bc8ee99..b31cd3d 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2682,6 +2682,7 @@ static void update_group_power(struct sched_domain *sd, int cpu)
+ 	} while (group != child->groups);
+ 
+ 	sdg->sgp->power = power;
++	BUG_ON(!power);
+ }
+ 
+ /*
+
+Simon-
