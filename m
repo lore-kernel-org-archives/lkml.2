@@ -1,296 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab1IAGzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 02:55:23 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:58826 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab1IAGye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 02:54:34 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p816sTcZ030484, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 4/4] r8169: support new chips of RTL8111F
-Date: Thu, 1 Sep 2011 14:53:54 +0800
-X-BOX-Message-Id: p816sTcZ030484
-Message-ID: <1314860034-3911-4-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1314860034-3911-1-git-send-email-hayeswang@realtek.com>
-References: <1314860034-3911-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755973Ab1IAGzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 02:55:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29910 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755107Ab1IAGzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 02:55:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,312,1312182000"; 
+   d="scan'208";a="44590614"
+Subject: [PATCH] EFI: Do not use __pa() to get the physical address of an
+ ioremapped memory range
+From: Zhang Rui <rui.zhang@intel.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Zhang, Rui" <rui.zhang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Sep 2011 14:55:14 +0800
+Message-ID: <1314860114.32522.3.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support new chips of RTL8111F.
+From: Zhang Rui <rui.zhang@intel.com>
+Date: Wed, 31 Aug 2011 09:59:01 +0800
+Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+set_memory_uc uses __pa() to translate the virtual address to the physical address.
+This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
+
+<1>[    0.029956] BUG: unable to handle kernel paging request at f7f22280
+<1>[    0.042049] IP: [<c10257b9>] reserve_ram_pages_type+0x89/0x210
+<4>[    0.053465] *pdpt = 0000000001978001 *pde = 0000000001ffb067 *pte = 0000000000000000
+<0>[    0.068781] Oops: 0000 [#1] PREEMPT SMP
+<4>[    0.076441] Modules linked in:
+<4>[    0.082399]
+<4>[    0.085304] Pid: 0, comm: swapper Not tainted 3.0.0-acpi-efi-0805 #3
+<4>[    0.098067] EIP: 0060:[<c10257b9>] EFLAGS: 00010202 CPU: 0
+<4>[    0.108810] EIP is at reserve_ram_pages_type+0x89/0x210
+<4>[    0.119022] EAX: 0070e280 EBX: 38714000 ECX: f7814000 EDX: 00000000
+<4>[    0.131284] ESI: 00000000 EDI: 38715000 EBP: c189fef0 ESP: c189fea8
+<4>[    0.143543]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+<0>[    0.154099] Process swapper (pid: 0, ti=c189e000 task=c18bbe60 task.ti=c189e000)
+<0>[    0.168576] Stack:
+<4>[    0.172475]  80000200 ff108000 00000000 c189ff00 00038714 00000000 00000000 c189fed0
+<4>[    0.187623]  c104f8ca 00038714 00000000 00038715 00000000 00000000 00038715 00000000
+<4>[    0.202777]  00000010 38715000 c189ff48 c1025aff 38715000 00000000 00000010 00000000
+<0>[    0.217930] Call Trace:
+<4>[    0.222722]  [<c104f8ca>] ? page_is_ram+0x1a/0x40
+<4>[    0.231916]  [<c1025aff>] reserve_memtype+0xdf/0x2f0
+<4>[    0.241622]  [<c1024dc9>] set_memory_uc+0x49/0xa0
+<4>[    0.250818]  [<c19334d0>] efi_enter_virtual_mode+0x1c2/0x3aa
+<4>[    0.261887]  [<c19216d4>] start_kernel+0x291/0x2f2
+<4>[    0.271245]  [<c19211c7>] ? loglevel+0x1b/0x1b
+<4>[    0.279929]  [<c19210bf>] i386_start_kernel+0xbf/0xc8
 ---
- drivers/net/ethernet/realtek/r8169.c |  178 +++++++++++++++++++++++++++++++++-
- 1 files changed, 176 insertions(+), 2 deletions(-)
+ arch/x86/platform/efi/efi.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index b999433..40008d2 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -42,6 +42,8 @@
- #define FIRMWARE_8168E_1	"rtl_nic/rtl8168e-1.fw"
- #define FIRMWARE_8168E_2	"rtl_nic/rtl8168e-2.fw"
- #define FIRMWARE_8168E_3	"rtl_nic/rtl8168e-3.fw"
-+#define FIRMWARE_8168F_1	"rtl_nic/rtl8168f-1.fw"
-+#define FIRMWARE_8168F_2	"rtl_nic/rtl8168f-2.fw"
- #define FIRMWARE_8105E_1	"rtl_nic/rtl8105e-1.fw"
+Index: acpi50/arch/x86/platform/efi/efi.c
+===================================================================
+--- acpi50.orig/arch/x86/platform/efi/efi.c
++++ acpi50/arch/x86/platform/efi/efi.c
+@@ -44,6 +44,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/tlbflush.h>
+ #include <asm/x86_init.h>
++#include <asm/pat.h>
  
- #ifdef RTL8169_DEBUG
-@@ -133,6 +135,8 @@ enum mac_version {
- 	RTL_GIGA_MAC_VER_32,
- 	RTL_GIGA_MAC_VER_33,
- 	RTL_GIGA_MAC_VER_34,
-+	RTL_GIGA_MAC_VER_35,
-+	RTL_GIGA_MAC_VER_36,
- 	RTL_GIGA_MAC_NONE   = 0xff,
- };
+ #define EFI_DEBUG	1
+ #define PFX 		"EFI: "
+@@ -687,7 +688,13 @@ void __init efi_enter_virtual_mode(void)
+ 			addr = md->virt_addr;
+ 			npages = md->num_pages;
+ 			memrange_efi_to_native(&addr, &npages);
+-			set_memory_uc(addr, npages);
++			if (reserve_memtype(md->phys_addr, md->phys_addr + npages * PAGE_SIZE,
++					_PAGE_CACHE_UC_MINUS, NULL)) {
++				printk(KERN_ERR PFX "failed to reserve region as uncacheable\n");
++			} elif (_set_memory_uc(addr, npages)) {
++				printk(KERN_ERR PFX "failed to set region to uncacheable\n");
++				free_memtype(md->phys_addr, md->phys_addr + npages * PAGE_SIZE);
++			}
+ 		}
  
-@@ -218,7 +222,11 @@ static const struct {
- 	[RTL_GIGA_MAC_VER_33] =
- 		_R("RTL8168e/8111e",	RTL_TD_1, FIRMWARE_8168E_2),
- 	[RTL_GIGA_MAC_VER_34] =
--		_R("RTL8168evl/8111evl",RTL_TD_1, FIRMWARE_8168E_3)
-+		_R("RTL8168evl/8111evl",RTL_TD_1, FIRMWARE_8168E_3),
-+	[RTL_GIGA_MAC_VER_35] =
-+		_R("RTL8168f/8111f",	RTL_TD_1, FIRMWARE_8168F_1),
-+	[RTL_GIGA_MAC_VER_36] =
-+		_R("RTL8168f/8111f",	RTL_TD_1, FIRMWARE_8168F_2)
- };
- #undef _R
- 
-@@ -1200,6 +1208,19 @@ static void rtl_link_chg_patch(struct rtl8169_private *tp)
- 			     ERIAR_EXGMAC);
- 		rtl_w1w0_eri(ioaddr, 0xdc, ERIAR_MASK_0001, 0x01, 0x00,
- 			     ERIAR_EXGMAC);
-+	} else if (tp->mac_version == RTL_GIGA_MAC_VER_35 ||
-+		   tp->mac_version == RTL_GIGA_MAC_VER_36) {
-+		if (RTL_R8(PHYstatus) & _1000bpsF) {
-+			rtl_eri_write(ioaddr, 0x1bc, ERIAR_MASK_1111,
-+				      0x00000011, ERIAR_EXGMAC);
-+			rtl_eri_write(ioaddr, 0x1dc, ERIAR_MASK_1111,
-+				      0x00000005, ERIAR_EXGMAC);
-+		} else {
-+			rtl_eri_write(ioaddr, 0x1bc, ERIAR_MASK_1111,
-+				      0x0000001f, ERIAR_EXGMAC);
-+			rtl_eri_write(ioaddr, 0x1dc, ERIAR_MASK_1111,
-+				      0x0000003f, ERIAR_EXGMAC);
-+		}
- 	}
- }
- 
-@@ -1739,6 +1760,10 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
- 		u32 val;
- 		int mac_version;
- 	} mac_info[] = {
-+		/* 8168F family. */
-+		{ 0x7cf00000, 0x48100000,	RTL_GIGA_MAC_VER_36 },
-+		{ 0x7cf00000, 0x48000000,	RTL_GIGA_MAC_VER_35 },
-+
- 		/* 8168E family. */
- 		{ 0x7c800000, 0x2c800000,	RTL_GIGA_MAC_VER_34 },
- 		{ 0x7cf00000, 0x2c200000,	RTL_GIGA_MAC_VER_33 },
-@@ -2873,6 +2898,97 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-+static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	static const struct phy_reg phy_reg_init[] = {
-+		/* Channel estimation fine tune */
-+		{ 0x1f, 0x0003 },
-+		{ 0x09, 0xa20f },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Modify green table for giga & fnet */
-+		{ 0x1f, 0x0005 },
-+		{ 0x05, 0x8b55 },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b5e },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b67 },
-+		{ 0x06, 0x0000 },
-+		{ 0x05, 0x8b70 },
-+		{ 0x06, 0x0000 },
-+		{ 0x1f, 0x0000 },
-+		{ 0x1f, 0x0007 },
-+		{ 0x1e, 0x0078 },
-+		{ 0x17, 0x0000 },
-+		{ 0x19, 0x00fb },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Modify green table for 10M */
-+		{ 0x1f, 0x0005 },
-+		{ 0x05, 0x8b79 },
-+		{ 0x06, 0xaa00 },
-+		{ 0x1f, 0x0000 },
-+
-+		/* Disable hiimpedance detection (RTCT) */
-+		{ 0x1f, 0x0003 },
-+		{ 0x01, 0x328a },
-+		{ 0x1f, 0x0000 }
-+	};
-+
-+	rtl_apply_firmware(tp);
-+
-+	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
-+
-+	/* For 4-corner performance improve */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b80);
-+	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* PHY auto speed down */
-+	rtl_writephy(tp, 0x1f, 0x0007);
-+	rtl_writephy(tp, 0x1e, 0x002d);
-+	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	/* improve 10M EEE waveform */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b86);
-+	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* Improve 2-pair detection performance */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b85);
-+	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+}
-+
-+static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
-+{
-+	rtl_apply_firmware(tp);
-+
-+	/* For 4-corner performance improve */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b80);
-+	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* PHY auto speed down */
-+	rtl_writephy(tp, 0x1f, 0x0007);
-+	rtl_writephy(tp, 0x1e, 0x002d);
-+	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	/* improve 10M EEE waveform */
-+	rtl_writephy(tp, 0x1f, 0x0005);
-+	rtl_writephy(tp, 0x05, 0x8b86);
-+	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+}
-+
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -2997,6 +3113,12 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 	case RTL_GIGA_MAC_VER_34:
- 		rtl8168e_2_hw_phy_config(tp);
- 		break;
-+	case RTL_GIGA_MAC_VER_35:
-+		rtl8168f_1_hw_phy_config(tp);
-+		break;
-+	case RTL_GIGA_MAC_VER_36:
-+		rtl8168f_2_hw_phy_config(tp);
-+		break;
- 
- 	default:
- 		break;
-@@ -3522,6 +3644,8 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_32:
- 	case RTL_GIGA_MAC_VER_33:
- 	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
- 		ops->down	= r8168_pll_power_down;
- 		ops->up		= r8168_pll_power_up;
- 		break;
-@@ -3994,7 +4118,9 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
- 	    tp->mac_version == RTL_GIGA_MAC_VER_31) {
- 		while (RTL_R8(TxPoll) & NPQ)
- 			udelay(20);
--	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
-+	} else if (tp->mac_version == RTL_GIGA_MAC_VER_34 ||
-+		   tp->mac_version == RTL_GIGA_MAC_VER_35 ||
-+		   tp->mac_version == RTL_GIGA_MAC_VER_36) {
- 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
- 		while (!(RTL_R32(TxConfig) & TXCFG_EMPTY))
- 			udelay(100);
-@@ -4480,6 +4606,49 @@ static void rtl_hw_start_8168e_2(void __iomem *ioaddr, struct pci_dev *pdev)
- 	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
- }
- 
-+static void rtl_hw_start_8168f_1(void __iomem *ioaddr, struct pci_dev *pdev)
-+{
-+	static const struct ephy_info e_info_8168f_1[] = {
-+		{ 0x06, 0x00c0,	0x0020 },
-+		{ 0x08, 0x0001,	0x0002 },
-+		{ 0x09, 0x0000,	0x0080 },
-+		{ 0x19, 0x0000,	0x0224 }
-+	};
-+
-+	rtl_csi_access_enable_1(ioaddr);
-+
-+	rtl_ephy_init(ioaddr, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
-+
-+	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
-+
-+	rtl_eri_write(ioaddr, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xc8, ERIAR_MASK_1111, 0x00100002, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xe8, ERIAR_MASK_1111, 0x00100006, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0x1b0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0x1d0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xcc, ERIAR_MASK_1111, 0x00000050, ERIAR_EXGMAC);
-+	rtl_eri_write(ioaddr, 0xd0, ERIAR_MASK_1111, 0x00000060, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
-+		     ERIAR_EXGMAC);
-+
-+	RTL_W8(MaxTxPacketSize, EarlySize);
-+
-+	rtl_disable_clock_request(pdev);
-+
-+	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
-+	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
-+
-+	/* Adjust EEE LED frequency */
-+	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
-+
-+	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
-+	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
-+	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
-+}
-+
- static void rtl_hw_start_8168(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
-@@ -4574,6 +4743,11 @@ static void rtl_hw_start_8168(struct net_device *dev)
- 		rtl_hw_start_8168e_2(ioaddr, pdev);
- 		break;
- 
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
-+		rtl_hw_start_8168f_1(ioaddr, pdev);
-+		break;
-+
- 	default:
- 		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
- 			dev->name, tp->mac_version);
--- 
-1.7.6
+ 		systab = (u64) (unsigned long) efi_phys.systab;
+
 
