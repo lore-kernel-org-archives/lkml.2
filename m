@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249Ab1IAWJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:09:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50584 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932190Ab1IAWJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:09:16 -0400
-Date: Thu, 1 Sep 2011 15:09:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Satoru Moriya <smoriya@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
-        Seiji Aguchi <saguchi@redhat.com>, hughd@google.com,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
-Message-Id: <20110901150901.48d92bc2.akpm@linux-foundation.org>
-In-Reply-To: <20110901152650.7a63cb8b@annuminas.surriel.com>
-References: <20110901105208.3849a8ff@annuminas.surriel.com>
-	<20110901100650.6d884589.rdunlap@xenotime.net>
-	<20110901152650.7a63cb8b@annuminas.surriel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932304Ab1IAWJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:09:23 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58046 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932190Ab1IAWJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 18:09:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [RFC][PATCH 5/5] PM / Domains: Add default power off governor function
+Date: Fri, 2 Sep 2011 00:11:12 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
+References: <201108310017.03103.rjw@sisk.pl> <201108310022.43850.rjw@sisk.pl> <CAORVsuW7rFEN8u7RCpmWJamtG2iUbA_zz3ax4hgBjGAZW9vU=A@mail.gmail.com>
+In-Reply-To: <CAORVsuW7rFEN8u7RCpmWJamtG2iUbA_zz3ax4hgBjGAZW9vU=A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201109020011.12264.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011 15:26:50 -0400
-Rik van Riel <riel@redhat.com> wrote:
+Hi,
 
-> Add a userspace visible knob to tell the VM to keep an extra amount
-> of memory free, by increasing the gap between each zone's min and
-> low watermarks.
+On Thursday, September 01, 2011, Jean Pihet wrote:
+> Rafael,
 > 
-> This is useful for realtime applications that call system
-> calls and have a bound on the number of allocations that happen
-> in any short time period.  In this application, extra_free_kbytes
-> would be left at an amount equal to or larger than than the
-> maximum number of allocations that happen in any burst.
-> 
-> It may also be useful to reduce the memory use of virtual
-> machines (temporarily?), in a way that does not cause memory
-> fragmentation like ballooning does.
-> 
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -96,6 +96,7 @@ extern char core_pattern[];
->  extern unsigned int core_pipe_limit;
->  extern int pid_max;
->  extern int min_free_kbytes;
-> +extern int extra_free_kbytes;
+> On Wed, Aug 31, 2011 at 12:22 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Add a function deciding whether or not a given PM domain should
+> > be powered off on the basis of that domain's devices' PM QoS
+> > constraints.
+> >
+> > ---
+> >  drivers/base/power/domain_governor.c |   96 +++++++++++++++++++++++++++++++++++
+> >  include/linux/pm_domain.h            |    7 ++
+> >  2 files changed, 103 insertions(+)
+> >
+> > Index: linux/include/linux/pm_domain.h
+> > ===================================================================
+> > --- linux.orig/include/linux/pm_domain.h
+> > +++ linux/include/linux/pm_domain.h
+> > @@ -49,6 +49,10 @@ struct generic_pm_domain {
+> >        int (*start_device)(struct device *dev);
+> >        int (*stop_device)(struct device *dev);
+> >        bool (*active_wakeup)(struct device *dev);
+> > +       ktime_t power_off_latency;
+> > +       ktime_t power_on_latency;
+> > +       s64 break_even_ns;
+> > +       s64 min_delta_ns;
+> How are those values populated?
 
-No externs in C, please.  Feel free to fix min_free_kbytes while you're
-there ;)
+I'm not sure.  There are a few possible ways to do that, but I simply
+don't know which one is going to be the most useful.  That's one of
+the reasons why patches [4-5/5] are RFCs.
 
-swap.h is a common place to declare these things.  mmzone.h would make
-sense too.
+> Is there a mechanism that dynamically updates the values?
 
+Obviously not at the moment.
 
->  extern int pid_max_min, pid_max_max;
->  extern int sysctl_drop_caches;
->  extern int percpu_pagelist_fraction;
-> @@ -1189,6 +1190,14 @@ static struct ctl_table vm_table[] = {
->  		.extra1		= &zero,
->  	},
->  	{
-> +		.procname	= "extra_free_kbytes",
-> +		.data		= &extra_free_kbytes,
-> +		.maxlen		= sizeof(extra_free_kbytes),
-> +		.mode		= 0644,
-> +		.proc_handler	= min_free_kbytes_sysctl_handler,
-
-Lazy.  The function should be renamed to accurately reflect its role.
-
-> +		.extra1		= &zero,
-> +	},
-> +	{
->  		.procname	= "percpu_pagelist_fraction",
->  		.data		= &percpu_pagelist_fraction,
->  		.maxlen		= sizeof(percpu_pagelist_fraction),
->
-> ...
->
-> +int extra_free_kbytes = 0;
-
-I'm inclined to agree with checkpatch here - it's just noise.
-
-
+Thanks,
+Rafael
