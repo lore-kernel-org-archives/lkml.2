@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab1IAV53 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:57:29 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:50130
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932109Ab1IAV52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:57:28 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Sep 2011 17:57:28 EDT
-From: Mike Sterling <mike.sterling@microsoft.com>
-To: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org
-Cc: Mike Sterling <mike.sterling@microsoft.com>
-Subject: [PATCH 1/1] staging: hv: Add support for >2 TB LUN in storage driver.
-Date: Thu,  1 Sep 2011 15:11:09 -0700
-Message-Id: <1314915069-1796-1-git-send-email-mike.sterling@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1758117Ab1IAV6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:58:13 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:41355 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757961Ab1IAV6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 17:58:11 -0400
+Date: Fri, 2 Sep 2011 00:55:40 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: "Maxin B. John" <maxin.john@gmail.com>
+Cc: Amit Kucheria <amit.kucheria@verdurent.com>, devel@driverdev.osuosl.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-iio@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Bryan Freed <bfreed@chromium.org>, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH] staging: iio: light: Fix compiler warning in tsl2563.c
+Message-ID: <20110901215540.GA2430@shale.localdomain>
+References: <20110901212413.GA3371@maxin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110901212413.GA3371@maxin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a LUN larger than 2 TB is attached to a Linux VM on Hyper-V, we currently 
-report a maximum size of 2 TB. This patch resolves the issue in hv_storvsc. 
-Thanks to Robert Scheck <robert.scheck@etes.de> for reporting the issue.
+On Fri, Sep 02, 2011 at 12:24:13AM +0300, Maxin B. John wrote:
+> --- a/drivers/staging/iio/light/tsl2563.c
+> +++ b/drivers/staging/iio/light/tsl2563.c
+> @@ -225,9 +225,9 @@ static int tsl2563_read_id(struct tsl2563_chip *chip, u8 *id)
+>  
+>  	ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_ID);
+>  	if (ret < 0)
+> -		return ret;
+> +		return -EIO;
 
-Reported-by: Robert Scheck <robert.scheck@etes.de>
-Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
-Signed-off-by: K.Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hyperv_storage.h |    1 +
- drivers/staging/hv/storvsc_drv.c    |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+Don't overwrite the error code.  For example, the lower layers can
+return -EAGAIN and that's more useful than just returning -EIO every
+time.
 
-diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
-index a01f9a0..5af82f4 100644
---- a/drivers/staging/hv/hyperv_storage.h
-+++ b/drivers/staging/hv/hyperv_storage.h
-@@ -218,6 +218,7 @@ struct vstor_packet {
- #define STORVSC_MAX_LUNS_PER_TARGET			64
- #define STORVSC_MAX_TARGETS				1
- #define STORVSC_MAX_CHANNELS				1
-+#define STORVSC_MAX_CMD_LEN				16
- 
- struct hv_storvsc_request;
- 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 7effaf3..26983ac 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -701,6 +701,8 @@ static int storvsc_probe(struct hv_device *device)
- 	host->max_id = STORVSC_MAX_TARGETS;
- 	/* max # of channels */
- 	host->max_channel = STORVSC_MAX_CHANNELS - 1;
-+	/* max cmd length */
-+	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
- 
- 	/* Register the HBA and start the scsi bus scan */
- 	ret = scsi_add_host(host, &device->device);
--- 
-1.7.1
+Your fix works, but it's not very clean.  Just add a "*id = ret;"
+line before the "return 0;" and that's it.  (It doesn't make sense
+to pass a pointer to "id" and not use it).
+
+(In other words, don't make any changes to the tsl2563_probe()
+function)
+
+>  
+> -	return 0;
+> +	return ret;
+>  }
+>  
+
+regards,
+dan carpenter
 
