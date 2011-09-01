@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab1IAIse (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 04:48:34 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42359 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab1IAIsa (ORCPT
+	id S1756705Ab1IAIws (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 04:52:48 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:39074 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756497Ab1IAIwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 04:48:30 -0400
-From: WANG Cong <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        linux-cris-kernel@axis.com, linux-serial@vger.kernel.org
-Subject: [Updated PATCH] cris: lower the printk level in cris serial driver
-Date: Thu,  1 Sep 2011 16:47:49 +0800
-Message-Id: <1314866869-14717-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 1 Sep 2011 04:52:46 -0400
+Date: Thu, 1 Sep 2011 10:52:26 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Randy Dunlap <rdunlap@xenotime.net>, "Ben Dooks" <ben-linux@fluff.org>,
+        linux-doc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] i2c: remove deprecated callbacks
+Message-ID: <20110901105226.0d8dd8b2@endymion.delvare>
+In-Reply-To: <1314852027-9523-1-git-send-email-xiyou.wangcong@gmail.com>
+References: <1314852027-9523-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KERN_CRIT is too high, replace those KERN_CRIT with KERN_ERR or KERN_WARNING.
+Hi Cong,
 
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+On Thu,  1 Sep 2011 12:40:27 +0800, WANG Cong wrote:
+> i2c_driver.attach_adapter and i2c_driver.detach_adapter are deprecated
+> and scheduled to be removed in Sep 2011.
+> 
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
----
-diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
-index 225123b..9f50bdd 100644
---- a/drivers/tty/serial/crisv10.c
-+++ b/drivers/tty/serial/crisv10.c
-@@ -1788,7 +1788,7 @@ static unsigned int handle_descr_data(struct e100_serial *info,
- 	struct etrax_recv_buffer *buffer = phys_to_virt(descr->buf) - sizeof *buffer;
- 
- 	if (info->recv_cnt + recvl > 65536) {
--		printk(KERN_CRIT
-+		printk(KERN_WARNING
- 		       "%s: Too much pending incoming serial data! Dropping %u bytes.\n", __func__, recvl);
- 		return 0;
- 	}
-@@ -3813,13 +3813,13 @@ rs_close(struct tty_struct *tty, struct file * filp)
- 		 * one, we've got real problems, since it means the
- 		 * serial port won't be shutdown.
- 		 */
--		printk(KERN_CRIT
-+		printk(KERN_ERR
- 		       "rs_close: bad serial port count; tty->count is 1, "
- 		       "info->count is %d\n", info->count);
- 		info->count = 1;
- 	}
- 	if (--info->count < 0) {
--		printk(KERN_CRIT "rs_close: bad serial port count for ttyS%d: %d\n",
-+		printk(KERN_ERR "rs_close: bad serial port count for ttyS%d: %d\n",
- 		       info->line, info->count);
- 		info->count = 0;
- 	}
-@@ -4452,7 +4452,7 @@ static int __init rs_init(void)
- #if defined(CONFIG_ETRAX_RS485_ON_PA)
- 	if (cris_io_interface_allocate_pins(if_ser0, 'a', rs485_pa_bit,
- 			rs485_pa_bit)) {
--		printk(KERN_CRIT "ETRAX100LX serial: Could not allocate "
-+		printk(KERN_ERR "ETRAX100LX serial: Could not allocate "
- 			"RS485 pin\n");
- 		put_tty_driver(driver);
- 		return -EBUSY;
-@@ -4461,7 +4461,7 @@ static int __init rs_init(void)
- #if defined(CONFIG_ETRAX_RS485_ON_PORT_G)
- 	if (cris_io_interface_allocate_pins(if_ser0, 'g', rs485_pa_bit,
- 			rs485_port_g_bit)) {
--		printk(KERN_CRIT "ETRAX100LX serial: Could not allocate "
-+		printk(KERN_ERR "ETRAX100LX serial: Could not allocate "
- 			"RS485 pin\n");
- 		put_tty_driver(driver);
- 		return -EBUSY;
-@@ -4494,7 +4494,7 @@ static int __init rs_init(void)
- 		if (info->enabled) {
- 			if (cris_request_io_interface(info->io_if,
- 					info->io_if_description)) {
--				printk(KERN_CRIT "ETRAX100LX async serial: "
-+				printk(KERN_ERR "ETRAX100LX async serial: "
- 					"Could not allocate IO pins for "
- 					"%s, port %d\n",
- 					info->io_if_description, i);
+I'm not sure what you are trying to achieve here.
+
+I am obviously aware of these functions being deprecated, I am the one
+who added the entry in feature-removal-schedule.txt. And as a matter of
+fact, I have a patch ready for months now.
+
+I could understand you sending a patch if the entry had expired long
+ago, but this isn't the case: it is marked for September 2011 and you
+send a patch on September 1st. Hardly a coincidence. While there
+certainly is a benefit in people reading feature-removal-schedule.txt
+and trying to clean it up by closing old (presumably forgotten)
+entries, this doesn't apply here.
+
+Furthermore, you didn't even check if the deprecated callbacks were
+still in use. It turns out that there are 9 drivers still using one of
+them (6 macintosh drivers and 3 sound drivers) so plain removing it
+will cause build breakages. We obviously don't want to do that, so I am
+not going to apply your patch (nor mine) for now.
+
+I know that Benjamin Herrenschmidt is working on converting (some of)
+the macintosh drivers. I don't have any news for some time though. Ben,
+are you done with the conversion by now? It would be great to get it
+merged in kernel 3.2.
+
+Cong, do you have a specific interest in these callbacks being removed?
+
+If you want to help, then instead of sending a patch which I already
+have and virtually everybody could have written, please get the
+remaining 3 drivers converted to the current i2c binding model:
+  sound/ppc/keywest.c
+  sound/aoa/codecs/onyx.c
+  sound/aoa/codecs/tas.c
+THAT would be helpful. At the moment, it only looks like you are trying
+to get your name on a trivial patch, i.e. getting credit for work you
+didn't really do.
+
+> 
+> ---
+> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> index c4a6e14..89a9695 100644
+> --- a/Documentation/feature-removal-schedule.txt
+> +++ b/Documentation/feature-removal-schedule.txt
+> @@ -486,15 +486,6 @@ Files:	include/linux/netfilter_ipv4/ipt_addrtype.h
+>  
+>  ----------------------------
+>  
+> -What:	i2c_driver.attach_adapter
+> -	i2c_driver.detach_adapter
+> -When:	September 2011
+> -Why:	These legacy callbacks should no longer be used as i2c-core offers
+> -	a variety of preferable alternative ways to instantiate I2C devices.
+> -Who:	Jean Delvare <khali@linux-fr.org>
+> -
+> -----------------------------
+> -
+> (...)
+
+-- 
+Jean Delvare
