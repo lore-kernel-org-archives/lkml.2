@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab1IAWBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:01:47 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:47577 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932082Ab1IAWBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:01:46 -0400
-Message-ID: <4E6000C4.7030007@linux.vnet.ibm.com>
-Date: Thu, 01 Sep 2011 17:01:40 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, ngupta@vflare.org, cascardo@holoscopio.com,
-        rdunlap@xenotime.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] staging: zcache: xcfmalloc support
-References: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com> <6e0e7950-0c91-4bb3-929b-3853fa95e63d@default 4E5EB066.6020007@linux.vnet.ibm.com> <36dad993-ea60-43f4-89f0-77831befd483@default> <4E5FB3CF.3020703@linux.vnet.ibm.com> <1314896087.13161.30.camel@nimitz>
-In-Reply-To: <1314896087.13161.30.camel@nimitz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932275Ab1IAWCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:02:09 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42021 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200Ab1IAWCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 18:02:07 -0400
+Subject: Re: [BUG] scsi: hpsa: how to destroy your files
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jon Mason <mason@myri.com>
+Cc: scameron@beardog.cce.hp.com, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-pci@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+In-Reply-To: <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
+References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
+	 <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20110901160724.GN9189@beardog.cce.hp.com>
+	 <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
+	 <1314903038.3067.27.camel@dabdike>
+	 <20110901125938.7cb1da85@jbarnes-desktop>
+	 <20110901200349.GO9189@beardog.cce.hp.com>
+	 <20110901130930.5caec2d4@jbarnes-desktop>
+	 <20110901204419.GY8422@beardog.cce.hp.com>
+	 <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 00:01:58 +0200
+Message-ID: <1314914518.3036.3.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2011 11:54 AM, Dave Hansen wrote:
-> On Thu, 2011-09-01 at 11:33 -0500, Seth Jennings wrote:
->> xcfmalloc is also 0(1) in that the number of freelists
->> at that have to be checked is constant and not increasing
->> with the number of allocations.  The constant hidden
->> in the O(1) for finding a suitable block is NUM_FREELISTS.
-> 
-> The algorithm is technically O(n^2) since there are
-> XCF_MAX_BLOCKS_PER_ALLOC searches through XCF_NUM_FREELISTS.  There's
-> also the reserved pages refill loop, which is linear too.
+Le jeudi 01 septembre 2011 à 16:50 -0500, Jon Mason a écrit :
+
+> I believe modifying the MRRS values is what is causing the issues.
+> Can you try the attached patch and verify that it also resolves the
+> issue?
 > 
 
-I was seeing n as the number of allocations.  Since 
-XCF_MAX_BLOCKS_PER_ALLOC and XCF_NUM_FREELISTS are constant (i.e.
-not increasing with the number of allocations) wouldn't it be
-O(1)?
+Its midnight here, I'll try this in ~7 hours
 
-I see it like this:
+Thanks
 
-for (i=0; i<2; i++) {
-	do_something();
-}
-
-vs.
-
-do_something();
-do_something();
-
-Is one O(n) and the other O(1)?  They do the same thing because the
-loop iterates a constant number of times.
-
-For it to be O(n) it would have to be:
-
-for (i=0; i<n; i++) {
-	do_something();
-}
-
-Right?
-
-> xcfmalloc's big compromise is that it doesn't do any searching or
-> fitting.  It might needlessly split larger blocks when two small ones
-> would have worked, for instance.
-
-Splitting a larger block is the last option.  I might not
-be understanding you correctly, but find_remove_block() does try to
-find the optimal block to use, which is "searching and fitting" in my
-mind.
-
-> 
-> -- Dave
-> 
 
