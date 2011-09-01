@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab1IAR7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:59:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756663Ab1IAR7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:59:44 -0400
-Date: Thu, 1 Sep 2011 13:59:27 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Allison Henderson <achender@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: Re: lock i_mutex for fallocate?
-Message-ID: <20110901175926.GC29299@dhcp231-156.rdu.redhat.com>
-References: <4E5ED2D5.8040302@linux.vnet.ibm.com> <4E5EDBE4.8010604@linux.vnet.ibm.com>
+	id S1757039Ab1IASIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 14:08:19 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34964 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756100Ab1IASIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 14:08:18 -0400
+Date: Thu, 1 Sep 2011 19:07:53 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Ming Lei <ming.lei@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH 0/3] RFC: addition to DMA API
+Message-ID: <20110901180753.GB15814@n2100.arm.linux.org.uk>
+References: <CACVXFVOT9FZexiZhuJtvyFP8qOPYUKg0JqGarBJgT4R8SN7p5Q@mail.gmail.com> <Pine.LNX.4.44L0.1109011127080.1896-100000@iolanthe.rowland.org> <20110901160429.GA15814@n2100.arm.linux.org.uk> <20110901173149.GE2803@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E5EDBE4.8010604@linux.vnet.ibm.com>
+In-Reply-To: <20110901173149.GE2803@e102144-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 06:12:04PM -0700, Allison Henderson wrote:
-> Oh, I meant for this to go to linux-fsdevel instead of linux-kernel, but  
-> all feedback is welcome!  :)
->
-> On 08/31/2011 05:33 PM, Allison Henderson wrote:
->> Hi All,
->>
->> In ext4 punch hole, we realized that the punch hole operation needs to
->> be done under i_mutex just like truncate. i_mutex for truncate is held
->> in the vfs layer, so we dont need to lock it at the file system layer,
->> but vfs does not lock i_mutex for fallocate. We can lock i_mutex for
->> fallocate at the fs layer, but question was raised then: should i_mutex
->> for fallocate be held in the vfs layer instead? I do not know if other
->> file systems need i_mutex to be locked for fallocate, or if they might
->> be locking it already, so I am doing some investigating on this idea,
->> and also the appropriate use of i_mutex in general. Can someone provide
->> some insight this topic? Thx!
->>
+On Thu, Sep 01, 2011 at 06:31:49PM +0100, Will Deacon wrote:
+> Given that I believe our coherent DMA memory is `cacheable, bufferable, do
+> not allocate' in terms of AXI attributes, then writes will go straight to
+> the write buffer on the PL310.
 
-Btrfs has range locking for our extents, so we don't really need to be holding
-the i_mutex, even tho it appears we do it anyway.  So I'd rather this not be
-moved to VFS for us who can do more fine grained locking.  Thanks,
+It's TEXCB=001, which due to the PRRR and NMRR registers is memory type
+10, inner policy 00 outer policy 00, which translated means (as I said)
+"Normal memory", "non-cacheable" at both the inner and outer levels.
 
-Josef
+How that gets translated to AXI attributes is outside the scope of the
+ARM ARM, it's probably in some mega secret AXI document somewhere which
+I don't have access to.
