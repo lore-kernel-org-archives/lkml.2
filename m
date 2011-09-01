@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab1IAQTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:19:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46461 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932632Ab1IAQTK (ORCPT
+	id S932654Ab1IAQT0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:19:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47725 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750786Ab1IAQTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:19:10 -0400
-Date: Thu, 1 Sep 2011 13:19:00 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de, anton@samba.org
-Subject: Re: [PATCH] perf tool: fix endianness handling of u32 data in samples
-Message-ID: <20110901161900.GB15984@ghostprotocols.net>
-References: <1314654924-13071-1-git-send-email-dsahern@gmail.com>
+	Thu, 1 Sep 2011 12:19:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1314654924-13071-1-git-send-email-dsahern@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E5FA18A.7010205@gmail.com>
+References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com>
+ <20110812195220.GA29051@elte.hu> <20110814095910.GA18809@liondog.tnic>
+ <6296.1313462075@turing-police.cc.vt.edu> <20110816121604.GA29251@aftab> <4E5FA18A.7010205@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 1 Sep 2011 09:18:32 -0700
+Message-ID: <CA+55aFz1RRY6KcqVVZ9tBH7PDXfBwkZ1AhJcSHPABLXMkNJCOA@mail.gmail.com>
+Subject: Re: x86 memcpy performance
+To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
+        melwyn lobo <linux.melwyn@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 29, 2011 at 03:55:24PM -0600, David Ahern escreveu:
-> Currently, analyzing PPC data files on x86 the cpu field is always 0 and
-> the tid and pid are backwards. For example, analyzing a PPC file on PPC
-> the pid/tid fields show:
->         rsyslogd  1210/1212
-> 
-> and analyzing the same PPC file using an x86 perf binary shows:
->         rsyslogd  1212/1210
-> 
-> The problem is that the swap_op method for samples is
-> perf_event__all64_swap which assumes all elements in the sample_data
-> struct are u64s. cpu, tid and pid are u32s and need to be handled
-> individually. Given that the swap is done before the sample is parsed,
-> the simplest solution is to undo the 64-bit swap of those elements when
-> the sample is parsed and do the proper swap.
-> 
-> The RAW data field is generic and perf cannot have programmatic knowledge
-> of how to treat that data. Instead a warning is given to the user.
-> 
-> Thanks to Anton Blanchard for providing a data file for a mult-CPU
-> PPC system so I could verify the fix for the CPU fields.
-> 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
+On Thu, Sep 1, 2011 at 8:15 AM, Maarten Lankhorst
+<m.b.lankhorst@gmail.com> wrote:
+>
+> This work intrigued me, in some cases kernel memcpy was a lot faster than sse memcpy,
+> and I finally figured out why. I also extended the test to an optimized avx memcpy,
+> but I think the kernel memcpy will always win in the aligned case.
 
-cc1: warnings being treated as errors
-util/evsel.c: In function ‘perf_event__parse_sample’:
-util/evsel.c:379: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:375: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:375: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:371: note: initialized from here
-util/evsel.c:376: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
-util/evsel.c:376: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
-util/evsel.c:376: note: initialized from here
-util/evsel.c:380: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
-util/evsel.c:380: note: initialized from here
-util/evsel.c:414: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:412: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:408: note: initialized from here
-util/evsel.c:462: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:450: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:450: error: dereferencing pointer ‘p’ does break strict-aliasing rules
-util/evsel.c:444: note: initialized from here
-util/evsel.c:451: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
-util/evsel.c:451: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
-util/evsel.c:451: note: initialized from here
-    CC /home/acme/git/build/perf//util/symbol.o
-make: *** [/home/acme/git/build/perf//util/evsel.o] Error 1
-make: *** Waiting for unfinished jobs....
-make: Leaving directory `/home/acme/git/linux/tools/perf'
-[acme@emilia linux]$
+"rep movs" is generally optimized in microcode on most modern Intel
+CPU's for some easyish cases, and it will outperform just about
+anything.
 
-[acme@emilia linux]$ uname -a
-Linux emilia.ghostprotocols.net 3.0.3-rt12.14.el6rt.x86_64 #1 SMP PREEMPT RT Wed Aug 31 12:38:53 BRT 2011 x86_64 x86_64 x86_64 GNU/Linux
-[acme@emilia linux]$ cat /etc/redhat-release 
-Red Hat Enterprise Linux release 6.0 Beta (Santiago)
-[acme@emilia linux]$
+Atom is a notable exception, but if you expect performance on any
+general loads from Atom, you need to get your head examined. Atom is a
+disaster for anything but tuned loops.
 
-- Arnaldo
+The "easyish cases" depend on microarchitecture. They are improving,
+so long-term "rep movs" is the best way regardless, but for most
+current ones it's something like "source aligned to 8 bytes *and*
+source and destination are equal "mod 64"".
+
+And that's true in a lot of common situations. It's true for the page
+copy, for example, and it's often true for big user "read()/write()"
+calls (but "often" may not be "often enough" - high-performance
+userland should strive to align read/write buffers to 64 bytes, for
+example).
+
+Many other cases of "memcpy()" are the fairly small, constant-sized
+ones, where the optimal strategy tends to be "move words by hand".
+
+                      Linus
