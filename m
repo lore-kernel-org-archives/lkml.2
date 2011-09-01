@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab1IAVdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:33:09 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18355 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758039Ab1IAVdH convert rfc822-to-8bit (ORCPT
+	id S1758083Ab1IAVdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:33:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37148 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758062Ab1IAVdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:33:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 01 Sep 2011 14:33:03 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>, Barry Song <21cnbao@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Thu, 1 Sep 2011 14:33:01 -0700
-Subject: RE: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
-Thread-Topic: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
-Thread-Index: Acxoij7VLNoLXj7FTUaCd1s4AqOSYQAY69zA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B327A40C@HQMAIL01.nvidia.com>
-References: <1314869552-5531-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1314869552-5531-1-git-send-email-linus.walleij@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 1 Sep 2011 17:33:44 -0400
+Date: Thu, 1 Sep 2011 14:33:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <dchinner@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
+ del_timer
+Message-Id: <20110901143333.51baf4ae.akpm@linux-foundation.org>
+In-Reply-To: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
+References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Thursday, September 01, 2011 3:33 AM:
-> This adds a driver for the U300 pinmux portions of the system
-> controller "SYSCON". It also serves as an example of how to use
-> the pinmux subsystem. This driver also houses the platform data
-> for the only supported platform.
+On Thu,  1 Sep 2011 21:27:02 +0530
+Kautuk Consul <consul.kautuk@gmail.com> wrote:
 
-> diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinmux-u300.c
+> This is important for SMP scenario, to check whether the timer
+> callback is executing on another CPU when we are deleting the
+> timer.
+> 
 
-> +/*
-> + * We define explicit indexes of the groups since these will be
-> + * referenced in the pinmuxes below.
-> + */
-> +#define POWERGRP_INDEX 0
-> +#define UART0GRP_INDEX 1
-> +#define MMC0GRP_INDEX 2
-> +#define SPI0GRP_INDEX 3
-> +
-> +static const struct u300_pin_group u300_pin_groups[] = {
-> +	[POWERGRP_INDEX] = {
-> +		.name = "powergrp",
-> +		.pins = power_pins,
-> +		.num_pins = ARRAY_SIZE(power_pins),
-> +	},
-...
-> +/**
-> + * struct u300_pmx_func - describes U300 pinmux functions
-> + * @name: the name of this specific function
-> + * @groups: corresponding pin groups
-> + * @onmask: bits to set to enable this when doing pin muxing
-> + */
-> +struct u300_pmx_func {
-> +	const char *name;
-> +	const unsigned groups[1];
-> +	const struct u300_pmx_mask *mask;
-> +};
-> +
-> +static const struct u300_pmx_func u300_pmx_functions[] = {
-> +	{
-> +		.name = "power",
-> +		.groups = { POWERGRP_INDEX },
-> +		/* Mask is N/A */
-> +	},
+I don't see why?
 
-Hmmm. That's a lot of _INDEX defines that'd need to be set up, at least
-to fully represent a chip like Tegra. Can the pinmux core be modified
-such that the group list is an array of names (char*) rather than the
-actual numeric IDs of the groups? Still, perhaps we could use the enum
-we already have for this, so perhaps it isn't a big deal...
+> index d6edf8d..754b35a 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -385,7 +385,7 @@ static int bdi_forker_thread(void *ptr)
+>  		 * dirty data on the default backing_dev_info
+>  		 */
+>  		if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list)) {
+> -			del_timer(&me->wakeup_timer);
+> +			del_timer_sync(&me->wakeup_timer);
+>  			wb_do_writeback(me, 0);
+>  		}
 
--- 
-nvpublic
+It isn't a use-after-free fix: bdi_unregister() safely shoots down any
+running timer.
 
+Please completely explain what you believe the problem is here.
