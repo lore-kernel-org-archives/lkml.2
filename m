@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab1IAWMr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:12:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58085 "EHLO ogre.sisk.pl"
+	id S932238Ab1IAWPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:15:46 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:35851 "EHLO ja.ssi.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202Ab1IAWMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:12:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jean Pihet <jean.pihet@newoldbits.com>
-Subject: Re: [PATCH 0/5] PM: Generic PM domains and device PM QoS
-Date: Fri, 2 Sep 2011 00:14:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
-References: <201108310017.03103.rjw@sisk.pl> <CAORVsuVJEbLRXLuQFUh3_rDf+DfNFpOhEuBr33SRKqxBos=6Bw@mail.gmail.com>
-In-Reply-To: <CAORVsuVJEbLRXLuQFUh3_rDf+DfNFpOhEuBr33SRKqxBos=6Bw@mail.gmail.com>
+	id S932082Ab1IAWPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 18:15:45 -0400
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Sep 2011 18:15:44 EDT
+Date: Fri, 2 Sep 2011 01:14:59 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: Jeff Harris <jeff_harris@kentrox.com>
+cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: Prefer non link-local source addresses
+In-Reply-To: <1314908454-14359-1-git-send-email-jeff_harris@kentrox.com>
+Message-ID: <alpine.LFD.2.00.1109020041140.1799@ja.ssi.bg>
+References: <1314908454-14359-1-git-send-email-jeff_harris@kentrox.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109020014.39027.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Thursday, September 01, 2011, Jean Pihet wrote:
-> Rafael,
+	Hello,
+
+On Thu, 1 Sep 2011, Jeff Harris wrote:
+
+> Section 2.6.1 of RFC 3927 specifies that if link-local and routable addresses
+> are available on an interface, a routable address is preferred.  Update the
+> IPv4 source address selection algorithm to use a 169.254.x.x address only if
+> another matching address is not found.
 > 
-> On Wed, Aug 31, 2011 at 12:17 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Hi,
-> >
-> > This patchset illustrates how device PM QoS may be used along with
-> > PM domains in my view.
-> >
-> > Actually, it consists of two parts.  Namely, patches [1-3/5] seem to be
-> > suitable for 3.2, unless somebody hates them,
-> The patches [1-3/5] are ok (reviewed only) excepted some remarks I have.
+> Tested combinations of configured IP addresses with and without link-local to
+> verify a link-local address was chosen only if no routable address was
+> present.
 
-OK, thanks for the comments.
+	As David Lamparter already said, isn't the scope value
+suitable for this purpose? Eg.
+ip addr add 169.254.5.5/16 brd + dev eth0 scope link
 
-> > but patches [4-5/5] are
-> > total RFC.  They haven't been tested, only compiled, so the use of them
-> > is not encouraged (they may kill your dog or make your cat go wild, or
-> > do something equally nasty, so beware).
-> That looks like a disclaimer ;p
+	iproute2 already has function default_scope() in
+ip/ipaddress.c that assigns scope if it is not specified
+while adding address. May be we can add RT_SCOPE_LINK for
+169.254 there?
+
+	Another such place is inet_set_ifa() in
+net/ipv4/devinet.c where we can assign scope, so that
+ifconfig works too.
+
+	I see also that net/ipv6/addrconf.c (sit_add_v4_addrs)
+avoids link-local addresses. What I mean is that the scope
+can be checked at many places and it is a mechanism that
+already works.
+
+	As result, we will not complicate inet_select_addr.
+
+> Signed-off-by: Jeff Harris <jeff_harris@kentrox.com>
+> ---
+>  net/ipv4/devinet.c |   18 ++++++++++++++++--
+>  1 files changed, 16 insertions(+), 2 deletions(-)
 > 
-> > Their purpose is to illustrate
-> > an idea that I'd like to discuss at the PM miniconference during the
-> > LPC.
-> There is some code for OMAP that dynamically updates the worst case
-> values for devices activation and de-activation;
-> cf._omap_device_activate and _omap_device_deactivate in
-> arch/arm/plat-omap/omap_device.c. The idea is to start with reference
-> figures (worst case measured on board) at boot and then update the
-> worst case values at runtime.
-> Based on the PM QoS values and the worst case latency values the next
-> power domains states can be determined. Unfortunately this is not
-> (yet) implemented.
+> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+> index bc19bd0..70ddf37 100644
+> --- a/net/ipv4/devinet.c
+> +++ b/net/ipv4/devinet.c
+> @@ -965,6 +965,8 @@ out:
+>  __be32 inet_select_addr(const struct net_device *dev, __be32 dst, int scope)
+>  {
+>  	__be32 addr = 0;
+> +	__be32 lladdr = 0;
+> +	__be32 firstaddr = 0;
+>  	struct in_device *in_dev;
+>  	struct net *net = dev_net(dev);
+>  
+> @@ -977,15 +979,27 @@ __be32 inet_select_addr(const struct net_device *dev, __be32 dst, int scope)
+>  		if (ifa->ifa_scope > scope)
+>  			continue;
+>  		if (!dst || inet_ifa_match(dst, ifa)) {
+> +			if (ipv4_is_linklocal_169(ifa->ifa_address)) {
+> +				lladdr = ifa->ifa_local;
+> +				continue;
+> +			}
+>  			addr = ifa->ifa_local;
+>  			break;
+>  		}
+> -		if (!addr)
+> -			addr = ifa->ifa_local;
+> +		if (!firstaddr)
+> +			firstaddr = ifa->ifa_local;
+>  	} endfor_ifa(in_dev);
+>  
+>  	if (addr)
+>  		goto out_unlock;
+> +	if (lladdr) {
+> +		addr = lladdr;
+> +		goto out_unlock;
+> +	}
+> +	if (firstaddr) {
+> +		addr = firstaddr;
+> +		goto out_unlock;
+> +	}
+>  no_in_dev:
+>  
+>  	/* Not loopback addresses on loopback should be preferred
+> -- 
+> 1.7.0.5
 
-I thought about that too, but I'd like to discuss the basic idea first.
+Regards
 
-> I am wondering if the patches [4-5/5] are meant to replace the OMAP
-> code, which would be really nice.
-
-I certainly hope they will be useful for multiple platforms.  Whether
-or not OMAP turns out to be one of them I can't tell at the moment.
-
-Thanks,
-Rafael
+--
+Julian Anastasov <ja@ssi.bg>
