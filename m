@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab1IANBS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 09:01:18 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:10485 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab1IANBQ convert rfc822-to-8bit (ORCPT
+	id S932333Ab1IANBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 09:01:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:37970 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932107Ab1IANBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 09:01:16 -0400
-Date: Thu, 1 Sep 2011 15:01:05 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: =?ISO-8859-1?B?QW3pcmljbw==?= Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Ben Dooks <ben-linux@fluff.org>,
-        linux-doc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] i2c: remove deprecated callbacks
-Message-ID: <20110901150105.31111b67@endymion.delvare>
-In-Reply-To: <CAM_iQpVGO6Jfcdy4wWN7O-ZpTha2SbfK6xeaf8g9DRGuh=xcbg@mail.gmail.com>
-References: <1314852027-9523-1-git-send-email-xiyou.wangcong@gmail.com>
-	<20110901105226.0d8dd8b2@endymion.delvare>
-	<CAM_iQpVGO6Jfcdy4wWN7O-ZpTha2SbfK6xeaf8g9DRGuh=xcbg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Sep 2011 09:01:51 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/573cIAAn5S75c/Ca7MonDDszdxAHDISiAyLiYkf
+	tdYg/guyyZQpsS
+Message-ID: <4E5F823C.9000200@gmx.de>
+Date: Thu, 01 Sep 2011 13:01:48 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH RESEND] video: mxsfb: add missing include of linux/module.h
+References: <1314835919.2208.1.camel@phoenix>
+In-Reply-To: <1314835919.2208.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011 17:12:00 +0800, Américo Wang wrote:
-> On Thu, Sep 1, 2011 at 4:52 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> > Furthermore, you didn't even check if the deprecated callbacks were
-> > still in use. It turns out that there are 9 drivers still using one of
-> > them (6 macintosh drivers and 3 sound drivers) so plain removing it
-> > will cause build breakages. We obviously don't want to do that, so I am
-> > not going to apply your patch (nor mine) for now.
+On 09/01/2011 12:11 AM, Axel Lin wrote:
+> Include linux/module.h to fix below build error:
 > 
-> Hmm, sorry that I didn't know this, maybe we can defer the removal
-> of these callbacks?
-
-We have to, obviously. And given that this is 50% of the patch, there's
-little point in applying the rest now.
-
-> > (...)
-> > If you want to help, then instead of sending a patch which I already
-> > have and virtually everybody could have written, please get the
-> > remaining 3 drivers converted to the current i2c binding model:
-> >  sound/ppc/keywest.c
-> >  sound/aoa/codecs/onyx.c
-> >  sound/aoa/codecs/tas.c
+>                  from drivers/video/mxsfb.c:42:
+> arch/arm/mach-mxs/include/mach/memory.h:22:1: warning: this is the location of the previous definition
+> drivers/video/mxsfb.c:574: error: 'THIS_MODULE' undeclared here (not in a function)
+> drivers/video/mxsfb.c:893: warning: data definition has no type or storage class
+> drivers/video/mxsfb.c:893: warning: type defaults to 'int' in declaration of 'MODULE_DEVICE_TABLE'
+> drivers/video/mxsfb.c:893: warning: parameter names (without types) in function declaration
+> drivers/video/mxsfb.c:917: error: expected declaration specifiers or '...' before string constant
+> drivers/video/mxsfb.c:917: warning: data definition has no type or storage class
+> drivers/video/mxsfb.c:917: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+> drivers/video/mxsfb.c:917: warning: function declaration isn't a prototype
+> drivers/video/mxsfb.c:918: error: expected declaration specifiers or '...' before string constant
+> drivers/video/mxsfb.c:918: warning: data definition has no type or storage class
+> drivers/video/mxsfb.c:918: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+> drivers/video/mxsfb.c:918: warning: function declaration isn't a prototype
+> drivers/video/mxsfb.c:919: error: expected declaration specifiers or '...' before string constant
+> drivers/video/mxsfb.c:919: warning: data definition has no type or storage class
+> drivers/video/mxsfb.c:919: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+> drivers/video/mxsfb.c:919: warning: function declaration isn't a prototype
+> make[2]: *** [drivers/video/mxsfb.o] Error 1
+> make[1]: *** [drivers/video] Error 2
+> make: *** [drivers] Error 2
 > 
-> Sure, if I can... so how do we convert them? Any examples?
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-If it was trivial, someone would have done it already... I converted
-most drivers a couple years ago, but the remaining ones only run on
-systems I don't have and converting them properly would take intimate
-knowledge of the systems in question and preferably actual hardware for
-testing.
+Applied.
 
-You can read the possible replacements for the current deprecated
-implementations:
-  Documentation/i2c/instantiating-devices
 
-At the moment I am essentially waiting to see when Ben is headed, as
-hopefully the sound drivers can follow the same path. If you want to
-help Ben with code review or testing (if you can) this would be great.
+Thanks,
 
--- 
-Jean Delvare
+Florian Tobias Schandinat
+
+> ---
+>  drivers/video/mxsfb.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+> index 0b2f2dd..d837d63 100644
+> --- a/drivers/video/mxsfb.c
+> +++ b/drivers/video/mxsfb.c
+> @@ -39,6 +39,7 @@
+>   * the required value in the imx_fb_videomode structure.
+>   */
+>  
+> +#include <linux/module.h>
+>  #include <linux/kernel.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/clk.h>
+
