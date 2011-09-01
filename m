@@ -1,75 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab1IAGCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 02:02:39 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:53123 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab1IAGCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 02:02:35 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p8162SIh013342, This message is released by code: ctlocs8528
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1314807479-1552-1-git-send-email-hayeswang@realtek.com> <20110831191344.GA24634@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH net-next 1/3] r8169: fix WOL setting for 8105 and 8111EVL
-Date: Thu, 1 Sep 2011 14:02:28 +0800
-X-BOX-Message-Id: p8162SIh013342
-Message-ID: <89F823C255D94E19BB78C69C1996025C@realtek.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S1753932Ab1IAGCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 02:02:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33403 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753773Ab1IAGCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 02:02:41 -0400
+Subject: Re: [PATCH 3/7] serial/8250: move UPIO_TSI to powerpc
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linuxppc-dev@lists.ozlabs.org,
+        linux-serial@vger.kernel.org
+In-Reply-To: <1309211120-2803-4-git-send-email-arnd@arndb.de>
+References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
+	 <1309211120-2803-4-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Sep 2011 16:02:06 +1000
+Message-ID: <1314856926.4145.12.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcxoFKPFq0QFeNFwS3aDttbDyVA/SgAWAWGw
-In-Reply-To: <20110831191344.GA24634@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Mon, 2011-06-27 at 23:45 +0200, Arnd Bergmann wrote:
+> This iotype is only used by the legacy_serial code in powerpc, so the
+> code should live there, rather than be compiled in for every 8250
+> driver.
 
-> -----Original Message-----
-> From: Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Thursday, September 01, 2011 3:14 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH net-next 1/3] r8169: fix WOL setting for 
-> 8105 and 8111EVL
-> 
-> Hayes Wang <hayeswang@realtek.com> :
-> > 8105, 8111E, and 8111EVL need enable RxConfig bit 1 ~ 3 for 
-> supporting 
-> > wake on lan.
-> [...]
-> > diff --git a/drivers/net/ethernet/realtek/r8169.c 
-> > b/drivers/net/ethernet/realtek/r8169.c
-> > index 1cf8c3c..96e003a 100644
-> > --- a/drivers/net/ethernet/realtek/r8169.c
-> > +++ b/drivers/net/ethernet/realtek/r8169.c
-> > @@ -3416,8 +3416,11 @@ static void 
-> r8168_pll_power_down(struct rtl8169_private *tp)
-> >  		rtl_writephy(tp, 0x1f, 0x0000);
-> >  		rtl_writephy(tp, MII_BMCR, 0x0000);
-> >  
-> > -		if (tp->mac_version == RTL_GIGA_MAC_VER_32 ||
-> > -		    tp->mac_version == RTL_GIGA_MAC_VER_33)
-> > +		if (tp->mac_version == RTL_GIGA_MAC_VER_29 ||
-> > +		    tp->mac_version == RTL_GIGA_MAC_VER_30 ||
-> > +		    tp->mac_version == RTL_GIGA_MAC_VER_32 ||
-> > +		    tp->mac_version == RTL_GIGA_MAC_VER_33 ||
-> > +		    tp->mac_version == RTL_GIGA_MAC_VER_34)
-> >  			RTL_W32(RxConfig, RTL_R32(RxConfig) | 
-> AcceptBroadcast |
-> >  				AcceptMulticast | AcceptMyPhys);
-> 
-> Fine for RTL_GIGA_MAC_VER_34 but RTL_GIGA_MAC_VER_29 and 
-> RTL_GIGA_MAC_VER_29 use r810x_pll_power_{up/down}, not their 
-> r8168_pll_xyz siblings.
-> 
+Obviously untested :-)
 
-I would fix it. Thanks.
- 
-Best Regards,
-Hayes
+Misses the definition of UART_IIR etc...
+
+I'm committing a fixed version in my tree
+
+Cheers.
+Ben.
+
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: linux-serial@vger.kernel.org
+> ---
+>  arch/powerpc/kernel/legacy_serial.c |   24 ++++++++++++++++++++++++
+>  drivers/tty/serial/8250.c           |   23 -----------------------
+>  2 files changed, 24 insertions(+), 23 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
+> index 2b97b80..b229e1e 100644
+> --- a/arch/powerpc/kernel/legacy_serial.c
+> +++ b/arch/powerpc/kernel/legacy_serial.c
+> @@ -47,6 +47,24 @@ static struct __initdata of_device_id legacy_serial_parents[] = {
+>  static unsigned int legacy_serial_count;
+>  static int legacy_serial_console = -1;
+>  
+> +static unsigned int tsi_serial_in(struct uart_port *p, int offset)
+> +{
+> +	unsigned int tmp;
+> +	offset = offset << p->regshift;
+> +	if (offset == UART_IIR) {
+> +		tmp = readl(p->membase + (UART_IIR & ~3));
+> +		return (tmp >> 16) & 0xff; /* UART_IIR % 4 == 2 */
+> +	} else
+> +		return readb(p->membase + offset);
+> +}
+> +
+> +static void tsi_serial_out(struct uart_port *p, int offset, int value)
+> +{
+> +	offset = offset << p->regshift;
+> +	if (!((offset == UART_IER) && (value & UART_IER_UUE)))
+> +		writeb(value, p->membase + offset);
+> +}
+> +
+>  static int __init add_legacy_port(struct device_node *np, int want_index,
+>  				  int iotype, phys_addr_t base,
+>  				  phys_addr_t taddr, unsigned long irq,
+> @@ -102,6 +120,7 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
+>  		legacy_serial_ports[index].iobase = base;
+>  	else
+>  		legacy_serial_ports[index].mapbase = base;
+> +
+>  	legacy_serial_ports[index].iotype = iotype;
+>  	legacy_serial_ports[index].uartclk = clock;
+>  	legacy_serial_ports[index].irq = irq;
+> @@ -112,6 +131,11 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
+>  	legacy_serial_infos[index].speed = spd ? be32_to_cpup(spd) : 0;
+>  	legacy_serial_infos[index].irq_check_parent = irq_check_parent;
+>  
+> +	if (iotype == UPIO_TSI) {
+> +		legacy_serial_ports[index].serial_in = tsi_serial_in;
+> +		legacy_serial_ports[index].serial_out = tsi_serial_out;
+> +	}
+> +
+>  	printk(KERN_DEBUG "Found legacy serial port %d for %s\n",
+>  	       index, np->full_name);
+>  	printk(KERN_DEBUG "  %s=%llx, taddr=%llx, irq=%lx, clk=%d, speed=%d\n",
+> diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+> index c8f107e..d575ccb 100644
+> --- a/drivers/tty/serial/8250.c
+> +++ b/drivers/tty/serial/8250.c
+> @@ -345,24 +345,6 @@ static unsigned int mem32_serial_in(struct uart_port *p, int offset)
+>  	return readl(p->membase + offset);
+>  }
+>  
+> -static unsigned int tsi_serial_in(struct uart_port *p, int offset)
+> -{
+> -	unsigned int tmp;
+> -	offset = map_8250_in_reg(p, offset) << p->regshift;
+> -	if (offset == UART_IIR) {
+> -		tmp = readl(p->membase + (UART_IIR & ~3));
+> -		return (tmp >> 16) & 0xff; /* UART_IIR % 4 == 2 */
+> -	} else
+> -		return readb(p->membase + offset);
+> -}
+> -
+> -static void tsi_serial_out(struct uart_port *p, int offset, int value)
+> -{
+> -	offset = map_8250_out_reg(p, offset) << p->regshift;
+> -	if (!((offset == UART_IER) && (value & UART_IER_UUE)))
+> -		writeb(value, p->membase + offset);
+> -}
+> -
+>  /* Save the LCR value so it can be re-written when a Busy Detect IRQ occurs. */
+>  static inline void dwapb_save_out_value(struct uart_port *p, int offset,
+>  					int value)
+> @@ -431,11 +413,6 @@ static void set_io_from_upio(struct uart_port *p)
+>  		p->serial_out = mem32_serial_out;
+>  		break;
+>  
+> -	case UPIO_TSI:
+> -		p->serial_in = tsi_serial_in;
+> -		p->serial_out = tsi_serial_out;
+> -		break;
+> -
+>  	case UPIO_DWAPB:
+>  		p->serial_in = mem_serial_in;
+>  		p->serial_out = dwapb_serial_out;
+
 
