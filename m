@@ -1,141 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371Ab1IAPNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 11:13:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45900 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab1IAPNq convert rfc822-to-8bit (ORCPT
+	id S932416Ab1IAPN6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 11:13:58 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:49645 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab1IAPN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 11:13:46 -0400
+	Thu, 1 Sep 2011 11:13:57 -0400
+Date: Thu, 1 Sep 2011 23:13:53 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: nmav@gnutls.org, cryptodev-linux-devel@gna.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: comparison of the AF_ALG interface with the /dev/crypto
+Message-ID: <20110901151352.GA32055@gondor.apana.org.au>
+References: <20110901133952.GB14522@orbit.nwl.cc> <20110901141445.GA31447@gondor.apana.org.au> <20110901150928.GC14522@orbit.nwl.cc>
 MIME-Version: 1.0
-X-Originating-IP: [87.66.92.201]
-In-Reply-To: <201108310021.13800.rjw@sisk.pl>
-References: <201108310017.03103.rjw@sisk.pl>
-	<201108310021.13800.rjw@sisk.pl>
-Date: Thu, 1 Sep 2011 17:13:44 +0200
-Message-ID: <CAORVsuX=vKiGxHrR4hZjeT4DV0vhUh+MXLwNjoOwgBDu1HRR5A@mail.gmail.com>
-Subject: Re: [PATCH 3/5] PM / QoS: Add function dev_pm_qos_read_value()
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110901150928.GC14522@orbit.nwl.cc>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On Thu, Sep 01, 2011 at 05:09:28PM +0200, Phil Sutter wrote:
+>
+> Good point. So in order to also test the throughput, I've put my OpenRD
+> under load:
 
-On Wed, Aug 31, 2011 at 12:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> To read the current PM QoS value for a given device we need to
-> make sure that the device's power.constraints object won't be
-> removed while we're doing that.  For this reason, put the
-> operation under dev->power.lock and acquire the lock
-> around the initialization and removal of power.constraints.
-Ok.
+No that's not what I meant.  You're pushing a request to an
+async device and waiting for a response to come back before
+pushing the next request.  In order to maximise throughput,
+you need to issue your requests without waiting for the responses
+synchronously.
 
-> Moreover, since we're using the value of power.constraints to
-> determine whether or not the object is present, the
-> power.constraints_state field isn't necessary any more and may be
-> removed.  However, dev_pm_qos_add_request() needs to check if the
-> device is being removed from the system before allocating a new
-> PM QoS constraints object for it, so it has to use device_pm_lock()
-> and the device PM QoS initialization and destruction should be done
-> under device_pm_lock() as well.
-Ok that makes sense.
-The constraints_state field can be replaced by a combination of
-dev->power.constraints and list_empty(&dev->power.entry), which makes
-the code more compact and less redundant.
-
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/base/power/main.c |    4 -
->  drivers/base/power/qos.c  |  167 ++++++++++++++++++++++++++--------------------
->  include/linux/pm.h        |    8 --
->  include/linux/pm_qos.h    |    3
->  4 files changed, 101 insertions(+), 81 deletions(-)
->
-> Index: linux/drivers/base/power/qos.c
-> ===================================================================
-> --- linux.orig/drivers/base/power/qos.c
-> +++ linux/drivers/base/power/qos.c
-> @@ -30,15 +30,6 @@
-...
-
->
-> @@ -178,8 +202,8 @@ void dev_pm_qos_constraints_destroy(stru
->  *
->  * Returns 1 if the aggregated constraint value has changed,
->  * 0 if the aggregated constraint value has not changed,
-> - * -EINVAL in case of wrong parameters, -ENODEV if the device has been
-> - * removed from the system
-> + * -EINVAL in case of wrong parameters, -ENOMEM if there's not enough memory
-> + * to allocate for data structures.
-Why not use -ENODEV in case there is no device?
-
->  */
->  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
->                           s32 value)
-> @@ -195,28 +219,35 @@ int dev_pm_qos_add_request(struct device
->                return -EINVAL;
->        }
->
-> -       mutex_lock(&dev_pm_qos_mtx);
->        req->dev = dev;
->
-> -       /* Return if the device has been removed */
-> -       if (req->dev->power.constraints_state == DEV_PM_QOS_NO_DEVICE) {
-> -               ret = -ENODEV;
-> -               goto out;
-> -       }
-> +       device_pm_lock();
-> +       mutex_lock(&dev_pm_qos_mtx);
->
-> -       /*
-> -        * Allocate the constraints data on the first call to add_request,
-> -        * i.e. only if the data is not already allocated and if the device has
-> -        * not been removed
-> -        */
-> -       if (dev->power.constraints_state == DEV_PM_QOS_DEVICE_PRESENT)
-> -               ret = dev_pm_qos_constraints_allocate(dev);
-> +       if (dev->power.constraints) {
-> +               device_pm_unlock();
-> +       } else {
-> +               if (list_empty(&dev->power.entry)) {
-> +                       /* The device has been removed from the system. */
-> +                       device_pm_unlock();
-> +                       goto out;
-0 is silently returned in case the device has been removed. Is that
-the intention?
-
-> +               } else {
-> +                       device_pm_unlock();
-> +                       /*
-> +                        * Allocate the constraints data on the first call to
-> +                        * add_request, i.e. only if the data is not already
-> +                        * allocated and if the device has not been removed.
-> +                        */
-> +                       ret = dev_pm_qos_constraints_allocate(dev);
-> +               }
-> +       }
->
->        if (!ret)
->                ret = apply_constraint(req, PM_QOS_ADD_REQ, value);
->
-> -out:
-> + out:
->        mutex_unlock(&dev_pm_qos_mtx);
-> +
->        return ret;
->  }
->  EXPORT_SYMBOL_GPL(dev_pm_qos_add_request);
-...
-
-Thanks,
-Jean
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
