@@ -1,116 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab1IAQks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:40:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:45201 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757503Ab1IAQkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:40:47 -0400
-Date: Thu, 1 Sep 2011 09:40:40 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to
- idle enter/exit APIs
-Message-ID: <20110901164040.GC2286@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110829233521.GK9748@somewhere.redhat.com>
- <1314703315.2799.5.camel@twins>
- <20110830143207.GP9748@somewhere.redhat.com>
- <1314717993.5812.11.camel@twins>
- <20110830153343.GW9748@somewhere.redhat.com>
- <1314737918.19586.8.camel@twins>
- <20110830222432.GD15953@somewhere.redhat.com>
- <1314782245.23993.9.camel@twins>
- <20110831133754.GA20598@somewhere>
- <1314801660.3578.41.camel@twins>
+	id S1757851Ab1IAQmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:42:07 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:46577 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757763Ab1IAQmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 12:42:04 -0400
+Message-ID: <4E5FB5D6.1080209@gmail.com>
+Date: Thu, 01 Sep 2011 10:41:58 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314801660.3578.41.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
+        paulus@samba.org, tglx@linutronix.de, anton@samba.org
+Subject: Re: [PATCH] perf tool: fix endianness handling of u32 data in samples
+References: <1314654924-13071-1-git-send-email-dsahern@gmail.com> <20110901161900.GB15984@ghostprotocols.net>
+In-Reply-To: <20110901161900.GB15984@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 04:41:00PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-08-31 at 15:37 +0200, Frederic Weisbecker wrote:
-> > > Why? rcu-sched can use a context-switch counter, rcu-preempt doesn't
-> > > even need that. Remote cpus can notice those just fine.
-> > 
-> > If that's fine to only rely on context switches, which don't happen in
-> > a bounded time in theory, then ok.
+
+
+On 09/01/2011 10:19 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Aug 29, 2011 at 03:55:24PM -0600, David Ahern escreveu:
+>> Currently, analyzing PPC data files on x86 the cpu field is always 0 and
+>> the tid and pid are backwards. For example, analyzing a PPC file on PPC
+>> the pid/tid fields show:
+>>         rsyslogd  1210/1212
+>>
+>> and analyzing the same PPC file using an x86 perf binary shows:
+>>         rsyslogd  1212/1210
+>>
+>> The problem is that the swap_op method for samples is
+>> perf_event__all64_swap which assumes all elements in the sample_data
+>> struct are u64s. cpu, tid and pid are u32s and need to be handled
+>> individually. Given that the swap is done before the sample is parsed,
+>> the simplest solution is to undo the 64-bit swap of those elements when
+>> the sample is parsed and do the proper swap.
+>>
+>> The RAW data field is generic and perf cannot have programmatic knowledge
+>> of how to treat that data. Instead a warning is given to the user.
+>>
+>> Thanks to Anton Blanchard for providing a data file for a mult-CPU
+>> PPC system so I could verify the fix for the CPU fields.
+>>
+>> Signed-off-by: David Ahern <dsahern@gmail.com>
 > 
-> But (!PREEMPT) rcu already depends on that, and suffers this lack of
-> time-bounds. What it does to expedite matters is force context switches,
-> but nowhere is it written the GP is bounded by anything sane.
+> cc1: warnings being treated as errors
+> util/evsel.c: In function ‘perf_event__parse_sample’:
+> util/evsel.c:379: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:375: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:375: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:371: note: initialized from here
+> util/evsel.c:376: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
+> util/evsel.c:376: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
+> util/evsel.c:376: note: initialized from here
+> util/evsel.c:380: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
+> util/evsel.c:380: note: initialized from here
+> util/evsel.c:414: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:412: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:408: note: initialized from here
+> util/evsel.c:462: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:450: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:450: error: dereferencing pointer ‘p’ does break strict-aliasing rules
+> util/evsel.c:444: note: initialized from here
+> util/evsel.c:451: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
+> util/evsel.c:451: error: dereferencing pointer ‘({anonymous})’ does break strict-aliasing rules
+> util/evsel.c:451: note: initialized from here
 
-Ah, but it really is written, among other things, by the OOM killer.  ;-)
+That's no good. It compiles cleanly on Fedora 15-x86 and Fedora 12-ppc.
+What version of gcc is this?
 
-> > > But you then also start the tick again..
-> > 
-> > When we enter kernel? (minus interrupts)
-> > No we only call rcu_exit_nohz(). 
+David
+
+
+>     CC /home/acme/git/build/perf//util/symbol.o
+> make: *** [/home/acme/git/build/perf//util/evsel.o] Error 1
+> make: *** Waiting for unfinished jobs....
+> make: Leaving directory `/home/acme/git/linux/tools/perf'
+> [acme@emilia linux]$
 > 
-> So thinking more about all this:
+> [acme@emilia linux]$ uname -a
+> Linux emilia.ghostprotocols.net 3.0.3-rt12.14.el6rt.x86_64 #1 SMP PREEMPT RT Wed Aug 31 12:38:53 BRT 2011 x86_64 x86_64 x86_64 GNU/Linux
+> [acme@emilia linux]$ cat /etc/redhat-release 
+> Red Hat Enterprise Linux release 6.0 Beta (Santiago)
+> [acme@emilia linux]$
 > 
-> rcu_exit_nohz() will make remote cpus wait for us, this is exactly what
-> is needed because we might have looked at pointers. Lacking a tick we
-> don't progress our own state but that is fine, !PREEMPT RCU wouldn't
-> have been able to progress our state anyway since we haven't scheduled
-> (there's nothing to schedule to except idle, see below).
+> - Arnaldo
 
-Lacking a tick, the CPU also fails to respond to state updates from
-other CPUs.
-
-> Then when we leave the kernel (or go idle) we re-enter rcu_nohz state,
-> and the other cpus will ignore our contribution (since we have entered a
-> QS and can't be holding any pointers) the other CPUs can continue and
-> complete the GP and run the callbacks.
-
-This is true.
-
-> I haven't fully considered PREEMPT RCU quite yet, but I'm thinking we
-> can get away with something similar.
-
-All the ways I know of to make PREEMPT_RCU live without a scheduling
-clock tick while not in some form of dyntick-idle mode require either
-IPIs or read-side memory barriers.  The special case where all CPUs
-are in dyntick-idle mode and something needs to happen also needs to
-be handled correctly.
-
-Or are you saying that PREEMPT_RCU does not need a CPU to take
-scheduling-clock interrupts while that CPU is in dyntick-idle mode?
-That is true enough.
-
-> So per the above we don't need the tick at all (for the case of
-> nr_running=[0,1]), RCU will sort itself out.
-> 
-> Now I forgot where all you send IPIs from, and I'll go look at these
-> patches once more.
-> 
-> As for call_rcu() for that we can indeed wake the tick (on leaving
-> kernel space or entering idle, no need to IPI since we can't process
-> anything before that anyway) or we could hand off our call list to a
-> 'willing' victim.
-> 
-> But yeah, input from Paul would be nice...
-
-In the call_rcu() case, I do have some code in preparation that allows
-CPUs to have non-empty callback queues and still be tickless.  There
-are some tricky corner cases, but it does look possible.  (Famous last
-words...)
-
-The reason for doing this is that people are enabling
-CONFIG_RCU_FAST_NO_HZ on systems that have no business enabling it.
-Bad choice of names on my part.
-
-							Thanx, Paul
