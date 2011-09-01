@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab1IAQUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:20:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64421 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932613Ab1IAQUb (ORCPT
+	id S1757210Ab1IAQXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:23:50 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40276
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751385Ab1IAQXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:20:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 1/3] staging:iio:magnetometer:ak8975 Don't use irq_to_gpio()
-Date: Thu, 1 Sep 2011 18:20:25 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, Andrew Chew <AChew@nvidia.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-References: <1314819657-828-1-git-send-email-swarren@nvidia.com> <201109011306.50936.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF04B327A2A4@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B327A2A4@HQMAIL01.nvidia.com>
+	Thu, 1 Sep 2011 12:23:49 -0400
+Date: Thu, 1 Sep 2011 12:23:37 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeremy Allison <jra@samba.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ulrich Drepper <drepper@akkadia.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org
+Subject: Re: Approaches to making io_submit not block
+Message-ID: <20110901162337.GA28802@infradead.org>
+References: <CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
+ <20110830155438.bc31ab99.akpm@linux-foundation.org>
+ <20110830230342.GB16326@samba2>
+ <20110830161130.592df746.akpm@linux-foundation.org>
+ <4E5E152A.9050804@akkadia.org>
+ <20110831165954.GC1611@samba2>
+ <4E5F690C.4010209@akkadia.org>
+ <20110901155845.GA758@samba2>
+ <20110901160436.GA13556@infradead.org>
+ <20110901161531.GB758@samba2>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109011820.25307.arnd@arndb.de>
-X-Provags-ID: V02:K0:UVFsMEN4VBRww9TJs7drRKvBk45SErLPZQHZeNlWyVI
- uTHd1KvVLzZHkTCRfVRxGf4Qm5YYIYpVv/pIevde7YBcbbCsaD
- PggEDvKx3EQ9kREdyy59FiRSW/TGrBik7/3wplYLqRXVzr6yJj
- dGZWjYt8P3dlbs4ofnrJFW2gJzq//MjM5HKFsaNl/q+CkU2kR8
- p4oYmt3oaFvFQI7P7T31b0XNr5rduLmuwXzVgLp1CMImwJBsWK
- PgRnwtCUVLnHgJp40Ccc8X1jFCV1snFahCxWY6KmZQnRxTkeQS
- Ih42LnAkgjI/WUKRBA2pSLq4We0HZLiClEAaWNV5lsYOZxn2B+
- iS9AqkJkQStwa1VTZmNM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110901161531.GB758@samba2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 September 2011, Stephen Warren wrote:
-> One question: When we add this field, how do drivers tell whether a value
-> of 0 is an uninitialized field, or a legitimate GPIO value of 0? Should we
-> add a flag to indicate validity, or just work hard to not enable driver-
-> side code to use this value until we've fixed up all places that instantiate
-> the driver to initialize the field to some invalid value like -1?
+On Thu, Sep 01, 2011 at 09:15:31AM -0700, Jeremy Allison wrote:
+> > We could easily give you an fcntl / dup3 flag to only release posix
+> > locks on the final close of a struct file if that helps you.
+> 
+> That would help us enormously - it'd be Linux only of course but
+> we could easily add support for that.
+> 
+> Can you propose the design here so we can run it past some of the
+> Solaris/FreeBSD folks (it'd be nice if we could get broader adoption) ?
 
-I think it's enough to coordinate the driver with the initialization of the
-i2c data. If a driver requires a GPIO number, it can assume that it's valid.
-Drivers that don't need one don't care. If it's an optional feature, you
-might want to either use platform_data after all, or use different identifiers
-for devices that have a gpio vs. those that have none -- in effect those are
-different types of devices handled by the same driver.
+Not sure there is all that much to discuss.  The idea is to have locks
+that behave like Posix locks, but only get release when the last duped
+fd to them gets released.
 
-	Arnd
+We'd define a new O_LOCKS_WHATEVER flag for it, which gets set either
+using fcntl(..., F_SETFL, ...) or dup3.  All in all that should be less
+than 50 lines of code in the kernel.
+
+The alternative would be to design a different lock type, but that would
+be a lot more invasive, and not provide any real benefits.
+
