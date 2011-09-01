@@ -1,150 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab1IAJdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 05:33:54 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:58105 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756502Ab1IAJdq (ORCPT
+	id S1756497Ab1IAJmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 05:42:09 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52250 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab1IAJmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 05:33:46 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>, Barry Song <21cnbao@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/4 v6] amba: request muxing for PrimeCell devices
-Date: Thu, 1 Sep 2011 11:32:53 +0200
-Message-ID: <1314869573-5569-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 1 Sep 2011 05:42:05 -0400
+From: Harvey Yang <harvey.huawei.yang@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
+Cc: linux-kernel@vger.kernel.org, Harvey Yang <harvey.huawei.yang@gmail.com>
+Subject: [PATCH 1/1] drivers/i2c/busses/scx200_acb.c: Fix section mismatch warning in scx200_pci_drv
+Date: Thu,  1 Sep 2011 17:40:29 +0800
+Message-Id: <1314870029-28541-1-git-send-email-harvey.huawei.yang@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+WARNING: drivers/i2c/busses/built-in.o(.data+0x47c8): Section mismatch in reference from the variable scx200_pci_drv to the function .devinit.text:scx200_probe()
+The variable scx200_pci_drv references
+the function __devinit scx200_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-This makes the AMBA PrimeCell drivers request padmuxing for
-themselves in the same manner as clocks and voltage is currently
-requested.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Harvey Yang <harvey.huawei.yang@gmail.com>
 ---
- drivers/amba/bus.c       |   49 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/amba/bus.h |    2 +
- 2 files changed, 49 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/scx200_acb.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index d74926e..bd0516c 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -474,6 +474,40 @@ static void amba_put_disable_vcore(struct amba_device *pcdev)
- 	}
+diff --git a/drivers/i2c/busses/scx200_acb.c b/drivers/i2c/busses/scx200_acb.c
+index 986e5f6..91e349c 100644
+--- a/drivers/i2c/busses/scx200_acb.c
++++ b/drivers/i2c/busses/scx200_acb.c
+@@ -550,7 +550,7 @@ static int __devexit scx200_remove(struct platform_device *pdev)
+ 	return 0;
  }
  
-+static int amba_get_enable_pinmux(struct amba_device *pcdev)
-+{
-+	struct pinmux *pmx = pinmux_get(&pcdev->dev, NULL);
-+	int ret;
-+
-+	pcdev->pmx = pmx;
-+
-+	if (IS_ERR(pmx)) {
-+		/* It is OK not to supply a pinmux regulator */
-+		if (PTR_ERR(pmx) == -ENODEV)
-+			return 0;
-+		return PTR_ERR(pmx);
-+	}
-+
-+	ret = pinmux_enable(pmx);
-+	if (ret) {
-+		pinmux_put(pmx);
-+		pcdev->pmx = ERR_PTR(-ENODEV);
-+	}
-+
-+	return ret;
-+}
-+
-+static void amba_put_disable_pinmux(struct amba_device *pcdev)
-+{
-+	struct pinmux *pmx = pcdev->pmx;
-+
-+	if (!IS_ERR(pmx)) {
-+		pinmux_disable(pmx);
-+		pinmux_put(pmx);
-+	}
-+}
-+
-+
- /*
-  * These are the device model conversion veneers; they convert the
-  * device model structures to our more specific structures.
-@@ -486,13 +520,22 @@ static int amba_probe(struct device *dev)
- 	int ret;
+-static struct platform_driver scx200_pci_drv = {
++static struct platform_driver scx200_pci_driver = {
+ 	.driver = {
+ 		.name = "cs5535-smb",
+ 		.owner = THIS_MODULE,
+@@ -593,14 +593,14 @@ static int __init scx200_acb_init(void)
+ 		return 0;
  
- 	do {
--		ret = amba_get_enable_vcore(pcdev);
-+		ret = amba_get_enable_pinmux(pcdev);
- 		if (ret)
- 			break;
- 
-+		ret = amba_get_enable_vcore(pcdev);
-+		if (ret) {
-+			amba_put_disable_pinmux(pcdev);
-+			break;
-+		}
-+
- 		ret = amba_get_enable_pclk(pcdev);
--		if (ret)
-+		if (ret) {
-+			amba_put_disable_pinmux(pcdev);
-+			amba_put_disable_vcore(pcdev);
- 			break;
-+		}
- 
- 		ret = pcdrv->probe(pcdev, id);
- 		if (ret == 0)
-@@ -500,6 +543,7 @@ static int amba_probe(struct device *dev)
- 
- 		amba_put_disable_pclk(pcdev);
- 		amba_put_disable_vcore(pcdev);
-+		amba_put_disable_pinmux(pcdev);
- 	} while (0);
- 
- 	return ret;
-@@ -513,6 +557,7 @@ static int amba_remove(struct device *dev)
- 
- 	amba_put_disable_pclk(pcdev);
- 	amba_put_disable_vcore(pcdev);
-+	amba_put_disable_pinmux(pcdev);
- 
- 	return ret;
+ 	/* No ISA devices; register the platform driver for PCI-based devices */
+-	return platform_driver_register(&scx200_pci_drv);
++	return platform_driver_register(&scx200_pci_driver);
  }
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index fcbbe71..35f1193 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -19,6 +19,7 @@
- #include <linux/err.h>
- #include <linux/resource.h>
- #include <linux/regulator/consumer.h>
-+#include <linux/pinctrl/pinmux.h>
  
- #define AMBA_NR_IRQS	2
- #define AMBA_CID	0xb105f00d
-@@ -30,6 +31,7 @@ struct amba_device {
- 	struct resource		res;
- 	struct clk		*pclk;
- 	struct regulator	*vcore;
-+	struct pinmux		*pmx;
- 	u64			dma_mask;
- 	unsigned int		periphid;
- 	unsigned int		irq[AMBA_NR_IRQS];
+ static void __exit scx200_acb_cleanup(void)
+ {
+ 	struct scx200_acb_iface *iface;
+ 
+-	platform_driver_unregister(&scx200_pci_drv);
++	platform_driver_unregister(&scx200_pci_driver);
+ 
+ 	mutex_lock(&scx200_acb_list_mutex);
+ 	while ((iface = scx200_acb_list) != NULL) {
 -- 
-1.7.3.2
+1.7.2.5
 
