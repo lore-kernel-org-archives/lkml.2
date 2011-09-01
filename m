@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab1IAXdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 19:33:02 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55246 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932506Ab1IAXc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 19:32:58 -0400
-Subject: Re: [PATCH] i2c: remove deprecated callbacks
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Ben Dooks <ben-linux@fluff.org>, linux-doc@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-In-Reply-To: <1314919458.4145.23.camel@pasglop>
-References: <1314852027-9523-1-git-send-email-xiyou.wangcong@gmail.com>
-	 <20110901105226.0d8dd8b2@endymion.delvare>
-	 <1314919458.4145.23.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Sep 2011 09:32:07 +1000
-Message-ID: <1314919927.4145.24.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S932674Ab1IAXe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 19:34:26 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41942 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932506Ab1IAXeZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 19:34:25 -0400
+Message-ID: <4E60167C.3090500@gmail.com>
+Date: Fri, 02 Sep 2011 09:34:20 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Mark Salter <msalter@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/24] fix default __strnlen_user macro
+References: <1314826019-22330-1-git-send-email-msalter@redhat.com>		 <1314826019-22330-2-git-send-email-msalter@redhat.com>		 <4E5EC3FE.10307@gmail.com> <1314841084.2344.113.camel@deneb.redhat.com>	 <4E5EE5DB.3030101@gmail.com> <1314905032.1439.29.camel@deneb.redhat.com>
+In-Reply-To: <1314905032.1439.29.camel@deneb.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-02 at 09:24 +1000, Benjamin Herrenschmidt wrote:
+On 02/09/11 05:23, Mark Salter wrote:
+> On Thu, 2011-09-01 at 11:54 +1000, Ryan Mallon wrote:
+>> It should either be changed as I suggested, or the comment in uaccess.h
+>> should be updated to reflect the actual behaviour of the function
+>> (stating that it returns n + 1 in the case where n is reached). Either
+>> way, its probably worth doing a quick check through the arch specific
+>> versions to see what their behaviour really is. It looks like there are
+>> potentially some subtle bugs at the callsites.
+> I think commenting it in uaccess.h is the only sane way to go. Changing
+> the semantics means changing all the arch-specific versions, most of
+> which are asm code and changing most, if not all callsites. All of the
+> arch-specific versions I looked at include the NULL count.
+>
 
+Agreed. Add a note to the comment that callers should check for a return 
+value > n.
 
- .../...
-
-> I'm just bogged down by too many things, including quite a bit of travel
-> lately. I have some mostly untested patches converting part of windfarm
-> (not all of it yet), and therm_adt746x and a patch to add the generic
-> code to register i2c devices from device-tree properly on powermacs.
-> 
-> I'm missing a couple more drivers & bits of windfarm and therm_pm72
-> which I'd like to use the opportunity to convert into a windfarm module.
-
-I'll push out my WIP to a branch on powerpc.git on k.org when hera is
-back online so those who want can help.
-
-Cheers,
-Ben.
-
-> Then there's some sound drivers etc...
-> 
-> I am travelling again tomorrow for 2 weeks, and after that a month in
-> europe, tho I'll have 10 days in the middle where I _might_ be able to
-> make progress on that. Else it will have to wait for november.
->  
-> > Cong, do you have a specific interest in these callbacks being removed?
-> > 
-> > If you want to help, then instead of sending a patch which I already
-> > have and virtually everybody could have written, please get the
-> > remaining 3 drivers converted to the current i2c binding model:
-> >   sound/ppc/keywest.c
-> >   sound/aoa/codecs/onyx.c
-> >   sound/aoa/codecs/tas.c
-> > THAT would be helpful. At the moment, it only looks like you are trying
-> > to get your name on a trivial patch, i.e. getting credit for work you
-> > didn't really do.
-> 
-> Cheers,
-> Ben.
-> 
-> > > 
-> > > ---
-> > > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-> > > index c4a6e14..89a9695 100644
-> > > --- a/Documentation/feature-removal-schedule.txt
-> > > +++ b/Documentation/feature-removal-schedule.txt
-> > > @@ -486,15 +486,6 @@ Files:	include/linux/netfilter_ipv4/ipt_addrtype.h
-> > >  
-> > >  ----------------------------
-> > >  
-> > > -What:	i2c_driver.attach_adapter
-> > > -	i2c_driver.detach_adapter
-> > > -When:	September 2011
-> > > -Why:	These legacy callbacks should no longer be used as i2c-core offers
-> > > -	a variety of preferable alternative ways to instantiate I2C devices.
-> > > -Who:	Jean Delvare <khali@linux-fr.org>
-> > > -
-> > > -----------------------------
-> > > -
-> > > (...)
-> > 
-> 
+~Ryan
 
 
