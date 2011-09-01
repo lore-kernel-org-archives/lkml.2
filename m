@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab1IAPlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 11:41:15 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:19543 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439Ab1IAPlO (ORCPT
+	id S932510Ab1IAPmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 11:42:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39733 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932439Ab1IAPmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 11:41:14 -0400
-Subject: Re: [PATCH] dev_ioctl should return -EINVAL for unknown ioctl
- instead of -ENOTTY
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4E5F9C14.1040108@gmail.com>
-References: <4E5F9C14.1040108@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Thu, 01 Sep 2011 16:41:10 +0100
-Message-ID: <1314891670.2733.12.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Sep 2011 15:41:13.0507 (UTC) FILETIME=[946B4F30:01CC68BD]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18358.005
-X-TM-AS-Result: No--10.704400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Thu, 1 Sep 2011 11:42:24 -0400
+Date: Thu, 1 Sep 2011 11:42:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH 0/3] RFC: addition to DMA API
+In-Reply-To: <CACVXFVOT9FZexiZhuJtvyFP8qOPYUKg0JqGarBJgT4R8SN7p5Q@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1109011127080.1896-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 22:52 +0800, Wang Sheng-Hui wrote:
-> The patch is against 3.1-rc3.
-> 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  net/core/dev.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 17d67b5..de6033c 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -5092,7 +5092,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
->  		/* Take care of Wireless Extensions */
->  		if (cmd >= SIOCIWFIRST && cmd <= SIOCIWLAST)
->  			return wext_handle_ioctl(net, &ifr, cmd, arg);
-> -		return -ENOTTY;
-> +		return -EINVAL;
->  	}
->  }
->  
+On Thu, 1 Sep 2011, Ming Lei wrote:
 
-Whereas, Linus Torvalds wrote in
-<BANLkTin=PTbTwBR2s+owMLy+GmKigeoYvg@mail.gmail.com>:
-[...]
-> The correct error code for "I don't understand this ioctl" is ENOTTY.
-> The naming may be odd, but you should think of that error value as a
-> "unrecognized ioctl number, you're feeding me random numbers that I
-> don't understand and I assume for historical reasons that you tried to
-> do some tty operation on me".
-[...]
+> First, most of barriers have made this kind of flush not necessary, as
+> explained int the example above.
 
-(Not that we are consistent about using ENOTTY in networking now.)
+You don't seem to understand the difference between memory barriers and 
+write flushes.  Neither makes the other unnecessary -- they do 
+different things.
 
-Ben.
+Now, there is good reason to question why write flushes should be 
+needed at all.  According to the definition in 
+Documentation/DMA-API.txt (the document doesn't distinguish between 
+coherent memory and consistent memory):
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+  Consistent memory is memory for which a write by either the device or
+  the processor can immediately be read by the processor or device
+  without having to worry about caching effects.  (You may however need
+  to make sure to flush the processor's write buffers before telling
+  devices to read that memory.)
+
+As far as I can tell, we are talking about a cache flush rather than a 
+processor write buffer flush.  If that's so, it would appear that the 
+memory in question is not truly coherent.
+
+>  Even for ehci driver, the flush to be
+> added is only __one__ special case, so could you list other cases in
+> which the flush operation is a must and memory barrier can't do it?
+
+There are other places in ehci-hcd where write flushes would help
+improve performance or correctness, although the one in qh_append_tds()  
+is probably the most critical.  One such place is in qh_link_async();
+others are in qh_link_periodic(), qh_unlink_periodic(), itd_link_urb(),
+and sitd_link_urb().
+
+And there are similar places in the other USB host controller drivers.
+
+> If one can understand dma master access order on shared memory
+> in the context, it is not difficult to use memory barrier to avoid the
+> flush operation.
+
+That simply is not true.  If it were, you would not have needed to 
+submit your original patch.
+
+> Second, as I said before, the flush operation is very easy to cause dma
+> descriptor updated in partial, as qtd descriptor updated in the ehci case.
+
+No, not if memory barriers are used correctly.
+
+> It is one of the side effects of the flush to be introduced.  Fortunately, EHCI
+> can handle this correctly, but can other hardwares always handle this correctly?
+
+If they can't, they are already broken.  Adding write flushes won't 
+make them any worse.
+
+Alan Stern
 
