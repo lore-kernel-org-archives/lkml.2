@@ -1,128 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab1IAHEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 03:04:30 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15994 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab1IAHE3 convert rfc822-to-8bit (ORCPT
+	id S1755592Ab1IAHIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 03:08:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58759 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab1IAHIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 03:04:29 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=YSBZpBgaqweoYipGERDlPd6nK8LFMGphVq0xi7M/y27l4s7IvSUq8j9CCRQ0IP8J7
-	kc9UDLJWYknrzo5HFX7sQ==
+	Thu, 1 Sep 2011 03:08:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] asm-generic: over-ride csum_partial_copy_nocheck, etc.
+Date: Thu, 01 Sep 2011 09:07:42 +0200
+Message-ID: <1664902.8eP1aWlL1O@wuerfel>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <20110831223519.GA14535@codeaurora.org>
+References: <20110831223519.GA14535@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20110901064034.GC22561@redhat.com>
-References: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110808124333.GA31739@redhat.com>
-	<20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110829155113.GA21661@redhat.com>
-	<20110830101233.ae416284.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110830070424.GA13061@redhat.com>
-	<20110830162050.f6c13c0c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110830084245.GC13061@redhat.com>
-	<CALWz4iyXbrgcrZEOsgvvW9mu6fr7Qwbn2d1FR_BVw6R_pMZPsQ@mail.gmail.com>
-	<20110901064034.GC22561@redhat.com>
-Date: Thu, 1 Sep 2011 00:04:24 -0700
-Message-ID: <CALWz4iyKXx+q5uKVOFqDs3Xx7ZGOertJ-ZWkwO=Z0Ynr4qsm2A@mail.gmail.com>
-Subject: Re: [patch] Revert "memcg: add memory.vmscan_stat"
-From: Ying Han <yinghan@google.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ecXhmidLANbngwydRXm8KhAlRuc1mvNOL7+XEkV4HU9
+ 4MbwP0r+WWXhFcrVzwjnTgd87GjR+Lo71ZAIGccC4koNyPCRkU
+ Olo0HdP8pdP30dZ+HWSW38JiY+pAXG1sG/2X8SnUqdIXdFnJjO
+ 0VEBzh/JKSxV11tNMEMV/sWFeDdIwDYI+yIfOrB4KB8Bev807R
+ SkZGuswGma9Wbdv+L+1ZRTaFb/h6zNIcts4U99FVj4qlLgSlXB
+ 08xlRrNRe+aLc6NXigHBk7oE0N6lQKgfroC056lYZlWNzhKpq+
+ CYWWomprrsL+6HPgB2bkJbpc8O2ShFrYdoKzSSvMKQkBNjz15r
+ TGIVCeojyIPXnQ+zsexI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 11:40 PM, Johannes Weiner <jweiner@redhat.com> wrote:
-> On Wed, Aug 31, 2011 at 11:05:51PM -0700, Ying Han wrote:
->> On Tue, Aug 30, 2011 at 1:42 AM, Johannes Weiner <jweiner@redhat.com> wrote:
->> > You want to look at A and see whether its limit was responsible for
->> > reclaim scans in any children.  IMO, that is asking the question
->> > backwards.  Instead, there is a cgroup under reclaim and one wants to
->> > find out the cause for that.  Not the other way round.
->> >
->> > In my original proposal I suggested differentiating reclaim caused by
->> > internal pressure (due to own limit) and reclaim caused by
->> > external/hierarchical pressure (due to limits from parents).
->> >
->> > If you want to find out why C is under reclaim, look at its reclaim
->> > statistics.  If the _limit numbers are high, C's limit is the problem.
->> > If the _hierarchical numbers are high, the problem is B, A, or
->> > physical memory, so you check B for _limit and _hierarchical as well,
->> > then move on to A.
->> >
->> > Implementing this would be as easy as passing not only the memcg to
->> > scan (victim) to the reclaim code, but also the memcg /causing/ the
->> > reclaim (root_mem):
->> >
->> >        root_mem == victim -> account to victim as _limit
->> >        root_mem != victim -> account to victim as _hierarchical
->> >
->> > This would make things much simpler and more natural, both the code
->> > and the way of tracking down a problem, IMO.
->>
->> This is pretty much the stats I am currently using for debugging the
->> reclaim patches. For example:
->>
->> scanned_pages_by_system 0
->> scanned_pages_by_system_under_hierarchy 50989
->>
->> scanned_pages_by_limit 0
->> scanned_pages_by_limit_under_hierarchy 0
->>
->> "_system" is count under global reclaim, and "_limit" is count under
->> per-memcg reclaim.
->> "_under_hiearchy" is set if memcg is not the one triggering pressure.
->
-> I don't get this distinction between _system and _limit.  How is it
-> orthogonal to _limit vs. _hierarchy, i.e. internal vs. external?
+On Wednesday 31 August 2011 17:35:19 Linas Vepstas wrote:
+> There are plausbile reasons for architectures to provide their own
+> versions of csum_partial_copy_nocheck and csum_tcpudp_magic. 
+> By protecting these, the architecture can still re-use the 
+> asm-generic checksum.h, instead of copying it.
+> 
+> Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
-Something like :
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-+enum mem_cgroup_scan_context {
-+       SCAN_BY_SYSTEM,
-+       SCAN_BY_SYSTEM_UNDER_HIERARCHY,
-+       SCAN_BY_LIMIT,
-+       SCAN_BY_LIMIT_UNDER_HIERARCHY,
-+       NR_SCAN_CONTEXT,
-+};
+Please add the patch to your hexagon patch set.
 
-if (global_reclaim(sc))
-   context = scan_by_system
-else
-   context = scan_by_limit
-
-if (target != mem)
-   context++;
-
->
-> If the system scans memcgs then no limit is at fault.  It's just
-> external pressure.
->
-> For example, what is the distinction between scanned_pages_by_system
-> and scanned_pages_by_system_under_hierarchy?
-
-you are right about this, there is no much difference on these since
-it is counting global reclaim and everyone
-is under_hierarchy except root_cgroup. For root cgroup, it is counted
-in "_system". (internal)
-
-The reason for scanned_pages_by_system would be, per your definition,
-neither due to
-> the limit (_by_system -> global reclaim) nor not due to the limit
-> (!_under_hierarchy -> memcg is the one triggering pressure)
-
-This value "scanned_pages_by_system" only making senses for root
-cgroup, which now could be counted as "# of pages scanned in root lru
-under global reclaim".
-
---Ying
+	Arnd
