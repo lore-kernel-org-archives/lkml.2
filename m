@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab1IAOlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 10:41:24 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:63626 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757634Ab1IAOlX convert rfc822-to-8bit (ORCPT
+	id S1757699Ab1IAOrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 10:47:43 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55684 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757513Ab1IAOrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 10:41:23 -0400
+	Thu, 1 Sep 2011 10:47:41 -0400
+Date: Thu, 1 Sep 2011 10:47:40 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Harald Dunkel <harri@afaics.de>, <linux-usb@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0.3 + Bluetooth USB Dongle: no success without noapic
+In-Reply-To: <201109010801.22009.oliver@neukum.org>
+Message-ID: <Pine.LNX.4.44L0.1109011047020.1896-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Message-ID: <0751ecab-e45d-4984-beff-1f74cabbd8db@default>
-Date: Thu, 1 Sep 2011 07:41:12 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: linux-kernel@vger.kernel.org
-Subject: RE: zcache - trivial tweak to build-time error message wording
-References: <54715.1314822196@turing-police.cc.vt.edu>
-In-Reply-To: <54715.1314822196@turing-police.cc.vt.edu>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020202.4E5F9992.0230:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Valdis.Kletnieks@vt.edu [mailto:Valdis.Kletnieks@vt.edu]
-> Sent: Wednesday, August 31, 2011 2:23 PM
-> To: Dan Magenheimer
-> Cc: linux-kernel@vger.kernel.org
-> Subject: zcache - trivial tweak to build-time error message wording
-> 
-> Clarify that the requirement is "at least one of" - the error message could
-> potentially be read as both being required.
-> 
-> Yes, the line is over 80 chars.  You can't get 79 chars of text and a #error
-> into 80 chars :)
-> 
-> Patch against linux-next-20110831
-> 
-> Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-> 
-> --- linux-next/drivers/staging/zcache/zcache-main.c.dist	2011-08-31 13:31:27.054696837 -0400
-> +++ linux-next/drivers/staging/zcache/zcache-main.c	2011-08-31 16:16:46.055659964 -0400
-> @@ -34,7 +34,7 @@
->  #include "../zram/xvmalloc.h" /* if built in drivers/staging */
-> 
->  #if (!defined(CONFIG_CLEANCACHE) && !defined(CONFIG_FRONTSWAP))
-> -#error "zcache is useless without CONFIG_CLEANCACHE or CONFIG_FRONTSWAP"
-> +#error "zcache is useless without at least one of CONFIG_CLEANCACHE or CONFIG_FRONTSWAP"
+On Thu, 1 Sep 2011, Oliver Neukum wrote:
 
-Actually, if the reader interprets that both are required,
-that's fine with me.  Cleancache and frontswap were split
-up for upstreaming purposes but, except in unusual circumstances,
-should always be used together.  That is difficult, of course,
-if frontswap is not yet merged in your build tree, but after
-frontswap is merged in Linus's tree, I might be inclined to
-require both CONFIG_CLEANCACHE *and* CONFIG_FRONTSWAP in
-the future Kconfig for zcache.
+> Am Donnerstag, 1. September 2011, 07:36:10 schrieb Harald Dunkel:
+> > On 08/28/11 12:07, Oliver Neukum wrote:
+> > > Am Sonntag, 28. August 2011, 11:49:57 schrieb Harald Dunkel:
+> 
+> Hi,
+> 
+> > >> [   91.589073] usb 2-5: new full speed USB device number 8 using ohci_hcd [   91.709067] usb 2-5: device descriptor read/64, error -62 [   91.930059] usb 2-5: device descriptor read/64, error -62 [   92.144054] usb 2-5: new full speed USB device number 9 using ohci_hcd [   92.264073] usb 2-5:
+> > >> device descriptor read/64, error -62 [   92.485064] usb 2-5: device descriptor read/64, error -62 [   92.699091] usb 2-5: new full speed USB device number 10 using ohci_hcd [   93.103040] usb 2-5: device not accepting address 10, error -62 [   93.216102] usb 2-5: new full speed USB device
+> > >> number 11 using ohci_hcd [   93.620038] usb 2-5: device not accepting address 11, error -62 [   93.620072] hub 2-0:1.0: unable to enumerate USB device on port 5
+> > >>
+> > >> Booting with noapic fixes this problem.
+> > >
+> > > Do any other USB devices work on that OHCI?
+> > >
+> > 
+> > Sorry for the delay.
+> > 
+> > It seems that this problem comes up by chance (with or without
+> > noapic). If I move the dongle to another USB slot then the problem
+> > is gone. By now the Bluetooth dongle is the only device showing this
+> > problem.
+> > 
+> > Here is the output of lsusb with all devices plugged in and
+> > working:
+> > 
+> > Bus 001 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> > Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> > Bus 002 Device 002: ID 04fc:0c15 Sunplus Technology Co., Ltd SPIF215A SATA bridge
+> > Bus 001 Device 007: ID 046d:c525 Logitech, Inc. MX Revolution Cordless Mouse
+> > Bus 001 Device 008: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
+> > Bus 001 Device 009: ID 04f2:0402 Chicony Electronics Co., Ltd Genius LuxeMate i200 Keyboard
+> > 
+> > Removing the usb drive or the keyboard doesn't make the bluetooth
+> > dongle more stable.
+> 
+> Voodoo. Does anybody have any ideas?
+
+It sounds like the dongle is making a bad electrical connection, or 
+there's a bad voltage, or something like that.
+
+Alan Stern
+
