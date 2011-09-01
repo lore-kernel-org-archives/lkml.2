@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab1IACKB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 22:10:01 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41449 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab1IACJ7 (ORCPT
+	id S1757446Ab1IACPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 22:15:50 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:42863 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757388Ab1IACPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 22:09:59 -0400
-Date: Thu, 1 Sep 2011 10:09:47 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: sifram rajas <sifram.rajas@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: General question about TASK_INTERRUPTIBLE and schedule_timeout()
-Message-ID: <20110901020947.GA9096@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <CA+OjSzzrYggQjDrgd6m+oF1sZkJFzf-3vSedAT3DAD9V2jTC3A@mail.gmail.com>
+	Wed, 31 Aug 2011 22:15:46 -0400
+Date: Thu, 1 Sep 2011 12:15:34 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+Cc: cryptodev-linux-devel@gna.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: comparison of the AF_ALG interface with the /dev/crypto
+Message-ID: <20110901021534.GA26330@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+OjSzzrYggQjDrgd6m+oF1sZkJFzf-3vSedAT3DAD9V2jTC3A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E5A3FCC.2030504@gnutls.org>
+Organization: Core
+X-Newsgroups: apana.lists.os.linux.cryptoapi,apana.lists.os.linux.kernel
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 06:18:19PM +0530, sifram rajas wrote:
-> Hi,
-> 
-> I have a general question about the following 2 lines of code I see
-> all over the kernel:
-> 1         set_current_state(TASK_INTERRUPTIBLE) ;
-> 2         schedule_timeout(<some value>);
-> 
-> In the above code, if we encounter an interrupt after executing line
-> 1, we will end up
-> call schedule() from the architecture specific code for CONFIG_PREEMPT
-> kernels, after
-> the interrupt handler has been invokled.
+Nikos Mavrogiannopoulos <nmav@gnutls.org> wrote:
+>
+> Given my benchmarks have no issues, it is not apparent to me why one
+> should use AF_ALG instead of cryptodev. I do not know though why AF_ALG
+> performs so poor. I'd speculate by blaming it on the usage of the socket
+> API and the number of system calls required.
 
-Yes.
+The target usage of AF_ALG is hardware offload devices that cannot
+be directly used in user-space, not software crypto on implementations
+such as AESNI/Padlock.
 
-> 
-> This will cause the current task to sleep interruptibly forever
-> instead of for a certain timeout interval.
+Going through the kernel to use something like AESNI/Padlock or
+software crypto is insane.
 
-No.
+Given the intended target case, your numbers are pretty much
+meaningless as cryptodev's performance can be easily beaten
+by a pure user-space implementation.
 
-schedule() will not put an preempted task to sleep, see:
-asmlinkage void __sched schduule(void)
-{
-...
-        if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-                if (unlikely(signal_pending_state(prev->state, prev))) {
-                        prev->state = TASK_RUNNING;
-                } else {
-		...
-		}
-        }
-...
-}
-
-Thanks,
-Yong
-
-> 
-> Won't this defeat the purpose of the above code to schedule out or
-> sleep for a certain finite timeout ?
-> If yes, then what are the techniques to solve this problem ?
-> 
-> 
-> Thanks,
-> Sifram.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+Cheers,
 -- 
-Only stand for myself
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
