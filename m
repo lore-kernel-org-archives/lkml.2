@@ -1,64 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab1IAS6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 14:58:39 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:60331 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756109Ab1IAS6i (ORCPT
+	id S1757446Ab1IATDd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 15:03:33 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:43701 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab1IATDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 14:58:38 -0400
-Date: Thu, 1 Sep 2011 11:58:26 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Roland Dreier <roland@purestorage.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, scameron@beardog.cce.hp.com,
-        Jon Mason <mason@myri.com>, linux-scsi@vger.kernel.org,
+	Thu, 1 Sep 2011 15:03:32 -0400
+Date: Thu, 1 Sep 2011 14:03:29 -0500
+From: scameron@beardog.cce.hp.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        scameron@beardog.cce.hp.com
 Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-Message-ID: <20110901115826.287538bd@jbarnes-desktop>
-In-Reply-To: <1314903038.3067.27.camel@dabdike>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-	<1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20110901160724.GN9189@beardog.cce.hp.com>
-	<1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
-	<1314903038.3067.27.camel@dabdike>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Message-ID: <20110901190329.GX8422@beardog.cce.hp.com>
+References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com> <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110901160724.GN9189@beardog.cce.hp.com> <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110901180138.GV8422@beardog.cce.hp.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110901180138.GV8422@beardog.cce.hp.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Sep 2011 11:50:38 -0700
-James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
-
-> On Thu, 2011-09-01 at 10:58 -0700, Roland Dreier wrote:
-> > > OK I found the bad commit,I got lucky... I lost some files but my
-> > > machine was able to complete the bisection. CC involved people
+On Thu, Sep 01, 2011 at 01:01:38PM -0500, scameron@beardog.cce.hp.com wrote:
+> On Thu, Sep 01, 2011 at 07:40:15PM +0200, Eric Dumazet wrote:
+> > Le jeudi 01 septembre 2011 à 11:07 -0500, scameron@beardog.cce.hp.com a
+> > écrit :
+> > > On Thu, Sep 01, 2011 at 05:24:02PM +0200, Eric Dumazet wrote:
+> > > > Stephen,
+> > > > 
+> > > > Current linux-3.1-rc4+ is a total disaster on my BL460c G6
+> > > 
+> > > What kernel were you running successfully previously?
+> > > 
+> > > I saw similar on BL460cG7 on Friday with 3.1-rc4,
+> > > but I'm not sure the problem is in the driver.  
+> > > I installed rhel6.1, then put 3.1-rc4 on.  Turning off
+> > > "Virtualization" in the kernel config seemed to help
+> > > (allowed it to boot) and so I thought that must have
+> > > been the source of the issue.  So, you might try that.
+> > > 
+> > > However, I rebooted that machine just now, and
+> > > now I am getting the similar "hpsa 0000:0c:00.0: resetting device 0:0:0:0"
+> > > message, so that's pretty weird.
+> > > 
+> > > The cmd_alloc failure, I didn't see, but I may have missed it
+> > > (didn't have console directed to serial output.)
+> > > 
+> > > cmd_alloc failing is not generally expected, as we reserve enough
+> > > commands that the upper layers should never exhaust them all (should
+> > > honor hpsa's max request limit), so that's pretty weird that
+> > > you're seeing that.
+> > > 
+> > > I am able to run 3.1-rc3 on rhel6 just fine on other systems (DL380g7,
+> > > for example) and I don't think there are any hpsa changes between rc3
+> > > and rc4.  (haven't tried rc4 on the dl380g7 yet).
+> > > 
+> > > So, I'm not sure what's going on with the BL460c yet, but I am
+> > > aware of the problem and have already seen it.  I can't think of
+> > > any driver changes lately which should be causing such
+> > > changes in behavior.
+> > > 
+> > > -- steve
+> > > 
+> > > 
 > > 
-> > > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI-E Max Payload Size on fabric
+> > OK I found the bad commit,I got lucky... I lost some files but my
+> > machine was able to complete the bisection. CC involved people
 > > 
-> > Hi Eric,
-> > 
-> > I guess it would be useful to see "lspci -vv" output with a "good" kernel
-> > and with that bad patch applied.  Most likely we should see some difference
-> > somewhere in the MaxPayload fields in the PCI Express capability of
-> > some device.
-> > 
-> > Either the RAID controller or something else lies, and puts a value
-> > in the DevCap that it can't actually support, or else the patch is
-> > buggy and puts something out of range in a DevCtl somewhere.
 > 
+> Thanks.  I will run this information by the hardware guys here
+> and see if they have any bright ideas.
 > 
-> While we investigate, I think the problems produced by the patch (data
-> corruption) are serious enough to warrant reverting it, please Jesse.
+> Would be interesting to see if the "pcie_bus_safe" option 
+> makes a difference.
 
-Yep, I just got another report about it today too, I'll queue the
-revert.
+FWIW, this option does not help (though it does change the
+behavior).  I get hpsa complaining about bad tags returned
+from the hardware, which is to say, this code from hpsa.c
+fires:
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+	static inline int bad_tag(struct ctlr_info *h, u32 tag_index,
+		u32 raw_tag)
+	{
+		if (unlikely(tag_index >= h->nr_cmds)) {
+			dev_warn(&h->pdev->dev, "bad tag 0x%08x ignored.\n", raw_tag);
+			return 1;
+		}
+		return 0;
+	}
+
+I had added "pcie_bus_safe" and "pci.pcie_bus_safe" to the command
+line parameters.  (Was hard to tell how it was supposed to be used
+as there is nothing in Documentation directory that mentions 
+pcie_bus_safe.)
+
+
+-- steve
+
+
+> 
+> -- steve
+> 
+> > git bisect start
+> > # bad: [9e79e3e9dd9672b37ac9412e9a926714306551fe] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc
+> > git bisect bad 9e79e3e9dd9672b37ac9412e9a926714306551fe
+> > # good: [322a8b034003c0d46d39af85bf24fee27b902f48] Linux 3.1-rc1
+> > git bisect good 322a8b034003c0d46d39af85bf24fee27b902f48
+> > # bad: [0c3bef612881ee6216a36952ffaabfc35b83545c] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6
+> > git bisect bad 0c3bef612881ee6216a36952ffaabfc35b83545c
+> > # good: [8c70aac04e01a08b7eca204312946206d1c1baac] Merge branch 'staging-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
+> > git bisect good 8c70aac04e01a08b7eca204312946206d1c1baac
+> > # good: [291b63c86aea8a571ddf913d41ab5156b8314dad] Merge branch 'drm-intel-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6
+> > git bisect good 291b63c86aea8a571ddf913d41ab5156b8314dad
+> > # good: [aa462abe8aaf2198d6aef97da20c874ac694a39f] mm: fix __page_to_pfn for a const struct page argument
+> > git bisect good aa462abe8aaf2198d6aef97da20c874ac694a39f
+> > # good: [5c80c71b9a0ec518b4b58d2a61de01a04f4a4453] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable
+> > git bisect good 5c80c71b9a0ec518b4b58d2a61de01a04f4a4453
+> > # good: [2c4ac99f983f1341b5962a16b5e8de6049bf10b5] Merge branch 'upstream-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev
+> > git bisect good 2c4ac99f983f1341b5962a16b5e8de6049bf10b5
+> > # bad: [0a2daa1cf35004f5adbf4138555cc5669abf3a3e] PCI: make cardbus-bridge resources optional
+> > git bisect bad 0a2daa1cf35004f5adbf4138555cc5669abf3a3e
+> > # bad: [be768912a49b10b68e96fbd8fa3cab0adfbd3091] PCI: honor child buses add_size in hot plug configuration
+> > git bisect bad be768912a49b10b68e96fbd8fa3cab0adfbd3091
+> > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI-E Max Payload Size on fabric
+> > git bisect bad b03e7495a862b028294f59fc87286d6d78ee7fa1
+> > commit b03e7495a862b028294f59fc87286d6d78ee7fa1
+> > Author: Jon Mason <mason@myri.com>
+> > Date:   Wed Jul 20 15:20:54 2011 -0500
+> > 
+> >     PCI: Set PCI-E Max Payload Size on fabric
+> >     
+> >     On a given PCI-E fabric, each device, bridge, and root port can have a
+> >     different PCI-E maximum payload size.  There is a sizable performance
+> >     boost for having the largest possible maximum payload size on each PCI-E
+> >     device.  However, if improperly configured, fatal bus errors can occur.
+> >     Thus, it is important to ensure that PCI-E payloads sends by a device
+> >     are never larger than the MPS setting of all devices on the way to the
+> >     destination.
+> >     
+> >     This can be achieved two ways:
+> >     
+> >     - A conservative approach is to use the smallest common denominator of
+> >       the entire tree below a root complex for every device on that fabric.
+> >     
+> >     This means for example that having a 128 bytes MPS USB controller on one
+> >     leg of a switch will dramatically reduce performances of a video card or
+> >     10GE adapter on another leg of that same switch.
+> >     
+> >     It also means that any hierarchy supporting hotplug slots (including
+> >     expresscard or thunderbolt I suppose, dbl check that) will have to be
+> >     entirely clamped to 128 bytes since we cannot predict what will be
+> >     plugged into those slots, and we cannot change the MPS on a "live"
+> >     system.
+> >     
+> >     - A more optimal way is possible, if it falls within a couple of
+> >       constraints:
+> >     * The top-level host bridge will never generate packets larger than the
+> >       smallest TLP (or if it can be controlled independently from its MPS at
+> >       least)
+> >     * The device will never generate packets larger than MPS (which can be
+> >       configured via MRRS)
+> >     * No support of direct PCI-E <-> PCI-E transfers between devices without
+> >       some additional code to specifically deal with that case
+> >     
+> >     Then we can use an approach that basically ignores downstream requests
+> >     and focuses exclusively on upstream requests. In that case, all we need
+> >     to care about is that a device MPS is no larger than its parent MPS,
+> >     which allows us to keep all switches/bridges to the max MPS supported by
+> >     their parent and eventually the PHB.
+> >     
+> >     In this case, your USB controller would no longer "starve" your 10GE
+> >     Ethernet and your hotplug slots won't affect your global MPS.
+> >     Additionally, the hotplugged devices themselves can be configured to a
+> >     larger MPS up to the value configured in the hotplug bridge.
+> >     
+> >     To choose between the two available options, two PCI kernel boot args
+> >     have been added to the PCI calls.  "pcie_bus_safe" will provide the
+> >     former behavior, while "pcie_bus_perf" will perform the latter behavior.
+> >     By default, the latter behavior is used.
+> >     
+> >     NOTE: due to the location of the enablement, each arch will need to add
+> >     calls to this function.  This patch only enables x86.
+> >     
+> >     This patch includes a number of changes recommended by Benjamin
+> >     Herrenschmidt.
+> >     
+> >     Tested-by: Jordan_Hargrave@dell.com
+> >     Signed-off-by: Jon Mason <mason@myri.com>
+> >     Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > 
+> > 
+> > 
+> > > > 
+> > > > 
+> > > > Few seconds after boot, I get "cmd_alloc returned NULL" messages
+> > > > or "hpsa 0000:0c:00.0: resetting device 0:0:0:0"
+> > > > 
+> > > > Usually lot of files are corrupted, fsck needed, and full distro
+> > > > reinstall as well.
+> > > > 
+> > > > I tested on two different machines, same result.
+> > > > 
+> > > > Relevant hardware information :
+> > > > 
+> > > > 	Manufacturer: HP
+> > > > 	Product Name: ProLiant BL460c G6
+> > > > 	Version: I24
+> > > > 	Release Date: 05/05/2011
+> > > > 	Intel(R) Xeon(R) CPU E5540 @ 2.53GHz  (two sockets)
+> > > > 
+> > > > 0c:00.0 RAID bus controller: Hewlett-Packard Company Smart Array G6
+> > > > controllers (rev 01)
+> > > > 	Subsystem: Hewlett-Packard Company Smart Array P410i
+> > > > 	Flags: bus master, fast devsel, latency 0, IRQ 16
+> > > > 	Memory at fbc00000 (64-bit, non-prefetchable) [size=4M]
+> > > > 	Memory at fbbf0000 (64-bit, non-prefetchable) [size=4K]
+> > > > 	I/O ports at 4000 [size=256]
+> > > > 	[virtual] Expansion ROM at e7200000 [disabled] [size=512K]
+> > > > 	Capabilities: [40] Power Management version 3
+> > > > 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+> > > > 	Capabilities: [70] Express Endpoint, MSI 00
+> > > > 	Capabilities: [ac] MSI-X: Enable+ Count=16 Masked-
+> > > > 	Capabilities: [100] Advanced Error Reporting
+> > > > 	Kernel driver in use: hpsa
+> > > > 
+> > > > # hpacucli ctrl all show config detail
+> > > > 
+> > > > Smart Array P410i in Slot 0 (Embedded)
+> > > >    Bus Interface: PCI
+> > > >    Slot: 0
+> > > >    Serial Number: 5001438006F44240
+> > > >    RAID 6 (ADG) Status: Disabled
+> > > >    Controller Status: OK
+> > > >    Chassis Slot: 
+> > > >    Hardware Revision: Rev C
+> > > >    Firmware Version: 2.50
+> > > >    Rebuild Priority: Medium
+> > > >    Expand Priority: Medium
+> > > >    Surface Scan Delay: 15 secs
+> > > >    Surface Scan Mode: Idle
+> > > >    Wait for Cache Room: Disabled
+> > > >    Surface Analysis Inconsistency Notification: Disabled
+> > > >    Post Prompt Timeout: 0 secs
+> > > >    Cache Board Present: False
+> > > >    Drive Write Cache: Disabled
+> > > >    SATA NCQ Supported: True
+> > > > 
+> > > >    Array: A
+> > > >       Interface Type: SATA
+> > > >       Unused Space: 0 MB
+> > > >       Status: OK
+> > > > 
+> > > > 
+> > > > 
+> > > >       Logical Drive: 1
+> > > >          Size: 232.9 GB
+> > > >          Fault Tolerance: RAID 1
+> > > >          Heads: 255
+> > > >          Sectors Per Track: 32
+> > > >          Cylinders: 59844
+> > > >          Strip Size: 128 KB
+> > > >          Status: OK
+> > > >          Unique Identifier: 600508B1001030364634343234300F00
+> > > >          Disk Name: /dev/cciss/c0d0
+> > > >          Mount Points: / 9.3 GB, /home 216.0 GB
+> > > >          OS Status: LOCKED
+> > > >          Logical Drive Label: A0124E845001438006F442403033
+> > > >          Mirror Group 0:
+> > > >             physicaldrive 1I:1:1 (port 1I:box 1:bay 1, SATA, 250 GB, OK)
+> > > >          Mirror Group 1:
+> > > >             physicaldrive 1I:1:2 (port 1I:box 1:bay 2, SATA, 250 GB, OK)
+> > > > 
+> > > >       physicaldrive 1I:1:1
+> > > >          Port: 1I
+> > > >          Box: 1
+> > > >          Bay: 1
+> > > >          Status: OK
+> > > >          Drive Type: Data Drive
+> > > >          Interface Type: SATA
+> > > >          Size: 250 GB
+> > > >          Firmware Revision: HPG2    
+> > > >          Serial Number: K648T9C27M8E        
+> > > >          Model: ATA     GJ0250EAGSQ     
+> > > >          SATA NCQ Capable: True
+> > > >          SATA NCQ Enabled: True
+> > > >          PHY Count: 1
+> > > >          PHY Transfer Rate: 3.0GBPS
+> > > > 
+> > > >       physicaldrive 1I:1:2
+> > > >          Port: 1I
+> > > >          Box: 1
+> > > >          Bay: 2
+> > > >          Status: OK
+> > > >          Drive Type: Data Drive
+> > > >          Interface Type: SATA
+> > > >          Size: 250 GB
+> > > >          Firmware Revision: HPG2    
+> > > >          Serial Number: K648T9C27M49        
+> > > >          Model: ATA     GJ0250EAGSQ     
+> > > >          SATA NCQ Capable: True
+> > > >          SATA NCQ Enabled: True
+> > > >          PHY Count: 1
+> > > >          PHY Transfer Rate: 3.0GBPS
+> > > > 
+> > > > 
+> > > > 
+> > > > 64 bit kernel, 4GB of memory
+> > > > 
+> > 
