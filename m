@@ -1,164 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144Ab1IAEPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 00:15:06 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14885 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702Ab1IAEPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 00:15:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,311,1312182000"; 
-   d="scan'208";a="47046582"
-Date: Thu, 1 Sep 2011 12:14:58 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Zhu Yanhai <zhu.yanhai@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: slow performance on disk/network i/o full speed after
- drop_caches
-Message-ID: <20110901041458.GA30123@localhost>
-References: <20110824093336.GB5214@localhost>
- <4E560F2A.1030801@profihost.ag>
- <20110826021648.GA19529@localhost>
- <4E570AEB.1040703@profihost.ag>
- <20110826030313.GA24058@localhost>
- <D299D0AE-2F3C-42E2-9723-A3D7C0108C40@profihost.ag>
- <20110826032601.GA26282@localhost>
- <CAC8teKXqZktBK7+GbLgHn-2k+zjjf8uieRM_q_V7JK7ePAk9Lg@mail.gmail.com>
- <4E573A99.4060309@profihost.ag>
- <4E5DDE86.3040202@profihost.ag>
+	id S1751178Ab1IAESy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 00:18:54 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:48325 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751003Ab1IAESx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 00:18:53 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ar8CALwFX055LIxDgWdsb2JhbABCqE8VAQEWJiWBQAEBBAE6HCMFCwgDEgYuFCUDDRQTh3K5JQ6GRwSbY4hd
+Date: Thu, 1 Sep 2011 14:18:48 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Daniel Ehrenberg <dehrenberg@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: Approaches to making io_submit not block
+Message-ID: <20110901041848.GO32358@dastard>
+References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
+ <20110830053231.GA1627@infradead.org>
+ <CAAK6Zt2P3jBPfeCPioK-ehpVAw0iQjikY0BujXfQmfozJ8GNvA@mail.gmail.com>
+ <20110831052627.GA5338@infradead.org>
+ <m2pqjlo6e5.fsf@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E5DDE86.3040202@profihost.ag>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m2pqjlo6e5.fsf@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
-
-On Wed, Aug 31, 2011 at 03:11:02PM +0800, Stefan Priebe - Profihost AG wrote:
-> Hi Fengguang,
-> Hi Yanhai,
+On Wed, Aug 31, 2011 at 10:08:50AM -0700, Andi Kleen wrote:
+> Christoph Hellwig <hch@infradead.org> writes:
+> >
+> > I'll get it polished up and send it out for RFC once Dave sends out
+> > the updated allocation workqueue patch.  With this he moves all
+> > allocator calls in XFS into a workqueue.  My direct I/O patch uses that
+> > fact to use that workqueue for the allocator call
 > 
-> > you're abssolutely corect zone_reclaim_mode is on - but why?
-> > There must be some linux software which switches it on.
-> >
-> > ~# grep 'zone_reclaim_mode' /etc/sysctl.* -r -i
-> > ~#
-> >
-> > also
-> > ~# grep 'zone_reclaim_mode' /etc/sysctl.* -r -i
-> > ~#
-> >
-> > tells us nothing.
-> >
-> > I've then read this:
-> >
-> > "zone_reclaim_mode is set during bootup to 1 if it is determined that
-> > pages from remote zones will cause a measurable performance reduction.
-> > The page allocator will then reclaim easily reusable pages (those page
-> > cache pages that are currently not used) before allocating off node pages."
-> >
-> > Why does the kernel do that here in our case on these machines.
-> 
-> Can nobody help why the kernel in this case set it to 1?
+> Is that really a good direction? The problem when you push operations
+> from multiple threads all into a single resource (per cpu workqueue)
+> is that the CPU scheduler loses control over that because they
+> are all mixed up.
 
-It's determined by RECLAIM_DISTANCE.
+Allocations are already serialised by a single resource - the AGF
+lock - so whether they block on the workqueue queue or on the AGF
+lock is irrelevant to scheduling. And a single thread can only have
+a single allocation outstanding at a time because the caller has to
+block waiting for the allocation to complete before moving on. 
 
-build_zonelists():
+> So if one guy submits a lot and another very little the "a lot" guy
+> can overwhelm the queue for the very little guy.
 
-                /*
-                 * If another node is sufficiently far away then it is better
-                 * to reclaim pages in a zone before going off node.
-                 */
-                if (distance > RECLAIM_DISTANCE)
-                        zone_reclaim_mode = 1;
+If we get lots of allocations queued on the one per-CPU wq, they
+will have all had to come from different contexts. In which case,
+FIFO processing of the work queued up is *exactly* the fairness we
+want, because that is exactly what doing them from process context
+would end up with.
 
-Since Linux v3.0 RECLAIM_DISTANCE is increased from 20 to 30 by this commit.
-It may well help your case, too.
+If the allocation work blocks (either on locks or metadata reads),
+the workqueue is configured with a deep amount of concurrent
+operations per CPU (I think I set it to the maximum of 512 works per
+CPU), so other pending allocations from the same per-cpu workqueue
+can be run in the mean time.
 
-commit 32e45ff43eaf5c17f5a82c9ad358d515622c2562
-Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date:   Wed Jun 15 15:08:20 2011 -0700
+> We also have similar problems with the IO schedulers, which also
+> rely on process context to make fairness decisions. If you remove
+> the process context they do badly.
 
-    mm: increase RECLAIM_DISTANCE to 30
-    
-    Recently, Robert Mueller reported (http://lkml.org/lkml/2010/9/12/236)
-    that zone_reclaim_mode doesn't work properly on his new NUMA server (Dual
-    Xeon E5520 + Intel S5520UR MB).  He is using Cyrus IMAPd and it's built on
-    a very traditional single-process model.
-    
-      * a master process which reads config files and manages the other
-        process
-      * multiple imapd processes, one per connection
-      * multiple pop3d processes, one per connection
-      * multiple lmtpd processes, one per connection
-      * periodical "cleanup" processes.
-    
-    There are thousands of independent processes.  The problem is, recent
-    Intel motherboard turn on zone_reclaim_mode by default and traditional
-    prefork model software don't work well on it.  Unfortunatelly, such models
-    are still typical even in the 21st century.  We can't ignore them.
-    
-    This patch raises the zone_reclaim_mode threshold to 30.  30 doesn't have
-    any specific meaning.  but 20 means that one-hop QPI/Hypertransport and
-    such relatively cheap 2-4 socket machine are often used for traditional
-    servers as above.  The intention is that these machines don't use
-    zone_reclaim_mode.
-    
-    Note: ia64 and Power have arch specific RECLAIM_DISTANCE definitions.
-    This patch doesn't change such high-end NUMA machine behavior.
-    
-    Dave Hansen said:
-    
-    : I know specifically of pieces of x86 hardware that set the information
-    : in the BIOS to '21' *specifically* so they'll get the zone_reclaim_mode
-    : behavior which that implies.
-    :
-    : They've done performance testing and run very large and scary benchmarks
-    : to make sure that they _want_ this turned on.  What this means for them
-    : is that they'll probably be de-optimized, at least on newer versions of
-    : the kernel.
-    :
-    : If you want to do this for particular systems, maybe _that_'s what we
-    : should do.  Have a list of specific configurations that need the
-    : defaults overridden either because they're buggy, or they have an
-    : unusual hardware configuration not really reflected in the distance
-    : table.
+Which, IMO, is a significant failing of the IO scheduler in question
+(CFQ) because it'll perform badly the moment your application or
+filesytem uses a multithreaded IO architecture.  Filesystem metadata
+is a global resource, not a per-process context resource, so IO
+scehdulers need to treat it that way.
 
-    And later said:
-    
-    : The original change in the hardware tables was for the benefit of a
-    : benchmark.  Said benchmark isn't going to get run on mainline until the
-    : next batch of enterprise distros drops, at which point the hardware where
-    : this was done will be irrelevant for the benchmark.  I'm sure any new
-    : hardware will just set this distance to another yet arbitrary value to
-    : make the kernel do what it wants.  :)
-    :
-    : Also, when the hardware got _set_ to this initially, I complained.  So, I
-    : guess I'm getting my way now, with this patch.  I'm cool with it.
+Indeed, taking the allocation IO out of the process context means
+the filesystem operations are not subject to process context based
+throttling, which can lead to priority inversion problems when a
+low priority process is throttled on a metadata read IO needed to
+complete an allocation that a high priority process is waiting on
+being completed...
 
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index b91a40e..fc839bf 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -60,7 +60,7 @@ int arch_update_cpu_topology(void);
-  * (in whatever arch specific measurement units returned by node_distance())
-  * then switch on zone reclaim on boot.
-  */
--#define RECLAIM_DISTANCE 20
-+#define RECLAIM_DISTANCE 30
- #endif
- #ifndef PENALTY_FOR_NODE_WITH_CPUS
- #define PENALTY_FOR_NODE_WITH_CPUS     (1)
+Cheers,
 
-Thanks,
-Fengguang
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
