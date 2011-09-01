@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab1IAMQW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:16:22 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20276 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab1IAMQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:16:20 -0400
-Message-ID: <4E5F7702.2070808@parallels.com>
-Date: Thu, 01 Sep 2011 16:13:54 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1757361Ab1IAM04 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 08:26:56 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47664 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757191Ab1IAM0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 08:26:55 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/ directory
- v6
-References: <20110831075814.003575573@openvz.org> <20110831080229.100652529@openvz.org> <20110831090612.GA3253@albatros> <20110831112642.GI25465@sun> <20110831140416.GA17626@shutemov.name> <20110831142622.GB30615@sun> <20110831151023.5b7e12da.akpm@linux-foundation.org> <4E5F3B25.9030701@parallels.com> <20110901115006.GB2752@htj.dyndns.org>
-In-Reply-To: <20110901115006.GB2752@htj.dyndns.org>
+In-Reply-To: <4E5F77A7.7090200@tuxonice.net>
+References: <CAEDdjHfu71X04JR2Yx8N495bDoJRudch3xbzNAEmUpVxYS+Oww@mail.gmail.com>
+	<4E5F77A7.7090200@tuxonice.net>
+Date: Thu, 1 Sep 2011 13:26:54 +0100
+Message-ID: <CAEDdjHeDYFqq7gLMEnhwP8jfA-xqTpTGVOSN017avC1JmXrEpg@mail.gmail.com>
+Subject: Re: [TuxOnIce-devel] Thinkpad hotkeys and USB audio not working after
+ resume in 3.0.x
+From: Pedro Ribeiro <pedrib@gmail.com>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2011 03:50 PM, Tejun Heo wrote:
-> Hello, Andrew, Pavel.
-> 
-> On Thu, Sep 01, 2011 at 11:58:29AM +0400, Pavel Emelyanov wrote:
->>> What additional kernel patches are required to bring that effort to a
->>> usable state and where are those patches?
+On 1 September 2011 13:16, Nigel Cunningham <nigel@tuxonice.net> wrote:
+> Hi Pedro.
+>
+> On 01/09/11 20:36, Pedro Ribeiro wrote:
+>> Hi,
 >>
->> * The one you've already accepted with ->statfs for pipefs.
->> * PTRACE_SEIZE set from Tejun (RFC was sent some time earlier)
-> 
-> This one is already in mainline.  It's necessary to make the existing
-> debuggers (strace and gdb) interact properly with job control.
-> 
->> * CLONE_USEPID flag for the clone() syscall (Cyrill will re-send a bit later)
->> * The binfmt handler for images (I've sent it earlier, but there's a discussion
->>   happening over it. We can do restore without one, but it will improve the
->>   situation significantly)
-> 
-> I still can't see much point in binfmt handler.  The kernel pieces
-> should be pretty small no matter how this one gets resolved.
+>> I'm hitting a bug with my thinkpad T400. After resuming from Hibernate,
+>> the thinkpad hotkeys and my USB audio card do not work at all.
+>> Suspending to RAM and resuming seem to solve the problem, but after
+>> another hibernation it comes back again.
+>>
+>> This only happens with TuxOnIce but not with the vanilla kernel.
+>>
+>> Rafael, can you please point out from the top of your head if there was
+>> any change that could have caused this?
+>
+> Sorry for my slowness in getting back to you Pedro.
+>
+> When you invoke swsusp, is it in exactly the same way that TuxOnIce is
+> invoked? I'm wondering whether modules are unloaded and services stopped
+> in one scenario that are handled differently in the other.
+>
+> Regards,
+>
+> Nigel
+> --
+> Evolution (n): A hypothetical process whereby improbable
+> events occur with alarming frequency, order arises from chaos, and
+> no one is given credit.
+>
 
-Because with the handler restore process looks very natural and simple - each
-task does the following steps
+Hi Nigel,
 
-1. restore task resources (open files, set IDs, restore connections, wire back timers, etc.)
-2. call execve() to jump into new memory+registers context which is
-   a. unmap all the user memory
-   b. map required mappings
-   c. populate them with data
-   d. restore registers
-   e. restore IP
+Thanks for your response.
 
-Note, that steps a through e are what execve() is designed for from day 1. Also note,
-that when talking about the binary handler I do not insist in having my own one - it's
-perfectly fine with me if we can make the ELF handler do the job (and I'm going to investigate
-this ability soon).
+I just tried using echo disk > /sys/power/state using both methods
+(swsusp and ToI) and the result is the same.
 
-With SEIZE it looks worse (maybe I'm seeing it wrong, then correct me please):
+With swsusp the keys and the USB interface work fine, but with ToI
+they stop working until I suspend to RAM.
 
-1. restore task resources
-2. freeze
-3. some foreigner attaches a parasite to the frozen task and the parasite
-   should do steps a through e from the previous list to restore mem+regs context,
-   but when doing steps a and b it should care about not killing himself from the
-   target task context
-
-This SEIZE-d restoring looks very complex and not efficient to me.
-
-Am I wrong at some point?
-   
-
-> Thanks.
-> 
-
+Regards,
+Pedro
