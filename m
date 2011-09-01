@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631Ab1IARQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:16:00 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:3868
+	id S1755971Ab1IARQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:16:15 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:23949
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750900Ab1IARP4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:15:56 -0400
-X-SpamScore: -23
-X-BigFish: VPS-23(zz9371K542M1432N98dK14ffOzz1202hzz8275bhz2ei2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
-From: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        scsi <linux-scsi@vger.kernel.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dept_iscsi_driver <iscsi-driver@qlogic.com>
-Date: Thu, 1 Sep 2011 10:15:50 -0700
-Subject: RE: linux-next: Tree for Aug 30 (scsi/qla4xxx)
-Thread-Topic: linux-next: Tree for Aug 30 (scsi/qla4xxx)
-Thread-Index: AcxoHujBrio8TGsbRuelKQ4f/kL5TwAq6fbg
-Message-ID: <5E4F49720D0BAD499EE1F01232234BA873C679F24B@AVEXMB1.qlogic.org>
-References: <20110830171605.168f29decb0558fa31e59210@canb.auug.org.au>
- <20110831134515.049f584b.rdunlap@xenotime.net>
-In-Reply-To: <20110831134515.049f584b.rdunlap@xenotime.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	by vger.kernel.org with ESMTP id S1751144Ab1IARQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 13:16:13 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h)
+X-Forefront-Antispam-Report: CIP:160.36.179.113;KIP:(null);UIP:(null);IPVD:NLI;H:kedge4.utk.tennessee.edu;RD:kedge4.utk.tennessee.edu;EFVD:NLI
+X-FB-SS: 13,
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 1 Sep 2011 13:16:10 -0400
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Hommey <mh@glandium.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Problem with perf hardware counters grouping
+In-Reply-To: <1314895312.1485.2.camel@twins>
+Message-ID: <alpine.DEB.2.00.1109011308430.9976@cl320.eecs.utk.edu>
+References: <20110831085718.GB13884@glandium.org>  <1314878012.11566.7.camel@twins>  <alpine.DEB.2.00.1109011117200.9976@cl320.eecs.utk.edu> <1314895312.1485.2.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 1 Sep 2011, Peter Zijlstra wrote:
+> > Is there any good workaround, or do we have to fall back to trying to 
+> > start/read/stop every proposed event set to make sure it's valid?
+> 
+> I guess my first question is going to be, how do you know what the
+> maximum number of counters is in the first place?
 
-> -----Original Message-----
-> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
-> Sent: Wednesday, August 31, 2011 1:45 PM
-> To: Stephen Rothwell; scsi
-> Cc: linux-next@vger.kernel.org; linux-kernel; Dept_iscsi_driver
-> Subject: Re: linux-next: Tree for Aug 30 (scsi/qla4xxx)
->
-> On Tue, 30 Aug 2011 17:16:05 +1000 Stephen Rothwell wrote:
->
-> > Hi all,
->
-> [Sorry about the delay.. slow build machine.
-> Please ignore if this is already known/fixed.]
->
->
-> (on i386)
->
-> ERROR: "iscsi_boot_create_target" [drivers/scsi/qla4xxx/qla4xxx.ko]
-> undefined!
-> ERROR: "iscsi_boot_create_ethernet" [drivers/scsi/qla4xxx/qla4xxx.ko]
-> undefined!
-> ERROR: "iscsi_boot_create_host_kset" [drivers/scsi/qla4xxx/qla4xxx.ko]
-> undefined!
-> ERROR: "iscsi_boot_create_initiator" [drivers/scsi/qla4xxx/qla4xxx.ko]
-> undefined!
-> ERROR: "iscsi_boot_destroy_kset" [drivers/scsi/qla4xxx/qla4xxx.ko]
-> undefined!
->
-> when CONFIG_ISCSI_BOOT_SYSFS is not enabled.
->
-Acked-by: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+The use case where this comes up the easiest is where you are adding
+events to an eventset one at a time until failure.  Then you assume
+failure - 1 is the number available.  So this would boil down
+to doing that many sys_perf_open()/close() calls.  This obviously fails
+in the current watchdog timer case.
 
-This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
+The other way to know is the query libpfm4 which "knows" the number of 
+counters available on each CPU.  PAPI uses this as a hueristic not as a 
+hard limit, but it can also lead to the problem occurring if the test 
+tries the limit, the sys_perf_open() succcedes... and then fails upon 
+read.
+
+Does the perf tool work around this in some way?  
+
+> > This is going to seriously impact performance, and perf_event performance 
+> > is pretty bad to begin with.  The whole reason I was writing the tests to 
+> > trigger this is because PAPI users are complaining that perf_event 
+> > overhead is roughly twice that of perfctr or perfmon2, which I've verified 
+> > experimentally.
+> 
+> Yeah, you keep saying this, where does it come from? Only the lack of
+> userspace rdpmc?
+
+that's part of it.  I've been working on isolating this, but for a fair 
+comparison it involves writing low-level code that accesses perf_event, 
+perfctr, and perfmon2 directly at the syscall level and as you can imagine 
+that's not easy or fun.  It's also tricky as you can imagine to try to 
+profile the perf_event code using perf_events.
+
+Vince
+vweaver1@eecs.utk.edu
 
