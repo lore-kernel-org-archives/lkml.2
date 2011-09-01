@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab1IAAXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 20:23:10 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52260 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab1IAAXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 20:23:08 -0400
-Message-ID: <4E5ED061.6020502@gmail.com>
-Date: Thu, 01 Sep 2011 08:22:57 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cleanup: small fix on comment for block_invalidatepage
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756705Ab1IAAZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 20:25:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:36306 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756242Ab1IAAZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 20:25:12 -0400
+Subject: Re: [PATCH 18/24] sctp: Remove unnecessary OOM logging messages
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, vladislav.yasevich@hp.com, sri@us.ibm.com,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110829.181520.933815499847625814.davem@davemloft.net>
+References: <21b4d996c8861373ac77d427914ec7882fe0c83e.1314650069.git.joe@perches.com>
+	 <1314654209.2563.7.camel@edumazet-laptop>
+	 <1314654681.2563.10.camel@edumazet-laptop>
+	 <20110829.181520.933815499847625814.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 31 Aug 2011 17:25:11 -0700
+Message-ID: <1314836711.27632.34.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch is aganist 3.1-rc3.
+On Mon, 2011-08-29 at 18:15 -0400, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Mon, 29 Aug 2011 23:51:21 +0200
+> > Le lundi 29 août 2011 à 23:43 +0200, Eric Dumazet a écrit :
+> >> Furthermore, a failed vmalloc() is not guaranteed to emit an OOM
+> >> message, is it ?
+> > It currently displays a message without context :
+> > vmap allocation for size XXXXXX failed: use vmalloc=<size> to increase
+> > size.
+> > So we dont know which part of the kernel asked this allocation.
+> > Please dont remove existing error messages after failed vmalloc() calls.
+> Indeed.
+> Joe, these vmalloc() and also the __GFP_NOWARN cases will need to be
+> attended to and this series resubmitted as such.
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- fs/buffer.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+No worries.
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 1a80b04..936d603 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1470,13 +1470,13 @@ static void discard_buffer(struct buffer_head * bh)
- }
- 
- /**
-- * block_invalidatepage - invalidate part of all of a buffer-backed page
-+ * block_invalidatepage - invalidate part or all of a buffer-backed page
-  *
-  * @page: the page which is affected
-  * @offset: the index of the truncation point
-  *
-  * block_invalidatepage() is called when all or part of the page has become
-- * invalidatedby a truncate operation.
-+ * invalidated by a truncate operation.
-  *
-  * block_invalidatepage() does not have to release all buffers, but it must
-  * ensure that no dirty buffer is left outside @offset and that no I/O
--- 
-1.7.1
+Andrew Morton picked up a patch I posted that
+changes vmalloc to be similar to kmalloc when
+the pointer returned is NULL (OOM).  It now
+uses dump_stack for those cases.
 
+https://patchwork.kernel.org/patch/1114682/
+
+I'll keep all the current vmalloc failure messages
+for now and resubmit in a day or two this series
+with acks.  Not batman or netfilter though as they
+were picked up by their maintainers.
+
+A month or two after the vmalloc patch hits
+mainline and/or wider testing, and it's deemed
+acceptable, removing vmalloc site specific OOM
+messages should be appropriate.
+
+Anyone object?
+
+I plan on submitting drivers/net OOM removals
+next week.
 
