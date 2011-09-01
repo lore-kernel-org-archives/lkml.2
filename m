@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510Ab1IANaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 09:30:39 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:46704 "EHLO mxout1.idt.com"
+	id S1757528Ab1IANbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 09:31:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22164 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757313Ab1IANai convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 09:30:38 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1757451Ab1IANbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 09:31:50 -0400
+Message-ID: <4E5F88F8.2040008@redhat.com>
+Date: Thu, 01 Sep 2011 16:30:32 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] fsl-rio: Release rapidio port I/O region resource if portfailed to initialize
-Date: Thu, 1 Sep 2011 06:29:55 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520210DF01@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <1314870744-27325-1-git-send-email-Gang.Liu@freescale.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] fsl-rio: Release rapidio port I/O region resource if portfailed to initialize
-Thread-Index: AcxopTwamG4taYG7SimZlQMwq7I+AwABR0MQ
-References: <1314870744-27325-1-git-send-email-Gang.Liu@freescale.com>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Liu Gang <Gang.Liu@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
-CC: <r58472@freescale.com>, <r61911@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <B11780@freescale.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: RFD: x32 ABI system call numbers
+References: <4E582577.2060805@zytor.com> <201108301409.27527.arnd@arndb.de> <4E5D1153.5030908@zytor.com> <201108311814.54906.arnd@arndb.de> <CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com> <4E5E6AC0.60000@zytor.com>
+In-Reply-To: <4E5E6AC0.60000@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 01, 2011 5:52 AM
-Liu Gang <Gang.Liu@freescale.com> wrote:
+On 08/31/2011 08:09 PM, H. Peter Anvin wrote:
+> >  I really think that "x32" should try to aim *VERY* hard at using the
+> >  64-bit system calls, and seeing itself as being a "32-bit application
+> >  in a 64-bit world".  That's not just true for time_t (which I think
+> >  should be 64-bit on anything new that expects to survive for any
+> >  amount of time), but in general.
+>
+> We're trying for it.  The things we're trying to avoid is to muck (too
+> much) with the compat layer for the mega-multiplex system calls like
+> ioctl.  We can't just use the 64-bit ioctl because ioctl structures
+> generally contain pointers.
+>
 
-> Subject: [PATCH] fsl-rio: Release rapidio port I/O region resource if
-> portfailed to initialize
-> 
-...
-> 
-> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-> ---
->  arch/powerpc/sysdev/fsl_rio.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/sysdev/fsl_rio.c
-> b/arch/powerpc/sysdev/fsl_rio.c
-> index c65f75a..22ffccd 100644
-> --- a/arch/powerpc/sysdev/fsl_rio.c
-> +++ b/arch/powerpc/sysdev/fsl_rio.c
-> @@ -1608,6 +1608,7 @@ int fsl_rio_setup(struct platform_device *dev)
->  	return 0;
->  err:
->  	iounmap(priv->regs_win);
-> +	release_resource(&port->iores);
->  err_res:
->  	kfree(priv);
->  err_priv:
-> --
-> 1.7.3.1
+     struct iovec
+     {
+         void __user *iov_base;    /* BSD uses caddr_t (1003.1g requires 
+void *) */
+         __kernel_size_t iov_len; /* Must be size_t (1003.1g) */
+     } __attribute__((x32_abi_64));
 
-Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
+     typedef long time_t __attribute__((x32_abi_64));
+
+The x32_abi_64 attribute converts pointers and longs back to 64-bit and 
+adjusts the alignment accordingly.  If we tag all userspace visible 
+structures with this attribute, we can use the 64-bit ABI without changes.
+
+Issues:
+&my_iovec->iov_base yields something that is not a void ** (reads of a 
+64-bit pointer decay to a 32-bit pointer, writes zero extend).
+   printf formats will break
+   if someone embeds an iovec in a structure, it will occupy more space 
+than expected
+
+
+-- 
+error compiling committee.c: too many arguments to function
 
