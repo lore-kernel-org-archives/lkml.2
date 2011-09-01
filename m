@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab1IAVdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:33:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37148 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758062Ab1IAVdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:33:44 -0400
-Date: Thu, 1 Sep 2011 14:33:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <dchinner@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
- del_timer
-Message-Id: <20110901143333.51baf4ae.akpm@linux-foundation.org>
-In-Reply-To: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
-References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758078Ab1IAVoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:44:18 -0400
+Received: from tuxonice.net ([96.126.116.212]:33510 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757961Ab1IAVoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 17:44:17 -0400
+Message-ID: <4E5FFCAB.6030409@tuxonice.net>
+Date: Fri, 02 Sep 2011 07:44:11 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Lightning/1.0b2 Thunderbird/3.1.12
+MIME-Version: 1.0
+To: Pedro Ribeiro <pedrib@gmail.com>
+CC: Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [TuxOnIce-devel] Thinkpad hotkeys and USB audio not working after
+ resume in 3.0.x
+References: <CAEDdjHfu71X04JR2Yx8N495bDoJRudch3xbzNAEmUpVxYS+Oww@mail.gmail.com>	<4E5F77A7.7090200@tuxonice.net> <CAEDdjHeDYFqq7gLMEnhwP8jfA-xqTpTGVOSN017avC1JmXrEpg@mail.gmail.com>
+In-Reply-To: <CAEDdjHeDYFqq7gLMEnhwP8jfA-xqTpTGVOSN017avC1JmXrEpg@mail.gmail.com>
+X-TagToolbar-Keys: D20110902074411855
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  1 Sep 2011 21:27:02 +0530
-Kautuk Consul <consul.kautuk@gmail.com> wrote:
+Hi.
 
-> This is important for SMP scenario, to check whether the timer
-> callback is executing on another CPU when we are deleting the
-> timer.
+On 01/09/11 22:26, Pedro Ribeiro wrote:
+> On 1 September 2011 13:16, Nigel Cunningham <nigel@tuxonice.net> wrote:
+>> Hi Pedro.
+>>
+>> On 01/09/11 20:36, Pedro Ribeiro wrote:
+>>> Hi,
+>>>
+>>> I'm hitting a bug with my thinkpad T400. After resuming from Hibernate,
+>>> the thinkpad hotkeys and my USB audio card do not work at all.
+>>> Suspending to RAM and resuming seem to solve the problem, but after
+>>> another hibernation it comes back again.
+>>>
+>>> This only happens with TuxOnIce but not with the vanilla kernel.
+>>>
+>>> Rafael, can you please point out from the top of your head if there was
+>>> any change that could have caused this?
+>>
+>> Sorry for my slowness in getting back to you Pedro.
+>>
+>> When you invoke swsusp, is it in exactly the same way that TuxOnIce is
+>> invoked? I'm wondering whether modules are unloaded and services stopped
+>> in one scenario that are handled differently in the other.
+>>
+>> Regards,
+>>
+>> Nigel
+>> --
+>> Evolution (n): A hypothetical process whereby improbable
+>> events occur with alarming frequency, order arises from chaos, and
+>> no one is given credit.
+>>
 > 
+> Hi Nigel,
+> 
+> Thanks for your response.
+> 
+> I just tried using echo disk > /sys/power/state using both methods
+> (swsusp and ToI) and the result is the same.
+> 
+> With swsusp the keys and the USB interface work fine, but with ToI
+> they stop working until I suspend to RAM.
 
-I don't see why?
+Okay; thanks for ruling that out. I'll seek to take a look today.
 
-> index d6edf8d..754b35a 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -385,7 +385,7 @@ static int bdi_forker_thread(void *ptr)
->  		 * dirty data on the default backing_dev_info
->  		 */
->  		if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list)) {
-> -			del_timer(&me->wakeup_timer);
-> +			del_timer_sync(&me->wakeup_timer);
->  			wb_do_writeback(me, 0);
->  		}
+Regards,
 
-It isn't a use-after-free fix: bdi_unregister() safely shoots down any
-running timer.
-
-Please completely explain what you believe the problem is here.
+Nigel
+-- 
+Evolution (n): A hypothetical process whereby improbable
+events occur with alarming frequency, order arises from chaos, and
+no one is given credit.
