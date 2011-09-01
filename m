@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab1IAHtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 03:49:25 -0400
-Received: from cernmx31.cern.ch ([137.138.144.179]:30972 "EHLO
-	CERNMX31.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754523Ab1IAHtX (ORCPT
+	id S1755868Ab1IAH5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 03:57:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59730 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121Ab1IAH5P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 03:49:23 -0400
-Date: Thu, 1 Sep 2011 09:46:01 +0200
-From: Manohar Vanga <manohar.vanga@cern.ch>
-To: "Emilio G. Cota" <cota@braap.org>
-CC: <gregkh@suse.de>, <martyn.welch@ge.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] staging: vme: make match() driver specific to
- improve non-VME64x support
-Message-ID: <20110901074601.GA3820@becoht-mvanga>
-Mail-Followup-To: "Emilio G. Cota" <cota@braap.org>, gregkh@suse.de,
-	martyn.welch@ge.com, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1314785146-19163-1-git-send-email-manohar.vanga@cern.ch>
- <1314785146-19163-4-git-send-email-manohar.vanga@cern.ch>
- <20110831212047.GB5339@flamenco.cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110831212047.GB5339@flamenco.cs.columbia.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [137.138.192.18]
-Keywords: CERN SpamKiller Note: -50
+	Thu, 1 Sep 2011 03:57:15 -0400
+Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 01 Sep 2011 09:57:08 +0200
+In-Reply-To: <4E5EE409.3060102@intel.com>
+References: <1314681384-20881-1-git-send-email-ying.huang@intel.com>
+		 <1314681384-20881-2-git-send-email-ying.huang@intel.com>
+	 <1314785405.23993.21.camel@twins> <4E5EE409.3060102@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314863829.7945.9.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Emilio,
+On Thu, 2011-09-01 at 09:46 +0800, Huang Ying wrote:
 
-On Wed, Aug 31, 2011 at 05:20:47PM -0400, Emilio G. Cota wrote:
-> This was hard to review. There are references to functions that
-> are not committed in Greg's tree yet ("staging" tree @ git.kernel.org).
+> You mean we should not use cpu_relax before the first cmpxchg? 
+
+Yeah, that's just wasting time for no reason..
+
+>  You suggest something as follow?
 > 
-> I assume this patch was applied before you wrote the v4 patchset:
+> void llist_add(struct llist_node *new, struct llist_head *head)
+> {
+>         struct llist_node *entry, *old_entry;
 > 
-> 	https://lkml.org/lkml/2011/8/12/107
->
-
-I believe Greg has acked this patch (I received a confirmation mail from him).
-
-> On Wed, Aug 31, 2011 at 12:05:46 +0200, Manohar Vanga wrote:
-> (snip)
-> > Another change introduced in this patch is that devices are now created
-> > within the VME driver structure rather than in the VME bridge structure.
-> > This way, things don't go haywire if the bridge driver is removed while
-> > a driver is using it (this is also additionally prevented by having
-> > reference counting of used bridge modules).
+> #ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+>         BUG_ON(in_nmi());
+> #endif
 > 
-> The mention to refcounting seems outdated. As I stated in my reply
-> to v0, we should just safely remove devices under the bus when
-> vme_unregister_bus() is called.
+>         entry = head->first;
+>         for (;;) {
+>                 old_entry = entry;
+>                 new->next = entry;
+>                 entry = cmpxchg(&head->first, old_entry, new);
+>                 if (entry == old_entry)
+>                         break;
+>                 cpu_relax();
+>         }
+> }
 
-Ah right need to reword that.
+If you insist on having cpu_relax(), then yes that's lots better. Also
+avoids the assignment in your conditional. Thing with cpu_relax() is
+that its only beneficial in the highly contended case and degrade
+light/un-contended loads.
 
-> > -void vme_unregister_bridge(struct vme_bridge *bridge)
-> > {
-> > -	int i;
-> > -	struct vme_dev *vdev;
-> > -
-> > -
-> > -	for (i = 0; i < VME_SLOTS_MAX; i++) {
-> > -		vdev = bridge->dev[i];
-> > -		device_unregister(&vdev->dev);
-> > - 	}
-> > 	vme_remove_bus(bridge);
-> > }
+Also, just noticed, why do you have different list_head/list_node
+structures? They're the same, a single pointer.
+
+> > and loose the get/put
+> > cpu muck? The existing preempt_disable/enable() are already superfluous
+> > and could be removed, you just made all this way more horrid than need
+> > be.
 > 
-> So we're essentially leaving the devices there, even though the
-> bridge they're under will be removed. This doesn't seem right.
-> btw with the removal of the array of vme_dev's from struct vme_bridge,
-> the bridge cannot know which devices are under it.
+> Will it cause race condition to remove preempt_disable/enable?
+> Considering something as follow:
 > 
-> We have to bear in mind that the drv->devices list needs to be
-> updated when devices come and go; possibly a bridge->devices list
-> could also be kept.
+> - get irq_work_list of CPU A
+> - queue irq_work into irq_work_list of CPU A
+> - preempted and resumed execution on CPU B
+> - arch_irq_work_raise on CPU B
 > 
-> Helpers around device_register and _unregister may simplify the lists'
-> housekeeping.
+> irq_work_run on CPU B will do nothing.  While irq_work need to wait for
+> next timer interrupt.  Isn't it an issue?
 
-I was going to add a separate patch for this but I'll just integrate into this
-one (makes more sense anyway).
+Yes that's unfortunate, the current version would work just fine without
+preempt but that's because of the this_cpu_* ops foo. 
 
-And yes, I also noticed that the bridge no longer has track of its devices and
-bridges will need to keep a list of them.
-
-> > -	return retval;
-> > +		if (vdev->dev.platform_data) {
-> > +			list_add_tail(&vdev->list, &drv->devices);
-> > +			drv->ndev++;
-> 
-> Ok, so drv->ndev can only increase. In case a device is removed (when
-> a bus driver is removed) this may need to be decreased, which isn't
-> done in the corresponding list_del() calls (I've marked them).
-> 
-> In fact I wonder whether it is useful at all to have drv->ndev. What's
-> its purpose?
-
-I'm not sure why I added that now...
-It can be removed.
-
--- 
-/manohar
+Not sure it would make sense to add a special this_cpu_llist_add() or
+so.. esp seeing that this_cpu_* is basically x86-only.
