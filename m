@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab1IAWHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:07:23 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59895 "EHLO
+	id S932272Ab1IAWEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:04:55 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33645 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab1IAWE4 (ORCPT
+	with ESMTP id S932190Ab1IAWEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:04:56 -0400
+	Thu, 1 Sep 2011 18:04:52 -0400
 From: Stephen Warren <swarren@nvidia.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
         Ben Dooks <ben-linux@fluff.org>, Jonathan Cameron <jic23@cam.ac.uk>,
@@ -18,9 +18,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Jonathan Cameron <jic23@cam.ac.uk>,
         linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
         spi-devel-general@lists.sourceforge.net,
         Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V3 5/5] staging:iio:magnetometer:ak8975: Fix probe() error-handling
-Date: Thu,  1 Sep 2011 16:04:31 -0600
-Message-Id: <1314914676-28397-5-git-send-email-swarren@nvidia.com>
+Subject: [PATCH V3 3/5] staging:iio:magnetometer:ak8975 Don't use irq_to_gpio()
+Date: Thu,  1 Sep 2011 16:04:29 -0600
+Message-Id: <1314914676-28397-3-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1314914676-28397-1-git-send-email-swarren@nvidia.com>
 References: <1314914676-28397-1-git-send-email-swarren@nvidia.com>
@@ -28,9 +28,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix ak8975_probe() to jump to the appropriate exit labels when an error
-occurs. With the previous code, some cleanup actions were being skipped
-for some error conditions.
+Tegra doesn't have irq_to_gpio() any more, and ak8975 is included in
+tegra_defconfig. This causes a build failure.
+
+Instead, obtain the GPIO ID corresponding to the chip's IRQ from the new
+i2c_client field irq_gpio.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
@@ -38,18 +40,18 @@ Signed-off-by: Stephen Warren <swarren@nvidia.com>
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
-index 0dfdf50..cc20e8d 100644
+index a17fa9f..14076da 100644
 --- a/drivers/staging/iio/magnetometer/ak8975.c
 +++ b/drivers/staging/iio/magnetometer/ak8975.c
-@@ -510,7 +510,7 @@ static int ak8975_probe(struct i2c_client *client,
- 	err = ak8975_setup(client);
- 	if (err < 0) {
- 		dev_err(&client->dev, "AK8975 initialization fails\n");
--		goto exit_gpio;
-+		goto exit_free_iio;
- 	}
+@@ -477,7 +477,7 @@ static int ak8975_probe(struct i2c_client *client,
+ 	int err;
  
- 	i2c_set_clientdata(client, indio_dev);
+ 	/* Grab and set up the supplied GPIO. */
+-	eoc_gpio = irq_to_gpio(client->irq);
++	eoc_gpio = client->irq_gpio;
+ 
+ 	/* We may not have a GPIO based IRQ to scan, that is fine, we will
+ 	   poll if so */
 -- 
 1.7.0.4
 
