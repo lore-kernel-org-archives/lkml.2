@@ -1,133 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab1IARxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:53:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49118 "EHLO
+	id S1757210Ab1IARzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:55:42 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44695 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757094Ab1IARxX (ORCPT
+	with ESMTP id S1756901Ab1IARzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:53:23 -0400
-From: crquan@gmail.com
-To: linux-kbuild@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        Nir Tzachar <nir.tzachar@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        c.rq541@comcast.net
-Subject: [PATCH V3 4/5] scripts/kconfig/nconf: fix editing long strings
-Date: Thu,  1 Sep 2011 10:52:21 -0700
-Message-Id: <1314899542-5848-4-git-send-email-crquan@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1314899542-5848-3-git-send-email-crquan@gmail.com>
-References: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
- <1314899542-5848-1-git-send-email-crquan@gmail.com>
- <1314899542-5848-2-git-send-email-crquan@gmail.com>
- <1314899542-5848-3-git-send-email-crquan@gmail.com>
+	Thu, 1 Sep 2011 13:55:41 -0400
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 1/1] drivers/amba/bus.c: Don't perform extra matching when any one fails
+Date: Thu,  1 Sep 2011 23:25:15 +0530
+Message-Id: <1314899715-20311-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cheng Renquan <crquan@gmail.com>
+If any one operation fails, then r anyways gets set to 0, which will
+cause the device to not match the find_data.
 
-The original dialog_inputbox doesn't work with longer than prompt_width
-strings, here fixed it in this way:
-1) add variable cursor_form_win to record cursor of form_win,
-   keep its value always between [0, prompt_width-1];
-   reuse the original cursor_position as cursor of the string result,
-   use (cursor_position-cursor_form_win) as begin offset to show part of
-   the string in form_win;
-
-Signed-off-by: Cheng Renquan <crquan@gmail.com>
-Cc: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Nir Tzachar <nir.tzachar@gmail.com>
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
 ---
- scripts/kconfig/nconf.gui.c |   29 +++++++++++++++++++++++------
- 1 files changed, 23 insertions(+), 6 deletions(-)
+ drivers/amba/bus.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/scripts/kconfig/nconf.gui.c b/scripts/kconfig/nconf.gui.c
-index d64bc1c..4b9d8b6 100644
---- a/scripts/kconfig/nconf.gui.c
-+++ b/scripts/kconfig/nconf.gui.c
-@@ -367,6 +367,7 @@ int dialog_inputbox(WINDOW *main_window,
- 	int i, x, y;
- 	int res = -1;
- 	int cursor_position = strlen(init);
-+	int cursor_form_win;
- 	char *result = *resultp;
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index d74926e..af2e0a1 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -699,10 +699,12 @@ static int amba_find_match(struct device *dev, void *data)
+ 	int r;
  
- 	if (strlen(init)+1 > *result_len) {
-@@ -410,7 +411,9 @@ int dialog_inputbox(WINDOW *main_window,
- 	fill_window(prompt_win, prompt);
+ 	r = (pcdev->periphid & d->mask) == d->id;
+-	if (d->parent)
+-		r &= d->parent == dev->parent;
+-	if (d->busid)
+-		r &= strcmp(dev_name(dev), d->busid) == 0;
++	if (r) {
++		if (d->parent)
++			r &= d->parent == dev->parent;
++		if (r && d->busid)
++			r &= strcmp(dev_name(dev), d->busid) == 0;
++	}
  
- 	mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
--	mvwprintw(form_win, 0, 0, "%s", result);
-+	cursor_form_win = min(cursor_position, prompt_width-1);
-+	mvwprintw(form_win, 0, 0, "%s",
-+		  result + cursor_position-cursor_form_win);
- 
- 	/* create panels */
- 	panel = new_panel(win);
-@@ -436,6 +439,8 @@ int dialog_inputbox(WINDOW *main_window,
- 						&result[cursor_position],
- 						len-cursor_position+1);
- 				cursor_position--;
-+				cursor_form_win--;
-+				len--;
- 			}
- 			break;
- 		case KEY_DC:
-@@ -443,18 +448,22 @@ int dialog_inputbox(WINDOW *main_window,
- 				memmove(&result[cursor_position],
- 						&result[cursor_position+1],
- 						len-cursor_position+1);
-+				len--;
- 			}
- 			break;
- 		case KEY_UP:
- 		case KEY_RIGHT:
--			if (cursor_position < len &&
--			    cursor_position < min(*result_len, prompt_width))
-+			if (cursor_position < len) {
- 				cursor_position++;
-+				cursor_form_win++;
-+			}
- 			break;
- 		case KEY_DOWN:
- 		case KEY_LEFT:
--			if (cursor_position > 0)
-+			if (cursor_position > 0) {
- 				cursor_position--;
-+				cursor_form_win--;
-+			}
- 			break;
- 		default:
- 			if ((isgraph(res) || isspace(res))) {
-@@ -470,16 +479,24 @@ int dialog_inputbox(WINDOW *main_window,
- 						len-cursor_position+1);
- 				result[cursor_position] = res;
- 				cursor_position++;
-+				cursor_form_win++;
-+				len++;
- 			} else {
- 				mvprintw(0, 0, "unknown key: %d\n", res);
- 			}
- 			break;
- 		}
-+		if (cursor_form_win < 0)
-+			cursor_form_win = 0;
-+		else if (cursor_form_win > prompt_width-1)
-+			cursor_form_win = prompt_width-1;
-+
- 		wmove(form_win, 0, 0);
- 		wclrtoeol(form_win);
- 		mvwprintw(form_win, 0, 0, "%*s", prompt_width, " ");
--		mvwprintw(form_win, 0, 0, "%s", result);
--		wmove(form_win, 0, cursor_position);
-+		mvwprintw(form_win, 0, 0, "%s",
-+			result + cursor_position-cursor_form_win);
-+		wmove(form_win, 0, cursor_form_win);
- 		touchwin(win);
- 		refresh_all_windows(main_window);
- 
+ 	if (r) {
+ 		get_device(dev);
 -- 
-1.7.6
+1.7.4.1
 
