@@ -1,137 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab1IAAdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 20:33:36 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58594 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757330Ab1IAAde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753375Ab1IAAde (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 31 Aug 2011 20:33:34 -0400
-Subject: [PATCH 2/3] libcrc32c: Expose big-endian version of crc32c
-To: Andreas Dilger <adilger.kernel@dilger.ca>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Theodore Tso <tytso@mit.edu>, David Miller <davem@davemloft.net>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Date: Wed, 31 Aug 2011 17:33:30 -0700
-Message-ID: <20110901003330.32645.32586.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20110901003317.32645.16843.stgit@elm3c44.beaverton.ibm.com>
-References: <20110901003317.32645.16843.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57914 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757268Ab1IAAdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 20:33:31 -0400
+Message-ID: <4E5ED2D5.8040302@linux.vnet.ibm.com>
+Date: Wed, 31 Aug 2011 17:33:25 -0700
+From: Allison Henderson <achender@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: linux-kernel@vger.kernel.org
+CC: Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: lock i_mutex for fallocate?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a big-endian version of crc32c for modules that want it.
+Hi All,
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- include/linux/crc32c.h |    5 +++--
- lib/libcrc32c.c        |   43 ++++++++++++++++++++++++++++++++++---------
- 2 files changed, 37 insertions(+), 11 deletions(-)
+In ext4 punch hole, we realized that the punch hole operation needs to 
+be done under i_mutex just like truncate.  i_mutex for truncate is held 
+in the vfs layer, so we dont need to lock it at the file system layer, 
+but vfs does not lock i_mutex for fallocate.  We can lock i_mutex for 
+fallocate at the fs layer, but question was raised then: should i_mutex 
+for fallocate be held in the vfs layer instead?  I do not know if other 
+file systems need i_mutex to be locked for fallocate, or if they might 
+be locking it already, so I am doing some investigating on this idea, 
+and also the appropriate use of i_mutex in general.  Can someone provide 
+some insight this topic?  Thx!
 
-
-diff --git a/include/linux/crc32c.h b/include/linux/crc32c.h
-index bd8b44d..33320e1 100644
---- a/include/linux/crc32c.h
-+++ b/include/linux/crc32c.h
-@@ -3,9 +3,10 @@
- 
- #include <linux/types.h>
- 
--extern u32 crc32c(u32 crc, const void *address, unsigned int length);
-+extern u32 crc32c_le(u32 crc, const void *address, unsigned int length);
-+extern u32 crc32c_be(u32 crc, const void *address, unsigned int length);
- 
- /* This macro exists for backwards-compatibility. */
--#define crc32c_le crc32c
-+#define crc32c crc32c_le
- 
- #endif	/* _LINUX_CRC32C_H */
-diff --git a/lib/libcrc32c.c b/lib/libcrc32c.c
-index 244f548..e421ff5 100644
---- a/lib/libcrc32c.c
-+++ b/lib/libcrc32c.c
-@@ -37,17 +37,17 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- 
--static struct crypto_shash *tfm;
-+static struct crypto_shash *tfm_le, *tfm_be;
- 
--u32 crc32c(u32 crc, const void *address, unsigned int length)
-+u32 crc32c_le(u32 crc, const void *address, unsigned int length)
- {
- 	struct {
- 		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
-+		char ctx[crypto_shash_descsize(tfm_le)];
- 	} desc;
- 	int err;
- 
--	desc.shash.tfm = tfm;
-+	desc.shash.tfm = tfm_le;
- 	desc.shash.flags = 0;
- 	*(u32 *)desc.ctx = crc;
- 
-@@ -56,21 +56,46 @@ u32 crc32c(u32 crc, const void *address, unsigned int length)
- 
- 	return *(u32 *)desc.ctx;
- }
-+EXPORT_SYMBOL(crc32c_le);
- 
--EXPORT_SYMBOL(crc32c);
-+u32 crc32c_be(u32 crc, const void *address, unsigned int length)
-+{
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[crypto_shash_descsize(tfm_be)];
-+	} desc;
-+	int err;
-+
-+	desc.shash.tfm = tfm_be;
-+	desc.shash.flags = 0;
-+	*(u32 *)desc.ctx = crc;
-+
-+	err = crypto_shash_update(&desc.shash, address, length);
-+	BUG_ON(err);
-+
-+	return *(u32 *)desc.ctx;
-+}
-+EXPORT_SYMBOL(crc32c_be);
- 
- static int __init libcrc32c_mod_init(void)
- {
--	tfm = crypto_alloc_shash("crc32c", 0, 0);
--	if (IS_ERR(tfm))
--		return PTR_ERR(tfm);
-+	tfm_le = crypto_alloc_shash("crc32c", 0, 0);
-+	if (IS_ERR(tfm_le))
-+		return PTR_ERR(tfm_le);
-+
-+	tfm_be = crypto_alloc_shash("crc32c-be", 0, 0);
-+	if (IS_ERR(tfm_be)) {
-+		crypto_free_shash(tfm_le);
-+		return PTR_ERR(tfm_be);
-+	}
- 
- 	return 0;
- }
- 
- static void __exit libcrc32c_mod_fini(void)
- {
--	crypto_free_shash(tfm);
-+	crypto_free_shash(tfm_be);
-+	crypto_free_shash(tfm_le);
- }
- 
- module_init(libcrc32c_mod_init);
-
+Allison Henderson
