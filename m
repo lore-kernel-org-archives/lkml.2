@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1IARBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:01:43 -0400
-Received: from ixia-3.edge2.lax012.pnap.net ([74.217.148.5]:51920 "EHLO
-	ixqw-mail-out.ixiacom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753298Ab1IARBm (ORCPT
+	id S1754518Ab1IARDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:03:48 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:54880 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab1IARDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:01:42 -0400
-Message-ID: <4E5FBA73.2050108@ixiacom.com>
-Date: Thu, 1 Sep 2011 10:01:39 -0700
-From: Earl Chew <echew@ixiacom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: <alan@lxorguk.ukuu.org.uk>, <viro@zeniv.linux.org.uk>,
-        <andi@firstfloor.org>, <oleg@redhat.com>
-Subject: [ PATCH 1/1 ] coredump: use current->group_leader->comm instead of
- current->comm
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Sep 2011 13:03:46 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]drivers:video:aty:radeonfb.h Fix some comments in radeonfb.h
+Date: Thu,  1 Sep 2011 10:03:20 -0700
+Message-Id: <1314896600-5461-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change corepattern %e and %E to use current->group_leader->comm instead of current->comm.
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-Multithreaded processes can use PR_SET_NAME (or the corresponding pthread_setname_np)
-to configure the name of each thread.
+The below patch, just fixes some typos/comments that I noticed allong the way.
+(let me know if this is legit).
 
-A core dump can be triggered from any task in a group, and substituting current->comm
-means that the name of the core file for a process can vary in surprising ways.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Using current->group_leader->comm makes the name of the core file more consistent
-for a process when used with %e or %E.
+---
+ drivers/video/aty/radeonfb.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Signed-off-by: Earl Chew <echew@ixiacom.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
---
---- fs/exec.c.orig	2011-08-28 21:16:01.000000000 -0700
-+++ fs/exec.c	2011-09-01 09:58:42.032116998 -0700
-@@ -1679,7 +1679,8 @@ static int cn_print_exe_file(struct core
- 	exe_file = get_mm_exe_file(current->mm);
- 	if (!exe_file) {
- 		char *commstart = cn->corename + cn->used;
--		ret = cn_printf(cn, "%s (path unknown)", current->comm);
-+		ret = cn_printf(cn, "%s (path unknown)",
-+				current->group_leader->comm);
- 		cn_escape(commstart);
- 		return ret;
- 	}
-@@ -1780,7 +1781,8 @@ static int format_corename(struct core_n
- 			/* executable */
- 			case 'e': {
- 				char *commstart = cn->corename + cn->used;
--				err = cn_printf(cn, "%s", current->comm);
-+				err = cn_printf(cn, "%s",
-+					      current->group_leader->comm);
- 				cn_escape(commstart);
- 				break;
- 			}
+diff --git a/drivers/video/aty/radeonfb.h b/drivers/video/aty/radeonfb.h
+index 7351e66..9f9daf0 100644
+--- a/drivers/video/aty/radeonfb.h
++++ b/drivers/video/aty/radeonfb.h
+@@ -147,7 +147,7 @@ struct pll_info {
+  * This structure contains the various registers manipulated by this
+  * driver for setting or restoring a mode. It's mostly copied from
+  * XFree's RADEONSaveRec structure. A few chip settings might still be
+- * tweaked without beeing reflected or saved in these registers though
++ * tweaked without being reflected or saved in these registers though
+  */
+ struct radeon_regs {
+ 	/* Common registers */
+@@ -372,7 +372,7 @@ struct radeonfb_info {
+  */
+ 
+ /* Note about this function: we have some rare cases where we must not schedule,
+- * this typically happen with our special "wake up early" hook which allows us to
++ * this typically happens with our special "wake up early" hook which allows us to
+  * wake up the graphic chip (and thus get the console back) before everything else
+  * on some machines that support that mechanism. At this point, interrupts are off
+  * and scheduling is not permitted
+@@ -410,7 +410,7 @@ static inline void _OUTREGP(struct radeonfb_info *rinfo, u32 addr,
+ #define OUTREGP(addr,val,mask)	_OUTREGP(rinfo, addr, val,mask)
+ 
+ /*
+- * Note about PLL register accesses:
++ * Note about PLL register access:
+  *
+  * I have removed the spinlock on them on purpose. The driver now
+  * expects that it will only manipulate the PLL registers in normal
+-- 
+1.7.6
 
