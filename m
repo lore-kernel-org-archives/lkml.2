@@ -1,253 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab1IAKy1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 06:54:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37959 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab1IAKy0 convert rfc822-to-8bit (ORCPT
+	id S1757183Ab1IALHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 07:07:10 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54137 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757126Ab1IALHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 06:54:26 -0400
-Subject: Re: process time < thread time?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Date: Thu, 01 Sep 2011 12:54:19 +0200
-In-Reply-To: <alpine.LFD.2.02.1109011226160.2723@ionos>
-References: <20110831.230718.2029810906806382170.davem@davemloft.net>
-	  <alpine.LFD.2.02.1109011148060.2723@ionos>
-	 <1314871884.7945.20.camel@twins> <alpine.LFD.2.02.1109011226160.2723@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314874459.7945.22.camel@twins>
-Mime-Version: 1.0
+	Thu, 1 Sep 2011 07:07:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH 1/3] staging:iio:magnetometer:ak8975 Don't use irq_to_gpio()
+Date: Thu, 1 Sep 2011 13:06:50 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Chew <AChew@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+References: <1314819657-828-1-git-send-email-swarren@nvidia.com> <643E69AA4436674C8F39DCC2C05F76383CF3C784A3@HQMAIL03.nvidia.com> <4E5F49F4.2080208@cam.ac.uk>
+In-Reply-To: <4E5F49F4.2080208@cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109011306.50936.arnd@arndb.de>
+X-Provags-ID: V02:K0:z5+PSUsuqm8IRvia9ix1XHBh2B5zK/bMt9fB8ygvtlU
+ C2b1nuIG3gP8PVWJh3nGcp7osMFWO/azlnsBFpfnzO4R6AJa5D
+ SZeE43oRZZiSAIURy2MD0NhKQ/OWTujoFEipujM7ez0zp229s2
+ SdgfrBRoLd8z/WxzgCwQ8heVQnTktCk8wj7UreLKCMJZwtyhpe
+ PCumKyl20aOdijT8HZC7IhoUSXO+xY4xt1aWzwTkzU/PI3+g1k
+ twQZ7MrO14uTLNDr6/amHHRfY08rEzB1QZZHHqmYr6vVCIvomH
+ kWl6VvzlEBAAFk9E2sbd//Qv8O8YeEJXJW+QL/ylyZUF+33S4R
+ PHbIQ6DgIVp1O2ZrnUJM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 12:39 +0200, Thomas Gleixner wrote:
-> > I think we just deadlocked:
+On Thursday 01 September 2011, Jonathan Cameron wrote:
+> On 08/31/11 20:45, Andrew Chew wrote:
+> >> Subject: [PATCH 1/3] staging:iio:magnetometer:ak8975 Don't 
+> >> use irq_to_gpio()
+> >>
+> >> Tegra doesn't have irq_to_gpio() any more, and ak8975 is included in
+> >> tegra_defconfig. This causes a build failure. Solve this with 
+> >> a heavy-handed
+> >> method for now.
+> >>
+> >> I suspect the long-term solution is to pass both the IRQ and GPIO IDs
+> >> to the driver; the GPIO ID coming from either platform data, 
+> >> or perhaps
+> >> enhancing struct i2c_client to add a gpio field alongside irq.
+> >>
+> >> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> >> ---
+> > 
+> > The three patches in this set LGTM.
+> > 
+> > Acked-by: Andrew Chew <achew@nvidia.com> 
+> > 
 > 
-> That's why I said untested :) 
+> Hmm.. I'd like to see some means of passing that in. Perhaps as simple as passing
+> a pointer to an int in as platform_data.  Patch to follow.
 
-the below seems to build boot and give consistent output.. 
+My feeling is that we should just add another field to
+struct i2c_client. There are probably more drivers that
+need the same thing, making it appropriate to increase
+the size of that struct for everything device instead of
+adding platform_data to a subset of the devices.
 
----
-Subject: posix-cpu-timers: Cure SMP wobbles
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Thu Sep 01 12:42:04 CEST 2011
-
-David reported:
-
-  Attached below is a watered-down version of rt/tst-cpuclock2.c from
-  GLIBC.  Just build it with "gcc -o test test.c -lpthread -lrt" or
-  similar.
-
-  Run it several times, and you will see cases where the main thread
-  will measure a process clock difference before and after the nanosleep
-  which is smaller than the cpu-burner thread's individual thread clock
-  difference.  This doesn't make any sense since the cpu-burner thread
-  is part of the top-level process's thread group.
-
-  I've reproduced this on both x86-64 and sparc64 (using both 32-bit and
-  64-bit binaries).
-
-  For example:
-
-  [davem@boricha build-x86_64-linux]$ ./test
-  process: before(0.001221967) after(0.498624371) diff(497402404)
-  thread:  before(0.000081692) after(0.498316431) diff(498234739)
-  self:    before(0.001223521) after(0.001240219) diff(16698)
-  [davem@boricha build-x86_64-linux]$ 
-
-  The diff of 'process' should always be >= the diff of 'thread'.
-
-  I make sure to wrap the 'thread' clock measurements the most tightly
-  around the nanosleep() call, and that the 'process' clock measurements
-  are the outer-most ones.
-
-  ---
-  #include <unistd.h>
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <time.h>
-  #include <fcntl.h>
-  #include <string.h>
-  #include <errno.h>
-  #include <pthread.h>
-
-  static pthread_barrier_t barrier;
-
-  static void *chew_cpu(void *arg)
-  {
-	  pthread_barrier_wait(&barrier);
-	  while (1)
-		  __asm__ __volatile__("" : : : "memory");
-	  return NULL;
-  }
-
-  int main(void)
-  {
-	  clockid_t process_clock, my_thread_clock, th_clock;
-	  struct timespec process_before, process_after;
-	  struct timespec me_before, me_after;
-	  struct timespec th_before, th_after;
-	  struct timespec sleeptime;
-	  unsigned long diff;
-	  pthread_t th;
-	  int err;
-
-	  err = clock_getcpuclockid(0, &process_clock);
-	  if (err)
-		  return 1;
-
-	  err = pthread_getcpuclockid(pthread_self(), &my_thread_clock);
-	  if (err)
-		  return 1;
-
-	  pthread_barrier_init(&barrier, NULL, 2);
-	  err = pthread_create(&th, NULL, chew_cpu, NULL);
-	  if (err)
-		  return 1;
-
-	  err = pthread_getcpuclockid(th, &th_clock);
-	  if (err)
-		  return 1;
-
-	  pthread_barrier_wait(&barrier);
-
-	  err = clock_gettime(process_clock, &process_before);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(my_thread_clock, &me_before);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(th_clock, &th_before);
-	  if (err)
-		  return 1;
-
-	  sleeptime.tv_sec = 0;
-	  sleeptime.tv_nsec = 500000000;
-	  nanosleep(&sleeptime, NULL);
-
-	  err = clock_gettime(th_clock, &th_after);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(my_thread_clock, &me_after);
-	  if (err)
-		  return 1;
-
-	  err = clock_gettime(process_clock, &process_after);
-	  if (err)
-		  return 1;
-
-	  diff = process_after.tv_nsec - process_before.tv_nsec;
-	  printf("process: before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-		 process_before.tv_sec, process_before.tv_nsec,
-		 process_after.tv_sec, process_after.tv_nsec, diff);
-	  diff = th_after.tv_nsec - th_before.tv_nsec;
-	  printf("thread:  before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-		 th_before.tv_sec, th_before.tv_nsec,
-		 th_after.tv_sec, th_after.tv_nsec, diff);
-	  diff = me_after.tv_nsec - me_before.tv_nsec;
-	  printf("self:    before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-		 me_before.tv_sec, me_before.tv_nsec,
-		 me_after.tv_sec, me_after.tv_nsec, diff);
-
-	  return 0;
-  }
-
-This is due to us using p->se.sum_exec_runtime in
-thread_group_cputime() where we iterate the thread group and sum all
-data. This does not take time since the last schedule operation (tick
-or otherwise) into account. We can cure this by using
-task_sched_runtime() at the cost of having to take locks.
-
-This also means we can (and must) do away with
-thread_group_sched_runtime() since the modified thread_group_cputime()
-is now more accurate and would deadlock when called from
-thread_group_sched_runtime().
-
-Reported-by: David Miller <davem@davemloft.net>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-nk5489zjtxsln3ixjonjs3h3@git.kernel.org
----
- include/linux/sched.h     |    1 -
- kernel/posix-cpu-timers.c |    5 +++--
- kernel/sched.c            |   24 ------------------------
- 3 files changed, 3 insertions(+), 27 deletions(-)
-
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1956,7 +1956,6 @@ static inline void disable_sched_clock_i
- 
- extern unsigned long long
- task_sched_runtime(struct task_struct *task);
--extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
- 
- /* sched_exec is called by processes performing an exec */
- #ifdef CONFIG_SMP
-Index: linux-2.6/kernel/posix-cpu-timers.c
-===================================================================
---- linux-2.6.orig/kernel/posix-cpu-timers.c
-+++ linux-2.6/kernel/posix-cpu-timers.c
-@@ -250,7 +250,7 @@ void thread_group_cputime(struct task_st
- 	do {
- 		times->utime = cputime_add(times->utime, t->utime);
- 		times->stime = cputime_add(times->stime, t->stime);
--		times->sum_exec_runtime += t->se.sum_exec_runtime;
-+		times->sum_exec_runtime += task_sched_runtime(t);
- 	} while_each_thread(tsk, t);
- out:
- 	rcu_read_unlock();
-@@ -312,7 +312,8 @@ static int cpu_clock_sample_group(const 
- 		cpu->cpu = cputime.utime;
- 		break;
- 	case CPUCLOCK_SCHED:
--		cpu->sched = thread_group_sched_runtime(p);
-+		thread_group_cputime(p, &cputime);
-+		cpu->sched = cputime.sum_exec_runtime;
- 		break;
- 	}
- 	return 0;
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -3866,30 +3866,6 @@ unsigned long long task_sched_runtime(st
- }
- 
- /*
-- * Return sum_exec_runtime for the thread group.
-- * In case the task is currently running, return the sum plus current's
-- * pending runtime that have not been accounted yet.
-- *
-- * Note that the thread group might have other running tasks as well,
-- * so the return value not includes other pending runtime that other
-- * running tasks might have.
-- */
--unsigned long long thread_group_sched_runtime(struct task_struct *p)
--{
--	struct task_cputime totals;
--	unsigned long flags;
--	struct rq *rq;
--	u64 ns;
--
--	rq = task_rq_lock(p, &flags);
--	thread_group_cputime(p, &totals);
--	ns = totals.sum_exec_runtime + do_task_delta_exec(p, rq);
--	task_rq_unlock(rq, p, &flags);
--
--	return ns;
--}
--
--/*
-  * Account user cpu time to a process.
-  * @p: the process that the cpu time gets accounted to
-  * @cputime: the cpu time spent in user space since the last update
-
+	Arnd
