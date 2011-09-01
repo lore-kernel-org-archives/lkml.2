@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab1IAXo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 19:44:28 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42155 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932536Ab1IAXo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 19:44:27 -0400
-Subject: Re: [PATCH 0/3] staging: zcache: xcfmalloc support
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, ngupta@vflare.org, cascardo@holoscopio.com,
-        rdunlap@xenotime.net, linux-kernel@vger.kernel.org
-In-Reply-To: <4E6000C4.7030007@linux.vnet.ibm.com>
-References: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	 <6e0e7950-0c91-4bb3-929b-3853fa95e63d@default 4E5EB066.6020007@linux.vnet.ibm.com>
-	 <36dad993-ea60-43f4-89f0-77831befd483@default>
-	 <4E5FB3CF.3020703@linux.vnet.ibm.com> <1314896087.13161.30.camel@nimitz>
-	 <4E6000C4.7030007@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Sep 2011 16:44:23 -0700
-Message-ID: <1314920663.6393.18.camel@nimitz>
+	id S932726Ab1IAXpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 19:45:31 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:46894 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932536Ab1IAXpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 19:45:30 -0400
+Date: Fri, 2 Sep 2011 01:45:27 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] thp: tail page refcounting fix #5
+Message-ID: <20110901234527.GD7761@one.firstfloor.org>
+References: <20110824002717.GI23870@redhat.com> <20110824133459.GP23870@redhat.com> <20110826062436.GA5847@google.com> <20110826161048.GE23870@redhat.com> <20110826185430.GA2854@redhat.com> <20110827094152.GA16402@google.com> <20110827173421.GA2967@redhat.com> <CAEwNFnDk0bQZKReKccuQMPEw_6EA2DxN4dm9cmjr01BVT4A7Dw@mail.gmail.com> <20110901152417.GF10779@redhat.com> <20110901162808.80a2117c.akpm@linux-foundation.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110901162808.80a2117c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 17:01 -0500, Seth Jennings wrote:
-> I was seeing n as the number of allocations.  Since 
-> XCF_MAX_BLOCKS_PER_ALLOC and XCF_NUM_FREELISTS are constant (i.e.
-> not increasing with the number of allocations) wouldn't it be
-> O(1)?
-
-It's the difference between your implementation and the _algorithm_
-you've chosen.  If someone doubled XCF_MAX_BLOCKS_PER_ALLOC and
-XCF_NUM_FREELISTS, you'd see the time quadruple, not stay constant.
-That's a property of the _algorithm_.
-
-> > xcfmalloc's big compromise is that it doesn't do any searching or
-> > fitting.  It might needlessly split larger blocks when two small ones
-> > would have worked, for instance.
+On Thu, Sep 01, 2011 at 04:28:08PM -0700, Andrew Morton wrote:
+> On Thu, 1 Sep 2011 17:24:17 +0200
+> Andrea Arcangeli <aarcange@redhat.com> wrote:
 > 
-> Splitting a larger block is the last option.  I might not
-> be understanding you correctly, but find_remove_block() does try to
-> find the optimal block to use, which is "searching and fitting" in my
-> mind.
+> > Ideally direct-io should stop calling get_page() on pages
+> > returned by get_user_pages().
+> 
+> Yeah.  get_user_pages() is sufficient.  Ideally we should be able to
+> undo the get_user_pages() get_page() from within the IO completion
+> interrupt and we're done.
+> 
+> Cc Andi, who is our resident dio tweaker ;)
+> 
 
-I don't want to split hairs on the wording.  It's obvious, though, that
-xcfmalloc does not find _optimal_ fits.  It also doesn't use the
-smallest-possible blocks to fit the alloction.  Consider if you wanted a
-1000 byte allocation (with 10 100-byte buckets and no metadata for
-simplicity), and had 4 blocks:
+Noted, I'll put it on my list.
 
-        900
-        500,500,500
+Should not be too difficult from a quick look, just the convoluted
+nature of direct-io.c requires a lot of double checking.
 
-I think it would split a 500 into 100,400, and leave the 400:
-        
-        500,500
-        400
+-Andi
 
-It took the largest (most valuable) block, and split a 500 block when it
-didn't have to.  The reason it doesn't do this is that it doesn't
-_search_.  It just indexes and guesses.  That's *fast*, but it errs on
-the side of speed rather than being optimal.  That's OK, we do it all
-the time, but it *is* a compromise.  We should at least be thinking of
-the cases when this doesn't perform well.
-
--- Dave
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
