@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab1IAWQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:16:55 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:33839 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082Ab1IAWQy (ORCPT
+	id S932397Ab1IAWR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:17:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37764 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932165Ab1IAWR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:16:54 -0400
-Date: Thu, 1 Sep 2011 17:16:48 -0500
-From: scameron@beardog.cce.hp.com
-To: Jon Mason <mason@myri.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        linux-pci@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        scameron@beardog.cce.hp.com
-Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-Message-ID: <20110901221648.GR9189@beardog.cce.hp.com>
-References: <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110901160724.GN9189@beardog.cce.hp.com> <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com> <1314903038.3067.27.camel@dabdike> <20110901125938.7cb1da85@jbarnes-desktop> <20110901200349.GO9189@beardog.cce.hp.com> <20110901130930.5caec2d4@jbarnes-desktop> <20110901204419.GY8422@beardog.cce.hp.com> <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
+	Thu, 1 Sep 2011 18:17:26 -0400
+Date: Thu, 1 Sep 2011 15:16:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, lwoodman@redhat.com,
+        Seiji Aguchi <saguchi@redhat.com>, hughd@google.com,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+Message-Id: <20110901151650.0a82716b.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1109011501260.22550@chino.kir.corp.google.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+	<20110901145819.4031ef7c.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1109011501260.22550@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 04:50:45PM -0500, Jon Mason wrote:
-> On Thu, Sep 1, 2011 at 3:44 PM,  <scameron@beardog.cce.hp.com> wrote:
-> > On Thu, Sep 01, 2011 at 01:09:30PM -0700, Jesse Barnes wrote:
-> >> On Thu, 1 Sep 2011 15:03:49 -0500
-> >> scameron@beardog.cce.hp.com wrote:
-> >>
-> >> > On Thu, Sep 01, 2011 at 12:59:38PM -0700, Jesse Barnes wrote:
-> >> > > On Thu, 01 Sep 2011 11:50:38 -0700
-> >> > > James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
-> >> > >
-> >> > > > On Thu, 2011-09-01 at 10:58 -0700, Roland Dreier wrote:
-> >> > > > > > OK I found the bad commit,I got lucky... I lost some files but my
-> >> > > > > > machine was able to complete the bisection. CC involved people
-> >> > > > >
-> >> > > > > > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI-E Max Payload Size on fabric
-> >> > > > >
-> >> > > > > Hi Eric,
-> >> > > > >
-> >> > > > > I guess it would be useful to see "lspci -vv" output with a "good" kernel
-> >> > > > > and with that bad patch applied.  Most likely we should see some difference
-> >> > > > > somewhere in the MaxPayload fields in the PCI Express capability of
-> >> > > > > some device.
-> >> > > > >
-> >> > > > > Either the RAID controller or something else lies, and puts a value
-> >> > > > > in the DevCap that it can't actually support, or else the patch is
-> >> > > > > buggy and puts something out of range in a DevCtl somewhere.
-> >> > > >
-> >> > > >
-> >> > > > While we investigate, I think the problems produced by the patch (data
-> >> > > > corruption) are serious enough to warrant reverting it, please Jesse.
-> >> > >
-> >> > > Hm I haven't been paying attention to the compromise thread; how should
-> >> > > I share these changes?  Is master.kernel.org down indefinitely?  Is
-> >> > > there a new server at kernel.org I can use?
-> >> >
-> >> > I can't answer that question, but I would like a copy of your revert
-> >> > patch(es) to test (as a simple patch --reverse of the original commit on the 3.1-rc4
-> >> > tree didn't go in cleanly).
-> >>
-> >> Attached is the series.  Applies on top of my for-linus branch.
-> >
-> > Thanks.  I tried them out vs. 3.1-rc4, and they applied cleanly and
-> > make things work on my BL460g7.
+On Thu, 1 Sep 2011 15:08:00 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
+
+> On Thu, 1 Sep 2011, Andrew Morton wrote:
 > 
-> I believe modifying the MRRS values is what is causing the issues.
-> Can you try the attached patch and verify that it also resolves the
-> issue?
+> > > Add a userspace visible knob
+> > 
+> > argh.  Fear and hostility at new knobs which need to be maintained for
+> > ever, even if the underlying implementation changes.
+> > 
+> 
+> Do we really need to maintain tunables that lose their purpose either 
+> because the implementation changes or is patched to fix the issue that the 
+> tunable was intended to address without requiring it?
+> 
+> Are there really userspace tools written to not be able to handle -ENOENT 
+> when one of these gets removed?
 
-Ok, just tried it.
+I don't know, and neither does anyone else.  So we need to be cautious.
+Like putting a warning printk in there and waiting several years.
 
-The mrrs_removal patch does also appear to resolve the issue.
+And it's not just a matter of handling ENOENT.  The user modified this
+tunable for a *reason*.  They were expecting some behaviour change in
+the kernel.  If we remove the tunable, we take that behaviour change
+away from them.  So by adding this tunable, we constrain future
+implementations by requiring those implementations to automatically do
+whatever the user was previously doing manually.  And we don't reliably
+know *why* each user altered that tunable.  It's a horrid mess.
 
-Thanks.
 
--- steve
+
