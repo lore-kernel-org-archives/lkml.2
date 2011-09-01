@@ -1,1196 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470Ab1IAMnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:43:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40938 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757370Ab1IAMne convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:43:34 -0400
+	id S1757495Ab1IAMnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 08:43:51 -0400
+Received: from mail.aixigo.de ([80.149.209.52]:50616 "EHLO mail.aixigo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757370Ab1IAMnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 08:43:49 -0400
+X-Greylist: delayed 665 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Sep 2011 08:43:49 EDT
+Message-ID: <4E5F7B6B.8030904@aixigo.de>
+Date: Thu, 01 Sep 2011 14:32:43 +0200
+From: Harald Dunkel <harald.dunkel@aixigo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.1) Gecko/20110830 Thunderbird/6.0.1
 MIME-Version: 1.0
-In-Reply-To: <1314259880-7854-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1314259880-7854-1-git-send-email-benjamin.tissoires@gmail.com>
-Date: Thu, 1 Sep 2011 14:43:32 +0200
-Message-ID: <CAN+gG=HZsREeuc0h53juGg3L6kseuEUeiBWe8ZCaNLaVpth1Qw@mail.gmail.com>
-Subject: Re: [PATCH v3] HID: Add full support for Logitech Unifying receivers
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        rtitmuss@logitech.com, ogay@logitech.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: "Unhandled error code" errors for USB 3.0 memory stick
+X-Enigmail-Version: 1.3.1
+Content-Type: multipart/mixed;
+ boundary="------------080907090104050104070508"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+This is a multi-part message in MIME format.
+--------------080907090104050104070508
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-just a little up to this patch, and a more technical question:
+Hi folks,
 
-On Thu, Aug 25, 2011 at 10:11, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> From: Nestor Lopez Casado <nlopezcasad@logitech.com>
->
-> With this driver, all the devices paired to a single Unifying
-> receiver are exposed to user processes in separated /input/dev
-> nodes.
->
-> Keyboards with different layouts can be treated differently,
-> Multiplayer games on single PC (like home theater PC) can
-> differentiate input coming from different kbds paired to the
-> same receiver.
->
-> Up to now, when Logitech Unifying receivers are connected to a
-> Linux based system, a single keyboard and a single mouse are
-> presented to the HID Layer, even if the Unifying receiver can
-> pair up to six compatible devices. The Unifying receiver by default
-> multiplexes all incoming events (from multiple keyboards/mice)
-> into these two.
->
-> Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
-> Signed-off-by: Benjamin Tissoires <btissoires@logitech.com>
-> ---
->
->  Hi guys,
->
->  this is the third version of the unifying receiver. I made the changes requested
->  by Dmitry:
->  - switch to kfifo
->  - introduce __func__ in all debugs/errors messages
->  - in logi_dj_ll_input_event, do not use the report of the device, but a copy
->  (is it the right way to do it to avoid the DMA problem?)
->  - switch to BUS_USB for the created devices
->  - small other cosmetic changes
->
->  One side note:
->  We really thing using BUS_USB is not the right way to do it when we will have
->  more drivers:
->   by keeping it, we will have no choice but to provide the VIP/PID of the
->  receiver to the created devices. We then will have to handle a manual parsing
->  of the wireless id to know which driver to use. This will result in having
->  all the Logitech's drivers loaded when someone plug an unifying receiver.
->   if we switch to a new BUS_DJ, we could then rely on the automatic user-space
->  loading of the drivers to load only the right drivers.
->
->  BTW, as long as Logitech does not provide those drivers (I hope they will come
->  out soon), there is no point using BUS_DJ. So it's fine not using it right now.
->
->  Thanks,
->  Benjamin
->
->  drivers/hid/Kconfig           |    9 +
->  drivers/hid/Makefile          |    1 +
->  drivers/hid/hid-core.c        |    2 +
->  drivers/hid/hid-ids.h         |    2 +
->  drivers/hid/hid-logitech-dj.c |  893 +++++++++++++++++++++++++++++++++++++++++
->  drivers/hid/hid-logitech-dj.h |  123 ++++++
->  6 files changed, 1030 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/hid/hid-logitech-dj.c
->  create mode 100644 drivers/hid/hid-logitech-dj.h
->
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index 36ca465..0eb7f04 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -231,6 +231,15 @@ config HID_LOGITECH
->        ---help---
->        Support for Logitech devices that are not fully compliant with HID standard.
->
-> +config HID_LOGITECH_DJ
-> +       tristate "Logitech Unifying receivers full support"
-> +       depends on HID_LOGITECH
-> +       default m
-> +       ---help---
-> +       Say Y if you want support for Logitech Unifying receivers and devices.
-> +       Unifying receivers are capable of pairing up to 6 Logitech compliant
-> +       devices to the same receiver.
-> +
->  config LOGITECH_FF
->        bool "Logitech force feedback support"
->        depends on HID_LOGITECH
-> diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-> index a24cee4..3aba5e7 100644
-> --- a/drivers/hid/Makefile
-> +++ b/drivers/hid/Makefile
-> @@ -44,6 +44,7 @@ obj-$(CONFIG_HID_KEYTOUCH)    += hid-keytouch.o
->  obj-$(CONFIG_HID_KYE)          += hid-kye.o
->  obj-$(CONFIG_HID_LCPOWER)       += hid-lcpower.o
->  obj-$(CONFIG_HID_LOGITECH)     += hid-logitech.o
-> +obj-$(CONFIG_HID_LOGITECH_DJ)  += hid-logitech-dj.o
->  obj-$(CONFIG_HID_MAGICMOUSE)    += hid-magicmouse.o
->  obj-$(CONFIG_HID_MICROSOFT)    += hid-microsoft.o
->  obj-$(CONFIG_HID_MONTEREY)     += hid-monterey.o
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index b0e618b..ebe4fdd 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1423,6 +1423,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_DFP_WHEEL) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G25_WHEEL) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_G27_WHEEL) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER_2) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_WII_WHEEL) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_RUMBLEPAD2) },
->        { HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_SPACETRAVELLER) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index a756ee6..c42764b 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -440,6 +440,8 @@
->  #define USB_DEVICE_ID_S510_RECEIVER_2  0xc517
->  #define USB_DEVICE_ID_LOGITECH_CORDLESS_DESKTOP_LX500  0xc512
->  #define USB_DEVICE_ID_MX3000_RECEIVER  0xc513
-> +#define USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER       0xc52b
-> +#define USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER_2     0xc532
->  #define USB_DEVICE_ID_SPACETRAVELLER   0xc623
->  #define USB_DEVICE_ID_SPACENAVIGATOR   0xc626
->  #define USB_DEVICE_ID_DINOVO_DESKTOP   0xc704
-> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-> new file mode 100644
-> index 0000000..896328d
-> --- /dev/null
-> +++ b/drivers/hid/hid-logitech-dj.c
-> @@ -0,0 +1,893 @@
-> +/*
-> + *  HID driver for Logitech Unifying receivers
-> + *
-> + *  Copyright (c) 2011 Logitech (c)
-> + */
-> +
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> +
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-> + *
-> + * Should you need to contact me, the author, you can do so by e-mail send
-> + * your message to Nestor Lopez Casado <xnlopez at gmail com>
-> + *
-> + */
-> +
-> +
-> +#include <linux/device.h>
-> +#include <linux/hid.h>
-> +#include <linux/module.h>
-> +#include <linux/usb.h>
-> +#include "usbhid/usbhid.h"
-> +#include "hid-ids.h"
-> +#include "hid-logitech-dj.h"
-> +
-> +/* Keyboard descriptor (1) */
-> +static const char kbd_descriptor[] = {
-> +       0x05, 0x01,             /* USAGE_PAGE (generic Desktop)     */
-> +       0x09, 0x06,             /* USAGE (Keyboard)         */
-> +       0xA1, 0x01,             /* COLLECTION (Application)     */
-> +       0x85, 0x01,             /* REPORT_ID (1)            */
-> +       0x95, 0x08,             /*   REPORT_COUNT (8)           */
-> +       0x75, 0x01,             /*   REPORT_SIZE (1)            */
-> +       0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
-> +       0x25, 0x01,             /*   LOGICAL_MAXIMUM (1)        */
-> +       0x05, 0x07,             /*   USAGE_PAGE (Keyboard)      */
-> +       0x19, 0xE0,             /*   USAGE_MINIMUM (Left Control)   */
-> +       0x29, 0xE7,             /*   USAGE_MAXIMUM (Right GUI)      */
-> +       0x81, 0x02,             /*   INPUT (Data,Var,Abs)       */
-> +       0x95, 0x05,             /*   REPORT COUNT (5)           */
-> +       0x05, 0x08,             /*   USAGE PAGE (LED page)      */
-> +       0x19, 0x01,             /*   USAGE MINIMUM (1)          */
-> +       0x29, 0x05,             /*   USAGE MAXIMUM (5)          */
-> +       0x91, 0x02,             /*   OUTPUT (Data, Variable, Absolute)  */
-> +       0x95, 0x01,             /*   REPORT COUNT (1)           */
-> +       0x75, 0x03,             /*   REPORT SIZE (3)            */
-> +       0x91, 0x01,             /*   OUTPUT (Constant)          */
-> +       0x95, 0x06,             /*   REPORT_COUNT (6)           */
-> +       0x75, 0x08,             /*   REPORT_SIZE (8)            */
-> +       0x15, 0x00,             /*   LOGICAL_MINIMUM (0)        */
-> +       0x26, 0xFF, 0x00,       /*   LOGICAL_MAXIMUM (255)      */
-> +       0x05, 0x07,             /*   USAGE_PAGE (Keyboard)      */
-> +       0x19, 0x00,             /*   USAGE_MINIMUM (no event)       */
-> +       0x2A, 0xFF, 0x00,       /*   USAGE_MAXIMUM (reserved)       */
-> +       0x81, 0x00,             /*   INPUT (Data,Ary,Abs)       */
-> +       0xC0
-> +};
-> +
-> +/* Mouse descriptor (2)     */
-> +static const char mse_descriptor[] = {
-> +       0x05, 0x01,             /*  USAGE_PAGE (Generic Desktop)        */
-> +       0x09, 0x02,             /*  USAGE (Mouse)                       */
-> +       0xA1, 0x01,             /*  COLLECTION (Application)            */
-> +       0x85, 0x02,             /*    REPORT_ID = 2                     */
-> +       0x09, 0x01,             /*    USAGE (pointer)                   */
-> +       0xA1, 0x00,             /*    COLLECTION (physical)             */
-> +       0x05, 0x09,             /*      USAGE_PAGE (buttons)            */
-> +       0x19, 0x01,             /*      USAGE_MIN (1)                   */
-> +       0x29, 0x10,             /*      USAGE_MAX (16)                  */
-> +       0x15, 0x00,             /*      LOGICAL_MIN (0)                 */
-> +       0x25, 0x01,             /*      LOGICAL_MAX (1)                 */
-> +       0x95, 0x10,             /*      REPORT_COUNT (16)               */
-> +       0x75, 0x01,             /*      REPORT_SIZE (1)                 */
-> +       0x81, 0x02,             /*      INPUT (data var abs)            */
-> +       0x05, 0x01,             /*      USAGE_PAGE (generic desktop)    */
-> +       0x16, 0x01, 0xF8,       /*      LOGICAL_MIN (-2047)             */
-> +       0x26, 0xFF, 0x07,       /*      LOGICAL_MAX (2047)              */
-> +       0x75, 0x0C,             /*      REPORT_SIZE (12)                */
-> +       0x95, 0x02,             /*      REPORT_COUNT (2)                */
-> +       0x09, 0x30,             /*      USAGE (X)                       */
-> +       0x09, 0x31,             /*      USAGE (Y)                       */
-> +       0x81, 0x06,             /*      INPUT                           */
-> +       0x15, 0x81,             /*      LOGICAL_MIN (-127)              */
-> +       0x25, 0x7F,             /*      LOGICAL_MAX (127)               */
-> +       0x75, 0x08,             /*      REPORT_SIZE (8)                 */
-> +       0x95, 0x01,             /*      REPORT_COUNT (1)                */
-> +       0x09, 0x38,             /*      USAGE (wheel)                   */
-> +       0x81, 0x06,             /*      INPUT                           */
-> +       0x05, 0x0C,             /*      USAGE_PAGE(consumer)            */
-> +       0x0A, 0x38, 0x02,       /*      USAGE(AC Pan)                   */
-> +       0x95, 0x01,             /*      REPORT_COUNT (1)                */
-> +       0x81, 0x06,             /*      INPUT                           */
-> +       0xC0,                   /*    END_COLLECTION                    */
-> +       0xC0,                   /*  END_COLLECTION                      */
-> +};
-> +
-> +/* Consumer Control descriptor (3) */
-> +static const char consumer_descriptor[] = {
-> +       0x05, 0x0C,             /* USAGE_PAGE (Consumer Devices)       */
-> +       0x09, 0x01,             /* USAGE (Consumer Control)            */
-> +       0xA1, 0x01,             /* COLLECTION (Application)            */
-> +       0x85, 0x03,             /* REPORT_ID = 3                       */
-> +       0x75, 0x10,             /* REPORT_SIZE (16)                    */
-> +       0x95, 0x02,             /* REPORT_COUNT (2)                    */
-> +       0x15, 0x01,             /* LOGICAL_MIN (1)                     */
-> +       0x26, 0x8C, 0x02,       /* LOGICAL_MAX (652)                   */
-> +       0x19, 0x01,             /* USAGE_MIN (1)                       */
-> +       0x2A, 0x8C, 0x02,       /* USAGE_MAX (652)                     */
-> +       0x81, 0x00,             /* INPUT (Data Ary Abs)                */
-> +       0xC0,                   /* END_COLLECTION                      */
-> +};                             /*                                     */
-> +
-> +/* System control descriptor (4) */
-> +static const char syscontrol_descriptor[] = {
-> +       0x05, 0x01,             /*   USAGE_PAGE (Generic Desktop)      */
-> +       0x09, 0x80,             /*   USAGE (System Control)            */
-> +       0xA1, 0x01,             /*   COLLECTION (Application)          */
-> +       0x85, 0x04,             /*   REPORT_ID = 4                     */
-> +       0x75, 0x02,             /*   REPORT_SIZE (2)                   */
-> +       0x95, 0x01,             /*   REPORT_COUNT (1)                  */
-> +       0x15, 0x01,             /*   LOGICAL_MIN (1)                   */
-> +       0x25, 0x03,             /*   LOGICAL_MAX (3)                   */
-> +       0x09, 0x82,             /*   USAGE (System Sleep)              */
-> +       0x09, 0x81,             /*   USAGE (System Power Down)         */
-> +       0x09, 0x83,             /*   USAGE (System Wake Up)            */
-> +       0x81, 0x60,             /*   INPUT (Data Ary Abs NPrf Null)    */
-> +       0x75, 0x06,             /*   REPORT_SIZE (6)                   */
-> +       0x81, 0x03,             /*   INPUT (Cnst Var Abs)              */
-> +       0xC0,                   /*   END_COLLECTION                    */
-> +};
-> +
-> +/* Media descriptor (8) */
-> +static const char media_descriptor[] = {
-> +       0x06, 0xbc, 0xff,       /* Usage Page 0xffbc                   */
-> +       0x09, 0x88,             /* Usage 0x0088                        */
-> +       0xa1, 0x01,             /* BeginCollection                     */
-> +       0x85, 0x08,             /*   Report ID 8                       */
-> +       0x19, 0x01,             /*   Usage Min 0x0001                  */
-> +       0x29, 0xff,             /*   Usage Max 0x00ff                  */
-> +       0x15, 0x01,             /*   Logical Min 1                     */
-> +       0x26, 0xff, 0x00,       /*   Logical Max 255                   */
-> +       0x75, 0x08,             /*   Report Size 8                     */
-> +       0x95, 0x01,             /*   Report Count 1                    */
-> +       0x81, 0x00,             /*   Input                             */
-> +       0xc0,                   /* EndCollection                       */
-> +};                             /*                                     */
-> +
-> +/* Maximum size of all defined hid reports in bytes (including report id) */
-> +#define MAX_REPORT_SIZE 8
-> +
-> +/* Number of possible hid report types that can be created by this driver.
-> + *
-> + * Right now, RF report types have the same report types (or report id's)
-> + * than the hid report created from those RF reports. In the future
-> + * this doesnt have to be true.
-> + *
-> + * For instance, RF report type 0x01 which has a size of 8 bytes, corresponds
-> + * to hid report id 0x01, this is standard keyboard. Same thing applies to mice
-> + * reports and consumer control, etc. If a new RF report is created, it doesn't
-> + * has to have the same report id as its corresponding hid report, so an
-> + * translation may have to take place for future report types.
-> + */
-> +#define NUMBER_OF_HID_REPORTS 32
-> +static const u8 hid_reportid_size_map[NUMBER_OF_HID_REPORTS] = {
-> +       [1] = 8,                /* Standard keyboard */
-> +       [2] = 8,                /* Standard mouse */
-> +       [3] = 5,                /* Consumer control */
-> +       [4] = 2,                /* System control */
-> +       [8] = 2,                /* Media Center */
-> +};
-> +
-> +
-> +#define LOGITECH_DJ_INTERFACE_NUMBER 0x02
-> +
-> +static struct hid_ll_driver logi_dj_ll_driver;
-> +
-> +static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
-> +                                       size_t count,
-> +                                       unsigned char report_type);
-> +
-> +static void logi_dj_recv_destroy_djhid_device(struct dj_receiver_dev *djrcv_dev,
-> +                                               struct dj_report *dj_report)
-> +{
-> +       /* Called in delayed work context */
-> +       struct dj_device *dj_dev;
-> +       unsigned long flags;
-> +
-> +       spin_lock_irqsave(&djrcv_dev->lock, flags);
-> +       dj_dev = djrcv_dev->paired_dj_devices[dj_report->device_index];
-> +       djrcv_dev->paired_dj_devices[dj_report->device_index] = NULL;
-> +       spin_unlock_irqrestore(&djrcv_dev->lock, flags);
-> +
-> +       if (dj_dev != NULL) {
-> +               hid_destroy_device(dj_dev->hdev);
-> +               kfree(dj_dev);
-> +       } else {
-> +               dev_err(&djrcv_dev->hdev->dev, "%s: can't destroy a NULL device\n",
-> +                       __func__);
-> +       }
-> +}
-> +
-> +static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
-> +                                         struct dj_report *dj_report)
-> +{
-> +       /* Called in delayed work context */
-> +       struct hid_device *djrcv_hdev = djrcv_dev->hdev;
-> +       struct usb_interface *intf = to_usb_interface(djrcv_hdev->dev.parent);
-> +       struct usb_device *usbdev = interface_to_usbdev(intf);
-> +       struct hid_device *dj_hiddev;
-> +       struct dj_device *dj_dev;
-> +       unsigned char tmpstr[20];
-> +
-> +       if (dj_report->report_params[DEVICE_PAIRED_PARAM_SPFUNCTION] &
-> +           SPFUNCTION_DEVICE_LIST_EMPTY) {
-> +               dbg_hid("%s: device list is empty\n", __func__);
-> +               return;
-> +       }
-> +
-> +       dj_hiddev = hid_allocate_device();
-> +       if (IS_ERR(dj_hiddev)) {
-> +               dev_err(&djrcv_hdev->dev, "%s: hid_allocate_device failed\n",
-> +                       __func__);
-> +               return;
-> +       }
-> +
-> +       dj_hiddev->ll_driver = &logi_dj_ll_driver;
-> +       dj_hiddev->hid_output_raw_report = logi_dj_output_hidraw_report;
-> +
-> +       dj_hiddev->dev.parent = &djrcv_hdev->dev;
-> +       dj_hiddev->bus = BUS_USB;
-> +       dj_hiddev->vendor = le16_to_cpu(usbdev->descriptor.idVendor);
-> +       dj_hiddev->product = le16_to_cpu(usbdev->descriptor.idProduct);
-> +       snprintf(dj_hiddev->name, sizeof(dj_hiddev->name),
-> +               "Logitech Unifying Device. Wireless PID:%02x%02x",
-> +               dj_report->report_params[DEVICE_PAIRED_PARAM_EQUAD_ID_MSB],
-> +               dj_report->report_params[DEVICE_PAIRED_PARAM_EQUAD_ID_LSB]);
-> +
-> +       usb_make_path(usbdev, dj_hiddev->phys, sizeof(dj_hiddev->phys));
-> +       snprintf(tmpstr, sizeof(tmpstr), ":%d", dj_report->device_index);
-> +       strlcat(dj_hiddev->phys, tmpstr, sizeof(dj_hiddev->phys));
-> +
-> +       dj_dev = kzalloc(sizeof(struct dj_device), GFP_KERNEL);
-> +
-> +       if (!dj_dev) {
-> +               dev_err(&djrcv_hdev->dev, "%s: failed allocating dj_device\n",
-> +                       __func__);
-> +               goto dj_device_allocate_fail;
-> +       }
-> +
-> +       dj_dev->reports_supported = le32_to_cpu(
-> +               dj_report->report_params[DEVICE_PAIRED_RF_REPORT_TYPE]);
-> +       dj_dev->hdev = dj_hiddev;
-> +       dj_dev->dj_receiver_dev = djrcv_dev;
-> +       dj_dev->device_index = dj_report->device_index;
-> +       dj_hiddev->driver_data = dj_dev;
-> +
-> +       djrcv_dev->paired_dj_devices[dj_report->device_index] = dj_dev;
-> +
-> +       if (hid_add_device(dj_hiddev)) {
-> +               dev_err(&djrcv_hdev->dev, "%s: failed adding dj_device\n",
-> +                       __func__);
-> +               goto hid_add_device_fail;
-> +       }
-> +
-> +       return;
-> +
-> +hid_add_device_fail:
-> +       djrcv_dev->paired_dj_devices[dj_report->device_index] = NULL;
-> +       kfree(dj_dev);
-> +dj_device_allocate_fail:
-> +       hid_destroy_device(dj_hiddev);
-> +}
-> +
-> +static void delayedwork_callback(struct work_struct *work)
-> +{
-> +       struct dj_receiver_dev *djrcv_dev =
-> +               container_of(work, struct dj_receiver_dev, work);
-> +
-> +       struct dj_report dj_report;
-> +       unsigned long flags;
-> +       int count;
-> +
-> +       dbg_hid("%s\n", __func__);
-> +
-> +       spin_lock_irqsave(&djrcv_dev->lock, flags);
-> +
-> +       count = kfifo_out(&djrcv_dev->notif_fifo, &dj_report,
-> +                               sizeof(struct dj_report));
-> +
-> +       if (count != sizeof(struct dj_report)) {
-> +               dev_err(&djrcv_dev->hdev->dev, "%s: workitem triggered without "
-> +                       "notifications available\n", __func__);
-> +               spin_unlock_irqrestore(&djrcv_dev->lock, flags);
-> +               return;
-> +       }
-> +
-> +       if (!kfifo_is_empty(&djrcv_dev->notif_fifo)) {
-> +               if (schedule_work(&djrcv_dev->work) == 0) {
-> +                       dbg_hid("%s: did not schedule the work item, was "
-> +                               "already queued\n", __func__);
-> +               }
-> +       }
-> +
-> +       spin_unlock_irqrestore(&djrcv_dev->lock, flags);
-> +
-> +       switch (dj_report.report_type) {
-> +       case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
-> +               logi_dj_recv_add_djhid_device(djrcv_dev, &dj_report);
-> +               break;
-> +       case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
-> +               logi_dj_recv_destroy_djhid_device(djrcv_dev, &dj_report);
-> +               break;
-> +       default:
-> +               dbg_hid("%s: unexpected report type\n", __func__);
-> +       }
-> +}
-> +
-> +static void logi_dj_recv_queue_notification(struct dj_receiver_dev *djrcv_dev,
-> +                                          struct dj_report *dj_report)
-> +{
-> +       /* We are called from atomic context (tasklet && djrcv->lock held) */
-> +
-> +       kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
-> +
-> +       if (schedule_work(&djrcv_dev->work) == 0) {
-> +               dbg_hid("%s: did not schedule the work item, was already "
-> +                       "queued\n", __func__);
-> +       }
-> +}
-> +
-> +static void logi_dj_recv_forward_null_report(struct dj_receiver_dev *djrcv_dev,
-> +                                            struct dj_report *dj_report)
-> +{
-> +       /* We are called from atomic context (tasklet && djrcv->lock held) */
-> +       unsigned int i;
-> +       u8 reportbuffer[MAX_REPORT_SIZE];
-> +       struct dj_device *djdev;
-> +
-> +       djdev = djrcv_dev->paired_dj_devices[dj_report->device_index];
-> +
-> +       if (!djdev) {
-> +               dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
-> +                       " is NULL, index %d\n", dj_report->device_index);
-> +               return;
-> +       }
-> +
-> +       memset(reportbuffer, 0, sizeof(reportbuffer));
-> +
-> +       for (i = 0; i < NUMBER_OF_HID_REPORTS; i++) {
-> +               if (djdev->reports_supported & (1 << i)) {
-> +                       reportbuffer[0] = i;
-> +                       if (hid_input_report(djdev->hdev,
-> +                                            HID_INPUT_REPORT,
-> +                                            reportbuffer,
-> +                                            hid_reportid_size_map[i], 1)) {
-> +                               dbg_hid("hid_input_report error sending null "
-> +                                       "report\n");
-> +                       }
-> +               }
-> +       }
-> +}
-> +
-> +static void logi_dj_recv_forward_report(struct dj_receiver_dev *djrcv_dev,
-> +                                       struct dj_report *dj_report)
-> +{
-> +       /* We are called from atomic context (tasklet && djrcv->lock held) */
-> +       struct dj_device *dj_device;
-> +
-> +       dj_device = djrcv_dev->paired_dj_devices[dj_report->device_index];
-> +
-> +       if (dj_device == NULL) {
-> +               dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
-> +                       " is NULL, index %d\n", dj_report->device_index);
-> +               return;
-> +       }
-> +
-> +       if ((dj_report->report_type > ARRAY_SIZE(hid_reportid_size_map) - 1) ||
-> +           (hid_reportid_size_map[dj_report->report_type] == 0)) {
-> +               dbg_hid("invalid report type:%x\n", dj_report->report_type);
-> +               return;
-> +       }
-> +
-> +       if (hid_input_report(dj_device->hdev,
-> +                       HID_INPUT_REPORT, &dj_report->report_type,
-> +                       hid_reportid_size_map[dj_report->report_type], 1)) {
-> +               dbg_hid("hid_input_report error\n");
-> +       }
-> +}
-> +
-> +
-> +static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
-> +                                   struct dj_report *dj_report)
-> +{
-> +       struct hid_device *hdev = djrcv_dev->hdev;
-> +       int sent_bytes;
-> +
-> +       if (!hdev->hid_output_raw_report) {
-> +               dev_err(&hdev->dev, "%s:"
-> +                       "hid_output_raw_report is null\n", __func__);
-> +               return -ENODEV;
-> +       }
-> +
-> +       sent_bytes = hdev->hid_output_raw_report(hdev, (u8 *) dj_report,
-> +                                                sizeof(struct dj_report),
-> +                                                HID_OUTPUT_REPORT);
-> +
-> +       return (sent_bytes < 0) ? sent_bytes : 0;
-> +}
-> +
-> +static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
-> +{
-> +       struct dj_report dj_report;
-> +
-> +       memset(&dj_report, 0, sizeof(dj_report));
-> +       dj_report.report_id = REPORT_ID_DJ_SHORT;
-> +       dj_report.device_index = 0xFF;
-> +       dj_report.report_type = REPORT_TYPE_CMD_GET_PAIRED_DEVICES;
-> +       return logi_dj_recv_send_report(djrcv_dev, &dj_report);
-> +}
-> +
-> +static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
-> +                                         unsigned timeout)
-> +{
-> +       struct dj_report dj_report;
-> +
-> +       memset(&dj_report, 0, sizeof(dj_report));
-> +       dj_report.report_id = REPORT_ID_DJ_SHORT;
-> +       dj_report.device_index = 0xFF;
-> +       dj_report.report_type = REPORT_TYPE_CMD_SWITCH;
-> +       dj_report.report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x1F;
-> +       dj_report.report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
-> +       return logi_dj_recv_send_report(djrcv_dev, &dj_report);
-> +}
-> +
-> +
-> +static int logi_dj_ll_open(struct hid_device *hid)
-> +{
-> +       dbg_hid("%s:%s\n", __func__, hid->phys);
-> +       return 0;
-> +
-> +}
-> +
-> +static void logi_dj_ll_close(struct hid_device *hid)
-> +{
-> +       dbg_hid("%s:%s\n", __func__, hid->phys);
-> +}
-> +
-> +static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
-> +                                       size_t count,
-> +                                       unsigned char report_type)
-> +{
-> +       /* Called by hid raw to send data */
-> +       dbg_hid("%s\n", __func__);
-> +
-> +       return 0;
-> +}
-> +
-> +static int logi_dj_ll_parse(struct hid_device *hid)
-> +{
-> +       struct dj_device *djdev = hid->driver_data;
-> +       int retval;
-> +
-> +       dbg_hid("%s\n", __func__);
-> +
-> +       djdev->hdev->version = 0x0111;
-> +       djdev->hdev->country = 0x00;
-> +
-> +       if (djdev->reports_supported & STD_KEYBOARD) {
-> +               dbg_hid("%s: sending a kbd descriptor, reports_supported: %x\n",
-> +                       __func__, djdev->reports_supported);
-> +               retval = hid_parse_report(hid,
-> +                                         (u8 *) kbd_descriptor,
-> +                                         sizeof(kbd_descriptor));
-> +               if (retval) {
-> +                       dbg_hid("%s: sending a kbd descriptor, hid_parse failed"
-> +                               " error: %d\n", __func__, retval);
-> +                       return retval;
-> +               }
-> +       }
-> +
-> +       if (djdev->reports_supported & STD_MOUSE) {
-> +               dbg_hid("%s: sending a mouse descriptor, reports_supported: "
-> +                       "%x\n", __func__, djdev->reports_supported);
-> +               retval = hid_parse_report(hid,
-> +                                         (u8 *) mse_descriptor,
-> +                                         sizeof(mse_descriptor));
-> +               if (retval) {
-> +                       dbg_hid("%s: sending a mouse descriptor, hid_parse "
-> +                               "failed error: %d\n", __func__, retval);
-> +                       return retval;
-> +               }
-> +       }
-> +
-> +       if (djdev->reports_supported & MULTIMEDIA) {
-> +               dbg_hid("%s: sending a multimedia report descriptor: %x\n",
-> +                       __func__, djdev->reports_supported);
-> +               retval = hid_parse_report(hid,
-> +                                         (u8 *) consumer_descriptor,
-> +                                         sizeof(consumer_descriptor));
-> +               if (retval) {
-> +                       dbg_hid("%s: sending a consumer_descriptor, hid_parse "
-> +                               "failed error: %d\n", __func__, retval);
-> +                       return retval;
-> +               }
-> +       }
-> +
-> +       if (djdev->reports_supported & POWER_KEYS) {
-> +               dbg_hid("%s: sending a power keys report descriptor: %x\n",
-> +                       __func__, djdev->reports_supported);
-> +               retval = hid_parse_report(hid,
-> +                                         (u8 *) syscontrol_descriptor,
-> +                                         sizeof(syscontrol_descriptor));
-> +               if (retval) {
-> +                       dbg_hid("%s: sending a syscontrol_descriptor, "
-> +                               "hid_parse failed error: %d\n",
-> +                               __func__, retval);
-> +                       return retval;
-> +               }
-> +       }
-> +
-> +       if (djdev->reports_supported & MEDIA_CENTER) {
-> +               dbg_hid("%s: sending a media center report descriptor: %x\n",
-> +                       __func__, djdev->reports_supported);
-> +               retval = hid_parse_report(hid,
-> +                                         (u8 *) media_descriptor,
-> +                                         sizeof(media_descriptor));
-> +               if (retval) {
-> +                       dbg_hid("%s: sending a media_descriptor, hid_parse "
-> +                               "failed error: %d\n", __func__, retval);
-> +                       return retval;
-> +               }
-> +       }
-> +
-> +       if (djdev->reports_supported & KBD_LEDS) {
-> +               dbg_hid("%s: need to send kbd leds report descriptor: %x\n",
-> +                       __func__, djdev->reports_supported);
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int logi_dj_ll_input_event(struct input_dev *dev, unsigned int type,
-> +                                 unsigned int code, int value)
-> +{
-> +       /* Sent by the input layer to handle leds and Force Feedback */
-> +       struct hid_device *dj_hiddev = input_get_drvdata(dev);
-> +       struct dj_device *dj_dev = dj_hiddev->driver_data;
-> +
-> +       struct dj_receiver_dev *djrcv_dev =
-> +           dev_get_drvdata(dj_hiddev->dev.parent);
-> +       struct hid_device *dj_rcv_hiddev = djrcv_dev->hdev;
-> +       struct hid_report_enum *output_report_enum;
-> +
-> +       struct hid_field *field;
-> +       struct hid_report report;
-> +       unsigned char data[8];
-> +       int offset;
-> +
-> +       dbg_hid("%s: %s, type:%d | code:%d | value:%d\n",
-> +               __func__, dev->phys, type, code, value);
-> +
-> +       if (type != EV_LED)
-> +               return -1;
-> +
-> +       offset = hidinput_find_field(dj_hiddev, type, code, &field);
-> +
-> +       if (offset == -1) {
-> +               dev_warn(&dev->dev, "event field not found\n");
-> +               return -1;
-> +       }
-> +       hid_set_field(field, offset, value);
-> +       hid_output_report(field->report, &data[0]);
-> +
-> +       output_report_enum = &dj_rcv_hiddev->report_enum[HID_OUTPUT_REPORT];
-> +       report = *output_report_enum->report_id_hash[REPORT_ID_DJ_SHORT];
-> +       hid_set_field(report.field[0], 0, dj_dev->device_index);
-> +       hid_set_field(report.field[0], 1, REPORT_TYPE_LEDS);
-> +       hid_set_field(report.field[0], 2, data[1]);
-> +
-> +       usbhid_submit_report(dj_rcv_hiddev, &report, USB_DIR_OUT);
+I got a few errors on writing an USB 3.0 memory stick (see
+below). Can anybody confirm that this is a hardware problem?
 
-This is not working when the receiver is paired to a keyboard. When
-the session launches, Gnome try to send leds commands to the keyboard
-and this results in an oops.
-
-Using a  pointer to the struct hid_report solves the crash.
-
-However, Dmitry, you told us about a DMA stack problem. Can you give
-us a better way to handle that?
-
-Thanks,
-Benjamin
+Kernel is 2.6.39 (from the Debian backports repository for
+Squeeze).
 
 
-> +
-> +       return 0;
-> +
-> +}
-> +
-> +static int logi_dj_ll_start(struct hid_device *hid)
-> +{
-> +       dbg_hid("%s\n", __func__);
-> +       return 0;
-> +}
-> +
-> +static void logi_dj_ll_stop(struct hid_device *hid)
-> +{
-> +       dbg_hid("%s\n", __func__);
-> +}
-> +
-> +
-> +static struct hid_ll_driver logi_dj_ll_driver = {
-> +       .parse = logi_dj_ll_parse,
-> +       .start = logi_dj_ll_start,
-> +       .stop = logi_dj_ll_stop,
-> +       .open = logi_dj_ll_open,
-> +       .close = logi_dj_ll_close,
-> +       .hidinput_input_event = logi_dj_ll_input_event,
-> +};
-> +
-> +
-> +static int logi_dj_raw_event(struct hid_device *hdev,
-> +                            struct hid_report *report, u8 *data,
-> +                            int size)
-> +{
-> +       struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
-> +       struct dj_report *dj_report = (struct dj_report *) data;
-> +       unsigned long flags;
-> +       bool report_processed = false;
-> +
-> +       dbg_hid("%s, size:%d\n", __func__, size);
-> +
-> +       /* Here we receive all data coming from iface 2, there are 4 cases:
-> +        *
-> +        * 1) Data should continue its normal processing i.e. data does not
-> +        * come from the DJ collection, in which case we do nothing and
-> +        * return 0, so hid-core can continue normal processing (will forward
-> +        * to associated hidraw device)
-> +        *
-> +        * 2) Data is from DJ collection, and is intended for this driver i. e.
-> +        * data contains arrival, departure, etc notifications, in which case
-> +        * we queue them for delayed processing by the work queue. We return 1
-> +        * to hid-core as no further processing is required from it.
-> +        *
-> +        * 3) Data is from DJ collection, and informs a connection change,
-> +        * if the change means rf link loss, then we must send a null report
-> +        * to the upper layer to discard potentially pressed keys that may be
-> +        * repeated forever by the input layer. Return 1 to hid-core as no
-> +        * further processing is required.
-> +        *
-> +        * 4) Data is from DJ collection and is an actual input event from
-> +        * a paired DJ device in which case we forward it to the correct hid
-> +        * device (via hid_input_report() ) and return 1 so hid-core does not do
-> +        * anything else with it.
-> +        */
-> +
-> +       spin_lock_irqsave(&djrcv_dev->lock, flags);
-> +       if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
-> +               switch (dj_report->report_type) {
-> +               case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
-> +               case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
-> +                       logi_dj_recv_queue_notification(djrcv_dev, dj_report);
-> +                       break;
-> +               case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
-> +                       if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
-> +                           STATUS_LINKLOSS) {
-> +                               logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
-> +                       }
-> +                       break;
-> +               default:
-> +                       logi_dj_recv_forward_report(djrcv_dev, dj_report);
-> +               }
-> +               report_processed = true;
-> +       }
-> +       spin_unlock_irqrestore(&djrcv_dev->lock, flags);
-> +
-> +       return report_processed;
-> +}
-> +
-> +static int logi_dj_probe(struct hid_device *hdev,
-> +                        const struct hid_device_id *id)
-> +{
-> +       struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
-> +       struct dj_receiver_dev *djrcv_dev;
-> +       int retval;
-> +
-> +       if (is_dj_device((struct dj_device *)hdev->driver_data))
-> +               return -ENODEV;
-> +
-> +       dbg_hid("%s called for ifnum %d\n", __func__,
-> +               intf->cur_altsetting->desc.bInterfaceNumber);
-> +
-> +       /* Ignore interfaces 0 and 1, they will not carry any data, dont create
-> +        * any hid_device for them */
-> +       if (intf->cur_altsetting->desc.bInterfaceNumber !=
-> +           LOGITECH_DJ_INTERFACE_NUMBER) {
-> +               dbg_hid("%s: ignoring ifnum %d\n", __func__,
-> +                       intf->cur_altsetting->desc.bInterfaceNumber);
-> +               return -ENODEV;
-> +       }
-> +
-> +       /* Treat interface 2 */
-> +
-> +       djrcv_dev = kzalloc(sizeof(struct dj_receiver_dev), GFP_KERNEL);
-> +       if (!djrcv_dev) {
-> +               dev_err(&hdev->dev,
-> +                       "%s:failed allocating dj_receiver_dev\n", __func__);
-> +               return -ENOMEM;
-> +       }
-> +       djrcv_dev->hdev = hdev;
-> +       INIT_WORK(&djrcv_dev->work, delayedwork_callback);
-> +       spin_lock_init(&djrcv_dev->lock);
-> +       if (kfifo_alloc(&djrcv_dev->notif_fifo,
-> +                       DJ_MAX_NUMBER_NOTIFICATIONS * sizeof(struct dj_report),
-> +                       GFP_KERNEL)) {
-> +               dev_err(&hdev->dev,
-> +                       "%s:failed allocating notif_fifo\n", __func__);
-> +               kfree(djrcv_dev);
-> +               return -ENOMEM;
-> +       }
-> +       hid_set_drvdata(hdev, djrcv_dev);
-> +
-> +       /* Call  to usbhid to fetch the HID descriptors of interface 2 and
-> +        * subsequently call to the hid/hid-core to parse the fetched
-> +        * descriptors, this will in turn create the hidraw and hiddev nodes
-> +        * for interface 2 of the receiver */
-> +       retval = hid_parse(hdev);
-> +       if (retval) {
-> +               dev_err(&hdev->dev,
-> +                       "%s:parse of interface 2 failed\n", __func__);
-> +               goto hid_parse_fail;
-> +       }
-> +
-> +       /* Starts the usb device and connects to upper interfaces hiddev and
-> +        * hidraw */
-> +       retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-> +       if (retval) {
-> +               dev_err(&hdev->dev,
-> +                       "%s:hid_hw_start returned error\n", __func__);
-> +               goto hid_hw_start_fail;
-> +       }
-> +
-> +       retval = logi_dj_recv_switch_to_dj_mode(djrcv_dev, 0);
-> +       if (retval < 0) {
-> +               dev_err(&hdev->dev,
-> +                       "%s:logi_dj_recv_switch_to_dj_mode returned error:%d\n",
-> +                       __func__, retval);
-> +               goto switch_to_dj_mode_fail;
-> +       }
-> +
-> +       /* This is enabling the polling urb on the IN endpoint */
-> +       retval = hdev->ll_driver->open(hdev);
-> +       if (retval < 0) {
-> +               dev_err(&hdev->dev, "%s:hdev->ll_driver->open returned "
-> +                       "error:%d\n", __func__, retval);
-> +               goto llopen_failed;
-> +       }
-> +
-> +       retval = logi_dj_recv_query_paired_devices(djrcv_dev);
-> +       if (retval < 0) {
-> +               dev_err(&hdev->dev, "%s:logi_dj_recv_query_paired_devices "
-> +                       "error:%d\n", __func__, retval);
-> +               goto logi_dj_recv_query_paired_devices_failed;
-> +       }
-> +
-> +       return retval;
-> +
-> +logi_dj_recv_query_paired_devices_failed:
-> +       hdev->ll_driver->close(hdev);
-> +
-> +llopen_failed:
-> +switch_to_dj_mode_fail:
-> +       hid_hw_stop(hdev);
-> +
-> +hid_hw_start_fail:
-> +hid_parse_fail:
-> +       kfifo_free(&djrcv_dev->notif_fifo);
-> +       kfree(djrcv_dev);
-> +       hid_set_drvdata(hdev, NULL);
-> +       return retval;
-> +
-> +}
-> +
-> +static void logi_dj_remove(struct hid_device *hdev)
-> +{
-> +       struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
-> +       struct dj_device *dj_dev;
-> +       int i;
-> +
-> +       dbg_hid("%s\n", __func__);
-> +
-> +       cancel_work_sync(&djrcv_dev->work);
-> +
-> +       hdev->ll_driver->close(hdev);
-> +       hid_hw_stop(hdev);
-> +
-> +       /* I suppose that at this point the only context that can access
-> +        * the djrecv_data is this thread as the work item is guaranteed to
-> +        * have finished and no more raw_event callbacks should arrive after
-> +        * the remove callback was triggered so no locks are put around the
-> +        * code below */
-> +       for (i = 0; i < DJ_MAX_PAIRED_DEVICES; i++) {
-> +               dj_dev = djrcv_dev->paired_dj_devices[i];
-> +               if (dj_dev != NULL) {
-> +                       hid_destroy_device(dj_dev->hdev);
-> +                       kfree(dj_dev);
-> +                       djrcv_dev->paired_dj_devices[i] = NULL;
-> +               }
-> +       }
-> +
-> +       kfifo_free(&djrcv_dev->notif_fifo);
-> +       kfree(djrcv_dev);
-> +       hid_set_drvdata(hdev, NULL);
-> +}
-> +
-> +static int logi_djdevice_probe(struct hid_device *hdev,
-> +                        const struct hid_device_id *id)
-> +{
-> +       int ret;
-> +       struct dj_device *dj_dev = hdev->driver_data;
-> +
-> +       if (!is_dj_device(dj_dev))
-> +               return -ENODEV;
-> +
-> +       ret = hid_parse(hdev);
-> +       if (!ret)
-> +               ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-> +
-> +       return ret;
-> +}
-> +
-> +static const struct hid_device_id logi_dj_receivers[] = {
-> +       {HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-> +               USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER)},
-> +       {HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-> +               USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER_2)},
-> +       {}
-> +};
-> +
-> +MODULE_DEVICE_TABLE(hid, logi_dj_receivers);
-> +
-> +static struct hid_driver logi_djreceiver_driver = {
-> +       .name = "logitech-djreceiver",
-> +       .id_table = logi_dj_receivers,
-> +       .probe = logi_dj_probe,
-> +       .remove = logi_dj_remove,
-> +       .raw_event = logi_dj_raw_event
-> +};
-> +
-> +
-> +static const struct hid_device_id logi_dj_devices[] = {
-> +       {HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-> +               USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER)},
-> +       {HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
-> +               USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER_2)},
-> +       {}
-> +};
-> +
-> +static struct hid_driver logi_djdevice_driver = {
-> +       .name = "logitech-djdevice",
-> +       .id_table = logi_dj_devices,
-> +       .probe = logi_djdevice_probe,
-> +};
-> +
-> +
-> +static int __init logi_dj_init(void)
-> +{
-> +       int retval;
-> +
-> +       dbg_hid("Logitech-DJ:%s\n", __func__);
-> +
-> +       retval = hid_register_driver(&logi_djreceiver_driver);
-> +       if (retval)
-> +               return retval;
-> +
-> +       retval = hid_register_driver(&logi_djdevice_driver);
-> +       if (retval)
-> +               hid_unregister_driver(&logi_djreceiver_driver);
-> +
-> +       return retval;
-> +
-> +}
-> +
-> +static void __exit logi_dj_exit(void)
-> +{
-> +       dbg_hid("Logitech-DJ:%s\n", __func__);
-> +
-> +       hid_unregister_driver(&logi_djdevice_driver);
-> +       hid_unregister_driver(&logi_djreceiver_driver);
-> +
-> +}
-> +
-> +module_init(logi_dj_init);
-> +module_exit(logi_dj_exit);
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Logitech");
-> +MODULE_AUTHOR("Nestor Lopez Casado");
-> diff --git a/drivers/hid/hid-logitech-dj.h b/drivers/hid/hid-logitech-dj.h
-> new file mode 100644
-> index 0000000..8dcdccd
-> --- /dev/null
-> +++ b/drivers/hid/hid-logitech-dj.h
-> @@ -0,0 +1,123 @@
-> +#ifndef __HID_LOGITECH_DJ_H
-> +#define __HID_LOGITECH_DJ_H
-> +
-> +/*
-> + *  HID driver for Logitech Unifying receivers
-> + *
-> + *  Copyright (c) 2011 Logitech (c)
-> + */
-> +
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-> + *
-> + * Should you need to contact me, the author, you can do so by e-mail send
-> + * your message to Nestor Lopez Casado <xnlopez at gmail com>
-> + *
-> + */
-> +
-> +#include <linux/kfifo.h>
-> +
-> +#define DJ_MAX_PAIRED_DEVICES                  6
-> +#define DJ_MAX_NUMBER_NOTIFICATIONS            8
-> +
-> +#define DJREPORT_SHORT_LENGTH                  15
-> +#define DJREPORT_LONG_LENGTH                   32
-> +
-> +#define REPORT_ID_DJ_SHORT                     0x20
-> +#define REPORT_ID_DJ_LONG                      0x21
-> +
-> +#define REPORT_TYPE_RFREPORT_FIRST             0x01
-> +#define REPORT_TYPE_RFREPORT_LAST              0x1F
-> +
-> +/* Command Switch to DJ mode */
-> +#define REPORT_TYPE_CMD_SWITCH                 0x80
-> +#define CMD_SWITCH_PARAM_DEVBITFIELD           0x00
-> +#define CMD_SWITCH_PARAM_TIMEOUT_SECONDS       0x01
-> +#define TIMEOUT_NO_KEEPALIVE                   0x00
-> +
-> +/* Command to Get the list of Paired devices */
-> +#define REPORT_TYPE_CMD_GET_PAIRED_DEVICES     0x81
-> +
-> +/* Device Paired Notification */
-> +#define REPORT_TYPE_NOTIF_DEVICE_PAIRED                0x41
-> +#define SPFUNCTION_MORE_NOTIF_EXPECTED         0x01
-> +#define SPFUNCTION_DEVICE_LIST_EMPTY           0x02
-> +#define DEVICE_PAIRED_PARAM_SPFUNCTION         0x00
-> +#define DEVICE_PAIRED_PARAM_EQUAD_ID_LSB       0x01
-> +#define DEVICE_PAIRED_PARAM_EQUAD_ID_MSB       0x02
-> +#define DEVICE_PAIRED_RF_REPORT_TYPE           0x03
-> +
-> +/* Device Un-Paired Notification */
-> +#define REPORT_TYPE_NOTIF_DEVICE_UNPAIRED      0x40
-> +
-> +
-> +/* Connection Status Notification */
-> +#define REPORT_TYPE_NOTIF_CONNECTION_STATUS    0x42
-> +#define CONNECTION_STATUS_PARAM_STATUS         0x00
-> +#define STATUS_LINKLOSS                                0x01
-> +
-> +/* Error Notification */
-> +#define REPORT_TYPE_NOTIF_ERROR                        0x7F
-> +#define NOTIF_ERROR_PARAM_ETYPE                        0x00
-> +#define ETYPE_KEEPALIVE_TIMEOUT                        0x01
-> +
-> +/* supported DJ HID && RF report types */
-> +#define REPORT_TYPE_KEYBOARD                   0x01
-> +#define REPORT_TYPE_MOUSE                      0x02
-> +#define REPORT_TYPE_CONSUMER_CONTROL           0x03
-> +#define REPORT_TYPE_SYSTEM_CONTROL             0x04
-> +#define REPORT_TYPE_MEDIA_CENTER               0x08
-> +#define REPORT_TYPE_LEDS                       0x0E
-> +
-> +/* RF Report types bitfield */
-> +#define STD_KEYBOARD                           0x00000002
-> +#define STD_MOUSE                              0x00000004
-> +#define MULTIMEDIA                             0x00000008
-> +#define POWER_KEYS                             0x00000010
-> +#define MEDIA_CENTER                           0x00000100
-> +#define KBD_LEDS                               0x00004000
-> +
-> +struct dj_report {
-> +       u8 report_id;
-> +       u8 device_index;
-> +       u8 report_type;
-> +       u8 report_params[DJREPORT_SHORT_LENGTH - 3];
-> +};
-> +
-> +struct dj_receiver_dev {
-> +       struct hid_device *hdev;
-> +       struct dj_device *paired_dj_devices[DJ_MAX_PAIRED_DEVICES];
-> +       struct work_struct work;
-> +       struct kfifo notif_fifo;
-> +       spinlock_t lock;
-> +};
-> +
-> +struct dj_device {
-> +       struct hid_device *hdev;
-> +       struct dj_receiver_dev *dj_receiver_dev;
-> +       u32 reports_supported;
-> +       u8 device_index;
-> +};
-> +
-> +/**
-> + * is_dj_device - know if the given dj_device is not the receiver.
-> + * @dj_dev: the dj device to test
-> + *
-> + * This macro tests if a struct dj_device pointer is a device created
-> + * by the bus enumarator.
-> + */
-> +#define is_dj_device(dj_dev) \
-> +       (&(dj_dev)->dj_receiver_dev->hdev->dev == (dj_dev)->hdev->dev.parent)
-> +
-> +#endif
-> --
-> 1.7.4.4
->
->
+Any helpful comment would be highly appreciated.
+
+Harri
+
+--------------080907090104050104070508
+Content-Type: application/gzip;
+ name="kern.log.gz"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="kern.log.gz"
+
+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
+mEw1AQA=
+--------------080907090104050104070508--
