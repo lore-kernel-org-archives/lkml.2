@@ -1,124 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab1IAEl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 00:41:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:40260 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab1IAElZ (ORCPT
+	id S1751461Ab1IAEtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 00:49:15 -0400
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:61098 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab1IAEtN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 00:41:25 -0400
-From: WANG Cong <xiyou.wangcong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, WANG Cong <xiyou.wangcong@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-doc@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: [PATCH] i2c: remove deprecated callbacks
-Date: Thu,  1 Sep 2011 12:40:27 +0800
-Message-Id: <1314852027-9523-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 1 Sep 2011 00:49:13 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=1h8qd3w5pbyJS47frJc7V6h9QwwiBhgsQMy9mbCO+wA= c=1 sm=1
+ a=5b58A9xGUdAA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=VnNF1IyMAAAA:8 a=k-YxjZOSQgUC5HudhmwA:9
+ a=pIL_R3O65imUb14hQ18A:7 a=CjuIK1q_8ugA:10 a=Q2GvhgFCQVToHMCY:21
+ a=R8JhmbEEPAVTDlVL:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 08/16] ext4: Calculate and verify checksums for inode bitmaps
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20110901003127.31048.13983.stgit@elm3c44.beaverton.ibm.com>
+Date: Wed, 31 Aug 2011 22:49:05 -0600
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2A834E5A-F07E-4B1E-835B-FBEE3FD7A103@dilger.ca>
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com> <20110901003127.31048.13983.stgit@elm3c44.beaverton.ibm.com>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2c_driver.attach_adapter and i2c_driver.detach_adapter are deprecated
-and scheduled to be removed in Sep 2011.
+On 2011-08-31, at 6:31 PM, Darrick J. Wong wrote:
+> Compute and verify the checksum of the inode bitmap; the checkum is stored in
+> the block group descriptor.
+> 
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> ---
+> fs/ext4/ext4.h   |    3 ++-
+> fs/ext4/ialloc.c |   33 ++++++++++++++++++++++++++++++---
+> 2 files changed, 32 insertions(+), 4 deletions(-)
+> 
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index bc7ace1..248cbd2 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -279,7 +279,8 @@ struct ext4_group_desc
+> 	__le16	bg_free_inodes_count_hi;/* Free inodes count MSB */
+> 	__le16	bg_used_dirs_count_hi;	/* Directories count MSB */
+> 	__le16  bg_itable_unused_hi;    /* Unused inodes count MSB */
+> -	__u32	bg_reserved2[3];
+> +	__le32	bg_inode_bitmap_csum;	/* crc32c(uuid+group+ibitmap) */
+> +	__u32	bg_reserved2[2];
+> };
 
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+I would prefer if there was a 16-bit checksum for the (most common)
+32-byte group descriptors, and this was extended to a 32-bit checksum
+for the (much less common) 64-byte+ group descriptors.  For filesystems
+that are newly formatted with the 64bit feature it makes no difference,
+but virtually all ext3/4 filesystems have only the smaller group descriptors.
 
----
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index c4a6e14..89a9695 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -486,15 +486,6 @@ Files:	include/linux/netfilter_ipv4/ipt_addrtype.h
- 
- ----------------------------
- 
--What:	i2c_driver.attach_adapter
--	i2c_driver.detach_adapter
--When:	September 2011
--Why:	These legacy callbacks should no longer be used as i2c-core offers
--	a variety of preferable alternative ways to instantiate I2C devices.
--Who:	Jean Delvare <khali@linux-fr.org>
--
------------------------------
--
- What:	Support for UVCIOC_CTRL_ADD in the uvcvideo driver
- When:	3.2
- Why:	The information passed to the driver by this ioctl is now queried
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 131079a..c833c53 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -44,8 +44,8 @@
- 
- 
- /* core_lock protects i2c_adapter_idr, and guarantees
--   that device detection, deletion of detected devices, and attach_adapter
--   and detach_adapter calls are serialized */
-+   that device detection, deletion of detected devices
-+   calls are serialized */
- static DEFINE_MUTEX(core_lock);
- static DEFINE_IDR(i2c_adapter_idr);
- 
-@@ -795,15 +795,6 @@ static int i2c_do_add_adapter(struct i2c_driver *driver,
- 	/* Detect supported devices on that bus, and instantiate them */
- 	i2c_detect(adap, driver);
- 
--	/* Let legacy drivers scan this bus for matching devices */
--	if (driver->attach_adapter) {
--		dev_warn(&adap->dev, "%s: attach_adapter method is deprecated\n",
--			 driver->driver.name);
--		dev_warn(&adap->dev, "Please use another way to instantiate "
--			 "your i2c_client\n");
--		/* We ignore the return code; if it fails, too bad */
--		driver->attach_adapter(adap);
--	}
- 	return 0;
- }
- 
-@@ -975,7 +966,6 @@ static int i2c_do_del_adapter(struct i2c_driver *driver,
- 			      struct i2c_adapter *adapter)
- {
- 	struct i2c_client *client, *_n;
--	int res;
- 
- 	/* Remove the devices we created ourselves as the result of hardware
- 	 * probing (using a driver's detect method) */
-@@ -988,15 +978,7 @@ static int i2c_do_del_adapter(struct i2c_driver *driver,
- 		}
- 	}
- 
--	if (!driver->detach_adapter)
--		return 0;
--	dev_warn(&adapter->dev, "%s: detach_adapter method is deprecated\n",
--		 driver->driver.name);
--	res = driver->detach_adapter(adapter);
--	if (res)
--		dev_err(&adapter->dev, "detach_adapter failed (%d) "
--			"for driver [%s]\n", res, driver->driver.name);
--	return res;
-+	return 0;
- }
- 
- static int __unregister_client(struct device *dev, void *dummy)
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index a6c652e..25c2c87 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -142,13 +142,6 @@ extern s32 i2c_smbus_write_i2c_block_data(const struct i2c_client *client,
- struct i2c_driver {
- 	unsigned int class;
- 
--	/* Notifies the driver that a new bus has appeared or is about to be
--	 * removed. You should avoid using this, it will be removed in a
--	 * near future.
--	 */
--	int (*attach_adapter)(struct i2c_adapter *) __deprecated;
--	int (*detach_adapter)(struct i2c_adapter *) __deprecated;
--
- 	/* Standard driver model interfaces */
- 	int (*probe)(struct i2c_client *, const struct i2c_device_id *);
- 	int (*remove)(struct i2c_client *);
+Regardless of whether using half of the crc32c is better or worse than
+using crc16 for the bitmap blocks, storing _any_ checksum is better than
+storing nothing at all.  I would propose the following:
+
+struct ext4_group_desc
+{
+        __le32 bg_block_bitmap_lo;	/* Blocks bitmap block */
+        __le32 bg_inode_bitmap_lo;	/* Inodes bitmap block */
+        __le32 bg_inode_table_lo;	/* Inodes table block */
+        __le16 bg_free_blocks_count_lo;	/* Free blocks count */
+        __le16 bg_free_inodes_count_lo;	/* Free inodes count */
+        __le16 bg_used_dirs_count_lo;	/* Directories count */
+        __le16 bg_flags;		/* EXT4_BG_flags (INODE_UNINIT, etc) */
+        __le32 bg_exclude_bitmap_lo;	/* Exclude bitmap block */
+        __le16 bg_block_bitmap_csum_lo;	/* Block bitmap checksum */
+	__le16 bg_inode_bitmap_csum_lo;	/* Inode bitmap checksum */
+        __le16 bg_itable_unused_lo;	/* Unused inodes count */
+        __le16 bg_checksum;		/* crc16(sb_uuid+group+desc) */
+        __le32 bg_block_bitmap_hi;	/* Blocks bitmap block MSB */
+        __le32 bg_inode_bitmap_hi;	/* Inodes bitmap block MSB */
+        __le32 bg_inode_table_hi;	/* Inodes table block MSB */
+        __le16 bg_free_blocks_count_hi;	/* Free blocks count MSB */
+        __le16 bg_free_inodes_count_hi;	/* Free inodes count MSB */
+        __le16 bg_used_dirs_count_hi;	/* Directories count MSB */
+        __le16 bg_itable_unused_hi;	/* Unused inodes count MSB */
+	__le32 bg_exclude_bitmap_hi;	/* Exclude bitmap block MSB */
+	__le16 bg_block_bitmap_csum_hi;	/* Blocks bitmap checksum MSB */
+	__le16 bg_inode_bitmap_csum_hi;	/* Inodes bitmap checksum MSB */
+        __le32 bg_reserved2;
+};
+
+This is also different from your layout because it locates the block bitmap
+checksum field before the inode bitmap checksum, to more closely match the
+order of other fields in this structure.
+
+> /*
+> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+> index 9c63f27..53faffc 100644
+> --- a/fs/ext4/ialloc.c
+> +++ b/fs/ext4/ialloc.c
+> @@ -82,12 +82,18 @@ static unsigned ext4_init_inode_bitmap(struct super_block *sb,
+> 		ext4_free_inodes_set(sb, gdp, 0);
+> 		ext4_itable_unused_set(sb, gdp, 0);
+> 		memset(bh->b_data, 0xff, sb->s_blocksize);
+> +		ext4_bitmap_csum_set(sb, block_group,
+> +				     &gdp->bg_inode_bitmap_csum, bh,
+> +				     (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+
+The number of inodes per group is already always a multiple of 8.
+
+> 		return 0;
+> 	}
+> 
+> 	memset(bh->b_data, 0, (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> 	ext4_mark_bitmap_end(EXT4_INODES_PER_GROUP(sb), sb->s_blocksize * 8,
+> 			bh->b_data);
+> +	ext4_bitmap_csum_set(sb, block_group, &gdp->bg_inode_bitmap_csum, bh,
+> +			     (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> +	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
+> 
+> 	return EXT4_INODES_PER_GROUP(sb);
+> }
+> @@ -118,12 +124,12 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> 		return NULL;
+> 	}
+> 	if (bitmap_uptodate(bh))
+> -		return bh;
+> +		goto verify;
+> 
+> 	lock_buffer(bh);
+> 	if (bitmap_uptodate(bh)) {
+> 		unlock_buffer(bh);
+> -		return bh;
+> +		goto verify;
+> 	}
+> 
+> 	ext4_lock_group(sb, block_group);
+> @@ -131,6 +137,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> 		ext4_init_inode_bitmap(sb, bh, block_group, desc);
+> 		set_bitmap_uptodate(bh);
+> 		set_buffer_uptodate(bh);
+> +		set_buffer_verified(bh);
+> 		ext4_unlock_group(sb, block_group);
+> 		unlock_buffer(bh);
+> 		return bh;
+> @@ -144,7 +151,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> 		 */
+> 		set_bitmap_uptodate(bh);
+> 		unlock_buffer(bh);
+> -		return bh;
+> +		goto verify;
+> 	}
+> 	/*
+> 	 * submit the buffer_head for read. We can
+> @@ -161,6 +168,21 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> 			    block_group, bitmap_blk);
+> 		return NULL;
+> 	}
+> +
+> +verify:
+> +	ext4_lock_group(sb, block_group);
+> +	if (!buffer_verified(bh) &&
+> +	    !ext4_bitmap_csum_verify(sb, block_group,
+> +				     desc->bg_inode_bitmap_csum, bh,
+> +				     (EXT4_INODES_PER_GROUP(sb) + 7) / 8)) {
+> +		ext4_unlock_group(sb, block_group);
+> +		put_bh(bh);
+> +		ext4_error(sb, "Corrupt inode bitmap - block_group = %u, "
+> +			   "inode_bitmap = %llu", block_group, bitmap_blk);
+> +		return NULL;
+
+At some point we should add a flag like EXT4_BG_INODE_ERROR so that the
+group can be marked in error on disk, and skipped for future allocations,
+but the whole filesystem does not need to be remounted read-only.  That's
+for another patch, however.
+
+> +	}
+> +	ext4_unlock_group(sb, block_group);
+> +	set_buffer_verified(bh);
+> 	return bh;
+> }
+> 
+> @@ -265,6 +287,8 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
+> 		ext4_used_dirs_set(sb, gdp, count);
+> 		percpu_counter_dec(&sbi->s_dirs_counter);
+> 	}
+> +	ext4_bitmap_csum_set(sb, block_group, &gdp->bg_inode_bitmap_csum,
+> +			     bitmap_bh, (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> 	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
+> 	ext4_unlock_group(sb, block_group);
+> 
+> @@ -784,6 +808,9 @@ static int ext4_claim_inode(struct super_block *sb,
+> 			atomic_inc(&sbi->s_flex_groups[f].used_dirs);
+> 		}
+> 	}
+> +	ext4_bitmap_csum_set(sb, group, &gdp->bg_inode_bitmap_csum,
+> +			     inode_bitmap_bh,
+> +			     (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> 	gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
+> err_ret:
+> 	ext4_unlock_group(sb, group);
+> 
+
