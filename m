@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab1IAS46 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 14:56:58 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55752 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752652Ab1IAS45 (ORCPT
+	id S1757374Ab1IAS6j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 14:58:39 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:60331 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756109Ab1IAS6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 14:56:57 -0400
-Date: Thu, 1 Sep 2011 19:55:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Earl Chew <echew@ixiacom.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <viro@zeniv.linux.org.uk>, <andi@firstfloor.org>, <oleg@redhat.com>
-Subject: Re: [ PATCH 1/1 ] coredump: use current->group_leader->comm instead
- of current->comm
-Message-ID: <20110901195554.667c5e58@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E5FBA73.2050108@ixiacom.com>
-References: <4E5FBA73.2050108@ixiacom.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Thu, 1 Sep 2011 14:58:38 -0400
+Date: Thu, 1 Sep 2011 11:58:26 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Roland Dreier <roland@purestorage.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, scameron@beardog.cce.hp.com,
+        Jon Mason <mason@myri.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Subject: Re: [BUG] scsi: hpsa: how to destroy your files
+Message-ID: <20110901115826.287538bd@jbarnes-desktop>
+In-Reply-To: <1314903038.3067.27.camel@dabdike>
+References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
+	<1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20110901160724.GN9189@beardog.cce.hp.com>
+	<1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
+	<1314903038.3067.27.camel@dabdike>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011 10:01:39 -0700
-Earl Chew <echew@ixiacom.com> wrote:
+On Thu, 01 Sep 2011 11:50:38 -0700
+James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
 
-> Change corepattern %e and %E to use current->group_leader->comm instead of current->comm.
+> On Thu, 2011-09-01 at 10:58 -0700, Roland Dreier wrote:
+> > > OK I found the bad commit,I got lucky... I lost some files but my
+> > > machine was able to complete the bisection. CC involved people
+> > 
+> > > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI-E Max Payload Size on fabric
+> > 
+> > Hi Eric,
+> > 
+> > I guess it would be useful to see "lspci -vv" output with a "good" kernel
+> > and with that bad patch applied.  Most likely we should see some difference
+> > somewhere in the MaxPayload fields in the PCI Express capability of
+> > some device.
+> > 
+> > Either the RAID controller or something else lies, and puts a value
+> > in the DevCap that it can't actually support, or else the patch is
+> > buggy and puts something out of range in a DevCtl somewhere.
+> 
+> 
+> While we investigate, I think the problems produced by the patch (data
+> corruption) are serious enough to warrant reverting it, please Jesse.
 
-Which might break stuff.
+Yep, I just got another report about it today too, I'll queue the
+revert.
 
-> A core dump can be triggered from any task in a group, and substituting current->comm
-> means that the name of the core file for a process can vary in surprising ways.
-
-Which some people may well be using
-
-> Using current->group_leader->comm makes the name of the core file more consistent
-> for a process when used with %e or %E.
-
-In your view, but there is a better way to do this - add a new case and
-letter for the behaviour you want. That way you don't break anyone elses
-defaults and expectation and people can set a corepattern dependant upon
-the group leader.
-
-Alan
+-- 
+Jesse Barnes, Intel Open Source Technology Center
