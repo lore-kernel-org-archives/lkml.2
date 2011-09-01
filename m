@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab1IAQ3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:29:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55856 "EHLO mx2.suse.de"
+	id S1757397Ab1IAQbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:31:12 -0400
+Received: from fn.samba.org ([216.83.154.106]:38213 "EHLO lists.samba.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756959Ab1IAQ3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:29:53 -0400
-Date: Thu, 1 Sep 2011 18:29:50 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
+	id S1756959Ab1IAQbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 12:31:11 -0400
+Date: Thu, 1 Sep 2011 09:31:07 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jeremy Allison <jra@samba.org>, Ulrich Drepper <drepper@akkadia.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: fix BDI_WRITTEN accounting disturbing
- bdi->completions
-Message-ID: <20110901162950.GD2070@quack.suse.cz>
-References: <20110901144041.GA5681@localhost>
+        Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org
+Subject: Re: Approaches to making io_submit not block
+Message-ID: <20110901163107.GE758@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <20110830155438.bc31ab99.akpm@linux-foundation.org>
+ <20110830230342.GB16326@samba2>
+ <20110830161130.592df746.akpm@linux-foundation.org>
+ <4E5E152A.9050804@akkadia.org>
+ <20110831165954.GC1611@samba2>
+ <4E5F690C.4010209@akkadia.org>
+ <20110901155845.GA758@samba2>
+ <20110901160436.GA13556@infradead.org>
+ <20110901161531.GB758@samba2>
+ <20110901162337.GA28802@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110901144041.GA5681@localhost>
+In-Reply-To: <20110901162337.GA28802@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-09-11 22:40:41, Wu Fengguang wrote:
-> Peter,
+On Thu, Sep 01, 2011 at 12:23:37PM -0400, Christoph Hellwig wrote:
+> On Thu, Sep 01, 2011 at 09:15:31AM -0700, Jeremy Allison wrote:
+> > > We could easily give you an fcntl / dup3 flag to only release posix
+> > > locks on the final close of a struct file if that helps you.
+> > 
+> > That would help us enormously - it'd be Linux only of course but
+> > we could easily add support for that.
+> > 
+> > Can you propose the design here so we can run it past some of the
+> > Solaris/FreeBSD folks (it'd be nice if we could get broader adoption) ?
 > 
-> This is an amazing bug. I'm not sure how the accounting goes wrong in
-> some tricky way. But you can compare the exact bdi proportions pattern
-> before/after patch. The gray "bdi setpoint" lines are vastly different.
+> Not sure there is all that much to discuss.  The idea is to have locks
+> that behave like Posix locks, but only get release when the last duped
+> fd to them gets released.
 > 
-> ---
-> When increasing BDI_WRITTEN together with bdi->completions inside the
-> same local irq disabling block, bdi_thresh is found to go wild in the
-> 1 disk + 1 usb stick writeback test case. Fix it by moving BDI_WRITTEN
-> accounting out.
-  I don't understand this - the patch is just NOP. The change in
-test_clear_page_writeback() does absolutely nothing and the change in
-bdi_writeout_inc() just changes:
-  	local_irq_save(flags);
-  	__inc_bdi_stat(bdi);
-  	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
-  			      bdi->max_prop_frac);
-  	local_irq_restore(flags);
+> We'd define a new O_LOCKS_WHATEVER flag for it, which gets set either
+> using fcntl(..., F_SETFL, ...) or dup3.  All in all that should be less
+> than 50 lines of code in the kernel.
 
-to:
-  	local_irq_save(flags);
-  	__inc_bdi_stat(bdi);
-  	local_irq_restore(flags);
-  	local_irq_save(flags);
-  	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
-  			      bdi->max_prop_frac);
-  	local_irq_restore(flags);
+Ok, so it'd be set at open() time, say:
 
-So the difference must be in something else...
+O_CLOLOCK_PERSIST
 
-								Honza
-> 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/page-writeback.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> --- linux.orig/mm/page-writeback.c	2011-09-01 21:43:45.312000020 +0800
-> +++ linux/mm/page-writeback.c	2011-09-01 21:46:10.656000006 +0800
-> @@ -230,7 +230,6 @@ int dirty_bytes_handler(struct ctl_table
->   */
->  static inline void __bdi_writeout_inc(struct backing_dev_info *bdi)
->  {
-> -	__inc_bdi_stat(bdi, BDI_WRITTEN);
->  	__prop_inc_percpu_max(&vm_completions, &bdi->completions,
->  			      bdi->max_prop_frac);
->  }
-> @@ -239,6 +238,7 @@ void bdi_writeout_inc(struct backing_dev
->  {
->  	unsigned long flags;
->  
-> +	inc_bdi_stat(bdi, BDI_WRITTEN);
->  	local_irq_save(flags);
->  	__bdi_writeout_inc(bdi);
->  	local_irq_restore(flags);
-> @@ -1577,6 +1577,7 @@ int test_clear_page_writeback(struct pag
->  						PAGECACHE_TAG_WRITEBACK);
->  			if (bdi_cap_account_writeback(bdi)) {
->  				__dec_bdi_stat(bdi, BDI_WRITEBACK);
-> +				__inc_bdi_stat(bdi, BDI_WRITTEN);
->  				__bdi_writeout_inc(bdi);
->  			}
->  		}
+(to match the naming of something like O_CLOEXEC) and be available to set
+with F_SETFD via an fcntl and dup3 call ?
 
+> The alternative would be to design a different lock type, but that would
+> be a lot more invasive, and not provide any real benefits.
 
+No, we don't want that thanks :-).
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jeremy
