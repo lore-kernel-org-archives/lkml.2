@@ -1,92 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab1IACtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 22:49:36 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:39545 "EHLO sabe.cs.wisc.edu"
+	id S1757529Ab1IAC6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 22:58:01 -0400
+Received: from dns1.mips.com ([12.201.5.69]:43568 "EHLO dns1.mips.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757479Ab1IACte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 22:49:34 -0400
-Message-ID: <4E5EF3B4.90204@cs.wisc.edu>
-Date: Wed, 31 Aug 2011 21:53:40 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1757497Ab1IAC55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 22:57:57 -0400
+From: Deng-Cheng Zhu <dczhu@mips.com>
+To: <bhelgaas@google.com>, <jbarnes@virtuousgeek.org>, <ralf@linux-mips.org>,
+        <monstr@monstr.eu>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <davem@davemloft.net>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <x86@kernel.org>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <eyal@mips.com>, <zenon@mips.com>,
+        <dczhu@mips.com>, <dengcheng.zhu@gmail.com>
+Subject: [RESEND PATCH v3 1/2] PCI: Pass available resources into pci_create_bus()
+Date: Thu, 1 Sep 2011 10:48:28 +0800
+Message-ID: <1314845309-3277-2-git-send-email-dczhu@mips.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1314845309-3277-1-git-send-email-dczhu@mips.com>
+References: <1314845309-3277-1-git-send-email-dczhu@mips.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        iscsi-driver@qlogic.com
-Subject: Re: linux-next: Tree for Aug 30 (scsi/qla4xxx)
-References: <20110830171605.168f29decb0558fa31e59210@canb.auug.org.au> <20110831134515.049f584b.rdunlap@xenotime.net>
-In-Reply-To: <20110831134515.049f584b.rdunlap@xenotime.net>
-Content-Type: multipart/mixed;
- boundary="------------010801060600060203050400"
+Content-Type: text/plain
+X-EMS-Proccessed: 6LP3oGfGVdcdb8o1aBnt6w==
+X-EMS-STAMP: 2gIJ6+cDy8UI0H/cL/LiXg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010801060600060203050400
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Currently, after pci_create_bus(), resources available on the bus could be
+handled by pci_scan_child_bus(). The problem is that, in
+pci_scan_child_bus(), before calling arch-dependent pcibios_fixup_bus(),
+PCI quirks will probably conflict (while doing pci_claim_resource()) with
+resources like system controller's I/O resource that have not yet been
+added to the bus. One can see that, by default, ioport_resource and
+iomem_resource are filled into the bus->resource[] array as the initial
+resources in pci_create_bus(). So, to avoid such conflicts, add those
+really available resources right before returning the newly created bus in
+pci_create_bus() whose interface should then be extended to receive them.
 
-On 08/31/2011 03:45 PM, Randy Dunlap wrote:
-> On Tue, 30 Aug 2011 17:16:05 +1000 Stephen Rothwell wrote:
-> 
->> Hi all,
-> 
-> [Sorry about the delay.. slow build machine.
-> Please ignore if this is already known/fixed.]
-> 
-> 
-> (on i386)
-> 
-> ERROR: "iscsi_boot_create_target" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
-> ERROR: "iscsi_boot_create_ethernet" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
-> ERROR: "iscsi_boot_create_host_kset" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
-> ERROR: "iscsi_boot_create_initiator" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
-> ERROR: "iscsi_boot_destroy_kset" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
-> 
-> when CONFIG_ISCSI_BOOT_SYSFS is not enabled.
-> 
+A related discussion thread can be found here:
+http://www.spinics.net/lists/mips/msg41654.html
 
-
-We need the attached patch.
-
---------------010801060600060203050400
-Content-Type: text/plain;
- name="0001-qla4xxx-select-iscsi-boot-sysfs-attrs.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-qla4xxx-select-iscsi-boot-sysfs-attrs.patch"
-
->From 64915c90128ebef61f076f58af3cba75288fae94 Mon Sep 17 00:00:00 2001
-From: Mike Christie <michaelc@cs.wisc.edu>
-Date: Wed, 31 Aug 2011 21:51:42 -0500
-Subject: [PATCH] qla4xxx: select iscsi boot sysfs attrs
-
-qla4xxx now uses iscsi_boot_sysfs to export the targets used
-for boot to sysfs. It needs to select that config option
-to make sure that module is also built.
-
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Deng-Cheng Zhu <dczhu@mips.com>
 ---
- drivers/scsi/qla4xxx/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Changes (v3 - v2):
+None
 
-diff --git a/drivers/scsi/qla4xxx/Kconfig b/drivers/scsi/qla4xxx/Kconfig
-index 2c33ce6..5b1aed4 100644
---- a/drivers/scsi/qla4xxx/Kconfig
-+++ b/drivers/scsi/qla4xxx/Kconfig
-@@ -2,6 +2,7 @@ config SCSI_QLA_ISCSI
- 	tristate "QLogic ISP4XXX and ISP82XX host adapter family support"
- 	depends on PCI && SCSI
- 	select SCSI_ISCSI_ATTRS
-+	select ISCSI_BOOT_SYSFS
- 	---help---
- 	This driver supports the QLogic 40xx (ISP4XXX) and 8022 (ISP82XX)
- 	iSCSI host adapter family.
+Changes (v2 - v1):
+o Add more info to the patch description.
+o Fix arch breaks in default resource setup discovered by Bjorn Helgaas.
+
+ arch/microblaze/pci/pci-common.c |    3 ++-
+ arch/powerpc/kernel/pci-common.c |    3 ++-
+ arch/sparc/kernel/pci.c          |    3 ++-
+ arch/x86/pci/acpi.c              |    2 +-
+ drivers/pci/probe.c              |   15 +++++++++++----
+ include/linux/pci.h              |    3 ++-
+ 6 files changed, 20 insertions(+), 9 deletions(-)
+
+diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+index 4cfae20..9c35aa6 100644
+--- a/arch/microblaze/pci/pci-common.c
++++ b/arch/microblaze/pci/pci-common.c
+@@ -1581,7 +1581,8 @@ static void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 		 node ? node->full_name : "<NO NAME>");
+ 
+ 	/* Create an empty bus for the toplevel */
+-	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
++	bus = pci_create_bus(hose->parent, hose->first_busno,
++			     hose->ops, hose, NULL);
+ 	if (bus == NULL) {
+ 		printk(KERN_ERR "Failed to create bus for PCI domain %04x\n",
+ 		       hose->global_number);
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 32656f1..2ede26a 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1703,7 +1703,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
+ 		 node ? node->full_name : "<NO NAME>");
+ 
+ 	/* Create an empty bus for the toplevel */
+-	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
++	bus = pci_create_bus(hose->parent, hose->first_busno,
++			     hose->ops, hose, NULL);
+ 	if (bus == NULL) {
+ 		pr_err("Failed to create bus for PCI domain %04x\n",
+ 			hose->global_number);
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index 1e94f94..77c38bb 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -689,7 +689,8 @@ struct pci_bus * __devinit pci_scan_one_pbm(struct pci_pbm_info *pbm,
+ 
+ 	printk("PCI: Scanning PBM %s\n", node->full_name);
+ 
+-	bus = pci_create_bus(parent, pbm->pci_first_busno, pbm->pci_ops, pbm);
++	bus = pci_create_bus(parent, pbm->pci_first_busno,
++			     pbm->pci_ops, pbm, NULL);
+ 	if (!bus) {
+ 		printk(KERN_ERR "Failed to create bus for %s\n",
+ 		       node->full_name);
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index c953302..bab2113 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -353,7 +353,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		memcpy(bus->sysdata, sd, sizeof(*sd));
+ 		kfree(sd);
+ 	} else {
+-		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd);
++		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd, NULL);
+ 		if (bus) {
+ 			get_current_resources(device, busnum, domain, bus);
+ 			bus->subordinate = pci_scan_child_bus(bus);
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 8473727..47a364c 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1516,7 +1516,8 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
+ }
+ 
+ struct pci_bus * pci_create_bus(struct device *parent,
+-		int bus, struct pci_ops *ops, void *sysdata)
++		int bus, struct pci_ops *ops, void *sysdata,
++		struct pci_bus_resource *bus_res)
+ {
+ 	int error;
+ 	struct pci_bus *b, *b2;
+@@ -1570,8 +1571,14 @@ struct pci_bus * pci_create_bus(struct device *parent,
+ 	pci_create_legacy_files(b);
+ 
+ 	b->number = b->secondary = bus;
+-	b->resource[0] = &ioport_resource;
+-	b->resource[1] = &iomem_resource;
++
++	/* Add initial resources to the bus */
++	if (bus_res != NULL)
++		list_add_tail(&b->resources, &bus_res->list);
++	else {
++		b->resource[0] = &ioport_resource;
++		b->resource[1] = &iomem_resource;
++	}
+ 
+ 	return b;
+ 
+@@ -1592,7 +1599,7 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
+ {
+ 	struct pci_bus *b;
+ 
+-	b = pci_create_bus(parent, bus, ops, sysdata);
++	b = pci_create_bus(parent, bus, ops, sysdata, NULL);
+ 	if (b)
+ 		b->subordinate = pci_scan_child_bus(b);
+ 	return b;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 8c230cb..5e1bacd 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -666,7 +666,8 @@ static inline struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *o
+ 	return root_bus;
+ }
+ struct pci_bus *pci_create_bus(struct device *parent, int bus,
+-			       struct pci_ops *ops, void *sysdata);
++			       struct pci_ops *ops, void *sysdata,
++			       struct pci_bus_resource *bus_res);
+ struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
+ 				int busnr);
+ void pcie_update_link_speed(struct pci_bus *bus, u16 link_status);
 -- 
-1.7.6
+1.7.1
 
-
---------------010801060600060203050400--
