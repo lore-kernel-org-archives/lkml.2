@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab1IAVSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:18:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44473 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757962Ab1IAVSj (ORCPT
+	id S1758045Ab1IAVYo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:24:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38628 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758017Ab1IAVYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:18:39 -0400
-Date: Thu, 1 Sep 2011 14:17:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [Revert] Re: [PATCH] mm: sync vmalloc address space page tables
- in alloc_vm_area()
-Message-Id: <20110901141754.76cef93b.akpm@linux-foundation.org>
-In-Reply-To: <4E5FED1A.1000300@goop.org>
-References: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com>
-	<20110901161134.GA8979@dumpdata.com>
-	<4E5FED1A.1000300@goop.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Sep 2011 17:24:43 -0400
+Date: Fri, 2 Sep 2011 00:24:13 +0300
+From: "Maxin B. John" <maxin.john@gmail.com>
+To: Amit Kucheria <amit.kucheria@verdurent.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Bryan Freed <bfreed@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: iio: light: Fix compiler warning in tsl2563.c
+Message-ID: <20110901212413.GA3371@maxin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Sep 2011 13:37:46 -0700
-Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+  CC [M]  drivers/staging/iio/light/tsl2563.o
+drivers/staging/iio/light/tsl2563.c: In function 'tsl2563_probe':
+drivers/staging/iio/light/tsl2563.c:736: warning: 'id' may be used 
+uninitialized in this function
 
-> On 09/01/2011 09:11 AM, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Sep 01, 2011 at 12:51:03PM +0100, David Vrabel wrote:
-> >> From: David Vrabel <david.vrabel@citrix.com>
-> > Andrew,
-> >
-> > I was wondering if you would be Ok with this patch for 3.1.
-> >
-> > It is a revert (I can prepare a proper revert if you would like
-> > that instead of this patch).
+Also fixes the tsl2563_read_id().
 
-David's patch looks better than a straight reversion.
-
-Problem is, I can't find David's original email anywhere.  Someone's
-been playing games with To: headers?
-
-> > The users of this particular function (alloc_vm_area) are just
-> > Xen. There are no others.
-> 
-> I'd prefer to put explicit vmalloc_sync_all()s in the callsites where
-> necessary,
-
-What would that patch look like?  Bear in mind that we'll need something
-suitable for 3.1 and for a 3.0 backport.
-
-> and ultimately try to work out ways of avoiding it altogether
-> (like have some hypercall wrapper which touches the arg memory to make
-> sure its mapped?).
-
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+index f25243b..f8f787d 100644
+--- a/drivers/staging/iio/light/tsl2563.c
++++ b/drivers/staging/iio/light/tsl2563.c
+@@ -225,9 +225,9 @@ static int tsl2563_read_id(struct tsl2563_chip *chip, u8 *id)
+ 
+ 	ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_ID);
+ 	if (ret < 0)
+-		return ret;
++		return -EIO;
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ /*
+@@ -697,7 +697,7 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+ 	struct tsl2563_platform_data *pdata = client->dev.platform_data;
+ 	int err = 0;
+ 	int ret;
+-	u8 id;
++	u8 id = 0;
+ 
+ 	indio_dev = iio_allocate_device(sizeof(*chip));
+ 	if (!indio_dev)
+@@ -709,15 +709,17 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+ 	chip->client = client;
+ 
+ 	err = tsl2563_detect(chip);
+-	if (err) {
++	if (err < 0) {
+ 		dev_err(&client->dev, "device not found, error %d\n", -err);
+ 		goto fail1;
+ 	}
+ 
+ 	err = tsl2563_read_id(chip, &id);
+-	if (err)
++	if (err < 0) {
++		dev_err(&client->dev, "id reading failed, error %d\n", -err);
+ 		goto fail1;
+-
++	}
++	id = err;
+ 	mutex_init(&chip->lock);
+ 
+ 	/* Default values used until userspace says otherwise */
