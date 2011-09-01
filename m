@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab1IAQqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:46:07 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33899
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750955Ab1IAQqF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:46:05 -0400
-Date: Thu, 1 Sep 2011 12:45:54 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jeremy Allison <jra@samba.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Ulrich Drepper <drepper@akkadia.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110901164554.GB7641@infradead.org>
-References: <20110830161130.592df746.akpm@linux-foundation.org>
- <4E5E152A.9050804@akkadia.org>
- <20110831165954.GC1611@samba2>
- <4E5F690C.4010209@akkadia.org>
- <20110901155845.GA758@samba2>
- <20110901160436.GA13556@infradead.org>
- <20110901161531.GB758@samba2>
- <20110901162337.GA28802@infradead.org>
- <20110901163107.GE758@samba2>
- <20110901163452.GF758@samba2>
+	id S1751750Ab1IAQrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:47:04 -0400
+Received: from claw.goop.org ([74.207.240.146]:42176 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750900Ab1IAQrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 12:47:02 -0400
+Message-ID: <4E5FB700.1070908@goop.org>
+Date: Thu, 01 Sep 2011 09:46:56 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110901163452.GF758@samba2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Igor Mammedov <imammedo@redhat.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com
+Subject: Re: [PATCH v2] xen: x86_32: do not enable iterrupts when returning
+ from exception in interrupt context
+References: <4E5EB794.7050909@goop.org> <1314877615-18280-1-git-send-email-imammedo@redhat.com>
+In-Reply-To: <1314877615-18280-1-git-send-email-imammedo@redhat.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 09:34:52AM -0700, Jeremy Allison wrote:
-> > 
-> > (to match the naming of something like O_CLOEXEC) and be available to set
-> > with F_SETFD via an fcntl and dup3 call ?
-> 
-> Ah, looking at fcntl - do you want to set/get this via F_SETFD/F_GETFD,
-> or via F_SETFL/F_GETFL ? i.e. is this a file descritor flag, or a status
-> flag ? I'd guess a file descriptor flag but I'm not sure of the difference
-> here..
+On 09/01/2011 04:46 AM, Igor Mammedov wrote:
+> If vmalloc page_fault happens inside of interrupt handler with interrupts
+> disabled then on exit path from exception handler when there is no pending
+> interrupts, the following code (arch/x86/xen/xen-asm_32.S:112):
+>
+> 	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
+> 	sete XEN_vcpu_info_mask(%eax)
+>
+> will enable interrupts even if they has been previously disabled according to
+> eflags from the bounce frame (arch/x86/xen/xen-asm_32.S:99)
+>
+> 	testb $X86_EFLAGS_IF>>8, 8+1+ESP_OFFSET(%esp)
+> 	setz XEN_vcpu_info_mask(%eax)
+>
+> Solution is in setting XEN_vcpu_info_mask only when it should be set
+> according to
+> 	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
+> but not clearing it if there isn't any pending events.
+>
+> Reproducer for bug is attached to RHBZ 707552
+>
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
 
-F_SETFD/F_GETFD operates on an entry in the fd table, e.g. separately
-if you have duped fds.  That's exactly what we do _not_ want here.
+One nit, this should be acked-by or reviewed-by, not signed-off-by,
+since the patch isn't passing through my hands.
 
+    J
