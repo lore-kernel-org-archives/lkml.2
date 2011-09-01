@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab1IADH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 23:07:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49873 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757379Ab1IADH0 convert rfc822-to-8bit (ORCPT
+	id S1757547Ab1IADJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 23:09:21 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:50075 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757503Ab1IADJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 23:07:26 -0400
+	Wed, 31 Aug 2011 23:09:20 -0400
+Date: Wed, 31 Aug 2011 23:09:19 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: Mark Salter <msalter@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] RFC: addition to DMA API
+In-Reply-To: <CACVXFVPN7SCk8z=vatphyM=PhZDAwtyDidALYPeVkuJ_zxpBvA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1108312255060.27371-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20110831151023.5b7e12da.akpm@linux-foundation.org>
-References: <20110831075814.003575573@openvz.org> <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros> <20110831112642.GI25465@sun>
- <20110831140416.GA17626@shutemov.name> <20110831142622.GB30615@sun> <20110831151023.5b7e12da.akpm@linux-foundation.org>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Wed, 31 Aug 2011 23:07:05 -0400
-Message-ID: <CAGZ=bqLE8uJj+m-LZM1OX093M+0aE6+zxJF0o5DPHOnYX3iA5A@mail.gmail.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Vasiliy Kulikov <segoon@openwall.com>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 18:10, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed, 31 Aug 2011 18:26:22 +0400  Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
->> one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
->> the target is the file. Opening a symlink results in a file that point exactly
->> to the same inode as them vma's one.
->>
->> For example the ls -l of some arbitrary /proc/<pid>/map_files/
->>
->>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
->>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
->>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
->>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
->>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
->
-> This particular patch introduces a distressing amount of duplication of
-> /proc/pid/maps.  The changelog should provide a really good
-> justification for doing this: why is /proc/pid/maps (and smaps!)
-> unsuitable and why cannot maps/smaps be fixed to be suitable?
+On Thu, 1 Sep 2011, Ming Lei wrote:
 
-Andrew,
+> Hi,
+> 
+> On Thu, Sep 1, 2011 at 5:30 AM, Mark Salter <msalter@redhat.com> wrote:
+> > This patch set arose out of a discussion on linux-arm concerning a
+> > performance problem with USB on some ARMv7 based platforms. The
+> > problem was tracked down by ming.lei@canonical.com and found to be
+> > the result of CPU writes to DMA-coherent memory being delayed in a
+> > write buffer between the CPU and memory. One proposed patch fixed
+> > only the immediate problem with the USB EHCI driver, but several
+> > folks thought a more general approach was needed, so I put this series
+> > of patches together as a starting point for wider discussion outside
+> > the ARM specific list.
+> 
+> After some further thoughts, I think it is not a good idea to introduce a
+> general DMA API to handle this case, see below:
+> 
+> 1. The side-effect of new API is that it will make descriptors of dma in a
+> partial update, such as qtd in the ehci case, even ehci can handle this
+> successful, but it is really not good to make DMA bus master see a
+> partial update of descriptor, and I am not  sure that other kind of bus masters
+> can handle this correctly, which may introduce other problems. A proper memory
+> barrier will always make dma master see a atomic update of dma descriptors,
+> which should be the preferred way to take by device driver.
 
-This is way more useful than /proc/$PID/maps, because this allows you
-to reliably obtain an FD to an arbitrary mapped memory segment.
+No, this is completely wrong.
 
-EG:
-  $ cp /bin/sleep ~/my-sleep
-  $ ~/my-sleep 1000 & kid=$!
-  $ rm ~/my-sleep
-  $ mkdir ~/mapped_files
-  $ for file in /proc/$kid/map_files/*; do cp "$file" ~/mapped_files/; done
+Firstly, you are forgetting about other architectures, ones in which
+writes to coherent memory aren't buffered.  On those architectures
+there's no way to prevent the DMA bus master from seeing an
+intermediate state of the data structures.  Therefore the driver has to
+be written so that even when this happens, everything will work
+correctly.
 
-This trivially gets me copies of every mapped file, including the deleted
-"my-sleep" binary, it also trivially handles lazy-unmounted filesystems,
-chroots, namespaces, and all sorts of similar kernel cleverness.
+Secondly, even when write flushes are used, you can't guarantee that
+the DMA bus master will see an atomic update.  It might turn out that
+the hardware occasionally flushes some writes very quickly, before the
+data-structure updates are complete.
 
-It's exactly the same kind of utility that /proc/$PID/fd/* has, but for
-mmap().
+Thirdly, you are mixing up memory barriers with write flushes.  The
+barriers are used to make sure that writes are done in the correct
+order, whereas the flushes are used to make sure that writes are done
+reasonably quickly.  One has nothing to do with the other, even if by
+coincidence on ARM a memory barrier causes a write flush.  On other
+architectures this might not be true.
 
-With /proc/$kid/maps you simply can't work around some of those
-kinds of issues (IE: deleted files, etc).
+> 2, most of such cases can be handled correctly by mb/wmb/rmb barriers.
 
-Cheers,
-Kyle Moffett
+No, they can't.  See the third point above.
+
+> The ehci case I reported is in the one of the most tricky code path in
+> ehci driver,
+> and it should be a special case, and up to now, we only have found this case
+> can't be handled by memory barriers. Is there other cases which can't be handled
+> correctly by mb/wmb/rmb? If so, please point it out.
+> 
+> 3, The new DMA API for the purpose to be introduced is much easier to
+> understand, and much easier to use than memory barrier, so it is very
+> possible to make device driver guys misuse or abuse it instead of using
+> memory barrier first to handle the case.
+
+That criticism could apply to almost any new feature.  We shouldn't be 
+afraid to adopt something new merely because it's so easy to use that 
+it might be misused.
+
+Alan Stern
+
