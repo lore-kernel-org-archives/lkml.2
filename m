@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab1IAQT0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:19:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47725 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750786Ab1IAQTX (ORCPT
+	id S1757794Ab1IAQUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:20:20 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:45349 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757752Ab1IAQUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:19:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E5FA18A.7010205@gmail.com>
-References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com>
- <20110812195220.GA29051@elte.hu> <20110814095910.GA18809@liondog.tnic>
- <6296.1313462075@turing-police.cc.vt.edu> <20110816121604.GA29251@aftab> <4E5FA18A.7010205@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 1 Sep 2011 09:18:32 -0700
-Message-ID: <CA+55aFz1RRY6KcqVVZ9tBH7PDXfBwkZ1AhJcSHPABLXMkNJCOA@mail.gmail.com>
-Subject: Re: x86 memcpy performance
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
-        melwyn lobo <linux.melwyn@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Sep 2011 12:20:17 -0400
+Date: Thu, 1 Sep 2011 09:20:14 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        iscsi-driver@qlogic.com
+Subject: Re: linux-next: Tree for Aug 30 (scsi/qla4xxx)
+Message-Id: <20110901092014.4be19efa.rdunlap@xenotime.net>
+In-Reply-To: <4E5EF3B4.90204@cs.wisc.edu>
+References: <20110830171605.168f29decb0558fa31e59210@canb.auug.org.au>
+	<20110831134515.049f584b.rdunlap@xenotime.net>
+	<4E5EF3B4.90204@cs.wisc.edu>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 8:15 AM, Maarten Lankhorst
-<m.b.lankhorst@gmail.com> wrote:
->
-> This work intrigued me, in some cases kernel memcpy was a lot faster than sse memcpy,
-> and I finally figured out why. I also extended the test to an optimized avx memcpy,
-> but I think the kernel memcpy will always win in the aligned case.
+On Wed, 31 Aug 2011 21:53:40 -0500 Mike Christie wrote:
 
-"rep movs" is generally optimized in microcode on most modern Intel
-CPU's for some easyish cases, and it will outperform just about
-anything.
+> On 08/31/2011 03:45 PM, Randy Dunlap wrote:
+> > On Tue, 30 Aug 2011 17:16:05 +1000 Stephen Rothwell wrote:
+> > 
+> >> Hi all,
+> > 
+> > [Sorry about the delay.. slow build machine.
+> > Please ignore if this is already known/fixed.]
+> > 
+> > 
+> > (on i386)
+> > 
+> > ERROR: "iscsi_boot_create_target" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> > ERROR: "iscsi_boot_create_ethernet" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> > ERROR: "iscsi_boot_create_host_kset" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> > ERROR: "iscsi_boot_create_initiator" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> > ERROR: "iscsi_boot_destroy_kset" [drivers/scsi/qla4xxx/qla4xxx.ko] undefined!
+> > 
+> > when CONFIG_ISCSI_BOOT_SYSFS is not enabled.
+> > 
+> 
+> 
+> We need the attached patch.
 
-Atom is a notable exception, but if you expect performance on any
-general loads from Atom, you need to get your head examined. Atom is a
-disaster for anything but tuned loops.
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-The "easyish cases" depend on microarchitecture. They are improving,
-so long-term "rep movs" is the best way regardless, but for most
-current ones it's something like "source aligned to 8 bytes *and*
-source and destination are equal "mod 64"".
+Thanks.
 
-And that's true in a lot of common situations. It's true for the page
-copy, for example, and it's often true for big user "read()/write()"
-calls (but "often" may not be "often enough" - high-performance
-userland should strive to align read/write buffers to 64 bytes, for
-example).
-
-Many other cases of "memcpy()" are the fairly small, constant-sized
-ones, where the optimal strategy tends to be "move words by hand".
-
-                      Linus
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
