@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab1IAQdn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:33:43 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:60271 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756959Ab1IAQdm (ORCPT
+	id S1757523Ab1IAQel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:34:41 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51460 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756959Ab1IAQej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:33:42 -0400
-Message-ID: <4E5FB3CF.3020703@linux.vnet.ibm.com>
-Date: Thu, 01 Sep 2011 11:33:19 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: gregkh@suse.de, devel@driverdev.osuosl.org, ngupta@vflare.org,
-        cascardo@holoscopio.com, rdunlap@xenotime.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] staging: zcache: xcfmalloc support
-References: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com> <6e0e7950-0c91-4bb3-929b-3853fa95e63d@default 4E5EB066.6020007@linux.vnet.ibm.com> <36dad993-ea60-43f4-89f0-77831befd483@default>
-In-Reply-To: <36dad993-ea60-43f4-89f0-77831befd483@default>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Sep 2011 12:34:39 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: linux-next RCU complaint during boot
+From: Valdis.Kletnieks@vt.edu
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1314894817_7603P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11090116-7282-0000-0000-0000010D90BE
+Date: Thu, 01 Sep 2011 12:33:37 -0400
+Message-ID: <8867.1314894817@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.4E5FB3E2.01D4,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2011 10:17 AM, Dan Magenheimer wrote:
->>> Do you have any data comparing xcfmalloc vs xvmalloc for
->>> compression ratio and/or performance (cycles to compress
->>> or decompress different pages) on a wide(r) range of data?
->>> Assuming xcfmalloc isn't "always better", maybe it would
->>> be best to allow the algorithm to be selectable?  (And
->>> then we would also need to decide the default.)
->>>
->>
->> I can get you some results comparing the two tomorrow.
->>
->> You have to make the distinction between the
->> "compression ratio" and the "effective compression".
->> The compression ratio is the same since the compression
->> algorithm, LZO, was changed.  The effective compression,
-> 
-> changed -> NOT changed, correct? LZO is used in both?
-> I had forgotten that, so the only issue might be the
-> overhead.
-> 
+--==_Exmh_1314894817_7603P
+Content-Type: text/plain; charset=us-ascii
 
-Yes, LZO is NOT changed. Typo on my part.
+Seen during boot of linux-next 20110831:
 
->> the ratio of stored compressed pages to allocator pool
->> pages, is different between the two, especially for
->> allocation sets > PAGE_SIZE/2.
->  
->> What the numbers will tell you is that for allocations sets
->> < PAGE_SIZE/2 xcfmalloc is a little worse (~2% greater
->> overhead).  But for allocation sets > PAGE_SIZE/2,
->> xcfmalloc has up to a 50% advantage over xvmalloc.
->>
->> As far as performance numbers, all I can see is that
->> the throughput is the same between the two.  I'm not
->> sure how to get, for example, and cycles delta
->> between the two.
-> 
-> IIRC, xvmalloc has O(1) overhead regardless of the number
-> of chunks of data stored.  Some algorithms are O(N) or
-> even O(N**2), i.e. might walk a potentially increasingly
-> very long list of allocations/descriptors
-> to find a slot, which would not be acceptable for
-> zcache as, for a large data set, the overhead might
-> be much worse than the cycles-to-compress.  Which is
-> xcfmalloc, O(1) or O(N) or O(N**2)?
+[    8.823047] ------------[ cut here ]------------
+[    8.823177] WARNING: at kernel/rcutree.c:1821 rcu_needs_cpu_quick_check+0x6e/0x204()
+[    8.823314] Hardware name: Latitude E6500
+[    8.823418] Modules linked in:
+[    8.823601] Pid: 0, comm: swapper Not tainted 3.1.0-rc4-next-20110831-dirty #11
+[    8.823724] Call Trace:
+[    8.823824]  <IRQ>  [<ffffffff81039682>] warn_slowpath_common+0x7e/0x96
+[    8.824015]  [<ffffffff81092467>] ? note_new_gpnum+0x32/0x96
+[    8.824034]  [<ffffffff810396af>] warn_slowpath_null+0x15/0x17
+[    8.824034]  [<ffffffff810917de>] rcu_needs_cpu_quick_check+0x6e/0x204
+[    8.824034]  [<ffffffff81093df8>] rcu_needs_cpu+0x9/0xd
+[    8.824034]  [<ffffffff81065933>] tick_nohz_stop_sched_tick+0x20a/0x420
+[    8.824034]  [<ffffffff8103fd77>] irq_exit+0xd2/0xe0
+[    8.824034]  [<ffffffff81018f91>] smp_apic_timer_interrupt+0x8b/0x99
+[    8.824034]  [<ffffffff815a1b30>] apic_timer_interrupt+0x70/0x80
+[    8.824034]  <EOI>  [<ffffffff8159dbbf>] ? notifier_call_chain+0x20/0x81
+[    8.824034]  [<ffffffff8159dc7e>] __atomic_notifier_call_chain+0x5e/0x90
+[    8.824034]  [<ffffffff8159dc20>] ? notifier_call_chain+0x81/0x81
+[    8.824034]  [<ffffffff8159dcbf>] atomic_notifier_call_chain+0xf/0x11
+[    8.824034]  [<ffffffff8100092d>] cpu_idle+0xaf/0x102
+[    8.824034]  [<ffffffff81569ddc>] rest_init+0xd0/0xd7
+[    8.824034]  [<ffffffff81569d0c>] ? csum_partial_copy_generic+0x16c/0x16c
+[    8.824034]  [<ffffffff81b31b09>] start_kernel+0x375/0x380
+[    8.824034]  [<ffffffff81b3129f>] x86_64_start_reservations+0xaf/0xb3
+[    8.824034]  [<ffffffff81b31393>] x86_64_start_kernel+0xf0/0xf7
+[    8.824034] ---[ end trace f6289633ba846f8f ]---
 
-xcfmalloc is also 0(1) in that the number of freelists
-at that have to be checked is constant and not increasing
-with the number of allocations.  The constant hidden
-in the O(1) for finding a suitable block is NUM_FREELISTS.
+Any ideas?
 
-The performance on the block lookup could be improved by
-using a freelist bitmap similar to xvmalloc.  However,
-I don't think there would be a measurable change in 
-performance, because this in not where the 
-zcache_put_page() codepath is spending all its time.
-The time eater in this codepath is the LZO compression,
-as dictated by the large difference in throughput
-depending on the compressibility of the page.
-This is supported by the metrics I am about to send you.
+--==_Exmh_1314894817_7603P
+Content-Type: application/pgp-signature
 
-> 
-> (Also, since I think interrupts are still disabled,
-> reading the tsc before/after should be safe to
-> get the cycles delta.)
-> 
->> I would be difficult to make it selectable because the
->> function signatures (and some concepts) aren't the same.
->> You can see the changes that were required in the patch
->> 2/3.
-> 
-> Then I definitely would like to see some review
-> and discussion from Nitin.  Clearly xcfmalloc is better
-> for poorly-compressible data; I would like to be confident
-> that it is not "worse" for another large common set of
-> data.
-> 
-> An even better implementation could be if both are
-> active and the selection is made at runtime depending
-> on the compressibility of the data, i.e. poorly-compressible
-> data gets stored in xcfmalloc and other data in xvmalloc?
-> Probably not worth the effort, but food for thought.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-In the metrics I am about to send, you'll see that xcfmalloc
-only does <2% worse on zeroed pages (the worst case for xcfmalloc),
-but does almost 22% better on pages that compress to 75% of their
-original size.
+iD8DBQFOX7PhcC3lWbTT17ARAt0RAKDNFTIvipoiLiKpo8fXLyDizP1xJgCfeCjt
+L/uunp5SWMuBjph6iYbROV8=
+=bUjD
+-----END PGP SIGNATURE-----
 
-> Thanks,
-> Dan
+--==_Exmh_1314894817_7603P--
 
