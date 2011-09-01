@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab1IABiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 21:38:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756900Ab1IABiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 21:38:07 -0400
-Subject: Re: [PATCH 01/24] fix default __strnlen_user macro
-From: Mark Salter <msalter@redhat.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 31 Aug 2011 21:38:03 -0400
-In-Reply-To: <4E5EC3FE.10307@gmail.com>
-References: <1314826019-22330-1-git-send-email-msalter@redhat.com>
-	 <1314826019-22330-2-git-send-email-msalter@redhat.com>
-	 <4E5EC3FE.10307@gmail.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1314841084.2344.113.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1757413Ab1IABoG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 21:44:06 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:57287 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab1IABoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 21:44:04 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] block: introduce __bio_endio()
+References: <1314589660-2918-1-git-send-email-namhyung@gmail.com>
+	<1314589660-2918-3-git-send-email-namhyung@gmail.com>
+	<4E5D36C7.5020706@kernel.dk>
+Date: Thu, 01 Sep 2011 10:43:53 +0900
+In-Reply-To: <4E5D36C7.5020706@kernel.dk> (Jens Axboe's message of "Tue, 30
+	Aug 2011 13:15:19 -0600")
+Message-ID: <87vctdvxye.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 09:30 +1000, Ryan Mallon wrote:
-> On 01/09/11 07:26, Mark Salter wrote:
-> > The existing __strnlen_user macro simply resolved to strnlen. However, the
-> > count returned by strnlen_user should include the NULL byte. This patch
-> > fixes the __strnlen_user macro to include the NULL byte in the count.
-> >
-> > Signed-off-by: Mark Salter<msalter@redhat.com>
-> > ---
-> >   include/asm-generic/uaccess.h |    2 +-
-> >   1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/include/asm-generic/uaccess.h b/include/asm-generic/uaccess.h
-> > index ac68c99..1d0fdf8 100644
-> > --- a/include/asm-generic/uaccess.h
-> > +++ b/include/asm-generic/uaccess.h
-> > @@ -289,7 +289,7 @@ strncpy_from_user(char *dst, const char __user *src, long count)
-> >    * Return 0 on exception, a value greater than N if too long
-> >    */
-> >   #ifndef __strnlen_user
-> > -#define __strnlen_user strnlen
-> > +#define __strnlen_user(s, n) (strnlen((s), (n)) + 1)
-> >   #endif
-> 
-> I don't think this is correct because if you hit maxlen you will add one 
-> to it. e.g. __strnlen_user("abcd\0", 3) would return 4 instead of 3.
+Jens Axboe <axboe@kernel.dk> writes:
 
-Yes, one would think so, but that doesn't seem to be the case. Looking
-at various places that call strnlen_user, you'll find checks for that.
-For one example, mm/util.c:
+> On 2011-08-28 21:47, Namhyung Kim wrote:
+>> Currently, bio_endio() lacks its completion tracepoint in it,
+>> so that the bio-based devices - except DM which inserted the
+>> tracepoint explicitly - cannot send us such an event when using
+>> blktrace. Adding the tracepoint in the function will fix this.
+>> 
+>> However, bio_endio() is also used for other ways like some
+>> nested bio-handling path and request-based devices. Simply
+>> adding will result in duplicated event for those cases. Thus
+>> add new __bio_endio() function to do things as before but no
+>> tracepoint. Similarly, __bio_io_error() helper was added too.
+>
+> Not crazy about this solution, it seems a little fragile. And it's hard
+> to know what the difference between bio_endio() and __bio_endio() is
+> without looking at the code.
+>
+> I think it would be cleaner to mark a bio as going inflight, so that we
+> can check this flag on completion. If it's never been in flight, don't
+> trigger a completion event trace for it.
 
-    char *strndup_user(const char __user *s, long n)
-    {
-	char *p;
-	long length;
+OK. Sounds reasonable.
 
-	length = strnlen_user(s, n);
-
-	if (!length)
-		return ERR_PTR(-EFAULT);
-
-	if (length > n)
-		return ERR_PTR(-EINVAL);
-
-> 
-> It should probably be something like this:
-> 
-> #define __strnlen_user(s, n) ({		\
-> 	size_t k = strnlen(s, n);	\
-> 	k<  n ? k + 1 : n; })
-> 
-> 
-> I wonder if this change will break anything since it has been incorrect 
-> (according to the comment in uaccess.h at least) for a while. Why does 
-> __strnlen_user have different semantics to strnlen anway?
-
-I think the C6X port I'm in the process of pushing upstream is the only
-port to actually use the definition in asm-generic/uaccess.h and I can
-assure you that the existing definition causes a failure to boot as it
-stands. No idea why the semantics are different, but you're not the
-first to note that fact. I thought briefly about changing the kernel to
-make the strnlen_user have the same semantics as strnlen, but that means
-touching every arch, every one of which defines their own. Kinda makes
-me feel inadequate for wanting to use the generic one. :)
-
---Mark
+So, how about this:
 
 
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 90e1ffdeb415..b70c086dc7c0 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -164,6 +164,9 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
+ 	if (unlikely(rq->cmd_flags & REQ_QUIET))
+ 		set_bit(BIO_QUIET, &bio->bi_flags);
+ 
++	/* completion event was already reported in blk_update_request */
++	clear_bit(BIO_IN_FLIGHT, &bio->bi_flags);
++
+ 	bio->bi_size -= nbytes;
+ 	bio->bi_sector += (nbytes >> 9);
+ 
+@@ -1545,6 +1548,8 @@ static inline void __generic_make_request(struct bio *bio)
+ 
+ 		trace_block_bio_queue(q, bio);
+ 
++		set_bit(BIO_IN_FLIGHT, &bio->bi_flags);
++
+ 		ret = q->make_request_fn(q, bio);
+ 	} while (ret);
+ 
+diff --git a/fs/bio.c b/fs/bio.c
+index 9bfade8a609b..0176ca4935c1 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1447,6 +1447,15 @@ void bio_endio(struct bio *bio, int error)
+ 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+ 		error = -EIO;
+ 
++	if (test_bit(BIO_IN_FLIGHT, &bio->bi_flags)) {
++		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
++
++		trace_block_bio_complete(q, bio, error);
++
++		/* prevent duplicated completion event report */
++		clear_bit(BIO_IN_FLIGHT, &bio->bi_flags);
++	}
++
+ 	if (bio->bi_end_io)
+ 		bio->bi_end_io(bio, error);
+ }
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 32f0076e844b..daa81a7d1522 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -98,6 +98,7 @@ struct bio {
+ #define BIO_FS_INTEGRITY 10	/* fs owns integrity data, not block layer */
+ #define BIO_QUIET	11	/* Make BIO Quiet */
+ #define BIO_MAPPED_INTEGRITY 12/* integrity metadata has been remapped */
++#define BIO_IN_FLIGHT	13	/* report I/O completion event */
+ #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 
+ /*
