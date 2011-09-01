@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab1IAW4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:56:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49208 "EHLO mx2.suse.de"
+	id S932718Ab1IAW5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:57:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49225 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932632Ab1IAW4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:56:17 -0400
+	id S932660Ab1IAW4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 18:56:24 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Sep  1 15:53:31 2011
-Message-Id: <20110901225331.004899394@clark.kroah.org>
+Message-Id: <20110901225331.226413240@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 01 Sep 2011 15:50:06 -0700
+Date: Thu, 01 Sep 2011 15:50:08 -0700
 From: gregkh@suse.de
 To: Matthew Garrett <mjg@redhat.com>, Greg KH <greg@kroah.com>
 Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Stubbs <jasonbstubbs@gmail.com>, stable <stable@kernel.org>
-Subject: [patch 4/8] platform: samsung_laptop: fix samsung brightness min/max calculations
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Jason Stubbs <jasonbstubbs@gmail.com>
+Subject: [patch 6/8] Platform: Brightness quirk for samsung laptop driver
 In-Reply-To: <20110901225401.GA26870@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,54 +23,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Stubbs <jasonbstubbs@gmail.com>
 
-The min_brightness value of the sabi_config is incorrectly used in brightness
-calculations. For the config where min_brightness = 1 and max_brightness = 8,
-the user visible range should be 0 to 7 with hardware being set in the range
-of 1 to 8. What is actually happening is that the user visible range is 0 to
-8 with hardware being set in the range of -1 to 7.
+On some Samsung laptops the brightness regulation works slightly different.
+All SABI commands except for set_brightness work as expected. The behaviour
+of set_brightness is as follows:
 
-This patch fixes the above issue as well as a miscalculation that would occur
-in the case of min_brightness > 1.
+- Setting a new brightness will only step one level toward the new brightness
+  level. For example, setting a level of 5 when the current level is 2 will
+  result in a brightness level of 3.
+- A spurious KEY_BRIGHTNESS_UP or KEY_BRIGHTNESS_DOWN event is also generated
+  along with the change in brightness.
+- Neither of the above two issues occur when changing from/to brightness
+  level 0.
+
+This patch adds detection and a non-intrusive workaround for the above issues.
 
 Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
-Cc: stable <stable@kernel.org>
+Tested-by: David Herrmann <dh.herrmann@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/samsung-laptop.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |   43 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
 
 --- a/drivers/platform/x86/samsung-laptop.c
 +++ b/drivers/platform/x86/samsung-laptop.c
-@@ -370,15 +370,17 @@ static u8 read_brightness(void)
- 				  &sretval);
- 	if (!retval) {
- 		user_brightness = sretval.retval[0];
--		if (user_brightness != 0)
-+		if (user_brightness > sabi_config->min_brightness)
- 			user_brightness -= sabi_config->min_brightness;
-+		else
-+			user_brightness = 0;
- 	}
- 	return user_brightness;
- }
+@@ -226,6 +226,7 @@ static struct backlight_device *backligh
+ static struct mutex sabi_mutex;
+ static struct platform_device *sdev;
+ static struct rfkill *rfk;
++static bool has_stepping_quirk;
  
- static void set_brightness(u8 user_brightness)
+ static int force;
+ module_param(force, bool, 0);
+@@ -382,6 +383,17 @@ static void set_brightness(u8 user_brigh
  {
--	u8 user_level = user_brightness - sabi_config->min_brightness;
-+	u8 user_level = user_brightness + sabi_config->min_brightness;
+ 	u8 user_level = user_brightness + sabi_config->min_brightness;
  
++	if (has_stepping_quirk && user_level != 0) {
++		/*
++		 * short circuit if the specified level is what's already set
++		 * to prevent the screen from flickering needlessly
++		 */
++		if (user_brightness == read_brightness())
++			return;
++
++		sabi_set_command(sabi_config->commands.set_brightness, 0);
++	}
++
  	sabi_set_command(sabi_config->commands.set_brightness, user_level);
  }
-@@ -829,7 +831,8 @@ static int __init samsung_init(void)
- 	/* create a backlight device to talk to this one */
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.type = BACKLIGHT_PLATFORM;
--	props.max_brightness = sabi_config->max_brightness;
-+	props.max_brightness = sabi_config->max_brightness -
-+				sabi_config->min_brightness;
- 	backlight_device = backlight_device_register("samsung", &sdev->dev,
- 						     NULL, &backlight_ops,
- 						     &props);
+ 
+@@ -390,6 +402,34 @@ static int get_brightness(struct backlig
+ 	return (int)read_brightness();
+ }
+ 
++static void check_for_stepping_quirk(void)
++{
++	u8 initial_level = read_brightness();
++	u8 check_level;
++
++	/*
++	 * Some laptops exhibit the strange behaviour of stepping toward
++	 * (rather than setting) the brightness except when changing to/from
++	 * brightness level 0. This behaviour is checked for here and worked
++	 * around in set_brightness.
++	 */
++
++	if (initial_level <= 2)
++		check_level = initial_level + 2;
++	else
++		check_level = initial_level - 2;
++
++	has_stepping_quirk = false;
++	set_brightness(check_level);
++
++	if (read_brightness() != check_level) {
++		has_stepping_quirk = true;
++		pr_info("enabled workaround for brightness stepping quirk\n");
++	}
++
++	set_brightness(initial_level);
++}
++
+ static int update_status(struct backlight_device *bd)
+ {
+ 	set_brightness(bd->props.brightness);
+@@ -823,6 +863,9 @@ static int __init samsung_init(void)
+ 		}
+ 	}
+ 
++	/* Check for stepping quirk */
++	check_for_stepping_quirk();
++
+ 	/* knock up a platform device to hang stuff off of */
+ 	sdev = platform_device_register_simple("samsung", -1, NULL, 0);
+ 	if (IS_ERR(sdev))
 
 
