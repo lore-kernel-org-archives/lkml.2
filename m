@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab1IAUv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 16:51:27 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:34821 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757905Ab1IAUv0 (ORCPT
+	id S1757991Ab1IAUw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 16:52:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36774 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab1IAUwZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 16:51:26 -0400
-From: Mike Sterling <steelforce@gmail.com>
-To: devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        gregkh@suse.de, linux-kernel@vger.kernel.org
-Cc: Mike Sterling <mike.sterling@microsoft.com>,
-        "K.Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] staging: hv: Add support for >2 TB LUN in storage driver.
-Date: Thu,  1 Sep 2011 14:11:52 -0700
-Message-Id: <1314911512-1079-1-git-send-email-mike.sterling@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 1 Sep 2011 16:52:25 -0400
+Subject: Re: 3.0.4 + rt12: deadlock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>, efault@gmx.de
+Date: Thu, 01 Sep 2011 22:52:12 +0200
+In-Reply-To: <alpine.LFD.2.02.1109012136300.2723@ionos>
+References: <4E5E6A75.5030404@localhost>
+	 <alpine.LFD.2.02.1109012136300.2723@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314910332.1485.14.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a LUN larger than 2 TB is attached to a Linux VM on Hyper-V, we currently 
-report a maximum size of 2 TB. This patch resolves the issue in hv_storvsc. 
-Thanks to Robert Scheck <robert.scheck@etes.de> for reporting the issue.
+On Thu, 2011-09-01 at 21:38 +0200, Thomas Gleixner wrote:
+> > =============================================
+> > [ INFO: possible recursive locking detected ]
+> > 3.0.4-1.rt12.1.fc14.ccrma.i686.rtPAE #1
+> > ---------------------------------------------
+> > swapper/0 is trying to acquire lock:
+> >  (&parent->list_lock){+.+...}, at: [<c05054ce>]
+> > __cache_free.clone.27+0x45/0xc4
+> > 
+> > but task is already holding lock:
+> >  (&parent->list_lock){+.+...}, at: [<c050662c>] do_tune_cpucache
+> +0xf0/0x2b0
+> > 
+> > other info that might help us debug this:
+> >  Possible unsafe locking scenario:
+> > 
+> >        CPU0
+> >        ----
+> >   lock(&parent->list_lock);
+> >   lock(&parent->list_lock);
+> 
 
-Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
-Signed-off-by: K.Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hyperv_storage.h |    1 +
- drivers/staging/hv/storvsc_drv.c    |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+> 
+>  
+> >  *** DEADLOCK ***
+> > 
+> >  May be due to missing lock nesting notation
+> > 
+> > 3 locks held by swapper/0:
+> >  #0:  (cache_chain_mutex){+.+...}, at: [<c0bedb96>]
+> > kmem_cache_init_late+0x15/0x61
+> >  #1:  (&per_cpu(slab_lock, __cpu).lock){+.+...}, at: [<c0504a53>]
+> > __local_lock_irq+0x1e/0x5b
+> >  #2:  (&parent->list_lock){+.+...}, at: [<c050662c>]
+> > do_tune_cpucache+0xf0/0x2b0 
 
-diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
-index a01f9a0..5af82f4 100644
---- a/drivers/staging/hv/hyperv_storage.h
-+++ b/drivers/staging/hv/hyperv_storage.h
-@@ -218,6 +218,7 @@ struct vstor_packet {
- #define STORVSC_MAX_LUNS_PER_TARGET			64
- #define STORVSC_MAX_TARGETS				1
- #define STORVSC_MAX_CHANNELS				1
-+#define STORVSC_MAX_CMD_LEN				16
- 
- struct hv_storvsc_request;
- 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 7effaf3..26983ac 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -701,6 +701,8 @@ static int storvsc_probe(struct hv_device *device)
- 	host->max_id = STORVSC_MAX_TARGETS;
- 	/* max # of channels */
- 	host->max_channel = STORVSC_MAX_CHANNELS - 1;
-+	/* max cmd length */
-+	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
- 
- 	/* Register the HBA and start the scsi bus scan */
- 	ret = scsi_add_host(host, &device->device);
--- 
-1.7.1
+> That's something which has to do with debugging options (debugobjects
+> IIRC). There was some attempt to fix that, but that might have gone
+> lost in my vacation and the following futile attempt to take care of
+> the resulting backlog. Peter ???
 
+Looks like the one supposedly cured by:
+
+patches/peter_zijlstra-slab_lockdep-annotate_the_locks_before_using.patch
+
+which should be in -rt12
+
+will have a peek, never reproduced for me though..
