@@ -1,111 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab1IAU5l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 16:57:41 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:8035 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757887Ab1IAU5k convert rfc822-to-8bit (ORCPT
+	id S1758000Ab1IAU7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 16:59:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34262 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab1IAU7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 16:57:40 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: Hyper-V TODO file
-Thread-Topic: Hyper-V TODO file
-Thread-Index: AQHMaOYedebhsNSnAEe3RY7o1REvPJU5AUPA
-Date: Thu, 1 Sep 2011 20:57:38 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081B5C63@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1314829011-28922-1-git-send-email-kys@microsoft.com>
- <20110901202733.GA15185@kroah.com>
-In-Reply-To: <20110901202733.GA15185@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Sep 2011 16:59:06 -0400
+Message-ID: <4E5FF216.2020207@suse.cz>
+Date: Thu, 01 Sep 2011 22:59:02 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at drivers/tty/tty_ldisc.c:766 tty_ldisc_reinit+0x52/0x90()
+ [3.0]
+References: <20110828131502.GA2580@redhat.com>
+In-Reply-To: <20110828131502.GA2580@redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------080707090905080808050108"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------080707090905080808050108
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 08/28/2011 03:15 PM, Dave Jones wrote:
+> Just saw this on a box that was recieving an rsync while I ssh'd in.
+> The ssh session hung.
+
+Yes, could you apply the attached debug patch and post a dmesg output?
+
+> WARNING: at drivers/tty/tty_ldisc.c:766 tty_ldisc_reinit+0x52/0x90()
+> Hardware name:
+> Modules linked in: nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc p4_clockmod freq_table speedstep_lib nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack microcode serio_raw snd_hda_codec_realtek i2c_i801 snd_hda_intel snd_hda_codec iTCO_wdt snd_hwdep iTCO_vendor_support snd_seq snd_seq_device snd_pcm snd_timer snd r8169 soundcore mii snd_page_alloc pata_sil680 i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: mperf]
+> Pid: 1381, comm: sshd Not tainted 2.6.40-4.fc15.x86_64.debug #1
+> Call Trace:
+>   [<ffffffff81058e74>] warn_slowpath_common+0x83/0x9b
+>   [<ffffffff81058ea6>] warn_slowpath_null+0x1a/0x1c
+>   [<ffffffff812f8e18>] tty_ldisc_reinit+0x52/0x90
+>   [<ffffffff812f9415>] tty_ldisc_hangup+0x13f/0x1e1
+>   [<ffffffff812f21b6>] __tty_hangup+0x111/0x35f
+>   [<ffffffff812f2429>] tty_vhangup+0xe/0x10
+>   [<ffffffff812faade>] pty_close+0x128/0x132
+>   [<ffffffff812f3404>] tty_release+0x1d8/0x4dc
+>   [<ffffffff81087a2e>] ? lock_release_holdtime.part.8+0x6b/0x72
+>   [<ffffffff8100eebf>] ? native_sched_clock+0x34/0x36
+>   [<ffffffff8113cdb2>] fput+0x127/0x1f5
+>   [<ffffffff81139d90>] filp_close+0x70/0x7b
+>   [<ffffffff81139e91>] sys_close+0xf6/0x13b
+>   [<ffffffff814fdf02>] system_call_fastpath+0x16/0x1b
 
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Thursday, September 01, 2011 4:28 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: Hyper-V TODO file
-> 
-> On Wed, Aug 31, 2011 at 03:16:51PM -0700, K. Y. Srinivasan wrote:
-> >
-> > Greg,
-> >
-> > The TODO file for Hyper-V drivers has not been updated in a while and does
-> > not reflect the current state of these drivers:
-> >
-> > 1) There are no more checkpatch warnings/errors in this code. One of the
-> TODO
-> > work items is "fix remaining checkpatch warnings and errors".
-> 
-> Great, you can delete it.
 
-Will do.
-> 
-> > 2) With your help, we have fixed all of the issues related to these drivers
-> > conforming to the Linux Device Driver model. One of the TODO work items is
-> > "audit the vmbus to verify it is working properly with the driver model".
-> 
-> I have a few comments about this, I'll respond in another email.
-> 
-> > 3) Like all other virtualization platforms, the protocol to communicate with
-> > the host is very host specific. The ringbuffer control structures are shared
-> > between the host and the guest and so, the guest is compelled to follow the
-> > mandates of the host. Thus, it is not possible for us to merge the vmbus with
-> > other virtual buses in the system. One of the TODO work items is  "see if the
-> > vmbus can be merged with the other virtual busses in the kernel".
-> 
-> Sure, you can delete it.
-> 
-Will do.
-> > 4) A couple of months ago, we had posted the network driver for community
-> review.
-> > We have submitted patches (and these have been applied) to address the
-> review
-> > comments. One of the TODO work items is "audit the network driver"
-> 
-> Leave that until the network subsystem authors agree that this is all
-> taken care of by merging the driver into their subsystem.
-> 
-Ok; will do.
+-- 
+js
+suse labs
 
-> > 5) Recently, we have merged the IDE and scsi drivers into a single driver that
-> > can handle both IDE and SCSI devices. These patches have been already
-> checked in.
-> > As part of this effort, we have addressed all of the community comments on
-> the
-> > combined storage driver. The TODO file currently has two work items on this
-> > issue: "audit the block driver" and "audit the scsi driver".
-> 
-> Same as above for the network driver, but you can leave just one entry
-> now.
+--------------080707090905080808050108
+Content-Type: text/x-patch;
+ name="0001-TTY-tty_ldisc_wait_idle-debug.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-TTY-tty_ldisc_wait_idle-debug.patch"
 
-Ok; will do.
-> 
-> I can't apply patches right now due to the kernel.org infrastructure
-> reworking, so you will have to wait a few days for me to apply your
-> previous ones, but feel free to send a patch cleaning up the TODO file
-> now.
+>From 4fe9f5edcd187fb29298b59698cb920f2baccc15 Mon Sep 17 00:00:00 2001
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Mon, 8 Aug 2011 16:00:59 +0200
+Subject: [PATCH 1/1] TTY: tty_ldisc_wait_idle debug
 
-Thanks Greg. I will get the patches out soon.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/tty_ldisc.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-Regards,
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 512c49f..0b90801 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -26,6 +26,7 @@
+ #include <linux/bitops.h>
+ #include <linux/delay.h>
+ #include <linux/seq_file.h>
++#include <linux/ratelimit.h>
+ 
+ #include <linux/uaccess.h>
+ #include <asm/system.h>
+@@ -758,11 +759,17 @@ static void tty_reset_termios(struct tty_struct *tty)
+ static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
+ {
+ 	struct tty_ldisc *ld = tty_ldisc_get(ldisc);
++	int ret;
+ 
+ 	if (IS_ERR(ld))
+ 		return -1;
+ 
+-	WARN_ON_ONCE(tty_ldisc_wait_idle(tty));
++	ret = tty_ldisc_wait_idle(tty);
++	if (ret)
++		printk_ratelimited(KERN_DEBUG "%s: refcount of %ps is still %d\n",
++				__func__,
++				tty->ldisc->ops,
++				atomic_read(&tty->ldisc->users));
+ 
+ 	tty_ldisc_close(tty, tty->ldisc);
+ 	tty_ldisc_put(tty->ldisc);
+-- 
+1.7.6.1
 
-K. Y
 
+--------------080707090905080808050108--
