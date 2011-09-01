@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab1IAAaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 20:30:52 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:59751 "EHLO e7.ny.us.ibm.com"
+	id S1757115Ab1IAAbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 20:31:07 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33294 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756584Ab1IAAat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 20:30:49 -0400
-Subject: [PATCH 02/16] ext4: ext4_rename should dirty dir_bh with the correct
-	directory
+	id S1756999Ab1IAAbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 20:31:01 -0400
+Subject: [PATCH 04/16] ext4: Create a new BH_Verified flag to avoid
+	unnecessary metadata validation
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -18,8 +18,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Wed, 31 Aug 2011 17:30:44 -0700
-Message-ID: <20110901003043.31048.48270.stgit@elm3c44.beaverton.ibm.com>
+Date: Wed, 31 Aug 2011 17:30:57 -0700
+Message-ID: <20110901003057.31048.51269.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
 References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -30,29 +30,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ext4_rename performs a directory rename (move), dir_bh is a buffer that is
-modified to update the '..' link in the directory being moved (old_inode).
-However, ext4_handle_dirty_metadata is called with the old parent directory
-inode (old_dir) and dir_bh, which is incorrect because dir_bh does not belong
-to the parent inode.  Fix this error.
+Create a new BH_Verified flag to indicate that we've verified all the data in a
+buffer_head for correctness.  This allows us to bypass expensive verification
+steps when they are not necessary without missing them when they are.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/namei.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/ext4/ext4.h    |    2 ++
+ fs/ext4/extents.c |   35 ++++++++++++++++++++++++++---------
+ 2 files changed, 28 insertions(+), 9 deletions(-)
 
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 815c31a..f778a54 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2529,7 +2529,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 		PARENT_INO(dir_bh->b_data, new_dir->i_sb->s_blocksize) =
- 						cpu_to_le32(new_dir->i_ino);
- 		BUFFER_TRACE(dir_bh, "call ext4_handle_dirty_metadata");
--		retval = ext4_handle_dirty_metadata(handle, old_dir, dir_bh);
-+		retval = ext4_handle_dirty_metadata(handle, old_inode, dir_bh);
- 		if (retval) {
- 			ext4_std_error(old_dir->i_sb, retval);
- 			goto end_rename;
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index e717dfd..ecb86c2 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2242,10 +2242,12 @@ extern int ext4_multi_mount_protect(struct super_block *, ext4_fsblk_t);
+ enum ext4_state_bits {
+ 	BH_Uninit	/* blocks are allocated but uninitialized on disk */
+ 	  = BH_JBDPrivateStart,
++	BH_Verified,	/* metadata block has been verified ok */
+ };
+ 
+ BUFFER_FNS(Uninit, uninit)
+ TAS_BUFFER_FNS(Uninit, uninit)
++BUFFER_FNS(Verified, verified)
+ 
+ /*
+  * Add new method to test wether block and inode bitmaps are properly
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 57cf568..4ac4303 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -403,6 +403,26 @@ int ext4_ext_check_inode(struct inode *inode)
+ 	return ext4_ext_check(inode, ext_inode_hdr(inode), ext_depth(inode));
+ }
+ 
++static int __ext4_ext_check_block(const char *function, unsigned int line,
++				  struct inode *inode,
++				  struct ext4_extent_header *eh,
++				  int depth,
++				  struct buffer_head *bh)
++{
++	int ret;
++
++	if (buffer_verified(bh))
++		return 0;
++	ret = ext4_ext_check(inode, eh, depth);
++	if (ret)
++		return ret;
++	set_buffer_verified(bh);
++	return ret;
++}
++
++#define ext4_ext_check_block(inode, eh, depth, bh)	\
++	__ext4_ext_check_block(__func__, __LINE__, inode, eh, depth, bh)
++
+ #ifdef EXT_DEBUG
+ static void ext4_ext_show_path(struct inode *inode, struct ext4_ext_path *path)
+ {
+@@ -659,8 +679,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 	i = depth;
+ 	/* walk through the tree */
+ 	while (i) {
+-		int need_to_validate = 0;
+-
+ 		ext_debug("depth %d: num %d, max %d\n",
+ 			  ppos, le16_to_cpu(eh->eh_entries), le16_to_cpu(eh->eh_max));
+ 
+@@ -679,8 +697,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 				put_bh(bh);
+ 				goto err;
+ 			}
+-			/* validate the extent entries */
+-			need_to_validate = 1;
+ 		}
+ 		eh = ext_block_hdr(bh);
+ 		ppos++;
+@@ -694,7 +710,7 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 		path[ppos].p_hdr = eh;
+ 		i--;
+ 
+-		if (need_to_validate && ext4_ext_check(inode, eh, i))
++		if (ext4_ext_check_block(inode, eh, i, bh))
+ 			goto err;
+ 	}
+ 
+@@ -1350,7 +1366,8 @@ got_index:
+ 			return -EIO;
+ 		eh = ext_block_hdr(bh);
+ 		/* subtract from p_depth to get proper eh_depth */
+-		if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
++		if (ext4_ext_check_block(inode, eh,
++					 path->p_depth - depth, bh)) {
+ 			put_bh(bh);
+ 			return -EIO;
+ 		}
+@@ -1363,7 +1380,7 @@ got_index:
+ 	if (bh == NULL)
+ 		return -EIO;
+ 	eh = ext_block_hdr(bh);
+-	if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
++	if (ext4_ext_check_block(inode, eh, path->p_depth - depth, bh)) {
+ 		put_bh(bh);
+ 		return -EIO;
+ 	}
+@@ -2591,8 +2608,8 @@ again:
+ 				err = -EIO;
+ 				break;
+ 			}
+-			if (ext4_ext_check(inode, ext_block_hdr(bh),
+-							depth - i - 1)) {
++			if (ext4_ext_check_block(inode, ext_block_hdr(bh),
++							depth - i - 1, bh)) {
+ 				err = -EIO;
+ 				break;
+ 			}
 
