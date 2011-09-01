@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab1IAMk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:40:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38862 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757398Ab1IAMkZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:40:25 -0400
-Subject: Re: Problem with perf hardware counters grouping
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Hommey <mh@glandium.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 01 Sep 2011 14:40:17 +0200
-In-Reply-To: <20110901115935.GA19550@glandium.org>
-References: <20110831085718.GB13884@glandium.org>
-	 <1314878012.11566.7.camel@twins> <20110901115935.GA19550@glandium.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314880817.11566.19.camel@twins>
+	id S1757459Ab1IAMlu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 08:41:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21903 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757370Ab1IAMlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 08:41:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,313,1312182000"; 
+   d="scan'208";a="44665694"
+Subject: Re: [PATCH] perf_event: fix Ming's Intel NHM/WSM/SNB uncore PMU
+ patch
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>
+In-Reply-To: <20110831124125.GA10443@quad>
+References: <20110831124125.GA10443@quad>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 01 Sep 2011 20:38:42 +0800
+Message-ID: <1314880722.2867.4.camel@hp6530s>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 13:59 +0200, Mike Hommey wrote:
-
-> > I'm guessing you're running on something x86, either AMD-Fam10-12 or
-> > Intel-NHM+.
+On Wed, 2011-08-31 at 20:41 +0800, Stephane Eranian wrote:
+> The following patch sits on top of Lin Ming's patch
+> which adds support for Intel uncore PMU on NHM/WSM/SNB.
+> The patch series was posted on LKML in July 2011.
 > 
-> Core2Duo
-
-Ah, ok, then you're also using the fixed purpose thingies.
-
-> > What happens with your >3 case is that while the group is valid and
-> > could fit on the PMU, it won't fit at runtime because the NMI watchdog
-> > is taking one and won't budge (cpu-pinned counter have precedence over
-> > any other kind), effectively starving your group of pmu runtime.
+> The patches fixes:
+>   - nhm_uncore_pmu_enable_all() to also enabled the fixed uncore counters
+>   - uncore_pmu_add() to schedule for the actual max number of generic counters
+>   - fixed the NHM/WSM vs. SNB MSRs for the fixed counter, they are swapped 
 > 
-> That makes sense. But how exactly is not using groups different, then?
-> perf, for instance doesn't use groups, and can get all the hardware
-> counters.
+> The patch adds the following improvement:
+>   - add an event group validation function, to check if a group can ever be
+>     schedule. This way, the behavior is consistent with core PMU event groups.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-The purpose of groups is to co-schedule events on the PMU, that is we
-mandate that all members of the group are configured at the same time.
-Note that this does not imply the group is scheduled at all times
-(although you could request that by setting the perf_event_attr::pinned
-on the leader).
+Can I merge this patch into my series with these change logs and your
+signed-off-by?
 
-By not using groups but individual counters we do not have this
-restriction and perf will schedule them individually.
-
-Now perf with rotate events when there are more than can physically fit
-on the PMU at any one time, including groups. This can create the
-appearance that all 4 are in fact working.
-
-# perf stat -e instructions  ~/loop_ld
-
- Performance counter stats for '/root/loop_ld':
-
-       400,765,771 instructions              #    0.00  insns per cycle        
-
-       0.085995705 seconds time elapsed
-
-# perf stat -e instructions -e instructions -e instructions -e instructions -e instructions -e instructions ~/loop_1b_ld
-
- Performance counter stats for '/root/loop_1b_ld':
-
-       398,136,503 instructions              #    0.00  insns per cycle         [83.45%]
-       400,387,443 instructions              #    0.00  insns per cycle         [83.62%]
-       400,076,744 instructions              #    0.00  insns per cycle         [83.60%]
-       400,221,739 instructions              #    0.00  insns per cycle         [83.62%]
-       400,038,563 instructions              #    0.00  insns per cycle         [83.60%]
-       402,085,668 instructions              #    0.00  insns per cycle         [82.94%]
-
-       0.085712325 seconds time elapsed
-
-
-This is on a wsm (4 gp + 1 fp counter capable of counting insn) with NMI
-disabled.
-
-Note the [83%] thing, that indicates these things got over committed and
-we had to rotate the counters. In particular it is the ration between
-PERF_FORMAT_TOTAL_TIME_ENABLED and PERF_FORMAT_TOTAL_TIME_RUNNING and we
-use that to scale up the count.
-
+Thanks,
+Lin Ming
 
