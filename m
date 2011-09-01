@@ -1,132 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab1IAWWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:22:22 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4736 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932296Ab1IAWWU (ORCPT
+	id S932481Ab1IAWYm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:24:42 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39879
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932265Ab1IAWYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:22:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 01 Sep 2011 15:22:20 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 1/2] power: bq20z75: devicetree init support
-Date: Thu,  1 Sep 2011 15:22:05 -0700
-Message-Id: <1314915726-21580-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.6
+	Thu, 1 Sep 2011 18:24:40 -0400
+Date: Thu, 1 Sep 2011 18:24:22 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Bob Pearson <rpearson@systemfabricworks.com>,
+        "'Andreas Dilger'" <adilger.kernel@dilger.ca>,
+        "'Herbert Xu'" <herbert@gondor.hengli.com.au>,
+        "'Theodore Tso'" <tytso@mit.edu>,
+        "'David Miller'" <davem@davemloft.net>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Mingming Cao'" <cmm@us.ibm.com>,
+        "'linux-crypto'" <linux-crypto@vger.kernel.org>,
+        "'linux-fsdevel'" <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 3/3] crc32c: Implement a self-test for CRC32c
+Message-ID: <20110901222422.GA5771@infradead.org>
+References: <20110901003317.32645.16843.stgit@elm3c44.beaverton.ibm.com>
+ <20110901003336.32645.32746.stgit@elm3c44.beaverton.ibm.com>
+ <03ac01cc6869$9cd23b60$d676b220$@systemfabricworks.com>
+ <20110901221854.GA12086@tux1.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110901221854.GA12086@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to generate platform data when kernel is configured
-through device tree.
+On Thu, Sep 01, 2011 at 03:18:54PM -0700, Darrick J. Wong wrote:
+> I suspect it would be pretty easy to adapt the Makefile to generate the
+> relevant .c and .h files; in particular it could be useful to use the crypto
+> framework for crc32 on the off chance anyone wants to provide hwaccel for that
+> too.
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
- drivers/power/bq20z75.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 73 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-index 9c5e5be..922f725 100644
---- a/drivers/power/bq20z75.c
-+++ b/drivers/power/bq20z75.c
-@@ -613,6 +613,76 @@ static void bq20z75_delayed_work(struct work_struct *work)
- 	}
- }
- 
-+#if defined(CONFIG_OF)
-+#include <linux/of_device.h>
-+static const struct of_device_id bq20z75_dt_ids[] = {
-+	{ .compatible = "ti,bq20z75" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(platform, bq20z75_dt_ids);
-+
-+static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
-+	struct i2c_client *client)
-+{
-+	const struct of_device_id *dtid;
-+	struct device_node *of_node = client->dev.of_node;
-+	struct bq20z75_platform_data *pdata = client->dev.platform_data;
-+	int rc;
-+	u32 prop;
-+
-+	/* verify this driver matches this device */
-+	dtid = of_match_device(bq20z75_dt_ids, &client->dev);
-+	if (!dtid)
-+		return NULL;
-+
-+	/* if platform data is set, honor it */
-+	if (pdata)
-+		return pdata;
-+
-+	/* first make sure at least one property is set, otherwise
-+	 * it won't change behavior from running without pdata.
-+	 */
-+	if (!of_get_property(of_node, "i2c-retry-count", NULL) &&
-+		!of_get_property(of_node, "poll-retry-count", NULL) &&
-+		!of_get_property(of_node, "battery-detect", NULL) &&
-+		!of_get_property(of_node, "battery-detect-present", NULL))
-+		goto of_out;
-+
-+	pdata = devm_kzalloc(&client->dev, sizeof(struct bq20z75_platform_data),
-+				GFP_KERNEL);
-+	if (!pdata)
-+		goto of_out;
-+
-+	rc = of_property_read_u32(of_node, "i2c-retry-count", &prop);
-+	if (!rc)
-+		pdata->i2c_retry_count = prop;
-+
-+	rc = of_property_read_u32(of_node, "battery-detect", &prop);
-+	if (!rc)
-+		pdata->battery_detect = prop;
-+	else
-+		pdata->battery_detect = -1; /*default is no gpio */
-+
-+	rc = of_property_read_u32(of_node, "battery-detect-present", &prop);
-+	if (!rc)
-+		pdata->battery_detect_present = prop;
-+
-+	rc = of_property_read_u32(of_node, "poll-retry-count", &prop);
-+	if (!rc)
-+		pdata->poll_retry_count = prop;
-+
-+of_out:
-+	return pdata;
-+}
-+#else
-+#define bq20z75_dt_ids NULL
-+static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
-+	struct i2c_client *client)
-+{
-+	return NULL;
-+}
-+#endif
-+
- static int __devinit bq20z75_probe(struct i2c_client *client,
- 	const struct i2c_device_id *id)
- {
-@@ -642,6 +712,8 @@ static int __devinit bq20z75_probe(struct i2c_client *client,
- 	bq20z75_device->power_supply.external_power_changed =
- 		bq20z75_external_power_changed;
- 
-+	pdata = bq20z75_of_populate_pdata(client);
-+
- 	if (pdata) {
- 		bq20z75_device->gpio_detect =
- 			gpio_is_valid(pdata->battery_detect);
-@@ -775,6 +847,7 @@ static struct i2c_driver bq20z75_battery_driver = {
- 	.id_table	= bq20z75_id,
- 	.driver = {
- 		.name	= "bq20z75-battery",
-+		.of_match_table = bq20z75_dt_ids,
- 	},
- };
- 
--- 
-1.7.6
+crc32 or crc32c?  Note that there already is a hardware optimized crc32c
+for recent Intel CPUs in arch/x86/crypto/crc32c-intel.c.
 
