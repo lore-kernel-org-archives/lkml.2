@@ -1,41 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab1IAPN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 11:13:58 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:49645 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab1IAPN5 (ORCPT
+	id S932426Ab1IAPOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 11:14:44 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:50385 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab1IAPOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 11:13:57 -0400
-Date: Thu, 1 Sep 2011 23:13:53 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: nmav@gnutls.org, cryptodev-linux-devel@gna.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: comparison of the AF_ALG interface with the /dev/crypto
-Message-ID: <20110901151352.GA32055@gondor.apana.org.au>
-References: <20110901133952.GB14522@orbit.nwl.cc> <20110901141445.GA31447@gondor.apana.org.au> <20110901150928.GC14522@orbit.nwl.cc>
-MIME-Version: 1.0
+	Thu, 1 Sep 2011 11:14:42 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "David S. Miller" <davem@davemloft.net>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next 20110831 - netconsole startup issue
+From: Valdis.Kletnieks@vt.edu
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110901150928.GC14522@orbit.nwl.cc>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Thu, 01 Sep 2011 11:14:39 -0400
+Message-ID: <5187.1314890079@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4E5FA160.008F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 05:09:28PM +0200, Phil Sutter wrote:
->
-> Good point. So in order to also test the throughput, I've put my OpenRD
-> under load:
+Chasing a kernel panic in linux-next, and hit an unrelated issue
+starting up netconsole that's bogging me down.
 
-No that's not what I meant.  You're pushing a request to an
-async device and waiting for a response to come back before
-pushing the next request.  In order to maximise throughput,
-you need to issue your requests without waiting for the responses
-synchronously.
+On linux-next-20110823, I had this:
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+[    7.078099] e1000e: Intel(R) PRO/1000 Network Driver - 1.5.1-k 
+[    7.078102] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
+[    7.078158] e1000e 0000:00:19.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
+[    7.078171] e1000e 0000:00:19.0: setting latency timer to 64
+[    7.078354] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
+[    7.269439] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:21:70:de:b6:fd
+[    7.269443] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
+[    7.269469] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 4003FF-0FF
+[    7.293569] netconsole: network logging started
+
+Bring up the ethernet, then the console. Works great,
+
+However, on -20110831, I get this:
+
+[    0.983149] netconsole: local port 9909
+[    0.983254] netconsole: local IP 128.173.14.107
+[    0.983358] netconsole: interface 'eth0'
+[    0.983461] netconsole: remote port 9909
+[    0.983564] netconsole: remote IP 128.173.14.108
+[    0.983668] netconsole: remote ethernet address 00:14:22:5a:79:d3
+[    0.983776] netconsole: eth0 doesn't exist, aborting.
+[    0.983897] netconsole: cleaning up
+[    1.176429] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 00:21:70:de:b6:fd
+[    1.176557] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
+[    1.176688] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 4003FF-0FF
+
+Whoops. No netconsole.
+
+Even more annoying (and quite possibly related), the kernel is built with
+CONFIG_NETCONSOLE_DYNAMIC. On -20110823, I have a /sys/kernel/config/netconsole
+directory and can use it to configure netconsole on the fly.  However, on
+-20110831, /sys/kernel/config is empty - no netconsole subdirectory.  So I
+couldn't even boot to single-user, configure netconsole, and then continue to
+multiuser and capture the crash.
