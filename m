@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1IAGIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 02:08:49 -0400
-Received: from mail.southpole.se ([193.12.106.18]:48009 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753606Ab1IAGIq (ORCPT
+	id S1754173Ab1IAGOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 02:14:46 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36731 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753586Ab1IAGOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 02:08:46 -0400
-Subject: Re: RFD: x32 ABI system call numbers
-From: Jonas Bonn <jonas@southpole.se>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Tobias Klauser <tklauser@distanz.ch>
-Date: Thu, 01 Sep 2011 08:08:03 +0200
-In-Reply-To: <201108311814.54906.arnd@arndb.de>
-References: <4E582577.2060805@zytor.com> <201108301409.27527.arnd@arndb.de>
-	 <4E5D1153.5030908@zytor.com> <201108311814.54906.arnd@arndb.de>
-Organization: South Pole Consulting AB
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-CrmFQ2262uBINVU0x203"
-X-Mailer: Evolution 3.1.5- 
-Message-ID: <1314857296.11447.17.camel@satguru>
-Mime-Version: 1.0
-X-Assp-Client-SSL: yes
+	Thu, 1 Sep 2011 02:14:45 -0400
+From: WANG Cong <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        linux-cris-kernel@axis.com, linux-serial@vger.kernel.org
+Subject: [PATCH] cris: lower the printk level in cris serial driver
+Date: Thu,  1 Sep 2011 14:14:00 +0800
+Message-Id: <1314857640-6623-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+KERN_CRIT is too high, replace those KERN_CRIT with KERN_ERR or KERN_INFO.
 
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
---=-CrmFQ2262uBINVU0x203
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 2011-08-31 at 18:14 +0200, Arnd Bergmann wrote:
-> On Tuesday 30 August 2011, H. Peter Anvin wrote:
-> > On 08/30/2011 05:09 AM, Arnd Bergmann wrote:
-> > >=20
-> > > I'm wondering about the time_t changes: given that we are still addin=
-g
-> > > new 32 bit architectures, should we change the asm-generic API as wel=
-l
-> > > to use 64 bit time_t by default (with fallbacks for the existing ones=
-)?
-> > >=20
-> > > If you are adding support for these in x32 already, we could use the
-> > > same code for regular 32 bit architectures.
-> > >=20
-> >=20
-> > It seems absolutely boggling insane that we're introducing new
-> > architectures with no legacy whatsoever and use 32-bit time_t on those.
->=20
-> I've added a few people to Cc who are in various stages of the
-> process to finalize their upstream kernel ports. It's clearly
-> the right decision to have time_t 64-bit eventually, the question
-> is how much work is everyone willing to spend in the short run,
-> and who is going to test it. In particular, openrisc has just
-> been merged, so we should not be changing it any more unless
-> there is a serious problem, but if there is not much legacy user
-> space with the current ABI yet, it may still be worth switching
-> over.
-
-As far as OpenRISC is concerned, this change can still be made now.  I
-know who the users of this platform are and, considering the rest of the
-libc churn that comes with dropping the legacy syscalls, I can guarantee
-that nobody's going to complain.  OpenRISC may be merged but 3.1's not
-released yet so there's still a bit of wiggle room to get this done.
-
-/Jonas
-
---=-CrmFQ2262uBINVU0x203
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk5fIUMACgkQ70gcjN2673OGzQCfffacfIdfJ85u7pjDKy+M6qDZ
-Qd8Ani3I+PnBAV6gpAc7VJpHv5HpBXCa
-=zomY
------END PGP SIGNATURE-----
-
---=-CrmFQ2262uBINVU0x203--
-
+---
+diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+index 225123b..77ba4ed 100644
+--- a/drivers/tty/serial/crisv10.c
++++ b/drivers/tty/serial/crisv10.c
+@@ -1788,7 +1788,7 @@ static unsigned int handle_descr_data(struct e100_serial *info,
+ 	struct etrax_recv_buffer *buffer = phys_to_virt(descr->buf) - sizeof *buffer;
+ 
+ 	if (info->recv_cnt + recvl > 65536) {
+-		printk(KERN_CRIT
++		printk(KERN_INFO
+ 		       "%s: Too much pending incoming serial data! Dropping %u bytes.\n", __func__, recvl);
+ 		return 0;
+ 	}
+@@ -3813,13 +3813,13 @@ rs_close(struct tty_struct *tty, struct file * filp)
+ 		 * one, we've got real problems, since it means the
+ 		 * serial port won't be shutdown.
+ 		 */
+-		printk(KERN_CRIT
++		printk(KERN_ERR
+ 		       "rs_close: bad serial port count; tty->count is 1, "
+ 		       "info->count is %d\n", info->count);
+ 		info->count = 1;
+ 	}
+ 	if (--info->count < 0) {
+-		printk(KERN_CRIT "rs_close: bad serial port count for ttyS%d: %d\n",
++		printk(KERN_ERR "rs_close: bad serial port count for ttyS%d: %d\n",
+ 		       info->line, info->count);
+ 		info->count = 0;
+ 	}
+@@ -4452,7 +4452,7 @@ static int __init rs_init(void)
+ #if defined(CONFIG_ETRAX_RS485_ON_PA)
+ 	if (cris_io_interface_allocate_pins(if_ser0, 'a', rs485_pa_bit,
+ 			rs485_pa_bit)) {
+-		printk(KERN_CRIT "ETRAX100LX serial: Could not allocate "
++		printk(KERN_ERR "ETRAX100LX serial: Could not allocate "
+ 			"RS485 pin\n");
+ 		put_tty_driver(driver);
+ 		return -EBUSY;
+@@ -4461,7 +4461,7 @@ static int __init rs_init(void)
+ #if defined(CONFIG_ETRAX_RS485_ON_PORT_G)
+ 	if (cris_io_interface_allocate_pins(if_ser0, 'g', rs485_pa_bit,
+ 			rs485_port_g_bit)) {
+-		printk(KERN_CRIT "ETRAX100LX serial: Could not allocate "
++		printk(KERN_ERR "ETRAX100LX serial: Could not allocate "
+ 			"RS485 pin\n");
+ 		put_tty_driver(driver);
+ 		return -EBUSY;
+@@ -4494,7 +4494,7 @@ static int __init rs_init(void)
+ 		if (info->enabled) {
+ 			if (cris_request_io_interface(info->io_if,
+ 					info->io_if_description)) {
+-				printk(KERN_CRIT "ETRAX100LX async serial: "
++				printk(KERN_ERR "ETRAX100LX async serial: "
+ 					"Could not allocate IO pins for "
+ 					"%s, port %d\n",
+ 					info->io_if_description, i);
