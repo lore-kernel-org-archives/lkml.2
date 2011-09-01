@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab1IAL6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 07:58:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46548 "EHLO comal.ext.ti.com"
+	id S1757324Ab1IAL7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 07:59:43 -0400
+Received: from vuizook.err.no ([85.19.221.46]:44680 "EHLO vuizook.err.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab1IAL6I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 07:58:08 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Thomas Meyer <thomas@m3y3r.de>, Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Date: Thu, 1 Sep 2011 17:27:28 +0530
-Subject: RE: [PATCH] arm: mach-davinci: use kzalloc()
-Thread-Topic: [PATCH] arm: mach-davinci: use kzalloc()
-Thread-Index: AcxUK8dy58oEnBNyQzC1Q+vj+nVjugUce/Bg
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB5930257268CA8@dbde02.ent.ti.com>
-References: <1312629976.5589.128.camel@localhost.localdomain>
-In-Reply-To: <1312629976.5589.128.camel@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757191Ab1IAL7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 07:59:42 -0400
+Date: Thu, 1 Sep 2011 13:59:35 +0200
+From: Mike Hommey <mh@glandium.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Problem with perf hardware counters grouping
+Message-ID: <20110901115935.GA19550@glandium.org>
+References: <20110831085718.GB13884@glandium.org>
+ <1314878012.11566.7.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314878012.11566.7.camel@twins>
+X-GPG-Fingerprint: A479 A824 265C B2A5 FC54  8D1E DE4B DA2C 54FD 2A58
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 06, 2011 at 16:56:13, Thomas Meyer wrote:
-> From: Thomas Meyer <thomas@m3y3r.de>
+On Thu, Sep 01, 2011 at 01:53:32PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-08-31 at 10:57 +0200, Mike Hommey wrote:
+> > I'm having two different problems with perf hardware counters with a
+> > group leader:
+> > - perf_event_open()ing more than 3 makes all of them always return a
+> >   value of 0;
+> > - perf_event_open()ing more than 4 fails with ENOSPC. 
 > 
->  Use kzalloc rather than kmalloc followed by memset with 0
+> 
+> I'm guessing you're running on something x86, either AMD-Fam10-12 or
+> Intel-NHM+.
 
-Queuing this for v3.2. While applying, I changed the
-subject to:
+Core2Duo
 
-"ARM: davinci: edma: use kzalloc()"
+> Both those have 4 generic hardware counters, but x86 defaults to
+> enabling the NMI watchdog which takes one, leaving you with 3 (try: echo
+> 0 > /proc/sys/kernel/nmi_watchdog). If you had looked at your dmesg
+> output you'd have found lines like:
+> 
+>   NMI watchdog enabled, takes one hw-pmu counter.
 
-to be more consistent with other patch headlines.
+Indeed, that shows up.
 
-Thanks,
-Sekhar
+> The code can only check if the group as a whole could possibly fit on a
+> PMU, which is where your failure on >4 comes from.
+> 
+> What happens with your >3 case is that while the group is valid and
+> could fit on the PMU, it won't fit at runtime because the NMI watchdog
+> is taking one and won't budge (cpu-pinned counter have precedence over
+> any other kind), effectively starving your group of pmu runtime.
 
+That makes sense. But how exactly is not using groups different, then?
+perf, for instance doesn't use groups, and can get all the hardware
+counters.
+
+Mike
