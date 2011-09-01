@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab1IAIPB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 04:15:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20070 "EHLO mga02.intel.com"
+	id S1756277Ab1IAIQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 04:16:11 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:60831 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755569Ab1IAIO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 04:14:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="44055502"
-Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of
- an ioremapped memory range
-From: Zhang Rui <rui.zhang@intel.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-In-Reply-To: <1314860114.32522.3.camel@rui>
-References: <1314860114.32522.3.camel@rui>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Sep 2011 16:14:49 +0800
-Message-ID: <1314864889.13161.4.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753484Ab1IAIQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 04:16:08 -0400
+In-Reply-To: <4E5EB5EE.806@systemfabricworks.com>
+References: <20110831213729.395283830@systemfabricworks.com> <4E5EB5EE.806@systemfabricworks.com>
+Subject: Re: [PATCH v6 04/10] crc32-add-pointer-to-tab.diff
+X-KeepSent: 50A5C1AE:3C914FB7-C12578FE:002C31F1;
+ type=4; name=$KeepSent
+To: Bob Pearson <rpearson@systemfabricworks.com>
+Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com,
+        George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OF50A5C1AE.3C914FB7-ONC12578FE.002C31F1-C12578FE.002D6AFD@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Thu, 1 Sep 2011 10:16:05 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 09/01/2011 10:16:04
+MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 14:55 +0800, Zhang, Rui wrote: 
-> From: Zhang Rui <rui.zhang@intel.com>
-> Date: Wed, 31 Aug 2011 09:59:01 +0800
-> Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
-> 
-> set_memory_uc uses __pa() to translate the virtual address to the physical address.
-> This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
-> 
-oops, wrong patch was attached.
+Bob Pearson <rpearson@systemfabricworks.com> wrote on 2011/09/01 00:30:06:
 
-here is the correct patch.
+> From: Bob Pearson <rpearson@systemfabricworks.com>
+> To: linux-kernel@vger.kernel.org
+> Cc: fzago@systemfabricworks.com, rpearson@systemfabricworks.com, Joakim Tjernlund <joakim.tjernlund@transmode.se>, George Spelvin <linux@horizon.com>, akpm@linux-foundation.org
+> Date: 2011/09/01 00:30
+> Subject: [PATCH v6 04/10] crc32-add-pointer-to-tab.diff
+>
+> Replace 2D array references by pointer references in loops.
+> This change has no effect on X86 code but improves PPC
+> performance.
+>
+> Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
 
-From: Zhang Rui <rui.zhang@intel.com>
-Date: Wed, 31 Aug 2011 09:59:01 +0800
-Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
+Yes, this makes a significant difference on ppc32, your self test
+went from
+  crc32: self tests passed, processed 225944 bytes in 2257673 nsec
+to
+  crc32: self tests passed, processed 225944 bytes in 1949869 nsec
+About 15% faster.
 
-set_memory_uc uses __pa() to translate the virtual address to the physical address.
-This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
+Technically this is my patch so I am adding my SOB:
 
-<1>[    0.029956] BUG: unable to handle kernel paging request at f7f22280
-<1>[    0.042049] IP: [<c10257b9>] reserve_ram_pages_type+0x89/0x210
-<4>[    0.053465] *pdpt = 0000000001978001 *pde = 0000000001ffb067 *pte = 0000000000000000
-<0>[    0.068781] Oops: 0000 [#1] PREEMPT SMP
-<4>[    0.076441] Modules linked in:
-<4>[    0.082399]
-<4>[    0.085304] Pid: 0, comm: swapper Not tainted 3.0.0-acpi-efi-0805 #3
-<4>[    0.098067] EIP: 0060:[<c10257b9>] EFLAGS: 00010202 CPU: 0
-<4>[    0.108810] EIP is at reserve_ram_pages_type+0x89/0x210
-<4>[    0.119022] EAX: 0070e280 EBX: 38714000 ECX: f7814000 EDX: 00000000
-<4>[    0.131284] ESI: 00000000 EDI: 38715000 EBP: c189fef0 ESP: c189fea8
-<4>[    0.143543]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-<0>[    0.154099] Process swapper (pid: 0, ti=c189e000 task=c18bbe60 task.ti=c189e000)
-<0>[    0.168576] Stack:
-<4>[    0.172475]  80000200 ff108000 00000000 c189ff00 00038714 00000000 00000000 c189fed0
-<4>[    0.187623]  c104f8ca 00038714 00000000 00038715 00000000 00000000 00038715 00000000
-<4>[    0.202777]  00000010 38715000 c189ff48 c1025aff 38715000 00000000 00000010 00000000
-<0>[    0.217930] Call Trace:
-<4>[    0.222722]  [<c104f8ca>] ? page_is_ram+0x1a/0x40
-<4>[    0.231916]  [<c1025aff>] reserve_memtype+0xdf/0x2f0
-<4>[    0.241622]  [<c1024dc9>] set_memory_uc+0x49/0xa0
-<4>[    0.250818]  [<c19334d0>] efi_enter_virtual_mode+0x1c2/0x3aa
-<4>[    0.261887]  [<c19216d4>] start_kernel+0x291/0x2f2
-<4>[    0.271245]  [<c19211c7>] ? loglevel+0x1b/0x1b
-<4>[    0.279929]  [<c19210bf>] i386_start_kernel+0xbf/0xc8
----
+Signed-off-by: Joakim Tjernlund <joakim.tjernlund@transmode.se>
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 3ae4128..89586fe 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -44,6 +44,7 @@
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
- #include <asm/x86_init.h>
-+#include <asm/pat.h>
- 
- #define EFI_DEBUG	1
- #define PFX 		"EFI: "
-@@ -687,7 +688,13 @@ void __init efi_enter_virtual_mode(void)
- 			addr = md->virt_addr;
- 			npages = md->num_pages;
- 			memrange_efi_to_native(&addr, &npages);
--			set_memory_uc(addr, npages);
-+			if (reserve_memtype(md->phys_addr, md->phys_addr + npages * PAGE_SIZE,
-+					_PAGE_CACHE_UC_MINUS, NULL)) {
-+				printk(KERN_ERR PFX "failed to reserve region as uncacheable\n");
-+			} else if (_set_memory_uc(addr, npages)) {
-+				printk(KERN_ERR PFX "failed to set region to uncacheable\n");
-+				free_memtype(md->phys_addr, md->phys_addr + npages * PAGE_SIZE);
-+			}
- 		}
- 
- 		systab = (u64) (unsigned long) efi_phys.systab;
-
-
-
-
-
+>
+> ---
+>  lib/crc32.c |   21 +++++++++++----------
+>  1 file changed, 11 insertions(+), 10 deletions(-)
+>
+> Index: for-next/lib/crc32.c
+> ===================================================================
+> --- for-next.orig/lib/crc32.c
+> +++ for-next/lib/crc32.c
+> @@ -53,20 +53,21 @@ static inline u32
+>  crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
+>  {
+>  # ifdef __LITTLE_ENDIAN
+> -#  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
+> -#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
+> -      tab[2][(crc >> 8) & 255] ^ \
+> -      tab[1][(crc >> 16) & 255] ^ \
+> -      tab[0][(crc >> 24) & 255]
+> +#  define DO_CRC(x) (crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8))
+> +#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
+> +         t2[(crc >> 8) & 255] ^ \
+> +         t1[(crc >> 16) & 255] ^ \
+> +         t0[(crc >> 24) & 255]
+>  # else
+> -#  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
+> -#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
+> -      tab[1][(crc >> 8) & 255] ^ \
+> -      tab[2][(crc >> 16) & 255] ^ \
+> -      tab[3][(crc >> 24) & 255]
+> +#  define DO_CRC(x) (crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8))
+> +#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
+> +         t1[(crc >> 8) & 255] ^ \
+> +         t2[(crc >> 16) & 255] ^ \
+> +         t3[(crc >> 24) & 255]
+>  # endif
+>     const u32 *b;
+>     size_t    rem_len;
+> +   const u32 *t0 = tab[0], *t1 = tab[1], *t2 = tab[2], *t3 = tab[3];
+>
+>     /* Align it */
+>     if (unlikely((long)buf & 3 && len)) {
+>
+>
 
