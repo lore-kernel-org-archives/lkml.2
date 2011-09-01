@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab1IAPVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 11:21:52 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:35017
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932346Ab1IAPVv (ORCPT
+	id S932447Ab1IAPWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 11:22:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38978 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932346Ab1IAPWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 11:21:51 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPVD:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 1 Sep 2011 11:21:42 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mike Hommey <mh@glandium.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Problem with perf hardware counters grouping
-In-Reply-To: <1314878012.11566.7.camel@twins>
-Message-ID: <alpine.DEB.2.00.1109011117200.9976@cl320.eecs.utk.edu>
-References: <20110831085718.GB13884@glandium.org> <1314878012.11566.7.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Sep 2011 11:22:51 -0400
+Date: Thu, 1 Sep 2011 11:22:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, <linux-arm-kernel@lists.infradead.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH 0/3] RFC: addition to DMA API
+In-Reply-To: <CACVXFVOYaxGDZrwkHYc+h=tFhpYp+g95KZrDjg+bPH_N-9BT_g@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1109011113210.1896-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011, Peter Zijlstra wrote:
+On Thu, 1 Sep 2011, Ming Lei wrote:
 
-> What happens with your >3 case is that while the group is valid and
-> could fit on the PMU, it won't fit at runtime because the NMI watchdog
-> is taking one and won't budge (cpu-pinned counter have precedence over
-> any other kind), effectively starving your group of pmu runtime.
+> I agree all about above, but what I described is from another view.
+> I post out the example before explaining my idea further:
 > 
-> Also, we should fix that return to say -EINVAL or so.
+> 
+> 	CPU			device	
+> 	A=1;
+> 	wmb
+> 	B=2;
+> 					read B
+> 					read A
+> 
+> one wmb is used to order 'A=1' and 'B=2', which will make the two write
+> operations reach to physical memory as the order: 'A=1' first, 'B=2' second.
+> Then the device can observe the two write events as the order above,
+> so if device has seen 'B==2', then device will surely see 'A==1'.
+> 
+> Suppose writing to A is operation to update dma descriptor, the above example
+> can make device always see a atomic update of descriptor, can't it?
 
-UGH!  I just noticed this problem yesterday and was meaning to track it 
-down.
+Suppose A and B are _both_ part of the dma descriptor.  The device 
+might see A==1 and B==0, if the memory accesses occur like this:
 
-This obviously causes PAPI to fail if you try to use the maximum number of 
-counters.  Instead of getting EINVAL at open time or even at start time, 
-you just silently read all zeros at read time, and by then it's too late 
-to do anything useful about the problem because you just missed measuring 
-what you were trying to.
+	CPU		device
+	---		------
+	A = 1;
+	wmb();
+			read B
+			read A
+	B = 2;
 
-Is there any good workaround, or do we have to fall back to trying to 
-start/read/stop every proposed event set to make sure it's valid?
+When this happens, the device will observe a non-atomic update of the 
+descriptor.  There's no way to prevent this.
 
-This is going to seriously impact performance, and perf_event performance 
-is pretty bad to begin with.  The whole reason I was writing the tests to 
-trigger this is because PAPI users are complaining that perf_event 
-overhead is roughly twice that of perfctr or perfmon2, which I've verified 
-experimentally.
+> My idea is that the memory access patterns are to be considered for
+> writer of device driver. For example, many memory access patterns on
+> EHCI hardware are described in detail.  Of course, device driver should
+> make full use of the background info, below is a example from ehci driver:
+> 
+> qh_link_async():
+> 
+> 	/*prepare qh descriptor*/
+> 	qh->qh_next = head->qh_next;
+> 	qh->hw->hw_next = head->hw->hw_next;
+> 	wmb ();
+> 
+> 	/*link the qh descriptor into hardware queue*/
+> 	head->qh_next.qh = qh;
+> 	head->hw->hw_next = dma;
+> 
+> so once EHCI fetches a qh with the address of 'dma', it will always see
+> consistent content of qh descriptor, which could not be updated partially.
 
-Vince
+Yes, of course.  That's what memory barriers are intended for, to make 
+sure that writes occur in the correct order.  Without the wmb(), the 
+CPU might decide to write out the value of head->hw->hw_next before 
+writing out the value of qh->hw->hw_next.  Then the device might see an 
+inconsistent set of values.
+
+None of this has anything to do with the write flushes you want to add.
+
+> >> 2, most of such cases can be handled correctly by mb/wmb/rmb barriers.
+> >
+> > No, they can't.  See the third point above.
+> 
+> The example above has demoed that barriers can do it, hasn't it?
+
+The memory barrier in your qh_link_async() example can make sure that
+the device always sees consistent data.  It doesn't guarantee that the
+write to head->hw->hw_next will be flushed to memory in a reasonably 
+short time, which is the problem you are trying to solve.
+
+Alan Stern
 
