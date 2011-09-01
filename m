@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab1IAQPe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:15:34 -0400
-Received: from fn.samba.org ([216.83.154.106]:52271 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932570Ab1IAQPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:15:33 -0400
-Date: Thu, 1 Sep 2011 09:15:31 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jeremy Allison <jra@samba.org>, Ulrich Drepper <drepper@akkadia.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110901161531.GB758@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <20110830154157.d802d097.akpm@linux-foundation.org>
- <CAAK6Zt20MNqgydQTgN3O46p+OZxR9Ta9=MfqRrw=w+y77-75Yw@mail.gmail.com>
- <20110830155438.bc31ab99.akpm@linux-foundation.org>
- <20110830230342.GB16326@samba2>
- <20110830161130.592df746.akpm@linux-foundation.org>
- <4E5E152A.9050804@akkadia.org>
- <20110831165954.GC1611@samba2>
- <4E5F690C.4010209@akkadia.org>
- <20110901155845.GA758@samba2>
- <20110901160436.GA13556@infradead.org>
+	id S932628Ab1IAQQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:16:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:60260 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932612Ab1IAQQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 12:16:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH 4/4] dynamic_debug: fix undefined reference to `__netdev_printk'
+Date: Thu, 1 Sep 2011 18:16:39 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        rdunlap@xenotime.net, linux-kernel@vger.kernel.org
+References: <cover.1314725877.git.jbaron@redhat.com> <bb1973868f9af8673cffdb5c77c590396d17554e.1314725877.git.jbaron@redhat.com>
+In-Reply-To: <bb1973868f9af8673cffdb5c77c590396d17554e.1314725877.git.jbaron@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110901160436.GA13556@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109011816.39274.arnd@arndb.de>
+X-Provags-ID: V02:K0:zsw4b7hVm5pb1bwMuzz1GEQlKQCteKbD60nMsIXTT6U
+ I+Hk674Qot0tE97PlGhLB4SBItFy7NfO0SzTsGoh2N+SjXrJHm
+ 2mt4Hg1eGMS8zJkp7LcwIIBO5kBdDO26vgcqayiqnLS2tzmxqr
+ Z9kAjHJOR8XNrHsk6jb5ze0/sHMxvXZAYbUUJvwBcsdHOOZwA3
+ 8ytHO2cLe/rZ4OahSnWCdlrSHDx75rQdq4IxJTnyjM364pU9wa
+ hYWERvjd2BtdEpA32GINZR8BFoMhq6ADCe7A+rhLGmbN3gcSPq
+ qDQKgFEonNDiqUx1kN4Ab+9wX1cT/4yrRqoOpzkXP9A2SphZep
+ UReKZyM1J1cOGVk4Ha9Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 12:04:36PM -0400, Christoph Hellwig wrote:
-> On Thu, Sep 01, 2011 at 08:58:45AM -0700, Jeremy Allison wrote:
-> > Yes I did consider that of course. Problem is that leads you to the
-> > nightmare that is losing all fcntl locks on the file when any of the
-> > descriptors are closed. Of course we already have internal work arounds
-> > for that - but they're not scalable in this case.  We'd have to dup on
-> > every read/write, and because of the fcntl lock problem we have to keep
-> > all fd's around until the final close of the file. Don't tell us to
-> > implement our own locking instead because (a) we already do in the case
-> > where we don't need locking consistency with NFS and (b) most vendors insist on
-> > locking consistency with NFS - not good if locks on one protocol aren't
-> > seen by another.
+On Tuesday 30 August 2011, Jason Baron wrote:
 > 
-> We could easily give you an fcntl / dup3 flag to only release posix
-> locks on the final close of a struct file if that helps you.
+> Dynamic debug recently added support for netdev_printk. It uses
+> __netdev_printk() to support this functionality. However, when
+> CONFIG_NET is not set, we get the following error:
+> 
+> lib/built-in.o: In function `__dynamic_netdev_dbg':
+> (.text+0x9fda): undefined reference to `__netdev_printk'
+> 
+> Fix this by making the call to netdev_printk() contingent upon
+> CONFIG_NET. We could have fixed this by defining netdev_printk()
+> to a 'no-op' in the !CONFIG_NET case. However, this is not
+> consistent with how the networking layer uses netdev_printk.
+> For example, CONFIG_NET is not set, netdev_printk() does not
+> have a 'no-op' definition defined.
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-That would help us enormously - it'd be Linux only of course but
-we could easily add support for that.
+Found it too, came up with the same fix
 
-Can you propose the design here so we can run it past some of the
-Solaris/FreeBSD folks (it'd be nice if we could get broader adoption) ?
-
-Jeremy.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
