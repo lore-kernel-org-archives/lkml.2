@@ -1,72 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab1IAQfC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:35:02 -0400
-Received: from fn.samba.org ([216.83.154.106]:38798 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757780Ab1IAQfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:35:00 -0400
-Date: Thu, 1 Sep 2011 09:34:52 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Jeremy Allison <jra@samba.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Ulrich Drepper <drepper@akkadia.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110901163452.GF758@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <20110830230342.GB16326@samba2>
- <20110830161130.592df746.akpm@linux-foundation.org>
- <4E5E152A.9050804@akkadia.org>
- <20110831165954.GC1611@samba2>
- <4E5F690C.4010209@akkadia.org>
- <20110901155845.GA758@samba2>
- <20110901160436.GA13556@infradead.org>
- <20110901161531.GB758@samba2>
- <20110901162337.GA28802@infradead.org>
- <20110901163107.GE758@samba2>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110901163107.GE758@samba2>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757612Ab1IAQhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:37:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56518 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab1IAQhT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 12:37:19 -0400
+Subject: Re: [PATCH v2] perf, x86: Fix event scheduler for constraints with
+ overlapping counters
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 01 Sep 2011 18:37:06 +0200
+In-Reply-To: <20110901141219.GA13447@erda.amd.com>
+References: <1302913676-14352-1-git-send-email-robert.richter@amd.com>
+	 <1302913676-14352-5-git-send-email-robert.richter@amd.com>
+	 <20110419102600.GU31407@erda.amd.com> <1305753398.2466.7180.camel@twins>
+	 <20110518212054.GC28476@elte.hu> <1305754613.2466.7190.camel@twins>
+	 <20110519180650.GC6139@elte.hu> <20110520031855.GA17196@erda.amd.com>
+	 <1314881807.11566.23.camel@twins> <20110901141219.GA13447@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314895026.1485.0.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 09:31:07AM -0700, Jeremy Allison wrote:
-> On Thu, Sep 01, 2011 at 12:23:37PM -0400, Christoph Hellwig wrote:
-> > On Thu, Sep 01, 2011 at 09:15:31AM -0700, Jeremy Allison wrote:
-> > > > We could easily give you an fcntl / dup3 flag to only release posix
-> > > > locks on the final close of a struct file if that helps you.
-> > > 
-> > > That would help us enormously - it'd be Linux only of course but
-> > > we could easily add support for that.
-> > > 
-> > > Can you propose the design here so we can run it past some of the
-> > > Solaris/FreeBSD folks (it'd be nice if we could get broader adoption) ?
-> > 
-> > Not sure there is all that much to discuss.  The idea is to have locks
-> > that behave like Posix locks, but only get release when the last duped
-> > fd to them gets released.
-> > 
-> > We'd define a new O_LOCKS_WHATEVER flag for it, which gets set either
-> > using fcntl(..., F_SETFL, ...) or dup3.  All in all that should be less
-> > than 50 lines of code in the kernel.
+On Thu, 2011-09-01 at 16:12 +0200, Robert Richter wrote:
+> Will try to post an updated version
+> next week. Ok?
 > 
-> Ok, so it'd be set at open() time, say:
-> 
-> O_CLOLOCK_PERSIST
-> 
-> (to match the naming of something like O_CLOEXEC) and be available to set
-> with F_SETFD via an fcntl and dup3 call ?
-
-Ah, looking at fcntl - do you want to set/get this via F_SETFD/F_GETFD,
-or via F_SETFL/F_GETFL ? i.e. is this a file descritor flag, or a status
-flag ? I'd guess a file descriptor flag but I'm not sure of the difference
-here..
-
-Jeremy.
+Sure.. thanks!
