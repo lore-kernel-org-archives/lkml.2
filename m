@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab1IAKhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 06:37:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64297 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab1IAKhq (ORCPT
+	id S1756460Ab1IAKjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 06:39:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35064 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab1IAKjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 06:37:46 -0400
+	Thu, 1 Sep 2011 06:39:09 -0400
+Date: Thu, 1 Sep 2011 12:39:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: process time < thread time?
+In-Reply-To: <1314871884.7945.20.camel@twins>
+Message-ID: <alpine.LFD.2.02.1109011226160.2723@ionos>
+References: <20110831.230718.2029810906806382170.davem@davemloft.net>  <alpine.LFD.2.02.1109011148060.2723@ionos> <1314871884.7945.20.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAEDdjHfu71X04JR2Yx8N495bDoJRudch3xbzNAEmUpVxYS+Oww@mail.gmail.com>
-References: <CAEDdjHfu71X04JR2Yx8N495bDoJRudch3xbzNAEmUpVxYS+Oww@mail.gmail.com>
-Date: Thu, 1 Sep 2011 11:37:41 +0100
-Message-ID: <CAEDdjHfa-+DwCEpGYnE++FmxOigWWnaE4grGwW74T2LUYpgsQw@mail.gmail.com>
-Subject: Fwd: Thinkpad hotkeys and USB audio not working after resume in 3.0.x
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: Kernel development list <linux-kernel@vger.kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 1 Sep 2011, Peter Zijlstra wrote:
 
-I'm hitting a bug with my thinkpad T400. After resuming from
-Hibernate, the thinkpad hotkeys and my USB audio card do not work at
-all.
-Suspending to RAM and resuming seem to solve the problem, but after
-another hibernation it comes back again.
+> On Thu, 2011-09-01 at 11:56 +0200, Thomas Gleixner wrote:
+> > The untested patch below should cure this.
+> > 
+> 
+> > diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+> > index 58f405b..42378cb 100644
+> > --- a/kernel/posix-cpu-timers.c
+> > +++ b/kernel/posix-cpu-timers.c
+> > @@ -250,7 +250,7 @@ void thread_group_cputime(struct task_struct *tsk,
+> > struct task_cputime *times)
+> >         do {
+> >                 times->utime = cputime_add(times->utime, t->utime);
+> >                 times->stime = cputime_add(times->stime, t->stime);
+> > -               times->sum_exec_runtime += t->se.sum_exec_runtime;
+> > +               times->sum_exec_runtime += task_sched_runtime(t);
+> >         } while_each_thread(tsk, t);
+> >  out:
+> >         rcu_read_unlock(); 
+> 
+> I think we just deadlocked:
 
-This only happens with TuxOnIce but not with the vanilla kernel.
+That's why I said untested :)
+ 
+> cpu_clock_sample_group()
+>   CPUCLOCK_SCHED: thread_group_sched_runtime()
+>     task_rq_lock()        <-.
+>     thread_group_cputime()  |
+>       task_sched_runtime()  |
+>        task_rq_lock() ------'
+> 
+> 
+> Also, having to take locks here is sad, but yeah if we want to cure this
+> there's not much we can do about that.
 
-Rafael, can you please point out from the top of your head if there
-was any change that could have caused this?
-
-Thanks in advance.
-
-Kind Regards,
+Yeah :(
+ 
