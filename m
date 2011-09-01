@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab1IAR6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:58:43 -0400
-Received: from na3sys010aog114.obsmtp.com ([74.125.245.96]:32996 "HELO
-	na3sys010aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755592Ab1IAR6m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:58:42 -0400
+	id S1757220Ab1IAR7q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:59:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756663Ab1IAR7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 13:59:44 -0400
+Date: Thu, 1 Sep 2011 13:59:27 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Allison Henderson <achender@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: Re: lock i_mutex for fallocate?
+Message-ID: <20110901175926.GC29299@dhcp231-156.rdu.redhat.com>
+References: <4E5ED2D5.8040302@linux.vnet.ibm.com> <4E5EDBE4.8010604@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
- <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110901160724.GN9189@beardog.cce.hp.com> <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-From: Roland Dreier <roland@purestorage.com>
-Date: Thu, 1 Sep 2011 10:58:21 -0700
-Message-ID: <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
-Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: scameron@beardog.cce.hp.com, Jon Mason <mason@myri.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5EDBE4.8010604@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> OK I found the bad commit,I got lucky... I lost some files but my
-> machine was able to complete the bisection. CC involved people
+On Wed, Aug 31, 2011 at 06:12:04PM -0700, Allison Henderson wrote:
+> Oh, I meant for this to go to linux-fsdevel instead of linux-kernel, but  
+> all feedback is welcome!  :)
+>
+> On 08/31/2011 05:33 PM, Allison Henderson wrote:
+>> Hi All,
+>>
+>> In ext4 punch hole, we realized that the punch hole operation needs to
+>> be done under i_mutex just like truncate. i_mutex for truncate is held
+>> in the vfs layer, so we dont need to lock it at the file system layer,
+>> but vfs does not lock i_mutex for fallocate. We can lock i_mutex for
+>> fallocate at the fs layer, but question was raised then: should i_mutex
+>> for fallocate be held in the vfs layer instead? I do not know if other
+>> file systems need i_mutex to be locked for fallocate, or if they might
+>> be locking it already, so I am doing some investigating on this idea,
+>> and also the appropriate use of i_mutex in general. Can someone provide
+>> some insight this topic? Thx!
+>>
 
-> # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI-E Max Payload Size on fabric
+Btrfs has range locking for our extents, so we don't really need to be holding
+the i_mutex, even tho it appears we do it anyway.  So I'd rather this not be
+moved to VFS for us who can do more fine grained locking.  Thanks,
 
-Hi Eric,
-
-I guess it would be useful to see "lspci -vv" output with a "good" kernel
-and with that bad patch applied.  Most likely we should see some difference
-somewhere in the MaxPayload fields in the PCI Express capability of
-some device.
-
-Either the RAID controller or something else lies, and puts a value
-in the DevCap that it can't actually support, or else the patch is
-buggy and puts something out of range in a DevCtl somewhere.
-
- - R.
+Josef
