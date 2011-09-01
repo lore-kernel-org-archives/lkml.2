@@ -1,182 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab1IAQH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:07:29 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:11957 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932571Ab1IAQH2 (ORCPT
+	id S932609Ab1IAQMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 12:12:40 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35847 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932577Ab1IAQMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:07:28 -0400
-Date: Thu, 1 Sep 2011 11:07:24 -0500
-From: scameron@beardog.cce.hp.com
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-Message-ID: <20110901160724.GN9189@beardog.cce.hp.com>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com> <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
+	Thu, 1 Sep 2011 12:12:37 -0400
+Date: Thu, 1 Sep 2011 12:11:34 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, namhyung@gmail.com, rientjes@google.com,
+        linux-mm@kvack.org
+Cc: xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        paulmck@linux.vnet.ibm.com
+Subject: [Revert] Re: [PATCH] mm: sync vmalloc address space page tables in
+ alloc_vm_area()
+Message-ID: <20110901161134.GA8979@dumpdata.com>
+References: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4E5FAEC3.00C5:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 05:24:02PM +0200, Eric Dumazet wrote:
-> Stephen,
-> 
-> Current linux-3.1-rc4+ is a total disaster on my BL460c G6
+On Thu, Sep 01, 2011 at 12:51:03PM +0100, David Vrabel wrote:
+> From: David Vrabel <david.vrabel@citrix.com>
 
-What kernel were you running successfully previously?
+Andrew,
 
-I saw similar on BL460cG7 on Friday with 3.1-rc4,
-but I'm not sure the problem is in the driver.  
-I installed rhel6.1, then put 3.1-rc4 on.  Turning off
-"Virtualization" in the kernel config seemed to help
-(allowed it to boot) and so I thought that must have
-been the source of the issue.  So, you might try that.
+I was wondering if you would be Ok with this patch for 3.1.
 
-However, I rebooted that machine just now, and
-now I am getting the similar "hpsa 0000:0c:00.0: resetting device 0:0:0:0"
-message, so that's pretty weird.
+It is a revert (I can prepare a proper revert if you would like
+that instead of this patch).
 
-The cmd_alloc failure, I didn't see, but I may have missed it
-(didn't have console directed to serial output.)
-
-cmd_alloc failing is not generally expected, as we reserve enough
-commands that the upper layers should never exhaust them all (should
-honor hpsa's max request limit), so that's pretty weird that
-you're seeing that.
-
-I am able to run 3.1-rc3 on rhel6 just fine on other systems (DL380g7,
-for example) and I don't think there are any hpsa changes between rc3
-and rc4.  (haven't tried rc4 on the dl380g7 yet).
-
-So, I'm not sure what's going on with the BL460c yet, but I am
-aware of the problem and have already seen it.  I can't think of
-any driver changes lately which should be causing such
-changes in behavior.
-
--- steve
-
+The users of this particular function (alloc_vm_area) are just
+Xen. There are no others.
 
 > 
+> Xen backend drivers (e.g., blkback and netback) would sometimes fail
+> to map grant pages into the vmalloc address space allocated with
+> alloc_vm_area().  The GNTTABOP_map_grant_ref would fail because Xen
+> could not find the page (in the L2 table) containing the PTEs it
+> needed to update.
 > 
-> Few seconds after boot, I get "cmd_alloc returned NULL" messages
-> or "hpsa 0000:0c:00.0: resetting device 0:0:0:0"
+> (XEN) mm.c:3846:d0 Could not find L1 PTE for address fbb42000
 > 
-> Usually lot of files are corrupted, fsck needed, and full distro
-> reinstall as well.
+> netback and blkback were making the hypercall from a kernel thread
+> where task->active_mm != &init_mm and alloc_vm_area() was only
+> updating the page tables for init_mm.  The usual method of deferring
+> the update to the page tables of other processes (i.e., after taking a
+> fault) doesn't work as a fault cannot occur during the hypercall.
 > 
-> I tested on two different machines, same result.
+> This would work on some systems depending on what else was using
+> vmalloc.
 > 
-> Relevant hardware information :
+> Fix this by reverting ef691947d8a3d479e67652312783aedcf629320a
+> (vmalloc: remove vmalloc_sync_all() from alloc_vm_area()) and add a
+> comment to explain why it's needed.
 > 
-> 	Manufacturer: HP
-> 	Product Name: ProLiant BL460c G6
-> 	Version: I24
-> 	Release Date: 05/05/2011
-> 	Intel(R) Xeon(R) CPU E5540 @ 2.53GHz  (two sockets)
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> ---
+>  mm/vmalloc.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
 > 
-> 0c:00.0 RAID bus controller: Hewlett-Packard Company Smart Array G6
-> controllers (rev 01)
-> 	Subsystem: Hewlett-Packard Company Smart Array P410i
-> 	Flags: bus master, fast devsel, latency 0, IRQ 16
-> 	Memory at fbc00000 (64-bit, non-prefetchable) [size=4M]
-> 	Memory at fbbf0000 (64-bit, non-prefetchable) [size=4K]
-> 	I/O ports at 4000 [size=256]
-> 	[virtual] Expansion ROM at e7200000 [disabled] [size=512K]
-> 	Capabilities: [40] Power Management version 3
-> 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-> 	Capabilities: [70] Express Endpoint, MSI 00
-> 	Capabilities: [ac] MSI-X: Enable+ Count=16 Masked-
-> 	Capabilities: [100] Advanced Error Reporting
-> 	Kernel driver in use: hpsa
-> 
-> # hpacucli ctrl all show config detail
-> 
-> Smart Array P410i in Slot 0 (Embedded)
->    Bus Interface: PCI
->    Slot: 0
->    Serial Number: 5001438006F44240
->    RAID 6 (ADG) Status: Disabled
->    Controller Status: OK
->    Chassis Slot: 
->    Hardware Revision: Rev C
->    Firmware Version: 2.50
->    Rebuild Priority: Medium
->    Expand Priority: Medium
->    Surface Scan Delay: 15 secs
->    Surface Scan Mode: Idle
->    Wait for Cache Room: Disabled
->    Surface Analysis Inconsistency Notification: Disabled
->    Post Prompt Timeout: 0 secs
->    Cache Board Present: False
->    Drive Write Cache: Disabled
->    SATA NCQ Supported: True
-> 
->    Array: A
->       Interface Type: SATA
->       Unused Space: 0 MB
->       Status: OK
-> 
-> 
-> 
->       Logical Drive: 1
->          Size: 232.9 GB
->          Fault Tolerance: RAID 1
->          Heads: 255
->          Sectors Per Track: 32
->          Cylinders: 59844
->          Strip Size: 128 KB
->          Status: OK
->          Unique Identifier: 600508B1001030364634343234300F00
->          Disk Name: /dev/cciss/c0d0
->          Mount Points: / 9.3 GB, /home 216.0 GB
->          OS Status: LOCKED
->          Logical Drive Label: A0124E845001438006F442403033
->          Mirror Group 0:
->             physicaldrive 1I:1:1 (port 1I:box 1:bay 1, SATA, 250 GB, OK)
->          Mirror Group 1:
->             physicaldrive 1I:1:2 (port 1I:box 1:bay 2, SATA, 250 GB, OK)
-> 
->       physicaldrive 1I:1:1
->          Port: 1I
->          Box: 1
->          Bay: 1
->          Status: OK
->          Drive Type: Data Drive
->          Interface Type: SATA
->          Size: 250 GB
->          Firmware Revision: HPG2    
->          Serial Number: K648T9C27M8E        
->          Model: ATA     GJ0250EAGSQ     
->          SATA NCQ Capable: True
->          SATA NCQ Enabled: True
->          PHY Count: 1
->          PHY Transfer Rate: 3.0GBPS
-> 
->       physicaldrive 1I:1:2
->          Port: 1I
->          Box: 1
->          Bay: 2
->          Status: OK
->          Drive Type: Data Drive
->          Interface Type: SATA
->          Size: 250 GB
->          Firmware Revision: HPG2    
->          Serial Number: K648T9C27M49        
->          Model: ATA     GJ0250EAGSQ     
->          SATA NCQ Capable: True
->          SATA NCQ Enabled: True
->          PHY Count: 1
->          PHY Transfer Rate: 3.0GBPS
-> 
-> 
-> 
-> 64 bit kernel, 4GB of memory
-> 
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 7ef0903..5016f19 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2140,6 +2140,14 @@ struct vm_struct *alloc_vm_area(size_t size)
+>  		return NULL;
+>  	}
+>  
+> +	/*
+> +	 * If the allocated address space is passed to a hypercall
+> +	 * before being used then we cannot rely on a page fault to
+> +	 * trigger an update of the page tables.  So sync all the page
+> +	 * tables here.
+> +	 */
+> +	vmalloc_sync_all();
+> +
+>  	return area;
+>  }
+>  EXPORT_SYMBOL_GPL(alloc_vm_area);
+> -- 
+> 1.7.2.5
