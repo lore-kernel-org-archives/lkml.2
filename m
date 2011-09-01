@@ -1,159 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab1IATKd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 15:10:33 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:42173 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab1IATKc (ORCPT
+	id S1757552Ab1IATND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 15:13:03 -0400
+Received: from ixia-3.edge2.lax012.pnap.net ([74.217.148.5]:41339 "EHLO
+	ixqw-mail-out.ixiacom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757168Ab1IATNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 15:10:32 -0400
-Date: Thu, 1 Sep 2011 20:10:28 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb
- (v4l2_device_disconnect+0x11/0x30)
-Message-ID: <20110901191028.GA30301@sucs.org>
-References: <20110829204846.GA14699@sucs.org>
- <CABqxG0cUx4W5JH-gX-rUe=mZ8SY0uxkrCyofPsfUDBojwWKTvQ@mail.gmail.com>
+	Thu, 1 Sep 2011 15:13:01 -0400
+Message-ID: <4E5FD937.7050307@ixiacom.com>
+Date: Thu, 1 Sep 2011 12:12:55 -0700
+From: Earl Chew <echew@ixiacom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABqxG0cUx4W5JH-gX-rUe=mZ8SY0uxkrCyofPsfUDBojwWKTvQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "oleg@redhat.com" <oleg@redhat.com>
+Subject: [PATCH 1/1 v2]: coredump: use current->group_leader->comm instead
+ of current->comm
+References: <4E5FBA73.2050108@ixiacom.com> <20110901195554.667c5e58@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110901195554.667c5e58@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 05:02:51PM +0800, Dave Young wrote:
-> On Tue, Aug 30, 2011 at 4:48 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-> >
-> > I managed to produce an oops in 3.1.0-rc3-00270-g7a54f5e by unplugging a
-> > USB webcam. See below:
-> 
-> Could you try the attached patch?
+> In your view, but there is a better way to do this - add a new case and
+> letter for the behaviour you want. That way you don't break anyone elses
+> defaults and expectation and people can set a corepattern dependant upon
+> the group leader.
 
-This patch fixed the oops but extending the sequence (enable camera,
-start cheese, disable camera, watch cheese pause, enable camera, quit
-cheese, start cheese) causes the following "poison overwritten" warning
-to appear:
+Ok.
 
 
-[  191.240695] uvcvideo: Found UVC 1.00 device CNF7129 (04f2:b071)
-[  191.277965] input: CNF7129 as /devices/pci0000:00/0000:00:1d.7/usb1/1-8/1-8:1.0/input/input9
-[  220.287366] =============================================================================
-[  220.287379] BUG kmalloc-512: Poison overwritten
-[  220.287384] -----------------------------------------------------------------------------
-[  220.287387] 
-[  220.287394] INFO: 0xec90f150-0xec90f150. First byte 0x6a instead of 0x6b
-[  220.287410] INFO: Allocated in uvc_probe+0x54/0xd50 age=210617 cpu=0 pid=16
-[  220.287421] 	T.974+0x29d/0x5e0
-[  220.287427] 	kmem_cache_alloc+0x167/0x180
-[  220.287433] 	uvc_probe+0x54/0xd50
-[  220.287441] 	usb_probe_interface+0xd5/0x1d0
-[  220.287448] 	driver_probe_device+0x80/0x1a0
-[  220.287455] 	__device_attach+0x41/0x50
-[  220.287460] 	bus_for_each_drv+0x53/0x80
-[  220.287466] 	device_attach+0x89/0xa0
-[  220.287472] 	bus_probe_device+0x25/0x40
-[  220.287478] 	device_add+0x5a9/0x660
-[  220.287484] 	usb_set_configuration+0x562/0x670
-[  220.287491] 	generic_probe+0x36/0x90
-[  220.287497] 	usb_probe_device+0x24/0x50
-[  220.287503] 	driver_probe_device+0x80/0x1a0
-[  220.287509] 	__device_attach+0x41/0x50
-[  220.287515] 	bus_for_each_drv+0x53/0x80
-[  220.287522] INFO: Freed in uvc_delete+0xfe/0x110 age=22 cpu=0 pid=1645
-[  220.287530] 	__slab_free+0x1f8/0x300
-[  220.287536] 	kfree+0x100/0x140
-[  220.287541] 	uvc_delete+0xfe/0x110
-[  220.287547] 	uvc_release+0x25/0x30
-[  220.287555] 	v4l2_device_release+0x9d/0xc0
-[  220.287560] 	device_release+0x19/0x90
-[  220.287567] 	kobject_release+0x3c/0x90
-[  220.287573] 	kref_put+0x2c/0x60
-[  220.287578] 	kobject_put+0x1d/0x50
-[  220.287587] 	put_device+0xf/0x20
-[  220.287593] 	v4l2_release+0x56/0x60
-[  220.287599] 	fput+0xcc/0x220
-[  220.287605] 	filp_close+0x44/0x70
-[  220.287613] 	put_files_struct+0x158/0x180
-[  220.287619] 	exit_files+0x40/0x50
-[  220.287626] 	do_exit+0xec/0x660
-[  220.287632] INFO: Slab 0xef722180 objects=23 used=23 fp=0x  (null) flags=0x4080
-[  220.287639] INFO: Object 0xec90f060 @offset=12384 fp=0xec90cac0
-[  220.287642] 
-[  220.287647] Bytes b4 0xec90f050:  6d 06 00 00 88 c8 fe ff 5a 5a 5a 5a 5a 5a 5a 5a m....ÈþÿZZZZZZZZ
-[  220.287681]   Object 0xec90f060:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287713]   Object 0xec90f070:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287746]   Object 0xec90f080:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287778]   Object 0xec90f090:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287811]   Object 0xec90f0a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287843]   Object 0xec90f0b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287876]   Object 0xec90f0c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287908]   Object 0xec90f0d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287941]   Object 0xec90f0e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.287973]   Object 0xec90f0f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288006]   Object 0xec90f100:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f110:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f120:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f130:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f140:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f150:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f160:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f170:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f180:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f190:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f1a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f1b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f1c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f1d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f1e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f1f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f200:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f210:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f220:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f230:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f240:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
-[  220.288012]   Object 0xec90f250:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5 kkkkkkkkkkkkkkk¥
-[  220.288012]  Redzone 0xec90f260:  bb bb bb bb                                     »»»»            
-[  220.288012]  Padding 0xec90f308:  5a 5a 5a 5a 5a 5a 5a 5a                         ZZZZZZZZ        
-[  220.288012] Pid: 1450, comm: metacity Not tainted 3.1.0-rc4-00131-g9e79e3e-dirty #488
-[  220.288012] Call Trace:
-[  220.288012]  [<b0192c3e>] print_trailer+0xee/0x140
-[  220.288012]  [<b0193157>] check_bytes_and_report+0xd7/0x160
-[  220.288012]  [<b0194a98>] check_object+0x1d8/0x220
-[  220.288012]  [<b0192fe3>] ? check_slab+0x63/0x100
-[  220.288012]  [<b0194f67>] alloc_debug_processing+0xb7/0x130
-[  220.288012]  [<b019602d>] T.974+0x29d/0x5e0
-[  220.288012]  [<b044c466>] ? sock_alloc_send_pskb+0x176/0x290
-[  220.288012]  [<b044c466>] ? sock_alloc_send_pskb+0x176/0x290
-[  220.288012]  [<b0198551>] ? create_object+0x191/0x240
-[  220.288012]  [<b01979f5>] __kmalloc_track_caller+0x1d5/0x1f0
-[  220.288012]  [<b044c466>] ? sock_alloc_send_pskb+0x176/0x290
-[  220.288012]  [<b044ff2d>] __alloc_skb+0x4d/0x140
-[  220.288012]  [<b044c466>] sock_alloc_send_pskb+0x176/0x290
-[  220.288012]  [<b055d98a>] ? __mutex_unlock_slowpath+0x9a/0x110
-[  220.288012]  [<b044c598>] sock_alloc_send_skb+0x18/0x20
-[  220.288012]  [<b04b7957>] unix_stream_sendmsg+0x2b7/0x3d0
-[  220.288012]  [<b0448913>] sock_aio_write+0x133/0x170
-[  220.288012]  [<b019b285>] do_sync_readv_writev+0x95/0xc0
-[  220.288012]  [<b0274328>] ? _copy_from_user+0x38/0x180
-[  220.288012]  [<b019b133>] ? rw_copy_check_uvector+0x73/0xf0
-[  220.288012]  [<b019bf1b>] do_readv_writev+0x9b/0x180
-[  220.288012]  [<b04487e0>] ? sock_destroy_inode+0x30/0x30
-[  220.288012]  [<b019c562>] ? fget_light+0xb2/0x130
-[  220.288012]  [<b019c576>] ? fget_light+0xc6/0x130
-[  220.288012]  [<b019c045>] vfs_writev+0x45/0x60
-[  220.288012]  [<b019c131>] sys_writev+0x41/0x80
-[  220.288012]  [<b055ff57>] sysenter_do_call+0x12/0x36
-[  220.288012]  [<b0550000>] ? rfkill_alloc+0xe0/0x110
-[  220.288012] FIX kmalloc-512: Restoring 0xec90f150-0xec90f150=0x6b
-[  220.288012] 
-[  220.288012] FIX kmalloc-512: Marking all objects used
+The patterns %n or %N are the same as %e and %E except that they 
+use current->group_leader->comm instead of current->comm.
 
--- 
-Sitsofe | http://sucs.org/~sits/
+
+Signed-off-by: Earl Chew <echew@ixiacom.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+--
+--- fs/exec.c.orig	2011-08-28 21:16:01.000000000 -0700
++++ fs/exec.c	2011-09-01 12:03:50.622059092 -0700
+@@ -1670,7 +1670,7 @@ static void cn_escape(char *str)
+ 			*str = '!';
+ }
+ 
+-static int cn_print_exe_file(struct core_name *cn)
++static int cn_print_exe_file(struct core_name *cn, const char *comm)
+ {
+ 	struct file *exe_file;
+ 	char *pathbuf, *path;
+@@ -1679,7 +1679,7 @@ static int cn_print_exe_file(struct core
+ 	exe_file = get_mm_exe_file(current->mm);
+ 	if (!exe_file) {
+ 		char *commstart = cn->corename + cn->used;
+-		ret = cn_printf(cn, "%s (path unknown)", current->comm);
++		ret = cn_printf(cn, "%s (path unknown)", comm);
+ 		cn_escape(commstart);
+ 		return ret;
+ 	}
+@@ -1777,6 +1777,18 @@ static int format_corename(struct core_n
+ 				cn_escape(namestart);
+ 				break;
+ 			}
++			/* task group executable */
++			case 'n': {
++				char *commstart = cn->corename + cn->used;
++				err = cn_printf(cn, "%s",
++					      current->group_leader->comm);
++				cn_escape(commstart);
++				break;
++			}
++			case 'N':
++				err = cn_print_exe_file(cn,
++					      current->group_leader->comm);
++				break;
+ 			/* executable */
+ 			case 'e': {
+ 				char *commstart = cn->corename + cn->used;
+@@ -1785,7 +1797,7 @@ static int format_corename(struct core_n
+ 				break;
+ 			}
+ 			case 'E':
+-				err = cn_print_exe_file(cn);
++				err = cn_print_exe_file(cn, current->comm);
+ 				break;
+ 			/* core limit size */
+ 			case 'c':
+
+
