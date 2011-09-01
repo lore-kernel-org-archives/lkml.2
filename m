@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab1IAHQE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 03:16:04 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63651 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab1IAHQB convert rfc822-to-8bit (ORCPT
+	id S1755457Ab1IAHbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 03:31:53 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60728
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754357Ab1IAHbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 03:16:01 -0400
+	Thu, 1 Sep 2011 03:31:50 -0400
+Date: Thu, 1 Sep 2011 03:31:46 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Allison Henderson <achender@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: Re: lock i_mutex for fallocate?
+Message-ID: <20110901073146.GA17100@infradead.org>
+References: <4E5ED2D5.8040302@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWSm2bQQpdM1OM=6+17CeNikn9RYm_BpFmEV7jD4sAPig@mail.gmail.com>
-References: <1314857640-6623-1-git-send-email-xiyou.wangcong@gmail.com>
-	<CAMuHMdWSm2bQQpdM1OM=6+17CeNikn9RYm_BpFmEV7jD4sAPig@mail.gmail.com>
-Date: Thu, 1 Sep 2011 15:16:00 +0800
-Message-ID: <CAM_iQpULfmXV96AB5L4K78rLfom+9F=sb6FgGSaOywtOzPt6Pg@mail.gmail.com>
-Subject: Re: [PATCH] cris: lower the printk level in cris serial driver
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Alan Cox <alan@linux.intel.com>, linux-cris-kernel@axis.com,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5ED2D5.8040302@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 2:35 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Thu, Sep 1, 2011 at 08:14, WANG Cong <xiyou.wangcong@gmail.com> wrote:
->> KERN_CRIT is too high, replace those KERN_CRIT with KERN_ERR or KERN_INFO.
->>
->> Cc: Mikael Starvik <starvik@axis.com>
->> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
->> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
->>
->> ---
->> diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
->> index 225123b..77ba4ed 100644
->> --- a/drivers/tty/serial/crisv10.c
->> +++ b/drivers/tty/serial/crisv10.c
->> @@ -1788,7 +1788,7 @@ static unsigned int handle_descr_data(struct e100_serial *info,
->>        struct etrax_recv_buffer *buffer = phys_to_virt(descr->buf) - sizeof *buffer;
->>
->>        if (info->recv_cnt + recvl > 65536) {
->> -               printk(KERN_CRIT
->> +               printk(KERN_INFO
->>                       "%s: Too much pending incoming serial data! Dropping %u bytes.\n", __func__, recvl);
->>                return 0;
->>        }
->
-> I think dropped data warrants KERN_WARN.
->
+On Wed, Aug 31, 2011 at 05:33:25PM -0700, Allison Henderson wrote:
+> Hi All,
+> 
+> In ext4 punch hole, we realized that the punch hole operation needs
+> to be done under i_mutex just like truncate.  i_mutex for truncate
+> is held in the vfs layer, so we dont need to lock it at the file
+> system layer, but vfs does not lock i_mutex for fallocate.  We can
+> lock i_mutex for fallocate at the fs layer, but question was raised
+> then: should i_mutex for fallocate be held in the vfs layer instead?
+> I do not know if other file systems need i_mutex to be locked for
+> fallocate, or if they might be locking it already, so I am doing
+> some investigating on this idea, and also the appropriate use of
+> i_mutex in general.  Can someone provide some insight this topic?
 
-Yeah, agreed! I will update this patch shortly.
+Don't do it.
 
-Thanks.
+i_mutex is already overloaded, and this does not fit into any
+of the somewhat reasonable uses cases for it, which are:
+
+ a) for directories the VFS uses it to protect the tree topology
+ b) for regular files all generic I/O code currently uses it to
+    serialize writers.
+ c) the VFS uses it around truncate, and setxattr updates
+ d) filesystems abuse it for internal metadata in various places
+
+As you can see right now we do not hold it over any file operation,
+and I'm absolutely against adding that.  I'd rather untange the
+current uses, specificly:
+
+ - push synchronization of setattr into the filesystems
+ - push synchronization of xattr write operations into the filesystems
+ - move the read/write synchronization to a separate shared/exclusive
+   lock like it's already done in XFS, and like Lukas proposed for
+   ext4.  This fixes the Posix compliance corner cases about reads
+   beeing atomic vs writes, simplifies direct I/O locking a lot,
+   and allows for more parallel direct I/O support like XFS supports.
+ - try to get rid of the abuses inside filesystems as much as possible.
+  
