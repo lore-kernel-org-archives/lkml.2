@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757941Ab1IAU2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 16:28:01 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:42900 "EHLO
-	ozymandias.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757892Ab1IAU16 (ORCPT
+	id S1757951Ab1IAUav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 16:30:51 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34579 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab1IAUas convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 16:27:58 -0400
+	Thu, 1 Sep 2011 16:30:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 01 Sep 2011 14:27:49 -0600
-From: emunson@mgebm.net
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, <avi@redhat.com>,
-        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <arnd@arndb.de>, <riel@redhat.com>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <kvm-ppc@vger.kernel.org>, <aliguori@us.ibm.com>,
-        <raharper@us.ibm.com>, <kvm-ia64@vger.kernel.org>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 0/4] Avoid soft lockup message when KVM is stopped by host
-In-Reply-To: <4E5FDBDC.2030302@codemonkey.ws>
-References: <1314660435-23293-1-git-send-email-emunson@mgebm.net>
- <20110830122630.GA19450@amt.cnet> <4E5FDBDC.2030302@codemonkey.ws>
-Message-ID: <6c387b0ab0b091253c1a1488dd625b94@mgebm.net>
-User-Agent: Roundcube Webmail/0.5.1
+In-Reply-To: <201109011343.22014.arnd@arndb.de>
+References: <20110830171605.168f29decb0558fa31e59210@canb.auug.org.au>
+	<20110831131429.0513af51.rdunlap@xenotime.net>
+	<201109011343.22014.arnd@arndb.de>
+Date: Thu, 1 Sep 2011 16:30:47 -0400
+Message-ID: <CACqU3MXZ52fM_xFFxmPm3wby8bD9isAsomxbvh_Dj+bBb9uFdg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 30 (jbd2 + bug.h)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-ext4@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Thu, 01 Sep 2011 14:24:12 -0500, Anthony Liguori wrote:
-> On 08/30/2011 07:26 AM, Marcelo Tosatti wrote:
->> On Mon, Aug 29, 2011 at 05:27:11PM -0600, Eric B Munson wrote:
->>> Currently, when qemu stops a guest kernel that guest will issue a 
->>> soft lockup
->>> message when it resumes.  This set provides the ability for qemu to 
->>> comminucate
->>> to the guest that it has been stopped.  When the guest hits the 
->>> watchdog on
->>> resume it will check if it was suspended before issuing the 
->>> warning.
->>>
->>> Eric B Munson (4):
->>>    Add flag to indicate that a vm was stopped by the host
->>>    Add functions to check if the host has stopped the vm
->>>    Add generic stubs for kvm stop check functions
->>>    Add check for suspended vm in softlockup detector
->>>
->>>   arch/x86/include/asm/pvclock-abi.h |    1 +
->>>   arch/x86/include/asm/pvclock.h     |    2 ++
->>>   arch/x86/kernel/kvmclock.c         |   14 ++++++++++++++
->>>   include/asm-generic/pvclock.h      |   14 ++++++++++++++
->>>   kernel/watchdog.c                  |   12 ++++++++++++
->>>   5 files changed, 43 insertions(+), 0 deletions(-)
->>>   create mode 100644 include/asm-generic/pvclock.h
->>>
->>> --
->>> 1.7.4.1
+Hi,
+
+On Thu, Sep 1, 2011 at 7:43 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 31 August 2011, Randy Dunlap wrote:
+>> On Tue, 30 Aug 2011 17:16:05 +1000 Stephen Rothwell wrote:
 >>
->> How is the host supposed to set this flag?
+>> > Hi all,
 >>
->> As mentioned previously, if you save save/restore the offset added 
->> to
->> kvmclock on stop/cont (and the TSC MSR, forgot to mention that), no
->> paravirt infrastructure is required. Which means the issue is also 
->> fixed
->> for older guests.
+>> [Sorry about the delay.  My build machine is being slow.
+>> If this is alread fixed, sorry about the noise.]
+>>
+>>
+>> When CONFIG_BUG is not enabled (I see this on x86_64):
+>>
+>> fs/jbd2/transaction.c: In function 'jbd2_journal_dirty_metadata':
+>> fs/jbd2/transaction.c:1176: error: implicit declaration of function '__WARN'
+>>
+>>
+>> asm-generic/bug.h does not provide a version of __WARN() when
+>> CONFIG_BUG is not enabled...
+>>
 >
-> IIRC, the steal time patches have some logic that basically say:
+> Hmm, my feeling is that we shouldn't do that either, and that jbd2 should
+> be changed. If we want a function that does what __WARN() does today, we
+> should probably make a conscious decision about what we want it to be called
+> and not have it start with "__".
 >
-> if there was steal time:
->    kick soft lockup detector
->
-> I wonder if that serves this purpose provided that time spent in stop
-> is accounted as steal time.  If it isn't, perhaps it should be?
->
-> Regards,
->
-> Anthony Liguori
->
+Why is WARN_ON() not used here ?
 
- I could be missing it, but I don't see anywhere in the steal time 
- patches that kicks the watchdog.
+ - Arnaud
 
- Accounting stopped time as stolen time opens a possible problem when 
- the accounting (CPU power modification) part is turned on.  As a process 
- accumulates steal time its CPU power is increased.  If we account 
- stopped time as stolen, it will do strange things with CPU power for 
- that process.  I believe that it is for this reason that patch 4 of 
- Glauber's series explicitly states that halted time is not stolen time.  
- Stolen time is only accumulated when a vCPU actually has work to do.
-
- Eric
+>        Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
