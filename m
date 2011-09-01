@@ -1,128 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab1IAIop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 04:44:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29275 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756583Ab1IAIok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 04:44:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,312,1312182000"; 
-   d="scan'208";a="47463618"
-Message-ID: <4E5F45F6.70009@intel.com>
-Date: Thu, 01 Sep 2011 16:44:38 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
+	id S1756630Ab1IAIre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 04:47:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57126 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756452Ab1IAIrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 04:47:33 -0400
+Date: Thu, 1 Sep 2011 09:45:57 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH 0/3] RFC: addition to DMA API
+Message-ID: <20110901084557.GA30417@e102144-lin.cambridge.arm.com>
+References: <CACVXFVPN7SCk8z=vatphyM=PhZDAwtyDidALYPeVkuJ_zxpBvA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1108312255060.27371-100000@netrider.rowland.org>
+ <CACVXFVOYaxGDZrwkHYc+h=tFhpYp+g95KZrDjg+bPH_N-9BT_g@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
-References: <1314681384-20881-1-git-send-email-ying.huang@intel.com>		 <1314681384-20881-2-git-send-email-ying.huang@intel.com>	 <1314785405.23993.21.camel@twins> <4E5EE409.3060102@intel.com> <1314863829.7945.9.camel@twins>
-In-Reply-To: <1314863829.7945.9.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACVXFVOYaxGDZrwkHYc+h=tFhpYp+g95KZrDjg+bPH_N-9BT_g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2011 03:57 PM, Peter Zijlstra wrote:
-> On Thu, 2011-09-01 at 09:46 +0800, Huang Ying wrote:
+On Thu, Sep 01, 2011 at 04:41:46AM +0100, Ming Lei wrote:
+> Hi,
 > 
->> You mean we should not use cpu_relax before the first cmpxchg? 
+> On Thu, Sep 1, 2011 at 11:09 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> >
+> > No, this is completely wrong.
+> >
+> > Firstly, you are forgetting about other architectures, ones in which
+> > writes to coherent memory aren't buffered.  On those architectures
+> > there's no way to prevent the DMA bus master from seeing an
+> > intermediate state of the data structures.  Therefore the driver has to
+> > be written so that even when this happens, everything will work
+> > correctly.
+> >
+> > Secondly, even when write flushes are used, you can't guarantee that
+> > the DMA bus master will see an atomic update.  It might turn out that
+> > the hardware occasionally flushes some writes very quickly, before the
+> > data-structure updates are complete.
+> >
+> > Thirdly, you are mixing up memory barriers with write flushes.  The
+> > barriers are used to make sure that writes are done in the correct
+> > order, whereas the flushes are used to make sure that writes are done
+> > reasonably quickly.  One has nothing to do with the other, even if by
+> > coincidence on ARM a memory barrier causes a write flush.  On other
+> > architectures this might not be true.
 > 
-> Yeah, that's just wasting time for no reason..
+> I agree all about above, but what I described is from another view.
+> I post out the example before explaining my idea further:
 > 
->>  You suggest something as follow?
->>
->> void llist_add(struct llist_node *new, struct llist_head *head)
->> {
->>         struct llist_node *entry, *old_entry;
->>
->> #ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
->>         BUG_ON(in_nmi());
->> #endif
->>
->>         entry = head->first;
->>         for (;;) {
->>                 old_entry = entry;
->>                 new->next = entry;
->>                 entry = cmpxchg(&head->first, old_entry, new);
->>                 if (entry == old_entry)
->>                         break;
->>                 cpu_relax();
->>         }
->> }
 > 
-> If you insist on having cpu_relax(), then yes that's lots better. Also
-> avoids the assignment in your conditional. Thing with cpu_relax() is
-> that its only beneficial in the highly contended case and degrade
-> light/un-contended loads.
-
-Because llist is in library, it may be used in highly contended case and
-light/un-contended loads.  So maybe code as above is best choice for llist.
-
-> Also, just noticed, why do you have different list_head/list_node
-> structures? They're the same, a single pointer.
-
-There is only one structure before (llist_head).  Linus give me some
-comments about that, suggests to use 2 structures.  I think his comments
-are reasonable.  Copied here:
-
-"
-Btw, looking at the lockless list, I really think it's a mistake to
-use "struct llist_head" for both the head and for the list linkage.
-
-They are _very_ different. In the <linux/list.h> kind of model, the
-list_head really *is* the same regardless of where in the list you
-are, and you can have headless lists (ie a list that doesn't really
-have an anchor, the list is just comprised of the elements
-themselves).
-
-But that's not true of the lockless list. There, the head is very much
-magical, and as I mentioned, you can NOT do a "traverse starting at
-head" thing. You can only do add/del/clear on the head, and then to
-traverse you have to have a list *without* the head entry, because it
-has been removed.
-
-So from a pure type safety angle, I think the lockless list should
-have clearly separate types for the head and for the actual list
-entries, because they behave totally differently. When the normal
-"list_add()" things can be used to add things in the middle - so each
-list entry really can act as a head - that isn't true at all for the
-lockless version.
-"
-
->>> and loose the get/put
->>> cpu muck? The existing preempt_disable/enable() are already superfluous
->>> and could be removed, you just made all this way more horrid than need
->>> be.
->>
->> Will it cause race condition to remove preempt_disable/enable?
->> Considering something as follow:
->>
->> - get irq_work_list of CPU A
->> - queue irq_work into irq_work_list of CPU A
->> - preempted and resumed execution on CPU B
->> - arch_irq_work_raise on CPU B
->>
->> irq_work_run on CPU B will do nothing.  While irq_work need to wait for
->> next timer interrupt.  Isn't it an issue?
+> 	CPU			device	
+> 	A=1;
+> 	wmb
+> 	B=2;
+> 					read B
+> 					read A
 > 
-> Yes that's unfortunate, the current version would work just fine without
-> preempt but that's because of the this_cpu_* ops foo. 
+> one wmb is used to order 'A=1' and 'B=2', which will make the two write
+> operations reach to physical memory as the order: 'A=1' first, 'B=2' second.
+> Then the device can observe the two write events as the order above,
+> so if device has seen 'B==2', then device will surely see 'A==1'.
 > 
-> Not sure it would make sense to add a special this_cpu_llist_add() or
-> so.. esp seeing that this_cpu_* is basically x86-only.
+> Suppose writing to A is operation to update dma descriptor, the above example
+> can make device always see a atomic update of descriptor, can't it?
+> 
+> My idea is that the memory access patterns are to be considered for
+> writer of device driver. For example, many memory access patterns on
+> EHCI hardware are described in detail.  Of course, device driver should
+> make full use of the background info, below is a example from ehci driver:
+> 
+> qh_link_async():
+> 
+> 	/*prepare qh descriptor*/
+> 	qh->qh_next = head->qh_next;
+> 	qh->hw->hw_next = head->hw->hw_next;
+> 	wmb ();
+> 
+> 	/*link the qh descriptor into hardware queue*/
+> 	head->qh_next.qh = qh;
+> 	head->hw->hw_next = dma;
+> 
+> so once EHCI fetches a qh with the address of 'dma', it will always see
+> consistent content of qh descriptor, which could not be updated partially.
 
-Even with this_cpu_* ops, it seems that the race condition I described
-is still possible.
+I'm struggling to see what you're getting at here. The proposal has
+*absolutely nothing* to do with memory barriers. All of the existing
+barriers will remain - they are needed for correctness. What changes is the
+addition of an /optional/ flush operation in order to guarantee some sort of
+immediacy for writes to the coherent buffer.
 
-- use this_cpu_cmpxchg to queue irq_work into irq_work_list of CPU A
-- preempted and resumed execution on CPU B
-- arch_irq_work_raise on CPU B
+> >> 3, The new DMA API for the purpose to be introduced is much easier to
+> >> understand, and much easier to use than memory barrier, so it is very
+> >> possible to make device driver guys misuse or abuse it instead of using
+> >> memory barrier first to handle the case.
+> >
+> > That criticism could apply to almost any new feature.  We shouldn't be
+> > afraid to adopt something new merely because it's so easy to use that
+> > it might be misused.
+> 
+> This point depends on the #1 and #2.
 
-Do you think so?
+Huh? I don't see the connection. If your worry is that people will start
+littering their code with flush calls, I don't think that's especially
+likely. The usual problem (from what I've seen) is that barriers tend to be
+missing rather than overused so I don't see why this would be different for
+a what has been proposed.
 
-Best Regards,
-Huang Ying
+Will
