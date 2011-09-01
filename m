@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab1IAOPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 10:15:06 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:41775 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757420Ab1IAOPB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 10:15:01 -0400
-Date: Thu, 1 Sep 2011 22:14:45 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Phil Sutter <phil@nwl.cc>
-Cc: nmav@gnutls.org, cryptodev-linux-devel@gna.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: comparison of the AF_ALG interface with the /dev/crypto
-Message-ID: <20110901141445.GA31447@gondor.apana.org.au>
+	id S1757601Ab1IAOUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 10:20:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40664 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757508Ab1IAOUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 10:20:31 -0400
+Date: Thu, 1 Sep 2011 15:20:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 3/3] compaction accouting fix
+Message-ID: <20110901142027.GI14369@suse.de>
+References: <cover.1321112552.git.minchan.kim@gmail.com>
+ <282a4531f23c5e35cfddf089f93559130b4bb660.1321112552.git.minchan.kim@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110901133952.GB14522@orbit.nwl.cc>
-Organization: Core
-X-Newsgroups: apana.lists.os.linux.cryptoapi,apana.lists.os.linux.kernel
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <282a4531f23c5e35cfddf089f93559130b4bb660.1321112552.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Phil Sutter <phil@nwl.cc> wrote:
+On Sun, Nov 13, 2011 at 01:37:43AM +0900, Minchan Kim wrote:
+> I saw the following accouting of compaction during test of the series.
+
+s/accouting/accounting/ both here and in the subject. A nicer name the
+patch would have been
+
+"mm: compaction: Only update compact_blocks_moved if compaction was successful"
+
 > 
-> chunksize       af_alg          cryptodev       (100 * cryptodev / af_alg)
-> --------------------------------------------------------------------------
-> 512              4.169 MB/s      7.113 MB/s     171 %
-> 1024             7.904 MB/s     12.957 MB/s     164 %
-> 2048            13.163 MB/s     19.683 MB/s     150 %
-> 4096            20.218 MB/s     26.960 MB/s     133 %
-> 8192            27.539 MB/s     34.373 MB/s     125 %
-> 16384           33.730 MB/s     39.997 MB/s     119 %
-> 32768           37.399 MB/s     42.727 MB/s     114 %
-> 65536           40.004 MB/s     44.660 MB/s     112 %
+> compact_blocks_moved 251
+> compact_pages_moved 44
+> 
+> It's very awkward to me although it's possbile because it means we try to compact 251 blocks
+> but it just migrated 44 pages. As further investigation, I found isolate_migratepages doesn't
+> isolate any pages but it returns ISOLATE_SUCCESS and then, it just increases compact_blocks_moved
+> but doesn't increased compact_pages_moved.
+> 
+> This patch makes accouting of compaction works only in case of success of isolation.
+> 
 
-Are you maxing out your submission CPU? If not then you're testing
-the latency of the interface, as opposed to the throughput.
+compact_blocks_moved exists to indicate the rate compaction is
+scanning pageblocks. If compact_blocks_moved and compact_pages_moved
+are increasing at a similar rate for example, it could imply that
+compaction is doing a lot of scanning but is not necessarily useful
+work. It's not necessarily reflected by compact_fail because that
+counter is only updated for pages that were isolated from the LRU.
 
-Cheers,
+I now recognise of course that "compact_blocks_moved" was an *awful*
+choice of name for this stat.
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Mel Gorman
+SUSE Labs
