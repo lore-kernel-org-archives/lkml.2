@@ -1,543 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab1IAKqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 06:46:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45590 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab1IAKqm (ORCPT
+	id S1757118Ab1IAKy1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 06:54:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37959 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab1IAKy0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 06:46:42 -0400
-Date: Thu, 1 Sep 2011 14:46:34 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Vasiliy Kulikov <segoon@openwall.com>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110901104633.GG30615@sun>
-References: <20110831075814.003575573@openvz.org>
- <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros>
- <20110831112642.GI25465@sun>
- <20110831140416.GA17626@shutemov.name>
- <20110831142622.GB30615@sun>
- <20110831151023.5b7e12da.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110831151023.5b7e12da.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Sep 2011 06:54:26 -0400
+Subject: Re: process time < thread time?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Date: Thu, 01 Sep 2011 12:54:19 +0200
+In-Reply-To: <alpine.LFD.2.02.1109011226160.2723@ionos>
+References: <20110831.230718.2029810906806382170.davem@davemloft.net>
+	  <alpine.LFD.2.02.1109011148060.2723@ionos>
+	 <1314871884.7945.20.camel@twins> <alpine.LFD.2.02.1109011226160.2723@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314874459.7945.22.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 03:10:23PM -0700, Andrew Morton wrote:
+On Thu, 2011-09-01 at 12:39 +0200, Thomas Gleixner wrote:
+> > I think we just deadlocked:
 > 
-> This function would benefit from a code comment.
-> 
-> Given that it's pretty generic (indeed there might be open-coded code
-> which already does this elsewhere), perhaps it should be in mm/mmap.c
-> as a kernel-wide utility function.  That will add a little overhead to
-> CONFIG_PROC_FS=n builds, which doesn't seem terribly important.
-> 
+> That's why I said untested :) 
 
-Andrew, here is an attempt to address concerns. Please review.
-Complains are welcome as always!
+the below seems to build boot and give consistent output.. 
 
-	Cyrill
 ---
-fs, proc: Introduce the /proc/<pid>/map_files/ directory v9
+Subject: posix-cpu-timers: Cure SMP wobbles
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu Sep 01 12:42:04 CEST 2011
 
-From: Pavel Emelyanov <xemul@parallels.com>
+David reported:
 
-This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
-the target is the file. Opening a symlink results in a file that point exactly
-to the same inode as them vma's one.
+  Attached below is a watered-down version of rt/tst-cpuclock2.c from
+  GLIBC.  Just build it with "gcc -o test test.c -lpthread -lrt" or
+  similar.
 
-For example the ls -l of some arbitrary /proc/<pid>/map_files/
+  Run it several times, and you will see cases where the main thread
+  will measure a process clock difference before and after the nanosleep
+  which is smaller than the cpu-burner thread's individual thread clock
+  difference.  This doesn't make any sense since the cpu-burner thread
+  is part of the top-level process's thread group.
 
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
- | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
+  I've reproduced this on both x86-64 and sparc64 (using both 32-bit and
+  64-bit binaries).
 
-This helps checkpointing process in three ways:
+  For example:
 
-1. When dumping a task mappings we do know exact file that is mapped by particular
-   region. We do this by opening /proc/pid/map_files/address symlink the way we do
-   with file descriptors.
+  [davem@boricha build-x86_64-linux]$ ./test
+  process: before(0.001221967) after(0.498624371) diff(497402404)
+  thread:  before(0.000081692) after(0.498316431) diff(498234739)
+  self:    before(0.001223521) after(0.001240219) diff(16698)
+  [davem@boricha build-x86_64-linux]$ 
 
-2. This also helps in determining which anonymous shared mappings are shared with
-   each other by comparing the inodes of them.
+  The diff of 'process' should always be >= the diff of 'thread'.
 
-3. When restoring a set of process in case two of them has a mapping shared, we map
-   the memory by the 1st one and then open its /proc/pid/map_files/address file and
-   map it by the 2nd task.
+  I make sure to wrap the 'thread' clock measurements the most tightly
+  around the nanosleep() call, and that the 'process' clock measurements
+  are the outer-most ones.
 
-v2: (spotted by Tejun Heo)
- - /proc/<pid>/mfd changed to /proc/<pid>/map_files
- - find_vma helper is used instead of linear search
- - routines are re-grouped
- - d_revalidate is set now
+  ---
+  #include <unistd.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <time.h>
+  #include <fcntl.h>
+  #include <string.h>
+  #include <errno.h>
+  #include <pthread.h>
 
-v3:
- - d_revalidate reworked, now it should drops no longer valid dentries (Tejun Heo)
- - ptrace_may_access added into proc_map_files_lookup (Vasiliy Kulikov)
- - because of filldir (which eventually might need to lock mmap_sem)
-   the proc_map_files_readdir() was reworked to call proc_fill_cache()
-   with unlocked mmap_sem
+  static pthread_barrier_t barrier;
 
-v4: (feedback by Tejun Heo and Vasiliy Kulikov)
- - instead of saving data in proc_inode we rather make a dentry name
-   to keep both vm_start and vm_end accordingly
- - d_revalidate now honor task credentials
+  static void *chew_cpu(void *arg)
+  {
+	  pthread_barrier_wait(&barrier);
+	  while (1)
+		  __asm__ __volatile__("" : : : "memory");
+	  return NULL;
+  }
 
-v5: (feedback by Kirill A. Shutemov)
- - don't forget to release mmap_sem on error path
+  int main(void)
+  {
+	  clockid_t process_clock, my_thread_clock, th_clock;
+	  struct timespec process_before, process_after;
+	  struct timespec me_before, me_after;
+	  struct timespec th_before, th_after;
+	  struct timespec sleeptime;
+	  unsigned long diff;
+	  pthread_t th;
+	  int err;
 
-v6:
- - sizeof get used in map_files_info which shrink member
-   a bit on x86-32 (by Kirill A. Shutemov)
- - map_name_to_addr returns -EINVAL instead of -1
-   which is more appropriate (by Tejun Heo)
+	  err = clock_getcpuclockid(0, &process_clock);
+	  if (err)
+		  return 1;
 
-v7:
- - add [get/set]attr handlers for
-   proc_map_files_inode_operations (by Vasiliy Kulikov)
+	  err = pthread_getcpuclockid(pthread_self(), &my_thread_clock);
+	  if (err)
+		  return 1;
 
-v8:
- - Kirill A. Shutemov spotted a parasite semicolon
-   which ruined the ptrace_check call, fixed.
+	  pthread_barrier_init(&barrier, NULL, 2);
+	  err = pthread_create(&th, NULL, chew_cpu, NULL);
+	  if (err)
+		  return 1;
 
-v9: (feedback by Andrew Morton)
- - find_exact_vma moved into include/linux/mm.h as
-   an inline helper
- - proc_map_files_setattr uses either kmalloc or
-   vmalloc depending on how many ojects are to be
-   allocated
- - no more map_name_to_addr but dname_to_vma_addr
-   introduced instead and it uses sscanf
- - because in one case the find_exact_vma() is used
-   only to confirm existence of vma area the
-   boolean flag is used
- - fancy justification dropped
- - still the proc_map_files_get/setattr leaved untouched
-   until additional fd/ patches applied first.
+	  err = pthread_getcpuclockid(th, &th_clock);
+	  if (err)
+		  return 1;
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Tejun Heo <tj@kernel.org>
-CC: Vasiliy Kulikov <segoon@openwall.com>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>
+	  pthread_barrier_wait(&barrier);
+
+	  err = clock_gettime(process_clock, &process_before);
+	  if (err)
+		  return 1;
+
+	  err = clock_gettime(my_thread_clock, &me_before);
+	  if (err)
+		  return 1;
+
+	  err = clock_gettime(th_clock, &th_before);
+	  if (err)
+		  return 1;
+
+	  sleeptime.tv_sec = 0;
+	  sleeptime.tv_nsec = 500000000;
+	  nanosleep(&sleeptime, NULL);
+
+	  err = clock_gettime(th_clock, &th_after);
+	  if (err)
+		  return 1;
+
+	  err = clock_gettime(my_thread_clock, &me_after);
+	  if (err)
+		  return 1;
+
+	  err = clock_gettime(process_clock, &process_after);
+	  if (err)
+		  return 1;
+
+	  diff = process_after.tv_nsec - process_before.tv_nsec;
+	  printf("process: before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
+		 process_before.tv_sec, process_before.tv_nsec,
+		 process_after.tv_sec, process_after.tv_nsec, diff);
+	  diff = th_after.tv_nsec - th_before.tv_nsec;
+	  printf("thread:  before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
+		 th_before.tv_sec, th_before.tv_nsec,
+		 th_after.tv_sec, th_after.tv_nsec, diff);
+	  diff = me_after.tv_nsec - me_before.tv_nsec;
+	  printf("self:    before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
+		 me_before.tv_sec, me_before.tv_nsec,
+		 me_after.tv_sec, me_after.tv_nsec, diff);
+
+	  return 0;
+  }
+
+This is due to us using p->se.sum_exec_runtime in
+thread_group_cputime() where we iterate the thread group and sum all
+data. This does not take time since the last schedule operation (tick
+or otherwise) into account. We can cure this by using
+task_sched_runtime() at the cost of having to take locks.
+
+This also means we can (and must) do away with
+thread_group_sched_runtime() since the modified thread_group_cputime()
+is now more accurate and would deadlock when called from
+thread_group_sched_runtime().
+
+Reported-by: David Miller <davem@davemloft.net>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-nk5489zjtxsln3ixjonjs3h3@git.kernel.org
 ---
- fs/proc/base.c     |  353 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mm.h |   12 +
- 2 files changed, 365 insertions(+)
+ include/linux/sched.h     |    1 -
+ kernel/posix-cpu-timers.c |    5 +++--
+ kernel/sched.c            |   24 ------------------------
+ 3 files changed, 3 insertions(+), 27 deletions(-)
 
-Index: linux-2.6.git/fs/proc/base.c
+Index: linux-2.6/include/linux/sched.h
 ===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -2171,6 +2171,358 @@ static const struct file_operations proc
- };
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1956,7 +1956,6 @@ static inline void disable_sched_clock_i
  
- /*
-+ * dname_to_vma_addr - maps a dentry name into two unsigned longs
-+ * which represent vma start and end addresses.
-+ */
-+static int dname_to_vma_addr(struct dentry *dentry,
-+			     unsigned long *start, unsigned long *end)
-+{
-+	if (sscanf(dentry->d_name.name, "%lx-%lx", start, end) != 2)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
-+{
-+	unsigned long vm_start, vm_end;
-+	struct task_struct *task;
-+	const struct cred *cred;
-+	struct mm_struct *mm;
-+	struct inode *inode;
-+
-+	bool exact_vma_exists = false;
-+
-+	if (nd && nd->flags & LOOKUP_RCU)
-+		return -ECHILD;
-+
-+	inode = dentry->d_inode;
-+	task = get_proc_task(inode);
-+	if (!task)
-+		goto out;
-+
-+	mm = get_task_mm(task);
-+	put_task_struct(task);
-+	if (!mm)
-+		goto out;
-+
-+	if (!dname_to_vma_addr(dentry, &vm_start, &vm_end)) {
-+		down_read(&mm->mmap_sem);
-+		exact_vma_exists = !!find_exact_vma(mm, vm_start, vm_end);
-+		up_read(&mm->mmap_sem);
-+	}
-+
-+	mmput(mm);
-+
-+	if (exact_vma_exists) {
-+		if (task_dumpable(task)) {
-+			rcu_read_lock();
-+			cred = __task_cred(task);
-+			inode->i_uid = cred->euid;
-+			inode->i_gid = cred->egid;
-+			rcu_read_unlock();
-+		} else {
-+			inode->i_uid = 0;
-+			inode->i_gid = 0;
-+		}
-+		security_task_to_inode(task, inode);
-+		return 1;
-+	}
-+out:
-+	d_drop(dentry);
-+	return 0;
-+}
-+
-+static const struct dentry_operations tid_map_files_dentry_operations = {
-+	.d_revalidate	= map_files_d_revalidate,
-+	.d_delete	= pid_delete_dentry,
-+};
-+
-+static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
-+{
-+	unsigned long vm_start, vm_end;
-+	struct vm_area_struct *vma;
-+	struct task_struct *task;
-+	struct mm_struct *mm;
-+	int rc = -ENOENT;
-+
-+	task = get_proc_task(dentry->d_inode);
-+	if (!task)
-+		goto out;
-+
-+	mm = get_task_mm(task);
-+	put_task_struct(task);
-+	if (!mm)
-+		goto out;
-+
-+	rc = dname_to_vma_addr(dentry, &vm_start, &vm_end);
-+	if (rc)
-+		goto out_mmput;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_exact_vma(mm, vm_start, vm_end);
-+	if (vma && vma->vm_file) {
-+		*path = vma->vm_file->f_path;
-+		path_get(path);
-+		rc = 0;
-+	}
-+	up_read(&mm->mmap_sem);
-+
-+out_mmput:
-+	mmput(mm);
-+out:
-+	return rc;
-+}
-+
-+struct map_files_info {
-+	struct file	*file;
-+	unsigned long	len;
-+	unsigned char	name[4*sizeof(long)+2]; /* max: %lx-%lx\0 */
-+};
-+
-+static struct dentry *
-+proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
-+			   struct task_struct *task, const void *ptr)
-+{
-+	const struct file *file = ptr;
-+	struct proc_inode *ei;
-+	struct inode *inode;
-+
-+	if (!file)
-+		return ERR_PTR(-ENOENT);
-+
-+	inode = proc_pid_make_inode(dir->i_sb, task);
-+	if (!inode)
-+		return ERR_PTR(-ENOENT);
-+
-+	ei = PROC_I(inode);
-+	ei->op.proc_get_link = proc_map_files_get_link;
-+
-+	inode->i_op = &proc_pid_link_inode_operations;
-+	inode->i_size = 64;
-+	inode->i_mode = S_IFLNK;
-+
-+	if (file->f_mode & FMODE_READ)
-+		inode->i_mode |= S_IRUSR | S_IXUSR;
-+	if (file->f_mode & FMODE_WRITE)
-+		inode->i_mode |= S_IWUSR | S_IXUSR;
-+
-+	d_set_d_op(dentry, &tid_map_files_dentry_operations);
-+	d_add(dentry, inode);
-+
-+	return NULL;
-+}
-+
-+static struct dentry *proc_map_files_lookup(struct inode *dir,
-+		struct dentry *dentry, struct nameidata *nd)
-+{
-+	unsigned long vm_start, vm_end;
-+	struct task_struct *task;
-+	struct vm_area_struct *vma;
-+	struct mm_struct *mm;
-+	struct dentry *result;
-+
-+	result = ERR_PTR(-ENOENT);
-+	task = get_proc_task(dir);
-+	if (!task)
-+		goto out_no_task;
-+
-+	result = ERR_PTR(-EPERM);
-+	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-+		goto out_no_mm;
-+
-+	result = ERR_PTR(-ENOENT);
-+	if (dname_to_vma_addr(dentry, &vm_start, &vm_end))
-+		goto out_no_mm;
-+
-+	mm = get_task_mm(task);
-+	if (!mm)
-+		goto out_no_mm;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_exact_vma(mm, vm_start, vm_end);
-+	if (!vma)
-+		goto out_no_vma;
-+
-+	result = proc_map_files_instantiate(dir, dentry, task, vma->vm_file);
-+
-+out_no_vma:
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
-+out_no_mm:
-+	put_task_struct(task);
-+out_no_task:
-+	return result;
-+}
-+
-+static int proc_map_files_setattr(struct dentry *dentry, struct iattr *attr)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	struct task_struct *task;
-+	int ret = -EACCES;
-+
-+	task = get_proc_task(inode);
-+	if (!task)
-+		return -ESRCH;
-+
-+	if (!lock_trace(task)) {
-+		ret = proc_setattr(dentry, attr);
-+		unlock_trace(task);
-+	}
-+
-+	put_task_struct(task);
-+	return ret;
-+}
-+
-+static int proc_map_files_getattr(struct vfsmount *mnt, struct dentry *dentry,
-+				  struct kstat *stat)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	struct task_struct *task;
-+	int ret = -EACCES;
-+
-+	task = get_proc_task(inode);
-+	if (!task)
-+		return -ESRCH;
-+
-+	if (!lock_trace(task)) {
-+		generic_fillattr(inode, stat);
-+		unlock_trace(task);
-+		ret = 0;
-+	}
-+
-+	put_task_struct(task);
-+	return ret;
-+}
-+
-+static const struct inode_operations proc_map_files_inode_operations = {
-+	.lookup		= proc_map_files_lookup,
-+	.setattr	= proc_map_files_setattr,
-+	.getattr	= proc_map_files_getattr,
-+};
-+
-+static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
-+{
-+	struct dentry *dentry = filp->f_path.dentry;
-+	struct inode *inode = dentry->d_inode;
-+	struct vm_area_struct *vma;
-+	struct task_struct *task;
-+	struct mm_struct *mm;
-+	ino_t ino;
-+	int ret;
-+
-+	ret = -ENOENT;
-+	task = get_proc_task(inode);
-+	if (!task)
-+		goto out_no_task;
-+
-+	ret = -EPERM;
-+	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-+		goto out;
-+
-+	ret = 0;
-+	switch (filp->f_pos) {
-+	case 0:
-+		ino = inode->i_ino;
-+		if (filldir(dirent, ".", 1, 0, ino, DT_DIR) < 0)
-+			goto out;
-+		filp->f_pos++;
-+	case 1:
-+		ino = parent_ino(dentry);
-+		if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
-+			goto out;
-+		filp->f_pos++;
-+	default:
-+	{
-+		struct map_files_info *info = NULL;
-+		unsigned long nr_files, used, pos, i;
-+		unsigned long mem_size = 0;
-+
-+		mm = get_task_mm(task);
-+		if (!mm)
-+			goto out;
-+		down_read(&mm->mmap_sem);
-+
-+		nr_files = 0;
-+		used = 0;
-+
-+		/*
-+		 * We need two passes here:
-+		 *
-+		 *  1) Collect vmas of mapped files with mmap_sem taken
-+		 *  2) Release mmap_sem and instantiate entries
-+		 *
-+		 * otherwise we get lockdep complained, since filldir()
-+		 * routine might require mmap_sem taken in might_fault().
-+		 */
-+
-+		for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+			if (vma->vm_file)
-+				nr_files++;
-+		}
-+
-+		if (nr_files) {
-+			mem_size = nr_files * sizeof(*info);
-+			if (mem_size <= KMALLOC_MAX_SIZE)
-+				info = kmalloc(mem_size, GFP_KERNEL);
-+			else
-+				info = vmalloc(mem_size);
-+			if (!info)
-+				ret = -ENOMEM;
-+			for (vma = mm->mmap, pos = 2; vma && info; vma = vma->vm_next) {
-+				if (!vma->vm_file)
-+					continue;
-+				if (++pos <= filp->f_pos)
-+					continue;
-+
-+				get_file(vma->vm_file);
-+				info[used].file	= vma->vm_file;
-+				info[used].len	= snprintf(info[used].name,
-+							   sizeof(info[used].name),
-+							   "%lx-%lx",
-+							   vma->vm_start,
-+							   vma->vm_end);
-+				used++;
-+			}
-+		}
-+
-+		up_read(&mm->mmap_sem);
-+
-+		for (i = 0; i < used; i++) {
-+			ret = proc_fill_cache(filp, dirent, filldir,
-+					      info[i].name, info[i].len,
-+					      proc_map_files_instantiate,
-+					      task, info[i].file);
-+			if (ret)
-+				break;
-+			filp->f_pos++;
-+			put_filp(info[i].file);
-+		}
-+
-+		for (; i < used; i++)
-+			put_filp(info[i].file);
-+
-+		if (mem_size <= KMALLOC_MAX_SIZE)
-+			kfree(info);
-+		else
-+			vfree(info);
-+		mmput(mm);
-+	}
-+	}
-+
-+out:
-+	put_task_struct(task);
-+out_no_task:
-+	return ret;
-+}
-+
-+static const struct file_operations proc_map_files_operations = {
-+	.read		= generic_read_dir,
-+	.readdir	= proc_map_files_readdir,
-+	.llseek		= default_llseek,
-+};
-+
-+/*
-  * /proc/pid/fd needs a special permission handler so that a process can still
-  * access /proc/self/fd after it has executed a setuid().
-  */
-@@ -2785,6 +3137,7 @@ static const struct inode_operations pro
- static const struct pid_entry tgid_base_stuff[] = {
- 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
- 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
-+	DIR("map_files",  S_IRUSR|S_IXUSR, proc_map_files_inode_operations, proc_map_files_operations),
- 	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
- 	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
- #ifdef CONFIG_NET
-Index: linux-2.6.git/include/linux/mm.h
+ extern unsigned long long
+ task_sched_runtime(struct task_struct *task);
+-extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
+ 
+ /* sched_exec is called by processes performing an exec */
+ #ifdef CONFIG_SMP
+Index: linux-2.6/kernel/posix-cpu-timers.c
 ===================================================================
---- linux-2.6.git.orig/include/linux/mm.h
-+++ linux-2.6.git/include/linux/mm.h
-@@ -1491,6 +1491,18 @@ static inline unsigned long vma_pages(st
- 	return (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+--- linux-2.6.orig/kernel/posix-cpu-timers.c
++++ linux-2.6/kernel/posix-cpu-timers.c
+@@ -250,7 +250,7 @@ void thread_group_cputime(struct task_st
+ 	do {
+ 		times->utime = cputime_add(times->utime, t->utime);
+ 		times->stime = cputime_add(times->stime, t->stime);
+-		times->sum_exec_runtime += t->se.sum_exec_runtime;
++		times->sum_exec_runtime += task_sched_runtime(t);
+ 	} while_each_thread(tsk, t);
+ out:
+ 	rcu_read_unlock();
+@@ -312,7 +312,8 @@ static int cpu_clock_sample_group(const 
+ 		cpu->cpu = cputime.utime;
+ 		break;
+ 	case CPUCLOCK_SCHED:
+-		cpu->sched = thread_group_sched_runtime(p);
++		thread_group_cputime(p, &cputime);
++		cpu->sched = cputime.sum_exec_runtime;
+ 		break;
+ 	}
+ 	return 0;
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -3866,30 +3866,6 @@ unsigned long long task_sched_runtime(st
  }
  
-+/* Look up the first VMA which exactly match the interval vm_start ... vm_end */
-+static inline struct vm_area_struct *
-+find_exact_vma(struct mm_struct *mm, unsigned long vm_start, unsigned long vm_end)
-+{
-+	struct vm_area_struct *vma = find_vma(mm, vm_start);
-+
-+	if (vma && (vma->vm_start != vm_start || vma->vm_end != vm_end))
-+		vma = NULL;
-+
-+	return vma;
-+}
-+
- #ifdef CONFIG_MMU
- pgprot_t vm_get_page_prot(unsigned long vm_flags);
- #else
+ /*
+- * Return sum_exec_runtime for the thread group.
+- * In case the task is currently running, return the sum plus current's
+- * pending runtime that have not been accounted yet.
+- *
+- * Note that the thread group might have other running tasks as well,
+- * so the return value not includes other pending runtime that other
+- * running tasks might have.
+- */
+-unsigned long long thread_group_sched_runtime(struct task_struct *p)
+-{
+-	struct task_cputime totals;
+-	unsigned long flags;
+-	struct rq *rq;
+-	u64 ns;
+-
+-	rq = task_rq_lock(p, &flags);
+-	thread_group_cputime(p, &totals);
+-	ns = totals.sum_exec_runtime + do_task_delta_exec(p, rq);
+-	task_rq_unlock(rq, p, &flags);
+-
+-	return ns;
+-}
+-
+-/*
+  * Account user cpu time to a process.
+  * @p: the process that the cpu time gets accounted to
+  * @cputime: the cpu time spent in user space since the last update
+
