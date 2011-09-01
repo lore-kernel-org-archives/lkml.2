@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab1IAQ5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 12:57:22 -0400
-Received: from fn.samba.org ([216.83.154.106]:50182 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632Ab1IAQ5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 12:57:21 -0400
-Date: Thu, 1 Sep 2011 09:57:18 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jeremy Allison <jra@samba.org>, Ulrich Drepper <drepper@akkadia.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Ehrenberg <dehrenberg@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110901165718.GG758@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <4E5E152A.9050804@akkadia.org>
- <20110831165954.GC1611@samba2>
- <4E5F690C.4010209@akkadia.org>
- <20110901155845.GA758@samba2>
- <20110901160436.GA13556@infradead.org>
- <20110901161531.GB758@samba2>
- <20110901162337.GA28802@infradead.org>
- <20110901163107.GE758@samba2>
- <20110901163452.GF758@samba2>
- <20110901164554.GB7641@infradead.org>
+	id S1753928Ab1IARBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:01:43 -0400
+Received: from ixia-3.edge2.lax012.pnap.net ([74.217.148.5]:51920 "EHLO
+	ixqw-mail-out.ixiacom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753298Ab1IARBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 13:01:42 -0400
+Message-ID: <4E5FBA73.2050108@ixiacom.com>
+Date: Thu, 1 Sep 2011 10:01:39 -0700
+From: Earl Chew <echew@ixiacom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110901164554.GB7641@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: <alan@lxorguk.ukuu.org.uk>, <viro@zeniv.linux.org.uk>,
+        <andi@firstfloor.org>, <oleg@redhat.com>
+Subject: [ PATCH 1/1 ] coredump: use current->group_leader->comm instead of
+ current->comm
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 12:45:54PM -0400, Christoph Hellwig wrote:
-> On Thu, Sep 01, 2011 at 09:34:52AM -0700, Jeremy Allison wrote:
-> > > 
-> > > (to match the naming of something like O_CLOEXEC) and be available to set
-> > > with F_SETFD via an fcntl and dup3 call ?
-> > 
-> > Ah, looking at fcntl - do you want to set/get this via F_SETFD/F_GETFD,
-> > or via F_SETFL/F_GETFL ? i.e. is this a file descritor flag, or a status
-> > flag ? I'd guess a file descriptor flag but I'm not sure of the difference
-> > here..
-> 
-> F_SETFD/F_GETFD operates on an entry in the fd table, e.g. separately
-> if you have duped fds.  That's exactly what we do _not_ want here.
+Change corepattern %e and %E to use current->group_leader->comm instead of current->comm.
 
-Ah, ok - I understand the difference now. So it's a status flag
-get/set with F_SETFL/F_GETFL.
+Multithreaded processes can use PR_SET_NAME (or the corresponding pthread_setname_np)
+to configure the name of each thread.
 
-Ok, that works for me. Get me a patch in the kernel and I'll code
-up the Samba changes very shortly (actually should be quite
-easy :-).
+A core dump can be triggered from any task in a group, and substituting current->comm
+means that the name of the core file for a process can vary in surprising ways.
 
-Jeremy.
+Using current->group_leader->comm makes the name of the core file more consistent
+for a process when used with %e or %E.
+
+Signed-off-by: Earl Chew <echew@ixiacom.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+--
+--- fs/exec.c.orig	2011-08-28 21:16:01.000000000 -0700
++++ fs/exec.c	2011-09-01 09:58:42.032116998 -0700
+@@ -1679,7 +1679,8 @@ static int cn_print_exe_file(struct core
+ 	exe_file = get_mm_exe_file(current->mm);
+ 	if (!exe_file) {
+ 		char *commstart = cn->corename + cn->used;
+-		ret = cn_printf(cn, "%s (path unknown)", current->comm);
++		ret = cn_printf(cn, "%s (path unknown)",
++				current->group_leader->comm);
+ 		cn_escape(commstart);
+ 		return ret;
+ 	}
+@@ -1780,7 +1781,8 @@ static int format_corename(struct core_n
+ 			/* executable */
+ 			case 'e': {
+ 				char *commstart = cn->corename + cn->used;
+-				err = cn_printf(cn, "%s", current->comm);
++				err = cn_printf(cn, "%s",
++					      current->group_leader->comm);
+ 				cn_escape(commstart);
+ 				break;
+ 			}
+
