@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab1IAW4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:56:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49235 "EHLO mx2.suse.de"
+	id S932650Ab1IAW4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:56:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49208 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932675Ab1IAW4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:56:31 -0400
+	id S932632Ab1IAW4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 18:56:17 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Sep  1 15:53:31 2011
-Message-Id: <20110901225331.430431479@clark.kroah.org>
+Message-Id: <20110901225331.004899394@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Thu, 01 Sep 2011 15:50:10 -0700
+Date: Thu, 01 Sep 2011 15:50:06 -0700
 From: gregkh@suse.de
-To: Matthew Garrett <mjg@redhat.com>
+To: Matthew Garrett <mjg@redhat.com>, Greg KH <greg@kroah.com>
 Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        greg@kroah.com, Raul Gutierrez Segales <rgs@collabora.co.uk>
-Subject: [patch 8/8] Platform: fix samsung-laptop DMI identification for N220 model
+        Jason Stubbs <jasonbstubbs@gmail.com>, stable <stable@kernel.org>
+Subject: [patch 4/8] platform: samsung_laptop: fix samsung brightness min/max calculations
 In-Reply-To: <20110901225401.GA26870@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a follow-up for commit 78a7539b, which didn't cover the
-Samsung N220 laptop. With this backlight brightness works nicely
-on the N220 netbook.
+From: Jason Stubbs <jasonbstubbs@gmail.com>
 
-Signed-off-by: Raul Gutierrez Segales <rgs@collabora.co.uk>
+The min_brightness value of the sabi_config is incorrectly used in brightness
+calculations. For the config where min_brightness = 1 and max_brightness = 8,
+the user visible range should be 0 to 7 with hardware being set in the range
+of 1 to 8. What is actually happening is that the user visible range is 0 to
+8 with hardware being set in the range of -1 to 7.
+
+This patch fixes the above issue as well as a miscalculation that would occur
+in the case of min_brightness > 1.
+
+Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
 Cc: stable <stable@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/samsung-laptop.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/platform/x86/samsung-laptop.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
 --- a/drivers/platform/x86/samsung-laptop.c
 +++ b/drivers/platform/x86/samsung-laptop.c
-@@ -663,6 +663,16 @@ static struct dmi_system_id __initdata s
- 		.callback = dmi_check_cb,
- 	},
- 	{
-+		.ident = "N220",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR,
-+					"SAMSUNG ELECTRONICS CO., LTD."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "N220"),
-+			DMI_MATCH(DMI_BOARD_NAME, "N220"),
-+		},
-+		.callback = dmi_check_cb,
-+	},
-+	{
- 		.ident = "N150/N210/N220/N230",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR,
+@@ -370,15 +370,17 @@ static u8 read_brightness(void)
+ 				  &sretval);
+ 	if (!retval) {
+ 		user_brightness = sretval.retval[0];
+-		if (user_brightness != 0)
++		if (user_brightness > sabi_config->min_brightness)
+ 			user_brightness -= sabi_config->min_brightness;
++		else
++			user_brightness = 0;
+ 	}
+ 	return user_brightness;
+ }
+ 
+ static void set_brightness(u8 user_brightness)
+ {
+-	u8 user_level = user_brightness - sabi_config->min_brightness;
++	u8 user_level = user_brightness + sabi_config->min_brightness;
+ 
+ 	sabi_set_command(sabi_config->commands.set_brightness, user_level);
+ }
+@@ -829,7 +831,8 @@ static int __init samsung_init(void)
+ 	/* create a backlight device to talk to this one */
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+ 	props.type = BACKLIGHT_PLATFORM;
+-	props.max_brightness = sabi_config->max_brightness;
++	props.max_brightness = sabi_config->max_brightness -
++				sabi_config->min_brightness;
+ 	backlight_device = backlight_device_register("samsung", &sdev->dev,
+ 						     NULL, &backlight_ops,
+ 						     &props);
 
 
