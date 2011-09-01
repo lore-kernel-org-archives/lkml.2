@@ -1,83 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab1IAPmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 11:42:25 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39733 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932439Ab1IAPmY (ORCPT
+	id S932519Ab1IAPnV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 11:43:21 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:46601 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932439Ab1IAPnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 11:42:24 -0400
-Date: Thu, 1 Sep 2011 11:42:23 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH 0/3] RFC: addition to DMA API
-In-Reply-To: <CACVXFVOT9FZexiZhuJtvyFP8qOPYUKg0JqGarBJgT4R8SN7p5Q@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1109011127080.1896-100000@iolanthe.rowland.org>
+	Thu, 1 Sep 2011 11:43:20 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19opskvEIVo3kbh9nl2G6oGs6TRWHVtcXjhPUjMEY
+	bbWA4pS3rjukdw
+Message-ID: <4E5FA7F9.9030802@gmx.de>
+Date: Thu, 01 Sep 2011 15:42:49 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
+        lethal@linux-sh.org, linux-fbdev@vger.kernel.org,
+        francis.moro@gmail.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Herton Ronaldo Krzesinski <herton@mandriva.com.br>, stable@kernel.org
+Subject: Re: [PATCH] fb: avoid possible deadlock caused by fb_set_suspend
+References: <4DF7B0B4.4060002@gmx.de>	<1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>	<20110618104311.6d80ba50@neptune.home> <20110618111934.26203dbf@neptune.home>
+In-Reply-To: <20110618111934.26203dbf@neptune.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011, Ming Lei wrote:
+ping
 
-> First, most of barriers have made this kind of flush not necessary, as
-> explained int the example above.
+Guennadi, I really want this issue fixed. Please have a look at Bruno's patch
+otherwise your driver might remain or get even more broken...
 
-You don't seem to understand the difference between memory barriers and 
-write flushes.  Neither makes the other unnecessary -- they do 
-different things.
+I am scheduling Herton's patch for the next merge window.
 
-Now, there is good reason to question why write flushes should be 
-needed at all.  According to the definition in 
-Documentation/DMA-API.txt (the document doesn't distinguish between 
-coherent memory and consistent memory):
 
-  Consistent memory is memory for which a write by either the device or
-  the processor can immediately be read by the processor or device
-  without having to worry about caching effects.  (You may however need
-  to make sure to flush the processor's write buffers before telling
-  devices to read that memory.)
+Regards,
 
-As far as I can tell, we are talking about a cache flush rather than a 
-processor write buffer flush.  If that's so, it would appear that the 
-memory in question is not truly coherent.
+Florian Tobias Schandinat
 
->  Even for ehci driver, the flush to be
-> added is only __one__ special case, so could you list other cases in
-> which the flush operation is a must and memory barrier can't do it?
 
-There are other places in ehci-hcd where write flushes would help
-improve performance or correctness, although the one in qh_append_tds()  
-is probably the most critical.  One such place is in qh_link_async();
-others are in qh_link_periodic(), qh_unlink_periodic(), itd_link_urb(),
-and sitd_link_urb().
-
-And there are similar places in the other USB host controller drivers.
-
-> If one can understand dma master access order on shared memory
-> in the context, it is not difficult to use memory barrier to avoid the
-> flush operation.
-
-That simply is not true.  If it were, you would not have needed to 
-submit your original patch.
-
-> Second, as I said before, the flush operation is very easy to cause dma
-> descriptor updated in partial, as qtd descriptor updated in the ehci case.
-
-No, not if memory barriers are used correctly.
-
-> It is one of the side effects of the flush to be introduced.  Fortunately, EHCI
-> can handle this correctly, but can other hardwares always handle this correctly?
-
-If they can't, they are already broken.  Adding write flushes won't 
-make them any worse.
-
-Alan Stern
+On 06/18/2011 09:19 AM, Bruno Prémont wrote:
+> Guennadi, could you have a look at (completely untested) patch which avoids
+> possible deadlock due to inverted lock taking order on hotplug as well
+> as "readding" lock_fb_info() for fb_set_suspend() call after Herton's
+> patch to fb_set_suspend().
+> 
+> Thanks,
+> Bruno
+> 
+> 
+> On Sat, 18 June 2011 Bruno Prémont <bonbons@linux-vserver.org> wrote:
+>> On Fri, 17 June 2011 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+>>> From: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+>>>
+>>> A lock ordering issue can cause deadlocks: in framebuffer/console code,
+>>> all needed struct fb_info locks are taken before acquire_console_sem(),
+>>> in places which need to take console semaphore.
+>>>
+>>> But fb_set_suspend is always called with console semaphore held, and
+>>> inside it we call lock_fb_info which gets the fb_info lock, inverse
+>>> locking order of what the rest of the code does. This causes a real
+>>> deadlock issue, when we write to state fb sysfs attribute (which calls
+>>> fb_set_suspend) while a framebuffer is being unregistered by
+>>> remove_conflicting_framebuffers, as can be shown by following show
+>>> blocked state trace on a test program which loads i915 and runs another
+>>> forked processes writing to state attribute:
+>>>
+>>> Test process with semaphore held and trying to get fb_info lock:
+>>
+>> ...
+>>
+>>> fb-test2 which reproduces above is available on kernel.org bug #26232.
+>>> To solve this issue, avoid calling lock_fb_info inside fb_set_suspend,
+>>> and move it out to where needed (callers of fb_set_suspend must call
+>>> lock_fb_info before if needed). So far, the only place which needs to
+>>> call lock_fb_info is store_fbstate, all other places which calls
+>>> fb_set_suspend are suspend/resume hooks that should not need the lock as
+>>> they should be run only when processes are already frozen in
+>>> suspend/resume.
+>>
+>> From a quick look through FB drivers in 2.6.39 I've found one that would need
+>> more work:
+>> - drivers/video/sh_mobile_hdmi.c: sh_hdmi_edid_work_fn()
+>>   Should get changed to
+>>   a) right locking order in case (hdmi->hp_state == HDMI_HOTPLUG_CONNECTED)
+>>   b) lock fb_info in the other case
+>>   For this one fb_set_suspend() does get call in a hotplug worker,
+>>   thus independently on suspend/resume process.
+>>
+>> The rest does match the suspend/resume hook pattern mentioned.
+>>
+>> Bruno
+>>
+>>
+>>> References: https://bugzilla.kernel.org/show_bug.cgi?id=26232
+>>> Signed-off-by: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+>>> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+>>> Cc: stable@kernel.org
+>>> ---
+>>>  drivers/video/fbmem.c   |    3 ---
+>>>  drivers/video/fbsysfs.c |    3 +++
+>>>  2 files changed, 3 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+>>> index 5aac00e..ad93629 100644
+>>> --- a/drivers/video/fbmem.c
+>>> +++ b/drivers/video/fbmem.c
+>>> @@ -1738,8 +1738,6 @@ void fb_set_suspend(struct fb_info *info, int state)
+>>>  {
+>>>  	struct fb_event event;
+>>>  
+>>> -	if (!lock_fb_info(info))
+>>> -		return;
+>>>  	event.info = info;
+>>>  	if (state) {
+>>>  		fb_notifier_call_chain(FB_EVENT_SUSPEND, &event);
+>>> @@ -1748,7 +1746,6 @@ void fb_set_suspend(struct fb_info *info, int state)
+>>>  		info->state = FBINFO_STATE_RUNNING;
+>>>  		fb_notifier_call_chain(FB_EVENT_RESUME, &event);
+>>>  	}
+>>> -	unlock_fb_info(info);
+>>>  }
+>>>  
+>>>  /**
+>>> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
+>>> index 04251ce..67afa9c 100644
+>>> --- a/drivers/video/fbsysfs.c
+>>> +++ b/drivers/video/fbsysfs.c
+>>> @@ -399,9 +399,12 @@ static ssize_t store_fbstate(struct device *device,
+>>>  
+>>>  	state = simple_strtoul(buf, &last, 0);
+>>>  
+>>> +	if (!lock_fb_info(fb_info))
+>>> +		return -ENODEV;
+>>>  	console_lock();
+>>>  	fb_set_suspend(fb_info, (int)state);
+>>>  	console_unlock();
+>>> +	unlock_fb_info(fb_info);
+>>>  
+>>>  	return count;
+>>>  }
+> 
+> 
+> diff --git a/drivers/video/sh_mobile_hdmi.c b/drivers/video/sh_mobile_hdmi.c
+> index 2b9e56a..b1a13ab 100644
+> --- a/drivers/video/sh_mobile_hdmi.c
+> +++ b/drivers/video/sh_mobile_hdmi.c
+> @@ -1151,27 +1151,27 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
+>  
+>  		ch = info->par;
+>  
+> -		console_lock();
+> +		if (lock_fb_info(info)) {
+> +			console_lock();
+>  
+> -		/* HDMI plug in */
+> -		if (!sh_hdmi_must_reconfigure(hdmi) &&
+> -		    info->state == FBINFO_STATE_RUNNING) {
+> -			/*
+> -			 * First activation with the default monitor - just turn
+> -			 * on, if we run a resume here, the logo disappears
+> -			 */
+> -			if (lock_fb_info(info)) {
+> +			/* HDMI plug in */
+> +			if (!sh_hdmi_must_reconfigure(hdmi) &&
+> +			    info->state == FBINFO_STATE_RUNNING) {
+> +				/*
+> +				 * First activation with the default monitor - just turn
+> +				 * on, if we run a resume here, the logo disappears
+> +				 */
+>  				info->var.width = hdmi->var.width;
+>  				info->var.height = hdmi->var.height;
+>  				sh_hdmi_display_on(hdmi, info);
+> -				unlock_fb_info(info);
+> +			} else {
+> +				/* New monitor or have to wake up */
+> +				fb_set_suspend(info, 0);
+>  			}
+> -		} else {
+> -			/* New monitor or have to wake up */
+> -			fb_set_suspend(info, 0);
+> -		}
+>  
+> -		console_unlock();
+> +			console_unlock();
+> +			unlock_fb_info(info);
+> +		}
+>  	} else {
+>  		ret = 0;
+>  		if (!hdmi->info)
+> @@ -1181,12 +1181,15 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
+>  		fb_destroy_modedb(hdmi->monspec.modedb);
+>  		hdmi->monspec.modedb = NULL;
+>  
+> -		console_lock();
+> +		if (lock_fb_info(info)) {
+> +			console_lock();
+>  
+> -		/* HDMI disconnect */
+> -		fb_set_suspend(hdmi->info, 1);
+> +			/* HDMI disconnect */
+> +			fb_set_suspend(hdmi->info, 1);
+>  
+> -		console_unlock();
+> +			console_unlock();
+> +			unlock_fb_info(info);
+> +		}
+>  		pm_runtime_put(hdmi->dev);
+>  	}
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
