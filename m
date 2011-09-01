@@ -1,151 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab1IAVus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:50:48 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40367 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757961Ab1IAVuq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:50:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110901204419.GY8422@beardog.cce.hp.com>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-	<1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20110901160724.GN9189@beardog.cce.hp.com>
-	<1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
-	<1314903038.3067.27.camel@dabdike>
-	<20110901125938.7cb1da85@jbarnes-desktop>
-	<20110901200349.GO9189@beardog.cce.hp.com>
-	<20110901130930.5caec2d4@jbarnes-desktop>
-	<20110901204419.GY8422@beardog.cce.hp.com>
-Date: Thu, 1 Sep 2011 16:50:45 -0500
-Message-ID: <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
-Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-From: Jon Mason <mason@myri.com>
-To: scameron@beardog.cce.hp.com
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        linux-pci@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Content-Type: multipart/mixed; boundary=001636c927b0aab79604abe83c63
+	id S1758113Ab1IAVzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:55:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758059Ab1IAVzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 17:55:38 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, dm-devel@redhat.com
+Cc: kzak@redhat.com, vgoyal@redhat.com
+Subject: [PATCH 1/1] block: Add ioctl for extending partition size online
+Date: Thu,  1 Sep 2011 17:55:27 -0400
+Message-Id: <1314914128-3171-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1314914128-3171-1-git-send-email-vgoyal@redhat.com>
+References: <1314914128-3171-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636c927b0aab79604abe83c63
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Currently one can change the partition table but new partition table does
+not take effect if there are any users/openers of the partition.
 
-On Thu, Sep 1, 2011 at 3:44 PM,  <scameron@beardog.cce.hp.com> wrote:
-> On Thu, Sep 01, 2011 at 01:09:30PM -0700, Jesse Barnes wrote:
->> On Thu, 1 Sep 2011 15:03:49 -0500
->> scameron@beardog.cce.hp.com wrote:
->>
->> > On Thu, Sep 01, 2011 at 12:59:38PM -0700, Jesse Barnes wrote:
->> > > On Thu, 01 Sep 2011 11:50:38 -0700
->> > > James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
->> > >
->> > > > On Thu, 2011-09-01 at 10:58 -0700, Roland Dreier wrote:
->> > > > > > OK I found the bad commit,I got lucky... I lost some files but=
- my
->> > > > > > machine was able to complete the bisection. CC involved people
->> > > > >
->> > > > > > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI=
--E Max Payload Size on fabric
->> > > > >
->> > > > > Hi Eric,
->> > > > >
->> > > > > I guess it would be useful to see "lspci -vv" output with a "goo=
-d" kernel
->> > > > > and with that bad patch applied. =A0Most likely we should see so=
-me difference
->> > > > > somewhere in the MaxPayload fields in the PCI Express capability=
- of
->> > > > > some device.
->> > > > >
->> > > > > Either the RAID controller or something else lies, and puts a va=
-lue
->> > > > > in the DevCap that it can't actually support, or else the patch =
-is
->> > > > > buggy and puts something out of range in a DevCtl somewhere.
->> > > >
->> > > >
->> > > > While we investigate, I think the problems produced by the patch (=
-data
->> > > > corruption) are serious enough to warrant reverting it, please Jes=
-se.
->> > >
->> > > Hm I haven't been paying attention to the compromise thread; how sho=
-uld
->> > > I share these changes? =A0Is master.kernel.org down indefinitely? =
-=A0Is
->> > > there a new server at kernel.org I can use?
->> >
->> > I can't answer that question, but I would like a copy of your revert
->> > patch(es) to test (as a simple patch --reverse of the original commit =
-on the 3.1-rc4
->> > tree didn't go in cleanly).
->>
->> Attached is the series. =A0Applies on top of my for-linus branch.
->
-> Thanks. =A0I tried them out vs. 3.1-rc4, and they applied cleanly and
-> make things work on my BL460g7.
+It will be nice if partition can be extended while in use. The use case
+is that a device size can grow and the one should be able to extend
+the last partition to use size increase.
 
-I believe modifying the MRRS values is what is causing the issues.
-Can you try the attached patch and verify that it also resolves the
-issue?
+This patch provides an ioctl BLKPG_EXTEND_PARTITION, to extend the
+partition online. It does not support partition shrinking. It also does
+not modify any of the on disk data structures. User must make sure
+that table is first updated on disk and then do relevant changes
+in kernel's view of table. That will make sure things are fine over
+a reboot.
 
-Thanks,
-Jon
+Apart from updating partition size, it also updates the associated
+bdev's inode size so that tools like pvresize can come to know of
+new size of partition device.
 
-> -- steve
->
->
->
->
->
->
+I have added one patch for util-linux package to add a command line tool
+, extendpart (on the lines of addpart, delpart).
 
---001636c927b0aab79604abe83c63
-Content-Type: text/x-patch; charset=US-ASCII; name="mrrs_removal.patch"
-Content-Disposition: attachment; filename="mrrs_removal.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gs29p3960
+I did following test.
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3Byb2JlLmMgYi9kcml2ZXJzL3BjaS9wcm9iZS5jCmlu
-ZGV4IDg0NzM3MjcuLmQ4OTZjNWUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvcGNpL3Byb2JlLmMKKysr
-IGIvZHJpdmVycy9wY2kvcHJvYmUuYwpAQCAtMTM5NCw0MSArMTM5NCw2IEBAIHN0YXRpYyB2b2lk
-IHBjaWVfd3JpdGVfbXBzKHN0cnVjdCBwY2lfZGV2ICpkZXYsIGludCBtcHMpCiAJCWRldl9lcnIo
-JmRldi0+ZGV2LCAiRmFpbGVkIGF0dGVtcHRpbmcgdG8gc2V0IHRoZSBNUFNcbiIpOwogfQogCi1z
-dGF0aWMgdm9pZCBwY2llX3dyaXRlX21ycnMoc3RydWN0IHBjaV9kZXYgKmRldiwgaW50IG1wcykK
-LXsKLQlpbnQgcmMsIG1ycnM7Ci0KLQlpZiAocGNpZV9idXNfY29uZmlnID09IFBDSUVfQlVTX1BF
-UkZPUk1BTkNFKSB7Ci0JCWludCBkZXZfbXBzcyA9IDEyOCA8PCBkZXYtPnBjaWVfbXBzczsKLQot
-CQkvKiBGb3IgTWF4IHBlcmZvcm1hbmNlLCB0aGUgTVJSUyBtdXN0IGJlIHNldCB0byB0aGUgbGFy
-Z2VzdAotCQkgKiBzdXBwb3J0ZWQgdmFsdWUuICBIb3dldmVyLCBpdCBjYW5ub3QgYmUgY29uZmln
-dXJlZCBsYXJnZXIKLQkJICogdGhhbiB0aGUgTVBTIHRoZSBkZXZpY2Ugb3IgdGhlIGJ1cyBjYW4g
-c3VwcG9ydC4gIFRoaXMgYXNzdW1lcwotCQkgKiB0aGF0IHRoZSBsYXJnZXN0IE1SUlMgYXZhaWxh
-YmxlIG9uIHRoZSBkZXZpY2UgY2Fubm90IGJlCi0JCSAqIHNtYWxsZXIgdGhhbiB0aGUgZGV2aWNl
-IE1QU1MuCi0JCSAqLwotCQltcnJzID0gbXBzIDwgZGV2X21wc3MgPyBtcHMgOiBkZXZfbXBzczsK
-LQl9IGVsc2UKLQkJLyogSW4gdGhlICJzYWZlIiBjYXNlLCBjb25maWd1cmUgdGhlIE1SUlMgZm9y
-IGZhaXJuZXNzIG9uIHRoZQotCQkgKiBidXMgYnkgbWFraW5nIGFsbCBkZXZpY2VzIGhhdmUgdGhl
-IHNhbWUgc2l6ZQotCQkgKi8KLQkJbXJycyA9IG1wczsKLQotCi0JLyogTVJSUyBpcyBhIFIvVyBy
-ZWdpc3Rlci4gIEludmFsaWQgdmFsdWVzIGNhbiBiZSB3cml0dGVuLCBidXQgYQotCSAqIHN1YnNp
-cXVlbnQgcmVhZCB3aWxsIHZlcmlmeSBpZiB0aGUgdmFsdWUgaXMgYWNjZXB0YWJsZSBvciBub3Qu
-Ci0JICogSWYgdGhlIE1SUlMgdmFsdWUgcHJvdmlkZWQgaXMgbm90IGFjY2VwdGFibGUgKGUuZy4s
-IHRvbyBsYXJnZSksCi0JICogc2hyaW5rIHRoZSB2YWx1ZSB1bnRpbCBpdCBpcyBhY2NlcHRhYmxl
-IHRvIHRoZSBIVy4KLSAJICovCi0Jd2hpbGUgKG1ycnMgIT0gcGNpZV9nZXRfcmVhZHJxKGRldikg
-JiYgbXJycyA+PSAxMjgpIHsKLQkJcmMgPSBwY2llX3NldF9yZWFkcnEoZGV2LCBtcnJzKTsKLQkJ
-aWYgKHJjKQotCQkJZGV2X2VycigmZGV2LT5kZXYsICJGYWlsZWQgYXR0ZW1wdGluZyB0byBzZXQg
-dGhlIE1SUlNcbiIpOwotCi0JCW1ycnMgLz0gMjsKLQl9Ci19Ci0KIHN0YXRpYyBpbnQgcGNpZV9i
-dXNfY29uZmlndXJlX3NldChzdHJ1Y3QgcGNpX2RldiAqZGV2LCB2b2lkICpkYXRhKQogewogCWlu
-dCBtcHMgPSAxMjggPDwgKih1OCAqKWRhdGE7CkBAIC0xNDQwLDcgKzE0MDUsNiBAQCBzdGF0aWMg
-aW50IHBjaWVfYnVzX2NvbmZpZ3VyZV9zZXQoc3RydWN0IHBjaV9kZXYgKmRldiwgdm9pZCAqZGF0
-YSkKIAkJIHBjaWVfZ2V0X21wcyhkZXYpLCAxMjg8PGRldi0+cGNpZV9tcHNzLCBwY2llX2dldF9y
-ZWFkcnEoZGV2KSk7CiAKIAlwY2llX3dyaXRlX21wcyhkZXYsIG1wcyk7Ci0JcGNpZV93cml0ZV9t
-cnJzKGRldiwgbXBzKTsKIAogCWRldl9pbmZvKCZkZXYtPmRldiwgIkRldiBNUFMgJWQgTVBTUyAl
-ZCBNUlJTICVkXG4iLAogCQkgcGNpZV9nZXRfbXBzKGRldiksIDEyODw8ZGV2LT5wY2llX21wc3Ms
-IHBjaWVfZ2V0X3JlYWRycShkZXYpKTsK
---001636c927b0aab79604abe83c63--
+- Create a partition of 10MB on a disk using fdisk.
+- Add this partition to a volume group
+- Use fdisk to increase the partition size to 20MB. (First delete the
+  partition and then create a new one of 20MB size).
+- Use extendpart to extend partition size in kernel.
+	extendpart /dev/sda 1 20480
+- Do pvresize on partition so that physical volume can be incrased in
+  size online.
+	pvresize /dev/sda1
+
+pvresize does recognize the new size. Also lsblk and /proc/partitions
+report the new size of partition.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/genhd.c         |   10 +++---
+ block/ioctl.c         |   74 +++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/partitions/check.c |   66 +++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/blkpg.h |    1 +
+ include/linux/genhd.h |    8 +++++
+ 5 files changed, 151 insertions(+), 8 deletions(-)
+
+diff --git a/block/genhd.c b/block/genhd.c
+index e2f6790..90327a4 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -154,7 +154,7 @@ struct hd_struct *disk_part_iter_next(struct disk_part_iter *piter)
+ 		part = rcu_dereference(ptbl->part[piter->idx]);
+ 		if (!part)
+ 			continue;
+-		if (!part->nr_sects &&
++		if (!part_nr_sects_read(part) &&
+ 		    !(piter->flags & DISK_PITER_INCL_EMPTY) &&
+ 		    !(piter->flags & DISK_PITER_INCL_EMPTY_PART0 &&
+ 		      piter->idx == 0))
+@@ -191,7 +191,7 @@ EXPORT_SYMBOL_GPL(disk_part_iter_exit);
+ static inline int sector_in_part(struct hd_struct *part, sector_t sector)
+ {
+ 	return part->start_sect <= sector &&
+-		sector < part->start_sect + part->nr_sects;
++		sector < part->start_sect + part_nr_sects_read(part);
+ }
+ 
+ /**
+@@ -760,8 +760,8 @@ void __init printk_all_partitions(void)
+ 
+ 			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
+ 			       bdevt_str(part_devt(part), devt_buf),
+-			       (unsigned long long)part->nr_sects >> 1,
+-			       disk_name(disk, part->partno, name_buf), uuid);
++			       (unsigned long long)part_nr_sects_read(part) >> 1
++			       , disk_name(disk, part->partno, name_buf), uuid);
+ 			if (is_part0) {
+ 				if (disk->driverfs_dev != NULL &&
+ 				    disk->driverfs_dev->driver != NULL)
+@@ -852,7 +852,7 @@ static int show_partition(struct seq_file *seqf, void *v)
+ 	while ((part = disk_part_iter_next(&piter)))
+ 		seq_printf(seqf, "%4d  %7d %10llu %s\n",
+ 			   MAJOR(part_devt(part)), MINOR(part_devt(part)),
+-			   (unsigned long long)part->nr_sects >> 1,
++			   (unsigned long long)part_nr_sects_read(part) >> 1,
+ 			   disk_name(sgp, part->partno, buf));
+ 	disk_part_iter_exit(&piter);
+ 
+diff --git a/block/ioctl.c b/block/ioctl.c
+index 1124cd2..d5de971 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -12,12 +12,13 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
+ {
+ 	struct block_device *bdevp;
+ 	struct gendisk *disk;
+-	struct hd_struct *part;
++	struct hd_struct *part, *lpart;
+ 	struct blkpg_ioctl_arg a;
+ 	struct blkpg_partition p;
+ 	struct disk_part_iter piter;
+-	long long start, length;
++	long long start, length, size, orig_length, new_length;
+ 	int partno;
++	loff_t bdev_size;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
+@@ -91,6 +92,75 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
+ 			bdput(bdevp);
+ 
+ 			return 0;
++		case BLKPG_EXTEND_PARTITION:
++			/* length here represents increase in partition size */
++			size = p.length >> 9;
++
++			part = disk_get_part(disk, partno);
++			if (!part)
++				return -ENXIO;
++			bdevp = bdget(part_devt(part));
++			disk_put_part(part);
++			if (!bdevp)
++				return -ENOMEM;
++
++			mutex_lock(&bdevp->bd_mutex);
++			mutex_lock_nested(&bdev->bd_mutex, 1);
++
++			start = part->start_sect;
++			orig_length = part->nr_sects;
++			new_length = orig_length + size;
++
++			if (new_length < orig_length || new_length < 0) {
++				mutex_unlock(&bdev->bd_mutex);
++				mutex_unlock(&bdevp->bd_mutex);
++				bdput(bdevp);
++				return -EINVAL;
++			}
++
++			/* check for fit in a hd_struct */
++			if (sizeof(sector_t) == sizeof(long) &&
++			    sizeof(long long) > sizeof(long)) {
++				long plength = new_length;
++				if (plength != length || plength < 0) {
++					mutex_unlock(&bdev->bd_mutex);
++					mutex_unlock(&bdevp->bd_mutex);
++					bdput(bdevp);
++					return -EINVAL;
++				}
++			}
++
++			/* overlap? */
++			disk_part_iter_init(&piter, disk,
++					    DISK_PITER_INCL_EMPTY);
++			while ((lpart = disk_part_iter_next(&piter))) {
++
++				/* This is partition being extended */
++				if (lpart->start_sect == part->start_sect)
++					continue;
++
++				if (!(start + new_length <= lpart->start_sect ||
++				    start >= lpart->start_sect + lpart->nr_sects
++					)) {
++					disk_part_iter_exit(&piter);
++					mutex_unlock(&bdev->bd_mutex);
++					mutex_unlock(&bdevp->bd_mutex);
++					bdput(bdevp);
++					return -EBUSY;
++				}
++			}
++			disk_part_iter_exit(&piter);
++			if (!extend_partition(disk, partno, size)) {
++				/* Update bdev->bd_inode size */
++				bdev_size = i_size_read(bdevp->bd_inode);
++				i_size_write(bdevp->bd_inode,
++						bdev_size + (size << 9));
++			}
++			mutex_unlock(&bdev->bd_mutex);
++			mutex_unlock(&bdevp->bd_mutex);
++			bdput(bdevp);
++
++			return 0;
+ 		default:
+ 			return -EINVAL;
+ 	}
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index e3c63d1..5d462d6 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -21,6 +21,7 @@
+ #include <linux/ctype.h>
+ #include <linux/genhd.h>
+ #include <linux/blktrace_api.h>
++#include <linux/seqlock.h>
+ 
+ #include "check.h"
+ 
+@@ -234,7 +235,7 @@ ssize_t part_size_show(struct device *dev,
+ 		       struct device_attribute *attr, char *buf)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
+-	return sprintf(buf, "%llu\n",(unsigned long long)p->nr_sects);
++	return sprintf(buf, "%llu\n",(unsigned long long)part_nr_sects_read(p));
+ }
+ 
+ static ssize_t part_ro_show(struct device *dev,
+@@ -408,6 +409,69 @@ void delete_partition(struct gendisk *disk, int partno)
+ 	hd_struct_put(part);
+ }
+ 
++#if BITS_PER_LONG == 32 && defined(CONFIG_LBDAF)
++static inline void part_nr_sects_write_begin(struct seqcount_t *seq)
++{
++	write_seqcount_begin(&seq);
++}
++
++static inline void part_nr_sects_write_end(struct seqcount_t *seq)
++{
++	write_seqcount_end(&seq);
++}
++
++/*
++ * Any access of part->nr_sects which is not protected by partition
++ * bd_mutex or gendisk bdev bd_mutex, hould be done using this accessor
++ * function.
++ */
++sector_t part_nr_sects_read(struct hd_struct *part)
++{
++	sector_t nr_sects;
++        unsigned seq;
++
++        do {
++                seq = read_seqcount_begin(&part->seq);
++                nr_sects = part->nr_sects;
++        } while (read_seqcount_retry(&part->seq, seq));
++
++        return nr_sects;
++}
++#else
++static inline void part_nr_sects_write_begin(seqcount_t *seq) {}
++static inline void part_nr_sects_write_end(seqcount_t *seq) {}
++sector_t part_nr_sects_read(struct hd_struct *part)
++{
++	return part->nr_sects;
++}
++#endif
++
++int extend_partition(struct gendisk *disk, int partno, sector_t size)
++{
++	struct disk_part_tbl *ptbl = disk->part_tbl;
++	struct hd_struct *part;
++	unsigned long flags;
++
++	if (partno >= ptbl->len)
++		return 1;
++
++	part = ptbl->part[partno];
++	if (!part)
++		return 1;
++
++	/*
++	 * It is called with mutex held for writer mutual exclusion. Disabling
++	 * interrupts to protect against a reader in interrupt/softirq
++	 * context. Is it not needed?
++	 */
++	local_irq_save(flags);
++	part_nr_sects_write_begin(&part->seq);
++	part->nr_sects += size;
++	part_nr_sects_write_end(&part->seq);
++	local_irq_restore(flags);
++	return 0;
++}
++
+ static ssize_t whole_disk_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+ {
+diff --git a/include/linux/blkpg.h b/include/linux/blkpg.h
+index faf8a45..2a7bce9 100644
+--- a/include/linux/blkpg.h
++++ b/include/linux/blkpg.h
+@@ -40,6 +40,7 @@ struct blkpg_ioctl_arg {
+ /* The subfunctions (for the op field) */
+ #define BLKPG_ADD_PARTITION	1
+ #define BLKPG_DEL_PARTITION	2
++#define BLKPG_EXTEND_PARTITION	3
+ 
+ /* Sizes of name fields. Unused at present. */
+ #define BLKPG_DEVNAMELTH	64
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 02fa469..81c12d2 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -98,7 +98,13 @@ struct partition_meta_info {
+ 
+ struct hd_struct {
+ 	sector_t start_sect;
++	/*
++	 * nr_sects is protected by sequence counter. One might extend a
++	 * partition while IO is happening to it and update of nr_sects
++	 * can be non-atomic on 32bit machines with 64bit sector_t.
++	 */
+ 	sector_t nr_sects;
++	seqcount_t seq;
+ 	sector_t alignment_offset;
+ 	unsigned int discard_alignment;
+ 	struct device __dev;
+@@ -600,8 +606,10 @@ extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
+ 						     struct partition_meta_info
+ 						       *info);
+ extern void __delete_partition(struct hd_struct *);
++extern int extend_partition(struct gendisk *disk, int partno, sector_t size);
+ extern void delete_partition(struct gendisk *, int);
+ extern void printk_all_partitions(void);
++extern sector_t part_nr_sects_read(struct hd_struct *part);
+ 
+ extern struct gendisk *alloc_disk_node(int minors, int node_id);
+ extern struct gendisk *alloc_disk(int minors);
+-- 
+1.7.6
+
