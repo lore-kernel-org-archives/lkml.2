@@ -1,744 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab1IAJDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 05:03:10 -0400
-Received: from mail2.nsc.com ([12.238.8.132]:55771 "EHLO sc-mailgw05.nsc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756497Ab1IAJDF convert rfc822-to-8bit (ORCPT
+	id S1756233Ab1IAJLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 05:11:06 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:65471 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab1IAJLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 05:03:05 -0400
-X-Greylist: delayed 1096 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Sep 2011 05:03:05 EDT
-X-WSS-ID: 0LQU5MI-0A-5T3-02
-X-M-MSG: 
-X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
-From: "Kim, Milo" <Milo.Kim@nsc.com>
-To: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cbou@mail.ru" <cbou@mail.ru>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>
-Date: Thu, 1 Sep 2011 01:44:32 -0700
-Subject: [PATCH] power_supply: Add LP8727 charger driver
-Thread-Topic: [PATCH] power_supply: Add LP8727 charger driver
-Thread-Index: Acxofvecfs/0jOLoTxWKdTEC+CQe5gAAjBHw
-Message-ID: <B567DBAB974C0544994013492B949F8E380F520DE9@EXMAIL03.scwf.nsc.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ko-KR, en-US
+	Thu, 1 Sep 2011 05:11:01 -0400
 MIME-Version: 1.0
-X-WSS-ID: 62419A791LS6212822-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110829204846.GA14699@sucs.org>
+References: <20110829204846.GA14699@sucs.org>
+Date: Thu, 1 Sep 2011 17:02:51 +0800
+Message-ID: <CABqxG0cUx4W5JH-gX-rUe=mZ8SY0uxkrCyofPsfUDBojwWKTvQ@mail.gmail.com>
+Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb (v4l2_device_disconnect+0x11/0x30)
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Content-Type: multipart/mixed; boundary=20cf300fabc96f681b04abdd8229
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Anton Vorontsov
+--20cf300fabc96f681b04abdd8229
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-This patch supports the LP8727 charger driver.
+On Tue, Aug 30, 2011 at 4:48 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
+> Hi,
+>
+> I managed to produce an oops in 3.1.0-rc3-00270-g7a54f5e by unplugging a
+> USB webcam. See below:
 
-* General features
-National Semiconductor LP8727 is the battery charger with Micro/Mini USB interface.
-This IC includes below functions
-- I2C interface for accessing user registers
-- Single input Li-Ion battery charger
-- Charger input ID detection from Micro/Mini USB
-- Multiplexing switches on USB, UART
+Could you try the attached patch?
 
-* Driver Description
-1) Interrupt
-        When the charger events occur(attached/detached), the LP8727 generates the interrupt.
-        Then the host will read 2 interrupt registers and do ID detection, multiplexing switches and updating power supplies.
-        It takes few debounce time (about 270ms) to get updated status.
-
-2) ID detection
-        LP8727 detects the charger and the device ID is updated in register area.
-        Available device ID : TA(Travel Adaptor), Dedicated charger, USB charger and USB downstream
-
-3) Power supplies
-        Three power supplies are registered when LP8727 driver is detected.
-        - AC : adapter
-        - USB : USB charger
-        - Battery : Li-On battery
-
-        AC and USB are supplied to the battery.
-        Charging parameters can be set as changed charger type.
-        For this function, 'external_power_changed()' and 'supplied_to' are used.
-
-4) Platform data for lp8727
-        There are two reason for providing lp8727 platform data.
-
-        a) Supporting limited power supply properties
-        LP8727 doesn't support the fuel gauging and no way to check whether battery exists or not.
-        So below properties can't be read from the LP8727 registers
-        - POWER_SUPPLY_PROP_PRESENT
-        - POWER_SUPPLY_PROP_VOLTAGE_NOW
-        - POWER_SUPPLY_PROP_CAPACITY
-        - POWER_SUPPLY_PROP_TEMP
-
-        If the system has fuel gauging and battery detection,
-        then I would recommend mapping functions in the platform data when adding i2c device.
-
-        Ex) static struct lp8727_platform_data lp8727_chg_pdata = {
-                .get_batt_present = dummy_get_batt_present,
-                .get_batt_level = dummy_get_batt_level;
-                .get_batt_capacity = dummy_get_batt_capacity,
-                .get_batt_temp = dummy_get_batt_temp,
-                ...
-        };
-
-        When user-space gets battery properties, the mapping function is called.
-
-        Ex) static int lp8727_battery_get_property(struct power_supply *psy,
-                                                                enum power_supply_property psp,
-                                                                union power_supply_propval *val)
-        {
-                struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
-
-                ...
-
-                // dummy_get_batt_level() will be called
-                case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-                        if(pchg->pdata->get_batt_level)
-                                val->intval = pchg->pdata->get_batt_level();
-                break;
-
-                ...
-        }
-
-        b) Supporting platform specific charging parameters
-        The values of EOC(End of Charge) and charging current depend on the charger type.(ac or usb)
-        For example, during charging battery with ac adaptor, eoc level is 10% of Vterm and charging current is 400mA.
-        (Vterm : charging termination voltage)
-        But with USB charger, charging current is set to 500mA.
-        This value is platform specific data.
-
-        Ex) static struct lp8727_platform_data lp8727_chg_pdata = {
-                ...
-
-                .ac = {
-                        .eoc_level = EOC_10P,
-                        .ichg = ICHG_400mA,
-                },
-                .usb = {
-                        .eoc_level = EOC_10P,
-                        .ichg = ICHG_500mA,
-                },
-        };
-
-        Then this value will be updated after power_supply_changed() is called.
-
-        Ex) static void lp8727_charger_changed(struct power_supply *psy)
-        {
-                ...
-                eoc_level = pchg->chg_parm->eoc_level;
-                ichg = pchg->chg_parm->ichg;
-                val = (ichg << 4) | eoc_level;
-                 (void)lp8727_i2c_write(pchg, CHGCTRL2, &val, 1);
-                ...
-        }
-
-* Tested on OMAP3530 board
-
-Signed-off-by: Woogyom Kim <milo.kim@nsc.com>
-
->From 5cd83ea3e0051ef2c2ce86189e9f1cd6bbb1577f Mon Sep 17 00:00:00 2001
-From: Woogyom Kim <milo.kim@nsc.com>
-Date: Thu, 1 Sep 2011 17:05:42 +0900
-Subject: [PATCH] Add National LP8727 charger driver
-
-LP8727 is the battery charger with Micro/Mini USB interface.
-This IC includes below functions
- - I2c interface for accessing user registers
- - Single input Li-Ion battery charger
- - Charger input ID detection from Micro/Mini USB
- - multiplexing switches on USB, UART
----
- drivers/power/Kconfig          |    6 +
- drivers/power/Makefile         |    1 +
- drivers/power/lp8727_charger.c |  478 ++++++++++++++++++++++++++++++++++++++++
- include/linux/lp8727.h         |   54 +++++
- 4 files changed, 539 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/lp8727_charger.c
- create mode 100644 include/linux/lp8727.h
-
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 57de051..51cb302 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -249,4 +249,10 @@ config CHARGER_MAX8998
-          Say Y to enable support for the battery charger control sysfs and
-          platform data of MAX8998/LP3974 PMICs.
-
-+config CHARGER_LP8727
-+       tristate "National Semiconductor LP8727 charger driver"
-+       depends on I2C
-+       help
-+         Say Y here to enable support for LP8727 Charger Driver.
-+
- endif # POWER_SUPPLY
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index b4af13d..aed6098 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -38,3 +38,4 @@ obj-$(CONFIG_CHARGER_TWL4030) += twl4030_charger.o
- obj-$(CONFIG_CHARGER_GPIO)     += gpio-charger.o
- obj-$(CONFIG_CHARGER_MAX8997)  += max8997_charger.o
- obj-$(CONFIG_CHARGER_MAX8998)  += max8998_charger.o
-+obj-$(CONFIG_CHARGER_LP8727)   += lp8727_charger.o
-diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
-new file mode 100644
-index 0000000..a4b504c
---- /dev/null
-+++ b/drivers/power/lp8727_charger.c
-@@ -0,0 +1,478 @@
-+/*
-+ * Driver for LP8727 Micro/Mini USB IC with intergrated charger
-+ *
-+ *                     Copyright (C) 2011 National Semiconductor
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/interrupt.h>
-+#include <linux/i2c.h>
-+#include <linux/power_supply.h>
-+#include <linux/lp8727.h>
-+
-+#define DEBOUNCE_MSEC  270
-+
-+/* Registers */
-+#define CTRL1          0x1
-+#define CTRL2          0x2
-+#define SWCTRL         0x3
-+#define INT1           0x4
-+#define INT2           0x5
-+#define STATUS1        0x6
-+#define STATUS2        0x7
-+#define CHGCTRL2       0x9
-+
-+/* CTRL1 register */
-+#define CP_EN          (1 << 0)
-+#define ADC_EN         (1 << 1)
-+#define ID200_EN       (1 << 4)
-+
-+/* CTRL2 register */
-+#define CHGDET_EN      (1 << 1)
-+#define INT_EN         (1 << 6)
-+
-+/* SWCTRL register */
-+#define SW_DM1_DM      (0x0 << 0)
-+#define SW_DM1_U1      (0x1 << 0)
-+#define SW_DM1_HiZ     (0x7 << 0)
-+#define SW_DP2_DP      (0x0 << 3)
-+#define SW_DP2_U2      (0x1 << 3)
-+#define SW_DP2_HiZ     (0x7 << 3)
-+
-+/* INT1 register */
-+#define IDNO           (0xF << 0)
-+#define VBUS           (1 << 4)
-+
-+/* STATUS1 register */
-+#define CHGSTAT        (3 << 4)
-+#define CHPORT         (1 << 6)
-+#define DCPORT         (1 << 7)
-+
-+/* STATUS2 register */
-+#define TEMP_STAT      (3 << 5)
-+
-+enum lp8727_dev_id {
-+       ID_NONE,
-+       ID_TA,
-+       ID_DEDICATED_CHG,
-+       ID_USB_CHG,
-+       ID_USB_DS,
-+       ID_MAX,
-+};
-+
-+enum lp8727_chg_stat {
-+       PRECHG,
-+       CC,
-+       CV,
-+       EOC,
-+};
-+
-+struct lp8727_psy {
-+       struct power_supply ac;
-+       struct power_supply usb;
-+       struct power_supply batt;
-+};
-+
-+struct lp8727_chg {
-+       struct device   *dev;
-+       struct i2c_client       *client;
-+       struct mutex    xfer_lock;
-+       struct delayed_work     work;
-+       struct workqueue_struct *irqthread;
-+       struct lp8727_platform_data     *pdata;
-+       struct lp8727_psy       *psy;
-+       struct lp8727_chg_param *chg_parm;
-+       enum lp8727_dev_id      devid;
-+};
-+
-+static int lp8727_i2c_read(struct lp8727_chg *pchg, u8 reg, u8 *data, u8 len)
-+{
-+       s32 ret;
-+
-+       mutex_lock(&pchg->xfer_lock);
-+       ret = i2c_smbus_read_i2c_block_data(pchg->client, reg, len, data);
-+       mutex_unlock(&pchg->xfer_lock);
-+
-+       return (ret != len) ? -EIO : 0;
-+}
-+
-+static int lp8727_i2c_write(struct lp8727_chg *pchg, u8 reg, u8 *data, u8 len)
-+{
-+       s32 ret;
-+
-+       mutex_lock(&pchg->xfer_lock);
-+       ret = i2c_smbus_write_i2c_block_data(pchg->client, reg, len, data);
-+       mutex_unlock(&pchg->xfer_lock);
-+
-+       return ret;
-+}
-+
-+static int lp8727_is_charger_attached(const char *name, int id)
-+{
-+       if(name) {
-+               if(!strcmp(name, "ac"))
-+                       return (id == ID_TA || id == ID_DEDICATED_CHG) ? 1 : 0;
-+               else if(!strcmp(name, "usb"))
-+                       return (id == ID_USB_CHG) ? 1 : 0;
-+       }
-+
-+       return (id >= ID_TA && id <= ID_USB_CHG) ? 1 : 0;
-+}
-+
-+static void lp8727_init_device(struct lp8727_chg *pchg)
-+{
-+       u8 val;
-+
-+       val = ID200_EN | ADC_EN | CP_EN;
-+       if(lp8727_i2c_write(pchg, CTRL1, &val, 1))
-+               dev_err(pchg->dev, "i2c write err : addr=0x%.2x\n", CTRL1);
-+
-+       val = INT_EN | CHGDET_EN;
-+       if(lp8727_i2c_write(pchg, CTRL2, &val, 1))
-+               dev_err(pchg->dev, "i2c write err : addr=0x%.2x\n", CTRL2);
-+}
-+
-+static int lp8727_is_dedicated_charger(struct lp8727_chg *pchg)
-+{
-+       u8 val;
-+       (void)lp8727_i2c_read(pchg, STATUS1, &val, 1);
-+       return (val & DCPORT);
-+}
-+
-+static int lp8727_is_usb_charger(struct lp8727_chg *pchg)
-+{
-+       u8 val;
-+       (void)lp8727_i2c_read(pchg, STATUS1, &val, 1);
-+       return (val & CHPORT);
-+}
-+
-+static void lp8727_ctrl_switch(struct lp8727_chg *pchg, u8 sw)
-+{
-+       u8 val = sw;
-+       (void)lp8727_i2c_write(pchg, SWCTRL, &val, 1);
-+}
-+
-+static void lp8727_id_detection(struct lp8727_chg *pchg, u8 id, int vbusin)
-+{
-+       u8 devid = ID_NONE;
-+       u8 swctrl = SW_DM1_HiZ | SW_DP2_HiZ;
-+
-+       switch(id) {
-+       case 0x5:
-+               devid = ID_TA;
-+               pchg->chg_parm = &pchg->pdata->ac;
-+               break;
-+       case 0xB:
-+               if(lp8727_is_dedicated_charger(pchg)) {
-+                       pchg->chg_parm = &pchg->pdata->ac;
-+                       devid = ID_DEDICATED_CHG;
-+               } else if(lp8727_is_usb_charger(pchg)) {
-+                       pchg->chg_parm = &pchg->pdata->usb;
-+                       devid = ID_USB_CHG;
-+                       swctrl = SW_DM1_DM | SW_DP2_DP;
-+               } else if(vbusin) {
-+                       devid = ID_USB_DS;
-+                       swctrl = SW_DM1_DM | SW_DP2_DP;
-+               }
-+               break;
-+       default:
-+               devid = ID_NONE;
-+               pchg->chg_parm = NULL;
-+               break;
-+       }
-+
-+       pchg->devid = devid;
-+       lp8727_ctrl_switch(pchg, swctrl);
-+}
-+
-+static void lp8727_enable_chgdet(struct lp8727_chg *pchg)
-+{
-+       u8 val;
-+
-+       (void)lp8727_i2c_read(pchg, CTRL2, &val, 1);
-+       val |= CHGDET_EN;
-+       (void)lp8727_i2c_write(pchg, CTRL2, &val, 1);
-+}
-+
-+static void lp8727_delayed_func(struct work_struct *_work)
-+{
-+       u8 intstat[2];
-+       u8 idno;
-+       u8 vbus;
-+       struct lp8727_chg *pchg =
-+               container_of(_work, struct lp8727_chg, work.work);
-+
-+       lp8727_i2c_read(pchg, INT1, intstat, 2);
-+
-+       idno = intstat[0] & IDNO;
-+       vbus = intstat[0] & VBUS;
-+
-+       lp8727_id_detection(pchg, idno, vbus);
-+       lp8727_enable_chgdet(pchg);
-+
-+       power_supply_changed(&pchg->psy->ac);
-+       power_supply_changed(&pchg->psy->usb);
-+       power_supply_changed(&pchg->psy->batt);
-+}
-+
-+static irqreturn_t lp8727_isr_func(int irq, void *ptr)
-+{
-+       struct lp8727_chg *pchg = ptr;
-+       unsigned long delay = msecs_to_jiffies(DEBOUNCE_MSEC);
-+
-+       queue_delayed_work(pchg->irqthread, &pchg->work, delay);
-+
-+       return IRQ_HANDLED;
-+}
-+
-+static void lp8727_intr_config(struct lp8727_chg *pchg)
-+{
-+       INIT_DELAYED_WORK(&pchg->work, lp8727_delayed_func);
-+       pchg->irqthread = create_singlethread_workqueue("lp8727-irqthd");
-+
-+       if(!pchg->irqthread)
-+               dev_err(pchg->dev, "can not create thread for lp8727\n");
-+
-+       if(request_threaded_irq(pchg->client->irq,
-+                               NULL,
-+                               lp8727_isr_func,
-+                               IRQF_TRIGGER_FALLING,
-+                               "lp8727_irq",
-+                               pchg)) {
-+               dev_err(pchg->dev, "lp8727 irq can not be registered\n");
-+       }
-+}
-+
-+static enum power_supply_property lp8727_charger_prop[] = {
-+       POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static enum power_supply_property lp8727_battery_prop[] = {
-+       POWER_SUPPLY_PROP_STATUS,
-+       POWER_SUPPLY_PROP_HEALTH,
-+       POWER_SUPPLY_PROP_PRESENT,
-+       POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+       POWER_SUPPLY_PROP_CAPACITY,
-+       POWER_SUPPLY_PROP_TEMP,
-+};
-+
-+static char *battery_supplied_to[] = {
-+       "main_batt",
-+};
-+
-+static int lp8727_charger_get_property(struct power_supply *psy,
-+                                       enum power_supply_property psp,
-+                                       union power_supply_propval *val)
-+{
-+       struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
-+
-+       if(psp == POWER_SUPPLY_PROP_ONLINE) {
-+               val->intval = lp8727_is_charger_attached(psy->name,
-+                                                       pchg->devid);
-+       }
-+
-+       return 0;
-+}
-+
-+static int lp8727_battery_get_property(struct power_supply *psy,
-+                                       enum power_supply_property psp,
-+                                       union power_supply_propval *val)
-+{
-+       struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
-+       u8 read;
-+
-+       switch(psp) {
-+       case POWER_SUPPLY_PROP_STATUS:
-+               if(lp8727_is_charger_attached(psy->name, pchg->devid)) {
-+                       (void)lp8727_i2c_read(pchg, STATUS1, &read, 1);
-+                       if(((read & CHGSTAT) >> 4) == EOC)
-+                               val->intval = POWER_SUPPLY_STATUS_FULL;
-+                       else
-+                               val->intval = POWER_SUPPLY_STATUS_CHARGING;
-+               } else {
-+                       val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
-+               }
-+               break;
-+       case POWER_SUPPLY_PROP_HEALTH:
-+               (void)lp8727_i2c_read(pchg, STATUS2, &read, 1);
-+               read = (read & TEMP_STAT) >> 5;
-+               if(read >= 0x1 && read <= 0x3)
-+                       val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
-+               else
-+                       val->intval = POWER_SUPPLY_HEALTH_GOOD;
-+               break;
-+       case POWER_SUPPLY_PROP_PRESENT:
-+               if(pchg->pdata->get_batt_present)
-+                       val->intval = pchg->pdata->get_batt_present();
-+               break;
-+       case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+               if(pchg->pdata->get_batt_level)
-+                       val->intval = pchg->pdata->get_batt_level();
-+               break;
-+       case POWER_SUPPLY_PROP_CAPACITY:
-+               if(pchg->pdata->get_batt_capacity)
-+                       val->intval = pchg->pdata->get_batt_capacity();
-+               break;
-+       case POWER_SUPPLY_PROP_TEMP:
-+               if(pchg->pdata->get_batt_temp)
-+                       val->intval = pchg->pdata->get_batt_temp();
-+               break;
-+       default:
-+               break;
-+       }
-+
-+       return 0;
-+}
-+
-+static void lp8727_charger_changed(struct power_supply *psy)
-+{
-+       struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
-+       u8 val;
-+       u8 eoc_level, ichg;
-+
-+       if(lp8727_is_charger_attached(psy->name, pchg->devid)) {
-+               if(pchg->chg_parm) {
-+                       eoc_level = pchg->chg_parm->eoc_level;
-+                       ichg = pchg->chg_parm->ichg;
-+                       val = (ichg << 4) | eoc_level;
-+                       (void)lp8727_i2c_write(pchg, CHGCTRL2, &val, 1);
-+               }
-+       }
-+}
-+
-+static int lp8727_register_psy(struct lp8727_chg *pchg)
-+{
-+       struct lp8727_psy *psy;
-+
-+       psy = kzalloc(sizeof(*psy), GFP_KERNEL);
-+       if(!psy)
-+               goto err_mem;
-+
-+       pchg->psy = psy;
-+
-+       psy->ac.name = "ac";
-+       psy->ac.type = POWER_SUPPLY_TYPE_MAINS;
-+       psy->ac.properties = lp8727_charger_prop;
-+       psy->ac.num_properties = ARRAY_SIZE(lp8727_charger_prop);
-+       psy->ac.get_property = lp8727_charger_get_property;
-+       psy->ac.supplied_to = battery_supplied_to;
-+       psy->ac.num_supplicants = ARRAY_SIZE(battery_supplied_to);
-+
-+       if(power_supply_register(pchg->dev, &psy->ac))
-+               goto err_psy;
-+
-+       psy->usb.name = "usb";
-+       psy->usb.type = POWER_SUPPLY_TYPE_USB;
-+       psy->usb.properties = lp8727_charger_prop;
-+       psy->usb.num_properties = ARRAY_SIZE(lp8727_charger_prop);
-+       psy->usb.get_property = lp8727_charger_get_property;
-+       psy->usb.supplied_to = battery_supplied_to;
-+       psy->usb.num_supplicants = ARRAY_SIZE(battery_supplied_to);
-+
-+       if(power_supply_register(pchg->dev, &psy->usb))
-+               goto err_psy;
-+
-+       psy->batt.name = "main_batt";
-+       psy->batt.type = POWER_SUPPLY_TYPE_BATTERY;
-+       psy->batt.properties = lp8727_battery_prop;
-+       psy->batt.num_properties = ARRAY_SIZE(lp8727_battery_prop);
-+       psy->batt.get_property = lp8727_battery_get_property;
-+       psy->batt.external_power_changed = lp8727_charger_changed;
-+
-+       if(power_supply_register(pchg->dev, &psy->batt))
-+               goto err_psy;
-+
-+       return 0;
-+
-+err_mem:
-+       return -ENOMEM;
-+err_psy:
-+       kfree(psy);
-+       return -EPERM;
-+}
-+
-+static void lp8727_unregister_psy(struct lp8727_chg *pchg)
-+{
-+       struct lp8727_psy *psy = pchg->psy;
-+
-+       if(psy) {
-+               power_supply_unregister(&psy->ac);
-+               power_supply_unregister(&psy->usb);
-+               power_supply_unregister(&psy->batt);
-+               kfree(psy);
-+       }
-+}
-+
-+static int lp8727_probe(struct i2c_client *cl, const struct i2c_device_id *id)
-+{
-+       struct lp8727_chg *pchg;
-+       int ret;
-+
-+       pchg = kzalloc(sizeof(*pchg), GFP_KERNEL);
-+       if(!pchg)
-+               return -ENOMEM;
-+
-+       pchg->client = cl;
-+       pchg->dev = &cl->dev;
-+       pchg->pdata = cl->dev.platform_data;
-+       i2c_set_clientdata(cl, pchg);
-+       mutex_init(&pchg->xfer_lock);
-+
-+       lp8727_init_device(pchg);
-+       lp8727_intr_config(pchg);
-+
-+       ret = lp8727_register_psy(pchg);
-+       if(ret) {
-+               dev_err(pchg->dev,
-+                       "can not register power supplies. err=%d", ret);
-+       }
-+
-+       return 0;
-+}
-+
-+static int __devexit lp8727_remove(struct i2c_client *cl)
-+{
-+       struct lp8727_chg *pchg = i2c_get_clientdata(cl);
-+
-+       lp8727_unregister_psy(pchg);
-+       free_irq(pchg->client->irq, pchg);
-+       flush_workqueue(pchg->irqthread);
-+       destroy_workqueue(pchg->irqthread);
-+       kfree(pchg);
-+       return 0;
-+}
-+
-+static const struct i2c_device_id lp8727_ids[] = {
-+       {"lp8727", 0},
-+};
-+
-+static struct i2c_driver lp8727_driver = {
-+       .driver = {
-+               .name = "lp8727",
-+       },
-+       .probe = lp8727_probe,
-+       .remove = __devexit_p(lp8727_remove),
-+       .id_table = lp8727_ids,
-+};
-+
-+static int __init lp8727_init(void)
-+{
-+       return i2c_add_driver(&lp8727_driver);
-+}
-+module_init(lp8727_init);
-+
-+static void __exit lp8727_chg_exit(void)
-+{
-+       i2c_del_driver(&lp8727_driver);
-+}
-+module_exit(lp8727_chg_exit);
-+
-+MODULE_DESCRIPTION("National Semiconductor LP8727 charger driver");
-+MODULE_AUTHOR("Woogyom Kim <milo.kim@nsc.com>");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/lp8727.h b/include/linux/lp8727.h
-new file mode 100644
-index 0000000..b779d0d
---- /dev/null
-+++ b/include/linux/lp8727.h
-@@ -0,0 +1,54 @@
-+/*
-+ * lp8727.h - Driver for LP8727 Micro/Mini USB IC with intergrated charger
-+ *
-+ *                     Copyright (C) 2011 National Semiconductor
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef _LP8727_H
-+#define _LP8727_H
-+
-+enum lp8727_eoc_level {
-+       EOC_5P,
-+       EOC_10P,
-+       EOC_16P,
-+       EOC_20P,
-+       EOC_25P,
-+       EOC_33P,
-+       EOC_50P,
-+};
-+
-+enum lp8727_ichg {
-+       ICHG_90mA,
-+       ICHG_100mA,
-+       ICHG_400mA,
-+       ICHG_450mA,
-+       ICHG_500mA,
-+       ICHG_600mA,
-+       ICHG_700mA,
-+       ICHG_800mA,
-+       ICHG_900mA,
-+       ICHG_1000mA,
-+};
-+
-+struct lp8727_chg_param {
-+       /* end of charge level setting */
-+       enum lp8727_eoc_level eoc_level;
-+       /* charging current */
-+       enum lp8727_ichg ichg;
-+};
-+
-+struct lp8727_platform_data {
-+       u8      (*get_batt_present)(void);
-+       u16     (*get_batt_level)(void);
-+       u8      (*get_batt_capacity)(void);
-+       u8      (*get_batt_temp)(void);
-+       struct lp8727_chg_param ac;
-+       struct lp8727_chg_param usb;
-+};
-+
-+#endif
---
-1.7.1
-
-Thank you for your help.
-
-Best Regards
-Woogyom Kim
-milo.kim@nsc.com
+>
+> eeepc kernel: [ 1263.874756] cheese[3402]: segfault at 58 ip 080630b6 sp =
+afc2c840 error 4 in cheese[8048000+24000]
+> eeepc kernel: [ 1393.419370] uvcvideo: Non-zero status (-84) in status co=
+mpletion handler.
+> eeepc kernel: [ 1393.500719] usb 3-2: USB disconnect, device number 4
+> eeepc kernel: [ 1393.504351] uvcvideo: Failed to resubmit video URB (-19)=
+.
+> eeepc kernel: [ 1495.428853] BUG: unable to handle kernel paging request =
+at 6b6b6bcb
+> eeepc kernel: [ 1495.429017] IP: [<b0358d37>] dev_get_drvdata+0x17/0x20
+> eeepc kernel: [ 1495.429017] *pde =3D 00000000
+> eeepc kernel: [ 1495.429017] Oops: 0000 [#1] DEBUG_PAGEALLOC
+> eeepc kernel: [ 1495.429017]
+> eeepc kernel: [ 1495.429017] Pid: 3476, comm: cheese Not tainted 3.1.0-rc=
+3-00270-g7a54f5e-dirty #485 ASUSTeK Computer INC. 900/900
+> eeepc kernel: [ 1495.429017] EIP: 0060:[<b0358d37>] EFLAGS: 00010202 CPU:=
+ 0
+> eeepc kernel: [ 1495.429017] EIP is at dev_get_drvdata+0x17/0x20
+> eeepc kernel: [ 1495.429017] EAX: 6b6b6b6b EBX: eb08d870 ECX: 00000000 ED=
+X: eb08d930
+> eeepc kernel: [ 1495.429017] ESI: eb08d870 EDI: eb08d870 EBP: d3249cac ES=
+P: d3249cac
+> eeepc kernel: [ 1495.429017] =C2=A0DS: 007b ES: 007b FS: 0000 GS: 00e0 SS=
+: 0068
+> eeepc kernel: [ 1495.429017] Process cheese (pid: 3476, ti=3Dd3248000 tas=
+k=3Ddf46d870 task.ti=3Dd3248000)
+> eeepc kernel: [ 1495.429017] Stack:
+> eeepc kernel: [ 1495.429017] =C2=A0d3249cb8 b03e77a1 d307b840 d3249ccc b0=
+3e77d1 d307b840 eb08d870 eb08d830
+> eeepc kernel: [ 1495.429017] =C2=A0d3249ce4 b03ed3b7 00000246 d307b840 eb=
+08d870 d3021b80 d3249cec b03ed565
+> eeepc kernel: [ 1495.429017] =C2=A0d3249cfc b03e044d e8323d10 b06e013c d3=
+249d18 b0355fb9 fffffffe d3249d1c
+> eeepc kernel: [ 1495.429017] Call Trace:
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03e77a1>] v4l2_device_disconnect+0x=
+11/0x30
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03e77d1>] v4l2_device_unregister+0x=
+11/0x50
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03ed3b7>] uvc_delete+0x37/0x110
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03ed565>] uvc_release+0x25/0x30
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03e044d>] v4l2_device_release+0x9d/=
+0xc0
+> eeepc kernel: [ 1495.429017] =C2=A0[<b0355fb9>] device_release+0x19/0x90
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03adfdc>] ? usb_hcd_unlink_urb+0x7c=
+/0x90
+> eeepc kernel: [ 1495.429017] =C2=A0[<b026b99c>] kobject_release+0x3c/0x90
+> eeepc kernel: [ 1495.429017] =C2=A0[<b026b960>] ? kobject_del+0x30/0x30
+> eeepc kernel: [ 1495.429017] =C2=A0[<b026ca4c>] kref_put+0x2c/0x60
+> eeepc kernel: [ 1495.429017] =C2=A0[<b026b88d>] kobject_put+0x1d/0x50
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03b2385>] ? usb_autopm_put_interfac=
+e+0x25/0x30
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03f0e5d>] ? uvc_v4l2_release+0x5d/0=
+xd0
+> eeepc kernel: [ 1495.429017] =C2=A0[<b0355d2f>] put_device+0xf/0x20
+> eeepc kernel: [ 1495.429017] =C2=A0[<b03dfa96>] v4l2_release+0x56/0x60
+> eeepc kernel: [ 1495.429017] =C2=A0[<b019c8dc>] fput+0xcc/0x220
+> eeepc kernel: [ 1495.429017] =C2=A0[<b01990f4>] filp_close+0x44/0x70
+> eeepc kernel: [ 1495.429017] =C2=A0[<b012b238>] put_files_struct+0x158/0x=
+180
+> eeepc kernel: [ 1495.429017] =C2=A0[<b012b100>] ? put_files_struct+0x20/0=
+x180
+> eeepc kernel: [ 1495.429017] =C2=A0[<b012b2a0>] exit_files+0x40/0x50
+> eeepc kernel: [ 1495.429017] =C2=A0[<b012b9e7>] do_exit+0x5a7/0x660
+> eeepc kernel: [ 1495.429017] =C2=A0[<b0135f72>] ? __dequeue_signal+0x12/0=
+x120
+> eeepc kernel: [ 1495.429017] =C2=A0[<b055edf2>] ? _raw_spin_unlock_irq+0x=
+22/0x30
+> eeepc kernel: [ 1495.429017] =C2=A0[<b012badc>] do_group_exit+0x3c/0xb0
+> eeepc kernel: [ 1495.429017] =C2=A0[<b015792b>] ? trace_hardirqs_on+0xb/0=
+x10
+> eeepc kernel: [ 1495.429017] =C2=A0[<b013755f>] get_signal_to_deliver+0x1=
+8f/0x570
+> eeepc kernel: [ 1495.429017] =C2=A0[<b01020f7>] do_signal+0x47/0x9e0
+> eeepc kernel: [ 1495.429017] =C2=A0[<b055edf2>] ? _raw_spin_unlock_irq+0x=
+22/0x30
+> eeepc kernel: [ 1495.429017] =C2=A0[<b015792b>] ? trace_hardirqs_on+0xb/0=
+x10
+> eeepc kernel: [ 1495.429017] =C2=A0[<b0123300>] ? T.1034+0x30/0xc0
+> eeepc kernel: [ 1495.429017] =C2=A0[<b055c45f>] ? schedule+0x29f/0x640
+> eeepc kernel: [ 1495.429017] =C2=A0[<b0102ac8>] do_notify_resume+0x38/0x4=
+0
+> eeepc kernel: [ 1495.429017] =C2=A0[<b055f154>] work_notifysig+0x9/0x11
+> eeepc kernel: [ 1495.429017] Code: e5 5d 83 f8 01 19 c0 f7 d0 83 e0 f0 c3=
+ 8d b4 26 00 00 00 00 55 85 c0 89 e5 75 09 31 c0 5d c3 90 8d 74 26 00 8b 40=
+ 04 85 c0 74 f0 <8b> 40 60 5d c3 8d 74 26 00 55 89 e5 53 89 c3 83 ec 04 8b =
+40 04
+> eeepc kernel: [ 1495.429017] EIP: [<b0358d37>] dev_get_drvdata+0x17/0x20 =
+SS:ESP 0068:d3249cac
+> eeepc kernel: [ 1495.429017] CR2: 000000006b6b6bcb
+> eeepc kernel: [ 1495.466975] uvcvideo: Failed to resubmit video URB (-27)=
+.
+> eeepc kernel: [ 1495.467860] uvcvideo: Failed to resubmit video URB (-27)=
+.
+> eeepc kernel: last message repeated 3 times
+> eeepc kernel: [ 1495.512610] ---[ end trace 73ec16848794e5a5 ]---
+> eeepc kernel: [ 1495.512620] Fixing recursive fault but reboot is needed!
+>
+> --
+> Sitsofe | http://sucs.org/~sits/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" i=
+n
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at =C2=A0http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at =C2=A0http://www.tux.org/lkml/
+>
 
 
+
+--=20
+Regards
+Yang RuiRui
+
+--20cf300fabc96f681b04abdd8229
+Content-Type: text/x-pascal; charset=US-ASCII; name="uvc-fix.patch"
+Content-Disposition: attachment; filename="uvc-fix.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gs1iu6o40
+
+UmVwb3J0ZWQtYnk6IFNpdHNvZmUgV2hlZWxlciA8c2l0c29mZUB5YWhvby5jb20+ClNpZ25lZC1v
+ZmYtYnk6IERhdmUgWW91bmcgPGhpZGF2ZS5kYXJrc3RhckBnbWFpbC5jb20+CgpVbnBsdWdnaW5n
+IHV2YyB2aWRlbyBjYW1lcmEgdHJpZ2dlciBmb2xsb3dpbmcgb29wczoKCmVlZXBjIGtlcm5lbDog
+WyAxMzkzLjUwMDcxOV0gdXNiIDMtMjogVVNCIGRpc2Nvbm5lY3QsIGRldmljZSBudW1iZXIgNApl
+ZWVwYyBrZXJuZWw6IFsgMTM5My41MDQzNTFdIHV2Y3ZpZGVvOiBGYWlsZWQgdG8gcmVzdWJtaXQg
+dmlkZW8gVVJCICgtMTkpLgplZWVwYyBrZXJuZWw6IFsgMTQ5NS40Mjg4NTNdIEJVRzogdW5hYmxl
+IHRvIGhhbmRsZSBrZXJuZWwgcGFnaW5nIHJlcXVlc3QgYXQgNmI2YjZiY2IKZWVlcGMga2VybmVs
+OiBbIDE0OTUuNDI5MDE3XSBJUDogWzxiMDM1OGQzNz5dIGRldl9nZXRfZHJ2ZGF0YSsweDE3LzB4
+MjAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAqcGRlID0gMDAwMDAwMDAgCmVlZXBjIGtl
+cm5lbDogWyAxNDk1LjQyOTAxN10gT29wczogMDAwMCBbIzFdIERFQlVHX1BBR0VBTExPQwplZWVw
+YyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddIAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddIFBp
+ZDogMzQ3NiwgY29tbTogY2hlZXNlIE5vdCB0YWludGVkIDMuMS4wLXJjMy0wMDI3MC1nN2E1NGY1
+ZS1kaXJ0eSAjNDg1IEFTVVNUZUsgQ29tcHV0ZXIgSU5DLiA5MDAvOTAwCmVlZXBjIGtlcm5lbDog
+WyAxNDk1LjQyOTAxN10gRUlQOiAwMDYwOls8YjAzNThkMzc+XSBFRkxBR1M6IDAwMDEwMjAyIENQ
+VTogMAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddIEVJUCBpcyBhdCBkZXZfZ2V0X2RydmRh
+dGErMHgxNy8weDIwCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gRUFYOiA2YjZiNmI2YiBF
+Qlg6IGViMDhkODcwIEVDWDogMDAwMDAwMDAgRURYOiBlYjA4ZDkzMAplZWVwYyBrZXJuZWw6IFsg
+MTQ5NS40MjkwMTddIEVTSTogZWIwOGQ4NzAgRURJOiBlYjA4ZDg3MCBFQlA6IGQzMjQ5Y2FjIEVT
+UDogZDMyNDljYWMKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgRFM6IDAwN2IgRVM6IDAw
+N2IgRlM6IDAwMDAgR1M6IDAwZTAgU1M6IDAwNjgKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3
+XSBQcm9jZXNzIGNoZWVzZSAocGlkOiAzNDc2LCB0aT1kMzI0ODAwMCB0YXNrPWRmNDZkODcwIHRh
+c2sudGk9ZDMyNDgwMDApCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gU3RhY2s6CmVlZXBj
+IGtlcm5lbDogWyAxNDk1LjQyOTAxN10gIGQzMjQ5Y2I4IGIwM2U3N2ExIGQzMDdiODQwIGQzMjQ5
+Y2NjIGIwM2U3N2QxIGQzMDdiODQwIGViMDhkODcwIGViMDhkODMwCmVlZXBjIGtlcm5lbDogWyAx
+NDk1LjQyOTAxN10gIGQzMjQ5Y2U0IGIwM2VkM2I3IDAwMDAwMjQ2IGQzMDdiODQwIGViMDhkODcw
+IGQzMDIxYjgwIGQzMjQ5Y2VjIGIwM2VkNTY1CmVlZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10g
+IGQzMjQ5Y2ZjIGIwM2UwNDRkIGU4MzIzZDEwIGIwNmUwMTNjIGQzMjQ5ZDE4IGIwMzU1ZmI5IGZm
+ZmZmZmZlIGQzMjQ5ZDFjCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gQ2FsbCBUcmFjZToK
+ZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDNlNzdhMT5dIHY0bDJfZGV2aWNlX2Rp
+c2Nvbm5lY3QrMHgxMS8weDMwCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gIFs8YjAzZTc3
+ZDE+XSB2NGwyX2RldmljZV91bnJlZ2lzdGVyKzB4MTEvMHg1MAplZWVwYyBrZXJuZWw6IFsgMTQ5
+NS40MjkwMTddICBbPGIwM2VkM2I3Pl0gdXZjX2RlbGV0ZSsweDM3LzB4MTEwCmVlZXBjIGtlcm5l
+bDogWyAxNDk1LjQyOTAxN10gIFs8YjAzZWQ1NjU+XSB1dmNfcmVsZWFzZSsweDI1LzB4MzAKZWVl
+cGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDNlMDQ0ZD5dIHY0bDJfZGV2aWNlX3JlbGVh
+c2UrMHg5ZC8weGMwCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gIFs8YjAzNTVmYjk+XSBk
+ZXZpY2VfcmVsZWFzZSsweDE5LzB4OTAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxi
+MDNhZGZkYz5dID8gdXNiX2hjZF91bmxpbmtfdXJiKzB4N2MvMHg5MAplZWVwYyBrZXJuZWw6IFsg
+MTQ5NS40MjkwMTddICBbPGIwMjZiOTljPl0ga29iamVjdF9yZWxlYXNlKzB4M2MvMHg5MAplZWVw
+YyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIwMjZiOTYwPl0gPyBrb2JqZWN0X2RlbCsweDMw
+LzB4MzAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDI2Y2E0Yz5dIGtyZWZfcHV0
+KzB4MmMvMHg2MAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIwMjZiODhkPl0ga29i
+amVjdF9wdXQrMHgxZC8weDUwCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gIFs8YjAzYjIz
+ODU+XSA/IHVzYl9hdXRvcG1fcHV0X2ludGVyZmFjZSsweDI1LzB4MzAKZWVlcGMga2VybmVsOiBb
+IDE0OTUuNDI5MDE3XSAgWzxiMDNmMGU1ZD5dID8gdXZjX3Y0bDJfcmVsZWFzZSsweDVkLzB4ZDAK
+ZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDM1NWQyZj5dIHB1dF9kZXZpY2UrMHhm
+LzB4MjAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDNkZmE5Nj5dIHY0bDJfcmVs
+ZWFzZSsweDU2LzB4NjAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDE5YzhkYz5d
+IGZwdXQrMHhjYy8weDIyMAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIwMTk5MGY0
+Pl0gZmlscF9jbG9zZSsweDQ0LzB4NzAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxi
+MDEyYjIzOD5dIHB1dF9maWxlc19zdHJ1Y3QrMHgxNTgvMHgxODAKZWVlcGMga2VybmVsOiBbIDE0
+OTUuNDI5MDE3XSAgWzxiMDEyYjEwMD5dID8gcHV0X2ZpbGVzX3N0cnVjdCsweDIwLzB4MTgwCmVl
+ZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gIFs8YjAxMmIyYTA+XSBleGl0X2ZpbGVzKzB4NDAv
+MHg1MAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIwMTJiOWU3Pl0gZG9fZXhpdCsw
+eDVhNy8weDY2MAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIwMTM1ZjcyPl0gPyBf
+X2RlcXVldWVfc2lnbmFsKzB4MTIvMHgxMjAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAg
+WzxiMDU1ZWRmMj5dID8gX3Jhd19zcGluX3VubG9ja19pcnErMHgyMi8weDMwCmVlZXBjIGtlcm5l
+bDogWyAxNDk1LjQyOTAxN10gIFs8YjAxMmJhZGM+XSBkb19ncm91cF9leGl0KzB4M2MvMHhiMApl
+ZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIwMTU3OTJiPl0gPyB0cmFjZV9oYXJkaXJx
+c19vbisweGIvMHgxMAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIwMTM3NTVmPl0g
+Z2V0X3NpZ25hbF90b19kZWxpdmVyKzB4MThmLzB4NTcwCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQy
+OTAxN10gIFs8YjAxMDIwZjc+XSBkb19zaWduYWwrMHg0Ny8weDllMAplZWVwYyBrZXJuZWw6IFsg
+MTQ5NS40MjkwMTddICBbPGIwNTVlZGYyPl0gPyBfcmF3X3NwaW5fdW5sb2NrX2lycSsweDIyLzB4
+MzAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDE1NzkyYj5dID8gdHJhY2VfaGFy
+ZGlycXNfb24rMHhiLzB4MTAKZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSAgWzxiMDEyMzMw
+MD5dID8gVC4xMDM0KzB4MzAvMHhjMAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40MjkwMTddICBbPGIw
+NTVjNDVmPl0gPyBzY2hlZHVsZSsweDI5Zi8weDY0MAplZWVwYyBrZXJuZWw6IFsgMTQ5NS40Mjkw
+MTddICBbPGIwMTAyYWM4Pl0gZG9fbm90aWZ5X3Jlc3VtZSsweDM4LzB4NDAKZWVlcGMga2VybmVs
+OiBbIDE0OTUuNDI5MDE3XSAgWzxiMDU1ZjE1ND5dIHdvcmtfbm90aWZ5c2lnKzB4OS8weDExCmVl
+ZXBjIGtlcm5lbDogWyAxNDk1LjQyOTAxN10gQ29kZTogZTUgNWQgODMgZjggMDEgMTkgYzAgZjcg
+ZDAgODMgZTAgZjAgYzMgOGQgYjQgMjYgMDAgMDAgMDAgMDAgNTUgODUgYzAgODkgZTUgNzUgMDkg
+MzEgYzAgNWQgYzMgOTAgOGQgNzQgMjYgMDAgOGIgNDAgMDQgODUgYzAgNzQgZjAgPDhiPiA0MCA2
+MCA1ZCBjMyA4ZCA3NCAyNiAwMCA1NSA4OSBlNSA1MyA4OSBjMyA4MyBlYyAwNCA4YiA0MCAwNCAK
+ZWVlcGMga2VybmVsOiBbIDE0OTUuNDI5MDE3XSBFSVA6IFs8YjAzNThkMzc+XSBkZXZfZ2V0X2Ry
+dmRhdGErMHgxNy8weDIwIFNTOkVTUCAwMDY4OmQzMjQ5Y2FjCmVlZXBjIGtlcm5lbDogWyAxNDk1
+LjQyOTAxN10gQ1IyOiAwMDAwMDAwMDZiNmI2YmNiCmVlZXBjIGtlcm5lbDogWyAxNDk1LjQ2Njk3
+NV0gdXZjdmlkZW86IEZhaWxlZCB0byByZXN1Ym1pdCB2aWRlbyBVUkIgKC0yNykuCmVlZXBjIGtl
+cm5lbDogWyAxNDk1LjQ2Nzg2MF0gdXZjdmlkZW86IEZhaWxlZCB0byByZXN1Ym1pdCB2aWRlbyBV
+UkIgKC0yNykuCmVlZXBjIGtlcm5lbDogbGFzdCBtZXNzYWdlIHJlcGVhdGVkIDMgdGltZXMKZWVl
+cGMga2VybmVsOiBbIDE0OTUuNTEyNjEwXSAtLS1bIGVuZCB0cmFjZSA3M2VjMTY4NDg3OTRlNWE1
+IF0tLS0KCkZvciB1dmMgZGV2aWNlLCBkZXYtPnZkZXYuZGV2IGlzIHRoZSAmaW50Zi0+ZGV2LAp1
+dmNfZGVsZXRlIGNvZGUgaXMgYXMgYmVsb3c6Cgl1c2JfcHV0X2ludGYoZGV2LT5pbnRmKTsKCXVz
+Yl9wdXRfZGV2KGRldi0+dWRldik7CgoJdXZjX3N0YXR1c19jbGVhbnVwKGRldik7Cgl1dmNfY3Ry
+bF9jbGVhbnVwX2RldmljZShkZXYpOwoKIyMgdGhlIGludGYgZGV2IGlzIHJlbGVhc2VkIGFib3Zl
+LCBzbyBiZWxvdyBjb2RlIHdpbGwgb29wcy4KCglpZiAoZGV2LT52ZGV2LmRldikKCQl2NGwyX2Rl
+dmljZV91bnJlZ2lzdGVyKCZkZXYtPnZkZXYpOwoKRml4IGl0IGJ5IGdldF9kZXZpY2UgaW4gdjRs
+Ml9kZXZpY2VfcmVnaXN0ZXIgYW5kIHB1dF9kZXZpY2UgaW4gdjRsMl9kZXZpY2VfZGlzY29ubmVj
+dAotLS0KIGRyaXZlcnMvbWVkaWEvdmlkZW8vdjRsMi1kZXZpY2UuYyB8ICAgIDIgKysKIDEgZmls
+ZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQgYS9kcml2ZXJzL21lZGlhL3Zp
+ZGVvL3Y0bDItZGV2aWNlLmMgYi9kcml2ZXJzL21lZGlhL3ZpZGVvL3Y0bDItZGV2aWNlLmMKaW5k
+ZXggYzcyODU2Yy4uZTZhMmMzYiAxMDA2NDQKLS0tIGEvZHJpdmVycy9tZWRpYS92aWRlby92NGwy
+LWRldmljZS5jCisrKyBiL2RyaXZlcnMvbWVkaWEvdmlkZW8vdjRsMi1kZXZpY2UuYwpAQCAtMzgs
+NiArMzgsNyBAQCBpbnQgdjRsMl9kZXZpY2VfcmVnaXN0ZXIoc3RydWN0IGRldmljZSAqZGV2LCBz
+dHJ1Y3QgdjRsMl9kZXZpY2UgKnY0bDJfZGV2KQogCW11dGV4X2luaXQoJnY0bDJfZGV2LT5pb2N0
+bF9sb2NrKTsKIAl2NGwyX3ByaW9faW5pdCgmdjRsMl9kZXYtPnByaW8pOwogCWtyZWZfaW5pdCgm
+djRsMl9kZXYtPnJlZik7CisJZ2V0X2RldmljZShkZXYpOwogCXY0bDJfZGV2LT5kZXYgPSBkZXY7
+CiAJaWYgKGRldiA9PSBOVUxMKSB7CiAJCS8qIElmIGRldiA9PSBOVUxMLCB0aGVuIG5hbWUgbXVz
+dCBiZSBmaWxsZWQgaW4gYnkgdGhlIGNhbGxlciAqLwpAQCAtOTMsNiArOTQsNyBAQCB2b2lkIHY0
+bDJfZGV2aWNlX2Rpc2Nvbm5lY3Qoc3RydWN0IHY0bDJfZGV2aWNlICp2NGwyX2RldikKIAogCWlm
+IChkZXZfZ2V0X2RydmRhdGEodjRsMl9kZXYtPmRldikgPT0gdjRsMl9kZXYpCiAJCWRldl9zZXRf
+ZHJ2ZGF0YSh2NGwyX2Rldi0+ZGV2LCBOVUxMKTsKKwlwdXRfZGV2aWNlKHY0bDJfZGV2LT5kZXYp
+OwogCXY0bDJfZGV2LT5kZXYgPSBOVUxMOwogfQogRVhQT1JUX1NZTUJPTF9HUEwodjRsMl9kZXZp
+Y2VfZGlzY29ubmVjdCk7Cg==
+--20cf300fabc96f681b04abdd8229--
