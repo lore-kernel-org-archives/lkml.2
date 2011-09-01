@@ -1,120 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab1IAIre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 04:47:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57126 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756452Ab1IAIrd (ORCPT
+	id S1756730Ab1IAIse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 04:48:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42359 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab1IAIsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 04:47:33 -0400
-Date: Thu, 1 Sep 2011 09:45:57 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH 0/3] RFC: addition to DMA API
-Message-ID: <20110901084557.GA30417@e102144-lin.cambridge.arm.com>
-References: <CACVXFVPN7SCk8z=vatphyM=PhZDAwtyDidALYPeVkuJ_zxpBvA@mail.gmail.com>
- <Pine.LNX.4.44L0.1108312255060.27371-100000@netrider.rowland.org>
- <CACVXFVOYaxGDZrwkHYc+h=tFhpYp+g95KZrDjg+bPH_N-9BT_g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACVXFVOYaxGDZrwkHYc+h=tFhpYp+g95KZrDjg+bPH_N-9BT_g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 1 Sep 2011 04:48:30 -0400
+From: WANG Cong <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        linux-cris-kernel@axis.com, linux-serial@vger.kernel.org
+Subject: [Updated PATCH] cris: lower the printk level in cris serial driver
+Date: Thu,  1 Sep 2011 16:47:49 +0800
+Message-Id: <1314866869-14717-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 04:41:46AM +0100, Ming Lei wrote:
-> Hi,
-> 
-> On Thu, Sep 1, 2011 at 11:09 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> >
-> > No, this is completely wrong.
-> >
-> > Firstly, you are forgetting about other architectures, ones in which
-> > writes to coherent memory aren't buffered.  On those architectures
-> > there's no way to prevent the DMA bus master from seeing an
-> > intermediate state of the data structures.  Therefore the driver has to
-> > be written so that even when this happens, everything will work
-> > correctly.
-> >
-> > Secondly, even when write flushes are used, you can't guarantee that
-> > the DMA bus master will see an atomic update.  It might turn out that
-> > the hardware occasionally flushes some writes very quickly, before the
-> > data-structure updates are complete.
-> >
-> > Thirdly, you are mixing up memory barriers with write flushes.  The
-> > barriers are used to make sure that writes are done in the correct
-> > order, whereas the flushes are used to make sure that writes are done
-> > reasonably quickly.  One has nothing to do with the other, even if by
-> > coincidence on ARM a memory barrier causes a write flush.  On other
-> > architectures this might not be true.
-> 
-> I agree all about above, but what I described is from another view.
-> I post out the example before explaining my idea further:
-> 
-> 
-> 	CPU			device	
-> 	A=1;
-> 	wmb
-> 	B=2;
-> 					read B
-> 					read A
-> 
-> one wmb is used to order 'A=1' and 'B=2', which will make the two write
-> operations reach to physical memory as the order: 'A=1' first, 'B=2' second.
-> Then the device can observe the two write events as the order above,
-> so if device has seen 'B==2', then device will surely see 'A==1'.
-> 
-> Suppose writing to A is operation to update dma descriptor, the above example
-> can make device always see a atomic update of descriptor, can't it?
-> 
-> My idea is that the memory access patterns are to be considered for
-> writer of device driver. For example, many memory access patterns on
-> EHCI hardware are described in detail.  Of course, device driver should
-> make full use of the background info, below is a example from ehci driver:
-> 
-> qh_link_async():
-> 
-> 	/*prepare qh descriptor*/
-> 	qh->qh_next = head->qh_next;
-> 	qh->hw->hw_next = head->hw->hw_next;
-> 	wmb ();
-> 
-> 	/*link the qh descriptor into hardware queue*/
-> 	head->qh_next.qh = qh;
-> 	head->hw->hw_next = dma;
-> 
-> so once EHCI fetches a qh with the address of 'dma', it will always see
-> consistent content of qh descriptor, which could not be updated partially.
+KERN_CRIT is too high, replace those KERN_CRIT with KERN_ERR or KERN_WARNING.
 
-I'm struggling to see what you're getting at here. The proposal has
-*absolutely nothing* to do with memory barriers. All of the existing
-barriers will remain - they are needed for correctness. What changes is the
-addition of an /optional/ flush operation in order to guarantee some sort of
-immediacy for writes to the coherent buffer.
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-> >> 3, The new DMA API for the purpose to be introduced is much easier to
-> >> understand, and much easier to use than memory barrier, so it is very
-> >> possible to make device driver guys misuse or abuse it instead of using
-> >> memory barrier first to handle the case.
-> >
-> > That criticism could apply to almost any new feature.  We shouldn't be
-> > afraid to adopt something new merely because it's so easy to use that
-> > it might be misused.
-> 
-> This point depends on the #1 and #2.
-
-Huh? I don't see the connection. If your worry is that people will start
-littering their code with flush calls, I don't think that's especially
-likely. The usual problem (from what I've seen) is that barriers tend to be
-missing rather than overused so I don't see why this would be different for
-a what has been proposed.
-
-Will
+---
+diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+index 225123b..9f50bdd 100644
+--- a/drivers/tty/serial/crisv10.c
++++ b/drivers/tty/serial/crisv10.c
+@@ -1788,7 +1788,7 @@ static unsigned int handle_descr_data(struct e100_serial *info,
+ 	struct etrax_recv_buffer *buffer = phys_to_virt(descr->buf) - sizeof *buffer;
+ 
+ 	if (info->recv_cnt + recvl > 65536) {
+-		printk(KERN_CRIT
++		printk(KERN_WARNING
+ 		       "%s: Too much pending incoming serial data! Dropping %u bytes.\n", __func__, recvl);
+ 		return 0;
+ 	}
+@@ -3813,13 +3813,13 @@ rs_close(struct tty_struct *tty, struct file * filp)
+ 		 * one, we've got real problems, since it means the
+ 		 * serial port won't be shutdown.
+ 		 */
+-		printk(KERN_CRIT
++		printk(KERN_ERR
+ 		       "rs_close: bad serial port count; tty->count is 1, "
+ 		       "info->count is %d\n", info->count);
+ 		info->count = 1;
+ 	}
+ 	if (--info->count < 0) {
+-		printk(KERN_CRIT "rs_close: bad serial port count for ttyS%d: %d\n",
++		printk(KERN_ERR "rs_close: bad serial port count for ttyS%d: %d\n",
+ 		       info->line, info->count);
+ 		info->count = 0;
+ 	}
+@@ -4452,7 +4452,7 @@ static int __init rs_init(void)
+ #if defined(CONFIG_ETRAX_RS485_ON_PA)
+ 	if (cris_io_interface_allocate_pins(if_ser0, 'a', rs485_pa_bit,
+ 			rs485_pa_bit)) {
+-		printk(KERN_CRIT "ETRAX100LX serial: Could not allocate "
++		printk(KERN_ERR "ETRAX100LX serial: Could not allocate "
+ 			"RS485 pin\n");
+ 		put_tty_driver(driver);
+ 		return -EBUSY;
+@@ -4461,7 +4461,7 @@ static int __init rs_init(void)
+ #if defined(CONFIG_ETRAX_RS485_ON_PORT_G)
+ 	if (cris_io_interface_allocate_pins(if_ser0, 'g', rs485_pa_bit,
+ 			rs485_port_g_bit)) {
+-		printk(KERN_CRIT "ETRAX100LX serial: Could not allocate "
++		printk(KERN_ERR "ETRAX100LX serial: Could not allocate "
+ 			"RS485 pin\n");
+ 		put_tty_driver(driver);
+ 		return -EBUSY;
+@@ -4494,7 +4494,7 @@ static int __init rs_init(void)
+ 		if (info->enabled) {
+ 			if (cris_request_io_interface(info->io_if,
+ 					info->io_if_description)) {
+-				printk(KERN_CRIT "ETRAX100LX async serial: "
++				printk(KERN_ERR "ETRAX100LX async serial: "
+ 					"Could not allocate IO pins for "
+ 					"%s, port %d\n",
+ 					info->io_if_description, i);
