@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab1IARDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:03:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:54880 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab1IARDq (ORCPT
+	id S1754824Ab1IARGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:06:55 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:55425 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753800Ab1IARGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:03:46 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]drivers:video:aty:radeonfb.h Fix some comments in radeonfb.h
-Date: Thu,  1 Sep 2011 10:03:20 -0700
-Message-Id: <1314896600-5461-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Thu, 1 Sep 2011 13:06:54 -0400
+Date: Thu, 1 Sep 2011 10:06:50 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Rik van Riel <riel@redhat.com>
+Cc: Satoru Moriya <smoriya@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, lwoodman@redhat.com,
+        Seiji Aguchi <saguchi@redhat.com>, akpm@linux-foundation.org,
+        hughd@google.com, hannes@cmpxchg.org
+Subject: Re: [PATCH -mm] add extra free kbytes tunable
+Message-Id: <20110901100650.6d884589.rdunlap@xenotime.net>
+In-Reply-To: <20110901105208.3849a8ff@annuminas.surriel.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+On Thu, 1 Sep 2011 10:52:08 -0400 Rik van Riel wrote:
 
-The below patch, just fixes some typos/comments that I noticed allong the way.
-(let me know if this is legit).
+> Add a userspace visible knob to tell the VM to keep an extra amount
+> of memory free, by increasing the gap between each zone's min and
+> low watermarks.
+> 
+> This is useful for realtime applications that call system
+> calls and have a bound on the number of allocations that happen
+> in any short time period.  In this application, extra_free_kbytes
+> would be left at an amount equal to or larger than than the
+> maximum number of allocations that happen in any burst.
+> 
+> It may also be useful to reduce the memory use of virtual
+> machines (temporarily?), in a way that does not cause memory
+> fragmentation like ballooning does.
+> 
+> Signed-off-by: Rik van Riel<riel@redhat.com>
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Hi Rik,
+
+Please add to Documentation/syctl/vm.txt ..
+
+Thanks.
+
+
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index 11d65b5..01a9acd 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -96,6 +96,7 @@ extern char core_pattern[];
+>  extern unsigned int core_pipe_limit;
+>  extern int pid_max;
+>  extern int min_free_kbytes;
+> +extern int extra_free_kbytes;
+>  extern int pid_max_min, pid_max_max;
+>  extern int sysctl_drop_caches;
+>  extern int percpu_pagelist_fraction;
+> @@ -1189,6 +1190,14 @@ static struct ctl_table vm_table[] = {
+>  		.extra1		= &zero,
+>  	},
+>  	{
+> +		.procname	= "extra_free_kbytes",
+> +		.data		= &extra_free_kbytes,
+> +		.maxlen		= sizeof(extra_free_kbytes),
+> +		.mode		= 0644,
+> +		.proc_handler	= min_free_kbytes_sysctl_handler,
+> +		.extra1		= &zero,
+> +	},
+> +	{
+>  		.procname	= "percpu_pagelist_fraction",
+>  		.data		= &percpu_pagelist_fraction,
+>  		.maxlen		= sizeof(percpu_pagelist_fraction),
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 6e8ecb6..47d185c 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -175,8 +175,20 @@ static char * const zone_names[MAX_NR_ZONES] = {
+>  	 "Movable",
+>  };
+>  
+> +/*
+> + * Try to keep at least this much lowmem free.  Do not allow normal
+> + * allocations below this point, only high priority ones. Automatically
+> + * tuned according to the amount of memory in the system.
+> + */
+>  int min_free_kbytes = 1024;
+>  
+> +/*
+> + * Extra memory for the system to try freeing. Used to temporarily
+> + * free memory, to make space for new workloads. Anyone can allocate
+> + * down to the min watermarks controlled by min_free_kbytes above.
+> + */
+> +int extra_free_kbytes = 0;
+
 
 ---
- drivers/video/aty/radeonfb.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/video/aty/radeonfb.h b/drivers/video/aty/radeonfb.h
-index 7351e66..9f9daf0 100644
---- a/drivers/video/aty/radeonfb.h
-+++ b/drivers/video/aty/radeonfb.h
-@@ -147,7 +147,7 @@ struct pll_info {
-  * This structure contains the various registers manipulated by this
-  * driver for setting or restoring a mode. It's mostly copied from
-  * XFree's RADEONSaveRec structure. A few chip settings might still be
-- * tweaked without beeing reflected or saved in these registers though
-+ * tweaked without being reflected or saved in these registers though
-  */
- struct radeon_regs {
- 	/* Common registers */
-@@ -372,7 +372,7 @@ struct radeonfb_info {
-  */
- 
- /* Note about this function: we have some rare cases where we must not schedule,
-- * this typically happen with our special "wake up early" hook which allows us to
-+ * this typically happens with our special "wake up early" hook which allows us to
-  * wake up the graphic chip (and thus get the console back) before everything else
-  * on some machines that support that mechanism. At this point, interrupts are off
-  * and scheduling is not permitted
-@@ -410,7 +410,7 @@ static inline void _OUTREGP(struct radeonfb_info *rinfo, u32 addr,
- #define OUTREGP(addr,val,mask)	_OUTREGP(rinfo, addr, val,mask)
- 
- /*
-- * Note about PLL register accesses:
-+ * Note about PLL register access:
-  *
-  * I have removed the spinlock on them on purpose. The driver now
-  * expects that it will only manipulate the PLL registers in normal
--- 
-1.7.6
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
