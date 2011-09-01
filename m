@@ -1,90 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab1IAODB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 10:03:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38733 "EHLO mx2.suse.de"
+	id S1757575Ab1IAOKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 10:10:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21838 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757596Ab1IAOC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 10:02:57 -0400
-Date: Thu, 1 Sep 2011 15:02:54 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/3] compaction: compact unevictable page
-Message-ID: <20110901140254.GH14369@suse.de>
-References: <cover.1321112552.git.minchan.kim@gmail.com>
- <8ef02605a7a76b176167d90a285033afa8513326.1321112552.git.minchan.kim@gmail.com>
- <20110831111954.GB17512@redhat.com>
- <20110831144150.GA1860@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110831144150.GA1860@barrios-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757426Ab1IAOKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 10:10:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="44145844"
+From: Oren Weil <oren.jer.weil@intel.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
+        tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
+Subject: [PATCH 05/12 v2] staging: mei: adding watchdog ping
+Date: Thu,  1 Sep 2011 17:08:57 +0300
+Message-Id: <1314886137-18822-1-git-send-email-oren.jer.weil@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 11:41:50PM +0900, Minchan Kim wrote:
-> On Wed, Aug 31, 2011 at 01:19:54PM +0200, Johannes Weiner wrote:
-> > On Sun, Nov 13, 2011 at 01:37:42AM +0900, Minchan Kim wrote:
-> > > Now compaction doesn't handle mlocked page as it uses __isolate_lru_page
-> > > which doesn't consider unevicatable page. It has been used by just lumpy so
-> > > it was pointless that it isolates unevictable page. But the situation is
-> > > changed. Compaction could handle unevictable page and it can help getting
-> > > big contiguos pages in fragment memory by many pinned page with mlock.
-> > 
-> > This may result in applications unexpectedly faulting and waiting on
-> > mlocked pages under migration.  I wonder how realtime people feel
-> > about that?
-> 
-> I didn't consider it but it's very important point.
-> The migrate_page can call pageout on dirty page so RT process could wait on the
-> mlocked page during very long time.
+adding watchdog ping to send ping/heartbeat to the the AMT watchdog client.
+in addition removing the heartbeat sending from the driver timers function.
 
-On the plus side, the filesystem that is likely to suffer from this
-is btrfs. The other important cases avoid the writeout.
+Version 2 - Removed two tab indent
 
-> I can mitigate it with isolating mlocked page in case of !sync but still we can't
-> guarantee the time because we can't know how many vmas point the page so that try_to_unmap
-> could spend lots of time.
-> 
+Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
+Acked-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/staging/mei/interrupt.c |   27 -------------------
+ drivers/staging/mei/wd.c        |   54 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 27 deletions(-)
 
-This loss of guarantee arguably violates POSIX 1B as part of the
-real-time extension. The wording is "The function mlock shall cause
-those whole pages containing any part of the address space of the
-process starting at address addr and continuing for len bytes to be
-memory resident until unlocked or until the process exits or execs
-another process image."
-
-It defines locking as "memory locking guarantees the residence of
-portions of the address space. It is implementation defined whether
-locking memory guarantees fixed translation between virtual addresses
-(as seen by the process) and physical addresses."
-
-As it's up to the implementation whether to preserve the physical
-page mapping, it's allowed for compaction to move that page. However,
-as it mlock is recommended for use by time-critical applications,
-I fear we would be breaking developer expectations on the behaviour
-of mlock even if it is permitted by POSIX.
-
-> We can think it's a trade off between high order allocation VS RT latency.
-> Now I am biasing toward RT latency as considering mlock man page.
-> 
-> Any thoughts?
-> 
-
-At the very least it should not be the default behaviour. I do not have
-suggestions on how it could be enabled though. It's a bit obscure to
-have as a kernel parameter or even a proc tunable and it's not a perfect
-for /sys/kernel/mm/transparent_hugepage/defrag either.
-
-How big of a problem is it that mlocked pages are not compacted at the
-moment?
-
+diff --git a/drivers/staging/mei/interrupt.c b/drivers/staging/mei/interrupt.c
+index 958a7e2..62b8001 100644
+--- a/drivers/staging/mei/interrupt.c
++++ b/drivers/staging/mei/interrupt.c
+@@ -1430,33 +1430,6 @@ void mei_wd_timer(struct work_struct *work)
+ 		}
+ 	}
+ 
+-	if (dev->wd_cl.state != MEI_FILE_CONNECTED)
+-		goto out;
+-
+-	/* Watchdog */
+-	if (dev->wd_due_counter && !dev->wd_bypass) {
+-		if (--dev->wd_due_counter == 0) {
+-			if (dev->mei_host_buffer_is_empty &&
+-			    mei_flow_ctrl_creds(dev, &dev->wd_cl) > 0) {
+-				dev->mei_host_buffer_is_empty = false;
+-				dev_dbg(&dev->pdev->dev, "send watchdog.\n");
+-
+-				if (mei_wd_send(dev))
+-					dev_dbg(&dev->pdev->dev, "wd send failed.\n");
+-				else
+-					if (mei_flow_ctrl_reduce(dev, &dev->wd_cl))
+-						goto out;
+-
+-				if (dev->wd_timeout)
+-					dev->wd_due_counter = 2;
+-				else
+-					dev->wd_due_counter = 0;
+-
+-			} else
+-				dev->wd_pending = true;
+-
+-		}
+-	}
+ 	if (dev->iamthif_stall_timer) {
+ 		if (--dev->iamthif_stall_timer == 0) {
+ 			dev_dbg(&dev->pdev->dev, "reseting because of hang to amthi.\n");
+diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
+index fb2bd3d..9338394 100644
+--- a/drivers/staging/mei/wd.c
++++ b/drivers/staging/mei/wd.c
+@@ -255,15 +255,69 @@ static int mei_wd_ops_stop(struct watchdog_device *wd_dev)
+ }
+ 
+ /*
++ * mei_wd_ops_ping - wd ping command from the watchdog core.
++ *
++ * @wd_dev - watchdog device struct
++ *
++ * returns 0 if success, negative errno code for failure
++ */
++static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
++{
++	int ret = 0;
++	struct mei_device *dev;
++	dev = pci_get_drvdata(mei_device);
++
++	if (!dev)
++		return -ENODEV;
++
++	mutex_lock(&dev->device_lock);
++
++	if (dev->wd_cl.state != MEI_FILE_CONNECTED) {
++		dev_dbg(&dev->pdev->dev, "wd is not connected.\n");
++		ret = -ENODEV;
++		goto end;
++	}
++
++	/* Check if we can send the ping to HW*/
++	if (dev->mei_host_buffer_is_empty &&
++		mei_flow_ctrl_creds(dev, &dev->wd_cl) > 0) {
++
++		dev->mei_host_buffer_is_empty = false;
++		dev_dbg(&dev->pdev->dev, "sending watchdog ping\n");
++
++		if (mei_wd_send(dev)) {
++			dev_dbg(&dev->pdev->dev, "wd send failed.\n");
++			ret = -EIO;
++			goto end;
++		}
++
++		if (mei_flow_ctrl_reduce(dev, &dev->wd_cl)) {
++			dev_dbg(&dev->pdev->dev, "mei_flow_ctrl_reduce() failed.\n");
++			ret = -EIO;
++			goto end;
++		}
++
++	} else {
++		dev->wd_pending = true;
++	}
++
++end:
++	mutex_unlock(&dev->device_lock);
++	return ret;
++}
++
++/*
+  * Watchdog Device structs
+  */
+ const struct watchdog_ops wd_ops = {
+ 		.owner = THIS_MODULE,
+ 		.start = mei_wd_ops_start,
+ 		.stop = mei_wd_ops_stop,
++		.ping = mei_wd_ops_ping,
+ };
+ const struct watchdog_info wd_info = {
+ 		.identity = INTEL_AMT_WATCHDOG_ID,
++		.options = WDIOF_KEEPALIVEPING,
+ };
+ 
+ struct watchdog_device amt_wd_dev = {
 -- 
-Mel Gorman
-SUSE Labs
+1.7.4.1
+
