@@ -1,156 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab1IADJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 23:09:57 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:43293 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757503Ab1IADJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 23:09:56 -0400
-Date: Wed, 31 Aug 2011 23:07:18 -0400 (EDT)
-Message-Id: <20110831.230718.2029810906806382170.davem@davemloft.net>
-To: peterz@infradead.org
-CC: tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: process time < thread time?
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1757554Ab1IADUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 23:20:44 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16651 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757503Ab1IADUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 23:20:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,310,1312182000"; 
+   d="scan'208";a="44548700"
+Message-ID: <4E5EFA08.30205@intel.com>
+Date: Thu, 01 Sep 2011 11:20:40 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
+References: <1314681384-20881-1-git-send-email-ying.huang@intel.com>	 <1314681384-20881-2-git-send-email-ying.huang@intel.com> <1314785405.23993.21.camel@twins> <4E5EE409.3060102@intel.com>
+In-Reply-To: <4E5EE409.3060102@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 31 Aug 2011 20:07:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/01/2011 09:46 AM, Huang Ying wrote:
+>>> -static void __irq_work_queue(struct irq_work *entry)
+>>> +static void __irq_work_queue(struct irq_work *work)
+>>>  {
+>>> -	struct irq_work *next;
+>>> +	struct irq_work_list *irq_work_list;
+>>>  
+>>> -	preempt_disable();
+>>> +	irq_work_list = &get_cpu_var(irq_work_lists);
+>>>  
+>>> -	do {
+>>> -		next = __this_cpu_read(irq_work_list);
+>>> -		/* Can assign non-atomic because we keep the flags set. */
+>>> -		entry->next = next_flags(next, IRQ_WORK_FLAGS);
+>>> -	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
+>>> +	llist_add(&work->llnode, &irq_work_list->llist);
+>>>  
+>>>  	/* The list was empty, raise self-interrupt to start processing. */
+>>> -	if (!irq_work_next(entry))
+>>> +	if (!test_and_set_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags))
+>>>  		arch_irq_work_raise();
+>>
+>> So why can't you simply test work->llnode->next?
+> 
+> Yes.  That is better.  Even if there may be a small race window, it is
+> not a big issue to raise one extra self interrupt seldom.
 
-If someone who understands our thread/process time implementation can
-look into this, I'd appreciate it.
+Remember something about this.  I didn't test work->llnode->next here
+because I didn't want expose the implementation details like that here.
+ How about make llist_add() return whether list is empty before adding?
+ Because it will be an inline function, that should be optimized out if
+the caller do not need the information.
 
-Attached below is a watered-down version of rt/tst-cpuclock2.c from
-GLIBC.  Just build it with "gcc -o test test.c -lpthread -lrt" or
-similar.
-
-Run it several times, and you will see cases where the main thread
-will measure a process clock difference before and after the nanosleep
-which is smaller than the cpu-burner thread's individual thread clock
-difference.  This doesn't make any sense since the cpu-burner thread
-is part of the top-level process's thread group.
-
-I've reproduced this on both x86-64 and sparc64 (using both 32-bit and
-64-bit binaries).
-
-For example:
-
-[davem@boricha build-x86_64-linux]$ ./test
-process: before(0.001221967) after(0.498624371) diff(497402404)
-thread:  before(0.000081692) after(0.498316431) diff(498234739)
-self:    before(0.001223521) after(0.001240219) diff(16698)
-[davem@boricha build-x86_64-linux]$ 
-
-The diff of 'process' should always be >= the diff of 'thread'.
-
-I make sure to wrap the 'thread' clock measurements the most tightly
-around the nanosleep() call, and that the 'process' clock measurements
-are the outer-most ones.
-
-I suspect this might be some kind of artifact of how the partial
-runqueue ->clock and ->clock_task updates work?  Maybe some weird
-interaction with ->skip_clock_update?
-
-Or is this some known issue?
-
-Thanks!
-
---------------------
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
-#include <pthread.h>
-
-static pthread_barrier_t barrier;
-
-static void *chew_cpu(void *arg)
-{
-	pthread_barrier_wait(&barrier);
-	while (1)
-		__asm__ __volatile__("" : : : "memory");
-	return NULL;
-}
-
-int main(void)
-{
-	clockid_t process_clock, my_thread_clock, th_clock;
-	struct timespec process_before, process_after;
-	struct timespec me_before, me_after;
-	struct timespec th_before, th_after;
-	struct timespec sleeptime;
-	unsigned long diff;
-	pthread_t th;
-	int err;
-
-	err = clock_getcpuclockid(0, &process_clock);
-	if (err)
-		return 1;
-
-	err = pthread_getcpuclockid(pthread_self(), &my_thread_clock);
-	if (err)
-		return 1;
-
-	pthread_barrier_init(&barrier, NULL, 2);
-	err = pthread_create(&th, NULL, chew_cpu, NULL);
-	if (err)
-		return 1;
-
-	err = pthread_getcpuclockid(th, &th_clock);
-	if (err)
-		return 1;
-
-	pthread_barrier_wait(&barrier);
-
-	err = clock_gettime(process_clock, &process_before);
-	if (err)
-		return 1;
-
-	err = clock_gettime(my_thread_clock, &me_before);
-	if (err)
-		return 1;
-
-	err = clock_gettime(th_clock, &th_before);
-	if (err)
-		return 1;
-
-	sleeptime.tv_sec = 0;
-	sleeptime.tv_nsec = 500000000;
-	nanosleep(&sleeptime, NULL);
-
-	err = clock_gettime(th_clock, &th_after);
-	if (err)
-		return 1;
-
-	err = clock_gettime(my_thread_clock, &me_after);
-	if (err)
-		return 1;
-
-	err = clock_gettime(process_clock, &process_after);
-	if (err)
-		return 1;
-
-	diff = process_after.tv_nsec - process_before.tv_nsec;
-	printf("process: before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-	       process_before.tv_sec, process_before.tv_nsec,
-	       process_after.tv_sec, process_after.tv_nsec, diff);
-	diff = th_after.tv_nsec - th_before.tv_nsec;
-	printf("thread:  before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-	       th_before.tv_sec, th_before.tv_nsec,
-	       th_after.tv_sec, th_after.tv_nsec, diff);
-	diff = me_after.tv_nsec - me_before.tv_nsec;
-	printf("self:    before(%lu.%.9lu) after(%lu.%.9lu) diff(%lu)\n",
-	       me_before.tv_sec, me_before.tv_nsec,
-	       me_after.tv_sec, me_after.tv_nsec, diff);
-
-	return 0;
-}
+Best Regards,
+Huang Ying
