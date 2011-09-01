@@ -1,45 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab1IABMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 21:12:22 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:50986 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756894Ab1IABMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 21:12:09 -0400
-Message-ID: <4E5EDBE4.8010604@linux.vnet.ibm.com>
-Date: Wed, 31 Aug 2011 18:12:04 -0700
-From: Allison Henderson <achender@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+	id S1757366Ab1IABOG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 21:14:06 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:59835 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab1IABOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 21:14:02 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-11.tower-209.messagelabs.com!1314839641!15151416!1
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: lib/bitmap.c: quiet sparse noise about address space
+Date: Wed, 31 Aug 2011 18:13:38 -0700
+User-Agent: KMail/1.9.9
+CC: <akpm@linux-foundation.org>, <len.brown@intel.com>, <ying.huang@intel.com>,
+        <andy.shevchenko@gmail.com>, <ak@linux.intel.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-CC: Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: Re: lock i_mutex for fallocate?
-References: <4E5ED2D5.8040302@linux.vnet.ibm.com>
-In-Reply-To: <4E5ED2D5.8040302@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201108311813.39282.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh, I meant for this to go to linux-fsdevel instead of linux-kernel, but 
-all feedback is welcome!  :)
+The functions __bitmap_parse and __bitmap_parselist both take a pointer
+to a kernel buffer as a parameter and then cast it to a pointer to user
+buffer for use in cases when the parameter is_user indicates that the
+buffer is actually located in user space. This casting, and the casts
+in the callers, results in sparse noise like the following:
 
-On 08/31/2011 05:33 PM, Allison Henderson wrote:
-> Hi All,
->
-> In ext4 punch hole, we realized that the punch hole operation needs to
-> be done under i_mutex just like truncate. i_mutex for truncate is held
-> in the vfs layer, so we dont need to lock it at the file system layer,
-> but vfs does not lock i_mutex for fallocate. We can lock i_mutex for
-> fallocate at the fs layer, but question was raised then: should i_mutex
-> for fallocate be held in the vfs layer instead? I do not know if other
-> file systems need i_mutex to be locked for fallocate, or if they might
-> be locking it already, so I am doing some investigating on this idea,
-> and also the appropriate use of i_mutex in general. Can someone provide
-> some insight this topic? Thx!
->
-> Allison Henderson
+	warning: incorrect type in initializer (different address spaces)
+	  expected char const [noderef] <asn:1>*ubuf
+	  got char const *buf
+	warning: cast removes address space of expression
 
+Since these casts are intentional, use __force to quiet the noise.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Huang Ying <ying.huang@intel.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+
+---
+
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 2f4412e..b7b71bd 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -419,7 +419,7 @@ int __bitmap_parse(const char *buf, unsigned int buflen,
+ {
+ 	int c, old_c, totaldigits, ndigits, nchunks, nbits;
+ 	u32 chunk;
+-	const char __user *ubuf = buf;
++	const char __user __force *ubuf = buf;
+ 
+ 	bitmap_zero(maskp, nmaskbits);
+ 
+@@ -504,7 +504,9 @@ int bitmap_parse_user(const char __user *ubuf,
+ {
+ 	if (!access_ok(VERIFY_READ, ubuf, ulen))
+ 		return -EFAULT;
+-	return __bitmap_parse((const char *)ubuf, ulen, 1, maskp, nmaskbits);
++	return __bitmap_parse((const char __force *)ubuf,
++				ulen, 1, maskp, nmaskbits);
++
+ }
+ EXPORT_SYMBOL(bitmap_parse_user);
+ 
+@@ -594,7 +596,7 @@ static int __bitmap_parselist(const char *buf, unsigned int buflen,
+ {
+ 	unsigned a, b;
+ 	int c, old_c, totaldigits;
+-	const char __user *ubuf = buf;
++	const char __user __force *ubuf = buf;
+ 	int exp_digit, in_range;
+ 
+ 	totaldigits = c = 0;
+@@ -694,7 +696,7 @@ int bitmap_parselist_user(const char __user *ubuf,
+ {
+ 	if (!access_ok(VERIFY_READ, ubuf, ulen))
+ 		return -EFAULT;
+-	return __bitmap_parselist((const char *)ubuf,
++	return __bitmap_parselist((const char __force *)ubuf,
+ 					ulen, 1, maskp, nmaskbits);
+ }
+ EXPORT_SYMBOL(bitmap_parselist_user);
