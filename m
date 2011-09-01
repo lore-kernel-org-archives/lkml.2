@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab1IAX3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 19:29:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52420 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932506Ab1IAX3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 19:29:04 -0400
-Date: Thu, 1 Sep 2011 16:28:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Michel Lespinasse <walken@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] thp: tail page refcounting fix #5
-Message-Id: <20110901162808.80a2117c.akpm@linux-foundation.org>
-In-Reply-To: <20110901152417.GF10779@redhat.com>
-References: <CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
-	<20110824000914.GH23870@redhat.com>
-	<20110824002717.GI23870@redhat.com>
-	<20110824133459.GP23870@redhat.com>
-	<20110826062436.GA5847@google.com>
-	<20110826161048.GE23870@redhat.com>
-	<20110826185430.GA2854@redhat.com>
-	<20110827094152.GA16402@google.com>
-	<20110827173421.GA2967@redhat.com>
-	<CAEwNFnDk0bQZKReKccuQMPEw_6EA2DxN4dm9cmjr01BVT4A7Dw@mail.gmail.com>
-	<20110901152417.GF10779@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S932662Ab1IAXdC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 19:33:02 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55246 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932506Ab1IAXc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 19:32:58 -0400
+Subject: Re: [PATCH] i2c: remove deprecated callbacks
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Ben Dooks <ben-linux@fluff.org>, linux-doc@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+In-Reply-To: <1314919458.4145.23.camel@pasglop>
+References: <1314852027-9523-1-git-send-email-xiyou.wangcong@gmail.com>
+	 <20110901105226.0d8dd8b2@endymion.delvare>
+	 <1314919458.4145.23.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 09:32:07 +1000
+Message-ID: <1314919927.4145.24.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011 17:24:17 +0200
-Andrea Arcangeli <aarcange@redhat.com> wrote:
+On Fri, 2011-09-02 at 09:24 +1000, Benjamin Herrenschmidt wrote:
 
-> Ideally direct-io should stop calling get_page() on pages
-> returned by get_user_pages().
 
-Yeah.  get_user_pages() is sufficient.  Ideally we should be able to
-undo the get_user_pages() get_page() from within the IO completion
-interrupt and we're done.
+ .../...
 
-Cc Andi, who is our resident dio tweaker ;)
+> I'm just bogged down by too many things, including quite a bit of travel
+> lately. I have some mostly untested patches converting part of windfarm
+> (not all of it yet), and therm_adt746x and a patch to add the generic
+> code to register i2c devices from device-tree properly on powermacs.
+> 
+> I'm missing a couple more drivers & bits of windfarm and therm_pm72
+> which I'd like to use the opportunity to convert into a windfarm module.
+
+I'll push out my WIP to a branch on powerpc.git on k.org when hera is
+back online so those who want can help.
+
+Cheers,
+Ben.
+
+> Then there's some sound drivers etc...
+> 
+> I am travelling again tomorrow for 2 weeks, and after that a month in
+> europe, tho I'll have 10 days in the middle where I _might_ be able to
+> make progress on that. Else it will have to wait for november.
+>  
+> > Cong, do you have a specific interest in these callbacks being removed?
+> > 
+> > If you want to help, then instead of sending a patch which I already
+> > have and virtually everybody could have written, please get the
+> > remaining 3 drivers converted to the current i2c binding model:
+> >   sound/ppc/keywest.c
+> >   sound/aoa/codecs/onyx.c
+> >   sound/aoa/codecs/tas.c
+> > THAT would be helpful. At the moment, it only looks like you are trying
+> > to get your name on a trivial patch, i.e. getting credit for work you
+> > didn't really do.
+> 
+> Cheers,
+> Ben.
+> 
+> > > 
+> > > ---
+> > > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> > > index c4a6e14..89a9695 100644
+> > > --- a/Documentation/feature-removal-schedule.txt
+> > > +++ b/Documentation/feature-removal-schedule.txt
+> > > @@ -486,15 +486,6 @@ Files:	include/linux/netfilter_ipv4/ipt_addrtype.h
+> > >  
+> > >  ----------------------------
+> > >  
+> > > -What:	i2c_driver.attach_adapter
+> > > -	i2c_driver.detach_adapter
+> > > -When:	September 2011
+> > > -Why:	These legacy callbacks should no longer be used as i2c-core offers
+> > > -	a variety of preferable alternative ways to instantiate I2C devices.
+> > > -Who:	Jean Delvare <khali@linux-fr.org>
+> > > -
+> > > -----------------------------
+> > > -
+> > > (...)
+> > 
+> 
+
 
