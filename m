@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab1IAOyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 10:54:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51919 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757628Ab1IAOyg (ORCPT
+	id S1757793Ab1IAO47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 10:56:59 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54831 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757671Ab1IAO46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 10:54:36 -0400
-Date: Thu, 1 Sep 2011 16:54:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: process time < thread time?
-In-Reply-To: <1314874459.7945.22.camel@twins>
-Message-ID: <alpine.LFD.2.02.1109011653450.2723@ionos>
-References: <20110831.230718.2029810906806382170.davem@davemloft.net>   <alpine.LFD.2.02.1109011148060.2723@ionos>  <1314871884.7945.20.camel@twins> <alpine.LFD.2.02.1109011226160.2723@ionos> <1314874459.7945.22.camel@twins>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 1 Sep 2011 10:56:58 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20110901141445.GA31447@gondor.apana.org.au>
+References: <20110901133952.GB14522@orbit.nwl.cc>
+	<20110901141445.GA31447@gondor.apana.org.au>
+Date: Thu, 1 Sep 2011 16:56:56 +0200
+X-Google-Sender-Auth: xyhtwFQSajTST5lLs9G_9AewLSs
+Message-ID: <CAJU7za+OAusW-n9F4CLJNSAXVQTE2gxkdgpDFZb2tfys3EZspw@mail.gmail.com>
+Subject: Re: comparison of the AF_ALG interface with the /dev/crypto
+From: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Phil Sutter <phil@nwl.cc>, cryptodev-linux-devel@gna.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011, Peter Zijlstra wrote:
-> On Thu, 2011-09-01 at 12:39 +0200, Thomas Gleixner wrote:
-> > > I think we just deadlocked:
-> > 
-> > That's why I said untested :) 
-> 
-> Reported-by: David Miller <davem@davemloft.net>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/n/tip-nk5489zjtxsln3ixjonjs3h3@git.kernel.org
+On Thu, Sep 1, 2011 at 4:14 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+> Are you maxing out your submission CPU? If not then you're testing
+> the latency of the interface, as opposed to the throughput.
+
+I think it is obvious that a benchmark of throughput measures
+throughput. If however, you think that AF_ALG is in disadvantage in
+this benchmark, because it is a high latency interface, you're free to
+propose and perform another one. I haven't seen anywhere how is this
+interface was supposed to be used, nor about its qualities (high
+latency, maybe(?) high throughput or so). Thus, I designed this
+benchmark with a use-case in mind, i.e., a TLS or DTLS tunnel
+executing in a system with such an accelerator. There might be other
+benchmarks with other use cases in mind, but I haven't seen any.
+
+regards,
+Nikos
