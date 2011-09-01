@@ -1,77 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab1IAM6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:58:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51924 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab1IAM63 (ORCPT
+	id S932212Ab1IANAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 09:00:45 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:52246 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932107Ab1IANAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:58:29 -0400
-Date: Thu, 1 Sep 2011 14:58:24 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 6/6] cgroup: kill subsys->can_attach_task(), pre_attach()
- and attach_task()
-Message-ID: <20110901125822.GB24650@somewhere.redhat.com>
-References: <1314312192-26885-1-git-send-email-tj@kernel.org>
- <1314312192-26885-7-git-send-email-tj@kernel.org>
- <20110830201030.GC15953@somewhere.redhat.com>
- <20110831070313.GA29179@mtj.dyndns.org>
- <20110831134220.GB20598@somewhere>
- <20110901112221.GA2752@htj.dyndns.org>
+	Thu, 1 Sep 2011 09:00:40 -0400
+Date: Thu, 1 Sep 2011 09:00:38 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
+Message-ID: <20110901130038.GA23048@Krystal>
+References: <1314681384-20881-1-git-send-email-ying.huang@intel.com> <1314681384-20881-2-git-send-email-ying.huang@intel.com> <1314785405.23993.21.camel@twins> <4E5EE409.3060102@intel.com> <4E5EFA08.30205@intel.com> <1314863927.7945.11.camel@twins> <4E5F48D1.801@intel.com> <20110901125140.GA22737@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110901112221.GA2752@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110901125140.GA22737@Krystal>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 08:59:34 up 281 days, 18:02,  4 users,  load average: 0.15, 0.04,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 08:22:21PM +0900, Tejun Heo wrote:
-> Hello,
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> * Huang Ying (ying.huang@intel.com) wrote:
+> > On 09/01/2011 03:58 PM, Peter Zijlstra wrote:
+> > > On Thu, 2011-09-01 at 11:20 +0800, Huang Ying wrote:
+> > >> On 09/01/2011 09:46 AM, Huang Ying wrote:
+> > >>>>> -static void __irq_work_queue(struct irq_work *entry)
+> > >>>>> +static void __irq_work_queue(struct irq_work *work)
+> > >>>>>  {
+> > >>>>> -	struct irq_work *next;
+> > >>>>> +	struct irq_work_list *irq_work_list;
+> > >>>>>  
+> > >>>>> -	preempt_disable();
+> > >>>>> +	irq_work_list = &get_cpu_var(irq_work_lists);
+> > >>>>>  
+> > >>>>> -	do {
+> > >>>>> -		next = __this_cpu_read(irq_work_list);
+> > >>>>> -		/* Can assign non-atomic because we keep the flags set. */
+> > >>>>> -		entry->next = next_flags(next, IRQ_WORK_FLAGS);
+> > >>>>> -	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
+> > >>>>> +	llist_add(&work->llnode, &irq_work_list->llist);
+> > >>>>>  
+> > >>>>>  	/* The list was empty, raise self-interrupt to start processing. */
+> > >>>>> -	if (!irq_work_next(entry))
+> > >>>>> +	if (!test_and_set_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags))
+> > >>>>>  		arch_irq_work_raise();
+> > >>>>
+> > >>>> So why can't you simply test work->llnode->next?
+> > >>>
+> > >>> Yes.  That is better.  Even if there may be a small race window, it is
+> > >>> not a big issue to raise one extra self interrupt seldom.
+> > >>
+> > >> Remember something about this.  I didn't test work->llnode->next here
+> > >> because I didn't want expose the implementation details like that here.
+> > >>  How about make llist_add() return whether list is empty before adding?
+> > >>  Because it will be an inline function, that should be optimized out if
+> > >> the caller do not need the information.
 > 
-> On Wed, Aug 31, 2011 at 03:42:24PM +0200, Frederic Weisbecker wrote:
-> > My task counter subsystem patchset brings a cancel_attach_task() callback
-> > that cancels can_attach_task() effects.
+> Yes, that would make sense.
+> 
+> something like
+> 
+> static inline
+> struct llist_node *llist_add(struct llist_node *new, struct llist_head *head)
+> {
+> 	struct llist_node *entry, *old_entry;
+> 
+> #ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> 	BUG_ON(in_nmi());
+> #endif
+> 
+> 	entry = head->first;
+> 	do {
+> 		old_entry = entry;
+> 		new->next = entry;
+> 		cpu_relax();
+> 	} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
+>         return old_entry;
+> }
+> 
+> Where llist_add returns NULL if the list was initially empty, else
+> returns non-null. This return value usage should be documented in the
+> function header, of course.
+> 
+> BUT, big warning here: this whole thing _should_ be renamed as a
+> "lockless stack" rather than a "lockless list". Really. I said it in the
+> past, and here I see another example showing why we should. The only
+> reason why we can get away this easily with knowing atomically if the
+> structure was empty prior to the insertion is because this "list"
+> hehaves like a stack (LIFO). I foresee we'll need to add "lockless
+> queues" at some point (FIFO), which has the ability to enqueue/dequeue
+> concurrently without sharing the same cache-lines when the queue is
+> non-empty. Within that kind of queue structure, knowing if the queue was
+> empty prior to insertion would become a bottleneck, so I would not
+> advise to make that part of _that_ API, which would require to add a new
+> "llqueue" API. And at that point, the "llist" vs "llqueue" semantic
+> would become really confusing. Maybe "llstack" would be more appropriate
+> here instead of llist ? Or llfifo ? The API we can provide with a
+
+I meant lllifo here, sorry. (3 'l's in a row is kind of messy though).
+
+Thanks,
+
+Mathieu
+
+> lock-less structure does not only depend on how the elements are
+> organized, but also on the operations allowed on the structure. So the
+> API should reflect that. So I'm saying this warning again: if we don't
+> fix that now, I think we're heading into a lock-free structure
+> namespacing trainwreck that will limit our ability to add other
+> lock-free operations due vague naming that does not take the operations
+> allowed on the structure into consideration, combined with API
+> constraints permitted by a specific given behavior (e.g. FIFO semantic)
+> that tend to define these lock-free APIs.
+> 
+> I've been working on lock-free structures myself in Userspace RCU: I
+> have lock-free stack and queue, wait-free stack, wait-free queue, and
+> (work in progress), RCU red-black tree (not lock-free), and lock-free
+> RCU expandable hash table. If we plan namespacing of lock-free data
+> structure correctly, I think there will be room for very interesting
+> performance and scalability improvements in the future.
+> 
+> 
+> > > 
+> > > You could also use llist_empty() although that brings me to that
+> > > ACCESS_ONCE thing in there, what's the point?
 > > 
-> > I thought that rebased on top of your patch it's going to be merged inside
-> > cancel_attach() but OTOH we can't cancel the effect of failed migration
-> > on a thread that way.
+> > Something as follow with llist_empty() seems not work.
 > > 
-> > May be we need to keep a cancel_attach_task() just for that purpose?
+> >   empty = llist_empty(irq_work_list);
+> >   llist_add(&work->llnode, irq_work_list);
+> >   if (empty)
+> >           arch_irq_work_raise();
+> > 
+> > Because irq_work IRQ handler or timer IRQ handler may be executed just
+> > before "llist_add(&work->llnode, irq_work_list)", so that, although
+> > "empty == false", arch_irq_work_raise() still should be executed.
+> > 
+> > Can you tell me how to that with llist_empty()?
+> > 
+> > 
+> > For ACCESS_ONCE, Mathiew suggest me to add it,
+> > 
+> > Hi, Mathiew,
+> > 
+> > Can you explain why ACCESS_ONCE should be used here?
 > 
-> We can do that but I think that becomes a bit too complex and fragile.
-> That path won't be traveled unless it races against exit.  Bugs will
-> be difficult to detect and reproduce.  In this respect, the current
-> code already seems racy.  ->can_attach (or other methods in the attach
-> path) and ->exit can race each other and I don't think all subsystems
-> handle that properly.
-
-I guess subsystems don't care about that currently, although I haven't
-checked. But the task counter will need this per thread cancellation in
-migration failure, without the need for any synchronization between
-can_attach, attach and exit.
-
-Now if we want to solve this with a synchronization there, either
-we task_lock() every tasks in the group in the beginning of cgroup_attach_proc().
-But that's not very nice. Or we use cgroup_mutex on cgroup_exit() exit,
-but that's even worse.
-
-I guess we need the leader->sighand->siglock on both cgroup_attach_proc()
-and cgroup_exit(). Besides we may have more reasons to have that:
-
-https://lkml.org/lkml/2011/8/15/342
-
+> It was mainly to force the compiler to re-fetch the head->first value
+> from memory in busy-waiting loops. So even though the right practice is
+> to have a cpu_relax() in the body of the loop (which would force the
+> refetch due to the compiler barrier), having the ACCESS_ONCE in
+> llist_empty() should not hurt much. It also seems to be what atomic*.h
+> does (volatile read), so I guess the expected behavior wrt atomic
+> accesses are to behave as volatile, hence my recommendation to make this
+> llist_empty a volatile access. Quoting my previous email on that topic:
 > 
-> IMHO the right thing to do here is simplifying synchronization rules
-> so that nothing else happens while migration is in progress.
+> "Would it make sense to do:
 > 
-> Thanks.
+>  return ACCESS_ONCE(head->first) == NULL;
+> 
+> instead ? Otherwise the compiler can choose to keep the result around in
+> registers without re-reading (e.g. busy waiting loop)."
+> 
+> So I was not implying it was strictly required, merely wondering whether
+> it should be added.
+> 
+> Best regards,
+> 
+> Mathieu
+> 
+> > 
+> > Best Regards,
+> > Huang Ying
 > 
 > -- 
-> tejun
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
