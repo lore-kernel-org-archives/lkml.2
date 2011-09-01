@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab1IAV6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:58:46 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:55476 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757961Ab1IAV6p convert rfc822-to-8bit (ORCPT
+	id S932209Ab1IAV66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:58:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42256 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932176Ab1IAV64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:58:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110521204148.GB10330@ghostprotocols.net>
-References: <1305968203-14240-1-git-send-email-jim.cromie@gmail.com>
- <1305968203-14240-2-git-send-email-jim.cromie@gmail.com> <20110521103418.GB23651@elte.hu>
- <20110521204148.GB10330@ghostprotocols.net>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Thu, 1 Sep 2011 15:58:13 -0600
-Message-ID: <CAJfuBxzhjhuGRfqW-qXFhNN+X6n_puaVS+-AbZN2NjUQGou3Jw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf stat: add -l <N> option to redirect stderr elsewhere
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Sep 2011 17:58:56 -0400
+Date: Thu, 1 Sep 2011 14:58:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Satoru Moriya <smoriya@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
+        Seiji Aguchi <saguchi@redhat.com>, hughd@google.com,
+        hannes@cmpxchg.org
+Subject: Re: [PATCH -v2 -mm] add extra free kbytes tunable
+Message-Id: <20110901145819.4031ef7c.akpm@linux-foundation.org>
+In-Reply-To: <20110901152650.7a63cb8b@annuminas.surriel.com>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 21, 2011 at 2:41 PM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
-> Em Sat, May 21, 2011 at 12:34:18PM +0200, Ingo Molnar escreveu:
->>
->> * Jim Cromie <jim.cromie@gmail.com> wrote:
->>
->> > This perf stat option emulates valgrind's --log-fd option, allowing the
->> > user to send perf results elsewhere, and leaving stderr for use by the
->> > program under test.
->> >
->> >   3>results perf stat -l 3 -- <cmd>
->> >
->> > The perl distro's make test.valgrind target uses valgrinds --log-fd
->> > option, I've adapted it to invoke perf also, and tested this patch there.
->> >
->> > Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
->>
->> Makes sense!
->>
->> Arnaldo, if you are fine with it, do you want to pick it up - or should i? If
->> you pick it up:
->>
->> Acked-by: Ingo Molnar <mingo@elte.hu>
->
-> Its ok with me:
->
-> Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
->
-> I will pick it this weekend, if you don't merge it till then.
->
-> - Arnaldo
->
+On Thu, 1 Sep 2011 15:26:50 -0400
+Rik van Riel <riel@redhat.com> wrote:
 
-Did this ever happen ?
-Can you point me to the git-url where it did/will end up ?
+> Add a userspace visible knob
+
+argh.  Fear and hostility at new knobs which need to be maintained for
+ever, even if the underlying implementation changes.
+
+Unfortunately, this one makes sense.
+
+> to tell the VM to keep an extra amount
+> of memory free, by increasing the gap between each zone's min and
+> low watermarks.
+> 
+> This is useful for realtime applications that call system
+> calls and have a bound on the number of allocations that happen
+> in any short time period.  In this application, extra_free_kbytes
+> would be left at an amount equal to or larger than than the
+> maximum number of allocations that happen in any burst.
+
+_is_ it useful?  Proof?
+
+Who is requesting this?  Have they tested it?  Results?
+
+> It may also be useful to reduce the memory use of virtual
+> machines (temporarily?), in a way that does not cause memory
+> fragmentation like ballooning does.
+
+Maybe.  You need to alter the setting, then somehow persuade all the
+targeted kswapd's to start running, then somehow determine that they've
+done their thing, then unalter the /proc setting.  Not the best API
+we've ever designed ;)
+
+> ...
+>  
+> +extra_free_kbytes
+> +
+> +This parameter tells the VM to keep extra free memory between the threshold
+> +where background reclaim (kswapd) kicks in, and the threshold where direct
+> +reclaim (by allocating processes) kicks in.
+> +
+> +This is useful for workloads that require low latency memory allocations
+> +and have a bounded burstiness in memory allocations, for example a
+> +realtime application that receives and transmits network traffic
+> +(causing in-kernel memory allocations) with a maximum total message burst
+> +size of 200MB may need 200MB of extra free memory to avoid direct reclaim
+> +related latencies.
+> +
+> +==============================================================
+
+It's upsetting that the names min_free_kbytes and extra_free_kbytes
+don't map onto the kernel variables (WMARK_MIN, WMARK_LOW, WMARK_HIGH)
+and also that they just aren't very communicative.
+
+Oh well, doesn't matter much.
+
+> ...
+> +/*
+> + * Extra memory for the system to try freeing. Used to temporarily
+> + * free memory, to make space for new workloads. Anyone can allocate
+> + * down to the min watermarks controlled by min_free_kbytes above.
+> + */
+
+The comment isn't really complete, is it?  There are valid use cases
+where an alteration here isn't temporary.
+
+
