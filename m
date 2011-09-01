@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab1IAS0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 14:26:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45864 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940Ab1IAS0k (ORCPT
+	id S1757336Ab1IASbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 14:31:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58477 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940Ab1IASbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 14:26:40 -0400
-Message-ID: <4E5FCE58.9060906@canonical.com>
-Date: Thu, 01 Sep 2011 11:26:32 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Thu, 1 Sep 2011 14:31:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
+        Ben Dooks <ben-linux@fluff.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Chew <achew@nvidia.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V2 1/4] i2c: Add irq_gpio field to struct i2c_client.
+Date: Thu, 01 Sep 2011 20:30:33 +0200
+Message-ID: <1432590.4sqjD9XTYs@wuerfel>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <1314895964-15964-1-git-send-email-swarren@nvidia.com>
+References: <1314895964-15964-1-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw> <20110818074756.GE10093@core.coreip.homeip.net>
-In-Reply-To: <20110818074756.GE10093@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:gINn45If+Zfzww0RxPVSDtw5sWvjWW2F47YdcoBuTbr
+ NE3Zkxs6MnyOM8tlWEtjMebQhQbQu2uK51HGMpBzK45yfuMqNX
+ FIuUNDyrMRJ1yb0ASdXwr+LSwVMYAjKz9g8Ek/i5vqfle51Zd5
+ hlCyrgbw6uv1vFW/pSzxZ/go0hbZd3XiFIcXB8xIYhrnaTHiF/
+ lsvzgEG8ZFVlR2qVto+0F5ui2dQHdIxvkCRAqFyuOjiUxEp5by
+ 2vExGqZ5xv6njB44nZ8rhKMIsqviv3Se+jjp34p/oZJ7X5A82W
+ 3ZWqfHr94bM13BoLDEce+UTyifoRkX4xn22UAZto7s/S9fptLT
+ j/AiiG+uH/XY4KlUrFlk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2011 12:47 AM, Dmitry Torokhov wrote:
-> On Thu, Aug 18, 2011 at 09:57:05AM +0800, JJ Ding wrote:
->> +
->> +		i = (etd->fw_version > 0x020800 &&
->> +		     etd->fw_version < 0x020900) ? 1 : 2;
->> +		*x_max = (etd->capabilities[1] - i) * 64;
->> +		*y_max = (etd->capabilities[2] - i) * 64;
->> +		*y_2ft_max = (*y_max - i) * 64 / 4;
+On Thursday 01 September 2011 10:52:37 Stephen Warren wrote:
+> Some devices use a single pin as both an IRQ and a GPIO. In that case,
+> irq_gpio is the GPIO ID for that pin. Not all drivers use this feature.
+> Where they do, and the use of this feature is optional, and the system
+> wishes to disable this feature, this field must be explicitly set to a
+> defined invalid GPIO ID, such as -1.
 > 
-> Hmm, we should have the same range for ST and MT data and scale MT data
-> if it has lower resolution to match ST.
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v2: This patch is new. This updated series based on Arnd's comments that
+> this solution was a good idea.
 
-I saw this go by a while back and it made sense to me at the time.
-However, I've had some thoughts that give me pause.
+Looks very good to me (the whole series).
 
-Seth Forshee has been working on getting a semi-mt driver for ALPS
-devices. The ALPS devices have an interesting mechanism for providing
-multitouch data, but it boils down to having a resolution of only 15
-values in the X axis and 11 in the Y axis (it looks possible to
-extrapolate and get double the resolution, but my point will remain).
-
-Let's take the X synaptics module as an example of the repercussions of
-in-kernel axis scaling. The X synaptics module translates two touch
-drags into scroll events. Synaptics will want to use the highest
-resolution axis for generating scroll events. If both the MT and ST axes
-have the same resolution, it might pick the MT axes for scrolling. On
-ALPS devices with in-kernel axis scaling that would be a bad choice.
-
-It's trivial to project the MT and ST axes onto each other in userspace.
-I suggest we report the real range and resolution of ST and MT axes
-independently.
-
--- Chase
+	Arnd
