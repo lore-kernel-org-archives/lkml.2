@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab1IATTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 15:19:43 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:46344 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757264Ab1IATTm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 15:19:42 -0400
+	id S1757762Ab1IATUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 15:20:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35910 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757575Ab1IATUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 15:20:06 -0400
+Date: Thu, 1 Sep 2011 21:20:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Liming Wang <liming.wang@windriver.com>
+cc: rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mips/rt: convert cascade interrupt non threaded
+In-Reply-To: <1314370804-21266-1-git-send-email-liming.wang@windriver.com>
+Message-ID: <alpine.LFD.2.02.1109012115000.2723@ionos>
+References: <1314370804-21266-1-git-send-email-liming.wang@windriver.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1314569323-6886-1-git-send-email-per.forlin@linaro.org>
-References: <1314569323-6886-1-git-send-email-per.forlin@linaro.org>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Fri, 2 Sep 2011 00:49:21 +0530
-Message-ID: <CANfBPZ-azGV0H7asRHD5+vdFjCkrx=E2Oypnrk_SW9K5+DwTLQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: omap_hsmmc: DMA unmap only once in case of MMC error
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Santosh <santosh.shilimkar@ti.com>,
-        Balaji T Krishnamoorthy <balajitk@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 29, 2011 at 3:38 AM, Per Forlin <per.forlin@linaro.org> wrote:
-> Reported by Russell King:
-> ------------
-> mmcblk0: error -84 transferring data, sector 149201, nr 64,
-> cmd response 0x900, card status 0xb00
-> mmcblk0: retrying using single block read
->
-> WARNING: at /home/rmk/git/linux-2.6-rmk/lib/dma-debug.c:811 check_unmap
-> omap_hsmmc omap_hsmmc.0: DMA-API: device driver tries to free DMA memory
-> it has not allocated [device address=0x0000000080933000] [size=20480 bytes]
-> -------------
->
-> In case of an error dma_unmap() is issued in omap_hsmmc_dma_cleanup()
-> and then again in omap_hsmmc_post_req(). Resolve this by clearing the
-> host_cookie to indicate there is no DMA mapped memory to unmap.
->
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+On Fri, 26 Aug 2011, Liming Wang wrote:
+
+> The preempt_rt kernel forces all irq interrupts to be threaded,
+> but special interrupts can be excluded from this conversion.
+> The cascade interrupt should be part of these exceptions.
+> 
+> In this case, irq2 is initialized before "kthreadd" task, which
+> converts irq interrupt to threaded.
+> 
+> If this irq is threaded, the kernel calls "try_to_wake_up" function
+> to wake up "kthreadd" task, but at that moment, "kthreadd" task
+> has not been initialized and try_to_wake_up wakes up a NULL task.
+
+That's not a reason to mark an interrupt NO_THREAD. The interrupt
+handler could be non hardirq safe on RT. You'd run into other
+problems.
+
+In the case at hand it's the no_action handler which is hardirq safe
+on RT and being no_action which means it simply returns IRQ_NONE.
+I'll queue it for the next rt release and fixup the changelog myself.
+ 
+Thanks,
+
+	tglx
+
+
+> Signed-off-by: Liming Wang <liming.wang@windriver.com>
+> Signed-off-by: Bruce Ashfield <bruce.ashfield@windriver.com>
 > ---
-> Bug fix on 3.1-rc3
->
->  drivers/mmc/host/omap_hsmmc.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index 21e4a79..31d9817 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -1011,6 +1011,7 @@ static void omap_hsmmc_dma_cleanup(struct omap_hsmmc_host *host, int errno)
->                        host->data->sg_len,
->                        omap_hsmmc_get_dma_dir(host, host->data));
->                omap_free_dma(dma_ch);
-> +               host->data->host_cookie = 0;
->        }
->        host->data = NULL;
->  }
-> @@ -1576,8 +1577,10 @@ static void omap_hsmmc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
->        struct mmc_data *data = mrq->data;
->
->        if (host->use_dma) {
-> -               dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
-> -                            omap_hsmmc_get_dma_dir(host, data));
-> +               if (data->host_cookie)
-> +                       dma_unmap_sg(mmc_dev(host->mmc), data->sg,
-> +                                    data->sg_len,
-> +                                    omap_hsmmc_get_dma_dir(host, data));
->                data->host_cookie = 0;
->        }
->  }
+>  arch/mips/kernel/i8259.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/mips/kernel/i8259.c b/arch/mips/kernel/i8259.c
+> index 5c74eb7..fb338db 100644
+> --- a/arch/mips/kernel/i8259.c
+> +++ b/arch/mips/kernel/i8259.c
+> @@ -295,6 +295,7 @@ static void init_8259A(int auto_eoi)
+>  static struct irqaction irq2 = {
+>  	.handler = no_action,
+>  	.name = "cascade",
+> +	.flags = IRQF_NO_THREAD,
+>  };
+>  
+>  static struct resource pic1_io_resource = {
+> -- 
+> 1.7.0.4
+> 
 > --
-> 1.7.4.1
->
->
-
-I just posted a patch [1] which just consolidates all unmapping to
-just post_req.
-This would obviously prevent double unmapping, and keeps all the related
-dma operations at a single place. Let me know if that works better.
-
-[1]: http://marc.info/?l=linux-mmc&m=131490406920616&w=2
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
