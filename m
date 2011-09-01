@@ -1,21 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab1IASke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 14:40:34 -0400
-Received: from new.virutasdegoma.com ([213.165.82.142]:51172 "EHLO
-	tetraware.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757301Ab1IASkd (ORCPT
+	id S1757401Ab1IASuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 14:50:40 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46757 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756522Ab1IASuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 14:40:33 -0400
-From: jose.jimenez@charanga.es
-Reply-To: jose.jimenez@charanga.es
-To: linux-kernel@vger.kernel.org
-Subject: Ausente por Vacaciones
-Auto-Submitted: auto-replied
-Message-Id: <E1QzCAk-0001Jt-CT@tetraware.net>
-Date: Thu, 01 Sep 2011 20:39:30 +0200
+	Thu, 1 Sep 2011 14:50:39 -0400
+Subject: Re: [BUG] scsi: hpsa: how to destroy your files
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Roland Dreier <roland@purestorage.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, scameron@beardog.cce.hp.com,
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+In-Reply-To: <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
+References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
+	 <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20110901160724.GN9189@beardog.cce.hp.com>
+	 <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Sep 2011 11:50:38 -0700
+Message-ID: <1314903038.3067.27.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Les comunico que estaré ausente del 19 de Agosto al 4 de Septiembre por vacaciones.rnrnPueden ponerse en contacto con nosotros a través de la dirección departamento.informatica@charanga.esrnrnUn saludo.
+On Thu, 2011-09-01 at 10:58 -0700, Roland Dreier wrote:
+> > OK I found the bad commit,I got lucky... I lost some files but my
+> > machine was able to complete the bisection. CC involved people
+> 
+> > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI-E Max Payload Size on fabric
+> 
+> Hi Eric,
+> 
+> I guess it would be useful to see "lspci -vv" output with a "good" kernel
+> and with that bad patch applied.  Most likely we should see some difference
+> somewhere in the MaxPayload fields in the PCI Express capability of
+> some device.
+> 
+> Either the RAID controller or something else lies, and puts a value
+> in the DevCap that it can't actually support, or else the patch is
+> buggy and puts something out of range in a DevCtl somewhere.
+
+
+While we investigate, I think the problems produced by the patch (data
+corruption) are serious enough to warrant reverting it, please Jesse.
+
+Thanks,
+
+James
+
+
