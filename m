@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882Ab1IATrF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 15:47:05 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:44043 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757563Ab1IATrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 15:47:03 -0400
-X-ASG-Debug-ID: 1314906421-01de2813ab2ec00001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E5FE133.3060904@fusionio.com>
-Date: Thu, 1 Sep 2011 13:46:59 -0600
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>,
-        "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
-	<asamymuthupa@micron.com>
-Subject: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
-References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com> <2A9BE4FF6209B644B6F8EB62DE6AEA1E07663ED4@ntxfrembx01.micron.com> <x49y5y8xd4i.fsf@segfault.boston.devel.redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH v4] drivers/block/mtip32xx: Adding new driver mtip32xx
-In-Reply-To: <x49y5y8xd4i.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1314906421
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.73361
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1757916Ab1IAT4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 15:56:13 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40856 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757438Ab1IAT4L convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 15:56:11 -0400
+Subject: gpio-pca953x interrupt feature unreliable
+Content-Transfer-Encoding: 8BIT
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <BA8BCC80-63E9-4798-9D2D-F6658D1E9F65@gmail.com>
+Date: Thu, 1 Sep 2011 15:58:08 -0400
+Cc: open list <linux-kernel@vger.kernel.org>,
+        broonie@opensource.wolfsonmicro.com, haojian.zhuang@marvell.com
+To: maz@misterjones.org, grant.likely@secretlab.ca
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-01 13:43, Jeff Moyer wrote:
-> "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com> writes:
-> 
->> New patch for mtip32xx driver based on feedback from
->> Jens Axboe, Christoph Hellwig, and Alan Cox.
-> 
-> Hi, Sam,
-> 
-> The patch is line-wrapped.  Could you fix your mailer settings and
-> re-send?
+Hi all,
 
-JFYI, it's already queued up in a for-3.2/mtip32xx branch in my tree,
-unwrapped. So might be easier to just take a peek there. Branch is
-intended to be merged into for-3.2/drivers eventually.
+(Using 3.1.0-rc4)
 
--- 
-Jens Axboe
+I have detected a flaw in the interrupt support of the gpio-pca953x driver. This is how I discovered the issue:
+
+I have a interrupt client device which has it's interrupt signal connected to one of the GPIOs of the pca9555. The client is an ad714x device. It's interrupt routine is falling edge triggered (so says the driver, but according to the AD714x specs, it should be level,low, however this is another topic). The pca9555 is interrupting the CPU through INTA of an ethernet PCI card for which I have only done "echo 1 > /bus/pci/devices/00xyz/enable". It is "(level, low)" which matches the pca953x request_Isr call (IRQF_TRIGGER_LOW | IRQF_ONESHOT). I used two GPOs on some other device to get the !ISR signals. These show the nested nature of the cli ISR called from the pca953x's ISR.
+
+ASCII art of my probing (use a monospace font)
+              ___          _______
+client !INT      |________|       |________(lost)___
+              __________                   _________
+cli !ISR                |____|____________|
+              ___      ___         _________________
+pca953x !INT     |____|   |_______|
+              _____                             ____
+pca953x !ISR       |___________________________|
+
+(note: the little spike in the cli !ISR marks the end of reading the client's registers, the rest of the ISR is updating driver state machines, etc.)
+
+Summary: The client enters interrupt, which immediately puts the pca953x in interrupt as well. When the pca953x enters it's isr thread, it reads the input status register, this immediately clears the pca953x interrupt. The pca953x ISR then figure's out it should invoke the nested ISR for the client. The client ISR starts by reading the client's status register, which clears the client interrupt. This immediately puts the pca953x back into interrupt since it's a different state that what was last read in the pca953x. This should't be a problem. The real problem is that the client goes back in interrupt before the client ISR even has time to finish. At that moment, the pca953x's input are back to the way they where when the pca953x ISR began and it read the input status register. When all of the ISR routines are done, the client has it's INT line asserted and no more interrupt will come from the pca953x.
+
+The pca953x specs clearly state this: "Resetting the interrupt circuit is achieved when data on the port is changed to the original setting, data is read from the port that generated the interrupt."
+
+So in essence, although the pca953x's design and doc says only edges are detected and supported, the chip design makes it impossible to guarantee that all edges will be caught. In fact, since the chip only has an input state register and no latching interrupt status register, the driver could be slightly modified to support only level based interrupt clients.
+
+I would propose a patch, but I am missing knowledge on the internals of the kernel's irq code, so here's a description, hoping to get some feedback.  In the pca953x_irq_handler (threaded), just after reading the pca953x's input status register (which clears the pca953x INT), just before calling the nested handlers, we could re-enable the IRQ so that the pca953x_irq_handler would be re-scheduled right after if needed. Now this would always happen since the client's clearing of it's INT constitute a change. This is why a hard IRQ handler should be added to re-disable the interrupt to avoid the storm caused by the level,low interrupt. In addition to all this, the driver should be changed to support only LEVEL based clients, since this is what it can reliably detect.
+
+Any thoughts? Hints on the precise APIs to use?
+
+/jfd
+
+
+
+
 
