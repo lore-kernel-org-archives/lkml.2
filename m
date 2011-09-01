@@ -1,142 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab1IAI2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 04:28:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756447Ab1IAI2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 04:28:47 -0400
-Date: Thu, 1 Sep 2011 10:27:55 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] Revert "memcg: add memory.vmscan_stat"
-Message-ID: <20110901082755.GD22561@redhat.com>
-References: <20110808124333.GA31739@redhat.com>
- <20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
- <20110829155113.GA21661@redhat.com>
- <20110830101233.ae416284.kamezawa.hiroyu@jp.fujitsu.com>
- <20110830070424.GA13061@redhat.com>
- <20110830162050.f6c13c0c.kamezawa.hiroyu@jp.fujitsu.com>
- <20110830084245.GC13061@redhat.com>
- <CALWz4iyXbrgcrZEOsgvvW9mu6fr7Qwbn2d1FR_BVw6R_pMZPsQ@mail.gmail.com>
- <20110901064034.GC22561@redhat.com>
- <CALWz4iyKXx+q5uKVOFqDs3Xx7ZGOertJ-ZWkwO=Z0Ynr4qsm2A@mail.gmail.com>
+	id S1756614Ab1IAI3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 04:29:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47205 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756100Ab1IAI3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 04:29:17 -0400
+Message-ID: <4E5F4258.8030008@suse.cz>
+Date: Thu, 01 Sep 2011 10:29:12 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: gregkh@suse.de, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 3/4] TTY: serial, fix build of some drivers
+References: <1314818699-10873-1-git-send-email-jslaby@suse.cz> <1314818699-10873-3-git-send-email-jslaby@suse.cz> <20110831222850.494bf19d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110831222850.494bf19d@lxorguk.ukuu.org.uk>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALWz4iyKXx+q5uKVOFqDs3Xx7ZGOertJ-ZWkwO=Z0Ynr4qsm2A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 12:04:24AM -0700, Ying Han wrote:
-> On Wed, Aug 31, 2011 at 11:40 PM, Johannes Weiner <jweiner@redhat.com> wrote:
-> > On Wed, Aug 31, 2011 at 11:05:51PM -0700, Ying Han wrote:
-> >> On Tue, Aug 30, 2011 at 1:42 AM, Johannes Weiner <jweiner@redhat.com> wrote:
-> >> > You want to look at A and see whether its limit was responsible for
-> >> > reclaim scans in any children.  IMO, that is asking the question
-> >> > backwards.  Instead, there is a cgroup under reclaim and one wants to
-> >> > find out the cause for that.  Not the other way round.
-> >> >
-> >> > In my original proposal I suggested differentiating reclaim caused by
-> >> > internal pressure (due to own limit) and reclaim caused by
-> >> > external/hierarchical pressure (due to limits from parents).
-> >> >
-> >> > If you want to find out why C is under reclaim, look at its reclaim
-> >> > statistics.  If the _limit numbers are high, C's limit is the problem.
-> >> > If the _hierarchical numbers are high, the problem is B, A, or
-> >> > physical memory, so you check B for _limit and _hierarchical as well,
-> >> > then move on to A.
-> >> >
-> >> > Implementing this would be as easy as passing not only the memcg to
-> >> > scan (victim) to the reclaim code, but also the memcg /causing/ the
-> >> > reclaim (root_mem):
-> >> >
-> >> >        root_mem == victim -> account to victim as _limit
-> >> >        root_mem != victim -> account to victim as _hierarchical
-> >> >
-> >> > This would make things much simpler and more natural, both the code
-> >> > and the way of tracking down a problem, IMO.
-> >>
-> >> This is pretty much the stats I am currently using for debugging the
-> >> reclaim patches. For example:
-> >>
-> >> scanned_pages_by_system 0
-> >> scanned_pages_by_system_under_hierarchy 50989
-> >>
-> >> scanned_pages_by_limit 0
-> >> scanned_pages_by_limit_under_hierarchy 0
-> >>
-> >> "_system" is count under global reclaim, and "_limit" is count under
-> >> per-memcg reclaim.
-> >> "_under_hiearchy" is set if memcg is not the one triggering pressure.
-> >
-> > I don't get this distinction between _system and _limit.  How is it
-> > orthogonal to _limit vs. _hierarchy, i.e. internal vs. external?
+On 08/31/2011 11:28 PM, Alan Cox wrote:
+> On Wed, 31 Aug 2011 21:24:58 +0200
+> Jiri Slaby <jslaby@suse.cz> wrote:
 > 
-> Something like :
+>> I'm getting build errors such as:
+>> .../tty/serial/max3107.c: In function â€˜put_data_to_circ_bufâ€™:
+>> .../tty/serial/max3107.c:149:2: error: implicit declaration of function â€˜tty_insert_flip_stringâ€™
+>>
+>> Those drivers need to include linux/tty_flip.h. The question is
+>> whether we want to fix them at all. As they are broken for some time
+>> already and nobody noticed...
 > 
-> +enum mem_cgroup_scan_context {
-> +       SCAN_BY_SYSTEM,
-> +       SCAN_BY_SYSTEM_UNDER_HIERARCHY,
-> +       SCAN_BY_LIMIT,
-> +       SCAN_BY_LIMIT_UNDER_HIERARCHY,
-> +       NR_SCAN_CONTEXT,
-> +};
-> 
-> if (global_reclaim(sc))
->    context = scan_by_system
-> else
->    context = scan_by_limit
-> 
-> if (target != mem)
->    context++;
+> Config options randomly including it ?
 
-I understand what you count, just not why.  If we just had
+Ah, no, ignore that comment. I realized that I removed linux/tty_flip.h
+inclusion from serial_core.h. I moved the big inlines out of the header
+and the inclusion was no longer needed there.
 
-	SCAN_LIMIT
-	SCAN_HIERARCHY
+Hence these failures. And I think there will be more. So please apply
+the patch, it's correct, except the changelog.
 
-wouldn't it be able to convey all that is necessary?  Global pressure
-is just hierarchical pressure, it comes from the outermost 'container'
-that is the machine itself.
-
-If you have one just memcg, SCAN_LIMIT shows reclaim pressure because
-of the limit and SCAN_HIERARCHY shows global pressure.
-
-With a hierarchical setup, you can find pressure either in SCAN_LIMIT
-or by looking at SCAN_HIERARCHY and recursively check the parent.
-
-        root_mem_cgroup
-       /
-      A
-     /
-    B
-
-Where is the difference for B whether outside pressure is coming from
-physical memory limitations or the limit in A?  The problem is not in
-B, you have to check the parents anyway.
-
-Or put differently:
-
-                root_mem_cgroup
-               /
-              A
-             /
-            B
-           /
-          C
-
-In C, you would account global pressure separately but would not make
-a distinction between pressure from A's limit and pressure from B's
-limit.
-
-What makes the physical memory limit special that requires the
-resulting reclaims to be designated over reclaims due to other
-hierarchical limits?
+thanks,
+-- 
+js
+suse labs
