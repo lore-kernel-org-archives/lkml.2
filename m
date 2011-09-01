@@ -1,169 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab1IAB2X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 21:28:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50286 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377Ab1IAB2I (ORCPT
+	id S932097Ab1IAB33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 21:29:29 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:4300 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756900Ab1IAB31 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 21:28:08 -0400
-From: Shan Hai <haishan.bai@gmail.com>
-To: akpm@linux-foundation.org
-Cc: eric.dumazet@gmail.com, vapier@gentoo.org, asharma@fb.com,
-        linux-kernel@vger.kernel.org, Shan Hai <haishan.bai@gmail.com>
-Subject: [PATCH 1/1] lib:atomic64 using raw_spin_lock_irq[save|resotre] for atomicity
-Date: Thu,  1 Sep 2011 09:28:00 +0800
-Message-Id: <1314840480-25182-2-git-send-email-haishan.bai@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314840480-25182-1-git-send-email-haishan.bai@gmail.com>
-References: <1314840480-25182-1-git-send-email-haishan.bai@gmail.com>
+	Wed, 31 Aug 2011 21:29:27 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH v4 8/8] Input: elantech - add v4 hardware support
+In-Reply-To: <4E5E2E33.9040904@tudelft.nl>
+References: <1314606539-24722-1-git-send-email-jj_ding@emc.com.tw> <1314606539-24722-9-git-send-email-jj_ding@emc.com.tw> <4E5E2E33.9040904@tudelft.nl>
+User-Agent: Notmuch/0.7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 01 Sep 2011 09:31:33 +0800
+Message-ID: <87ty8x3v62.fsf@emc.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spin_lock_irq[save|restore] could break the atomicity of the
-atomic64_* operations in the PREEMPT-RT configuration, because
-the spin_lock_irq[save|restore] themselves are preemptable in the
-PREEMPT-RT, using raw variant of the spin lock could provide the
-atomicity that atomic64_* need.
+Hi Éric,
 
-Signed-off-by: Shan Hai <haishan.bai@gmail.com>
----
- lib/atomic64.c |   40 ++++++++++++++++++++--------------------
- 1 files changed, 20 insertions(+), 20 deletions(-)
+Thanks for your comments.
+Reply below inline, thank you.
 
-diff --git a/lib/atomic64.c b/lib/atomic64.c
-index e12ae0d..26f524a 100644
---- a/lib/atomic64.c
-+++ b/lib/atomic64.c
-@@ -48,9 +48,9 @@ long long atomic64_read(const atomic64_t *v)
- 	spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_read);
-@@ -60,9 +60,9 @@ void atomic64_set(atomic64_t *v, long long i)
- 	unsigned long flags;
- 	spinlock_t *lock = lock_addr(v);
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	v->counter = i;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- }
- EXPORT_SYMBOL(atomic64_set);
- 
-@@ -71,9 +71,9 @@ void atomic64_add(long long a, atomic64_t *v)
- 	unsigned long flags;
- 	spinlock_t *lock = lock_addr(v);
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	v->counter += a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- }
- EXPORT_SYMBOL(atomic64_add);
- 
-@@ -83,9 +83,9 @@ long long atomic64_add_return(long long a, atomic64_t *v)
- 	spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter += a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_add_return);
-@@ -95,9 +95,9 @@ void atomic64_sub(long long a, atomic64_t *v)
- 	unsigned long flags;
- 	spinlock_t *lock = lock_addr(v);
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	v->counter -= a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- }
- EXPORT_SYMBOL(atomic64_sub);
- 
-@@ -107,9 +107,9 @@ long long atomic64_sub_return(long long a, atomic64_t *v)
- 	spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter -= a;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_sub_return);
-@@ -120,11 +120,11 @@ long long atomic64_dec_if_positive(atomic64_t *v)
- 	spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter - 1;
- 	if (val >= 0)
- 		v->counter = val;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_dec_if_positive);
-@@ -135,11 +135,11 @@ long long atomic64_cmpxchg(atomic64_t *v, long long o, long long n)
- 	spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter;
- 	if (val == o)
- 		v->counter = n;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_cmpxchg);
-@@ -150,10 +150,10 @@ long long atomic64_xchg(atomic64_t *v, long long new)
- 	spinlock_t *lock = lock_addr(v);
- 	long long val;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	val = v->counter;
- 	v->counter = new;
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return val;
- }
- EXPORT_SYMBOL(atomic64_xchg);
-@@ -164,12 +164,12 @@ int atomic64_add_unless(atomic64_t *v, long long a, long long u)
- 	spinlock_t *lock = lock_addr(v);
- 	int ret = 0;
- 
--	spin_lock_irqsave(lock, flags);
-+	raw_spin_lock_irqsave(lock, flags);
- 	if (v->counter != u) {
- 		v->counter += a;
- 		ret = 1;
- 	}
--	spin_unlock_irqrestore(lock, flags);
-+	raw_spin_unlock_irqrestore(lock, flags);
- 	return ret;
- }
- EXPORT_SYMBOL(atomic64_add_unless);
--- 
-1.7.4.1
+jj
 
+On Wed, 31 Aug 2011 14:50:59 +0200, Éric Piel <E.A.B.Piel@tudelft.nl> wrote:
+> Op 29-08-11 10:28, JJ Ding schreef:
+> > v4 hardware is a true multitouch capable touchpad (up to 5 fingers).
+> > The packet format is quite complex, please see protocol document for
+> > reference.
+> Hi,
+> 
+> It's great that you add support for another version!
+> 
+> Looks good. Just a few comment (inline).
+> 
+> Cheers,
+> Éric
+> 
+> 
+> >
+> > Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
+> > ---
+> >   Documentation/input/elantech.txt |  170 ++++++++++++++++++++++++++
+> >   drivers/input/mouse/elantech.c   |  247 ++++++++++++++++++++++++++++++++++----
+> >   drivers/input/mouse/elantech.h   |   29 ++++-
+> >   3 files changed, 420 insertions(+), 26 deletions(-)
+> >
+> > diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
+> > index cee08ee..f63115a 100644
+> > --- a/Documentation/input/elantech.txt
+> > +++ b/Documentation/input/elantech.txt
+> > @@ -32,6 +32,12 @@ Contents
+> >       6.2 Native absolute mode 6 byte packet format
+> >           6.2.1 One/Three finger touch
+> >           6.2.2 Two finger touch
+> > + 7. Hardware version 4
+> > +    7.1 Registers
+> > +    7.2 Native absolute mode 6 byte packet format
+> > +        7.2.1 Status packet
+> > +        7.2.2 Head packet
+> > +        7.2.3 Motion packet
+> >
+> >
+> >
+> > @@ -573,3 +579,167 @@ The packet format is exactly the same for two finger touch, except the hardware
+> >   sends two 6 byte packets. The first packet contains data for the first finger,
+> >   the second packet has data for the second finger. So for two finger touch a
+> >   total of 12 bytes are sent.
+> > +
+> > +/////////////////////////////////////////////////////////////////////////////
+> > +
+> > +7. Hardware version 4
+> > +   ==================
+> > +
+> > +7.1 Registers
+> > +    ~~~~~~~~~
+> > +* reg_07
+> > +
+> > +   bit   7   6   5   4   3   2   1   0
+> > +         0   0   0   0   0   0   0   A
+> > +
+> > +         A: 1 = enable absolute tracking
+> > +
+> > +7.2 Native absolute mode 6 byte packet format
+> > +    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> > +v4 hardware is a true multitouch touchpad, capable of tracking up to 5 fingers.
+> > +Unfortunately, due to PS/2's limited bandwidth, its packet format is rather
+> > +complex.
+> > +
+> > +Whenever the numbers or identities of the fingers changes, the hardware sends a
+> > +status packet to indicate how many and which fingers is on touchpad, followed by
+> > +head packets or motion packets. A head packet contains data of finger id, finger
+> > +position (absolute x, y values), width, and presure. A motion packet contains
+> Typo: pres_s_ure
+Fixed.
+> > +two fingers' position delta.
+> > +
+> :
+> > diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+> > index c4ceefd..0d3936d 100644
+> > --- a/drivers/input/mouse/elantech.c
+> > +++ b/drivers/input/mouse/elantech.c
+> > @@ -84,12 +84,6 @@ static int elantech_read_reg(struct psmouse *psmouse, unsigned char reg,
+> >   	unsigned char param[3];
+> >   	int rc = 0;
+> >
+> > -	if (reg<  0x10 || reg>  0x26)
+> > -		return -1;
+> > -
+> > -	if (reg>  0x11&&  reg<  0x20)
+> > -		return -1;
+> > -
+> You could still leave a check of reg being between 0x07 and 0x26, it's
+> better than nothing.
+OK, I will add them back. 
+> :
+> >
+> > +static void elantech_mt_sync(struct psmouse *psmouse)
+> > +{
+> > +	struct input_dev *dev = psmouse->dev;
+> > +	unsigned char *packet = psmouse->packet;
+> > +
+> > +	input_report_key(dev, BTN_LEFT, packet[0]&  0x01);
+> > +	input_report_key(dev, BTN_RIGHT, packet[0]&  0x02);
+> > +	input_mt_report_pointer_emulation(dev, true);
+> > +	input_sync(dev);
+> > +}
+> The function naming is a bit strange. If you put _mt_, I expect there is 
+> only code related to multitouch. Maybe rename to:
+> elantech_input_sync_v4()
+Changed.
+> 
+> > +
+> > +static void process_packet_status(struct psmouse *psmouse)
+> :
+> > +static void process_packet_head(struct psmouse *psmouse)
+> :
+> > +static void process_packet_motion(struct psmouse *psmouse)
+> Maybe rename these function to *_v4(), so that it's clear it's not for 
+> v3 hardware or any other version.
+Changed.
+> :
+> > @@ -645,10 +807,11 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+> >
+> >   static int set_range(struct psmouse *psmouse, unsigned int *x_min,
+> >   		     unsigned int *y_min, unsigned int *x_max,
+> > -		     unsigned int *y_max)
+> > +		     unsigned int *y_max, unsigned int *width)
+> >   {
+> >   	struct elantech_data *etd = psmouse->private;
+> >   	unsigned char param[3];
+> > +	unsigned char traces = 0;
+> Don't initialize it.
+Fixed.
+> 
+> >   	int i;
+> >
+> >   	switch (etd->hw_version) {
+> > @@ -677,12 +840,16 @@ static int set_range(struct psmouse *psmouse, unsigned int *x_min,
+> >   		}
+> >   		break;
+> >
+> > +	case 4:
+> > +		traces = etd->capabilities[1];
+> > +		/* pass through */
+> >   	case 3:
+> >   		if (synaptics_send_cmd(psmouse, ETP_FW_ID_QUERY, param))
+> >   			return -1;
+> >
+> >   		*x_max = (0x0f&  param[0])<<  8 | param[1];
+> >   		*y_max = (0xf0&  param[0])<<  4 | param[2];
+> > +		*width = *x_max / (traces - 1);
+> >   		break;
+> >   	}
+> width is used only for firmware 4, right? If so then this code is too 
+> tricky. Order normally the cases, and duplicate the few common lines. 
+> Maintainability is more important than saving a couple of bytes :-)
+Yes, width is only used for firmware 4. I will change this for better
+maintainability.
+> Also, what happens if the firmware returns 1 in  etd->capabilities[1]? 
+> Make sure a division by zero is _impossible_. Please add a check on sane 
+> values for "traces", and bail out if it's not within these limits:
+> 	if ((traces < 2) || (traces > *x_max))
+> 		return -1;
+Thanks for reminding me this. I will fix it.
+> Éric
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
