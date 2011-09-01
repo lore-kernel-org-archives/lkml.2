@@ -1,106 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab1IAWmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 18:42:12 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34340 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202Ab1IAWmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 18:42:09 -0400
-Message-ID: <4E600A3B.2090609@linux.vnet.ibm.com>
-Date: Thu, 01 Sep 2011 17:42:03 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: gregkh@suse.de, devel@driverdev.osuosl.org, ngupta@vflare.org,
-        cascardo@holoscopio.com, rdunlap@xenotime.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] staging: zcache: xcfmalloc support
-References: <1314801641-15059-1-git-send-email-sjenning@linux.vnet.ibm.com> <6e0e7950-0c91-4bb3-929b-3853fa95e63d@default>
-In-Reply-To: <6e0e7950-0c91-4bb3-929b-3853fa95e63d@default>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932554Ab1IAWu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 18:50:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35114 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932202Ab1IAWuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 18:50:55 -0400
+Date: Thu, 1 Sep 2011 15:49:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Vasiliy Kulikov <segoon@openwall.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-Id: <20110901154946.b43ba91b.akpm@linux-foundation.org>
+In-Reply-To: <20110901104633.GG30615@sun>
+References: <20110831075814.003575573@openvz.org>
+	<20110831080229.100652529@openvz.org>
+	<20110831090612.GA3253@albatros>
+	<20110831112642.GI25465@sun>
+	<20110831140416.GA17626@shutemov.name>
+	<20110831142622.GB30615@sun>
+	<20110831151023.5b7e12da.akpm@linux-foundation.org>
+	<20110901104633.GG30615@sun>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/31/2011 02:46 PM, Dan Magenheimer wrote:
->> This patchset introduces a new memory allocator for persistent
->> pages for zcache.  The current allocator is xvmalloc.  xvmalloc
->> has two notable limitations:
->> * High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
->> * No compaction support which reduces page reclaimation
->>
->> xcfmalloc seeks to fix these issues by using scatter-gather model that
->> allows for cross-page allocations and relocatable data blocks.
->>
->> In tests, with pages that only compress to 75% of their original
->> size, xvmalloc had an effective compression (pages stored / pages used by the
->> compressed memory pool) of ~95% (~20% lost to fragmentation). Almost nothing
->> was gained by the compression in this case. xcfmalloc had an effective
->> compression of ~77% (about ~2% lost to fragmentation and metadata overhead).
+On Thu, 1 Sep 2011 14:46:34 +0400
+Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+
+> On Wed, Aug 31, 2011 at 03:10:23PM -0700, Andrew Morton wrote:
+> > 
+> > This function would benefit from a code comment.
+> > 
+> > Given that it's pretty generic (indeed there might be open-coded code
+> > which already does this elsewhere), perhaps it should be in mm/mmap.c
+> > as a kernel-wide utility function.  That will add a little overhead to
+> > CONFIG_PROC_FS=n builds, which doesn't seem terribly important.
+> > 
 > 
-> Hi Seth --
-> 
-> Do you have any data comparing xcfmalloc vs xvmalloc for
-> compression ratio and/or performance (cycles to compress
-> or decompress different pages) on a wide(r) range of data?
-> Assuming xcfmalloc isn't "always better", maybe it would
-> be best to allow the algorithm to be selectable?  (And
-> then we would also need to decide the default.)
-> 
+> Andrew, here is an attempt to address concerns. Please review.
+> Complains are welcome as always!
 
-Ok, so I was able to get some numbers and I said I'd send them out
-today, so... here they are. 32-bit system.  I create a cgroup with a 
-memory.limit_in_bytes of 256MB.  Then I ran a program that allocates
-512MB, one 4k page a time.  The pages can be filled with zeros
-or text depending on the command arguments.  The text is english
-text that has an average compression ratio, using lzo1x, of 75%
-with little deviation.  zv_max_mean_zsize and zv_max_zsize are
-both set to 3584 (7 * PAGE_SIZE / 8).
+Changelog still doesn't explain why /proc/pid/maps is unfixably unsuitable.
 
-xvmalloc
-		curr_pages	zv_page_count	effective compression
-zero filled	65859		1269		1.93%
-text (75%)	65925		65892		99.95%
+>
+> ...
+>
+> +static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
+> +{
+> +	unsigned long vm_start, vm_end;
+> +	struct task_struct *task;
+> +	const struct cred *cred;
+> +	struct mm_struct *mm;
+> +	struct inode *inode;
+> +
+> +	bool exact_vma_exists = false;
+>
 
-xcfmalloc (descriptors are 24 bytes, 170 per 4k page)
-		curr_pages	zv_page_count	zv_desc_count	effective compression
-zero filled	65845		2068		65858		3.72% (+1.79)
-text (75%)	65965		50848		114980		78.11% (-21.84)
+Extraneous newline there.
 
-This shows that xvmalloc is 1.79 points better on zero filled pages.
-This is because xcfmalloc has higher internal fragmentation because
-the block sizes aren't as granular as xvmalloc.  This contributes
-to 1.21 points of the delta. xcfmalloc also has block descriptors,
-which contributes to the remaining 0.58 points.
+> +	if (nd && nd->flags & LOOKUP_RCU)
+> +		return -ECHILD;
+> +
+> +	inode = dentry->d_inode;
+> +	task = get_proc_task(inode);
+> +	if (!task)
+> +		goto out;
+> +
+> +	mm = get_task_mm(task);
+> +	put_task_struct(task);
+> +	if (!mm)
+> +		goto out;
+> +
+> +	if (!dname_to_vma_addr(dentry, &vm_start, &vm_end)) {
+> +		down_read(&mm->mmap_sem);
+> +		exact_vma_exists = !!find_exact_vma(mm, vm_start, vm_end);
+> +		up_read(&mm->mmap_sem);
+> +	}
+> +
+> +	mmput(mm);
+> +
+> +	if (exact_vma_exists) {
+> +		if (task_dumpable(task)) {
+> +			rcu_read_lock();
+> +			cred = __task_cred(task);
+> +			inode->i_uid = cred->euid;
+> +			inode->i_gid = cred->egid;
+> +			rcu_read_unlock();
+> +		} else {
+> +			inode->i_uid = 0;
+> +			inode->i_gid = 0;
+> +		}
+> +		security_task_to_inode(task, inode);
+> +		return 1;
+> +	}
+> +out:
+> +	d_drop(dentry);
+> +	return 0;
+> +}
+> +
+>
+> ...
+>
+> +static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
+> +{
+> +	struct dentry *dentry = filp->f_path.dentry;
+> +	struct inode *inode = dentry->d_inode;
+> +	struct vm_area_struct *vma;
+> +	struct task_struct *task;
+> +	struct mm_struct *mm;
+> +	ino_t ino;
+> +	int ret;
+> +
+> +	ret = -ENOENT;
+> +	task = get_proc_task(inode);
+> +	if (!task)
+> +		goto out_no_task;
+> +
+> +	ret = -EPERM;
+> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+> +		goto out;
+> +
+> +	ret = 0;
+> +	switch (filp->f_pos) {
+> +	case 0:
+> +		ino = inode->i_ino;
+> +		if (filldir(dirent, ".", 1, 0, ino, DT_DIR) < 0)
+> +			goto out;
+> +		filp->f_pos++;
+> +	case 1:
+> +		ino = parent_ino(dentry);
+> +		if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
+> +			goto out;
+> +		filp->f_pos++;
+> +	default:
+> +	{
+> +		struct map_files_info *info = NULL;
+> +		unsigned long nr_files, used, pos, i;
+> +		unsigned long mem_size = 0;
+> +
+> +		mm = get_task_mm(task);
+> +		if (!mm)
+> +			goto out;
+> +		down_read(&mm->mmap_sem);
+> +
+> +		nr_files = 0;
+> +		used = 0;
+> +
+> +		/*
+> +		 * We need two passes here:
+> +		 *
+> +		 *  1) Collect vmas of mapped files with mmap_sem taken
+> +		 *  2) Release mmap_sem and instantiate entries
+> +		 *
+> +		 * otherwise we get lockdep complained, since filldir()
+> +		 * routine might require mmap_sem taken in might_fault().
+> +		 */
+> +
+> +		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> +			if (vma->vm_file)
+> +				nr_files++;
+> +		}
+> +
+> +		if (nr_files) {
+> +			mem_size = nr_files * sizeof(*info);
+> +			if (mem_size <= KMALLOC_MAX_SIZE)
+> +				info = kmalloc(mem_size, GFP_KERNEL);
+> +			else
+> +				info = vmalloc(mem_size);
 
-It also shows that xcfmalloc is 21.84 points better on text filled 
-pages. This is because of xcfmalloc allocations can span different
-pages which greatly reduces external fragmentation compared to xvmalloc.
+This still sucks :(
 
-I did some quick tests with "time" using the same program and the
-timings are very close (3 run average, little deviation):
+A KMALLOC_MAX_SIZE allocation is huuuuuuuuuuuuge!  I don't know how big
+it is nowadays, but over 100 kbytes.  This will frequently send page
+reclaim on a berzerk rampage freeing *thousands* of pages (or
+relocating pages) until it manages to generate 20 or 30 physically
+contiguous free pages.
 
-xvmalloc:
-zero filled	0m0.852s
-text (75%)	0m14.415s
+Also, vmalloc sucks.  The more often we perform vmallocs (with a mix of
+differently-sized ones), the more internally fragmented the vmalloc
+arena will become.  With some workloads we'll run out of
+sufficiently-large contiguous free spaces and things will start
+failing.  This doesn't happen often.  Yet.  But the more vmalloc()
+callsites we add, the more likely and the more frequent it becomes.  So
+vmalloc is something we should only use as a last resort.
 
-xcfmalloc:
-zero filled	0m0.870s
-text (75%)	0m15.089s
+The most robust implementation here is to allocate a large number of
+small objects - one per vma.  A list would be a suitable way of
+managing them.
 
-I suspect that the small decrease in throughput is due to the
-extra memcpy in xcfmalloc.  However, these timing, more than 
-anything, demonstrate that the throughput is GREATLY effected
-by the compressibility of the data.
-
-In all cases, all swapped pages where captured by frontswap with
-no put failures.
-
-> (Hopefully Nitin will have a chance to comment, since he
-> has much more expertise in compression than I do.)
-> 
-> Thanks,
-> Dan
+But do we *really* need to do it in two passes?  Avoiding the temporary
+storage would involve doing more work under mmap_sem, and a put_filp()
+under mmap_sem might be problematic.
 
