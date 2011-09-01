@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab1IAMvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:51:12 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:55764 "EHLO
+	id S932361Ab1IAMvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 08:51:14 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:55667 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab1IAMtN (ORCPT
+	with ESMTP id S932160Ab1IAMtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:49:13 -0400
+	Thu, 1 Sep 2011 08:49:12 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 13/18] drbd: simplify conn_all_vols_unconf, make it bool
-Date: Thu,  1 Sep 2011 14:49:00 +0200
-Message-Id: <1314881345-6420-14-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 11/18] drbd: remove now unused connector related files
+Date: Thu,  1 Sep 2011 14:48:58 +0200
+Message-Id: <1314881345-6420-12-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314881345-6420-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314881345-6420-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,64 +22,283 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Get rid of a temporary variable and, funny bitand assignment.
-Just short circuit, returning false, once we encounter the first
-still configured volume.
-
-FIXME verify call sites for need of rcu_read_lock or stronger.
-
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_state.c |   16 +++++++---------
- drivers/block/drbd/drbd_state.h |    2 +-
- 2 files changed, 8 insertions(+), 10 deletions(-)
+ include/linux/drbd_nl.h        |  172 ----------------------------------------
+ include/linux/drbd_tag_magic.h |   84 -------------------
+ 2 files changed, 0 insertions(+), 256 deletions(-)
+ delete mode 100644 include/linux/drbd_nl.h
+ delete mode 100644 include/linux/drbd_tag_magic.h
 
-diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
-index 34be2ef..c6a659b 100644
---- a/drivers/block/drbd/drbd_state.c
-+++ b/drivers/block/drbd/drbd_state.c
-@@ -48,20 +48,18 @@ static enum drbd_state_rv is_valid_transition(union drbd_state os, union drbd_st
- static union drbd_state sanitize_state(struct drbd_conf *mdev, union drbd_state ns,
- 				       const char **warn_sync_abort);
- 
--int conn_all_vols_unconf(struct drbd_tconn *tconn)
-+bool conn_all_vols_unconf(struct drbd_tconn *tconn)
- {
- 	struct drbd_conf *mdev;
--	int minor, uncfg = 1;
-+	int minor;
- 
- 	idr_for_each_entry(&tconn->volumes, mdev, minor) {
--		uncfg &= (mdev->state.disk == D_DISKLESS &&
--			  mdev->state.conn == C_STANDALONE &&
--			  mdev->state.role == R_SECONDARY);
--		if (!uncfg)
--			break;
-+		if (mdev->state.disk != D_DISKLESS ||
-+		    mdev->state.conn != C_STANDALONE ||
-+		    mdev->state.role != R_SECONDARY)
-+			return false;
- 	}
+diff --git a/include/linux/drbd_nl.h b/include/linux/drbd_nl.h
+deleted file mode 100644
+index 1216c7a..0000000
+--- a/include/linux/drbd_nl.h
++++ /dev/null
+@@ -1,172 +0,0 @@
+-/*
+-   PAKET( name,
+-	  TYPE ( pn, pr, member )
+-	  ...
+-   )
 -
--	return uncfg;
-+	return true;
- }
- 
- /**
-diff --git a/drivers/block/drbd/drbd_state.h b/drivers/block/drbd/drbd_state.h
-index d9536cd..55df072 100644
---- a/drivers/block/drbd/drbd_state.h
-+++ b/drivers/block/drbd/drbd_state.h
-@@ -91,7 +91,7 @@ conn_request_state(struct drbd_tconn *tconn, union drbd_state mask, union drbd_s
- 		   enum chg_state_flags flags);
- 
- extern void drbd_resume_al(struct drbd_conf *mdev);
--extern int conn_all_vols_unconf(struct drbd_tconn *tconn);
-+extern bool conn_all_vols_unconf(struct drbd_tconn *tconn);
- 
- /**
-  * drbd_request_state() - Reqest a state change
+-   You may never reissue one of the pn arguments
+-*/
+-
+-#if !defined(NL_PACKET) || !defined(NL_STRING) || !defined(NL_INTEGER) || !defined(NL_BIT) || !defined(NL_INT64)
+-#error "The macros NL_PACKET, NL_STRING, NL_INTEGER, NL_INT64 and NL_BIT needs to be defined"
+-#endif
+-
+-NL_PACKET(primary, 1,
+-       NL_BIT(		1,	T_MAY_IGNORE,	primary_force)
+-)
+-
+-NL_PACKET(secondary, 2, )
+-
+-NL_PACKET(disk_conf, 3,
+-	NL_INT64(	2,	T_MAY_IGNORE,	disk_size)
+-	NL_STRING(	3,	T_MANDATORY,	backing_dev,	128)
+-	NL_STRING(	4,	T_MANDATORY,	meta_dev,	128)
+-	NL_INTEGER(	5,	T_MANDATORY,	meta_dev_idx)
+-	NL_INTEGER(	6,	T_MAY_IGNORE,	on_io_error)
+-	NL_INTEGER(	7,	T_MAY_IGNORE,	fencing)
+-	NL_BIT(		37,	T_MAY_IGNORE,	use_bmbv)
+-	NL_BIT(		53,	T_MAY_IGNORE,	no_disk_flush)
+-	NL_BIT(		54,	T_MAY_IGNORE,	no_md_flush)
+-	  /*  55 max_bio_size was available in 8.2.6rc2 */
+-	NL_INTEGER(	56,	T_MAY_IGNORE,	max_bio_bvecs)
+-	NL_BIT(		57,	T_MAY_IGNORE,	no_disk_barrier)
+-	NL_BIT(		58,	T_MAY_IGNORE,	no_disk_drain)
+-)
+-
+-NL_PACKET(detach, 4, )
+-
+-NL_PACKET(net_conf, 5,
+-	NL_STRING(	8,	T_MANDATORY,	my_addr,	128)
+-	NL_STRING(	9,	T_MANDATORY,	peer_addr,	128)
+-	NL_STRING(	10,	T_MAY_IGNORE,	shared_secret,	SHARED_SECRET_MAX)
+-	NL_STRING(	11,	T_MAY_IGNORE,	cram_hmac_alg,	SHARED_SECRET_MAX)
+-	NL_STRING(	44,	T_MAY_IGNORE,	integrity_alg,	SHARED_SECRET_MAX)
+-	NL_INTEGER(	14,	T_MAY_IGNORE,	timeout)
+-	NL_INTEGER(	15,	T_MANDATORY,	wire_protocol)
+-	NL_INTEGER(	16,	T_MAY_IGNORE,	try_connect_int)
+-	NL_INTEGER(	17,	T_MAY_IGNORE,	ping_int)
+-	NL_INTEGER(	18,	T_MAY_IGNORE,	max_epoch_size)
+-	NL_INTEGER(	19,	T_MAY_IGNORE,	max_buffers)
+-	NL_INTEGER(	20,	T_MAY_IGNORE,	unplug_watermark)
+-	NL_INTEGER(	21,	T_MAY_IGNORE,	sndbuf_size)
+-	NL_INTEGER(	22,	T_MAY_IGNORE,	ko_count)
+-	NL_INTEGER(	24,	T_MAY_IGNORE,	after_sb_0p)
+-	NL_INTEGER(	25,	T_MAY_IGNORE,	after_sb_1p)
+-	NL_INTEGER(	26,	T_MAY_IGNORE,	after_sb_2p)
+-	NL_INTEGER(	39,	T_MAY_IGNORE,	rr_conflict)
+-	NL_INTEGER(	40,	T_MAY_IGNORE,	ping_timeo)
+-	NL_INTEGER(	67,	T_MAY_IGNORE,	rcvbuf_size)
+-	NL_INTEGER(	81,	T_MAY_IGNORE,	on_congestion)
+-	NL_INTEGER(	82,	T_MAY_IGNORE,	cong_fill)
+-	NL_INTEGER(	83,	T_MAY_IGNORE,	cong_extents)
+-	  /* 59 addr_family was available in GIT, never released */
+-	NL_BIT(		60,	T_MANDATORY,	mind_af)
+-	NL_BIT(		27,	T_MAY_IGNORE,	want_lose)
+-	NL_BIT(		28,	T_MAY_IGNORE,	two_primaries)
+-	NL_BIT(		41,	T_MAY_IGNORE,	always_asbp)
+-	NL_BIT(		61,	T_MAY_IGNORE,	no_cork)
+-	NL_BIT(		62,	T_MANDATORY,	auto_sndbuf_size)
+-	NL_BIT(		70,	T_MANDATORY,	dry_run)
+-)
+-
+-NL_PACKET(disconnect, 6,
+-	NL_BIT(		84,	T_MAY_IGNORE,	force)
+-)
+-
+-NL_PACKET(resize, 7,
+-	NL_INT64(		29,	T_MAY_IGNORE,	resize_size)
+-	NL_BIT(			68,	T_MAY_IGNORE,	resize_force)
+-	NL_BIT(			69,	T_MANDATORY,	no_resync)
+-)
+-
+-NL_PACKET(syncer_conf, 8,
+-	NL_INTEGER(	30,	T_MAY_IGNORE,	rate)
+-	NL_INTEGER(	31,	T_MAY_IGNORE,	after)
+-	NL_INTEGER(	32,	T_MAY_IGNORE,	al_extents)
+-/*	NL_INTEGER(     71,	T_MAY_IGNORE,	dp_volume)
+- *	NL_INTEGER(     72,	T_MAY_IGNORE,	dp_interval)
+- *	NL_INTEGER(     73,	T_MAY_IGNORE,	throttle_th)
+- *	NL_INTEGER(     74,	T_MAY_IGNORE,	hold_off_th)
+- * feature will be reimplemented differently with 8.3.9 */
+-	NL_STRING(      52,     T_MAY_IGNORE,   verify_alg,     SHARED_SECRET_MAX)
+-	NL_STRING(      51,     T_MAY_IGNORE,   cpu_mask,       32)
+-	NL_STRING(	64,	T_MAY_IGNORE,	csums_alg,	SHARED_SECRET_MAX)
+-	NL_BIT(         65,     T_MAY_IGNORE,   use_rle)
+-	NL_INTEGER(	75,	T_MAY_IGNORE,	on_no_data)
+-	NL_INTEGER(	76,	T_MAY_IGNORE,	c_plan_ahead)
+-	NL_INTEGER(     77,	T_MAY_IGNORE,	c_delay_target)
+-	NL_INTEGER(     78,	T_MAY_IGNORE,	c_fill_target)
+-	NL_INTEGER(     79,	T_MAY_IGNORE,	c_max_rate)
+-	NL_INTEGER(     80,	T_MAY_IGNORE,	c_min_rate)
+-)
+-
+-NL_PACKET(invalidate, 9, )
+-NL_PACKET(invalidate_peer, 10, )
+-NL_PACKET(pause_sync, 11, )
+-NL_PACKET(resume_sync, 12, )
+-NL_PACKET(suspend_io, 13, )
+-NL_PACKET(resume_io, 14, )
+-NL_PACKET(outdate, 15, )
+-NL_PACKET(get_config, 16, )
+-NL_PACKET(get_state, 17,
+-	NL_INTEGER(	33,	T_MAY_IGNORE,	state_i)
+-)
+-
+-NL_PACKET(get_uuids, 18,
+-	NL_STRING(	34,	T_MAY_IGNORE,	uuids,	(UI_SIZE*sizeof(__u64)))
+-	NL_INTEGER(	35,	T_MAY_IGNORE,	uuids_flags)
+-)
+-
+-NL_PACKET(get_timeout_flag, 19,
+-	NL_BIT(		36,	T_MAY_IGNORE,	use_degraded)
+-)
+-
+-NL_PACKET(call_helper, 20,
+-	NL_STRING(	38,	T_MAY_IGNORE,	helper,		32)
+-)
+-
+-/* Tag nr 42 already allocated in drbd-8.1 development. */
+-
+-NL_PACKET(sync_progress, 23,
+-	NL_INTEGER(	43,	T_MAY_IGNORE,	sync_progress)
+-)
+-
+-NL_PACKET(dump_ee, 24,
+-	NL_STRING(	45,	T_MAY_IGNORE,	dump_ee_reason, 32)
+-	NL_STRING(	46,	T_MAY_IGNORE,	seen_digest, SHARED_SECRET_MAX)
+-	NL_STRING(	47,	T_MAY_IGNORE,	calc_digest, SHARED_SECRET_MAX)
+-	NL_INT64(	48,	T_MAY_IGNORE,	ee_sector)
+-	NL_INT64(	49,	T_MAY_IGNORE,	ee_block_id)
+-	NL_STRING(	50,	T_MAY_IGNORE,	ee_data,	32 << 10)
+-)
+-
+-NL_PACKET(start_ov, 25,
+-	NL_INT64(	66,	T_MAY_IGNORE,	start_sector)
+-)
+-
+-NL_PACKET(new_c_uuid, 26,
+-       NL_BIT(		63,	T_MANDATORY,	clear_bm)
+-)
+-
+-#ifdef NL_RESPONSE
+-NL_RESPONSE(return_code_only, 27)
+-#endif
+-
+-NL_PACKET(new_connection, 28, /* CHT_CTOR */
+-	NL_STRING(	85,	T_MANDATORY,	name, DRBD_NL_OBJ_NAME_LEN)
+-)
+-
+-NL_PACKET(new_minor, 29, /* CHT_CONN */
+-	NL_INTEGER(	86,	T_MANDATORY,	minor)
+-	NL_INTEGER(	87,	T_MANDATORY,	vol_nr)
+-)
+-
+-NL_PACKET(del_minor, 30, ) /* CHT_MINOR */
+-NL_PACKET(del_connection, 31, ) /* CHT_CONN */
+-
+-#undef NL_PACKET
+-#undef NL_INTEGER
+-#undef NL_INT64
+-#undef NL_BIT
+-#undef NL_STRING
+-#undef NL_RESPONSE
+diff --git a/include/linux/drbd_tag_magic.h b/include/linux/drbd_tag_magic.h
+deleted file mode 100644
+index 0695431..0000000
+--- a/include/linux/drbd_tag_magic.h
++++ /dev/null
+@@ -1,84 +0,0 @@
+-#ifndef DRBD_TAG_MAGIC_H
+-#define DRBD_TAG_MAGIC_H
+-
+-#define TT_END     0
+-#define TT_REMOVED 0xE000
+-
+-/* declare packet_type enums */
+-enum packet_types {
+-#define NL_PACKET(name, number, fields) P_ ## name = number,
+-#define NL_RESPONSE(name, number) P_ ## name = number,
+-#define NL_INTEGER(pn, pr, member)
+-#define NL_INT64(pn, pr, member)
+-#define NL_BIT(pn, pr, member)
+-#define NL_STRING(pn, pr, member, len)
+-#include "drbd_nl.h"
+-	P_nl_after_last_packet,
+-};
+-
+-/* These struct are used to deduce the size of the tag lists: */
+-#define NL_PACKET(name, number, fields)	\
+-	struct name ## _tag_len_struct { fields };
+-#define NL_INTEGER(pn, pr, member)		\
+-	int member; int tag_and_len ## member;
+-#define NL_INT64(pn, pr, member)		\
+-	__u64 member; int tag_and_len ## member;
+-#define NL_BIT(pn, pr, member)		\
+-	unsigned char member:1; int tag_and_len ## member;
+-#define NL_STRING(pn, pr, member, len)	\
+-	unsigned char member[len]; int member ## _len; \
+-	int tag_and_len ## member;
+-#include "linux/drbd_nl.h"
+-
+-/* declare tag-list-sizes */
+-static const int tag_list_sizes[] = {
+-#define NL_PACKET(name, number, fields) 2 fields ,
+-#define NL_INTEGER(pn, pr, member)      + 4 + 4
+-#define NL_INT64(pn, pr, member)        + 4 + 8
+-#define NL_BIT(pn, pr, member)          + 4 + 1
+-#define NL_STRING(pn, pr, member, len)  + 4 + (len)
+-#include "drbd_nl.h"
+-};
+-
+-/* The two highest bits are used for the tag type */
+-#define TT_MASK      0xC000
+-#define TT_INTEGER   0x0000
+-#define TT_INT64     0x4000
+-#define TT_BIT       0x8000
+-#define TT_STRING    0xC000
+-/* The next bit indicates if processing of the tag is mandatory */
+-#define T_MANDATORY  0x2000
+-#define T_MAY_IGNORE 0x0000
+-#define TN_MASK      0x1fff
+-/* The remaining 13 bits are used to enumerate the tags */
+-
+-#define tag_type(T)   ((T) & TT_MASK)
+-#define tag_number(T) ((T) & TN_MASK)
+-
+-/* declare tag enums */
+-#define NL_PACKET(name, number, fields) fields
+-enum drbd_tags {
+-#define NL_INTEGER(pn, pr, member)     T_ ## member = pn | TT_INTEGER | pr ,
+-#define NL_INT64(pn, pr, member)       T_ ## member = pn | TT_INT64   | pr ,
+-#define NL_BIT(pn, pr, member)         T_ ## member = pn | TT_BIT     | pr ,
+-#define NL_STRING(pn, pr, member, len) T_ ## member = pn | TT_STRING  | pr ,
+-#include "drbd_nl.h"
+-};
+-
+-struct tag {
+-	const char *name;
+-	int type_n_flags;
+-	int max_len;
+-};
+-
+-/* declare tag names */
+-#define NL_PACKET(name, number, fields) fields
+-static const struct tag tag_descriptions[] = {
+-#define NL_INTEGER(pn, pr, member)     [ pn ] = { #member, TT_INTEGER | pr, sizeof(int)   },
+-#define NL_INT64(pn, pr, member)       [ pn ] = { #member, TT_INT64   | pr, sizeof(__u64) },
+-#define NL_BIT(pn, pr, member)         [ pn ] = { #member, TT_BIT     | pr, sizeof(int)   },
+-#define NL_STRING(pn, pr, member, len) [ pn ] = { #member, TT_STRING  | pr, (len)         },
+-#include "drbd_nl.h"
+-};
+-
+-#endif
 -- 
 1.7.4.1
 
