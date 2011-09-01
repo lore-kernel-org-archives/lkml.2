@@ -1,151 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab1IAVsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:48:16 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:36526 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757961Ab1IAVsP (ORCPT
+	id S932138Ab1IAVus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:50:48 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40367 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757961Ab1IAVuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:48:15 -0400
-Date: Thu, 1 Sep 2011 17:46:43 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, NeilBrown <neilb@suse.de>,
-        paulmck@linux.vnet.ibm.com, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH][BUGFIX] cgroups: more safe tasklist locking in
- cgroup_attach_proc
-Message-ID: <20110901214643.GD10401@unix33.andrew.cmu.edu>
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu>
- <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu>
- <20110815184957.GA16588@redhat.com>
+	Thu, 1 Sep 2011 17:50:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815184957.GA16588@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
-X-SMTP-Spam-Clean: 8% (
- BODY_SIZE_3000_3999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, NO_URI_FOUND 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+In-Reply-To: <20110901204419.GY8422@beardog.cce.hp.com>
+References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
+	<1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20110901160724.GN9189@beardog.cce.hp.com>
+	<1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
+	<1314903038.3067.27.camel@dabdike>
+	<20110901125938.7cb1da85@jbarnes-desktop>
+	<20110901200349.GO9189@beardog.cce.hp.com>
+	<20110901130930.5caec2d4@jbarnes-desktop>
+	<20110901204419.GY8422@beardog.cce.hp.com>
+Date: Thu, 1 Sep 2011 16:50:45 -0500
+Message-ID: <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
+Subject: Re: [BUG] scsi: hpsa: how to destroy your files
+From: Jon Mason <mason@myri.com>
+To: scameron@beardog.cce.hp.com
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-pci@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Content-Type: multipart/mixed; boundary=001636c927b0aab79604abe83c63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 08:49:57PM +0200, Oleg Nesterov wrote:
-> > -	rcu_read_lock();
-> > +	read_lock(&tasklist_lock);
-> >  	if (!thread_group_leader(leader)) {
-> 
-> Agreed, this should work.
-> 
-> But can't we avoid the global list? thread_group_leader() or not, we do
-> not really care. We only need to ensure we can safely find all threads.
-> 
-> How about the patch below?
+--001636c927b0aab79604abe83c63
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I was content with the tasklist_lock because cgroup_attach_proc is
-already a pretty heavyweight operation, and probably pretty rare that a
-user would want to do multiple of them at once quickly. I asked Andrew
-to take the simple tasklist_lock patch just now, since it does fix the
-bug at least.
+On Thu, Sep 1, 2011 at 3:44 PM,  <scameron@beardog.cce.hp.com> wrote:
+> On Thu, Sep 01, 2011 at 01:09:30PM -0700, Jesse Barnes wrote:
+>> On Thu, 1 Sep 2011 15:03:49 -0500
+>> scameron@beardog.cce.hp.com wrote:
+>>
+>> > On Thu, Sep 01, 2011 at 12:59:38PM -0700, Jesse Barnes wrote:
+>> > > On Thu, 01 Sep 2011 11:50:38 -0700
+>> > > James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
+>> > >
+>> > > > On Thu, 2011-09-01 at 10:58 -0700, Roland Dreier wrote:
+>> > > > > > OK I found the bad commit,I got lucky... I lost some files but=
+ my
+>> > > > > > machine was able to complete the bisection. CC involved people
+>> > > > >
+>> > > > > > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI=
+-E Max Payload Size on fabric
+>> > > > >
+>> > > > > Hi Eric,
+>> > > > >
+>> > > > > I guess it would be useful to see "lspci -vv" output with a "goo=
+d" kernel
+>> > > > > and with that bad patch applied. =A0Most likely we should see so=
+me difference
+>> > > > > somewhere in the MaxPayload fields in the PCI Express capability=
+ of
+>> > > > > some device.
+>> > > > >
+>> > > > > Either the RAID controller or something else lies, and puts a va=
+lue
+>> > > > > in the DevCap that it can't actually support, or else the patch =
+is
+>> > > > > buggy and puts something out of range in a DevCtl somewhere.
+>> > > >
+>> > > >
+>> > > > While we investigate, I think the problems produced by the patch (=
+data
+>> > > > corruption) are serious enough to warrant reverting it, please Jes=
+se.
+>> > >
+>> > > Hm I haven't been paying attention to the compromise thread; how sho=
+uld
+>> > > I share these changes? =A0Is master.kernel.org down indefinitely? =
+=A0Is
+>> > > there a new server at kernel.org I can use?
+>> >
+>> > I can't answer that question, but I would like a copy of your revert
+>> > patch(es) to test (as a simple patch --reverse of the original commit =
+on the 3.1-rc4
+>> > tree didn't go in cleanly).
+>>
+>> Attached is the series. =A0Applies on top of my for-linus branch.
+>
+> Thanks. =A0I tried them out vs. 3.1-rc4, and they applied cleanly and
+> make things work on my BL460g7.
 
-Anyway, looking at this, hmm. I am not sure if this protects adequately?
-In de_thread, the sighand lock is held only around the first half
-(around zap_other_threads), and not around the following section where
-leadership is transferred (esp. around the list_replace calls).
-tasklist_lock is held here, though, so it seems like the right lock to
-hold.
-
-> 
-> 
-> With or without this/your patch this leader can die right after we
-> drop the lock. ss->can_attach(leader) and ss->attach(leader) look
-> suspicious. If a sub-thread execs, this task_struct has nothing to
-> do with the threadgroup.
-
-hmm. I thought I had this case covered, but it's been so long since I
-actually wrote the code that if I did I can't remember how. I think
-exiting is no issue since we hold a reference on the task_struct, but
-exec may still be a problem. I'm thinking:
-
-- cgroup_attach_proc drops the tasklist_lock
-- a sub-thread execs, and in exec_mmap (after de_thread) changes the mm
-- ss->attach, for example in memcg, wants to use leader->mm, which is
-  now wrong
-
-this seems to be possible as the code currently is. I wonder if the best
-fix is just to have exec (maybe around de_thread) bounce off of or hold
-threadgroup_fork_read_lock somewhere?
-
-> 
-> 
-> 
-> Also. This is off-topic, but... Why cgroup_attach_proc() and
-> cgroup_attach_task() do ->attach_task() + cgroup_task_migrate()
-> in the different order? cgroup_attach_proc() looks wrong even
-> if currently doesn't matter.
-
-(already submitted a patch for this)
+I believe modifying the MRRS values is what is causing the issues.
+Can you try the attached patch and verify that it also resolves the
+issue?
 
 Thanks,
-Ben
+Jon
 
-> 
-> 
-> Oleg.
-> 
-> --- x/kernel/cgroup.c
-> +++ x/kernel/cgroup.c
-> @@ -2000,6 +2000,7 @@ int cgroup_attach_proc(struct cgroup *cg
->  	/* threadgroup list cursor and array */
->  	struct task_struct *tsk;
->  	struct flex_array *group;
-> +	unsigned long flags;
->  	/*
->  	 * we need to make sure we have css_sets for all the tasks we're
->  	 * going to move -before- we actually start moving them, so that in
-> @@ -2027,19 +2028,10 @@ int cgroup_attach_proc(struct cgroup *cg
->  		goto out_free_group_list;
->  
->  	/* prevent changes to the threadgroup list while we take a snapshot. */
-> -	rcu_read_lock();
-> -	if (!thread_group_leader(leader)) {
-> -		/*
-> -		 * a race with de_thread from another thread's exec() may strip
-> -		 * us of our leadership, making while_each_thread unsafe to use
-> -		 * on this task. if this happens, there is no choice but to
-> -		 * throw this task away and try again (from cgroup_procs_write);
-> -		 * this is "double-double-toil-and-trouble-check locking".
-> -		 */
-> -		rcu_read_unlock();
-> -		retval = -EAGAIN;
-> +	retval = -EAGAIN;
-> +	if (!lock_task_sighand(leader, &flags))
->  		goto out_free_group_list;
-> -	}
-> +
->  	/* take a reference on each task in the group to go in the array. */
->  	tsk = leader;
->  	i = 0;
-> @@ -2055,9 +2047,9 @@ int cgroup_attach_proc(struct cgroup *cg
->  		BUG_ON(retval != 0);
->  		i++;
->  	} while_each_thread(leader, tsk);
-> +	unlock_task_sighand(leader, &flags);
->  	/* remember the number of threads in the array for later. */
->  	group_size = i;
-> -	rcu_read_unlock();
->  
->  	/*
->  	 * step 1: check that we can legitimately attach to the cgroup.
-> 
-> 
+> -- steve
+>
+>
+>
+>
+>
+>
+
+--001636c927b0aab79604abe83c63
+Content-Type: text/x-patch; charset=US-ASCII; name="mrrs_removal.patch"
+Content-Disposition: attachment; filename="mrrs_removal.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gs29p3960
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3Byb2JlLmMgYi9kcml2ZXJzL3BjaS9wcm9iZS5jCmlu
+ZGV4IDg0NzM3MjcuLmQ4OTZjNWUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvcGNpL3Byb2JlLmMKKysr
+IGIvZHJpdmVycy9wY2kvcHJvYmUuYwpAQCAtMTM5NCw0MSArMTM5NCw2IEBAIHN0YXRpYyB2b2lk
+IHBjaWVfd3JpdGVfbXBzKHN0cnVjdCBwY2lfZGV2ICpkZXYsIGludCBtcHMpCiAJCWRldl9lcnIo
+JmRldi0+ZGV2LCAiRmFpbGVkIGF0dGVtcHRpbmcgdG8gc2V0IHRoZSBNUFNcbiIpOwogfQogCi1z
+dGF0aWMgdm9pZCBwY2llX3dyaXRlX21ycnMoc3RydWN0IHBjaV9kZXYgKmRldiwgaW50IG1wcykK
+LXsKLQlpbnQgcmMsIG1ycnM7Ci0KLQlpZiAocGNpZV9idXNfY29uZmlnID09IFBDSUVfQlVTX1BF
+UkZPUk1BTkNFKSB7Ci0JCWludCBkZXZfbXBzcyA9IDEyOCA8PCBkZXYtPnBjaWVfbXBzczsKLQot
+CQkvKiBGb3IgTWF4IHBlcmZvcm1hbmNlLCB0aGUgTVJSUyBtdXN0IGJlIHNldCB0byB0aGUgbGFy
+Z2VzdAotCQkgKiBzdXBwb3J0ZWQgdmFsdWUuICBIb3dldmVyLCBpdCBjYW5ub3QgYmUgY29uZmln
+dXJlZCBsYXJnZXIKLQkJICogdGhhbiB0aGUgTVBTIHRoZSBkZXZpY2Ugb3IgdGhlIGJ1cyBjYW4g
+c3VwcG9ydC4gIFRoaXMgYXNzdW1lcwotCQkgKiB0aGF0IHRoZSBsYXJnZXN0IE1SUlMgYXZhaWxh
+YmxlIG9uIHRoZSBkZXZpY2UgY2Fubm90IGJlCi0JCSAqIHNtYWxsZXIgdGhhbiB0aGUgZGV2aWNl
+IE1QU1MuCi0JCSAqLwotCQltcnJzID0gbXBzIDwgZGV2X21wc3MgPyBtcHMgOiBkZXZfbXBzczsK
+LQl9IGVsc2UKLQkJLyogSW4gdGhlICJzYWZlIiBjYXNlLCBjb25maWd1cmUgdGhlIE1SUlMgZm9y
+IGZhaXJuZXNzIG9uIHRoZQotCQkgKiBidXMgYnkgbWFraW5nIGFsbCBkZXZpY2VzIGhhdmUgdGhl
+IHNhbWUgc2l6ZQotCQkgKi8KLQkJbXJycyA9IG1wczsKLQotCi0JLyogTVJSUyBpcyBhIFIvVyBy
+ZWdpc3Rlci4gIEludmFsaWQgdmFsdWVzIGNhbiBiZSB3cml0dGVuLCBidXQgYQotCSAqIHN1YnNp
+cXVlbnQgcmVhZCB3aWxsIHZlcmlmeSBpZiB0aGUgdmFsdWUgaXMgYWNjZXB0YWJsZSBvciBub3Qu
+Ci0JICogSWYgdGhlIE1SUlMgdmFsdWUgcHJvdmlkZWQgaXMgbm90IGFjY2VwdGFibGUgKGUuZy4s
+IHRvbyBsYXJnZSksCi0JICogc2hyaW5rIHRoZSB2YWx1ZSB1bnRpbCBpdCBpcyBhY2NlcHRhYmxl
+IHRvIHRoZSBIVy4KLSAJICovCi0Jd2hpbGUgKG1ycnMgIT0gcGNpZV9nZXRfcmVhZHJxKGRldikg
+JiYgbXJycyA+PSAxMjgpIHsKLQkJcmMgPSBwY2llX3NldF9yZWFkcnEoZGV2LCBtcnJzKTsKLQkJ
+aWYgKHJjKQotCQkJZGV2X2VycigmZGV2LT5kZXYsICJGYWlsZWQgYXR0ZW1wdGluZyB0byBzZXQg
+dGhlIE1SUlNcbiIpOwotCi0JCW1ycnMgLz0gMjsKLQl9Ci19Ci0KIHN0YXRpYyBpbnQgcGNpZV9i
+dXNfY29uZmlndXJlX3NldChzdHJ1Y3QgcGNpX2RldiAqZGV2LCB2b2lkICpkYXRhKQogewogCWlu
+dCBtcHMgPSAxMjggPDwgKih1OCAqKWRhdGE7CkBAIC0xNDQwLDcgKzE0MDUsNiBAQCBzdGF0aWMg
+aW50IHBjaWVfYnVzX2NvbmZpZ3VyZV9zZXQoc3RydWN0IHBjaV9kZXYgKmRldiwgdm9pZCAqZGF0
+YSkKIAkJIHBjaWVfZ2V0X21wcyhkZXYpLCAxMjg8PGRldi0+cGNpZV9tcHNzLCBwY2llX2dldF9y
+ZWFkcnEoZGV2KSk7CiAKIAlwY2llX3dyaXRlX21wcyhkZXYsIG1wcyk7Ci0JcGNpZV93cml0ZV9t
+cnJzKGRldiwgbXBzKTsKIAogCWRldl9pbmZvKCZkZXYtPmRldiwgIkRldiBNUFMgJWQgTVBTUyAl
+ZCBNUlJTICVkXG4iLAogCQkgcGNpZV9nZXRfbXBzKGRldiksIDEyODw8ZGV2LT5wY2llX21wc3Ms
+IHBjaWVfZ2V0X3JlYWRycShkZXYpKTsK
+--001636c927b0aab79604abe83c63--
