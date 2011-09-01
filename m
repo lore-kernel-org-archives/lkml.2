@@ -1,71 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab1IAPJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 11:09:31 -0400
-Received: from orbit.nwl.cc ([91.121.141.167]:40181 "EHLO orbit.nwl.cc"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932185Ab1IAPJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 11:09:30 -0400
-Date: Thu, 1 Sep 2011 17:09:28 +0200
-From: Phil Sutter <phil@nwl.cc>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: nmav@gnutls.org, cryptodev-linux-devel@gna.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: comparison of the AF_ALG interface with the /dev/crypto
-Message-ID: <20110901150928.GC14522@orbit.nwl.cc>
-Mail-Followup-To: Herbert Xu <herbert@gondor.apana.org.au>, nmav@gnutls.org,
-	cryptodev-linux-devel@gna.org, linux-crypto@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20110901133952.GB14522@orbit.nwl.cc>
- <20110901141445.GA31447@gondor.apana.org.au>
+	id S932371Ab1IAPNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 11:13:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45900 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab1IAPNq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 11:13:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110901141445.GA31447@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [87.66.92.201]
+In-Reply-To: <201108310021.13800.rjw@sisk.pl>
+References: <201108310017.03103.rjw@sisk.pl>
+	<201108310021.13800.rjw@sisk.pl>
+Date: Thu, 1 Sep 2011 17:13:44 +0200
+Message-ID: <CAORVsuX=vKiGxHrR4hZjeT4DV0vhUh+MXLwNjoOwgBDu1HRR5A@mail.gmail.com>
+Subject: Re: [PATCH 3/5] PM / QoS: Add function dev_pm_qos_read_value()
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Herbert,
+Hi Rafael,
 
-On Thu, Sep 01, 2011 at 10:14:45PM +0800, Herbert Xu wrote:
-> Phil Sutter <phil@nwl.cc> wrote:
-> > 
-> > chunksize       af_alg          cryptodev       (100 * cryptodev / af_alg)
-> > --------------------------------------------------------------------------
-> > 512              4.169 MB/s      7.113 MB/s     171 %
-> > 1024             7.904 MB/s     12.957 MB/s     164 %
-> > 2048            13.163 MB/s     19.683 MB/s     150 %
-> > 4096            20.218 MB/s     26.960 MB/s     133 %
-> > 8192            27.539 MB/s     34.373 MB/s     125 %
-> > 16384           33.730 MB/s     39.997 MB/s     119 %
-> > 32768           37.399 MB/s     42.727 MB/s     114 %
-> > 65536           40.004 MB/s     44.660 MB/s     112 %
-> 
-> Are you maxing out your submission CPU? If not then you're testing
-> the latency of the interface, as opposed to the throughput.
+On Wed, Aug 31, 2011 at 12:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+>
+> To read the current PM QoS value for a given device we need to
+> make sure that the device's power.constraints object won't be
+> removed while we're doing that.  For this reason, put the
+> operation under dev->power.lock and acquire the lock
+> around the initialization and removal of power.constraints.
+Ok.
 
-Good point. So in order to also test the throughput, I've put my OpenRD
-under load:
+> Moreover, since we're using the value of power.constraints to
+> determine whether or not the object is present, the
+> power.constraints_state field isn't necessary any more and may be
+> removed.  However, dev_pm_qos_add_request() needs to check if the
+> device is being removed from the system before allocating a new
+> PM QoS constraints object for it, so it has to use device_pm_lock()
+> and the device PM QoS initialization and destruction should be done
+> under device_pm_lock() as well.
+Ok that makes sense.
+The constraints_state field can be replaced by a combination of
+dev->power.constraints and list_empty(&dev->power.entry), which makes
+the code more compact and less redundant.
 
-| stress -c 2 -i 2 -m 2 --vm-bytes 64MB
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/base/power/main.c |    4 -
+>  drivers/base/power/qos.c  |  167 ++++++++++++++++++++++++++--------------------
+>  include/linux/pm.h        |    8 --
+>  include/linux/pm_qos.h    |    3
+>  4 files changed, 101 insertions(+), 81 deletions(-)
+>
+> Index: linux/drivers/base/power/qos.c
+> ===================================================================
+> --- linux.orig/drivers/base/power/qos.c
+> +++ linux/drivers/base/power/qos.c
+> @@ -30,15 +30,6 @@
+...
 
-and ran the tests again:
+>
+> @@ -178,8 +202,8 @@ void dev_pm_qos_constraints_destroy(stru
+>  *
+>  * Returns 1 if the aggregated constraint value has changed,
+>  * 0 if the aggregated constraint value has not changed,
+> - * -EINVAL in case of wrong parameters, -ENODEV if the device has been
+> - * removed from the system
+> + * -EINVAL in case of wrong parameters, -ENOMEM if there's not enough memory
+> + * to allocate for data structures.
+Why not use -ENODEV in case there is no device?
 
-chunksize       af_alg          cryptodev       (100 * cryptodev / af_alg)
---------------------------------------------------------------------------
-512              0.618 MB/s      1.14 MB/s      184 %
-1024             1.258 MB/s      2.28 MB/s      181 %
-2048             2.453 MB/s      4.39 MB/s      179 %
-4096             4.540 MB/s      7.76 MB/s      171 %
-8192             7.981 MB/s     11.67 MB/s      146 %
-16384           12.543 MB/s     14.08 MB/s      112 %
-32768           13.139 MB/s     14.46 MB/s      110 %
-65536           14.254 MB/s     15.55 MB/s      109 %
+>  */
+>  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+>                           s32 value)
+> @@ -195,28 +219,35 @@ int dev_pm_qos_add_request(struct device
+>                return -EINVAL;
+>        }
+>
+> -       mutex_lock(&dev_pm_qos_mtx);
+>        req->dev = dev;
+>
+> -       /* Return if the device has been removed */
+> -       if (req->dev->power.constraints_state == DEV_PM_QOS_NO_DEVICE) {
+> -               ret = -ENODEV;
+> -               goto out;
+> -       }
+> +       device_pm_lock();
+> +       mutex_lock(&dev_pm_qos_mtx);
+>
+> -       /*
+> -        * Allocate the constraints data on the first call to add_request,
+> -        * i.e. only if the data is not already allocated and if the device has
+> -        * not been removed
+> -        */
+> -       if (dev->power.constraints_state == DEV_PM_QOS_DEVICE_PRESENT)
+> -               ret = dev_pm_qos_constraints_allocate(dev);
+> +       if (dev->power.constraints) {
+> +               device_pm_unlock();
+> +       } else {
+> +               if (list_empty(&dev->power.entry)) {
+> +                       /* The device has been removed from the system. */
+> +                       device_pm_unlock();
+> +                       goto out;
+0 is silently returned in case the device has been removed. Is that
+the intention?
 
-So that means cryptodev-linux is superior in throughput as well as
-latency, right? Or is it the lower latency of the interface causing the
-higher throughput?
+> +               } else {
+> +                       device_pm_unlock();
+> +                       /*
+> +                        * Allocate the constraints data on the first call to
+> +                        * add_request, i.e. only if the data is not already
+> +                        * allocated and if the device has not been removed.
+> +                        */
+> +                       ret = dev_pm_qos_constraints_allocate(dev);
+> +               }
+> +       }
+>
+>        if (!ret)
+>                ret = apply_constraint(req, PM_QOS_ADD_REQ, value);
+>
+> -out:
+> + out:
+>        mutex_unlock(&dev_pm_qos_mtx);
+> +
+>        return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(dev_pm_qos_add_request);
+...
 
-Greetings, Phil
+Thanks,
+Jean
