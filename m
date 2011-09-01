@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab1IAMxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:53:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41096 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab1IAMxO convert rfc822-to-8bit (ORCPT
+	id S932271Ab1IAMyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 08:54:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56410 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab1IAMyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:53:14 -0400
+	Thu, 1 Sep 2011 08:54:35 -0400
+Message-ID: <4E5F8053.4080603@ru.mvista.com>
+Date: Thu, 01 Sep 2011 16:53:39 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <1313117333-26763-1-git-send-email-sonic.adi@gmail.com>
-References: <1313117333-26763-1-git-send-email-sonic.adi@gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Thu, 1 Sep 2011 20:52:54 +0800
-Message-ID: <CAGsJ_4xGJoz7JNQHBtK7pC+sn+pUZsibgiBNPnL=Vdyii-JsDA@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [PATCH v2] spi:spi_bfin5xx: SPI SSEL
- deasserted too early in soft irq mode.
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Shaun Kluzek <g0del@bigpond.com>
+CC: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB GADGET: u_serial.c: fixed a brace and whitespace
+ coding style issue
+References: <20110831072254.GA9706@epione>
+In-Reply-To: <20110831072254.GA9706@epione>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/12 Sonic Zhang <sonic.adi@gmail.com>:
-> From: Sonic Zhang <sonic.zhang@analog.com>
->
-> Poll the FIFO till it is empty before deassert SSEL in pump_transfers in
-> soft irq mode. No polling is necessary in interrupt mode and error handling.
->
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Hello.
 
-Acked-by: Barry Song <21cnbao@gmail.com>
+On 31-08-2011 11:22, Shaun Kluzek wrote:
 
-it is actually making sure the last message is finished.
-
+> Signed-off-by: Shaun Kluzek<g0del@bigpond.com>
 > ---
->  drivers/spi/spi-bfin5xx.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/spi/spi-bfin5xx.c b/drivers/spi/spi-bfin5xx.c
-> index b8d25f2..7e03e7d 100644
-> --- a/drivers/spi/spi-bfin5xx.c
-> +++ b/drivers/spi/spi-bfin5xx.c
-> @@ -587,6 +587,7 @@ static void bfin_spi_pump_transfers(unsigned long data)
->        if (message->state == DONE_STATE) {
->                dev_dbg(&drv_data->pdev->dev, "transfer: all done!\n");
->                message->status = 0;
-> +               bfin_spi_flush(drv_data);
->                bfin_spi_giveback(drv_data);
->                return;
->        }
-> @@ -870,8 +871,10 @@ static void bfin_spi_pump_transfers(unsigned long data)
->                message->actual_length += drv_data->len_in_bytes;
->                /* Move to next transfer of this msg */
->                message->state = bfin_spi_next_transfer(drv_data);
-> -               if (drv_data->cs_change)
-> +               if (drv_data->cs_change) {
-> +                       bfin_spi_flush(drv_data);
->                        bfin_spi_cs_deactive(drv_data, chip);
-> +               }
->        }
->
->        /* Schedule next transfer tasklet */
-> --
-> 1.7.0.4
->
->
-> _______________________________________________
-> Uclinux-dist-devel mailing list
-> Uclinux-dist-devel@blackfin.uclinux.org
-> https://blackfin.uclinux.org/mailman/listinfo/uclinux-dist-devel
+>   drivers/usb/gadget/u_serial.c |    5 +----
+>   1 files changed, 1 insertions(+), 4 deletions(-)
+
+> diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+> index a8aa469..b86022f 100644
+> --- a/drivers/usb/gadget/u_serial.c
+> +++ b/drivers/usb/gadget/u_serial.c
+> @@ -552,11 +552,8 @@ recycle:
+>   	/* Push from tty to ldisc; without low_latency set this is handled by
+>   	 * a workqueue, so we won't get callbacks and can hold port_lock
+>   	 */
+> -	if (tty && do_push) {
+> +	if (tty && do_push)
+>   		tty_flip_buffer_push(tty);
+> -	}
+> -
+
+    What's wrong with the first empty line here?
+
+> -
+>   	/* We want our data queue to become empty ASAP, keeping data
+>   	 * in the tty and ldisc (not here).  If we couldn't push any
+>   	 * this time around, there may be trouble unless there's an
+
+WBR, Sergei
