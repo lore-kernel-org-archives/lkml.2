@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab1IARs5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:48:57 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:54435 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756845Ab1IARsz (ORCPT
+	id S1756998Ab1IARxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:53:17 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:50115 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755244Ab1IARxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:48:55 -0400
-Message-ID: <4E5FC533.1060409@linux.vnet.ibm.com>
-Date: Thu, 01 Sep 2011 10:47:31 -0700
-From: Allison Henderson <achender@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-kernel@vger.kernel.org,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: Re: lock i_mutex for fallocate?
-References: <4E5ED2D5.8040302@linux.vnet.ibm.com> <20110901073146.GA17100@infradead.org>
-In-Reply-To: <20110901073146.GA17100@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Sep 2011 13:53:15 -0400
+From: crquan@gmail.com
+To: linux-kbuild@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        Nir Tzachar <nir.tzachar@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        c.rq541@comcast.net
+Subject: [PATCH V3 1/5] scripts/kconfig/nconf: fix typo: unknow => unknown
+Date: Thu,  1 Sep 2011 10:52:18 -0700
+Message-Id: <1314899542-5848-1-git-send-email-crquan@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
+References: <CAH5vBdKxbaKDrA2gAj5CoDYShN+5dnfu6Bmd=4+oV-XmnYQnFA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2011 12:31 AM, Christoph Hellwig wrote:
-> On Wed, Aug 31, 2011 at 05:33:25PM -0700, Allison Henderson wrote:
->> Hi All,
->>
->> In ext4 punch hole, we realized that the punch hole operation needs
->> to be done under i_mutex just like truncate.  i_mutex for truncate
->> is held in the vfs layer, so we dont need to lock it at the file
->> system layer, but vfs does not lock i_mutex for fallocate.  We can
->> lock i_mutex for fallocate at the fs layer, but question was raised
->> then: should i_mutex for fallocate be held in the vfs layer instead?
->> I do not know if other file systems need i_mutex to be locked for
->> fallocate, or if they might be locking it already, so I am doing
->> some investigating on this idea, and also the appropriate use of
->> i_mutex in general.  Can someone provide some insight this topic?
->
-> Don't do it.
->
-> i_mutex is already overloaded, and this does not fit into any
-> of the somewhat reasonable uses cases for it, which are:
->
->   a) for directories the VFS uses it to protect the tree topology
->   b) for regular files all generic I/O code currently uses it to
->      serialize writers.
->   c) the VFS uses it around truncate, and setxattr updates
->   d) filesystems abuse it for internal metadata in various places
->
-> As you can see right now we do not hold it over any file operation,
-> and I'm absolutely against adding that.  I'd rather untange the
-> current uses, specificly:
->
->   - push synchronization of setattr into the filesystems
->   - push synchronization of xattr write operations into the filesystems
->   - move the read/write synchronization to a separate shared/exclusive
->     lock like it's already done in XFS, and like Lukas proposed for
->     ext4.  This fixes the Posix compliance corner cases about reads
->     beeing atomic vs writes, simplifies direct I/O locking a lot,
->     and allows for more parallel direct I/O support like XFS supports.
->   - try to get rid of the abuses inside filesystems as much as possible.
->
+From: Cheng Renquan <crquan@gmail.com>
 
-Alrighty, this helps explain things!  Thx all for the feedback!  :)
+Signed-off-by: Cheng Renquan <crquan@gmail.com>
+Acked-by: Arnaud Lacombe <lacombar@gmail.com>
+---
+ scripts/kconfig/nconf.gui.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/kconfig/nconf.gui.c b/scripts/kconfig/nconf.gui.c
+index f8137b3..d3af04e 100644
+--- a/scripts/kconfig/nconf.gui.c
++++ b/scripts/kconfig/nconf.gui.c
+@@ -461,7 +461,7 @@ int dialog_inputbox(WINDOW *main_window,
+ 				result[cursor_position] = res;
+ 				cursor_position++;
+ 			} else {
+-				mvprintw(0, 0, "unknow key: %d\n", res);
++				mvprintw(0, 0, "unknown key: %d\n", res);
+ 			}
+ 			break;
+ 		}
+-- 
+1.7.6
+
