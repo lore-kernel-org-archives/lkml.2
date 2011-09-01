@@ -1,122 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab1IASzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 14:55:17 -0400
-Received: from www.hansjkoch.de ([178.63.77.200]:43701 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab1IASzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 14:55:15 -0400
-Date: Thu, 1 Sep 2011 20:55:02 +0200
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Jan Altenberg <jan@linutronix.de>,
-        linux-mm@kvack.org, b.spranger@linutronix.de,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: bade page state while calling munmap() for kmalloc'ed UIO memory
-Message-ID: <20110901185502.GB8408@local>
-References: <1314630347.2258.150.camel@bender.lan>
- <20110831095825.GC4769@local>
- <20110831161307.d605848b.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110831161307.d605848b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757413Ab1IAS46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 14:56:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55752 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752652Ab1IAS45 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 14:56:57 -0400
+Date: Thu, 1 Sep 2011 19:55:54 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Earl Chew <echew@ixiacom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <viro@zeniv.linux.org.uk>, <andi@firstfloor.org>, <oleg@redhat.com>
+Subject: Re: [ PATCH 1/1 ] coredump: use current->group_leader->comm instead
+ of current->comm
+Message-ID: <20110901195554.667c5e58@lxorguk.ukuu.org.uk>
+In-Reply-To: <4E5FBA73.2050108@ixiacom.com>
+References: <4E5FBA73.2050108@ixiacom.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 04:13:07PM -0700, Andrew Morton wrote:
-> On Wed, 31 Aug 2011 11:58:25 +0200
-> "Hans J. Koch" <hjk@hansjkoch.de> wrote:
-> 
-> > On Mon, Aug 29, 2011 at 05:05:47PM +0200, Jan Altenberg wrote:
-> > 
-> > [Since we got no reply on linux-mm, I added lkml and Andrew to Cc: (mm doesn't
-> > seem to have a maintainer...)]
-> > 
-> > > Hi,
-> > > 
-> > > I'm currently analysing a problem similar to some mmap() issue reported
-> > > in the past: https://lkml.org/lkml/2010/7/11/140
-> > 
-> > The arch there was microblaze, and you are working on arm. That means
-> > the problem appears on at least to archs.
-> > 
-> > > 
-> > > So, what I'm trying to do is mapping some physically continuous memory
-> > > (allocated by kmalloc) to userspace, using a trivial UIO driver (the
-> > > idea is that a device can directly DMA to that buffer):
-> > > 
-> > > [...]
-> > > #define MEM_SIZE (4 * PAGE_SIZE)
-> > > 
-> > > addr = kmalloc(MEM_SIZE, GFP_KERNEL)
-> > > [...]
-> > > info.mem[0].addr = (unsigned long) addr;
-> > > info.mem[0].internal_addr = addr;
-> > > info.mem[0].size = MEM_SIZE;
-> > > info.mem[0].memtype = UIO_MEM_LOGICAL;
-> > > [...]
-> > > ret = uio_register_device(&pdev->dev, &info);
-> > > 
-> > > Userspace maps that memory range and writes its contents to a file:
-> > > 
-> > > [...]
-> > > 
-> > > fd = open("/dev/uio0", O_RDWR);
-> > > if (fd < 0) {
-> > >            perror("Can't open UIO device\n");
-> > >            exit(1);
-> > > }
-> > > 
-> > > mem_map = mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE,
-> > >                   MAP_PRIVATE, fd, 0);
-> > > 
-> > > if(mem_map == MAP_FAILED) {
-> > >            perror("Can't map UIO memory\n");
-> > >            ret = -ENOMEM;
-> > >            goto out_file;
-> > > }
-> > > [...]
-> > > bytes_written = write(fd_file, mem_map, MAP_SIZE)
-> > > [...]
-> > > 
-> > > munmap(mem_map);
-> > 
-> > >From my point of view (I've got Jan's full test case code), this
-> > is a completely correct UIO use case.
-> > 
-> > > 
-> > > So, what happens is (I'm currently testing with 3.0.3 on ARM
-> > > VersatilePB): When I do the munmap(), I run into the following error:
-> > > 
-> > > BUG: Bad page state in process uio_test  pfn:078ed
-> > > page:c0409154 count:0 mapcount:0 mapping:  (null) index:0x0
-> > > page flags: 0x284(referenced|slab|arch_1)
-> 
-> PG_slab is set.  The kernel is complaining because a page which was
-> allocated via kmalloc/kmem_cache_alloc was directly passed to the page
-> allocator for freeing.  It should have been passed to kfree().
-> 
-> Presumably the uio driver expects that its memory was allocated via
-> alloc_pages(), not via kmalloc().
+On Thu, 1 Sep 2011 10:01:39 -0700
+Earl Chew <echew@ixiacom.com> wrote:
 
-Thanks for that hint. I'll check and will update UIO documentation
-accordingly if necessary.
+> Change corepattern %e and %E to use current->group_leader->comm instead of current->comm.
 
-BUT the following problems are still threatening my mental health:
+Which might break stuff.
 
-If userspace gets a valid and working pointer from mmap(), it is
-entitled to expect munmap() to work on that pointer, too, isn't it?
-Shouldn't mmap() fail in such a case?
+> A core dump can be triggered from any task in a group, and substituting current->comm
+> means that the name of the core file for a process can vary in surprising ways.
 
-The kernel's behavior should be the same, no matter which SLAB or
-SLUB is chosen.
+Which some people may well be using
 
-Or am I following wrong philosophies?
+> Using current->group_leader->comm makes the name of the core file more consistent
+> for a process when used with %e or %E.
 
-Thanks,
-Hans
+In your view, but there is a better way to do this - add a new case and
+letter for the behaviour you want. That way you don't break anyone elses
+defaults and expectation and people can set a corepattern dependant upon
+the group leader.
 
-
+Alan
