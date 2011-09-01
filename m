@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab1IAHIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 03:08:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58759 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab1IAHIh (ORCPT
+	id S1755917Ab1IAHIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 03:08:53 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:46639 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755636Ab1IAHIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 03:08:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Linas Vepstas (Code Aurora)" <linas@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] asm-generic: over-ride csum_partial_copy_nocheck, etc.
-Date: Thu, 01 Sep 2011 09:07:42 +0200
-Message-ID: <1664902.8eP1aWlL1O@wuerfel>
-User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <20110831223519.GA14535@codeaurora.org>
-References: <20110831223519.GA14535@codeaurora.org>
+	Thu, 1 Sep 2011 03:08:51 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgUEAGssX055LIxDgWdsb2JhbAA6CKhUFQEBFiYlgUABAQQBOhwjBQsIAw4KLhQlAyETh3K4KA6DKoMjBJtjiF4
+Date: Thu, 1 Sep 2011 17:08:48 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Allison Henderson <achender@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: Re: lock i_mutex for fallocate?
+Message-ID: <20110901070848.GQ32358@dastard>
+References: <4E5ED2D5.8040302@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ecXhmidLANbngwydRXm8KhAlRuc1mvNOL7+XEkV4HU9
- 4MbwP0r+WWXhFcrVzwjnTgd87GjR+Lo71ZAIGccC4koNyPCRkU
- Olo0HdP8pdP30dZ+HWSW38JiY+pAXG1sG/2X8SnUqdIXdFnJjO
- 0VEBzh/JKSxV11tNMEMV/sWFeDdIwDYI+yIfOrB4KB8Bev807R
- SkZGuswGma9Wbdv+L+1ZRTaFb/h6zNIcts4U99FVj4qlLgSlXB
- 08xlRrNRe+aLc6NXigHBk7oE0N6lQKgfroC056lYZlWNzhKpq+
- CYWWomprrsL+6HPgB2bkJbpc8O2ShFrYdoKzSSvMKQkBNjz15r
- TGIVCeojyIPXnQ+zsexI=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E5ED2D5.8040302@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 August 2011 17:35:19 Linas Vepstas wrote:
-> There are plausbile reasons for architectures to provide their own
-> versions of csum_partial_copy_nocheck and csum_tcpudp_magic. 
-> By protecting these, the architecture can still re-use the 
-> asm-generic checksum.h, instead of copying it.
+On Wed, Aug 31, 2011 at 05:33:25PM -0700, Allison Henderson wrote:
+> Hi All,
 > 
-> Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+> In ext4 punch hole, we realized that the punch hole operation needs
+> to be done under i_mutex just like truncate.  i_mutex for truncate
+> is held in the vfs layer, so we dont need to lock it at the file
+> system layer, but vfs does not lock i_mutex for fallocate.  We can
+> lock i_mutex for fallocate at the fs layer, but question was raised
+> then: should i_mutex for fallocate be held in the vfs layer instead?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+No.
 
-Please add the patch to your hexagon patch set.
+> I do not know if other file systems need i_mutex to be locked for
+> fallocate,
 
-	Arnd
+For one, XFS does not require i_mutex to be held for any extent
+manipulation of any kind (allocation, truncation, hole punch,
+unwritten extent conversion, etc).
+
+Hence the current structure of having the filesystem take i_mutex if
+it needs it to protect allocations against races is appropriate.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
