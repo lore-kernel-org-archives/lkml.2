@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673Ab1IATOr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 15:14:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51253 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab1IATOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 15:14:46 -0400
-Date: Thu, 1 Sep 2011 21:14:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Kacur <jkacur@redhat.com>
-cc: rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PREEMPT_RT_FULL Build error fix
-In-Reply-To: <1314360393-13605-1-git-send-email-jkacur@redhat.com>
-Message-ID: <alpine.LFD.2.02.1109012112100.2723@ionos>
-References: <1314360393-13605-1-git-send-email-jkacur@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-222593702-1314904483=:2723"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1757602Ab1IATOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 15:14:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64240 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757168Ab1IATOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 15:14:36 -0400
+Subject: Re: [PATCH 0/3] RFC: addition to DMA API
+From: Mark Salter <msalter@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Ming Lei <ming.lei@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 01 Sep 2011 15:14:18 -0400
+In-Reply-To: <20110901173149.GE2803@e102144-lin.cambridge.arm.com>
+References: <CACVXFVOT9FZexiZhuJtvyFP8qOPYUKg0JqGarBJgT4R8SN7p5Q@mail.gmail.com>
+	 <Pine.LNX.4.44L0.1109011127080.1896-100000@iolanthe.rowland.org>
+	 <20110901160429.GA15814@n2100.arm.linux.org.uk>
+	 <20110901173149.GE2803@e102144-lin.cambridge.arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1314904459.1439.24.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, 2011-09-01 at 18:31 +0100, Will Deacon wrote:
+> I don't think what we're seeing in this case is caused by mismatched memory
+> attributes, especially as passing `nosmp' on the command-line makes the
+> performance issue disappear.
 
---8323328-222593702-1314904483=:2723
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+I'm coming to think we are dealing with two different problems.
 
-On Fri, 26 Aug 2011, John Kacur wrote:
+We have the original problem where adding the write buffer flush
+to EHCI gives a 4x performance boost to USB. Also adding nosmp to
+the cmdline gives pretty much the same boost. This is looking like
+something other than just data getting held up in a write buffer.
 
-> Problem:
-> make O=/bld/3.0.3-rt11/ kernel/fork.o
-> /home/jkacur/jk-2.6/kernel/fork.c:91: error: section of ‘name’ conflicts with previous declaration
-> 
-> __cacheline_aligned is already part of the definition of DEFINE_RWLOCK
-> for -rt
-> 
-> However it is not always used for the tasklist_lock in non-rt, so it can't
-> simply be added to the definition of DEFINE_RWLOCK in non-rt, so I modified
-> the definition in fork.c
+On the other hand, on a nosmp kernel, I get about 3-4% performance
+boost for hdparm -t using the write buffer flush patch vs. without
+it.
 
--ENOPARSE
+So, regardless of what turns out to be the actual cause of the 4x
+problem, it may still be worthwhile to have the explicit write
+buffer sync API if we can't avoid using buffered mappings for DMA.
 
-The real question is whether RWLOCKS should be cacheline aligned in
-general or the RT addon is just overkill. Slapping an ifdef around
-does not answer that.
+--Mark
 
-Thanks,
 
-	tglx
---8323328-222593702-1314904483=:2723--
