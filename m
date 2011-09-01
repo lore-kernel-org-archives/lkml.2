@@ -1,81 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab1IAVoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 17:44:18 -0400
-Received: from tuxonice.net ([96.126.116.212]:33510 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757961Ab1IAVoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 17:44:17 -0400
-Message-ID: <4E5FFCAB.6030409@tuxonice.net>
-Date: Fri, 02 Sep 2011 07:44:11 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Lightning/1.0b2 Thunderbird/3.1.12
+	id S1758076Ab1IAVsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 17:48:16 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:36526 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757961Ab1IAVsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 17:48:15 -0400
+Date: Thu, 1 Sep 2011 17:46:43 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, NeilBrown <neilb@suse.de>,
+        paulmck@linux.vnet.ibm.com, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH][BUGFIX] cgroups: more safe tasklist locking in
+ cgroup_attach_proc
+Message-ID: <20110901214643.GD10401@unix33.andrew.cmu.edu>
+References: <20110727171101.5e32d8eb@notabene.brown>
+ <20110727150710.GB5242@unix33.andrew.cmu.edu>
+ <20110727234235.GA2318@linux.vnet.ibm.com>
+ <20110728110813.7ff84b13@notabene.brown>
+ <20110728062616.GC15204@unix33.andrew.cmu.edu>
+ <20110728171345.67d3797d@notabene.brown>
+ <20110729142842.GA8462@unix33.andrew.cmu.edu>
+ <20110815184957.GA16588@redhat.com>
 MIME-Version: 1.0
-To: Pedro Ribeiro <pedrib@gmail.com>
-CC: Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [TuxOnIce-devel] Thinkpad hotkeys and USB audio not working after
- resume in 3.0.x
-References: <CAEDdjHfu71X04JR2Yx8N495bDoJRudch3xbzNAEmUpVxYS+Oww@mail.gmail.com>	<4E5F77A7.7090200@tuxonice.net> <CAEDdjHeDYFqq7gLMEnhwP8jfA-xqTpTGVOSN017avC1JmXrEpg@mail.gmail.com>
-In-Reply-To: <CAEDdjHeDYFqq7gLMEnhwP8jfA-xqTpTGVOSN017avC1JmXrEpg@mail.gmail.com>
-X-TagToolbar-Keys: D20110902074411855
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815184957.GA16588@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
+X-SMTP-Spam-Clean: 8% (
+ BODY_SIZE_3000_3999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, NO_URI_FOUND 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-
-On 01/09/11 22:26, Pedro Ribeiro wrote:
-> On 1 September 2011 13:16, Nigel Cunningham <nigel@tuxonice.net> wrote:
->> Hi Pedro.
->>
->> On 01/09/11 20:36, Pedro Ribeiro wrote:
->>> Hi,
->>>
->>> I'm hitting a bug with my thinkpad T400. After resuming from Hibernate,
->>> the thinkpad hotkeys and my USB audio card do not work at all.
->>> Suspending to RAM and resuming seem to solve the problem, but after
->>> another hibernation it comes back again.
->>>
->>> This only happens with TuxOnIce but not with the vanilla kernel.
->>>
->>> Rafael, can you please point out from the top of your head if there was
->>> any change that could have caused this?
->>
->> Sorry for my slowness in getting back to you Pedro.
->>
->> When you invoke swsusp, is it in exactly the same way that TuxOnIce is
->> invoked? I'm wondering whether modules are unloaded and services stopped
->> in one scenario that are handled differently in the other.
->>
->> Regards,
->>
->> Nigel
->> --
->> Evolution (n): A hypothetical process whereby improbable
->> events occur with alarming frequency, order arises from chaos, and
->> no one is given credit.
->>
+On Mon, Aug 15, 2011 at 08:49:57PM +0200, Oleg Nesterov wrote:
+> > -	rcu_read_lock();
+> > +	read_lock(&tasklist_lock);
+> >  	if (!thread_group_leader(leader)) {
 > 
-> Hi Nigel,
+> Agreed, this should work.
 > 
-> Thanks for your response.
+> But can't we avoid the global list? thread_group_leader() or not, we do
+> not really care. We only need to ensure we can safely find all threads.
 > 
-> I just tried using echo disk > /sys/power/state using both methods
-> (swsusp and ToI) and the result is the same.
+> How about the patch below?
+
+I was content with the tasklist_lock because cgroup_attach_proc is
+already a pretty heavyweight operation, and probably pretty rare that a
+user would want to do multiple of them at once quickly. I asked Andrew
+to take the simple tasklist_lock patch just now, since it does fix the
+bug at least.
+
+Anyway, looking at this, hmm. I am not sure if this protects adequately?
+In de_thread, the sighand lock is held only around the first half
+(around zap_other_threads), and not around the following section where
+leadership is transferred (esp. around the list_replace calls).
+tasklist_lock is held here, though, so it seems like the right lock to
+hold.
+
 > 
-> With swsusp the keys and the USB interface work fine, but with ToI
-> they stop working until I suspend to RAM.
+> 
+> With or without this/your patch this leader can die right after we
+> drop the lock. ss->can_attach(leader) and ss->attach(leader) look
+> suspicious. If a sub-thread execs, this task_struct has nothing to
+> do with the threadgroup.
 
-Okay; thanks for ruling that out. I'll seek to take a look today.
+hmm. I thought I had this case covered, but it's been so long since I
+actually wrote the code that if I did I can't remember how. I think
+exiting is no issue since we hold a reference on the task_struct, but
+exec may still be a problem. I'm thinking:
 
-Regards,
+- cgroup_attach_proc drops the tasklist_lock
+- a sub-thread execs, and in exec_mmap (after de_thread) changes the mm
+- ss->attach, for example in memcg, wants to use leader->mm, which is
+  now wrong
 
-Nigel
--- 
-Evolution (n): A hypothetical process whereby improbable
-events occur with alarming frequency, order arises from chaos, and
-no one is given credit.
+this seems to be possible as the code currently is. I wonder if the best
+fix is just to have exec (maybe around de_thread) bounce off of or hold
+threadgroup_fork_read_lock somewhere?
+
+> 
+> 
+> 
+> Also. This is off-topic, but... Why cgroup_attach_proc() and
+> cgroup_attach_task() do ->attach_task() + cgroup_task_migrate()
+> in the different order? cgroup_attach_proc() looks wrong even
+> if currently doesn't matter.
+
+(already submitted a patch for this)
+
+Thanks,
+Ben
+
+> 
+> 
+> Oleg.
+> 
+> --- x/kernel/cgroup.c
+> +++ x/kernel/cgroup.c
+> @@ -2000,6 +2000,7 @@ int cgroup_attach_proc(struct cgroup *cg
+>  	/* threadgroup list cursor and array */
+>  	struct task_struct *tsk;
+>  	struct flex_array *group;
+> +	unsigned long flags;
+>  	/*
+>  	 * we need to make sure we have css_sets for all the tasks we're
+>  	 * going to move -before- we actually start moving them, so that in
+> @@ -2027,19 +2028,10 @@ int cgroup_attach_proc(struct cgroup *cg
+>  		goto out_free_group_list;
+>  
+>  	/* prevent changes to the threadgroup list while we take a snapshot. */
+> -	rcu_read_lock();
+> -	if (!thread_group_leader(leader)) {
+> -		/*
+> -		 * a race with de_thread from another thread's exec() may strip
+> -		 * us of our leadership, making while_each_thread unsafe to use
+> -		 * on this task. if this happens, there is no choice but to
+> -		 * throw this task away and try again (from cgroup_procs_write);
+> -		 * this is "double-double-toil-and-trouble-check locking".
+> -		 */
+> -		rcu_read_unlock();
+> -		retval = -EAGAIN;
+> +	retval = -EAGAIN;
+> +	if (!lock_task_sighand(leader, &flags))
+>  		goto out_free_group_list;
+> -	}
+> +
+>  	/* take a reference on each task in the group to go in the array. */
+>  	tsk = leader;
+>  	i = 0;
+> @@ -2055,9 +2047,9 @@ int cgroup_attach_proc(struct cgroup *cg
+>  		BUG_ON(retval != 0);
+>  		i++;
+>  	} while_each_thread(leader, tsk);
+> +	unlock_task_sighand(leader, &flags);
+>  	/* remember the number of threads in the array for later. */
+>  	group_size = i;
+> -	rcu_read_unlock();
+>  
+>  	/*
+>  	 * step 1: check that we can legitimately attach to the cgroup.
+> 
+> 
