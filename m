@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab1IABfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Aug 2011 21:35:44 -0400
-Received: from dave.nur.ac.rw ([41.222.244.20]:44862 "EHLO dave.nur.ac.rw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756942Ab1IABfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Aug 2011 21:35:42 -0400
-X-Greylist: delayed 654 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Aug 2011 21:35:42 EDT
-Message-ID: <20110901032439.15143smn36c7ovyv@webmail.nur.ac.rw>
-Date: Thu, 01 Sep 2011 03:24:39 +0200
-From: System Administrator <info@web.com>
-To: undisclosed-recipients:;
-Subject: Warning Increase Your Mailbox Quota Now
+	id S1757398Ab1IABhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Aug 2011 21:37:35 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:27020 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756900Ab1IABhb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Aug 2011 21:37:31 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH v4 0/8] Input: elantech: add support for newer hardware
+In-Reply-To: <4E5E2EEF.8050405@tudelft.nl>
+References: <1314606539-24722-1-git-send-email-jj_ding@emc.com.tw> <4E5E2EEF.8050405@tudelft.nl>
+User-Agent: Notmuch/0.7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 01 Sep 2011 09:39:40 +0800
+Message-ID: <87obz53usj.fsf@emc.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Éric,
 
-Your Mail Quota Has Exceeded The Set Quota/Limit. You Are Currently
-Running On 23GB Due To Hidden Files And Folder On Your Mailbox,
-you may not be able to receive or send new mails until you re-validate.
+Thnaks for the reviewing and testing.
 
-Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
+jj
 
-http://buzurl.com/bc74
-
-Failure To Validate Your Quota May Result In Loss Of Important Information
-In Your Mailbox Or Cause Limited Access To It.
-
-Mail Quota alert -Error Code #1997142DDE
-System Administrator
-
-
-
-
+On Wed, 31 Aug 2011 14:54:07 +0200, Éric Piel <E.A.B.Piel@tudelft.nl> wrote:
+> Op 29-08-11 10:28, JJ Ding schreef:
+> > Hi Lists,
+> >
+> > This is a series of patches to add support for newer generations of ELAN
+> > touchpad.
+> >
+> > Patches #1~#6 are essentially fixes and cleanups that pave the way for
+> > patch #7 and patch #8, which really adds code for v3 and v4 hardware.
+> >
+> > Any comments, suggestoins are welcome.
+> >
+> Hello,
+> IMHO, this patch series is starting to look really good.
+> 
+> For patches 1-7 you have my:
+> 
+> Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
+> 
+> I've just some little comments on patch 8.
+> 
+> I'll try find the time to test on my laptop (with touchpad firmware 
+> version 2) this weekend.
+> 
+> Cheers,
+> Éric
