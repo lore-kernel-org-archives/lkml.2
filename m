@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273Ab1IAM51 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 08:57:27 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:35790 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932107Ab1IAM5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 08:57:24 -0400
-Date: Thu, 1 Sep 2011 13:57:20 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
-        Zhu Yanhai <zhu.yanhai@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: slow performance on disk/network i/o full speed after drop_caches
-Message-ID: <20110901125720.GC24629@csn.ul.ie>
-References: <4E560F2A.1030801@profihost.ag>
- <20110826021648.GA19529@localhost>
- <4E570AEB.1040703@profihost.ag>
- <20110826030313.GA24058@localhost>
- <D299D0AE-2F3C-42E2-9723-A3D7C0108C40@profihost.ag>
- <20110826032601.GA26282@localhost>
- <CAC8teKXqZktBK7+GbLgHn-2k+zjjf8uieRM_q_V7JK7ePAk9Lg@mail.gmail.com>
- <4E573A99.4060309@profihost.ag>
- <4E5DDE86.3040202@profihost.ag>
- <20110901041458.GA30123@localhost>
+	id S932293Ab1IAM6a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 08:58:30 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51924 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125Ab1IAM63 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 08:58:29 -0400
+Date: Thu, 1 Sep 2011 14:58:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 6/6] cgroup: kill subsys->can_attach_task(), pre_attach()
+ and attach_task()
+Message-ID: <20110901125822.GB24650@somewhere.redhat.com>
+References: <1314312192-26885-1-git-send-email-tj@kernel.org>
+ <1314312192-26885-7-git-send-email-tj@kernel.org>
+ <20110830201030.GC15953@somewhere.redhat.com>
+ <20110831070313.GA29179@mtj.dyndns.org>
+ <20110831134220.GB20598@somewhere>
+ <20110901112221.GA2752@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110901041458.GA30123@localhost>
+In-Reply-To: <20110901112221.GA2752@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 12:14:58PM +0800, Wu Fengguang wrote:
-> Hi Stefan,
+On Thu, Sep 01, 2011 at 08:22:21PM +0900, Tejun Heo wrote:
+> Hello,
 > 
-> On Wed, Aug 31, 2011 at 03:11:02PM +0800, Stefan Priebe - Profihost AG wrote:
-> > Hi Fengguang,
-> > Hi Yanhai,
+> On Wed, Aug 31, 2011 at 03:42:24PM +0200, Frederic Weisbecker wrote:
+> > My task counter subsystem patchset brings a cancel_attach_task() callback
+> > that cancels can_attach_task() effects.
 > > 
-> > > you're abssolutely corect zone_reclaim_mode is on - but why?
-> > > There must be some linux software which switches it on.
-> > >
-> > > ~# grep 'zone_reclaim_mode' /etc/sysctl.* -r -i
-> > > ~#
-> > >
-> > > also
-> > > ~# grep 'zone_reclaim_mode' /etc/sysctl.* -r -i
-> > > ~#
-> > >
-> > > tells us nothing.
-> > >
-> > > I've then read this:
-> > >
-> > > "zone_reclaim_mode is set during bootup to 1 if it is determined that
-> > > pages from remote zones will cause a measurable performance reduction.
-> > > The page allocator will then reclaim easily reusable pages (those page
-> > > cache pages that are currently not used) before allocating off node pages."
-> > >
-> > > Why does the kernel do that here in our case on these machines.
+> > I thought that rebased on top of your patch it's going to be merged inside
+> > cancel_attach() but OTOH we can't cancel the effect of failed migration
+> > on a thread that way.
 > > 
-> > Can nobody help why the kernel in this case set it to 1?
+> > May be we need to keep a cancel_attach_task() just for that purpose?
 > 
-> It's determined by RECLAIM_DISTANCE.
-> 
-> build_zonelists():
-> 
->                 /*
->                  * If another node is sufficiently far away then it is better
->                  * to reclaim pages in a zone before going off node.
->                  */
->                 if (distance > RECLAIM_DISTANCE)
->                         zone_reclaim_mode = 1;
-> 
-> Since Linux v3.0 RECLAIM_DISTANCE is increased from 20 to 30 by this commit.
-> It may well help your case, too.
-> 
+> We can do that but I think that becomes a bit too complex and fragile.
+> That path won't be traveled unless it races against exit.  Bugs will
+> be difficult to detect and reproduce.  In this respect, the current
+> code already seems racy.  ->can_attach (or other methods in the attach
+> path) and ->exit can race each other and I don't think all subsystems
+> handle that properly.
 
-Even with that, it's known that zone_reclaim() can be a disaster when
-it runs into problems. This should be fixed in 3.1 by the following
-commits;
+I guess subsystems don't care about that currently, although I haven't
+checked. But the task counter will need this per thread cancellation in
+migration failure, without the need for any synchronization between
+can_attach, attach and exit.
 
-[cd38b115 mm: page allocator: initialise ZLC for first zone eligible for zone_reclaim]
-[76d3fbf8 mm: page allocator: reconsider zones for allocation after direct reclaim]
+Now if we want to solve this with a synchronization there, either
+we task_lock() every tasks in the group in the beginning of cgroup_attach_proc().
+But that's not very nice. Or we use cgroup_mutex on cgroup_exit() exit,
+but that's even worse.
 
-The description in cd38b115 has the interesting details.
+I guess we need the leader->sighand->siglock on both cgroup_attach_proc()
+and cgroup_exit(). Besides we may have more reasons to have that:
 
--- 
-Mel Gorman
-SUSE Labs
+https://lkml.org/lkml/2011/8/15/342
+
+> 
+> IMHO the right thing to do here is simplifying synchronization rules
+> so that nothing else happens while migration is in progress.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
