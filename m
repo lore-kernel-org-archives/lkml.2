@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab1IAROF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 13:14:05 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:51967 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab1IAROD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 13:14:03 -0400
-Date: Fri, 2 Sep 2011 02:13:55 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110901171355.GC2752@htj.dyndns.org>
-References: <20110831075814.003575573@openvz.org>
- <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros>
- <20110831112642.GI25465@sun>
- <20110831140416.GA17626@shutemov.name>
- <20110831142622.GB30615@sun>
- <20110831151023.5b7e12da.akpm@linux-foundation.org>
- <4E5F3B25.9030701@parallels.com>
- <20110901115006.GB2752@htj.dyndns.org>
- <4E5F7702.2070808@parallels.com>
+	id S1755631Ab1IARQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 13:16:00 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:3868
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750900Ab1IARP4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 13:15:56 -0400
+X-SpamScore: -23
+X-BigFish: VPS-23(zz9371K542M1432N98dK14ffOzz1202hzz8275bhz2ei2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+From: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        scsi <linux-scsi@vger.kernel.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dept_iscsi_driver <iscsi-driver@qlogic.com>
+Date: Thu, 1 Sep 2011 10:15:50 -0700
+Subject: RE: linux-next: Tree for Aug 30 (scsi/qla4xxx)
+Thread-Topic: linux-next: Tree for Aug 30 (scsi/qla4xxx)
+Thread-Index: AcxoHujBrio8TGsbRuelKQ4f/kL5TwAq6fbg
+Message-ID: <5E4F49720D0BAD499EE1F01232234BA873C679F24B@AVEXMB1.qlogic.org>
+References: <20110830171605.168f29decb0558fa31e59210@canb.auug.org.au>
+ <20110831134515.049f584b.rdunlap@xenotime.net>
+In-Reply-To: <20110831134515.049f584b.rdunlap@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E5F7702.2070808@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Thu, Sep 01, 2011 at 04:13:54PM +0400, Pavel Emelyanov wrote:
-> Because with the handler restore process looks very natural and simple - each
-> task does the following steps
-> 
-> 1. restore task resources (open files, set IDs, restore connections, wire back timers, etc.)
-> 2. call execve() to jump into new memory+registers context which is
->    a. unmap all the user memory
->    b. map required mappings
->    c. populate them with data
->    d. restore registers
->    e. restore IP
+> -----Original Message-----
+> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
+> Sent: Wednesday, August 31, 2011 1:45 PM
+> To: Stephen Rothwell; scsi
+> Cc: linux-next@vger.kernel.org; linux-kernel; Dept_iscsi_driver
+> Subject: Re: linux-next: Tree for Aug 30 (scsi/qla4xxx)
+>
+> On Tue, 30 Aug 2011 17:16:05 +1000 Stephen Rothwell wrote:
+>
+> > Hi all,
+>
+> [Sorry about the delay.. slow build machine.
+> Please ignore if this is already known/fixed.]
+>
+>
+> (on i386)
+>
+> ERROR: "iscsi_boot_create_target" [drivers/scsi/qla4xxx/qla4xxx.ko]
+> undefined!
+> ERROR: "iscsi_boot_create_ethernet" [drivers/scsi/qla4xxx/qla4xxx.ko]
+> undefined!
+> ERROR: "iscsi_boot_create_host_kset" [drivers/scsi/qla4xxx/qla4xxx.ko]
+> undefined!
+> ERROR: "iscsi_boot_create_initiator" [drivers/scsi/qla4xxx/qla4xxx.ko]
+> undefined!
+> ERROR: "iscsi_boot_destroy_kset" [drivers/scsi/qla4xxx/qla4xxx.ko]
+> undefined!
+>
+> when CONFIG_ISCSI_BOOT_SYSFS is not enabled.
+>
+Acked-by: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
 
-But what about multiple threads?  exec is already scary enough as it
-is and I don't think it would be wise to overload it for this.
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
 
-I don't really think binfmt handler would be able to achieve
-completeness without ending up with full de-serializer in kernel.
-There are a lot of states which already have API to manipulate from
-the userland thread itself and they all will need to be replicated in
-the binfmt handler.  It really has to be full de-serializer if it
-wants to function like you described.
-
-And if we're gonna have interventions anyway, I can't see much point
-in implementing something which seems simpler - it's not gonna be
-actually simpler.
-
-Thanks.
-
--- 
-tejun
