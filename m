@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab1IAOrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 10:47:43 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:55684 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757513Ab1IAOrl (ORCPT
+	id S1757740Ab1IAOsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 10:48:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63807 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757723Ab1IAOsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 10:47:41 -0400
-Date: Thu, 1 Sep 2011 10:47:40 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Oliver Neukum <oliver@neukum.org>
-cc: Harald Dunkel <harri@afaics.de>, <linux-usb@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0.3 + Bluetooth USB Dongle: no success without noapic
-In-Reply-To: <201109010801.22009.oliver@neukum.org>
-Message-ID: <Pine.LNX.4.44L0.1109011047020.1896-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 1 Sep 2011 10:48:18 -0400
+Subject: [PATCH] gpio: davinci: eliminate unused variable warnings
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Nori Sekhar <nsekhar@ti.com>, Hilman Kevin <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source@linux.davincidsp.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Sep 2011 22:48:08 +0800
+Message-ID: <1314888488.11908.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Sep 2011, Oliver Neukum wrote:
+Since commit 5093aec872e5be7a55d8dd2b639e8a3818dc19db
+"arm: davinci: Cleanup irq chip code", the variable 'mask' and 'g'
+are not being used.
 
-> Am Donnerstag, 1. September 2011, 07:36:10 schrieb Harald Dunkel:
-> > On 08/28/11 12:07, Oliver Neukum wrote:
-> > > Am Sonntag, 28. August 2011, 11:49:57 schrieb Harald Dunkel:
-> 
-> Hi,
-> 
-> > >> [   91.589073] usb 2-5: new full speed USB device number 8 using ohci_hcd [   91.709067] usb 2-5: device descriptor read/64, error -62 [   91.930059] usb 2-5: device descriptor read/64, error -62 [   92.144054] usb 2-5: new full speed USB device number 9 using ohci_hcd [   92.264073] usb 2-5:
-> > >> device descriptor read/64, error -62 [   92.485064] usb 2-5: device descriptor read/64, error -62 [   92.699091] usb 2-5: new full speed USB device number 10 using ohci_hcd [   93.103040] usb 2-5: device not accepting address 10, error -62 [   93.216102] usb 2-5: new full speed USB device
-> > >> number 11 using ohci_hcd [   93.620038] usb 2-5: device not accepting address 11, error -62 [   93.620072] hub 2-0:1.0: unable to enumerate USB device on port 5
-> > >>
-> > >> Booting with noapic fixes this problem.
-> > >
-> > > Do any other USB devices work on that OHCI?
-> > >
-> > 
-> > Sorry for the delay.
-> > 
-> > It seems that this problem comes up by chance (with or without
-> > noapic). If I move the dongle to another USB slot then the problem
-> > is gone. By now the Bluetooth dongle is the only device showing this
-> > problem.
-> > 
-> > Here is the output of lsusb with all devices plugged in and
-> > working:
-> > 
-> > Bus 001 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-> > Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-> > Bus 002 Device 002: ID 04fc:0c15 Sunplus Technology Co., Ltd SPIF215A SATA bridge
-> > Bus 001 Device 007: ID 046d:c525 Logitech, Inc. MX Revolution Cordless Mouse
-> > Bus 001 Device 008: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
-> > Bus 001 Device 009: ID 04f2:0402 Chicony Electronics Co., Ltd Genius LuxeMate i200 Keyboard
-> > 
-> > Removing the usb drive or the keyboard doesn't make the bluetooth
-> > dongle more stable.
-> 
-> Voodoo. Does anybody have any ideas?
+This patch eliminates below unused variable warnings:
 
-It sounds like the dongle is making a bad electrical connection, or 
-there's a bad voltage, or something like that.
+  CC      drivers/gpio/gpio-davinci.o
+drivers/gpio/gpio-davinci.c: In function 'gpio_irq_type':
+drivers/gpio/gpio-davinci.c:234: warning: unused variable 'mask'
+drivers/gpio/gpio-davinci.c:233: warning: unused variable 'g'
 
-Alan Stern
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/gpio/gpio-davinci.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+index a8066e8..df0d595 100644
+--- a/drivers/gpio/gpio-davinci.c
++++ b/drivers/gpio/gpio-davinci.c
+@@ -230,9 +230,6 @@ static void gpio_irq_enable(struct irq_data *d)
+ 
+ static int gpio_irq_type(struct irq_data *d, unsigned trigger)
+ {
+-	struct davinci_gpio_regs __iomem *g = irq2regs(d->irq);
+-	u32 mask = (u32) irq_data_get_irq_handler_data(d);
+-
+ 	if (trigger & ~(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
+ 		return -EINVAL;
+ 
+-- 
+1.7.4.1
+
+
 
