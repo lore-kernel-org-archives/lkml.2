@@ -1,59 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab1IASuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 14:50:40 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46757 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756522Ab1IASuj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 14:50:39 -0400
-Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Roland Dreier <roland@purestorage.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, scameron@beardog.cce.hp.com,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephenmcameron@gmail.com, thenzl@redhat.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-In-Reply-To: <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-	 <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20110901160724.GN9189@beardog.cce.hp.com>
-	 <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Sep 2011 11:50:38 -0700
-Message-ID: <1314903038.3067.27.camel@dabdike>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1757356Ab1IASzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 14:55:17 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:43701 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652Ab1IASzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 14:55:15 -0400
+Date: Thu, 1 Sep 2011 20:55:02 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Jan Altenberg <jan@linutronix.de>,
+        linux-mm@kvack.org, b.spranger@linutronix.de,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: bade page state while calling munmap() for kmalloc'ed UIO memory
+Message-ID: <20110901185502.GB8408@local>
+References: <1314630347.2258.150.camel@bender.lan>
+ <20110831095825.GC4769@local>
+ <20110831161307.d605848b.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110831161307.d605848b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 10:58 -0700, Roland Dreier wrote:
-> > OK I found the bad commit,I got lucky... I lost some files but my
-> > machine was able to complete the bisection. CC involved people
+On Wed, Aug 31, 2011 at 04:13:07PM -0700, Andrew Morton wrote:
+> On Wed, 31 Aug 2011 11:58:25 +0200
+> "Hans J. Koch" <hjk@hansjkoch.de> wrote:
 > 
-> > # bad: [b03e7495a862b028294f59fc87286d6d78ee7fa1] PCI: Set PCI-E Max Payload Size on fabric
+> > On Mon, Aug 29, 2011 at 05:05:47PM +0200, Jan Altenberg wrote:
+> > 
+> > [Since we got no reply on linux-mm, I added lkml and Andrew to Cc: (mm doesn't
+> > seem to have a maintainer...)]
+> > 
+> > > Hi,
+> > > 
+> > > I'm currently analysing a problem similar to some mmap() issue reported
+> > > in the past: https://lkml.org/lkml/2010/7/11/140
+> > 
+> > The arch there was microblaze, and you are working on arm. That means
+> > the problem appears on at least to archs.
+> > 
+> > > 
+> > > So, what I'm trying to do is mapping some physically continuous memory
+> > > (allocated by kmalloc) to userspace, using a trivial UIO driver (the
+> > > idea is that a device can directly DMA to that buffer):
+> > > 
+> > > [...]
+> > > #define MEM_SIZE (4 * PAGE_SIZE)
+> > > 
+> > > addr = kmalloc(MEM_SIZE, GFP_KERNEL)
+> > > [...]
+> > > info.mem[0].addr = (unsigned long) addr;
+> > > info.mem[0].internal_addr = addr;
+> > > info.mem[0].size = MEM_SIZE;
+> > > info.mem[0].memtype = UIO_MEM_LOGICAL;
+> > > [...]
+> > > ret = uio_register_device(&pdev->dev, &info);
+> > > 
+> > > Userspace maps that memory range and writes its contents to a file:
+> > > 
+> > > [...]
+> > > 
+> > > fd = open("/dev/uio0", O_RDWR);
+> > > if (fd < 0) {
+> > >            perror("Can't open UIO device\n");
+> > >            exit(1);
+> > > }
+> > > 
+> > > mem_map = mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE,
+> > >                   MAP_PRIVATE, fd, 0);
+> > > 
+> > > if(mem_map == MAP_FAILED) {
+> > >            perror("Can't map UIO memory\n");
+> > >            ret = -ENOMEM;
+> > >            goto out_file;
+> > > }
+> > > [...]
+> > > bytes_written = write(fd_file, mem_map, MAP_SIZE)
+> > > [...]
+> > > 
+> > > munmap(mem_map);
+> > 
+> > >From my point of view (I've got Jan's full test case code), this
+> > is a completely correct UIO use case.
+> > 
+> > > 
+> > > So, what happens is (I'm currently testing with 3.0.3 on ARM
+> > > VersatilePB): When I do the munmap(), I run into the following error:
+> > > 
+> > > BUG: Bad page state in process uio_test  pfn:078ed
+> > > page:c0409154 count:0 mapcount:0 mapping:  (null) index:0x0
+> > > page flags: 0x284(referenced|slab|arch_1)
 > 
-> Hi Eric,
+> PG_slab is set.  The kernel is complaining because a page which was
+> allocated via kmalloc/kmem_cache_alloc was directly passed to the page
+> allocator for freeing.  It should have been passed to kfree().
 > 
-> I guess it would be useful to see "lspci -vv" output with a "good" kernel
-> and with that bad patch applied.  Most likely we should see some difference
-> somewhere in the MaxPayload fields in the PCI Express capability of
-> some device.
-> 
-> Either the RAID controller or something else lies, and puts a value
-> in the DevCap that it can't actually support, or else the patch is
-> buggy and puts something out of range in a DevCtl somewhere.
+> Presumably the uio driver expects that its memory was allocated via
+> alloc_pages(), not via kmalloc().
 
+Thanks for that hint. I'll check and will update UIO documentation
+accordingly if necessary.
 
-While we investigate, I think the problems produced by the patch (data
-corruption) are serious enough to warrant reverting it, please Jesse.
+BUT the following problems are still threatening my mental health:
+
+If userspace gets a valid and working pointer from mmap(), it is
+entitled to expect munmap() to work on that pointer, too, isn't it?
+Shouldn't mmap() fail in such a case?
+
+The kernel's behavior should be the same, no matter which SLAB or
+SLUB is chosen.
+
+Or am I following wrong philosophies?
 
 Thanks,
-
-James
+Hans
 
 
