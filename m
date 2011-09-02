@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179Ab1IBD5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 23:57:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52001 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab1IBD5s (ORCPT
+	id S933206Ab1IBD6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 23:58:07 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:35020 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933195Ab1IBD6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 23:57:48 -0400
+	Thu, 1 Sep 2011 23:58:02 -0400
 From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org,
         "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH v4 06/19] Staging: cx25821: Fix wrong statement indent in cx25821-cards.c
-Date: Fri,  2 Sep 2011 11:55:34 +0800
-Message-Id: <1314935747-6881-7-git-send-email-leonidsbox@gmail.com>
+Subject: [PATCH v4 08/19] Staging: cx25821: Fix wrong statement indent in cx25821-i2c.c
+Date: Fri,  2 Sep 2011 11:55:36 +0800
+Message-Id: <1314935747-6881-9-git-send-email-leonidsbox@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
 References: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
@@ -27,59 +27,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix wrong brace placement and statement indent in cx25821-cards.c
+Fix wrong brace placement and statement indent in cx25821-i2c.c
 
 Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
 ---
- drivers/staging/cx25821/cx25821-cards.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/staging/cx25821/cx25821-i2c.c |   30 +++++++++++++++---------------
+ 1 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/cx25821/cx25821-cards.c b/drivers/staging/cx25821/cx25821-cards.c
-index 94e8d68..6ace603 100644
---- a/drivers/staging/cx25821/cx25821-cards.c
-+++ b/drivers/staging/cx25821/cx25821-cards.c
-@@ -36,17 +36,17 @@
+diff --git a/drivers/staging/cx25821/cx25821-i2c.c b/drivers/staging/cx25821/cx25821-i2c.c
+index 130dfeb..4d3d0ce 100644
+--- a/drivers/staging/cx25821/cx25821-i2c.c
++++ b/drivers/staging/cx25821/cx25821-i2c.c
+@@ -370,16 +370,16 @@ int cx25821_i2c_read(struct cx25821_i2c *bus, u16 reg_addr, int *value)
  
- struct cx25821_board cx25821_boards[] = {
- 	[UNKNOWN_BOARD] = {
--			   .name = "UNKNOWN/GENERIC",
--			   /* Ensure safe default for unknown boards */
--			   .clk_freq = 0,
--			   },
-+		.name = "UNKNOWN/GENERIC",
-+		/* Ensure safe default for unknown boards */
-+		.clk_freq = 0,
-+	},
+ 	struct i2c_msg msgs[2] = {
+ 		{
+-		 .addr = client->addr,
+-		 .flags = 0,
+-		 .len = 2,
+-		 .buf = addr,
+-		 }, {
+-		     .addr = client->addr,
+-		     .flags = I2C_M_RD,
+-		     .len = 4,
+-		     .buf = buf,
+-		     }
++			.addr = client->addr,
++			.flags = 0,
++			.len = 2,
++			.buf = addr,
++		}, {
++			.addr = client->addr,
++			.flags = I2C_M_RD,
++			.len = 4,
++			.buf = buf,
++		}
+ 	};
  
- 	[CX25821_BOARD] = {
--			   .name = "CX25821",
--			   .portb = CX25821_RAW,
--			   .portc = CX25821_264,
--			   .input[0].type = CX25821_VMUX_COMPOSITE,
--			   },
-+		.name = "CX25821",
-+		.portb = CX25821_RAW,
-+		.portc = CX25821_264,
-+		.input[0].type = CX25821_VMUX_COMPOSITE,
-+	},
+ 	addr[0] = (reg_addr >> 8);
+@@ -403,11 +403,11 @@ int cx25821_i2c_write(struct cx25821_i2c *bus, u16 reg_addr, int value)
  
- };
+ 	struct i2c_msg msgs[1] = {
+ 		{
+-		 .addr = client->addr,
+-		 .flags = 0,
+-		 .len = 6,
+-		 .buf = buf,
+-		 }
++			.addr = client->addr,
++			.flags = 0,
++			.len = 6,
++			.buf = buf,
++		}
+ 	};
  
-@@ -54,10 +54,10 @@ const unsigned int cx25821_bcount = ARRAY_SIZE(cx25821_boards);
- 
- struct cx25821_subid cx25821_subids[] = {
- 	{
--	 .subvendor = 0x14f1,
--	 .subdevice = 0x0920,
--	 .card = CX25821_BOARD,
--	 },
-+		.subvendor = 0x14f1,
-+		.subdevice = 0x0920,
-+		.card = CX25821_BOARD,
-+	},
- };
- 
- void cx25821_card_setup(struct cx25821_dev *dev)
+ 	buf[0] = reg_addr >> 8;
 -- 
 1.7.0.4
 
