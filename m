@@ -1,114 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab1IBT6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:58:47 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58879 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755276Ab1IBT6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:58:44 -0400
-X-Sasl-enc: KU7VExiaGZlZOGYZfZPqH4cHlzto9c74QTxhxSDfCQXW 1314993523
-Date: Fri, 2 Sep 2011 12:58:07 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: Hyper-V TODO file
-Message-ID: <20110902195807.GA2339@kroah.com>
-References: <1314829011-28922-1-git-send-email-kys@microsoft.com>
- <20110901202733.GA15185@kroah.com>
- <20110901203031.GB15185@kroah.com>
- <6E21E5352C11B742B20C142EB499E048081C595A@TK5EX14MBXC126.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E048081C595A@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755478Ab1IBT5q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:57:46 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39529 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755264Ab1IBTz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:55:59 -0400
+From: Serge Hallyn <serge@hallyn.com>
+To: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        dhowells@redhat.com, ebiederm@xmission.com, rdunlap@xenotime.net
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: [PATCH 11/15] userns: make some net-sysfs capable calls targeted
+Date: Fri,  2 Sep 2011 19:56:36 +0000
+Message-Id: <1314993400-6910-14-git-send-email-serge@hallyn.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1314993400-6910-1-git-send-email-serge@hallyn.com>
+References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 07:47:12PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:greg@kroah.com]
-> > Sent: Thursday, September 01, 2011 4:31 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> > Subject: Re: Hyper-V TODO file
-> > 
-> > On Thu, Sep 01, 2011 at 01:27:33PM -0700, Greg KH wrote:
-> > > On Wed, Aug 31, 2011 at 03:16:51PM -0700, K. Y. Srinivasan wrote:
-> > > > 2) With your help, we have fixed all of the issues related to these drivers
-> > > > conforming to the Linux Device Driver model. One of the TODO work items is
-> > > > "audit the vmbus to verify it is working properly with the driver model".
-> > >
-> > > I have a few comments about this, I'll respond in another email.
-> > 
-> > Ok, it looks a _lot_ better, but I have a few minor nits, and one larger
-> > one:
-> > 
-> > - rename the vmbus_child_* functions to vmbus_* as there's no need to
-> >   think of "children" here.
-> > 
-> > - vmbus_onoffer comment is incorrect.  You handle offers from lots of
-> >   other types.  Or if not, am I reading the code incorrectly?
-> > 
-> > - the static hv_cb_utils array needs to go away.  In the hv_utils.c
-> >   util_probe() call, properly register the channel callback, and the
-> >   same goes for the util_remove() call, unregister things there.
-> >   Note, you can use the driver_data field to determine exactly which
-> >   callback needs to be registered to make things easy.  Something like
-> >   the following (pseudo code only):
-> > 
-> > static const struct hv_vmbus_device_id id_table[] = {
-> > 	/* Shutdown guid */
-> > 	{ VMBUS_DEVICE(0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
-> > 		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB),
-> > 	  .driver_data = &shutdown_onchannelcallback },
-> > 	....
-> > };
-> > 
-> > util_probe(struct hv_device *dev, const struct hv_vmbus_device_id *id)
-> >  [ Yes, you will have to change the probe callback signature, but that's fine. ]
-> 
-> Greg, I think if I understand you correctly, the id parameter to the probe function
-> would be pointing to relevant entry in the hv_vmbus_device_id array.
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
 
-Yes, just like it does for USB, PCI, etc.
+Changelog: jul 1: fix compilation errors (net_device != net)
 
-> Since the driver can handle multiple ids (guids), we need to either in
-> the driver specific probe function or in the bus specific probe
-> function,  figure out which of the many devices the driver supports is
-> being probed. I have couple of implementation options and would
-> appreciate your preference:
-> 
-> 1) Do the guid parsing at the vmbus level parsing function. If I go
-> this route, the driver specific probe function would get an extra
-> parameter as you have described in pseudo code.
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+---
+ net/core/net-sysfs.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Yes, that's the proper way to do this, as your match function already
-found the proper id structure, so you have the pointer, just pass it to
-the probe function callback.
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index 1683e5d..876915b 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -76,7 +76,7 @@ static ssize_t netdev_store(struct device *dev, struct device_attribute *attr,
+ 	unsigned long new;
+ 	int ret = -EINVAL;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!ns_capable(dev_net(net)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	new = simple_strtoul(buf, &endp, 0);
+@@ -261,7 +261,7 @@ static ssize_t store_ifalias(struct device *dev, struct device_attribute *attr,
+ 	size_t count = len;
+ 	ssize_t ret;
+ 
+-	if (!capable(CAP_NET_ADMIN))
++	if (!ns_capable(dev_net(netdev)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+ 	/* ignore trailing newline */
+-- 
+1.7.5.4
 
-> 2) Do the guid parsing in the util probe function. In this case, we
-> don't need to change the signature for the probe function as all the
-> id information is available in the (util) driver. 
-
-Yes, but you end up doing the matching all over again in the util
-driver, which isn't nice and ripe for duplication and bugs.
-
-> I personally would prefer the second approach since it does not affect
-> other drivers (no need to change the signature for the probe
-> function). Let me know how you want me to proceed here.
-
-As you only have 3 probe functions, it's not a big deal to change them
-all :)
-
-thanks,
-
-greg k-h
