@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099Ab1IBCN1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 22:13:27 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:41679 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933059Ab1IBCN0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 22:13:26 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 1 Sep 2011 19:10:29 -0700
-Subject: [PATCH 1/2] power: max8925_power:  Do not read random data from
- chip  registers
-Thread-Topic: [PATCH 1/2] power: max8925_power:  Do not read random data
- from chip  registers
-Thread-Index: AcxpFXjI/eItPkOvTByFLdpNqjredw==
-Message-ID: <E1322B23-1B84-4E72-A106-1F6B1F6F8504@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S933102Ab1IBCTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 22:19:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:30017 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933059Ab1IBCTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 22:19:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,316,1312182000"; 
+   d="scan'208";a="13394646"
+Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of
+ an ioremapped memory range
+From: Zhang Rui <rui.zhang@intel.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+In-Reply-To: <1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1314860114.32522.3.camel@rui>  <1314864889.13161.4.camel@rui>
+	 <1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 10:18:56 +0800
+Message-ID: <1314929936.15006.19.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reading the voltage, charge etc requires that we tell the chip
-what property we want to read before reading it according to
-maxim.
+On Thu, 2011-09-01 at 20:28 +0800, Matt Fleming wrote:
+> On Thu, 2011-09-01 at 16:14 +0800, Zhang Rui wrote:
+> > On Thu, 2011-09-01 at 14:55 +0800, Zhang, Rui wrote: 
+> > > From: Zhang Rui <rui.zhang@intel.com>
+> > > Date: Wed, 31 Aug 2011 09:59:01 +0800
+> > > Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
+> > > 
+> > > set_memory_uc uses __pa() to translate the virtual address to the physical address.
+> > > This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
+> > > 
+> > oops, wrong patch was attached.
+> > 
+> > here is the correct patch.
+> > 
+> > From: Zhang Rui <rui.zhang@intel.com>
+> > Date: Wed, 31 Aug 2011 09:59:01 +0800
+> > Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
+> > 
+> > set_memory_uc uses __pa() to translate the virtual address to the physical address.
+> > This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
+> 
+> Hmm.. does anyone know why we ioremap_cache() the memory on
+> CONFIG_X86_32 instead of ioremap_nocache()? 
 
-Signed-off-by: Philip Rakity <prakity@marvell.com>
-Signed-off-by: Thomas Liu <Thomas.Liu@maxim-ic.com>
-Tested-by: Ted Bennett <tbennett@marvell.com>
----
- drivers/power/max8925_power.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Perhaps this is because not all the memory range need ioremap_nocache(),
+e.g. EFI_BOOT_SERVICES_CODE, EFI_BOOT_SERVICES_DATA, etc?
 
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index f808608..b56c78a 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -245,25 +245,30 @@ irqreturn_t max8925_charger_handler(int irq, void *data)
- static int start_measure(struct max8925_power_info *info, int type)
- {
- 	unsigned char buf[2] = {0, 0};
--	int meas_reg = 0, ret;
-+	int meas_reg = 0, meas_cmd = 0, ret;
- 
- 	switch (type) {
- 	case MEASURE_VCHG:
-+		meas_cmd = MAX8925_CMD_VCHG;
- 		meas_reg = MAX8925_ADC_VCHG;
- 		break;
- 	case MEASURE_VBBATT:
-+		meas_cmd = MAX8925_CMD_VBBATT;
- 		meas_reg = MAX8925_ADC_VBBATT;
- 		break;
- 	case MEASURE_VMBATT:
-+		meas_cmd = MAX8925_CMD_VMBATT;
- 		meas_reg = MAX8925_ADC_VMBATT;
- 		break;
- 	case MEASURE_ISNS:
-+		meas_cmd = MAX8925_CMD_ISNS;
- 		meas_reg = MAX8925_ADC_ISNS;
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
- 
-+	max8925_reg_write(info->adc, meas_cmd, 0);
- 	max8925_bulk_read(info->adc, meas_reg, 2, buf);
- 	ret = ((buf[0]<<8) | buf[1]) >> 4;
- 
--- 
-1.7.6
+So the current logic is to use ioremap_cache for all of them first, and
+then set all the non-write-back memory ranges to uncacheable.
 
+> In the case of
+> EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
+> we've ioremap'd the memory we should skip set_memory_uc() altogether,
+> no?
+> 
+In the beginning, I tried to fix efi_ioremap, i.e. use ioremap_nocache
+for EFI_MEMORY_MAPPED_IO and ioremap_cache for others.
+But I'm not sure if that is the right FIX, as I don't know if there
+might be other memory ranges that also need to be set to uncached.
+
+thanks,
+rui
 
