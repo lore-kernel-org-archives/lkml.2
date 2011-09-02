@@ -1,95 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab1IBQ0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:26:23 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:30842 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941Ab1IBQ0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:26:22 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll3c7qFNVV
-X-RZG-CLASS-ID: mo00
-Date: Fri, 2 Sep 2011 18:25:56 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: [PATCH] Staging: hv: vmbus: Show the modalias in
- /sys/bus/vmbus/devices/*/
-Message-ID: <20110902162556.GA25073@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
+	id S1753406Ab1IBQ0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:26:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51223 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753382Ab1IBQ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 12:26:42 -0400
+Date: Fri, 2 Sep 2011 12:26:02 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Satoru Moriya <smoriya@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
+        Seiji Aguchi <saguchi@redhat.com>, hughd@google.com,
+        hannes@cmpxchg.org
+Subject: [PATCH -mm] fixes & cleanups for "add extra free kbytes tunable"
+Message-ID: <20110902122602.6f7c1238@annuminas.surriel.com>
+In-Reply-To: <20110901150901.48d92bc2.akpm@linux-foundation.org>
+References: <20110901105208.3849a8ff@annuminas.surriel.com>
+	<20110901100650.6d884589.rdunlap@xenotime.net>
+	<20110901152650.7a63cb8b@annuminas.surriel.com>
+	<20110901150901.48d92bc2.akpm@linux-foundation.org>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Show a modalias file in /sys/bus/vmbus/devices/*/
-Add a helper function to print the same content in modalias and uevent.
+All the fixes suggested by Andrew Morton.   Not much of a changelog
+since the patch should probably be folded into
+mm-add-extra-free-kbytes-tunable.patch
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Thank you for pointing these out, Andrew.
 
+Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- drivers/staging/hv/vmbus_drv.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ include/linux/mmzone.h |    2 +-
+ include/linux/swap.h   |    2 ++
+ kernel/sysctl.c        |    6 ++----
+ mm/page_alloc.c        |   13 +++++++------
+ 4 files changed, 12 insertions(+), 11 deletions(-)
 
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -93,6 +93,14 @@ static void get_channel_info(struct hv_d
- 		debug_info.outbound.bytes_avail_towrite;
- }
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index be1ac8d..7013bab 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -772,7 +772,7 @@ static inline int is_dma(struct zone *zone)
  
-+#define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2)
-+static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
-+{
-+	int i;
-+	for (i = 0; i < VMBUS_ALIAS_LEN; i += 2)
-+		sprintf(&alias_name[i], "%02x", hv_dev->dev_type.b[i/2]);
-+}
-+
+ /* These two functions are used to setup the per zone pages min values */
+ struct ctl_table;
+-int min_free_kbytes_sysctl_handler(struct ctl_table *, int,
++int free_kbytes_sysctl_handler(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
+ extern int sysctl_lowmem_reserve_ratio[MAX_NR_ZONES-1];
+ int lowmem_reserve_ratio_sysctl_handler(struct ctl_table *, int,
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 14d6249..0679ed5 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -207,6 +207,8 @@ struct swap_list_t {
+ /* linux/mm/page_alloc.c */
+ extern unsigned long totalram_pages;
+ extern unsigned long totalreserve_pages;
++extern int min_free_kbytes;
++extern int extra_free_kbytes;
+ extern unsigned int nr_free_buffer_pages(void);
+ extern unsigned int nr_free_pagecache_pages(void);
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 01a9acd..a3a015c 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -95,8 +95,6 @@ extern int suid_dumpable;
+ extern char core_pattern[];
+ extern unsigned int core_pipe_limit;
+ extern int pid_max;
+-extern int min_free_kbytes;
+-extern int extra_free_kbytes;
+ extern int pid_max_min, pid_max_max;
+ extern int sysctl_drop_caches;
+ extern int percpu_pagelist_fraction;
+@@ -1186,7 +1184,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &min_free_kbytes,
+ 		.maxlen		= sizeof(min_free_kbytes),
+ 		.mode		= 0644,
+-		.proc_handler	= min_free_kbytes_sysctl_handler,
++		.proc_handler	= free_kbytes_sysctl_handler,
+ 		.extra1		= &zero,
+ 	},
+ 	{
+@@ -1194,7 +1192,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &extra_free_kbytes,
+ 		.maxlen		= sizeof(extra_free_kbytes),
+ 		.mode		= 0644,
+-		.proc_handler	= min_free_kbytes_sysctl_handler,
++		.proc_handler	= free_kbytes_sysctl_handler,
+ 		.extra1		= &zero,
+ 	},
+ 	{
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 47d185c..14fc9e9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -183,11 +183,12 @@ static char * const zone_names[MAX_NR_ZONES] = {
+ int min_free_kbytes = 1024;
+ 
  /*
-  * vmbus_show_device_attr - Show the device attribute in sysfs.
-  *
-@@ -105,6 +113,7 @@ static ssize_t vmbus_show_device_attr(st
+- * Extra memory for the system to try freeing. Used to temporarily
+- * free memory, to make space for new workloads. Anyone can allocate
+- * down to the min watermarks controlled by min_free_kbytes above.
++ * Extra memory for the system to try freeing between the min and
++ * low watermarks.  Useful for workloads that require low latency
++ * memory allocations in bursts larger than the normal gap between
++ * low and min.
+  */
+-int extra_free_kbytes = 0;
++int extra_free_kbytes;
+ 
+ static unsigned long __meminitdata nr_kernel_pages;
+ static unsigned long __meminitdata nr_all_pages;
+@@ -5280,11 +5281,11 @@ int __meminit init_per_zone_wmark_min(void)
+ module_init(init_per_zone_wmark_min)
+ 
+ /*
+- * min_free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so 
++ * free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so 
+  *	that we can call two helper functions whenever min_free_kbytes
+  *	or extra_free_kbytes changes.
+  */
+-int min_free_kbytes_sysctl_handler(ctl_table *table, int write, 
++int free_kbytes_sysctl_handler(ctl_table *table, int write, 
+ 	void __user *buffer, size_t *length, loff_t *ppos)
  {
- 	struct hv_device *hv_dev = device_to_hv_device(dev);
- 	struct hv_device_info device_info;
-+	char alias_name[VMBUS_ALIAS_LEN + 1];
- 
- 	memset(&device_info, 0, sizeof(struct hv_device_info));
- 
-@@ -148,6 +157,9 @@ static ssize_t vmbus_show_device_attr(st
- 			       device_info.chn_instance.b[13],
- 			       device_info.chn_instance.b[14],
- 			       device_info.chn_instance.b[15]);
-+	} else if (!strcmp(dev_attr->attr.name, "modalias")) {
-+		print_alias_name(hv_dev, alias_name);
-+		return sprintf(buf, "vmbus:%s\n", alias_name);
- 	} else if (!strcmp(dev_attr->attr.name, "state")) {
- 		return sprintf(buf, "%d\n", device_info.chn_state);
- 	} else if (!strcmp(dev_attr->attr.name, "id")) {
-@@ -204,6 +216,7 @@ static struct device_attribute vmbus_dev
- 	__ATTR(class_id, S_IRUGO, vmbus_show_device_attr, NULL),
- 	__ATTR(device_id, S_IRUGO, vmbus_show_device_attr, NULL),
- 	__ATTR(monitor_id, S_IRUGO, vmbus_show_device_attr, NULL),
-+	__ATTR(modalias, S_IRUGO, vmbus_show_device_attr, NULL),
- 
- 	__ATTR(server_monitor_pending, S_IRUGO, vmbus_show_device_attr, NULL),
- 	__ATTR(server_monitor_latency, S_IRUGO, vmbus_show_device_attr, NULL),
-@@ -242,12 +255,10 @@ static struct device_attribute vmbus_dev
- static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
- {
- 	struct hv_device *dev = device_to_hv_device(device);
--	int i, ret;
--	char alias_name[((sizeof((struct hv_vmbus_device_id *)0)->guid) + 1) * 2];
--
--	for (i = 0; i < ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2); i += 2)
--		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
-+	int ret;
-+	char alias_name[VMBUS_ALIAS_LEN + 1];
- 
-+	print_alias_name(dev, alias_name);
- 	ret = add_uevent_var(env, "MODALIAS=vmbus:%s", alias_name);
- 	return ret;
- }
+ 	proc_dointvec(table, write, buffer, length, ppos);
+
