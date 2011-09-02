@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab1IBS2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 14:28:13 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:48414 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754308Ab1IBS2K (ORCPT
+	id S1754479Ab1IBS2X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 14:28:23 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48944 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356Ab1IBS2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 14:28:10 -0400
+	Fri, 2 Sep 2011 14:28:12 -0400
 From: Tejun Heo <tj@kernel.org>
 To: oleg@redhat.com, matthltc@us.ibm.com, rjw@sisk.pl, paul@paulmenage.org
 Cc: containers@lists.linux-foundation.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/6] freezer: set PF_NOFREEZE on a dying task right before TASK_DEAD setting bug in freezer_change_state()
-Date: Sat,  3 Sep 2011 03:27:46 +0900
-Message-Id: <1314988070-12244-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/6] freezer: restructure __refrigerator()
+Date: Sat,  3 Sep 2011 03:27:47 +0900
+Message-Id: <1314988070-12244-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1314988070-12244-1-git-send-email-tj@kernel.org>
 References: <1314988070-12244-1-git-send-email-tj@kernel.org>
@@ -21,51 +21,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3fb45733df "freezer: make exiting tasks properly unfreezable" removed
-clear_freeze_flag() from exit path and set PF_NOFREEZE right after
-PTRACE_EVENT_EXIT; however, Oleg pointed out that following exit paths
-may cause interaction with device drivers after PM freezer consider
-the system frozen.
+If another freeze happens before all tasks leave FROZEN state after
+being thawed, the freezer can see the existing FROZEN and consider the
+tasks to be frozen but they can clear FROZEN without checking the new
+freezing().
 
-There's no try_to_freeze() call in the exit path and the only
-necessary guarantee is that freezer doesn't hang waiting for zombies.
-Set PF_NOFREEZE right before setting tsk->state to TASK_DEAD instead.
+Oleg suggested restructuring __refrigerator() such that there's single
+condition check section inside freezer_lock and sigpending is cleared
+afterwards, which fixes the problem and simplifies the code.
+Restructure accordingly.
+
+-v2: Frozen loop exited without releasing freezer_lock.  Fixed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Reported-by: Oleg Nesterov <oleg@redhat.com>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 ---
- kernel/exit.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ kernel/freezer.c |   29 +++++++++++------------------
+ 1 files changed, 11 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index ac58259..7b6c4fa 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -913,12 +913,6 @@ NORET_TYPE void do_exit(long code)
- 
- 	ptrace_event(PTRACE_EVENT_EXIT, code);
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index 466ea6b..ebee1ab 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -52,36 +52,29 @@ bool __refrigerator(bool check_kthr_stop)
+ 	/* Hmm, should we be allowed to suspend when there are realtime
+ 	   processes around? */
+ 	bool was_frozen = false;
+-	long save;
++	long save = current->state;
  
 -	/*
--	 * With ptrace notification done, there's no point in freezing from
--	 * here on.  Disallow freezing.
+-	 * No point in checking freezing() again - the caller already did.
+-	 * Proceed to enter FROZEN.
 -	 */
--	current->flags |= PF_NOFREEZE;
+-	spin_lock_irq(&freezer_lock);
+-	current->flags |= PF_FROZEN;
+-	spin_unlock_irq(&freezer_lock);
 -
- 	validate_creds_for_do_exit(tsk);
+-	save = current->state;
+ 	pr_debug("%s entered refrigerator\n", current->comm);
  
- 	/*
-@@ -1044,6 +1038,10 @@ NORET_TYPE void do_exit(long code)
+-	spin_lock_irq(&current->sighand->siglock);
+-	recalc_sigpending(); /* We sent fake signal, clean it up */
+-	spin_unlock_irq(&current->sighand->siglock);
+-
+ 	for (;;) {
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
++
++		spin_lock_irq(&freezer_lock);
++		current->flags |= PF_FROZEN;
+ 		if (!freezing(current) ||
+ 		    (check_kthr_stop && kthread_should_stop()))
++			current->flags &= ~PF_FROZEN;
++		spin_unlock_irq(&freezer_lock);
++
++		if (!(current->flags & PF_FROZEN))
+ 			break;
+ 		was_frozen = true;
+ 		schedule();
+ 	}
  
- 	preempt_disable();
- 	exit_rcu();
-+
-+	/* this task is now dead and freezer should ignore it */
-+	current->flags |= PF_NOFREEZE;
-+
- 	/* causes final put_task_struct in finish_task_switch(). */
- 	tsk->state = TASK_DEAD;
- 	schedule();
+-	/* leave FROZEN */
+-	spin_lock_irq(&freezer_lock);
+-	current->flags &= ~PF_FROZEN;
+-	spin_unlock_irq(&freezer_lock);
++	spin_lock_irq(&current->sighand->siglock);
++	recalc_sigpending(); /* We sent fake signal, clean it up */
++	spin_unlock_irq(&current->sighand->siglock);
+ 
+ 	pr_debug("%s left refrigerator\n", current->comm);
+ 
 -- 
 1.7.6
 
