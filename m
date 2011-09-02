@@ -1,81 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab1IBHb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:31:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59945 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab1IBHbY (ORCPT
+	id S1757466Ab1IBHbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:31:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38711 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757344Ab1IBHbv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:31:24 -0400
-User-Agent: Microsoft-Entourage/12.30.0.110427
-Date: Fri, 02 Sep 2011 08:31:16 +0100
-Subject: Re: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
- space page tables in alloc_vm_area()
-From: Keir Fraser <keir.xen@gmail.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Message-ID: <CA8644D4.20348%keir.xen@gmail.com>
-Thread-Topic: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
- space page tables in alloc_vm_area()
-Thread-Index: AcxpQkyN6Y7ZjHhdY0KuxuwbyOI3oA==
-In-Reply-To: <1314948154.28989.158.camel@zakaz.uk.xensource.com>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+	Fri, 2 Sep 2011 03:31:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E608081.5000107@gmail.com>
+References: <CA+OjSzzrYggQjDrgd6m+oF1sZkJFzf-3vSedAT3DAD9V2jTC3A@mail.gmail.com>
+	<20110901020947.GA9096@zhy>
+	<4E607523.30907@gmail.com>
+	<4E608081.5000107@gmail.com>
+Date: Fri, 2 Sep 2011 13:01:49 +0530
+Message-ID: <CAFPAmTT_kCjKvZ5rjq20f-dZN8uxd-x62k+qTkYV7=8Y8tyZ3g@mail.gmail.com>
+Subject: Re: General question about TASK_INTERRUPTIBLE and schedule_timeout()
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Shan Hai <haishan.bai@gmail.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, sifram rajas <sifram.rajas@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2011 08:22, "Ian Campbell" <Ian.Campbell@citrix.com> wrote:
+On Fri, Sep 2, 2011 at 12:36 PM, Shan Hai <haishan.bai@gmail.com> wrote:
+> On 09/02/2011 02:18 PM, Shan Hai wrote:
+>>
+>> On 09/01/2011 10:09 AM, Yong Zhang wrote:
+>>>
+>>> On Wed, Aug 31, 2011 at 06:18:19PM +0530, sifram rajas wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> I have a general question about the following 2 lines of code I see
+>>>> all over the kernel:
+>>>> 1         set_current_state(TASK_INTERRUPTIBLE) ;
+>>>> 2         schedule_timeout(<some value>);
+>>>>
+>>>> In the above code, if we encounter an interrupt after executing line
+>>>> 1, we will end up
+>>>> call schedule() from the architecture specific code for CONFIG_PREEMPT
+>>>> kernels, after
+>>>> the interrupt handler has been invokled.
+>>>
+>>> Yes.
+>>>
+>>>> This will cause the current task to sleep interruptibly forever
+>>
+>> Actually, sleeping forever in the TASK_INTERRUPTIBLE state is not correct,
+>> because even though the task is preempted by higher priority one
+>> it will finally get a chance to run, but you will get time out value
+>> of <some value> + preemption latency.
+>>
+>>>> instead of for a certain timeout interval.
+>>>
+>>> No.
+>>>
+>>> schedule() will not put an preempted task to sleep, see:
+>>
+>> This might be problematic, because on the IRQ to preemption check path
+>> the PREEMPT_ACTIVE was already set and the following 'if' statement
+>> could not hold because of
+>> !(preempt_count() & PREEMPT_ACTIVE) == false
 
-> On Thu, 2011-09-01 at 21:37 +0100, Jeremy Fitzhardinge wrote:
->> On 09/01/2011 09:11 AM, Konrad Rzeszutek Wilk wrote:
->>> On Thu, Sep 01, 2011 at 12:51:03PM +0100, David Vrabel wrote:
->>>> From: David Vrabel <david.vrabel@citrix.com>
->>> Andrew,
->>> 
->>> I was wondering if you would be Ok with this patch for 3.1.
->>> 
->>> It is a revert (I can prepare a proper revert if you would like
->>> that instead of this patch).
->>> 
->>> The users of this particular function (alloc_vm_area) are just
->>> Xen. There are no others.
->> 
->> I'd prefer to put explicit vmalloc_sync_all()s in the callsites where
->> necessary, and ultimately try to work out ways of avoiding it altogether
->> (like have some hypercall wrapper which touches the arg memory to make
->> sure its mapped?).
-> 
-> That only syncs the current pagetable though. If that is sufficient (and
-> it could well be) then perhaps just doing a vmalloc_sync_one on the
-> current page tables directly would be better than faulting to do it?
+Yes.
 
-It's probably sufficient unless the kernel has non-voluntary preemption, and
-we are not preempt_disable()d.
+>>
+>> and the pick_next_task() might put the preempted task to sleep.
+>>
 
- -- Keir
+pick_next_task() will simply select the next task for scheduling.
+After all running tasks have been scheduled then this preempted task
+will also be rescheduled
+as it is still on this runqueue.
 
-> It's the sort of thing you could hide inside the gnttab_set_map_op type
-> helpers I guess?
-> 
-> Ian.
-> 
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+I do not think that this will put this preempted it to sleep.
+Reason: Although the state is still set to TASK_INTERRUPTIBLE, the
+task is not removed
+from the runqueue as !(preempt_count() & PREEMPT_ACTIVE) == false.
 
 
+>
+> I mean when the state of task is TASK_INTERRUPTIBLE the preempted task will
+> be put to sleep, its true in sifram's case.
+
+I disagree.Yong is still right in this scenario as the task will
+remain on the runqueue due to
+the !(preempt_count() & PREEMPT_ACTIVE) == false.
+
+>
+> Yong is right on stating "schedule() will not put an preempted task to
+> sleep",
+> its true for the task state of which is TASK_RUNNING.
+
+Since TASK_RUNNING is defined as 0, the task remains on the runqueue here also.
+
+>
+> Cheers
+> Shan Hai
+>
+>> Correct me on any misunderstanding :-)
+>>
+>> Cheers
+>> Shan Hai
+>>
+>>> asmlinkage void __sched schduule(void)
+>>> {
+>>> ...
+>>>         if (prev->state&&  !(preempt_count()&  PREEMPT_ACTIVE)) {
+>>>                 if (unlikely(signal_pending_state(prev->state, prev))) {
+>>>                         prev->state = TASK_RUNNING;
+>>>                 } else {
+>>>        ...
+>>>        }
+>>>         }
+>>> ...
+>>> }
+>>>
+>>> Thanks,
+>>> Yong
+>>>
+>>>> Won't this defeat the purpose of the above code to schedule out or
+>>>> sleep for a certain finite timeout ?
+>>>> If yes, then what are the techniques to solve this problem ?
+>>>>
+>>>>
+>>>> Thanks,
+>>>> Sifram.
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>>> in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
