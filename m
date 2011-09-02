@@ -1,83 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1IBPth (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 11:49:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53233 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab1IBPtf (ORCPT
+	id S1753235Ab1IBPuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 11:50:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35554 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab1IBPud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 11:49:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] mfd: Combine MFD_SUPPORT and MFD_CORE
-Date: Fri, 2 Sep 2011 17:49:10 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Luciano Coelho <coelho@ti.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        matti.j.aaltonen@nokia.com, johannes@sipsolutions.net,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <20110829102732.03f0f05d.rdunlap@xenotime.net> <201108311849.37273.arnd@arndb.de> <20110902143713.307bbebe@endymion.delvare>
-In-Reply-To: <20110902143713.307bbebe@endymion.delvare>
+	Fri, 2 Sep 2011 11:50:33 -0400
+Date: Fri, 2 Sep 2011 17:50:21 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephen Warren <swarren@nvidia.com>
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: RE: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B327A55C@HQMAIL01.nvidia.com>
+Message-ID: <alpine.LFD.2.02.1109021731141.2723@ionos>
+References: <1312498820-2275-1-git-send-email-swarren@nvidia.com> <1312498820-2275-2-git-send-email-swarren@nvidia.com> <alpine.LFD.2.02.1109021027360.2723@ionos> <74CDBE0F657A3D45AFBB94109FB122FF04B327A55C@HQMAIL01.nvidia.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109021749.10638.arnd@arndb.de>
-X-Provags-ID: V02:K0:mFXB3CAD9TWMBjga2M2XFmz0BSsGNOJe1dW+YUEPood
- ydUKV7qAmttlMmKbL+i1TNyGfuXCo35maSUedHSJl8fOruvm45
- F3BjldgCx50WwuTiRQE2R4ahALDFULrVVNInvxxGAWXo/6QJZW
- pIoythKdS3RZg7V6NxEnVrCqb+pK2KHw4gQ++oGrfD8pXlYyWn
- W7fIfgvfVG8CwEFaFP+i2/tB8psuTPwczcVvDkyGqHU12Cyxhj
- 5Izn36bfJ7utaY/8MUQsxQx+8AaIE8LJ3VIjP93/4gBAFj/9vq
- Py1rke56K/PoYZB7GuK0FBFimLJvc7UE2s5VPdCx3wbxteKEn8
- 0PQfN5FqlTz1X7NxxqD4=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 September 2011, Jean Delvare wrote:
-> > Doing this is a good idea, but incidentally I have just spent some time
-> > with the same problem and ended up with a solution that I like better,
-> > which is removing CONFIG_MFD_SUPPORT altogether.
+On Fri, 2 Sep 2011, Stephen Warren wrote:
+
+> Thomas Gleixner wrote at Friday, September 02, 2011 2:37 AM:
+> > On Thu, 4 Aug 2011, Stephen Warren wrote:
 > > 
-> > The point is that there is no use enabling MFD_CORE if you don't also
-> > enable any of the specific drivers.
+> > > Many IRQs are associated with GPIO pins. When the pin is used as an IRQ,
+> > > it can't be used as anything else; it should be requested. Enhance the
+> > > core interrupt code to call gpio_request() and gpio_direction_input() for
+> > > any IRQ that is also a GPIO. This prevents duplication of these calls in
+> > > each driver that uses an IRQ.
+> > 
+> > This is very much the wrong approach. If you think it through then the
+> > irq setup code might end up with tons of other subsystem specific
+> > setup thingies, e.g. PCI .....
+> > 
+> > The right thing to do is to add a irq_configure() function pointer to
+> > the irq chip and provide a common function for gpios in gpiolib, which
+> > is then used by the particular GPIO irq chip implementation.
 > 
-> Same holds for pretty much every subsystem, right?
-
-I think not: MFD is a bit different from other subsystems in that it does
-not have a user space interface by itself. It's also different from bus
-drivers in that it is not specific to some particular class of hardware,
-since it only abstracts devices that do multiple things independent of
-how they do them.
-
-It is similar to MISC_DEVICES (drivers/misc) in some regards, and I
-would also like to turn that one back from menuconfig into menu for
-the same reasons.
-
-> > MFD_SUPPORT was added as a 'menuconfig'
-> > before we had Kconfig warn about broken dependencies, so everything was
-> > fine. Since Kconfig now issues the warnings, I think it would be better
-> > to just turn the MFD menu into a plain 'menu' and remove all the
-> > 'depends on MFD_SUPPORT' and 'select MFD_SUPPORT' lines from the other
-> > Kconfig files.
+> Sorry, could you expand on this some more.
 > 
-> This would make it impossible to turn off all MFD drivers at once. I
-> think this is considered a feature, at least I find it very convenient
-> to be able to "kill" a subsystem completely. And in the past few years
-> many subsystems were turned from menu to menuconfig for this reason.
-> But maybe MFD is a special case here.
+> The whole point of these patches is that it's impossible to convert from
+> IRQ number to GPIO number.
+> 
+> Some drivers use just an IRQ, and don't care if it's a GPIO. They work
+> fine currently.
+> 
+> Some drivers use just a GPIO; that's not relevant to these patches.
+> 
+> Some drivers use something that's both an IRQ and a GPIO. Historically,
+> this has worked by passing the IRQ to the driver, and then the driver
+> calling irq_to_gpio() to get the GPIO ID. Since irq_to_gpio() is being
+> removed, this is no longer possible. The whole point of the removal was
+> that it's not possible in general to convert from IRQ to GPIO, so I'm not
+> sure exactly what you're proposing irq_configure() or gpiolib do to
+> centralize this?
 
-I agree that it's convenient for a lot of subsystems to be able to
-turn them off entirely, but in case of MFD and MISC, I cannot see a clear
-use case for that.
+chip->irq_configure() calls a irqchip function if set. So now the code
+which implements the irq functionality for GPIO definitely knows how
+to map the irq number to the GPIO pin, otherwise it would not be able
+to handle the mask/ack/unmask function either.
 
-> Anyway, if you want your patch to be applied, you'll have to send it
-> for review first, as at this point all we have is Luciano's proposal.
+The drivers which just request an irq are oblivious about that:
 
-Ok. I had actually meant to send this mail out before the patches, but
-apparently it got stuck in my mail client.
+request_irq(irq)
 
-	Arnd
+	if (chip->irq_configure)
+	   chip->irq_configure()
+		configure_gpio_pin()
+
+Whether configure_gpio_pin() is a function which is implemented per
+GPIO driver or a common function in gpiolib is not relevant for the
+irq core code.
+
+Thanks,
+
+	tglx
