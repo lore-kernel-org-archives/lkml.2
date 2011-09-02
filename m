@@ -1,75 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab1IBCTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 22:19:52 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51177 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933105Ab1IBCTu convert rfc822-to-8bit (ORCPT
+	id S933113Ab1IBCVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 22:21:21 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:36535 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933059Ab1IBCVR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 22:19:50 -0400
+	Thu, 1 Sep 2011 22:21:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110831173031.GA21571@redhat.com>
-References: <1321285043-3470-1-git-send-email-minchan.kim@gmail.com>
-	<20110831173031.GA21571@redhat.com>
-Date: Fri, 2 Sep 2011 11:19:49 +0900
-Message-ID: <CAEwNFnDcNqLvo=oyXXkxgFxs8wNc+WTLwot0qeru1VfQKmUYDQ@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: Do reclaim stall in case of mlocked page.
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1314927625.3058.53.camel@localhost.localdomain>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	<20110822125355.bb01d76b.rdunlap@xenotime.net>
+	<CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+	<20110822174958.73dd96c7.rdunlap@xenotime.net>
+	<1314065358.3225.44.camel@localhost.localdomain>
+	<20110823164035.ca28fdc6.rdunlap@xenotime.net>
+	<CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
+	<1314362342.3224.19.camel@localhost.localdomain>
+	<20110826100011.9213d872.rdunlap@xenotime.net>
+	<CACqU3MXBjHi9nOfxeQGJVtc7x33KbzK2Mi+_+A+jr+bPwqzY-Q@mail.gmail.com>
+	<CACqU3MWcBJuXA3n=ha_MNteM6MHfEWj8=42nZ_zvorvt6Pbq-w@mail.gmail.com>
+	<1314927625.3058.53.camel@localhost.localdomain>
+Date: Thu, 1 Sep 2011 22:21:16 -0400
+Message-ID: <CACqU3MWf=4Lk1kji3T9V9TZL7p3FzFygTz-ZH3mcb6Y0SSFF0A@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 2:30 AM, Johannes Weiner <jweiner@redhat.com> wrote:
-> On Tue, Nov 15, 2011 at 12:37:23AM +0900, Minchan Kim wrote:
->> [1] made avoid unnecessary reclaim stall when second shrink_page_list(ie, synchronous
->> shrink_page_list) try to reclaim page_list which has not-dirty pages.
->> But it seems rather awkawrd on unevictable page.
->> The unevictable page in shrink_page_list would be moved into unevictable lru from page_list.
->> So it would be not on page_list when shrink_page_list returns.
->> Nevertheless it skips reclaim stall.
+Hi,
+
+On Thu, Sep 1, 2011 at 9:40 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Thu, 2011-09-01 at 20:32 -0400, Arnaud Lacombe wrote:
+>> Hi,
 >>
->> This patch fixes it so that it can do reclaim stall in case of mixing mlocked pages
->> and writeback pages on page_list.
+>> On Sat, Aug 27, 2011 at 2:06 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> > Hi,
+>> >
+>> > On Fri, Aug 26, 2011 at 1:00 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> >> On Fri, 26 Aug 2011 08:39:02 -0400 Mimi Zohar wrote:
+>> >>
+>> >>> On Tue, 2011-08-23 at 22:10 -0400, Arnaud Lacombe wrote:
+>> >>> > Hi,
+>> >>> >
+>> >>> > On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> >>> > > I think that you are going to need to do something like Arnaud suggested
+>> >>> > > and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
+>> >>> > > unless you can convince someone that this is a kconfig bug.
+>> >>> > >
+>> >>> > dammit... I guess there is...
+>> >>> >
+>> >>> > If you consider the following Kconfig:
+>> >>> >
+>> >>> > config MOD
+>> >>> >         bool
+>> >>> >         default y
+>> >>> >         option modules
+>> >>> >
+>> >>> > config EXPERIMENTAL
+>> >>> >         bool
+>> >>> >         default y
+>> >>> >
+>> >>> > menuconfig A
+>> >>> >         tristate "A"
+>> >>> >         depends on EXPERIMENTAL
+>> >>> >
+>> >>> > config B
+>> >>> >         bool "B"
+>> >>> >
+>> >>> > config B0
+>> >>> >         bool
+>> >>> >
+>> >>> > config C
+>> >>> >         tristate "C"
+>> >>> >         depends on B
+>> >>> >
+>> >>> > config C0
+>> >>> >         tristate
+>> >>> >
+>> >>> > config D
+>> >>> >         boolean "D"
+>> >>> >         depends on A && B
+>> >>> >         select C
+>> >>> >         select C0
+>> >>> >
+>> >>> > config E
+>> >>> >         tristate "E"
+>> >>> >
+>> >>> > config F
+>> >>> >         tristate "F"
+>> >>> >         select E
+>> >>> >
+>> >>> > B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
+>> >>> > (TCG_TPM) allows to set D (EVM), which will select (C). Now,
+>> >>> > menuconfig highlight the problem very well. Proceeding as following
+>> >>> > A=m, B=y, C=m, E=y, F=y, we ends up having:
+>> >>> >
+>> >>> >  <M> A  --->
+>> >>> >  [*] B
+>> >>> >  {M} C
+>> >>> >  [*] D
+>> >>> >  -*- E
+>> >>> >  <*> F
+>> >>> >
+>> >>> > which translate in the following config:
+>> >>> >
+>> >>> > CONFIG_MOD=y
+>> >>> > CONFIG_EXPERIMENTAL=y
+>> >>> > CONFIG_A=m
+>> >>> > CONFIG_B=y
+>> >>> > CONFIG_C=m
+>> >>> > CONFIG_C0=m
+>> >>> > CONFIG_D=y
+>> >>> > CONFIG_E=y
+>> >>> > CONFIG_F=y
+>> >>> >
+>> >>> > I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
+>> >>> > If you remove D's dependency on 'A', everything works as expected. So
+>> >>> > it would seem direct dependency state influence the state of reverse
+>> >>> > dependencies...
+>> >>> >
+>> >>> > Will have a look...
+>> >>> >
+>> >>> >  - Arnaud
+>> >>>
+>> >>> Thanks for looking into this!  Instead of changing 'TCG_TPM' to
+>> >>> 'TCG_TPM=y', the dependency should be on 'TRUSTED_KEYS=y'.  Then when
+>> >>> I've refactored ENCRYPTED_KEYS, removing the ENCRYPTED_KEYS dependency
+>> >>> on TRUSTED_KEYS, the EVM dependency would be '(TRUSTED_KEYS=y ||
+>> >>> TRUSTED_KEYS=n)'.  Do you want a temporary fix for now?
+>> >>
+>> >> Yes, linux-next (randconfig) builds are still failing, so we need something
+>> >> to prevent that.
+>> >>
+>> > you may want to try:
+>> >
+>> > git://github.com/lacombar/linux-2.6.git master/kconfig/expr-woes
+>> >
+>> ping ?
 >>
->> [1] 7d3579e,vmscan: narrow the scenarios in whcih lumpy reclaim uses synchrounous reclaim
+>>  - Arnaud
 >
-> Lumpy isolates physically contiguous in the hope to free a bunch of
-> pages that can be merged to a bigger page. Â If an unevictable page is
-> encountered, the chance of that is gone. Â Why invest the allocation
-> latency when we know it won't pay off anymore?
+> I assume you want me to test using expr-woes, but I'm not how.  Could
+> you help me here a bit.
 >
+> (Over the weekend I removed encrypted keys dependency on TCG_TPM.)
+>
+Well, at this point, this is not really related to the particular
+issue, but to kconfig more generally. I guess I'll just post the
+patches on LKML and see if they triggers non-wanted regression.
 
-Good point!
+Thanks,
+ - Arnaud
 
-Except some cases, when we require higher orer page, we used zone
-defensive algorithm by zone_watermark_ok. So the number of fewer
-higher order pages would be factor of failure of allocation. If it was
-problem, we could rescue the situation by only reclaim part of the
-block in the hope to free fewer higher order pages.
-
-I thought the lumpy was designed to consider the case.(I might be wrong).
-Why I thought is that when we isolate the pages for lumpy and found
-the page isn't able to isolate, we don't rollback the isolated pages
-in the lumpy phsyical block. It's very pointless to get a higher order
-pages.
-
-If we consider that, we have to fix other reset_reclaim_mode cases as
-well as mlocked pages.
-Or
-fix isolataion logic for the lumpy? (When we find the page isn't able
-to isolate, rollback the pages in the lumpy block to the LRU)
-Or
-Nothing and wait to remove lumpy completely.
-
-What do you think about it?
-
--- 
-Kind regards,
-Minchan Kim
+> thanks,
+>
+> Mimi
+>
+>> > only the last commit is relevant to the problem, but depend on one
+>> > another to get <assert.h>. The rest aims at tidying the expr stuff.
+>> > I'm looking for regression it may have introduced.
+>> >
+>> > Thanks,
+>> >  - Arnaud
+>> >
+>> > ps: I'll most likely be AFK until sunday evening (to be conservative).
+>> >
+>> >> thanks,
+>> >> ---
+>> >> ~Randy
+>> >> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>> >>
+>> >
+>>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
