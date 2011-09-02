@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab1IBQhO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:37:14 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55526 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753195Ab1IBQhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:37:10 -0400
-Date: Fri, 2 Sep 2011 09:37:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: linux-next RCU complaint during boot
-Message-ID: <20110902163706.GA2319@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <8867.1314894817@turing-police.cc.vt.edu>
- <20110902014424.GB2405@linux.vnet.ibm.com>
- <20110902015330.GA28121@somewhere.redhat.com>
- <6595.1314979603@turing-police.cc.vt.edu>
+	id S1753460Ab1IBQh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:37:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47398 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab1IBQhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 12:37:25 -0400
+Date: Fri, 2 Sep 2011 20:37:11 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-ID: <20110902163711.GA3124@albatros>
+References: <20110831075814.003575573@openvz.org>
+ <20110831080229.100652529@openvz.org>
+ <20110831090612.GA3253@albatros>
+ <20110831112642.GI25465@sun>
+ <20110831140416.GA17626@shutemov.name>
+ <20110831142622.GB30615@sun>
+ <20110831151023.5b7e12da.akpm@linux-foundation.org>
+ <20110901080508.GF30615@sun>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6595.1314979603@turing-police.cc.vt.edu>
+In-Reply-To: <20110901080508.GF30615@sun>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 12:06:43PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Fri, 02 Sep 2011 03:53:32 +0200, Frederic Weisbecker said:
-> > On Thu, Sep 01, 2011 at 06:44:24PM -0700, Paul E. McKenney wrote:
-> 
-> > > This is a bug where someone uses RCU at a time when RCU has been told
-> > > that the CPU is in dyntick-idle mode.  Frederic Weisbecker has some
-> > > patches that should address this.
+Hi,
+
+On Thu, Sep 01, 2011 at 12:05 +0400, Cyrill Gorcunov wrote:
+> ...
+> > > +/*
+> > > + * NOTE: The getattr/setattr for both /proc/$pid/map_files and
+> > > + * /proc/$pid/fd seems to have share the code, so need to be
+> > > + * unified and code duplication eliminated!
 > > 
-> > Yep, see there: https://lkml.org/lkml/2011/8/20/81
+> > Why not do this now?
 > 
-> Hmm.. .would test, but didn't apply cleanly to -next from Wednesday.  Of course,
-> I was trying to do it before corn flakes, so I probably got the patches out of order.
-> WIll re-try this evening if I get a chance.
+> There are a couple of reasons. Yesterday I was talking to
+> Vasiliy Kulikov about this snippet, so he seems about to send
+> you patches related to /proc/$pid/fd update, and after those
+> patches will be merged we are to drop code duplication.
+> Vasiliy, what the status of the update?
 
-I need to queue those patches anyway.  With luck they will hit -rcu by
-the end of the weekend.
+It looks like protecting directories with sensible contents is a nasty
+thing.  The problem here is that if the dentry is present in the cache,
+->lookup() is not called at all and the permissions can be checked in
+fop/dop/iop specific handler (getattr(), readlink(), etc.).  However, it
+would be much simplier to hook ->lookup() only.  Otherwise, we have to
+define procfs handlers for all operations, which don't call
+->d_revalidate().
 
-							Thanx, Paul
+Is it possible to disable caching dentry for specific files?  It is not
+performace critical thing in fd and map_files and it would much simplify
+the task.  Creating handlers for all these op handler bloats procfs.
+
+Also I'm not sure what other handlers might reveal dentry presence.
+Besides ->getattr() I could find only one thing - ->link() (Cyrill,
+AFAICS ->setattr() doesn't reveal files' presence).  Someone more
+familiar with vfs than me - please, help to identify all infoleak
+sources!
+
+
+Thank you,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
