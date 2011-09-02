@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1IBO0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 10:26:19 -0400
-Received: from mail-ww0-f66.google.com ([74.125.82.66]:64719 "EHLO
-	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab1IBO0S (ORCPT
+	id S1752542Ab1IBObv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 10:31:51 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52419 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752349Ab1IBObu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 10:26:18 -0400
-MIME-Version: 1.0
-Date: Fri, 2 Sep 2011 07:26:10 -0700
-Message-ID: <CACbYmskNhAMr=zbY9oj1g1VpSk7M=j3CvduefjDbHjx39Uy1XQ@mail.gmail.com>
-Subject: NOTE: Your E-mail Account Expire in three (3) days.
-From: System Administrator <sstmdmnstrtr15@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Sep 2011 10:31:50 -0400
+Subject: [Tech-board-discuss] Linux Foundation Technical Advisory Board
+ Elections and Nomination process
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tech Board Discuss <Tech-board-discuss@lists.linux-foundation.org>
+Cc: "ksummit-2011-discuss@lists.linux-foundation.org" 
+	<ksummit-2011-discuss@lists.linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 07:31:48 -0700
+Message-ID: <1314973908.2965.6.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Webmail User,
+The elections for five of the ten members of the Linux Foundation
+Technical Advisory Board[TAB] are held every year, currently the
+election will be at the 2011 Kernel Summit at one of the Joint events
+(probably on the Tuesday 25th October) and will be open to all attendees
+of the Weeks events (Kernel Summit, LinuxCon and ELC).
+
+Anyone is eligible to stand for election, simply send your nomination
+to:
+
+Tech-board-discuss@lists.linux-foundation.org
+
+We currently have five nominees (the incumbents):
+
+Alan Cox <alan@lxorguk.ukuu.org.uk>
+Thomas Gleixner <tglx@linutronix.de>
+Jonathan Corbet <corbet@lwn.net>
+Theodore Ts'o <tytso@mit.edu>
+Greg Kroah-Hartman <greg@kroah.com>
+
+The deadline for receiving nominations is up until the beginning of the
+event where the election is held (Currently thought to be the evening of
+October 25th Central European Standard time). Although, please remember
+if you're not going to be present that things go wrong with both
+networks and mailing lists, so get your nomination in early).
+
+James Bottomley (TAB Chair)
 
 
-Warning Code: ACCOUNTHELPID67788980
-
-
-This message was sent automatically by a program on Webmail which
-periodically checks admin center or the size of the inbox, the program
-to start automatically on any user to ensure inbox grows too large. If
-your mailbox is too large, you will be able to receive new emails.
-Just before this message was sent, you are currently running at 20.9
-GB, you have exceeded the limit is 20GB.
-
-
-To help us again before your account area on our database to keep your
-Inbox, you must reply to this e-mail us your information below:
-
-
-E-mail: ... ... ... ... ... ... ... ...
-Webmail Access page:.................
-Domain/Username: ... ... ... ... ... ... ..
-Current Password: ... ... ... ... ... ... ..
-Retype Password: ... ... ... ...... ... ..
-
-
->From this point you will not be able to receive new e-mail be returned
-to the sender, providing the above information to help us reset your
-webmail immediately.
-
-
-NOTE: Your E-mail Account Expire in three (3) days. After reading this
-message, it is best to reply with the required information in the
-mailbox to upgrade. Reply to this post Re immediately activate your
-account.
-
-
-Thank you for your cooperation.
-Help Desk System.
-Webmail System Administrator
---------------------------------------------------
