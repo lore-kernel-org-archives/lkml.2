@@ -1,138 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab1IBMAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 08:00:47 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:55708 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab1IBMAp convert rfc822-to-8bit (ORCPT
+	id S1751576Ab1IBMAt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 08:00:49 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:57185 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751083Ab1IBMAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Sep 2011 08:00:45 -0400
-X-AuditID: cbfee61b-b7b7fae000005864-ae-4e60c56bc579
-From: Inki Dae <inki.dae@samsung.com>
-To: "'Rob Clark'" <robdclark@gmail.com>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org, sw0312.kim@samsung.com,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-References: <1314359274-21585-1-git-send-email-inki.dae@samsung.com>
- <CAF6AEGu3ss-rJC28H1rm2GWLm1bAZnHLftXfMLJQNeqjBt3umQ@mail.gmail.com>
- <001001cc67aa$72760460$57620d20$%dae@samsung.com>
- <CAF6AEGsqbFcS_QwihrjpVLQK1Y+h1iJSyu+GFV0Govp3XHYbOw@mail.gmail.com>
- <003501cc68a7$e8935aa0$b9ba0fe0$%dae@samsung.com>
- <CAF6AEGuZb1nhMJwc+k-cwPTPLHTiO1PkHcpGN899Yq3pEMUwkA@mail.gmail.com>
-In-reply-to: <CAF6AEGuZb1nhMJwc+k-cwPTPLHTiO1PkHcpGN899Yq3pEMUwkA@mail.gmail.com>
-Subject: RE: [RFC][PATCH v3] DRM: add DRM Driver for Samsung SoC EXYNOS4210.
-Date: Fri, 02 Sep 2011 21:00:21 +0900
-Message-id: <001401cc6967$e41f3460$ac5d9d20$%dae@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: AcxpDi10VCKkN1p1TgqBsUPaX7nA7QAVXZKA
-X-OriginalArrivalTime: 02 Sep 2011 12:01:19.0302 (UTC)
- FILETIME=[06792660:01CC6968]
-X-Brightmail-Tracker: AAAAAA==
+Subject: Re: [PATCH] mfd: Combine MFD_SUPPORT and MFD_CORE
+From: Luciano Coelho <coelho@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, matti.j.aaltonen@nokia.com,
+        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, mchehab@infradead.org,
+        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+In-Reply-To: <201108311849.37273.arnd@arndb.de>
+References: <20110829102732.03f0f05d.rdunlap@xenotime.net>
+	 <1314643307-17780-1-git-send-email-coelho@ti.com>
+	 <201108311849.37273.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 14:54:55 +0300
+Message-ID: <1314964495.2296.632.camel@cumari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rob.
-Below is my comments.
+On Wed, 2011-08-31 at 18:49 +0200, Arnd Bergmann wrote: 
+> On Monday 29 August 2011, Luciano Coelho wrote:
+> > From: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > Combine MFD_SUPPORT (which only enabled the remainder of the MFD
+> > menu) and MFD_CORE.  This allows other drivers to select MFD_CORE
+> > without needing to also select MFD_SUPPORT, which fixes some
+> > kconfig unmet dependency warnings.  Modeled after I2C kconfig.
+> > 
+> > [Forward-ported to 3.1-rc4.  This fixes a warning when some drivers,
+> > such as RADIO_WL1273, are selected, but MFD_SUPPORT is not. -- Luca]
+> > 
+> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> > Reported-by: Johannes Berg <johannes@sipsolutions.net>
+> > Cc: Jean Delvare <khali@linux-fr.org>
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: Grant Likely <grant.likely@secretlab.ca>
+> > Signed-off-by: Luciano Coelho <coelho@ti.com>
+> > ---
+> > 
+> > I guess this should fix the problem.  I've simple forward-ported
+> > Randy's patch to the latest mainline kernel.  I don't know via which
+> > tree this should go in, though.
+> > 
+> > NOTE: I have not tested this very thoroughly.  But at least
+> > omap2plus stuff seems to work okay with this change.  MFD_SUPPORT is
+> > also selected by a couple of "tile" platforms defconfigs, but I guess
+> > the Kconfig system should take care of it.
+> 
+> Doing this is a good idea, but incidentally I have just spent some time
+> with the same problem and ended up with a solution that I like better,
+> which is removing CONFIG_MFD_SUPPORT altogether.
+> 
+> The point is that there is no use enabling MFD_CORE if you don't also
+> enable any of the specific drivers. MFD_SUPPORT was added as a 'menuconfig'
+> before we had Kconfig warn about broken dependencies, so everything was
+> fine. Since Kconfig now issues the warnings, I think it would be better
+> to just turn the MFD menu into a plain 'menu' and remove all the
+> 'depends on MFD_SUPPORT' and 'select MFD_SUPPORT' lines from the other
+> Kconfig files.
 
-> -----Original Message-----
-> From: Rob Clark [mailto:robdclark@gmail.com]
-> Sent: Friday, September 02, 2011 10:18 AM
-> To: Inki Dae
-> Cc: airlied@linux.ie; dri-devel@lists.freedesktop.org;
-> sw0312.kim@samsung.com; linux-kernel@vger.kernel.org;
-> kyungmin.park@samsung.com; linux-arm-kernel@lists.infradead.org
-> Subject: Re: [RFC][PATCH v3] DRM: add DRM Driver for Samsung SoC
-> EXYNOS4210.
-> 
-> On Thu, Sep 1, 2011 at 8:06 AM, Inki Dae <inki.dae@samsung.com> wrote:
-> >> >> > +struct samsung_drm_gem_obj *
-> >> >> > +               find_samsung_drm_gem_object(struct drm_file
-> > *file_priv,
-> >> >> > +                       struct drm_device *dev, unsigned int
-handle)
-> >> >> > +{
-> >> >> > +       struct drm_gem_object *gem_obj;
-> >> >> > +
-> >> >> > +       gem_obj = drm_gem_object_lookup(dev, file_priv, handle);
-> >> >> > +       if (!gem_obj) {
-> >> >> > +               DRM_LOG_KMS("a invalid gem object not registered
-to
-> >> >> lookup.\n");
-> >> >> > +               return NULL;
-> >> >> > +       }
-> >> >> > +
-> >> >> > +       /**
-> >> >> > +        * unreference refcount of the gem object.
-> >> >> > +        * at drm_gem_object_lookup(), the gem object was
-> referenced.
-> >> >> > +        */
-> >> >> > +       drm_gem_object_unreference(gem_obj);
-> >> >>
-> >> >> this doesn't seem right, to drop the reference before you use the
-> >> >> buffer elsewhere..
-> >> >>
-> >> > No, see drm_gem_object_lookup fxn. at this function, if there is a
-> >> object
-> >> > found then drm_gem_object_reference is called to increase refcount of
-> >> this
-> >> > object. if there is any missing point, give me any comment please.
-> thank
-> >> > you.
-> >>
-> >>
-> >> Right, but I think there is a reason it takes a reference... so that
-> >> the object doesn't get free'd from under your feet.  So pattern
-> >> should, I think, be:
-> >>
-> >>   obj = lookup(...);
-> >>   ... do stuff w/ obj ...
-> >>   unreference(obj)
-> >>
-> >> so the caller who is using the looked up obj should unref it when done
-> >>
-> >> Instead, you have:
-> >>
-> >>   obj = lookup(...);
-> >>   unreference(obj);
-> >>   ... do stuff w/ obj ...
-> >>
-> >>
-> >
-> > Generally right, but in this case, it is just used to get specific gem
-> > object through find_samsung_drm_gem_object() so doesn't reference this
-> gem
-> > object anywhere.
-> > therefore reference and unreference should be done within
-> > find_samsung_drm_gem_object(). if there is any point I missed then let
-> me
-> > know please. thank you.
-> >
-> 
-> Still, it seems like find_samsung_drm_gem_object() is encouraging the
-> wrong usage-pattern, even if it works fine today because you know
-> somewhere else is holding a reference to the object.  Later if you
-> expand your use of GEM objects, this fxn might come back to bite you.
-> There is a good reason that drm_gem_object_lookup() takes a reference
-> to the object, and it feels wrong to intentionally subvert that.
-> 
-> (I'm perfectly willing to be overridden on the subject.. there are
-> plenty of folks on this list who have been doing the GEM thing longer
-> than I have.  But it just seems better to use APIs like
-> drm_gem_object_lookup() the way they were intended.)
-> 
+Yes, this makes sense.  I think your solution is indeed cleaner.  If you
+want to send it it's fine with me.  I don't really have any preference,
+I just wanted to clean a problem that was reported to me. ;)
 
-Ah, you are right. I misunderstanded it. as you pointed out, a gem object
-should be unreferenced after doing something with the gem object. so I will
-remove find_samsung_drm_gem_object() and use drm_gem_object_lookup()
-directly to get a gem object instead. of course, the gem object will be
-unreferenced after doing something with it. thank you for your explanation.
-:)
+If you send your changes, my patch can be ignored, otherwise, I can send
+a v2 with the changes Jean proposed.
 
-> BR,
-> -R
+
+-- 
+Cheers,
+Luca.
 
