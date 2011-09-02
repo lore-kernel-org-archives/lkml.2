@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab1IBA5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:57:37 -0400
-Received: from claw.goop.org ([74.207.240.146]:43194 "EHLO claw.goop.org"
+	id S932976Ab1IBA5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:57:55 -0400
+Received: from claw.goop.org ([74.207.240.146]:43186 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932860Ab1IBAz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:55:29 -0400
+	id S932855Ab1IBAz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 20:55:27 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 09/13] x86/pvticketlocks: we only need to kick if there's waiters
-Date: Thu,  1 Sep 2011 17:55:02 -0700
-Message-Id: <a2b685fa9d44cf93fc1d1bf69199f5d355e02f82.1314922370.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 12/13] x86/pvticketlock: make sure unlock_kick pvop call is inlined
+Date: Thu,  1 Sep 2011 17:55:05 -0700
+Message-Id: <59ac6dc9120d440f45fa997910b5d396461c60f5.1314922370.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
@@ -31,28 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-If we're releasing the lock into an uncontended state, there's nobody
-waiting on it, so there's no need to kick anyone.
+Otherwise the generated code for raw_spin_lock will look awful.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/kernel/paravirt-spinlocks.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/paravirt.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
-index 21b6986..71b8557 100644
---- a/arch/x86/kernel/paravirt-spinlocks.c
-+++ b/arch/x86/kernel/paravirt-spinlocks.c
-@@ -47,8 +47,7 @@ void __ticket_unlock_release_slowpath(struct arch_spinlock *lock)
- 		    old.head_tail, new.head_tail) != old.head_tail) {
- 		/* still people waiting */
- 		__ticket_unlock_release(lock);
-+		__ticket_unlock_kick(lock, new.tickets.head);
- 	}
--
--	__ticket_unlock_kick(lock, new.tickets.head);
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index b89699a..a6f2651 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -741,12 +741,12 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 
+ #if defined(CONFIG_SMP) && defined(CONFIG_PARAVIRT_SPINLOCKS)
+ 
+-static inline void __ticket_lock_spinning(struct arch_spinlock *lock, unsigned ticket)
++static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, unsigned ticket)
+ {
+ 	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
  }
- EXPORT_SYMBOL(__ticket_unlock_release_slowpath);
+ 
+-static inline void __ticket_unlock_kick(struct arch_spinlock *lock, unsigned ticket)
++static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, unsigned ticket)
+ {
+ 	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
+ }
 -- 
 1.7.6
 
