@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933407Ab1IBKro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 06:47:44 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:42766 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313Ab1IBKrm (ORCPT
+	id S933416Ab1IBKxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 06:53:12 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41935 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933313Ab1IBKxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 06:47:42 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E60B63C.1030101@cam.ac.uk>
-Date: Fri, 02 Sep 2011 11:55:56 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
-MIME-Version: 1.0
-To: "Maxin B. John" <maxin.john@gmail.com>
-CC: Dan Carpenter <error27@gmail.com>, Bryan Freed <bfreed@chromium.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-iio@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        devel@driverdev.osuosl.org,
-        Amit Kucheria <amit.kucheria@verdurent.com>
-Subject: Re: [PATCH] staging: iio: light: Fix compiler warning in tsl2563.c
-References: <20110902094107.GA2846@maxin>
-In-Reply-To: <20110902094107.GA2846@maxin>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Sep 2011 06:53:08 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Staging: comedi: fix line over 80 character issue in s626.c
+In-Reply-To: Your message of "Fri, 02 Sep 2011 12:58:07 +0530."
+             <1314948487-3475-1-git-send-email-ravishankar.km@greenturtles.in>
+From: Valdis.Kletnieks@vt.edu
+References: <[PATCH 1/2]Staging: comedi: fix line over 80 character issue in s626.c>
+            <1314948487-3475-1-git-send-email-ravishankar.km@greenturtles.in>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1314960779_2654P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Fri, 02 Sep 2011 06:52:59 -0400
+Message-ID: <6154.1314960779@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4E60B58E.005C,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/11 10:41, Maxin B. John wrote:
->> Don't overwrite the error code.  For example, the lower layers can
->> return -EAGAIN and that's more useful than just returning -EIO every
->> time.
-> Ahh.. Thanks a lot for explaining this.
-> 
->> Your fix works, but it's not very clean.  Just add a "*id = ret;"
->> line before the "return 0;" and that's it.  (It doesn't make sense
->> to pass a pointer to "id" and not use it).
-> Dan, yes, I agree with you. This fix is much much better than what I 
-> had in my mind.
-> 
->> Yikes - I wonder why my various compilers don't throw that up.
-> I guess, in "iio-blue.git" tree, the 'id = 0' suppresses this warning.
-That'd do it. oops.
+--==_Exmh_1314960779_2654P
+Content-Type: text/plain; charset=us-ascii
 
-Ideally keep the white space but doesn't really matter. Either send on
-to Greg directly or I'll add it to iio-blue and send on with the next fixes
-series - probably this afternoon.
-> 
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+On Fri, 02 Sep 2011 12:58:07 +0530, Ravishankar K Mallikarjunayya said:
+> This is a patch to the s626.c file that fixes up a line over 80 character
 
-> ---
-> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
-> index f25243b..55012ff 100644
-> --- a/drivers/staging/iio/light/tsl2563.c
-> +++ b/drivers/staging/iio/light/tsl2563.c
-> @@ -226,7 +226,7 @@ static int tsl2563_read_id(struct tsl2563_chip *chip, u8 *id)
->  	ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_ID);
->  	if (ret < 0)
->  		return ret;
-> -
-> +	*id = ret;
->  	return 0;
->  }
->  
-> 
+Patch looks mostly good - but a question:
+
+> diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
+
+> @@ -266,7 +267,11 @@ module_exit(driver_s626_cleanup_module);
+>  static int s626_ai_insn_config(struct comedi_device *dev,
+>  			       struct comedi_subdevice *s,
+>  			       struct comedi_insn *insn, unsigned int *data);
+> -/* static int s626_ai_rinsn(struct comedi_device *dev,struct comedi_subdevice *s,struct comedi_insn *insn,unsigned int *data); */
+> +/*
+> + * static int s626_ai_rinsn(struct comedi_device *dev,
+> + * struct comedi_subdevice *s, struct comedi_insn *insn,
+> + * unsigned int *data);
+> + */
+
+At 4 places, you fix commented-out function prototypes.  Maybe they should
+just be deleted instead?
+
+--==_Exmh_1314960779_2654P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOYLWLcC3lWbTT17ARApHEAJ9eRTHc4wX3abfQl4aJPfyKTGsodQCeMGrx
+aLTIrb/BzIzwW5kKaKOak8Q=
+=0O0n
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1314960779_2654P--
 
