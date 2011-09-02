@@ -1,160 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab1IBAcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:32:51 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38664 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932659Ab1IBAcs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:32:48 -0400
+	id S932791Ab1IBAoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:44:09 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:43953 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932773Ab1IBAoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 20:44:05 -0400
+Date: Thu, 1 Sep 2011 17:42:31 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Oleg Nesterov <oleg@redhat.com>,
+        Paul Menage <paul@paulmenage.org>,
+        containers@lists.linux-foundation.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH pm-freezer 1/4] cgroup_freezer: fix freezer->state
+ setting	bug in freezer_change_state()
+Message-ID: <20110902004231.GF1919@count0.beaverton.ibm.com>
+References: <20110831102100.GA2828@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <CACqU3MXBjHi9nOfxeQGJVtc7x33KbzK2Mi+_+A+jr+bPwqzY-Q@mail.gmail.com>
-References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-	<20110822125355.bb01d76b.rdunlap@xenotime.net>
-	<CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
-	<20110822174958.73dd96c7.rdunlap@xenotime.net>
-	<1314065358.3225.44.camel@localhost.localdomain>
-	<20110823164035.ca28fdc6.rdunlap@xenotime.net>
-	<CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
-	<1314362342.3224.19.camel@localhost.localdomain>
-	<20110826100011.9213d872.rdunlap@xenotime.net>
-	<CACqU3MXBjHi9nOfxeQGJVtc7x33KbzK2Mi+_+A+jr+bPwqzY-Q@mail.gmail.com>
-Date: Thu, 1 Sep 2011 20:32:47 -0400
-Message-ID: <CACqU3MWcBJuXA3n=ha_MNteM6MHfEWj8=42nZ_zvorvt6Pbq-w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 22 (evm)
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110831102100.GA2828@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11090200-6078-0000-0000-0000004EE97F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Aug 31, 2011 at 12:21:07PM +0200, Tejun Heo wrote:
+> d02f52811d0e "cgroup_freezer: prepare for removal of TIF_FREEZE" moved
+> setting of freezer->state into freezer_change_state(); unfortunately,
+> while doing so, when it's beginning to freeze tasks, it sets the state
+> to CGROUP_FROZEN instead of CGROUP_FREEZING ending up skipping the
+> whole freezing state.  Fix it.
+> 
+> -v2: Oleg pointed out that re-freezing FROZEN cgroup could increment
+>      system_freezing_cnt.  Fixed.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: Paul Menage <paul@paulmenage.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+> I'm in the process of moving and can only use a quite old laptop.  I
+> tested compile but couldn't really do much else, so please proceed
+> with caution.  Oleg, can you please ack the patches if you agree with
+> the updated versions?
+> 
+> Thanks.
+> 
+>  kernel/cgroup_freezer.c |   20 +++++++++++---------
+>  1 file changed, 11 insertions(+), 9 deletions(-)
+> 
+> Index: work/kernel/cgroup_freezer.c
+> ===================================================================
+> --- work.orig/kernel/cgroup_freezer.c
+> +++ work/kernel/cgroup_freezer.c
+> @@ -308,24 +308,26 @@ static int freezer_change_state(struct c
+>  	spin_lock_irq(&freezer->lock);
+> 
+>  	update_if_frozen(cgroup, freezer);
+> -	if (goal_state == freezer->state)
+> -		goto out;
+> -
+> -	freezer->state = goal_state;
+> 
+>  	switch (goal_state) {
+>  	case CGROUP_THAWED:
+> -		atomic_dec(&system_freezing_cnt);
+> -		unfreeze_cgroup(cgroup, freezer);
+> +		if (freezer->state != CGROUP_THAWED) {
+> +			freezer->state = CGROUP_THAWED;
+> +			atomic_dec(&system_freezing_cnt);
+> +			unfreeze_cgroup(cgroup, freezer);
+> +		}
+>  		break;
+>  	case CGROUP_FROZEN:
+> -		atomic_inc(&system_freezing_cnt);
+> -		retval = try_to_freeze_cgroup(cgroup, freezer);
+> +		if (freezer->state == CGROUP_THAWED) {
+> +			freezer->state = CGROUP_FREEZING;
+> +			atomic_inc(&system_freezing_cnt);
+> +			retval = try_to_freeze_cgroup(cgroup, freezer);
 
-On Sat, Aug 27, 2011 at 2:06 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Fri, Aug 26, 2011 at 1:00 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> On Fri, 26 Aug 2011 08:39:02 -0400 Mimi Zohar wrote:
->>
->>> On Tue, 2011-08-23 at 22:10 -0400, Arnaud Lacombe wrote:
->>> > Hi,
->>> >
->>> > On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->>> > > I think that you are going to need to do something like Arnaud suggested
->>> > > and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
->>> > > unless you can convince someone that this is a kconfig bug.
->>> > >
->>> > dammit... I guess there is...
->>> >
->>> > If you consider the following Kconfig:
->>> >
->>> > config MOD
->>> >         bool
->>> >         default y
->>> >         option modules
->>> >
->>> > config EXPERIMENTAL
->>> >         bool
->>> >         default y
->>> >
->>> > menuconfig A
->>> >         tristate "A"
->>> >         depends on EXPERIMENTAL
->>> >
->>> > config B
->>> >         bool "B"
->>> >
->>> > config B0
->>> >         bool
->>> >
->>> > config C
->>> >         tristate "C"
->>> >         depends on B
->>> >
->>> > config C0
->>> >         tristate
->>> >
->>> > config D
->>> >         boolean "D"
->>> >         depends on A && B
->>> >         select C
->>> >         select C0
->>> >
->>> > config E
->>> >         tristate "E"
->>> >
->>> > config F
->>> >         tristate "F"
->>> >         select E
->>> >
->>> > B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
->>> > (TCG_TPM) allows to set D (EVM), which will select (C). Now,
->>> > menuconfig highlight the problem very well. Proceeding as following
->>> > A=m, B=y, C=m, E=y, F=y, we ends up having:
->>> >
->>> >  <M> A  --->
->>> >  [*] B
->>> >  {M} C
->>> >  [*] D
->>> >  -*- E
->>> >  <*> F
->>> >
->>> > which translate in the following config:
->>> >
->>> > CONFIG_MOD=y
->>> > CONFIG_EXPERIMENTAL=y
->>> > CONFIG_A=m
->>> > CONFIG_B=y
->>> > CONFIG_C=m
->>> > CONFIG_C0=m
->>> > CONFIG_D=y
->>> > CONFIG_E=y
->>> > CONFIG_F=y
->>> >
->>> > I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
->>> > If you remove D's dependency on 'A', everything works as expected. So
->>> > it would seem direct dependency state influence the state of reverse
->>> > dependencies...
->>> >
->>> > Will have a look...
->>> >
->>> >  - Arnaud
->>>
->>> Thanks for looking into this!  Instead of changing 'TCG_TPM' to
->>> 'TCG_TPM=y', the dependency should be on 'TRUSTED_KEYS=y'.  Then when
->>> I've refactored ENCRYPTED_KEYS, removing the ENCRYPTED_KEYS dependency
->>> on TRUSTED_KEYS, the EVM dependency would be '(TRUSTED_KEYS=y ||
->>> TRUSTED_KEYS=n)'.  Do you want a temporary fix for now?
->>
->> Yes, linux-next (randconfig) builds are still failing, so we need something
->> to prevent that.
->>
-> you may want to try:
->
-> git://github.com/lacombar/linux-2.6.git master/kconfig/expr-woes
->
-ping ?
+This still doesn't look quite right. If the cgroup is FREEZING it should
+also call try_to_freeze_cgroup(). I think this is what's needed:
 
- - Arnaud
+		if (freezer->state == CGROUP_THAWED)
+			atomic_inc(&system_freezing_cnt);
+		freezer->state = CGROUP_FREEZING;
+		retval = try_to_freeze_cgroup(cgroup, freezer);
 
-> only the last commit is relevant to the problem, but depend on one
-> another to get <assert.h>. The rest aims at tidying the expr stuff.
-> I'm looking for regression it may have introduced.
->
-> Thanks,
->  - Arnaud
->
-> ps: I'll most likely be AFK until sunday evening (to be conservative).
->
->> thanks,
->> ---
->> ~Randy
->> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->>
->
+> +		}
+>  		break;
+>  	default:
+>  		BUG();
+>  	}
+
+Cheers,
+	-Matt Helsley
+
