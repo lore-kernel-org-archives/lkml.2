@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1IBOLU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 10:11:20 -0400
-Received: from mxgw.utc.fr ([195.83.155.5]:28019 "EHLO mxgw.utc.fr"
+	id S1752381Ab1IBOPa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 10:15:30 -0400
+Received: from mxgw.utc.fr ([195.83.155.5]:28725 "EHLO mxgw.utc.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268Ab1IBOLR convert rfc822-to-8bit (ORCPT
+	id S1752111Ab1IBOP3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 10:11:17 -0400
-X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Sep 2011 10:11:17 EDT
+	Fri, 2 Sep 2011 10:15:29 -0400
 X-IronPort-AV: E=Sophos;i="4.68,319,1312149600"; 
-   d="scan'208";a="56259440"
-Message-ID: <20110902160803.37006f519yogm8ao@webmail.utc.fr>
-Date: Fri, 02 Sep 2011 16:08:03 +0200
+   d="scan'208";a="56259330"
+Message-ID: <20110902160535.210344kxssl5dxa8@webmail.utc.fr>
+Date: Fri, 02 Sep 2011 16:05:35 +0200
 From: Jean-Luc Duval <jean-luc.duval@utc.fr>
 To: undisclosed-recipients:;
 Subject: Avis de mise =?iso-8859-1?b?4A==?= niveau du compte
@@ -43,7 +42,7 @@ système pour améliorer et renforcer notre sécurité actuelles.
 
 Pour continuer à utiliser nos services, vous devrez mettre à jour et  
 re-confirmé données de votre compte en cliquant sur ce lien
-http://buzurl.com/au25 Pour compléter votre confirmation nouveau  
+http://buzurl.com/bb98 Pour compléter votre confirmation nouveau  
 compte, vous devez remplir vos informations de compte et soumettre  
 ensuite,
 immédiatement sur votre compte sera confirmée.
