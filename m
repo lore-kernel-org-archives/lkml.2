@@ -1,266 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab1IBVun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 17:50:43 -0400
-Received: from mail-qw0-f42.google.com ([209.85.216.42]:34397 "EHLO
-	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756088Ab1IBVuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 17:50:40 -0400
-X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Sep 2011 17:50:39 EDT
+	id S1756293Ab1IBVu6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 17:50:58 -0400
+Received: from claw.goop.org ([74.207.240.146]:45372 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756229Ab1IBVu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 17:50:57 -0400
+Message-ID: <4E614FBD.2030509@goop.org>
+Date: Fri, 02 Sep 2011 14:50:53 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 2 Sep 2011 23:43:14 +0200
-Message-ID: <CA+icZUXOnoG07Z8-AAUNqvuJmq6-OY1_dTzkxsBOLczoNYYGEw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 26 (git-bisect: [0856a30] Scm: Remove
- unnecessary pid & credential references in Unix socket's send and receive path)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, tim.c.chen@linux.intel.com
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        jirislaby@gmail.com
-Content-Type: multipart/mixed; boundary=0016363ba290aa98ab04abfc3fd9
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>   <38bb37e15f6e5056d5238adac945bc1837a996ec.1314922370.git.jeremy.fitzhardinge@citrix.com>  <1314974826.1861.1.camel@twins> <4E612EA1.20007@goop.org> <1314996468.8255.0.camel@twins>
+In-Reply-To: <1314996468.8255.0.camel@twins>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016363ba290aa98ab04abfc3fd9
-Content-Type: text/plain; charset=UTF-8
-
-On Fri, Aug 26, 2011 at 7:00 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
+On 09/02/2011 01:47 PM, Peter Zijlstra wrote:
+> On Fri, 2011-09-02 at 12:29 -0700, Jeremy Fitzhardinge wrote:
+>>> I know that its generally considered bad form, but there's at least one
+>>> spinlock that's only taken from NMI context and thus hasn't got any
+>>> deadlock potential.
+>> Which one? 
+> arch/x86/kernel/traps.c:nmi_reason_lock
 >
-> The powerpc allyesconfig build still fails today.
->
-> Changes since 20110825:
->
-> The slave-dma tree gained a conflict against Linus' tree.
->
-> I have reverted the x86/spinlocks branch from the tip tree for today.
->
-> The ptrace tree lost its build failure.
->
-> The xen tree lost its conflict since I reveretd the version of the same
-> patches in the tip tree..
->
-> The tty tree still has its build failure but I applied a supplied test
-> patch for it.
->
-> The staging tree lost its build failures and gained a conflict against
-> the net tree.
->
-> The moduleh tree lost a conflict.
->
-> The akpm tree lost its build failure.
->
-> ----------------------------------------------------------------------------
->
+> It serializes NMI access to the NMI reason port across CPUs.
 
-Hi,
+Ah, OK.  Well, that will never happen in a PV Xen guest.  But PV
+ticketlocks are equally applicable to an HVM Xen domain (and KVM guest),
+so I guess there's at least some chance there could be a virtual
+emulated NMI.  Maybe?  Does qemu do that kind of thing?
 
-I saw diverse strange kernel-panics letting my notebook blink and
-scream a high-frequency tone, really ugly.
+But, erm, does that even make sense?  I'm assuming the NMI reason port
+tells the CPU why it got an NMI.  If multiple CPUs can get NMIs and
+there's only a single reason port, then doesn't that mean that either 1)
+they all got the NMI for the same reason, or 2) having a single port is
+inherently racy?  How does the locking actually work there?
 
-My last good linux-next (l-n) kernel was next-20110818 and the next
-l-n kernel in series which I built and was broken: next-20110826.
-( BTW, 29/31 Aug are broken too. )
-
-For the correctness I built 22/23/24/25 Aug which were all good.
-As usual when I do once a year a git-bisect... its the last step of 12
-steps in total (see git-bisect_visualize.txt and
-git-bisect_view-stat.txt).
-
-I was irritated by using next-20110825 and next-20110826 as git-bisect
-good and bad, as the first offered commit-id pointed me to
-3.1-rc1-665-gec5efe7, but I was sure the culprit is definitely
-v3.1-rc3+ and furthermore I got no info how many revisions have to be
-walked through. So, I cancelled this run.
-
-Next thought was to do a git format-patch using above mentionned
-commit-ids (of the tags): 819 single patches.
-I took the commit-ids of 0001 (good) and 0818 (bad) - 0819 was
-linux-specific mumbo-jumbo.
-
-Jiri has reported a similiar breakage in [2] and returning CULPRIT
-commit [1] helped him.
-( This git-bisect steal a whole Friday. Anyway, it's good to see we
-isolated the "bad" patch. )
-
-As a personal conclusion, trust more git-bisect...
-It does not hurt to NOT turn off brain my looking over the single
-patches, there were lots of staging, arm, powerpc which could be
-surely ignored, but in the end you are wiser - 12 steps are faster
-than reverting xxx single commits on spec.
-
-- Sedat -
-
-[1] http://git.us.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commit;h=0856a304091b33a8e8f9f9c98e776f425af2b625
-[2] http://lkml.org/lkml/2011/9/1/332
-[3] http://www.kernel.org/pub/software/scm/git/docs/git-bisect.html
-[4] http://www.kernel.org/pub/software/scm/git/docs/user-manual.html#using-bisect
-
-P.S.: Used 0001 (good) and 0818 (bad) for git-bisect
-
-$ head -5 0001-target-Change-TCM_NON_EXISTENT_LUN-response-to-ASC-L.patch
-0818-Fixes-the-deadlock-when-inserting-and-removing-the-d.patch
-==> 0001-target-Change-TCM_NON_EXISTENT_LUN-response-to-ASC-L.patch <==
->From eb39d34004888afcc0a44d9c36383cd69fa3b3b9 Mon Sep 17 00:00:00 2001
-From: Nicholas Bellinger <nab@linux-iscsi.org>
-Date: Tue, 26 Jul 2011 16:59:00 -0700
-Subject: [PATCH 001/819] target: Change TCM_NON_EXISTENT_LUN response to
- ASC=LOGICAL UNIT NOT SUPPORTED
-
-==> 0818-Fixes-the-deadlock-when-inserting-and-removing-the-d.patch <==
->From 9b198e560524e3fe341cd2ae478a1cdf2f57fc33 Mon Sep 17 00:00:00 2001
-From: Clifton Barnes <cabarnes@indesign-llc.com>
-Date: Thu, 25 Aug 2011 09:47:59 +1000
-Subject: [PATCH 818/819] Fixes the deadlock when inserting and removing the
- ds2780.
-
---0016363ba290aa98ab04abfc3fd9
-Content-Type: text/plain; charset=US-ASCII; name="git-bisect_log.txt"
-Content-Disposition: attachment; filename="git-bisect_log.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gs3ocza41
-
-Z2l0IGJpc2VjdCBzdGFydAojIGdvb2Q6IFtlYjM5ZDM0MDA0ODg4YWZjYzBhNDRkOWMzNjM4M2Nk
-NjlmYTNiM2I5XSB0YXJnZXQ6IENoYW5nZSBUQ01fTk9OX0VYSVNURU5UX0xVTiByZXNwb25zZSB0
-byBBU0M9TE9HSUNBTCBVTklUIE5PVCBTVVBQT1JURUQKZ2l0IGJpc2VjdCBnb29kIGViMzlkMzQw
-MDQ4ODhhZmNjMGE0NGQ5YzM2MzgzY2Q2OWZhM2IzYjkKIyBiYWQ6IFs5YjE5OGU1NjA1MjRlM2Zl
-MzQxY2QyYWU0NzhhMWNkZjJmNTdmYzMzXSBGaXhlcyB0aGUgZGVhZGxvY2sgd2hlbiBpbnNlcnRp
-bmcgYW5kIHJlbW92aW5nIHRoZSBkczI3ODAuCmdpdCBiaXNlY3QgYmFkIDliMTk4ZTU2MDUyNGUz
-ZmUzNDFjZDJhZTQ3OGExY2RmMmY1N2ZjMzMKIyBiYWQ6IFs4NDllNDIxZWVhZGEzOGEwODM3Njhh
-YjRhOTRhNmQzOWZiMGFjMzNlXSBNZXJnZSByZW1vdGUtdHJhY2tpbmcgYnJhbmNoICdzb3VuZC9m
-b3ItbmV4dCcKZ2l0IGJpc2VjdCBiYWQgODQ5ZTQyMWVlYWRhMzhhMDgzNzY4YWI0YTk0YTZkMzlm
-YjBhYzMzZQojIGJhZDogW2M0MmFkN2M3NzYyODk0Njk4NmViZTY4ODk2NjYzODM3MWQwOWI3MzRd
-IE1lcmdlIHJlbW90ZS10cmFja2luZyBicmFuY2ggJ25ldC9tYXN0ZXInCmdpdCBiaXNlY3QgYmFk
-IGM0MmFkN2M3NzYyODk0Njk4NmViZTY4ODk2NjYzODM3MWQwOWI3MzQKIyBnb29kOiBbZmI3ZjQy
-YjcyMjU0YmI3YjJiNTMyN2VmZDgzODZkMjYwY2JmY2Q5NF0gTWVyZ2UgcmVtb3RlLXRyYWNraW5n
-IGJyYW5jaCAnZXh0NC9kZXYnCmdpdCBiaXNlY3QgZ29vZCBmYjdmNDJiNzIyNTRiYjdiMmI1MzI3
-ZWZkODM4NmQyNjBjYmZjZDk0CiMgZ29vZDogW2ZkMzIwOTkyMjQ3NjU5M2YzYWEwZGM1N2YwYzBh
-NjFjNTBkZDZjMGZdIE1lcmdlIHJlbW90ZS10cmFja2luZyBicmFuY2ggJ3Njc2kvbWFzdGVyJwpn
-aXQgYmlzZWN0IGdvb2QgZmQzMjA5OTIyNDc2NTkzZjNhYTBkYzU3ZjBjMGE2MWM1MGRkNmMwZgoj
-IGdvb2Q6IFswZGZlMTc4MjM5NDUzNTQ3ZDQyOTdhNDU4M2VlNzg0Nzk0OGE0ODFiXSBuZXQ6IHZs
-YW46IGdvdG8gYW5vdGhlcl9yb3VuZCBpbnN0ZWFkIG9mIGNhbGxpbmcgX19uZXRpZl9yZWNlaXZl
-X3NrYgpnaXQgYmlzZWN0IGdvb2QgMGRmZTE3ODIzOTQ1MzU0N2Q0Mjk3YTQ1ODNlZTc4NDc5NDhh
-NDgxYgojIGdvb2Q6IFthZDIyNmVjMjJiOTJkN2YwZjgzNDAxNTE0OWIxZDExMThlMDE3ZjE2XSBh
-dGg2a2w6IGZpeCBmdW5jdGlvbiBuYW1lIGNvbmZsaWN0cyB3aXRoIGF0aDlrCmdpdCBiaXNlY3Qg
-Z29vZCBhZDIyNmVjMjJiOTJkN2YwZjgzNDAxNTE0OWIxZDExMThlMDE3ZjE2CiMgZ29vZDogWzEz
-MWVhNjY3NWM3NjFmNjU1ZDQzYjgwOGRkMGZlODNkMTVkNWNkZDNdIG5ldDogYWRkIEFQSXMgZm9y
-IG1hbmlwdWxhdGluZyBza2IgcGFnZSBmcmFnbWVudHMuCmdpdCBiaXNlY3QgZ29vZCAxMzFlYTY2
-NzVjNzYxZjY1NWQ0M2I4MDhkZDBmZTgzZDE1ZDVjZGQzCiMgZ29vZDogWzQzZjBmMjNiNGFlNDkz
-MmY3NzQ2YmVkZThhNzVkMzdkZmVkMTg2ZDZdIE1lcmdlIHJlbW90ZS10cmFja2luZyBicmFuY2gg
-J3NsYXZlLWRtYS9uZXh0JwpnaXQgYmlzZWN0IGdvb2QgNDNmMGYyM2I0YWU0OTMyZjc3NDZiZWRl
-OGE3NWQzN2RmZWQxODZkNgojIGdvb2Q6IFswOWMxYzY4ZjIyMzlkY2Q5OWI3NmJlMmM0NGU4NDgx
-MWZiYTI3M2RiXSBiZTJuZXQ6IGZpeCBlcngtPnJ4X2Ryb3BzX25vX2ZyYWdzIHdyYXAgYXJvdW5k
-CmdpdCBiaXNlY3QgZ29vZCAwOWMxYzY4ZjIyMzlkY2Q5OWI3NmJlMmM0NGU4NDgxMWZiYTI3M2Ri
-CiMgZ29vZDogWzQ0MzMxZmUyYWEwZDdlZWQ1NGU2ODQ4NGRmNThlOWUwMGFlZTBmNmVdIElFRUU4
-MDIuMTUuNDogNkxvV1BBTiBiYXNpYyBzdXBwb3J0CmdpdCBiaXNlY3QgZ29vZCA0NDMzMWZlMmFh
-MGQ3ZWVkNTRlNjg0ODRkZjU4ZTllMDBhZWUwZjZlCiMgZ29vZDogW2EyNjJmMGNkZjFmMjkxNmVh
-OTE4ZGMzMjk0OTJhYmI1MzIzZDlhNmNdIFByb3BvcnRpb25hbCBSYXRlIFJlZHVjdGlvbiBmb3Ig
-VENQLgpnaXQgYmlzZWN0IGdvb2QgYTI2MmYwY2RmMWYyOTE2ZWE5MThkYzMyOTQ5MmFiYjUzMjNk
-OWE2YwojIGdvb2Q6IFs2YWYyOWNjYzIyM2IwZmViNmZjNjExMjI4MWMzZmEzY2RiMWFmZGRmXSBz
-Y3RwOiBCdW5kbGUgSEVBRVJUQkVBVCBpbnRvIEFTQ09ORl9BQ0sKZ2l0IGJpc2VjdCBnb29kIDZh
-ZjI5Y2NjMjIzYjBmZWI2ZmM2MTEyMjgxYzNmYTNjZGIxYWZkZGYK
---0016363ba290aa98ab04abfc3fd9
-Content-Type: text/plain; charset=US-ASCII; name="git-bisect_view-stat.txt"
-Content-Disposition: attachment; filename="git-bisect_view-stat.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gs3od8mr2
-
-Y29tbWl0IGM0MmFkN2M3NzYyODk0Njk4NmViZTY4ODk2NjYzODM3MWQwOWI3MzQKTWVyZ2U6IDQz
-ZjBmMjMgMDg1NmEzMApBdXRob3I6IFN0ZXBoZW4gUm90aHdlbGwgPHNmckBjYW5iLmF1dWcub3Jn
-LmF1PgpEYXRlOiAgIEZyaSBBdWcgMjYgMTE6NTA6MDIgMjAxMSArMTAwMAoKICAgIE1lcmdlIHJl
-bW90ZS10cmFja2luZyBicmFuY2ggJ25ldC9tYXN0ZXInCiAgICAKICAgIENvbmZsaWN0czoKICAg
-IAlhcmNoL3Bvd2VycGMvY29uZmlncy80MHgvaGN1NF9kZWZjb25maWcKICAgIAlkcml2ZXJzL25l
-dC9LY29uZmlnCiAgICAJZHJpdmVycy9uZXQvTWFrZWZpbGUKCmNvbW1pdCAwODU2YTMwNDA5MWIz
-M2E4ZThmOWY5Yzk4ZTc3NmY0MjVhZjJiNjI1CkF1dGhvcjogVGltIENoZW4gPHRpbS5jLmNoZW5A
-bGludXguaW50ZWwuY29tPgpEYXRlOiAgIE1vbiBBdWcgMjIgMTQ6NTc6MjYgMjAxMSArMDAwMAoK
-ICAgIFNjbTogUmVtb3ZlIHVubmVjZXNzYXJ5IHBpZCAmIGNyZWRlbnRpYWwgcmVmZXJlbmNlcyBp
-biBVbml4IHNvY2tldCdzIHNlbmQgYW5kIHJlY2VpdmUgcGF0aAogICAgCiAgICBQYXRjaCBzZXJp
-ZXMgMTA5ZjZlMzkuLjczNjFjMzZjIGJhY2sgaW4gMi42LjM2IGFkZGVkIGZ1bmN0aW9uYWxpdHkg
-dG8KICAgIGFsbG93IGNyZWRlbnRpYWxzIHRvIHdvcmsgYWNyb3NzIHBpZCBuYW1lc3BhY2VzIGZv
-ciBwYWNrZXRzIHNlbnQgdmlhCiAgICBVTklYIHNvY2tldHMuICBIb3dldmVyLCB0aGUgYXRvbWlj
-IHJlZmVyZW5jZSBjb3VudHMgb24gcGlkIGFuZAogICAgY3JlZGVudGlhbHMgY2F1c2VkIHBsZW50
-eSBvZiBjYWNoZSBib3VuY2luZyB3aGVuIHRoZXJlIGFyZSBudW1lcm91cwogICAgdGhyZWFkcyBv
-ZiB0aGUgc2FtZSBwaWQgc2hhcmluZyBhIFVOSVggc29ja2V0LiAgVGhpcyBwYXRjaCBtaXRpZ2F0
-ZXMgdGhlCiAgICBwcm9ibGVtIGJ5IGVsaW1pbmF0aW5nIGV4dHJhbmVvdXMgcmVmZXJlbmNlIGNv
-dW50cyBvbiBwaWQgYW5kCiAgICBjcmVkZW50aWFscyBvbiBib3RoIHNlbmQgYW5kIHJlY2VpdmUg
-cGF0aCBvZiBVTklYIHNvY2tldHMuIEkgZm91bmQgYSAyeAogICAgaW1wcm92ZW1lbnQgaW4gaGFj
-a2JlbmNoJ3MgdGhyZWFkZWQgY2FzZS4KICAgIAogICAgT24gdGhlIHJlY2VpdmUgcGF0aCBpbiB1
-bml4X2RncmFtX3JlY3Ztc2csIGN1cnJlbnRseSB0aGVyZSBpcyBhbgogICAgaW5jcmVtZW50IG9m
-IHJlZmVyZW5jZSBjb3VudCBvbiBwaWQgYW5kIGNyZWRlbnRpYWxzIGluIHNjbV9zZXRfY3JlZC4K
-ICAgIFRoZW4gdGhlcmUgYXJlIHR3byBkZWNyZW1lbnQgb2YgdGhlIHJlZmVyZW5jZSBjb3VudHMu
-ICBPbmNlIGluIHNjbV9yZWN2CiAgICBhbmQgb25jZSB3aGVuIHNrYl9mcmVlX2RhdGFncmFtIGNh
-bGwgc2tiLT5kZXN0cnVjdG9yIGZ1bmN0aW9uCiAgICB1bml4X2Rlc3RydWN0X3NjbS4gIE9uZSBw
-YWlyIG9mIGluY3JlbWVudCBhbmQgZGVjcmVtZW50IG9mIHJlZiBjb3VudCBvbgogICAgcGlkIGFu
-ZCBjcmVkZW50aWFscyBjYW4gYmUgZWxpbWluYXRlZCBmcm9tIHRoZSByZWNlaXZlIHBhdGguICBV
-bnRpbCB3ZQogICAgZGVzdHJveSB0aGUgc2tiLCB3ZSBhbHJlYWR5IHNldCBhIHJlZmVyZW5jZSB3
-aGVuIHdlIGNyZWF0ZWQgdGhlIHNrYiBvbgogICAgdGhlIHNlbmQgc2lkZS4KICAgIAogICAgT24g
-dGhlIHNlbmQgcGF0aCwgdGhlcmUgYXJlIHR3byBpbmNyZW1lbnRzIG9mIHJlZiBjb3VudCBvbiBw
-aWQgYW5kCiAgICBjcmVkZW50aWFscywgb25jZSBpbiBzY21fc2VuZCBhbmQgb25jZSBpbiB1bml4
-X3NjbV90b19za2IuICBUaGVuIHRoZXJlCiAgICBpcyBhIGRlY3JlbWVudCBvZiB0aGUgcmVmZXJl
-bmNlIGNvdW50cyBpbiBzY21fZGVzdHJveSdzIGNhbGwgdG8KICAgIHNjbV9kZXN0cm95X2NyZWQg
-YXQgdGhlIGVuZCBvZiB1bml4X2RncmFtX3NlbmRtc2cgZnVuY3Rpb25zLiAgIE9uZSBwYWlyCiAg
-ICBvZiBpbmNyZW1lbnQgYW5kIGRlY3JlbWVudCBvZiB0aGUgcmVmZXJlbmNlIGNvdW50cyBjYW4g
-YmUgcmVtb3ZlZCBzbyB3ZQogICAgb25seSBuZWVkIHRvIGluY3JlbWVudCB0aGUgcmVmIGNvdW50
-cyBvbmNlLgogICAgCiAgICBCeSBpbmNvcnBvcmF0aW5nIHRoZXNlIGNoYW5nZXMsIGZvciBoYWNr
-YmVuY2ggcnVubmluZyBvbiBhIDQgc29ja2V0CiAgICBOSE0tRVggbWFjaGluZSB3aXRoIDQwIGNv
-cmVzLCB0aGUgZXhlY3V0aW9uIG9mIGhhY2tiZW5jaCBvbgogICAgNTAgZ3JvdXBzIG9mIDIwIHRo
-cmVhZHMgc3BlZCB1cCBieSBmYWN0b3Igb2YgMi4KICAgIAogICAgSGFja2JlbmNoIGNvbW1hbmQg
-dXNlZCBmb3IgdGVzdGluZzoKICAgIC4vaGFja2JlbmNoIDUwIHRocmVhZCAyMDAwCiAgICAKICAg
-IFNpZ25lZC1vZmYtYnk6IFRpbSBDaGVuIDx0aW0uYy5jaGVuQGxpbnV4LmludGVsLmNvbT4KICAg
-IFNpZ25lZC1vZmYtYnk6IERhdmlkIFMuIE1pbGxlciA8ZGF2ZW1AZGF2ZW1sb2Z0Lm5ldD4KCiBp
-bmNsdWRlL25ldC9zY20uaCAgfCAgIDIyICsrKysrKysrKysrKysrKysrKystLS0KIG5ldC91bml4
-L2FmX3VuaXguYyB8ICAgNDUgKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0t
-LS0tLS0tCiAyIGZpbGVzIGNoYW5nZWQsIDQ4IGluc2VydGlvbnMoKyksIDE5IGRlbGV0aW9ucygt
-KQo=
---0016363ba290aa98ab04abfc3fd9
-Content-Type: text/plain; charset=US-ASCII; name="git-bisect_visualize.txt"
-Content-Disposition: attachment; filename="git-bisect_visualize.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gs3odchq3
-
-Y29tbWl0IGM0MmFkN2M3NzYyODk0Njk4NmViZTY4ODk2NjYzODM3MWQwOWI3MzQKTWVyZ2U6IDQz
-ZjBmMjMgMDg1NmEzMApBdXRob3I6IFN0ZXBoZW4gUm90aHdlbGwgPHNmckBjYW5iLmF1dWcub3Jn
-LmF1PgpEYXRlOiAgIEZyaSBBdWcgMjYgMTE6NTA6MDIgMjAxMSArMTAwMAoKICAgIE1lcmdlIHJl
-bW90ZS10cmFja2luZyBicmFuY2ggJ25ldC9tYXN0ZXInCiAgICAKICAgIENvbmZsaWN0czoKICAg
-IAlhcmNoL3Bvd2VycGMvY29uZmlncy80MHgvaGN1NF9kZWZjb25maWcKICAgIAlkcml2ZXJzL25l
-dC9LY29uZmlnCiAgICAJZHJpdmVycy9uZXQvTWFrZWZpbGUKCmNvbW1pdCAwODU2YTMwNDA5MWIz
-M2E4ZThmOWY5Yzk4ZTc3NmY0MjVhZjJiNjI1CkF1dGhvcjogVGltIENoZW4gPHRpbS5jLmNoZW5A
-bGludXguaW50ZWwuY29tPgpEYXRlOiAgIE1vbiBBdWcgMjIgMTQ6NTc6MjYgMjAxMSArMDAwMAoK
-ICAgIFNjbTogUmVtb3ZlIHVubmVjZXNzYXJ5IHBpZCAmIGNyZWRlbnRpYWwgcmVmZXJlbmNlcyBp
-biBVbml4IHNvY2tldCdzIHNlbmQgYW5kIHJlY2VpdmUgcGF0aAogICAgCiAgICBQYXRjaCBzZXJp
-ZXMgMTA5ZjZlMzkuLjczNjFjMzZjIGJhY2sgaW4gMi42LjM2IGFkZGVkIGZ1bmN0aW9uYWxpdHkg
-dG8KICAgIGFsbG93IGNyZWRlbnRpYWxzIHRvIHdvcmsgYWNyb3NzIHBpZCBuYW1lc3BhY2VzIGZv
-ciBwYWNrZXRzIHNlbnQgdmlhCiAgICBVTklYIHNvY2tldHMuICBIb3dldmVyLCB0aGUgYXRvbWlj
-IHJlZmVyZW5jZSBjb3VudHMgb24gcGlkIGFuZAogICAgY3JlZGVudGlhbHMgY2F1c2VkIHBsZW50
-eSBvZiBjYWNoZSBib3VuY2luZyB3aGVuIHRoZXJlIGFyZSBudW1lcm91cwogICAgdGhyZWFkcyBv
-ZiB0aGUgc2FtZSBwaWQgc2hhcmluZyBhIFVOSVggc29ja2V0LiAgVGhpcyBwYXRjaCBtaXRpZ2F0
-ZXMgdGhlCiAgICBwcm9ibGVtIGJ5IGVsaW1pbmF0aW5nIGV4dHJhbmVvdXMgcmVmZXJlbmNlIGNv
-dW50cyBvbiBwaWQgYW5kCiAgICBjcmVkZW50aWFscyBvbiBib3RoIHNlbmQgYW5kIHJlY2VpdmUg
-cGF0aCBvZiBVTklYIHNvY2tldHMuIEkgZm91bmQgYSAyeAogICAgaW1wcm92ZW1lbnQgaW4gaGFj
-a2JlbmNoJ3MgdGhyZWFkZWQgY2FzZS4KICAgIAogICAgT24gdGhlIHJlY2VpdmUgcGF0aCBpbiB1
-bml4X2RncmFtX3JlY3Ztc2csIGN1cnJlbnRseSB0aGVyZSBpcyBhbgogICAgaW5jcmVtZW50IG9m
-IHJlZmVyZW5jZSBjb3VudCBvbiBwaWQgYW5kIGNyZWRlbnRpYWxzIGluIHNjbV9zZXRfY3JlZC4K
-ICAgIFRoZW4gdGhlcmUgYXJlIHR3byBkZWNyZW1lbnQgb2YgdGhlIHJlZmVyZW5jZSBjb3VudHMu
-ICBPbmNlIGluIHNjbV9yZWN2CiAgICBhbmQgb25jZSB3aGVuIHNrYl9mcmVlX2RhdGFncmFtIGNh
-bGwgc2tiLT5kZXN0cnVjdG9yIGZ1bmN0aW9uCiAgICB1bml4X2Rlc3RydWN0X3NjbS4gIE9uZSBw
-YWlyIG9mIGluY3JlbWVudCBhbmQgZGVjcmVtZW50IG9mIHJlZiBjb3VudCBvbgogICAgcGlkIGFu
-ZCBjcmVkZW50aWFscyBjYW4gYmUgZWxpbWluYXRlZCBmcm9tIHRoZSByZWNlaXZlIHBhdGguICBV
-bnRpbCB3ZQogICAgZGVzdHJveSB0aGUgc2tiLCB3ZSBhbHJlYWR5IHNldCBhIHJlZmVyZW5jZSB3
-aGVuIHdlIGNyZWF0ZWQgdGhlIHNrYiBvbgogICAgdGhlIHNlbmQgc2lkZS4KICAgIAogICAgT24g
-dGhlIHNlbmQgcGF0aCwgdGhlcmUgYXJlIHR3byBpbmNyZW1lbnRzIG9mIHJlZiBjb3VudCBvbiBw
-aWQgYW5kCiAgICBjcmVkZW50aWFscywgb25jZSBpbiBzY21fc2VuZCBhbmQgb25jZSBpbiB1bml4
-X3NjbV90b19za2IuICBUaGVuIHRoZXJlCiAgICBpcyBhIGRlY3JlbWVudCBvZiB0aGUgcmVmZXJl
-bmNlIGNvdW50cyBpbiBzY21fZGVzdHJveSdzIGNhbGwgdG8KICAgIHNjbV9kZXN0cm95X2NyZWQg
-YXQgdGhlIGVuZCBvZiB1bml4X2RncmFtX3NlbmRtc2cgZnVuY3Rpb25zLiAgIE9uZSBwYWlyCiAg
-ICBvZiBpbmNyZW1lbnQgYW5kIGRlY3JlbWVudCBvZiB0aGUgcmVmZXJlbmNlIGNvdW50cyBjYW4g
-YmUgcmVtb3ZlZCBzbyB3ZQogICAgb25seSBuZWVkIHRvIGluY3JlbWVudCB0aGUgcmVmIGNvdW50
-cyBvbmNlLgogICAgCiAgICBCeSBpbmNvcnBvcmF0aW5nIHRoZXNlIGNoYW5nZXMsIGZvciBoYWNr
-YmVuY2ggcnVubmluZyBvbiBhIDQgc29ja2V0CiAgICBOSE0tRVggbWFjaGluZSB3aXRoIDQwIGNv
-cmVzLCB0aGUgZXhlY3V0aW9uIG9mIGhhY2tiZW5jaCBvbgogICAgNTAgZ3JvdXBzIG9mIDIwIHRo
-cmVhZHMgc3BlZCB1cCBieSBmYWN0b3Igb2YgMi4KICAgIAogICAgSGFja2JlbmNoIGNvbW1hbmQg
-dXNlZCBmb3IgdGVzdGluZzoKICAgIC4vaGFja2JlbmNoIDUwIHRocmVhZCAyMDAwCiAgICAKICAg
-IFNpZ25lZC1vZmYtYnk6IFRpbSBDaGVuIDx0aW0uYy5jaGVuQGxpbnV4LmludGVsLmNvbT4KICAg
-IFNpZ25lZC1vZmYtYnk6IERhdmlkIFMuIE1pbGxlciA8ZGF2ZW1AZGF2ZW1sb2Z0Lm5ldD4K
---0016363ba290aa98ab04abfc3fd9--
+    J
