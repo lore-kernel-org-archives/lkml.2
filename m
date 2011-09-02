@@ -1,150 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab1IBMLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 08:11:25 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54860 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab1IBMLY convert rfc822-to-8bit (ORCPT
+	id S1751773Ab1IBMLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 08:11:44 -0400
+Received: from vm4.telegraphics.com.au ([98.124.60.149]:46069 "EHLO
+	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab1IBMLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 08:11:24 -0400
+	Fri, 2 Sep 2011 08:11:38 -0400
+Date: Fri, 2 Sep 2011 22:14:15 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Linux/m68k <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: m68k: [v5] Convert to genirq (WIP)
+In-Reply-To: <alpine.OSX.2.00.1108271506320.190@ibook.local>
+Message-ID: <alpine.OSX.2.00.1108300148040.435@ibook.local>
+References: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com> <alpine.OSX.2.00.1108271506320.190@ibook.local>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1314963064-22109-1-git-send-email-jack@suse.cz>
-References: <1314963064-22109-1-git-send-email-jack@suse.cz>
-Date: Fri, 2 Sep 2011 17:41:22 +0530
-Message-ID: <CAFPAmTTQeHAd9o9y_SfRbQefovo6ukASHodopMtFLCZ4zL07RQ@mail.gmail.com>
-Subject: Re: [PATCH v2] mm: Make logic in bdi_forker_thread() straight
-From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jens Axboe <jaxboe@fusionio.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry to butt in before Jens' review but i have one small comment:
 
-On Fri, Sep 2, 2011 at 5:01 PM, Jan Kara <jack@suse.cz> wrote:
-> The logic in bdi_forker_thread() is unnecessarily convoluted by setting task
-> state there and back or calling schedule_timeout() in TASK_RUNNING state. Also
-> clearing of BDI_pending bit is placed at the and of global loop and cases of a
-> switch which mustn't reach it must call 'continue' instead of 'break' which is
-> non-intuitive and thus asking for trouble. So make the logic more obvious.
->
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Wu Fengguang <fengguang.wu@intel.com>
-> CC: consul.kautuk@gmail.com
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  mm/backing-dev.c |   37 ++++++++++++++++++++-----------------
->  1 files changed, 20 insertions(+), 17 deletions(-)
->
->  This should be the right cleanup. Jens?
->
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index d6edf8d..bdf7d6b 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -359,6 +359,17 @@ static unsigned long bdi_longest_inactive(void)
->        return max(5UL * 60 * HZ, interval);
->  }
->
-> +/*
-> + * Clear pending bit and wakeup anybody waiting for flusher thread startup
-> + * or teardown.
-> + */
-> +static void bdi_clear_pending(struct backing_dev_info *bdi)
-> +{
-> +       clear_bit(BDI_pending, &bdi->state);
-> +       smp_mb__after_clear_bit();
-> +       wake_up_bit(&bdi->state, BDI_pending);
-> +}
-> +
->  static int bdi_forker_thread(void *ptr)
->  {
->        struct bdi_writeback *me = ptr;
-> @@ -390,8 +401,6 @@ static int bdi_forker_thread(void *ptr)
->                }
->
->                spin_lock_bh(&bdi_lock);
-> -               set_current_state(TASK_INTERRUPTIBLE);
-> -
->                list_for_each_entry(bdi, &bdi_list, bdi_list) {
->                        bool have_dirty_io;
->
-> @@ -441,13 +450,8 @@ static int bdi_forker_thread(void *ptr)
->                }
->                spin_unlock_bh(&bdi_lock);
->
-> -               /* Keep working if default bdi still has things to do */
-> -               if (!list_empty(&me->bdi->work_list))
-> -                       __set_current_state(TASK_RUNNING);
-> -
->                switch (action) {
->                case FORK_THREAD:
-> -                       __set_current_state(TASK_RUNNING);
->                        task = kthread_create(bdi_writeback_thread, &bdi->wb,
->                                              "flush-%s", dev_name(bdi->dev));
->                        if (IS_ERR(task)) {
-> @@ -469,14 +473,21 @@ static int bdi_forker_thread(void *ptr)
->                                spin_unlock_bh(&bdi->wb_lock);
->                                wake_up_process(task);
->                        }
-> +                       bdi_clear_pending(bdi);
->                        break;
->
->                case KILL_THREAD:
-> -                       __set_current_state(TASK_RUNNING);
->                        kthread_stop(task);
-> +                       bdi_clear_pending(bdi);
->                        break;
->
->                case NO_ACTION:
-> +                       /* Keep working if default bdi still has things to do */
+On Sun, 28 Aug 2011, I wrote:
 
-Can we acquire and release the spinlocks as below:
-                            spin_lock_bh(&me->bdi->wb_lock) ;
-
-> +                       if (!list_empty(&me->bdi->work_list)) {
-
-                            spin_unlock_bh(&me->bdi->wb_lock) ;
-
-> +                               try_to_freeze();
-> +                               break;
-> +                       }
-> +                       set_current_state(TASK_INTERRUPTIBLE);
-
-                            spin_unlock_bh(&me->bdi->wb_lock) ;
-
->                        if (!wb_has_dirty_io(me) || !dirty_writeback_interval)
->                                /*
->                                 * There are no dirty data. The only thing we
-> @@ -489,16 +500,8 @@ static int bdi_forker_thread(void *ptr)
->                        else
->                                schedule_timeout(msecs_to_jiffies(dirty_writeback_interval * 10));
->                        try_to_freeze();
-> -                       /* Back to the main loop */
-> -                       continue;
-> +                       break;
->                }
-> -
-> -               /*
-> -                * Clear pending bit and wakeup anybody waiting to tear us down.
-> -                */
-> -               clear_bit(BDI_pending, &bdi->state);
-> -               smp_mb__after_clear_bit();
-> -               wake_up_bit(&bdi->state, BDI_pending);
->        }
 >
->        return 0;
-> --
-> 1.7.1
->
->
+> I also found that the mac_esp driver probe (when in PIO mode) locks up 
+> the machine. I worked around this by changing the 
+> disable_irq(IRQ_VIA2_3)/enable_irq(IRQ_VIA2_3) calls to 
+> local_irq_save/local_irq_restore, but this is not a good solution.
 
-That should take care of the problem I initially mentioned due to the
-wakeup_timer_fn executing
-in parallel on another CPU as the task state will now be protected by
-the wb_lock spinlock.
+This seems to be a bug in my mac_esp code. m68k's disable_irq() is 
+actually equivalent to genirq's disable_irq_nosync(). Changing mac_esp to 
+use disable_irq_nosync() fixes the issue under genirq.
+
+I think these disable_irq/enable_irq calls are probably redundant. They 
+don't seem to make any difference in practice. I'll send a patch when I've 
+studied the code some more.
+
+However, I found another problem. pmac_zilog oopses when its TTY is closed 
+(see below). And macsonic does the same when the NIC is closed. The trace 
+says that irq_shutdown() died trying to call the chip irq_mask routine, 
+when desc->irq_data.chip (in a0) was NULL. Any ideas?
+
+Finn
+
+
+Unable to handle kernel NULL pointer dereference at virtual address   (null)
+Oops: 00000000
+Modules linked in:
+PC: [<00000000>]   (null)
+SR: 2700  SP: 02019d84  a2: 02017960
+d0: 00000004    d1: 00000007    d2: 0031cadc    d3: 00000004
+d4: 00002000    d5: 01c00710    a0: 00000000    a1: 00000000
+Process init (pid: 1, task=02017960)
+Frame format=7 eff addr=02019e10 ssw=05e6 faddr=00000000
+wb 1 stat/addr/data: 0005 02109460 01c13e88
+wb 2 stat/addr/data: 0000 0007b474 000771ac
+wb 3 stat/addr/data: 0005 01c10b64 00000000
+push data: 01c13e88 0201ac80 00000024 00000000
+Stack from 02019dec:
+        0004ce34 002f7fdc 0210edd0 0004c870 002f7fdc 00000004 0031cadc 00000bb
+        002f7fdc 0031cadc 0004c8c6 00000004 0031cadc 00002000 00168b1c 0031cadc
+        0017c296 00000004 0031cadc 00302000 00002000 020ca800 0017986e 0031cadc
+        020ca820 00000001 00000001 00000000 00002008 020ca800 020f5000 0017a61a
+        020f5000 020ca800 0210a7b0 00000000 00000002 01c00710 00000000 00000000
+        020f5000 00000000 02109820 02019f34 01c00710 00000000 00164002 ffffffff
+Call Trace: [<0004ce34>] irq_shutdown+0x48/0x54
+ [<0004c870>] __free_irq+0x128/0x14e
+ [<0004c8c6>] free_irq+0x30/0x80
+ [<00002000>] _start+0x0/0x8
+ [<00168b1c>] tty_chars_in_buffer+0x0/0x1a
+ [<0017c296>] pmz_shutdown+0x28/0xe8
+ [<00002000>] _start+0x0/0x8
+ [<0017986e>] uart_shutdown+0x7e/0xb4
+ [<00002008>] do_one_initcall+0x0/0x1c0
+ [<0017a61a>] uart_close+0xe0/0x2a0
+ [<00164002>] tty_release+0x58/0x472
+ [<001640a4>] tty_release+0xfa/0x472
+ [<00001000>] kernel_pg_dir+0x0/0x1000
+ [<00001000>] kernel_pg_dir+0x0/0x1000
+ [<0008dace>] alloc_fd+0x82/0x162
+ [<00079b94>] fput+0x1aa/0x23a
+ [<00079a6e>] fput+0x84/0x23a [<00076bca>] filp_close+0x4a/0x70
+ [<00076c50>] sys_close+0x60/0x88
+ [<0000269c>] syscall+0x8/0xc
+ [<00001000>] kernel_pg_dir+0x0/0x1000
+ [<0000c012>] res_func+0x48e/0x141a
+ [<000021e4>] run_init_process+0x1c/0x22
+ [<00002228>] init_post+0x3e/0xce
+ [<000862aa>] sys_dup+0x0/0x58
+ [<00327ad6>] kernel_init+0xe0/0xe8
+ [<003279f6>] kernel_init+0x0/0xe8
+ [<00002000>] _start+0x0/0x8
+ [<00002960>] kernel_thread+0x3a/0x4e
+
+Code: 0000 0000 0000 0000 0000 0000 0000 0000 Bad PC value.
+Disabling lock debugging due to kernel taint
+
+
