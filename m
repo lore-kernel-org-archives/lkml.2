@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab1IBAzm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:55:42 -0400
+	id S932939Ab1IBAz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:55:56 -0400
 Received: from claw.goop.org ([74.207.240.146]:43181 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932905Ab1IBAzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:55:37 -0400
+	id S932911Ab1IBAzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 20:55:41 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 13/13] x86/pvticketlock: use __ticket_t for pvop args
-Date: Thu,  1 Sep 2011 17:55:06 -0700
-Message-Id: <f4c29768b5bb41088d2ab12e5de40efe5765a52c.1314922370.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 06/13] x86/ticketlock: add slowpath logic
+Date: Thu,  1 Sep 2011 17:54:59 -0700
+Message-Id: <8a788f3fbf2ad1316e462bf5aae623bab9d38319.1314922370.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
@@ -31,74 +31,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Use __ticket_t for the ticket argument to the pvops, to prevent
-unnecessary zero-extension in the calling code.
+Maintain a flag in both LSBs of the ticket lock which indicates whether
+anyone is in the lock slowpath and may need kicking when the current
+holder unlocks.  The flags are set when the first locker enters
+the slowpath, and cleared when unlocking to an empty queue.
+
+In the specific implementation of lock_spinning(), make sure to set
+the slowpath flags on the lock just before blocking.  We must do
+this before the last-chance pickup test to prevent a deadlock
+with the unlocker:
+
+Unlocker			Locker
+				test for lock pickup
+					-> fail
+test slowpath + unlock
+	-> false
+				set slowpath flags
+				block
+
+Whereas this works in any ordering:
+
+Unlocker			Locker
+				set slowpath flags
+				test for lock pickup
+					-> fail
+				block
+test slowpath + unlock
+	-> true, kick
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/paravirt.h       |    6 ++++--
- arch/x86/include/asm/spinlock_types.h |    4 ----
- arch/x86/xen/spinlock.c               |    4 ++--
- 3 files changed, 6 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/spinlock.h       |   41 +++++++++++++++++++++++++++++---
+ arch/x86/include/asm/spinlock_types.h |    2 +
+ arch/x86/kernel/paravirt-spinlocks.c  |   37 +++++++++++++++++++++++++++++
+ arch/x86/xen/spinlock.c               |    4 +++
+ 4 files changed, 80 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index a6f2651..932a682 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -741,12 +741,14 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 6028b01..2135a48 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -41,7 +41,38 @@
+ /* How long a lock should spin before we consider blocking */
+ #define SPIN_THRESHOLD	(1 << 11)
  
- #if defined(CONFIG_SMP) && defined(CONFIG_PARAVIRT_SPINLOCKS)
- 
--static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, unsigned ticket)
-+#include <asm/spinlock_types.h>
+-#ifndef CONFIG_PARAVIRT_SPINLOCKS
++/* Only defined when CONFIG_PARAVIRT_SPINLOCKS defined, but may as
++ * well leave the prototype always visible.  */
++extern void __ticket_unlock_release_slowpath(struct arch_spinlock *lock);
 +
-+static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, __ticket_t ticket)
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++
++/*
++ * Return true if someone is in the slowpath on this lock.  This
++ * should only be used by the current lock-holder.
++ */
++static inline bool __ticket_in_slowpath(struct arch_spinlock *lock)
++{
++	return !!(lock->tickets.tail & TICKET_SLOWPATH_FLAG);
++}
++
++static inline void __ticket_enter_slowpath(struct arch_spinlock *lock)
++{
++	if (sizeof(lock->tickets.tail) == sizeof(u8))
++		asm (LOCK_PREFIX "orb %1, %0"
++		     : "+m" (lock->tickets.tail)
++		     : "i" (TICKET_SLOWPATH_FLAG) : "memory");
++	else
++		asm (LOCK_PREFIX "orw %1, %0"
++		     : "+m" (lock->tickets.tail)
++		     : "i" (TICKET_SLOWPATH_FLAG) : "memory");
++}
++
++#else  /* !CONFIG_PARAVIRT_SPINLOCKS */
++static inline bool __ticket_in_slowpath(struct arch_spinlock *lock)
++{
++	return false;
++}
+ 
+ static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, unsigned ticket)
  {
- 	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
+@@ -86,6 +117,7 @@ static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
+ 	register struct __raw_tickets inc = { .tail = TICKET_LOCK_INC };
+ 
+ 	inc = xadd(&lock->tickets, inc);
++	inc.tail &= ~TICKET_SLOWPATH_FLAG;
+ 
+ 	for (;;) {
+ 		unsigned count = SPIN_THRESHOLD;
+@@ -135,10 +167,11 @@ static __always_inline void __ticket_unlock_release(arch_spinlock_t *lock)
+ 
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
+ {
+-	__ticket_t next = lock->tickets.head + TICKET_LOCK_INC;
+ 
+-	__ticket_unlock_release(lock);
+-	__ticket_unlock_kick(lock, next);
++	if (unlikely(__ticket_in_slowpath(lock)))
++		__ticket_unlock_release_slowpath(lock);
++	else
++		__ticket_unlock_release(lock);
  }
  
--static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, unsigned ticket)
-+static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
- {
- 	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
- }
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
 diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 7b383e2..62ea99e 100644
+index 0553c0b..7b383e2 100644
 --- a/arch/x86/include/asm/spinlock_types.h
 +++ b/arch/x86/include/asm/spinlock_types.h
-@@ -1,10 +1,6 @@
- #ifndef _ASM_X86_SPINLOCK_TYPES_H
- #define _ASM_X86_SPINLOCK_TYPES_H
- 
--#ifndef __LINUX_SPINLOCK_TYPES_H
--# error "please don't include this file directly"
--#endif
--
- #include <linux/types.h>
+@@ -9,8 +9,10 @@
  
  #ifdef CONFIG_PARAVIRT_SPINLOCKS
+ #define __TICKET_LOCK_INC	2
++#define TICKET_SLOWPATH_FLAG	((__ticket_t)1)
+ #else
+ #define __TICKET_LOCK_INC	1
++#define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
+ #endif
+ 
+ #if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
+index 4251c1d..21b6986 100644
+--- a/arch/x86/kernel/paravirt-spinlocks.c
++++ b/arch/x86/kernel/paravirt-spinlocks.c
+@@ -15,3 +15,40 @@ struct pv_lock_ops pv_lock_ops = {
+ };
+ EXPORT_SYMBOL(pv_lock_ops);
+ 
++
++/*
++ * If we're unlocking and we're leaving the lock uncontended (there's
++ * nobody else waiting for the lock), then we can clear the slowpath
++ * bits.  However, we need to be careful about this because someone
++ * may just be entering as we leave, and enter the slowpath.
++ */
++void __ticket_unlock_release_slowpath(struct arch_spinlock *lock)
++{
++	struct arch_spinlock old, new;
++
++	BUILD_BUG_ON(((__ticket_t)NR_CPUS) != NR_CPUS);
++
++	old = ACCESS_ONCE(*lock);
++
++	new = old;
++	new.tickets.head += TICKET_LOCK_INC;
++
++	/* Clear the slowpath flag */
++	new.tickets.tail &= ~TICKET_SLOWPATH_FLAG;
++
++	/*
++	 * If there's currently people waiting or someone snuck in
++	 * since we read the lock above, then do a normal unlock and
++	 * kick.  If we managed to unlock with no queued waiters, then
++	 * we can clear the slowpath flag.
++	 */
++	if (new.tickets.head != new.tickets.tail ||
++	    cmpxchg(&lock->head_tail,
++		    old.head_tail, new.head_tail) != old.head_tail) {
++		/* still people waiting */
++		__ticket_unlock_release(lock);
++	}
++
++	__ticket_unlock_kick(lock, new.tickets.head);
++}
++EXPORT_SYMBOL(__ticket_unlock_release_slowpath);
 diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 7b89439..91b0940 100644
+index b133865..4c46144 100644
 --- a/arch/x86/xen/spinlock.c
 +++ b/arch/x86/xen/spinlock.c
-@@ -92,7 +92,7 @@ static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
- static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
- static cpumask_t waiting_cpus;
+@@ -119,6 +119,10 @@ static void xen_lock_spinning(struct arch_spinlock *lock, unsigned want)
+ 	/* Only check lock once pending cleared */
+ 	barrier();
  
--static void xen_lock_spinning(struct arch_spinlock *lock, unsigned want)
-+static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
- 	int irq = __this_cpu_read(lock_kicker_irq);
- 	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
-@@ -171,7 +171,7 @@ out:
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
- 
--static void xen_unlock_kick(struct arch_spinlock *lock, unsigned next)
-+static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- {
- 	int cpu;
- 
++	/* Mark entry to slowpath before doing the pickup test to make
++	   sure we don't deadlock with an unlocker. */
++	__ticket_enter_slowpath(lock);
++
+ 	/* check again make sure it didn't become free while
+ 	   we weren't looking  */
+ 	if (ACCESS_ONCE(lock->tickets.head) == want) {
 -- 
 1.7.6
 
