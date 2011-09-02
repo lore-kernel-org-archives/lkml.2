@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab1IBTeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:34:19 -0400
-Received: from claw.goop.org ([74.207.240.146]:45129 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754875Ab1IBTeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:34:17 -0400
-Message-ID: <4E612FB6.9030904@goop.org>
-Date: Fri, 02 Sep 2011 12:34:14 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1755157Ab1IBTfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:35:21 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:60187 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755026Ab1IBTfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:35:17 -0400
+X-Sasl-enc: 5MP35V25KScw4WlpCQ6lMr+VPC99kRA6CDUz7I3xekWS 1314992116
+Date: Fri, 2 Sep 2011 12:22:50 -0700
+From: Greg KH <greg@kroah.com>
+To: Luben Tuikov <ltuikov@yahoo.com>
+Cc: Daniel J Blueman <daniel.blueman@gmail.com>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux USB <linux-usb-devel@lists.sourceforge.net>,
+        "usb-storage@lists.one-eyed-alien.net" 
+	<usb-storage@lists.one-eyed-alien.net>
+Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating
+ autosense
+Message-ID: <20110902192250.GA440@kroah.com>
+References: <CAM9Y=f6eSgxsbrO11d0ux72NJip14xGQDeX84VWb9uiBtEVsjA@mail.gmail.com>
+ <20110902181826.GA29848@kroah.com>
+ <CB97E92C-3990-418B-BA04-94073E011ECE@yahoo.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 11/13] x86/ticketlock: only do kick after doing unlock
-References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>  <8cd2c77886e2d3fcad8258aa62509b3b2fae5545.1314922370.git.jeremy.fitzhardinge@citrix.com> <1314974968.1861.3.camel@twins>
-In-Reply-To: <1314974968.1861.3.camel@twins>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CB97E92C-3990-418B-BA04-94073E011ECE@yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2011 07:49 AM, Peter Zijlstra wrote:
-> On Thu, 2011-09-01 at 17:55 -0700, Jeremy Fitzhardinge wrote:
->> From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
->>
->> We must release the lock before checking to see if the lock is in
->> slowpath or else there's a potential race where the lock enters the
->> slow path after the unlocker has checked the slowpath flag, but before
->> it has actually unlocked.
->>
->> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
->> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com> 
-> Wouldn't it be much better to fold it back so that this bug never
-> happens when you bisect?
+On Fri, Sep 02, 2011 at 12:08:44PM -0700, Luben Tuikov wrote:
+> On Sep 2, 2011, at 11:18, Greg KH <greg@kroah.com> wrote:
+> 
+> > On Fri, Sep 02, 2011 at 02:24:36PM +0800, Daniel J Blueman wrote:
+> >> Hi Luben, Greg, Matthew,
+> >> 
+> >> Any plan for reviewing and accepting this patch [1] yet? I'm still
+> >> seeing the symptoms on USB 3 SATA bridges with linux-3.0+.
+> > 
+> > I needed an ack from Matthew before I could take it.
+> > 
+> > Matthew?
+> 
+> 
+> He acked it already: http://marc.info/?l=linux-kernel&m=128950140420081&w=2
+> 
+> But interestingly enough, it never made it into your tree. 
 
-Yes indeed.
+Odd, you did, and I found the resend I asked for in my archives, but I
+don't see it in the tree, I don't know what happened here, sorry.
 
-    J
+I'll go queue it up when master.kernel.org comes back up, sorry about
+that.
 
+greg k-h
