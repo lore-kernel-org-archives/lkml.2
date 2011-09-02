@@ -1,253 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab1IBPQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 11:16:17 -0400
-Received: from mxout5.netvision.net.il ([194.90.9.29]:57526 "EHLO
-	mxout5.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab1IBPQQ (ORCPT
+	id S1752794Ab1IBPRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 11:17:21 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:17279 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab1IBPRU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 11:16:16 -0400
-Content-transfer-encoding: 7BIT
-From: Eli Billauer <eli.billauer@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: monstr@monstr.eu, Eli Billauer <eli.billauer@gmail.com>
-Subject: [PATCH] Added sync method support for DMA and made refinements (Take
- II)
-Date: Fri, 02 Sep 2011 18:15:38 +0300
-Message-id: <1314976538-21052-1-git-send-email-eli.billauer@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-reply-to: <4E60A276.7010903@billauer.co.il>
-References: <4E60A276.7010903@billauer.co.il>
+	Fri, 2 Sep 2011 11:17:20 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>, Peter Foley <pefoley2@verizon.net>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: Hyper-V TODO file
+Thread-Topic: Hyper-V TODO file
+Thread-Index: AQHMaDPOS/BsfL6FREeXxxnZwadf6JU5cR+AgAC/xVA=
+Date: Fri, 2 Sep 2011 15:17:19 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B5FA3@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1314829011-28922-1-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1108311907130.20924@linux>
+ <20110901203113.GA15259@kroah.com>
+In-Reply-To: <20110901203113.GA15259@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Signed-off-by: Eli Billauer <eli.billauer@gmail.com>
----
- arch/microblaze/include/asm/dma-mapping.h |   20 +++++-
- arch/microblaze/kernel/dma.c              |  114 ++++++++++++++++++++++------
- 2 files changed, 107 insertions(+), 27 deletions(-)
 
-diff --git a/arch/microblaze/include/asm/dma-mapping.h b/arch/microblaze/include/asm/dma-mapping.h
-index 8fbb0ec..cddeca5 100644
---- a/arch/microblaze/include/asm/dma-mapping.h
-+++ b/arch/microblaze/include/asm/dma-mapping.h
-@@ -28,12 +28,12 @@
- #include <linux/dma-attrs.h>
- #include <asm/io.h>
- #include <asm-generic/dma-coherent.h>
-+#include <asm/cacheflush.h>
- 
- #define DMA_ERROR_CODE		(~(dma_addr_t)0x0)
- 
- #define __dma_alloc_coherent(dev, gfp, size, handle)	NULL
- #define __dma_free_coherent(size, addr)		((void)0)
--#define __dma_sync(addr, size, rw)		((void)0)
- 
- static inline unsigned long device_to_mask(struct device *dev)
- {
-@@ -95,6 +95,22 @@ static inline int dma_set_mask(struct device *dev, u64 dma_mask)
- 
- #include <asm-generic/dma-mapping-common.h>
- 
-+static inline void __dma_sync(unsigned long paddr,
-+			      size_t size, enum dma_data_direction direction)
-+{
-+	switch (direction) {
-+	case DMA_TO_DEVICE:
-+	case DMA_BIDIRECTIONAL:
-+		flush_dcache_range(paddr, paddr + size);
-+		break;
-+	case DMA_FROM_DEVICE:
-+		invalidate_dcache_range(paddr, paddr + size);
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
- static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
- {
- 	struct dma_map_ops *ops = get_dma_ops(dev);
-@@ -135,7 +151,7 @@ static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
- 		enum dma_data_direction direction)
- {
- 	BUG_ON(direction == DMA_NONE);
--	__dma_sync(vaddr, size, (int)direction);
-+	__dma_sync(virt_to_phys(vaddr), size, (int)direction);
- }
- 
- #endif	/* _ASM_MICROBLAZE_DMA_MAPPING_H */
-diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.c
-index 393e6b2..78d8289 100644
---- a/arch/microblaze/kernel/dma.c
-+++ b/arch/microblaze/kernel/dma.c
-@@ -11,7 +11,6 @@
- #include <linux/gfp.h>
- #include <linux/dma-debug.h>
- #include <asm/bug.h>
--#include <asm/cacheflush.h>
- 
- /*
-  * Generic direct DMA implementation
-@@ -21,21 +20,6 @@
-  * can set archdata.dma_data to an unsigned long holding the offset. By
-  * default the offset is PCI_DRAM_OFFSET.
-  */
--static inline void __dma_sync_page(unsigned long paddr, unsigned long offset,
--				size_t size, enum dma_data_direction direction)
--{
--	switch (direction) {
--	case DMA_TO_DEVICE:
--	case DMA_BIDIRECTIONAL:
--		flush_dcache_range(paddr + offset, paddr + offset + size);
--		break;
--	case DMA_FROM_DEVICE:
--		invalidate_dcache_range(paddr + offset, paddr + offset + size);
--		break;
--	default:
--		BUG();
--	}
--}
- 
- static unsigned long get_dma_direct_offset(struct device *dev)
- {
-@@ -91,17 +75,24 @@ static int dma_direct_map_sg(struct device *dev, struct scatterlist *sgl,
- 	/* FIXME this part of code is untested */
- 	for_each_sg(sgl, sg, nents, i) {
- 		sg->dma_address = sg_phys(sg) + get_dma_direct_offset(dev);
--		__dma_sync_page(page_to_phys(sg_page(sg)), sg->offset,
--							sg->length, direction);
-+		__dma_sync(page_to_phys(sg_page(sg)) + sg->offset,
-+			   sg->length, DMA_TO_DEVICE);
- 	}
- 
- 	return nents;
- }
- 
--static void dma_direct_unmap_sg(struct device *dev, struct scatterlist *sg,
-+static void dma_direct_unmap_sg(struct device *dev, struct scatterlist *sgl,
- 				int nents, enum dma_data_direction direction,
- 				struct dma_attrs *attrs)
- {
-+	struct scatterlist *sg;
-+	int i;
-+	
-+	/* FIXME this part of code is untested */
-+	if (direction == DMA_FROM_DEVICE)
-+		for_each_sg(sgl, sg, nents, i) 
-+			__dma_sync(sg->dma_address, sg->length, direction);	
- }
- 
- static int dma_direct_dma_supported(struct device *dev, u64 mask)
-@@ -116,7 +107,16 @@ static inline dma_addr_t dma_direct_map_page(struct device *dev,
- 					     enum dma_data_direction direction,
- 					     struct dma_attrs *attrs)
- {
--	__dma_sync_page(page_to_phys(page), offset, size, direction);
-+	/*
-+	 * We're before the DMA transfer, so cache invalidation makes no
-+	 * sense in the case of DMA_FROM_DEVICE. Flushing is necessary
-+	 * in either case, or an unflushed cache line may overwrite
-+	 * data written by device, in the event of that line being allocated
-+	 * for other use. Calling __dma_sync with DMA_TO_DEVICE makes this
-+	 * flush.
-+	 */
-+
-+	__dma_sync(page_to_phys(page) + offset, size, DMA_TO_DEVICE);
- 	return page_to_phys(page) + offset + get_dma_direct_offset(dev);
- }
- 
-@@ -126,12 +126,72 @@ static inline void dma_direct_unmap_page(struct device *dev,
- 					 enum dma_data_direction direction,
- 					 struct dma_attrs *attrs)
- {
--/* There is not necessary to do cache cleanup
-- *
-- * phys_to_virt is here because in __dma_sync_page is __virt_to_phys and
-- * dma_address is physical address
-+
-+/*
-+ * On a DMA to the device, the data has already been flushed and read by
-+ * the device at the point unmapping is done. No point doing anything.
-+ * In the other direction, unmapping may be used just before accessing the
-+ *  data on the CPU, so cache invalidation is necessary.
-  */
--	__dma_sync_page(dma_address, 0 , size, direction);
-+
-+	if (direction == DMA_FROM_DEVICE)
-+		__dma_sync(dma_address, size, direction);
-+}
-+
-+static inline void 
-+dma_direct_sync_single_for_cpu(struct device *dev,
-+			       dma_addr_t dma_handle, size_t size,
-+			       enum dma_data_direction direction)
-+{
-+	/*
-+	 *  It's pointless to invalidate the cache if the device isn't
-+	 *  supposed to write to the relevant region
-+	 */
-+
-+	if (direction == DMA_FROM_DEVICE)
-+		__dma_sync(dma_handle, size, direction);
-+}
-+
-+static inline void 
-+dma_direct_sync_single_for_device(struct device *dev,
-+				  dma_addr_t dma_handle, size_t size,
-+				  enum dma_data_direction direction)
-+{
-+	/*
-+	 *  It's pointless to invalidate the cache if the device isn't
-+	 *  supposed to write to the relevant region
-+	 */
-+	
-+	if (direction == DMA_TO_DEVICE)
-+		__dma_sync(dma_handle, size, direction);
-+}
-+
-+static inline void
-+dma_direct_sync_sg_for_cpu(struct device *dev,
-+			   struct scatterlist *sgl, int nents,
-+			   enum dma_data_direction direction)
-+{
-+	struct scatterlist *sg;
-+	int i;
-+	
-+	/* FIXME this part of code is untested */
-+	if (direction == DMA_FROM_DEVICE)
-+		for_each_sg(sgl, sg, nents, i)
-+			__dma_sync(sg->dma_address, sg->length, direction);
-+}
-+
-+static inline void
-+dma_direct_sync_sg_for_device(struct device *dev,
-+			      struct scatterlist *sgl, int nents,
-+			      enum dma_data_direction direction)
-+{
-+	struct scatterlist *sg;
-+	int i;
-+	
-+	/* FIXME this part of code is untested */
-+	if (direction == DMA_TO_DEVICE)
-+		for_each_sg(sgl, sg, nents, i)
-+			__dma_sync(sg->dma_address, sg->length, direction);
- }
- 
- struct dma_map_ops dma_direct_ops = {
-@@ -142,6 +202,10 @@ struct dma_map_ops dma_direct_ops = {
- 	.dma_supported	= dma_direct_dma_supported,
- 	.map_page	= dma_direct_map_page,
- 	.unmap_page	= dma_direct_unmap_page,
-+	.sync_single_for_cpu 		= dma_direct_sync_single_for_cpu,
-+	.sync_single_for_device 	= dma_direct_sync_single_for_device,
-+	.sync_sg_for_cpu 		= dma_direct_sync_sg_for_cpu,
-+	.sync_sg_for_device 		= dma_direct_sync_sg_for_device,
- };
- EXPORT_SYMBOL(dma_direct_ops);
- 
--- 
-1.7.2.2
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Thursday, September 01, 2011 4:31 PM
+> To: Peter Foley
+> Cc: KY Srinivasan; gregkh@suse.de; Linux Kernel Mailing List;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: Hyper-V TODO file
+> 
+> On Wed, Aug 31, 2011 at 07:11:39PM -0400, Peter Foley wrote:
+> > On Wed, 31 Aug 2011, K. Y. Srinivasan wrote:
+> > > Greg, as I have been pestering you for some time now, we are very
+> interested in
+> > > exiting staging and we are willing to dedicate the necessary development
+> > > resources to address whatever issues that may still be pending. So, your help
+> > > in identifying what needs to be done will be greatly appreciated. To that end,
+> > > I think it will be useful to update the TODO file to reflect the current state of
+> > > the drivers. Let us know how we should proceed here.
+> >
+> > An issue I've come across in the hyper-v drivers is the forced modular
+> > build. You might want to see if the "depends on m" is still needed.
+> 
+> Ah, good point, KY, can you try this out and see if that can be changed?
+> If not, something is wrong and that needs to get fixed.
+
+Just verified that we can build into the kernel (not as modules) all hyper-V
+drivers except hv_storvsc. hv_storvsc depends upon functionality that in my build 
+is being built as modules (SCSI etc.) and this is the reason why I could not build
+hv_storvsc as part of the kernel.
+
+Greg, do you want me to submit a patch to Kconfig, getting rid of the module
+dependency (for hyperv-v drivers).
+
+Regards,
+
+K. Y
 
