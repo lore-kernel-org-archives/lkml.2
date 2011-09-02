@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1IBXz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:55:26 -0400
-Received: from claw.goop.org ([74.207.240.146]:45584 "EHLO claw.goop.org"
+	id S1752899Ab1IBXz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:55:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:45577 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab1IBXya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:54:30 -0400
+	id S1752061Ab1IBXy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:54:29 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 8/8] xen/pvticketlock: allow interrupts to be enabled while blocking
-Date: Fri,  2 Sep 2011 16:54:15 -0700
-Message-Id: <b927340248ad896330903fe63a6c9adbdf533c6f.1315007226.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 5/8] x86/pvticketlock: use callee-save for lock_spinning
+Date: Fri,  2 Sep 2011 16:54:12 -0700
+Message-Id: <9205607036e71de584347dc5b9e90f08e393b6fe.1315007226.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1315007226.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1315007226.git.jeremy.fitzhardinge@citrix.com>
@@ -31,95 +31,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
+Although the lock_spinning calls in the spinlock code are on the
+uncommon path, their presence can cause the compiler to generate many
+more register save/restores in the function pre/postamble, which is in
+the fast path.  To avoid this, convert it to using the pvops callee-save
+calling convention, which defers all the save/restores until the actual
+function is called, keeping the fastpath clean.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/xen/spinlock.c |   42 +++++++++++++++++++++++++++++++++++-------
- 1 files changed, 35 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/paravirt.h       |    2 +-
+ arch/x86/include/asm/paravirt_types.h |    2 +-
+ arch/x86/kernel/paravirt-spinlocks.c  |    2 +-
+ arch/x86/xen/spinlock.c               |    3 ++-
+ 4 files changed, 5 insertions(+), 4 deletions(-)
 
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 76cae7a..50281c7 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -752,7 +752,7 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 
+ static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, __ticket_t ticket)
+ {
+-	PVOP_VCALL2(pv_lock_ops.lock_spinning, lock, ticket);
++	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
+ }
+ 
+ static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 005e24d..5e0c138 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -330,7 +330,7 @@ struct arch_spinlock;
+ #include <asm/spinlock_types.h>
+ 
+ struct pv_lock_ops {
+-	void (*lock_spinning)(struct arch_spinlock *lock, __ticket_t ticket);
++	struct paravirt_callee_save lock_spinning;
+ 	void (*unlock_kick)(struct arch_spinlock *lock, __ticket_t ticket);
+ };
+ 
+diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
+index c2e010e..4251c1d 100644
+--- a/arch/x86/kernel/paravirt-spinlocks.c
++++ b/arch/x86/kernel/paravirt-spinlocks.c
+@@ -9,7 +9,7 @@
+ 
+ struct pv_lock_ops pv_lock_ops = {
+ #ifdef CONFIG_SMP
+-	.lock_spinning = paravirt_nop,
++	.lock_spinning = __PV_IS_CALLEE_SAVE(paravirt_nop),
+ 	.unlock_kick = paravirt_nop,
+ #endif
+ };
 diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index c939723..d2335f88 100644
+index f6133c5..7a04950 100644
 --- a/arch/x86/xen/spinlock.c
 +++ b/arch/x86/xen/spinlock.c
-@@ -106,11 +106,28 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+@@ -145,6 +145,7 @@ out:
  
- 	start = spin_time_start();
+ 	spin_time_accum_blocked(start);
+ }
++PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
  
--	/* Make sure interrupts are disabled to ensure that these
--	   per-cpu values are not overwritten. */
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
- 	local_irq_save(flags);
+ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
+ {
+@@ -197,7 +198,7 @@ void xen_uninit_lock_cpu(int cpu)
  
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
-+	smp_wmb();
- 	w->lock = lock;
+ void __init xen_init_spinlocks(void)
+ {
+-	pv_lock_ops.lock_spinning = xen_lock_spinning;
++	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
+ 	pv_lock_ops.unlock_kick = xen_unlock_kick;
+ }
  
- 	/* This uses set_bit, which atomic and therefore a barrier */
-@@ -124,21 +141,30 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
- 
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
- 
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking 
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		ADD_STATS(taken_slow_pickup, 1);
- 		goto out;
- 	}
- 
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	ADD_STATS(taken_slow_spurious, !xen_test_irq_pending(irq));
- 
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- 
- out:
-@@ -160,7 +186,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
- 
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			ADD_STATS(released_slow_kicked, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
 -- 
 1.7.6
 
