@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1IBRkz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 13:40:55 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:59571 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803Ab1IBRky (ORCPT
+	id S1754016Ab1IBRun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 13:50:43 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:20529 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab1IBRum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 13:40:54 -0400
-In-Reply-To: <20110902172259.GA6619@n2100.arm.linux.org.uk>
-References: <20110823220056.GK3895@n2100.arm.linux.org.uk> <20110825130907.GO3286@htj.dyndns.org> <20110825145558.GF8883@n2100.arm.linux.org.uk> <201108261644.26329.arnd@arndb.de> <OF2C5ADB6A.65B1BE36-ONC12578FE.00493A67-C12578FE.004B3315@de.ibm.com> <20110901140000.GF29729@n2100.arm.linux.org.uk> <OF69A57AB0.CF22689A-ONC12578FF.004EDD71-C12578FF.005142FF@de.ibm.com> <20110902172259.GA6619@n2100.arm.linux.org.uk>
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-X-KeepSent: A88E54BC:55310B1A-C12578FF:00607E64;
- type=4; name=$KeepSent
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linaro-toolchain@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>
-X-Mailer: Lotus Notes Release 8.5.2 August 10, 2010
-Message-ID: <OFA88E54BC.55310B1A-ONC12578FF.00607E64-C12578FF.00611957@de.ibm.com>
-From: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-Date: Fri, 2 Sep 2011 19:40:34 +0200
-X-MIMETrack: Serialize by Router on D12ML069/12/M/IBM(Release 8.0.2FP2|June 22, 2009) at
- 02/09/2011 19:40:45
+	Fri, 2 Sep 2011 13:50:42 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH] Staging: hv: vmbus: Show the modalias in
+ /sys/bus/vmbus/devices/*/
+Thread-Topic: [PATCH] Staging: hv: vmbus: Show the modalias in
+ /sys/bus/vmbus/devices/*/
+Thread-Index: AQHMaY0RFSglJspxWUu3P1/h0ZnnU5U6XZ5w
+Date: Fri, 2 Sep 2011 17:50:40 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B604C@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <20110902162556.GA25073@aepfle.de>
+In-Reply-To: <20110902162556.GA25073@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p82Hp5jX014803
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote on 09/02/2011
-07:22:59 PM:
-> On Fri, Sep 02, 2011 at 04:47:35PM +0200, Ulrich Weigand wrote:
-> > Assume the scenario you initally describe, where a first signal is
-> > ignored and leads to system call restart.  With your latest patch,
-> > you call into syscall_restart which sets everything up to restart
-> > the call (with interrupts disabled).
->
-> I don't think SIG_IGN signals even set the TIF work flag, so they
-> never even cause a call into do_signal().  Therefore, as far as
-> syscalls go, attempting to send a process (eg) a SIGINT which its
-> handler is set to SIG_IGN results in the process not even being
-> notified about the attempt - we won't even wake up while the
-> syscall is sleeping.
 
-I don't see why SIG_IGN signals shouldn't set the TIF work flag;
-the decision whether to ignore a signal is only made once we've
-got to get_signal_to_deliver.  In any case, whether or not the
-signal is SIG_IGN doesn't matter for the example at all; I'm
-simply talking about the case whether the first signal we get
-leads to system call restart, exactly the same as in the original
-example you initially described here:
-http://lists.arm.linux.org.uk/lurker/message/20110823.154329.a3e65f95.en.html
 
-> > To really fix this case would probably require some way for the
-> > debugger to save and restore the restore_block saved state.  This
-> > is not quite trivial, since it would expose that state to user space,
-> > effectively creating a new ABI (and probably requiring sanity checks
-> > to ensure a valid state is restored).  This probably cannot be fixed
-> > by one architecture for itself, but would need support from common
-> > kernel code.
->
-> Such state would have to be crytographically signed or kept entirely
-> within the kernel, as it would otherwise mean that you could redirect
-> the kernel PC to anywhere...
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Friday, September 02, 2011 12:26 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: [PATCH] Staging: hv: vmbus: Show the modalias in
+> /sys/bus/vmbus/devices/*/
+> 
+> Show a modalias file in /sys/bus/vmbus/devices/*/
+> Add a helper function to print the same content in modalias and uevent.
+> 
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> 
+> ---
+>  drivers/staging/hv/vmbus_drv.c |   21 ++++++++++++++++-----
+>  1 file changed, 16 insertions(+), 5 deletions(-)
+> 
+> --- a/drivers/staging/hv/vmbus_drv.c
+> +++ b/drivers/staging/hv/vmbus_drv.c
+> @@ -93,6 +93,14 @@ static void get_channel_info(struct hv_d
+>  		debug_info.outbound.bytes_avail_towrite;
+>  }
+> 
+> +#define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid) *
+> 2)
+> +static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
+> +{
+> +	int i;
+> +	for (i = 0; i < VMBUS_ALIAS_LEN; i += 2)
+> +		sprintf(&alias_name[i], "%02x", hv_dev->dev_type.b[i/2]);
+> +}
+> +
+>  /*
+>   * vmbus_show_device_attr - Show the device attribute in sysfs.
+>   *
+> @@ -105,6 +113,7 @@ static ssize_t vmbus_show_device_attr(st
+>  {
+>  	struct hv_device *hv_dev = device_to_hv_device(dev);
+>  	struct hv_device_info device_info;
+> +	char alias_name[VMBUS_ALIAS_LEN + 1];
+> 
+>  	memset(&device_info, 0, sizeof(struct hv_device_info));
+> 
+> @@ -148,6 +157,9 @@ static ssize_t vmbus_show_device_attr(st
+>  			       device_info.chn_instance.b[13],
+>  			       device_info.chn_instance.b[14],
+>  			       device_info.chn_instance.b[15]);
+> +	} else if (!strcmp(dev_attr->attr.name, "modalias")) {
+> +		print_alias_name(hv_dev, alias_name);
+> +		return sprintf(buf, "vmbus:%s\n", alias_name);
+>  	} else if (!strcmp(dev_attr->attr.name, "state")) {
+>  		return sprintf(buf, "%d\n", device_info.chn_state);
+>  	} else if (!strcmp(dev_attr->attr.name, "id")) {
+> @@ -204,6 +216,7 @@ static struct device_attribute vmbus_dev
+>  	__ATTR(class_id, S_IRUGO, vmbus_show_device_attr, NULL),
+>  	__ATTR(device_id, S_IRUGO, vmbus_show_device_attr, NULL),
+>  	__ATTR(monitor_id, S_IRUGO, vmbus_show_device_attr, NULL),
+> +	__ATTR(modalias, S_IRUGO, vmbus_show_device_attr, NULL),
+> 
+>  	__ATTR(server_monitor_pending, S_IRUGO, vmbus_show_device_attr,
+> NULL),
+>  	__ATTR(server_monitor_latency, S_IRUGO, vmbus_show_device_attr,
+> NULL),
+> @@ -242,12 +255,10 @@ static struct device_attribute vmbus_dev
+>  static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
+>  {
+>  	struct hv_device *dev = device_to_hv_device(device);
+> -	int i, ret;
+> -	char alias_name[((sizeof((struct hv_vmbus_device_id *)0)->guid) + 1) *
+> 2];
+> -
+> -	for (i = 0; i < ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2); i += 2)
+> -		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
+> +	int ret;
+> +	char alias_name[VMBUS_ALIAS_LEN + 1];
+> 
+> +	print_alias_name(dev, alias_name);
+>  	ret = add_uevent_var(env, "MODALIAS=vmbus:%s", alias_name);
+>  	return ret;
+>  }
 
-Agreed, that's why the state would need to be verified (in the case of
-the function pointer, we probably would not want to export the kernel
-code address to user space in any case, but identify which of the
-possible target functions is to be called in some other manner).
+Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
 
-Bye,
-Ulrich
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
