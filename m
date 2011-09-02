@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab1IBFKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 01:10:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59521 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1IBFJz (ORCPT
+	id S1752075Ab1IBFML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 01:12:11 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52263 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1IBFMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 01:09:55 -0400
+	Fri, 2 Sep 2011 01:12:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110901142027.GI14369@suse.de>
-References: <cover.1321112552.git.minchan.kim@gmail.com>
-	<282a4531f23c5e35cfddf089f93559130b4bb660.1321112552.git.minchan.kim@gmail.com>
-	<20110901142027.GI14369@suse.de>
-Date: Fri, 2 Sep 2011 14:09:55 +0900
-Message-ID: <CAEwNFnCSgPj+KuZr0h9-0=mr29QDYnFDzvtwV5Vc1VBVtThqWA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] compaction accouting fix
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>
+In-Reply-To: <1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1314860114.32522.3.camel@rui>
+	<1314864889.13161.4.camel@rui>
+	<1314880125.8038.39.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Fri, 2 Sep 2011 13:12:06 +0800
+Message-ID: <CAC=cRTOzcgm+3kHGcZrHs=9Q3cs5z6vmBqb1Bn+2qcvcSZ-2Xg@mail.gmail.com>
+Subject: Re: [PATCH] EFI: Do not use __pa() to get the physical address of an
+ ioremapped memory range
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 11:20 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Sun, Nov 13, 2011 at 01:37:43AM +0900, Minchan Kim wrote:
->> I saw the following accouting of compaction during test of the series.
->
-> s/accouting/accounting/ both here and in the subject. A nicer name the
-> patch would have been
->
-> "mm: compaction: Only update compact_blocks_moved if compaction was successful"
-
-Thanks, I will fix it at next version. :)
-
->
+On Thu, Sep 1, 2011 at 8:28 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> On Thu, 2011-09-01 at 16:14 +0800, Zhang Rui wrote:
+>> On Thu, 2011-09-01 at 14:55 +0800, Zhang, Rui wrote:
+>> > From: Zhang Rui <rui.zhang@intel.com>
+>> > Date: Wed, 31 Aug 2011 09:59:01 +0800
+>> > Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
+>> >
+>> > set_memory_uc uses __pa() to translate the virtual address to the physical address.
+>> > This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
+>> >
+>> oops, wrong patch was attached.
 >>
->> compact_blocks_moved 251
->> compact_pages_moved 44
+>> here is the correct patch.
 >>
->> It's very awkward to me although it's possbile because it means we try to compact 251 blocks
->> but it just migrated 44 pages. As further investigation, I found isolate_migratepages doesn't
->> isolate any pages but it returns ISOLATE_SUCCESS and then, it just increases compact_blocks_moved
->> but doesn't increased compact_pages_moved.
+>> From: Zhang Rui <rui.zhang@intel.com>
+>> Date: Wed, 31 Aug 2011 09:59:01 +0800
+>> Subject: Do not use __pa() to get the physical address of an ioremapped memory range.
 >>
->> This patch makes accouting of compaction works only in case of success of isolation.
->>
+>> set_memory_uc uses __pa() to translate the virtual address to the physical address.
+>> This breaks a EFI_MEMORY_MAPPED_IO memory region in my case as it was ioremapped first.
 >
-> compact_blocks_moved exists to indicate the rate compaction is
-> scanning pageblocks. If compact_blocks_moved and compact_pages_moved
-> are increasing at a similar rate for example, it could imply that
-> compaction is doing a lot of scanning but is not necessarily useful
-> work. It's not necessarily reflected by compact_fail because that
-> counter is only updated for pages that were isolated from the LRU.
+> Hmm.. does anyone know why we ioremap_cache() the memory on
+> CONFIG_X86_32 instead of ioremap_nocache()? In the case of
+> EFI_MEMORY_MAPPED_IO the memory really needs to be uncached. Then if
+> we've ioremap'd the memory we should skip set_memory_uc() altogether,
+> no?
 
-You seem to say "compact_pagemigrate_failed" not "compact_fail".
+Because whether the mapping should be cached is determined by md->attr
+instead of md->type.  And besides UC, we may add WC, etc support.
 
->
-> I now recognise of course that "compact_blocks_moved" was an *awful*
-> choice of name for this stat.
-
-I hope changing stat names as follows unless it's too late(ie, it
-doesn't break ABI with any tools)
-
-compact_blocks_moved -> compact_blocks
-compact_pages_moved -> compact_pgmigrated_success
-compact_pagemigrate_failed -> compact_pgmigrated_fail
-compact_stall -> compact_alloc_stall
-compact_fail -> compact_alloc_fail
-compact_success -> compact_alloc_success
-
-
->
-> --
-> Mel Gorman
-> SUSE Labs
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+Best Regards,
+Huang Ying
