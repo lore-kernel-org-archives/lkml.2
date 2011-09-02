@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab1IBJ5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 05:57:35 -0400
-Received: from gold.linx.net ([195.66.232.40]:49643 "EHLO gold.linx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932375Ab1IBJ5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 05:57:32 -0400
-Message-ID: <4E60A88B.2070507@linx.net>
-Date: Fri, 02 Sep 2011 10:57:31 +0100
-From: Tony Vroon <tony@linx.net>
-Organization: London Internet Exchange (LINX; AS5459)
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110822 Thunderbird/6.0
-MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, "yinghai@kernel.org" <yinghai@kernel.org>,
-        venki@google.com
-Subject: Re: MTRR setup failure on Fujitsu Lifebook S761
-References: <4E579397.6010009@linx.net>  <4E57CBBB.3040806@zytor.com>  <1314385315.8356.0.camel@localhost>  <1314394157.4729.23.camel@sbsiddha-desk.sc.intel.com>  <4E581D1A.90404@zytor.com> <1314402667.4729.38.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1314402667.4729.38.camel@sbsiddha-desk.sc.intel.com>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933361Ab1IBKA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 06:00:58 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:33022 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932960Ab1IBKAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 06:00:50 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 02/16] drbd: New minors have to intherit the connection state form their connection
+Date: Fri,  2 Sep 2011 12:00:34 +0200
+Message-Id: <1314957648-13242-3-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314957648-13242-1-git-send-email-philipp.reisner@linbit.com>
+References: <1314957648-13242-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_int.h      |    1 +
+ drivers/block/drbd/drbd_main.c     |    5 +++++
+ drivers/block/drbd/drbd_receiver.c |    5 +++--
+ drivers/block/drbd/drbd_state.c    |    4 ++--
+ 4 files changed, 11 insertions(+), 4 deletions(-)
 
-On 27/08/11 00:51, Suresh Siddha wrote:
-> Agree. Ideally in this case PAT should have helped. There must be
-> some other hidden issue that I am trying to understand.
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index d84a073..05bb9fd 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1595,6 +1595,7 @@ extern void _drbd_wait_ee_list_empty(struct drbd_conf *mdev,
+ extern void drbd_set_recv_tcq(struct drbd_conf *mdev, int tcq_enabled);
+ extern void _drbd_clear_done_ee(struct drbd_conf *mdev, struct list_head *to_be_freed);
+ extern void conn_flush_workqueue(struct drbd_tconn *tconn);
++extern int drbd_connected(int vnr, void *p, void *data);
+ static inline void drbd_flush_workqueue(struct drbd_conf *mdev)
+ {
+ 	conn_flush_workqueue(mdev->tconn);
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index de49c8d..4bfffe9 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2410,6 +2410,11 @@ enum drbd_ret_code conn_new_minor(struct drbd_tconn *tconn, unsigned int minor,
+ 	}
+ 	add_disk(disk);
+ 
++	/* inherit the connection state */
++	mdev->state.conn = tconn->cstate;
++	if (mdev->state.conn == C_WF_REPORT_PARAMS)
++		drbd_connected(vnr, mdev, tconn);
++
+ 	return NO_ERROR;
+ 
+ out_idr_remove_vol:
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 956a0e2..1c83a12 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -744,8 +744,9 @@ static int drbd_socket_okay(struct socket **sock)
+ 		return false;
+ 	}
+ }
+-
+-static int drbd_connected(int vnr, void *p, void *data)
++/* Gets called if a connection is established, or if a new minor gets created
++   in a connection */
++int drbd_connected(int vnr, void *p, void *data)
+ {
+ 	struct drbd_conf *mdev = (struct drbd_conf *)p;
+ 	int ok = 1;
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index 3ca535e..37b52d7 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -433,8 +433,8 @@ is_valid_soft_transition(union drbd_state os, union drbd_state ns)
+ 	if (ns.conn == C_DISCONNECTING && os.conn == C_UNCONNECTED)
+ 		rv = SS_IN_TRANSIENT_STATE;
+ 
+-	if (ns.conn == os.conn && ns.conn == C_WF_REPORT_PARAMS)
+-		rv = SS_IN_TRANSIENT_STATE;
++	/* if (ns.conn == os.conn && ns.conn == C_WF_REPORT_PARAMS)
++	   rv = SS_IN_TRANSIENT_STATE; */
+ 
+ 	if ((ns.conn == C_VERIFY_S || ns.conn == C_VERIFY_T) && os.conn < C_CONNECTED)
+ 		rv = SS_NEED_CONNECTION;
+-- 
+1.7.4.1
 
-Suresh, I have submitted the information that you requested. Is there
-more that you require please?
-
-Regards,
-- -- 
-Tony Vroon
-UNIX systems administrator
-London Internet Exchange Ltd, Trinity Court, Trinity Street,
-Peterborough, PE1 1DA
-Registered in England number 3137929
-E-Mail: tony@linx.net
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk5gqIsACgkQp5vW4rUFj5rVCQCfd6ogFVCMtkNHrGy/YE/8d0OP
-zdwAn1tLqM3fsc3DB1OQjrMrFtb2MpCH
-=Ii13
------END PGP SIGNATURE-----
