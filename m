@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1IBSS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 14:18:29 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65351 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab1IBSS1 (ORCPT
+	id S1754196Ab1IBSXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 14:23:04 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49807 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544Ab1IBSXB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 14:18:27 -0400
-Date: Fri, 2 Sep 2011 15:18:19 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com,
-        paulus@samba.org, tglx@linutronix.de, anton@samba.org
-Subject: Re: [PATCH v2] perf tool: fix endianness handling of u32 data in
- samples
-Message-ID: <20110902181818.GD17970@ghostprotocols.net>
-References: <1314979426-29356-1-git-send-email-dsahern@gmail.com>
+	Fri, 2 Sep 2011 14:23:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314979426-29356-1-git-send-email-dsahern@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110310014952.38b7a6ef@redhat.com>
+References: <20110216161728.GA8431@darkside.kls.lan>
+	<20110310014952.38b7a6ef@redhat.com>
+Date: Fri, 2 Sep 2011 20:23:00 +0200
+Message-ID: <CAJJYPdmmaDuW-yhLQbGj9ihfiJOp5K_C_Vn6dCTzmr0A_gaKjg@mail.gmail.com>
+Subject: Re: kernel BUG and freeze on cat /proc/tty/driver/serial
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: Chuck Ebbert <cebbert@redhat.com>
+Cc: "Mario 'BitKoenig' Holbe" <Mario.Holbe@tu-ilmenau.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 02, 2011 at 10:03:46AM -0600, David Ahern escreveu:
->  	if (type & PERF_SAMPLE_RAW) {
-> -		u32 *p = (u32 *)array;
-> +		u.val64 = *array;
-> +		if (swapped) {
-> +			static bool show_warn = true;
-> +
-> +			/* undo swap of u64, then swap on individual u32s */
-> +			u.val64 = bswap_64(u.val64);
-> +			u.val32[0] = bswap_32(u.val32[0]);
-> +			u.val32[1] = bswap_32(u.val32[1]);
-> +
-> +			if (show_warn) {
-> +				pr_warning("Endianness of raw data not corrected!\n");
-> +				show_warn = false;
-> +			}
-> +		}
+2011/3/10 Chuck Ebbert <cebbert@redhat.com>:
+> On Wed, 16 Feb 2011 17:17:28 +0100
+> "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE> wrote:
+>
+>> reading /proc/tty/driver/serial leads to a NULL pointer dereference
+>> BUG and freeze on a serial-console enabled 2.6.35.{4,10,11} and
+>> 2.6.37. 2.6.32.28 does fine without BUG and freeze.
+>>
+>> Fresh boot 2.6.35.11 into emergency...
+>> # cat /proc/tty/driver/serial
+>> [   73.199568] BUG: unable to handle kernel NULL pointer dereference
+>> at 00000099 [   73.227373] IP: [<c11a8969>] tty_ldisc_try+0x10/0x35
+>
+> The oops is here, in uart_handle_dcd_change() in serial_core.h:
+>
+>        struct tty_ldisc *ld = tty_ldisc_ref(port->tty);
+>
+> (port->tty is NULL)
+>
+> Called from check_modem_status() in 8250.c:
+>
+>                if (status & UART_MSR_DDCD)
+>                        uart_handle_dcd_change(&up->port, status & UART_MSR_DCD);
+>
+> So apparently the port has no tty, until you run "setserial -g", or else
+> that somehow makes the DCD status appear unchanged later when reading
+> /proc/tty/driver/serial.
 
-Can you use WARN_ONCE? Would become:
-	
-		if (WARN_ONCE(swapped, "Endianness of raw data not corrected!\n")) {
-			/* undo swap of u64, then swap on individual u32s */
-			u.val64 = bswap_64(u.val64);
-			u.val32[0] = bswap_32(u.val32[0]);
-			u.val32[1] = bswap_32(u.val32[1]);
-		}
 
-We have that and its the usual idiom in the kernel proper :-)
+Just noticed the same freeze of my box with 3.1.0-rc4 - thought with
+just a little bit different stack trace
+(as I've taken only camera snap - here is just list of function) -
+happened right after resume.
 
-See tools/perf/util/include/asm/bug.h and net/can/af_can.c can_rcv for
-an example.
+tty_ldisc_try   NULL pointer dereference
 
-Thanks,
+tty_ldisc_ref
+check_modem_status
+serial8250_get_mctrl
+uart_proc_show
+? seq_read
+? kmem_cache_alloc_trace
+? seq_read
+seq_read
+? sub_preempt_count
+? seq_lseek
+proc_reg_read
+vfs_read
+sys_read
+system_call_fastpath
 
-- Arnaldo
+
+Zdenek
