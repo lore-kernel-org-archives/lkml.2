@@ -1,140 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab1IBHaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:30:21 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:56937 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab1IBHaU (ORCPT
+	id S1757301Ab1IBHb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:31:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59945 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab1IBHbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:30:20 -0400
-From: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-Subject: [PATCH 2/2] Staging: comedi: fix line over 80 character issue in s626.c
-Date: Fri,  2 Sep 2011 13:00:07 +0530
-Message-Id: <1314948607-3508-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH 2/2]Staging: comedi:fix warning issue in s626.c>
-References: <[PATCH 2/2]Staging: comedi:fix warning issue in s626.c>
+	Fri, 2 Sep 2011 03:31:24 -0400
+User-Agent: Microsoft-Entourage/12.30.0.110427
+Date: Fri, 02 Sep 2011 08:31:16 +0100
+Subject: Re: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
+ space page tables in alloc_vm_area()
+From: Keir Fraser <keir.xen@gmail.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Message-ID: <CA8644D4.20348%keir.xen@gmail.com>
+Thread-Topic: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
+ space page tables in alloc_vm_area()
+Thread-Index: AcxpQkyN6Y7ZjHhdY0KuxuwbyOI3oA==
+In-Reply-To: <1314948154.28989.158.camel@zakaz.uk.xensource.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the s626.c file that fixes up a line over 80 character warning found by the checkpatch.pl tool
+On 02/09/2011 08:22, "Ian Campbell" <Ian.Campbell@citrix.com> wrote:
 
-Signed-off-by: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- drivers/staging/comedi/drivers/s626.c |   48 ++++++++++++++++++++++----------
- 1 files changed, 33 insertions(+), 15 deletions(-)
+> On Thu, 2011-09-01 at 21:37 +0100, Jeremy Fitzhardinge wrote:
+>> On 09/01/2011 09:11 AM, Konrad Rzeszutek Wilk wrote:
+>>> On Thu, Sep 01, 2011 at 12:51:03PM +0100, David Vrabel wrote:
+>>>> From: David Vrabel <david.vrabel@citrix.com>
+>>> Andrew,
+>>> 
+>>> I was wondering if you would be Ok with this patch for 3.1.
+>>> 
+>>> It is a revert (I can prepare a proper revert if you would like
+>>> that instead of this patch).
+>>> 
+>>> The users of this particular function (alloc_vm_area) are just
+>>> Xen. There are no others.
+>> 
+>> I'd prefer to put explicit vmalloc_sync_all()s in the callsites where
+>> necessary, and ultimately try to work out ways of avoiding it altogether
+>> (like have some hypercall wrapper which touches the arg memory to make
+>> sure its mapped?).
+> 
+> That only syncs the current pagetable though. If that is sufficient (and
+> it could well be) then perhaps just doing a vmalloc_sync_one on the
+> current page tables directly would be better than faulting to do it?
 
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index c1e9c51..5b88cb4 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -1007,9 +1007,11 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		 */
- 		devpriv->ChargeEnabled = 0;
- 
--		/* Init image of watchdog timer interval in WRMISC2.  This image
-+		/*
-+		 * Init image of watchdog timer interval in WRMISC2.  This image
- 		 * maintains the value of the control bits of MISC2 are
--		 * continuously reset to zero as long as the WD timer is disabled.
-+		 * continuously reset to zero as long as the WD timer is
-+		 * disabled.
- 		 */
- 		devpriv->WDInterval = 0;
- 
-@@ -1022,10 +1024,12 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		/*  Init counters. */
- 		CountersInit(dev);
- 
--		/* Without modifying the state of the Battery Backup enab, disable
--		 * the watchdog timer, set DIO channels 0-5 to operate in the
--		 * standard DIO (vs. counter overflow) mode, disable the battery
--		 * charger, and reset the watchdog interval selector to zero.
-+		/*
-+		 * Without modifying the state of the Battery Backup enab,
-+		 * disable the watchdog timer, set DIO channels 0-5 to operate
-+		 * in the standard DIO (vs. counter overflow) mode, disable the
-+		 * battery charger, and reset the watchdog interval selector to
-+		 * zero.
- 		 */
- 		WriteMISC2(dev, (uint16_t) (DEBIread(dev,
- 						     LP_RDMISC2) &
-@@ -1106,16 +1110,19 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 		s = dev->subdevices;
- 		cmd = &(s->async->cmd);
- 
--		/* Init ptr to DMA buffer that holds new ADC data.  We skip the
--		 * first uint16_t in the buffer because it contains junk data from
--		 * the final ADC of the previous poll list scan.
-+		/*
-+		 * Init ptr to DMA buffer that holds new ADC data.  We skip the
-+		 * first uint16_t in the buffer because it contains junk data
-+		 * from the final ADC of the previous poll list scan.
- 		 */
- 		readaddr = (int32_t *) devpriv->ANABuf.LogicalBase + 1;
- 
- 		/*  get the data and hand it over to comedi */
- 		for (i = 0; i < (s->async->cmd.chanlist_len); i++) {
--			/*  Convert ADC data to 16-bit integer values and copy to application */
--			/*  buffer. */
-+			/*
-+			 * Convert ADC data to 16-bit integer values and copy to
-+			 * application buffer.
-+			 */
- 			tempdata = s626_ai_reg_to_uint((int)*readaddr);
- 			readaddr++;
- 
-@@ -1224,7 +1231,10 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 						    ("s626_irq_handler: Edge capture interrupt received from channel %d\n",
- 						     cmd->scan_begin_arg);
- 
--						/*  Trigger ADC scan loop start by setting RPS Signal 0. */
-+						/*
-+						 * Trigger ADC scan loop start
-+						 * by setting RPS Signal 0.
-+						 */
- 						MC_ENABLE(P_MC2, MC2_ADC_RPS);
- 
- 						DEBUG
-@@ -1266,7 +1276,10 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 						    ("s626_irq_handler: Edge capture interrupt received from channel %d\n",
- 						     cmd->convert_arg);
- 
--						/*  Trigger ADC scan loop start by setting RPS Signal 0. */
-+						/*
-+						 * Trigger ADC scan loop start
-+						 * by setting RPS Signal 0.
-+						 */
- 						MC_ENABLE(P_MC2, MC2_ADC_RPS);
- 
- 						DEBUG
-@@ -1369,7 +1382,10 @@ static irqreturn_t s626_irq_handler(int irq, void *d)
- 				DEBUG
- 				    ("s626_irq_handler: scan timer trigger!!!\n");
- 
--				/*  Trigger ADC scan loop start by setting RPS Signal 0. */
-+				/*
-+				 * Trigger ADC scan loop start
-+				 * by setting RPS Signal 0.
-+				 */
- 				MC_ENABLE(P_MC2, MC2_ADC_RPS);
- 			}
- 
-@@ -1401,7 +1417,9 @@ static int s626_detach(struct comedi_device *dev)
- 		if (devpriv->base_addr) {
- 			/* interrupt mask */
- 			WR7146(P_IER, 0);	/*  Disable master interrupt. */
--			WR7146(P_ISR, IRQ_GPIO3 | IRQ_RPS1);	/*  Clear board's IRQ status flag. */
-+
-+			/* Clear board's IRQ status flag. */
-+			WR7146(P_ISR, IRQ_GPIO3 | IRQ_RPS1);
- 
- 			/*  Disable the watchdog timer and battery charger. */
- 			WriteMISC2(dev, 0);
--- 
-1.6.5.2
+It's probably sufficient unless the kernel has non-voluntary preemption, and
+we are not preempt_disable()d.
+
+ -- Keir
+
+> It's the sort of thing you could hide inside the gnttab_set_map_op type
+> helpers I guess?
+> 
+> Ian.
+> 
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
+
 
