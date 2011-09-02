@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab1IBT6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:58:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54267 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755625Ab1IBT6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:58:03 -0400
-Date: Fri, 2 Sep 2011 21:57:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dimitri Sivanich <sivanich@sgi.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
-In-Reply-To: <20110902192958.GB30665@sgi.com>
-Message-ID: <alpine.LFD.2.02.1109022155080.2723@ionos>
-References: <20110817160759.GA3482@sgi.com> <alpine.LFD.2.02.1108171819120.2807@ionos> <20110823195628.GB4533@sgi.com> <alpine.LFD.2.02.1109021015290.2723@ionos> <20110902192958.GB30665@sgi.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1755557Ab1IBT5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:57:50 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39526 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755261Ab1IBTz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:55:59 -0400
+From: Serge Hallyn <serge@hallyn.com>
+To: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        dhowells@redhat.com, ebiederm@xmission.com, rdunlap@xenotime.net
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: [PATCH 10/15] net/core/scm.c: target capable() calls to user_ns owning the net_ns
+Date: Fri,  2 Sep 2011 19:56:35 +0000
+Message-Id: <1314993400-6910-13-git-send-email-serge@hallyn.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1314993400-6910-1-git-send-email-serge@hallyn.com>
+References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Sep 2011, Dimitri Sivanich wrote:
-> On Fri, Sep 02, 2011 at 10:19:36AM +0200, Thomas Gleixner wrote:
-> +#ifdef CONFIG_SYSFS
-> +/**
-> + * sysfs_show_do_timer_cpu - sysfs interface for tick_do_timer_cpu
-> + * @dev:        unused
-> + * @buf:        char buffer where value of tick_do_timer_cpu is copied
-> + *
-> + * Provides sysfs interface for showing the current tick_do_timer_cpu.
-> + */
-> +static ssize_t
-> +sysfs_show_do_timer_cpu(struct sys_device *dev,
-> +				struct sysdev_attribute *attr, char *buf)
-> +{
-> +	ssize_t count = 0;
-> +
-> +	count = snprintf(buf, PAGE_SIZE, "%d\n", tick_do_timer_cpu);
-> +
-> +	return count;
-> +}
-> +
-> +/**
-> + * sysfs_override_do_timer_cpu - manually override tick_do_timer_cpu
-> + * @dev:        unused
-> + * @buf:        cpu number of desired tick_do_timer_cpu
-> + * @count:      length of buffer
-> + *
-> + * Takes input from sysfs interface for manually overriding the selected
-> + * tick_do_timer_cpu.  Only applicable when not running in nohz mode.
-> + */
-> +static ssize_t
-> +sysfs_override_do_timer_cpu(struct sys_device *dev,
-> +					struct sysdev_attribute *attr,
-> +					const char *buf, size_t count)
-> +{
-> +	char b[16];
-> +	size_t ret = count;
-> +	int c;
-> +
-> +#ifdef CONFIG_NO_HZ
-> +	/* nohz mode not supported */
-> +	if (tick_nohz_enabled)
-> +		return -EINVAL;
-> +#endif
-> +	/* strings from sysfs write are not 0 terminated! */
-> +	if (count >= sizeof(b))
-> +		return -EINVAL;
-> +
-> +	/* strip off \n: */
-> +	if (buf[count-1] == '\n')
-> +		count--;
-> +	if (count < 1)
-> +		return -EINVAL;
-> +
-> +	memcpy(b, buf, count);
-> +	b[count] = 0;
-> +
-> +	if (sscanf(b, "%d", &c) != 1)
-> +		return -EINVAL;
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
 
-Isn't there a function which parses sysfs writes into an integer ?
+The uid/gid comparisons don't have to be pulled out.  This just seemed
+more easily proved correct.
 
-Thanks,
+Changelog:
+   mark struct cred arg const
 
-	tglx
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+---
+ net/core/scm.c |   41 ++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/net/core/scm.c b/net/core/scm.c
+index 811b53f..4f376bf 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -43,17 +43,44 @@
+  *	setu(g)id.
+  */
+ 
+-static __inline__ int scm_check_creds(struct ucred *creds)
++static __inline__ bool uidequiv(const struct cred *src, struct ucred *tgt,
++			       struct user_namespace *ns)
++{
++	if (src->user_ns != ns)
++		goto check_capable;
++	if (src->uid == tgt->uid || src->euid == tgt->uid ||
++	    src->suid == tgt->uid)
++		return true;
++check_capable:
++	if (ns_capable(ns, CAP_SETUID))
++		return true;
++	return false;
++}
++
++static __inline__ bool gidequiv(const struct cred *src, struct ucred *tgt,
++			       struct user_namespace *ns)
++{
++	if (src->user_ns != ns)
++		goto check_capable;
++	if (src->gid == tgt->gid || src->egid == tgt->gid ||
++	    src->sgid == tgt->gid)
++		return true;
++check_capable:
++	if (ns_capable(ns, CAP_SETGID))
++		return true;
++	return false;
++}
++
++static __inline__ int scm_check_creds(struct ucred *creds, struct socket *sock)
+ {
+ 	const struct cred *cred = current_cred();
++	struct user_namespace *ns = sock_net(sock->sk)->user_ns;
+ 
+-	if ((creds->pid == task_tgid_vnr(current) || capable(CAP_SYS_ADMIN)) &&
+-	    ((creds->uid == cred->uid   || creds->uid == cred->euid ||
+-	      creds->uid == cred->suid) || capable(CAP_SETUID)) &&
+-	    ((creds->gid == cred->gid   || creds->gid == cred->egid ||
+-	      creds->gid == cred->sgid) || capable(CAP_SETGID))) {
++	if ((creds->pid == task_tgid_vnr(current) || ns_capable(ns, CAP_SYS_ADMIN)) &&
++	     uidequiv(cred, creds, ns) && gidequiv(cred, creds, ns)) {
+ 	       return 0;
+ 	}
++
+ 	return -EPERM;
+ }
+ 
+@@ -169,7 +196,7 @@ int __scm_send(struct socket *sock, struct msghdr *msg, struct scm_cookie *p)
+ 			if (cmsg->cmsg_len != CMSG_LEN(sizeof(struct ucred)))
+ 				goto error;
+ 			memcpy(&p->creds, CMSG_DATA(cmsg), sizeof(struct ucred));
+-			err = scm_check_creds(&p->creds);
++			err = scm_check_creds(&p->creds, sock);
+ 			if (err)
+ 				goto error;
+ 
+-- 
+1.7.5.4
+
