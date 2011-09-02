@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab1IBRun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 13:50:43 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:20529 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab1IBRum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 13:50:42 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
+	id S1754089Ab1IBRvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 13:51:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754050Ab1IBRvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 13:51:21 -0400
+Date: Fri, 2 Sep 2011 19:48:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Earl Chew <echew@ixiacom.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH] Staging: hv: vmbus: Show the modalias in
- /sys/bus/vmbus/devices/*/
-Thread-Topic: [PATCH] Staging: hv: vmbus: Show the modalias in
- /sys/bus/vmbus/devices/*/
-Thread-Index: AQHMaY0RFSglJspxWUu3P1/h0ZnnU5U6XZ5w
-Date: Fri, 2 Sep 2011 17:50:40 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081B604C@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <20110902162556.GA25073@aepfle.de>
-In-Reply-To: <20110902162556.GA25073@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="utf-8"
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH 1/1 v2]: coredump: use current->group_leader->comm
+	instead of current->comm
+Message-ID: <20110902174806.GA9238@redhat.com>
+References: <4E5FBA73.2050108@ixiacom.com> <20110901195554.667c5e58@lxorguk.ukuu.org.uk> <4E5FD937.7050307@ixiacom.com> <20110902163037.GA4808@redhat.com> <4E610DAE.4080607@ixiacom.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E610DAE.4080607@ixiacom.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p82Hp5jX014803
+
+On 09/02, Earl Chew wrote:
+>
+> Oleg,
+>
+> >> The patterns %n or %N are the same as %e and %E except that they
+> >> use current->group_leader->comm instead of current->comm.
+> >
+> > I simply do not know what is better. Alan has a point imho, "might
+> > break stuff" is true.
+> >
+> > OTOH, %p always reports tgid, not tid...
+>
+> Which speaks partly to my notion of "consistency".
+
+That is why I mentioned it with "otoh" ;)
+
+> I viewed my original change as more "consistent" because it
+> yielded the attribute alluded to in the documentation --- the
+> same value for all threads in the one process:
+>
+> 	- Consistent with the documentation
+> 	- Consistent with respect to process name (as opposed to thread name)
+>
+> >> A core dump can be triggered from any task in a group,
+> >
+> > Indeed. The important case is the private/synchronous signals like
+> > SIGSEGV, you can see the name of the thread which triggered the crash.
+>
+> While that is true, it doesn't seem to have been the original intent as
+> per the %e documentation.
+
+May be. May be not. I do not know.
+
+> Should get_mm_exe_file() just use current->group_leader->comm since it's
+> meant to be process specific anyway,
+
+Probably. Although group_leader->comm is thread specific too, but
+at least we do not use the "random" thread. My only point was, imho
+this doesn't deserve another option.
+
+> and there isn't an existing code base
+> for %E ?
+
+Who knows? But once again, we use ->comm in the very unlikely case.
 
 
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Friday, September 02, 2011 12:26 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: [PATCH] Staging: hv: vmbus: Show the modalias in
-> /sys/bus/vmbus/devices/*/
-> 
-> Show a modalias file in /sys/bus/vmbus/devices/*/
-> Add a helper function to print the same content in modalias and uevent.
-> 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> 
-> ---
->  drivers/staging/hv/vmbus_drv.c |   21 ++++++++++++++++-----
->  1 file changed, 16 insertions(+), 5 deletions(-)
-> 
-> --- a/drivers/staging/hv/vmbus_drv.c
-> +++ b/drivers/staging/hv/vmbus_drv.c
-> @@ -93,6 +93,14 @@ static void get_channel_info(struct hv_d
->  		debug_info.outbound.bytes_avail_towrite;
->  }
-> 
-> +#define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid) *
-> 2)
-> +static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
-> +{
-> +	int i;
-> +	for (i = 0; i < VMBUS_ALIAS_LEN; i += 2)
-> +		sprintf(&alias_name[i], "%02x", hv_dev->dev_type.b[i/2]);
-> +}
-> +
->  /*
->   * vmbus_show_device_attr - Show the device attribute in sysfs.
->   *
-> @@ -105,6 +113,7 @@ static ssize_t vmbus_show_device_attr(st
->  {
->  	struct hv_device *hv_dev = device_to_hv_device(dev);
->  	struct hv_device_info device_info;
-> +	char alias_name[VMBUS_ALIAS_LEN + 1];
-> 
->  	memset(&device_info, 0, sizeof(struct hv_device_info));
-> 
-> @@ -148,6 +157,9 @@ static ssize_t vmbus_show_device_attr(st
->  			       device_info.chn_instance.b[13],
->  			       device_info.chn_instance.b[14],
->  			       device_info.chn_instance.b[15]);
-> +	} else if (!strcmp(dev_attr->attr.name, "modalias")) {
-> +		print_alias_name(hv_dev, alias_name);
-> +		return sprintf(buf, "vmbus:%s\n", alias_name);
->  	} else if (!strcmp(dev_attr->attr.name, "state")) {
->  		return sprintf(buf, "%d\n", device_info.chn_state);
->  	} else if (!strcmp(dev_attr->attr.name, "id")) {
-> @@ -204,6 +216,7 @@ static struct device_attribute vmbus_dev
->  	__ATTR(class_id, S_IRUGO, vmbus_show_device_attr, NULL),
->  	__ATTR(device_id, S_IRUGO, vmbus_show_device_attr, NULL),
->  	__ATTR(monitor_id, S_IRUGO, vmbus_show_device_attr, NULL),
-> +	__ATTR(modalias, S_IRUGO, vmbus_show_device_attr, NULL),
-> 
->  	__ATTR(server_monitor_pending, S_IRUGO, vmbus_show_device_attr,
-> NULL),
->  	__ATTR(server_monitor_latency, S_IRUGO, vmbus_show_device_attr,
-> NULL),
-> @@ -242,12 +255,10 @@ static struct device_attribute vmbus_dev
->  static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
->  {
->  	struct hv_device *dev = device_to_hv_device(device);
-> -	int i, ret;
-> -	char alias_name[((sizeof((struct hv_vmbus_device_id *)0)->guid) + 1) *
-> 2];
-> -
-> -	for (i = 0; i < ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2); i += 2)
-> -		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
-> +	int ret;
-> +	char alias_name[VMBUS_ALIAS_LEN + 1];
-> 
-> +	print_alias_name(dev, alias_name);
->  	ret = add_uevent_var(env, "MODALIAS=vmbus:%s", alias_name);
->  	return ret;
->  }
+And let me repeat just in case. I do not argue, I agree either way.
 
-Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
+Oleg.
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
