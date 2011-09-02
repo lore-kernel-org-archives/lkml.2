@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933347Ab1IBKIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 06:08:54 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40219 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933028Ab1IBKIv (ORCPT
+	id S933376Ab1IBKfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 06:35:24 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56167 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933313Ab1IBKfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 06:08:51 -0400
-Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jon Mason <mason@myri.com>
-Cc: scameron@beardog.cce.hp.com, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephenmcameron@gmail.com, thenzl@redhat.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        linux-pci@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-In-Reply-To: <1314956388.2573.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-	 <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20110901160724.GN9189@beardog.cce.hp.com>
-	 <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
-	 <1314903038.3067.27.camel@dabdike>
-	 <20110901125938.7cb1da85@jbarnes-desktop>
-	 <20110901200349.GO9189@beardog.cce.hp.com>
-	 <20110901130930.5caec2d4@jbarnes-desktop>
-	 <20110901204419.GY8422@beardog.cce.hp.com>
-	 <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
-	 <1314956388.2573.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Sep 2011 12:08:53 +0200
-Message-ID: <1314958133.2573.13.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	Fri, 2 Sep 2011 06:35:23 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ruslan Pisarev <ruslan@rpisarev.org.ua>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, Joe Perches <joe@perches.com>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Arnd Bergmann <arnd@arndb.de>,
+        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH v4 00/19] Staging: cx25821: Fix style issues
+In-Reply-To: Your message of "Fri, 02 Sep 2011 11:55:28 +0800."
+             <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; boundary="==_Exmh_1314959695_2654P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 02 Sep 2011 06:34:55 -0400
+Message-ID: <5753.1314959695@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4E60B154.00ED,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 02 septembre 2011 à 11:39 +0200, Eric Dumazet a écrit :
-> Le jeudi 01 septembre 2011 à 16:50 -0500, Jon Mason a écrit :
-> 
-> > I believe modifying the MRRS values is what is causing the issues.
-> > Can you try the attached patch and verify that it also resolves the
-> > issue?
-> 
-> I tested this patch and can confirm this solves the corruption problem.
-> 
-> But my disk is _much_ slower than before
-> 
-> # hdparm -t /dev/sda1
-> 
-> Before :
-> 
->  Timing buffered disk reads: 254 MB in  3.02 seconds =  84.16 MB/sec
-> 
-> After :
-> 
->  Timing buffered disk reads: 120 MB in  3.04 seconds =  39.42 MB/sec
+--==_Exmh_1314959695_2654P
+Content-Type: text/plain; charset=us-ascii
 
-Hmm, this speed regression is probably old : the 84MB/s was with the
-standard debian 6.0.2 kernel (2.6.32-5-amd64)
+On Fri, 02 Sep 2011 11:55:28 +0800, "Leonid V. Fedorenchik" said:
+> This patch series fixes some style issues in drivers/staging/cx25821
 
+Happened to glance at a "Fix long lines" patch that actually improved
+the code.  That's sufficiently rare I decided to look at the whole series,
+which all looks good - the + lines in the patches generally are nicer
+looking than the - lines. ;)
+
+Feel free to stick this on the whole series:
+
+Reviewed-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+
+--==_Exmh_1314959695_2654P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOYLFPcC3lWbTT17ARAmeNAKCVvfp/4qj4bdnUqaUlU1OPUOs6xQCeN2pa
+joiK+6Lu/r/blXHLRC6cxyA=
+=19qc
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1314959695_2654P--
 
