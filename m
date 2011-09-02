@@ -1,104 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab1IBXvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:51:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50877 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751459Ab1IBXvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:51:47 -0400
-Date: Fri, 2 Sep 2011 16:51:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bob Pearson <rpearson@systemfabricworks.com>
-Cc: linux-kernel@vger.kernel.org, fzago@systemfabricworks.com,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH v6 03/10] crc32-replace-self-test.diff
-Message-Id: <20110902165138.927100ce.akpm@linux-foundation.org>
-In-Reply-To: <4E5EB5E6.3040202@systemfabricworks.com>
-References: <20110831213729.395283830@systemfabricworks.com>
-	<4E5EB5E6.3040202@systemfabricworks.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1752042Ab1IBXx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:53:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8656 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176Ab1IBXxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:53:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="44642441"
+Subject: Re: [next] unix stream crashes
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Jiri Slaby <jirislaby@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+        ML netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sedat Dilek <sedat.dilek@googlemail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <6805.1314979936@turing-police.cc.vt.edu>
+References: <4E5FEF28.60406@gmail.com>
+	 <3179.1314924559@turing-police.cc.vt.edu>
+	 <1314927645.2576.2939.camel@schen9-DESK>
+	 <6805.1314979936@turing-police.cc.vt.edu>
+Content-Type: multipart/mixed; boundary="=-R8z0zoj60uOyb+ALM1/W"
+Date: Fri, 02 Sep 2011 16:55:03 -0700
+Message-ID: <1315007703.2576.2965.camel@schen9-DESK>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Aug 2011 17:29:58 -0500
-Bob Pearson <rpearson@systemfabricworks.com> wrote:
 
-> Replaced the unit test provided in crc32.c, which doesn't have a
-> makefile and doesn't compile with current headers, with a simpler
-> self test routine that also gives a measure of performance and
-> runs at module init time. The self test option can be enabled
-> through a configuration option CONFIG_CRC32_SELFTEST.
+--=-R8z0zoj60uOyb+ALM1/W
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+On Fri, 2011-09-02 at 12:12 -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 01 Sep 2011 18:40:45 PDT, Tim Chen said:
 > 
-> The test stresses the pre and post loops and is thus not very
-> realistic since actual uses will likely have addresses and lengths
-> that are at least 4 byte aligned. However, the main loop is long
-> enough so that the performance is dominated by that loop.
+> > Yes, Jiri's log does indicate that something went wrong when releasing
+> > the skb, most likely due to changes in the pid and credentials ref
+> > count.  Unfortunately, I cannot duplicate the problem on my system.  Any
+> > info on your system to help me debug will be appreciated.  I'll try to
+> > take another look at the patch tomorrow.
 > 
-> The expected values for crc32_le and crc32_be were generated
-> with the original version of crc32.c using CRC_BITS_LE = 8 and
-> CRC_BITS_BE = 8. These values were then used to check all the
-> values of the BITS parameters in both the original and new versions.
+> Dell Latitude E6500, Core2 T8700 processor, x86_64 kernel, a slightly mangled
+> Fedora Rawhide userspace.  I'd not be surprised if there's an idiocyncratic
+> setting in my .config that makes the bug crawl out of the woodwork on my box,
+> so I'm attaching the .config in case it provides some enlightenment.
 > 
-> The performance results show some variability from run to run
-> in spite of attempts to both warm the cache and reduce the amount
-> of OS noise by limiting interrutps during the test. To get comparable
-> results and to analyse options wrt performance the best time
-> reported over a small sample of runs has been taken.
-> 
+> If you want me to try a debugging or test patch, let me know...
 
-I don't object to a self-test which actually works, but it seems pretty
-lame that the self-test exists in kernel mode when it is so simple to
-prepare a much more useful and powerful correctness/performance test
-harness in userspace.
+Valdis,
 
-> ...
->
-> -static u32 test_step(u32 init, unsigned char *buf, size_t len)
-> -{
-> -	u32 crc1, crc2;
-> -	size_t i;
-> +		crc ^= crc32_be(test[i].crc, test_buf +
-> +		    test[i].start, test[i].length);
-> +	}
->  
-> -	crc1 = crc32_be(init, buf, len);
-> -	store_be(crc1, buf + len);
-> -	crc2 = crc32_be(init, buf, len + 4);
-> -	if (crc2)
-> -		printf("\nCRC cancellation fail: 0x%08x should be 0\n",
-> -		       crc2);
-> -
-> -	for (i = 0; i <= len + 4; i++) {
-> -		crc2 = crc32_be(init, buf, i);
-> -		crc2 = crc32_be(crc2, buf + i, len + 4 - i);
-> -		if (crc2)
-> -			printf("\nCRC split fail: 0x%08x\n", crc2);
-> +	/* reduce OS noise */
+I've tried your config on a few different machines but I'm still not
+able to reproduce the problem.  Can you help me narrow things down?
+Please revert my original patch.  I've separated my original changes
+into two parts.  Try apply only the recv_scm.patch attached and try to
+boot.  Then apply only the send_scm.patch without the rcv_scm.patch and
+repeat.  Let me know which patch causes the boot problem.
 
-This comment is useless.
+I'll like to isolate the problem to either the send path or receive
+path. My suspicion is the error handling portion of the send path is not
+quite right but I haven't yet found any issues after reviewing the
+patch.  
 
-> +	local_irq_save(flags);
-> +	local_irq_disable();
+Thanks.
 
-local_irq_save() already does local_irq_disable().
+Tim
 
-local_irq_disable() doesn't protect against actions of other CPUs.  I'd
-know if this was a bug if the comment wasn't useless :)
+--=-R8z0zoj60uOyb+ALM1/W
+Content-Disposition: attachment; filename="scm_recv.patch"
+Content-Type: text/x-patch; name="scm_recv.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-> +	getnstimeofday(&start);
-> +	for (i = 0; i < 100; i++) {
-> +		if (test[i].crc_le != crc32_le(test[i].crc, test_buf +
-> +		    test[i].start, test[i].length))
-> +			errors++;
-> +
-> +		if (test[i].crc_be != crc32_be(test[i].crc, test_buf +
-> +		    test[i].start, test[i].length))
-> +			errors++;
->  	}
-> ...
+diff --git a/include/net/scm.h b/include/net/scm.h
+index 745460f..68e1e48 100644
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -53,6 +53,14 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
+ 	cred_to_ucred(pid, cred, &scm->creds);
+ }
+ 
++static __inline__ void scm_set_cred_noref(struct scm_cookie *scm,
++				    struct pid *pid, const struct cred *cred)
++{
++	scm->pid  = pid;
++	scm->cred = cred;
++	cred_to_ucred(pid, cred, &scm->creds);
++}
++
+ static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
+ {
+ 	put_pid(scm->pid);
+@@ -108,15 +125,14 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+ 	if (!msg->msg_control) {
+ 		if (test_bit(SOCK_PASSCRED, &sock->flags) || scm->fp)
+ 			msg->msg_flags |= MSG_CTRUNC;
+-		scm_destroy(scm);
++		if (scm && scm->fp)
++			__scm_destroy(scm);
+ 		return;
+ 	}
+ 
+ 	if (test_bit(SOCK_PASSCRED, &sock->flags))
+ 		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(scm->creds), &scm->creds);
+ 
+-	scm_destroy_cred(scm);
+-
+ 	scm_passec(sock, msg, scm);
+ 
+ 	if (!scm->fp)
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index ec68e1c..e6d9d10 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1777,7 +1789,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		siocb->scm = &tmp_scm;
+ 		memset(&tmp_scm, 0, sizeof(tmp_scm));
+ 	}
+-	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
++	scm_set_cred_noref(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
+ 	unix_set_secdata(siocb->scm, skb);
+ 
+ 	if (!(flags & MSG_PEEK)) {
+@@ -1939,7 +1951,8 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			}
+ 		} else {
+ 			/* Copy credentials */
+-			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
++			scm_set_cred_noref(siocb->scm, UNIXCB(skb).pid,
++					   UNIXCB(skb).cred);
+ 			check_creds = 1;
+ 		}
+ 
+
+--=-R8z0zoj60uOyb+ALM1/W
+Content-Disposition: attachment; filename="scm_send.patch"
+Content-Type: text/x-patch; name="scm_send.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+diff --git a/include/net/scm.h b/include/net/scm.h
+index 745460f..68e1e48 100644
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -70,6 +78,15 @@ static __inline__ void scm_destroy(struct scm_cookie *scm)
+ 		__scm_destroy(scm);
+ }
+ 
++static __inline__ void scm_release(struct scm_cookie *scm)
++{
++	/* keep ref on pid and cred */
++	scm->pid = NULL;
++	scm->cred = NULL;
++	if (scm->fp)
++		__scm_destroy(scm);
++}
++
+ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
+ 			       struct scm_cookie *scm)
+ {
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index ec68e1c..e6d9d10 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1378,11 +1378,17 @@ static int unix_attach_fds(struct scm_cookie *scm, struct sk_buff *skb)
+ 	return max_level;
+ }
+ 
+-static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool send_fds)
++static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb,
++			   bool send_fds, bool ref)
+ {
+ 	int err = 0;
+-	UNIXCB(skb).pid  = get_pid(scm->pid);
+-	UNIXCB(skb).cred = get_cred(scm->cred);
++	if (ref) {
++		UNIXCB(skb).pid  = get_pid(scm->pid);
++		UNIXCB(skb).cred = get_cred(scm->cred);
++	} else {
++		UNIXCB(skb).pid  = scm->pid;
++		UNIXCB(skb).cred = scm->cred;
++	}
+ 	UNIXCB(skb).fp = NULL;
+ 	if (scm->fp && send_fds)
+ 		err = unix_attach_fds(scm, skb);
+@@ -1407,7 +1413,7 @@ static int unix_dgram_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	int namelen = 0; /* fake GCC */
+ 	int err;
+ 	unsigned hash;
+-	struct sk_buff *skb;
++	struct sk_buff *skb = NULL;
+ 	long timeo;
+ 	struct scm_cookie tmp_scm;
+ 	int max_level;
+@@ -1448,7 +1454,7 @@ static int unix_dgram_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	if (skb == NULL)
+ 		goto out;
+ 
+-	err = unix_scm_to_skb(siocb->scm, skb, true);
++	err = unix_scm_to_skb(siocb->scm, skb, true, false);
+ 	if (err < 0)
+ 		goto out_free;
+ 	max_level = err + 1;
+@@ -1544,7 +1550,7 @@ restart:
+ 	unix_state_unlock(other);
+ 	other->sk_data_ready(other, len);
+ 	sock_put(other);
+-	scm_destroy(siocb->scm);
++	scm_release(siocb->scm);
+ 	return len;
+ 
+ out_unlock:
+@@ -1554,7 +1560,8 @@ out_free:
+ out:
+ 	if (other)
+ 		sock_put(other);
+-	scm_destroy(siocb->scm);
++	if (skb == NULL)
++		scm_destroy(siocb->scm);
+ 	return err;
+ }
+ 
+@@ -1566,7 +1573,7 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	struct sock *sk = sock->sk;
+ 	struct sock *other = NULL;
+ 	int err, size;
+-	struct sk_buff *skb;
++	struct sk_buff *skb = NULL;
+ 	int sent = 0;
+ 	struct scm_cookie tmp_scm;
+ 	bool fds_sent = false;
+@@ -1631,11 +1638,11 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		size = min_t(int, size, skb_tailroom(skb));
+ 
+ 
+-		/* Only send the fds in the first buffer */
+-		err = unix_scm_to_skb(siocb->scm, skb, !fds_sent);
++		/* Only send the fds and no ref to pid in the first buffer */
++		err = unix_scm_to_skb(siocb->scm, skb, !fds_sent, fds_sent);
+ 		if (err < 0) {
+ 			kfree_skb(skb);
+-			goto out_err;
++			goto out;
+ 		}
+ 		max_level = err + 1;
+ 		fds_sent = true;
+@@ -1643,7 +1650,7 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
+ 		if (err) {
+ 			kfree_skb(skb);
+-			goto out_err;
++			goto out;
+ 		}
+ 
+ 		unix_state_lock(other);
+@@ -1660,7 +1667,10 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		sent += size;
+ 	}
+ 
+-	scm_destroy(siocb->scm);
++	if (skb)
++		scm_release(siocb->scm);
++	else
++		scm_destroy(siocb->scm);
+ 	siocb->scm = NULL;
+ 
+ 	return sent;
+@@ -1673,7 +1683,9 @@ pipe_err:
+ 		send_sig(SIGPIPE, current, 0);
+ 	err = -EPIPE;
+ out_err:
+-	scm_destroy(siocb->scm);
++	if (skb == NULL)
++		scm_destroy(siocb->scm);
++out:
+ 	siocb->scm = NULL;
+ 	return sent ? : err;
+ }
+
+--=-R8z0zoj60uOyb+ALM1/W--
+
