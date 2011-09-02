@@ -1,138 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab1IBGtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 02:49:24 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59914 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab1IBGtU convert rfc822-to-8bit (ORCPT
+	id S1753078Ab1IBG4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 02:56:51 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:23623 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab1IBG4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 02:49:20 -0400
-MIME-Version: 1.0
-X-Originating-IP: [87.66.92.201]
-In-Reply-To: <201109020007.22743.rjw@sisk.pl>
-References: <201108310017.03103.rjw@sisk.pl>
-	<201108310021.13800.rjw@sisk.pl>
-	<CAORVsuX=vKiGxHrR4hZjeT4DV0vhUh+MXLwNjoOwgBDu1HRR5A@mail.gmail.com>
-	<201109020007.22743.rjw@sisk.pl>
-Date: Fri, 2 Sep 2011 08:49:18 +0200
-Message-ID: <CAORVsuVAzc8Q2tG0-WW+96Ad9GhR5OCq2bAuweggs1rimFMcqg@mail.gmail.com>
-Subject: Re: [PATCH 3/5] PM / QoS: Add function dev_pm_qos_read_value()
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Sep 2011 02:56:48 -0400
+Date: Fri, 2 Sep 2011 08:56:20 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Andrew Chew <achew@nvidia.com>, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH V3 1/5] i2c: Add irq_gpio field to struct i2c_client,
+ i2c_board_info.
+Message-ID: <20110902085620.4ad918c4@endymion.delvare>
+In-Reply-To: <1314914676-28397-1-git-send-email-swarren@nvidia.com>
+References: <1314914676-28397-1-git-send-email-swarren@nvidia.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 2, 2011 at 12:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Hi,
->
-> On Thursday, September 01, 2011, Jean Pihet wrote:
->> Hi Rafael,
->>
->> On Wed, Aug 31, 2011 at 12:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > From: Rafael J. Wysocki <rjw@sisk.pl>
->> >
->> > To read the current PM QoS value for a given device we need to
->> > make sure that the device's power.constraints object won't be
->> > removed while we're doing that.  For this reason, put the
->> > operation under dev->power.lock and acquire the lock
->> > around the initialization and removal of power.constraints.
->> Ok.
->>
->> > Moreover, since we're using the value of power.constraints to
->> > determine whether or not the object is present, the
->> > power.constraints_state field isn't necessary any more and may be
->> > removed.  However, dev_pm_qos_add_request() needs to check if the
->> > device is being removed from the system before allocating a new
->> > PM QoS constraints object for it, so it has to use device_pm_lock()
->> > and the device PM QoS initialization and destruction should be done
->> > under device_pm_lock() as well.
->> Ok that makes sense.
->> The constraints_state field can be replaced by a combination of
->> dev->power.constraints and list_empty(&dev->power.entry), which makes
->> the code more compact and less redundant.
->>
->> >
->> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
->> > ---
->> >  drivers/base/power/main.c |    4 -
->> >  drivers/base/power/qos.c  |  167 ++++++++++++++++++++++++++--------------------
->> >  include/linux/pm.h        |    8 --
->> >  include/linux/pm_qos.h    |    3
->> >  4 files changed, 101 insertions(+), 81 deletions(-)
->> >
->> > Index: linux/drivers/base/power/qos.c
->> > ===================================================================
->> > --- linux.orig/drivers/base/power/qos.c
->> > +++ linux/drivers/base/power/qos.c
->> > @@ -30,15 +30,6 @@
->> ...
->>
->> >
->> > @@ -178,8 +202,8 @@ void dev_pm_qos_constraints_destroy(stru
->> >  *
->> >  * Returns 1 if the aggregated constraint value has changed,
->> >  * 0 if the aggregated constraint value has not changed,
->> > - * -EINVAL in case of wrong parameters, -ENODEV if the device has been
->> > - * removed from the system
->> > + * -EINVAL in case of wrong parameters, -ENOMEM if there's not enough memory
->> > + * to allocate for data structures.
->> Why not use -ENODEV in case there is no device?
->
-> I don't think it's useful for the caller.  If the device is gone, the
-> constraing simply doesn't matter, so there's no error to handle.
->
->> >  */
->> >  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
->> >                           s32 value)
->> > @@ -195,28 +219,35 @@ int dev_pm_qos_add_request(struct device
->> >                return -EINVAL;
->> >        }
->> >
->> > -       mutex_lock(&dev_pm_qos_mtx);
->> >        req->dev = dev;
->> >
->> > -       /* Return if the device has been removed */
->> > -       if (req->dev->power.constraints_state == DEV_PM_QOS_NO_DEVICE) {
->> > -               ret = -ENODEV;
->> > -               goto out;
->> > -       }
->> > +       device_pm_lock();
->> > +       mutex_lock(&dev_pm_qos_mtx);
->> >
->> > -       /*
->> > -        * Allocate the constraints data on the first call to add_request,
->> > -        * i.e. only if the data is not already allocated and if the device has
->> > -        * not been removed
->> > -        */
->> > -       if (dev->power.constraints_state == DEV_PM_QOS_DEVICE_PRESENT)
->> > -               ret = dev_pm_qos_constraints_allocate(dev);
->> > +       if (dev->power.constraints) {
->> > +               device_pm_unlock();
->> > +       } else {
->> > +               if (list_empty(&dev->power.entry)) {
->> > +                       /* The device has been removed from the system. */
->> > +                       device_pm_unlock();
->> > +                       goto out;
->> 0 is silently returned in case the device has been removed. Is that
->> the intention?
->
-> Pretty much it is.  Is that a problem?
-I think the caller needs to know if the constraint has been applied
-correctly or not. That is why I changed the API functions to int.
+Stephen,
 
-Note: I still need to come with an API documentation patch after the
-code is settled down.
+Can you please fix your e-mail client / system / whatever so that your
+patch series are no longer sent duplicated?
 
->
-> Rafael
->
+On Thu,  1 Sep 2011 16:04:27 -0600, Stephen Warren wrote:
+> Some devices use a single pin as both an IRQ and a GPIO. In that case,
+> irq_gpio is the GPIO ID for that pin. Not all drivers use this feature.
+> Where they do, and the use of this feature is optional, and the system
+> wishes to disable this feature, this field must be explicitly set to a
+> defined invalid GPIO ID, such as -1.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v3: Also add the field to i2c_board_info, and copy the field from
+>     i2c_board_info to i2c_client upon instantiation
 
-Thanks,
-Jean
+I don't get the idea. The i2c core doesn't make any use of the field,
+and that field will only be used by a few drivers amongst the 420+
+i2c drivers in the tree. This looks like a waste of memory. What's wrong
+with including the new field in the private platform or arch data
+structure for drivers which need it?
+
+> 
+>  drivers/i2c/i2c-core.c |    1 +
+>  include/linux/i2c.h    |    9 +++++++++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index 131079a..da12540 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -518,6 +518,7 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+>  	client->flags = info->flags;
+>  	client->addr = info->addr;
+>  	client->irq = info->irq;
+> +	client->irq_gpio = info->irq_gpio;
+>  
+>  	strlcpy(client->name, info->type, sizeof(client->name));
+>  
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 3fad485..49e2e36 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -192,6 +192,12 @@ struct i2c_driver {
+>   * @driver: device's driver, hence pointer to access routines
+>   * @dev: Driver model device node for the slave.
+>   * @irq: indicates the IRQ generated by this device (if any)
+> + * @irq_gpio: some devices use a single pin as both an IRQ and a GPIO. In
+> + *	that case, irq_gpio is the GPIO ID for that pin. Not all drivers
+> + *	use this feature. Where they do, and the use of this feature is
+> + *	optional, and the system wishes to disable this feature, this
+> + *	field must be explicitly set to a defined invalid GPIO ID, such
+> + *	as -1.
+>   * @detected: member of an i2c_driver.clients list or i2c-core's
+>   *	userspace_devices list
+>   *
+> @@ -209,6 +215,7 @@ struct i2c_client {
+>  	struct i2c_driver *driver;	/* and our access routines	*/
+>  	struct device dev;		/* the device structure		*/
+>  	int irq;			/* irq issued by device		*/
+> +	int irq_gpio;			/* gpio corresponding to irq	*/
+>  	struct list_head detected;
+>  };
+>  #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
+> @@ -240,6 +247,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
+>   * @archdata: copied into i2c_client.dev.archdata
+>   * @of_node: pointer to OpenFirmware device node
+>   * @irq: stored in i2c_client.irq
+> + * @irq_gpio: stored in i2c_client.irq_gpio
+>   *
+>   * I2C doesn't actually support hardware probing, although controllers and
+>   * devices may be able to use I2C_SMBUS_QUICK to tell whether or not there's
+> @@ -260,6 +268,7 @@ struct i2c_board_info {
+>  	struct dev_archdata	*archdata;
+>  	struct device_node *of_node;
+>  	int		irq;
+> +	int		irq_gpio;
+>  };
+>  
+>  /**
+
+
+-- 
+Jean Delvare
