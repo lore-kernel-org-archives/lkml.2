@@ -1,83 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744Ab1IBIkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 04:40:21 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:41086 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932683Ab1IBIkQ (ORCPT
+	id S932795Ab1IBImP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 04:42:15 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:51513 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932604Ab1IBImM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 04:40:16 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E60985B.6010901@cam.ac.uk>
-Date: Fri, 02 Sep 2011 09:48:27 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
+	Fri, 2 Sep 2011 04:42:12 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: RFD: x32 ABI system call numbers
+Date: Fri, 2 Sep 2011 09:42:06 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
+Cc: Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+References: <4E582577.2060805@zytor.com> <201109020149.10780.pedro@codesourcery.com> <4E6036A7.6090200@zytor.com>
+In-Reply-To: <4E6036A7.6090200@zytor.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
-        Ben Dooks <ben-linux@fluff.org>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Chew <achew@nvidia.com>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V2 1/4] i2c: Add irq_gpio field to struct i2c_client.
-References: <1314895964-15964-1-git-send-email-swarren@nvidia.com> <1314895964-15964-5-git-send-email-swarren@nvidia.com>
-In-Reply-To: <1314895964-15964-5-git-send-email-swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201109020942.07312.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/11 17:52, Stephen Warren wrote:
-> Some devices use a single pin as both an IRQ and a GPIO. In that case,
-> irq_gpio is the GPIO ID for that pin. Not all drivers use this feature.
-> Where they do, and the use of this feature is optional, and the system
-> wishes to disable this feature, this field must be explicitly set to a
-> defined invalid GPIO ID, such as -1.
-Why make it specifically an irq related gpio?  Might as well just call it
-gpio then it can be used for cases where it never corresponds to an irq
-such as capture trigger pins.
+On Friday 02 September 2011 02:51:35, H. Peter Anvin wrote:
+> On 09/01/2011 05:49 PM, Pedro Alves wrote:
+> >>>
+> >>>       struct iovec
+> >>>       {
+> >>>           void __user *iov_base;    /* BSD uses caddr_t (1003.1g requires
+> >>> void *) */
+> >>>           __kernel_size_t iov_len; /* Must be size_t (1003.1g) */
+> >>>       } __attribute__((x32_abi_64));
+> >>>
+> >>>       typedef long time_t __attribute__((x32_abi_64));
+> >>>
+> >>> The x32_abi_64 attribute converts pointers and longs back to 64-bit and
+> >>> adjusts the alignment accordingly.  If we tag all userspace visible
+> >>> structures with this attribute, we can use the 64-bit ABI without changes.
+> >
+> > I would expect no new gcc extension to be needed for that -- there's the
+> > mode attribute (you can read DI as 64-bit):
+> >
+> >   typedef void * __kernel_ptr64 __attribute ((mode(DI)));
+> >
+> >   struct iovec
+> >   {
+> >     __kernel_ptr64 iov_base;
+> >     ...
+> >   };
+> >
+> 
+> Does that work for *writing*, too?  That might be a very useful little 
+> escape hatch for some particularly tight corners.
 
-Otherwise I'd be happy to see this go in.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> v2: This patch is new. This updated series based on Arnd's comments that
-> this solution was a good idea.
-> 
-> Note that I leave on vacation for 2 weeks starting Friday afternoon. I
-> may have some email capabilities during this time, but will certainly be
-> slow to respond.
-> 
->  include/linux/i2c.h |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index 3fad485..b368097 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -192,6 +192,12 @@ struct i2c_driver {
->   * @driver: device's driver, hence pointer to access routines
->   * @dev: Driver model device node for the slave.
->   * @irq: indicates the IRQ generated by this device (if any)
-> + * @irq_gpio: some devices use a single pin as both an IRQ and a GPIO. In
-> + *	that case, irq_gpio is the GPIO ID for that pin. Not all drivers
-> + *	use this feature. Where they do, and the use of this feature is
-> + *	optional, and the system wishes to disable this feature, this
-> + *	field must be explicitly set to a defined invalid GPIO ID, such
-> + *	as -1.
->   * @detected: member of an i2c_driver.clients list or i2c-core's
->   *	userspace_devices list
->   *
-> @@ -209,6 +215,7 @@ struct i2c_client {
->  	struct i2c_driver *driver;	/* and our access routines	*/
->  	struct device dev;		/* the device structure		*/
->  	int irq;			/* irq issued by device		*/
-> +	int irq_gpio;			/* gpio corresponding to irq	*/
->  	struct list_head detected;
->  };
->  #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
+With a gcc trunk from earlier this month (that supports -mx32):
 
+typedef void * ptr64 __attribute ((mode(DI)));
+
+struct foo
+{
+  ptr64 p64;
+};
+
+int
+foofunc (void)
+{
+  struct foo foo;
+  int i;
+  void *p32;
+  ptr64 p64;
+
+  p32 = &i;
+  p32 = &foofunc;
+
+  p64 = p32;
+  p64 = &i;
+  p64 = foofunc;
+
+  foo.p64 = p32;
+
+  void **ptrp64 = &p64;  /* gives "warning: initialization from incompatible pointer type [enabled by default]". */
+
+  return (int) (void*) ptrp64;
+}
+
+With:
+
+./cc1 ~/mode.c -o mode.o -mx32 -fverbose-asm
+
+gives me:
+
+/home/pedro/mode.c: In function ‘foofunc’:
+/home/pedro/mode.c:25:19: warning: initialization from incompatible pointer type [enabled by default]
+
+and produced (note, -O0):
+
+foofunc:
+.LFB0:
+        .cfi_startproc
+        pushq   %rbp    #
+        .cfi_def_cfa_offset 16
+        .cfi_offset 6, -16
+        movq    %rsp, %rbp      #,
+        .cfi_def_cfa_register 6
+        leaq    -20(%rbp), %rax #, tmp61
+        movl    %eax, -4(%rbp)  # tmp61, p32
+        movl    $foofunc, -4(%rbp)      #, p32
+        mov     -4(%rbp), %eax  # p32,
+        movq    %rax, -32(%rbp) #, p64
+        leaq    -20(%rbp), %rax #, tmp62
+        movq    %rax, -32(%rbp) # tmp62, p64
+        movq    $foofunc, -32(%rbp)     #, p64
+        mov     -4(%rbp), %eax  # p32, tmp63
+        movq    %rax, -16(%rbp) # tmp63, foo.p64
+        leaq    -32(%rbp), %rax #, tmp64
+        movl    %eax, -8(%rbp)  # tmp64, ptrp64
+        movl    -8(%rbp), %eax  # ptrp64, D.2693
+        popq    %rbp    #
+        .cfi_def_cfa 7, 8
+        ret
+        .cfi_endproc
+
+-- 
+Pedro Alves
