@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1IBNgz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 09:36:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38483 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab1IBNgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 09:36:52 -0400
-Date: Fri, 2 Sep 2011 14:36:48 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 3/3] compaction accouting fix
-Message-ID: <20110902133648.GP14369@suse.de>
-References: <cover.1321112552.git.minchan.kim@gmail.com>
- <282a4531f23c5e35cfddf089f93559130b4bb660.1321112552.git.minchan.kim@gmail.com>
- <20110901142027.GI14369@suse.de>
- <CAEwNFnCSgPj+KuZr0h9-0=mr29QDYnFDzvtwV5Vc1VBVtThqWA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CAEwNFnCSgPj+KuZr0h9-0=mr29QDYnFDzvtwV5Vc1VBVtThqWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752179Ab1IBNkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 09:40:16 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:54130 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751836Ab1IBNkN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 09:40:13 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: grant.likely@secretlab.ca
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 RESEND] gpio-vx855: add device tree binding
+Message-Id: <20110902134008.A7C899D401C@zog.reactivated.net>
+Date: Fri,  2 Sep 2011 14:40:08 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=CtAWj5ivj2cA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=x7EdvbJ8gsB9n6TrBDgA:9 a=2VOpp8wDU8semRwgGpEA:7 a=d4CUUju0HPYA:10 a=XRHo941U3qHBMacx:21 a=yClDitE5-8W8Zd-a:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 02:09:55PM +0900, Minchan Kim wrote:
-> On Thu, Sep 1, 2011 at 11:20 PM, Mel Gorman <mgorman@suse.de> wrote:
-> > On Sun, Nov 13, 2011 at 01:37:43AM +0900, Minchan Kim wrote:
-> >> I saw the following accouting of compaction during test of the series.
-> >
-> > s/accouting/accounting/ both here and in the subject. A nicer name the
-> > patch would have been
-> >
-> > "mm: compaction: Only update compact_blocks_moved if compaction was successful"
-> 
-> Thanks, I will fix it at next version. :)
-> 
-> >
-> >>
-> >> compact_blocks_moved 251
-> >> compact_pages_moved 44
-> >>
-> >> It's very awkward to me although it's possbile because it means we try to compact 251 blocks
-> >> but it just migrated 44 pages. As further investigation, I found isolate_migratepages doesn't
-> >> isolate any pages but it returns ISOLATE_SUCCESS and then, it just increases compact_blocks_moved
-> >> but doesn't increased compact_pages_moved.
-> >>
-> >> This patch makes accouting of compaction works only in case of success of isolation.
-> >>
-> >
-> > compact_blocks_moved exists to indicate the rate compaction is
-> > scanning pageblocks. If compact_blocks_moved and compact_pages_moved
-> > are increasing at a similar rate for example, it could imply that
-> > compaction is doing a lot of scanning but is not necessarily useful
-> > work. It's not necessarily reflected by compact_fail because that
-> > counter is only updated for pages that were isolated from the LRU.
-> 
-> You seem to say "compact_pagemigrate_failed" not "compact_fail".
-> 
+This is needed to enable the HDD LED on the OLPC XO-1.5 laptop,
+enabled through devicetree and the gpio-leds driver.
 
-I did. Thanks.
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ .../devicetree/bindings/gpio/gpio_vx855.txt        |   20 ++++++++++++++++++++
+ drivers/gpio/gpio-vx855.c                          |    5 +++++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio_vx855.txt
 
-> >
-> > I now recognise of course that "compact_blocks_moved" was an *awful*
-> > choice of name for this stat.
-> 
-> I hope changing stat names as follows unless it's too late(ie, it
-> doesn't break ABI with any tools)
-> 
+v2: extended the documentation with information about the pin numbering
+scheme, which matches that of the driver.
 
-I'm not aware of any tools that depend on this except my own reporting
-scripts and even those do not particularly care.
-
-> compact_blocks_moved -> compact_blocks
-
-compact_pageblock_scanned?
-
-> compact_pages_moved -> compact_pgmigrated_success
-> compact_pagemigrate_failed -> compact_pgmigrated_fail
-> compact_stall -> compact_alloc_stall
-> compact_fail -> compact_alloc_fail
-> compact_success -> compact_alloc_success
-> 
-
-Seems reasonable to me.
-
+diff --git a/Documentation/devicetree/bindings/gpio/gpio_vx855.txt b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
+new file mode 100644
+index 0000000..17285a5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
+@@ -0,0 +1,20 @@
++VIA VX855 GPIO controller
++
++Required properties:
++- compatible : "via,vx855-gpio"
++- #gpio-cells : Should be two. The first cell is the pin number and the
++  second cell is used to specify optional parameters:
++  - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- gpio-controller : Marks the device node as a GPIO controller.
++
++As VIA differentiates between GPI, GPO and GPIO on its 42 available pins,
++with each pin type restarting numbering at 0, the following numbering scheme
++is used in the device tree for the pin number:
++
++PIN NO		VIA NAME
++0..13		GPI 0..13
++14..26		GPO 0..12
++27..41		GPIO 0..14
++
++For example, GPIO 11 (VIA name) is referred to with pin number 38 in the
++device tree.
+diff --git a/drivers/gpio/gpio-vx855.c b/drivers/gpio/gpio-vx855.c
+index ef5aabd..5b7e9ba 100644
+--- a/drivers/gpio/gpio-vx855.c
++++ b/drivers/gpio/gpio-vx855.c
+@@ -31,6 +31,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pci.h>
+ #include <linux/io.h>
++#include <linux/of.h>
+ 
+ #define MODULE_NAME "vx855_gpio"
+ 
+@@ -216,6 +217,10 @@ static void vx855gpio_gpio_setup(struct vx855_gpio *vg)
+ 	c->ngpio = NR_VX855_GP;
+ 	c->can_sleep = 0;
+ 	c->names = vx855gpio_names;
++
++#ifdef CONFIG_OF_GPIO
++	c->of_node = of_find_compatible_node(NULL, NULL, "via,vx855-gpio");
++#endif
+ }
+ 
+ /* This platform device is ordinarily registered by the vx855 mfd driver */
 -- 
-Mel Gorman
-SUSE Labs
+1.7.6
+
