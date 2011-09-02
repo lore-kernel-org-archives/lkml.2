@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab1IBXtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:49:55 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:59753 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab1IBXtw (ORCPT
+	id S1751883Ab1IBXuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:50:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48079 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751468Ab1IBXub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:49:52 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Serge Hallyn <serge@hallyn.com>
-Cc: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        dhowells@redhat.com, rdunlap@xenotime.net
-References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
-	<1314993400-6910-3-git-send-email-serge@hallyn.com>
-Date: Fri, 02 Sep 2011 16:49:46 -0700
-In-Reply-To: <1314993400-6910-3-git-send-email-serge@hallyn.com> (Serge
-	Hallyn's message of "Fri, 2 Sep 2011 19:56:25 +0000")
-Message-ID: <m11uvyld2d.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/2D5CIFFfIM8RlPzPzuGn7rg5aSVvilc8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 
-X-Spam-Combo: ;Serge Hallyn <serge@hallyn.com>
-X-Spam-Relay-Country: 
-Subject: missing [PATCH 01/15]
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Fri, 2 Sep 2011 19:50:31 -0400
+Date: Fri, 2 Sep 2011 16:50:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bob Pearson <rpearson@systemfabricworks.com>
+Cc: linux-kernel@vger.kernel.org, fzago@systemfabricworks.com,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        George Spelvin <linux@horizon.com>
+Subject: Re: [PATCH v6 00/10] crc32
+Message-Id: <20110902165020.7c6b5382.akpm@linux-foundation.org>
+In-Reply-To: <4E5EB5CC.1010605@systemfabricworks.com>
+References: <4E5EB5CC.1010605@systemfabricworks.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 31 Aug 2011 17:29:32 -0500
+Bob Pearson <rpearson@systemfabricworks.com> wrote:
 
+> This is an attempt to resolve all the issues that were left in the last review.
+> There is one proposed change that is still causing a difference of opinion
+> which has to do with the form of the loops and their performance on x86 and ppc
+> This version has the change to the form that runs faster on x86 as an ifdef.
+> 
+> This patch series provides improved performance for computing the crc32
+> polynomial on common hardware by adding the Slicing-by-8 algorithm to the
+> existing algorithms already included. The new algorithm is very closely
+> related to the existing algorithm so the extension requires small changes
+> to implement.  Additionally it cleans up some warnings in the existing
+> code and adds a kernel mode optional self test to replace the existing
+> user mode self test.
+> 
+> A description of the existing and new algorithm is included in
+> Documentation/crc32.txt.
 
-Was this blank email supposed to be patch 01/15?
+So...  are the crc wars over yet?  I hope it's safe to look at the
+patches now ;)
 
-Eric
+Please see Documentation/SubmittingPatches Section 15's discussion of
+patch Subject: lines.
 
-
-
+Is there any code in the kernel which uses the crc code so much that we
+actually care about its performance?
 
