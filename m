@@ -1,57 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab1IBBjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 21:39:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28606 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933004Ab1IBBjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 21:39:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="44581443"
-Subject: Re: [next] unix stream crashes
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Jiri Slaby <jirislaby@gmail.com>, "David S. Miller" <davem@davemloft.net>,
-        ML netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <3179.1314924559@turing-police.cc.vt.edu>
-References: <4E5FEF28.60406@gmail.com>
-	 <3179.1314924559@turing-police.cc.vt.edu>
+	id S933044Ab1IBBkc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 21:40:32 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:36980 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933004Ab1IBBka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 21:40:30 -0400
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+In-Reply-To: <CACqU3MWcBJuXA3n=ha_MNteM6MHfEWj8=42nZ_zvorvt6Pbq-w@mail.gmail.com>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	 <20110822125355.bb01d76b.rdunlap@xenotime.net>
+	 <CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+	 <20110822174958.73dd96c7.rdunlap@xenotime.net>
+	 <1314065358.3225.44.camel@localhost.localdomain>
+	 <20110823164035.ca28fdc6.rdunlap@xenotime.net>
+	 <CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
+	 <1314362342.3224.19.camel@localhost.localdomain>
+	 <20110826100011.9213d872.rdunlap@xenotime.net>
+	 <CACqU3MXBjHi9nOfxeQGJVtc7x33KbzK2Mi+_+A+jr+bPwqzY-Q@mail.gmail.com>
+	 <CACqU3MWcBJuXA3n=ha_MNteM6MHfEWj8=42nZ_zvorvt6Pbq-w@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Sep 2011 18:40:45 -0700
-Message-ID: <1314927645.2576.2939.camel@schen9-DESK>
+Date: Thu, 01 Sep 2011 21:40:25 -0400
+Message-ID: <1314927625.3058.53.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 20:49 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 01 Sep 2011 22:46:32 +0200, Jiri Slaby said:
+On Thu, 2011-09-01 at 20:32 -0400, Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Sat, Aug 27, 2011 at 2:06 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
 > > Hi,
-> > 
-> > my box 100% crashes when booting. It's both in unix socket recv and send 
-> > paths. I've reverted 0856a30409 (Scm: Remove unnecessary pid & 
-> > credential references in Unix socket's send and receive path) and it 
-> > seems to help.
-> > 
-> > The oops:
-> > http://www.fi.muni.cz/~xslaby/sklad/panics/af_unix_crash.png
+> >
+> > On Fri, Aug 26, 2011 at 1:00 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >> On Fri, 26 Aug 2011 08:39:02 -0400 Mimi Zohar wrote:
+> >>
+> >>> On Tue, 2011-08-23 at 22:10 -0400, Arnaud Lacombe wrote:
+> >>> > Hi,
+> >>> >
+> >>> > On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >>> > > I think that you are going to need to do something like Arnaud suggested
+> >>> > > and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
+> >>> > > unless you can convince someone that this is a kconfig bug.
+> >>> > >
+> >>> > dammit... I guess there is...
+> >>> >
+> >>> > If you consider the following Kconfig:
+> >>> >
+> >>> > config MOD
+> >>> >         bool
+> >>> >         default y
+> >>> >         option modules
+> >>> >
+> >>> > config EXPERIMENTAL
+> >>> >         bool
+> >>> >         default y
+> >>> >
+> >>> > menuconfig A
+> >>> >         tristate "A"
+> >>> >         depends on EXPERIMENTAL
+> >>> >
+> >>> > config B
+> >>> >         bool "B"
+> >>> >
+> >>> > config B0
+> >>> >         bool
+> >>> >
+> >>> > config C
+> >>> >         tristate "C"
+> >>> >         depends on B
+> >>> >
+> >>> > config C0
+> >>> >         tristate
+> >>> >
+> >>> > config D
+> >>> >         boolean "D"
+> >>> >         depends on A && B
+> >>> >         select C
+> >>> >         select C0
+> >>> >
+> >>> > config E
+> >>> >         tristate "E"
+> >>> >
+> >>> > config F
+> >>> >         tristate "F"
+> >>> >         select E
+> >>> >
+> >>> > B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
+> >>> > (TCG_TPM) allows to set D (EVM), which will select (C). Now,
+> >>> > menuconfig highlight the problem very well. Proceeding as following
+> >>> > A=m, B=y, C=m, E=y, F=y, we ends up having:
+> >>> >
+> >>> >  <M> A  --->
+> >>> >  [*] B
+> >>> >  {M} C
+> >>> >  [*] D
+> >>> >  -*- E
+> >>> >  <*> F
+> >>> >
+> >>> > which translate in the following config:
+> >>> >
+> >>> > CONFIG_MOD=y
+> >>> > CONFIG_EXPERIMENTAL=y
+> >>> > CONFIG_A=m
+> >>> > CONFIG_B=y
+> >>> > CONFIG_C=m
+> >>> > CONFIG_C0=m
+> >>> > CONFIG_D=y
+> >>> > CONFIG_E=y
+> >>> > CONFIG_F=y
+> >>> >
+> >>> > I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
+> >>> > If you remove D's dependency on 'A', everything works as expected. So
+> >>> > it would seem direct dependency state influence the state of reverse
+> >>> > dependencies...
+> >>> >
+> >>> > Will have a look...
+> >>> >
+> >>> >  - Arnaud
+> >>>
+> >>> Thanks for looking into this!  Instead of changing 'TCG_TPM' to
+> >>> 'TCG_TPM=y', the dependency should be on 'TRUSTED_KEYS=y'.  Then when
+> >>> I've refactored ENCRYPTED_KEYS, removing the ENCRYPTED_KEYS dependency
+> >>> on TRUSTED_KEYS, the EVM dependency would be '(TRUSTED_KEYS=y ||
+> >>> TRUSTED_KEYS=n)'.  Do you want a temporary fix for now?
+> >>
+> >> Yes, linux-next (randconfig) builds are still failing, so we need something
+> >> to prevent that.
+> >>
+> > you may want to try:
+> >
+> > git://github.com/lacombar/linux-2.6.git master/kconfig/expr-woes
+> >
+> ping ?
 > 
-> I was seeing a 100% repeatable crash with the X server starting as well, but
-> wasn't able to get a traceback because my X server was doing the modeset before
-> it crashed (so all I got was a black screen) and netconsole is busticated for
-> me.  I can confirm that reverting that one commit allows my box to boot and get
-> X up and running as well.
+>  - Arnaud
+
+I assume you want me to test using expr-woes, but I'm not how.  Could
+you help me here a bit.
+
+(Over the weekend I removed encrypted keys dependency on TCG_TPM.)
+
+thanks,
+
+Mimi
+
+> > only the last commit is relevant to the problem, but depend on one
+> > another to get <assert.h>. The rest aims at tidying the expr stuff.
+> > I'm looking for regression it may have introduced.
+> >
+> > Thanks,
+> >  - Arnaud
+> >
+> > ps: I'll most likely be AFK until sunday evening (to be conservative).
+> >
+> >> thanks,
+> >> ---
+> >> ~Randy
+> >> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> >>
+> >
 > 
 
-Yes, Jiri's log does indicate that something went wrong when releasing
-the skb, most likely due to changes in the pid and credentials ref
-count.  Unfortunately, I cannot duplicate the problem on my system.  Any
-info on your system to help me debug will be appreciated.  I'll try to
-take another look at the patch tomorrow.
-
-Tim
 
