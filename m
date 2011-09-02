@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab1IBIns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 04:43:48 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:49455 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932604Ab1IBInp (ORCPT
+	id S932680Ab1IBIoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 04:44:10 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:39297 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933014Ab1IBIoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 04:43:45 -0400
+	Fri, 2 Sep 2011 04:44:07 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E60992F.50602@cam.ac.uk>
-Date: Fri, 02 Sep 2011 09:51:59 +0100
+Message-ID: <4E609941.6080402@cam.ac.uk>
+Date: Fri, 02 Sep 2011 09:52:17 +0100
 From: Jonathan Cameron <jic23@cam.ac.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
 MIME-Version: 1.0
@@ -22,10 +22,9 @@ CC: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
         linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
         linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V2 3/4] staging:iio:magnetometer:ak8975: Don't assume
- 0 is an invalid GPIO
-References: <1314895964-15964-1-git-send-email-swarren@nvidia.com> <1314895964-15964-3-git-send-email-swarren@nvidia.com>
-In-Reply-To: <1314895964-15964-3-git-send-email-swarren@nvidia.com>
+Subject: Re: [PATCH V2 4/4] staging:iio:magnetometer:ak8975: Fix probe() error-handling
+References: <1314895964-15964-1-git-send-email-swarren@nvidia.com> <1314895964-15964-4-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1314895964-15964-4-git-send-email-swarren@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,65 +32,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 09/01/11 17:52, Stephen Warren wrote:
-> gpio_is_valid() is the defined mechanism to determine whether a GPIO is
-> valid. Use this instead of assuming that 0 is an invalid GPIO.
+> Fix ak8975_probe() to jump to the appropriate exit labels when an error
+> occurs. With the previous code, some cleanup actions were being skipped
+> for some error conditions.
 > 
-This one is unchanged so you should probably have carried acks from v1.
-Anyhow,
 > Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 > ---
->  drivers/staging/iio/magnetometer/ak8975.c |   11 +++++------
->  1 files changed, 5 insertions(+), 6 deletions(-)
+>  drivers/staging/iio/magnetometer/ak8975.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
 > diff --git a/drivers/staging/iio/magnetometer/ak8975.c b/drivers/staging/iio/magnetometer/ak8975.c
-> index 14076da..0dfdf50 100644
+> index 0dfdf50..cc20e8d 100644
 > --- a/drivers/staging/iio/magnetometer/ak8975.c
 > +++ b/drivers/staging/iio/magnetometer/ak8975.c
-> @@ -373,7 +373,7 @@ static int ak8975_read_axis(struct iio_dev *indio_dev, int index, int *val)
+> @@ -510,7 +510,7 @@ static int ak8975_probe(struct i2c_client *client,
+>  	err = ak8975_setup(client);
+>  	if (err < 0) {
+>  		dev_err(&client->dev, "AK8975 initialization fails\n");
+> -		goto exit_gpio;
+> +		goto exit_free_iio;
 >  	}
 >  
->  	/* Wait for the conversion to complete. */
-> -	if (data->eoc_gpio)
-> +	if (gpio_is_valid(data->eoc_gpio))
->  		ret = wait_conversion_complete_gpio(data);
->  	else
->  		ret = wait_conversion_complete_polled(data);
-> @@ -481,7 +481,7 @@ static int ak8975_probe(struct i2c_client *client,
->  
->  	/* We may not have a GPIO based IRQ to scan, that is fine, we will
->  	   poll if so */
-> -	if (eoc_gpio > 0) {
-> +	if (gpio_is_valid(eoc_gpio)) {
->  		err = gpio_request(eoc_gpio, "ak_8975");
->  		if (err < 0) {
->  			dev_err(&client->dev,
-> @@ -497,8 +497,7 @@ static int ak8975_probe(struct i2c_client *client,
->  						eoc_gpio, err);
->  			goto exit_gpio;
->  		}
-> -	} else
-> -		eoc_gpio = 0;	/* No GPIO available */
-> +	}
->  
->  	/* Register with IIO */
->  	indio_dev = iio_allocate_device(sizeof(*data));
-> @@ -534,7 +533,7 @@ static int ak8975_probe(struct i2c_client *client,
->  exit_free_iio:
->  	iio_free_device(indio_dev);
->  exit_gpio:
-> -	if (eoc_gpio)
-> +	if (gpio_is_valid(eoc_gpio))
->  		gpio_free(eoc_gpio);
->  exit:
->  	return err;
-> @@ -549,7 +548,7 @@ static int ak8975_remove(struct i2c_client *client)
->  	iio_device_unregister(indio_dev);
->  	iio_free_device(indio_dev);
->  
-> -	if (eoc_gpio)
-> +	if (gpio_is_valid(eoc_gpio))
->  		gpio_free(eoc_gpio);
->  
->  	return 0;
+>  	i2c_set_clientdata(client, indio_dev);
 
