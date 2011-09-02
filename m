@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078Ab1IBNLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 09:11:09 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34135
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751806Ab1IBNLF (ORCPT
+	id S1752164Ab1IBN0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 09:26:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51978 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab1IBN0W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 09:11:05 -0400
-Date: Fri, 2 Sep 2011 09:10:57 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "Ted Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Daniel Ehrenberg <dehrenberg@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: Approaches to making io_submit not block
-Message-ID: <20110902131057.GA7779@infradead.org>
-References: <CAAK6Zt2icmsBxjdqFvDXfnxZHXuKN3hDSTdDmh7Vhj1iJ_5LXQ@mail.gmail.com>
- <20110830053231.GA1627@infradead.org>
- <CAAK6Zt2P3jBPfeCPioK-ehpVAw0iQjikY0BujXfQmfozJ8GNvA@mail.gmail.com>
- <20110831052627.GA5338@infradead.org>
- <m2pqjlo6e5.fsf@firstfloor.org>
- <20110901041848.GO32358@dastard>
- <20110901043947.GB7761@one.firstfloor.org>
- <20110901065415.GP32358@dastard>
- <20110902130835.GB4110@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110902130835.GB4110@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 2 Sep 2011 09:26:22 -0400
+Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 02 Sep 2011 15:26:12 +0200
+In-Reply-To: <4E602EC8.9010306@intel.com>
+References: <1314681384-20881-1-git-send-email-ying.huang@intel.com>
+				 <1314681384-20881-2-git-send-email-ying.huang@intel.com>
+			 <1314785405.23993.21.camel@twins> <4E5EE409.3060102@intel.com>
+		 <1314863829.7945.9.camel@twins> <4E5F45F6.70009@intel.com>
+	 <1314871201.7945.17.camel@twins> <4E602EC8.9010306@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314969972.1301.15.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 09:08:35AM -0400, Ted Ts'o wrote:
-> That may be true for hard drives, but PCIe attached flash can support
-> millions of IOP's per second --- i.e., at least hundreds of IOP's in
-> milliseconds.  Yes, these devices are expensive, but so are the
-> thousand-disk RAID arrays that some people attach via XFS.  :-)
+On Fri, 2011-09-02 at 09:18 +0800, Huang Ying wrote:
+> On 09/01/2011 06:00 PM, Peter Zijlstra wrote:
+> > On Thu, 2011-09-01 at 16:44 +0800, Huang Ying wrote:
+> > 
+> >> Because llist is in library, it may be used in highly contended case and
+> >> light/un-contended loads.  So maybe code as above is best choice for llist.
+> > 
+> > Well the thing is, if you're heavily contended you should probably be
+> > doing something else..
+> 
+> So which solution is preferable?
+> 
+> 1) no cpu_relax
+> 2) cpu_relax after first cmpxchg
+> 
+> Personally, I prefer 2).  It should have acceptable overhead in
+> ligh/un-contended loads.  Do you agree.
 
-reading / writing to the devices is different from allocator calls.
-
-You reall do not want to do an allocator call for each of these device.
-
+I guess so, we can always poke at it again when someone finds something
+to measure.
