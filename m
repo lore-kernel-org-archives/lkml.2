@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab1IBXEY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:04:24 -0400
-Received: from claw.goop.org ([74.207.240.146]:45445 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756464Ab1IBXEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:04:22 -0400
-Message-ID: <4E6160F3.8030708@goop.org>
-Date: Fri, 02 Sep 2011 16:04:19 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1756623Ab1IBXFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:05:09 -0400
+Received: from ixia-3.edge2.lax012.pnap.net ([74.217.148.5]:31878 "EHLO
+	ixqw-mail-out.ixiacom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756495Ab1IBXFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:05:08 -0400
+Message-ID: <4E616122.3030901@ixiacom.com>
+Date: Fri, 2 Sep 2011 16:05:06 -0700
+From: Earl Chew <echew@ixiacom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.1) Gecko/20110830 Thunderbird/6.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [Revert] Re: [PATCH] mm: sync vmalloc address space page tables
- in alloc_vm_area()
-References: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com> <20110901161134.GA8979@dumpdata.com> <4E5FED1A.1000300@goop.org> <20110901141754.76cef93b.akpm@linux-foundation.org> <4E60C067.4010600@citrix.com> <20110902153204.59a928c1.akpm@linux-foundation.org>
-In-Reply-To: <20110902153204.59a928c1.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "andi@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH 1/1 v2]: coredump: use current->group_leader->comm instead
+ of current->comm
+References: <4E5FBA73.2050108@ixiacom.com> <20110901195554.667c5e58@lxorguk.ukuu.org.uk> <4E5FD937.7050307@ixiacom.com> <20110902163037.GA4808@redhat.com> <4E610DAE.4080607@ixiacom.com> <20110902174806.GA9238@redhat.com>
+In-Reply-To: <20110902174806.GA9238@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2011 03:32 PM, Andrew Morton wrote:
-> On Fri, 2 Sep 2011 12:39:19 +0100
-> David Vrabel <david.vrabel@citrix.com> wrote:
+Oleg, Alan,
+
+
+> Who knows? But once again, we use ->comm in the very unlikely case.
 >
->> Xen backend drivers (e.g., blkback and netback) would sometimes fail
->> to map grant pages into the vmalloc address space allocated with
->> alloc_vm_area().  The GNTTABOP_map_grant_ref would fail because Xen
->> could not find the page (in the L2 table) containing the PTEs it
->> needed to update.
->>
->> (XEN) mm.c:3846:d0 Could not find L1 PTE for address fbb42000
->>
->> netback and blkback were making the hypercall from a kernel thread
->> where task->active_mm != &init_mm and alloc_vm_area() was only
->> updating the page tables for init_mm.  The usual method of deferring
->> the update to the page tables of other processes (i.e., after taking a
->> fault) doesn't work as a fault cannot occur during the hypercall.
->>
->> This would work on some systems depending on what else was using
->> vmalloc.
->>
->> Fix this by reverting ef691947d8a3d479e67652312783aedcf629320a
->> (vmalloc: remove vmalloc_sync_all() from alloc_vm_area()) and add a
->> comment to explain why it's needed.
-> oookay, I queued this for 3.1 and tagged it for a 3.0.x backport.  I
-> *think* that's the outcome of this discussion, for the short-term?
+> And let me repeat just in case. I do not argue, I agree either way.
+
+I understand.
+
+Before I give thought to reworking the change, perhaps some other
+considerations.
 
 
-Sure, that will get things going for now.
+The other interesting thing is that Alan brought up the relevant point
+about stuff breaking.
 
-Thanks,
-    J
+Alan Cox wrote:
+> Earl wrote:
+>> Change corepattern %e and %E to use current->group_leader->comm instead of current->comm.
+>
+> Which might break stuff.
 
+
+What are your thoughts regarding the introduction of cn_escape() in this patch ?
+
+https://lkml.org/lkml/2011/6/7/292
+
+
+While this change also has merit, it is also breaking change. There might
+be code relying on %e containing embedded slashes, either directly in
+core pattern:
+
+	%e.core
+
+or via the pipe:
+
+	| /opt/corehandler '%e'	
+
+
+
+Isn't the interface change introduced by cn_escape() also a concern ?
+
+
+Earl
