@@ -1,86 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab1IBPKl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 11:10:41 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57540 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab1IBPKi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 11:10:38 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-ide@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] ahci: add DT binding for Calxeda AHCI controller
-Date: Fri,  2 Sep 2011 10:10:15 -0500
-Message-Id: <1314976215-23902-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752698Ab1IBPO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 11:14:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44499 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752391Ab1IBPO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 11:14:58 -0400
+Date: Fri, 2 Sep 2011 17:14:50 +0200
+From: Jan Kara <jack@suse.cz>
+To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
+ del_timer
+Message-ID: <20110902151450.GF12182@quack.suse.cz>
+References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
+ <20110901143333.51baf4ae.akpm@linux-foundation.org>
+ <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
+ <20110902112133.GD12182@quack.suse.cz>
+ <CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
+ <CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Fri 02-09-11 17:32:35, kautuk.c @samsung.com wrote:
+> Hi Jan,
+> 
+> I looked at that other patch you just sent.
+> 
+> I think that the task state problem can still happen in that case as the setting
+> of the task state is not protected by any lock and the timer callback can be
+> executing on another CPU at that time.
+> 
+> Am I right about this ?
+  Yes, the cleanup is not meant to change the scenario you describe - as I
+said, there's no point in protecting against it as it's harmless...
 
-Add devicetree match table to ahci platform driver for Calxeda Highbank
-AHCI controller.
+								Honza
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
----
- .../devicetree/bindings/ata/calxeda-sata.txt       |   17 +++++++++++++++++
- drivers/ata/ahci_platform.c                        |    7 +++++++
- 2 files changed, 24 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/calxeda-sata.txt
-
-diff --git a/Documentation/devicetree/bindings/ata/calxeda-sata.txt b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
-new file mode 100644
-index 0000000..79caa56
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
-@@ -0,0 +1,17 @@
-+* Calxeda SATA Controller
-+
-+SATA nodes are defined to describe on-chip Serial ATA controllers.
-+Each SATA controller should have its own node.
-+
-+Required properties:
-+- compatible        : compatible list, contains "calxeda,hb-ahci"
-+- interrupts        : <interrupt mapping for SATA IRQ>
-+- reg               : <registers mapping>
-+
-+Example:
-+        sata@ffe08000 {
-+		compatible = "calxeda,hb-ahci";
-+                reg = <0xffe08000 0x1000>;
-+                interrupts = <115>;
-+        };
-+
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 6fef1fa..9bfc970 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -171,11 +171,18 @@ static int __devexit ahci_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static const struct of_device_id ahci_of_match[] = {
-+	{ .compatible = "calxeda,hb-ahci", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, ahci_of_match);
-+
- static struct platform_driver ahci_driver = {
- 	.remove = __devexit_p(ahci_remove),
- 	.driver = {
- 		.name = "ahci",
- 		.owner = THIS_MODULE,
-+		.of_match_table = ahci_of_match,
- 	},
- };
- 
+> On Fri, Sep 2, 2011 at 5:14 PM, kautuk.c @samsung.com
+> <consul.kautuk@gmail.com> wrote:
+> > Hi,
+> >
+> > On Fri, Sep 2, 2011 at 4:51 PM, Jan Kara <jack@suse.cz> wrote:
+> >>  Hello,
+> >>
+> >> On Fri 02-09-11 10:47:03, kautuk.c @samsung.com wrote:
+> >>> On Fri, Sep 2, 2011 at 3:03 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >>> > On Thu,  1 Sep 2011 21:27:02 +0530
+> >>> > Kautuk Consul <consul.kautuk@gmail.com> wrote:
+> >>> >
+> >>> >> This is important for SMP scenario, to check whether the timer
+> >>> >> callback is executing on another CPU when we are deleting the
+> >>> >> timer.
+> >>> >>
+> >>> >
+> >>> > I don't see why?
+> >>> >
+> >>> >> index d6edf8d..754b35a 100644
+> >>> >> --- a/mm/backing-dev.c
+> >>> >> +++ b/mm/backing-dev.c
+> >>> >> @@ -385,7 +385,7 @@ static int bdi_forker_thread(void *ptr)
+> >>> >>                * dirty data on the default backing_dev_info
+> >>> >>                */
+> >>> >>               if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list)) {
+> >>> >> -                     del_timer(&me->wakeup_timer);
+> >>> >> +                     del_timer_sync(&me->wakeup_timer);
+> >>> >>                       wb_do_writeback(me, 0);
+> >>> >>               }
+> >>> >
+> >>> > It isn't a use-after-free fix: bdi_unregister() safely shoots down any
+> >>> > running timer.
+> >>> >
+> >>>
+> >>> In the situation that we do a del_timer at the same time that the
+> >>> wakeup_timer_fn is
+> >>> executing on another CPU, there is one tiny possible problem:
+> >>> 1)  The wakeup_timer_fn will call wake_up_process on the bdi-default thread.
+> >>>       This will set the bdi-default thread's state to TASK_RUNNING.
+> >>> 2)  However, the code in bdi_writeback_thread() sets the state of the
+> >>> bdi-default process
+> >>>     to TASK_INTERRUPTIBLE as it intends to sleep later.
+> >>>
+> >>> If 2) happens before 1), then the bdi_forker_thread will not sleep
+> >>> inside schedule as is the intention of the bdi_forker_thread() code.
+> >>  OK, I agree the code in bdi_forker_thread() might use some straightening
+> >> up wrt. task state handling but is what you decribe really an issue? Sure
+> >> the task won't go to sleep but the whole effect is that it will just loop
+> >> once more to find out there's nothing to do and then go to sleep - not a
+> >> bug deal... Or am I missing something?
+> >
+> > Yes, you are right.
+> > I was studying the code and I found this inconsistency.
+> > Anyways, if there is NO_ACTION it will just loop and go to sleep again.
+> > I just posted this because I felt that the code was not achieving the logic
+> > that was intended in terms of sleeps and wakeups.
+> >
+> > I am currently trying to study the other patches you have just sent.
+> >
+> >>
+> >>> This protection is not achieved even by acquiring spinlocks before
+> >>> setting the task->state
+> >>> as the spinlock used in wakeup_timer_fn is &bdi->wb_lock whereas the code in
+> >>> bdi_forker_thread acquires &bdi_lock which is a different spin_lock.
+> >>>
+> >>> Am I correct in concluding this ?
+> >>
+> >>                                                                Honza
+> >> --
+> >> Jan Kara <jack@suse.cz>
+> >> SUSE Labs, CR
+> >>
+> >
 -- 
-1.7.5.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
