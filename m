@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab1IBPZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 11:25:06 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4136 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab1IBPZE convert rfc822-to-8bit (ORCPT
+	id S1752949Ab1IBPbO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 11:31:14 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2517 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab1IBPbL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 11:25:04 -0400
+	Fri, 2 Sep 2011 11:31:11 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 02 Sep 2011 08:24:40 -0700
+	by hqnvupgp06.nvidia.com on Fri, 02 Sep 2011 08:30:33 -0700
 From: Stephen Warren <swarren@nvidia.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
+        Ben Dooks <ben-linux@fluff.org>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Chew <AChew@nvidia.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 2 Sep 2011 08:24:38 -0700
-Subject: RE: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Thread-Topic: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Thread-Index: AcxpS3sA8/WZnoqoTwmulPZj8aa8/QAOHErA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B327A55C@HQMAIL01.nvidia.com>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
- <1312498820-2275-2-git-send-email-swarren@nvidia.com>
- <alpine.LFD.2.02.1109021027360.2723@ionos>
-In-Reply-To: <alpine.LFD.2.02.1109021027360.2723@ionos>
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Date: Fri, 2 Sep 2011 08:30:31 -0700
+Subject: RE: [PATCH V2 1/4] i2c: Add irq_gpio field to struct i2c_client.
+Thread-Topic: [PATCH V2 1/4] i2c: Add irq_gpio field to struct i2c_client.
+Thread-Index: AcxpS++wHWoM4TO2QOazlAVlhsuZtgAONe0g
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B327A55D@HQMAIL01.nvidia.com>
+References: <1314895964-15964-1-git-send-email-swarren@nvidia.com>
+ <1314895964-15964-5-git-send-email-swarren@nvidia.com>
+ <4E60985B.6010901@cam.ac.uk>
+In-Reply-To: <4E60985B.6010901@cam.ac.uk>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -42,42 +40,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote at Friday, September 02, 2011 2:37 AM:
-> On Thu, 4 Aug 2011, Stephen Warren wrote:
+Jonathan Cameron wrote at Friday, September 02, 2011 2:48 AM:
+> On 09/01/11 17:52, Stephen Warren wrote:
+> > Some devices use a single pin as both an IRQ and a GPIO. In that case,
+> > irq_gpio is the GPIO ID for that pin. Not all drivers use this feature.
+> > Where they do, and the use of this feature is optional, and the system
+> > wishes to disable this feature, this field must be explicitly set to a
+> > defined invalid GPIO ID, such as -1.
+>
+> Why make it specifically an irq related gpio?  Might as well just call it
+> gpio then it can be used for cases where it never corresponds to an irq
+> such as capture trigger pins.
 > 
-> > Many IRQs are associated with GPIO pins. When the pin is used as an IRQ,
-> > it can't be used as anything else; it should be requested. Enhance the
-> > core interrupt code to call gpio_request() and gpio_direction_input() for
-> > any IRQ that is also a GPIO. This prevents duplication of these calls in
-> > each driver that uses an IRQ.
-> 
-> This is very much the wrong approach. If you think it through then the
-> irq setup code might end up with tons of other subsystem specific
-> setup thingies, e.g. PCI .....
-> 
-> The right thing to do is to add a irq_configure() function pointer to
-> the irq chip and provide a common function for gpios in gpiolib, which
-> is then used by the particular GPIO irq chip implementation.
+> Otherwise I'd be happy to see this go in.
 
-Sorry, could you expand on this some more.
+The idea was specifically to replace the need to call irq_to_gpio(i2c->irq).
+If we did just rename it plain "gpio" and allow it to be used for anything,
+then that does indeed start looking more like device-specific platform data.
 
-The whole point of these patches is that it's impossible to convert from
-IRQ number to GPIO number.
-
-Some drivers use just an IRQ, and don't care if it's a GPIO. They work
-fine currently.
-
-Some drivers use just a GPIO; that's not relevant to these patches.
-
-Some drivers use something that's both an IRQ and a GPIO. Historically,
-this has worked by passing the IRQ to the driver, and then the driver
-calling irq_to_gpio() to get the GPIO ID. Since irq_to_gpio() is being
-removed, this is no longer possible. The whole point of the removal was
-that it's not possible in general to convert from IRQ to GPIO, so I'm not
-sure exactly what you're proposing irq_configure() or gpiolib do to
-centralize this?
-
-Thanks for any insight.
+I guess it sounds like consensus is to go that way. It does seem like that
+will end up creating a bunch more device-specific platform-data files though.
+I wonder if adding IORESOURCE_GPIO would make sense so this could be handled
+in a generic way without custom platform data types?
 
 -- 
 nvpublic
