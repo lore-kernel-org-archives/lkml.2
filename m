@@ -1,52 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1IBL3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 07:29:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36141 "EHLO mga11.intel.com"
+	id S1752021Ab1IBLaF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 07:30:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57283 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804Ab1IBL3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 07:29:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,318,1312182000"; 
-   d="scan'208";a="48078358"
-Subject: Re: [PATCH 0/4] dmaeninge/ste_dma40: bug fixes for 3.1
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        linaro-dev@lists.linaro.org
-In-Reply-To: <1314617615-2394-1-git-send-email-per.forlin@linaro.org>
-References: <1314617615-2394-1-git-send-email-per.forlin@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Sep 2011 16:57:19 +0530
-Message-ID: <1314962839.26251.47.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1750926Ab1IBLaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 07:30:02 -0400
+Date: Fri, 2 Sep 2011 13:30:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, consul.kautuk@gmail.com
+Subject: Re: [PATCH] mm: Make logic in bdi_forker_thread() straight
+Message-ID: <20110902113000.GE12182@quack.suse.cz>
+References: <1314962768-21922-1-git-send-email-jack@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314962768-21922-1-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 13:33 +0200, Per Forlin wrote:
-> Started off fixing a memory leak due to not freed dma descriptors
-> in mmci. The descriptor allocated at device_prep...(), not submitted,
-> isn't freed at dmaeninge_terminate_all() or dmaengine_release().
-> While sorting this one out some other issues were found as well.
-> * kernel doc missing
-> * duplication of d40_pool_lli_free()
-> * free of client descriptor triggers an oops.
+On Fri 02-09-11 13:26:08, Jan Kara wrote:
+> The logic in bdi_forker_thread() is unnecessarily convoluted by setting task
+> state there and back or calling schedule_timeout() in TASK_RUNNING state. Also
+> clearing of BDI_pending bit is placed at the and of global loop and cases of a
+> switch which mustn't reach it must call 'continue' instead of 'break' which is
+> non-intuitive and thus asking for trouble. So make the logic more obvious.
 > 
-> Per Forlin (4):
->   dmaengine/ste_dma40: add missing kernel doc for pending_queue
->   dmaengine/ste_dma40: remove duplicate call to d40_pool_lli_free().
->   dmaengine/ste_dma40: fix Oops due to double free of client descriptor
->   dmaengine/ste_dma40: fix memory leak due to prepared descriptors
-> 
->  drivers/dma/ste_dma40.c |   42 +++++++++++++++++++++++++++++-------------
->  1 files changed, 29 insertions(+), 13 deletions(-)
-> 
-Applied, Thanks
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Wu Fengguang <fengguang.wu@intel.com>
+> CC: consul.kautuk@gmail.com
+> Signed-off-by: Jan Kara <jack@suse.cz>
+  Argh, this patch is missing one fix I forgot to commit --amend to it. I'm
+sending v2 in a minute. Sorry for the noise.
 
+									Honza
+> ---
+>  mm/backing-dev.c |   37 ++++++++++++++++++++-----------------
+>  1 files changed, 20 insertions(+), 17 deletions(-)
+> 
+>  Jens, would you merge this patch?
+> 
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index d6edf8d..fc441d7 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -359,6 +359,17 @@ static unsigned long bdi_longest_inactive(void)
+>  	return max(5UL * 60 * HZ, interval);
+>  }
+>  
+> +/*
+> + * Clear pending bit and wakeup anybody waiting for flusher thread startup
+> + * or teardown.
+> + */
+> +static void bdi_clear_pending(struct backing_dev *bdi)
+> +{
+> +	clear_bit(BDI_pending, &bdi->state);
+> +	smp_mb__after_clear_bit();
+> +	wake_up_bit(&bdi->state, BDI_pending);
+> +}
+> +
+>  static int bdi_forker_thread(void *ptr)
+>  {
+>  	struct bdi_writeback *me = ptr;
+> @@ -390,8 +401,6 @@ static int bdi_forker_thread(void *ptr)
+>  		}
+>  
+>  		spin_lock_bh(&bdi_lock);
+> -		set_current_state(TASK_INTERRUPTIBLE);
+> -
+>  		list_for_each_entry(bdi, &bdi_list, bdi_list) {
+>  			bool have_dirty_io;
+>  
+> @@ -441,13 +450,8 @@ static int bdi_forker_thread(void *ptr)
+>  		}
+>  		spin_unlock_bh(&bdi_lock);
+>  
+> -		/* Keep working if default bdi still has things to do */
+> -		if (!list_empty(&me->bdi->work_list))
+> -			__set_current_state(TASK_RUNNING);
+> -
+>  		switch (action) {
+>  		case FORK_THREAD:
+> -			__set_current_state(TASK_RUNNING);
+>  			task = kthread_create(bdi_writeback_thread, &bdi->wb,
+>  					      "flush-%s", dev_name(bdi->dev));
+>  			if (IS_ERR(task)) {
+> @@ -469,14 +473,21 @@ static int bdi_forker_thread(void *ptr)
+>  				spin_unlock_bh(&bdi->wb_lock);
+>  				wake_up_process(task);
+>  			}
+> +			bdi_clear_pending(bdi);
+>  			break;
+>  
+>  		case KILL_THREAD:
+> -			__set_current_state(TASK_RUNNING);
+>  			kthread_stop(task);
+> +			bdi_clear_pending(bdi);
+>  			break;
+>  
+>  		case NO_ACTION:
+> +			/* Keep working if default bdi still has things to do */
+> +			if (!list_empty(&me->bdi->work_list)) {
+> +				try_to_freeze();
+> +				break;
+> +			}
+> +			set_current_state(TASK_INTERRUPTIBLE);
+>  			if (!wb_has_dirty_io(me) || !dirty_writeback_interval)
+>  				/*
+>  				 * There are no dirty data. The only thing we
+> @@ -489,16 +500,8 @@ static int bdi_forker_thread(void *ptr)
+>  			else
+>  				schedule_timeout(msecs_to_jiffies(dirty_writeback_interval * 10));
+>  			try_to_freeze();
+> -			/* Back to the main loop */
+> -			continue;
+> +			break;
+>  		}
+> -
+> -		/*
+> -		 * Clear pending bit and wakeup anybody waiting to tear us down.
+> -		 */
+> -		clear_bit(BDI_pending, &bdi->state);
+> -		smp_mb__after_clear_bit();
+> -		wake_up_bit(&bdi->state, BDI_pending);
+>  	}
+>  
+>  	return 0;
+> -- 
+> 1.7.1
+> 
 -- 
-~Vinod
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
