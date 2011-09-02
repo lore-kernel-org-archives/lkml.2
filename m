@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab1IBLoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 07:44:10 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39317 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab1IBLoH convert rfc822-to-8bit (ORCPT
+	id S1751321Ab1IBLt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 07:49:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51041 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab1IBLt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 07:44:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110902112133.GD12182@quack.suse.cz>
-References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
-	<20110901143333.51baf4ae.akpm@linux-foundation.org>
-	<CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
-	<20110902112133.GD12182@quack.suse.cz>
-Date: Fri, 2 Sep 2011 17:14:05 +0530
-Message-ID: <CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of del_timer
-From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Sep 2011 07:49:57 -0400
+Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <alpine.LFD.2.02.1109021135270.2723@ionos>
+References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
+	 <1314661157-22173-4-git-send-email-andi@firstfloor.org>
+	 <alpine.LFD.2.02.1109021135270.2723@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 13:49:58 +0200
+Message-ID: <1314964198.2573.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le vendredi 02 septembre 2011 Ã  12:06 +0200, Thomas Gleixner a Ã©crit :
 
-On Fri, Sep 2, 2011 at 4:51 PM, Jan Kara <jack@suse.cz> wrote:
->  Hello,
->
-> On Fri 02-09-11 10:47:03, kautuk.c @samsung.com wrote:
->> On Fri, Sep 2, 2011 at 3:03 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
->> > On Thu,  1 Sep 2011 21:27:02 +0530
->> > Kautuk Consul <consul.kautuk@gmail.com> wrote:
->> >
->> >> This is important for SMP scenario, to check whether the timer
->> >> callback is executing on another CPU when we are deleting the
->> >> timer.
->> >>
->> >
->> > I don't see why?
->> >
->> >> index d6edf8d..754b35a 100644
->> >> --- a/mm/backing-dev.c
->> >> +++ b/mm/backing-dev.c
->> >> @@ -385,7 +385,7 @@ static int bdi_forker_thread(void *ptr)
->> >>                * dirty data on the default backing_dev_info
->> >>                */
->> >>               if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list)) {
->> >> -                     del_timer(&me->wakeup_timer);
->> >> +                     del_timer_sync(&me->wakeup_timer);
->> >>                       wb_do_writeback(me, 0);
->> >>               }
->> >
->> > It isn't a use-after-free fix: bdi_unregister() safely shoots down any
->> > running timer.
->> >
->>
->> In the situation that we do a del_timer at the same time that the
->> wakeup_timer_fn is
->> executing on another CPU, there is one tiny possible problem:
->> 1)  The wakeup_timer_fn will call wake_up_process on the bdi-default thread.
->>       This will set the bdi-default thread's state to TASK_RUNNING.
->> 2)  However, the code in bdi_writeback_thread() sets the state of the
->> bdi-default process
->>     to TASK_INTERRUPTIBLE as it intends to sleep later.
->>
->> If 2) happens before 1), then the bdi_forker_thread will not sleep
->> inside schedule as is the intention of the bdi_forker_thread() code.
->  OK, I agree the code in bdi_forker_thread() might use some straightening
-> up wrt. task state handling but is what you decribe really an issue? Sure
-> the task won't go to sleep but the whole effect is that it will just loop
-> once more to find out there's nothing to do and then go to sleep - not a
-> bug deal... Or am I missing something?
+> ------------------>
+> Subject: posix-timers: Simplify deletion protection
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Fri, 02 Sep 2011 11:59:14 +0200
+> 
+> k_itimer->it_signal is soleley used to protect a timer lookup against
+> a concurrent deletion. We can use k_itimer->list for the same purpose.
+> 
 
-Yes, you are right.
-I was studying the code and I found this inconsistency.
-Anyways, if there is NO_ACTION it will just loop and go to sleep again.
-I just posted this because I felt that the code was not achieving the logic
-that was intended in terms of sleeps and wakeups.
+Well, this patch is wrong too, unless you base it after Andi patch 1/4
+(move global timer id management to signal_struct)
 
-I am currently trying to study the other patches you have just sent.
+The test is also present to make sure one process doesnt try to use a
+timer_id of another process.
 
->
->> This protection is not achieved even by acquiring spinlocks before
->> setting the task->state
->> as the spinlock used in wakeup_timer_fn is &bdi->wb_lock whereas the code in
->> bdi_forker_thread acquires &bdi_lock which is a different spin_lock.
->>
->> Am I correct in concluding this ?
->
->                                                                Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
->
+
+> @@ -643,7 +643,7 @@ static struct k_itimer *__lock_timer(tim
+>  	timr = idr_find(&posix_timers_id, (int)timer_id);
+>  	if (timr) {
+>  		spin_lock_irqsave(&timr->it_lock, *flags);
+> -		if (timr->it_signal == current->signal) {
+> +		if (!list_empty(&timr->list)) {
+>  			rcu_read_unlock();
+>  			return timr;
+>  		}
+
+
+
