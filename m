@@ -1,206 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab1IBQD5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:03:57 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58096 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab1IBQDz (ORCPT
+	id S1753339Ab1IBQEv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:04:51 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6854 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab1IBQEu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:03:55 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
-        tglx@linutronix.de, anton@samba.org, David Ahern <dsahern@gmail.com>
-Subject: [PATCH v2] perf tool: fix endianness handling of u32 data in samples
-Date: Fri,  2 Sep 2011 10:03:46 -0600
-Message-Id: <1314979426-29356-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Fri, 2 Sep 2011 12:04:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 02 Sep 2011 09:04:44 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>, Barry Song <21cnbao@gmail.com>
+Date: Fri, 2 Sep 2011 09:04:42 -0700
+Subject: RE: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
+Thread-Topic: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
+Thread-Index: AcxpR/g8SKqnYGaSSUavMv0rj+KFxQAQX3Tw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B327A570@HQMAIL01.nvidia.com>
+References: <1314869552-5531-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B327A40C@HQMAIL01.nvidia.com>
+ <CACRpkdZ1kNbtOqw=X1mmM-bA+Gg2BbmO5_CT0sSQtBCK_WdwYw@mail.gmail.com>
+In-Reply-To: <CACRpkdZ1kNbtOqw=X1mmM-bA+Gg2BbmO5_CT0sSQtBCK_WdwYw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, analyzing PPC data files on x86 the cpu field is always 0 and
-the tid and pid are backwards. For example, analyzing a PPC file on PPC
-the pid/tid fields show:
-        rsyslogd  1210/1212
+Linus Walleij wrote at Friday, September 02, 2011 2:12 AM:
+> On Thu, Sep 1, 2011 at 11:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> 
+> >> +static const struct u300_pmx_func u300_pmx_functions[] = {
+> >> +     {
+> >> +             .name = "power",
+> >> +             .groups = { POWERGRP_INDEX },
+> >> +             /* Mask is N/A */
+> >> +     },
+> >
+> > Hmmm. That's a lot of _INDEX defines that'd need to be set up, at least
+> > to fully represent a chip like Tegra. Can the pinmux core be modified
+> > such that the group list is an array of names (char*) rather than the
+> > actual numeric IDs of the groups? Still, perhaps we could use the enum
+> > we already have for this, so perhaps it isn't a big deal...
+> 
+> Well I could think about a lot of ways to do this, but it's basically up
+> to the driver, the U300 is just some simple example of what you can
+> do, it's just trying to satisfy the API.
+> 
+> Maybe as part of writing the nVidia driver you find a clever
+> mechanism for doing this, if it's looking generally useful at that
+> point then let's move it to the core I'd say.
 
-and analyzing the same PPC file using an x86 perf binary shows:
-        rsyslogd  1212/1210
+The reason I asked about the pinmux core handling this is because the
+driver op get_function_groups:
 
-The problem is that the swap_op method for samples is
-perf_event__all64_swap which assumes all elements in the sample_data
-struct are u64s. cpu, tid and pid are u32s and need to be handled
-individually. Given that the swap is done before the sample is parsed,
-the simplest solution is to undo the 64-bit swap of those elements when
-the sample is parsed and do the proper swap.
++	int (*get_function_groups) (struct pinctrl_dev *pctldev,
++				  unsigned selector,
++				  unsigned ** const groups,
++				  unsigned * const num_groups);
 
-The RAW data field is generic and perf cannot have programmatic knowledge
-of how to treat that data. Instead a warning is given to the user.
+returns an array of integer indexes. I think the only way to get rid of
+the index definitions in the drivers is to allow get_function_groups to
+return an array of strings instead.
 
-Thanks to Anton Blanchard for providing a data file for a mult-CPU
-PPC system so I could verify the fix for the CPU fields.
+Well, I suppose the implementation of get_function_groups could convert
+from an internal array of strings to the returned array of integers at
+run-time, but that doesn't seem like a great idea.
 
-v1 -> v2:
-- added a union for undoing the byte-swap on u64 and redoing swap on
-  u32's to address compiler errors (see git commit 65014ab3)
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-test.c |    2 +-
- tools/perf/util/event.h   |    2 +-
- tools/perf/util/evsel.c   |   61 ++++++++++++++++++++++++++++++++++++--------
- tools/perf/util/session.h |    3 +-
- 4 files changed, 54 insertions(+), 14 deletions(-)
-
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 55f4c76..efe696f 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -561,7 +561,7 @@ static int test__basic_mmap(void)
- 		}
- 
- 		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
--					       false, &sample);
-+					       false, &sample, false);
- 		if (err) {
- 			pr_err("Can't parse sample, err = %d\n", err);
- 			goto out_munmap;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 1d7f664..357a85b 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -186,6 +186,6 @@ const char *perf_event__name(unsigned int id);
- 
- int perf_event__parse_sample(const union perf_event *event, u64 type,
- 			     int sample_size, bool sample_id_all,
--			     struct perf_sample *sample);
-+			     struct perf_sample *sample, bool swapped);
- 
- #endif /* __PERF_RECORD_H */
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index a03a36b..c368c8a 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -7,6 +7,7 @@
-  * Released under the GPL v2. (and only v2, not any later version)
-  */
- 
-+#include <byteswap.h>
- #include "evsel.h"
- #include "evlist.h"
- #include "util.h"
-@@ -342,9 +343,21 @@ static bool sample_overlap(const union perf_event *event,
- 
- int perf_event__parse_sample(const union perf_event *event, u64 type,
- 			     int sample_size, bool sample_id_all,
--			     struct perf_sample *data)
-+			     struct perf_sample *data, bool swapped)
- {
- 	const u64 *array;
-+	
-+	/* 
-+	 * used for cross-endian analysis. See git commit 65014ab3
-+	 * for why this goofiness is needed.
-+	 */
-+	struct {
-+		union {
-+			u64 val64;
-+			u32 val32[2];
-+		};
-+	} u;
-+
- 
- 	data->cpu = data->pid = data->tid = -1;
- 	data->stream_id = data->id = data->time = -1ULL;
-@@ -366,9 +379,16 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	}
- 
- 	if (type & PERF_SAMPLE_TID) {
--		u32 *p = (u32 *)array;
--		data->pid = p[0];
--		data->tid = p[1];
-+		u.val64 = *array;
-+		if (swapped) {
-+			/* undo swap of u64, then swap on individual u32s */
-+			u.val64 = bswap_64(u.val64);
-+			u.val32[0] = bswap_32(u.val32[0]);
-+			u.val32[1] = bswap_32(u.val32[1]);
-+		}
-+
-+		data->pid = u.val32[0];
-+		data->tid = u.val32[1];
- 		array++;
- 	}
- 
-@@ -395,8 +415,15 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	}
- 
- 	if (type & PERF_SAMPLE_CPU) {
--		u32 *p = (u32 *)array;
--		data->cpu = *p;
-+
-+		u.val64 = *array;
-+		if (swapped) {
-+			/* undo swap of u64, then swap on individual u32s */
-+			u.val64 = bswap_64(u.val64);
-+			u.val32[0] = bswap_32(u.val32[0]);
-+		}
-+
-+		data->cpu = u.val32[0];
- 		array++;
- 	}
- 
-@@ -423,18 +450,30 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	}
- 
- 	if (type & PERF_SAMPLE_RAW) {
--		u32 *p = (u32 *)array;
-+		u.val64 = *array;
-+		if (swapped) {
-+			static bool show_warn = true;
-+
-+			/* undo swap of u64, then swap on individual u32s */
-+			u.val64 = bswap_64(u.val64);
-+			u.val32[0] = bswap_32(u.val32[0]);
-+			u.val32[1] = bswap_32(u.val32[1]);
-+
-+			if (show_warn) {
-+				pr_warning("Endianness of raw data not corrected!\n");
-+				show_warn = false;
-+			}
-+		}
- 
- 		if (sample_overlap(event, array, sizeof(u32)))
- 			return -EFAULT;
- 
--		data->raw_size = *p;
--		p++;
-+		data->raw_size = u.val32[0];
- 
--		if (sample_overlap(event, p, data->raw_size))
-+		if (sample_overlap(event, &u.val32[1], data->raw_size))
- 			return -EFAULT;
- 
--		data->raw_data = p;
-+		data->raw_data = &u.val32[1];
- 	}
- 
- 	return 0;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 170601e..974d0cb 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -162,7 +162,8 @@ static inline int perf_session__parse_sample(struct perf_session *session,
- {
- 	return perf_event__parse_sample(event, session->sample_type,
- 					session->sample_size,
--					session->sample_id_all, sample);
-+					session->sample_id_all, sample,
-+					session->header.needs_swap);
- }
- 
- struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
 -- 
-1.7.6
+nvpublic
 
