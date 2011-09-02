@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1IBQWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:22:44 -0400
-Received: from gretna.indigovision.com ([62.7.85.227]:1182 "EHLO
-	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259Ab1IBQWl convert rfc822-to-8bit (ORCPT
+	id S1753376Ab1IBQ0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:26:23 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:30842 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab1IBQ0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:22:41 -0400
-From: Bruce Stenning <b.stenning@indigovision.com>
-To: Tejun Heo <htejun@gmail.com>
-CC: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Date: Fri, 2 Sep 2011 17:22:38 +0100
-Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Index: AcxpFLfLpoBaT/HeQBKZswqOM2ItAgAdz4DQ
-Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
-References: <20110430140109.GJ29280@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com>
- <20110525094127.GF10146@htj.dyndns.org> <4DF20E03.9030502@teksavvy.com>
- <20110610140155.GJ15235@htj.dyndns.org> <4DF25526.9010800@teksavvy.com>
- <20110611121957.GA7980@mtj.dyndns.org> <4DF4F30B.70702@teksavvy.com>
- <20110613104856.GC16021@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
- <20110902011305.GE2752@htj.dyndns.org>
-In-Reply-To: <20110902011305.GE2752@htj.dyndns.org>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Sep 2011 12:26:22 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll3c7qFNVV
+X-RZG-CLASS-ID: mo00
+Date: Fri, 2 Sep 2011 18:25:56 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: [PATCH] Staging: hv: vmbus: Show the modalias in
+ /sys/bus/vmbus/devices/*/
+Message-ID: <20110902162556.GA25073@aepfle.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That's weird.  Another EH is scheduled after one completes but EH
-> doesn't kick in.  Hmmm... can't see how that can happen.  How easily
-> can you reproduce the problem?
->
-> Thanks.
+Show a modalias file in /sys/bus/vmbus/devices/*/
+Add a helper function to print the same content in modalias and uevent.
 
-Hi Tejun,
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-I hope you are well :-)
+---
+ drivers/staging/hv/vmbus_drv.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-I have been trying to determine if the problem is that it is failing to
-schedule the EH, or whether it is correctly scheduling it but for some
-reason it is getting blocked or lost.
-
-Unfortunately it has so far been quite difficult to reproduce when specifically
-attempting to.  In normal use cases I reproduced it twice by unplugging a drive
-from a RAID array with redundancy intact.  This was out of around a dozen
-cycles of waiting until redundancy was restored while the unit was under load,
-popping the disk, reinserting, and triggering a RAID rebuild.
-
-I have only twice managed to trigger a lockup deliberately.  In both cases the
-tracing showed a scheduled EH which was subsequently not enacted.
-
-How long could it take for the EH to be enacted?  In the lockups that I
-have reproduced it did not seem to have recovered minutes later, but perhaps
-if I had waited longer...?  I have noticed that error recovery sometimes backs
-off for 8s and even 33s, but it always warns when that sort of delay is coming
-up.
-
-I shall continue to try to track down why the scheduled EH does not happen.
-
-Kind Regards,
-
-Bruce.
-
-
-Latest News at: http://www.indigovision.com/index.php/en/news.html
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -93,6 +93,14 @@ static void get_channel_info(struct hv_d
+ 		debug_info.outbound.bytes_avail_towrite;
+ }
+ 
++#define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2)
++static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
++{
++	int i;
++	for (i = 0; i < VMBUS_ALIAS_LEN; i += 2)
++		sprintf(&alias_name[i], "%02x", hv_dev->dev_type.b[i/2]);
++}
++
+ /*
+  * vmbus_show_device_attr - Show the device attribute in sysfs.
+  *
+@@ -105,6 +113,7 @@ static ssize_t vmbus_show_device_attr(st
+ {
+ 	struct hv_device *hv_dev = device_to_hv_device(dev);
+ 	struct hv_device_info device_info;
++	char alias_name[VMBUS_ALIAS_LEN + 1];
+ 
+ 	memset(&device_info, 0, sizeof(struct hv_device_info));
+ 
+@@ -148,6 +157,9 @@ static ssize_t vmbus_show_device_attr(st
+ 			       device_info.chn_instance.b[13],
+ 			       device_info.chn_instance.b[14],
+ 			       device_info.chn_instance.b[15]);
++	} else if (!strcmp(dev_attr->attr.name, "modalias")) {
++		print_alias_name(hv_dev, alias_name);
++		return sprintf(buf, "vmbus:%s\n", alias_name);
+ 	} else if (!strcmp(dev_attr->attr.name, "state")) {
+ 		return sprintf(buf, "%d\n", device_info.chn_state);
+ 	} else if (!strcmp(dev_attr->attr.name, "id")) {
+@@ -204,6 +216,7 @@ static struct device_attribute vmbus_dev
+ 	__ATTR(class_id, S_IRUGO, vmbus_show_device_attr, NULL),
+ 	__ATTR(device_id, S_IRUGO, vmbus_show_device_attr, NULL),
+ 	__ATTR(monitor_id, S_IRUGO, vmbus_show_device_attr, NULL),
++	__ATTR(modalias, S_IRUGO, vmbus_show_device_attr, NULL),
+ 
+ 	__ATTR(server_monitor_pending, S_IRUGO, vmbus_show_device_attr, NULL),
+ 	__ATTR(server_monitor_latency, S_IRUGO, vmbus_show_device_attr, NULL),
+@@ -242,12 +255,10 @@ static struct device_attribute vmbus_dev
+ static int vmbus_uevent(struct device *device, struct kobj_uevent_env *env)
+ {
+ 	struct hv_device *dev = device_to_hv_device(device);
+-	int i, ret;
+-	char alias_name[((sizeof((struct hv_vmbus_device_id *)0)->guid) + 1) * 2];
+-
+-	for (i = 0; i < ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2); i += 2)
+-		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
++	int ret;
++	char alias_name[VMBUS_ALIAS_LEN + 1];
+ 
++	print_alias_name(dev, alias_name);
+ 	ret = add_uevent_var(env, "MODALIAS=vmbus:%s", alias_name);
+ 	return ret;
+ }
