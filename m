@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab1IBIhH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 04:37:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59315 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932419Ab1IBIhD (ORCPT
+	id S932744Ab1IBIkV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 04:40:21 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:41086 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932683Ab1IBIkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 04:37:03 -0400
-Date: Fri, 2 Sep 2011 10:36:51 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Warren <swarren@nvidia.com>
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        ccross@android.com, olof@lixom.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-In-Reply-To: <1312498820-2275-2-git-send-email-swarren@nvidia.com>
-Message-ID: <alpine.LFD.2.02.1109021027360.2723@ionos>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com> <1312498820-2275-2-git-send-email-swarren@nvidia.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 2 Sep 2011 04:40:16 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E60985B.6010901@cam.ac.uk>
+Date: Fri, 02 Sep 2011 09:48:27 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Stephen Warren <swarren@nvidia.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
+        Ben Dooks <ben-linux@fluff.org>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Chew <achew@nvidia.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V2 1/4] i2c: Add irq_gpio field to struct i2c_client.
+References: <1314895964-15964-1-git-send-email-swarren@nvidia.com> <1314895964-15964-5-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1314895964-15964-5-git-send-email-swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Aug 2011, Stephen Warren wrote:
+On 09/01/11 17:52, Stephen Warren wrote:
+> Some devices use a single pin as both an IRQ and a GPIO. In that case,
+> irq_gpio is the GPIO ID for that pin. Not all drivers use this feature.
+> Where they do, and the use of this feature is optional, and the system
+> wishes to disable this feature, this field must be explicitly set to a
+> defined invalid GPIO ID, such as -1.
+Why make it specifically an irq related gpio?  Might as well just call it
+gpio then it can be used for cases where it never corresponds to an irq
+such as capture trigger pins.
 
-> Many IRQs are associated with GPIO pins. When the pin is used as an IRQ,
-> it can't be used as anything else; it should be requested. Enhance the
-> core interrupt code to call gpio_request() and gpio_direction_input() for
-> any IRQ that is also a GPIO. This prevents duplication of these calls in
-> each driver that uses an IRQ.
-
-This is very much the wrong approach. If you think it through then the
-irq setup code might end up with tons of other subsystem specific
-setup thingies, e.g. PCI .....
-
-The right thing to do is to add a irq_configure() function pointer to
-the irq chip and provide a common function for gpios in gpiolib, which
-is then used by the particular GPIO irq chip implementation.
-
-Thanks,
-
-	tglx
----
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 5951730..33ba4b8 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -265,6 +265,7 @@ static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
-  * struct irq_chip - hardware interrupt chip descriptor
-  *
-  * @name:		name for /proc/interrupts
-+ * @irq_configure:	configure an interrupt (optional)
-  * @irq_startup:	start up the interrupt (defaults to ->enable if NULL)
-  * @irq_shutdown:	shut down the interrupt (defaults to ->disable if NULL)
-  * @irq_enable:		enable the interrupt (defaults to chip->unmask if NULL)
-@@ -289,9 +290,14 @@ static inline void irqd_clr_chained_irq_inprogress(struct irq_data *d)
-  * @flags:		chip specific flags
-  *
-  * @release:		release function solely used by UML
-+ *
-+ * If @irq_configure is provided, it's called from setup_irq prior to
-+ * enabling the interrupt. irq_configure should return 0 on success or
-+ * an appropriate error code.
-  */
- struct irq_chip {
- 	const char	*name;
-+	int		(*irq_configure)(struct irq_data *data);
- 	unsigned int	(*irq_startup)(struct irq_data *data);
- 	void		(*irq_shutdown)(struct irq_data *data);
- 	void		(*irq_enable)(struct irq_data *data);
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 9b956fa..d5e6a58 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -999,6 +999,13 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	if (!shared) {
- 		init_waitqueue_head(&desc->wait_for_threads);
- 
-+		/* Configure the interrupt */
-+		if (desc->chip->irq_configure) {
-+			ret = desc->chip->irq_configure(&desc->irq_data);
-+			if (ret)
-+				goto out_mask;
-+		}
-+
- 		/* Setup the type (level, edge polarity) if configured: */
- 		if (new->flags & IRQF_TRIGGER_MASK) {
- 			ret = __irq_set_trigger(desc, irq,
+Otherwise I'd be happy to see this go in.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v2: This patch is new. This updated series based on Arnd's comments that
+> this solution was a good idea.
+> 
+> Note that I leave on vacation for 2 weeks starting Friday afternoon. I
+> may have some email capabilities during this time, but will certainly be
+> slow to respond.
+> 
+>  include/linux/i2c.h |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 3fad485..b368097 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -192,6 +192,12 @@ struct i2c_driver {
+>   * @driver: device's driver, hence pointer to access routines
+>   * @dev: Driver model device node for the slave.
+>   * @irq: indicates the IRQ generated by this device (if any)
+> + * @irq_gpio: some devices use a single pin as both an IRQ and a GPIO. In
+> + *	that case, irq_gpio is the GPIO ID for that pin. Not all drivers
+> + *	use this feature. Where they do, and the use of this feature is
+> + *	optional, and the system wishes to disable this feature, this
+> + *	field must be explicitly set to a defined invalid GPIO ID, such
+> + *	as -1.
+>   * @detected: member of an i2c_driver.clients list or i2c-core's
+>   *	userspace_devices list
+>   *
+> @@ -209,6 +215,7 @@ struct i2c_client {
+>  	struct i2c_driver *driver;	/* and our access routines	*/
+>  	struct device dev;		/* the device structure		*/
+>  	int irq;			/* irq issued by device		*/
+> +	int irq_gpio;			/* gpio corresponding to irq	*/
+>  	struct list_head detected;
+>  };
+>  #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
 
