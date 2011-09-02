@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1IBRTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 13:19:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753584Ab1IBRTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 13:19:22 -0400
-Date: Fri, 2 Sep 2011 19:15:17 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Matt Helsley <matthltc@us.ibm.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Menage <paul@paulmenage.org>,
-        containers@lists.linux-foundation.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH pm-freezer 1/4] cgroup_freezer: fix freezer->state
-	setting bug in freezer_change_state()
-Message-ID: <20110902171517.GA8247@redhat.com>
-References: <20110831102100.GA2828@mtj.dyndns.org> <20110902004231.GF1919@count0.beaverton.ibm.com> <20110902165839.GA7478@redhat.com> <20110902170844.GJ2752@htj.dyndns.org>
+	id S1753724Ab1IBRYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 13:24:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43611 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab1IBRYq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 13:24:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110902170844.GJ2752@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.OSX.2.00.1108300148040.435@ibook.local>
+References: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com>
+	<alpine.OSX.2.00.1108271506320.190@ibook.local>
+	<alpine.OSX.2.00.1108300148040.435@ibook.local>
+Date: Fri, 2 Sep 2011 19:24:34 +0200
+X-Google-Sender-Auth: Yb3DCi0wdTdxc7M3fQ_3eJI0rG0
+Message-ID: <CAMuHMdVmNAOSK+M9z-ySOR-oA4LwuS_N0SZ8XxzQ9_pYqM_vdQ@mail.gmail.com>
+Subject: Re: m68k: [v5] Convert to genirq (WIP)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Finn Thain <fthain@telegraphics.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03, Tejun Heo wrote:
->
-> Hello,
->
-> On Fri, Sep 02, 2011 at 06:58:39PM +0200, Oleg Nesterov wrote:
-> > > This still doesn't look quite right. If the cgroup is FREEZING it should
-> > > also call try_to_freeze_cgroup(). I think this is what's needed:
-> > >
-> > > 		if (freezer->state == CGROUP_THAWED)
-> > > 			atomic_inc(&system_freezing_cnt);
-> > > 		freezer->state = CGROUP_FREEZING;
-> > > 		retval = try_to_freeze_cgroup(cgroup, freezer);
-> >
-> > This is what I mentioned before, to me this looks like a win.
-> >
-> > Why do we need try_to_freeze_cgroup() in this case? "for safety"
-> > could actually mean "hide the bug" ;)
->
-> I guess it depends on the viewpoint.  A simple analogy would be using
-> WARN_ON_ONCE() instead of BUG_ON() so that the mode of failure is
-> softer.  This change isn't likely to make bugs significantly more
-> difficult to discover so why not?
+On Fri, Sep 2, 2011 at 14:14, Finn Thain <fthain@telegraphics.com.au> wrote:
+> On Sun, 28 Aug 2011, I wrote:
+> However, I found another problem. pmac_zilog oopses when its TTY is closed
+> (see below). And macsonic does the same when the NIC is closed. The trace
+> says that irq_shutdown() died trying to call the chip irq_mask routine,
+> when desc->irq_data.chip (in a0) was NULL. Any ideas?
 
-I agree either way.
+> Unable to handle kernel NULL pointer dereference at virtual address   (null)
+> Oops: 00000000
+> Modules linked in:
+> PC: [<00000000>]   (null)
 
-Personally I prefer your current patch. Because it is not clear why
-do we call try_to_freeze_cgroup() if it was already called. And, the
-2nd call can silently hide the problem if we have some bug.
+No, it calls a function pointer that's NULL.
 
-But of course, this is up to you and Matt.
+void irq_shutdown(struct irq_desc *desc)
+{
+        irq_state_set_disabled(desc);
+        desc->depth = 1;
+        if (desc->irq_data.chip->irq_shutdown)
+                desc->irq_data.chip->irq_shutdown(&desc->irq_data);
+        if (desc->irq_data.chip->irq_disable)
+                desc->irq_data.chip->irq_disable(&desc->irq_data);
+        else
+                desc->irq_data.chip->irq_mask(&desc->irq_data);
+        irq_state_set_masked(desc);
+}
 
+Oops, seems I misread the code and assumed the second "if" was an "else if",
+as I wrote down in my notes that it calls only one of the 3 functions :-(
+But it does need either .irq_disable() or .irq_mask().
 
+The following irq_chip structs have both .irq_disable() and .irq_mask() NULL:
+  - arch/m68k/apollo/dn_ints.c:apollo_irq_chip
+  - arch/m68k/kernel/ints.c:auto_irq_chip
+  - arch/m68k/kernel/ints.c:user_irq_chip
 
-> > But I agree either way. Rafael, I think 1-4 are fine, but I think
-> > we need the simple 5/4, will send in a minute...
->
-> Can you please wait a bit?  The second one was broken (missing unlock)
+Since this is on Mac and mac_irq_chip is OK, I guess this is a non-PSC Mac,
+i.e. the IRQ number is IRQ_MAC_SCC == IRQ_AUTO_4?
 
-Yes, I just noticed the small problem too, hopefully we mean the same
-bug ;)
+Thomas: As we cannot disable or mask autovector interrupts at the
+autovector level,
+IMHO it doesn't make much sense do add a dummy .irq_mask() function.
+Can we add an extra check in irq_shutdown() to not call .irq_mask() if
+it's NULL?
 
-Oleg.
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
