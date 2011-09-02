@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab1IBA6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:58:05 -0400
-Received: from claw.goop.org ([74.207.240.146]:43160 "EHLO claw.goop.org"
+	id S932994Ab1IBA6D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:58:03 -0400
+Received: from claw.goop.org ([74.207.240.146]:43181 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932843Ab1IBAzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:55:24 -0400
+	id S932822Ab1IBAz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 20:55:27 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -16,10 +16,11 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 04/13] x86/pvticketlock: use callee-save for lock_spinning
-Date: Thu,  1 Sep 2011 17:54:57 -0700
-Message-Id: <3dbb724d24eddcda0e4ff708f7a91da0023bc6c2.1314922370.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 11/13] x86/ticketlock: only do kick after doing unlock
+Date: Thu,  1 Sep 2011 17:55:04 -0700
+Message-Id: <8cd2c77886e2d3fcad8258aa62509b3b2fae5545.1314922370.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
@@ -29,83 +30,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 
-Although the lock_spinning calls in the spinlock code are on the
-uncommon path, their presence can cause the compiler to generate many
-more register save/restores in the function pre/postamble, which is in
-the fast path.  To avoid this, convert it to using the pvops callee-save
-calling convention, which defers all the save/restores until the actual
-function is called, keeping the fastpath clean.
+We must release the lock before checking to see if the lock is in
+slowpath or else there's a potential race where the lock enters the
+slow path after the unlocker has checked the slowpath flag, but before
+it has actually unlocked.
 
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/paravirt.h       |    2 +-
- arch/x86/include/asm/paravirt_types.h |    2 +-
- arch/x86/kernel/paravirt-spinlocks.c  |    2 +-
- arch/x86/xen/spinlock.c               |    3 ++-
- 4 files changed, 5 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/spinlock.h      |    7 +++----
+ arch/x86/kernel/paravirt-spinlocks.c |   23 ++++++-----------------
+ 2 files changed, 9 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index d88a813..622f3d6 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -743,7 +743,7 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 365d787..bf6dff4 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -43,7 +43,7 @@
  
- static inline void __ticket_lock_spinning(struct arch_spinlock *lock, unsigned ticket)
+ /* Only defined when CONFIG_PARAVIRT_SPINLOCKS defined, but may as
+  * well leave the prototype always visible.  */
+-extern void __ticket_unlock_release_slowpath(struct arch_spinlock *lock);
++extern void __ticket_unlock_slowpath(struct arch_spinlock *lock);
+ 
+ #ifdef CONFIG_PARAVIRT_SPINLOCKS
+ 
+@@ -154,10 +154,9 @@ static __always_inline void __ticket_unlock_release(arch_spinlock_t *lock)
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
  {
--	PVOP_VCALL2(pv_lock_ops.lock_spinning, lock, ticket);
-+	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
+ 
++	__ticket_unlock_release(lock);
+ 	if (unlikely(__ticket_in_slowpath(lock)))
+-		__ticket_unlock_release_slowpath(lock);
+-	else
+-		__ticket_unlock_release(lock);
++		__ticket_unlock_slowpath(lock);
  }
  
- static inline void ____ticket_unlock_kick(struct arch_spinlock *lock, unsigned ticket)
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index e9101c3..97faa3b 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -321,7 +321,7 @@ struct pv_mmu_ops {
- 
- struct arch_spinlock;
- struct pv_lock_ops {
--	void (*lock_spinning)(struct arch_spinlock *lock, unsigned ticket);
-+	struct paravirt_callee_save lock_spinning;
- 	void (*unlock_kick)(struct arch_spinlock *lock, unsigned ticket);
- };
- 
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
 diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
-index c2e010e..4251c1d 100644
+index 71b8557..674718f 100644
 --- a/arch/x86/kernel/paravirt-spinlocks.c
 +++ b/arch/x86/kernel/paravirt-spinlocks.c
-@@ -9,7 +9,7 @@
- 
- struct pv_lock_ops pv_lock_ops = {
- #ifdef CONFIG_SMP
--	.lock_spinning = paravirt_nop,
-+	.lock_spinning = __PV_IS_CALLEE_SAVE(paravirt_nop),
- 	.unlock_kick = paravirt_nop,
- #endif
- };
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index c1bd84c..b133865 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -137,6 +137,7 @@ out:
- 	w->lock = NULL;
- 	spin_time_accum_blocked(start);
- }
-+PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
- 
- static void xen_unlock_kick(struct arch_spinlock *lock, unsigned next)
+@@ -22,32 +22,21 @@ EXPORT_SYMBOL(pv_lock_ops);
+  * bits.  However, we need to be careful about this because someone
+  * may just be entering as we leave, and enter the slowpath.
+  */
+-void __ticket_unlock_release_slowpath(struct arch_spinlock *lock)
++void __ticket_unlock_slowpath(struct arch_spinlock *lock)
  {
-@@ -189,7 +190,7 @@ void xen_uninit_lock_cpu(int cpu)
+ 	struct arch_spinlock old, new;
  
- void __init xen_init_spinlocks(void)
- {
--	pv_lock_ops.lock_spinning = xen_lock_spinning;
-+	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
- 	pv_lock_ops.unlock_kick = xen_unlock_kick;
+ 	BUILD_BUG_ON(((__ticket_t)NR_CPUS) != NR_CPUS);
+ 
+ 	old = ACCESS_ONCE(*lock);
+-
+ 	new = old;
+-	new.tickets.head += TICKET_LOCK_INC;
+ 
+ 	/* Clear the slowpath flag */
+ 	new.tickets.tail &= ~TICKET_SLOWPATH_FLAG;
++	if (new.tickets.head == new.tickets.tail)
++		cmpxchg(&lock->head_tail, old.head_tail, new.head_tail);
+ 
+-	/*
+-	 * If there's currently people waiting or someone snuck in
+-	 * since we read the lock above, then do a normal unlock and
+-	 * kick.  If we managed to unlock with no queued waiters, then
+-	 * we can clear the slowpath flag.
+-	 */
+-	if (new.tickets.head != new.tickets.tail ||
+-	    cmpxchg(&lock->head_tail,
+-		    old.head_tail, new.head_tail) != old.head_tail) {
+-		/* still people waiting */
+-		__ticket_unlock_release(lock);
+-		__ticket_unlock_kick(lock, new.tickets.head);
+-	}
++	/* Wake up an appropriate waiter */
++ 	__ticket_unlock_kick(lock, new.tickets.head);
  }
- 
+-EXPORT_SYMBOL(__ticket_unlock_release_slowpath);
++EXPORT_SYMBOL(__ticket_unlock_slowpath);
 -- 
 1.7.6
 
