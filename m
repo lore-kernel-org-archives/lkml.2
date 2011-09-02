@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab1IBXQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:16:50 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:35554 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756500Ab1IBXQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:16:48 -0400
-X-ASG-Debug-ID: 1315005407-03d6a5396973d80001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E6163DE.4030208@fusionio.com>
-Date: Fri, 2 Sep 2011 17:16:46 -0600
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751218Ab1IBXco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:32:44 -0400
+Received: from mail.microway.com ([206.173.81.22]:33195 "EHLO microway.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750735Ab1IBXcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:32:42 -0400
+Message-ID: <50815a5ec08cdb713de8eaa92ad6e8b3.squirrel@www.microway.com>
+In-Reply-To: <4E56EA02.7020307@intel.com>
+References: <201108171751.51648.rick@microway.com>
+    <8338f9871d1f52f9376a1eca319a7866.squirrel@www.microway.com>
+    <201108222047.11086.rjw@sisk.pl> <201108221651.35654.rick@microway.com>
+    <20110823171432.GA10794@redhat.com>
+    <faf1d1211a8d409b39119e44727b3c83.squirrel@www.microway.com>
+    <4E547B0F.6000001@intel.com>
+    <cf5a31c38191654364bd281df6cb81e0.squirrel@www.microway.com>
+    <7f348bab30fb6be7706ef35af999e5b1.squirrel@www.microway.com>
+    <4E56EA02.7020307@intel.com>
+Date: Fri, 2 Sep 2011 19:32:38 -0400
+Subject: Re: kernel oops and panic in acpi_atomic_read under 2.6.39.3.   call
+ trace included
+From: rick@microway.com
+To: "Huang Ying" <ying.huang@intel.com>
+Cc: "Don Zickus" <dzickus@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Richard Houghton" <rhoughton@microway.com>,
+        "ACPI Devel Mailing List" <linux-acpi@vger.kernel.org>,
+        "Len Brown" <lenb@kernel.org>, "Matthew Garrett" <mjg59@srcf.ucam.org>
+User-Agent: SquirrelMail/1.4.21
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Sanitizer: Advosys mail filter
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2 v3] Small cleanup of bdi_forker_thread()
-References: <1315004059-9844-1-git-send-email-jack@suse.cz> <4E61619E.8040105@fusionio.com> <20110902231212.GH12182@quack.suse.cz>
-X-ASG-Orig-Subj: Re: [PATCH 0/2 v3] Small cleanup of bdi_forker_thread()
-In-Reply-To: <20110902231212.GH12182@quack.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: UNKNOWN[10.101.1.21]
-X-Barracuda-Start-Time: 1315005407
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.73469
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-02 17:12, Jan Kara wrote:
-> On Fri 02-09-11 17:07:10, Jens Axboe wrote:
->> On 2011-09-02 16:54, Jan Kara wrote:
->>>
->>>   Hi Jens,
->>>
->>>   so after I realized how I underestimated subtlety of bdi_forker_thread()
->>> here are two small cleanups to it. The first one puts clearing of BDI_pending
->>> in a more natural place, the second patch adds a comment so that fools like
->>> me don't try to optimize the function in a wrong place...
+Hi Huang,
+
+Sorry for the delay in my response.  Hurricane Irene delayed our testing a
+bit.
+
+I had to switch the 5620 CPUS I had for 5670s.  After 4 days of running
+(it was usually about 2 before) I finally got this output in dmesg:
+
+[337296.365930] GHES: gar accessed: 0, 0xbf7b9370
+[337296.365936] ACPI atomic read mem: addr 0xbf7b9370 mapped to
+ffffc90013ee8370
+
+It is not mapped to 0 as expected, but it didn't crash now!
+
+Thanks,
+Rick
+
+> On 08/25/2011 11:47 PM, rick@microway.com wrote:
+>> Hi Huang,
 >>
->> Thanks Jan, I've queued it up for 3.1. I've marked it as stable, looks
->> like we need it from 2.6.36 and above.
->   Thanks. But is it really a stable material? It's just a cleanup after
-> all...
+>> My new setup reproduced the panic. However I do not have any gar
+>> accessed
+>> messages on it.  The gar mapped messages are in my previous email.  Here
+>> is the latest call trace.  There is no GHES output prior to it:
+>>
+>
+> That is wired.  Can you try the patch attached?  If my guessing is
+> correct, there will be no panic, but something as follow will be in dmesg:
+>
+> ACPI atomic read mem: addr 0xxxxx mapped to 0
+>
+> Best Regards,
+> Huang Ying
+>
 
-I guess it's not strictly stable material, since it's not fixing a
-problematic issue.
-
--- 
-Jens Axboe
 
