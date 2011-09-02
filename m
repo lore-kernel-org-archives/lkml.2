@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1IBHCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:02:34 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57797 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab1IBHCd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:02:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
-References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
-Date: Fri, 2 Sep 2011 09:02:32 +0200
-Message-ID: <CAOY=C6F7x+8UJv+0wChch4SAiRd+PRVgdCbZQ1_Db21uc-_9Bw@mail.gmail.com>
-Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
-From: Stijn Devriendt <highguy@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754907Ab1IBHFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:05:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12004 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752075Ab1IBHFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 03:05:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,317,1312182000"; 
+   d="scan'208";a="44962415"
+Subject: [patch] x86: tlb flush avoid superflous leave_mm()
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 15:07:57 +0800
+Message-ID: <1314947277.29510.66.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 11:53 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> +
-> +/**
-> + * pin_request() - request a single pin to be muxed in, typically for GPIO
-> + * @pin: the pin number in the global pin space
-> + * @function: a functional name to give to this pin, passed to the driver
-> + *     so it knows what function to mux in, e.g. the string "gpioNN"
-> + *     means that you want to mux in the pin for use as GPIO number NN
-> + * @gpio: if this request concerns a single GPIO pin
-> + */
-> +static int pin_request(struct pinctrl_dev *pctldev,
-> +                      int pin, const char *function, bool gpio)
-> +{
-> +       struct pin_desc *desc;
-> +       const struct pinmux_ops *ops;
-> +       int status = -EINVAL;
-> +
-> +       pr_debug("request pin %d for %s\n", pin, function);
-> +
-> +       if (!pin_is_valid(pctldev, pin)) {
-> +               pr_err("pin is invalid\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       if (!function) {
-> +               pr_err("no function name given\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       desc = pin_desc_get(pctldev, pin);
-> +       if (desc == NULL) {
-> +               pr_err("pin is not registered so it cannot be requested\n");
-> +               goto out;
-> +       }
-> +       if (desc->mux_requested) {
-> +               pr_err("pin already requested\n");
-> +               goto out;
-> +       }
+If just one page VA tlb is required to be flushed and current task is in lazy
+TLB state, doing leave_mm() is superfluous because it flushes the whole TLB.
+This can reduce some TLB miss.
 
-Isn't locking missing here?
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-> +       ops = pctldev->desc->pmxops;
-> +
-> +       /* Let each pin increase references to this module */
-> +       if (!try_module_get(pctldev->owner)) {
-> +               pr_err("could not increase module refcount for pin %d\n", pin);
-> +               status = -EINVAL;
-> +               goto out;
-> +       }
-> +
-> +       /*
-> +        * If there is no kind of request function for the pin we just assume
-> +        * we got it by default and proceed.
-> +        */
-> +       if (gpio && ops->gpio_request_enable)
-> +               /* This requests and enables a single GPIO pin */
-> +               status = ops->gpio_request_enable(pctldev, pin);
-> +       else if (ops->request)
-> +               status = ops->request(pctldev, pin);
-> +       else
-> +               status = 0;
-> +
-> +       if (status) {
-> +               pr_err("->request on device %s failed "
-> +                      "for pin %d\n",
-> +                      pctldev->desc->name, pin);
-> +               goto out;
-> +       }
-> +
-> +       desc->mux_requested = true;
-> +       strncpy(desc->mux_function, function, sizeof(desc->mux_function));
-> +
-> +out:
-> +       if (status)
-> +               pr_err("pin-%d (%s) status %d\n",
-> +                      pin, function ? : "?", status);
-> +
-> +       return status;
-> +}
-> +
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..3041665 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -153,13 +153,13 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 		 */
+ 
+ 	if (f->flush_mm == percpu_read(cpu_tlbstate.active_mm)) {
+-		if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+-			if (f->flush_va == TLB_FLUSH_ALL)
++		if (f->flush_va == TLB_FLUSH_ALL) {
++			if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
+ 				local_flush_tlb();
+ 			else
+-				__flush_tlb_one(f->flush_va);
++				leave_mm(cpu);
+ 		} else
+-			leave_mm(cpu);
++			__flush_tlb_one(f->flush_va);
+ 	}
+ out:
+ 	ack_APIC_irq();
+@@ -306,12 +306,8 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+ 
+ 	preempt_disable();
+ 
+-	if (current->active_mm == mm) {
+-		if (current->mm)
+-			__flush_tlb_one(va);
+-		else
+-			leave_mm(smp_processor_id());
+-	}
++	if (current->active_mm == mm)
++		__flush_tlb_one(va);
+ 
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, va);
 
-Regards,
-Stijn
+
