@@ -1,341 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab1IBQH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:07:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61117 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1IBQH1 convert rfc822-to-8bit (ORCPT
+	id S1753245Ab1IBQIC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:08:02 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:58227 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab1IBQIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:07:27 -0400
-Date: Fri, 2 Sep 2011 18:06:49 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-cc: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
-        lethal@linux-sh.org, linux-fbdev@vger.kernel.org,
-        francis.moro@gmail.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Herton Ronaldo Krzesinski <herton@mandriva.com.br>, stable@kernel.org
-Subject: Re: [PATCH] fb: avoid possible deadlock caused by fb_set_suspend
-In-Reply-To: <4E5FA7F9.9030802@gmx.de>
-Message-ID: <Pine.LNX.4.64.1109021802560.4731@axis700.grange>
-References: <4DF7B0B4.4060002@gmx.de> <1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
- <20110618104311.6d80ba50@neptune.home> <20110618111934.26203dbf@neptune.home>
- <4E5FA7F9.9030802@gmx.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:ftGpDj5Vgqn5oQosNiqiSuIek5FIl7sao20lhYTbPB5
- XprC141pnCSpKcTkeZROs3kLmv0KCpKLoZ+iPgrUfv1SVKDJFj
- PrvuM7lQCn1HLJj36ojOlfTWkHxLBvi2SDMqsYXLa0N8XZbxID
- 1ecZrmt5Pbxv6/WqzTp8fe/J1IZN6y0L9ke9QlNVgiDIekCJqQ
- g+TiG2Wtv8s/bBRWDfISdqfS+AZ/L4529PczZlR881lE1Y4c02
- YxsQNl50SnapwuKy1swPzHaQTzrwx94awJAwYQ4bO5/QGXkSKl
- 2QG1Bf4lKG7ZWKWx1t3gnW82UqyCtXLqxj1LNuTtnAo3e+3UFx
- U0uglKkTuQ5GfN1R3dyplFqjjIQIvKN/wVzqu8US+YVDubcWTV
- GgOBuof88H25g==
+	Fri, 2 Sep 2011 12:08:00 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next RCU complaint during boot
+In-Reply-To: Your message of "Fri, 02 Sep 2011 03:53:32 +0200."
+             <20110902015330.GA28121@somewhere.redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <8867.1314894817@turing-police.cc.vt.edu> <20110902014424.GB2405@linux.vnet.ibm.com>
+            <20110902015330.GA28121@somewhere.redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1314979603_2710P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 02 Sep 2011 12:06:43 -0400
+Message-ID: <6595.1314979603@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4E60FF17.00EC,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian
+--==_Exmh_1314979603_2710P
+Content-Type: text/plain; charset=us-ascii
 
-On Thu, 1 Sep 2011, Florian Tobias Schandinat wrote:
+On Fri, 02 Sep 2011 03:53:32 +0200, Frederic Weisbecker said:
+> On Thu, Sep 01, 2011 at 06:44:24PM -0700, Paul E. McKenney wrote:
 
-> ping
+> > This is a bug where someone uses RCU at a time when RCU has been told
+> > that the CPU is in dyntick-idle mode.  Frederic Weisbecker has some
+> > patches that should address this.
 > 
-> Guennadi, I really want this issue fixed. Please have a look at Bruno's patch
-> otherwise your driver might remain or get even more broken...
-> 
-> I am scheduling Herton's patch for the next merge window.
+> Yep, see there: https://lkml.org/lkml/2011/8/20/81
 
-So, the patch looks simple and correct, when applied on top of 
-http://marc.info/?l=linux-kernel&m=130833638508657&w=2
-But it doesn't apply anymore and after fixing a trivial merge conflict, it 
-fails to build, which is also trivially fixed. Please, add my
+Hmm.. .would test, but didn't apply cleanly to -next from Wednesday.  Of course,
+I was trying to do it before corn flakes, so I probably got the patches out of order.
+WIll re-try this evening if I get a chance.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+--==_Exmh_1314979603_2710P
+Content-Type: application/pgp-signature
 
-to the set and use this updated version:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-diff --git a/drivers/video/sh_mobile_hdmi.c b/drivers/video/sh_mobile_hdmi.c
-index 7d54e2c..647ba98 100644
---- a/drivers/video/sh_mobile_hdmi.c
-+++ b/drivers/video/sh_mobile_hdmi.c
-@@ -1111,6 +1111,7 @@ static long sh_hdmi_clk_configure(struct sh_hdmi *hdmi, unsigned long hdmi_rate,
- static void sh_hdmi_edid_work_fn(struct work_struct *work)
- {
- 	struct sh_hdmi *hdmi = container_of(work, struct sh_hdmi, edid_work.work);
-+	struct fb_info *info;
- 	struct sh_mobile_hdmi_info *pdata = hdmi->dev->platform_data;
- 	struct sh_mobile_lcdc_chan *ch;
- 	int ret;
-@@ -1123,8 +1124,9 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
- 
- 	mutex_lock(&hdmi->mutex);
- 
-+	info = hdmi->info;
-+
- 	if (hdmi->hp_state == HDMI_HOTPLUG_CONNECTED) {
--		struct fb_info *info = hdmi->info;
- 		unsigned long parent_rate = 0, hdmi_rate;
- 
- 		ret = sh_hdmi_read_edid(hdmi, &hdmi_rate, &parent_rate);
-@@ -1148,42 +1150,45 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
- 
- 		ch = info->par;
- 
--		console_lock();
-+		if (lock_fb_info(info)) {
-+			console_lock();
- 
--		/* HDMI plug in */
--		if (!sh_hdmi_must_reconfigure(hdmi) &&
--		    info->state == FBINFO_STATE_RUNNING) {
--			/*
--			 * First activation with the default monitor - just turn
--			 * on, if we run a resume here, the logo disappears
--			 */
--			if (lock_fb_info(info)) {
-+			/* HDMI plug in */
-+			if (!sh_hdmi_must_reconfigure(hdmi) &&
-+			    info->state == FBINFO_STATE_RUNNING) {
-+				/*
-+				 * First activation with the default monitor - just turn
-+				 * on, if we run a resume here, the logo disappears
-+				 */
- 				info->var.width = hdmi->var.width;
- 				info->var.height = hdmi->var.height;
- 				sh_hdmi_display_on(hdmi, info);
--				unlock_fb_info(info);
-+			} else {
-+				/* New monitor or have to wake up */
-+				fb_set_suspend(info, 0);
- 			}
--		} else {
--			/* New monitor or have to wake up */
--			fb_set_suspend(info, 0);
--		}
- 
--		console_unlock();
-+			console_unlock();
-+			unlock_fb_info(info);
-+		}
- 	} else {
- 		ret = 0;
--		if (!hdmi->info)
-+		if (!info)
- 			goto out;
- 
- 		hdmi->monspec.modedb_len = 0;
- 		fb_destroy_modedb(hdmi->monspec.modedb);
- 		hdmi->monspec.modedb = NULL;
- 
--		console_lock();
-+		if (lock_fb_info(info)) {
-+			console_lock();
- 
--		/* HDMI disconnect */
--		fb_set_suspend(hdmi->info, 1);
-+			/* HDMI disconnect */
-+			fb_set_suspend(info, 1);
- 
--		console_unlock();
-+			console_unlock();
-+			unlock_fb_info(info);
-+		}
- 	}
- 
- out:
+iD4DBQFOYP8TcC3lWbTT17ARAumUAJ4609ziLbsR2wfq/kcoPuMGjNU96QCXQ1+m
+yywB+X3tClZYNNKRokkSLA==
+=RrNe
+-----END PGP SIGNATURE-----
 
-Thanks
-Guennadi
+--==_Exmh_1314979603_2710P--
 
-> 
-> 
-> Regards,
-> 
-> Florian Tobias Schandinat
-> 
-> 
-> On 06/18/2011 09:19 AM, Bruno Prémont wrote:
-> > Guennadi, could you have a look at (completely untested) patch which avoids
-> > possible deadlock due to inverted lock taking order on hotplug as well
-> > as "readding" lock_fb_info() for fb_set_suspend() call after Herton's
-> > patch to fb_set_suspend().
-> > 
-> > Thanks,
-> > Bruno
-> > 
-> > 
-> > On Sat, 18 June 2011 Bruno Prémont <bonbons@linux-vserver.org> wrote:
-> >> On Fri, 17 June 2011 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
-> >>> From: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
-> >>>
-> >>> A lock ordering issue can cause deadlocks: in framebuffer/console code,
-> >>> all needed struct fb_info locks are taken before acquire_console_sem(),
-> >>> in places which need to take console semaphore.
-> >>>
-> >>> But fb_set_suspend is always called with console semaphore held, and
-> >>> inside it we call lock_fb_info which gets the fb_info lock, inverse
-> >>> locking order of what the rest of the code does. This causes a real
-> >>> deadlock issue, when we write to state fb sysfs attribute (which calls
-> >>> fb_set_suspend) while a framebuffer is being unregistered by
-> >>> remove_conflicting_framebuffers, as can be shown by following show
-> >>> blocked state trace on a test program which loads i915 and runs another
-> >>> forked processes writing to state attribute:
-> >>>
-> >>> Test process with semaphore held and trying to get fb_info lock:
-> >>
-> >> ...
-> >>
-> >>> fb-test2 which reproduces above is available on kernel.org bug #26232.
-> >>> To solve this issue, avoid calling lock_fb_info inside fb_set_suspend,
-> >>> and move it out to where needed (callers of fb_set_suspend must call
-> >>> lock_fb_info before if needed). So far, the only place which needs to
-> >>> call lock_fb_info is store_fbstate, all other places which calls
-> >>> fb_set_suspend are suspend/resume hooks that should not need the lock as
-> >>> they should be run only when processes are already frozen in
-> >>> suspend/resume.
-> >>
-> >> From a quick look through FB drivers in 2.6.39 I've found one that would need
-> >> more work:
-> >> - drivers/video/sh_mobile_hdmi.c: sh_hdmi_edid_work_fn()
-> >>   Should get changed to
-> >>   a) right locking order in case (hdmi->hp_state == HDMI_HOTPLUG_CONNECTED)
-> >>   b) lock fb_info in the other case
-> >>   For this one fb_set_suspend() does get call in a hotplug worker,
-> >>   thus independently on suspend/resume process.
-> >>
-> >> The rest does match the suspend/resume hook pattern mentioned.
-> >>
-> >> Bruno
-> >>
-> >>
-> >>> References: https://bugzilla.kernel.org/show_bug.cgi?id=26232
-> >>> Signed-off-by: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
-> >>> Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> >>> Cc: stable@kernel.org
-> >>> ---
-> >>>  drivers/video/fbmem.c   |    3 ---
-> >>>  drivers/video/fbsysfs.c |    3 +++
-> >>>  2 files changed, 3 insertions(+), 3 deletions(-)
-> >>>
-> >>> diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-> >>> index 5aac00e..ad93629 100644
-> >>> --- a/drivers/video/fbmem.c
-> >>> +++ b/drivers/video/fbmem.c
-> >>> @@ -1738,8 +1738,6 @@ void fb_set_suspend(struct fb_info *info, int state)
-> >>>  {
-> >>>  	struct fb_event event;
-> >>>  
-> >>> -	if (!lock_fb_info(info))
-> >>> -		return;
-> >>>  	event.info = info;
-> >>>  	if (state) {
-> >>>  		fb_notifier_call_chain(FB_EVENT_SUSPEND, &event);
-> >>> @@ -1748,7 +1746,6 @@ void fb_set_suspend(struct fb_info *info, int state)
-> >>>  		info->state = FBINFO_STATE_RUNNING;
-> >>>  		fb_notifier_call_chain(FB_EVENT_RESUME, &event);
-> >>>  	}
-> >>> -	unlock_fb_info(info);
-> >>>  }
-> >>>  
-> >>>  /**
-> >>> diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
-> >>> index 04251ce..67afa9c 100644
-> >>> --- a/drivers/video/fbsysfs.c
-> >>> +++ b/drivers/video/fbsysfs.c
-> >>> @@ -399,9 +399,12 @@ static ssize_t store_fbstate(struct device *device,
-> >>>  
-> >>>  	state = simple_strtoul(buf, &last, 0);
-> >>>  
-> >>> +	if (!lock_fb_info(fb_info))
-> >>> +		return -ENODEV;
-> >>>  	console_lock();
-> >>>  	fb_set_suspend(fb_info, (int)state);
-> >>>  	console_unlock();
-> >>> +	unlock_fb_info(fb_info);
-> >>>  
-> >>>  	return count;
-> >>>  }
-> > 
-> > 
-> > diff --git a/drivers/video/sh_mobile_hdmi.c b/drivers/video/sh_mobile_hdmi.c
-> > index 2b9e56a..b1a13ab 100644
-> > --- a/drivers/video/sh_mobile_hdmi.c
-> > +++ b/drivers/video/sh_mobile_hdmi.c
-> > @@ -1151,27 +1151,27 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
-> >  
-> >  		ch = info->par;
-> >  
-> > -		console_lock();
-> > +		if (lock_fb_info(info)) {
-> > +			console_lock();
-> >  
-> > -		/* HDMI plug in */
-> > -		if (!sh_hdmi_must_reconfigure(hdmi) &&
-> > -		    info->state == FBINFO_STATE_RUNNING) {
-> > -			/*
-> > -			 * First activation with the default monitor - just turn
-> > -			 * on, if we run a resume here, the logo disappears
-> > -			 */
-> > -			if (lock_fb_info(info)) {
-> > +			/* HDMI plug in */
-> > +			if (!sh_hdmi_must_reconfigure(hdmi) &&
-> > +			    info->state == FBINFO_STATE_RUNNING) {
-> > +				/*
-> > +				 * First activation with the default monitor - just turn
-> > +				 * on, if we run a resume here, the logo disappears
-> > +				 */
-> >  				info->var.width = hdmi->var.width;
-> >  				info->var.height = hdmi->var.height;
-> >  				sh_hdmi_display_on(hdmi, info);
-> > -				unlock_fb_info(info);
-> > +			} else {
-> > +				/* New monitor or have to wake up */
-> > +				fb_set_suspend(info, 0);
-> >  			}
-> > -		} else {
-> > -			/* New monitor or have to wake up */
-> > -			fb_set_suspend(info, 0);
-> > -		}
-> >  
-> > -		console_unlock();
-> > +			console_unlock();
-> > +			unlock_fb_info(info);
-> > +		}
-> >  	} else {
-> >  		ret = 0;
-> >  		if (!hdmi->info)
-> > @@ -1181,12 +1181,15 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
-> >  		fb_destroy_modedb(hdmi->monspec.modedb);
-> >  		hdmi->monspec.modedb = NULL;
-> >  
-> > -		console_lock();
-> > +		if (lock_fb_info(info)) {
-> > +			console_lock();
-> >  
-> > -		/* HDMI disconnect */
-> > -		fb_set_suspend(hdmi->info, 1);
-> > +			/* HDMI disconnect */
-> > +			fb_set_suspend(hdmi->info, 1);
-> >  
-> > -		console_unlock();
-> > +			console_unlock();
-> > +			unlock_fb_info(info);
-> > +		}
-> >  		pm_runtime_put(hdmi->dev);
-> >  	}
-> >  
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
