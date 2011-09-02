@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933067Ab1IBBxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 21:53:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62669 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019Ab1IBBxh (ORCPT
+	id S933078Ab1IBByk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 21:54:40 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:62921 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933019Ab1IBByh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 21:53:37 -0400
-Date: Fri, 2 Sep 2011 03:53:32 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org
-Subject: Re: linux-next RCU complaint during boot
-Message-ID: <20110902015330.GA28121@somewhere.redhat.com>
-References: <8867.1314894817@turing-police.cc.vt.edu>
- <20110902014424.GB2405@linux.vnet.ibm.com>
+	Thu, 1 Sep 2011 21:54:37 -0400
+Message-ID: <4E603758.6050003@gmail.com>
+Date: Thu, 01 Sep 2011 18:54:32 -0700
+From: Nicholas Miell <nmiell@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110902014424.GB2405@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: containers@lists.osdl.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/ directory
+ v6
+References: <20110831075814.003575573@openvz.org> <20110831080229.100652529@openvz.org>
+In-Reply-To: <20110831080229.100652529@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 06:44:24PM -0700, Paul E. McKenney wrote:
-> On Thu, Sep 01, 2011 at 12:33:37PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> > Seen during boot of linux-next 20110831:
-> > 
-> > [    8.823047] ------------[ cut here ]------------
-> > [    8.823177] WARNING: at kernel/rcutree.c:1821 rcu_needs_cpu_quick_check+0x6e/0x204()
-> > [    8.823314] Hardware name: Latitude E6500
-> > [    8.823418] Modules linked in:
-> > [    8.823601] Pid: 0, comm: swapper Not tainted 3.1.0-rc4-next-20110831-dirty #11
-> > [    8.823724] Call Trace:
-> > [    8.823824]  <IRQ>  [<ffffffff81039682>] warn_slowpath_common+0x7e/0x96
-> > [    8.824015]  [<ffffffff81092467>] ? note_new_gpnum+0x32/0x96
-> > [    8.824034]  [<ffffffff810396af>] warn_slowpath_null+0x15/0x17
-> > [    8.824034]  [<ffffffff810917de>] rcu_needs_cpu_quick_check+0x6e/0x204
-> > [    8.824034]  [<ffffffff81093df8>] rcu_needs_cpu+0x9/0xd
-> > [    8.824034]  [<ffffffff81065933>] tick_nohz_stop_sched_tick+0x20a/0x420
-> > [    8.824034]  [<ffffffff8103fd77>] irq_exit+0xd2/0xe0
-> > [    8.824034]  [<ffffffff81018f91>] smp_apic_timer_interrupt+0x8b/0x99
-> > [    8.824034]  [<ffffffff815a1b30>] apic_timer_interrupt+0x70/0x80
-> > [    8.824034]  <EOI>  [<ffffffff8159dbbf>] ? notifier_call_chain+0x20/0x81
-> > [    8.824034]  [<ffffffff8159dc7e>] __atomic_notifier_call_chain+0x5e/0x90
-> > [    8.824034]  [<ffffffff8159dc20>] ? notifier_call_chain+0x81/0x81
-> > [    8.824034]  [<ffffffff8159dcbf>] atomic_notifier_call_chain+0xf/0x11
-> > [    8.824034]  [<ffffffff8100092d>] cpu_idle+0xaf/0x102
-> > [    8.824034]  [<ffffffff81569ddc>] rest_init+0xd0/0xd7
-> > [    8.824034]  [<ffffffff81569d0c>] ? csum_partial_copy_generic+0x16c/0x16c
-> > [    8.824034]  [<ffffffff81b31b09>] start_kernel+0x375/0x380
-> > [    8.824034]  [<ffffffff81b3129f>] x86_64_start_reservations+0xaf/0xb3
-> > [    8.824034]  [<ffffffff81b31393>] x86_64_start_kernel+0xf0/0xf7
-> > [    8.824034] ---[ end trace f6289633ba846f8f ]---
-> > 
-> > Any ideas?
+On 08/31/2011 12:58 AM, Cyrill Gorcunov wrote:
+> From: Pavel Emelyanov <xemul@parallels.com>
 > 
-> This is a bug where someone uses RCU at a time when RCU has been told
-> that the CPU is in dyntick-idle mode.  Frederic Weisbecker has some
-> patches that should address this.
+> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
+> one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
+> the target is the file. Opening a symlink results in a file that point exactly
+> to the same inode as them vma's one.
+> 
+> For example the ls -l of some arbitrary /proc/<pid>/map_files/
+> 
+>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
+>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
+>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
+>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
+>  | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
 
-Yep, see there: https://lkml.org/lkml/2011/8/20/81
+This doesn't seem to fully export all the information passed to mmap(2)
+-- it encompasses the addr, size, fd and (assuming the generated
+symlink's permissions are accurate) prot parameters, but does nothing to
+export the flags or offset parameters.
+
