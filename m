@@ -1,97 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab1IBAVe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:21:34 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:47036 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932766Ab1IBAVA (ORCPT
+	id S932769Ab1IBA3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:29:25 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54887 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932740Ab1IBA3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:21:00 -0400
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, davem@davemloft.net
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, tomoya-linux@dsn.okisemi.com,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Subject: [PATCH 3/3] pch_gbe: support ML7831 IOH
-Date: Fri,  2 Sep 2011 09:20:09 +0900
-Message-Id: <1314922809-4041-3-git-send-email-toshiharu-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1314922809-4041-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-References: <1314922809-4041-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
+	Thu, 1 Sep 2011 20:29:25 -0400
+Date: Fri, 2 Sep 2011 09:29:17 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Ripduman Sohan <ripduman.sohan@cl.cam.ac.uk>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org
+Subject: Re: [PATCH] workqueue: Restore cpus_allowed mask for sleeping
+ workqueue rescue threads
+Message-ID: <20110902002917.GD2752@htj.dyndns.org>
+References: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314884193-20454-1-git-send-email-ripduman.sohan@cl.cam.ac.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support new device OKI SEMICONDUCTOR ML7831 IOH(Input/Output Hub)
+Hello,
 
-ML7831 is for general purpose use.
-ML7831 is companion chip for Intel Atom E6xx series.
-ML7831 is completely compatible for Intel EG20T PCH.
+On Thu, Sep 01, 2011 at 02:36:33PM +0100, Ripduman Sohan wrote:
+> Rescuer threads may be migrated (and are bound) to particular CPUs when
+> active.  However, the allowed_cpus mask is not restored when they return
+> to sleep rendering inconsistent the presented and actual set of CPUs the
+> process may potentially run on.  This patch fixes this oversight by
+> recording the allowed_cpus mask for rescuer threads when it enters the
+> rescuer_thread() main loop and restoring it every time the thread sleeps.
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/net/Kconfig                |   11 ++++++-----
- drivers/net/pch_gbe/pch_gbe_main.c |   10 ++++++++++
- 2 files changed, 16 insertions(+), 5 deletions(-)
+Hmmm... so, currently, rescuer is left bound to the last cpu it worked
+on.  Why is this a problem?
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 8d0314d..a44874e 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -2535,7 +2535,7 @@ config S6GMAC
- source "drivers/net/stmmac/Kconfig"
- 
- config PCH_GBE
--	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GbE"
-+	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR IOH(ML7223/ML7831) GbE"
- 	depends on PCI
- 	select MII
- 	---help---
-@@ -2548,10 +2548,11 @@ config PCH_GBE
- 	  This driver enables Gigabit Ethernet function.
- 
- 	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
--	  Output Hub), ML7223.
--	  ML7223 IOH is for MP(Media Phone) use.
--	  ML7223 is companion chip for Intel Atom E6xx series.
--	  ML7223 is completely compatible for Intel EG20T PCH.
-+	  Output Hub), ML7223/ML7831.
-+	  ML7223 IOH is for MP(Media Phone) use. ML7831 IOH is for general
-+	  purpose use.
-+	  ML7223/ML7831 is companion chip for Intel Atom E6xx series.
-+	  ML7223/ML7831 is completely compatible for Intel EG20T PCH.
- 
- config FTGMAC100
- 	tristate "Faraday FTGMAC100 Gigabit Ethernet support"
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index 39ce0ee..567ff10 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -39,6 +39,9 @@ const char pch_driver_version[] = DRV_VERSION;
- #define PCI_VENDOR_ID_ROHM			0x10db
- #define PCI_DEVICE_ID_ROHM_ML7223_GBE		0x8013
- 
-+/* Macros for ML7831 */
-+#define PCI_DEVICE_ID_ROHM_ML7831_GBE		0x8802
-+
- #define PCH_GBE_TX_WEIGHT         64
- #define PCH_GBE_RX_WEIGHT         64
- #define PCH_GBE_RX_BUFFER_WRITE   16
-@@ -2526,6 +2529,13 @@ static DEFINE_PCI_DEVICE_TABLE(pch_gbe_pcidev_id) = {
- 	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
- 	 .class_mask = (0xFFFF00)
- 	 },
-+	{.vendor = PCI_VENDOR_ID_ROHM,
-+	 .device = PCI_DEVICE_ID_ROHM_ML7831_GBE,
-+	 .subvendor = PCI_ANY_ID,
-+	 .subdevice = PCI_ANY_ID,
-+	 .class = (PCI_CLASS_NETWORK_ETHERNET << 8),
-+	 .class_mask = (0xFFFF00)
-+	 },
- 	/* required last entry */
- 	{0}
- };
+Thanks.
+
 -- 
-1.7.4.4
-
+tejun
