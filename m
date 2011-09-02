@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813Ab1IBAtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:49:16 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:54275 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932747Ab1IBAtO (ORCPT
+	id S932833Ab1IBAta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:49:30 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:46575 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932747Ab1IBAt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:49:14 -0400
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: RFD: x32 ABI system call numbers
-Date: Fri, 2 Sep 2011 01:49:10 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
-Cc: Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-References: <4E582577.2060805@zytor.com> <4E5F88F8.2040008@redhat.com> <4E5F930A.6070006@zytor.com>
-In-Reply-To: <4E5F930A.6070006@zytor.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 1 Sep 2011 20:49:27 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: tim.c.chen@linux.intel.com, "David S. Miller" <davem@davemloft.net>,
+        ML netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [next] unix stream crashes
+In-Reply-To: Your message of "Thu, 01 Sep 2011 22:46:32 +0200."
+             <4E5FEF28.60406@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <4E5FEF28.60406@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1314924559_3073P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109020149.10780.pedro@codesourcery.com>
+Date: Thu, 01 Sep 2011 20:49:19 -0400
+Message-ID: <3179.1314924559@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4E602813.0071,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 September 2011 15:13:30, H. Peter Anvin wrote:
-> On 09/01/2011 06:30 AM, Avi Kivity wrote:
-> > On 08/31/2011 08:09 PM, H. Peter Anvin wrote:
-> >>>  I really think that "x32" should try to aim *VERY* hard at using the
-> >>>  64-bit system calls, and seeing itself as being a "32-bit application
-> >>>  in a 64-bit world".  That's not just true for time_t (which I think
-> >>>  should be 64-bit on anything new that expects to survive for any
-> >>>  amount of time), but in general.
-> >>
-> >> We're trying for it.  The things we're trying to avoid is to muck (too
-> >> much) with the compat layer for the mega-multiplex system calls like
-> >> ioctl.  We can't just use the 64-bit ioctl because ioctl structures
-> >> generally contain pointers.
-> >>
-> > 
-> >      struct iovec
-> >      {
-> >          void __user *iov_base;    /* BSD uses caddr_t (1003.1g requires 
-> > void *) */
-> >          __kernel_size_t iov_len; /* Must be size_t (1003.1g) */
-> >      } __attribute__((x32_abi_64));
-> > 
-> >      typedef long time_t __attribute__((x32_abi_64));
-> > 
-> > The x32_abi_64 attribute converts pointers and longs back to 64-bit and 
-> > adjusts the alignment accordingly.  If we tag all userspace visible 
-> > structures with this attribute, we can use the 64-bit ABI without changes.
+--==_Exmh_1314924559_3073P
+Content-Type: text/plain; charset=us-ascii
 
-I would expect no new gcc extension to be needed for that -- there's the
-mode attribute (you can read DI as 64-bit):
+On Thu, 01 Sep 2011 22:46:32 +0200, Jiri Slaby said:
+> Hi,
+> 
+> my box 100% crashes when booting. It's both in unix socket recv and send 
+> paths. I've reverted 0856a30409 (Scm: Remove unnecessary pid & 
+> credential references in Unix socket's send and receive path) and it 
+> seems to help.
+> 
+> The oops:
+> http://www.fi.muni.cz/~xslaby/sklad/panics/af_unix_crash.png
 
- typedef void * __kernel_ptr64 __attribute ((mode(DI)));
+I was seeing a 100% repeatable crash with the X server starting as well, but
+wasn't able to get a traceback because my X server was doing the modeset before
+it crashed (so all I got was a black screen) and netconsole is busticated for
+me.  I can confirm that reverting that one commit allows my box to boot and get
+X up and running as well.
 
- struct iovec
- {
-   __kernel_ptr64 iov_base;
-   ...
- };
 
--- 
-Pedro Alves
+--==_Exmh_1314924559_3073P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOYCgPcC3lWbTT17ARAmDBAKDUhUb6Lcsk2lG9y3YzY+ElVp12bQCg4C/j
+0U1hhZYPxQ4/8cRVZJGZgow=
+=TRzo
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1314924559_3073P--
+
