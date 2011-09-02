@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab1IBL0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 07:26:40 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:50703 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab1IBL0h (ORCPT
+	id S1751897Ab1IBL1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 07:27:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58544 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1IBL1S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 07:26:37 -0400
-Date: Fri, 2 Sep 2011 19:23:51 +0800
-From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ruslan Pisarev <ruslan@rpisarev.org.ua>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Joe Perches <joe@perches.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH v4 00/19] Staging: cx25821: Fix style issues
-Message-ID: <20110902192351.161a9577@inspire>
-In-Reply-To: <5753.1314959695@turing-police.cc.vt.edu>
-References: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
-	<5753.1314959695@turing-police.cc.vt.edu>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Sep 2011 07:27:18 -0400
+MIME-Version: 1.0
+Date: Fri, 2 Sep 2011 16:57:17 +0530
+Message-ID: <CADDb1s1A38RyioiehzbRCgjFQT-MhfoD7cutxkn+h_cvUcZpfg@mail.gmail.com>
+Subject: =?windows-1252?Q?vfat_filesystem=3A_Why_utf8=3D1_when_iocharset=3D=94utf8?=
+	=?windows-1252?Q?=94_was_already_there=3F?=
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linkinjeon@gmail.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Sep 2011 06:34:55 -0400
-Valdis.Kletnieks@vt.edu wrote:
+>From my opinion both should support the same functionality as the
+motive behind this seems to introduce the complete support for utf8.
+But, I am surprised to see the behavior changes in the ‘2’ options.
+1)	When using iocharset=”utf8” it makes vfat case sensitive, while
+this is not the case with using utf8=1
+2)	Surrogate pair don’t work when using iocharset=”utf8”, because that
+traverses a path like this:
+xlate_to_uni()-->nls->char2uni()-->char2uni()-->utf8_to_utf32()
+After this it returns EINVAL because Surrogate pair correct code is
+greater than 0xFFFF (MAX_WCHAR_T – limit which is put)
+But this is not the case with utf8=1
+There are other places also where I can see usage different due to
+usage of char2uni()
 
-> On Fri, 02 Sep 2011 11:55:28 +0800, "Leonid V. Fedorenchik" said:
-> > This patch series fixes some style issues in drivers/staging/cx25821
-> 
-> Happened to glance at a "Fix long lines" patch that actually improved
-> the code.  That's sufficiently rare I decided to look at the whole series,
-> which all looks good - the + lines in the patches generally are nicer
-> looking than the - lines. ;)
-> 
-> Feel free to stick this on the whole series:
-> 
-> Reviewed-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Can someone provide any help on this? Why do we have separate options
+for using utf8 and if utf8=1 smoothly supports proper working then why
+not discard iocharset=”utf8” ? and if this is not the case
+why was utf8=1 introduced?
 
-Thank you. Appreciate your review.
+Please provide any guidance in this.
 
-Leonid V. Fedorenchik
+Thanks & Regards,
+Amit Sahrawat
