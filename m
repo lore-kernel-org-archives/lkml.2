@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab1IBT5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:57:52 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39520 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755247Ab1IBTz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:55:59 -0400
-From: Serge Hallyn <serge@hallyn.com>
-To: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        dhowells@redhat.com, ebiederm@xmission.com, rdunlap@xenotime.net
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [PATCH 08/15] af_netlink.c: make netlink_capable userns-aware
-Date: Fri,  2 Sep 2011 19:56:33 +0000
-Message-Id: <1314993400-6910-11-git-send-email-serge@hallyn.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1314993400-6910-1-git-send-email-serge@hallyn.com>
-References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
+	id S1755644Ab1IBT6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:58:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54267 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755625Ab1IBT6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:58:03 -0400
+Date: Fri, 2 Sep 2011 21:57:59 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dimitri Sivanich <sivanich@sgi.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
+In-Reply-To: <20110902192958.GB30665@sgi.com>
+Message-ID: <alpine.LFD.2.02.1109022155080.2723@ionos>
+References: <20110817160759.GA3482@sgi.com> <alpine.LFD.2.02.1108171819120.2807@ionos> <20110823195628.GB4533@sgi.com> <alpine.LFD.2.02.1109021015290.2723@ionos> <20110902192958.GB30665@sgi.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+On Fri, 2 Sep 2011, Dimitri Sivanich wrote:
+> On Fri, Sep 02, 2011 at 10:19:36AM +0200, Thomas Gleixner wrote:
+> +#ifdef CONFIG_SYSFS
+> +/**
+> + * sysfs_show_do_timer_cpu - sysfs interface for tick_do_timer_cpu
+> + * @dev:        unused
+> + * @buf:        char buffer where value of tick_do_timer_cpu is copied
+> + *
+> + * Provides sysfs interface for showing the current tick_do_timer_cpu.
+> + */
+> +static ssize_t
+> +sysfs_show_do_timer_cpu(struct sys_device *dev,
+> +				struct sysdev_attribute *attr, char *buf)
+> +{
+> +	ssize_t count = 0;
+> +
+> +	count = snprintf(buf, PAGE_SIZE, "%d\n", tick_do_timer_cpu);
+> +
+> +	return count;
+> +}
+> +
+> +/**
+> + * sysfs_override_do_timer_cpu - manually override tick_do_timer_cpu
+> + * @dev:        unused
+> + * @buf:        cpu number of desired tick_do_timer_cpu
+> + * @count:      length of buffer
+> + *
+> + * Takes input from sysfs interface for manually overriding the selected
+> + * tick_do_timer_cpu.  Only applicable when not running in nohz mode.
+> + */
+> +static ssize_t
+> +sysfs_override_do_timer_cpu(struct sys_device *dev,
+> +					struct sysdev_attribute *attr,
+> +					const char *buf, size_t count)
+> +{
+> +	char b[16];
+> +	size_t ret = count;
+> +	int c;
+> +
+> +#ifdef CONFIG_NO_HZ
+> +	/* nohz mode not supported */
+> +	if (tick_nohz_enabled)
+> +		return -EINVAL;
+> +#endif
+> +	/* strings from sysfs write are not 0 terminated! */
+> +	if (count >= sizeof(b))
+> +		return -EINVAL;
+> +
+> +	/* strip off \n: */
+> +	if (buf[count-1] == '\n')
+> +		count--;
+> +	if (count < 1)
+> +		return -EINVAL;
+> +
+> +	memcpy(b, buf, count);
+> +	b[count] = 0;
+> +
+> +	if (sscanf(b, "%d", &c) != 1)
+> +		return -EINVAL;
 
-netlink_capable should check for permissions against the user
-namespace owning the socket in question.
+Isn't there a function which parses sysfs writes into an integer ?
 
-Changelog:
-  Per Eric Dumazet advice, use sock_net(sk) instead of #ifdef.
+Thanks,
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
----
- net/netlink/af_netlink.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 0a4db02..3cc0bbe 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -580,8 +580,9 @@ retry:
- 
- static inline int netlink_capable(struct socket *sock, unsigned int flag)
- {
--	return (nl_table[sock->sk->sk_protocol].nl_nonroot & flag) ||
--	       capable(CAP_NET_ADMIN);
-+	if (nl_table[sock->sk->sk_protocol].nl_nonroot & flag)
-+		return 1;
-+	return ns_capable(sock_net(sock->sk)->user_ns, CAP_NET_ADMIN);
- }
- 
- static void
--- 
-1.7.5.4
-
+	tglx
