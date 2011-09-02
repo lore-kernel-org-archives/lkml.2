@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918Ab1IBBJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 21:09:11 -0400
-Received: from wobosm02.netvigator.com ([219.76.94.18]:51829 "EHLO
-	wobosm02.netvigator.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932809Ab1IBBJH (ORCPT
+	id S932902Ab1IBBKv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 21:10:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65455 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932809Ab1IBBKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 21:09:07 -0400
-Date: Fri, 2 Sep 2011 08:59:52 +0800 (HKT)
-From: Peter Chow <petertse26@netvigator.com>
-Reply-To: Peter Chow <pchoww56@yahoo.com.hk>
-Message-ID: <836802372.807710.1314925192932.JavaMail.root@yzbmbs01>
-Subject: Business Proposal!!!! (Urgent Response)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.12.42]
-X-Mailer: Zimbra 6.0.8_GA_2661 (ZimbraWebClient - FF3.0 (Win)/6.0.8_GA_2661)
-To: undisclosed-recipients:;
+	Thu, 1 Sep 2011 21:10:50 -0400
+From: Shan Hai <haishan.bai@gmail.com>
+To: akpm@linux-foundation.org, tglx@linutronix.de
+Cc: eric.dumazet@gmail.com, vapier@gentoo.org, asharma@fb.com,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Subject: [PATCH V2 0/1] lib/atomic64 using raw_spin_lock_irq[save|resotre] for atomicity
+Date: Fri,  2 Sep 2011 09:10:50 +0800
+Message-Id: <1314925851-28163-1-git-send-email-haishan.bai@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
 
-I bring you greetings. I am PETER CHOW, I work with BANK OF CHINA, HONG KONG. I have a Business Proposal of $17.3M for you to handle with me from my bank.I need you to assist me in executing this Business Project from Hong Kong to your country.I need to know if you will be able to handle this with me before I explain to you in details. Should you be interested please send me the required information below;
+[PATCH V3 0/1] lib:atomic64 using raw_spin_lock_irq[save|resotre] for atomicity
 
-(1). Full Names:
-(2). Current Residential Address/Country:
-(3). Private Telephone Number:
-(4). Age:
+The command 'perf top -e L1-dcache-loads' causes OOPS and hang up in the
+following configuration.
 
-I will want you to reach me on my private e-mail : (pchoww56@yahoo.com.hk) .Finally after that I shall provide you with more information.
+Powerpc e500 core
+OOPS on: 		2.6.34.9 PREEMPT-RT
+Whole system hangs up:	3.0.3 PREEMPT-RT
 
-Regards,
-Peter Chow
+Listed the panic info. below. 
+
+Cause of the problem is that the atomic64_add_return is interrupted by the 
+performence counter interrupt, the interrupt handler calls atomic64_read,
+failed at /build/linux/kernel/rtmutex.c:832! for the reason trying to hold the
+same lock twice in the same context. 
+
+Replace the spin_lock_irq[save|restore] with raw_spin_lock_irq[save|restore] 
+could guarantee the atomicity of atomic64_* because the raw variant of the spin
+lock disables interrupts during atomic64_* operations.
+
+---
+ lib/atomic64.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
+---
+
+OOPS on 2.6.34.9+PREEMPT-RT:
+------------[ cut here ]------------
+kernel BUG at /build/linux/kernel/rtmutex.c:832!
+Oops: Exception in kernel mode, sig: 5 [#2]
+PREEMPT SMP NR_CPUS=8 LTT NESTING LEVEL : 0
+P4080 DS
+last sysfs file: /sys/devices/system/cpu/online
+Modules linked in: ipv6(+) [last unloaded: scsi_wait_scan]
+NIP: c068b218 LR: c068b1e0 CTR: 00000000
+REGS: eb459ae0 TRAP: 0700   Tainted: G      D     (2.6.34.9-rt)
+MSR: 00021002 <ME,CE>  CR: 28000488  XER: 00000000
+TASK = ea43d3b0[968] 'perf' THREAD: eb458000 CPU: 0
+GPR00: 00000001 eb459b90 ea43d3b0 00021002 00000000 00000000 00000000 00000001
+GPR08: 00000001 ea43d3b0 c068b1e0 00000000 28000482 10092c4c 7fffffff 80000000
+GPR16: eb459d40 eb459c68 00000001 c2fa2098 eb459ec0 eac5a8e8 eac5a900 c0906308
+GPR24: c0906334 00000000 eb459b9c c090d0ec 00021002 c09062e0 c09062e0 eb459b90
+NIP [c068b218] rt_spin_lock_slowlock+0x78/0x3a8
+LR [c068b1e0] rt_spin_lock_slowlock+0x40/0x3a8
+Call Trace:
+[eb459b90] [c068b1e0] rt_spin_lock_slowlock+0x40/0x3a8 (unreliable)
+[eb459c20] [c068bdb0] rt_spin_lock+0x40/0x98
+[eb459c40] [c03d2a14] atomic64_read+0x48/0x84
+[eb459c60] [c001aaf4] perf_event_interrupt+0xec/0x28c
+[eb459d10] [c0010138] performance_monitor_exception+0x7c/0x150
+[eb459d30] [c0014170] ret_from_except_full+0x0/0x4c
+--- Exception: 2060 at lock_acquire+0x94/0x130
+    LR = lock_acquire+0x8c/0x130
+[eb459e30] [c068bdf0] rt_spin_lock+0x80/0x98
+[eb459e50] [c03d2884] atomic64_add_return+0x50/0x98
+[eb459e70] [c00ff888] T.902+0x150/0x4f8
+[eb459eb0] [c00ffedc] sys_perf_event_open+0x2ac/0x508
+[eb459f40] [c0013b6c] ret_from_syscall+0x0/0x4
+--- Exception: c00 at 0xfa8abe4
+    LR = 0x10016034
+
