@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568Ab1IBMRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 08:17:08 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45161 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab1IBMRG convert rfc822-to-8bit (ORCPT
+	id S1751429Ab1IBMY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 08:24:56 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57865 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750860Ab1IBMYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 08:17:06 -0400
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 02 Sep 2011 14:16:40 +0200
-In-Reply-To: <20110829133729.GA27871@localhost>
-References: <1313154259.6576.42.camel@twins>
-	 <20110812142020.GB17781@localhost> <1314027488.24275.74.camel@twins>
-	 <20110823034042.GC7332@localhost> <1314093660.8002.24.camel@twins>
-	 <20110823141504.GA15949@localhost> <20110823174757.GC15820@redhat.com>
-	 <20110824001257.GA6349@localhost> <20110824180058.GC22434@redhat.com>
-	 <1314623527.2816.28.camel@twins> <20110829133729.GA27871@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314965800.1301.7.camel@twins>
-Mime-Version: 1.0
+	Fri, 2 Sep 2011 08:24:54 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Magnus Damm <magnus.damm@gmail.com>
+Subject: [RFC 0/2] Memory mapped virtio device
+Date: Fri,  2 Sep 2011 13:24:15 +0100
+Message-Id: <1314966257-7503-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.6.3.3
+X-OriginalArrivalTime: 02 Sep 2011 12:24:23.0080 (UTC) FILETIME=[3F44EA80:01CC696B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-29 at 21:37 +0800, Wu Fengguang wrote:
-> > 
-> > Ok so this argument makes sense, is there some formalism to describe
-> > such systems where such things are more evident?
-> 
-> I find the most easy and clean way to describe it is,
-> 
-> (1) the below formula
->                                                           write_bw  
->     bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * --------- * pos_ratio
->                                                           dirty_bw
-> is able to yield
-> 
->     dirty_ratelimit_(i) ~= (write_bw / N)
-> 
-> as long as
-> 
-> - write_bw, dirty_bw and pos_ratio are not changing rapidly
-> - dirty pages are not around @freerun or @limit
-> 
-> Otherwise there will be larger estimation errors.
-> 
-> (2) based on (1), we get
-> 
->     task_ratelimit ~= (write_bw / N) * pos_ratio
-> 
-> So the pos_ratio feedback is able to drive dirty count to the
-> setpoint, where pos_ratio = 1.
-> 
-> That interpretation based on _real values_ can neatly decouple the two
-> feedback loops :) It makes full utilization of the fact "the
-> dirty_ratelimit _value_ is independent on pos_ratio except for
-> possible impacts on estimation errors". 
+Hi All,
 
-OK, so the 'problem' I have with this is that the whole control thing
-really doesn't care about N. All it does is measure:
+This is a proposal of a memory mapped virtio device.
 
- - dirty rate
- - writeback rate
+The main goal was to provide an equivalent of the virtio PCI device,
+happily used by KVM an qemu on x86, which could be used by PCI-less
+platforms (common in ARM world). The interface exposed by my device
+is very similar to the original virtio_pci one, maybe just a little
+bit simplified (no sophisticated IRQ infrastructure here). Of course
+all the control registers live in memory space, instead of PCI IO
+space (writel vs iowrite32).
 
-observe:
+This raises an obvious question whether these two implementation
+could share some common code. Probably some constant values could
+be shared (like VIRTIO_*_HOST_FEATURES or VIRTIO_*_VRING_ALIGN),
+maybe struct virtio_*_vq_info as well. On the other hand the vring
+interface itself is an abstraction layer already... I really don't
+know, all comments and ideas appreciated.
 
- - dirty count; with the independent input of its setpoint
+The second thing is AMBAness of the driver... I've decided to
+make it an AMBA device rather than simple platform device to add
+at least a touch of "dicoverability". The idea was simple - one
+can add "permanent" virtio AMBA device in the kernel placing it
+somewhere in reserved area of real hardware, so the kernel running
+on hardware will not get correct amba_id value and ignore the
+device. With the eve of Device-Trees-Everywhere this argument is
+slightly out of date, as qemu could add the virtio device even in
+runtime. So maybe I should convert it into a platform_device then?
 
-control:
+This brings additional problem though. Magnus Damm already proposed
+a platform virtio device here:
 
- - ratelimit
+http://thread.gmane.org/gmane.linux.ports.sh.devel/11554
 
-so I was looking for a way to describe the interaction between the two
-feedback loops without involving the exact details of what they're
-controlling, but that might just end up being an oxymoron.
+however it's something completely different, as his use case is a
+heterogeneous system and the virtio is used mainly as a transport
+between nodes. It also uses lguest-based interface, which is much
+less applicable to the qemu reality.
 
+The second patch simply makes it possible to use virtio framework
+on ARM.
+
+Let me just add that Peter Maydell (Linaro qemu magician) kindly
+agreed to work on the qemu side of the problem once we have some
+consensus regarding the interface.
+
+Pawel Moll (2):
+  virtio: Add AMBA bus driver for virtio device
+  arm: Add VIRTUALIZATION configuration menu and virtio options
+
+ arch/arm/Kconfig             |   16 ++
+ drivers/virtio/Kconfig       |   11 +
+ drivers/virtio/Makefile      |    1 +
+ drivers/virtio/virtio_amba.c |  443 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/virtio_amba.h  |   62 ++++++
+ 5 files changed, 533 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/virtio/virtio_amba.c
+ create mode 100644 include/linux/virtio_amba.h
 
