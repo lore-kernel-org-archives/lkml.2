@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab1IBDgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 23:36:46 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:57872 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab1IBDgl (ORCPT
+	id S1758108Ab1IBD4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 23:56:47 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:42704 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757Ab1IBD4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 23:36:41 -0400
-X-AuditID: b753bd60-a14abba0000019f4-01-4e604f463602
-X-AuditID: b753bd60-a14abba0000019f4-01-4e604f463602
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [PATCH net-next-2.6 ] Fix overflow of socket buffer in sunrpc
-To: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Fri, 02 Sep 2011 12:41:38 +0900
-Message-ID: <20110902034138.22595.9759.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 1 Sep 2011 23:56:42 -0400
+From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ruslan Pisarev <ruslan@rpisarev.org.ua>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, Joe Perches <joe@perches.com>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Arnd Bergmann <arnd@arndb.de>,
+        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org,
+        "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+Subject: [PATCH v4 00/19] Staging: cx25821: Fix style issues
+Date: Fri,  2 Sep 2011 11:55:28 +0800
+Message-Id: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sk_sndbuf and sk_rcvbuf fields of struct sock are sizes of send and
-receive socket buffers respectively, and are defined as integer.
-The sunrpc which is used in NFSD and any other applications can change them
-via svc_sock_setbufsize(). It, however, sets them as unsigned integer and
-may cause overflow of integer. This leads to a degradation of networking
-capability.
+This patch series fixes some style issues in drivers/staging/cx25821
 
-This patch adds integer-overflow check into svc_sock_setbufsize() before
-both fields are set, and limits their maximum sizes to INT_MAX.
+I split my previous patches per logical change and combined them into
+one patch series.
 
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: "David S. Miller" <davem@davemloft.net>
----
+Changes in v4 based on reviews of v3.
 
- net/sunrpc/svcsock.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Leonid V. Fedorenchik (19):
+  Staging: cx25821: Get rid of typedef in cx25821.h
+  Staging: cx25821: Rename member name in struct cx25821_dev
+  Staging: cx25821: Delete file cx25821-gpio.h
+  Staging: cx25821: Move EXPORT_SYMBOL() to the right place
+  Staging: cx25821: Use DEFINE_PCI_DEVICE_TABLE for cx25821_pci_tbl
+  Staging: cx25821: Fix wrong statement indent in cx25821-cards.c
+  Staging: cx25821: Fix wrong statement indent in cx25821-core.c
+  Staging: cx25821: Fix wrong statement indent in cx25821-i2c.c
+  Staging: cx25821: Fix too long lines in cx25821-audio.h
+  Staging: cx25821: Fix obscure line endings in cx25821-audio-upstream.c
+  Staging: cx25821: Fix long lines in cx25821-audio-upstream.c
+  Staging: cx25821: Fix long lines in cx25821-audio-upstream.h
+  Staging: cx25821: Replace :? by if-else in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix labels' placement in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix wrong line endings in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix long lines in cx25821-video-upstream-ch2.c
+  Staging: cx25821: Fix long lines in cx25821-video-upstream-ch2.h
+  Staging: cx25821: Fix long lines in cx25821-video-upstream.c
+  Staging: cx25821: Fix long lines in cx25821-video-upstream.h
 
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index 767d494..bd66775 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -54,6 +54,7 @@
- #include "sunrpc.h"
- 
- #define RPCDBG_FACILITY	RPCDBG_SVCXPRT
-+#define MAX_SKBUFSIZ	INT_MAX
- 
- 
- static struct svc_sock *svc_setup_socket(struct svc_serv *, struct socket *,
-@@ -435,6 +436,11 @@ static void svc_sock_setbufsize(struct socket *sock, unsigned int snd,
- 	 * on not having CAP_SYS_RESOURCE or similar, we go direct...
- 	 * DaveM said I could!
- 	 */
-+	if (snd > MAX_SKBUFSIZ/2)
-+		snd = MAX_SKBUFSIZ/2;
-+	if (rcv > MAX_SKBUFSIZ/2)
-+		rcv = MAX_SKBUFSIZ/2;
-+
- 	lock_sock(sock->sk);
- 	sock->sk->sk_sndbuf = snd * 2;
- 	sock->sk->sk_rcvbuf = rcv * 2;
-
+ drivers/staging/cx25821/cx25821-audio-upstream.c   |   41 +-
+ drivers/staging/cx25821/cx25821-audio-upstream.h   |    9 +-
+ drivers/staging/cx25821/cx25821-audio.h            |    6 +-
+ drivers/staging/cx25821/cx25821-cards.c            |   26 +-
+ drivers/staging/cx25821/cx25821-core.c             |  503 ++++++++++----------
+ drivers/staging/cx25821/cx25821-gpio.c             |    1 +
+ drivers/staging/cx25821/cx25821-gpio.h             |    2 -
+ drivers/staging/cx25821/cx25821-i2c.c              |   30 +-
+ .../staging/cx25821/cx25821-video-upstream-ch2.c   |   79 ++--
+ .../staging/cx25821/cx25821-video-upstream-ch2.h   |   83 +++-
+ drivers/staging/cx25821/cx25821-video-upstream.c   |   16 +-
+ drivers/staging/cx25821/cx25821-video-upstream.h   |   78 +++-
+ drivers/staging/cx25821/cx25821.h                  |   10 +-
+ 13 files changed, 465 insertions(+), 419 deletions(-)
+ delete mode 100644 drivers/staging/cx25821/cx25821-gpio.h
