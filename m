@@ -1,89 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab1IBTPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:15:22 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35321 "EHLO e8.ny.us.ibm.com"
+	id S1754952Ab1IBTSi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:18:38 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:37633 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754871Ab1IBTPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:15:20 -0400
-Date: Fri, 2 Sep 2011 12:15:10 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Nathan Lynch <ntl@pobox.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110902191510.GB27179@count0.beaverton.ibm.com>
-References: <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros>
- <20110831112642.GI25465@sun>
- <20110831140416.GA17626@shutemov.name>
- <20110831142622.GB30615@sun>
- <20110831151023.5b7e12da.akpm@linux-foundation.org>
- <4E5F3B25.9030701@parallels.com>
- <20110901115006.GB2752@htj.dyndns.org>
- <4E5F7702.2070808@parallels.com>
- <20110901171355.GC2752@htj.dyndns.org>
+	id S1754507Ab1IBTSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:18:33 -0400
+Date: Fri, 2 Sep 2011 12:18:28 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 08/16] ext4: Calculate and verify checksums for inode
+	bitmaps
+Message-ID: <20110902191828.GL12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com> <20110901003127.31048.13983.stgit@elm3c44.beaverton.ibm.com> <2A834E5A-F07E-4B1E-835B-FBEE3FD7A103@dilger.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110901171355.GC2752@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2A834E5A-F07E-4B1E-835B-FBEE3FD7A103@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 02:13:55AM +0900, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Sep 01, 2011 at 04:13:54PM +0400, Pavel Emelyanov wrote:
-> > Because with the handler restore process looks very natural and simple - each
-> > task does the following steps
+On Wed, Aug 31, 2011 at 10:49:05PM -0600, Andreas Dilger wrote:
+> On 2011-08-31, at 6:31 PM, Darrick J. Wong wrote:
+> > Compute and verify the checksum of the inode bitmap; the checkum is stored in
+> > the block group descriptor.
 > > 
-> > 1. restore task resources (open files, set IDs, restore connections, wire back timers, etc.)
-> > 2. call execve() to jump into new memory+registers context which is
-> >    a. unmap all the user memory
-> >    b. map required mappings
-> >    c. populate them with data
-> >    d. restore registers
-> >    e. restore IP
+> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> > ---
+> > fs/ext4/ext4.h   |    3 ++-
+> > fs/ext4/ialloc.c |   33 ++++++++++++++++++++++++++++++---
+> > 2 files changed, 32 insertions(+), 4 deletions(-)
+> > 
+> > 
+> > diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> > index bc7ace1..248cbd2 100644
+> > --- a/fs/ext4/ext4.h
+> > +++ b/fs/ext4/ext4.h
+> > @@ -279,7 +279,8 @@ struct ext4_group_desc
+> > 	__le16	bg_free_inodes_count_hi;/* Free inodes count MSB */
+> > 	__le16	bg_used_dirs_count_hi;	/* Directories count MSB */
+> > 	__le16  bg_itable_unused_hi;    /* Unused inodes count MSB */
+> > -	__u32	bg_reserved2[3];
+> > +	__le32	bg_inode_bitmap_csum;	/* crc32c(uuid+group+ibitmap) */
+> > +	__u32	bg_reserved2[2];
+> > };
 > 
-> But what about multiple threads?  exec is already scary enough as it
-> is and I don't think it would be wise to overload it for this.
+> I would prefer if there was a 16-bit checksum for the (most common)
+> 32-byte group descriptors, and this was extended to a 32-bit checksum
+> for the (much less common) 64-byte+ group descriptors.  For filesystems
+> that are newly formatted with the 64bit feature it makes no difference,
+> but virtually all ext3/4 filesystems have only the smaller group descriptors.
 > 
-> I don't really think binfmt handler would be able to achieve
-> completeness without ending up with full de-serializer in kernel.
+> Regardless of whether using half of the crc32c is better or worse than
+> using crc16 for the bitmap blocks, storing _any_ checksum is better than
+> storing nothing at all.  I would propose the following:
 
-Yeah, I think you'd have to remove the de_thread()-based assumptions 
-in exec to avoid this. And then there's the can of worms opened by
-non-pthread threads where files, signals, etc. may or may not be shared..
+That's an interesting reframing of the argument that I hadn't considered.  I'd
+fallen into the idea of needing crc32c because of its bit error guarantees (all
+corruptions of odd numbers of bits and all corruptions of fewer than ...4?
+bits) that I hadn't quite realized that even if crc16 can't guarantee to find
+any corruption at all, it still _might_, and that's better than nothing.
 
-> There are a lot of states which already have API to manipulate from
-> the userland thread itself and they all will need to be replicated in
-> the binfmt handler.  It really has to be full de-serializer if it
+Ok, let's split the 32-bit fields and use crc16 for the case of 32-byte block
+group descriptors.
 
-Re-creating all possible states from userspace is not necessarily going
-to be any prettier. I'd really like to see SEIZE used to restart threaded
-tasks before I'll be convinced it's any more or less pretty than a binfmt
-handler.
-
-> wants to function like you described.
+> struct ext4_group_desc
+> {
+>         __le32 bg_block_bitmap_lo;	/* Blocks bitmap block */
+>         __le32 bg_inode_bitmap_lo;	/* Inodes bitmap block */
+>         __le32 bg_inode_table_lo;	/* Inodes table block */
+>         __le16 bg_free_blocks_count_lo;	/* Free blocks count */
+>         __le16 bg_free_inodes_count_lo;	/* Free inodes count */
+>         __le16 bg_used_dirs_count_lo;	/* Directories count */
+>         __le16 bg_flags;		/* EXT4_BG_flags (INODE_UNINIT, etc) */
+>         __le32 bg_exclude_bitmap_lo;	/* Exclude bitmap block */
+>         __le16 bg_block_bitmap_csum_lo;	/* Block bitmap checksum */
+> 	__le16 bg_inode_bitmap_csum_lo;	/* Inode bitmap checksum */
+>         __le16 bg_itable_unused_lo;	/* Unused inodes count */
+>         __le16 bg_checksum;		/* crc16(sb_uuid+group+desc) */
+>         __le32 bg_block_bitmap_hi;	/* Blocks bitmap block MSB */
+>         __le32 bg_inode_bitmap_hi;	/* Inodes bitmap block MSB */
+>         __le32 bg_inode_table_hi;	/* Inodes table block MSB */
+>         __le16 bg_free_blocks_count_hi;	/* Free blocks count MSB */
+>         __le16 bg_free_inodes_count_hi;	/* Free inodes count MSB */
+>         __le16 bg_used_dirs_count_hi;	/* Directories count MSB */
+>         __le16 bg_itable_unused_hi;	/* Unused inodes count MSB */
+> 	__le32 bg_exclude_bitmap_hi;	/* Exclude bitmap block MSB */
+> 	__le16 bg_block_bitmap_csum_hi;	/* Blocks bitmap checksum MSB */
+> 	__le16 bg_inode_bitmap_csum_hi;	/* Inodes bitmap checksum MSB */
+>         __le32 bg_reserved2;
+> };
 > 
-> And if we're gonna have interventions anyway, I can't see much point
-> in implementing something which seems simpler - it's not gonna be
-> actually simpler.
+> This is also different from your layout because it locates the block bitmap
+> checksum field before the inode bitmap checksum, to more closely match the
+> order of other fields in this structure.
 
-You may have lost me here -- I have no idea whether this is a summary
-or some new point you're trying to make.
+Er.. I reversed the order in the structure definition just prior to publishing,
+and forgot to update the wiki page.  Well I guess I'm about to update it again.
+:)
 
-Cheers,
-	-Matt Helsley
+> > /*
+> > diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+> > index 9c63f27..53faffc 100644
+> > --- a/fs/ext4/ialloc.c
+> > +++ b/fs/ext4/ialloc.c
+> > @@ -82,12 +82,18 @@ static unsigned ext4_init_inode_bitmap(struct super_block *sb,
+> > 		ext4_free_inodes_set(sb, gdp, 0);
+> > 		ext4_itable_unused_set(sb, gdp, 0);
+> > 		memset(bh->b_data, 0xff, sb->s_blocksize);
+> > +		ext4_bitmap_csum_set(sb, block_group,
+> > +				     &gdp->bg_inode_bitmap_csum, bh,
+> > +				     (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> 
+> The number of inodes per group is already always a multiple of 8.
+
+Ok.  I suppose we can fix that in the lines below too.
+
+> > 		return 0;
+> > 	}
+> > 
+> > 	memset(bh->b_data, 0, (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> > 	ext4_mark_bitmap_end(EXT4_INODES_PER_GROUP(sb), sb->s_blocksize * 8,
+> > 			bh->b_data);
+> > +	ext4_bitmap_csum_set(sb, block_group, &gdp->bg_inode_bitmap_csum, bh,
+> > +			     (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> > +	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
+> > 
+> > 	return EXT4_INODES_PER_GROUP(sb);
+> > }
+> > @@ -118,12 +124,12 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> > 		return NULL;
+> > 	}
+> > 	if (bitmap_uptodate(bh))
+> > -		return bh;
+> > +		goto verify;
+> > 
+> > 	lock_buffer(bh);
+> > 	if (bitmap_uptodate(bh)) {
+> > 		unlock_buffer(bh);
+> > -		return bh;
+> > +		goto verify;
+> > 	}
+> > 
+> > 	ext4_lock_group(sb, block_group);
+> > @@ -131,6 +137,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> > 		ext4_init_inode_bitmap(sb, bh, block_group, desc);
+> > 		set_bitmap_uptodate(bh);
+> > 		set_buffer_uptodate(bh);
+> > +		set_buffer_verified(bh);
+> > 		ext4_unlock_group(sb, block_group);
+> > 		unlock_buffer(bh);
+> > 		return bh;
+> > @@ -144,7 +151,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> > 		 */
+> > 		set_bitmap_uptodate(bh);
+> > 		unlock_buffer(bh);
+> > -		return bh;
+> > +		goto verify;
+> > 	}
+> > 	/*
+> > 	 * submit the buffer_head for read. We can
+> > @@ -161,6 +168,21 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
+> > 			    block_group, bitmap_blk);
+> > 		return NULL;
+> > 	}
+> > +
+> > +verify:
+> > +	ext4_lock_group(sb, block_group);
+> > +	if (!buffer_verified(bh) &&
+> > +	    !ext4_bitmap_csum_verify(sb, block_group,
+> > +				     desc->bg_inode_bitmap_csum, bh,
+> > +				     (EXT4_INODES_PER_GROUP(sb) + 7) / 8)) {
+> > +		ext4_unlock_group(sb, block_group);
+> > +		put_bh(bh);
+> > +		ext4_error(sb, "Corrupt inode bitmap - block_group = %u, "
+> > +			   "inode_bitmap = %llu", block_group, bitmap_blk);
+> > +		return NULL;
+> 
+> At some point we should add a flag like EXT4_BG_INODE_ERROR so that the
+> group can be marked in error on disk, and skipped for future allocations,
+> but the whole filesystem does not need to be remounted read-only.  That's
+> for another patch, however.
+
+Agreed. :)
+
+--D
+
+> > +	}
+> > +	ext4_unlock_group(sb, block_group);
+> > +	set_buffer_verified(bh);
+> > 	return bh;
+> > }
+> > 
+> > @@ -265,6 +287,8 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
+> > 		ext4_used_dirs_set(sb, gdp, count);
+> > 		percpu_counter_dec(&sbi->s_dirs_counter);
+> > 	}
+> > +	ext4_bitmap_csum_set(sb, block_group, &gdp->bg_inode_bitmap_csum,
+> > +			     bitmap_bh, (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> > 	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
+> > 	ext4_unlock_group(sb, block_group);
+> > 
+> > @@ -784,6 +808,9 @@ static int ext4_claim_inode(struct super_block *sb,
+> > 			atomic_inc(&sbi->s_flex_groups[f].used_dirs);
+> > 		}
+> > 	}
+> > +	ext4_bitmap_csum_set(sb, group, &gdp->bg_inode_bitmap_csum,
+> > +			     inode_bitmap_bh,
+> > +			     (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
+> > 	gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
+> > err_ret:
+> > 	ext4_unlock_group(sb, group);
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
