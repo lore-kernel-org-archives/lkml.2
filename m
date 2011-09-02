@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162Ab1IBF6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 01:58:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52012 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab1IBF6N (ORCPT
+	id S1758168Ab1IBGSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 02:18:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49508 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1IBGSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 01:58:13 -0400
+	Fri, 2 Sep 2011 02:18:04 -0400
+Message-ID: <4E607523.30907@gmail.com>
+Date: Fri, 02 Sep 2011 14:18:11 +0800
+From: Shan Hai <haishan.bai@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYkk+W98RoCCwRWXyF+_1_H9gujxHLCPnqtPMn401fZvg@mail.gmail.com>
-References: <CAKYAXd_QrgHHdiev-Vxt=FrwkJg-3qfjxzqkPmgLbwZ=U4358Q@mail.gmail.com>
-	<CACRpkdYkk+W98RoCCwRWXyF+_1_H9gujxHLCPnqtPMn401fZvg@mail.gmail.com>
-Date: Fri, 2 Sep 2011 14:58:11 +0900
-Message-ID: <CAKYAXd8VUAZ1gL-MZx7y6+nORJ4m2U+SFyzF2duB-9NUcbqBQw@mail.gmail.com>
-Subject: Re: RFC : mmc : Use wait_for_completion_timeout() instead of
- wait_for_completion in case of multiple write blocks.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>, Kyungmin Park <kmpark@infradead.org>,
-        Sebastian Rasmussen <Sebastian.Rasmussen@stericsson.com>,
-        Ulf Hansson <Ulf.Hansson@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: sifram rajas <sifram.rajas@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: General question about TASK_INTERRUPTIBLE and schedule_timeout()
+References: <CA+OjSzzrYggQjDrgd6m+oF1sZkJFzf-3vSedAT3DAD9V2jTC3A@mail.gmail.com> <20110901020947.GA9096@zhy>
+In-Reply-To: <20110901020947.GA9096@zhy>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/30 Linus Walleij <linus.walleij@linaro.org>:
-> On Thu, Aug 25, 2011 at 6:44 AM, NamJae Jeon <linkinjeon@gmail.com> wrote:
->
->> If card is infinitely holding pull down busy line(data 0) while
->> writing multiple blocks, write will be blocked in
->> mmc_wait_for_req_done().
->> I suggest to use wait_for_completion_timeout instread of
->> wait_for_completion like the below code.
+On 09/01/2011 10:09 AM, Yong Zhang wrote:
+> On Wed, Aug 31, 2011 at 06:18:19PM +0530, sifram rajas wrote:
+>> Hi,
 >>
->> How do you think about my suggestion ?
+>> I have a general question about the following 2 lines of code I see
+>> all over the kernel:
+>> 1         set_current_state(TASK_INTERRUPTIBLE) ;
+>> 2         schedule_timeout(<some value>);
+>>
+>> In the above code, if we encounter an interrupt after executing line
+>> 1, we will end up
+>> call schedule() from the architecture specific code for CONFIG_PREEMPT
+>> kernels, after
+>> the interrupt handler has been invokled.
+> Yes.
 >
-> Since this is a hardware lock-up it is up to the host driver to
-> timeout and return an error to the framework.
->
-> For example only the host driver have information on the
-> clock speed on the host controller and other information such
-> as request size that can be used to set a suitable timeout waiting
-> for the request to complete.
->
-> If you just grep for timeout_ns in drivers/mmc/host you can
-> see several drivers using the card-supplied timeout_ns for
-> handing the timeout properly given local clocking
-> constraints etc.
->
-> Often host controllers can take the number
-> of clock cycles until timeout as a parameter, and only
-> the host controller can calculate this number.
-> See for example in mmci_start_data()
-> in mmci.c.
->
-> So I seriously think you need to look closer at the problematic
-> host driver if this is a problem to you, e.g. rewrite it to use
-> wait_for_completion_timeout() there.
->
-> Yours,
-> Linus Walleij
->
+>> This will cause the current task to sleep interruptibly forever
 
-We should consider DMA situation. As I know, host controller can not
-rise timeout interrupt in write not read in DMA status. host
-controller can just know whether card is finish to program to use busy
-line. If unstable card is holding busy line while writing using DMA,
-hang problem will happen by wait_for_completion.
-so I think that mmc driver need some exception to avoid this problem.
+Actually, sleeping forever in the TASK_INTERRUPTIBLE state is not correct,
+because even though the task is preempted by higher priority one
+it will finally get a chance to run, but you will get time out value
+of <some value> + preemption latency.
+
+>> instead of for a certain timeout interval.
+> No.
+>
+> schedule() will not put an preempted task to sleep, see:
+
+This might be problematic, because on the IRQ to preemption check path
+the PREEMPT_ACTIVE was already set and the following 'if' statement
+could not hold because of
+!(preempt_count() & PREEMPT_ACTIVE) == false
+
+and the pick_next_task() might put the preempted task to sleep.
+
+Correct me on any misunderstanding :-)
+
+Cheers
+Shan Hai
+
+> asmlinkage void __sched schduule(void)
+> {
+> ...
+>          if (prev->state&&  !(preempt_count()&  PREEMPT_ACTIVE)) {
+>                  if (unlikely(signal_pending_state(prev->state, prev))) {
+>                          prev->state = TASK_RUNNING;
+>                  } else {
+> 		...
+> 		}
+>          }
+> ...
+> }
+>
+> Thanks,
+> Yong
+>
+>> Won't this defeat the purpose of the above code to schedule out or
+>> sleep for a certain finite timeout ?
+>> If yes, then what are the techniques to solve this problem ?
+>>
+>>
+>> Thanks,
+>> Sifram.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
