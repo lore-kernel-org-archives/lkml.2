@@ -1,131 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab1IBIrS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 04:47:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48916 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627Ab1IBIrP (ORCPT
+	id S933165Ab1IBJCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 05:02:45 -0400
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:57829 "EHLO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933135Ab1IBJCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 04:47:15 -0400
-Date: Fri, 2 Sep 2011 10:47:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-cc: davidb@codeaurora.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, dwalker@fifo99.com,
-        linux-arm-msm-owner@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [RFC PATCH] genirq: set pending flag for disabled level
- interrupt
-In-Reply-To: <1312820566-5842-1-git-send-email-adharmap@codeaurora.org>
-Message-ID: <alpine.LFD.2.02.1109021046240.2723@ionos>
-References: <1312820566-5842-1-git-send-email-adharmap@codeaurora.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 2 Sep 2011 05:02:43 -0400
+Message-ID: <4E609BAF.2020102@ge.com>
+Date: Fri, 02 Sep 2011 10:02:39 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Manohar Vanga <manohar.vanga@cern.ch>
+CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] staging: vme: add struct vme_dev for VME devices
+References: <1314868526-13230-1-git-send-email-manohar.vanga@cern.ch> <1314868526-13230-3-git-send-email-manohar.vanga@cern.ch>
+In-Reply-To: <1314868526-13230-3-git-send-email-manohar.vanga@cern.ch>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Sep 2011 08:58:52.0357 (UTC) FILETIME=[8995E750:01CC694E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Mon, 8 Aug 2011, Abhijeet Dharmapurikar wrote:
-
-> For hardware which has no wakeup source configuration facility, it needs
-> its wakeup interrupts unmasked.
-> If a wakeup edge interrupt triggered while the system was suspending the
-> edge flow handler marks it pending and masks the interrupt. The kernel
-> checks pending flag on wakeup interrupts and aborts suspend if one is set.
-> 
-> If a wakeup level interrupt triggered while the system was suspending the
-> level flow handler masks the interrupt without setting the pending flag.
-> Suspend won't be aborted. This is fine as it is expected that a level
-> triggered interrupt will stay triggered and cause the system to resume.
-> This however doesn't work on chips that don't have wakeup configuration
-> in hardware because such chips need that interrupt unmasked for causing
-> a resume.
-> 
-> Address that shortcoming by making the level flow handler set the pending
-> flag if a wakeup interrupt controlled by such a chip is triggered while
-> it is suspended.
-
-And how is that supposed to work ?
-
-check_irq_resend()
-{
-        if (irq_settings_is_level(desc))
-                return;
-...
- 
-> Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-> ---
-> If a level interrupt irq triggered right while the system was doing
-> suspend_noirqs, the level flow handler will mask that interrupt and when the
-> system went in to power collapse the interrupt controller did not wakeup the
-> phone. The interrupt controller needs an interrupt triggered and masked to
-> wakeup the phone - it does not have any wakeup interrupt configuration.
-> The solution presented here is to mark that level triggered
-> wakeup interrupt pending for chips with IRQCHIP_MASK_ON_SUSPEND. This will cause
-> check_wakeup_irqs to abort suspend.
-> Other solution would be to unmask such level interrupt in check_wakeup_irqs()
-> but that seemed like I was expanding and complicating check_wakeup_irqs()
-> duties - let me know if you think otherwise. 
-> Note that we cannot unmask the interrupt in the level flow handler, that will
-> cause an interrupt storm.
-> 
->  include/linux/irq.h |    4 +++-
->  kernel/irq/chip.c   |   16 +++++++++++++++-
->  2 files changed, 18 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/irq.h b/include/linux/irq.h
-> index 87a06f3..0019385 100644
-> --- a/include/linux/irq.h
-> +++ b/include/linux/irq.h
-> @@ -332,7 +332,9 @@ struct irq_chip {
->   *
->   * IRQCHIP_SET_TYPE_MASKED:	Mask before calling chip.irq_set_type()
->   * IRQCHIP_EOI_IF_HANDLED:	Only issue irq_eoi() when irq was handled
-> - * IRQCHIP_MASK_ON_SUSPEND:	Mask non wake irqs in the suspend path
-> + * IRQCHIP_MASK_ON_SUSPEND:	Mask non wake irqs in the suspend path,
-> + *				mark wakeup level interrupts pending
-> + *				if suspended and triggered
->   * IRQCHIP_ONOFFLINE_ENABLED:	Only call irq_on/off_line callbacks
->   *				when irq enabled
->   */
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index d5a3009..0199871 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -339,9 +339,23 @@ handle_level_irq(unsigned int irq, struct irq_desc *desc)
->  	 * If its disabled or no action available
->  	 * keep it masked and get out of here
->  	 */
-> -	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data)))
-> +	if (unlikely(!desc->action))
->  		goto out_unlock;
+On 01/09/11 10:15, Manohar Vanga wrote:
+> diff --git a/drivers/staging/vme/vme.h b/drivers/staging/vme/vme.h
+> index 4155d8c..d442cce 100644
+> --- a/drivers/staging/vme/vme.h
+> +++ b/drivers/staging/vme/vme.h
+> @@ -91,17 +91,34 @@ extern struct bus_type vme_bus_type;
+>  #define VME_SLOT_CURRENT	-1
+>  #define VME_SLOT_ALL		-2
 >  
-> +	if (irqd_irq_disabled(&desc->irq_data)) {
-> +		/*
-> +		 * Hardware which has no wakeup source configuration facility,
-> +		 * needs its wakeup interrupts unmasked and triggered to cause
-> +		 * a wakeup. Since the interrupt will be masked, mark it pending
-> +		 * if it were suspended so that suspend will be aborted later.
-> +		 */
-> +		if (desc->istate & IRQS_SUSPENDED &&
-> +		    irqd_is_wakeup_set(&desc->irq_data) &&
-> +		    irq_desc_get_chip(desc)->flags & IRQCHIP_MASK_ON_SUSPEND)
-> +			desc->istate |= IRQS_PENDING;
-> +		goto out_unlock;
-> +	}
+> +/**
+> + * VME device identifier structure
+> + * @bus: The bus ID of the bus the device is on
+> + * @slot: The slot this device is plugged into
+> + */
+>  struct vme_device_id {
+>  	int bus;
+>  	int slot;
+>  };
+>  
+> +/**
+> + * Structure representing a VME device
+> + * @id: The ID of the device (currently the bus and slot number)
+> + * @bridge: Pointer to the bridge device this device is on
+> + * @dev: Internal device structure
+> + */
+> +struct vme_dev {
+> +	struct vme_device_id id;
+> +	struct vme_bridge *bridge;
+> +	struct device dev;
+> +};
 > +
->  	handle_irq_event(desc);
->  
->  	if (!irqd_irq_disabled(&desc->irq_data) && !(desc->istate & IRQS_ONESHOT))
-> -- 
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> 
-> 
+
+I think we can probably merge vme_device_id and vme_dev.
+
+Since we have a pointer to the vme_bridge, the bus number in vme_device_id is
+kinda superfluous.
+
+The direction we are heading in makes the slot number far less important, in
+some ways it becomes more of an optional information field (in pre-vme64 racks
+we probably won't know which slot the device we are bound to is in anyway).
+Basically moving from a binding mechanism like PCI to a binding mechanism
+closer to ISA, which matches the (widely used, more historic subset) of
+capabilites of the VME bus. I think we can just move the slot number to
+vme_dev and do away with vme_device_id entirely.
+
+Martyn
+
+
+-- 
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)1327322748                         | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
