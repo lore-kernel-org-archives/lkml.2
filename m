@@ -1,475 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab1IBS77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 14:59:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37324 "EHLO mx1.redhat.com"
+	id S1754858Ab1IBTCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:02:44 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60076 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754735Ab1IBS76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 14:59:58 -0400
-Date: Fri, 2 Sep 2011 14:59:23 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: akpm@linux-foundation.org, davidel@xmailserver.org
-Cc: nelhage@ksplice.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] epoll: limit paths
-Message-ID: <20110902185922.GA8770@redhat.com>
+	id S1754342Ab1IBTCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:02:41 -0400
+Date: Fri, 2 Sep 2011 12:02:19 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 10/16] ext4: Verify and calculate checksums for extent
+	tree blocks
+Message-ID: <20110902190219.GI12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com> <20110901003140.31048.74275.stgit@elm3c44.beaverton.ibm.com> <26584BE9-B716-40D5-B3B4-8C5912869648@dilger.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <26584BE9-B716-40D5-B3B4-8C5912869648@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 01, 2011 at 12:40:06AM -0600, Andreas Dilger wrote:
+> On 2011-08-31, at 6:31 PM, Darrick J. Wong wrote:
+> > Calculate and verify the checksum for each extent tree block.  The checksum is
+> > located immediately after the last ext4_extent in the block, which is typically
+> > 4-8 bytes in size.
+> 
+> It would be more correct to write "... located in the space immediately
+> following the last possible ext4_extent in the block."
 
-The current epoll code can be tickled to run basically indefinitely in both
-loop detection path check (on ep_insert()), and in the wakeup paths. The
-programs that tickle this behavior set up deeply linked networks of epoll
-file descriptors that cause the epoll algorithms to traverse them indefinitely.
-A couple of these sample programs have been previously posted in this thread:
-https://lkml.org/lkml/2011/2/25/297.
+Agreed.
 
-To fix the loop detection path check algorithms, I simply keep track of the
-epoll nodes that have been already visited. Thus, the loop detection
-becomes proportional to the number of epoll file descriptor and links. This
-dramatically decreases the run-time of the loop check algorithm. In one
-diabolical case I tried it reduced the run-time from 15 mintues
-(all in kernel time) to .3 seconds.
+> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> > ---
+> > fs/ext4/ext4_extents.h |   25 ++++++++++++++++++-
+> > fs/ext4/extents.c      |   64 +++++++++++++++++++++++++++++++++++++++++++++---
+> > 2 files changed, 84 insertions(+), 5 deletions(-)
+> > 
+> > 
+> > diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
+> > index 095c36f..24b106a 100644
+> > --- a/fs/ext4/ext4_extents.h
+> > +++ b/fs/ext4/ext4_extents.h
+> > @@ -62,10 +62,22 @@
+> > /*
+> >  * ext4_inode has i_block array (60 bytes total).
+> >  * The first 12 bytes store ext4_extent_header;
+> > - * the remainder stores an array of ext4_extent.
+> > + * the remainder stores an array of ext4_extent,
+> > + * followed by ext4_extent_tail.
+> >  */
+> > 
+> > /*
+> > + * This is the extent tail on-disk structure.
+> > + * All other extent structures are 12 bytes long.  It turns out that
+> > + * block_size % 12 >= 4 for all valid block sizes (1k, 2k, 4k).
+> > + * Therefore, this tail structure can be crammed into the end of the block
+> > + * without having to rebalance the tree.
+> > + */
+> > +struct ext4_extent_tail {
+> > +	__le32	et_checksum;	/* crc32c(uuid+inum+extent_block) */
+> > +};
+> 
+> Did you do any analysis of extent blocks to see whether there is enough
+> space in most extents to have a larger extent tail that stores the inode
+> number and generation?  This would be the same as with some directory
+> blocks needing to add a directory entry to hold the checksum.
 
-Fixing the wakeup paths could be done at wakeup time in a similar manner by
-keeping track of nodes that have already been visited, but the complexity is
-harder, since there can be multiple wakeups on different cpus...Thus, I've
-opted to limit the number of possible wakeup paths when the paths are created.
+With 12-byte structures we're guaranteed 4 bytes that can be inserted without
+needing to change any on-disk structures.
 
-This is accomplished, by noting that the end file descriptor points that are
-found during the loop detection pass (from the newly added link), are actually
-the sources for wakeup events. I keep a list of these file descriptors and
-limit the number and length of these paths that emanate from these 'source file
-descriptors'. In the current implemetation I allow 1000 paths of length 1,
-500 of length 2, 100 of length 3, 50 of length 4 and 10 of length 5. Note that
-it is sufficient to check the 'source file descriptors' reachable from the newly
-added link, since no other 'source file descriptors' will have newly added
-links. This allows us to check only the wakeup paths that may have gotten too
-long, and not re-check all possible wakeup paths on the system.
+Most extent blocks aren't full, and provided that you decrease eh_max, you
+could free up 8 more bytes for extra info.  Of course then you'd have to write
+code to rebalance the extent tree whenever you find a full extent block.
 
-In terms of the path limit selection, I think its first worth noting that the
-most common case for epoll, is probably the model where you have 1 epoll file
-descriptor that is monitoring n number of 'source file descriptors'. In this
-case, each 'source file descriptor' has a 1 path of length 1. Thus, I believe
-that the limits I'm proposing are quite reasonable and in fact may be too
-generous. Thus, I'm hoping that the proposed limits will not prevent any
-workloads that currently work to fail.
+It's also possible that we could simply bake i_generation into the checksum
+whenever we bake in i_inum.
 
-In terms of locking, I have extended the use of the 'epmutex' to all epoll_ctl
-add and remove operations. Currently its only used in a subset of the add paths.
-I need to hold the epmutex, so that we can correctly traverse a coherent graph,
-to check the number of paths. I believe that this additional locking is
-probably ok, since its in the setup/teardown paths, and doesn't affect the
-running paths, but it certainly is going to add some extra overhead. Also,
-worth noting is that the epmuex was recently added to the ep_ctl add operations
-in the initial path loop detection code using the argument that it was
-not on a critical path.
+> > +/*
+> >  * This is the extent on-disk structure.
+> >  * It's used at the bottom of the tree.
+> >  */
+> > @@ -101,6 +113,17 @@ struct ext4_extent_header {
+> > 
+> > #define EXT4_EXT_MAGIC		cpu_to_le16(0xf30a)
+> > 
+> > +#define EXT4_EXTENT_TAIL_OFFSET(hdr) \
+> > +	(sizeof(struct ext4_extent_header) + \
+> > +	 (sizeof(struct ext4_extent) * le16_to_cpu((hdr)->eh_max)))
+> > +
+> > +static inline struct ext4_extent_tail *
+> > +find_ext4_extent_tail(struct ext4_extent_header *eh)
+> 
+> I don't really like using "find" in this function name, since it implies
+> a search is needed.  Maybe a name like ext4_extent_tail_ptr()?
 
-Another thing to note here, is the length of epoll chains that is allowed.
-Currently, eventpoll.c defines:
+Ok.
 
-/* Maximum number of nesting allowed inside epoll sets */
-#define EP_MAX_NESTS 4
+--D
 
-This basically means that I am limited to a graph depth of 5 (EP_MAX_NESTS + 1).
-However, this limit is currently only enforced during the loop check detection
-code, and only when the epoll file descriptors are added in a certain order.
-Thus, this limit is currently easily bypassed. The newly added check for wakeup
-paths, stricly limits the wakeup paths to a length of 5, regardless of the order
-in which ep's are linked together. Thus, a side-effect of the new code is a more
-consistent enforcement of the graph depth.
-
-Thus far, I've tested this, using the sample programs previously mentioned,
-which now either return quickly or return -EINVAL. I've also testing using
-the piptest.c epoll tester, which showed no difference in performance. I've
-also created a number of different epoll networks and tested that they behave
-as expectdd.
-
-I believe this solves the original diabolical test cases, while still preserving
-the sane epoll nesting.
-
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- fs/eventpoll.c            |  224 ++++++++++++++++++++++++++++++++++++++++-----
- include/linux/eventpoll.h |    1 +
- include/linux/fs.h        |    1 +
- 3 files changed, 202 insertions(+), 24 deletions(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index fe047d96..bf3db56 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -188,6 +188,12 @@ struct eventpoll {
- 
- 	/* The user that created the eventpoll descriptor */
- 	struct user_struct *user;
-+
-+	struct file *file;
-+
-+	/* used to optimize loop detection check */
-+	int visited;
-+	struct list_head visitedllink;
- };
- 
- /* Wait structure used by the poll hooks */
-@@ -246,6 +252,12 @@ static struct kmem_cache *epi_cache __read_mostly;
- /* Slab cache used to allocate "struct eppoll_entry" */
- static struct kmem_cache *pwq_cache __read_mostly;
- 
-+/* Visited nodes during ep_loop_check(), so we can unset them when we finish */
-+LIST_HEAD(visited_list);
-+
-+/* Files with newly added links, which need a limit on emanating paths */
-+LIST_HEAD(tfile_check_list);
-+
- #ifdef CONFIG_SYSCTL
- 
- #include <linux/sysctl.h>
-@@ -267,6 +279,12 @@ ctl_table epoll_table[] = {
- };
- #endif /* CONFIG_SYSCTL */
- 
-+static const struct file_operations eventpoll_fops;
-+
-+static inline int is_file_epoll(struct file *f)
-+{
-+	return f->f_op == &eventpoll_fops;
-+}
- 
- /* Setup the structure that is used as key for the RB tree */
- static inline void ep_set_ffd(struct epoll_filefd *ffd,
-@@ -700,12 +718,6 @@ static const struct file_operations eventpoll_fops = {
- 	.llseek		= noop_llseek,
- };
- 
--/* Fast test to see if the file is an evenpoll file */
--static inline int is_file_epoll(struct file *f)
--{
--	return f->f_op == &eventpoll_fops;
--}
--
- /*
-  * This is called from eventpoll_release() to unlink files from the eventpoll
-  * interface. We need to have this facility to cleanup correctly files that are
-@@ -915,6 +927,96 @@ static void ep_rbtree_insert(struct eventpoll *ep, struct epitem *epi)
- 	rb_insert_color(&epi->rbn, &ep->rbr);
- }
- 
-+
-+
-+#define PATH_ARR_SIZE 5
-+/* These are the number paths of length 1 to 5, that we are allowing to emanate
-+ * from a single file of interest. For example, we allow 1000 paths of length
-+ * 1, to emanate from each file of interest. This essentially represents the
-+ * potential wakeup paths, which need to be limited in order to avoid massive
-+ * uncontrolled wakeup storms. The common use case should be a single ep which
-+ * is connected to n file sources. In this case each file source has 1 path
-+ * of length 1. Thus, the numbers below should be more than sufficient.
-+ */
-+int path_limits[PATH_ARR_SIZE] = { 1000, 500, 100, 50, 10 };
-+int path_count[PATH_ARR_SIZE];
-+
-+static int path_count_inc(int nests)
-+{
-+	if (++path_count[nests] > path_limits[nests])
-+		return -1;
-+	return 0;
-+}
-+
-+static void path_count_init(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < PATH_ARR_SIZE; i++)
-+		path_count[i] = 0;
-+}
-+
-+static int reverse_path_check_proc(void *priv, void *cookie, int call_nests)
-+{
-+	int error = 0;
-+	struct file *file = priv;
-+	struct file *child_file;
-+	struct epitem *epi;
-+
-+	list_for_each_entry(epi, &file->f_ep_links, fllink) {
-+		child_file = epi->ep->file;
-+		if (is_file_epoll(child_file)) {
-+			if (list_empty(&child_file->f_ep_links)) {
-+				if (path_count_inc(call_nests)) {
-+					error = -1;
-+					break;
-+				}
-+			} else {
-+				error = ep_call_nested(&poll_loop_ncalls,
-+							EP_MAX_NESTS,
-+							reverse_path_check_proc,
-+							child_file, child_file,
-+							current);
-+			}
-+			if (error != 0)
-+				break;
-+		} else {
-+			printk(KERN_ERR "reverse_path_check_proc: "
-+				"file is not an ep!\n");
-+		}
-+	}
-+	return error;
-+}
-+
-+/**
-+ * reverse_path_check - The tfile_check_list is list of file *, which have
-+ *                      links that are proposed to be newly added. We need to
-+ *                      make sure that those added links don't add too many
-+ *                      paths such that we will spend all our time waking up
-+ *                      eventpoll objects.
-+ *
-+ * Returns: Returns zero if the proposed links don't create too many paths,
-+ *	    -1 otherwise.
-+ */
-+static int reverse_path_check(void)
-+{
-+	int length = 0;
-+	int error = 0;
-+	struct file *current_file;
-+
-+	/* let's call this for all tfiles */
-+	list_for_each_entry(current_file, &tfile_check_list, f_tfile_llink) {
-+		length++;
-+		path_count_init();
-+		error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+					reverse_path_check_proc, current_file,
-+					current_file, current);
-+		if (error)
-+			break;
-+	}
-+	return error;
-+}
-+
- /*
-  * Must be called with "mtx" held.
-  */
-@@ -976,6 +1078,11 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
- 	 */
- 	ep_rbtree_insert(ep, epi);
- 
-+	/* now check if we've created too many backpaths */
-+	error = -EINVAL;
-+	if (reverse_path_check())
-+		goto error_remove_epi;
-+
- 	/* We have to drop the new item inside our item list to keep track of it */
- 	spin_lock_irqsave(&ep->lock, flags);
- 
-@@ -1000,6 +1107,14 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
- 
- 	return 0;
- 
-+error_remove_epi:
-+	spin_lock(&tfile->f_lock);
-+	if (ep_is_linked(&epi->fllink))
-+		list_del_init(&epi->fllink);
-+	spin_unlock(&tfile->f_lock);
-+
-+	rb_erase(&epi->rbn, &ep->rbr);
-+
- error_unregister:
- 	ep_unregister_pollwait(ep, epi);
- 
-@@ -1264,18 +1379,35 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
- 	int error = 0;
- 	struct file *file = priv;
- 	struct eventpoll *ep = file->private_data;
-+	struct eventpoll *ep_tovisit;
- 	struct rb_node *rbp;
- 	struct epitem *epi;
- 
- 	mutex_lock(&ep->mtx);
-+	ep->visited = 1;
-+	list_add(&ep->visitedllink, &visited_list);
- 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
- 		epi = rb_entry(rbp, struct epitem, rbn);
- 		if (unlikely(is_file_epoll(epi->ffd.file))) {
-+			ep_tovisit = epi->ffd.file->private_data;
-+			if (ep_tovisit->visited)
-+				continue;
- 			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
- 					       ep_loop_check_proc, epi->ffd.file,
--					       epi->ffd.file->private_data, current);
-+					       ep_tovisit, current);
- 			if (error != 0)
- 				break;
-+		} else {
-+			/* if we've reached a file that is not associated with
-+			 * an ep, then then we need to check if the newly added
-+			 * links are going to add too many wakeup paths. We do
-+			 * this by adding it to the tfile_check_list, if it's
-+			 * not already there, and calling reverse_path_check()
-+			 * during ep_insert()
-+			 */
-+			if (list_empty(&epi->ffd.file->f_tfile_llink))
-+				list_add(&epi->ffd.file->f_tfile_llink,
-+					 &tfile_check_list);
- 		}
- 	}
- 	mutex_unlock(&ep->mtx);
-@@ -1296,8 +1428,30 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
-  */
- static int ep_loop_check(struct eventpoll *ep, struct file *file)
- {
--	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+	int ret;
-+	struct eventpoll *ep_cur, *ep_next;
-+
-+	ret = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
- 			      ep_loop_check_proc, file, ep, current);
-+	/* clear visited list */
-+	list_for_each_entry_safe(ep_cur, ep_next, &visited_list, visitedllink) {
-+		ep_cur->visited = 0;
-+		list_del(&ep_cur->visitedllink);
-+	}
-+	return ret;
-+}
-+
-+static void clear_tfile_check_list(void)
-+{
-+	struct file *file;
-+
-+	/* first clear the tfile_check_list */
-+	while (!list_empty(&tfile_check_list)) {
-+		file = list_first_entry(&tfile_check_list, struct file,
-+					f_tfile_llink);
-+		list_del_init(&file->f_tfile_llink);
-+	}
-+	INIT_LIST_HEAD(&tfile_check_list);
- }
- 
- /*
-@@ -1305,8 +1459,9 @@ static int ep_loop_check(struct eventpoll *ep, struct file *file)
-  */
- SYSCALL_DEFINE1(epoll_create1, int, flags)
- {
--	int error;
-+	int error, fd;
- 	struct eventpoll *ep = NULL;
-+	struct file *file;
- 
- 	/* Check the EPOLL_* constant for consistency.  */
- 	BUILD_BUG_ON(EPOLL_CLOEXEC != O_CLOEXEC);
-@@ -1323,11 +1478,25 @@ SYSCALL_DEFINE1(epoll_create1, int, flags)
- 	 * Creates all the items needed to setup an eventpoll file. That is,
- 	 * a file structure and a free file descriptor.
- 	 */
--	error = anon_inode_getfd("[eventpoll]", &eventpoll_fops, ep,
-+	fd = get_unused_fd_flags(O_RDWR | (flags & O_CLOEXEC));
-+	if (fd < 0) {
-+		error = fd;
-+		goto out_free_ep;
-+	}
-+	file = anon_inode_getfile("[eventpoll]", &eventpoll_fops, ep,
- 				 O_RDWR | (flags & O_CLOEXEC));
--	if (error < 0)
--		ep_free(ep);
--
-+	if (IS_ERR(file)) {
-+		error = PTR_ERR(file);
-+		goto out_free_fd;
-+	}
-+	fd_install(fd, file);
-+	ep->file = file;
-+	return fd;
-+
-+out_free_fd:
-+	put_unused_fd(fd);
-+out_free_ep:
-+	ep_free(ep);
- 	return error;
- }
- 
-@@ -1393,21 +1562,27 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 	/*
- 	 * When we insert an epoll file descriptor, inside another epoll file
- 	 * descriptor, there is the change of creating closed loops, which are
--	 * better be handled here, than in more critical paths.
-+	 * better be handled here, than in more critical paths. While we are
-+	 * checking for loops we also determine the list of files reachable
-+	 * and hang them on the tfile_check_list, so we can check that we
-+	 * haven't created too many possible wakeup paths.
- 	 *
--	 * We hold epmutex across the loop check and the insert in this case, in
--	 * order to prevent two separate inserts from racing and each doing the
--	 * insert "at the same time" such that ep_loop_check passes on both
--	 * before either one does the insert, thereby creating a cycle.
-+	 * We need to hold the epmutex across both ep_insert and ep_remove
-+	 * b/c we want to make sure we are looking at a coherent view of
-+	 * epoll network.
- 	 */
--	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD)) {
-+	if (op == EPOLL_CTL_ADD || op == EPOLL_CTL_DEL) {
- 		mutex_lock(&epmutex);
- 		did_lock_epmutex = 1;
--		error = -ELOOP;
--		if (ep_loop_check(ep, tfile) != 0)
--			goto error_tgt_fput;
- 	}
--
-+	if (op == EPOLL_CTL_ADD) {
-+		if (is_file_epoll(tfile)) {
-+			error = -ELOOP;
-+			if (ep_loop_check(ep, tfile) != 0)
-+				goto error_tgt_fput;
-+		} else
-+			list_add(&tfile->f_tfile_llink, &tfile_check_list);
-+	}
- 
- 	mutex_lock(&ep->mtx);
- 
-@@ -1426,6 +1601,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 			error = ep_insert(ep, &epds, tfile, fd);
- 		} else
- 			error = -EEXIST;
-+		clear_tfile_check_list();
- 		break;
- 	case EPOLL_CTL_DEL:
- 		if (epi)
-@@ -1444,7 +1620,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 	mutex_unlock(&ep->mtx);
- 
- error_tgt_fput:
--	if (unlikely(did_lock_epmutex))
-+	if (did_lock_epmutex)
- 		mutex_unlock(&epmutex);
- 
- 	fput(tfile);
-diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
-index f362733..657ab55 100644
---- a/include/linux/eventpoll.h
-+++ b/include/linux/eventpoll.h
-@@ -61,6 +61,7 @@ struct file;
- static inline void eventpoll_init_file(struct file *file)
- {
- 	INIT_LIST_HEAD(&file->f_ep_links);
-+	INIT_LIST_HEAD(&file->f_tfile_llink);
- }
- 
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index c2bd68f..aaf5ad2 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -987,6 +987,7 @@ struct file {
- #ifdef CONFIG_EPOLL
- 	/* Used by fs/eventpoll.c to link all the hooks to this file */
- 	struct list_head	f_ep_links;
-+	struct list_head	f_tfile_llink;
- #endif /* #ifdef CONFIG_EPOLL */
- 	struct address_space	*f_mapping;
- #ifdef CONFIG_DEBUG_WRITECOUNT
--- 
-1.7.5.4
-
+> > +{
+> > +	return (struct ext4_extent_tail *)(((void *)eh) +
+> > +					   EXT4_EXTENT_TAIL_OFFSET(eh));
+> > +}
+> > +
+> > /*
+> >  * Array of ext4_ext_path contains path to some extent.
+> >  * Creation/lookup routines use it for traversal/splitting/etc.
+> > diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> > index 4ac4303..94f09ce 100644
+> > --- a/fs/ext4/extents.c
+> > +++ b/fs/ext4/extents.c
+> > @@ -41,11 +41,57 @@
+> > #include <linux/falloc.h>
+> > #include <asm/uaccess.h>
+> > #include <linux/fiemap.h>
+> > +#include <linux/crc32c.h>
+> > #include "ext4_jbd2.h"
+> > #include "ext4_extents.h"
+> > 
+> > #include <trace/events/ext4.h>
+> > 
+> > +static __le32 ext4_extent_block_csum(struct inode *inode,
+> > +				     struct ext4_extent_header *eh)
+> > +{
+> > +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> > +	__le32 inum = cpu_to_le32(inode->i_ino);
+> > +	__u32 crc = 0;
+> > +
+> > +	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return 0;
+> > +
+> > +	crc = crc32c_le(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
+> > +	crc = crc32c_le(crc, (__u8 *)&inum, sizeof(inum));
+> > +	crc = crc32c_le(crc, (__u8 *)eh, EXT4_EXTENT_TAIL_OFFSET(eh));
+> > +	return cpu_to_le32(crc);
+> > +}
+> > +
+> > +static int ext4_extent_block_csum_verify(struct inode *inode,
+> > +					 struct ext4_extent_header *eh)
+> > +{
+> > +	struct ext4_extent_tail *et;
+> > +
+> > +	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return 1;
+> > +
+> > +	et = find_ext4_extent_tail(eh);
+> > +	if (et->et_checksum != ext4_extent_block_csum(inode, eh))
+> > +		return 0;
+> > +	return 1;
+> > +}
+> > +
+> > +static void ext4_extent_block_csum_set(struct inode *inode,
+> > +				       struct ext4_extent_header *eh)
+> > +{
+> > +	struct ext4_extent_tail *et;
+> > +
+> > +	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return;
+> > +
+> > +	et = find_ext4_extent_tail(eh);
+> > +	et->et_checksum = ext4_extent_block_csum(inode, eh);
+> > +}
+> > +
+> > static int ext4_split_extent(handle_t *handle,
+> > 				struct inode *inode,
+> > 				struct ext4_ext_path *path,
+> > @@ -101,6 +147,7 @@ static int ext4_ext_dirty(handle_t *handle, struct inode *inode,
+> > {
+> > 	int err;
+> > 	if (path->p_bh) {
+> > +		ext4_extent_block_csum_set(inode, ext_block_hdr(path->p_bh));
+> > 		/* path points to block */
+> > 		err = ext4_handle_dirty_metadata(handle, inode, path->p_bh);
+> > 	} else {
+> > @@ -382,6 +429,12 @@ static int __ext4_ext_check(const char *function, unsigned int line,
+> > 		error_msg = "invalid extent entries";
+> > 		goto corrupted;
+> > 	}
+> > +	/* Verify checksum on non-root extent tree nodes */
+> > +	if (ext_depth(inode) != depth &&
+> > +	    !ext4_extent_block_csum_verify(inode, eh)) {
+> > +		error_msg = "extent tree corrupted";
+> > +		goto corrupted;
+> > +	}
+> > 	return 0;
+> > 
+> > corrupted:
+> > @@ -922,6 +975,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
+> > 		le16_add_cpu(&neh->eh_entries, m);
+> > 	}
+> > 
+> > +	ext4_extent_block_csum_set(inode, neh);
+> > 	set_buffer_uptodate(bh);
+> > 	unlock_buffer(bh);
+> > 
+> > @@ -1000,6 +1054,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
+> > 				sizeof(struct ext4_extent_idx) * m);
+> > 			le16_add_cpu(&neh->eh_entries, m);
+> > 		}
+> > +		ext4_extent_block_csum_set(inode, neh);
+> > 		set_buffer_uptodate(bh);
+> > 		unlock_buffer(bh);
+> > 
+> > @@ -1098,6 +1153,7 @@ static int ext4_ext_grow_indepth(handle_t *handle, struct inode *inode,
+> > 	else
+> > 		neh->eh_max = cpu_to_le16(ext4_ext_space_block(inode, 0));
+> > 	neh->eh_magic = EXT4_EXT_MAGIC;
+> > +	ext4_extent_block_csum_set(inode, neh);
+> > 	set_buffer_uptodate(bh);
+> > 	unlock_buffer(bh);
+> > 
+> > @@ -2458,10 +2514,6 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+> > 		if (uninitialized && num)
+> > 			ext4_ext_mark_uninitialized(ex);
+> > 
+> > -		err = ext4_ext_dirty(handle, inode, path + depth);
+> > -		if (err)
+> > -			goto out;
+> > -
+> > 		/*
+> > 		 * If the extent was completely released,
+> > 		 * we need to remove it from the leaf
+> > @@ -2483,6 +2535,10 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
+> > 			le16_add_cpu(&eh->eh_entries, -1);
+> > 		}
+> > 
+> > +		err = ext4_ext_dirty(handle, inode, path + depth);
+> > +		if (err)
+> > +			goto out;
+> > +
+> > 		ext_debug("new extent: %u:%u:%llu\n", block, num,
+> > 				ext4_ext_pblock(ex));
+> > 		ex--;
+> > 
+> 
