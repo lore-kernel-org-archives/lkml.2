@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab1IBD7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 23:59:03 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58219 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933234Ab1IBD67 (ORCPT
+	id S933226Ab1IBD6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 23:58:18 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:35020 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933195Ab1IBD6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 23:58:59 -0400
+	Thu, 1 Sep 2011 23:58:13 -0400
 From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org,
         "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH v4 17/19] Staging: cx25821: Fix long lines in cx25821-video-upstream-ch2.h
-Date: Fri,  2 Sep 2011 11:55:45 +0800
-Message-Id: <1314935747-6881-18-git-send-email-leonidsbox@gmail.com>
+Subject: [PATCH v4 10/19] Staging: cx25821: Fix obscure line endings in cx25821-audio-upstream.c
+Date: Fri,  2 Sep 2011 11:55:38 +0800
+Message-Id: <1314935747-6881-11-git-send-email-leonidsbox@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
 References: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
@@ -27,115 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix long lines in cx25821-video-upstream-ch2.h
+Change obscure line endings to less obscure ones. Rationale: more
+readable.
 
 Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
 ---
- .../staging/cx25821/cx25821-video-upstream-ch2.h   |   83 ++++++++++++++------
- 1 files changed, 60 insertions(+), 23 deletions(-)
+ drivers/staging/cx25821/cx25821-audio-upstream.c |   25 ++++++++--------------
+ 1 files changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.h b/drivers/staging/cx25821/cx25821-video-upstream-ch2.h
-index 029e830..d42dab5 100644
---- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.h
-+++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.h
-@@ -65,37 +65,74 @@
- #define USE_RISC_NOOP_VIDEO   1
+diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+index 55df658..e6c4b34 100644
+--- a/drivers/staging/cx25821/cx25821-audio-upstream.c
++++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+@@ -349,10 +349,8 @@ static void cx25821_audioups_handler(struct work_struct *work)
+ 		return;
+ 	}
  
- #ifdef USE_RISC_NOOP_VIDEO
--#define PAL_US_VID_PROG_SIZE      ((PAL_FIELD_HEIGHT) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE +   \
--				    RISC_SYNC_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define PAL_US_VID_PROG_SIZE						\
-+	(PAL_FIELD_HEIGHT * 3 * DWORD_SIZE +				\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + RISC_SYNC_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
+-	cx25821_get_audio_data(dev,
+-			      dev->channels[dev->
+-				       _audio_upstream_channel].
+-				       sram_channels);
++	cx25821_get_audio_data(dev, dev->channels[dev->_audio_upstream_channel].
++			sram_channels);
+ }
  
- #define PAL_RISC_BUF_SIZE         (2 * PAL_US_VID_PROG_SIZE)
+ int cx25821_openfile_audio(struct cx25821_dev *dev,
+@@ -555,8 +553,7 @@ int cx25821_audio_upstream_irq(struct cx25821_dev *dev, int chan_num,
+ 					}
+ 				}
+ 				/* Jump to 2nd Audio Frame */
+-				*(rp++) =
+-				    cpu_to_le32(RISC_JUMP | RISC_IRQ1 |
++				*(rp++) = cpu_to_le32(RISC_JUMP | RISC_IRQ1 |
+ 						RISC_CNT_RESET);
+ 				*(rp++) = cpu_to_le32(risc_phys_jump_addr);
+ 				*(rp++) = cpu_to_le32(0);
+@@ -611,11 +608,8 @@ static irqreturn_t cx25821_upstream_irq_audio(int irq, void *dev_id)
  
--#define PAL_VID_PROG_SIZE         ((PAL_FIELD_HEIGHT*2) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				    RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE + 2*NUM_NO_OPS*DWORD_SIZE)
-+#define PAL_VID_PROG_SIZE						\
-+	((PAL_FIELD_HEIGHT * 2) * 3 * DWORD_SIZE +			\
-+	 2 * RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
-+	 JUMP_INSTRUCTION_SIZE + 2 * NUM_NO_OPS * DWORD_SIZE)
+ 	/* Only deal with our interrupt */
+ 	if (audio_status) {
+-		handled =
+-		    cx25821_audio_upstream_irq(dev,
+-					       dev->
+-					       _audio_upstream_channel,
+-					       audio_status);
++		handled = cx25821_audio_upstream_irq(dev,
++				dev->_audio_upstream_channel, audio_status);
+ 	}
  
--#define ODD_FLD_PAL_PROG_SIZE     ((PAL_FIELD_HEIGHT) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + \
--				    RISC_WRITECR_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define ODD_FLD_PAL_PROG_SIZE						\
-+	(PAL_FIELD_HEIGHT * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
+ 	if (handled < 0)
+@@ -770,9 +764,8 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ 		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
+ 	}
  
--#define NTSC_US_VID_PROG_SIZE     ((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
--				    JUMP_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define NTSC_US_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE +			\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
+-	retval =
+-	    cx25821_sram_channel_setup_upstream_audio(dev, sram_ch, _line_size,
+-						      0);
++	retval = cx25821_sram_channel_setup_upstream_audio(dev, sram_ch,
++							_line_size, 0);
  
--#define NTSC_RISC_BUF_SIZE        (2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
-+#define NTSC_RISC_BUF_SIZE						\
-+	(2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
+ 	dev->audio_upstream_riscbuf_size =
+ 	    AUDIO_RISC_DMA_BUF_SIZE * NUM_AUDIO_PROGS +
+@@ -780,8 +773,8 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ 	dev->audio_upstream_databuf_size = AUDIO_DATA_BUF_SZ * NUM_AUDIO_PROGS;
  
--#define FRAME1_VID_PROG_SIZE      ((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				    RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE + 2*NUM_NO_OPS*DWORD_SIZE)
--#define ODD_FLD_NTSC_PROG_SIZE    ((NTSC_ODD_FLD_LINES) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + \
--				    RISC_WRITECR_INSTRUCTION_SIZE + NUM_NO_OPS*DWORD_SIZE)
-+#define FRAME1_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) *			\
-+	 3 * DWORD_SIZE + 2 * RISC_SYNC_INSTRUCTION_SIZE +		\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE +	\
-+	 2 * NUM_NO_OPS * DWORD_SIZE)
-+
-+#define ODD_FLD_NTSC_PROG_SIZE						\
-+	(NTSC_ODD_FLD_LINES * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE +	\
-+	 NUM_NO_OPS * DWORD_SIZE)
- #endif
- 
- #ifndef USE_RISC_NOOP_VIDEO
--#define PAL_US_VID_PROG_SIZE      ((PAL_FIELD_HEIGHT + 1) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
--#define PAL_RISC_BUF_SIZE         (2 * (RISC_SYNC_INSTRUCTION_SIZE + PAL_US_VID_PROG_SIZE))
--#define PAL_VID_PROG_SIZE         ((PAL_FIELD_HEIGHT*2) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				    RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
--#define ODD_FLD_PAL_PROG_SIZE     ((PAL_FIELD_HEIGHT) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
--#define ODD_FLD_NTSC_PROG_SIZE    ((NTSC_ODD_FLD_LINES) * 3 * DWORD_SIZE + RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
--#define NTSC_US_VID_PROG_SIZE     ((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
--#define NTSC_RISC_BUF_SIZE        (2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
--#define FRAME1_VID_PROG_SIZE      ((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) * 3 * DWORD_SIZE + 2*RISC_SYNC_INSTRUCTION_SIZE + \
--				    RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
-+#define PAL_US_VID_PROG_SIZE						\
-+	((PAL_FIELD_HEIGHT + 1) * 3 * DWORD_SIZE +			\
-+	 RISC_WRITECR_INSTRUCTION_SIZE)
-+
-+#define PAL_RISC_BUF_SIZE						\
-+	(2 * (RISC_SYNC_INSTRUCTION_SIZE + PAL_US_VID_PROG_SIZE))
-+
-+#define PAL_VID_PROG_SIZE						\
-+	((PAL_FIELD_HEIGHT * 2) * 3 * DWORD_SIZE +			\
-+	 2 * RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE + \
-+	 JUMP_INSTRUCTION_SIZE)
-+
-+#define ODD_FLD_PAL_PROG_SIZE						\
-+	(PAL_FIELD_HEIGHT * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
-+
-+#define ODD_FLD_NTSC_PROG_SIZE						\
-+	(NTSC_ODD_FLD_LINES * 3 * DWORD_SIZE +				\
-+	 RISC_SYNC_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE)
-+
-+#define NTSC_US_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + 1) * 3 * DWORD_SIZE +			\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
-+
-+#define NTSC_RISC_BUF_SIZE						\
-+	(2 * (RISC_SYNC_INSTRUCTION_SIZE + NTSC_US_VID_PROG_SIZE))
-+
-+#define FRAME1_VID_PROG_SIZE						\
-+	((NTSC_ODD_FLD_LINES + NTSC_FIELD_HEIGHT) *			\
-+	 3 * DWORD_SIZE + 2 * RISC_SYNC_INSTRUCTION_SIZE +		\
-+	 RISC_WRITECR_INSTRUCTION_SIZE + JUMP_INSTRUCTION_SIZE)
-+
- #endif
+ 	/* Allocating buffers and prepare RISC program */
+-	retval =
+-	    cx25821_audio_upstream_buffer_prepare(dev, sram_ch, _line_size);
++	retval = cx25821_audio_upstream_buffer_prepare(dev, sram_ch,
++							_line_size);
+ 	if (retval < 0) {
+ 		pr_err("%s: Failed to set up Audio upstream buffers!\n",
+ 		       dev->name);
 -- 
 1.7.0.4
 
