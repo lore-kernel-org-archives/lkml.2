@@ -1,59 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236Ab1IBGY2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 02:24:28 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:55399 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758146Ab1IBGYL (ORCPT
+	id S933259Ab1IBGYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 02:24:41 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:38824 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933219Ab1IBGYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 02:24:11 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p826O0eb013156
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v3 2/4] r8169: define the early size for 8111evl
-Date: Fri, 2 Sep 2011 14:23:49 +0800
-X-BOX-Message-Id: p826O0eb013156
-Message-ID: <1314944631-5005-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1314944631-5005-1-git-send-email-hayeswang@realtek.com>
-References: <1314944631-5005-1-git-send-email-hayeswang@realtek.com>
+	Fri, 2 Sep 2011 02:24:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Fri, 2 Sep 2011 14:24:36 +0800
+Message-ID: <CAM9Y=f6eSgxsbrO11d0ux72NJip14xGQDeX84VWb9uiBtEVsjA@mail.gmail.com>
+Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating autosense
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Greg KH <greg@kroah.com>, Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Luben Tuikov <ltuikov@yahoo.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux USB <linux-usb-devel@lists.sourceforge.net>,
+        usb-storage@lists.one-eyed-alien.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For RTL8111EVL, the register of MaxTxPacketSize doesn't acctually
-limit the tx size. It influnces the feature of early tx.
+Hi Luben, Greg, Matthew,
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Any plan for reviewing and accepting this patch [1] yet? I'm still
+seeing the symptoms on USB 3 SATA bridges with linux-3.0+.
+
+Thanks,
+  Daniel
+
+--- [1]
+
+http://www.kerneltrap.com/mailarchive/linux-kernel/2010/11/11/4644097/thread
+
+This patch solves two things:
+1) Enables autosense emulation code to correctly
+interpret descriptor format sense data, and
+2) Fixes a bug whereby the autosense emulation
+code would overwrite descriptor format sense data
+with SENSE KEY HARDWARE ERROR in fixed format, to
+incorrectly look like this:
+
+Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  Sense Key :
+Recovered Error [current] [descriptor]
+Oct 21 14:11:07 localhost kernel: Descriptor sense data with sense
+descriptors (in hex):
+Oct 21 14:11:07 localhost kernel:        72 01 04 1d 00 00 00 0e 09 0c
+00 00 00 00 00 00
+Oct 21 14:11:07 localhost kernel:        00 4f 00 c2 00 50
+Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  ASC=0x4 ASCQ=0x1d
+
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
 ---
- drivers/net/ethernet/realtek/r8169.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/usb/storage/transport.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index aaae43e..db5ab2c 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -311,6 +311,7 @@ enum rtl_registers {
- 	MaxTxPacketSize	= 0xec,	/* 8101/8168. Unit of 128 bytes. */
- 
- #define TxPacketMax	(8064 >> 7)
-+#define EarlySize	0x27
- 
- 	FuncEvent	= 0xf0,
- 	FuncEventMask	= 0xf4,
-@@ -4465,7 +4466,7 @@ static void rtl_hw_start_8168e_2(void __iomem *ioaddr, struct pci_dev *pdev)
- 	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
- 		     ERIAR_EXGMAC);
- 
--	RTL_W8(MaxTxPacketSize, 0x27);
-+	RTL_W8(MaxTxPacketSize, EarlySize);
- 
- 	rtl_disable_clock_request(pdev);
- 
+diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
+index 64ec073..cb04664 100644
+--- a/drivers/usb/storage/transport.c
++++ b/drivers/usb/storage/transport.c
+@@ -691,6 +691,9 @@ void usb_stor_invoke_transport(struct scsi_cmnd
+*srb, struct us_data *us)
+ 		int temp_result;
+ 		struct scsi_eh_save ses;
+ 		int sense_size = US_SENSE_SIZE;
++		struct scsi_sense_hdr sshdr;
++		const u8 *scdd;
++		u8 fm_ili;
+
+ 		/* device supports and needs bigger sense buffer */
+ 		if (us->fflags & US_FL_SANE_SENSE)
+@@ -774,32 +777,30 @@ Retry_Sense:
+ 			srb->sense_buffer[7] = (US_SENSE_SIZE - 8);
+ 		}
+
++		scsi_normalize_sense(srb->sense_buffer, SCSI_SENSE_BUFFERSIZE,
++				     &sshdr);
++
+ 		US_DEBUGP("-- Result from auto-sense is %d\n", temp_result);
+ 		US_DEBUGP("-- code: 0x%x, key: 0x%x, ASC: 0x%x, ASCQ: 0x%x\n",
+-			  srb->sense_buffer[0],
+-			  srb->sense_buffer[2] & 0xf,
+-			  srb->sense_buffer[12],
+-			  srb->sense_buffer[13]);
++			  sshdr.response_code, sshdr.sense_key,
++			  sshdr.asc, sshdr.ascq);
+ #ifdef CONFIG_USB_STORAGE_DEBUG
+-		usb_stor_show_sense(
+-			  srb->sense_buffer[2] & 0xf,
+-			  srb->sense_buffer[12],
+-			  srb->sense_buffer[13]);
++		usb_stor_show_sense(sshdr.sense_key, sshdr.asc, sshdr.ascq);
+ #endif
+
+ 		/* set the result so the higher layers expect this data */
+ 		srb->result = SAM_STAT_CHECK_CONDITION;
+
++		scdd = scsi_sense_desc_find(srb->sense_buffer,
++					    SCSI_SENSE_BUFFERSIZE, 4);
++		fm_ili = (scdd ? scdd[3] : srb->sense_buffer[2]) & 0xA0;
++
+ 		/* We often get empty sense data.  This could indicate that
+ 		 * everything worked or that there was an unspecified
+ 		 * problem.  We have to decide which.
+ 		 */
+-		if (	/* Filemark 0, ignore EOM, ILI 0, no sense */
+-				(srb->sense_buffer[2] & 0xaf) == 0 &&
+-			/* No ASC or ASCQ */
+-				srb->sense_buffer[12] == 0 &&
+-				srb->sense_buffer[13] == 0) {
+-
++		if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0 &&
++		    fm_ili == 0) {
+ 			/* If things are really okay, then let's show that.
+ 			 * Zero out the sense buffer so the higher layers
+ 			 * won't realize we did an unsolicited auto-sense.
+@@ -814,7 +815,10 @@ Retry_Sense:
+ 			 */
+ 			} else {
+ 				srb->result = DID_ERROR << 16;
+-				srb->sense_buffer[2] = HARDWARE_ERROR;
++				if ((sshdr.response_code & 0x72) == 0x72)
++					srb->sense_buffer[1] = HARDWARE_ERROR;
++				else
++					srb->sense_buffer[2] = HARDWARE_ERROR;
+ 			}
+ 		}
+ 	}
 -- 
-1.7.6
-
+Daniel J Blueman
