@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1IBS2E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 14:28:04 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36654 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab1IBS2C (ORCPT
+	id S1754360Ab1IBSad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 14:30:33 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:47248 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab1IBSac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 14:28:02 -0400
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, matthltc@us.ibm.com, rjw@sisk.pl, paul@paulmenage.org
-Cc: containers@lists.linux-foundation.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET pm-freezer] freezer: fixes & simplifications
-Date: Sat,  3 Sep 2011 03:27:44 +0900
-Message-Id: <1314988070-12244-1-git-send-email-tj@kernel.org>
+	Fri, 2 Sep 2011 14:30:32 -0400
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: x86@kernel.org
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/4] Support for the TS-5500 platform
+Date: Fri,  2 Sep 2011 14:30:20 -0400
+Message-Id: <1314988224-13162-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Thanks to H. Peter Anvin and Mark Brown for the comments and
+explanations given in the previous versions of this patch set.
 
-These six patches are fixes and simplifications for the recent freezer
-changes.  The first four have been posted twice.  Changes since the
-last posting[L] are
+This is the third version, which brings support for
+the Technologic Systems TS-5500 Single Board Computer.
+The code is rebased on v3.1-rc4.
 
-* freezer->state setting bug fix updated per Matt Helsley so that the
-  actual per-task freeze/thaw operations are always performed.
+The first patch adds the base for the support of the board in
+/arch/x86/platform/ts5500 and a documentation file in
+Documentation/ABI/testing/sysfs-platform-ts5500.
 
-* fixed a bug caused by forgetting to unlock freezer_lock in "freezer:
-  restructure __refrigerator()".
+The second patch adds support for GPIO.
 
-* Two patches added.  The fifth one is mostly trivial.  The sixth a
-  bit more involved but still shouldn't cause any noticeable
-  functional difference.  This removes the buggy and unused
-  freezable_with_signal.
+The third patch adds support for the on-board LED.
 
-Properly tested this time.  As hera is still down, no git branch
-available at this point.  Patch list and diffstat follow.
+The fourth patch brings support for the Analogic/Digital converter.
 
-Thanks.
+Jerome Oufella (1):
+  platform: (TS-5500) add GPIO support
 
- [PATCH 1/6] cgroup_freezer: fix freezer->state setting bug in
- [PATCH 2/6] freezer: set PF_NOFREEZE on a dying task right before
- [PATCH 3/6] freezer: restructure __refrigerator()
- [PATCH 4/6] freezer: use lock_task_sighand() in
- [PATCH 5/6] freezer: remove unused @sig_only from freeze_task()
- [PATCH 6/6] freezer: kill unused set_freezable_with_signal()
+Jonas Fonseca (2):
+  platform: (TS-5500) add LED support
+  platform: (TS-5500) add ADC support
 
- include/linux/freezer.h |   22 +------------
- include/linux/sched.h   |    1
- kernel/cgroup_freezer.c |   18 +++++------
- kernel/exit.c           |   10 ++----
- kernel/freezer.c        |   78 ++++++++++++++++--------------------------------
- kernel/kthread.c        |    2 -
- kernel/power/process.c  |    8 ++--
- 7 files changed, 47 insertions(+), 92 deletions(-)
+Vivien Didelot (1):
+  platform: (TS-5500) add base support
 
---
-tejun
+ Documentation/ABI/testing/sysfs-platform-ts5500 |   46 +++
+ MAINTAINERS                                     |    5 +
+ arch/x86/Kconfig                                |    2 +
+ arch/x86/platform/Makefile                      |    1 +
+ arch/x86/platform/ts5500/Kconfig                |   28 ++
+ arch/x86/platform/ts5500/Makefile               |    4 +
+ arch/x86/platform/ts5500/ts5500.c               |  468 +++++++++++++++++++++++
+ arch/x86/platform/ts5500/ts5500_adc.c           |  326 ++++++++++++++++
+ arch/x86/platform/ts5500/ts5500_adc.h           |   62 +++
+ arch/x86/platform/ts5500/ts5500_gpio.c          |  413 ++++++++++++++++++++
+ arch/x86/platform/ts5500/ts5500_gpio.h          |   60 +++
+ arch/x86/platform/ts5500/ts5500_led.c           |  115 ++++++
+ 12 files changed, 1530 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-ts5500
+ create mode 100644 arch/x86/platform/ts5500/Kconfig
+ create mode 100644 arch/x86/platform/ts5500/Makefile
+ create mode 100644 arch/x86/platform/ts5500/ts5500.c
+ create mode 100644 arch/x86/platform/ts5500/ts5500_adc.c
+ create mode 100644 arch/x86/platform/ts5500/ts5500_adc.h
+ create mode 100644 arch/x86/platform/ts5500/ts5500_gpio.c
+ create mode 100644 arch/x86/platform/ts5500/ts5500_gpio.h
+ create mode 100644 arch/x86/platform/ts5500/ts5500_led.c
 
-[L] http://thread.gmane.org/gmane.linux.kernel/1186387
+-- 
+1.7.6
+
