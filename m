@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab1IBPCo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 11:02:44 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:52511 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752531Ab1IBPCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 11:02:42 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201109021502.p82F2W3w003902@stout.americas.sgi.com>
-Date: Fri, 02 Sep 2011 10:02:32 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.1-rc5
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752880Ab1IBPD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 11:03:29 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:30863 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab1IBPD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 11:03:26 -0400
+Date: Fri, 2 Sep 2011 10:03:21 -0500
+From: scameron@beardog.cce.hp.com
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-pci@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [BUG] scsi: hpsa: how to destroy your files
+Message-ID: <20110902150321.GU9189@beardog.cce.hp.com>
+References: <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com> <1314903038.3067.27.camel@dabdike> <20110901125938.7cb1da85@jbarnes-desktop> <20110901200349.GO9189@beardog.cce.hp.com> <20110901130930.5caec2d4@jbarnes-desktop> <20110901204419.GY8422@beardog.cce.hp.com> <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com> <1314956388.2573.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1314958133.2573.13.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1314958133.2573.13.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the following XFS changes for 3.1-rc5.  The first
-documents a feature that we plan to remove in 3.3.  The second fixes
-a problem related to inode dirtying during unmount, and the third
-fixes some other problems found in that region of code.
+On Fri, Sep 02, 2011 at 12:08:53PM +0200, Eric Dumazet wrote:
+> Le vendredi 02 septembre 2011 à 11:39 +0200, Eric Dumazet a écrit :
+> > Le jeudi 01 septembre 2011 à 16:50 -0500, Jon Mason a écrit :
+> > 
+> > > I believe modifying the MRRS values is what is causing the issues.
+> > > Can you try the attached patch and verify that it also resolves the
+> > > issue?
+> > 
+> > I tested this patch and can confirm this solves the corruption problem.
+> > 
+> > But my disk is _much_ slower than before
+> > 
+> > # hdparm -t /dev/sda1
+> > 
+> > Before :
+> > 
+> >  Timing buffered disk reads: 254 MB in  3.02 seconds =  84.16 MB/sec
+> > 
+> > After :
+> > 
+> >  Timing buffered disk reads: 120 MB in  3.04 seconds =  39.42 MB/sec
+> 
+> Hmm, this speed regression is probably old : the 84MB/s was with the
+> standard debian 6.0.2 kernel (2.6.32-5-amd64)
+> 
 
-The last two have not been through a -next build because of the
-recent kernel.org issues, but I've done testing with a local pull
-into your current master branch and all looks well.
+This regression might be due to these two patches:
 
-Thank you.
+	d0be5ec8693944c2e2fc0de70fda9dbc1b93bd7d
+	[SCSI] hpsa: do readl after writel in main i/o path to ensure commands don't get lost.
 
-					-Alex
+	Apparently we've been doin it rong for a decade, but only lately do we
+	run into problems.
+and
+	fec62c368b9c8b05d5124ca6c3b8336b537f26f3
+	[SCSI] hpsa: do not attempt to read from a write-only register
 
-The following changes since commit 9e79e3e9dd9672b37ac9412e9a926714306551fe:
+	Most smartarrays tolerate it, but a few new ones don't.
+	Without this change some newer Smart Arrays will lock up
+	and i/o will grind to a halt.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2011-08-30 11:28:18 -0700)
+with the second patch being a correction to the first.
 
-are available in the git repository at:
+It seems like the readl after the writel should not be needed,
+and wasn't needed for a very long time, but there is some very
+hard to trigger and not yet well understood problem in which very
+occasionally a command would get lost and the driver thinks a 
+command is out, but controller firmware thinks all commands are
+completed -- a circumstance which tends to make things grind to
+a halt.
 
-  git://oss.sgi.com/xfs/xfs for-linus
+Those two patches avoid that problem.
 
-Christoph Hellwig (3):
-      xfs: deprecate the nodelaylog mount option
-      xfs: fix xfs_mark_inode_dirty during umount
-      xfs: fix ->write_inode return values
+-- steve
 
- Documentation/feature-removal-schedule.txt |    8 ++++++
- fs/xfs/xfs_iops.c                          |   14 ++++++++--
- fs/xfs/xfs_super.c                         |   36 ++++++++-------------------
- 3 files changed, 30 insertions(+), 28 deletions(-)
