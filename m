@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955Ab1IBA4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:56:43 -0400
+	id S932948Ab1IBA4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:56:19 -0400
 Received: from claw.goop.org ([74.207.240.146]:43181 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932881Ab1IBAzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:55:33 -0400
+	id S932892Ab1IBAzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 20:55:35 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,9 +17,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 07/13] x86/ticketlocks: tidy up __ticket_unlock_kick()
-Date: Thu,  1 Sep 2011 17:55:00 -0700
-Message-Id: <b93e43da28e584058db4a52ad8280269c3b1947e.1314922370.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+Date: Thu,  1 Sep 2011 17:55:01 -0700
+Message-Id: <38bb37e15f6e5056d5238adac945bc1837a996ec.1314922370.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
@@ -31,56 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-__ticket_unlock_kick() is now only called from known slowpaths, so there's
-no need for it to do any checking of its own.
+We need to make sure interrupts are disabled while we're relying on the
+contents of the per-cpu lock_waiting values, otherwise an interrupt
+handler could come in, try to take some other lock, block, and overwrite
+our values.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/paravirt.h |    2 +-
- arch/x86/include/asm/spinlock.h |   14 --------------
- 2 files changed, 1 insertions(+), 15 deletions(-)
+ arch/x86/xen/spinlock.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index 622f3d6..b89699a 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -746,7 +746,7 @@ static inline void __ticket_lock_spinning(struct arch_spinlock *lock, unsigned t
- 	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 4c46144..2ed5d05 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -98,6 +98,7 @@ static void xen_lock_spinning(struct arch_spinlock *lock, unsigned want)
+ 	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
+ 	int cpu = smp_processor_id();
+ 	u64 start;
++	unsigned long flags;
+ 
+ 	/* If kicker interrupts not initialized yet, just spin */
+ 	if (irq == -1)
+@@ -105,6 +106,10 @@ static void xen_lock_spinning(struct arch_spinlock *lock, unsigned want)
+ 
+ 	start = spin_time_start();
+ 
++	/* Make sure interrupts are disabled to ensure that these
++	   per-cpu values are not overwritten. */
++	local_irq_save(flags);
++
+ 	w->want = want;
+ 	w->lock = lock;
+ 
+@@ -139,6 +144,9 @@ static void xen_lock_spinning(struct arch_spinlock *lock, unsigned want)
+ out:
+ 	cpumask_clear_cpu(cpu, &waiting_cpus);
+ 	w->lock = NULL;
++
++	local_irq_restore(flags);
++
+ 	spin_time_accum_blocked(start);
  }
- 
--static inline void ____ticket_unlock_kick(struct arch_spinlock *lock, unsigned ticket)
-+static inline void __ticket_unlock_kick(struct arch_spinlock *lock, unsigned ticket)
- {
- 	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
- }
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 2135a48..365d787 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -78,23 +78,9 @@ static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, u
- {
- }
- 
--static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock, unsigned ticket)
--{
--}
--
- #endif	/* CONFIG_PARAVIRT_SPINLOCKS */
- 
- 
--/* 
-- * If a spinlock has someone waiting on it, then kick the appropriate
-- * waiting cpu.
-- */
--static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
--{
--	if (unlikely(lock->tickets.tail != next))
--		____ticket_unlock_kick(lock, next);
--}
--
- /*
-  * Ticket locks are conceptually two parts, one indicating the current head of
-  * the queue, and the other indicating the current tail. The lock is acquired
+ PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
 -- 
 1.7.6
 
