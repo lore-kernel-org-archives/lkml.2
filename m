@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933385Ab1IBKBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 06:01:09 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:33146 "EHLO
+	id S933412Ab1IBKBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 06:01:15 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:33127 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933303Ab1IBKAz (ORCPT
+	with ESMTP id S933339Ab1IBKA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 06:00:55 -0400
+	Fri, 2 Sep 2011 06:00:56 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 10/16] drbd: Converted got_Ping() and got_PingAck() from mdev to tconn
-Date: Fri,  2 Sep 2011 12:00:42 +0200
-Message-Id: <1314957648-13242-11-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 12/16] drbd: fix conn_reconfig_start without conn_reconfig_done in drbd_adm_attach
+Date: Fri,  2 Sep 2011 12:00:44 +0200
+Message-Id: <1314957648-13242-13-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314957648-13242-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314957648-13242-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,46 +20,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
+
+If drbd_adm_attach failed early, it left the CONFIG_PENDING bit on,
+blocking any further conn_reconfig_start on that connection.
+
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/block/drbd/drbd_nl.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 0117dcd..e28f194 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -4444,15 +4444,14 @@ static int got_RqSReply(struct drbd_conf *mdev, enum drbd_packet cmd)
- 	return true;
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 2970f45..7389e37 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1074,7 +1074,7 @@ int drbd_adm_attach(struct sk_buff *skb, struct genl_info *info)
+ 	if (!adm_ctx.reply_skb)
+ 		return retcode;
+ 	if (retcode != NO_ERROR)
+-		goto fail;
++		goto finish;
+ 
+ 	mdev = adm_ctx.mdev;
+ 	conn_reconfig_start(mdev->tconn);
+@@ -1433,8 +1433,8 @@ int drbd_adm_attach(struct sk_buff *skb, struct genl_info *info)
+  force_diskless:
+ 	drbd_force_state(mdev, NS(disk, D_FAILED));
+ 	drbd_md_sync(mdev);
+-	conn_reconfig_done(mdev->tconn);
+  fail:
++	conn_reconfig_done(mdev->tconn);
+ 	if (nbc) {
+ 		if (nbc->backing_bdev)
+ 			blkdev_put(nbc->backing_bdev,
+@@ -1446,6 +1446,7 @@ int drbd_adm_attach(struct sk_buff *skb, struct genl_info *info)
+ 	}
+ 	lc_destroy(resync_lru);
+ 
++ finish:
+ 	drbd_adm_finish(info, retcode);
+ 	return 0;
  }
- 
--static int got_Ping(struct drbd_conf *mdev, enum drbd_packet cmd)
-+static int got_Ping(struct drbd_tconn *tconn, enum drbd_packet cmd)
- {
--	return drbd_send_ping_ack(mdev->tconn);
-+	return drbd_send_ping_ack(tconn);
- 
- }
- 
--static int got_PingAck(struct drbd_conf *mdev, enum drbd_packet cmd)
-+static int got_PingAck(struct drbd_tconn *tconn, enum drbd_packet cmd)
- {
--	struct drbd_tconn *tconn = mdev->tconn;
- 	/* restore idle timeout */
- 	tconn->meta.socket->sk->sk_rcvtimeo = tconn->net_conf->ping_int*HZ;
- 	if (!test_and_set_bit(GOT_PING_ACK, &tconn->flags))
-@@ -4732,8 +4731,8 @@ struct asender_cmd {
- };
- 
- static struct asender_cmd asender_tbl[] = {
--	[P_PING]	    = { sizeof(struct p_header), MDEV, { got_Ping } },
--	[P_PING_ACK]	    = { sizeof(struct p_header), MDEV, { got_PingAck } },
-+	[P_PING]	    = { sizeof(struct p_header), CONN, { .conn_fn = got_Ping } },
-+	[P_PING_ACK]	    = { sizeof(struct p_header), CONN, { .conn_fn = got_PingAck } },
- 	[P_RECV_ACK]	    = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
- 	[P_WRITE_ACK]	    = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
- 	[P_RS_WRITE_ACK]    = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
 -- 
 1.7.4.1
 
