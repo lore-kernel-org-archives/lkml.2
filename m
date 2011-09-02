@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933226Ab1IBD6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 23:58:18 -0400
+	id S1758143Ab1IBD5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 23:57:41 -0400
 Received: from mail-pz0-f42.google.com ([209.85.210.42]:35020 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933195Ab1IBD6N (ORCPT
+	with ESMTP id S1753810Ab1IBD5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 23:58:13 -0400
+	Thu, 1 Sep 2011 23:57:36 -0400
 From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -17,9 +17,9 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org,
         "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
-Subject: [PATCH v4 10/19] Staging: cx25821: Fix obscure line endings in cx25821-audio-upstream.c
-Date: Fri,  2 Sep 2011 11:55:38 +0800
-Message-Id: <1314935747-6881-11-git-send-email-leonidsbox@gmail.com>
+Subject: [PATCH v4 04/19] Staging: cx25821: Move EXPORT_SYMBOL() to the right place
+Date: Fri,  2 Sep 2011 11:55:32 +0800
+Message-Id: <1314935747-6881-5-git-send-email-leonidsbox@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
 References: <1314935747-6881-1-git-send-email-leonidsbox@gmail.com>
@@ -27,78 +27,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change obscure line endings to less obscure ones. Rationale: more
-readable.
+Move EXPORT_SYMBOL(cx25821_set_gpiopin_direction) to the right place.
 
 Signed-off-by: Leonid V. Fedorenchik <leonidsbox@gmail.com>
 ---
- drivers/staging/cx25821/cx25821-audio-upstream.c |   25 ++++++++--------------
- 1 files changed, 9 insertions(+), 16 deletions(-)
+ drivers/staging/cx25821/cx25821-core.c |    1 -
+ drivers/staging/cx25821/cx25821-gpio.c |    1 +
+ 2 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
-index 55df658..e6c4b34 100644
---- a/drivers/staging/cx25821/cx25821-audio-upstream.c
-+++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
-@@ -349,10 +349,8 @@ static void cx25821_audioups_handler(struct work_struct *work)
- 		return;
- 	}
- 
--	cx25821_get_audio_data(dev,
--			      dev->channels[dev->
--				       _audio_upstream_channel].
--				       sram_channels);
-+	cx25821_get_audio_data(dev, dev->channels[dev->_audio_upstream_channel].
-+			sram_channels);
+diff --git a/drivers/staging/cx25821/cx25821-core.c b/drivers/staging/cx25821/cx25821-core.c
+index 523ac5e..8e8a56d 100644
+--- a/drivers/staging/cx25821/cx25821-core.c
++++ b/drivers/staging/cx25821/cx25821-core.c
+@@ -1512,7 +1512,6 @@ static void __exit cx25821_fini(void)
+ 	pci_unregister_driver(&cx25821_pci_driver);
  }
  
- int cx25821_openfile_audio(struct cx25821_dev *dev,
-@@ -555,8 +553,7 @@ int cx25821_audio_upstream_irq(struct cx25821_dev *dev, int chan_num,
- 					}
- 				}
- 				/* Jump to 2nd Audio Frame */
--				*(rp++) =
--				    cpu_to_le32(RISC_JUMP | RISC_IRQ1 |
-+				*(rp++) = cpu_to_le32(RISC_JUMP | RISC_IRQ1 |
- 						RISC_CNT_RESET);
- 				*(rp++) = cpu_to_le32(risc_phys_jump_addr);
- 				*(rp++) = cpu_to_le32(0);
-@@ -611,11 +608,8 @@ static irqreturn_t cx25821_upstream_irq_audio(int irq, void *dev_id)
+-EXPORT_SYMBOL(cx25821_set_gpiopin_direction);
  
- 	/* Only deal with our interrupt */
- 	if (audio_status) {
--		handled =
--		    cx25821_audio_upstream_irq(dev,
--					       dev->
--					       _audio_upstream_channel,
--					       audio_status);
-+		handled = cx25821_audio_upstream_irq(dev,
-+				dev->_audio_upstream_channel, audio_status);
- 	}
+ module_init(cx25821_init);
+ module_exit(cx25821_fini);
+diff --git a/drivers/staging/cx25821/cx25821-gpio.c b/drivers/staging/cx25821/cx25821-gpio.c
+index 2f154b3..29e43b0 100644
+--- a/drivers/staging/cx25821/cx25821-gpio.c
++++ b/drivers/staging/cx25821/cx25821-gpio.c
+@@ -50,6 +50,7 @@ void cx25821_set_gpiopin_direction(struct cx25821_dev *dev,
  
- 	if (handled < 0)
-@@ -770,9 +764,8 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- 		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
- 	}
+ 	cx_write(gpio_oe_reg, value);
+ }
++EXPORT_SYMBOL(cx25821_set_gpiopin_direction);
  
--	retval =
--	    cx25821_sram_channel_setup_upstream_audio(dev, sram_ch, _line_size,
--						      0);
-+	retval = cx25821_sram_channel_setup_upstream_audio(dev, sram_ch,
-+							_line_size, 0);
- 
- 	dev->audio_upstream_riscbuf_size =
- 	    AUDIO_RISC_DMA_BUF_SIZE * NUM_AUDIO_PROGS +
-@@ -780,8 +773,8 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- 	dev->audio_upstream_databuf_size = AUDIO_DATA_BUF_SZ * NUM_AUDIO_PROGS;
- 
- 	/* Allocating buffers and prepare RISC program */
--	retval =
--	    cx25821_audio_upstream_buffer_prepare(dev, sram_ch, _line_size);
-+	retval = cx25821_audio_upstream_buffer_prepare(dev, sram_ch,
-+							_line_size);
- 	if (retval < 0) {
- 		pr_err("%s: Failed to set up Audio upstream buffers!\n",
- 		       dev->name);
+ static void cx25821_set_gpiopin_logicvalue(struct cx25821_dev *dev,
+ 					   int pin_number, int pin_logic_value)
 -- 
 1.7.0.4
 
