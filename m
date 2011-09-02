@@ -1,118 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab1IBG4v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 02:56:51 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:23623 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101Ab1IBG4s (ORCPT
+	id S1753648Ab1IBHCe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:02:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57797 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab1IBHCd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 02:56:48 -0400
-Date: Fri, 2 Sep 2011 08:56:20 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
+	Fri, 2 Sep 2011 03:02:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
+References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
+Date: Fri, 2 Sep 2011 09:02:32 +0200
+Message-ID: <CAOY=C6F7x+8UJv+0wChch4SAiRd+PRVgdCbZQ1_Db21uc-_9Bw@mail.gmail.com>
+Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
+From: Stijn Devriendt <highguy@gmail.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Andrew Chew <achew@nvidia.com>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH V3 1/5] i2c: Add irq_gpio field to struct i2c_client,
- i2c_board_info.
-Message-ID: <20110902085620.4ad918c4@endymion.delvare>
-In-Reply-To: <1314914676-28397-1-git-send-email-swarren@nvidia.com>
-References: <1314914676-28397-1-git-send-email-swarren@nvidia.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
+On Fri, Aug 19, 2011 at 11:53 AM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> +
+> +/**
+> + * pin_request() - request a single pin to be muxed in, typically for GPIO
+> + * @pin: the pin number in the global pin space
+> + * @function: a functional name to give to this pin, passed to the driver
+> + *     so it knows what function to mux in, e.g. the string "gpioNN"
+> + *     means that you want to mux in the pin for use as GPIO number NN
+> + * @gpio: if this request concerns a single GPIO pin
+> + */
+> +static int pin_request(struct pinctrl_dev *pctldev,
+> +                      int pin, const char *function, bool gpio)
+> +{
+> +       struct pin_desc *desc;
+> +       const struct pinmux_ops *ops;
+> +       int status = -EINVAL;
+> +
+> +       pr_debug("request pin %d for %s\n", pin, function);
+> +
+> +       if (!pin_is_valid(pctldev, pin)) {
+> +               pr_err("pin is invalid\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       if (!function) {
+> +               pr_err("no function name given\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       desc = pin_desc_get(pctldev, pin);
+> +       if (desc == NULL) {
+> +               pr_err("pin is not registered so it cannot be requested\n");
+> +               goto out;
+> +       }
+> +       if (desc->mux_requested) {
+> +               pr_err("pin already requested\n");
+> +               goto out;
+> +       }
 
-Can you please fix your e-mail client / system / whatever so that your
-patch series are no longer sent duplicated?
+Isn't locking missing here?
 
-On Thu,  1 Sep 2011 16:04:27 -0600, Stephen Warren wrote:
-> Some devices use a single pin as both an IRQ and a GPIO. In that case,
-> irq_gpio is the GPIO ID for that pin. Not all drivers use this feature.
-> Where they do, and the use of this feature is optional, and the system
-> wishes to disable this feature, this field must be explicitly set to a
-> defined invalid GPIO ID, such as -1.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> v3: Also add the field to i2c_board_info, and copy the field from
->     i2c_board_info to i2c_client upon instantiation
+> +       ops = pctldev->desc->pmxops;
+> +
+> +       /* Let each pin increase references to this module */
+> +       if (!try_module_get(pctldev->owner)) {
+> +               pr_err("could not increase module refcount for pin %d\n", pin);
+> +               status = -EINVAL;
+> +               goto out;
+> +       }
+> +
+> +       /*
+> +        * If there is no kind of request function for the pin we just assume
+> +        * we got it by default and proceed.
+> +        */
+> +       if (gpio && ops->gpio_request_enable)
+> +               /* This requests and enables a single GPIO pin */
+> +               status = ops->gpio_request_enable(pctldev, pin);
+> +       else if (ops->request)
+> +               status = ops->request(pctldev, pin);
+> +       else
+> +               status = 0;
+> +
+> +       if (status) {
+> +               pr_err("->request on device %s failed "
+> +                      "for pin %d\n",
+> +                      pctldev->desc->name, pin);
+> +               goto out;
+> +       }
+> +
+> +       desc->mux_requested = true;
+> +       strncpy(desc->mux_function, function, sizeof(desc->mux_function));
+> +
+> +out:
+> +       if (status)
+> +               pr_err("pin-%d (%s) status %d\n",
+> +                      pin, function ? : "?", status);
+> +
+> +       return status;
+> +}
+> +
 
-I don't get the idea. The i2c core doesn't make any use of the field,
-and that field will only be used by a few drivers amongst the 420+
-i2c drivers in the tree. This looks like a waste of memory. What's wrong
-with including the new field in the private platform or arch data
-structure for drivers which need it?
-
-> 
->  drivers/i2c/i2c-core.c |    1 +
->  include/linux/i2c.h    |    9 +++++++++
->  2 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index 131079a..da12540 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -518,6 +518,7 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
->  	client->flags = info->flags;
->  	client->addr = info->addr;
->  	client->irq = info->irq;
-> +	client->irq_gpio = info->irq_gpio;
->  
->  	strlcpy(client->name, info->type, sizeof(client->name));
->  
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index 3fad485..49e2e36 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -192,6 +192,12 @@ struct i2c_driver {
->   * @driver: device's driver, hence pointer to access routines
->   * @dev: Driver model device node for the slave.
->   * @irq: indicates the IRQ generated by this device (if any)
-> + * @irq_gpio: some devices use a single pin as both an IRQ and a GPIO. In
-> + *	that case, irq_gpio is the GPIO ID for that pin. Not all drivers
-> + *	use this feature. Where they do, and the use of this feature is
-> + *	optional, and the system wishes to disable this feature, this
-> + *	field must be explicitly set to a defined invalid GPIO ID, such
-> + *	as -1.
->   * @detected: member of an i2c_driver.clients list or i2c-core's
->   *	userspace_devices list
->   *
-> @@ -209,6 +215,7 @@ struct i2c_client {
->  	struct i2c_driver *driver;	/* and our access routines	*/
->  	struct device dev;		/* the device structure		*/
->  	int irq;			/* irq issued by device		*/
-> +	int irq_gpio;			/* gpio corresponding to irq	*/
->  	struct list_head detected;
->  };
->  #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
-> @@ -240,6 +247,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
->   * @archdata: copied into i2c_client.dev.archdata
->   * @of_node: pointer to OpenFirmware device node
->   * @irq: stored in i2c_client.irq
-> + * @irq_gpio: stored in i2c_client.irq_gpio
->   *
->   * I2C doesn't actually support hardware probing, although controllers and
->   * devices may be able to use I2C_SMBUS_QUICK to tell whether or not there's
-> @@ -260,6 +268,7 @@ struct i2c_board_info {
->  	struct dev_archdata	*archdata;
->  	struct device_node *of_node;
->  	int		irq;
-> +	int		irq_gpio;
->  };
->  
->  /**
-
-
--- 
-Jean Delvare
+Regards,
+Stijn
