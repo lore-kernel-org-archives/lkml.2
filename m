@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab1IBBNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 21:13:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43999 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932809Ab1IBBNN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 21:13:13 -0400
-Date: Fri, 2 Sep 2011 10:13:05 +0900
-From: Tejun Heo <htejun@gmail.com>
-To: Bruce Stenning <b.stenning@indigovision.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Message-ID: <20110902011305.GE2752@htj.dyndns.org>
-References: <20110430140109.GJ29280@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32C777089B2@gretna.indigovision.com>
- <20110525094127.GF10146@htj.dyndns.org>
- <4DF20E03.9030502@teksavvy.com>
- <20110610140155.GJ15235@htj.dyndns.org>
- <4DF25526.9010800@teksavvy.com>
- <20110611121957.GA7980@mtj.dyndns.org>
- <4DF4F30B.70702@teksavvy.com>
- <20110613104856.GC16021@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
+	id S932931Ab1IBBOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 21:14:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29763 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932809Ab1IBBO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 21:14:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,316,1312182000"; 
+   d="scan'208";a="47872384"
+Message-ID: <4E602DF2.809@intel.com>
+Date: Fri, 02 Sep 2011 09:14:26 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
+References: <1314681384-20881-1-git-send-email-ying.huang@intel.com>			 <1314681384-20881-2-git-send-email-ying.huang@intel.com>		 <1314785405.23993.21.camel@twins> <4E5EE409.3060102@intel.com>		 <4E5EFA08.30205@intel.com> <1314863927.7945.11.camel@twins>	 <4E5F48D1.801@intel.com> <1314871035.7945.14.camel@twins>
+In-Reply-To: <1314871035.7945.14.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 09/01/2011 05:57 PM, Peter Zijlstra wrote:
+> On Thu, 2011-09-01 at 16:56 +0800, Huang Ying wrote:
+>> Something as follow with llist_empty() seems not work.
+>>
+>>   empty = llist_empty(irq_work_list);
+>>   llist_add(&work->llnode, irq_work_list);
+>>   if (empty)
+>>           arch_irq_work_raise();
+>>
+>> Because irq_work IRQ handler or timer IRQ handler may be executed just
+>> before "llist_add(&work->llnode, irq_work_list)", so that, although
+>> "empty == false", arch_irq_work_raise() still should be executed.
+> 
+> Right, I was thinking:
+> 
+> 	llist_add(&work->llist, irq_work_list);
+> 	if (llist_empty(&work->llist))
+> 		arch_irq_work_raise();
+> 
+> And then ran into the difference between llist_node and llist_head. Now
+> we could sort that by introducing llist_next() and write it like:
+> 
+> 	if (!llist_next(&work->list))
+> 		arch_irq_work_raise();
+> 
 
-On Mon, Aug 29, 2011 at 04:49:29PM +0100, Bruce Stenning wrote:
-> I should mention that we are now working on kernel 2.6.39.4 (and are choosing
-> not to go with 3.x to limit changes as we progress towards final testing.)
+This reveals some implementation details of llist.  But it will reveal
+some implementation details to make llist_add() return whether list is
+empty before adding as Mathieu pointed out.  So I think something like
+this or just to check work->list->next should be acceptable.
 
-I don't think it would make any difference.  The core EH hasn't
-changed for some time now.
-
-> [...]
-> ata4: EH complete
-> ata_scsi_error: EXIT
-> __ata_port_freeze: ata4 port frozen
-> ata_port_schedule_eh: port EH scheduled
-> ata_scsiop_noop: ENTER
-> ata_scsiop_read_cap: ENTER
-> ata_scsiop_mode_sense: ENTER
-> ata_scsiop_mode_sense: ENTER
-> ata_scsiop_mode_sense: ENTER
-
-That's weird.  Another EH is scheduled after one completes but EH
-doesn't kick in.  Hmmm... can't see how that can happen.  How easily
-can you reproduce the problem?
-
-Thanks.
-
--- 
-tejun
+Best Regards,
+Huang Ying
