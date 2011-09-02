@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933318Ab1IBJvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 05:51:48 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48815 "EHLO gir.skynet.ie"
+	id S933254Ab1IBJ5f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 05:57:35 -0400
+Received: from gold.linx.net ([195.66.232.40]:49643 "EHLO gold.linx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935Ab1IBJvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 05:51:47 -0400
-Date: Fri, 2 Sep 2011 10:53:09 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm-fixes from an alternate place
-Message-ID: <alpine.DEB.2.00.1109021051530.10356@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932375Ab1IBJ5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 05:57:32 -0400
+Message-ID: <4E60A88B.2070507@linx.net>
+Date: Fri, 02 Sep 2011 10:57:31 +0100
+From: Tony Vroon <tony@linx.net>
+Organization: London Internet Exchange (LINX; AS5459)
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110822 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, "yinghai@kernel.org" <yinghai@kernel.org>,
+        venki@google.com
+Subject: Re: MTRR setup failure on Fujitsu Lifebook S761
+References: <4E579397.6010009@linx.net>  <4E57CBBB.3040806@zytor.com>  <1314385315.8356.0.camel@localhost>  <1314394157.4729.23.camel@sbsiddha-desk.sc.intel.com>  <4E581D1A.90404@zytor.com> <1314402667.4729.38.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1314402667.4729.38.camel@sbsiddha-desk.sc.intel.com>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Hi Linus,
+On 27/08/11 00:51, Suresh Siddha wrote:
+> Agree. Ideally in this case PAT should have helped. There must be
+> some other hidden issue that I am trying to understand.
 
-two radeon fixes from my tree on fd.o, not sure you can really do much,
-since its not like you can republish it :)
+Suresh, I have submitted the information that you requested. Is there
+more that you require please?
 
-Dave.
+Regards,
+- -- 
+Tony Vroon
+UNIX systems administrator
+London Internet Exchange Ltd, Trinity Court, Trinity Street,
+Peterborough, PE1 1DA
+Registered in England number 3137929
+E-Mail: tony@linx.net
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-The following changes since commit 9e79e3e9dd9672b37ac9412e9a926714306551fe:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2011-08-30 11:28:18 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
-
-Alex Deucher (1):
-      drm/radeon/kms: make sure pci max read request size is valid on evergreen+ (v2)
-
-Dave Airlie (1):
-      drm/radeon/kms: set a default max_pixel_clock
-
- drivers/gpu/drm/radeon/evergreen.c     |   27 +++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/ni.c            |    3 +++
- drivers/gpu/drm/radeon/radeon_clocks.c |    3 +++
- 3 files changed, 33 insertions(+), 0 deletions(-)
+iEYEARECAAYFAk5gqIsACgkQp5vW4rUFj5rVCQCfd6ogFVCMtkNHrGy/YE/8d0OP
+zdwAn1tLqM3fsc3DB1OQjrMrFtb2MpCH
+=Ii13
+-----END PGP SIGNATURE-----
