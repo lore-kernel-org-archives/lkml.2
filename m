@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab1IBOoN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 10:44:13 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62309 "EHLO
+	id S1752728Ab1IBOoc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 10:44:32 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53382 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab1IBOoL (ORCPT
+	with ESMTP id S1752612Ab1IBOo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 10:44:11 -0400
+	Fri, 2 Sep 2011 10:44:29 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH 1/2] misc: remove CONFIG_MISC_DEVICES
-Date: Fri, 2 Sep 2011 16:43:14 +0200
+Subject: [PATCH 2/2] mfd: remove CONFIG_MFD_SUPPORT
+Date: Fri, 2 Sep 2011 16:43:36 +0200
 User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
 Cc: Luciano Coelho <coelho@ti.com>, Randy Dunlap <rdunlap@xenotime.net>,
         matti.j.aaltonen@nokia.com, johannes@sipsolutions.net,
@@ -24,157 +24,135 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109021643.14275.arnd@arndb.de>
-X-Provags-ID: V02:K0:/KWQPXwpR+vWSxeEqM3cEu2dFYQsfK3hzh1osBsekDs
- pGTEmr61tD8VWyZQeJcM+tJMefqdQCTXf/Xro9tYewxZhgCwpL
- dzg372C+q27kFrYL31xNEiJNrQFVD7txl2SYvxM1RGjFw1tALD
- 6jQzBzkK1RwtaPZwztxZpHzoyo0WpFmlX9oLwzCt8a2/3EL3yP
- cVKPdBcoP2VjDjnS60AiRmszoJh8kaGKsN9Ci7pe/Qa5BmZSA4
- vNPjM0VDuD+4OxqJ+Yexs+iU/0qbjLG9nlABm4zbq1iQ0EtsBN
- l5YVk80SxFS3o2RG72lD0SK9zjZN6JbbMnP+0ba7NdVVfCmxng
- IqrGI7E1n3kfXLnCimvM=
+Message-Id: <201109021643.36369.arnd@arndb.de>
+X-Provags-ID: V02:K0:+NqpHAipdvszACtvtW7JClMFWqRFFq9xPYyzpi7e76k
+ A9m+BseH8fPTb5jX71KUfv1jw805OfyewYgMVe3idzrSshcSV6
+ 000XJFRjinl04my0Km9MrmIvBF3t2eeHLY8P3fgWtlLKic+nFq
+ 7jZjENkyIsA+U3HLtRLPm5GdKfgXXErdijCYn9HhQHoGkZBO7j
+ ovZjuPGZotBa1pKMUASXHKOtgg6QirgS9vSzCG2oQ+5JeFd20c
+ 68cx6EKWQn9j+yi6SJTepAG51xqquhuHjKvw8Uqim0a0bKwH/R
+ 87YApHXM8VyAknGl1U2yeNQOxdkb/aYEgMCkiBv3w4THp8+Twj
+ zjWsp5T4lWxnkeWonlZo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since misc devices have nothing in common besides fitting in no
-other category, there is no need to group them in one Kconfig
-symbol. Simply removing the symbol gets rid of all sorts of
-Kconfig warnings about missing dependencies when another driver
-selects a misc driver without also selecting MISC_DEVICES.
+We currently have two symbols to control compilation the MFD subsystem,
+MFD_SUPPORT and MFD_CORE. The MFD_SUPPORT is actually not required
+at all, it only hides the submenu when not set, with the effect that
+Kconfig warns about missing dependencies when another driver selects
+an MFD driver while MFD_SUPPORT is disabled. Turning the MFD submenu
+back from menuconfig into a plain menu simplifies the Kconfig syntax
+for those kinds of users and avoids the surprise when the menu
+suddenly appears because another driver was enabled that selects this
+symbol.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/mach-davinci/Kconfig |    6 ------
- arch/unicore32/Kconfig        |    1 -
- drivers/misc/Kconfig          |   26 ++++++++------------------
- drivers/mmc/host/Kconfig      |    1 -
- 4 files changed, 8 insertions(+), 26 deletions(-)
+ arch/arm/mach-omap2/Kconfig |    1 -
+ drivers/gpio/Kconfig        |    3 +--
+ drivers/i2c/busses/Kconfig  |    1 -
+ drivers/media/radio/Kconfig |    1 -
+ drivers/mfd/Kconfig         |   22 ++++------------------
+ 5 files changed, 5 insertions(+), 23 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
-index c0deaca..3755cec 100644
---- a/arch/arm/mach-davinci/Kconfig
-+++ b/arch/arm/mach-davinci/Kconfig
-@@ -61,7 +61,6 @@ config MACH_DAVINCI_EVM
- 	bool "TI DM644x EVM"
- 	default ARCH_DAVINCI_DM644x
- 	depends on ARCH_DAVINCI_DM644x
--	select MISC_DEVICES
- 	select EEPROM_AT24
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 57b66d5..1aee224 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -14,7 +14,6 @@ config ARCH_OMAP2PLUS_TYPICAL
+ 	select SERIAL_OMAP_CONSOLE
  	select I2C
- 	help
-@@ -71,7 +70,6 @@ config MACH_DAVINCI_EVM
- config MACH_SFFSDR
- 	bool "Lyrtech SFFSDR"
- 	depends on ARCH_DAVINCI_DM644x
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -105,7 +103,6 @@ config MACH_DAVINCI_DM6467_EVM
- 	default ARCH_DAVINCI_DM646x
- 	depends on ARCH_DAVINCI_DM646x
- 	select MACH_DAVINCI_DM6467TEVM
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -119,7 +116,6 @@ config MACH_DAVINCI_DM365_EVM
- 	bool "TI DM365 EVM"
- 	default ARCH_DAVINCI_DM365
- 	depends on ARCH_DAVINCI_DM365
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -131,7 +127,6 @@ config MACH_DAVINCI_DA830_EVM
- 	default ARCH_DAVINCI_DA830
- 	depends on ARCH_DAVINCI_DA830
- 	select GPIO_PCF857X
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-@@ -208,7 +203,6 @@ config MACH_TNETV107X
- config MACH_MITYOMAPL138
- 	bool "Critical Link MityDSP-L138/MityARM-1808 SoM"
- 	depends on ARCH_DAVINCI_DA850
--	select MISC_DEVICES
- 	select EEPROM_AT24
- 	select I2C
- 	help
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-index e57dcce..5fb023a 100644
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -244,7 +244,6 @@ config I2C_BATTERY_BQ27200
- config I2C_EEPROM_AT24
- 	tristate "I2C EEPROMs AT24 support"
- 	select PUV3_I2C
--	select MISC_DEVICES
- 	select EEPROM_AT24
+ 	select I2C_OMAP
+-	select MFD_SUPPORT
+ 	select MENELAUS if ARCH_OMAP2
+ 	select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
+ 	select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index d539efd..fbc5fd4 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -180,7 +180,7 @@ config GPIO_SCH
  
- config LCD_BACKLIGHT
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 2d6423c..c11e5ba 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -2,23 +2,7 @@
- # Misc strange devices
+ config GPIO_VX855
+ 	tristate "VIA VX855/VX875 GPIO"
+-	depends on MFD_SUPPORT && PCI
++	depends on PCI
+ 	select MFD_CORE
+ 	select MFD_VX855
+ 	help
+@@ -417,7 +417,6 @@ config GPIO_TIMBERDALE
+ config GPIO_RDC321X
+ 	tristate "RDC R-321x GPIO support"
+ 	depends on PCI
+-	select MFD_SUPPORT
+ 	select MFD_CORE
+ 	select MFD_RDC321X
+ 	help
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 646068e..d625a48 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -110,7 +110,6 @@ config I2C_I801
+ config I2C_ISCH
+ 	tristate "Intel SCH SMBus 1.0"
+ 	depends on PCI
+-	select MFD_CORE
+ 	select LPC_SCH
+ 	help
+ 	  Say Y here if you want to use SMBus controller on the Intel SCH
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+index 52798a1..ccd5f0d 100644
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -426,7 +426,6 @@ config RADIO_TIMBERDALE
+ config RADIO_WL1273
+ 	tristate "Texas Instruments WL1273 I2C FM Radio"
+ 	depends on I2C && VIDEO_V4L2
+-	select MFD_CORE
+ 	select MFD_WL1273_CORE
+ 	select FW_LOADER
+ 	---help---
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 21574bd..a7f1137 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -2,23 +2,8 @@
+ # Multifunction miscellaneous devices
  #
  
--# This one has to live outside of the MISC_DEVICES conditional,
--# because it may be selected by drivers/platform/x86/hp_accel.
--config SENSORS_LIS3LV02D
--	tristate
--	depends on INPUT
--	select INPUT_POLLDEV
--	default n
+-menuconfig MFD_SUPPORT
+-	bool "Multifunction device drivers"
+-	depends on HAS_IOMEM
+-	default y
+-	help
+-	  Multifunction devices embed several functions (e.g. GPIOs,
+-	  touchscreens, keyboards, current regulators, power management chips,
+-	  etc...) in one single integrated circuit. They usually talk to the
+-	  main CPU through one or more IRQ lines and low speed data busses (SPI,
+-	  I2C, etc..). They appear as one single device to the main system
+-	  through the data bus and the MFD framework allows for sub devices
+-	  (a.k.a. functions) to appear as discrete platform devices.
+-	  MFDs are typically found on embedded platforms.
 -
--menuconfig MISC_DEVICES
--	bool "Misc devices"
--	---help---
--	  Say Y here to get to see options for device drivers from various
--	  different categories. This option alone does not add any kernel code.
+-	  This option alone does not add any kernel code.
 -
--	  If you say N, all options in this submenu will be skipped and disabled.
--
--if MISC_DEVICES
-+menu "Misc devices"
+-if MFD_SUPPORT
++if HAS_IOMEM
++menu "Multifunction device drivers"
  
- config AD525X_DPOT
- 	tristate "Analog Devices Digital Potentiometers"
-@@ -344,6 +328,12 @@ config ISL29020
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called isl29020.
+ config MFD_CORE
+ 	tristate
+@@ -770,7 +755,8 @@ config MFD_AAT2870_CORE
+ 	  additional drivers must be enabled in order to use the
+ 	  functionality of the device.
  
-+config SENSORS_LIS3LV02D
-+	tristate
-+	depends on INPUT
-+	select INPUT_POLLDEV
-+	default n
-+
- config SENSORS_TSL2550
- 	tristate "Taos TSL2550 ambient light sensor"
- 	depends on I2C && SYSFS
-@@ -507,4 +497,4 @@ source "drivers/misc/ti-st/Kconfig"
- source "drivers/misc/lis3lv02d/Kconfig"
- source "drivers/misc/carma/Kconfig"
- 
--endif # MISC_DEVICES
+-endif # MFD_SUPPORT
 +endmenu
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index 8c87096..4fb03d4 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -477,7 +477,6 @@ config MMC_SDHI
- config MMC_CB710
- 	tristate "ENE CB710 MMC/SD Interface support"
- 	depends on PCI
--	select MISC_DEVICES
- 	select CB710_CORE
- 	help
- 	  This option enables support for MMC/SD part of ENE CB710/720 Flash
++endif
+ 
+ menu "Multimedia Capabilities Port drivers"
+ 	depends on ARCH_SA1100
 -- 
 1.7.1
 
