@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab1IBMAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 08:00:49 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:57185 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751083Ab1IBMAp (ORCPT
+	id S1751672Ab1IBMCi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 08:02:38 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60701 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab1IBMCg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 08:00:45 -0400
-Subject: Re: [PATCH] mfd: Combine MFD_SUPPORT and MFD_CORE
-From: Luciano Coelho <coelho@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, matti.j.aaltonen@nokia.com,
-        johannes@sipsolutions.net, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, mchehab@infradead.org,
-        linux-media@vger.kernel.org, linux-omap@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-In-Reply-To: <201108311849.37273.arnd@arndb.de>
-References: <20110829102732.03f0f05d.rdunlap@xenotime.net>
-	 <1314643307-17780-1-git-send-email-coelho@ti.com>
-	 <201108311849.37273.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Sep 2011 14:54:55 +0300
-Message-ID: <1314964495.2296.632.camel@cumari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Sep 2011 08:02:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
+References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
+	<20110901143333.51baf4ae.akpm@linux-foundation.org>
+	<CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
+	<20110902112133.GD12182@quack.suse.cz>
+	<CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
+Date: Fri, 2 Sep 2011 17:32:35 +0530
+Message-ID: <CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of del_timer
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-31 at 18:49 +0200, Arnd Bergmann wrote: 
-> On Monday 29 August 2011, Luciano Coelho wrote:
-> > From: Randy Dunlap <rdunlap@xenotime.net>
-> > 
-> > Combine MFD_SUPPORT (which only enabled the remainder of the MFD
-> > menu) and MFD_CORE.  This allows other drivers to select MFD_CORE
-> > without needing to also select MFD_SUPPORT, which fixes some
-> > kconfig unmet dependency warnings.  Modeled after I2C kconfig.
-> > 
-> > [Forward-ported to 3.1-rc4.  This fixes a warning when some drivers,
-> > such as RADIO_WL1273, are selected, but MFD_SUPPORT is not. -- Luca]
-> > 
-> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> > Reported-by: Johannes Berg <johannes@sipsolutions.net>
-> > Cc: Jean Delvare <khali@linux-fr.org>
-> > Cc: Tony Lindgren <tony@atomide.com>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Signed-off-by: Luciano Coelho <coelho@ti.com>
-> > ---
-> > 
-> > I guess this should fix the problem.  I've simple forward-ported
-> > Randy's patch to the latest mainline kernel.  I don't know via which
-> > tree this should go in, though.
-> > 
-> > NOTE: I have not tested this very thoroughly.  But at least
-> > omap2plus stuff seems to work okay with this change.  MFD_SUPPORT is
-> > also selected by a couple of "tile" platforms defconfigs, but I guess
-> > the Kconfig system should take care of it.
-> 
-> Doing this is a good idea, but incidentally I have just spent some time
-> with the same problem and ended up with a solution that I like better,
-> which is removing CONFIG_MFD_SUPPORT altogether.
-> 
-> The point is that there is no use enabling MFD_CORE if you don't also
-> enable any of the specific drivers. MFD_SUPPORT was added as a 'menuconfig'
-> before we had Kconfig warn about broken dependencies, so everything was
-> fine. Since Kconfig now issues the warnings, I think it would be better
-> to just turn the MFD menu into a plain 'menu' and remove all the
-> 'depends on MFD_SUPPORT' and 'select MFD_SUPPORT' lines from the other
-> Kconfig files.
+Hi Jan,
 
-Yes, this makes sense.  I think your solution is indeed cleaner.  If you
-want to send it it's fine with me.  I don't really have any preference,
-I just wanted to clean a problem that was reported to me. ;)
+I looked at that other patch you just sent.
 
-If you send your changes, my patch can be ignored, otherwise, I can send
-a v2 with the changes Jean proposed.
+I think that the task state problem can still happen in that case as the setting
+of the task state is not protected by any lock and the timer callback can be
+executing on another CPU at that time.
+
+Am I right about this ?
 
 
--- 
-Cheers,
-Luca.
-
+On Fri, Sep 2, 2011 at 5:14 PM, kautuk.c @samsung.com
+<consul.kautuk@gmail.com> wrote:
+> Hi,
+>
+> On Fri, Sep 2, 2011 at 4:51 PM, Jan Kara <jack@suse.cz> wrote:
+>>  Hello,
+>>
+>> On Fri 02-09-11 10:47:03, kautuk.c @samsung.com wrote:
+>>> On Fri, Sep 2, 2011 at 3:03 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>>> > On Thu,  1 Sep 2011 21:27:02 +0530
+>>> > Kautuk Consul <consul.kautuk@gmail.com> wrote:
+>>> >
+>>> >> This is important for SMP scenario, to check whether the timer
+>>> >> callback is executing on another CPU when we are deleting the
+>>> >> timer.
+>>> >>
+>>> >
+>>> > I don't see why?
+>>> >
+>>> >> index d6edf8d..754b35a 100644
+>>> >> --- a/mm/backing-dev.c
+>>> >> +++ b/mm/backing-dev.c
+>>> >> @@ -385,7 +385,7 @@ static int bdi_forker_thread(void *ptr)
+>>> >>                * dirty data on the default backing_dev_info
+>>> >>                */
+>>> >>               if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list)) {
+>>> >> -                     del_timer(&me->wakeup_timer);
+>>> >> +                     del_timer_sync(&me->wakeup_timer);
+>>> >>                       wb_do_writeback(me, 0);
+>>> >>               }
+>>> >
+>>> > It isn't a use-after-free fix: bdi_unregister() safely shoots down any
+>>> > running timer.
+>>> >
+>>>
+>>> In the situation that we do a del_timer at the same time that the
+>>> wakeup_timer_fn is
+>>> executing on another CPU, there is one tiny possible problem:
+>>> 1)  The wakeup_timer_fn will call wake_up_process on the bdi-default thread.
+>>>       This will set the bdi-default thread's state to TASK_RUNNING.
+>>> 2)  However, the code in bdi_writeback_thread() sets the state of the
+>>> bdi-default process
+>>>     to TASK_INTERRUPTIBLE as it intends to sleep later.
+>>>
+>>> If 2) happens before 1), then the bdi_forker_thread will not sleep
+>>> inside schedule as is the intention of the bdi_forker_thread() code.
+>>  OK, I agree the code in bdi_forker_thread() might use some straightening
+>> up wrt. task state handling but is what you decribe really an issue? Sure
+>> the task won't go to sleep but the whole effect is that it will just loop
+>> once more to find out there's nothing to do and then go to sleep - not a
+>> bug deal... Or am I missing something?
+>
+> Yes, you are right.
+> I was studying the code and I found this inconsistency.
+> Anyways, if there is NO_ACTION it will just loop and go to sleep again.
+> I just posted this because I felt that the code was not achieving the logic
+> that was intended in terms of sleeps and wakeups.
+>
+> I am currently trying to study the other patches you have just sent.
+>
+>>
+>>> This protection is not achieved even by acquiring spinlocks before
+>>> setting the task->state
+>>> as the spinlock used in wakeup_timer_fn is &bdi->wb_lock whereas the code in
+>>> bdi_forker_thread acquires &bdi_lock which is a different spin_lock.
+>>>
+>>> Am I correct in concluding this ?
+>>
+>>                                                                Honza
+>> --
+>> Jan Kara <jack@suse.cz>
+>> SUSE Labs, CR
+>>
+>
