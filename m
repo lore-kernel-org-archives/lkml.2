@@ -1,363 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab1IBT5t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:57:49 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39527 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755262Ab1IBTz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:55:59 -0400
-From: Serge Hallyn <serge@hallyn.com>
-To: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        dhowells@redhat.com, ebiederm@xmission.com, rdunlap@xenotime.net
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [PATCH 09/15] user ns: convert ipv6 to targeted capabilities
-Date: Fri,  2 Sep 2011 19:56:34 +0000
-Message-Id: <1314993400-6910-12-git-send-email-serge@hallyn.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1314993400-6910-1-git-send-email-serge@hallyn.com>
-References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
+	id S1755602Ab1IBT6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:58:47 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58879 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755276Ab1IBT6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:58:44 -0400
+X-Sasl-enc: KU7VExiaGZlZOGYZfZPqH4cHlzto9c74QTxhxSDfCQXW 1314993523
+Date: Fri, 2 Sep 2011 12:58:07 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: Hyper-V TODO file
+Message-ID: <20110902195807.GA2339@kroah.com>
+References: <1314829011-28922-1-git-send-email-kys@microsoft.com>
+ <20110901202733.GA15185@kroah.com>
+ <20110901203031.GB15185@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081C595A@TK5EX14MBXC126.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048081C595A@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+On Fri, Sep 02, 2011 at 07:47:12PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Thursday, September 01, 2011 4:31 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > Subject: Re: Hyper-V TODO file
+> > 
+> > On Thu, Sep 01, 2011 at 01:27:33PM -0700, Greg KH wrote:
+> > > On Wed, Aug 31, 2011 at 03:16:51PM -0700, K. Y. Srinivasan wrote:
+> > > > 2) With your help, we have fixed all of the issues related to these drivers
+> > > > conforming to the Linux Device Driver model. One of the TODO work items is
+> > > > "audit the vmbus to verify it is working properly with the driver model".
+> > >
+> > > I have a few comments about this, I'll respond in another email.
+> > 
+> > Ok, it looks a _lot_ better, but I have a few minor nits, and one larger
+> > one:
+> > 
+> > - rename the vmbus_child_* functions to vmbus_* as there's no need to
+> >   think of "children" here.
+> > 
+> > - vmbus_onoffer comment is incorrect.  You handle offers from lots of
+> >   other types.  Or if not, am I reading the code incorrectly?
+> > 
+> > - the static hv_cb_utils array needs to go away.  In the hv_utils.c
+> >   util_probe() call, properly register the channel callback, and the
+> >   same goes for the util_remove() call, unregister things there.
+> >   Note, you can use the driver_data field to determine exactly which
+> >   callback needs to be registered to make things easy.  Something like
+> >   the following (pseudo code only):
+> > 
+> > static const struct hv_vmbus_device_id id_table[] = {
+> > 	/* Shutdown guid */
+> > 	{ VMBUS_DEVICE(0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
+> > 		       0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB),
+> > 	  .driver_data = &shutdown_onchannelcallback },
+> > 	....
+> > };
+> > 
+> > util_probe(struct hv_device *dev, const struct hv_vmbus_device_id *id)
+> >  [ Yes, you will have to change the probe callback signature, but that's fine. ]
+> 
+> Greg, I think if I understand you correctly, the id parameter to the probe function
+> would be pointing to relevant entry in the hv_vmbus_device_id array.
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
----
- net/ipv6/addrconf.c             |    4 ++--
- net/ipv6/af_inet6.c             |    6 ++++--
- net/ipv6/datagram.c             |    6 +++---
- net/ipv6/ip6_flowlabel.c        |   24 ++++++++++++++----------
- net/ipv6/ip6_tunnel.c           |    4 ++--
- net/ipv6/ip6mr.c                |    2 +-
- net/ipv6/ipv6_sockglue.c        |    7 ++++---
- net/ipv6/netfilter/ip6_tables.c |    8 ++++----
- net/ipv6/route.c                |    2 +-
- net/ipv6/sit.c                  |   10 +++++-----
- 10 files changed, 40 insertions(+), 33 deletions(-)
+Yes, just like it does for USB, PCI, etc.
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index f012ebd..871e5cf 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -2230,7 +2230,7 @@ int addrconf_add_ifaddr(struct net *net, void __user *arg)
- 	struct in6_ifreq ireq;
- 	int err;
- 
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	if (copy_from_user(&ireq, arg, sizeof(struct in6_ifreq)))
-@@ -2249,7 +2249,7 @@ int addrconf_del_ifaddr(struct net *net, void __user *arg)
- 	struct in6_ifreq ireq;
- 	int err;
- 
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	if (copy_from_user(&ireq, arg, sizeof(struct in6_ifreq)))
-diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index 3b5669a..1854ffe 100644
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -160,7 +160,8 @@ lookup_protocol:
- 	}
- 
- 	err = -EPERM;
--	if (sock->type == SOCK_RAW && !kern && !capable(CAP_NET_RAW))
-+	if (sock->type == SOCK_RAW && !kern &&
-+	    !ns_capable(net->user_ns, CAP_NET_RAW))
- 		goto out_rcu_unlock;
- 
- 	sock->ops = answer->ops;
-@@ -281,7 +282,8 @@ int inet6_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 		return -EINVAL;
- 
- 	snum = ntohs(addr->sin6_port);
--	if (snum && snum < PROT_SOCK && !capable(CAP_NET_BIND_SERVICE))
-+	if (snum && snum < PROT_SOCK &&
-+	    !ns_capable(sock_net(sk)->user_ns, CAP_NET_BIND_SERVICE))
- 		return -EACCES;
- 
- 	lock_sock(sk);
-diff --git a/net/ipv6/datagram.c b/net/ipv6/datagram.c
-index 9ef1831..33b1b0f 100644
---- a/net/ipv6/datagram.c
-+++ b/net/ipv6/datagram.c
-@@ -701,7 +701,7 @@ int datagram_send_ctl(struct net *net,
- 				err = -EINVAL;
- 				goto exit_f;
- 			}
--			if (!capable(CAP_NET_RAW)) {
-+			if (!ns_capable(net->user_ns, CAP_NET_RAW)) {
- 				err = -EPERM;
- 				goto exit_f;
- 			}
-@@ -721,7 +721,7 @@ int datagram_send_ctl(struct net *net,
- 				err = -EINVAL;
- 				goto exit_f;
- 			}
--			if (!capable(CAP_NET_RAW)) {
-+			if (!ns_capable(net->user_ns, CAP_NET_RAW)) {
- 				err = -EPERM;
- 				goto exit_f;
- 			}
-@@ -746,7 +746,7 @@ int datagram_send_ctl(struct net *net,
- 				err = -EINVAL;
- 				goto exit_f;
- 			}
--			if (!capable(CAP_NET_RAW)) {
-+			if (!ns_capable(net->user_ns, CAP_NET_RAW)) {
- 				err = -EPERM;
- 				goto exit_f;
- 			}
-diff --git a/net/ipv6/ip6_flowlabel.c b/net/ipv6/ip6_flowlabel.c
-index f3caf1b..4726c02 100644
---- a/net/ipv6/ip6_flowlabel.c
-+++ b/net/ipv6/ip6_flowlabel.c
-@@ -294,21 +294,22 @@ struct ipv6_txoptions *fl6_merge_options(struct ipv6_txoptions * opt_space,
- 	return opt_space;
- }
- 
--static unsigned long check_linger(unsigned long ttl)
-+static unsigned long check_linger(unsigned long ttl, struct user_namespace *ns)
- {
- 	if (ttl < FL_MIN_LINGER)
- 		return FL_MIN_LINGER*HZ;
--	if (ttl > FL_MAX_LINGER && !capable(CAP_NET_ADMIN))
-+	if (ttl > FL_MAX_LINGER && !ns_capable(ns, CAP_NET_ADMIN))
- 		return 0;
- 	return ttl*HZ;
- }
- 
--static int fl6_renew(struct ip6_flowlabel *fl, unsigned long linger, unsigned long expires)
-+static int fl6_renew(struct ip6_flowlabel *fl, unsigned long linger,
-+		     unsigned long expires, struct user_namespace *ns)
- {
--	linger = check_linger(linger);
-+	linger = check_linger(linger, ns);
- 	if (!linger)
- 		return -EPERM;
--	expires = check_linger(expires);
-+	expires = check_linger(expires, ns);
- 	if (!expires)
- 		return -EPERM;
- 	fl->lastuse = jiffies;
-@@ -375,7 +376,7 @@ fl_create(struct net *net, struct in6_flowlabel_req *freq, char __user *optval,
- 
- 	fl->fl_net = hold_net(net);
- 	fl->expires = jiffies;
--	err = fl6_renew(fl, freq->flr_linger, freq->flr_expires);
-+	err = fl6_renew(fl, freq->flr_linger, freq->flr_expires, net->user_ns);
- 	if (err)
- 		goto done;
- 	fl->share = freq->flr_share;
-@@ -425,7 +426,7 @@ static int mem_check(struct sock *sk)
- 	if (room <= 0 ||
- 	    ((count >= FL_MAX_PER_SOCK ||
- 	      (count > 0 && room < FL_MAX_SIZE/2) || room < FL_MAX_SIZE/4) &&
--	     !capable(CAP_NET_ADMIN)))
-+	     !ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)))
- 		return -ENOBUFS;
- 
- 	return 0;
-@@ -507,17 +508,20 @@ int ipv6_flowlabel_opt(struct sock *sk, char __user *optval, int optlen)
- 		read_lock_bh(&ip6_sk_fl_lock);
- 		for (sfl = np->ipv6_fl_list; sfl; sfl = sfl->next) {
- 			if (sfl->fl->label == freq.flr_label) {
--				err = fl6_renew(sfl->fl, freq.flr_linger, freq.flr_expires);
-+				err = fl6_renew(sfl->fl, freq.flr_linger, freq.flr_expires,
-+						net->user_ns);
- 				read_unlock_bh(&ip6_sk_fl_lock);
- 				return err;
- 			}
- 		}
- 		read_unlock_bh(&ip6_sk_fl_lock);
- 
--		if (freq.flr_share == IPV6_FL_S_NONE && capable(CAP_NET_ADMIN)) {
-+		if (freq.flr_share == IPV6_FL_S_NONE &&
-+		    ns_capable(net->user_ns, CAP_NET_ADMIN)) {
- 			fl = fl_lookup(net, freq.flr_label);
- 			if (fl) {
--				err = fl6_renew(fl, freq.flr_linger, freq.flr_expires);
-+				err = fl6_renew(fl, freq.flr_linger, freq.flr_expires,
-+						net->user_ns);
- 				fl_release(fl);
- 				return err;
- 			}
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 0bc9888..c430d69 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1269,7 +1269,7 @@ ip6_tnl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case SIOCADDTUNNEL:
- 	case SIOCCHGTUNNEL:
- 		err = -EPERM;
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(dev_net(dev)->user_ns, CAP_NET_ADMIN))
- 			break;
- 		err = -EFAULT;
- 		if (copy_from_user(&p, ifr->ifr_ifru.ifru_data, sizeof (p)))
-@@ -1304,7 +1304,7 @@ ip6_tnl_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		break;
- 	case SIOCDELTUNNEL:
- 		err = -EPERM;
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(dev_net(dev)->user_ns, CAP_NET_ADMIN))
- 			break;
- 
- 		if (dev == ip6n->fb_tnl_dev) {
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index 705c828..1649ccd 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -1582,7 +1582,7 @@ int ip6_mroute_setsockopt(struct sock *sk, int optname, char __user *optval, uns
- 		return -ENOENT;
- 
- 	if (optname != MRT6_INIT) {
--		if (sk != mrt->mroute6_sk && !capable(CAP_NET_ADMIN))
-+		if (sk != mrt->mroute6_sk && !ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			return -EACCES;
- 	}
- 
-diff --git a/net/ipv6/ipv6_sockglue.c b/net/ipv6/ipv6_sockglue.c
-index 147ede38..485e181 100644
---- a/net/ipv6/ipv6_sockglue.c
-+++ b/net/ipv6/ipv6_sockglue.c
-@@ -343,7 +343,7 @@ static int do_ipv6_setsockopt(struct sock *sk, int level, int optname,
- 		break;
- 
- 	case IPV6_TRANSPARENT:
--		if (!capable(CAP_NET_ADMIN)) {
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN)) {
- 			retv = -EPERM;
- 			break;
- 		}
-@@ -381,7 +381,8 @@ static int do_ipv6_setsockopt(struct sock *sk, int level, int optname,
- 
- 		/* hop-by-hop / destination options are privileged option */
- 		retv = -EPERM;
--		if (optname != IPV6_RTHDR && !capable(CAP_NET_RAW))
-+		if (optname != IPV6_RTHDR &&
-+		    !ns_capable(net->user_ns, CAP_NET_RAW))
- 			break;
- 
- 		opt = ipv6_renew_options(sk, np->opt, optname,
-@@ -725,7 +726,7 @@ done:
- 	case IPV6_IPSEC_POLICY:
- 	case IPV6_XFRM_POLICY:
- 		retv = -EPERM;
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			break;
- 		retv = xfrm_user_policy(sk, optname, optval, optlen);
- 		break;
-diff --git a/net/ipv6/netfilter/ip6_tables.c b/net/ipv6/netfilter/ip6_tables.c
-index 94874b0..7fce7d8 100644
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1869,7 +1869,7 @@ compat_do_ip6t_set_ctl(struct sock *sk, int cmd, void __user *user,
- {
- 	int ret;
- 
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	switch (cmd) {
-@@ -1984,7 +1984,7 @@ compat_do_ip6t_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
- {
- 	int ret;
- 
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	switch (cmd) {
-@@ -2006,7 +2006,7 @@ do_ip6t_set_ctl(struct sock *sk, int cmd, void __user *user, unsigned int len)
- {
- 	int ret;
- 
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	switch (cmd) {
-@@ -2031,7 +2031,7 @@ do_ip6t_get_ctl(struct sock *sk, int cmd, void __user *user, int *len)
- {
- 	int ret;
- 
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	switch (cmd) {
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 9e69eb0..f00c18d 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1938,7 +1938,7 @@ int ipv6_route_ioctl(struct net *net, unsigned int cmd, void __user *arg)
- 	switch(cmd) {
- 	case SIOCADDRT:		/* Add a route */
- 	case SIOCDELRT:		/* Delete a route */
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			return -EPERM;
- 		err = copy_from_user(&rtmsg, arg,
- 				     sizeof(struct in6_rtmsg));
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 00b15ac..7438711 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -308,7 +308,7 @@ static int ipip6_tunnel_get_prl(struct ip_tunnel *t,
- 	/* For simple GET or for root users,
- 	 * we try harder to allocate.
- 	 */
--	kp = (cmax <= 1 || capable(CAP_NET_ADMIN)) ?
-+	kp = (cmax <= 1 || ns_capable(dev_net(t->dev)->user_ns, CAP_NET_ADMIN)) ?
- 		kcalloc(cmax, sizeof(*kp), GFP_KERNEL) :
- 		NULL;
- 
-@@ -929,7 +929,7 @@ ipip6_tunnel_ioctl (struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case SIOCADDTUNNEL:
- 	case SIOCCHGTUNNEL:
- 		err = -EPERM;
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(dev_net(dev)->user_ns, CAP_NET_ADMIN))
- 			goto done;
- 
- 		err = -EFAULT;
-@@ -988,7 +988,7 @@ ipip6_tunnel_ioctl (struct net_device *dev, struct ifreq *ifr, int cmd)
- 
- 	case SIOCDELTUNNEL:
- 		err = -EPERM;
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(dev_net(dev)->user_ns, CAP_NET_ADMIN))
- 			goto done;
- 
- 		if (dev == sitn->fb_tunnel_dev) {
-@@ -1021,7 +1021,7 @@ ipip6_tunnel_ioctl (struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case SIOCDELPRL:
- 	case SIOCCHGPRL:
- 		err = -EPERM;
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(dev_net(dev)->user_ns, CAP_NET_ADMIN))
- 			goto done;
- 		err = -EINVAL;
- 		if (dev == sitn->fb_tunnel_dev)
-@@ -1050,7 +1050,7 @@ ipip6_tunnel_ioctl (struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case SIOCCHG6RD:
- 	case SIOCDEL6RD:
- 		err = -EPERM;
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(dev_net(dev)->user_ns, CAP_NET_ADMIN))
- 			goto done;
- 
- 		err = -EFAULT;
--- 
-1.7.5.4
+> Since the driver can handle multiple ids (guids), we need to either in
+> the driver specific probe function or in the bus specific probe
+> function,  figure out which of the many devices the driver supports is
+> being probed. I have couple of implementation options and would
+> appreciate your preference:
+> 
+> 1) Do the guid parsing at the vmbus level parsing function. If I go
+> this route, the driver specific probe function would get an extra
+> parameter as you have described in pseudo code.
 
+Yes, that's the proper way to do this, as your match function already
+found the proper id structure, so you have the pointer, just pass it to
+the probe function callback.
+
+> 2) Do the guid parsing in the util probe function. In this case, we
+> don't need to change the signature for the probe function as all the
+> id information is available in the (util) driver. 
+
+Yes, but you end up doing the matching all over again in the util
+driver, which isn't nice and ripe for duplication and bugs.
+
+> I personally would prefer the second approach since it does not affect
+> other drivers (no need to change the signature for the probe
+> function). Let me know how you want me to proceed here.
+
+As you only have 3 probe functions, it's not a big deal to change them
+all :)
+
+thanks,
+
+greg k-h
