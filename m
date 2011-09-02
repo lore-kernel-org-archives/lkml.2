@@ -1,146 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab1IBHbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:31:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38711 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757344Ab1IBHbv convert rfc822-to-8bit (ORCPT
+	id S1757251Ab1IBHds (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:33:48 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:39818 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab1IBHdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:31:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E608081.5000107@gmail.com>
-References: <CA+OjSzzrYggQjDrgd6m+oF1sZkJFzf-3vSedAT3DAD9V2jTC3A@mail.gmail.com>
-	<20110901020947.GA9096@zhy>
-	<4E607523.30907@gmail.com>
-	<4E608081.5000107@gmail.com>
-Date: Fri, 2 Sep 2011 13:01:49 +0530
-Message-ID: <CAFPAmTT_kCjKvZ5rjq20f-dZN8uxd-x62k+qTkYV7=8Y8tyZ3g@mail.gmail.com>
-Subject: Re: General question about TASK_INTERRUPTIBLE and schedule_timeout()
-From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-To: Shan Hai <haishan.bai@gmail.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, sifram rajas <sifram.rajas@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Sep 2011 03:33:47 -0400
+From: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+Subject: [PATCH 1/1] Staging: comedi: fix line over 80 character issue in usbduxfast.c
+Date: Fri,  2 Sep 2011 13:03:33 +0530
+Message-Id: <1314948813-3583-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH 1/1]Staging: comedi: fix line over 80 character issue in usbduxfast.c>
+References: <[PATCH 1/1]Staging: comedi: fix line over 80 character issue in usbduxfast.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 2, 2011 at 12:36 PM, Shan Hai <haishan.bai@gmail.com> wrote:
-> On 09/02/2011 02:18 PM, Shan Hai wrote:
->>
->> On 09/01/2011 10:09 AM, Yong Zhang wrote:
->>>
->>> On Wed, Aug 31, 2011 at 06:18:19PM +0530, sifram rajas wrote:
->>>>
->>>> Hi,
->>>>
->>>> I have a general question about the following 2 lines of code I see
->>>> all over the kernel:
->>>> 1         set_current_state(TASK_INTERRUPTIBLE) ;
->>>> 2         schedule_timeout(<some value>);
->>>>
->>>> In the above code, if we encounter an interrupt after executing line
->>>> 1, we will end up
->>>> call schedule() from the architecture specific code for CONFIG_PREEMPT
->>>> kernels, after
->>>> the interrupt handler has been invokled.
->>>
->>> Yes.
->>>
->>>> This will cause the current task to sleep interruptibly forever
->>
->> Actually, sleeping forever in the TASK_INTERRUPTIBLE state is not correct,
->> because even though the task is preempted by higher priority one
->> it will finally get a chance to run, but you will get time out value
->> of <some value> + preemption latency.
->>
->>>> instead of for a certain timeout interval.
->>>
->>> No.
->>>
->>> schedule() will not put an preempted task to sleep, see:
->>
->> This might be problematic, because on the IRQ to preemption check path
->> the PREEMPT_ACTIVE was already set and the following 'if' statement
->> could not hold because of
->> !(preempt_count() & PREEMPT_ACTIVE) == false
+This is a patch to the usbduxfast.c file that fixes up a line 0ver 80 character warning found by the checkpatch.pl tool
 
-Yes.
+Signed-off-by: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/usbduxfast.c |   47 ++++++++++++++------------
+ 1 files changed, 25 insertions(+), 22 deletions(-)
 
->>
->> and the pick_next_task() might put the preempted task to sleep.
->>
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index 2a8e725..62ca2a3 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -453,14 +453,15 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
+ 	/* 7f92 to zero */
+ 	local_transfer_buffer[0] = 0;
+ 	/* bRequest, "Firmware" */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
+-				VENDOR_DIR_OUT,	/* bmRequestType */
+-				USBDUXFASTSUB_CPUCS,	/* Value */
+-				0x0000,	/* Index */
+-				/* address of the transfer buffer */
+-				local_transfer_buffer,
+-				1,	/* Length */
+-				EZTIMEOUT);	/* Timeout */
++	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
++			USBDUXFASTSUB_FIRMWARE,
++			VENDOR_DIR_OUT,	/* bmRequestType */
++			USBDUXFASTSUB_CPUCS,	/* Value */
++			0x0000,	/* Index */
++			/* address of the transfer buffer */
++			local_transfer_buffer,
++			1,	/* Length */
++			EZTIMEOUT);	/* Timeout */
+ 	if (ret < 0) {
+ 		printk("comedi_: usbduxfast_: control msg failed (start)\n");
+ 		return ret;
+@@ -477,12 +478,13 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
+ 	/* 7f92 to one */
+ 	local_transfer_buffer[0] = 1;
+ 	/* bRequest, "Firmware" */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
+-			      VENDOR_DIR_OUT,	/* bmRequestType */
+-			      USBDUXFASTSUB_CPUCS,	/* Value */
+-			      0x0000,	/* Index */
+-			      local_transfer_buffer, 1,	/* Length */
+-			      EZTIMEOUT);	/* Timeout */
++	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
++			USBDUXFASTSUB_FIRMWARE,
++			VENDOR_DIR_OUT,	/* bmRequestType */
++			USBDUXFASTSUB_CPUCS,	/* Value */
++			0x0000,	/* Index */
++			local_transfer_buffer, 1,	/* Length */
++			EZTIMEOUT);	/* Timeout */
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "comedi_: usbduxfast: control msg failed "
+ 		       "(stop)\n");
+@@ -504,14 +506,15 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
+ 	       startAddr, local_transfer_buffer[0]);
+ #endif
+ 	/* brequest, firmware */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
+-				VENDOR_DIR_OUT,	/* bmRequestType */
+-				startAddr,	/* value */
+-				0x0000,	/* index */
+-				/* our local safe buffer */
+-				local_transfer_buffer,
+-				len,	/* length */
+-				EZTIMEOUT);	/* timeout */
++	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
++			USBDUXFASTSUB_FIRMWARE,
++			VENDOR_DIR_OUT,	/* bmRequestType */
++			startAddr,	/* value */
++			0x0000,	/* index */
++			/* our local safe buffer */
++			local_transfer_buffer,
++			len,	/* length */
++			EZTIMEOUT);	/* timeout */
+ 
+ #ifdef CONFIG_COMEDI_DEBUG
+ 	printk(KERN_DEBUG "comedi_: usbduxfast: result=%d\n", ret);
+-- 
+1.6.5.2
 
-pick_next_task() will simply select the next task for scheduling.
-After all running tasks have been scheduled then this preempted task
-will also be rescheduled
-as it is still on this runqueue.
-
-I do not think that this will put this preempted it to sleep.
-Reason: Although the state is still set to TASK_INTERRUPTIBLE, the
-task is not removed
-from the runqueue as !(preempt_count() & PREEMPT_ACTIVE) == false.
-
-
->
-> I mean when the state of task is TASK_INTERRUPTIBLE the preempted task will
-> be put to sleep, its true in sifram's case.
-
-I disagree.Yong is still right in this scenario as the task will
-remain on the runqueue due to
-the !(preempt_count() & PREEMPT_ACTIVE) == false.
-
->
-> Yong is right on stating "schedule() will not put an preempted task to
-> sleep",
-> its true for the task state of which is TASK_RUNNING.
-
-Since TASK_RUNNING is defined as 0, the task remains on the runqueue here also.
-
->
-> Cheers
-> Shan Hai
->
->> Correct me on any misunderstanding :-)
->>
->> Cheers
->> Shan Hai
->>
->>> asmlinkage void __sched schduule(void)
->>> {
->>> ...
->>>         if (prev->state&&  !(preempt_count()&  PREEMPT_ACTIVE)) {
->>>                 if (unlikely(signal_pending_state(prev->state, prev))) {
->>>                         prev->state = TASK_RUNNING;
->>>                 } else {
->>>        ...
->>>        }
->>>         }
->>> ...
->>> }
->>>
->>> Thanks,
->>> Yong
->>>
->>>> Won't this defeat the purpose of the above code to schedule out or
->>>> sleep for a certain finite timeout ?
->>>> If yes, then what are the techniques to solve this problem ?
->>>>
->>>>
->>>> Thanks,
->>>> Sifram.
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>>> in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
