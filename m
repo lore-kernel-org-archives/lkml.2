@@ -1,119 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab1IBIHz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 04:07:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33484 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757875Ab1IBIHs (ORCPT
+	id S1758217Ab1IBIJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 04:09:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43831 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758172Ab1IBIJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 04:07:48 -0400
+	Fri, 2 Sep 2011 04:09:02 -0400
+Message-ID: <4E608F10.3000107@gmail.com>
+Date: Fri, 02 Sep 2011 16:08:48 +0800
+From: Shan Hai <haishan.bai@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B327A3A0@HQMAIL01.nvidia.com>
-References: <1314609001-28052-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B3279BD7@HQMAIL01.nvidia.com>
-	<CACRpkdaWbgiaJvvjDgBWFTpC6P=XcG6fm+L8rnjv9rxDxgs_YQ@mail.gmail.com>
-	<CACRpkda4PRd_WUPrnEBVADbHnmSOgVB=WCXvVR4dFMektyQ2tQ@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B327A3A0@HQMAIL01.nvidia.com>
-Date: Fri, 2 Sep 2011 10:07:47 +0200
-Message-ID: <CACRpkdYj+4tPgBQWd6MhWJStkdSmorGDBUr68LtsWwnpfTo_5w@mail.gmail.com>
-Subject: Re: [PATCH 1/4 v5] drivers: create a pin control subsystem v5
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>, Barry Song <21cnbao@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+CC: Yong Zhang <yong.zhang0@gmail.com>, sifram rajas <sifram.rajas@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: General question about TASK_INTERRUPTIBLE and schedule_timeout()
+References: <CA+OjSzzrYggQjDrgd6m+oF1sZkJFzf-3vSedAT3DAD9V2jTC3A@mail.gmail.com>	<20110901020947.GA9096@zhy>	<4E607523.30907@gmail.com>	<4E608081.5000107@gmail.com> <CAFPAmTT_kCjKvZ5rjq20f-dZN8uxd-x62k+qTkYV7=8Y8tyZ3g@mail.gmail.com>
+In-Reply-To: <CAFPAmTT_kCjKvZ5rjq20f-dZN8uxd-x62k+qTkYV7=8Y8tyZ3g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 9:43 PM, Stephen Warren <swarren@nvidia.com> wrote:
+On 09/02/2011 03:31 PM, kautuk.c @samsung.com wrote:
+> On Fri, Sep 2, 2011 at 12:36 PM, Shan Hai<haishan.bai@gmail.com>  wrote:
+>> On 09/02/2011 02:18 PM, Shan Hai wrote:
+>>> On 09/01/2011 10:09 AM, Yong Zhang wrote:
+>>>> On Wed, Aug 31, 2011 at 06:18:19PM +0530, sifram rajas wrote:
+>>>>> Hi,
+>>>>>
+>>>>> I have a general question about the following 2 lines of code I see
+>>>>> all over the kernel:
+>>>>> 1         set_current_state(TASK_INTERRUPTIBLE) ;
+>>>>> 2         schedule_timeout(<some value>);
+>>>>>
+>>>>> In the above code, if we encounter an interrupt after executing line
+>>>>> 1, we will end up
+>>>>> call schedule() from the architecture specific code for CONFIG_PREEMPT
+>>>>> kernels, after
+>>>>> the interrupt handler has been invokled.
+>>>> Yes.
+>>>>
+>>>>> This will cause the current task to sleep interruptibly forever
+>>> Actually, sleeping forever in the TASK_INTERRUPTIBLE state is not correct,
+>>> because even though the task is preempted by higher priority one
+>>> it will finally get a chance to run, but you will get time out value
+>>> of<some value>  + preemption latency.
+>>>
+>>>>> instead of for a certain timeout interval.
+>>>> No.
+>>>>
+>>>> schedule() will not put an preempted task to sleep, see:
+>>> This might be problematic, because on the IRQ to preemption check path
+>>> the PREEMPT_ACTIVE was already set and the following 'if' statement
+>>> could not hold because of
+>>> !(preempt_count()&  PREEMPT_ACTIVE) == false
+> Yes.
+>
+>>> and the pick_next_task() might put the preempted task to sleep.
+>>>
+> pick_next_task() will simply select the next task for scheduling.
+> After all running tasks have been scheduled then this preempted task
+> will also be rescheduled
+> as it is still on this runqueue.
+>
+> I do not think that this will put this preempted it to sleep.
+> Reason: Although the state is still set to TASK_INTERRUPTIBLE, the
+> task is not removed
+> from the runqueue as !(preempt_count()&  PREEMPT_ACTIVE) == false.
+>
+>
 
-> Looking forward a little, I expect that different SoCs have such a
-> different set of biasing/driver-strength/... options that actually having
-> some formalized semantic representation of what those options are doesn't
-> make sense; all we need is a standard API to set the values for a given
-> pin or pingroup;
+Yep, that's right,  call 'sleep' here is improper, the right way
+to put it should be 'the current task is deprived of its CPU' OR
+'the current lost the CPU', we call sleep when a task is
+removed from the run queue anyway :-)
 
-I'm still thinking about this thing, when I (and others) wer trying to
-shoehorn this kind of stuff into the GPIO layer I actually started to
-enumerate the different things you could do with a pin, beginning
-like this:
+>> I mean when the state of task is TASK_INTERRUPTIBLE the preempted task will
+>> be put to sleep, its true in sifram's case.
+> I disagree.Yong is still right in this scenario as the task will
+> remain on the runqueue due to
+> the !(preempt_count()&  PREEMPT_ACTIVE) == false.
+>
 
-+/*
-+ * Bias modes for GPIOs - if you have more biases, add them here or provide
-+ * custom enumerators for your driver if you find they are not generally
-+ * useful.
-+ *
-+ * GPIO_CONFIG_BIAS_UNKNOWN: this bias mode is not known to us
-+ * GPIO_CONFIG_BIAS_FLOAT: no specific bias, the GPIO will float or state
-+ *     is not controlled by software
-+ * GPIO_CONFIG_BIAS_PULL_UP: the GPIO will be pulled up (usually with high
-+ *     impedance to VDD)
-+ * GPIO_CONFIG_BIAS_PULL_DOWN: the GPIO will be pulled down (usually with high
-+ *     impedance to GROUND)
-+ * GPIO_BIAS_HIGH: the GPIO will be wired high, connected to VDD
-+ * GPIO_BIAS_GROUND: the GPIO will be grounded, connected to GROUND
-+ */
-+#define GPIO_CONFIG_BIAS_UNKNOWN       0x1000
-+#define GPIO_CONFIG_BIAS_FLOAT         0x1001
-+#define GPIO_CONFIG_BIAS_PULL_UP       0x1002
-+#define GPIO_CONFIG_BIAS_PULL_DOWN     0x1003
-+#define GPIO_CONFIG_BIAS_HIGH          0x1004
-+#define GPIO_CONFIG_BIAS_GROUND        0x1005
-+
-+/*
-+ * Drive modes for GPIOs (output) - if you have more custom modes either
-+ * add them here or keep them to your driver if you think they are not
-+ * generally useful.
-+ *
-+ * GPIO_CONFIG_DRIVE_UNKNOWN: we don't know the drive mode of this GPIO, for
-+ *     example since it is controlled by hardware or the information is not
-+ *     accessible but we need a meaningful enumerator in e.g. initialization
-+ *     code
-+ * GPIO_CONFIG_DRIVE_PUSH_PULL: the GPIO will be driven actively high and
-+ *     low, this is the most typical case and is typically achieved with two
-+ *     active transistors on the output
-+ * GPIO_CONFIG_DRIVE_OPEN_DRAIN: the GPIO will be driven with open drain (open
-+ *     collector) which means it is usually wired with other output ports
-+ *     which are then pulled up with an external resistor
-+ * GPIO_CONFIG_DRIVE_OPEN_SOURCE: the GPIO will be driven with open drain
-+ *     (open emitter) which is the same as open drain mutatis mutandis but
-+ *     pulled to ground
-+ * GPIO_CONFIG_DRIVE_OFF: the GPIO pin is set to inactive mode, off
-+ */
-+#define GPIO_CONFIG_DRIVE_UNKNOWN      0x2010
-+#define GPIO_CONFIG_DRIVE_PUSH_PULL    0x2011
-+#define GPIO_CONFIG_DRIVE_OPEN_DRAIN   0x2012
-+#define GPIO_CONFIG_DRIVE_OPEN_SOURCE  0x2013
-+#define GPIO_CONFIG_DRIVE_OFF          0x2014
+As stated above.
 
-The basic assumption is that there are not that infinitely many
-things you may want to do with a pin after all.
+Cheers
+Shan Hai
 
-I can already think about interesting enumerators for
-GPIO_CONFIG_INPUT_SCHMITT_TRIGGER
-GPIO_CONFIG_INPUT_LOAD_CAPACITANCE
-etc. But not unenumerable things.
+>> Yong is right on stating "schedule() will not put an preempted task to
+>> sleep",
+>> its true for the task state of which is TASK_RUNNING.
+> Since TASK_RUNNING is defined as 0, the task remains on the runqueue here also.
+>
+>> Cheers
+>> Shan Hai
+>>
+>>> Correct me on any misunderstanding :-)
+>>>
+>>> Cheers
+>>> Shan Hai
+>>>
+>>>> asmlinkage void __sched schduule(void)
+>>>> {
+>>>> ...
+>>>>          if (prev->state&&    !(preempt_count()&    PREEMPT_ACTIVE)) {
+>>>>                  if (unlikely(signal_pending_state(prev->state, prev))) {
+>>>>                          prev->state = TASK_RUNNING;
+>>>>                  } else {
+>>>>         ...
+>>>>         }
+>>>>          }
+>>>> ...
+>>>> }
+>>>>
+>>>> Thanks,
+>>>> Yong
+>>>>
+>>>>> Won't this defeat the purpose of the above code to schedule out or
+>>>>> sleep for a certain finite timeout ?
+>>>>> If yes, then what are the techniques to solve this problem ?
+>>>>>
+>>>>>
+>>>>> Thanks,
+>>>>> Sifram.
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>>>>> in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 
-The upside of this scheme is that we might have some handle on
-trying to consolidate common functionality between drivers,
-also to sort of consolidate the knowledge of what you can
-do with pins in one place, even if you can't share any code.
-
-For a stupid example the generic debugfs files could give you a list
-of all pins in any system and what bias mode they're in, no
-matter what platform we're dealing with, which would give the
-some kind of cosy consensus for developers that platforms
-are not that different after all.
-
-Yours,
-Linus Walleij
