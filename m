@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab1IBJjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 05:39:48 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52751 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756025Ab1IBJjq (ORCPT
+	id S1758222Ab1IBJlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 05:41:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38033 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756025Ab1IBJlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 05:39:46 -0400
-Subject: Re: [BUG] scsi: hpsa: how to destroy your files
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jon Mason <mason@myri.com>
-Cc: scameron@beardog.cce.hp.com, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephenmcameron@gmail.com, thenzl@redhat.com,
-        akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        linux-pci@vger.kernel.org, Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-In-Reply-To: <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
-References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
-	 <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20110901160724.GN9189@beardog.cce.hp.com>
-	 <1314898815.2823.33.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CAL1RGDWu4mBE3=0BC3iNnvfSSuT2pfGrXsBZBU-VB+tqZx7DeA@mail.gmail.com>
-	 <1314903038.3067.27.camel@dabdike>
-	 <20110901125938.7cb1da85@jbarnes-desktop>
-	 <20110901200349.GO9189@beardog.cce.hp.com>
-	 <20110901130930.5caec2d4@jbarnes-desktop>
-	 <20110901204419.GY8422@beardog.cce.hp.com>
-	 <CAMaF-rOG9gNf3g8rOXiKMq3TXrfJf5dFwN6q6uQqvMruUm4VQg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Sep 2011 11:39:48 +0200
-Message-ID: <1314956388.2573.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 2 Sep 2011 05:41:12 -0400
+Date: Fri, 2 Sep 2011 12:41:07 +0300
+From: "Maxin B. John" <maxin.john@gmail.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Bryan Freed <bfreed@chromium.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-iio@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        devel@driverdev.osuosl.org,
+        Amit Kucheria <amit.kucheria@verdurent.com>
+Subject: Re: [PATCH] staging: iio: light: Fix compiler warning in tsl2563.c
+Message-ID: <20110902094107.GA2846@maxin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 01 septembre 2011 à 16:50 -0500, Jon Mason a écrit :
+> Don't overwrite the error code.  For example, the lower layers can
+> return -EAGAIN and that's more useful than just returning -EIO every
+> time.
+Ahh.. Thanks a lot for explaining this.
 
-> I believe modifying the MRRS values is what is causing the issues.
-> Can you try the attached patch and verify that it also resolves the
-> issue?
+> Your fix works, but it's not very clean.  Just add a "*id = ret;"
+> line before the "return 0;" and that's it.  (It doesn't make sense
+> to pass a pointer to "id" and not use it).
+Dan, yes, I agree with you. This fix is much much better than what I 
+had in my mind.
 
-I tested this patch and can confirm this solves the corruption problem.
+> Yikes - I wonder why my various compilers don't throw that up.
+I guess, in "iio-blue.git" tree, the 'id = 0' suppresses this warning.
 
-But my disk is _much_ slower than before
-
-# hdparm -t /dev/sda1
-
-Before :
-
- Timing buffered disk reads: 254 MB in  3.02 seconds =  84.16 MB/sec
-
-After :
-
- Timing buffered disk reads: 120 MB in  3.04 seconds =  39.42 MB/sec
-
-
-
-
-
-
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+index f25243b..55012ff 100644
+--- a/drivers/staging/iio/light/tsl2563.c
++++ b/drivers/staging/iio/light/tsl2563.c
+@@ -226,7 +226,7 @@ static int tsl2563_read_id(struct tsl2563_chip *chip, u8 *id)
+ 	ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_ID);
+ 	if (ret < 0)
+ 		return ret;
+-
++	*id = ret;
+ 	return 0;
+ }
+ 
