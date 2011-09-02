@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab1IBRvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 13:51:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59503 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643Ab1IBRvj (ORCPT
+	id S1754134Ab1IBRxm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 13:53:42 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:26336 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab1IBRxi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 13:51:39 -0400
-Date: Fri, 2 Sep 2011 18:48:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linaro-toolchain@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-Message-ID: <20110902174812.GD6619@n2100.arm.linux.org.uk>
-References: <20110823220056.GK3895@n2100.arm.linux.org.uk> <20110825130907.GO3286@htj.dyndns.org> <20110825145558.GF8883@n2100.arm.linux.org.uk> <201108261644.26329.arnd@arndb.de> <OF2C5ADB6A.65B1BE36-ONC12578FE.00493A67-C12578FE.004B3315@de.ibm.com> <20110901140000.GF29729@n2100.arm.linux.org.uk> <OF69A57AB0.CF22689A-ONC12578FF.004EDD71-C12578FF.005142FF@de.ibm.com> <20110902172259.GA6619@n2100.arm.linux.org.uk> <OFA88E54BC.55310B1A-ONC12578FF.00607E64-C12578FF.00611957@de.ibm.com>
+	Fri, 2 Sep 2011 13:53:38 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>, Olaf Hering <olaf@aepfle.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH] Staging: hv: vmbus: Show the modalias in
+ /sys/bus/vmbus/devices/*/
+Thread-Topic: [PATCH] Staging: hv: vmbus: Show the modalias in
+ /sys/bus/vmbus/devices/*/
+Thread-Index: AQHMaY0RFSglJspxWUu3P1/h0ZnnU5U6vv4A//+fryA=
+Date: Fri, 2 Sep 2011 17:53:37 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B605D@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <20110902162556.GA25073@aepfle.de>
+ <20110902163550.GA5508@suse.de>
+In-Reply-To: <20110902163550.GA5508@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <OFA88E54BC.55310B1A-ONC12578FF.00607E64-C12578FF.00611957@de.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 07:40:34PM +0200, Ulrich Weigand wrote:
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote on 09/02/2011
-> 07:22:59 PM:
-> > On Fri, Sep 02, 2011 at 04:47:35PM +0200, Ulrich Weigand wrote:
-> > > Assume the scenario you initally describe, where a first signal is
-> > > ignored and leads to system call restart.  With your latest patch,
-> > > you call into syscall_restart which sets everything up to restart
-> > > the call (with interrupts disabled).
-> >
-> > I don't think SIG_IGN signals even set the TIF work flag, so they
-> > never even cause a call into do_signal().  Therefore, as far as
-> > syscalls go, attempting to send a process (eg) a SIGINT which its
-> > handler is set to SIG_IGN results in the process not even being
-> > notified about the attempt - we won't even wake up while the
-> > syscall is sleeping.
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Friday, September 02, 2011 12:36 PM
+> To: Olaf Hering
+> Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org
+> Subject: Re: [PATCH] Staging: hv: vmbus: Show the modalias in
+> /sys/bus/vmbus/devices/*/
 > 
-> I don't see why SIG_IGN signals shouldn't set the TIF work flag;
-> the decision whether to ignore a signal is only made once we've
-> got to get_signal_to_deliver.
+> On Fri, Sep 02, 2011 at 06:25:56PM +0200, Olaf Hering wrote:
+> > Show a modalias file in /sys/bus/vmbus/devices/*/
+> > Add a helper function to print the same content in modalias and uevent.
+> >
+> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> 
+> Nice idea, thanks for this, one minor nit below:
+> 
+> > ---
+> >  drivers/staging/hv/vmbus_drv.c |   21 ++++++++++++++++-----
+> >  1 file changed, 16 insertions(+), 5 deletions(-)
+> >
+> > --- a/drivers/staging/hv/vmbus_drv.c
+> > +++ b/drivers/staging/hv/vmbus_drv.c
+> > @@ -93,6 +93,14 @@ static void get_channel_info(struct hv_d
+> >  		debug_info.outbound.bytes_avail_towrite;
+> >  }
+> >
+> > +#define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid)
+> * 2)
+> > +static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
+> > +{
+> > +	int i;
+> > +	for (i = 0; i < VMBUS_ALIAS_LEN; i += 2)
+> > +		sprintf(&alias_name[i], "%02x", hv_dev->dev_type.b[i/2]);
+> > +}
+> > +
+> >  /*
+> >   * vmbus_show_device_attr - Show the device attribute in sysfs.
+> >   *
+> > @@ -105,6 +113,7 @@ static ssize_t vmbus_show_device_attr(st
+> >  {
+> >  	struct hv_device *hv_dev = device_to_hv_device(dev);
+> >  	struct hv_device_info device_info;
+> > +	char alias_name[VMBUS_ALIAS_LEN + 1];
+> 
+> Is that too big to put on the stack?  64 bytes, right?  Hm, maybe not.
+> 
+> Wait, hv_device_info is huge, that should be dynamic in the first place.
+> Olaf, not your issue, but KY, want to fix that up?
 
-Yes, having looked deeper, you seem to be right - but only if the thread
-is being ptraced.  If it's not being ptraced, ignored signals don't
-make it that far.
+hv_device_info is about 101 bytes. I will fix this. Greg, if you are applying Olaf's patch,
+I will generate my patch on top of Olaf's. Let me know.
 
-And yes, we can end up processing the interrupt before the SVC is
-executed, which is still a hole.  So we need to avoid doing the
-restart in userspace - which might actually make things easier.
-I'll take a look into that over the weekend.
+Regards,
+
+K. Y
+
