@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab1IBT7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:59:45 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39511 "EHLO
+	id S1755470Ab1IBUAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 16:00:40 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:39501 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755245Ab1IBTz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755223Ab1IBTz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Sep 2011 15:55:59 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, containers@lists.linux-foundation.org,
         dhowells@redhat.com, ebiederm@xmission.com, rdunlap@xenotime.net
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: [PATCH 07/15] user namespace: use net->user_ns for some capable calls under net/
-Date: Fri,  2 Sep 2011 19:56:32 +0000
-Message-Id: <1314993400-6910-10-git-send-email-serge@hallyn.com>
+Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: [PATCH 03/15] keyctl: check capabilities against key's user_ns
+Date: Fri,  2 Sep 2011 19:56:28 +0000
+Message-Id: <1314993400-6910-6-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1314993400-6910-1-git-send-email-serge@hallyn.com>
 References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
@@ -21,111 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
 
-Just a partial conversion to show how the previous patch is expected to
-be used.
+ATM, task should only be able to get his own user_ns's keys
+anyway, so nsown_capable should also work, but there is no
+advantage to doing that, while using key's user_ns is clearer.
 
-Changelog:
-  6/28/11: fix typo in net/core/sock.c
-  7/08/11: don't target capability which authorizes module loading
+changelog: jun 6:
+	compile fix: keyctl.c (key_user, not key has user_ns)
 
-Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Acked-by: David Howells <dhowells@redhat.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
- net/core/dev.c  |    4 ++--
- net/core/sock.c |   14 ++++++++------
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ security/keys/keyctl.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 17d67b5..6ae955f 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5014,7 +5014,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
- 	case SIOCGMIIPHY:
- 	case SIOCGMIIREG:
- 	case SIOCSIFNAME:
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			return -EPERM;
- 		dev_load(net, ifr.ifr_name);
- 		rtnl_lock();
-@@ -5053,7 +5053,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
- 	case SIOCBRADDIF:
- 	case SIOCBRDELIF:
- 	case SIOCSHWTSTAMP:
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			return -EPERM;
- 		/* fall through */
- 	case SIOCBONDSLAVEINFOQUERY:
-diff --git a/net/core/sock.c b/net/core/sock.c
-index bc745d0..0f31675 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -420,7 +420,7 @@ static int sock_bindtodevice(struct sock *sk, char __user *optval, int optlen)
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index eca5191..fa7d420 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -745,7 +745,7 @@ long keyctl_chown_key(key_serial_t id, uid_t uid, gid_t gid)
+ 	ret = -EACCES;
+ 	down_write(&key->sem);
  
- 	/* Sorry... */
- 	ret = -EPERM;
--	if (!capable(CAP_NET_RAW))
-+	if (!ns_capable(net->user_ns, CAP_NET_RAW))
- 		goto out;
+-	if (!capable(CAP_SYS_ADMIN)) {
++	if (!ns_capable(key->user->user_ns, CAP_SYS_ADMIN)) {
+ 		/* only the sysadmin can chown a key to some other UID */
+ 		if (uid != (uid_t) -1 && key->uid != uid)
+ 			goto error_put;
+@@ -852,7 +852,8 @@ long keyctl_setperm_key(key_serial_t id, key_perm_t perm)
+ 	down_write(&key->sem);
  
- 	ret = -EINVAL;
-@@ -488,6 +488,7 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
- 	int valbool;
- 	struct linger ling;
- 	int ret = 0;
-+	struct net *net = sock_net(sk);
- 
- 	/*
- 	 *	Options without arguments
-@@ -508,7 +509,7 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
- 
- 	switch (optname) {
- 	case SO_DEBUG:
--		if (val && !capable(CAP_NET_ADMIN))
-+		if (val && !ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			ret = -EACCES;
- 		else
- 			sock_valbool_flag(sk, SOCK_DBG, valbool);
-@@ -551,7 +552,7 @@ set_sndbuf:
- 		break;
- 
- 	case SO_SNDBUFFORCE:
--		if (!capable(CAP_NET_ADMIN)) {
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN)) {
- 			ret = -EPERM;
- 			break;
- 		}
-@@ -589,7 +590,7 @@ set_rcvbuf:
- 		break;
- 
- 	case SO_RCVBUFFORCE:
--		if (!capable(CAP_NET_ADMIN)) {
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN)) {
- 			ret = -EPERM;
- 			break;
- 		}
-@@ -612,7 +613,8 @@ set_rcvbuf:
- 		break;
- 
- 	case SO_PRIORITY:
--		if ((val >= 0 && val <= 6) || capable(CAP_NET_ADMIN))
-+		if ((val >= 0 && val <= 6) ||
-+		     ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			sk->sk_priority = val;
- 		else
- 			ret = -EPERM;
-@@ -729,7 +731,7 @@ set_rcvbuf:
- 			clear_bit(SOCK_PASSSEC, &sock->flags);
- 		break;
- 	case SO_MARK:
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			ret = -EPERM;
- 		else
- 			sk->sk_mark = val;
+ 	/* if we're not the sysadmin, we can only change a key that we own */
+-	if (capable(CAP_SYS_ADMIN) || key->uid == current_fsuid()) {
++	if (ns_capable(key->user->user_ns, CAP_SYS_ADMIN) ||
++	    key->uid == current_fsuid()) {
+ 		key->perm = perm;
+ 		ret = 0;
+ 	}
 -- 
 1.7.5.4
 
