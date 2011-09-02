@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab1IBUkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 16:40:52 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:46017
-	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab1IBUku (ORCPT
+	id S1755829Ab1IBUsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 16:48:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35772 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab1IBUsh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 16:40:50 -0400
-Message-ID: <4E613F4B.8030502@kernel.dk>
-Date: Fri, 02 Sep 2011 14:40:43 -0600
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Maxim Patlasov <maxim.patlasov@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] cfq: queued/in_driver stats
-References: <1314982962-30271-1-git-send-email-maxim.patlasov@gmail.com>
-In-Reply-To: <1314982962-30271-1-git-send-email-maxim.patlasov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Sep 2011 16:48:37 -0400
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while
+ blocking
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Fri, 02 Sep 2011 22:47:48 +0200
+In-Reply-To: <4E612EA1.20007@goop.org>
+References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
+	  <38bb37e15f6e5056d5238adac945bc1837a996ec.1314922370.git.jeremy.fitzhardinge@citrix.com>
+	 <1314974826.1861.1.camel@twins> <4E612EA1.20007@goop.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314996468.8255.0.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-02 11:02, Maxim Patlasov wrote:
-> The patch implements gathering and exporting statistics for cfqd->rq_queued
-> and cfqd->rq_in_driver. Average values of queued/in_driver are visible via
-> /sys/.../iosched/queued_avg and /sys/.../iosched/in_driver_avg correspondingly.
-> The output is in form of "%lu.%02lu %lu.%02lu %lu.%02lu" where the first
-> value represents average over 1 sec interval, the second - over 5 sec,
-> the third - over 15 sec.
+On Fri, 2011-09-02 at 12:29 -0700, Jeremy Fitzhardinge wrote:
 > 
-> The patch also exports cfqd->hw_tag to be seen via /sys/.../iosched/hw_tag.
+> > I know that its generally considered bad form, but there's at least one
+> > spinlock that's only taken from NMI context and thus hasn't got any
+> > deadlock potential.
 > 
-> Seeing hw_tag is useful to be sure that cfq detected NCQ correctly on given
-> h/w. queued/in_driver stats are useful to debug performance problems: e.g.,
-> if you know that fast h/w raid is able to concurrently process many requests
-> quite effectively, but at the same time you observe high queued average and
-> low in_driver one, you can suggest that cfq underloads h/w raid.
-> 
-> Changes since first version: do_div was used wrongly, fixed.
+> Which one? 
 
-Seems like an awful lot of code for something that could be gleaned
-with blktrace?
+arch/x86/kernel/traps.c:nmi_reason_lock
 
--- 
-Jens Axboe
-
+It serializes NMI access to the NMI reason port across CPUs.
