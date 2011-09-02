@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab1IBPIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 11:08:52 -0400
-Received: from mxout5.netvision.net.il ([194.90.9.29]:56984 "EHLO
-	mxout5.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab1IBPIs (ORCPT
+	id S1752684Ab1IBPKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 11:10:41 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:57540 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391Ab1IBPKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 11:08:48 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; format=flowed
-Message-id: <4E60F270.4020208@billauer.co.il>
-Date: Fri, 02 Sep 2011 18:12:48 +0300
-From: Eli Billauer <eli@billauer.co.il>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: monstr@monstr.eu
-Subject: Re: [PATCH] arch/microblaze: Added sync method support for DMA  and
- made refinements
-References: <4E60A276.7010903@billauer.co.il> <4E60CCE9.5050900@monstr.eu>
-In-reply-to: <4E60CCE9.5050900@monstr.eu>
+	Fri, 2 Sep 2011 11:10:38 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-ide@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] ahci: add DT binding for Calxeda AHCI controller
+Date: Fri,  2 Sep 2011 10:10:15 -0500
+Message-Id: <1314976215-23902-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Simek wrote:
+From: Rob Herring <rob.herring@calxeda.com>
 
->
-> DMA_TO_DEVICE is fine - data has to be flushed.
->
-> For DMA_FROM_DEVICE you expect that allocated space will contains data 
-> from device.
-> Which means if you flush them, they will be rewritten by DMA in the 
-> next step.
-> Which means that IMHO you can invalidate them which is faster than 
-> flushing.
-The flushing is only necessary when a certain memory region is written 
-to, not flushed, and then allocated for DMA from device. This is not 
-what drivers usually do, but it's nevertheless legal to do so. Maybe it 
-can also happen as a result of memory being freed but not flushed, and 
-then allocated as a DMA buffer. So this flushing prevents, at most, an 
-extremely rare problem. I don't expect to see something go wrong right 
-away in the lack of this flush.
+Add devicetree match table to ahci platform driver for Calxeda Highbank
+AHCI controller.
 
-In light of this, I can't see why flushing would be slower than 
-invalidation, if the cache lines aren't expected to be dirty except for 
-very rare conditions.
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+---
+ .../devicetree/bindings/ata/calxeda-sata.txt       |   17 +++++++++++++++++
+ drivers/ata/ahci_platform.c                        |    7 +++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/calxeda-sata.txt
 
-As for invalidation of a dirty cache line: Looking at the Microblaze 
-reference manual's description of the wdc instruction, I'm under the 
-impression that each cache line has two flags: Valid and Dirty, as they 
-appear in the pseudocode. I'm not on the clear about what happens if a 
-dirty cache line is invalidated. It would make sense to clear both 
-flags. It also makes sense to write the data back to the RAM in this 
-case. But I really don't know what's actually implemented.
-
-Patch with the corrections soon to be posted.
-
-   Eli
-
+diff --git a/Documentation/devicetree/bindings/ata/calxeda-sata.txt b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
+new file mode 100644
+index 0000000..79caa56
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/calxeda-sata.txt
+@@ -0,0 +1,17 @@
++* Calxeda SATA Controller
++
++SATA nodes are defined to describe on-chip Serial ATA controllers.
++Each SATA controller should have its own node.
++
++Required properties:
++- compatible        : compatible list, contains "calxeda,hb-ahci"
++- interrupts        : <interrupt mapping for SATA IRQ>
++- reg               : <registers mapping>
++
++Example:
++        sata@ffe08000 {
++		compatible = "calxeda,hb-ahci";
++                reg = <0xffe08000 0x1000>;
++                interrupts = <115>;
++        };
++
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 6fef1fa..9bfc970 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -171,11 +171,18 @@ static int __devexit ahci_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id ahci_of_match[] = {
++	{ .compatible = "calxeda,hb-ahci", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, ahci_of_match);
++
+ static struct platform_driver ahci_driver = {
+ 	.remove = __devexit_p(ahci_remove),
+ 	.driver = {
+ 		.name = "ahci",
+ 		.owner = THIS_MODULE,
++		.of_match_table = ahci_of_match,
+ 	},
+ };
+ 
 -- 
-Web: http://www.billauer.co.il
+1.7.5.4
 
