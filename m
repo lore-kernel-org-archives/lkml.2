@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1IBFRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 01:17:08 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41760 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1IBFRE convert rfc822-to-8bit (ORCPT
+	id S1753176Ab1IBFSq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 01:18:46 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51692 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751731Ab1IBFSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 01:17:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110901143333.51baf4ae.akpm@linux-foundation.org>
-References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
-	<20110901143333.51baf4ae.akpm@linux-foundation.org>
-Date: Fri, 2 Sep 2011 10:47:03 +0530
-Message-ID: <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of del_timer
-From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <dchinner@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Sep 2011 01:18:43 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/m2mQ9GqDmvveXdoY0Z+nYssuantQKK8gLOLzryU
+	04B36+86Vcmhvw
+Subject: Re: [BUG] scsi: hpsa: how to destroy your files
+From: Mike Galbraith <efault@gmx.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+In-Reply-To: <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <20110721181605.31672.36250.stgit@beardog.cce.hp.com>
+	 <1314890642.2823.27.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Sep 2011 07:18:36 +0200
+Message-ID: <1314940716.6336.8.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2011-09-01 at 17:24 +0200, Eric Dumazet wrote:
+> Stephen,
+> 
+> Current linux-3.1-rc4+ is a total disaster on my BL460c G6
+> 
+> 
+> Few seconds after boot, I get "cmd_alloc returned NULL" messages
+> or "hpsa 0000:0c:00.0: resetting device 0:0:0:0"
 
-On Fri, Sep 2, 2011 at 3:03 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu,  1 Sep 2011 21:27:02 +0530
-> Kautuk Consul <consul.kautuk@gmail.com> wrote:
->
->> This is important for SMP scenario, to check whether the timer
->> callback is executing on another CPU when we are deleting the
->> timer.
->>
->
-> I don't see why?
->
->> index d6edf8d..754b35a 100644
->> --- a/mm/backing-dev.c
->> +++ b/mm/backing-dev.c
->> @@ -385,7 +385,7 @@ static int bdi_forker_thread(void *ptr)
->>                * dirty data on the default backing_dev_info
->>                */
->>               if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list)) {
->> -                     del_timer(&me->wakeup_timer);
->> +                     del_timer_sync(&me->wakeup_timer);
->>                       wb_do_writeback(me, 0);
->>               }
->
-> It isn't a use-after-free fix: bdi_unregister() safely shoots down any
-> running timer.
->
+Bingo.
 
-In the situation that we do a del_timer at the same time that the
-wakeup_timer_fn is
-executing on another CPU, there is one tiny possible problem:
-1)  The wakeup_timer_fn will call wake_up_process on the bdi-default thread.
-      This will set the bdi-default thread's state to TASK_RUNNING.
-2)  However, the code in bdi_writeback_thread() sets the state of the
-bdi-default process
-    to TASK_INTERRUPTIBLE as it intends to sleep later.
+> Usually lot of files are corrupted, fsck needed, and full distro
+> reinstall as well.
 
-If 2) happens before 1), then the bdi_forker_thread will not sleep
-inside schedule as is the
-intention of the bdi_forker_thread() code.
+(I put tip-rt11 on a DL980 three times.. munched fs each time)
 
-This protection is not achieved even by acquiring spinlocks before
-setting the task->state
-as the spinlock used in wakeup_timer_fn is &bdi->wb_lock whereas the code in
-bdi_forker_thread acquires &bdi_lock which is a different spin_lock.
-
-Am I correct in concluding this ?
-
-> Please completely explain what you believe the problem is here.
->
