@@ -1,95 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab1IBRxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 13:53:42 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:26336 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab1IBRxi convert rfc822-to-8bit (ORCPT
+	id S1754064Ab1IBSCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 14:02:53 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63577 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab1IBSCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 13:53:38 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>, Olaf Hering <olaf@aepfle.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH] Staging: hv: vmbus: Show the modalias in
- /sys/bus/vmbus/devices/*/
-Thread-Topic: [PATCH] Staging: hv: vmbus: Show the modalias in
- /sys/bus/vmbus/devices/*/
-Thread-Index: AQHMaY0RFSglJspxWUu3P1/h0ZnnU5U6vv4A//+fryA=
-Date: Fri, 2 Sep 2011 17:53:37 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081B605D@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <20110902162556.GA25073@aepfle.de>
- <20110902163550.GA5508@suse.de>
-In-Reply-To: <20110902163550.GA5508@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Sep 2011 14:02:50 -0400
+Date: Fri, 2 Sep 2011 15:02:42 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org
+Subject: Re: [PATCH 1/2] perf stat: add -l <N> option to redirect stderr
+ elsewhere
+Message-ID: <20110902180242.GB17970@ghostprotocols.net>
+References: <1305968203-14240-1-git-send-email-jim.cromie@gmail.com>
+ <1305968203-14240-2-git-send-email-jim.cromie@gmail.com>
+ <20110521103418.GB23651@elte.hu>
+ <20110521204148.GB10330@ghostprotocols.net>
+ <CAJfuBxzhjhuGRfqW-qXFhNN+X6n_puaVS+-AbZN2NjUQGou3Jw@mail.gmail.com>
+ <20110902143549.GA17970@ghostprotocols.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110902143549.GA17970@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Fri, Sep 02, 2011 at 11:35:49AM -0300, Arnaldo Carvalho de Melo escreveu:
+> I'll look at the other 3 patch series that came after, will fix up and
+> post here for your consideration.
 
+Can you try to rehash those? Ingo added a series of patches to print
+other metrics (stalled cycles frontend, etc) and the changes require
+some more work, if you could work on it I'd appreciate.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Friday, September 02, 2011 12:36 PM
-> To: Olaf Hering
-> Cc: KY Srinivasan; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org
-> Subject: Re: [PATCH] Staging: hv: vmbus: Show the modalias in
-> /sys/bus/vmbus/devices/*/
-> 
-> On Fri, Sep 02, 2011 at 06:25:56PM +0200, Olaf Hering wrote:
-> > Show a modalias file in /sys/bus/vmbus/devices/*/
-> > Add a helper function to print the same content in modalias and uevent.
-> >
-> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> 
-> Nice idea, thanks for this, one minor nit below:
-> 
-> > ---
-> >  drivers/staging/hv/vmbus_drv.c |   21 ++++++++++++++++-----
-> >  1 file changed, 16 insertions(+), 5 deletions(-)
-> >
-> > --- a/drivers/staging/hv/vmbus_drv.c
-> > +++ b/drivers/staging/hv/vmbus_drv.c
-> > @@ -93,6 +93,14 @@ static void get_channel_info(struct hv_d
-> >  		debug_info.outbound.bytes_avail_towrite;
-> >  }
-> >
-> > +#define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid)
-> * 2)
-> > +static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
-> > +{
-> > +	int i;
-> > +	for (i = 0; i < VMBUS_ALIAS_LEN; i += 2)
-> > +		sprintf(&alias_name[i], "%02x", hv_dev->dev_type.b[i/2]);
-> > +}
-> > +
-> >  /*
-> >   * vmbus_show_device_attr - Show the device attribute in sysfs.
-> >   *
-> > @@ -105,6 +113,7 @@ static ssize_t vmbus_show_device_attr(st
-> >  {
-> >  	struct hv_device *hv_dev = device_to_hv_device(dev);
-> >  	struct hv_device_info device_info;
-> > +	char alias_name[VMBUS_ALIAS_LEN + 1];
-> 
-> Is that too big to put on the stack?  64 bytes, right?  Hm, maybe not.
-> 
-> Wait, hv_device_info is huge, that should be dynamic in the first place.
-> Olaf, not your issue, but KY, want to fix that up?
+Again, sorry for not having merged this sooner, avoiding this work now.
 
-hv_device_info is about 101 bytes. I will fix this. Greg, if you are applying Olaf's patch,
-I will generate my patch on top of Olaf's. Let me know.
-
-Regards,
-
-K. Y
-
+- Arnaldo
