@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab1IBHGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:06:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37403 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab1IBHGa (ORCPT
+	id S1754393Ab1IBHWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:22:38 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:53604 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab1IBHWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:06:30 -0400
-Message-ID: <4E608081.5000107@gmail.com>
-Date: Fri, 02 Sep 2011 15:06:41 +0800
-From: Shan Hai <haishan.bai@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 2 Sep 2011 03:22:37 -0400
+X-IronPort-AV: E=Sophos;i="4.68,317,1312156800"; 
+   d="scan'208";a="7565448"
+Subject: Re: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
+ space page tables in alloc_vm_area()
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <4E5FED1A.1000300@goop.org>
+References: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com>
+	 <20110901161134.GA8979@dumpdata.com>  <4E5FED1A.1000300@goop.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Fri, 2 Sep 2011 08:22:34 +0100
+Message-ID: <1314948154.28989.158.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: sifram rajas <sifram.rajas@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: General question about TASK_INTERRUPTIBLE and schedule_timeout()
-References: <CA+OjSzzrYggQjDrgd6m+oF1sZkJFzf-3vSedAT3DAD9V2jTC3A@mail.gmail.com> <20110901020947.GA9096@zhy> <4E607523.30907@gmail.com>
-In-Reply-To: <4E607523.30907@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2011 02:18 PM, Shan Hai wrote:
-> On 09/01/2011 10:09 AM, Yong Zhang wrote:
->> On Wed, Aug 31, 2011 at 06:18:19PM +0530, sifram rajas wrote:
->>> Hi,
->>>
->>> I have a general question about the following 2 lines of code I see
->>> all over the kernel:
->>> 1         set_current_state(TASK_INTERRUPTIBLE) ;
->>> 2         schedule_timeout(<some value>);
->>>
->>> In the above code, if we encounter an interrupt after executing line
->>> 1, we will end up
->>> call schedule() from the architecture specific code for CONFIG_PREEMPT
->>> kernels, after
->>> the interrupt handler has been invokled.
->> Yes.
->>
->>> This will cause the current task to sleep interruptibly forever
->
-> Actually, sleeping forever in the TASK_INTERRUPTIBLE state is not 
-> correct,
-> because even though the task is preempted by higher priority one
-> it will finally get a chance to run, but you will get time out value
-> of <some value> + preemption latency.
->
->>> instead of for a certain timeout interval.
->> No.
->>
->> schedule() will not put an preempted task to sleep, see:
->
-> This might be problematic, because on the IRQ to preemption check path
-> the PREEMPT_ACTIVE was already set and the following 'if' statement
-> could not hold because of
-> !(preempt_count() & PREEMPT_ACTIVE) == false
->
-> and the pick_next_task() might put the preempted task to sleep.
->
+On Thu, 2011-09-01 at 21:37 +0100, Jeremy Fitzhardinge wrote:
+> On 09/01/2011 09:11 AM, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Sep 01, 2011 at 12:51:03PM +0100, David Vrabel wrote:
+> >> From: David Vrabel <david.vrabel@citrix.com>
+> > Andrew,
+> >
+> > I was wondering if you would be Ok with this patch for 3.1.
+> >
+> > It is a revert (I can prepare a proper revert if you would like
+> > that instead of this patch).
+> >
+> > The users of this particular function (alloc_vm_area) are just
+> > Xen. There are no others.
+> 
+> I'd prefer to put explicit vmalloc_sync_all()s in the callsites where
+> necessary, and ultimately try to work out ways of avoiding it altogether
+> (like have some hypercall wrapper which touches the arg memory to make
+> sure its mapped?).
 
-I mean when the state of task is TASK_INTERRUPTIBLE the preempted task will
-be put to sleep, its true in sifram's case.
+That only syncs the current pagetable though. If that is sufficient (and
+it could well be) then perhaps just doing a vmalloc_sync_one on the
+current page tables directly would be better than faulting to do it?
 
-Yong is right on stating "schedule() will not put an preempted task to 
-sleep",
-its true for the task state of which is TASK_RUNNING.
+It's the sort of thing you could hide inside the gnttab_set_map_op type
+helpers I guess?
 
-Cheers
-Shan Hai
+Ian.
 
-> Correct me on any misunderstanding :-)
->
-> Cheers
-> Shan Hai
->
->> asmlinkage void __sched schduule(void)
->> {
->> ...
->>          if (prev->state&&  !(preempt_count()&  PREEMPT_ACTIVE)) {
->>                  if (unlikely(signal_pending_state(prev->state, 
->> prev))) {
->>                          prev->state = TASK_RUNNING;
->>                  } else {
->>         ...
->>         }
->>          }
->> ...
->> }
->>
->> Thanks,
->> Yong
->>
->>> Won't this defeat the purpose of the above code to schedule out or
->>> sleep for a certain finite timeout ?
->>> If yes, then what are the techniques to solve this problem ?
->>>
->>>
->>> Thanks,
->>> Sifram.
->>> -- 
->>> To unsubscribe from this list: send the line "unsubscribe 
->>> linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->
 
