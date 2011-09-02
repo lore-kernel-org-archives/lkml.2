@@ -1,83 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab1IBRYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 13:24:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43611 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab1IBRYq convert rfc822-to-8bit (ORCPT
+	id S1753764Ab1IBRYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 13:24:55 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:46914 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753732Ab1IBRYv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 13:24:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.OSX.2.00.1108300148040.435@ibook.local>
-References: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com>
-	<alpine.OSX.2.00.1108271506320.190@ibook.local>
-	<alpine.OSX.2.00.1108300148040.435@ibook.local>
-Date: Fri, 2 Sep 2011 19:24:34 +0200
-X-Google-Sender-Auth: Yb3DCi0wdTdxc7M3fQ_3eJI0rG0
-Message-ID: <CAMuHMdVmNAOSK+M9z-ySOR-oA4LwuS_N0SZ8XxzQ9_pYqM_vdQ@mail.gmail.com>
-Subject: Re: m68k: [v5] Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Finn Thain <fthain@telegraphics.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org
+	Fri, 2 Sep 2011 13:24:51 -0400
+Date: Fri, 2 Sep 2011 19:24:03 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, lethal@linux-sh.org,
+        linux-fbdev@vger.kernel.org, francis.moro@gmail.com,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Herton Ronaldo Krzesinski <herton@mandriva.com.br>, stable@kernel.org
+Subject: [PATCH] fb: sh-mobile: Fix deadlock risk between lock_fb_info() and
+ console_lock()
+Message-ID: <20110902192403.10f9cff7@neptune.home>
+In-Reply-To: <4E61086C.3050102@gmx.de>
+References: <4DF7B0B4.4060002@gmx.de>
+	<1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
+	<20110618104311.6d80ba50@neptune.home>
+	<20110618111934.26203dbf@neptune.home>
+	<4E5FA7F9.9030802@gmx.de>
+	<Pine.LNX.4.64.1109021802560.4731@axis700.grange>
+	<4E61086C.3050102@gmx.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 2, 2011 at 14:14, Finn Thain <fthain@telegraphics.com.au> wrote:
-> On Sun, 28 Aug 2011, I wrote:
-> However, I found another problem. pmac_zilog oopses when its TTY is closed
-> (see below). And macsonic does the same when the NIC is closed. The trace
-> says that irq_shutdown() died trying to call the chip irq_mask routine,
-> when desc->irq_data.chip (in a0) was NULL. Any ideas?
+Following on Herton's patch "fb: avoid possible deadlock caused by
+fb_set_suspend" which moves lock_fb_info() out of fb_set_suspend()
+to its callers, correct sh-mobile's locking around call to
+fb_set_suspend() and the same sort of deaklocks with console_lock()
+due to order of taking the lock.
 
-> Unable to handle kernel NULL pointer dereference at virtual address   (null)
-> Oops: 00000000
-> Modules linked in:
-> PC: [<00000000>]   (null)
+console_lock() must be taken while fb_info is already locked and fb_info
+must be locked while calling fb_set_suspend().
 
-No, it calls a function pointer that's NULL.
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+---
 
-void irq_shutdown(struct irq_desc *desc)
-{
-        irq_state_set_disabled(desc);
-        desc->depth = 1;
-        if (desc->irq_data.chip->irq_shutdown)
-                desc->irq_data.chip->irq_shutdown(&desc->irq_data);
-        if (desc->irq_data.chip->irq_disable)
-                desc->irq_data.chip->irq_disable(&desc->irq_data);
-        else
-                desc->irq_data.chip->irq_mask(&desc->irq_data);
-        irq_state_set_masked(desc);
-}
+Hi Florian,
 
-Oops, seems I misread the code and assumed the second "if" was an "else if",
-as I wrote down in my notes that it calls only one of the 3 functions :-(
-But it does need either .irq_disable() or .irq_mask().
+> On the other hand I just noticed the original patch didn't have
+> Bruno's Signed-off and a commit message was missing. So may I ask you,
+> Bruno, to add your Signed-off or preferably resend the version tested
+> by Guennadi in the appropriate patch format.
 
-The following irq_chip structs have both .irq_disable() and .irq_mask() NULL:
-  - arch/m68k/apollo/dn_ints.c:apollo_irq_chip
-  - arch/m68k/kernel/ints.c:auto_irq_chip
-  - arch/m68k/kernel/ints.c:user_irq_chip
+Here it is with commit message and the Signed-off-by's.
 
-Since this is on Mac and mac_irq_chip is OK, I guess this is a non-PSC Mac,
-i.e. the IRQ number is IRQ_MAC_SCC == IRQ_AUTO_4?
+Thanks,
+Bruno
 
-Thomas: As we cannot disable or mask autovector interrupts at the
-autovector level,
-IMHO it doesn't make much sense do add a dummy .irq_mask() function.
-Can we add an extra check in irq_shutdown() to not call .irq_mask() if
-it's NULL?
 
-Gr{oetje,eeting}s,
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+ drivers/video/sh_mobile_hdmi.c |   47 ++++++++++++++++++++++-----------------
+ 1 files changed, 26 insertions(+), 21 deletions(-)
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/drivers/video/sh_mobile_hdmi.c b/drivers/video/sh_mobile_hdmi.c
+index 7d54e2c..647ba98 100644
+--- a/drivers/video/sh_mobile_hdmi.c
++++ b/drivers/video/sh_mobile_hdmi.c
+@@ -1111,6 +1111,7 @@ static long sh_hdmi_clk_configure(struct sh_hdmi *hdmi, unsigned long hdmi_rate,
+ static void sh_hdmi_edid_work_fn(struct work_struct *work)
+ {
+ 	struct sh_hdmi *hdmi = container_of(work, struct sh_hdmi, edid_work.work);
++	struct fb_info *info;
+ 	struct sh_mobile_hdmi_info *pdata = hdmi->dev->platform_data;
+ 	struct sh_mobile_lcdc_chan *ch;
+ 	int ret;
+@@ -1123,8 +1124,9 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
+ 
+ 	mutex_lock(&hdmi->mutex);
+ 
++	info = hdmi->info;
++
+ 	if (hdmi->hp_state == HDMI_HOTPLUG_CONNECTED) {
+-		struct fb_info *info = hdmi->info;
+ 		unsigned long parent_rate = 0, hdmi_rate;
+ 
+ 		ret = sh_hdmi_read_edid(hdmi, &hdmi_rate, &parent_rate);
+@@ -1148,42 +1150,45 @@ static void sh_hdmi_edid_work_fn(struct work_struct *work)
+ 
+ 		ch = info->par;
+ 
+-		console_lock();
++		if (lock_fb_info(info)) {
++			console_lock();
+ 
+-		/* HDMI plug in */
+-		if (!sh_hdmi_must_reconfigure(hdmi) &&
+-		    info->state == FBINFO_STATE_RUNNING) {
+-			/*
+-			 * First activation with the default monitor - just turn
+-			 * on, if we run a resume here, the logo disappears
+-			 */
+-			if (lock_fb_info(info)) {
++			/* HDMI plug in */
++			if (!sh_hdmi_must_reconfigure(hdmi) &&
++			    info->state == FBINFO_STATE_RUNNING) {
++				/*
++				 * First activation with the default monitor - just turn
++				 * on, if we run a resume here, the logo disappears
++				 */
+ 				info->var.width = hdmi->var.width;
+ 				info->var.height = hdmi->var.height;
+ 				sh_hdmi_display_on(hdmi, info);
+-				unlock_fb_info(info);
++			} else {
++				/* New monitor or have to wake up */
++				fb_set_suspend(info, 0);
+ 			}
+-		} else {
+-			/* New monitor or have to wake up */
+-			fb_set_suspend(info, 0);
+-		}
+ 
+-		console_unlock();
++			console_unlock();
++			unlock_fb_info(info);
++		}
+ 	} else {
+ 		ret = 0;
+-		if (!hdmi->info)
++		if (!info)
+ 			goto out;
+ 
+ 		hdmi->monspec.modedb_len = 0;
+ 		fb_destroy_modedb(hdmi->monspec.modedb);
+ 		hdmi->monspec.modedb = NULL;
+ 
+-		console_lock();
++		if (lock_fb_info(info)) {
++			console_lock();
+ 
+-		/* HDMI disconnect */
+-		fb_set_suspend(hdmi->info, 1);
++			/* HDMI disconnect */
++			fb_set_suspend(info, 1);
+ 
+-		console_unlock();
++			console_unlock();
++			unlock_fb_info(info);
++		}
+ 	}
+ 
+ out:
