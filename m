@@ -1,284 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab1IBXx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:53:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8656 "EHLO mga02.intel.com"
+	id S1752169Ab1IBXxi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:53:38 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33772 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176Ab1IBXxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:53:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="44642441"
-Subject: Re: [next] unix stream crashes
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Jiri Slaby <jirislaby@gmail.com>, "David S. Miller" <davem@davemloft.net>,
-        ML netdev <netdev@vger.kernel.org>,
+	id S1751780Ab1IBXxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:53:36 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH 3/5] PM / QoS: Add function dev_pm_qos_read_value()
+Date: Sat, 3 Sep 2011 01:55:27 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Sedat Dilek <sedat.dilek@googlemail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <6805.1314979936@turing-police.cc.vt.edu>
-References: <4E5FEF28.60406@gmail.com>
-	 <3179.1314924559@turing-police.cc.vt.edu>
-	 <1314927645.2576.2939.camel@schen9-DESK>
-	 <6805.1314979936@turing-police.cc.vt.edu>
-Content-Type: multipart/mixed; boundary="=-R8z0zoj60uOyb+ALM1/W"
-Date: Fri, 02 Sep 2011 16:55:03 -0700
-Message-ID: <1315007703.2576.2965.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
+References: <201108310017.03103.rjw@sisk.pl> <201109020007.22743.rjw@sisk.pl> <CAORVsuVAzc8Q2tG0-WW+96Ad9GhR5OCq2bAuweggs1rimFMcqg@mail.gmail.com>
+In-Reply-To: <CAORVsuVAzc8Q2tG0-WW+96Ad9GhR5OCq2bAuweggs1rimFMcqg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109030155.28031.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, September 02, 2011, Jean Pihet wrote:
+> On Fri, Sep 2, 2011 at 12:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Hi,
+> >
+> > On Thursday, September 01, 2011, Jean Pihet wrote:
+> >> Hi Rafael,
+> >>
+> >> On Wed, Aug 31, 2011 at 12:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >> >
+> >> > To read the current PM QoS value for a given device we need to
+> >> > make sure that the device's power.constraints object won't be
+> >> > removed while we're doing that.  For this reason, put the
+> >> > operation under dev->power.lock and acquire the lock
+> >> > around the initialization and removal of power.constraints.
+> >> Ok.
+> >>
+> >> > Moreover, since we're using the value of power.constraints to
+> >> > determine whether or not the object is present, the
+> >> > power.constraints_state field isn't necessary any more and may be
+> >> > removed.  However, dev_pm_qos_add_request() needs to check if the
+> >> > device is being removed from the system before allocating a new
+> >> > PM QoS constraints object for it, so it has to use device_pm_lock()
+> >> > and the device PM QoS initialization and destruction should be done
+> >> > under device_pm_lock() as well.
+> >> Ok that makes sense.
+> >> The constraints_state field can be replaced by a combination of
+> >> dev->power.constraints and list_empty(&dev->power.entry), which makes
+> >> the code more compact and less redundant.
+> >>
+> >> >
+> >> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >> > ---
+> >> >  drivers/base/power/main.c |    4 -
+> >> >  drivers/base/power/qos.c  |  167 ++++++++++++++++++++++++++--------------------
+> >> >  include/linux/pm.h        |    8 --
+> >> >  include/linux/pm_qos.h    |    3
+> >> >  4 files changed, 101 insertions(+), 81 deletions(-)
+> >> >
+> >> > Index: linux/drivers/base/power/qos.c
+> >> > ===================================================================
+> >> > --- linux.orig/drivers/base/power/qos.c
+> >> > +++ linux/drivers/base/power/qos.c
+> >> > @@ -30,15 +30,6 @@
+> >> ...
+> >>
+> >> >
+> >> > @@ -178,8 +202,8 @@ void dev_pm_qos_constraints_destroy(stru
+> >> >  *
+> >> >  * Returns 1 if the aggregated constraint value has changed,
+> >> >  * 0 if the aggregated constraint value has not changed,
+> >> > - * -EINVAL in case of wrong parameters, -ENODEV if the device has been
+> >> > - * removed from the system
+> >> > + * -EINVAL in case of wrong parameters, -ENOMEM if there's not enough memory
+> >> > + * to allocate for data structures.
+> >> Why not use -ENODEV in case there is no device?
+> >
+> > I don't think it's useful for the caller.  If the device is gone, the
+> > constraing simply doesn't matter, so there's no error to handle.
+> >
+> >> >  */
+> >> >  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+> >> >                           s32 value)
+> >> > @@ -195,28 +219,35 @@ int dev_pm_qos_add_request(struct device
+> >> >                return -EINVAL;
+> >> >        }
+> >> >
+> >> > -       mutex_lock(&dev_pm_qos_mtx);
+> >> >        req->dev = dev;
+> >> >
+> >> > -       /* Return if the device has been removed */
+> >> > -       if (req->dev->power.constraints_state == DEV_PM_QOS_NO_DEVICE) {
+> >> > -               ret = -ENODEV;
+> >> > -               goto out;
+> >> > -       }
+> >> > +       device_pm_lock();
+> >> > +       mutex_lock(&dev_pm_qos_mtx);
+> >> >
+> >> > -       /*
+> >> > -        * Allocate the constraints data on the first call to add_request,
+> >> > -        * i.e. only if the data is not already allocated and if the device has
+> >> > -        * not been removed
+> >> > -        */
+> >> > -       if (dev->power.constraints_state == DEV_PM_QOS_DEVICE_PRESENT)
+> >> > -               ret = dev_pm_qos_constraints_allocate(dev);
+> >> > +       if (dev->power.constraints) {
+> >> > +               device_pm_unlock();
+> >> > +       } else {
+> >> > +               if (list_empty(&dev->power.entry)) {
+> >> > +                       /* The device has been removed from the system. */
+> >> > +                       device_pm_unlock();
+> >> > +                       goto out;
+> >> 0 is silently returned in case the device has been removed. Is that
+> >> the intention?
+> >
+> > Pretty much it is.  Is that a problem?
+> I think the caller needs to know if the constraint has been applied
+> correctly or not.
 
---=-R8z0zoj60uOyb+ALM1/W
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+However, the removal of the device is a special case.  What would the caller
+be supposed to do when it learned that the device had been removed while it had
+been trying to add a QoS constraing for it?  Not much I guess.
 
-On Fri, 2011-09-02 at 12:12 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 01 Sep 2011 18:40:45 PDT, Tim Chen said:
-> 
-> > Yes, Jiri's log does indicate that something went wrong when releasing
-> > the skb, most likely due to changes in the pid and credentials ref
-> > count.  Unfortunately, I cannot duplicate the problem on my system.  Any
-> > info on your system to help me debug will be appreciated.  I'll try to
-> > take another look at the patch tomorrow.
-> 
-> Dell Latitude E6500, Core2 T8700 processor, x86_64 kernel, a slightly mangled
-> Fedora Rawhide userspace.  I'd not be surprised if there's an idiocyncratic
-> setting in my .config that makes the bug crawl out of the woodwork on my box,
-> so I'm attaching the .config in case it provides some enlightenment.
-> 
-> If you want me to try a debugging or test patch, let me know...
-
-Valdis,
-
-I've tried your config on a few different machines but I'm still not
-able to reproduce the problem.  Can you help me narrow things down?
-Please revert my original patch.  I've separated my original changes
-into two parts.  Try apply only the recv_scm.patch attached and try to
-boot.  Then apply only the send_scm.patch without the rcv_scm.patch and
-repeat.  Let me know which patch causes the boot problem.
-
-I'll like to isolate the problem to either the send path or receive
-path. My suspicion is the error handling portion of the send path is not
-quite right but I haven't yet found any issues after reviewing the
-patch.  
-
-Thanks.
-
-Tim
-
---=-R8z0zoj60uOyb+ALM1/W
-Content-Disposition: attachment; filename="scm_recv.patch"
-Content-Type: text/x-patch; name="scm_recv.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-diff --git a/include/net/scm.h b/include/net/scm.h
-index 745460f..68e1e48 100644
---- a/include/net/scm.h
-+++ b/include/net/scm.h
-@@ -53,6 +53,14 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
- 	cred_to_ucred(pid, cred, &scm->creds);
- }
- 
-+static __inline__ void scm_set_cred_noref(struct scm_cookie *scm,
-+				    struct pid *pid, const struct cred *cred)
-+{
-+	scm->pid  = pid;
-+	scm->cred = cred;
-+	cred_to_ucred(pid, cred, &scm->creds);
-+}
-+
- static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
- {
- 	put_pid(scm->pid);
-@@ -108,15 +125,14 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
- 	if (!msg->msg_control) {
- 		if (test_bit(SOCK_PASSCRED, &sock->flags) || scm->fp)
- 			msg->msg_flags |= MSG_CTRUNC;
--		scm_destroy(scm);
-+		if (scm && scm->fp)
-+			__scm_destroy(scm);
- 		return;
- 	}
- 
- 	if (test_bit(SOCK_PASSCRED, &sock->flags))
- 		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(scm->creds), &scm->creds);
- 
--	scm_destroy_cred(scm);
--
- 	scm_passec(sock, msg, scm);
- 
- 	if (!scm->fp)
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index ec68e1c..e6d9d10 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1777,7 +1789,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		siocb->scm = &tmp_scm;
- 		memset(&tmp_scm, 0, sizeof(tmp_scm));
- 	}
--	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
-+	scm_set_cred_noref(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
- 	unix_set_secdata(siocb->scm, skb);
- 
- 	if (!(flags & MSG_PEEK)) {
-@@ -1939,7 +1951,8 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 			}
- 		} else {
- 			/* Copy credentials */
--			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
-+			scm_set_cred_noref(siocb->scm, UNIXCB(skb).pid,
-+					   UNIXCB(skb).cred);
- 			check_creds = 1;
- 		}
- 
-
---=-R8z0zoj60uOyb+ALM1/W
-Content-Disposition: attachment; filename="scm_send.patch"
-Content-Type: text/x-patch; name="scm_send.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-diff --git a/include/net/scm.h b/include/net/scm.h
-index 745460f..68e1e48 100644
---- a/include/net/scm.h
-+++ b/include/net/scm.h
-@@ -70,6 +78,15 @@ static __inline__ void scm_destroy(struct scm_cookie *scm)
- 		__scm_destroy(scm);
- }
- 
-+static __inline__ void scm_release(struct scm_cookie *scm)
-+{
-+	/* keep ref on pid and cred */
-+	scm->pid = NULL;
-+	scm->cred = NULL;
-+	if (scm->fp)
-+		__scm_destroy(scm);
-+}
-+
- static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
- 			       struct scm_cookie *scm)
- {
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index ec68e1c..e6d9d10 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1378,11 +1378,17 @@ static int unix_attach_fds(struct scm_cookie *scm, struct sk_buff *skb)
- 	return max_level;
- }
- 
--static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool send_fds)
-+static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb,
-+			   bool send_fds, bool ref)
- {
- 	int err = 0;
--	UNIXCB(skb).pid  = get_pid(scm->pid);
--	UNIXCB(skb).cred = get_cred(scm->cred);
-+	if (ref) {
-+		UNIXCB(skb).pid  = get_pid(scm->pid);
-+		UNIXCB(skb).cred = get_cred(scm->cred);
-+	} else {
-+		UNIXCB(skb).pid  = scm->pid;
-+		UNIXCB(skb).cred = scm->cred;
-+	}
- 	UNIXCB(skb).fp = NULL;
- 	if (scm->fp && send_fds)
- 		err = unix_attach_fds(scm, skb);
-@@ -1407,7 +1413,7 @@ static int unix_dgram_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 	int namelen = 0; /* fake GCC */
- 	int err;
- 	unsigned hash;
--	struct sk_buff *skb;
-+	struct sk_buff *skb = NULL;
- 	long timeo;
- 	struct scm_cookie tmp_scm;
- 	int max_level;
-@@ -1448,7 +1454,7 @@ static int unix_dgram_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 	if (skb == NULL)
- 		goto out;
- 
--	err = unix_scm_to_skb(siocb->scm, skb, true);
-+	err = unix_scm_to_skb(siocb->scm, skb, true, false);
- 	if (err < 0)
- 		goto out_free;
- 	max_level = err + 1;
-@@ -1544,7 +1550,7 @@ restart:
- 	unix_state_unlock(other);
- 	other->sk_data_ready(other, len);
- 	sock_put(other);
--	scm_destroy(siocb->scm);
-+	scm_release(siocb->scm);
- 	return len;
- 
- out_unlock:
-@@ -1554,7 +1560,8 @@ out_free:
- out:
- 	if (other)
- 		sock_put(other);
--	scm_destroy(siocb->scm);
-+	if (skb == NULL)
-+		scm_destroy(siocb->scm);
- 	return err;
- }
- 
-@@ -1566,7 +1573,7 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 	struct sock *sk = sock->sk;
- 	struct sock *other = NULL;
- 	int err, size;
--	struct sk_buff *skb;
-+	struct sk_buff *skb = NULL;
- 	int sent = 0;
- 	struct scm_cookie tmp_scm;
- 	bool fds_sent = false;
-@@ -1631,11 +1638,11 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 		size = min_t(int, size, skb_tailroom(skb));
- 
- 
--		/* Only send the fds in the first buffer */
--		err = unix_scm_to_skb(siocb->scm, skb, !fds_sent);
-+		/* Only send the fds and no ref to pid in the first buffer */
-+		err = unix_scm_to_skb(siocb->scm, skb, !fds_sent, fds_sent);
- 		if (err < 0) {
- 			kfree_skb(skb);
--			goto out_err;
-+			goto out;
- 		}
- 		max_level = err + 1;
- 		fds_sent = true;
-@@ -1643,7 +1650,7 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
- 		if (err) {
- 			kfree_skb(skb);
--			goto out_err;
-+			goto out;
- 		}
- 
- 		unix_state_lock(other);
-@@ -1660,7 +1667,10 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
- 		sent += size;
- 	}
- 
--	scm_destroy(siocb->scm);
-+	if (skb)
-+		scm_release(siocb->scm);
-+	else
-+		scm_destroy(siocb->scm);
- 	siocb->scm = NULL;
- 
- 	return sent;
-@@ -1673,7 +1683,9 @@ pipe_err:
- 		send_sig(SIGPIPE, current, 0);
- 	err = -EPIPE;
- out_err:
--	scm_destroy(siocb->scm);
-+	if (skb == NULL)
-+		scm_destroy(siocb->scm);
-+out:
- 	siocb->scm = NULL;
- 	return sent ? : err;
- }
-
---=-R8z0zoj60uOyb+ALM1/W--
-
+Thanks,
+Rafael
