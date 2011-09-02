@@ -1,49 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab1IBTc3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:32:29 -0400
-Received: from claw.goop.org ([74.207.240.146]:45109 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754855Ab1IBTc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:32:28 -0400
-Message-ID: <4E612F49.9080100@goop.org>
-Date: Fri, 02 Sep 2011 12:32:25 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1755120Ab1IBTcg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:32:36 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47270 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab1IBTcd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:32:33 -0400
+Date: Fri, 2 Sep 2011 12:32:20 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 06/16] ext4: Calculate and verify inode checksums
+Message-ID: <20110902193220.GM12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com> <20110901003112.31048.36302.stgit@elm3c44.beaverton.ibm.com> <C1CC4631-3651-4493-A45E-465A620B1FB7@dilger.ca>
 MIME-Version: 1.0
-To: Eric Northup <digitaleric@google.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 06/13] x86/ticketlock: add slowpath logic
-References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com> <8a788f3fbf2ad1316e462bf5aae623bab9d38319.1314922370.git.jeremy.fitzhardinge@citrix.com> <CAG7+5M0s76O_TWBaoY2KU+WeEoJYEhkLLDXfg81WHYNvavH3yw@mail.gmail.com>
-In-Reply-To: <CAG7+5M0s76O_TWBaoY2KU+WeEoJYEhkLLDXfg81WHYNvavH3yw@mail.gmail.com>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C1CC4631-3651-4493-A45E-465A620B1FB7@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2011 11:46 AM, Eric Northup wrote:
-> On Thu, Sep 1, 2011 at 5:54 PM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
->> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>
->> Maintain a flag in both LSBs of the ticket lock which indicates whether
->> anyone is in the lock slowpath and may need kicking when the current
->> holder unlocks.  The flags are set when the first locker enters
->> the slowpath, and cleared when unlocking to an empty queue.
-> Are there actually two flags maintained?  I only see the one in the
-> ticket tail getting set/cleared/tested.
+On Wed, Aug 31, 2011 at 08:30:25PM -0600, Andreas Dilger wrote:
+> On 2011-08-31, at 6:31 PM, Darrick J. Wong wrote:
+> > This patch introduces to ext4 the ability to calculate and verify inode
+> > checksums.  This requires the use of a new ro compatibility flag and some
+> > accompanying e2fsprogs patches to provide the relevant features in tune2fs and
+> > e2fsck.
+> > 
+> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> > ---
+> > fs/ext4/ext4.h  |    4 ++--
+> > fs/ext4/inode.c |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > 2 files changed, 64 insertions(+), 2 deletions(-)
+> > 
+> > 
+> > diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> > index f79ddac..e2361cc 100644
+> > --- a/fs/ext4/ext4.h
+> > +++ b/fs/ext4/ext4.h
+> > @@ -609,7 +609,7 @@ struct ext4_inode {
+> > 			__le16	l_i_file_acl_high;
+> > 			__le16	l_i_uid_high;	/* these 2 fields */
+> > 			__le16	l_i_gid_high;	/* were reserved2[0] */
+> > -			__u32	l_i_reserved2;
+> > +			__le32	l_i_checksum;	/* crc32c(uuid+inum+inode) */
+> > 		} linux2;
+> > 		struct {
+> > 			__le16	h_i_reserved1;	/* Obsoleted fragment number/size which are removed in ext4 */
+> > @@ -727,7 +727,7 @@ do {									       \
+> > #define i_gid_low	i_gid
+> > #define i_uid_high	osd2.linux2.l_i_uid_high
+> > #define i_gid_high	osd2.linux2.l_i_gid_high
+> > -#define i_reserved2	osd2.linux2.l_i_reserved2
+> > +#define i_checksum	osd2.linux2.l_i_checksum
+> > 
+> > #elif defined(__GNU__)
+> > 
+> > diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> > index c4da98a..44a7f88 100644
+> > --- a/fs/ext4/inode.c
+> > +++ b/fs/ext4/inode.c
+> > @@ -38,6 +38,7 @@
+> > #include <linux/printk.h>
+> > #include <linux/slab.h>
+> > #include <linux/ratelimit.h>
+> > +#include <linux/crc32c.h>
+> > 
+> > #include "ext4_jbd2.h"
+> > #include "xattr.h"
+> > @@ -49,6 +50,53 @@
+> > 
+> > #define MPAGE_DA_EXTENT_TAIL 0x01
+> > 
+> > +static __le32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw)
+> > +{
+> > +	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> > +	struct ext4_inode_info *ei = EXT4_I(inode);
+> > +	int offset = offsetof(struct ext4_inode, i_checksum);
+> 
+> This could be declared "const int" so that it is not consuming space on
+> the stack, or just put it inline in the code instead of a stack variable
+> since it is a compile time constant.
+> 
+> > +	__le32 inum = cpu_to_le32(inode->i_ino);
+> > +	__u32 crc = 0;
+> > +
+> > +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
+> > +	    cpu_to_le32(EXT4_OS_LINUX))
+> 
+> This can be marked unlikely() I think.
 
-Yeah, there's only one flag, so there's a spare bit in the other half.
+Ok.
 
-    j
+> > +		return 0;
+> > +	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return 0;
+> > +
+> > +	crc = crc32c_le(~0, sbi->s_es->s_uuid, sizeof(sbi->s_es->s_uuid));
+> > +	crc = crc32c_le(crc, (__u8 *)&inum, sizeof(inum));
+> 
+> I wonder if it makes sense to pre-compute the crc32c of s_uuid (stored
+> in sbi) and/or s_uuid+inum (stored in struct ext4_inode_info).  I suspect
+> precomputing the s_uuid checksum is worthwhile, but I'm not sure whether
+> precomputing the inode checksum is worthwhile unless it doesn't reduce
+> the number of ext4_inode_info structs per page in the slab.
 
+Sounds like a good idea, I'll look into it.
+
+> > +	crc = crc32c_le(crc, (__u8 *)raw, offset);
+> > +	offset += sizeof(raw->i_checksum); /* skip checksum */
+> > +	crc = crc32c_le(crc, (__u8 *)raw + offset,
+> > +		    EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize -
+> > +		    offset);
+> 
+> I suspect it would be more efficient to set raw->i_checksum = 0, then
+> compute the checksum on the whole raw inode buffer, and fill in
+> raw->i_checksum = cpu_to_le32(crc) at the end.  That would mean the
+> caller ext4_inode_csum_verify() should save the original checksum for
+> comparison with the returned value.
+
+You mean to avoid the overhead of the add/store and the second function call?
+
+> The one problem with this is that it is racy w.r.t other users
+
+Yeah, I was thinking that if I move the *_csum_set() calls to a jbd2 callback
+(for journal mode, obviously) then this might clash with that.  Maybe a better
+approach would be to calculate/verify an entire block's worth of inodes at a
+time.  Then again, if you only want to touch /one/ inode out of a whole block,
+that's a lot of unnecessary work.
+
+> > +	return cpu_to_le32(crc);
+> > +}
+> > +
+> > +static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw)
+> > +{
+> > +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os ==
+> > +	    cpu_to_le32(EXT4_OS_LINUX) &&
+> > +	    EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) &&
+> > +	    (raw->i_checksum != ext4_inode_csum(inode, raw)))
+> 
+> This check can be marked unlikely(), since the rare case of a checksum
+> failure can cause a stall in the execution pipeline.  It might make sense
+> to put the unlikely() at the lone callsite to move the whole function call
+> overhead out-of-line.
+
+I suppose so, both for this and for all the other _verify() functions.
+
+> > +		return 0;
+> > +	return 1;
+> > +}
+> > +
+> > +static void ext4_inode_csum_set(struct inode *inode, struct ext4_inode *raw)
+> > +{
+> > +	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
+> > +	    cpu_to_le32(EXT4_OS_LINUX) ||
+> > +	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
+> > +		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return;
+> > +
+> > +	raw->i_checksum = ext4_inode_csum(inode, raw);
+> > +}
+> > +
+> > static inline int ext4_begin_ordered_truncate(struct inode *inode,
+> > 					      loff_t new_size)
+> > {
+> > @@ -3410,6 +3458,15 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+> > 	if (ret < 0)
+> > 		goto bad_inode;
+> > 	raw_inode = ext4_raw_inode(&iloc);
+> > +
+> > +	if (!ext4_inode_csum_verify(inode, raw_inode)) {
+> > +		EXT4_ERROR_INODE(inode, "checksum invalid (0x%x != 0x%x)",
+> > +		       le32_to_cpu(ext4_inode_csum(inode, raw_inode)),
+> > +		       le32_to_cpu(raw_inode->i_checksum));
+> > +		ret = -EIO;
+> > +		goto bad_inode;
+> > +	}
+> > +
+> > 	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
+> > 	inode->i_uid = (uid_t)le16_to_cpu(raw_inode->i_uid_low);
+> > 	inode->i_gid = (gid_t)le16_to_cpu(raw_inode->i_gid_low);
+> > @@ -3490,6 +3547,9 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+> > 		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
+> > 		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
+> > 		    EXT4_INODE_SIZE(inode->i_sb)) {
+> > +			EXT4_ERROR_INODE(inode, "bad extra_isize (%u != %u)",
+> > +				EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize,
+> > +				EXT4_INODE_SIZE(inode->i_sb));
+> > 			ret = -EIO;
+> > 			goto bad_inode;
+> > 		}
+> > @@ -3731,6 +3791,8 @@ static int ext4_do_update_inode(handle_t *handle,
+> > 		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
+> > 	}
+> > 
+> > +	ext4_inode_csum_set(inode, raw_inode);
+> 
+> This might warrant a comment to always be the last function before
+> submitting the inode to the journal.
+
+Ok.
+
+> > 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
+> > 	rc = ext4_handle_dirty_metadata(handle, NULL, bh);
+> > 	if (!err)
+> 
+> Also, rather than just making the checksum be updated at commit time, it
+> makes more sense to have ext4_do_update_inode() only be called once per
+> commit, since this is an expensive function.
+
+If I made jbd2 responsible for calling back into ext4 to apply checksums just
+prior to submit_bh()ing metadata blocks, I think that would take care of this.
+
+--D
+> 
+> Cheers, Andreas
+> 
