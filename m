@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab1IBJlP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 05:41:15 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38033 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756025Ab1IBJlM (ORCPT
+	id S933047Ab1IBJta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 05:49:30 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:39445 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758014Ab1IBJt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 05:41:12 -0400
-Date: Fri, 2 Sep 2011 12:41:07 +0300
-From: "Maxin B. John" <maxin.john@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, Bryan Freed <bfreed@chromium.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-iio@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        devel@driverdev.osuosl.org,
-        Amit Kucheria <amit.kucheria@verdurent.com>
-Subject: Re: [PATCH] staging: iio: light: Fix compiler warning in tsl2563.c
-Message-ID: <20110902094107.GA2846@maxin>
+	Fri, 2 Sep 2011 05:49:29 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p829nMJP007618, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v4 1/4] r8169: fix WOL setting for 8105 and 8111EVL
+Date: Fri, 2 Sep 2011 17:49:10 +0800
+X-BOX-Message-Id: p829nMJP007618
+Message-ID: <1314956953-1568-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Don't overwrite the error code.  For example, the lower layers can
-> return -EAGAIN and that's more useful than just returning -EIO every
-> time.
-Ahh.. Thanks a lot for explaining this.
+rtl8105, rtl8111E, and rtl8111evl need enable RxConfig bit 1 ~ 3
+for supporting wake on lan.
 
-> Your fix works, but it's not very clean.  Just add a "*id = ret;"
-> line before the "return 0;" and that's it.  (It doesn't make sense
-> to pass a pointer to "id" and not use it).
-Dan, yes, I agree with you. This fix is much much better than what I 
-had in my mind.
-
-> Yikes - I wonder why my various compilers don't throw that up.
-I guess, in "iio-blue.git" tree, the 'id = 0' suppresses this warning.
-
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
-diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
-index f25243b..55012ff 100644
---- a/drivers/staging/iio/light/tsl2563.c
-+++ b/drivers/staging/iio/light/tsl2563.c
-@@ -226,7 +226,7 @@ static int tsl2563_read_id(struct tsl2563_chip *chip, u8 *id)
- 	ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_ID);
- 	if (ret < 0)
- 		return ret;
--
-+	*id = ret;
- 	return 0;
- }
+ drivers/net/ethernet/realtek/r8169.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 1cf8c3c..aaae43e 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3319,9 +3319,16 @@ static void r810x_phy_power_up(struct rtl8169_private *tp)
  
+ static void r810x_pll_power_down(struct rtl8169_private *tp)
+ {
++	void __iomem *ioaddr = tp->mmio_addr;
++
+ 	if (__rtl8169_get_wol(tp) & WAKE_ANY) {
+ 		rtl_writephy(tp, 0x1f, 0x0000);
+ 		rtl_writephy(tp, MII_BMCR, 0x0000);
++
++		if (tp->mac_version == RTL_GIGA_MAC_VER_29 ||
++		    tp->mac_version == RTL_GIGA_MAC_VER_30)
++			RTL_W32(RxConfig, RTL_R32(RxConfig) | AcceptBroadcast |
++				AcceptMulticast | AcceptMyPhys);
+ 		return;
+ 	}
+ 
+@@ -3417,7 +3424,8 @@ static void r8168_pll_power_down(struct rtl8169_private *tp)
+ 		rtl_writephy(tp, MII_BMCR, 0x0000);
+ 
+ 		if (tp->mac_version == RTL_GIGA_MAC_VER_32 ||
+-		    tp->mac_version == RTL_GIGA_MAC_VER_33)
++		    tp->mac_version == RTL_GIGA_MAC_VER_33 ||
++		    tp->mac_version == RTL_GIGA_MAC_VER_34)
+ 			RTL_W32(RxConfig, RTL_R32(RxConfig) | AcceptBroadcast |
+ 				AcceptMulticast | AcceptMyPhys);
+ 		return;
+-- 
+1.7.6
+
