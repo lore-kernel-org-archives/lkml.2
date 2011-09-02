@@ -1,67 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab1IBSbq (ORCPT <rfc822;w@1wt.eu>);
+	id S1754663Ab1IBSbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 14:31:49 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:59208 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754623Ab1IBSbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Sep 2011 14:31:46 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:54550 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754127Ab1IBSbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 14:31:43 -0400
-Date: Fri, 2 Sep 2011 11:31:38 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Paul Menage <paul@paulmenage.org>,
-        containers@lists.linux-foundation.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH pm-freezer 1/4] cgroup_freezer: fix freezer->state
- setting bug in freezer_change_state()
-Message-ID: <20110902183138.GA27179@count0.beaverton.ibm.com>
-References: <20110831102100.GA2828@mtj.dyndns.org>
- <20110902004231.GF1919@count0.beaverton.ibm.com>
- <20110902165839.GA7478@redhat.com>
+Date: Fri, 2 Sep 2011 11:31:36 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 16/16] jbd2: Support CRC32C transaction checksums
+Message-ID: <20110902183136.GD12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com> <20110901003224.31048.33516.stgit@elm3c44.beaverton.ibm.com> <99019900-30B1-450A-9620-E94371A30CC6@dilger.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110902165839.GA7478@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <99019900-30B1-450A-9620-E94371A30CC6@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 06:58:39PM +0200, Oleg Nesterov wrote:
-> On 09/01, Matt Helsley wrote:
-> >
-> > On Wed, Aug 31, 2011 at 12:21:07PM +0200, Tejun Heo wrote:
-> > >  	case CGROUP_FROZEN:
-> > > -		atomic_inc(&system_freezing_cnt);
-> > > -		retval = try_to_freeze_cgroup(cgroup, freezer);
-> > > +		if (freezer->state == CGROUP_THAWED) {
-> > > +			freezer->state = CGROUP_FREEZING;
-> > > +			atomic_inc(&system_freezing_cnt);
-> > > +			retval = try_to_freeze_cgroup(cgroup, freezer);
-> >
-> > This still doesn't look quite right. If the cgroup is FREEZING it should
-> > also call try_to_freeze_cgroup(). I think this is what's needed:
-> >
-> > 		if (freezer->state == CGROUP_THAWED)
-> > 			atomic_inc(&system_freezing_cnt);
-> > 		freezer->state = CGROUP_FREEZING;
-> > 		retval = try_to_freeze_cgroup(cgroup, freezer);
+On Thu, Sep 01, 2011 at 02:11:26AM -0600, Andreas Dilger wrote:
+> On 2011-08-31, at 6:32 PM, Darrick J. Wong wrote:
+> > The CRC32c polynomial provides better error detection and can be hardware
+> > accelerated on certain machines.  To that end, add support for it to jbd2.
+> > 
+> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> > ---
+> > fs/jbd2/Kconfig      |    1 +
+> > fs/jbd2/commit.c     |    6 +++---
+> > fs/jbd2/recovery.c   |   20 +++++++++++++++++---
+> > include/linux/jbd2.h |    1 +
+> > 4 files changed, 22 insertions(+), 6 deletions(-)
+> > 
+> > 
+> > diff --git a/fs/jbd2/Kconfig b/fs/jbd2/Kconfig
+> > index f32f346..40a126b 100644
+> > --- a/fs/jbd2/Kconfig
+> > +++ b/fs/jbd2/Kconfig
+> > @@ -1,6 +1,7 @@
+> > config JBD2
+> > 	tristate
+> > 	select CRC32
+> > +	select LIBCRC32C
+> > 	help
+> > 	  This is a generic journaling layer for block devices that support
+> > 	  both 32-bit and 64-bit block numbers.  It is currently used by
+> > diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+> > index eef6979..00387be 100644
+> > --- a/fs/jbd2/commit.c
+> > +++ b/fs/jbd2/commit.c
+> > @@ -21,7 +21,7 @@
+> > #include <linux/mm.h>
+> > #include <linux/pagemap.h>
+> > #include <linux/jiffies.h>
+> > -#include <linux/crc32.h>
+> > +#include <linux/crc32c.h>
+> > #include <linux/writeback.h>
+> > #include <linux/backing-dev.h>
+> > #include <linux/bio.h>
+> > @@ -125,7 +125,7 @@ static int journal_submit_commit_record(journal_t *journal,
+> > 
+> > 	if (JBD2_HAS_COMPAT_FEATURE(journal,
+> > 				    JBD2_FEATURE_COMPAT_CHECKSUM)) {
+> > -		tmp->h_chksum_type 	= JBD2_CRC32_CHKSUM;
+> > +		tmp->h_chksum_type	= JBD2_CRC32C_CHKSUM;
+> > 		tmp->h_chksum_size 	= JBD2_CRC32_CHKSUM_SIZE;
+> > 		tmp->h_chksum[0] 	= cpu_to_be32(crc32_sum);
+> > 	}
+> > @@ -287,7 +287,7 @@ static __u32 jbd2_checksum_data(__u32 crc32_sum, struct buffer_head *bh)
+> > 	__u32 checksum;
+> > 
+> > 	addr = kmap_atomic(page, KM_USER0);
+> > -	checksum = crc32_be(crc32_sum,
+> > +	checksum = crc32c_le(crc32_sum,
+> > 		(void *)(addr + offset_in_page(bh->b_data)), bh->b_size);
+> > 	kunmap_atomic(addr, KM_USER0);
+> > 
+> > diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
+> > index 1cad869..4bab4dd 100644
+> > --- a/fs/jbd2/recovery.c
+> > +++ b/fs/jbd2/recovery.c
+> > @@ -21,6 +21,7 @@
+> > #include <linux/jbd2.h>
+> > #include <linux/errno.h>
+> > #include <linux/crc32.h>
+> > +#include <linux/crc32c.h>
+> > #endif
+> > 
+> > /*
+> > @@ -323,7 +324,8 @@ static inline unsigned long long read_tag_block(int tag_bytes, journal_block_tag
+> >  * descriptor block.
+> >  */
+> > static int calc_chksums(journal_t *journal, struct buffer_head *bh,
+> > -			unsigned long *next_log_block, __u32 *crc32_sum)
+> > +			unsigned long *next_log_block, __u32 *crc32_sum,
+> > +			__u32 *crc32c_sum)
+> > {
+> > 	int i, num_blks, err;
+> > 	unsigned long io_block;
+> > @@ -332,6 +334,7 @@ static int calc_chksums(journal_t *journal, struct buffer_head *bh,
+> > 	num_blks = count_tags(journal, bh);
+> > 	/* Calculate checksum of the descriptor block. */
+> > 	*crc32_sum = crc32_be(*crc32_sum, (void *)bh->b_data, bh->b_size);
+> > +	*crc32c_sum = crc32c_le(*crc32c_sum, (void *)bh->b_data, bh->b_size);
 > 
-> This is what I mentioned before, to me this looks like a win.
+> We definitely do not want to compute both the crc32 and crc32c for every
+> block written to the journal.  That would be needlessly expensive.
 > 
-> Why do we need try_to_freeze_cgroup() in this case? "for safety"
-> could actually mean "hide the bug" ;)
+> It looks like the missing factor is not knowing the checksum type before
+> the commit block is accessed.  This can be fixed by storing the checksum
+> type in the journal superblock (JBD2_CKSUM_TYPE_CRC32 = 0 for compatibility).
+> 
+> During recovery, the journal superblock s_chksum_type should remain as
+> set by the previous kernel (so the existing commit block checksums can
+> be verified) and as soon as the journal recovery has completed and a new
+> block written to the journal the checksum type can be updated to the latest
+> default value.
 
-Well, I need to check Tejun's latest freezer bits to see if this is
-still the case but it was possible to get to the FREEZING state and
-not enter FROZEN before returning to userspace. So you could come back
-into the state change function in the FREEZING state with FROZEN as
-the goal state. Note that for the cgroup freezer the FREEZING state is
-optional -- so skipping it is fine so long was we guarantee that by the
-time we exit to userspace with a FROZEN state all the tasks in the cgroup
-are actually frozen (in the refrigerator loop) or frozen enough (about to
-enter the refrigerator loop without causing more IO -- e.g. stopped).
+Okay, that does sound better than my current weird approach. :)  I admit to
+being a bit timid about messing with jbd2 after proposing a lot of changes to
+ext4.
 
-Cheers,
-	-Matt
+> > 	for (i = 0; i < num_blks; i++) {
+> > 		io_block = (*next_log_block)++;
+> > @@ -344,6 +347,9 @@ static int calc_chksums(journal_t *journal, struct buffer_head *bh,
+> > 		} else {
+> > 			*crc32_sum = crc32_be(*crc32_sum, (void *)obh->b_data,
+> > 				     obh->b_size);
+> > +			*crc32c_sum = crc32c_le(*crc32c_sum,
+> > +				     (void *)obh->b_data,
+> > +				     obh->b_size);
+> 
+> (style) the indenting here is funky.  Continued lines should follow the
+>        '(' on the previous line and not be gratuitously wrapped.
+
+Yeah, I wondered about that.
+
+--D
+
+> > @@ -617,7 +625,12 @@ static int do_one_pass(journal_t *journal,
+> > 				    cbh->h_chksum_type == JBD2_CRC32_CHKSUM &&
+> > 				    cbh->h_chksum_size ==
+> > 						JBD2_CRC32_CHKSUM_SIZE)
+> > -				       chksum_seen = 1;
+> > +					chksum_seen = 1;
+> > +				else if (crc32c_sum == found_chksum &&
+> > +				    cbh->h_chksum_type == JBD2_CRC32C_CHKSUM &&
+> > +				    cbh->h_chksum_size ==
+> > +						JBD2_CRC32_CHKSUM_SIZE)
+> > +					chksum_seen = 1;
+> > 				else if (!(cbh->h_chksum_type == 0 &&
+> > 					     cbh->h_chksum_size == 0 &&
+> > 					     found_chksum == 0 &&
+> > @@ -646,6 +659,7 @@ static int do_one_pass(journal_t *journal,
+> > 					}
+> > 				}
+> > 				crc32_sum = ~0;
+> > +				crc32c_sum = ~0;
+> > 			}
+> > 			brelse(bh);
+> > 			next_commit_ID++;
+> > diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+> > index 38f307b..de3ec23 100644
+> > --- a/include/linux/jbd2.h
+> > +++ b/include/linux/jbd2.h
+> > @@ -147,6 +147,7 @@ typedef struct journal_header_s
+> > #define JBD2_CRC32_CHKSUM   1
+> > #define JBD2_MD5_CHKSUM     2
+> > #define JBD2_SHA1_CHKSUM    3
+> > +#define JBD2_CRC32C_CHKSUM  4
+> > 
+> > #define JBD2_CRC32_CHKSUM_SIZE 4
+> > 
+> > 
+> 
