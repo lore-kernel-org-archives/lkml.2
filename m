@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab1IBOvO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 10:51:14 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:38872 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab1IBOvN (ORCPT
+	id S1752818Ab1IBOzy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 10:55:54 -0400
+Received: from bulk1.smtp.messagingengine.com ([66.111.4.222]:49080 "EHLO
+	bulk1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752349Ab1IBOzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 10:51:13 -0400
-In-Reply-To: <20110901140000.GF29729@n2100.arm.linux.org.uk>
-References: <20110823220056.GK3895@n2100.arm.linux.org.uk> <20110825130907.GO3286@htj.dyndns.org> <20110825145558.GF8883@n2100.arm.linux.org.uk> <201108261644.26329.arnd@arndb.de> <OF2C5ADB6A.65B1BE36-ONC12578FE.00493A67-C12578FE.004B3315@de.ibm.com> <20110901140000.GF29729@n2100.arm.linux.org.uk>
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-X-KeepSent: 69A57AB0:CF22689A-C12578FF:004EDD71;
- type=4; name=$KeepSent
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linaro-toolchain@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>
-X-Mailer: Lotus Notes Release 8.5.2 August 10, 2010
-Message-ID: <OF69A57AB0.CF22689A-ONC12578FF.004EDD71-C12578FF.005142FF@de.ibm.com>
-From: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-Date: Fri, 2 Sep 2011 16:47:35 +0200
-X-MIMETrack: Serialize by Router on D12ML069/12/M/IBM(Release 8.0.2FP2|June 22, 2009) at
- 02/09/2011 16:51:00
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+	Fri, 2 Sep 2011 10:55:52 -0400
+X-Greylist: delayed 1080 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Sep 2011 10:55:52 EDT
+X-Sasl-enc: sTN2z/OrVs8xGIDP0IrF9fvJQdihv3g1wiatp4Gqdnwk 1314974271
+Subject: TFD_CANCEL_ON_SET race when making a wall clock
+From: Colin Walters <walters@verbum.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 02 Sep 2011 10:37:12 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1314974233.30505.9.camel@lenny>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote on 09/01/2011
-04:00:00 PM:
-> On Thu, Sep 01, 2011 at 03:41:22PM +0200, Ulrich Weigand wrote:
-> > One way to fix this might be to make the TIF_SYS_RESTART flag
-> > itself visible to ptrace, so the GDB could save/restore it
-> > along with the rest of the register set; this would be similar
-> > to how that problem is handled on other platforms.  However,
-> > there doesn't appear to be an obvious place for the flag in
-> > the ptrace register set ...
->
-> Thanks for looking at this.
->
-> I don't think we can augment the ptrace register set - that would be a
-> major API change which would immediately break lots of userspace,
-> causing user stack overflows and such like.
+Hi,
 
-Well, it wouldn't need to go into the default register set (REGSET_GPR),
-but could be in a new register set.  This shouldn't change anything for
-existing applications, but GDB could probe for support for the new
-regset and use it if present.
+So I was recently making GNOME use the new timerfd TFD_CANCEL_ON_SET so
+we get woken up when the system clock changes.  It works generally well,
+except Ryan Lortie pointed out a race condition in my use of
+timerfd_settime() that I think anyone using it to make a wall clock
+display might not realize at first:
 
-> I can't see a way out of this - and given the seriousness of the kernel
-> side issue (causing kernel warnings), and that your change altered the
-> strace behaviour (an unintended user-visible change) I think we're going
-> to have to live with the gdb testcase failing until we can come up with
-> a better fix for it.
+https://bugzilla.gnome.org/show_bug.cgi?id=655129#c36
 
-The change you suggest, with the addition of making the flag available
-to the debugger in a new register set, should be fine for GDB.
+For the link-averse, basically the system clock can move backwards
+between when the process gets the current time, and computes the wakeup
+(typically for the next minute).
 
-I agree that the race you pointed out in the initial mail to this thread
-needs to be fixed; an in fact, it seems that this race is also present
-on s390 ...  In discussions with Martin, we were wondering however
-whether the fix you suggest does actually fully plug the race:
+I was able to work around it in userspace with this patch:
+http://bugzilla-attachments.gnome.org/attachment.cgi?id=195252
+But it's clearly not what I'd call beautiful.
 
-Assume the scenario you initally describe, where a first signal is
-ignored and leads to system call restart.  With your latest patch,
-you call into syscall_restart which sets everything up to restart
-the call (with interrupts disabled).  Then, you go back to user space,
-with PC pointing to the SVC that is to be restarted.  Now assume that
-some interrupt is pending at this point.  At the switch to user
-space, interrupts will be enabled.  Can it now happen that this
-pending interrupt is recognized *before* the SVC is executed?
-(Maybe the hardware doesn't allow that on ARM ... it definitely
-*is* possible on s390, though.)
+I don't see a nice way to handle this in the kernel given the current
+API, but maybe someone else does?
 
-If so, can this not then lead to the exact same race you initially
-described (the interrupt causing some other task to be scheduled,
-and then an second signal to be delivered to the task about to
-restart the SVC)?
+TFD_CANCEL_ON_SET isn't documented in man-pages at all right now...maybe
+this is just a useful note for a future patch to
+man-pages/man2/timerfd_create.2.
 
-I guess one way to fix this would be to not actually go back to
-user space for system call restart at all, but instead just short-
-cut this in entry.S and simply go right back to the system call
-entry path.  As a side benefit, this could eliminate the need to
-create a stack frame for the OABI RESTARTBLOCK case ...  (This is
-what we do on s390 b.t.w., where there is a similar issue with the
-system call number being an immediate argument to the SVC
-instruction.)
-
-> I also wonder what the validity of this behaviour is - there are cases
-> where you can't do what gdb's trying to do - eg, with a syscall using
-> a restart block (-ERESTART_RESTARTBLOCK) because the restart information
-> could be wiped out by a new syscall performed by the function gdb wants
-> to run.  Or when the program receives a signal for it to handle while
-> running that function.
-
-Yes, performing an inferior call during a system call that restarts
-using RESTARTBLOCK is broken.  This is a problem on all architectures,
-and has been ever since the RESTARTBLOCK mechanism was introduced ...
-
-To really fix this case would probably require some way for the
-debugger to save and restore the restore_block saved state.  This
-is not quite trivial, since it would expose that state to user space,
-effectively creating a new ABI (and probably requiring sanity checks
-to ensure a valid state is restored).  This probably cannot be fixed
-by one architecture for itself, but would need support from common
-kernel code.
-
-Bye,
-Ulrich
 
