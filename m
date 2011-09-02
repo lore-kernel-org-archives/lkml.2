@@ -1,172 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab1IBTOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:14:48 -0400
-Received: from nm30-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.69]:25231 "HELO
-	nm30-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754278Ab1IBTOr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:14:47 -0400
-X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Sep 2011 15:14:47 EDT
-X-Yahoo-Newman-Id: 162331.48254.bm@omp1057.mail.ne1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=DKIM-Signature:X-Yahoo-Newman-Property:X-YMail-OSG:X-Yahoo-SMTP:Received:References:Mime-Version:In-Reply-To:X-Apple-Yahoo-Original-Message-Folder:Content-Type:Content-Transfer-Encoding:Message-Id:Cc:X-Mailer:From:X-Apple-Yahoo-Replied-Msgid:Subject:Date:To;
-  b=6eUpdvuYe1VfDiyA6M+frkGd4mbBkrqToJFWFY2TA3l4WyvJyP/756oGz7pGhETv4I6Eh3jQf0y8aHyrJAO+ahmXWweRspkxx/ZnGlzv3ZueisBRLy7AwJJxk6kCNZBFmYLMGXdhk4OpK4qTX1U6Xf8Iy0RYj0IVJ2047qcnmmU=  ;
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: P0SZD6QVM1mbmt962uUFfjW8jpmCd78x1NvWTGzrlvXnPha
- nW8izOYBMBTPGGeB8MlNreqoFdJOV.ruQL454dHeYyPGfZXS.3bCTwzG8WWO
- QSUmPBrZwx_O1dm9o9VTlipYer7bJGa2eL1RiWrCF59gjaIJDvh8cJ3UxPJt
- tvThMbPkuJJ61B2xqkQAwm06DCs92zt_ZuF5uD4udeAznl7uHC751LlYH4ub
- ufj5_WSvDvdwgMo5bM32zOsiAuzXAhjwioKNwPxtKX0hx7mCxClgq3dlRZkX
- Os_beBR6rpB99jvB.04gb3G1CVOLtniRbvxMu4U._SQFUzgaYsfSBh78HEUQ
- P00L3OaI7eV099cQftE2rtBigocmNAhpaU10I0HbLGXu_LiBeQqlu.Of5K2Y
- fOzh5plog8c7XE5mAYRDh1D5bZiRTK8FmQ71M5gGPSze40IUvBqY7sQwHZzB
- _Brus4q32vjIRHRMn5A2R4Ms7KR00g7QQAkrfkAIeMhv5Enql_R5BXy8QIj9
- PPQYDnDd.6RunF.A3AI58.3JADkpKiQ_Il.Wwr52wchIcflHtuOTmB5c8Oui
- cf.nzhZEIOy8c5fnisEE.5ELwKKZ8bngSw5i3qXW.NvtGZMNYQkblvERaKkD
- wPKLVjuXxIBY-
-X-Yahoo-SMTP: Jr5mEQOswBBUeQ6oSnePwwxoZ1M-
-References: <CAM9Y=f6eSgxsbrO11d0ux72NJip14xGQDeX84VWb9uiBtEVsjA@mail.gmail.com> <20110902181826.GA29848@kroah.com>
-Mime-Version: 1.0 (iPhone Mail 8J2)
-In-Reply-To: <20110902181826.GA29848@kroah.com>
-X-Apple-Yahoo-Original-Message-Folder: Inbox
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CB97E92C-3990-418B-BA04-94073E011ECE@yahoo.com>
-Cc: Daniel J Blueman <daniel.blueman@gmail.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux USB <linux-usb-devel@lists.sourceforge.net>,
-        "usb-storage@lists.one-eyed-alien.net" 
-	<usb-storage@lists.one-eyed-alien.net>
-X-Mailer: iPhone Mail (8J2)
-From: Luben Tuikov <ltuikov@yahoo.com>
-X-Apple-Yahoo-Replied-Msgid: 1_7615510_AEnPjkQAAM3DTmEg0wkhUTVigmA
-Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating autosense
-Date: Fri, 2 Sep 2011 12:08:44 -0700
-To: Greg KH <greg@kroah.com>
+	id S1754929Ab1IBTPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:15:22 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35321 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754871Ab1IBTPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 15:15:20 -0400
+Date: Fri, 2 Sep 2011 12:15:10 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Nathan Lynch <ntl@pobox.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-ID: <20110902191510.GB27179@count0.beaverton.ibm.com>
+References: <20110831080229.100652529@openvz.org>
+ <20110831090612.GA3253@albatros>
+ <20110831112642.GI25465@sun>
+ <20110831140416.GA17626@shutemov.name>
+ <20110831142622.GB30615@sun>
+ <20110831151023.5b7e12da.akpm@linux-foundation.org>
+ <4E5F3B25.9030701@parallels.com>
+ <20110901115006.GB2752@htj.dyndns.org>
+ <4E5F7702.2070808@parallels.com>
+ <20110901171355.GC2752@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110901171355.GC2752@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 2, 2011, at 11:18, Greg KH <greg@kroah.com> wrote:
-
-> On Fri, Sep 02, 2011 at 02:24:36PM +0800, Daniel J Blueman wrote:
->> Hi Luben, Greg, Matthew,
->> 
->> Any plan for reviewing and accepting this patch [1] yet? I'm still
->> seeing the symptoms on USB 3 SATA bridges with linux-3.0+.
+On Fri, Sep 02, 2011 at 02:13:55AM +0900, Tejun Heo wrote:
+> Hello,
 > 
-> I needed an ack from Matthew before I could take it.
+> On Thu, Sep 01, 2011 at 04:13:54PM +0400, Pavel Emelyanov wrote:
+> > Because with the handler restore process looks very natural and simple - each
+> > task does the following steps
+> > 
+> > 1. restore task resources (open files, set IDs, restore connections, wire back timers, etc.)
+> > 2. call execve() to jump into new memory+registers context which is
+> >    a. unmap all the user memory
+> >    b. map required mappings
+> >    c. populate them with data
+> >    d. restore registers
+> >    e. restore IP
 > 
-> Matthew?
-
-
-He acked it already: http://marc.info/?l=linux-kernel&m=128950140420081&w=2
-
-But interestingly enough, it never made it into your tree. 
-
+> But what about multiple threads?  exec is already scary enough as it
+> is and I don't think it would be wise to overload it for this.
 > 
+> I don't really think binfmt handler would be able to achieve
+> completeness without ending up with full de-serializer in kernel.
+
+Yeah, I think you'd have to remove the de_thread()-based assumptions 
+in exec to avoid this. And then there's the can of worms opened by
+non-pthread threads where files, signals, etc. may or may not be shared..
+
+> There are a lot of states which already have API to manipulate from
+> the userland thread itself and they all will need to be replicated in
+> the binfmt handler.  It really has to be full de-serializer if it
+
+Re-creating all possible states from userspace is not necessarily going
+to be any prettier. I'd really like to see SEIZE used to restart threaded
+tasks before I'll be convinced it's any more or less pretty than a binfmt
+handler.
+
+> wants to function like you described.
 > 
->> --- [1]
->> 
->> http://www.kerneltrap.com/mailarchive/linux-kernel/2010/11/11/4644097/thread
->> 
->> This patch solves two things:
->> 1) Enables autosense emulation code to correctly
->> interpret descriptor format sense data, and
->> 2) Fixes a bug whereby the autosense emulation
->> code would overwrite descriptor format sense data
->> with SENSE KEY HARDWARE ERROR in fixed format, to
->> incorrectly look like this:
->> 
->> Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  Sense Key :
->> Recovered Error [current] [descriptor]
->> Oct 21 14:11:07 localhost kernel: Descriptor sense data with sense
->> descriptors (in hex):
->> Oct 21 14:11:07 localhost kernel:        72 01 04 1d 00 00 00 0e 09 0c
->> 00 00 00 00 00 00
->> Oct 21 14:11:07 localhost kernel:        00 4f 00 c2 00 50
->> Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  ASC=0x4 ASCQ=0x1d
->> 
->> Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
->> ---
->> drivers/usb/storage/transport.c |   34 +++++++++++++++++++---------------
->> 1 files changed, 19 insertions(+), 15 deletions(-)
->> 
->> diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
->> index 64ec073..cb04664 100644
->> --- a/drivers/usb/storage/transport.c
->> +++ b/drivers/usb/storage/transport.c
->> @@ -691,6 +691,9 @@ void usb_stor_invoke_transport(struct scsi_cmnd
->> *srb, struct us_data *us)
->>        int temp_result;
->>        struct scsi_eh_save ses;
->>        int sense_size = US_SENSE_SIZE;
->> +        struct scsi_sense_hdr sshdr;
->> +        const u8 *scdd;
->> +        u8 fm_ili;
->> 
->>        /* device supports and needs bigger sense buffer */
->>        if (us->fflags & US_FL_SANE_SENSE)
->> @@ -774,32 +777,30 @@ Retry_Sense:
->>            srb->sense_buffer[7] = (US_SENSE_SIZE - 8);
->>        }
->> 
->> +        scsi_normalize_sense(srb->sense_buffer, SCSI_SENSE_BUFFERSIZE,
->> +                     &sshdr);
->> +
->>        US_DEBUGP("-- Result from auto-sense is %d\n", temp_result);
->>        US_DEBUGP("-- code: 0x%x, key: 0x%x, ASC: 0x%x, ASCQ: 0x%x\n",
->> -              srb->sense_buffer[0],
->> -              srb->sense_buffer[2] & 0xf,
->> -              srb->sense_buffer[12],
->> -              srb->sense_buffer[13]);
->> +              sshdr.response_code, sshdr.sense_key,
->> +              sshdr.asc, sshdr.ascq);
->> #ifdef CONFIG_USB_STORAGE_DEBUG
->> -        usb_stor_show_sense(
->> -              srb->sense_buffer[2] & 0xf,
->> -              srb->sense_buffer[12],
->> -              srb->sense_buffer[13]);
->> +        usb_stor_show_sense(sshdr.sense_key, sshdr.asc, sshdr.ascq);
->> #endif
->> 
->>        /* set the result so the higher layers expect this data */
->>        srb->result = SAM_STAT_CHECK_CONDITION;
->> 
->> +        scdd = scsi_sense_desc_find(srb->sense_buffer,
->> +                        SCSI_SENSE_BUFFERSIZE, 4);
->> +        fm_ili = (scdd ? scdd[3] : srb->sense_buffer[2]) & 0xA0;
->> +
->>        /* We often get empty sense data.  This could indicate that
->>         * everything worked or that there was an unspecified
->>         * problem.  We have to decide which.
->>         */
->> -        if (    /* Filemark 0, ignore EOM, ILI 0, no sense */
->> -                (srb->sense_buffer[2] & 0xaf) == 0 &&
->> -            /* No ASC or ASCQ */
->> -                srb->sense_buffer[12] == 0 &&
->> -                srb->sense_buffer[13] == 0) {
->> -
->> +        if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0 &&
->> +            fm_ili == 0) {
->>            /* If things are really okay, then let's show that.
->>             * Zero out the sense buffer so the higher layers
->>             * won't realize we did an unsolicited auto-sense.
->> @@ -814,7 +815,10 @@ Retry_Sense:
->>             */
->>            } else {
->>                srb->result = DID_ERROR << 16;
->> -                srb->sense_buffer[2] = HARDWARE_ERROR;
->> +                if ((sshdr.response_code & 0x72) == 0x72)
->> +                    srb->sense_buffer[1] = HARDWARE_ERROR;
->> +                else
->> +                    srb->sense_buffer[2] = HARDWARE_ERROR;
->>            }
->>        }
->>    }
->> -- 
->> Daniel J Blueman
+> And if we're gonna have interventions anyway, I can't see much point
+> in implementing something which seems simpler - it's not gonna be
+> actually simpler.
+
+You may have lost me here -- I have no idea whether this is a summary
+or some new point you're trying to make.
+
+Cheers,
+	-Matt Helsley
