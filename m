@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805Ab1IBAs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 20:48:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50736 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932747Ab1IBAsZ (ORCPT
+	id S932813Ab1IBAtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 20:49:16 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:54275 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932747Ab1IBAtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 20:48:25 -0400
-Message-ID: <4E6027E1.1090905@gmail.com>
-Date: Fri, 02 Sep 2011 08:48:33 +0800
-From: Shan Hai <haishan.bai@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Thu, 1 Sep 2011 20:49:14 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: RFD: x32 ABI system call numbers
+Date: Fri, 2 Sep 2011 01:49:10 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.7.0; x86_64; ; )
+Cc: Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+References: <4E582577.2060805@zytor.com> <4E5F88F8.2040008@redhat.com> <4E5F930A.6070006@zytor.com>
+In-Reply-To: <4E5F930A.6070006@zytor.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: akpm@linux-foundation.org, eric.dumazet@gmail.com, vapier@gentoo.org,
-        asharma@fb.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH V2 1/1] lib/atomic64 using raw_spin_lock_irq[save|resotre]
- for atomicity
-References: <1314847923-26428-1-git-send-email-haishan.bai@gmail.com> <1314847923-26428-2-git-send-email-haishan.bai@gmail.com> <alpine.LFD.2.02.1109011158500.2723@ionos> <alpine.LFD.2.02.1109011209000.2723@ionos>
-In-Reply-To: <alpine.LFD.2.02.1109011209000.2723@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201109020149.10780.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2011 06:11 PM, Thomas Gleixner wrote:
-> On Thu, 1 Sep 2011, Thomas Gleixner wrote:
->
->> On Thu, 1 Sep 2011, Shan Hai wrote:
->>
->>> The spin_lock_irq[save|restore] could break the atomicity of the
->>> atomic64_* operations in the PREEMPT-RT configuration, because
->>> the spin_lock_irq[save|restore] themselves are preemptable in the
->>> PREEMPT-RT, using raw variant of the spin lock could provide the
->>> atomicity that atomic64_* need.
->> Good catch. Queued for the next release.
-> Though the changelog is misleading. The reason is not that they are
-> preemtible.
->
-> The reason for your OOPs is that the sleeping locks are not IRQ
-> safe. And your system simply deadlocked due to that.
->
+On Thursday 01 September 2011 15:13:30, H. Peter Anvin wrote:
+> On 09/01/2011 06:30 AM, Avi Kivity wrote:
+> > On 08/31/2011 08:09 PM, H. Peter Anvin wrote:
+> >>>  I really think that "x32" should try to aim *VERY* hard at using the
+> >>>  64-bit system calls, and seeing itself as being a "32-bit application
+> >>>  in a 64-bit world".  That's not just true for time_t (which I think
+> >>>  should be 64-bit on anything new that expects to survive for any
+> >>>  amount of time), but in general.
+> >>
+> >> We're trying for it.  The things we're trying to avoid is to muck (too
+> >> much) with the compat layer for the mega-multiplex system calls like
+> >> ioctl.  We can't just use the 64-bit ioctl because ioctl structures
+> >> generally contain pointers.
+> >>
+> > 
+> >      struct iovec
+> >      {
+> >          void __user *iov_base;    /* BSD uses caddr_t (1003.1g requires 
+> > void *) */
+> >          __kernel_size_t iov_len; /* Must be size_t (1003.1g) */
+> >      } __attribute__((x32_abi_64));
+> > 
+> >      typedef long time_t __attribute__((x32_abi_64));
+> > 
+> > The x32_abi_64 attribute converts pointers and longs back to 64-bit and 
+> > adjusts the alignment accordingly.  If we tag all userspace visible 
+> > structures with this attribute, we can use the 64-bit ABI without changes.
 
-Will correct it in the V3 patch, thanks for the advice.
+I would expect no new gcc extension to be needed for that -- there's the
+mode attribute (you can read DI as 64-bit):
 
-Cheers
-Shan Hai
+ typedef void * __kernel_ptr64 __attribute ((mode(DI)));
 
-> Thanks,
->
-> 	tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ struct iovec
+ {
+   __kernel_ptr64 iov_base;
+   ...
+ };
 
+-- 
+Pedro Alves
