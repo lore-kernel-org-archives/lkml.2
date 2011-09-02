@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab1IBXPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:15:00 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:43788 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756500Ab1IBXO7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:14:59 -0400
-Message-ID: <af88b0d6c81fbf480eee4cef120ff710.squirrel@www.firstfloor.org>
-In-Reply-To: <4E614FBD.2030509@goop.org>
-References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
-    <38bb37e15f6e5056d5238adac945bc1837a996ec.1314922370.git.jeremy.fitzhardinge@citrix.com>
-    <1314974826.1861.1.camel@twins> <4E612EA1.20007@goop.org>
-    <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org>
-Date: Sat, 3 Sep 2011 01:14:55 +0200
-Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while
- blocking
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "Peter Zijlstra" <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Ingo Molnar" <mingo@elte.hu>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Nick Piggin" <npiggin@kernel.dk>, "Avi Kivity" <avi@redhat.com>,
-        "Marcelo Tosatti" <mtosatti@redhat.com>, "KVM" <kvm@vger.kernel.org>,
-        "Andi Kleen" <andi@firstfloor.org>,
-        "Xen Devel" <xen-devel@lists.xensource.com>,
-        "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>
-User-Agent: SquirrelMail/1.4.21
+	id S1756717Ab1IBXQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:16:50 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:35554 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756500Ab1IBXQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:16:48 -0400
+X-ASG-Debug-ID: 1315005407-03d6a5396973d80001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E6163DE.4030208@fusionio.com>
+Date: Fri, 2 Sep 2011 17:16:46 -0600
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Jan Kara <jack@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2 v3] Small cleanup of bdi_forker_thread()
+References: <1315004059-9844-1-git-send-email-jack@suse.cz> <4E61619E.8040105@fusionio.com> <20110902231212.GH12182@quack.suse.cz>
+X-ASG-Orig-Subj: Re: [PATCH 0/2 v3] Small cleanup of bdi_forker_thread()
+In-Reply-To: <20110902231212.GH12182@quack.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: UNKNOWN[10.101.1.21]
+X-Barracuda-Start-Time: 1315005407
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.73469
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2011-09-02 17:12, Jan Kara wrote:
+> On Fri 02-09-11 17:07:10, Jens Axboe wrote:
+>> On 2011-09-02 16:54, Jan Kara wrote:
+>>>
+>>>   Hi Jens,
+>>>
+>>>   so after I realized how I underestimated subtlety of bdi_forker_thread()
+>>> here are two small cleanups to it. The first one puts clearing of BDI_pending
+>>> in a more natural place, the second patch adds a comment so that fools like
+>>> me don't try to optimize the function in a wrong place...
+>>
+>> Thanks Jan, I've queued it up for 3.1. I've marked it as stable, looks
+>> like we need it from 2.6.36 and above.
+>   Thanks. But is it really a stable material? It's just a cleanup after
+> all...
 
-> But, erm, does that even make sense?  I'm assuming the NMI reason port
-> tells the CPU why it got an NMI.  If multiple CPUs can get NMIs and
-> there's only a single reason port, then doesn't that mean that either 1)
-> they all got the NMI for the same reason, or 2) having a single port is
-> inherently racy?  How does the locking actually work there?
+I guess it's not strictly stable material, since it's not fixing a
+problematic issue.
 
-All the code to determine NMI reasons is inherently racy,
-and each new NMI user makes it worse.
-
--Andi
+-- 
+Jens Axboe
 
