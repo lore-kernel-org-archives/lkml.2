@@ -1,68 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243Ab1IBG2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 02:28:38 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:14227 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933128Ab1IBG2f (ORCPT
+	id S1755141Ab1IBGtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 02:49:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59914 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab1IBGtU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 02:28:35 -0400
-Date: Fri, 2 Sep 2011 08:28:13 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Ben Dooks <ben-linux@fluff.org>, linux-doc@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c: remove deprecated callbacks
-Message-ID: <20110902082813.310454af@endymion.delvare>
-In-Reply-To: <1314919458.4145.23.camel@pasglop>
-References: <1314852027-9523-1-git-send-email-xiyou.wangcong@gmail.com>
-	<20110901105226.0d8dd8b2@endymion.delvare>
-	<1314919458.4145.23.camel@pasglop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Sep 2011 02:49:20 -0400
+MIME-Version: 1.0
+X-Originating-IP: [87.66.92.201]
+In-Reply-To: <201109020007.22743.rjw@sisk.pl>
+References: <201108310017.03103.rjw@sisk.pl>
+	<201108310021.13800.rjw@sisk.pl>
+	<CAORVsuX=vKiGxHrR4hZjeT4DV0vhUh+MXLwNjoOwgBDu1HRR5A@mail.gmail.com>
+	<201109020007.22743.rjw@sisk.pl>
+Date: Fri, 2 Sep 2011 08:49:18 +0200
+Message-ID: <CAORVsuVAzc8Q2tG0-WW+96Ad9GhR5OCq2bAuweggs1rimFMcqg@mail.gmail.com>
+Subject: Re: [PATCH 3/5] PM / QoS: Add function dev_pm_qos_read_value()
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Sep 2011 09:24:18 +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-09-01 at 10:52 +0200, Jean Delvare wrote:
-> > Furthermore, you didn't even check if the deprecated callbacks were
-> > still in use. It turns out that there are 9 drivers still using one of
-> > them (6 macintosh drivers and 3 sound drivers) so plain removing it
-> > will cause build breakages. We obviously don't want to do that, so I am
-> > not going to apply your patch (nor mine) for now.
-> > 
-> > I know that Benjamin Herrenschmidt is working on converting (some of)
-> > the macintosh drivers. I don't have any news for some time though. Ben,
-> > are you done with the conversion by now? It would be great to get it
-> > merged in kernel 3.2.
-> 
-> I'm just bogged down by too many things, including quite a bit of travel
-> lately. I have some mostly untested patches converting part of windfarm
-> (not all of it yet), and therm_adt746x and a patch to add the generic
-> code to register i2c devices from device-tree properly on powermacs.
-> 
-> I'm missing a couple more drivers & bits of windfarm and therm_pm72
-> which I'd like to use the opportunity to convert into a windfarm module.
-> 
-> Then there's some sound drivers etc...
-> 
-> I am travelling again tomorrow for 2 weeks, and after that a month in
-> europe, tho I'll have 10 days in the middle where I _might_ be able to
-> make progress on that. Else it will have to wait for november.
+On Fri, Sep 2, 2011 at 12:07 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Hi,
+>
+> On Thursday, September 01, 2011, Jean Pihet wrote:
+>> Hi Rafael,
+>>
+>> On Wed, Aug 31, 2011 at 12:21 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > From: Rafael J. Wysocki <rjw@sisk.pl>
+>> >
+>> > To read the current PM QoS value for a given device we need to
+>> > make sure that the device's power.constraints object won't be
+>> > removed while we're doing that.  For this reason, put the
+>> > operation under dev->power.lock and acquire the lock
+>> > around the initialization and removal of power.constraints.
+>> Ok.
+>>
+>> > Moreover, since we're using the value of power.constraints to
+>> > determine whether or not the object is present, the
+>> > power.constraints_state field isn't necessary any more and may be
+>> > removed.  However, dev_pm_qos_add_request() needs to check if the
+>> > device is being removed from the system before allocating a new
+>> > PM QoS constraints object for it, so it has to use device_pm_lock()
+>> > and the device PM QoS initialization and destruction should be done
+>> > under device_pm_lock() as well.
+>> Ok that makes sense.
+>> The constraints_state field can be replaced by a combination of
+>> dev->power.constraints and list_empty(&dev->power.entry), which makes
+>> the code more compact and less redundant.
+>>
+>> >
+>> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+>> > ---
+>> >  drivers/base/power/main.c |    4 -
+>> >  drivers/base/power/qos.c  |  167 ++++++++++++++++++++++++++--------------------
+>> >  include/linux/pm.h        |    8 --
+>> >  include/linux/pm_qos.h    |    3
+>> >  4 files changed, 101 insertions(+), 81 deletions(-)
+>> >
+>> > Index: linux/drivers/base/power/qos.c
+>> > ===================================================================
+>> > --- linux.orig/drivers/base/power/qos.c
+>> > +++ linux/drivers/base/power/qos.c
+>> > @@ -30,15 +30,6 @@
+>> ...
+>>
+>> >
+>> > @@ -178,8 +202,8 @@ void dev_pm_qos_constraints_destroy(stru
+>> >  *
+>> >  * Returns 1 if the aggregated constraint value has changed,
+>> >  * 0 if the aggregated constraint value has not changed,
+>> > - * -EINVAL in case of wrong parameters, -ENODEV if the device has been
+>> > - * removed from the system
+>> > + * -EINVAL in case of wrong parameters, -ENOMEM if there's not enough memory
+>> > + * to allocate for data structures.
+>> Why not use -ENODEV in case there is no device?
+>
+> I don't think it's useful for the caller.  If the device is gone, the
+> constraing simply doesn't matter, so there's no error to handle.
+>
+>> >  */
+>> >  int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+>> >                           s32 value)
+>> > @@ -195,28 +219,35 @@ int dev_pm_qos_add_request(struct device
+>> >                return -EINVAL;
+>> >        }
+>> >
+>> > -       mutex_lock(&dev_pm_qos_mtx);
+>> >        req->dev = dev;
+>> >
+>> > -       /* Return if the device has been removed */
+>> > -       if (req->dev->power.constraints_state == DEV_PM_QOS_NO_DEVICE) {
+>> > -               ret = -ENODEV;
+>> > -               goto out;
+>> > -       }
+>> > +       device_pm_lock();
+>> > +       mutex_lock(&dev_pm_qos_mtx);
+>> >
+>> > -       /*
+>> > -        * Allocate the constraints data on the first call to add_request,
+>> > -        * i.e. only if the data is not already allocated and if the device has
+>> > -        * not been removed
+>> > -        */
+>> > -       if (dev->power.constraints_state == DEV_PM_QOS_DEVICE_PRESENT)
+>> > -               ret = dev_pm_qos_constraints_allocate(dev);
+>> > +       if (dev->power.constraints) {
+>> > +               device_pm_unlock();
+>> > +       } else {
+>> > +               if (list_empty(&dev->power.entry)) {
+>> > +                       /* The device has been removed from the system. */
+>> > +                       device_pm_unlock();
+>> > +                       goto out;
+>> 0 is silently returned in case the device has been removed. Is that
+>> the intention?
+>
+> Pretty much it is.  Is that a problem?
+I think the caller needs to know if the constraint has been applied
+correctly or not. That is why I changed the API functions to int.
 
-Thanks for the update, Ben. November is totally fine with me, the i2c
-subsystem conversion started 5 years ago or so, we can wait a couple
-additional months ;) I definitely prefer that you take the time to do
-it properly and we can apply the same for the remaining drivers.
+Note: I still need to come with an API documentation patch after the
+code is settled down.
 
-If you want, we may be able to spend half an hour face to face in
-Prague in October to check what you've done and if there are blocking
-issues remaining.
+>
+> Rafael
+>
 
--- 
-Jean Delvare
+Thanks,
+Jean
