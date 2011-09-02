@@ -1,436 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab1IBHtC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:49:02 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:18308 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756953Ab1IBHs7 (ORCPT
+	id S1757663Ab1IBHwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:52:12 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:42473 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755809Ab1IBHwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:48:59 -0400
-Message-ID: <4E608A51.70509@siemens.com>
-Date: Fri, 02 Sep 2011 09:48:33 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: [RFC] pci: Rework config space blocking services
-References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <4E5BDEAB.5000405@siemens.com> <20110829191858.GA9415@redhat.com>
-In-Reply-To: <20110829191858.GA9415@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Sep 2011 03:52:06 -0400
+From: Gerard Snitselaar <dev@snitselaar.org>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: rtl8187se: Fix whitespace issues
+Date: Fri,  2 Sep 2011 00:51:53 -0700
+Message-Id: <1314949913-13090-1-git-send-email-dev@snitselaar.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-29 21:18, Michael S. Tsirkin wrote:
-> On Mon, Aug 29, 2011 at 08:47:07PM +0200, Jan Kiszka wrote:
->> On 2011-08-29 17:42, Jan Kiszka wrote:
->>> I still don't get what prevents converting ipr to allow plain mutex
->>> synchronization. My vision is:
->>>  - push reset-on-error of ipr into workqueue (or threaded IRQ?)
->>
->> I'm starting to like your proposal: I had a look at ipr, but it turned
->> out to be anything but trivial to convert that driver. It runs its
->> complete state machine under spin_lock_irq, and the functions calling
->> pci_block/unblock_user_cfg_access are deep inside this thing. I have no
->> hardware to test whatever change, and I feel a bit uncomfortable asking
->> Brian to redesign his driver that massively.
->>
->> So back to your idea: I would generalize pci_block_user_cfg_access to
->> pci_block_cfg_access. It should fail when some other site already holds
->> the access lock, but it should remain non-blocking - for the sake of ipr.
-> 
-> It would be easy to have blocking and non-blocking variants.
-> 
-> But
-> - I have no idea whether supporting sysfs config/reset access
->   while ipr is active makes any sense - I know we need it for uio.
-> - reset while uio handles interrupt needs to block, not fail I think
-> 
+Fixed whitespace issues found by checkpatch.pl
 
-Here is a preview following those ideas. I'll look into generic INTx
-masking services now and, if that works out and no concerns are raised,
-I'll post it all.
-
-Jan
-
------8<-----
-
-pci_block_user_cfg_access was designed for the use case that a single
-context, the IPR driver, temporarily delays user space accesses to the
-config space via sysfs. This assumption became invalid by the time
-pci_dev_reset was added as locking instance. Today, if you run two loops
-in parallel that reset the same device via sysfs, you end up with a
-kernel BUG as pci_block_user_cfg_access detect the broken assumption.
-
-This reworks the pci_block_user_cfg_access to a sleeping service
-pci_block_cfg_access and an atomic variant called
-pci_block_cfg_access_in_atomic. The former not only blocks user space
-access as before but also waits if access was already blocked. The
-latter service just returns an error code in this case, allowing the
-caller to resolve the conflict instead of raising a BUG.
-
+Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
 ---
- drivers/pci/access.c          |   76 +++++++++++++++++++++++++++--------------
- drivers/pci/iov.c             |   12 +++---
- drivers/pci/pci.c             |    4 +-
- drivers/scsi/ipr.c            |   24 +++++++++----
- drivers/uio/uio_pci_generic.c |   10 +++--
- include/linux/pci.h           |   14 +++++---
- 6 files changed, 89 insertions(+), 51 deletions(-)
+ drivers/staging/rtl8187se/r8180.h       |   12 ++++++------
+ drivers/staging/rtl8187se/r8180_core.c  |   22 +++++++++++-----------
+ drivers/staging/rtl8187se/r8180_dm.c    |   23 +++++++++++------------
+ drivers/staging/rtl8187se/r8180_wx.c    |    4 +---
+ drivers/staging/rtl8187se/r8185b_init.c |    3 +--
+ 5 files changed, 30 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index fdaa42a..640522a 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -127,20 +127,20 @@ EXPORT_SYMBOL(pci_write_vpd);
-  * We have a bit per device to indicate it's blocked and a global wait queue
-  * for callers to sleep on until devices are unblocked.
+diff --git a/drivers/staging/rtl8187se/r8180.h b/drivers/staging/rtl8187se/r8180.h
+index a2c46ae..175aa82 100644
+--- a/drivers/staging/rtl8187se/r8180.h
++++ b/drivers/staging/rtl8187se/r8180.h
+@@ -63,7 +63,7 @@
+ 
+ #define BEACON_QUEUE					6
+ 
+-#define aSifsTime 	10
++#define aSifsTime	10
+ 
+ #define sCrcLng         4
+ #define sAckCtsLng	112		// bits in ACK and CTS frames
+@@ -78,7 +78,7 @@ typedef enum _WIRELESS_MODE {
+ 	WIRELESS_MODE_AUTO = 0x08,
+ } WIRELESS_MODE;
+ 
+-typedef struct 	ChnlAccessSetting {
++typedef struct	ChnlAccessSetting {
+ 	u16 SIFS_Timer;
+ 	u16 DIFS_Timer;
+ 	u16 SlotTimeTimer;
+@@ -216,7 +216,7 @@ typedef struct Stats
+ } Stats;
+ 
+ #define MAX_LD_SLOT_NUM 10
+-#define KEEP_ALIVE_INTERVAL 				20 // in seconds.
++#define KEEP_ALIVE_INTERVAL				20 // in seconds.
+ #define CHECK_FOR_HANG_PERIOD			2 //be equal to watchdog check time
+ #define DEFAULT_KEEP_ALIVE_LEVEL			1
+ #define DEFAULT_SLOT_NUM					2
+@@ -591,14 +591,14 @@ typedef struct r8180_priv
+ 	int	   ForcedDataRate; // Force Data Rate. 0: Auto, 0x02: 1M ~ 0x6C: 54M.)
+ 	u32     NumTxUnicast; //YJ,add,080828,for keep alive
+ 	u8      keepAliveLevel; //YJ,add,080828,for KeepAlive
+-	unsigned long 	NumTxOkTotal;
++	unsigned long	NumTxOkTotal;
+ 	u16                                 LastRetryCnt;
+         u16                                     LastRetryRate;
+         unsigned long       LastTxokCnt;
+         unsigned long           LastRxokCnt;
+         u16                                     CurrRetryCnt;
+         unsigned long           LastTxOKBytes;
+-	unsigned long 		    NumTxOkBytesTotal;
++	unsigned long		    NumTxOkBytesTotal;
+         u8                          LastFailTxRate;
+         long                        LastFailTxRateSS;
+         u8                          FailTxRateCount;
+@@ -636,7 +636,7 @@ typedef struct r8180_priv
+ 	u32 ReceiveConfig;
+ 	u32 IntrMask;
+ 
+-	struct 	ChnlAccessSetting  ChannelAccessSetting;
++	struct	ChnlAccessSetting  ChannelAccessSetting;
+ }r8180_priv;
+ 
+ #define MANAGE_PRIORITY 0
+diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+index 4c6651a..dbcf383 100644
+--- a/drivers/staging/rtl8187se/r8180_core.c
++++ b/drivers/staging/rtl8187se/r8180_core.c
+@@ -1654,7 +1654,7 @@ void rtl8180_rx(struct net_device *dev)
+ 			}
+ 			/* support for prism header has been originally added by Christian */
+ 			if (priv->prism_hdr && priv->ieee80211->iw_mode == IW_MODE_MONITOR) {
+-				
++
+ 			} else {
+ 				priv->rx_skb = dev_alloc_skb(len+2);
+ 				if (!priv->rx_skb)
+@@ -1766,7 +1766,7 @@ void rtl8180_data_hard_resume(struct net_device *dev)
+ 	rtl8180_set_mode(dev, EPROM_CMD_NORMAL);
+ }
+ 
+-/* 
++/*
+  * This function TX data frames when the ieee80211 stack requires this.
+  * It checks also if we need to stop the ieee tx queue, eventually do it
   */
--static DECLARE_WAIT_QUEUE_HEAD(pci_ucfg_wait);
-+static DECLARE_WAIT_QUEUE_HEAD(pci_cfg_wait);
- 
--static noinline void pci_wait_ucfg(struct pci_dev *dev)
-+static noinline void pci_wait_cfg(struct pci_dev *dev)
- {
- 	DECLARE_WAITQUEUE(wait, current);
- 
--	__add_wait_queue(&pci_ucfg_wait, &wait);
-+	__add_wait_queue(&pci_cfg_wait, &wait);
- 	do {
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		raw_spin_unlock_irq(&pci_lock);
- 		schedule();
- 		raw_spin_lock_irq(&pci_lock);
--	} while (dev->block_ucfg_access);
--	__remove_wait_queue(&pci_ucfg_wait, &wait);
-+	} while (dev->block_cfg_access);
-+	__remove_wait_queue(&pci_cfg_wait, &wait);
+@@ -1810,7 +1810,7 @@ rate) {
+ 	spin_unlock_irqrestore(&priv->tx_lock, flags);
  }
  
- /* Returns 0 on success, negative values indicate error. */
-@@ -153,7 +153,8 @@ int pci_user_read_config_##size						\
- 	if (PCI_##size##_BAD)						\
- 		return -EINVAL;						\
- 	raw_spin_lock_irq(&pci_lock);				\
--	if (unlikely(dev->block_ucfg_access)) pci_wait_ucfg(dev);	\
-+	if (unlikely(dev->block_cfg_access))				\
-+		pci_wait_cfg(dev);					\
- 	ret = dev->bus->ops->read(dev->bus, dev->devfn,			\
- 					pos, sizeof(type), &data);	\
- 	raw_spin_unlock_irq(&pci_lock);				\
-@@ -172,7 +173,8 @@ int pci_user_write_config_##size					\
- 	if (PCI_##size##_BAD)						\
- 		return -EINVAL;						\
- 	raw_spin_lock_irq(&pci_lock);				\
--	if (unlikely(dev->block_ucfg_access)) pci_wait_ucfg(dev);	\
-+	if (unlikely(dev->block_cfg_access))				\
-+		pci_wait_cfg(dev);					\
- 	ret = dev->bus->ops->write(dev->bus, dev->devfn,		\
- 					pos, sizeof(type), val);	\
- 	raw_spin_unlock_irq(&pci_lock);				\
-@@ -401,36 +403,58 @@ int pci_vpd_truncate(struct pci_dev *dev, size_t size)
- EXPORT_SYMBOL(pci_vpd_truncate);
- 
- /**
-- * pci_block_user_cfg_access - Block userspace PCI config reads/writes
-+ * pci_block_cfg_access - Block PCI config reads/writes
-  * @dev:	pci device struct
-  *
-- * When user access is blocked, any reads or writes to config space will
-- * sleep until access is unblocked again.  We don't allow nesting of
-- * block/unblock calls.
-+ * When access is blocked, any userspace reads or writes to config space
-+ * and concurrent block requests will sleep until
-+ * access is unblocked again.
-  */
--void pci_block_user_cfg_access(struct pci_dev *dev)
-+void pci_block_cfg_access(struct pci_dev *dev)
- {
- 	unsigned long flags;
--	int was_blocked;
-+
-+	might_sleep();
-+
-+	raw_spin_lock_irqsave(&pci_lock, flags);
-+	if (dev->block_cfg_access)
-+		pci_wait_cfg(dev);
-+	dev->block_cfg_access = 1;
-+	raw_spin_unlock_irqrestore(&pci_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(pci_block_cfg_access);
-+
-+/**
-+ * pci_block_cfg_access_in_atomic - Block PCI config reads/writes from atomic
-+ *                                  context
-+ * @dev:	pci device struct
-+ *
-+ * Same as pci_block_cfg_access, but will fail with -EBUSY if access is
-+ * already blocked.
-+ */
-+int pci_block_cfg_access_in_atomic(struct pci_dev *dev)
-+{
-+	unsigned long flags;
-+	int err = 0;
- 
- 	raw_spin_lock_irqsave(&pci_lock, flags);
--	was_blocked = dev->block_ucfg_access;
--	dev->block_ucfg_access = 1;
-+	if (dev->block_cfg_access)
-+		err = -EBUSY;
-+	else
-+		dev->block_cfg_access = 1;
- 	raw_spin_unlock_irqrestore(&pci_lock, flags);
- 
--	/* If we BUG() inside the pci_lock, we're guaranteed to hose
--	 * the machine */
--	BUG_ON(was_blocked);
-+	return err;
+-/* 
++/*
+  * This is a rough attempt to TX a frame
+  * This is called by the ieee 80211 stack to TX management frames.
+  * If the ring is full packet are dropped (for data frame the queue
+@@ -1916,7 +1916,7 @@ void rtl8180_prepare_beacon(struct net_device *dev)
+ 	}
  }
--EXPORT_SYMBOL_GPL(pci_block_user_cfg_access);
-+EXPORT_SYMBOL_GPL(pci_block_cfg_access_in_atomic);
  
- /**
-- * pci_unblock_user_cfg_access - Unblock userspace PCI config reads/writes
-+ * pci_unblock_cfg_access - Unblock PCI config reads/writes
-  * @dev:	pci device struct
-  *
-- * This function allows userspace PCI config accesses to resume.
-+ * This function allows PCI config accesses to resume.
-  */
--void pci_unblock_user_cfg_access(struct pci_dev *dev)
-+void pci_unblock_cfg_access(struct pci_dev *dev)
- {
- 	unsigned long flags;
+-/* 
++/*
+  * This function do the real dirty work: it enqueues a TX command
+  * descriptor in the ring buffer, copyes the frame in a TX buffer
+  * and kicks the NIC to ensure it does the DMA transfer.
+@@ -2184,7 +2184,7 @@ short rtl8180_tx(struct net_device *dev, u8* txbuf, int len, int priority,
+ 			priv->txhpbufstail = buflist;
+ 			break;
+ 		case BEACON_PRIORITY:
+-			/* 
++			/*
+ 			 * The HW seems to be happy with the 1st
+ 			 * descriptor filled and the 2nd empty...
+ 			 * So always update descriptor 1 and never
+@@ -2304,13 +2304,13 @@ void rtl8180_hw_sleep(struct net_device *dev, u32 th, u32 tl)
  
-@@ -438,10 +462,10 @@ void pci_unblock_user_cfg_access(struct pci_dev *dev)
+ 	spin_lock_irqsave(&priv->ps_lock, flags);
  
- 	/* This indicates a problem in the caller, but we don't need
- 	 * to kill them, unlike a double-block above. */
--	WARN_ON(!dev->block_ucfg_access);
-+	WARN_ON(!dev->block_cfg_access);
+-	/* 
++	/*
+ 	 * Writing HW register with 0 equals to disable
+ 	 * the timer, that is not really what we want
+ 	 */
+ 	tl -= MSECS(4+16+7);
  
--	dev->block_ucfg_access = 0;
--	wake_up_all(&pci_ucfg_wait);
-+	dev->block_cfg_access = 0;
-+	wake_up_all(&pci_cfg_wait);
- 	raw_spin_unlock_irqrestore(&pci_lock, flags);
+-	/* 
++	/*
+ 	 * If the interval in witch we are requested to sleep is too
+ 	 * short then give up and remain awake
+ 	 */
+@@ -2328,7 +2328,7 @@ void rtl8180_hw_sleep(struct net_device *dev, u32 th, u32 tl)
+ 
+ 		queue_delayed_work(priv->ieee80211->wq, &priv->ieee80211->hw_wakeup_wq, tmp); /* as tl may be less than rb */
+ 	}
+-	/* 
++	/*
+ 	 * If we suspect the TimerInt is gone beyond tl
+ 	 * while setting it, then give up
+ 	 */
+@@ -3168,7 +3168,7 @@ void rtl8180_adapter_start(struct net_device *dev)
+ 	netif_start_queue(dev);
  }
--EXPORT_SYMBOL_GPL(pci_unblock_user_cfg_access);
-+EXPORT_SYMBOL_GPL(pci_unblock_cfg_access);
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 42fae47..a061847 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -340,10 +340,10 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+ 
+-/* 
++/*
+  * This configures registers for beacon tx and enables it via
+  * rtl8180_beacon_tx_enable(). rtl8180_beacon_tx_disable() might
+  * be used to stop beacon transmission
+@@ -3839,7 +3839,7 @@ void rtl8180_tx_isr(struct net_device *dev, int pri, short error)
+ 			return;
+ 		}
+ 
+-	/* 
++	/*
+ 	 * We check all the descriptors between the head and the nic,
+ 	 * but not the currently pointed by the nic (the next to be txed)
+ 	 * and the previous of the pointed (might be in process ??)
+@@ -3877,7 +3877,7 @@ void rtl8180_tx_isr(struct net_device *dev, int pri, short error)
+ 			head += 8;
  	}
  
- 	iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
--	pci_block_user_cfg_access(dev);
-+	pci_block_cfg_access(dev);
- 	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
- 	msleep(100);
--	pci_unblock_user_cfg_access(dev);
-+	pci_unblock_cfg_access(dev);
+-	/* 
++	/*
+ 	 * The head has been moved to the last certainly TXed
+ 	 * (or at least processed by the nic) packet.
+ 	 * The driver take forcefully owning of all these packets
+diff --git a/drivers/staging/rtl8187se/r8180_dm.c b/drivers/staging/rtl8187se/r8180_dm.c
+index 261085d..5e87647 100644
+--- a/drivers/staging/rtl8187se/r8180_dm.c
++++ b/drivers/staging/rtl8187se/r8180_dm.c
+@@ -180,7 +180,7 @@ DIG_Zebra(
+ 	u16			OfdmFA1, OfdmFA2;
+ 	int			InitialGainStep = 7; // The number of initial gain stages.
+ 	int			LowestGainStage = 4; // The capable lowest stage of performing dig workitem.
+-	u32 			AwakePeriodIn2Sec=0;
++	u32			AwakePeriodIn2Sec=0;
  
- 	iov->initial = initial;
- 	if (nr_virtfn < initial)
-@@ -371,10 +371,10 @@ failed:
- 		virtfn_remove(dev, j, 0);
+ 	//printk("---------> DIG_Zebra()\n");
  
- 	iov->ctrl &= ~(PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE);
--	pci_block_user_cfg_access(dev);
-+	pci_block_cfg_access(dev);
- 	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
- 	ssleep(1);
--	pci_unblock_user_cfg_access(dev);
-+	pci_unblock_cfg_access(dev);
- 
- 	if (iov->link != dev->devfn)
- 		sysfs_remove_link(&dev->dev.kobj, "dep_link");
-@@ -397,10 +397,10 @@ static void sriov_disable(struct pci_dev *dev)
- 		virtfn_remove(dev, i, 0);
- 
- 	iov->ctrl &= ~(PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE);
--	pci_block_user_cfg_access(dev);
-+	pci_block_cfg_access(dev);
- 	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
- 	ssleep(1);
--	pci_unblock_user_cfg_access(dev);
-+	pci_unblock_cfg_access(dev);
- 
- 	if (iov->link != dev->devfn)
- 		sysfs_remove_link(&dev->dev.kobj, "dep_link");
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 0ce6742..3c6ce05 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2959,7 +2959,7 @@ static int pci_dev_reset(struct pci_dev *dev, int probe)
- 	might_sleep();
- 
- 	if (!probe) {
--		pci_block_user_cfg_access(dev);
-+		pci_block_cfg_access(dev);
- 		/* block PM suspend, driver probe, etc. */
- 		device_lock(&dev->dev);
- 	}
-@@ -2984,7 +2984,7 @@ static int pci_dev_reset(struct pci_dev *dev, int probe)
- done:
- 	if (!probe) {
- 		device_unlock(&dev->dev);
--		pci_unblock_user_cfg_access(dev);
-+		pci_unblock_cfg_access(dev);
- 	}
- 
- 	return rc;
-diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
-index 8d63630..7fc3861 100644
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -7640,7 +7640,7 @@ static int ipr_reset_restore_cfg_space(struct ipr_cmnd *ipr_cmd)
- static int ipr_reset_bist_done(struct ipr_cmnd *ipr_cmd)
+@@ -502,7 +502,7 @@ MgntIsCckRate(
+ //
+ //	Description:
+ //		Tx Power tracking mechanism routine on 87SE.
+-// 	Created by Roger, 2007.12.11.
++//	Created by Roger, 2007.12.11.
+ //
+ void
+ TxPwrTracking87SE(
+@@ -567,11 +567,11 @@ StaRateAdaptive87SE(
+ 	)
  {
- 	ENTER;
--	pci_unblock_user_cfg_access(ipr_cmd->ioa_cfg->pdev);
-+	pci_unblock_cfg_access(ipr_cmd->ioa_cfg->pdev);
- 	ipr_cmd->job_step = ipr_reset_restore_cfg_space;
- 	LEAVE;
- 	return IPR_RC_JOB_CONTINUE;
-@@ -7661,7 +7661,8 @@ static int ipr_reset_start_bist(struct ipr_cmnd *ipr_cmd)
- 	int rc = PCIBIOS_SUCCESSFUL;
+ 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
+-	unsigned long 			CurrTxokCnt;
++	unsigned long			CurrTxokCnt;
+ 	u16			CurrRetryCnt;
+ 	u16			CurrRetryRate;
+ 	//u16			i,idx;
+-	unsigned long       	CurrRxokCnt;
++	unsigned long		CurrRxokCnt;
+ 	bool			bTryUp = false;
+ 	bool			bTryDown = false;
+ 	u8			TryUpTh = 1;
+@@ -579,7 +579,7 @@ StaRateAdaptive87SE(
+ 	u32			TxThroughput;
+ 	long		CurrSignalStrength;
+ 	bool		bUpdateInitialGain = false;
+-    	u8			u1bOfdm=0, u1bCck = 0;
++	u8			u1bOfdm=0, u1bCck = 0;
+ 	char		OfdmTxPwrIdx, CckTxPwrIdx;
  
- 	ENTER;
--	pci_block_user_cfg_access(ioa_cfg->pdev);
-+	if (pci_block_cfg_access_in_atomic(ioa_cfg->pdev) != 0)
-+		goto error;
+ 	priv->RateAdaptivePeriod= RATE_ADAPTIVE_TIMER_PERIOD;
+@@ -634,7 +634,7 @@ StaRateAdaptive87SE(
+ 		if (priv->TryupingCountNoData>30)
+ 		{
+ 			priv->TryupingCountNoData = 0;
+-		 	priv->CurrentOperaRate = GetUpgradeTxRate(dev, priv->CurrentOperaRate);
++			priv->CurrentOperaRate = GetUpgradeTxRate(dev, priv->CurrentOperaRate);
+ 			// Reset Fail Record
+ 			priv->LastFailTxRate = 0;
+ 			priv->LastFailTxRateSS = -200;
+@@ -687,9 +687,9 @@ StaRateAdaptive87SE(
+ 	{
+ 		//2 For Test Upgrading mechanism
+ 		// Note:
+-		// 	Sometimes the throughput is upon on the capability bwtween the AP and NIC,
+-		// 	thus the low data rate does not improve the performance.
+-		// 	We randomly upgrade the data rate and check if the retry rate is improved.
++		//	Sometimes the throughput is upon on the capability bwtween the AP and NIC,
++		//	thus the low data rate does not improve the performance.
++		//	We randomly upgrade the data rate and check if the retry rate is improved.
  
- 	if (ioa_cfg->ipr_chip->bist_method == IPR_MMIO)
- 		writel(IPR_UPROCI_SIS64_START_BIST,
-@@ -7674,7 +7675,8 @@ static int ipr_reset_start_bist(struct ipr_cmnd *ipr_cmd)
- 		ipr_reset_start_timer(ipr_cmd, IPR_WAIT_FOR_BIST_TIMEOUT);
- 		rc = IPR_RC_JOB_RETURN;
- 	} else {
--		pci_unblock_user_cfg_access(ipr_cmd->ioa_cfg->pdev);
-+		pci_unblock_cfg_access(ipr_cmd->ioa_cfg->pdev);
-+error:
- 		ipr_cmd->s.ioasa.hdr.ioasc = cpu_to_be32(IPR_IOASC_PCI_ACCESS_ERROR);
- 		rc = IPR_RC_JOB_CONTINUE;
+ 		// Upgrading rate did not improve the retry rate, fallback to the original rate.
+ 		if ( (CurrRetryRate > 25) && TxThroughput < priv->LastTxThroughput)
+@@ -846,7 +846,7 @@ StaRateAdaptive87SE(
+ 			bTryDown = true;
+ 			priv->TryDownCountLowData += TryDownTh;
+ 		}
+-  		else if ( (CurrRetryRate<20) && (priv->LastRetryRate<21)) //TO DO: need to consider (RSSI)
++		else if ( (CurrRetryRate<20) && (priv->LastRetryRate<21)) //TO DO: need to consider (RSSI)
+ //		else if ( (CurrRetryRate<40) && (priv->LastRetryRate<41))
+ 		{
+ 			bTryUp = true;
+@@ -942,7 +942,7 @@ StaRateAdaptive87SE(
  	}
-@@ -7715,14 +7717,20 @@ static int ipr_reset_slot_reset(struct ipr_cmnd *ipr_cmd)
- {
- 	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
- 	struct pci_dev *pdev = ioa_cfg->pdev;
-+	int rc = IPR_RC_JOB_RETURN;
  
- 	ENTER;
--	pci_block_user_cfg_access(pdev);
--	pci_set_pcie_reset_state(pdev, pcie_warm_reset);
--	ipr_cmd->job_step = ipr_reset_slot_reset_done;
--	ipr_reset_start_timer(ipr_cmd, IPR_PCI_RESET_TIMEOUT);
-+	if (pci_block_cfg_access_in_atomic(pdev) == 0) {
-+		pci_set_pcie_reset_state(pdev, pcie_warm_reset);
-+		ipr_cmd->job_step = ipr_reset_slot_reset_done;
-+		ipr_reset_start_timer(ipr_cmd, IPR_PCI_RESET_TIMEOUT);
-+	} else {
-+		ipr_cmd->s.ioasa.hdr.ioasc =
-+			cpu_to_be32(IPR_IOASC_PCI_ACCESS_ERROR);
-+		rc = IPR_RC_JOB_CONTINUE;
-+	}
- 	LEAVE;
--	return IPR_RC_JOB_RETURN;
-+	return rc;
+ 	if(bTryUp && bTryDown)
+-    	printk("StaRateAdaptive87B(): Tx Rate tried upping and downing simultaneously!\n");
++	printk("StaRateAdaptive87B(): Tx Rate tried upping and downing simultaneously!\n");
+ 
+ 	//1 Test Upgrading Tx Rate
+ 	// Sometimes the cause of the low throughput (high retry rate) is the compatibility between the AP and NIC.
+@@ -1626,4 +1626,3 @@ SwAntennaDiversityTimerCallback(
+ 
+ 	//printk("-SwAntennaDiversityTimerCallback()\n");
  }
- 
- /**
-diff --git a/drivers/uio/uio_pci_generic.c b/drivers/uio/uio_pci_generic.c
-index fc22e1e..642f7fa 100644
---- a/drivers/uio/uio_pci_generic.c
-+++ b/drivers/uio/uio_pci_generic.c
-@@ -58,7 +58,8 @@ static irqreturn_t irqhandler(int irq, struct uio_info *info)
- 	BUILD_BUG_ON(PCI_COMMAND + 2 != PCI_STATUS);
- 
- 	spin_lock_irq(&gdev->lock);
--	pci_block_user_cfg_access(pdev);
-+	if (pci_block_cfg_access_in_atomic(pdev) != 0)
-+		goto error;
- 
- 	/* Read both command and status registers in a single 32-bit operation.
- 	 * Note: we could cache the value for command and move the status read
-@@ -82,7 +83,8 @@ static irqreturn_t irqhandler(int irq, struct uio_info *info)
- 	ret = IRQ_HANDLED;
- done:
- 
--	pci_unblock_user_cfg_access(pdev);
-+	pci_unblock_cfg_access(pdev);
-+error:
- 	spin_unlock_irq(&gdev->lock);
- 	return ret;
- }
-@@ -95,7 +97,7 @@ static int __devinit verify_pci_2_3(struct pci_dev *pdev)
- 	u16 orig, new;
- 	int err = 0;
- 
--	pci_block_user_cfg_access(pdev);
-+	pci_block_cfg_access(pdev);
- 	pci_read_config_word(pdev, PCI_COMMAND, &orig);
- 	pci_write_config_word(pdev, PCI_COMMAND,
- 			      orig ^ PCI_COMMAND_INTX_DISABLE);
-@@ -118,7 +120,7 @@ static int __devinit verify_pci_2_3(struct pci_dev *pdev)
- 	/* Now restore the original value. */
- 	pci_write_config_word(pdev, PCI_COMMAND, orig);
- err:
--	pci_unblock_user_cfg_access(pdev);
-+	pci_unblock_cfg_access(pdev);
- 	return err;
- }
- 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 8c230cb..3414b74 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -305,7 +305,7 @@ struct pci_dev {
- 	unsigned int	is_added:1;
- 	unsigned int	is_busmaster:1; /* device is busmaster */
- 	unsigned int	no_msi:1;	/* device may not use msi */
--	unsigned int	block_ucfg_access:1;	/* userspace config space access is blocked */
-+	unsigned int	block_cfg_access:1;	/* config space access is blocked */
- 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
- 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
- 	unsigned int 	msi_enabled:1;
-@@ -1079,8 +1079,9 @@ int  ht_create_irq(struct pci_dev *dev, int idx);
- void ht_destroy_irq(unsigned int irq);
- #endif /* CONFIG_HT_IRQ */
- 
--extern void pci_block_user_cfg_access(struct pci_dev *dev);
--extern void pci_unblock_user_cfg_access(struct pci_dev *dev);
-+extern void pci_block_cfg_access(struct pci_dev *dev);
-+extern int pci_block_cfg_access_in_atomic(struct pci_dev *dev);
-+extern void pci_unblock_cfg_access(struct pci_dev *dev);
- 
- /*
-  * PCI domain support.  Sometimes called PCI segment (eg by ACPI),
-@@ -1277,10 +1278,13 @@ static inline void pci_release_regions(struct pci_dev *dev)
- 
- #define pci_dma_burst_advice(pdev, strat, strategy_parameter) do { } while (0)
- 
--static inline void pci_block_user_cfg_access(struct pci_dev *dev)
-+static inline void pci_block_cfg_access(struct pci_dev *dev)
- { }
- 
--static inline void pci_unblock_user_cfg_access(struct pci_dev *dev)
-+static inline int pci_block_cfg_access_in_atomic(struct pci_dev *dev)
-+{ return 0; }
+-
+diff --git a/drivers/staging/rtl8187se/r8180_wx.c b/drivers/staging/rtl8187se/r8180_wx.c
+index 39ef7e0..8160aef 100644
+--- a/drivers/staging/rtl8187se/r8180_wx.c
++++ b/drivers/staging/rtl8187se/r8180_wx.c
+@@ -1169,7 +1169,7 @@ static int r8180_wx_set_channelplan(struct net_device *dev,
+ 		/* Set new channel map */
+ 		for (i = 1; i <= DefaultChannelPlan[*val].Len; i++)
+ 			GET_DOT11D_INFO(priv->ieee80211)->channel_map[DefaultChannelPlan[*val].Channel[i-1]] = 1;
+-		
 +
-+static inline void pci_unblock_cfg_access(struct pci_dev *dev)
- { }
+ 	}
+ 	up(&priv->wx_sem);
  
- static inline struct pci_bus *pci_find_next_bus(const struct pci_bus *from)
+@@ -1571,5 +1571,3 @@ struct iw_handler_def  r8180_wx_handlers_def = {
+ 	.get_wireless_stats = r8180_get_wireless_stats,
+ 	.private_args = (struct iw_priv_args *)r8180_private_args,
+ };
+-
+-
+diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
+index 4b0b830..6c0e6c2 100644
+--- a/drivers/staging/rtl8187se/r8185b_init.c
++++ b/drivers/staging/rtl8187se/r8185b_init.c
+@@ -172,7 +172,7 @@ if (offset == PhyAddr)	{
+ 		*/
+ /*		NdisAcquireSpinLock( &(pDevice->IoSpinLock) );	*/
+ 
+-		for (idx = 0; idx < 30; idx++)	{ 
++		for (idx = 0; idx < 30; idx++)	{
+ 		/* Make sure command bit is clear before access it.	*/
+ 			u1bTmp = PlatformIORead1Byte(dev, PhyAddr);
+ 			if ((u1bTmp & BIT7) == 0)
+@@ -1765,4 +1765,3 @@ void rtl8185b_tx_enable(struct net_device *dev)
+ 	cmd = read_nic_byte(dev, CMD);
+ 	write_nic_byte(dev, CMD, cmd | (1<<CMD_TX_ENABLE_SHIFT));
+ }
+-
 -- 
-1.7.3.4
+1.7.6
+
