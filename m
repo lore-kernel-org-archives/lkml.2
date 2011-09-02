@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab1IBHes (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:34:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:45113 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646Ab1IBHer (ORCPT
+	id S1757259Ab1IBHiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:38:10 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33187 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755718Ab1IBHiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:34:47 -0400
-From: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
-Subject: [PATCH 1/1] Staging: comedi: fix line over 80 character issue in unioxx5.c
-Date: Fri,  2 Sep 2011 13:04:34 +0530
-Message-Id: <1314948874-3616-1-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH 1/1]Staging: comedi: fix line over 80 character issue in unioxx5.c>
-References: <[PATCH 1/1]Staging: comedi: fix line over 80 character issue in unioxx5.c>
+	Fri, 2 Sep 2011 03:38:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAORVsuVkxHTEr5J9F1USr3csMoCELDfk9ixeG3kddy6oRj5RUw@mail.gmail.com>
+References: <1313766244-22313-1-git-send-email-tom.leiming@gmail.com>
+	<201108192231.02665.trenn@suse.de>
+	<CACVXFVPeFyg7YoAsY63Mpy9HVR1y3ibg9R8HnUfLVe=hKf3ApA@mail.gmail.com>
+	<201108221027.34441.trenn@suse.de>
+	<CAORVsuVkxHTEr5J9F1USr3csMoCELDfk9ixeG3kddy6oRj5RUw@mail.gmail.com>
+Date: Fri, 2 Sep 2011 15:38:07 +0800
+Message-ID: <CACVXFVOq2Hn-ZED2LyRQjk72mWJ5N=_LbVw3-vvrK-xUtKZGhQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] trace points: power: remove 'cpu_id' from trace_cpu_idle
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Cc: Thomas Renninger <trenn@suse.de>, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the unioxx5.c file that fixes up a line over 80 character warning found by the checkpatch.pl tool
+Hi,
 
-Signed-off-by: Ravishankar K Mallikarjunayya <ravishankar.km@greenturtles.in>
----
- drivers/staging/comedi/drivers/unioxx5.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
+On Fri, Sep 2, 2011 at 3:26 PM, Jean Pihet <jean.pihet@newoldbits.com> wrote:
+>> It was known that cpu_id is always the current cpu with current
+>> implementation when this got introduced.
+>> But the perf events API must not change back and forth for userspace
+>> compatibility. Therefore the cpu_id was added in case
+>> that future implementations want to pass info where the current cpu
+>> is not the cpu which is sent to the sleep state.
+> Agree. Let's keep the cpu_id field.
 
-diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
-index 89e62aa..fca7c2f 100644
---- a/drivers/staging/comedi/drivers/unioxx5.c
-+++ b/drivers/staging/comedi/drivers/unioxx5.c
-@@ -101,7 +101,10 @@ static int __unioxx5_digital_write(struct unioxx5_subd_priv *usp,
- 				   unsigned int *data, int channel, int minor);
- static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
- 				  unsigned int *data, int channel, int minor);
--/* static void __unioxx5_digital_config(struct unioxx5_subd_priv* usp, int mode); */
-+/*
-+ * static void __unioxx5_digital_config(struct unioxx5_subd_priv* usp,
-+ * int mode);
-+ */
- static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
- 				  unsigned int *data, int channel, int minor);
- static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
-@@ -141,7 +144,10 @@ static int unioxx5_attach(struct comedi_device *dev,
- 	dev->iobase = iobase;
- 	iobase += UNIOXX5_SUBDEV_BASE;
- 
--	/* defining number of subdevices and getting they types (it must be 'g01')  */
-+	/*
-+	 * defining number of subdevices and getting they types
-+	 * (it must be 'g01')
-+	 */
- 	for (i = n_subd = 0, ba = iobase; i < 4; i++, ba += UNIOXX5_SUBDEV_ODDS) {
- 		id = inb(ba + 0xE);
- 		num = inb(ba + 0xF);
-@@ -409,7 +415,11 @@ static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
- 	*data &= mask;
- 
- 	if (channel_offset > 1)
--		channel -= 2 << channel_offset;	/* this operation is created for correct readed value to 0 or 1 */
-+		/*
-+		 * this operation is created for correct readed
-+		 * value to 0 or 1
-+		 */
-+		channel -= 2 << channel_offset;
- 	*data >>= channel;
- 	return 1;
- }
+OK, let's keep it.
+
+How about removing it in clock_enalbe/clock_disable/power_domain_target
+as did in [1/3] and [2/3]?  I don't see any usefulness of 'cpu_id' in the tree
+trace points.
+
+
+thanks,
 -- 
-1.6.5.2
-
+Ming Lei
