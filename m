@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab1IBRbg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 13:31:36 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56678 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab1IBRbf (ORCPT
+	id S1753783Ab1IBRdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 13:33:00 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39734 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab1IBRc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 13:31:35 -0400
-Date: Sat, 3 Sep 2011 02:31:27 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Paul Menage <paul@paulmenage.org>,
-        containers@lists.linux-foundation.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH pm-freezer 1/4] cgroup_freezer: fix freezer->state
- setting bug in freezer_change_state()
-Message-ID: <20110902173127.GA3083@htj.dyndns.org>
-References: <20110831102100.GA2828@mtj.dyndns.org>
- <20110902004231.GF1919@count0.beaverton.ibm.com>
- <20110902165839.GA7478@redhat.com>
- <20110902170844.GJ2752@htj.dyndns.org>
- <20110902171517.GA8247@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110902171517.GA8247@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Sep 2011 13:32:59 -0400
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <iommu@lists.linux-foundation.org>
+Cc: <linux-omap@vger.kernel.org>, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH/RFC 0/7] iommu: fixes & extensions
+Date: Fri,  2 Sep 2011 20:32:29 +0300
+Message-Id: <1314984756-4400-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+5 first patches are relatively small iommu fixes/cleanups.
 
-On Fri, Sep 02, 2011 at 07:15:17PM +0200, Oleg Nesterov wrote:
-> > I guess it depends on the viewpoint.  A simple analogy would be using
-> > WARN_ON_ONCE() instead of BUG_ON() so that the mode of failure is
-> > softer.  This change isn't likely to make bugs significantly more
-> > difficult to discover so why not?
-> 
-> I agree either way.
-> 
-> Personally I prefer your current patch. Because it is not clear why
-> do we call try_to_freeze_cgroup() if it was already called. And, the
-> 2nd call can silently hide the problem if we have some bug.
-> 
-> But of course, this is up to you and Matt.
+2 last patches are proposals for core iommu extensions:
+- Add fault report mechanism, needed for recovery of remote processors
+  trying to access unmapped addresses.
+- Add splitting of memory regions to pages in the iommu core itself
+  (according to hardware capabilities as advertised by the iommu drivers).
+  This is needed to prevent duplication of this logic by
+  the iommu users/drivers themselves.
 
-I'm okay either way too.  It would make a bug in that area a bit less
-annoying and thus may decrease the chance of bug report, but it means
-that we ship with built-in easy work around (if it doesn't work at the
-first kick, kick again), which can be beneficial in practice.
+The patches are based on Joerg's arm/omap branch.
 
-> > > But I agree either way. Rafael, I think 1-4 are fine, but I think
-> > > we need the simple 5/4, will send in a minute...
-> >
-> > Can you please wait a bit?  The second one was broken (missing unlock)
-> 
-> Yes, I just noticed the small problem too, hopefully we mean the same
-> bug ;)
+Tested with OMAP3 (omap3isp) + OMAP4 (rpmsg/remoteproc).
 
-Yeap, the same one.  I thought it was the second patch instead of the
-third. :)
+Laurent Pinchart (1):
+  iommu/omap-iovmm: support non page-aligned buffers in iommu_vmap
 
-Thanks.
+Ohad Ben-Cohen (6):
+  iommu/omap: cleanup: remove a redundant 'return' statement
+  iommu/core: use the existing IS_ALIGNED macro
+  iommu/omap: ->unmap() should return order of unmapped page
+  iommu/msm: ->unmap() should return order of unmapped page
+  iommu/core: add fault reporting
+  iommu/core: split mapping to page sizes as supported by the hardware
+
+ arch/arm/plat-omap/include/plat/iommu.h |    3 +-
+ drivers/iommu/iommu.c                   |  142 +++++++++++++++++++++++++++----
+ drivers/iommu/msm_iommu.c               |   15 +++-
+ drivers/iommu/omap-iommu.c              |   56 +++---------
+ drivers/iommu/omap-iovmm.c              |   50 +++++++-----
+ drivers/media/video/omap3isp/isp.c      |    2 +-
+ include/linux/iommu.h                   |   67 ++++++++++++++-
+ virt/kvm/iommu.c                        |    6 +-
+ 8 files changed, 251 insertions(+), 90 deletions(-)
 
 -- 
-tejun
+1.7.4.1
+
