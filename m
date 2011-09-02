@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152Ab1IBDAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 23:00:48 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:57754 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933111Ab1IBDAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 23:00:47 -0400
-Date: Fri, 2 Sep 2011 03:01:40 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Kevin Tian <kevin.tian@intel.com>, mingo@redhat.com, hpa@zytor.com,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>, JBeulich@novell.com,
-        xen-devel@lists.xensource.com, Lars Boegild Thomsen <lth@cow.dk>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [regression] Ideapad S10-3 does not wake up from suspend (Re:
- [PATCH v2 2/2] x86: don't unmask disabled irqs when migrating them)
-Message-ID: <20110902030140.GA31569@hallyn.com>
-References: <625BA99ED14B2D499DC4E29D8138F1505C8ED7F7E3@shsmsx502.ccr.corp.intel.com>
- <20110829041532.GA22087@elie.gateway.2wire.net>
- <1314752662.6411.26.camel@nimitz>
- <20110831082230.GA4539@elie.gateway.2wire.net>
+	id S933161Ab1IBD3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 23:29:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48858 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933111Ab1IBD3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Sep 2011 23:29:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110831082230.GA4539@elie.gateway.2wire.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110901130542.GG14369@suse.de>
+References: <cover.1321112552.git.minchan.kim@gmail.com>
+	<e139175e938d94c0c977edd05ae07cbad7a72cc5.1321112552.git.minchan.kim@gmail.com>
+	<20110901130542.GG14369@suse.de>
+Date: Fri, 2 Sep 2011 12:29:45 +0900
+Message-ID: <CAEwNFnAq99Bj0kZq6aa2mOc9RoTT=T69s4BaA7i_5yieaFLPEA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Correct isolate_mode_t bitwise type
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Jonathan Nieder (jrnieder@gmail.com):
-> Hi Dave,
-> 
-> Dave Hansen wrote:
-> 
-> > I'm seeing the exact same symptoms on my S10-3, fwiw.  They definitely
-> > don't happen when intel_idle is compiled out or when
-> > intel_idle.max_cstate=0 is specified on the kernel command-line.
-> 
-> Lars reminds me[1] that the kernel he was testing already had the
-> intel_idle driver compiled out, so you're probably seeing a different
-> (possibly related) bug.  (By the way, Lars, it is fine to communicate
-> with lkml directly. :)  The people there don't bite.)
+On Thu, Sep 1, 2011 at 10:05 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Sun, Nov 13, 2011 at 01:37:41AM +0900, Minchan Kim wrote:
+>> [c1e8b0ae8, mm-change-isolate-mode-from-define-to-bitwise-type]
+>> made a mistake on the bitwise type.
+>>
+>
+> Minor nit, commit c1e8b0ae8 does not exist anywhere. I suspect you
+> are looking at a git tree generated from the mmotm quilt series. It
+> would be easier if you had said "This patch should be merged with
+> mm-change-isolate-mode-from-define-to-bitwise-type.patch in mmotm".
 
-Right, over the past year or so this has been hit or miss.  Sometimes
-intel_idle.max_cstate=0 would fix it.  Sometimes (like today) not.  Ever
-since the problems have started, using intel_idle has not worked once,
-but disabling it is not 100% reliable.  And when it doesn't work, it
-doesn't work at all until I get a new kernel.
+Right you are. I did it by habit without realizing just quilt series. :(
+For preventing such bad thing, I always use [git commit id, patch
+name] together these day. Fortunately, it seems to be effective. But
+unfortunately, I couldn't prevent your wasted time which spend until
+notice that.
 
-Sorry, not very helpful.
+I will be careful in the future.
 
--serge
+>
+> Otherwise, looks ok.
+
+Thanks, Mel.
+-- 
+Kind regards,
+Minchan Kim
