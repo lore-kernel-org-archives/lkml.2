@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab1IBXFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:05:09 -0400
-Received: from ixia-3.edge2.lax012.pnap.net ([74.217.148.5]:31878 "EHLO
-	ixqw-mail-out.ixiacom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756495Ab1IBXFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:05:08 -0400
-Message-ID: <4E616122.3030901@ixiacom.com>
-Date: Fri, 2 Sep 2011 16:05:06 -0700
-From: Earl Chew <echew@ixiacom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.1) Gecko/20110830 Thunderbird/6.0.1
+	id S1756599Ab1IBXHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:07:15 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:53940 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756509Ab1IBXHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:07:12 -0400
+X-ASG-Debug-ID: 1315004831-01de285e7b0a520001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E61619E.8040105@fusionio.com>
+Date: Fri, 2 Sep 2011 17:07:10 -0600
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-Subject: Re: [PATCH 1/1 v2]: coredump: use current->group_leader->comm instead
- of current->comm
-References: <4E5FBA73.2050108@ixiacom.com> <20110901195554.667c5e58@lxorguk.ukuu.org.uk> <4E5FD937.7050307@ixiacom.com> <20110902163037.GA4808@redhat.com> <4E610DAE.4080607@ixiacom.com> <20110902174806.GA9238@redhat.com>
-In-Reply-To: <20110902174806.GA9238@redhat.com>
+To: Jan Kara <jack@suse.cz>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2 v3] Small cleanup of bdi_forker_thread()
+References: <1315004059-9844-1-git-send-email-jack@suse.cz>
+X-ASG-Orig-Subj: Re: [PATCH 0/2 v3] Small cleanup of bdi_forker_thread()
+In-Reply-To: <1315004059-9844-1-git-send-email-jack@suse.cz>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1315004831
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.73470
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg, Alan,
+On 2011-09-02 16:54, Jan Kara wrote:
+> 
+>   Hi Jens,
+> 
+>   so after I realized how I underestimated subtlety of bdi_forker_thread()
+> here are two small cleanups to it. The first one puts clearing of BDI_pending
+> in a more natural place, the second patch adds a comment so that fools like
+> me don't try to optimize the function in a wrong place...
 
+Thanks Jan, I've queued it up for 3.1. I've marked it as stable, looks
+like we need it from 2.6.36 and above.
 
-> Who knows? But once again, we use ->comm in the very unlikely case.
->
-> And let me repeat just in case. I do not argue, I agree either way.
+-- 
+Jens Axboe
 
-I understand.
-
-Before I give thought to reworking the change, perhaps some other
-considerations.
-
-
-The other interesting thing is that Alan brought up the relevant point
-about stuff breaking.
-
-Alan Cox wrote:
-> Earl wrote:
->> Change corepattern %e and %E to use current->group_leader->comm instead of current->comm.
->
-> Which might break stuff.
-
-
-What are your thoughts regarding the introduction of cn_escape() in this patch ?
-
-https://lkml.org/lkml/2011/6/7/292
-
-
-While this change also has merit, it is also breaking change. There might
-be code relying on %e containing embedded slashes, either directly in
-core pattern:
-
-	%e.core
-
-or via the pipe:
-
-	| /opt/corehandler '%e'	
-
-
-
-Isn't the interface change introduced by cn_escape() also a concern ?
-
-
-Earl
