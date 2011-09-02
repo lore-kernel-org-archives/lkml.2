@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933466Ab1IBKDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 06:03:12 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:33115 "EHLO
+	id S933398Ab1IBKDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 06:03:08 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:33084 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933236Ab1IBKAw (ORCPT
+	with ESMTP id S933300Ab1IBKAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 06:00:52 -0400
+	Fri, 2 Sep 2011 06:00:53 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 06/16] drbd: Allow packet handler functions that take a connection
-Date: Fri,  2 Sep 2011 12:00:38 +0200
-Message-Id: <1314957648-13242-7-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 09/16] drbd: Allow packet handler functions that take a connection (meta connection)
+Date: Fri,  2 Sep 2011 12:00:41 +0200
+Message-Id: <1314957648-13242-10-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1314957648-13242-1-git-send-email-philipp.reisner@linbit.com>
 References: <1314957648-13242-1-git-send-email-philipp.reisner@linbit.com>
@@ -20,127 +20,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That is necessary in case a connection does not have a volume 0
-
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |   75 ++++++++++++++++++++----------------
- 1 files changed, 42 insertions(+), 33 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |   66 ++++++++++++++++++++++-------------
+ 1 files changed, 41 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 7bb5e5c..1301ba1 100644
+index 7e25a80..0117dcd 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -3856,39 +3856,45 @@ static int receive_out_of_sync(struct drbd_conf *mdev, enum drbd_packet cmd,
- 	return true;
- }
+@@ -60,6 +60,11 @@ enum finish_epoch {
+ 	FE_RECYCLED,
+ };
  
--typedef int (*drbd_cmd_handler_f)(struct drbd_conf *, enum drbd_packet cmd,
--				  unsigned int to_receive);
--
++enum mdev_or_conn {
++	MDEV,
++	CONN,
++};
++
+ static int drbd_do_handshake(struct drbd_tconn *tconn);
+ static int drbd_do_auth(struct drbd_tconn *tconn);
+ static int drbd_disconnected(int vnr, void *p, void *data);
+@@ -3879,10 +3884,7 @@ static int receive_out_of_sync(struct drbd_conf *mdev, enum drbd_packet cmd,
  struct data_cmd {
  	int expect_payload;
  	size_t pkt_size;
--	drbd_cmd_handler_f function;
-+	enum {
-+		MDEV,
-+		CONN,
-+	} type;
-+	union {
-+		int (*mdev_fn)(struct drbd_conf *, enum drbd_packet cmd,
-+				  unsigned int to_receive);
-+		int (*conn_fn)(struct drbd_tconn *, enum drbd_packet cmd,
-+				  unsigned int to_receive);
-+	};
- };
- 
- static struct data_cmd drbd_cmd_handler[] = {
--	[P_DATA]	    = { 1, sizeof(struct p_data), receive_Data },
--	[P_DATA_REPLY]	    = { 1, sizeof(struct p_data), receive_DataReply },
--	[P_RS_DATA_REPLY]   = { 1, sizeof(struct p_data), receive_RSDataReply } ,
--	[P_BARRIER]	    = { 0, sizeof(struct p_barrier), receive_Barrier } ,
--	[P_BITMAP]	    = { 1, sizeof(struct p_header), receive_bitmap } ,
--	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header), receive_bitmap } ,
--	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header), receive_UnplugRemote },
--	[P_DATA_REQUEST]    = { 0, sizeof(struct p_block_req), receive_DataRequest },
--	[P_RS_DATA_REQUEST] = { 0, sizeof(struct p_block_req), receive_DataRequest },
--	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header), receive_SyncParam },
--	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header), receive_SyncParam },
--	[P_PROTOCOL]        = { 1, sizeof(struct p_protocol), receive_protocol },
--	[P_UUIDS]	    = { 0, sizeof(struct p_uuids), receive_uuids },
--	[P_SIZES]	    = { 0, sizeof(struct p_sizes), receive_sizes },
--	[P_STATE]	    = { 0, sizeof(struct p_state), receive_state },
--	[P_STATE_CHG_REQ]   = { 0, sizeof(struct p_req_state), receive_req_state },
--	[P_SYNC_UUID]       = { 0, sizeof(struct p_rs_uuid), receive_sync_uuid },
--	[P_OV_REQUEST]      = { 0, sizeof(struct p_block_req), receive_DataRequest },
--	[P_OV_REPLY]        = { 1, sizeof(struct p_block_req), receive_DataRequest },
--	[P_CSUM_RS_REQUEST] = { 1, sizeof(struct p_block_req), receive_DataRequest },
--	[P_DELAY_PROBE]     = { 0, sizeof(struct p_delay_probe93), receive_skip },
--	[P_OUT_OF_SYNC]     = { 0, sizeof(struct p_block_desc), receive_out_of_sync },
--	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), receive_req_state },
-+	[P_DATA]	    = { 1, sizeof(struct p_data), MDEV, { receive_Data } },
-+	[P_DATA_REPLY]	    = { 1, sizeof(struct p_data), MDEV, { receive_DataReply } },
-+	[P_RS_DATA_REPLY]   = { 1, sizeof(struct p_data), MDEV, { receive_RSDataReply } } ,
-+	[P_BARRIER]	    = { 0, sizeof(struct p_barrier), MDEV, { receive_Barrier } } ,
-+	[P_BITMAP]	    = { 1, sizeof(struct p_header), MDEV, { receive_bitmap } } ,
-+	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header), MDEV, { receive_bitmap } } ,
-+	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header), MDEV, { receive_UnplugRemote } },
-+	[P_DATA_REQUEST]    = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
-+	[P_RS_DATA_REQUEST] = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
-+	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header), MDEV, { receive_SyncParam } },
-+	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header), MDEV, { receive_SyncParam } },
-+	[P_PROTOCOL]        = { 1, sizeof(struct p_protocol), MDEV, { receive_protocol } },
-+	[P_UUIDS]	    = { 0, sizeof(struct p_uuids), MDEV, { receive_uuids } },
-+	[P_SIZES]	    = { 0, sizeof(struct p_sizes), MDEV, { receive_sizes } },
-+	[P_STATE]	    = { 0, sizeof(struct p_state), MDEV, { receive_state } },
-+	[P_STATE_CHG_REQ]   = { 0, sizeof(struct p_req_state), MDEV, { receive_req_state } },
-+	[P_SYNC_UUID]       = { 0, sizeof(struct p_rs_uuid), MDEV, { receive_sync_uuid } },
-+	[P_OV_REQUEST]      = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
-+	[P_OV_REPLY]        = { 1, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
-+	[P_CSUM_RS_REQUEST] = { 1, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
-+	[P_DELAY_PROBE]     = { 0, sizeof(struct p_delay_probe93), MDEV, { receive_skip } },
-+	[P_OUT_OF_SYNC]     = { 0, sizeof(struct p_block_desc), MDEV, { receive_out_of_sync } },
-+	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), MDEV, { receive_req_state } },
- };
- 
- /* All handler functions that expect a sub-header get that sub-heder in
-@@ -3901,7 +3907,6 @@ static struct data_cmd drbd_cmd_handler[] = {
- static void drbdd(struct drbd_tconn *tconn)
- {
- 	struct p_header *header = &tconn->data.rbuf.header;
--	struct drbd_conf *mdev;
- 	struct packet_info pi;
- 	size_t shs; /* sub header size */
- 	int rv;
-@@ -3912,7 +3917,7 @@ static void drbdd(struct drbd_tconn *tconn)
- 			goto err_out;
- 
- 		if (unlikely(pi.cmd >= ARRAY_SIZE(drbd_cmd_handler) ||
--		    !drbd_cmd_handler[pi.cmd].function)) {
-+		    !drbd_cmd_handler[pi.cmd].mdev_fn)) {
- 			conn_err(tconn, "unknown packet type %d, l: %d!\n", pi.cmd, pi.size);
- 			goto err_out;
- 		}
-@@ -3932,10 +3937,14 @@ static void drbdd(struct drbd_tconn *tconn)
+-	enum {
+-		MDEV,
+-		CONN,
+-	} type;
++	enum mdev_or_conn fa_type; /* first argument's type */
+ 	union {
+ 		int (*mdev_fn)(struct drbd_conf *, enum drbd_packet cmd,
+ 				  unsigned int to_receive);
+@@ -3957,7 +3959,7 @@ static void drbdd(struct drbd_tconn *tconn)
  			}
  		}
  
--		mdev = vnr_to_mdev(tconn, pi.vnr);
--		rv = mdev ?
--			drbd_cmd_handler[pi.cmd].function(mdev, pi.cmd, pi.size - shs) :
--			tconn_receive_skip(tconn, pi.cmd, pi.size - shs);
-+		if (drbd_cmd_handler[pi.cmd].type == CONN) {
-+			rv = drbd_cmd_handler[pi.cmd].conn_fn(tconn, pi.cmd, pi.size - shs);
-+		} else {
-+			struct drbd_conf *mdev = vnr_to_mdev(tconn, pi.vnr);
-+			rv = mdev ?
-+				drbd_cmd_handler[pi.cmd].mdev_fn(mdev, pi.cmd, pi.size - shs) :
-+				tconn_receive_skip(tconn, pi.cmd, pi.size - shs);
-+		}
+-		if (drbd_cmd_handler[pi.cmd].type == CONN) {
++		if (drbd_cmd_handler[pi.cmd].fa_type == CONN) {
+ 			rv = drbd_cmd_handler[pi.cmd].conn_fn(tconn, pi.cmd, pi.size - shs);
+ 		} else {
+ 			struct drbd_conf *mdev = vnr_to_mdev(tconn, pi.vnr);
+@@ -4722,27 +4724,31 @@ static int tconn_process_done_ee(struct drbd_tconn *tconn)
  
- 		if (unlikely(!rv)) {
- 			conn_err(tconn, "error receiving %s, l: %d!\n",
+ struct asender_cmd {
+ 	size_t pkt_size;
+-	int (*process)(struct drbd_conf *, enum drbd_packet);
++	enum mdev_or_conn fa_type; /* first argument's type */
++	union {
++		int (*mdev_fn)(struct drbd_conf *mdev, enum drbd_packet cmd);
++		int (*conn_fn)(struct drbd_tconn *tconn, enum drbd_packet cmd);
++	};
+ };
+ 
+ static struct asender_cmd asender_tbl[] = {
+-	[P_PING]	    = { sizeof(struct p_header), got_Ping },
+-	[P_PING_ACK]	    = { sizeof(struct p_header), got_PingAck },
+-	[P_RECV_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_WRITE_ACK]	    = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_RS_WRITE_ACK]    = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_DISCARD_WRITE]   = { sizeof(struct p_block_ack), got_BlockAck },
+-	[P_NEG_ACK]	    = { sizeof(struct p_block_ack), got_NegAck },
+-	[P_NEG_DREPLY]	    = { sizeof(struct p_block_ack), got_NegDReply },
+-	[P_NEG_RS_DREPLY]   = { sizeof(struct p_block_ack), got_NegRSDReply},
+-	[P_OV_RESULT]	    = { sizeof(struct p_block_ack), got_OVResult },
+-	[P_BARRIER_ACK]	    = { sizeof(struct p_barrier_ack), got_BarrierAck },
+-	[P_STATE_CHG_REPLY] = { sizeof(struct p_req_state_reply), got_RqSReply },
+-	[P_RS_IS_IN_SYNC]   = { sizeof(struct p_block_ack), got_IsInSync },
+-	[P_DELAY_PROBE]     = { sizeof(struct p_delay_probe93), got_skip },
+-	[P_RS_CANCEL]       = { sizeof(struct p_block_ack), got_NegRSDReply},
+-	[P_CONN_ST_CHG_REPLY]={ sizeof(struct p_req_state_reply), got_RqSReply },
+-	[P_RETRY_WRITE]	    = { sizeof(struct p_block_ack), got_BlockAck },
++	[P_PING]	    = { sizeof(struct p_header), MDEV, { got_Ping } },
++	[P_PING_ACK]	    = { sizeof(struct p_header), MDEV, { got_PingAck } },
++	[P_RECV_ACK]	    = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
++	[P_WRITE_ACK]	    = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
++	[P_RS_WRITE_ACK]    = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
++	[P_DISCARD_WRITE]   = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
++	[P_NEG_ACK]	    = { sizeof(struct p_block_ack), MDEV, { got_NegAck } },
++	[P_NEG_DREPLY]	    = { sizeof(struct p_block_ack), MDEV, { got_NegDReply } },
++	[P_NEG_RS_DREPLY]   = { sizeof(struct p_block_ack), MDEV, { got_NegRSDReply } },
++	[P_OV_RESULT]	    = { sizeof(struct p_block_ack), MDEV, { got_OVResult } },
++	[P_BARRIER_ACK]	    = { sizeof(struct p_barrier_ack), MDEV, { got_BarrierAck } },
++	[P_STATE_CHG_REPLY] = { sizeof(struct p_req_state_reply), MDEV, { got_RqSReply } },
++	[P_RS_IS_IN_SYNC]   = { sizeof(struct p_block_ack), MDEV, { got_IsInSync } },
++	[P_DELAY_PROBE]     = { sizeof(struct p_delay_probe93), MDEV, { got_skip } },
++	[P_RS_CANCEL]       = { sizeof(struct p_block_ack), MDEV, { got_NegRSDReply } },
++	[P_CONN_ST_CHG_REPLY]={ sizeof(struct p_req_state_reply), MDEV, { got_RqSReply } },
++	[P_RETRY_WRITE]	    = { sizeof(struct p_block_ack), MDEV, { got_BlockAck } },
+ };
+ 
+ int drbd_asender(struct drbd_thread *thi)
+@@ -4845,10 +4851,20 @@ int drbd_asender(struct drbd_thread *thi)
+ 			}
+ 		}
+ 		if (received == expect) {
+-			tconn->last_received = jiffies;
+-			if (!cmd->process(vnr_to_mdev(tconn, pi.vnr), pi.cmd))
++			bool rv;
++
++			if (cmd->fa_type == CONN) {
++				rv = cmd->conn_fn(tconn, pi.cmd);
++			} else {
++				struct drbd_conf *mdev = vnr_to_mdev(tconn, pi.vnr);
++				rv = cmd->mdev_fn(mdev, pi.cmd);
++			}
++
++			if (!rv)
+ 				goto reconnect;
+ 
++			tconn->last_received = jiffies;
++
+ 			/* the idle_timeout (ping-int)
+ 			 * has been restored in got_PingAck() */
+ 			if (cmd == &asender_tbl[P_PING_ACK])
 -- 
 1.7.4.1
 
