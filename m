@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab1IBObv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 10:31:51 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52419 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752349Ab1IBObu (ORCPT
+	id S1752576Ab1IBOdd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 10:33:33 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:33610 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752391Ab1IBOda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 10:31:50 -0400
-Subject: [Tech-board-discuss] Linux Foundation Technical Advisory Board
- Elections and Nomination process
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tech Board Discuss <Tech-board-discuss@lists.linux-foundation.org>
-Cc: "ksummit-2011-discuss@lists.linux-foundation.org" 
-	<ksummit-2011-discuss@lists.linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Sep 2011 07:31:48 -0700
-Message-ID: <1314973908.2965.6.camel@dabdike>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Sep 2011 10:33:30 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Misael Lopez Cruz <misael.lopez@ti.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] Input: twl6040-vibra: Use accessor to get revision information
+Date: Fri,  2 Sep 2011 17:32:41 +0300
+Message-Id: <1314973961-21187-4-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1314973961-21187-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1314973961-21187-1-git-send-email-peter.ujfalusi@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The elections for five of the ten members of the Linux Foundation
-Technical Advisory Board[TAB] are held every year, currently the
-election will be at the 2011 Kernel Summit at one of the Joint events
-(probably on the Tuesday 25th October) and will be open to all attendees
-of the Weeks events (Kernel Summit, LinuxCon and ELC).
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/input/misc/twl6040-vibra.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Anyone is eligible to stand for election, simply send your nomination
-to:
-
-Tech-board-discuss@lists.linux-foundation.org
-
-We currently have five nominees (the incumbents):
-
-Alan Cox <alan@lxorguk.ukuu.org.uk>
-Thomas Gleixner <tglx@linutronix.de>
-Jonathan Corbet <corbet@lwn.net>
-Theodore Ts'o <tytso@mit.edu>
-Greg Kroah-Hartman <greg@kroah.com>
-
-The deadline for receiving nominations is up until the beginning of the
-event where the election is held (Currently thought to be the evening of
-October 25th Central European Standard time). Although, please remember
-if you're not going to be present that things go wrong with both
-networks and mailing lists, so get your nomination in early).
-
-James Bottomley (TAB Chair)
-
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index c43002e..154b7a3 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -97,7 +97,7 @@ static void twl6040_vibra_enable(struct vibra_info *info)
+ 	}
+ 
+ 	twl6040_power(info->twl6040, 1);
+-	if (twl6040->rev <= TWL6040_REV_ES1_1) {
++	if (twl6040_get_revid(twl6040) <= TWL6040_REV_ES1_1) {
+ 		/*
+ 		 * ERRATA: Disable overcurrent protection for at least
+ 		 * 3ms when enabling vibrator drivers to avoid false
+-- 
+1.7.6.1
 
