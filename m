@@ -1,87 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab1IBMlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 08:41:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55082 "EHLO
+	id S1752096Ab1IBMls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 08:41:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55084 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab1IBMlk convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751524Ab1IBMlo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 08:41:40 -0400
-Subject: [RFC][PATCH -rt] spinlock: frob debug bits
+	Fri, 2 Sep 2011 08:41:44 -0400
+Subject: [PATCH -rt] sched: teach migrate_disable about atomic contexts
 From: Peter Zijlstra <peterz@infradead.org>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 02 Sep 2011 14:41:33 +0200
+Date: Fri, 02 Sep 2011 14:41:37 +0200
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314967293.1301.13.camel@twins>
+Message-ID: <1314967297.1301.14.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure this is actually worth it, but since I wrote it I thought I
-might as well send it out. Didn't actually need it. Once I frobbed the
-printk stuff to work again there were plenty error to point out what
-gone wrong.
-
----
-Subject: spinlock: frob debug bits
+Subject: sched: teach migrate_disable about atomic contexts
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri Sep 02 14:29:30 CEST 2011
+Date: Fri Sep 02 14:29:27 CEST 2011
 
-gets more debug on a spinlock lockup, but also destroys all lock
-debugging.. you win some, you loose some..
+ <NMI>  [<ffffffff812dafd8>] spin_bug+0x94/0xa8
+ [<ffffffff812db07f>] do_raw_spin_lock+0x43/0xea
+ [<ffffffff814fa9be>] _raw_spin_lock_irqsave+0x6b/0x85
+ [<ffffffff8106ff9e>] ? migrate_disable+0x75/0x12d
+ [<ffffffff81078aaf>] ? pin_current_cpu+0x36/0xb0
+ [<ffffffff8106ff9e>] migrate_disable+0x75/0x12d
+ [<ffffffff81115b9d>] pagefault_disable+0xe/0x1f
+ [<ffffffff81047027>] copy_from_user_nmi+0x74/0xe6
+ [<ffffffff810489d7>] perf_callchain_user+0xf3/0x135
+
+Now clearly we can't go around taking locks from NMI context, cure
+this by short-circuiting migrate_disable() when we're in an atomic
+context already.
+
+Add some extra debugging to avoid things like:
+
+  preempt_disable()
+  migrate_disable();
+
+  preempt_enable();
+  migrate_enable();
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-3h4nzmhbik02u9xp9logjrv4@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-wbot4vsmwhi8vmbf83hsclk6@git.kernel.org
 ---
- lib/spinlock_debug.c |   19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
+ include/linux/sched.h |    3 +++
+ kernel/sched.c        |   21 +++++++++++++++++++++
+ 2 files changed, 24 insertions(+)
 
-Index: linux-2.6/lib/spinlock_debug.c
+Index: linux-2.6/kernel/sched.c
 ===================================================================
---- linux-2.6.orig/lib/spinlock_debug.c
-+++ linux-2.6/lib/spinlock_debug.c
-@@ -54,7 +54,7 @@ static void spin_bug(raw_spinlock_t *loc
- {
- 	struct task_struct *owner = NULL;
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -6135,6 +6135,17 @@ void migrate_disable(void)
+ 	unsigned long flags;
+ 	struct rq *rq;
  
--	if (!debug_locks_off())
-+	if (unlikely(!debug_locks))
- 		return;
- 
- 	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
-@@ -69,6 +69,11 @@ static void spin_bug(raw_spinlock_t *loc
- 		owner ? task_pid_nr(owner) : -1,
- 		lock->owner_cpu);
- 	dump_stack();
-+	debug_show_all_locks();
-+#ifdef CONFIG_SMP
-+	trigger_all_cpu_backtrace();
++	if (in_atomic()) {
++#ifdef CONFIG_SCHED_DEBUG
++		p->migrate_disable_atomic++;
 +#endif
-+	debug_locks_off();
- }
++		return;
++	}
++
++#ifdef CONFIG_SCHED_DEBUG
++	WARN_ON_ONCE(p->migrate_disable_atomic);
++#endif
++
+ 	preempt_disable();
+ 	if (p->migrate_disable) {
+ 		p->migrate_disable++;
+@@ -6183,6 +6194,16 @@ void migrate_enable(void)
+ 	unsigned long flags;
+ 	struct rq *rq;
  
- #define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
-@@ -112,17 +117,7 @@ static void __spin_lock_debug(raw_spinlo
- 			__delay(1);
- 		}
- 		/* lockup suspected: */
--		if (print_once) {
--			print_once = 0;
--			printk(KERN_EMERG "BUG: spinlock lockup on CPU#%d, "
--					"%s/%d, %p\n",
--				raw_smp_processor_id(), current->comm,
--				task_pid_nr(current), lock);
--			dump_stack();
--#ifdef CONFIG_SMP
--			trigger_all_cpu_backtrace();
--#endif
--		}
-+		SPIN_BUG_ON(1, lock, "timeout");
- 	}
- }
++	if (in_atomic()) {
++#ifdef CONFIG_SCHED_DEBUG
++		p->migrate_disable_atomic--;
++#endif
++		return;
++	}
++
++#ifdef CONFIG_SCHED_DEBUG
++	WARN_ON_ONCE(p->migrate_disable_atomic);
++#endif
+ 	WARN_ON_ONCE(p->migrate_disable <= 0);
+ 
+ 	preempt_disable();
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1264,6 +1264,9 @@ struct task_struct {
+ 	unsigned int policy;
+ #ifdef CONFIG_PREEMPT_RT_FULL
+ 	int migrate_disable;
++#ifdef CONFIG_SCHED_DEBUG
++	int migrate_disable_atomic;
++#endif
+ #endif
+ 	cpumask_t cpus_allowed;
  
 
