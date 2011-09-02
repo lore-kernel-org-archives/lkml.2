@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218Ab1IBXco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:32:44 -0400
-Received: from mail.microway.com ([206.173.81.22]:33195 "EHLO microway.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750735Ab1IBXcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:32:42 -0400
-Message-ID: <50815a5ec08cdb713de8eaa92ad6e8b3.squirrel@www.microway.com>
-In-Reply-To: <4E56EA02.7020307@intel.com>
-References: <201108171751.51648.rick@microway.com>
-    <8338f9871d1f52f9376a1eca319a7866.squirrel@www.microway.com>
-    <201108222047.11086.rjw@sisk.pl> <201108221651.35654.rick@microway.com>
-    <20110823171432.GA10794@redhat.com>
-    <faf1d1211a8d409b39119e44727b3c83.squirrel@www.microway.com>
-    <4E547B0F.6000001@intel.com>
-    <cf5a31c38191654364bd281df6cb81e0.squirrel@www.microway.com>
-    <7f348bab30fb6be7706ef35af999e5b1.squirrel@www.microway.com>
-    <4E56EA02.7020307@intel.com>
-Date: Fri, 2 Sep 2011 19:32:38 -0400
-Subject: Re: kernel oops and panic in acpi_atomic_read under 2.6.39.3.   call
- trace included
-From: rick@microway.com
-To: "Huang Ying" <ying.huang@intel.com>
-Cc: "Don Zickus" <dzickus@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Richard Houghton" <rhoughton@microway.com>,
-        "ACPI Devel Mailing List" <linux-acpi@vger.kernel.org>,
-        "Len Brown" <lenb@kernel.org>, "Matthew Garrett" <mjg59@srcf.ucam.org>
-User-Agent: SquirrelMail/1.4.21
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Sanitizer: Advosys mail filter
+	id S1751342Ab1IBXiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:38:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56220 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab1IBXiP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:38:15 -0400
+Date: Fri, 2 Sep 2011 18:38:06 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: linux-wireless@vger.kernel.org
+Cc: Christoph Anton Mitterer <calestyo@scientia.net>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>, linux-kernel@vger.kernel.org
+Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
+Message-ID: <20110902233806.GA22157@elie>
+References: <bbdbd01d4965ae789384bc1f9d0a2426@imap.dd24.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <bbdbd01d4965ae789384bc1f9d0a2426@imap.dd24.net>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huang,
+Hi,
 
-Sorry for the delay in my response.  Hurricane Irene delayed our testing a
-bit.
+Christoph Anton Mitterer wrote[1]:
 
-I had to switch the 5620 CPUS I had for 5670s.  After 4 days of running
-(it was usually about 2 before) I finally got this output in dmesg:
+> When I bring the WLAN interface up, after some time (usually just
+> minutes) I get the following error (during which the system
+> completely freezes for some 10-20s)
+[...]
+> kernel: [  951.087153] iwl4965 0000:14:00.0: Error sending REPLY_SCAN_CMD: time out after 500ms.
+> wpa_supplicant[13032]: Failed to initiate AP scan.
+> kernel: [  952.089208] ------------[ cut here ]------------
+> kernel: [  952.090089] WARNING: at drivers/net/wireless/iwlegacy/iwl-tx.c:483 iwl_legacy_enqueue_hcmd+0x3c7/0x3f0()
 
-[337296.365930] GHES: gar accessed: 0, 0xbf7b9370
-[337296.365936] ACPI atomic read mem: addr 0xbf7b9370 mapped to
-ffffc90013ee8370
+The warning is from v3.0-rc2~7^2~16^2~216 (iwlegacy: fix enqueue hcmd
+race conditions, 2011-04-28):
 
-It is not mapped to 0 as expected, but it didn't crash now!
+| -	spin_lock_irqsave(&priv->hcmd_lock, flags);
+| -
+| -	/* If this is a huge cmd, mark the huge flag also on the meta.flags
+| -	 * of the _original_ cmd. This is used for DMA mapping clean up.
+| -	 */
+| -	if (cmd->flags & CMD_SIZE_HUGE) {
+| -		idx = iwl_legacy_get_cmd_index(q, q->write_ptr, 0);
+| -		txq->meta[idx].flags = CMD_SIZE_HUGE;
+| -	}
+| -
+| 	idx = iwl_legacy_get_cmd_index(q, q->write_ptr, cmd->flags & CMD_SIZE_HUGE);
+| 	out_cmd = txq->cmd[idx];
+| 	out_meta = &txq->meta[idx];
+|  
+| +	if (WARN_ON(out_meta->flags & CMD_MAPPED)) {
+| +		spin_unlock_irqrestore(&priv->hcmd_lock, flags);
+| +		return -ENOSPC;
+| +	}
+| +
+
+More details are at [1].  Stanislav, thoughts?  Is this a bug, and if
+so, any ideas for tracking it down?
 
 Thanks,
-Rick
+Jonathan
 
-> On 08/25/2011 11:47 PM, rick@microway.com wrote:
->> Hi Huang,
->>
->> My new setup reproduced the panic. However I do not have any gar
->> accessed
->> messages on it.  The gar mapped messages are in my previous email.  Here
->> is the latest call trace.  There is no GHES output prior to it:
->>
->
-> That is wired.  Can you try the patch attached?  If my guessing is
-> correct, there will be no panic, but something as follow will be in dmesg:
->
-> ACPI atomic read mem: addr 0xxxxx mapped to 0
->
-> Best Regards,
-> Huang Ying
->
-
-
+[1] http://bugs.debian.org/636355
