@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091Ab1IBPEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 11:04:12 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:33491 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752899Ab1IBPDn (ORCPT
+	id S1753111Ab1IBPEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 11:04:15 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:33200 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752907Ab1IBPDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 11:03:43 -0400
+	Fri, 2 Sep 2011 11:03:39 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <samuel.ortiz@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
         Misael Lopez Cruz <misael.lopez@ti.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/4] MFD: twl6040: Fix power on GPIO handling
-Date: Fri,  2 Sep 2011 18:03:05 +0300
-Message-Id: <1314975785-25081-5-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 2/4] MFD: twl6040: Add accessor for revision ID
+Date: Fri,  2 Sep 2011 18:03:03 +0300
+Message-Id: <1314975785-25081-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1314975785-25081-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1314975785-25081-1-git-send-email-peter.ujfalusi@ti.com>
@@ -21,55 +21,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid requesting the audpwron gpio in case of ES1.0
-revision.
-In the past we requested the gpio, but we did not
-free it up, since we made the check for the revision
-later. This results later checks for gpio validity to
-fail, leaving the gpio reserved (even after the driver
-has been removed).
+For client driver to use, if they need chip resvision information.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl6040-core.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/mfd/twl6040-core.c  |    2 +-
+ include/linux/mfd/twl6040.h |    5 +++++
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index 51c3b47..7dc8c47 100644
+index b0519e6..51c3b47 100644
 --- a/drivers/mfd/twl6040-core.c
 +++ b/drivers/mfd/twl6040-core.c
-@@ -470,7 +470,6 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, twl6040);
- 
- 	twl6040->dev = &pdev->dev;
--	twl6040->audpwron = pdata->audpwron_gpio;
- 	twl6040->irq = pdata->naudint_irq;
- 	twl6040->irq_base = pdata->irq_base;
- 
-@@ -480,6 +479,12 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
- 
- 	twl6040->rev = twl6040_reg_read(twl6040, TWL6040_REG_ASICREV);
- 
-+	/* ERRATA: Automatic power-up is not possible in ES1.0 */
-+	if (twl6040_get_revid(twl6040) > TWL6040_REV_ES1_0)
-+		twl6040->audpwron = pdata->audpwron_gpio;
-+	else
-+		twl6040->audpwron = -EINVAL;
-+
- 	if (gpio_is_valid(twl6040->audpwron)) {
- 		ret = gpio_request(twl6040->audpwron, "audpwron");
- 		if (ret)
-@@ -490,10 +495,6 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
- 			goto gpio2_err;
+@@ -491,7 +491,7 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
  	}
  
--	/* ERRATA: Automatic power-up is not possible in ES1.0 */
--	if (twl6040_get_revid(twl6040) == TWL6040_REV_ES1_0)
--		twl6040->audpwron = -EINVAL;
--
+ 	/* ERRATA: Automatic power-up is not possible in ES1.0 */
+-	if (twl6040->rev == TWL6040_REV_ES1_0)
++	if (twl6040_get_revid(twl6040) == TWL6040_REV_ES1_0)
+ 		twl6040->audpwron = -EINVAL;
+ 
  	/* codec interrupt */
- 	ret = twl6040_irq_init(twl6040);
- 	if (ret)
+diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
+index 4c806f6..cb3b822 100644
+--- a/include/linux/mfd/twl6040.h
++++ b/include/linux/mfd/twl6040.h
+@@ -225,4 +225,9 @@ unsigned int twl6040_get_sysclk(struct twl6040 *twl6040);
+ int twl6040_irq_init(struct twl6040 *twl6040);
+ void twl6040_irq_exit(struct twl6040 *twl6040);
+ 
++static inline int twl6040_get_revid(struct twl6040 *twl6040)
++{
++	return twl6040->rev;
++}
++
+ #endif  /* End of __TWL6040_CODEC_H__ */
 -- 
 1.7.6.1
 
