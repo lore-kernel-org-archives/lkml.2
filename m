@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab1IBHWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 03:22:38 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:53604 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab1IBHWh (ORCPT
+	id S1756447Ab1IBH0a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 03:26:30 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63779 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab1IBH03 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 03:22:37 -0400
-X-IronPort-AV: E=Sophos;i="4.68,317,1312156800"; 
-   d="scan'208";a="7565448"
-Subject: Re: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
- space page tables in alloc_vm_area()
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <4E5FED1A.1000300@goop.org>
-References: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com>
-	 <20110901161134.GA8979@dumpdata.com>  <4E5FED1A.1000300@goop.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Fri, 2 Sep 2011 08:22:34 +0100
-Message-ID: <1314948154.28989.158.camel@zakaz.uk.xensource.com>
+	Fri, 2 Sep 2011 03:26:29 -0400
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [87.66.92.201]
+In-Reply-To: <201108221027.34441.trenn@suse.de>
+References: <1313766244-22313-1-git-send-email-tom.leiming@gmail.com>
+	<201108192231.02665.trenn@suse.de>
+	<CACVXFVPeFyg7YoAsY63Mpy9HVR1y3ibg9R8HnUfLVe=hKf3ApA@mail.gmail.com>
+	<201108221027.34441.trenn@suse.de>
+Date: Fri, 2 Sep 2011 09:26:28 +0200
+Message-ID: <CAORVsuVkxHTEr5J9F1USr3csMoCELDfk9ixeG3kddy6oRj5RUw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] trace points: power: remove 'cpu_id' from trace_cpu_idle
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Thomas Renninger <trenn@suse.de>, Ming Lei <tom.leiming@gmail.com>
+Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-01 at 21:37 +0100, Jeremy Fitzhardinge wrote:
-> On 09/01/2011 09:11 AM, Konrad Rzeszutek Wilk wrote:
-> > On Thu, Sep 01, 2011 at 12:51:03PM +0100, David Vrabel wrote:
-> >> From: David Vrabel <david.vrabel@citrix.com>
-> > Andrew,
-> >
-> > I was wondering if you would be Ok with this patch for 3.1.
-> >
-> > It is a revert (I can prepare a proper revert if you would like
-> > that instead of this patch).
-> >
-> > The users of this particular function (alloc_vm_area) are just
-> > Xen. There are no others.
-> 
-> I'd prefer to put explicit vmalloc_sync_all()s in the callsites where
-> necessary, and ultimately try to work out ways of avoiding it altogether
-> (like have some hypercall wrapper which touches the arg memory to make
-> sure its mapped?).
+Ming Lei, Thomas,
 
-That only syncs the current pagetable though. If that is sufficient (and
-it could well be) then perhaps just doing a vmalloc_sync_one on the
-current page tables directly would be better than faulting to do it?
+Sorry if it is a bit late to jump in.
 
-It's the sort of thing you could hide inside the gnttab_set_map_op type
-helpers I guess?
+On Mon, Aug 22, 2011 at 10:27 AM, Thomas Renninger <trenn@suse.de> wrote:
+> On Saturday, August 20, 2011 04:40:09 AM Ming Lei wrote:
+>> Hi,
+>>
+>> 2011/8/20 Thomas Renninger <trenn@suse.de>:
+>> > On Friday, August 19, 2011 05:04:04 PM tom.leiming@gmail.com wrote:
+>> >> From: Ming Lei <tom.leiming@gmail.com>
+>> >>
+>> >> This patch removes the 'cpu_id' parameter of the cpu_idle
+>> >> trace point, based on the ideas below:
+>> >>
+>> >> - the cpu_id which is passed to trace point is always the current
+>> >>   cpu
+>> > Are you sure this will always be true?
+>>
+>> It is sure at least now,  the only place to pass 'dev->cpu' is inside
+>> cpuidle_idle_call,
+> It was known that cpu_id is always the current cpu with current
+> implementation when this got introduced.
+> But the perf events API must not change back and forth for userspace
+> compatibility. Therefore the cpu_id was added in case
+> that future implementations want to pass info where the current cpu
+> is not the cpu which is sent to the sleep state.
+Agree. Let's keep the cpu_id field.
 
-Ian.
+>
+>> smp_processor_id() can't be used safely in preemptible context.
+> I expect the only side effect that could happen is that if smp_process_id
+> is interrupted you get the wrong core id on a cpu idle trace event.
+> This only happens if cpuidle is not used and even then should happen
+> very rarely, nothing to worry for a debug tool like that.
+> And it should get fixed if these idle functions get fully integrated into
+> cpuidle at some point of time.
+>
+>   Thomas
+>
 
-
+Regards,
+Jean
