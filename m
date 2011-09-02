@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab1IBQEv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:04:51 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6854 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753154Ab1IBQEu convert rfc822-to-8bit (ORCPT
+	id S1753354Ab1IBQF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:05:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62550 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab1IBQFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:04:50 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 02 Sep 2011 09:04:44 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
+	Fri, 2 Sep 2011 12:05:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V2 1/4] i2c: Add irq_gpio field to struct i2c_client.
+Date: Fri, 2 Sep 2011 18:05:27 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Chew <AChew@nvidia.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>, Barry Song <21cnbao@gmail.com>
-Date: Fri, 2 Sep 2011 09:04:42 -0700
-Subject: RE: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
-Thread-Topic: [PATCH 2/4 v6] pinmux: add a driver for the U300 pinmux
-Thread-Index: AcxpR/g8SKqnYGaSSUavMv0rj+KFxQAQX3Tw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B327A570@HQMAIL01.nvidia.com>
-References: <1314869552-5531-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B327A40C@HQMAIL01.nvidia.com>
- <CACRpkdZ1kNbtOqw=X1mmM-bA+Gg2BbmO5_CT0sSQtBCK_WdwYw@mail.gmail.com>
-In-Reply-To: <CACRpkdZ1kNbtOqw=X1mmM-bA+Gg2BbmO5_CT0sSQtBCK_WdwYw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1314895964-15964-1-git-send-email-swarren@nvidia.com> <4E60985B.6010901@cam.ac.uk> <74CDBE0F657A3D45AFBB94109FB122FF04B327A55D@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B327A55D@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109021805.27569.arnd@arndb.de>
+X-Provags-ID: V02:K0:CA2aPCVbqkDg/bxXGD5yEkvsOygSPl7slNKSPMTKCeR
+ 2zOQaXawNqahwl4+d3VWWybr7Gw0mrc+UqMUIpYmV81sMr/B/D
+ 6GNEnn5Z14bk0eqSX9SyL/VGrrauUZlm8mcj3FzoJgEmCYmqRh
+ /YNe/wKV+wfqIMTMlhhlQESUUGdfOoYSwJhCsPAlufrkXCnvKE
+ aEdZEOl3IeOJBV0nmW7uAMjjLHhBHg1oBQHunnQX45UMq2R3Jb
+ E/udfY2kmhu0T1bK84v7UZTR/jeKxFVTOTNLxaO04POf5kYtGD
+ I4pyFdguqP+L43GGh/u6iN2YgQyGnlNWsNJstfMn9cCNkC/VHW
+ gcHiH9vIM4Fxh1AyE89Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Friday, September 02, 2011 2:12 AM:
-> On Thu, Sep 1, 2011 at 11:33 PM, Stephen Warren <swarren@nvidia.com> wrote:
+On Friday 02 September 2011, Stephen Warren wrote:
+> The idea was specifically to replace the need to call irq_to_gpio(i2c->irq).
+> If we did just rename it plain "gpio" and allow it to be used for anything,
+> then that does indeed start looking more like device-specific platform data.
 > 
-> >> +static const struct u300_pmx_func u300_pmx_functions[] = {
-> >> +     {
-> >> +             .name = "power",
-> >> +             .groups = { POWERGRP_INDEX },
-> >> +             /* Mask is N/A */
-> >> +     },
-> >
-> > Hmmm. That's a lot of _INDEX defines that'd need to be set up, at least
-> > to fully represent a chip like Tegra. Can the pinmux core be modified
-> > such that the group list is an array of names (char*) rather than the
-> > actual numeric IDs of the groups? Still, perhaps we could use the enum
-> > we already have for this, so perhaps it isn't a big deal...
-> 
-> Well I could think about a lot of ways to do this, but it's basically up
-> to the driver, the U300 is just some simple example of what you can
-> do, it's just trying to satisfy the API.
-> 
-> Maybe as part of writing the nVidia driver you find a clever
-> mechanism for doing this, if it's looking generally useful at that
-> point then let's move it to the core I'd say.
+> I guess it sounds like consensus is to go that way. It does seem like that
+> will end up creating a bunch more device-specific platform-data files though.
+> I wonder if adding IORESOURCE_GPIO would make sense so this could be handled
+> in a generic way without custom platform data types?
 
-The reason I asked about the pinmux core handling this is because the
-driver op get_function_groups:
+Interesting point. That's probably best for Grant to comment on, because
+it depends on the long-term direction he wants to take with this.
 
-+	int (*get_function_groups) (struct pinctrl_dev *pctldev,
-+				  unsigned selector,
-+				  unsigned ** const groups,
-+				  unsigned * const num_groups);
+I suppose that an IORESOURCE_GPIO makes a lot of sense if we expect
+to keep having a flat system-wide gpio number space in the long run,
+similar to irq numbers.
 
-returns an array of integer indexes. I think the only way to get rid of
-the index definitions in the drivers is to allow get_function_groups to
-return an array of strings instead.
+It would not fit well if we expect gpio numbers to be local to
+a gpio controller, with no unique global identifier for them, similar
+to how dma channels in the dma-engine subsystem are handled.
 
-Well, I suppose the implementation of get_function_groups could convert
-from an internal array of strings to the returned array of integers at
-run-time, but that doesn't seem like a great idea.
-
--- 
-nvpublic
-
+	Arnd
