@@ -1,152 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab1IBS2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 14:28:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48944 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab1IBS2U (ORCPT
+	id S1754606Ab1IBS3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 14:29:06 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:60496 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754576Ab1IBS3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 14:28:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: oleg@redhat.com, matthltc@us.ibm.com, rjw@sisk.pl, paul@paulmenage.org
-Cc: containers@lists.linux-foundation.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 5/6] freezer: remove unused @sig_only from freeze_task()
-Date: Sat,  3 Sep 2011 03:27:49 +0900
-Message-Id: <1314988070-12244-6-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1314988070-12244-1-git-send-email-tj@kernel.org>
-References: <1314988070-12244-1-git-send-email-tj@kernel.org>
+	Fri, 2 Sep 2011 14:29:03 -0400
+X-Sasl-enc: uXTsAgVQW4396zSwh7rpGHe7l3aJl4dg+FTaB0xSRL8V 1314988142
+Date: Fri, 2 Sep 2011 11:18:26 -0700
+From: Greg KH <greg@kroah.com>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Luben Tuikov <ltuikov@yahoo.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux USB <linux-usb-devel@lists.sourceforge.net>,
+        usb-storage@lists.one-eyed-alien.net
+Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating
+ autosense
+Message-ID: <20110902181826.GA29848@kroah.com>
+References: <CAM9Y=f6eSgxsbrO11d0ux72NJip14xGQDeX84VWb9uiBtEVsjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM9Y=f6eSgxsbrO11d0ux72NJip14xGQDeX84VWb9uiBtEVsjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After 25a16d02ba "freezer: make freezing() test freeze conditions in
-effect instead of TIF_FREEZE", freezing() returns authoritative answer
-on whether the current task should freeze or not and freeze_task()
-doesn't need or use @sig_only.  Remove it.
+On Fri, Sep 02, 2011 at 02:24:36PM +0800, Daniel J Blueman wrote:
+> Hi Luben, Greg, Matthew,
+> 
+> Any plan for reviewing and accepting this patch [1] yet? I'm still
+> seeing the symptoms on USB 3 SATA bridges with linux-3.0+.
 
-While at it, rewrite function comment for freeze_task() and rename
-@sig_only to @user_only in try_to_freeze_tasks().
+I needed an ack from Matthew before I could take it.
 
-This patch doesn't cause any functional change.
+Matthew?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/freezer.h |    2 +-
- kernel/cgroup_freezer.c |    4 ++--
- kernel/freezer.c        |   21 +++++++++------------
- kernel/power/process.c  |    8 ++++----
- 4 files changed, 16 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 122b5ce..9193bae 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -47,7 +47,7 @@ static inline bool try_to_freeze(void)
- 	return __refrigerator(false);
- }
- 
--extern bool freeze_task(struct task_struct *p, bool sig_only);
-+extern bool freeze_task(struct task_struct *p);
- extern bool __set_freezable(bool with_signal);
- 
- #ifdef CONFIG_CGROUP_FREEZER
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index 56a457a..8753e7b 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -206,7 +206,7 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 
- 	/* Locking avoids race with FREEZING -> THAWED transitions. */
- 	if (freezer->state == CGROUP_FREEZING)
--		freeze_task(task, true);
-+		freeze_task(task);
- 	spin_unlock_irq(&freezer->lock);
- }
- 
-@@ -274,7 +274,7 @@ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
- 
- 	cgroup_iter_start(cgroup, &it);
- 	while ((task = cgroup_iter_next(cgroup, &it))) {
--		if (!freeze_task(task, true))
-+		if (!freeze_task(task))
- 			continue;
- 		if (frozen(task))
- 			continue;
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 9846133..da76b64 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -100,20 +100,17 @@ static void fake_signal_wake_up(struct task_struct *p)
- }
- 
- /**
-- *	freeze_task - send a freeze request to given task
-- *	@p: task to send the request to
-- *	@sig_only: if set, the request will only be sent if the task has the
-- *		PF_FREEZER_NOSIG flag unset
-- *	Return value: 'false', if @sig_only is set and the task has
-- *		PF_FREEZER_NOSIG set or the task is frozen, 'true', otherwise
-+ * freeze_task - send a freeze request to given task
-+ * @p: task to send the request to
-  *
-- *	The freeze request is sent by setting the tasks's TIF_FREEZE flag and
-- *	either sending a fake signal to it or waking it up, depending on whether
-- *	or not it has PF_FREEZER_NOSIG set.  If @sig_only is set and the task
-- *	has PF_FREEZER_NOSIG set (ie. it is a typical kernel thread), its
-- *	TIF_FREEZE flag will not be set.
-+ * If @p is freezing, the freeze request is sent by setting %TIF_FREEZE
-+ * flag and either sending a fake signal to it or waking it up, depending
-+ * on whether it has %PF_FREEZER_NOSIG set.
-+ *
-+ * RETURNS:
-+ * %false, if @p is not freezing or already frozen; %true, otherwise
-  */
--bool freeze_task(struct task_struct *p, bool sig_only)
-+bool freeze_task(struct task_struct *p)
- {
- 	unsigned long flags;
- 
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index fe06ddf..ab4fd7b 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -22,7 +22,7 @@
-  */
- #define TIMEOUT	(20 * HZ)
- 
--static int try_to_freeze_tasks(bool sig_only)
-+static int try_to_freeze_tasks(bool user_only)
- {
- 	struct task_struct *g, *p;
- 	unsigned long end_time;
-@@ -37,14 +37,14 @@ static int try_to_freeze_tasks(bool sig_only)
- 
- 	end_time = jiffies + TIMEOUT;
- 
--	if (!sig_only)
-+	if (!user_only)
- 		freeze_workqueues_begin();
- 
- 	while (true) {
- 		todo = 0;
- 		read_lock(&tasklist_lock);
- 		do_each_thread(g, p) {
--			if (p == current || !freeze_task(p, sig_only))
-+			if (p == current || !freeze_task(p))
- 				continue;
- 
- 			/*
-@@ -65,7 +65,7 @@ static int try_to_freeze_tasks(bool sig_only)
- 		} while_each_thread(g, p);
- 		read_unlock(&tasklist_lock);
- 
--		if (!sig_only) {
-+		if (!user_only) {
- 			wq_busy = freeze_workqueues_busy();
- 			todo += wq_busy;
- 		}
--- 
-1.7.6
-
+> --- [1]
+> 
+> http://www.kerneltrap.com/mailarchive/linux-kernel/2010/11/11/4644097/thread
+> 
+> This patch solves two things:
+> 1) Enables autosense emulation code to correctly
+> interpret descriptor format sense data, and
+> 2) Fixes a bug whereby the autosense emulation
+> code would overwrite descriptor format sense data
+> with SENSE KEY HARDWARE ERROR in fixed format, to
+> incorrectly look like this:
+> 
+> Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  Sense Key :
+> Recovered Error [current] [descriptor]
+> Oct 21 14:11:07 localhost kernel: Descriptor sense data with sense
+> descriptors (in hex):
+> Oct 21 14:11:07 localhost kernel:        72 01 04 1d 00 00 00 0e 09 0c
+> 00 00 00 00 00 00
+> Oct 21 14:11:07 localhost kernel:        00 4f 00 c2 00 50
+> Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  ASC=0x4 ASCQ=0x1d
+> 
+> Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+> ---
+>  drivers/usb/storage/transport.c |   34 +++++++++++++++++++---------------
+>  1 files changed, 19 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
+> index 64ec073..cb04664 100644
+> --- a/drivers/usb/storage/transport.c
+> +++ b/drivers/usb/storage/transport.c
+> @@ -691,6 +691,9 @@ void usb_stor_invoke_transport(struct scsi_cmnd
+> *srb, struct us_data *us)
+>  		int temp_result;
+>  		struct scsi_eh_save ses;
+>  		int sense_size = US_SENSE_SIZE;
+> +		struct scsi_sense_hdr sshdr;
+> +		const u8 *scdd;
+> +		u8 fm_ili;
+> 
+>  		/* device supports and needs bigger sense buffer */
+>  		if (us->fflags & US_FL_SANE_SENSE)
+> @@ -774,32 +777,30 @@ Retry_Sense:
+>  			srb->sense_buffer[7] = (US_SENSE_SIZE - 8);
+>  		}
+> 
+> +		scsi_normalize_sense(srb->sense_buffer, SCSI_SENSE_BUFFERSIZE,
+> +				     &sshdr);
+> +
+>  		US_DEBUGP("-- Result from auto-sense is %d\n", temp_result);
+>  		US_DEBUGP("-- code: 0x%x, key: 0x%x, ASC: 0x%x, ASCQ: 0x%x\n",
+> -			  srb->sense_buffer[0],
+> -			  srb->sense_buffer[2] & 0xf,
+> -			  srb->sense_buffer[12],
+> -			  srb->sense_buffer[13]);
+> +			  sshdr.response_code, sshdr.sense_key,
+> +			  sshdr.asc, sshdr.ascq);
+>  #ifdef CONFIG_USB_STORAGE_DEBUG
+> -		usb_stor_show_sense(
+> -			  srb->sense_buffer[2] & 0xf,
+> -			  srb->sense_buffer[12],
+> -			  srb->sense_buffer[13]);
+> +		usb_stor_show_sense(sshdr.sense_key, sshdr.asc, sshdr.ascq);
+>  #endif
+> 
+>  		/* set the result so the higher layers expect this data */
+>  		srb->result = SAM_STAT_CHECK_CONDITION;
+> 
+> +		scdd = scsi_sense_desc_find(srb->sense_buffer,
+> +					    SCSI_SENSE_BUFFERSIZE, 4);
+> +		fm_ili = (scdd ? scdd[3] : srb->sense_buffer[2]) & 0xA0;
+> +
+>  		/* We often get empty sense data.  This could indicate that
+>  		 * everything worked or that there was an unspecified
+>  		 * problem.  We have to decide which.
+>  		 */
+> -		if (	/* Filemark 0, ignore EOM, ILI 0, no sense */
+> -				(srb->sense_buffer[2] & 0xaf) == 0 &&
+> -			/* No ASC or ASCQ */
+> -				srb->sense_buffer[12] == 0 &&
+> -				srb->sense_buffer[13] == 0) {
+> -
+> +		if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0 &&
+> +		    fm_ili == 0) {
+>  			/* If things are really okay, then let's show that.
+>  			 * Zero out the sense buffer so the higher layers
+>  			 * won't realize we did an unsolicited auto-sense.
+> @@ -814,7 +815,10 @@ Retry_Sense:
+>  			 */
+>  			} else {
+>  				srb->result = DID_ERROR << 16;
+> -				srb->sense_buffer[2] = HARDWARE_ERROR;
+> +				if ((sshdr.response_code & 0x72) == 0x72)
+> +					srb->sense_buffer[1] = HARDWARE_ERROR;
+> +				else
+> +					srb->sense_buffer[2] = HARDWARE_ERROR;
+>  			}
+>  		}
+>  	}
+> -- 
+> Daniel J Blueman
