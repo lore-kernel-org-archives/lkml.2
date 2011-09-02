@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1IBQIC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:08:02 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:58227 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab1IBQIA (ORCPT
+	id S1753173Ab1IBQJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:09:30 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:60047 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752797Ab1IBQJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:08:00 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next RCU complaint during boot
-In-Reply-To: Your message of "Fri, 02 Sep 2011 03:53:32 +0200."
-             <20110902015330.GA28121@somewhere.redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <8867.1314894817@turing-police.cc.vt.edu> <20110902014424.GB2405@linux.vnet.ibm.com>
-            <20110902015330.GA28121@somewhere.redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1314979603_2710P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 02 Sep 2011 12:06:43 -0400
-Message-ID: <6595.1314979603@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020B.4E60FF17.00EC,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 2 Sep 2011 12:09:28 -0400
+X-Sasl-enc: brhejIRDeM+o0MpRHjkqYHMlq9i1CshqqVhhFxmHDR0Y 1314979767
+Date: Fri, 2 Sep 2011 09:03:29 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Peter Foley <pefoley2@verizon.net>, "gregkh@suse.de" <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: Hyper-V TODO file
+Message-ID: <20110902160329.GA4682@kroah.com>
+References: <1314829011-28922-1-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1108311907130.20924@linux>
+ <20110901203113.GA15259@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B5FA3@TK5EX14MBXC126.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048081B5FA3@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1314979603_2710P
-Content-Type: text/plain; charset=us-ascii
-
-On Fri, 02 Sep 2011 03:53:32 +0200, Frederic Weisbecker said:
-> On Thu, Sep 01, 2011 at 06:44:24PM -0700, Paul E. McKenney wrote:
-
-> > This is a bug where someone uses RCU at a time when RCU has been told
-> > that the CPU is in dyntick-idle mode.  Frederic Weisbecker has some
-> > patches that should address this.
+On Fri, Sep 02, 2011 at 03:17:19PM +0000, KY Srinivasan wrote:
 > 
-> Yep, see there: https://lkml.org/lkml/2011/8/20/81
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Thursday, September 01, 2011 4:31 PM
+> > To: Peter Foley
+> > Cc: KY Srinivasan; gregkh@suse.de; Linux Kernel Mailing List;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > Subject: Re: Hyper-V TODO file
+> > 
+> > On Wed, Aug 31, 2011 at 07:11:39PM -0400, Peter Foley wrote:
+> > > On Wed, 31 Aug 2011, K. Y. Srinivasan wrote:
+> > > > Greg, as I have been pestering you for some time now, we are very
+> > interested in
+> > > > exiting staging and we are willing to dedicate the necessary development
+> > > > resources to address whatever issues that may still be pending. So, your help
+> > > > in identifying what needs to be done will be greatly appreciated. To that end,
+> > > > I think it will be useful to update the TODO file to reflect the current state of
+> > > > the drivers. Let us know how we should proceed here.
+> > >
+> > > An issue I've come across in the hyper-v drivers is the forced modular
+> > > build. You might want to see if the "depends on m" is still needed.
+> > 
+> > Ah, good point, KY, can you try this out and see if that can be changed?
+> > If not, something is wrong and that needs to get fixed.
+> 
+> Just verified that we can build into the kernel (not as modules) all hyper-V
+> drivers except hv_storvsc. hv_storvsc depends upon functionality that in my build 
+> is being built as modules (SCSI etc.) and this is the reason why I could not build
+> hv_storvsc as part of the kernel.
 
-Hmm.. .would test, but didn't apply cleanly to -next from Wednesday.  Of course,
-I was trying to do it before corn flakes, so I probably got the patches out of order.
-WIll re-try this evening if I get a chance.
+So 'make allyesconfig' with the module dependancy turned off doesn't
+break the build?  If so, great.
 
---==_Exmh_1314979603_2710P
-Content-Type: application/pgp-signature
+> Greg, do you want me to submit a patch to Kconfig, getting rid of the module
+> dependency (for hyperv-v drivers).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Yes please.
 
-iD4DBQFOYP8TcC3lWbTT17ARAumUAJ4609ziLbsR2wfq/kcoPuMGjNU96QCXQ1+m
-yywB+X3tClZYNNKRokkSLA==
-=RrNe
------END PGP SIGNATURE-----
+thanks,
 
---==_Exmh_1314979603_2710P--
-
+greg k-h
