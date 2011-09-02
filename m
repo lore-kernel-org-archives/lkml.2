@@ -1,207 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab1IBLOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 07:14:45 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:30421 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933452Ab1IBLOm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 07:14:42 -0400
-X-IronPort-AV: E=Sophos;i="4.68,318,1312156800"; 
-   d="scan'208";a="7570621"
-Date: Fri, 2 Sep 2011 12:22:31 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH 00/13] [PATCH RFC] Paravirtualized ticketlocks
-In-Reply-To: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
-Message-ID: <alpine.DEB.2.00.1109021222080.12963@kaball-desktop>
-References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933515Ab1IBLVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 07:21:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56789 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933452Ab1IBLVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 07:21:36 -0400
+Date: Fri, 2 Sep 2011 13:21:33 +0200
+From: Jan Kara <jack@suse.cz>
+To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
+ del_timer
+Message-ID: <20110902112133.GD12182@quack.suse.cz>
+References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
+ <20110901143333.51baf4ae.akpm@linux-foundation.org>
+ <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Sep 2011, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> 
-> This series replaces the existing paravirtualized spinlock mechanism
-> with a paravirtualized ticketlock mechanism.
-> 
-> Ticket locks have an inherent problem in a virtualized case, because
-> the vCPUs are scheduled rather than running concurrently (ignoring
-> gang scheduled vCPUs).  This can result in catastrophic performance
-> collapses when the vCPU scheduler doesn't schedule the correct "next"
-> vCPU, and ends up scheduling a vCPU which burns its entire timeslice
-> spinning.  (Note that this is not the same problem as lock-holder
-> preemption, which this series also addresses; that's also a problem,
-> but not catastrophic).
-> 
-> (See Thomas Friebel's talk "Prevent Guests from Spinning Around"
-> http://www.xen.org/files/xensummitboston08/LHP.pdf for more details.)
-> 
-> Currently we deal with this by having PV spinlocks, which adds a layer
-> of indirection in front of all the spinlock functions, and defining a
-> completely new implementation for Xen (and for other pvops users, but
-> there are none at present).
-> 
-> PV ticketlocks keeps the existing ticketlock implemenentation
-> (fastpath) as-is, but adds a couple of pvops for the slow paths:
-> 
-> - If a CPU has been waiting for a spinlock for SPIN_THRESHOLD
->   iterations, then call out to the __ticket_lock_spinning() pvop,
->   which allows a backend to block the vCPU rather than spinning.  This
->   pvop can set the lock into "slowpath state".
-> 
-> - When releasing a lock, if it is in "slowpath state", the call
->   __ticket_unlock_kick() to kick the next vCPU in line awake.  If the
->   lock is no longer in contention, it also clears the slowpath flag.
-> 
-> The "slowpath state" is stored in the LSB of the within the lock
-> ticket.  This has the effect of reducing the max number of CPUs by
-> half (so, a "small ticket" can deal with 128 CPUs, and "large ticket"
-> 32768).
-> 
-> This series provides a Xen implementation, but it should be
-> straightforward to add a KVM implementation as well.
-> 
-> Overall, it results in a large reduction in code, it makes the native
-> and virtualized cases closer, and it removes a layer of indirection
-> around all the spinlock functions.  The downside is that it does add a
-> few instructions into the fastpath in the native case.
-> 
-> Most of the heavy lifting code is in the slowpaths, but it does have
-> an effect on the fastpath code.  The inner part of ticket lock code
-> becomes:
-> 	inc = xadd(&lock->tickets, inc);
-> 	inc.tail &= ~TICKET_SLOWPATH_FLAG;
-> 
-> 	for (;;) {
-> 		unsigned count = SPIN_THRESHOLD;
-> 
-> 		do {
-> 			if (inc.head == inc.tail)
-> 				goto out;
-> 			cpu_relax();
-> 			inc.head = ACCESS_ONCE(lock->tickets.head);
-> 		} while (--count);
-> 		__ticket_lock_spinning(lock, inc.tail);
-> 	}
-> 
-> which results in:
-> 
->       pushq   %rbp
->       movq    %rsp,%rbp
-> 
->       movl    $512, %ecx
->       lock; xaddw %cx, (%rdi)	# claim ticket
-> 
->       movzbl  %ch, %edx
->       movl    $2048, %eax	# set spin count
->       andl    $-2, %edx		# mask off TICKET_SLOWPATH_FLAG
->       movzbl  %dl, %esi
-> 
-> 1:    cmpb    %dl, %cl		# compare head and tail
->       je      2f   		# got it!
-> 
->       ### BEGIN SLOWPATH
->       rep; nop			# pause
->       decl    %eax		# dec count
->       movb    (%rdi), %cl	# re-fetch head
->       jne     1b      		# try again
-> 
->       call    *pv_lock_ops	# call __ticket_lock_spinning
->       movl    $2048, %eax	# reload spin count
->       jmp     1b
->       ### END SLOWPATH
-> 
-> 2:    popq    %rbp
->       ret
-> 
-> with CONFIG_PARAVIRT_SPINLOCKS=n, the same code identical asm to the
-> current ticketlock code:
-> 
-> 	pushq   %rbp
->         movq    %rsp, %rbp
-> 
->         movl    $256, %eax
-> 	lock; xaddw %ax, (%rdi)
-> 
-> 	movzbl  %ah, %edx
-> 
-> 1:	cmpb    %dl, %al	# compare head and tail
-> 	je	2f   		# got it!
-> 
-> 	### BEGIN SLOWPATH
-> 	rep; nop		# pause
-> 	movb    (%rdi), %al	# reload head
-> 	jmp	1b		# loop
-> 	### END SLOWPATH
-> 
-> 2:	popq	%rbp
-> 	ret
-> 
-> so the pv ticketlocks add 3 extra instructions to the fastpath, one of
-> which really doesn't need to be there (setting up the arg for the
-> slowpath function):
->       movl    $2048, %eax	# set spin count
->       andl    $-2, %edx		# mask off SLOW_PATH_FLAG
->       movzbl  %dl, %esi		# set up __ticket_lock_spinning arg
-> 
-> The unlock code is very straightforward:
-> 	__ticket_unlock_release(lock);
-> 	if (unlikely(__ticket_in_slowpath(lock)))
-> 		__ticket_unlock_slowpath(lock);
-> which generates:
->       addb $2, (%rdi)
->       testb    $1, 1(%rdi)
->       je       1f
->       call     __ticket_unlock_slowpath
-> 1:
-> 
-> which, while simple, is more complex than the simple "incb (%rdi)".
-> (I'm not sure whether its worth inlining this or not.)
-> 
-> Thoughts? Comments? Suggestions?
-> 
-> Thanks,
-> 	J
-> 
-> Jeremy Fitzhardinge (12):
->   x86/spinlocks: replace pv spinlocks with pv ticketlocks
->   x86/ticketlock: collapse a layer of functions
->   xen/pvticketlock: Xen implementation for PV ticket locks
->   x86/pvticketlock: use callee-save for lock_spinning
->   x86/ticketlocks: when paravirtualizing ticket locks, increment by 2
->   x86/ticketlock: add slowpath logic
->   x86/ticketlocks: tidy up __ticket_unlock_kick()
->   xen/pvticketlock: disable interrupts while blocking
->   x86/pvticketlocks: we only need to kick if there's waiters
->   xen/pvticket: allow interrupts to be enabled while blocking
->   x86/pvticketlock: make sure unlock_kick pvop call is inlined
->   x86/pvticketlock: use __ticket_t for pvop args
-> 
-> Srivatsa Vaddagiri (1):
->   x86/ticketlock: only do kick after doing unlock
-> 
->  arch/x86/include/asm/paravirt.h       |   30 +---
->  arch/x86/include/asm/paravirt_types.h |    8 +-
->  arch/x86/include/asm/spinlock.h       |  118 ++++++++-----
->  arch/x86/include/asm/spinlock_types.h |   16 ++-
->  arch/x86/kernel/paravirt-spinlocks.c  |   40 +++--
->  arch/x86/xen/spinlock.c               |  305 ++++++++-------------------------
->  6 files changed, 186 insertions(+), 331 deletions(-)
+  Hello,
 
-do you have a git tree somewhere with this series?
+On Fri 02-09-11 10:47:03, kautuk.c @samsung.com wrote:
+> On Fri, Sep 2, 2011 at 3:03 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Thu,  1 Sep 2011 21:27:02 +0530
+> > Kautuk Consul <consul.kautuk@gmail.com> wrote:
+> >
+> >> This is important for SMP scenario, to check whether the timer
+> >> callback is executing on another CPU when we are deleting the
+> >> timer.
+> >>
+> >
+> > I don't see why?
+> >
+> >> index d6edf8d..754b35a 100644
+> >> --- a/mm/backing-dev.c
+> >> +++ b/mm/backing-dev.c
+> >> @@ -385,7 +385,7 @@ static int bdi_forker_thread(void *ptr)
+> >>                * dirty data on the default backing_dev_info
+> >>                */
+> >>               if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list)) {
+> >> -                     del_timer(&me->wakeup_timer);
+> >> +                     del_timer_sync(&me->wakeup_timer);
+> >>                       wb_do_writeback(me, 0);
+> >>               }
+> >
+> > It isn't a use-after-free fix: bdi_unregister() safely shoots down any
+> > running timer.
+> >
+> 
+> In the situation that we do a del_timer at the same time that the
+> wakeup_timer_fn is
+> executing on another CPU, there is one tiny possible problem:
+> 1)  The wakeup_timer_fn will call wake_up_process on the bdi-default thread.
+>       This will set the bdi-default thread's state to TASK_RUNNING.
+> 2)  However, the code in bdi_writeback_thread() sets the state of the
+> bdi-default process
+>     to TASK_INTERRUPTIBLE as it intends to sleep later.
+> 
+> If 2) happens before 1), then the bdi_forker_thread will not sleep
+> inside schedule as is the intention of the bdi_forker_thread() code.
+  OK, I agree the code in bdi_forker_thread() might use some straightening
+up wrt. task state handling but is what you decribe really an issue? Sure
+the task won't go to sleep but the whole effect is that it will just loop
+once more to find out there's nothing to do and then go to sleep - not a
+bug deal... Or am I missing something?
+
+> This protection is not achieved even by acquiring spinlocks before
+> setting the task->state
+> as the spinlock used in wakeup_timer_fn is &bdi->wb_lock whereas the code in
+> bdi_forker_thread acquires &bdi_lock which is a different spin_lock.
+> 
+> Am I correct in concluding this ?
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
