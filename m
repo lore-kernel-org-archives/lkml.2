@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1IBXz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 19:55:28 -0400
-Received: from claw.goop.org ([74.207.240.146]:45577 "EHLO claw.goop.org"
+	id S1752965Ab1IBX4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 19:56:05 -0400
+Received: from claw.goop.org ([74.207.240.146]:45547 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab1IBXy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 19:54:29 -0400
+	id S1752373Ab1IBXy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 19:54:28 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,95 +17,215 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andi Kleen <andi@firstfloor.org>,
         Xen Devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 5/8] x86/pvticketlock: use callee-save for lock_spinning
-Date: Fri,  2 Sep 2011 16:54:12 -0700
-Message-Id: <9205607036e71de584347dc5b9e90f08e393b6fe.1315007226.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 0/8] [PATCH RFC V2] Paravirtualized ticketlocks
+Date: Fri,  2 Sep 2011 16:54:07 -0700
+Message-Id: <cover.1315007226.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1315007226.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1315007226.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1315007226.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1315007226.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Although the lock_spinning calls in the spinlock code are on the
-uncommon path, their presence can cause the compiler to generate many
-more register save/restores in the function pre/postamble, which is in
-the fast path.  To avoid this, convert it to using the pvops callee-save
-calling convention, which defers all the save/restores until the actual
-function is called, keeping the fastpath clean.
+[ Changes since last posting:
+  - fold all the cleanup/bugfix patches into their base patches
+  - change spin_lock to make sure fastpath has no cruft in it
+  - make sure it doesn't attempt to inline unlock
+]
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/include/asm/paravirt.h       |    2 +-
- arch/x86/include/asm/paravirt_types.h |    2 +-
- arch/x86/kernel/paravirt-spinlocks.c  |    2 +-
- arch/x86/xen/spinlock.c               |    3 ++-
- 4 files changed, 5 insertions(+), 4 deletions(-)
+NOTE: this series is based on tip.git tip/x86/spinlocks
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index 76cae7a..50281c7 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -752,7 +752,7 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
- 
- static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock, __ticket_t ticket)
- {
--	PVOP_VCALL2(pv_lock_ops.lock_spinning, lock, ticket);
-+	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
- }
- 
- static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 005e24d..5e0c138 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -330,7 +330,7 @@ struct arch_spinlock;
- #include <asm/spinlock_types.h>
- 
- struct pv_lock_ops {
--	void (*lock_spinning)(struct arch_spinlock *lock, __ticket_t ticket);
-+	struct paravirt_callee_save lock_spinning;
- 	void (*unlock_kick)(struct arch_spinlock *lock, __ticket_t ticket);
- };
- 
-diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
-index c2e010e..4251c1d 100644
---- a/arch/x86/kernel/paravirt-spinlocks.c
-+++ b/arch/x86/kernel/paravirt-spinlocks.c
-@@ -9,7 +9,7 @@
- 
- struct pv_lock_ops pv_lock_ops = {
- #ifdef CONFIG_SMP
--	.lock_spinning = paravirt_nop,
-+	.lock_spinning = __PV_IS_CALLEE_SAVE(paravirt_nop),
- 	.unlock_kick = paravirt_nop,
- #endif
- };
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index f6133c5..7a04950 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -145,6 +145,7 @@ out:
- 
- 	spin_time_accum_blocked(start);
- }
-+PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
- 
- static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- {
-@@ -197,7 +198,7 @@ void xen_uninit_lock_cpu(int cpu)
- 
- void __init xen_init_spinlocks(void)
- {
--	pv_lock_ops.lock_spinning = xen_lock_spinning;
-+	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
- 	pv_lock_ops.unlock_kick = xen_unlock_kick;
- }
- 
+This series replaces the existing paravirtualized spinlock mechanism
+with a paravirtualized ticketlock mechanism.
+
+Ticket locks have an inherent problem in a virtualized case, because
+the vCPUs are scheduled rather than running concurrently (ignoring
+gang scheduled vCPUs).  This can result in catastrophic performance
+collapses when the vCPU scheduler doesn't schedule the correct "next"
+vCPU, and ends up scheduling a vCPU which burns its entire timeslice
+spinning.  (Note that this is not the same problem as lock-holder
+preemption, which this series also addresses; that's also a problem,
+but not catastrophic).
+
+(See Thomas Friebel's talk "Prevent Guests from Spinning Around"
+http://www.xen.org/files/xensummitboston08/LHP.pdf for more details.)
+
+Currently we deal with this by having PV spinlocks, which adds a layer
+of indirection in front of all the spinlock functions, and defining a
+completely new implementation for Xen (and for other pvops users, but
+there are none at present).
+
+PV ticketlocks keeps the existing ticketlock implemenentation
+(fastpath) as-is, but adds a couple of pvops for the slow paths:
+
+- If a CPU has been waiting for a spinlock for SPIN_THRESHOLD
+  iterations, then call out to the __ticket_lock_spinning() pvop,
+  which allows a backend to block the vCPU rather than spinning.  This
+  pvop can set the lock into "slowpath state".
+
+- When releasing a lock, if it is in "slowpath state", the call
+  __ticket_unlock_kick() to kick the next vCPU in line awake.  If the
+  lock is no longer in contention, it also clears the slowpath flag.
+
+The "slowpath state" is stored in the LSB of the within the lock
+ticket.  This has the effect of reducing the max number of CPUs by
+half (so, a "small ticket" can deal with 128 CPUs, and "large ticket"
+32768).
+
+This series provides a Xen implementation, but it should be
+straightforward to add a KVM implementation as well.
+
+Overall, it results in a large reduction in code, it makes the native
+and virtualized cases closer, and it removes a layer of indirection
+around all the spinlock functions.
+
+The fast path (taking an uncontended lock which isn't in "slowpath"
+state) is optimal, identical to the non-paravirtualized case.
+
+The inner part of ticket lock code becomes:
+	inc = xadd(&lock->tickets, inc);
+	inc.tail &= ~TICKET_SLOWPATH_FLAG;
+
+	if (likely(inc.head == inc.tail))
+		goto out;
+
+	for (;;) {
+		unsigned count = SPIN_THRESHOLD;
+
+		do {
+			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
+				goto out;
+			cpu_relax();
+		} while (--count);
+		__ticket_lock_spinning(lock, inc.tail);
+	}
+out:	barrier();
+
+which results in:
+	push   %rbp
+	mov    %rsp,%rbp
+
+	mov    $0x200,%eax
+	lock xadd %ax,(%rdi)
+	movzbl %ah,%edx
+	cmp    %al,%dl
+	jne    1f
+
+	pop    %rbp
+	retq   
+
+	### SLOWPATH START
+1:	and    $-2,%edx
+	movzbl %dl,%esi
+
+2:	mov    $0x800,%eax
+	jmp    4f
+
+3:	pause  
+	sub    $0x1,%eax
+	je     5f
+
+4:	movzbl (%rdi),%ecx
+	cmp    %cl,%dl
+	jne    3b
+
+	pop    %rbp
+	retq   
+
+5:	callq  *__ticket_lock_spinning
+	jmp    2b
+	### SLOWPATH END
+
+with CONFIG_PARAVIRT_SPINLOCKS=n, the code has changed slightly, where
+the fastpath case is straight through (taking the lock without
+contention), and the spin loop is out of line:
+
+	push   %rbp
+	mov    %rsp,%rbp
+
+	mov    $0x100,%eax
+	lock xadd %ax,(%rdi)
+	movzbl %ah,%edx
+	cmp    %al,%dl
+	jne    1f
+
+	pop    %rbp
+	retq   
+
+	### SLOWPATH START
+1:	pause  
+	movzbl (%rdi),%eax
+	cmp    %dl,%al
+	jne    1b
+
+	pop    %rbp
+	retq   
+	### SLOWPATH END
+
+The unlock code is very straightforward:
+	__ticket_unlock_release(lock);
+	if (unlikely(__ticket_in_slowpath(lock)))
+		__ticket_unlock_slowpath(lock);
+
+which generates:
+	push   %rbp
+	mov    %rsp,%rbp
+
+	addb   $0x2,(%rdi)
+	testb  $0x1,0x1(%rdi)
+	jne    1f
+
+	pop    %rbp
+	retq   
+
+	### SLOWPATH START
+1:	movzwl (%rdi),%edx
+	movzbl %dh,%ecx
+	mov    %edx,%eax
+	and    $-2,%ecx	# clear TICKET_SLOWPATH_FLAG
+	mov    %cl,%dh
+	cmp    %dl,%cl	# test to see if lock is uncontended
+	je     3f
+
+2:	movzbl %dl,%esi
+	callq  *__ticket_unlock_kick	# kick anyone waiting
+	pop    %rbp
+	retq   
+
+3:	lock cmpxchg %dx,(%rdi)	# use cmpxchg to safely write back flag
+	jmp    2b
+	### SLOWPATH END
+
+The fastpath is pretty straightforward, but it is definitely more
+complex than a simple "incb (%rdi)" - which is still generated (and
+inlined) when PARAVIRT_SPINLOCKS is disabled.
+
+Thoughts? Comments? Suggestions?
+
+Thanks,
+	J
+
+Jeremy Fitzhardinge (8):
+  x86/spinlocks: replace pv spinlocks with pv ticketlocks
+  x86/ticketlock: don't inline _spin_unlock when using paravirt
+    spinlocks
+  x86/ticketlock: collapse a layer of functions
+  xen/pvticketlock: Xen implementation for PV ticket locks
+  x86/pvticketlock: use callee-save for lock_spinning
+  x86/ticketlocks: when paravirtualizing ticket locks, increment by 2
+  x86/ticketlock: add slowpath logic
+  xen/pvticketlock: allow interrupts to be enabled while blocking
+
+ arch/x86/Kconfig                      |    3 +
+ arch/x86/include/asm/paravirt.h       |   30 +---
+ arch/x86/include/asm/paravirt_types.h |   10 +-
+ arch/x86/include/asm/spinlock.h       |  134 ++++++++++-----
+ arch/x86/include/asm/spinlock_types.h |   16 ++-
+ arch/x86/kernel/paravirt-spinlocks.c  |   16 +--
+ arch/x86/xen/spinlock.c               |  311 ++++++++-------------------------
+ kernel/Kconfig.locks                  |    2 +-
+ 8 files changed, 193 insertions(+), 329 deletions(-)
+
 -- 
 1.7.6
 
