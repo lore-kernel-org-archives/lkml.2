@@ -1,168 +1,475 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab1IBS7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 14:59:11 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36070 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab1IBS7H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 14:59:07 -0400
-Date: Fri, 2 Sep 2011 15:58:57 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: [PATCH 1/2] perf stat: add -l <N> option to redirect stderr
- elsewhere
-Message-ID: <20110902185857.GE17970@ghostprotocols.net>
-References: <1305968203-14240-1-git-send-email-jim.cromie@gmail.com>
- <1305968203-14240-2-git-send-email-jim.cromie@gmail.com>
- <20110521103418.GB23651@elte.hu>
- <20110521204148.GB10330@ghostprotocols.net>
- <CAJfuBxzhjhuGRfqW-qXFhNN+X6n_puaVS+-AbZN2NjUQGou3Jw@mail.gmail.com>
- <20110902143549.GA17970@ghostprotocols.net>
- <CAJfuBxzmqKoxFqrX8UjHFUioHesOKUe6yZn+CdD1Fracti2MYQ@mail.gmail.com>
+	id S1754821Ab1IBS77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 14:59:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754735Ab1IBS76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 14:59:58 -0400
+Date: Fri, 2 Sep 2011 14:59:23 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: akpm@linux-foundation.org, davidel@xmailserver.org
+Cc: nelhage@ksplice.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] epoll: limit paths
+Message-ID: <20110902185922.GA8770@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJfuBxzmqKoxFqrX8UjHFUioHesOKUe6yZn+CdD1Fracti2MYQ@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 02, 2011 at 12:04:03PM -0600, Jim Cromie escreveu:
-> On Fri, Sep 2, 2011 at 8:35 AM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
-> > Em Thu, Sep 01, 2011 at 03:58:13PM -0600, Jim Cromie escreveu:
-> >> On Sat, May 21, 2011 at 2:41 PM, Arnaldo Carvalho de Melo
-> >> <acme@ghostprotocols.net> wrote:
-> >> > Em Sat, May 21, 2011 at 12:34:18PM +0200, Ingo Molnar escreveu:
-> >> >> * Jim Cromie <jim.cromie@gmail.com> wrote:
-> >> >>
-> >> >> > This perf stat option emulates valgrind's --log-fd option, allowing the
-> >> >> > user to send perf results elsewhere, and leaving stderr for use by the
-> >> >> > program under test.
-> >> >> >
-> >> >> >   3>results perf stat -l 3 -- <cmd>
-> >> >> >
-> >> >> > The perl distro's make test.valgrind target uses valgrinds --log-fd
-> >> >> > option, I've adapted it to invoke perf also, and tested this patch there.
-> >> >> >
-> >> >> > Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> >> >>
-> >> >> Makes sense!
-> >> >>
-> >> >> Arnaldo, if you are fine with it, do you want to pick it up - or should i? If
-> >> >> you pick it up:
-> >> >>
-> >> >> Acked-by: Ingo Molnar <mingo@elte.hu>
-> >> >
-> >> > Its ok with me:
-> >> >
-> >> > Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> >> >
-> >> > I will pick it this weekend, if you don't merge it till then.
-> >
-> >> Did this ever happen ?
-> >> Can you point me to the git-url where it did/will end up ?
-> >
-> > Fell thru the cracks, then Stephane implemented --output:
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/tip/linux-tip.git;a=commitdiff;h=4aa9015f8bfd2c8d7cc33a360275b71a9d708b37
-> >
-> > That introduces an output FILE pointer as in your patch (logfp), so I
-> > adjusted your patch, that ended up like below. I removed -l and made it
-> > --log-fd, just like valgrind and added the Documentation bits about the
-> > new cmdline option, ok?
-> >
-> 
-> absolutely.
-> theres one comment I added (just above output_fd decl)
-> that mentions -I, it should be updated to --log-fd
-> 
-> And probably --output and --log-fd should be mutually exclusive.
+Hi,
 
-With the current implementation if --output is used --log-fd will be
-ignored if present, perhaps we should print a warning or plain fail if
-the user tries to specify both?
+The current epoll code can be tickled to run basically indefinitely in both
+loop detection path check (on ep_insert()), and in the wakeup paths. The
+programs that tickle this behavior set up deeply linked networks of epoll
+file descriptors that cause the epoll algorithms to traverse them indefinitely.
+A couple of these sample programs have been previously posted in this thread:
+https://lkml.org/lkml/2011/2/25/297.
+
+To fix the loop detection path check algorithms, I simply keep track of the
+epoll nodes that have been already visited. Thus, the loop detection
+becomes proportional to the number of epoll file descriptor and links. This
+dramatically decreases the run-time of the loop check algorithm. In one
+diabolical case I tried it reduced the run-time from 15 mintues
+(all in kernel time) to .3 seconds.
+
+Fixing the wakeup paths could be done at wakeup time in a similar manner by
+keeping track of nodes that have already been visited, but the complexity is
+harder, since there can be multiple wakeups on different cpus...Thus, I've
+opted to limit the number of possible wakeup paths when the paths are created.
+
+This is accomplished, by noting that the end file descriptor points that are
+found during the loop detection pass (from the newly added link), are actually
+the sources for wakeup events. I keep a list of these file descriptors and
+limit the number and length of these paths that emanate from these 'source file
+descriptors'. In the current implemetation I allow 1000 paths of length 1,
+500 of length 2, 100 of length 3, 50 of length 4 and 10 of length 5. Note that
+it is sufficient to check the 'source file descriptors' reachable from the newly
+added link, since no other 'source file descriptors' will have newly added
+links. This allows us to check only the wakeup paths that may have gotten too
+long, and not re-check all possible wakeup paths on the system.
+
+In terms of the path limit selection, I think its first worth noting that the
+most common case for epoll, is probably the model where you have 1 epoll file
+descriptor that is monitoring n number of 'source file descriptors'. In this
+case, each 'source file descriptor' has a 1 path of length 1. Thus, I believe
+that the limits I'm proposing are quite reasonable and in fact may be too
+generous. Thus, I'm hoping that the proposed limits will not prevent any
+workloads that currently work to fail.
+
+In terms of locking, I have extended the use of the 'epmutex' to all epoll_ctl
+add and remove operations. Currently its only used in a subset of the add paths.
+I need to hold the epmutex, so that we can correctly traverse a coherent graph,
+to check the number of paths. I believe that this additional locking is
+probably ok, since its in the setup/teardown paths, and doesn't affect the
+running paths, but it certainly is going to add some extra overhead. Also,
+worth noting is that the epmuex was recently added to the ep_ctl add operations
+in the initial path loop detection code using the argument that it was
+not on a critical path.
+
+Another thing to note here, is the length of epoll chains that is allowed.
+Currently, eventpoll.c defines:
+
+/* Maximum number of nesting allowed inside epoll sets */
+#define EP_MAX_NESTS 4
+
+This basically means that I am limited to a graph depth of 5 (EP_MAX_NESTS + 1).
+However, this limit is currently only enforced during the loop check detection
+code, and only when the epoll file descriptors are added in a certain order.
+Thus, this limit is currently easily bypassed. The newly added check for wakeup
+paths, stricly limits the wakeup paths to a length of 5, regardless of the order
+in which ep's are linked together. Thus, a side-effect of the new code is a more
+consistent enforcement of the graph depth.
+
+Thus far, I've tested this, using the sample programs previously mentioned,
+which now either return quickly or return -EINVAL. I've also testing using
+the piptest.c epoll tester, which showed no difference in performance. I've
+also created a number of different epoll networks and tested that they behave
+as expectdd.
+
+I believe this solves the original diabolical test cases, while still preserving
+the sane epoll nesting.
+
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ fs/eventpoll.c            |  224 ++++++++++++++++++++++++++++++++++++++++-----
+ include/linux/eventpoll.h |    1 +
+ include/linux/fs.h        |    1 +
+ 3 files changed, 202 insertions(+), 24 deletions(-)
+
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index fe047d96..bf3db56 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -188,6 +188,12 @@ struct eventpoll {
  
-> > I'll look at the other 3 patch series that came after, will fix up and
-> > post here for your consideration.
-> 
-> those are the output format refactoring ?
-> 
-> ah, your new message just arrived.
-> I'll take another go at them..
-
-Ok, please apply this reworked --log-fd before, of course :)
-
-> thanks
-> 
-> >
-> > - Arnaldo
-> >
-> > diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-> > index 08394c4..b6bfd1e 100644
-> > --- a/tools/perf/Documentation/perf-stat.txt
-> > +++ b/tools/perf/Documentation/perf-stat.txt
-> > @@ -101,6 +101,9 @@ Print the output into the designated file.
-> >  --append::
-> >  Append to the output file designated with the -o option. Ignored if -o is not specified.
-> >
-> > +--log-fd::
-> > +Log output to fd, instead of stderr.
-> 
-> stderr / outputfile ??
-> 
-> > +
-> >  EXAMPLES
-> >  --------
-> >
-> > diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-> > index bec64a9..c991d66 100644
-> > --- a/tools/perf/builtin-stat.c
-> > +++ b/tools/perf/builtin-stat.c
-> > @@ -196,6 +196,8 @@ static bool                 csv_output                      = false;
-> >  static bool                    group                           = false;
-> >  static const char              *output_name                    = NULL;
-> >  static FILE                    *output                         = NULL;
-> > +/* stderr by default, override with -l */
-> 
-> with --log-fd
-
-Can you rework it and put as the first on your new patchset?
-
-Thanks,
-
-- Arnaldo
+ 	/* The user that created the eventpoll descriptor */
+ 	struct user_struct *user;
++
++	struct file *file;
++
++	/* used to optimize loop detection check */
++	int visited;
++	struct list_head visitedllink;
+ };
  
-> > +static int                     output_fd                       = 2;
-> >
-> >  static volatile int done = 0;
-> >
-> > @@ -1080,6 +1082,8 @@ static const struct option options[] = {
-> >        OPT_STRING('o', "output", &output_name, "file",
-> >                    "output file name"),
-> >        OPT_BOOLEAN(0, "append", &append_file, "append to the output file"),
-> > +       OPT_INTEGER(0, "log-fd", &output_fd,
-> > +                   "log output to fd, instead of stderr"),
-> >        OPT_END()
-> >  };
-> >
-> > @@ -1177,6 +1181,12 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
-> >                }
-> >                clock_gettime(CLOCK_REALTIME, &tm);
-> >                fprintf(output, "# started on %s\n", ctime(&tm.tv_sec));
-> > +       } else if (output_fd != 2) {
-> > +               output = fdopen(output_fd, "w");
-> > +               if (!output) {
-> > +                       perror("Failed opening logfd");
-> > +                       return -errno;
-> > +               }
-> >        }
-> >
-> >        if (csv_sep)
-> >
+ /* Wait structure used by the poll hooks */
+@@ -246,6 +252,12 @@ static struct kmem_cache *epi_cache __read_mostly;
+ /* Slab cache used to allocate "struct eppoll_entry" */
+ static struct kmem_cache *pwq_cache __read_mostly;
+ 
++/* Visited nodes during ep_loop_check(), so we can unset them when we finish */
++LIST_HEAD(visited_list);
++
++/* Files with newly added links, which need a limit on emanating paths */
++LIST_HEAD(tfile_check_list);
++
+ #ifdef CONFIG_SYSCTL
+ 
+ #include <linux/sysctl.h>
+@@ -267,6 +279,12 @@ ctl_table epoll_table[] = {
+ };
+ #endif /* CONFIG_SYSCTL */
+ 
++static const struct file_operations eventpoll_fops;
++
++static inline int is_file_epoll(struct file *f)
++{
++	return f->f_op == &eventpoll_fops;
++}
+ 
+ /* Setup the structure that is used as key for the RB tree */
+ static inline void ep_set_ffd(struct epoll_filefd *ffd,
+@@ -700,12 +718,6 @@ static const struct file_operations eventpoll_fops = {
+ 	.llseek		= noop_llseek,
+ };
+ 
+-/* Fast test to see if the file is an evenpoll file */
+-static inline int is_file_epoll(struct file *f)
+-{
+-	return f->f_op == &eventpoll_fops;
+-}
+-
+ /*
+  * This is called from eventpoll_release() to unlink files from the eventpoll
+  * interface. We need to have this facility to cleanup correctly files that are
+@@ -915,6 +927,96 @@ static void ep_rbtree_insert(struct eventpoll *ep, struct epitem *epi)
+ 	rb_insert_color(&epi->rbn, &ep->rbr);
+ }
+ 
++
++
++#define PATH_ARR_SIZE 5
++/* These are the number paths of length 1 to 5, that we are allowing to emanate
++ * from a single file of interest. For example, we allow 1000 paths of length
++ * 1, to emanate from each file of interest. This essentially represents the
++ * potential wakeup paths, which need to be limited in order to avoid massive
++ * uncontrolled wakeup storms. The common use case should be a single ep which
++ * is connected to n file sources. In this case each file source has 1 path
++ * of length 1. Thus, the numbers below should be more than sufficient.
++ */
++int path_limits[PATH_ARR_SIZE] = { 1000, 500, 100, 50, 10 };
++int path_count[PATH_ARR_SIZE];
++
++static int path_count_inc(int nests)
++{
++	if (++path_count[nests] > path_limits[nests])
++		return -1;
++	return 0;
++}
++
++static void path_count_init(void)
++{
++	int i;
++
++	for (i = 0; i < PATH_ARR_SIZE; i++)
++		path_count[i] = 0;
++}
++
++static int reverse_path_check_proc(void *priv, void *cookie, int call_nests)
++{
++	int error = 0;
++	struct file *file = priv;
++	struct file *child_file;
++	struct epitem *epi;
++
++	list_for_each_entry(epi, &file->f_ep_links, fllink) {
++		child_file = epi->ep->file;
++		if (is_file_epoll(child_file)) {
++			if (list_empty(&child_file->f_ep_links)) {
++				if (path_count_inc(call_nests)) {
++					error = -1;
++					break;
++				}
++			} else {
++				error = ep_call_nested(&poll_loop_ncalls,
++							EP_MAX_NESTS,
++							reverse_path_check_proc,
++							child_file, child_file,
++							current);
++			}
++			if (error != 0)
++				break;
++		} else {
++			printk(KERN_ERR "reverse_path_check_proc: "
++				"file is not an ep!\n");
++		}
++	}
++	return error;
++}
++
++/**
++ * reverse_path_check - The tfile_check_list is list of file *, which have
++ *                      links that are proposed to be newly added. We need to
++ *                      make sure that those added links don't add too many
++ *                      paths such that we will spend all our time waking up
++ *                      eventpoll objects.
++ *
++ * Returns: Returns zero if the proposed links don't create too many paths,
++ *	    -1 otherwise.
++ */
++static int reverse_path_check(void)
++{
++	int length = 0;
++	int error = 0;
++	struct file *current_file;
++
++	/* let's call this for all tfiles */
++	list_for_each_entry(current_file, &tfile_check_list, f_tfile_llink) {
++		length++;
++		path_count_init();
++		error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++					reverse_path_check_proc, current_file,
++					current_file, current);
++		if (error)
++			break;
++	}
++	return error;
++}
++
+ /*
+  * Must be called with "mtx" held.
+  */
+@@ -976,6 +1078,11 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 	 */
+ 	ep_rbtree_insert(ep, epi);
+ 
++	/* now check if we've created too many backpaths */
++	error = -EINVAL;
++	if (reverse_path_check())
++		goto error_remove_epi;
++
+ 	/* We have to drop the new item inside our item list to keep track of it */
+ 	spin_lock_irqsave(&ep->lock, flags);
+ 
+@@ -1000,6 +1107,14 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 
+ 	return 0;
+ 
++error_remove_epi:
++	spin_lock(&tfile->f_lock);
++	if (ep_is_linked(&epi->fllink))
++		list_del_init(&epi->fllink);
++	spin_unlock(&tfile->f_lock);
++
++	rb_erase(&epi->rbn, &ep->rbr);
++
+ error_unregister:
+ 	ep_unregister_pollwait(ep, epi);
+ 
+@@ -1264,18 +1379,35 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
+ 	int error = 0;
+ 	struct file *file = priv;
+ 	struct eventpoll *ep = file->private_data;
++	struct eventpoll *ep_tovisit;
+ 	struct rb_node *rbp;
+ 	struct epitem *epi;
+ 
+ 	mutex_lock(&ep->mtx);
++	ep->visited = 1;
++	list_add(&ep->visitedllink, &visited_list);
+ 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
+ 		epi = rb_entry(rbp, struct epitem, rbn);
+ 		if (unlikely(is_file_epoll(epi->ffd.file))) {
++			ep_tovisit = epi->ffd.file->private_data;
++			if (ep_tovisit->visited)
++				continue;
+ 			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
+ 					       ep_loop_check_proc, epi->ffd.file,
+-					       epi->ffd.file->private_data, current);
++					       ep_tovisit, current);
+ 			if (error != 0)
+ 				break;
++		} else {
++			/* if we've reached a file that is not associated with
++			 * an ep, then then we need to check if the newly added
++			 * links are going to add too many wakeup paths. We do
++			 * this by adding it to the tfile_check_list, if it's
++			 * not already there, and calling reverse_path_check()
++			 * during ep_insert()
++			 */
++			if (list_empty(&epi->ffd.file->f_tfile_llink))
++				list_add(&epi->ffd.file->f_tfile_llink,
++					 &tfile_check_list);
+ 		}
+ 	}
+ 	mutex_unlock(&ep->mtx);
+@@ -1296,8 +1428,30 @@ static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
+  */
+ static int ep_loop_check(struct eventpoll *ep, struct file *file)
+ {
+-	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++	int ret;
++	struct eventpoll *ep_cur, *ep_next;
++
++	ret = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
+ 			      ep_loop_check_proc, file, ep, current);
++	/* clear visited list */
++	list_for_each_entry_safe(ep_cur, ep_next, &visited_list, visitedllink) {
++		ep_cur->visited = 0;
++		list_del(&ep_cur->visitedllink);
++	}
++	return ret;
++}
++
++static void clear_tfile_check_list(void)
++{
++	struct file *file;
++
++	/* first clear the tfile_check_list */
++	while (!list_empty(&tfile_check_list)) {
++		file = list_first_entry(&tfile_check_list, struct file,
++					f_tfile_llink);
++		list_del_init(&file->f_tfile_llink);
++	}
++	INIT_LIST_HEAD(&tfile_check_list);
+ }
+ 
+ /*
+@@ -1305,8 +1459,9 @@ static int ep_loop_check(struct eventpoll *ep, struct file *file)
+  */
+ SYSCALL_DEFINE1(epoll_create1, int, flags)
+ {
+-	int error;
++	int error, fd;
+ 	struct eventpoll *ep = NULL;
++	struct file *file;
+ 
+ 	/* Check the EPOLL_* constant for consistency.  */
+ 	BUILD_BUG_ON(EPOLL_CLOEXEC != O_CLOEXEC);
+@@ -1323,11 +1478,25 @@ SYSCALL_DEFINE1(epoll_create1, int, flags)
+ 	 * Creates all the items needed to setup an eventpoll file. That is,
+ 	 * a file structure and a free file descriptor.
+ 	 */
+-	error = anon_inode_getfd("[eventpoll]", &eventpoll_fops, ep,
++	fd = get_unused_fd_flags(O_RDWR | (flags & O_CLOEXEC));
++	if (fd < 0) {
++		error = fd;
++		goto out_free_ep;
++	}
++	file = anon_inode_getfile("[eventpoll]", &eventpoll_fops, ep,
+ 				 O_RDWR | (flags & O_CLOEXEC));
+-	if (error < 0)
+-		ep_free(ep);
+-
++	if (IS_ERR(file)) {
++		error = PTR_ERR(file);
++		goto out_free_fd;
++	}
++	fd_install(fd, file);
++	ep->file = file;
++	return fd;
++
++out_free_fd:
++	put_unused_fd(fd);
++out_free_ep:
++	ep_free(ep);
+ 	return error;
+ }
+ 
+@@ -1393,21 +1562,27 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	/*
+ 	 * When we insert an epoll file descriptor, inside another epoll file
+ 	 * descriptor, there is the change of creating closed loops, which are
+-	 * better be handled here, than in more critical paths.
++	 * better be handled here, than in more critical paths. While we are
++	 * checking for loops we also determine the list of files reachable
++	 * and hang them on the tfile_check_list, so we can check that we
++	 * haven't created too many possible wakeup paths.
+ 	 *
+-	 * We hold epmutex across the loop check and the insert in this case, in
+-	 * order to prevent two separate inserts from racing and each doing the
+-	 * insert "at the same time" such that ep_loop_check passes on both
+-	 * before either one does the insert, thereby creating a cycle.
++	 * We need to hold the epmutex across both ep_insert and ep_remove
++	 * b/c we want to make sure we are looking at a coherent view of
++	 * epoll network.
+ 	 */
+-	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD)) {
++	if (op == EPOLL_CTL_ADD || op == EPOLL_CTL_DEL) {
+ 		mutex_lock(&epmutex);
+ 		did_lock_epmutex = 1;
+-		error = -ELOOP;
+-		if (ep_loop_check(ep, tfile) != 0)
+-			goto error_tgt_fput;
+ 	}
+-
++	if (op == EPOLL_CTL_ADD) {
++		if (is_file_epoll(tfile)) {
++			error = -ELOOP;
++			if (ep_loop_check(ep, tfile) != 0)
++				goto error_tgt_fput;
++		} else
++			list_add(&tfile->f_tfile_llink, &tfile_check_list);
++	}
+ 
+ 	mutex_lock(&ep->mtx);
+ 
+@@ -1426,6 +1601,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 			error = ep_insert(ep, &epds, tfile, fd);
+ 		} else
+ 			error = -EEXIST;
++		clear_tfile_check_list();
+ 		break;
+ 	case EPOLL_CTL_DEL:
+ 		if (epi)
+@@ -1444,7 +1620,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	mutex_unlock(&ep->mtx);
+ 
+ error_tgt_fput:
+-	if (unlikely(did_lock_epmutex))
++	if (did_lock_epmutex)
+ 		mutex_unlock(&epmutex);
+ 
+ 	fput(tfile);
+diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
+index f362733..657ab55 100644
+--- a/include/linux/eventpoll.h
++++ b/include/linux/eventpoll.h
+@@ -61,6 +61,7 @@ struct file;
+ static inline void eventpoll_init_file(struct file *file)
+ {
+ 	INIT_LIST_HEAD(&file->f_ep_links);
++	INIT_LIST_HEAD(&file->f_tfile_llink);
+ }
+ 
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c2bd68f..aaf5ad2 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -987,6 +987,7 @@ struct file {
+ #ifdef CONFIG_EPOLL
+ 	/* Used by fs/eventpoll.c to link all the hooks to this file */
+ 	struct list_head	f_ep_links;
++	struct list_head	f_tfile_llink;
+ #endif /* #ifdef CONFIG_EPOLL */
+ 	struct address_space	*f_mapping;
+ #ifdef CONFIG_DEBUG_WRITECOUNT
+-- 
+1.7.5.4
+
