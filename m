@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab1IBNkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 09:40:16 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:54130 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751836Ab1IBNkN (ORCPT
+	id S1752211Ab1IBNky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 09:40:54 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:60883 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab1IBNkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 09:40:13 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: grant.likely@secretlab.ca
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 RESEND] gpio-vx855: add device tree binding
-Message-Id: <20110902134008.A7C899D401C@zog.reactivated.net>
-Date: Fri,  2 Sep 2011 14:40:08 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=CtAWj5ivj2cA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=x7EdvbJ8gsB9n6TrBDgA:9 a=2VOpp8wDU8semRwgGpEA:7 a=d4CUUju0HPYA:10 a=XRHo941U3qHBMacx:21 a=yClDitE5-8W8Zd-a:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Fri, 2 Sep 2011 09:40:53 -0400
+Date: Fri, 2 Sep 2011 09:40:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH v2] xen: x86_32: do not enable iterrupts
+ when returning from exception in interrupt context
+Message-ID: <20110902134032.GA6064@dumpdata.com>
+References: <4E5EB794.7050909@goop.org>
+ <1314877615-18280-1-git-send-email-imammedo@redhat.com>
+ <4E5FB700.1070908@goop.org>
+ <4E60914F.7080208@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E60914F.7080208@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4E60DCDC.0005,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed to enable the HDD LED on the OLPC XO-1.5 laptop,
-enabled through devicetree and the gpio-leds driver.
+On Fri, Sep 02, 2011 at 10:18:23AM +0200, Igor Mammedov wrote:
+> On 09/01/2011 06:46 PM, Jeremy Fitzhardinge wrote:
+> >On 09/01/2011 04:46 AM, Igor Mammedov wrote:
+> >>If vmalloc page_fault happens inside of interrupt handler with interrupts
+> >>disabled then on exit path from exception handler when there is no pending
+> >>interrupts, the following code (arch/x86/xen/xen-asm_32.S:112):
+> >>
+> >>	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
+> >>	sete XEN_vcpu_info_mask(%eax)
+> >>
+> >>will enable interrupts even if they has been previously disabled according to
+> >>eflags from the bounce frame (arch/x86/xen/xen-asm_32.S:99)
+> >>
+> >>	testb $X86_EFLAGS_IF>>8, 8+1+ESP_OFFSET(%esp)
+> >>	setz XEN_vcpu_info_mask(%eax)
+> >>
+> >>Solution is in setting XEN_vcpu_info_mask only when it should be set
+> >>according to
+> >>	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
+> >>but not clearing it if there isn't any pending events.
+> >>
+> >>Reproducer for bug is attached to RHBZ 707552
+> >>
+> >>Signed-off-by: Igor Mammedov<imammedo@redhat.com>
+> >>Signed-off-by: Jeremy Fitzhardinge<jeremy@goop.org>
+> >
+> >One nit, this should be acked-by or reviewed-by, not signed-off-by,
+> >since the patch isn't passing through my hands.
+> >
+> >     J
+> 
+> I'm new to this stuff, would you like me to re-post it?
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- .../devicetree/bindings/gpio/gpio_vx855.txt        |   20 ++++++++++++++++++++
- drivers/gpio/gpio-vx855.c                          |    5 +++++
- 2 files changed, 25 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio_vx855.txt
-
-v2: extended the documentation with information about the pin numbering
-scheme, which matches that of the driver.
-
-diff --git a/Documentation/devicetree/bindings/gpio/gpio_vx855.txt b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
-new file mode 100644
-index 0000000..17285a5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
-@@ -0,0 +1,20 @@
-+VIA VX855 GPIO controller
-+
-+Required properties:
-+- compatible : "via,vx855-gpio"
-+- #gpio-cells : Should be two. The first cell is the pin number and the
-+  second cell is used to specify optional parameters:
-+  - bit 0 specifies polarity (0 for normal, 1 for inverted)
-+- gpio-controller : Marks the device node as a GPIO controller.
-+
-+As VIA differentiates between GPI, GPO and GPIO on its 42 available pins,
-+with each pin type restarting numbering at 0, the following numbering scheme
-+is used in the device tree for the pin number:
-+
-+PIN NO		VIA NAME
-+0..13		GPI 0..13
-+14..26		GPO 0..12
-+27..41		GPIO 0..14
-+
-+For example, GPIO 11 (VIA name) is referred to with pin number 38 in the
-+device tree.
-diff --git a/drivers/gpio/gpio-vx855.c b/drivers/gpio/gpio-vx855.c
-index ef5aabd..5b7e9ba 100644
---- a/drivers/gpio/gpio-vx855.c
-+++ b/drivers/gpio/gpio-vx855.c
-@@ -31,6 +31,7 @@
- #include <linux/platform_device.h>
- #include <linux/pci.h>
- #include <linux/io.h>
-+#include <linux/of.h>
- 
- #define MODULE_NAME "vx855_gpio"
- 
-@@ -216,6 +217,10 @@ static void vx855gpio_gpio_setup(struct vx855_gpio *vg)
- 	c->ngpio = NR_VX855_GP;
- 	c->can_sleep = 0;
- 	c->names = vx855gpio_names;
-+
-+#ifdef CONFIG_OF_GPIO
-+	c->of_node = of_find_compatible_node(NULL, NULL, "via,vx855-gpio");
-+#endif
- }
- 
- /* This platform device is ordinarily registered by the vx855 mfd driver */
--- 
-1.7.6
-
+That is OK.  I fixed it up in the git commit. Thanks for finding this one!
