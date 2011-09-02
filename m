@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab1IBD3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Sep 2011 23:29:47 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48858 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933111Ab1IBD3q (ORCPT
+	id S933149Ab1IBDgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Sep 2011 23:36:46 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:57872 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab1IBDgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Sep 2011 23:29:46 -0400
+	Thu, 1 Sep 2011 23:36:41 -0400
+X-AuditID: b753bd60-a14abba0000019f4-01-4e604f463602
+X-AuditID: b753bd60-a14abba0000019f4-01-4e604f463602
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH net-next-2.6 ] Fix overflow of socket buffer in sunrpc
+To: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Fri, 02 Sep 2011 12:41:38 +0900
+Message-ID: <20110902034138.22595.9759.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20110901130542.GG14369@suse.de>
-References: <cover.1321112552.git.minchan.kim@gmail.com>
-	<e139175e938d94c0c977edd05ae07cbad7a72cc5.1321112552.git.minchan.kim@gmail.com>
-	<20110901130542.GG14369@suse.de>
-Date: Fri, 2 Sep 2011 12:29:45 +0900
-Message-ID: <CAEwNFnAq99Bj0kZq6aa2mOc9RoTT=T69s4BaA7i_5yieaFLPEA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Correct isolate_mode_t bitwise type
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 10:05 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Sun, Nov 13, 2011 at 01:37:41AM +0900, Minchan Kim wrote:
->> [c1e8b0ae8, mm-change-isolate-mode-from-define-to-bitwise-type]
->> made a mistake on the bitwise type.
->>
->
-> Minor nit, commit c1e8b0ae8 does not exist anywhere. I suspect you
-> are looking at a git tree generated from the mmotm quilt series. It
-> would be easier if you had said "This patch should be merged with
-> mm-change-isolate-mode-from-define-to-bitwise-type.patch in mmotm".
+The sk_sndbuf and sk_rcvbuf fields of struct sock are sizes of send and
+receive socket buffers respectively, and are defined as integer.
+The sunrpc which is used in NFSD and any other applications can change them
+via svc_sock_setbufsize(). It, however, sets them as unsigned integer and
+may cause overflow of integer. This leads to a degradation of networking
+capability.
 
-Right you are. I did it by habit without realizing just quilt series. :(
-For preventing such bad thing, I always use [git commit id, patch
-name] together these day. Fortunately, it seems to be effective. But
-unfortunately, I couldn't prevent your wasted time which spend until
-notice that.
+This patch adds integer-overflow check into svc_sock_setbufsize() before
+both fields are set, and limits their maximum sizes to INT_MAX.
 
-I will be careful in the future.
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Neil Brown <neilb@suse.de>
+Cc: "David S. Miller" <davem@davemloft.net>
+---
 
->
-> Otherwise, looks ok.
+ net/sunrpc/svcsock.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-Thanks, Mel.
--- 
-Kind regards,
-Minchan Kim
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index 767d494..bd66775 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -54,6 +54,7 @@
+ #include "sunrpc.h"
+ 
+ #define RPCDBG_FACILITY	RPCDBG_SVCXPRT
++#define MAX_SKBUFSIZ	INT_MAX
+ 
+ 
+ static struct svc_sock *svc_setup_socket(struct svc_serv *, struct socket *,
+@@ -435,6 +436,11 @@ static void svc_sock_setbufsize(struct socket *sock, unsigned int snd,
+ 	 * on not having CAP_SYS_RESOURCE or similar, we go direct...
+ 	 * DaveM said I could!
+ 	 */
++	if (snd > MAX_SKBUFSIZ/2)
++		snd = MAX_SKBUFSIZ/2;
++	if (rcv > MAX_SKBUFSIZ/2)
++		rcv = MAX_SKBUFSIZ/2;
++
+ 	lock_sock(sock->sk);
+ 	sock->sk->sk_sndbuf = snd * 2;
+ 	sock->sk->sk_rcvbuf = rcv * 2;
+
