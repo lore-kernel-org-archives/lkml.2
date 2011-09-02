@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758162Ab1IBIH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 04:07:29 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52318 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757875Ab1IBIHW (ORCPT
+	id S1758194Ab1IBIHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 04:07:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47370 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757947Ab1IBIHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 04:07:22 -0400
-Date: Fri, 2 Sep 2011 11:04:57 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Gerard Snitselaar <dev@snitselaar.org>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8187se: Fix whitespace issues
-Message-ID: <20110902080457.GE2430@shale.localdomain>
-References: <1314949913-13090-1-git-send-email-dev@snitselaar.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314949913-13090-1-git-send-email-dev@snitselaar.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Sep 2011 04:07:14 -0400
+Date: Fri, 2 Sep 2011 01:10:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Frank van Maarseveen <frankvm@frankvm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.0.3 kernel BUG at kernel/timer.c:1035
+Message-Id: <20110902011058.c5bad476.akpm@linux-foundation.org>
+In-Reply-To: <20110824130238.GA24543@janus>
+References: <20110824130238.GA24543@janus>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 12:51:53AM -0700, Gerard Snitselaar wrote:
->  #define MAX_LD_SLOT_NUM 10
-> -#define KEEP_ALIVE_INTERVAL 				20 // in seconds.
-> +#define KEEP_ALIVE_INTERVAL				20 // in seconds.
->  #define CHECK_FOR_HANG_PERIOD			2 //be equal to watchdog check time
->  #define DEFAULT_KEEP_ALIVE_LEVEL			1
->  #define DEFAULT_SLOT_NUM					2
+On Wed, 24 Aug 2011 15:02:38 +0200 Frank van Maarseveen <frankvm@frankvm.com> wrote:
 
-It would be better if the 1 and 2 were lined up.
+> Got several of these (logged via netconsole):
+> 
+>  kernel BUG at kernel/timer.c:1035!
+>  invalid opcode: 0000 [#1]
+>  PREEMPT
+>  SMP
+> 
+> ...
+>
+>  Call Trace:
+>   [<c107af48>] run_timer_softirq+0x148/0x1e0
+>   [<c1069265>] ? rebalance_domains+0x135/0x160
+>   [<c106a28b>] ? get_parent_ip+0xb/0x40
+>   [<c106a28b>] ? get_parent_ip+0xb/0x40
+>   [<c1075098>] __do_softirq+0x78/0x100
+>   [<c1075020>] ? local_bh_enable+0xa0/0xa0
+>   <IRQ>
+> 
+>   [<c10753ad>] ? irq_exit+0x5d/0x70
+>   [<c104df53>] ? smp_apic_timer_interrupt+0x53/0x90
+>   [<c178fa22>] ? apic_timer_interrupt+0x2a/0x30
+>   [<c103d3ed>] ? mwait_idle+0x4d/0x80
+>   [<c1034b0a>] ? cpu_idle+0x3a/0x80
+>   [<c176dc3b>] ? rest_init+0x7b/0x80
+>   [<c1b1471b>] ? start_kernel+0x2e2/0x2e8
+>   [<c1b141c1>] ? loglevel+0x1a/0x1a
+>   [<c1b140b3>] ? i386_start_kernel+0xb3/0xbb
+> 
+> 
 
-> @@ -591,14 +591,14 @@ typedef struct r8180_priv
->  	int	   ForcedDataRate; // Force Data Rate. 0: Auto, 0x02: 1M ~ 0x6C: 54M.)
->  	u32     NumTxUnicast; //YJ,add,080828,for keep alive
->  	u8      keepAliveLevel; //YJ,add,080828,for KeepAlive
-> -	unsigned long 	NumTxOkTotal;
-> +	unsigned long	NumTxOkTotal;
->  	u16                                 LastRetryCnt;
->          u16                                     LastRetryRate;
->          unsigned long       LastTxokCnt;
->          unsigned long           LastRxokCnt;
->          u16                                     CurrRetryCnt;
->          unsigned long           LastTxOKBytes;
-> -	unsigned long 		    NumTxOkBytesTotal;
-> +	unsigned long		    NumTxOkBytesTotal;
->          u8                          LastFailTxRate;
->          long                        LastFailTxRateSS;
->          u8                          FailTxRateCount;
+Could be that a timer was freed while still running.
 
-These are all higgledy-piggledy.
+Please ensure that all kernel debugging options are enabled. 
+Especially 
 
-> @@ -579,7 +579,7 @@ StaRateAdaptive87SE(
->  	u32			TxThroughput;
->  	long		CurrSignalStrength;
->  	bool		bUpdateInitialGain = false;
-> -    	u8			u1bOfdm=0, u1bCck = 0;
-> +	u8			u1bOfdm=0, u1bCck = 0;
-                                      ^^^
-Spaces around the '=' char.
+CONFIG_DEBUG_OBJECTS=y
+CONFIG_DEBUG_OBJECTS_SELFTEST=y
+CONFIG_DEBUG_OBJECTS_FREE=y
+CONFIG_DEBUG_OBJECTS_TIMERS=y
+CONFIG_DEBUG_OBJECTS_WORK=y
+CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER=y
+CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
+CONFIG_SLUB_DEBUG_ON=y
 
-> @@ -846,7 +846,7 @@ StaRateAdaptive87SE(
->  			bTryDown = true;
->  			priv->TryDownCountLowData += TryDownTh;
->  		}
-> -  		else if ( (CurrRetryRate<20) && (priv->LastRetryRate<21)) //TO DO: need to consider (RSSI)
-> +		else if ( (CurrRetryRate<20) && (priv->LastRetryRate<21)) //TO DO: need to consider (RSSI)
-                         ^             ^^^                         ^^^
-Delete extra space, add spaces around the '<' chars.
-
-> --- a/drivers/staging/rtl8187se/r8185b_init.c
-> +++ b/drivers/staging/rtl8187se/r8185b_init.c
-> @@ -172,7 +172,7 @@ if (offset == PhyAddr)	{
->  		*/
->  /*		NdisAcquireSpinLock( &(pDevice->IoSpinLock) );	*/
->  
-> -		for (idx = 0; idx < 30; idx++)	{ 
-> +		for (idx = 0; idx < 30; idx++)	{
-                                               ^
-Delete the second space here.
-
-regards,
-dan carpenter
-
+CONFIG_DEBUG_OBJECTS_TIMERS might catch this one.
