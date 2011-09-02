@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab1IBQh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 12:37:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47398 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195Ab1IBQhZ (ORCPT
+	id S1753440Ab1IBQii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 12:38:38 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:42569 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab1IBQih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 12:37:25 -0400
-Date: Fri, 2 Sep 2011 20:37:11 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110902163711.GA3124@albatros>
-References: <20110831075814.003575573@openvz.org>
- <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros>
- <20110831112642.GI25465@sun>
- <20110831140416.GA17626@shutemov.name>
- <20110831142622.GB30615@sun>
- <20110831151023.5b7e12da.akpm@linux-foundation.org>
- <20110901080508.GF30615@sun>
+	Fri, 2 Sep 2011 12:38:37 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll3c7qFNVV
+X-RZG-CLASS-ID: mo00
+Date: Fri, 2 Sep 2011 18:38:20 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Greg KH <gregkh@suse.de>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Subject: Re: [PATCH] Staging: hv: vmbus: Show the modalias in
+ /sys/bus/vmbus/devices/*/
+Message-ID: <20110902163820.GA25353@aepfle.de>
+References: <20110902162556.GA25073@aepfle.de>
+ <20110902163550.GA5508@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110901080508.GF30615@sun>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110902163550.GA5508@suse.de>
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Sep 02, Greg KH wrote:
 
-On Thu, Sep 01, 2011 at 12:05 +0400, Cyrill Gorcunov wrote:
-> ...
-> > > +/*
-> > > + * NOTE: The getattr/setattr for both /proc/$pid/map_files and
-> > > + * /proc/$pid/fd seems to have share the code, so need to be
-> > > + * unified and code duplication eliminated!
-> > 
-> > Why not do this now?
+> On Fri, Sep 02, 2011 at 06:25:56PM +0200, Olaf Hering wrote:
+
+> > +#define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2)
+
+> > +	char alias_name[VMBUS_ALIAS_LEN + 1];
 > 
-> There are a couple of reasons. Yesterday I was talking to
-> Vasiliy Kulikov about this snippet, so he seems about to send
-> you patches related to /proc/$pid/fd update, and after those
-> patches will be merged we are to drop code duplication.
-> Vasiliy, what the status of the update?
+> Is that too big to put on the stack?  64 bytes, right?  Hm, maybe not.
 
-It looks like protecting directories with sensible contents is a nasty
-thing.  The problem here is that if the dentry is present in the cache,
-->lookup() is not called at all and the permissions can be checked in
-fop/dop/iop specific handler (getattr(), readlink(), etc.).  However, it
-would be much simplier to hook ->lookup() only.  Otherwise, we have to
-define procfs handlers for all operations, which don't call
-->d_revalidate().
+16 * 2 + 1 = 33 bytes.
 
-Is it possible to disable caching dentry for specific files?  It is not
-performace critical thing in fd and map_files and it would much simplify
-the task.  Creating handlers for all these op handler bloats procfs.
-
-Also I'm not sure what other handlers might reveal dentry presence.
-Besides ->getattr() I could find only one thing - ->link() (Cyrill,
-AFAICS ->setattr() doesn't reveal files' presence).  Someone more
-familiar with vfs than me - please, help to identify all infoleak
-sources!
-
-
-Thank you,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Olaf
