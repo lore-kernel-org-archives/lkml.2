@@ -1,137 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334Ab1IBEs4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 00:48:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58680 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab1IBEsz convert rfc822-to-8bit (ORCPT
+	id S1751523Ab1IBE7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 00:59:13 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33707 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab1IBE7I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 00:48:55 -0400
+	Fri, 2 Sep 2011 00:59:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110901140254.GH14369@suse.de>
-References: <cover.1321112552.git.minchan.kim@gmail.com>
-	<8ef02605a7a76b176167d90a285033afa8513326.1321112552.git.minchan.kim@gmail.com>
-	<20110831111954.GB17512@redhat.com>
-	<20110831144150.GA1860@barrios-desktop>
-	<20110901140254.GH14369@suse.de>
-Date: Fri, 2 Sep 2011 13:48:54 +0900
-Message-ID: <CAEwNFnCmZ5tJ2Fy9Qt8=GBZN2=YhrX4ZiWmMPx0mAVXtvZj_Pg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] compaction: compact unevictable page
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>
+In-Reply-To: <20110901191028.GA30301@sucs.org>
+References: <20110829204846.GA14699@sucs.org>
+	<CABqxG0cUx4W5JH-gX-rUe=mZ8SY0uxkrCyofPsfUDBojwWKTvQ@mail.gmail.com>
+	<20110901191028.GA30301@sucs.org>
+Date: Fri, 2 Sep 2011 12:59:05 +0800
+Message-ID: <CABqxG0c-k0PfUEC5YDyj3G6n1iXZqSxavAMVx9rDD6PjT5wWnA@mail.gmail.com>
+Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb (v4l2_device_disconnect+0x11/0x30)
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 11:02 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Wed, Aug 31, 2011 at 11:41:50PM +0900, Minchan Kim wrote:
->> On Wed, Aug 31, 2011 at 01:19:54PM +0200, Johannes Weiner wrote:
->> > On Sun, Nov 13, 2011 at 01:37:42AM +0900, Minchan Kim wrote:
->> > > Now compaction doesn't handle mlocked page as it uses __isolate_lru_page
->> > > which doesn't consider unevicatable page. It has been used by just lumpy so
->> > > it was pointless that it isolates unevictable page. But the situation is
->> > > changed. Compaction could handle unevictable page and it can help getting
->> > > big contiguos pages in fragment memory by many pinned page with mlock.
+On Fri, Sep 2, 2011 at 3:10 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
+> On Thu, Sep 01, 2011 at 05:02:51PM +0800, Dave Young wrote:
+>> On Tue, Aug 30, 2011 at 4:48 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
 >> >
->> > This may result in applications unexpectedly faulting and waiting on
->> > mlocked pages under migration.  I wonder how realtime people feel
->> > about that?
+>> > I managed to produce an oops in 3.1.0-rc3-00270-g7a54f5e by unplugging a
+>> > USB webcam. See below:
 >>
->> I didn't consider it but it's very important point.
->> The migrate_page can call pageout on dirty page so RT process could wait on the
->> mlocked page during very long time.
+>> Could you try the attached patch?
 >
-> On the plus side, the filesystem that is likely to suffer from this
-> is btrfs. The other important cases avoid the writeout.
+> This patch fixed the oops but extending the sequence (enable camera,
+> start cheese, disable camera, watch cheese pause, enable camera, quit
+> cheese, start cheese) causes the following "poison overwritten" warning
+> to appear:
 
-You mean only btrfs does write in reclaim context?
-It's the oppose I have known.
-Anyway, it would be mitigated if we merge your patch "Reduce
-filesystem writeback from page reclaim".
-But we have other problem as I said.
-We can suffer from unmapping page of many ptes.
+It seems another bug, I can reproduce this as well.
 
->
->> I can mitigate it with isolating mlocked page in case of !sync but still we can't
->> guarantee the time because we can't know how many vmas point the page so that try_to_unmap
->> could spend lots of time.
->>
->
-> This loss of guarantee arguably violates POSIX 1B as part of the
-> real-time extension. The wording is "The function mlock shall cause
-> those whole pages containing any part of the address space of the
-> process starting at address addr and continuing for len bytes to be
-> memory resident until unlocked or until the process exits or execs
-> another process image."
->
-> It defines locking as "memory locking guarantees the residence of
-> portions of the address space. It is implementation defined whether
-> locking memory guarantees fixed translation between virtual addresses
-> (as seen by the process) and physical addresses."
->
-> As it's up to the implementation whether to preserve the physical
-> page mapping, it's allowed for compaction to move that page. However,
-> as it mlock is recommended for use by time-critical applications,
-> I fear we would be breaking developer expectations on the behaviour
-> of mlock even if it is permitted by POSIX.
+uvc_device is freed in uvc_delete,
 
-Agree.
+struct v4l2_device vdev is the member of struct uvc_device, so vdev is
+also freed. Later v4l2_device operations on vdev will overwrite the
+poison memory area.
 
 >
->> We can think it's a trade off between high order allocation VS RT latency.
->> Now I am biasing toward RT latency as considering mlock man page.
->>
->> Any thoughts?
->>
 >
-> At the very least it should not be the default behaviour. I do not have
-> suggestions on how it could be enabled though. It's a bit obscure to
-> have as a kernel parameter or even a proc tunable and it's not a perfect
-> for /sys/kernel/mm/transparent_hugepage/defrag either.
+> [  191.240695] uvcvideo: Found UVC 1.00 device CNF7129 (04f2:b071)
+> [  191.277965] input: CNF7129 as /devices/pci0000:00/0000:00:1d.7/usb1/1-8/1-8:1.0/input/input9
+> [  220.287366] =============================================================================
+> [  220.287379] BUG kmalloc-512: Poison overwritten
+> [  220.287384] -----------------------------------------------------------------------------
+> [  220.287387]
+> [  220.287394] INFO: 0xec90f150-0xec90f150. First byte 0x6a instead of 0x6b
+> [  220.287410] INFO: Allocated in uvc_probe+0x54/0xd50 age=210617 cpu=0 pid=16
+> [  220.287421]  T.974+0x29d/0x5e0
+> [  220.287427]  kmem_cache_alloc+0x167/0x180
+> [  220.287433]  uvc_probe+0x54/0xd50
+> [  220.287441]  usb_probe_interface+0xd5/0x1d0
+> [  220.287448]  driver_probe_device+0x80/0x1a0
+> [  220.287455]  __device_attach+0x41/0x50
+> [  220.287460]  bus_for_each_drv+0x53/0x80
+> [  220.287466]  device_attach+0x89/0xa0
+> [  220.287472]  bus_probe_device+0x25/0x40
+> [  220.287478]  device_add+0x5a9/0x660
+> [  220.287484]  usb_set_configuration+0x562/0x670
+> [  220.287491]  generic_probe+0x36/0x90
+> [  220.287497]  usb_probe_device+0x24/0x50
+> [  220.287503]  driver_probe_device+0x80/0x1a0
+> [  220.287509]  __device_attach+0x41/0x50
+> [  220.287515]  bus_for_each_drv+0x53/0x80
+> [  220.287522] INFO: Freed in uvc_delete+0xfe/0x110 age=22 cpu=0 pid=1645
+> [  220.287530]  __slab_free+0x1f8/0x300
+> [  220.287536]  kfree+0x100/0x140
+> [  220.287541]  uvc_delete+0xfe/0x110
+> [  220.287547]  uvc_release+0x25/0x30
+> [  220.287555]  v4l2_device_release+0x9d/0xc0
+> [  220.287560]  device_release+0x19/0x90
+> [  220.287567]  kobject_release+0x3c/0x90
+> [  220.287573]  kref_put+0x2c/0x60
+> [  220.287578]  kobject_put+0x1d/0x50
+> [  220.287587]  put_device+0xf/0x20
+> [  220.287593]  v4l2_release+0x56/0x60
+> [  220.287599]  fput+0xcc/0x220
+> [  220.287605]  filp_close+0x44/0x70
+> [  220.287613]  put_files_struct+0x158/0x180
+> [  220.287619]  exit_files+0x40/0x50
+> [  220.287626]  do_exit+0xec/0x660
+> [  220.287632] INFO: Slab 0xef722180 objects=23 used=23 fp=0x  (null) flags=0x4080
+> [  220.287639] INFO: Object 0xec90f060 @offset=12384 fp=0xec90cac0
+> [  220.287642]
+> [  220.287647] Bytes b4 0xec90f050:  6d 06 00 00 88 c8 fe ff 5a 5a 5a 5a 5a 5a 5a 5a m....ÈþÿZZZZZZZZ
+> [  220.287681]   Object 0xec90f060:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287713]   Object 0xec90f070:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287746]   Object 0xec90f080:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287778]   Object 0xec90f090:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287811]   Object 0xec90f0a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287843]   Object 0xec90f0b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287876]   Object 0xec90f0c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287908]   Object 0xec90f0d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287941]   Object 0xec90f0e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.287973]   Object 0xec90f0f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288006]   Object 0xec90f100:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f110:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f120:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f130:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f140:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f150:  6a 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b jkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f160:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f170:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f180:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f190:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f1a0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f1b0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f1c0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f1d0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f1e0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f1f0:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f200:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f210:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f220:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f230:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f240:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+> [  220.288012]   Object 0xec90f250:  6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5 kkkkkkkkkkkkkkk¥
+> [  220.288012]  Redzone 0xec90f260:  bb bb bb bb                                     »»»»
+> [  220.288012]  Padding 0xec90f308:  5a 5a 5a 5a 5a 5a 5a 5a                         ZZZZZZZZ
+> [  220.288012] Pid: 1450, comm: metacity Not tainted 3.1.0-rc4-00131-g9e79e3e-dirty #488
+> [  220.288012] Call Trace:
+> [  220.288012]  [<b0192c3e>] print_trailer+0xee/0x140
+> [  220.288012]  [<b0193157>] check_bytes_and_report+0xd7/0x160
+> [  220.288012]  [<b0194a98>] check_object+0x1d8/0x220
+> [  220.288012]  [<b0192fe3>] ? check_slab+0x63/0x100
+> [  220.288012]  [<b0194f67>] alloc_debug_processing+0xb7/0x130
+> [  220.288012]  [<b019602d>] T.974+0x29d/0x5e0
+> [  220.288012]  [<b044c466>] ? sock_alloc_send_pskb+0x176/0x290
+> [  220.288012]  [<b044c466>] ? sock_alloc_send_pskb+0x176/0x290
+> [  220.288012]  [<b0198551>] ? create_object+0x191/0x240
+> [  220.288012]  [<b01979f5>] __kmalloc_track_caller+0x1d5/0x1f0
+> [  220.288012]  [<b044c466>] ? sock_alloc_send_pskb+0x176/0x290
+> [  220.288012]  [<b044ff2d>] __alloc_skb+0x4d/0x140
+> [  220.288012]  [<b044c466>] sock_alloc_send_pskb+0x176/0x290
+> [  220.288012]  [<b055d98a>] ? __mutex_unlock_slowpath+0x9a/0x110
+> [  220.288012]  [<b044c598>] sock_alloc_send_skb+0x18/0x20
+> [  220.288012]  [<b04b7957>] unix_stream_sendmsg+0x2b7/0x3d0
+> [  220.288012]  [<b0448913>] sock_aio_write+0x133/0x170
+> [  220.288012]  [<b019b285>] do_sync_readv_writev+0x95/0xc0
+> [  220.288012]  [<b0274328>] ? _copy_from_user+0x38/0x180
+> [  220.288012]  [<b019b133>] ? rw_copy_check_uvector+0x73/0xf0
+> [  220.288012]  [<b019bf1b>] do_readv_writev+0x9b/0x180
+> [  220.288012]  [<b04487e0>] ? sock_destroy_inode+0x30/0x30
+> [  220.288012]  [<b019c562>] ? fget_light+0xb2/0x130
+> [  220.288012]  [<b019c576>] ? fget_light+0xc6/0x130
+> [  220.288012]  [<b019c045>] vfs_writev+0x45/0x60
+> [  220.288012]  [<b019c131>] sys_writev+0x41/0x80
+> [  220.288012]  [<b055ff57>] sysenter_do_call+0x12/0x36
+> [  220.288012]  [<b0550000>] ? rfkill_alloc+0xe0/0x110
+> [  220.288012] FIX kmalloc-512: Restoring 0xec90f150-0xec90f150=0x6b
+> [  220.288012]
+> [  220.288012] FIX kmalloc-512: Marking all objects used
 >
-> How big of a problem is it that mlocked pages are not compacted at the
-> moment?
+> --
+> Sitsofe | http://sucs.org/~sits/
+>
 
-I found it by just code review and didn't see any reports about that.
-But it is quite possible that someone calls mlock with small request sparsely.
-And logically, compaction could be a feature to solve it if user
-endures the pain.
-(But still, I am not sure how many of user on mlock can bear it)
 
-We can solve a bit that by another approach if it's really problem
-with RT processes. The another approach is to separate mlocked pages
-with allocation time like below pseudo patch which just show the
-concept)
-
-ex)
-diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-index 3a93f73..8ae2e60 100644
---- a/include/linux/highmem.h
-+++ b/include/linux/highmem.h
-@@ -175,7 +175,8 @@ static inline struct page *
- alloc_zeroed_user_highpage_movable(struct vm_area_struct *vma,
-                                        unsigned long vaddr)
- {
--       return __alloc_zeroed_user_highpage(__GFP_MOVABLE, vma, vaddr);
-+       gfp_t gfp_flag = vma->vm_flags & VM_LCOKED ? 0 : __GFP_MOVABLE;
-+       return __alloc_zeroed_user_highpage(gfp_flag, vma, vaddr);
- }
-
-But it's a solution about newly allocated page on mlocked vma.
-Old pages in the VMA is still a problem.
-We can solve it at mlock system call through migrating the pages to
-UNMOVABLE block.
-
-What we need is just VOC. Who know there are such systems which call
-mlock call frequently with small pages?
-If any customer doesn't require it strongly, I can drop this patch.
 
 -- 
-Kind regards,
-Minchan Kim
+Regards
+Yang RuiRui
