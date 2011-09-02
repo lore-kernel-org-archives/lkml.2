@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201Ab1IBTxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 15:53:43 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36761 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab1IBTxk (ORCPT
+	id S1755235Ab1IBTyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 15:54:03 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:50096 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab1IBTyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 15:53:40 -0400
-Date: Fri, 2 Sep 2011 21:53:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Finn Thain <fthain@telegraphics.com.au>,
-        Linux/m68k <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: m68k: [v5] Convert to genirq (WIP)
-In-Reply-To: <CAMuHMdVmNAOSK+M9z-ySOR-oA4LwuS_N0SZ8XxzQ9_pYqM_vdQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1109022152210.2723@ionos>
-References: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com> <alpine.OSX.2.00.1108271506320.190@ibook.local> <alpine.OSX.2.00.1108300148040.435@ibook.local> <CAMuHMdVmNAOSK+M9z-ySOR-oA4LwuS_N0SZ8XxzQ9_pYqM_vdQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1902576084-1314993217=:2723"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 2 Sep 2011 15:54:00 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: George Shuklin <george.shuklin@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: si_swapinfo export
+In-Reply-To: Your message of "Fri, 02 Sep 2011 19:41:29 +0400."
+             <1314978089.11870.2.camel@mabase>
+From: Valdis.Kletnieks@vt.edu
+References: <1314978089.11870.2.camel@mabase>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1314993238_2623P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 02 Sep 2011 15:53:58 -0400
+Message-ID: <3187.1314993238@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4E613457.003F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+--==_Exmh_1314993238_2623P
+Content-Type: text/plain; charset=us-ascii
 
---8323328-1902576084-1314993217=:2723
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 2 Sep 2011, Geert Uytterhoeven wrote:
-
-> On Fri, Sep 2, 2011 at 14:14, Finn Thain <fthain@telegraphics.com.au> wrote:
-> > On Sun, 28 Aug 2011, I wrote:
-> > However, I found another problem. pmac_zilog oopses when its TTY is closed
-> > (see below). And macsonic does the same when the NIC is closed. The trace
-> > says that irq_shutdown() died trying to call the chip irq_mask routine,
-> > when desc->irq_data.chip (in a0) was NULL. Any ideas?
+On Fri, 02 Sep 2011 19:41:29 +0400, George Shuklin said:
+> Good day.
 > 
-> > Unable to handle kernel NULL pointer dereference at virtual address   (null)
-> > Oops: 00000000
-> > Modules linked in:
-> > PC: [<00000000>]   (null)
-> 
-> No, it calls a function pointer that's NULL.
-> 
-> void irq_shutdown(struct irq_desc *desc)
-> {
->         irq_state_set_disabled(desc);
->         desc->depth = 1;
->         if (desc->irq_data.chip->irq_shutdown)
->                 desc->irq_data.chip->irq_shutdown(&desc->irq_data);
->         if (desc->irq_data.chip->irq_disable)
->                 desc->irq_data.chip->irq_disable(&desc->irq_data);
->         else
->                 desc->irq_data.chip->irq_mask(&desc->irq_data);
->         irq_state_set_masked(desc);
-> }
-> 
-> Oops, seems I misread the code and assumed the second "if" was an "else if",
+> Why si_swapinfo (from include/linux/swap.h) is not marked as
+> EXPORT_SYMBOL_GPL? It's kinda hard to gain information about memory in
+> module. 
 
-I think that was supposed to be an "else if". Lemme look at the code
-before the overhaul to be sure.
+Use case?  What information exactly are you trying to get in the module, and
+equally important, why?  More likely, what you *actually* want isn't the
+information, it's a new API (or using an existing one you didn't even know was
+there) :)
 
-> as I wrote down in my notes that it calls only one of the 3 functions :-(
-> But it does need either .irq_disable() or .irq_mask().
-> 
-> The following irq_chip structs have both .irq_disable() and .irq_mask() NULL:
->   - arch/m68k/apollo/dn_ints.c:apollo_irq_chip
->   - arch/m68k/kernel/ints.c:auto_irq_chip
->   - arch/m68k/kernel/ints.c:user_irq_chip
-> 
-> Since this is on Mac and mac_irq_chip is OK, I guess this is a non-PSC Mac,
-> i.e. the IRQ number is IRQ_MAC_SCC == IRQ_AUTO_4?
-> 
-> Thomas: As we cannot disable or mask autovector interrupts at the
-> autovector level,
-> IMHO it doesn't make much sense do add a dummy .irq_mask() function.
-> Can we add an extra check in irq_shutdown() to not call .irq_mask() if
-> it's NULL?
 
-Yes.
+--==_Exmh_1314993238_2623P
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-	tglx
---8323328-1902576084-1314993217=:2723--
+iD8DBQFOYTRWcC3lWbTT17ARAmVfAKDp49+0OomiA9UJ7ZO6i2lj4kl8oQCfW/sB
+hTTMDiOYtLv2ZIVHXJHFMSg=
+=5WQ2
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1314993238_2623P--
+
