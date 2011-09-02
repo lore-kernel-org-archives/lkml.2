@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1IBMls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 08:41:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55084 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab1IBMlo convert rfc822-to-8bit (ORCPT
+	id S1751982Ab1IBMwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 08:52:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42203 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845Ab1IBMwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 08:41:44 -0400
-Subject: [PATCH -rt] sched: teach migrate_disable about atomic contexts
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 02 Sep 2011 14:41:37 +0200
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314967297.1301.14.camel@twins>
-Mime-Version: 1.0
+	Fri, 2 Sep 2011 08:52:11 -0400
+X-AuditID: b753bd60-a1479ba0000050a4-71-4e60d177ccae
+X-AuditID: b753bd60-a1479ba0000050a4-71-4e60d177ccae
+Message-ID: <4E60D16A.8060802@hitachi.com>
+Date: Fri, 02 Sep 2011 21:51:54 +0900
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        James.Bottomley@HansenPartnership.com,
+        dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, kay.sievers@gmail.com
+Subject: Re: [-v3 PATCH 0/3] Persistent device name using alias
+References: <20110825090359.2288.91057.stgit@ltc197.sdl.hitachi.co.jp> <20110825101602.GI3286@htj.dyndns.org> <4E58C3BD.3000609@hitachi.com> <20110827102655.GJ2632@htj.dyndns.org>            <4E58E905.4020704@hitachi.com> <16628.1314734537@turing-police.cc.vt.edu>
+In-Reply-To: <16628.1314734537@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: sched: teach migrate_disable about atomic contexts
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri Sep 02 14:29:27 CEST 2011
+Hi Valdis,
 
- <NMI>  [<ffffffff812dafd8>] spin_bug+0x94/0xa8
- [<ffffffff812db07f>] do_raw_spin_lock+0x43/0xea
- [<ffffffff814fa9be>] _raw_spin_lock_irqsave+0x6b/0x85
- [<ffffffff8106ff9e>] ? migrate_disable+0x75/0x12d
- [<ffffffff81078aaf>] ? pin_current_cpu+0x36/0xb0
- [<ffffffff8106ff9e>] migrate_disable+0x75/0x12d
- [<ffffffff81115b9d>] pagefault_disable+0xe/0x1f
- [<ffffffff81047027>] copy_from_user_nmi+0x74/0xe6
- [<ffffffff810489d7>] perf_callchain_user+0xf3/0x135
+(2011/08/31 5:02), Valdis.Kletnieks@vt.edu wrote:
+> On Sat, 27 Aug 2011 21:54:29 +0900, Nao Nishijima said:
+> 
+>> A kernel device names (e.g. sda) is not useful information because it
+>> doesn't always point the same disk at each boot-up time.
+> 
+> If this is important to you, can't you use a udev rule, similar to what most
+> distros already stick in 70-persistent-net.rules and 70-persistent-cd.rules?
+> 
+> (Yes, this *does* involve finding a UUID or label or  something on the disk
+> that you can identify as "same entity as last time".
 
-Now clearly we can't go around taking locks from NMI context, cure
-this by short-circuiting migrate_disable() when we're in an atomic
-context already.
+As you said, it is able to identify a disk at the expense of checking
+cost. However to introduce "alias" is an advantage of reducing both the
+cost and the risk of miss-communication, and it can easily identify it.
 
-Add some extra debugging to avoid things like:
+And also, currently, kernel log and command output do not accord with
+the device name which a user uses (e.g. by-id, by-uuid). I would try to
+solve those mismatches using "alias". In other words, I'd like to
+introduce aliases for integrating the name of devices to control and record.
 
-  preempt_disable()
-  migrate_disable();
+Of course I will modify commands using a device name to use a persistent
+device names.
 
-  preempt_enable();
-  migrate_enable();
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-wbot4vsmwhi8vmbf83hsclk6@git.kernel.org
----
- include/linux/sched.h |    3 +++
- kernel/sched.c        |   21 +++++++++++++++++++++
- 2 files changed, 24 insertions(+)
+Best regards,
 
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -6135,6 +6135,17 @@ void migrate_disable(void)
- 	unsigned long flags;
- 	struct rq *rq;
- 
-+	if (in_atomic()) {
-+#ifdef CONFIG_SCHED_DEBUG
-+		p->migrate_disable_atomic++;
-+#endif
-+		return;
-+	}
-+
-+#ifdef CONFIG_SCHED_DEBUG
-+	WARN_ON_ONCE(p->migrate_disable_atomic);
-+#endif
-+
- 	preempt_disable();
- 	if (p->migrate_disable) {
- 		p->migrate_disable++;
-@@ -6183,6 +6194,16 @@ void migrate_enable(void)
- 	unsigned long flags;
- 	struct rq *rq;
- 
-+	if (in_atomic()) {
-+#ifdef CONFIG_SCHED_DEBUG
-+		p->migrate_disable_atomic--;
-+#endif
-+		return;
-+	}
-+
-+#ifdef CONFIG_SCHED_DEBUG
-+	WARN_ON_ONCE(p->migrate_disable_atomic);
-+#endif
- 	WARN_ON_ONCE(p->migrate_disable <= 0);
- 
- 	preempt_disable();
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1264,6 +1264,9 @@ struct task_struct {
- 	unsigned int policy;
- #ifdef CONFIG_PREEMPT_RT_FULL
- 	int migrate_disable;
-+#ifdef CONFIG_SCHED_DEBUG
-+	int migrate_disable_atomic;
-+#endif
- #endif
- 	cpumask_t cpus_allowed;
- 
-
+-- 
+Nao NISHIJIMA
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., YOKOHAMA Research  Laboratory
+Email： nao.nishijima.xt@hitachi.com
