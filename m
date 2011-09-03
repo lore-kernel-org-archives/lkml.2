@@ -1,79 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1ICRf0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 13:35:26 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48090 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753297Ab1ICRfZ (ORCPT
+	id S1753607Ab1ICRrO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 13:47:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34111 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753184Ab1ICRrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 13:35:25 -0400
-Date: Sat, 3 Sep 2011 13:35:22 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 1/2] irq_work, Use llist in irq_work
-Message-ID: <20110903173522.GB10744@Krystal>
-References: <1314681384-20881-1-git-send-email-ying.huang@intel.com> <1314681384-20881-2-git-send-email-ying.huang@intel.com> <1314785405.23993.21.camel@twins> <4E5EE409.3060102@intel.com> <4E5EFA08.30205@intel.com> <1314863927.7945.11.camel@twins> <4E5F48D1.801@intel.com> <1314871035.7945.14.camel@twins> <4E602DF2.809@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E602DF2.809@intel.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:33:37 up 283 days, 21:36,  1 user,  load average: 0.08, 0.04,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 3 Sep 2011 13:47:10 -0400
+Date: Sat, 3 Sep 2011 10:50:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <wfg@mail.ustc.edu.cn>, linux-usb@vger.kernel.org
+Subject: Re: [BUG] D state process after unplug and umount usb disk
+Message-Id: <20110903105045.7d195883.akpm@linux-foundation.org>
+In-Reply-To: <CABqxG0dM27pmAiajtwAFeBVgc=U+2KaaLCYH9wxOdcW=vbku_A@mail.gmail.com>
+References: <CABqxG0dM27pmAiajtwAFeBVgc=U+2KaaLCYH9wxOdcW=vbku_A@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Huang Ying (ying.huang@intel.com) wrote:
-> On 09/01/2011 05:57 PM, Peter Zijlstra wrote:
-> > On Thu, 2011-09-01 at 16:56 +0800, Huang Ying wrote:
-> >> Something as follow with llist_empty() seems not work.
-> >>
-> >>   empty = llist_empty(irq_work_list);
-> >>   llist_add(&work->llnode, irq_work_list);
-> >>   if (empty)
-> >>           arch_irq_work_raise();
-> >>
-> >> Because irq_work IRQ handler or timer IRQ handler may be executed just
-> >> before "llist_add(&work->llnode, irq_work_list)", so that, although
-> >> "empty == false", arch_irq_work_raise() still should be executed.
-> > 
-> > Right, I was thinking:
-> > 
-> > 	llist_add(&work->llist, irq_work_list);
-> > 	if (llist_empty(&work->llist))
-> > 		arch_irq_work_raise();
-> > 
-> > And then ran into the difference between llist_node and llist_head. Now
-> > we could sort that by introducing llist_next() and write it like:
-> > 
-> > 	if (!llist_next(&work->list))
-> > 		arch_irq_work_raise();
-> > 
+(cc linux-usb)
+
+On Sat, 3 Sep 2011 18:31:11 +0800 Dave Young <hidave.darkstar@gmail.com> wrote:
+
+> Hi,
 > 
-> This reveals some implementation details of llist.  But it will reveal
-> some implementation details to make llist_add() return whether list is
-> empty before adding as Mathieu pointed out.  So I think something like
-> this or just to check work->list->next should be acceptable.
+> Known issue?
 
-No. These solutions all appear to have some relatively high level of
-ugliness and expose too much of the structure internals.
+Not as far as I know.  Kernel version?
 
-I'll submit a patch to change the API from llist to llstack shortly for
-comments.
+> Reproduce by:
+> mount /dev/sdb2 /mnt/sdb2 -t ext3
+> cat /mnt/sdb2/* >/dev/null
+> unplug usb disk
+> umount -f /mnt/sdb2
+> 
+> dmesg as below:
+> 
+> [ 1440.567271] SysRq : Show Blocked State
+> [ 1440.567278]   task                        PC stack   pid father
+> [ 1440.567312] cat             D ffff880037a1e378  4296  2381   2310 0x00000004
+> [ 1440.567320]  ffff88003cca5838 0000000000000046 ffff88003cca57e8
+> ffffffff00000000
+> [ 1440.567332]  00000000000134c0 00000000000134c0 00000000000134c0
+> ffff880037a1e000
+> [ 1440.567339]  00000000000134c0 ffff88003cca5fd8 00000000000134c0
+> 00000000000134c0
+> [ 1440.567347] Call Trace:
+> [ 1440.567357]  [<ffffffff810c0468>] ? lock_page+0x2a/0x2a
+> [ 1440.567363]  [<ffffffff815e452d>] io_schedule+0x5e/0x79
+> [ 1440.567368]  [<ffffffff810c0471>] sleep_on_page+0x9/0xd
+> [ 1440.567373]  [<ffffffff815e4adf>] __wait_on_bit_lock+0x41/0x8a
+> [ 1440.567378]  [<ffffffff810c0437>] __lock_page+0x61/0x68
+> [ 1440.567384]  [<ffffffff81058739>] ? autoremove_wake_function+0x34/0x34
+> [ 1440.567390]  [<ffffffff8102f704>] ? should_resched+0x9/0x29
+> [ 1440.567395]  [<ffffffff810c9b0b>] lock_page+0x25/0x29
+> [ 1440.567400]  [<ffffffff810ca1ac>] truncate_inode_pages_range+0x2a6/0x32d
+> [ 1440.567406]  [<ffffffff810ca240>] truncate_inode_pages+0xd/0xf
+> [ 1440.567411]  [<ffffffff811642cf>] ext3_evict_inode+0xc9/0x1d7
+> [ 1440.567417]  [<ffffffff8111288e>] evict+0xa3/0x15e
+> [ 1440.567422]  [<ffffffff81112b34>] dispose_list+0x3d/0x49
+> [ 1440.567426]  [<ffffffff81113475>] evict_inodes+0xf1/0x100
+> [ 1440.567431]  [<ffffffff810ffd21>] generic_shutdown_super+0x47/0xc7
+> [ 1440.567436]  [<ffffffff810ffdc3>] kill_block_super+0x22/0x65
+> [ 1440.567441]  [<ffffffff811000da>] deactivate_locked_super+0x21/0x52
+> [ 1440.567445]  [<ffffffff811009ab>] deactivate_super+0x35/0x39
+> [ 1440.567452]  [<ffffffff81116395>] mntput_no_expire+0xcb/0xd0
+> [ 1440.567457]  [<ffffffff811163bb>] mntput+0x21/0x23
+> [ 1440.567461]  [<ffffffff810ff8e7>] fput+0x196/0x1a5
+> [ 1440.567467]  [<ffffffff810fc7a1>] filp_close+0x6b/0x76
+> [ 1440.567472]  [<ffffffff8103fa8a>] put_files_struct+0x73/0xd1
+> [ 1440.567477]  [<ffffffff8103fb7b>] exit_files+0x46/0x4f
+> [ 1440.567481]  [<ffffffff8103fe01>] do_exit+0x27d/0x7b3
+> [ 1440.567487]  [<ffffffff8104d97f>] ? get_signal_to_deliver+0x81/0x4ac
+> [ 1440.567493]  [<ffffffff812e5e27>] ? do_raw_spin_lock+0x6b/0x122
+> [ 1440.567497]  [<ffffffff810405c5>] do_group_exit+0x7d/0xa8
+> [ 1440.567502]  [<ffffffff8104dd8b>] get_signal_to_deliver+0x48d/0x4ac
+> [ 1440.567509]  [<ffffffff81001ea2>] do_signal+0x39/0x600
+> [ 1440.567514]  [<ffffffff810fdb37>] ? fsnotify_access+0x5d/0x65
+> [ 1440.567519]  [<ffffffff810024a4>] do_notify_resume+0x27/0x69
+> [ 1440.567524]  [<ffffffff812e158e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [ 1440.567529]  [<ffffffff815ecd63>] int_signal+0x12/0x17
+> [ 1440.710163] INFO: task cat:2381 blocked for more than 120 seconds.
+> [ 1440.710170] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> [ 1440.710175] cat             D ffff880037a1e378  4296  2381   2310 0x00000004
+> [ 1440.710188]  ffff88003cca5838 0000000000000046 ffff88003cca57e8
+> ffffffff00000000
+> [ 1440.710201]  00000000000134c0 00000000000134c0 00000000000134c0
+> ffff880037a1e000
+> [ 1440.710218]  00000000000134c0 ffff88003cca5fd8 00000000000134c0
+> 00000000000134c0
+> [ 1440.710225] Call Trace:
+> [ 1440.710233]  [<ffffffff810c0468>] ? lock_page+0x2a/0x2a
+> [ 1440.710239]  [<ffffffff815e452d>] io_schedule+0x5e/0x79
+> [ 1440.710244]  [<ffffffff810c0471>] sleep_on_page+0x9/0xd
+> [ 1440.710249]  [<ffffffff815e4adf>] __wait_on_bit_lock+0x41/0x8a
+> [ 1440.710253]  [<ffffffff810c0437>] __lock_page+0x61/0x68
+> [ 1440.710259]  [<ffffffff81058739>] ? autoremove_wake_function+0x34/0x34
+> [ 1440.710264]  [<ffffffff8102f704>] ? should_resched+0x9/0x29
+> [ 1440.710269]  [<ffffffff810c9b0b>] lock_page+0x25/0x29
+> [ 1440.710274]  [<ffffffff810ca1ac>] truncate_inode_pages_range+0x2a6/0x32d
+> [ 1440.710279]  [<ffffffff810ca240>] truncate_inode_pages+0xd/0xf
+> [ 1440.710284]  [<ffffffff811642cf>] ext3_evict_inode+0xc9/0x1d7
+> [ 1440.710289]  [<ffffffff8111288e>] evict+0xa3/0x15e
+> [ 1440.710294]  [<ffffffff81112b34>] dispose_list+0x3d/0x49
+> [ 1440.710299]  [<ffffffff81113475>] evict_inodes+0xf1/0x100
+> [ 1440.710303]  [<ffffffff810ffd21>] generic_shutdown_super+0x47/0xc7
+> [ 1440.710308]  [<ffffffff810ffdc3>] kill_block_super+0x22/0x65
+> [ 1440.710312]  [<ffffffff811000da>] deactivate_locked_super+0x21/0x52
+> [ 1440.710316]  [<ffffffff811009ab>] deactivate_super+0x35/0x39
+> [ 1440.710322]  [<ffffffff81116395>] mntput_no_expire+0xcb/0xd0
+> [ 1440.710326]  [<ffffffff811163bb>] mntput+0x21/0x23
+> [ 1440.710330]  [<ffffffff810ff8e7>] fput+0x196/0x1a5
+> [ 1440.710335]  [<ffffffff810fc7a1>] filp_close+0x6b/0x76
+> [ 1440.710342]  [<ffffffff8103fa8a>] put_files_struct+0x73/0xd1
+> [ 1440.710346]  [<ffffffff8103fb7b>] exit_files+0x46/0x4f
+> [ 1440.710350]  [<ffffffff8103fe01>] do_exit+0x27d/0x7b3
+> [ 1440.710356]  [<ffffffff8104d97f>] ? get_signal_to_deliver+0x81/0x4ac
+> [ 1440.710361]  [<ffffffff812e5e27>] ? do_raw_spin_lock+0x6b/0x122
+> [ 1440.710366]  [<ffffffff810405c5>] do_group_exit+0x7d/0xa8
+> [ 1440.710371]  [<ffffffff8104dd8b>] get_signal_to_deliver+0x48d/0x4ac
+> [ 1440.710376]  [<ffffffff81001ea2>] do_signal+0x39/0x600
+> [ 1440.710381]  [<ffffffff810fdb37>] ? fsnotify_access+0x5d/0x65
+> [ 1440.710386]  [<ffffffff810024a4>] do_notify_resume+0x27/0x69
+> [ 1440.710391]  [<ffffffff812e158e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [ 1440.710396]  [<ffffffff815ecd63>] int_signal+0x12/0x17
+> [ 1440.710399] INFO: lockdep is turned off.
 
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
