@@ -1,156 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448Ab1ICM4c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 08:56:32 -0400
-Received: from mailgw01.dd24.net ([193.46.215.41]:50059 "EHLO
-	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab1ICM43 (ORCPT
+	id S1751900Ab1ICNrh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 09:47:37 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33916 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1ICNrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 08:56:29 -0400
-X-Greylist: delayed 658 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Sep 2011 08:56:29 EDT
-Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
-From: Christoph Anton Mitterer <calestyo@scientia.net>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: linux-wireless@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110902233806.GA22157@elie>
-References: <bbdbd01d4965ae789384bc1f9d0a2426@imap.dd24.net>
-	 <20110902233806.GA22157@elie>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-7lMY12b62GmNamfeFVw2"
-Date: Sat, 03 Sep 2011 14:45:22 +0200
-Message-ID: <1315053922.6355.8.camel@fermat.scientia.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Sat, 3 Sep 2011 09:47:35 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAAM7YAkB3VVNMmBMVuvEZuV6oGZeyog37_sjFGUunu+15apvZA@mail.gmail.com>
+References: <4E5FEF28.60406@gmail.com>
+	<3179.1314924559@turing-police.cc.vt.edu>
+	<1314927645.2576.2939.camel@schen9-DESK>
+	<6805.1314979936@turing-police.cc.vt.edu>
+	<1315007703.2576.2965.camel@schen9-DESK>
+	<6043.1315028115@turing-police.cc.vt.edu>
+	<CA+icZUVuJWpLquLk4kHJzmMKtPw24oxud=u3Na0U0HhSYqwV1w@mail.gmail.com>
+	<4E61C7F2.3090902@gmail.com>
+	<CAAM7YAkB3VVNMmBMVuvEZuV6oGZeyog37_sjFGUunu+15apvZA@mail.gmail.com>
+Date: Sat, 3 Sep 2011 15:47:32 +0200
+Message-ID: <CA+icZUXULisfr6_EOrj8+q36UMo2mudcoJu3z0SX4T3x_OZQSg@mail.gmail.com>
+Subject: Re: [next] unix stream crashes
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Yan, Zheng" <yanzheng@21cn.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Valdis.Kletnieks@vt.edu,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        ML netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: multipart/mixed; boundary=0016e652f4283e1cda04ac09b8b2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-7lMY12b62GmNamfeFVw2
-Content-Type: text/plain; charset="UTF-8"
+--0016e652f4283e1cda04ac09b8b2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Hi guys :)
+On Sat, Sep 3, 2011 at 2:30 PM, Yan, Zheng <yanzheng@21cn.com> wrote:
+> The skb can be destructed before the while loop in unix_stream_sendmsg st=
+ops.
+> please try below patch.
+>
+> ---
+> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+> index e6d9d10..f6d7ed7 100644
+> --- a/net/unix/af_unix.c
+> +++ b/net/unix/af_unix.c
+> @@ -1577,6 +1577,7 @@ static int unix_stream_sendmsg(struct kiocb
+> *kiocb, struct socket *sock,
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0int sent =3D 0;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0struct scm_cookie tmp_scm;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0bool fds_sent =3D false;
+> + =C2=A0 =C2=A0 =C2=A0 bool scm_ref =3D true;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0int max_level;
+>
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0if (NULL =3D=3D siocb->scm)
+> @@ -1637,12 +1638,19 @@ static int unix_stream_sendmsg(struct kiocb
+> *kiocb, struct socket *sock,
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 */
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0size =3D min_t(int=
+, size, skb_tailroom(skb));
+>
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 /*
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0* pass the scm r=
+eference to the skb if a single skb is large
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0* enough to hold=
+ all data.
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0*/
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 if (!fds_sent && sent =
++ size >=3D len)
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 scm_ref =3D false;
+>
+> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 /* Only send the fds a=
+nd no ref to pid in the first buffer */
+> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 err =3D unix_scm_to_sk=
+b(siocb->scm, skb, !fds_sent, fds_sent);
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 /* Only send the fds i=
+n the first buffer */
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 err =3D unix_scm_to_sk=
+b(siocb->scm, skb, !fds_sent,
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 fds_sent || =
+scm_ref);
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0if (err < 0) {
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0kfree_skb(skb);
+> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 goto out;
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 goto out_err;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0}
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0max_level =3D err =
++ 1;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0fds_sent =3D true;
+> @@ -1650,7 +1658,7 @@ static int unix_stream_sendmsg(struct kiocb
+> *kiocb, struct socket *sock,
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0err =3D memcpy_fro=
+miovec(skb_put(skb, size), msg->msg_iov, size);
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0if (err) {
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 =C2=A0kfree_skb(skb);
+> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 goto out;
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0 goto out_err;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0}
+>
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0unix_state_lock(ot=
+her);
+> @@ -1667,10 +1675,10 @@ static int unix_stream_sendmsg(struct kiocb
+> *kiocb, struct socket *sock,
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0sent +=3D size;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0}
+>
+> - =C2=A0 =C2=A0 =C2=A0 if (skb)
+> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 scm_release(siocb->scm=
+);
+> - =C2=A0 =C2=A0 =C2=A0 else
+> + =C2=A0 =C2=A0 =C2=A0 if (scm_ref)
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0scm_destroy(siocb-=
+>scm);
+> + =C2=A0 =C2=A0 =C2=A0 else
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 scm_release(siocb->scm=
+);
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0siocb->scm =3D NULL;
+>
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0return sent;
+> @@ -1683,9 +1691,10 @@ pipe_err:
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0send_sig(SIGPIPE, =
+current, 0);
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0err =3D -EPIPE;
+> =C2=A0out_err:
+> - =C2=A0 =C2=A0 =C2=A0 if (skb =3D=3D NULL)
+> + =C2=A0 =C2=A0 =C2=A0 if (scm_ref)
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0scm_destroy(siocb-=
+>scm);
+> -out:
+> + =C2=A0 =C2=A0 =C2=A0 else
+> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 scm_release(siocb->scm=
+);
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0siocb->scm =3D NULL;
+> =C2=A0 =C2=A0 =C2=A0 =C2=A0return sent ? : err;
+> =C2=A0}
+>
+>
 
-If there's any quick fix (like reverting the patch above) I'd be happy
-to test it,... cause I'm on a conference next week,.. and having no Wifi
-there is annyoing.
+I have tested your patch on i386 against:
 
-btw: I might be, but I'm not sure about this anymore, that the issue has
-already appeared with 2.6.39... but again... not sure on this, forgot
-it.
+1. linux-next/patch-v3.1-rc3-next-20110826
+2. scm-fix/0001-Revert-Scm-Remove-unnecessary-pid-credential-referen.patch
+3. scm-fix-2/scm_send.patch
+4. scm-fix-3/0001-Fix-unix-stream-crashes.patch
 
+So the BROKEN scm-send path seems to be fixed, now!
 
-Cheers,
-Chris.
+As the patch arrived "malformed" in my mbox I git-am-ed it on top of
+linux-next (next-20110826) GIT repository (patch attached).
 
---=-7lMY12b62GmNamfeFVw2
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
+After confirmation of Valdis (x86_64) and ACK-by Tim, I would
+appreciate a proper patch with all Reported-by/Tested-by/S-o-b etc.
+In my case I bisected the issue, I recall that there is sth. like
+Bisected-by, so feel free to do so.
+
+Doing now a 2nd run with:
+
+1. linux-next/patch-v3.1-rc3-next-20110826
+2. scm-fix-3/0001-Fix-unix-stream-crashes.patch
+
+- Sedat -
+
+> On Sat, Sep 3, 2011 at 2:23 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+>> On 09/03/2011 07:54 AM, Sedat Dilek wrote:
+>>>
+>>> I saw similiar call-traces with put_cred_rcu() - besides with
+>>> kmem_cache_alloc_trace().
+>>> My post-it says:
+>>> Kernel panic - not syncing: CRED: put_cred_rcu sees f67ac0c0 with usage
+>>> -43
+>>
+>> Hm, Tim, it looks like you put a pid which you did not get?
+>>
+>> regards,
+>> --
+>> js
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" =
+in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at =C2=A0http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at =C2=A0http://www.tux.org/lkml/
+>>
+>
+
+--0016e652f4283e1cda04ac09b8b2
+Content-Type: text/x-diff; charset=US-ASCII; name="0001-Fix-unix-stream-crashes.patch"
+Content-Disposition: attachment; 
+	filename="0001-Fix-unix-stream-crashes.patch"
 Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gs4n7cct0
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIITMjCCBggw
-ggPwoAMCAQICAQEwDQYJKoZIhvcNAQEEBQAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UECxMV
-aHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0aG9yaXR5
-MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcwHhcNMDUxMDE0MDczNjU1WhcNMzMw
-MzI4MDczNjU1WjBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
-QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MIICIjANBgkqhkiG9w0BAQEF
-AAOCAg8AMIICCgKCAgEAq0k1EUh80iZ+U5TPQ6ndKNdCKovzh3gZWHwPntqJfeH763KQDXShlmSr
-n6AkmXPa4lV2xxd79QSsRrjDvn9kjRBsJPNhnMDykPpR5vVpAWPDD1biSkLP4kSMJSioxXkJfUa5
-ivPp8zQpCEXkHJ/LlAQcgagUs5hlxEPsToKNCdG9qluNktDs3pDFfwrC4+vmMVpedD6XM1nowwM9
-YDO/99FvR8TN7mKDUm4uCJqk2RUYkaaFkkewrkjrbbch7IUaaHI1q//wEF3A9JSnatU7kn5MkAV+
-k8Esi6SOYnQVcW4LcQPqrxU4mtTSBXJvjPkr61pyJfk5RuNyGz4Ew2QnIhAqik9YpwOtvrQuE+1d
-qkjX1X3UKntc+kYEUOTMDkJbjO3b8s/8lpPg2xE2VGI0OI8MYJs7l1Y4rfPSW4ugW+pOlrh819Wg
-hnBA05Ept6I8rfWMu88akorkNHvA2Gxf6QrCw6cgmlrfLF1SXLpH1ZvvJChwOCAv1X8pwLJBA2iS
-zOCczJdLRe86EAqrcDqYlXCtNbHqhSukHIAhMamuYHqAJkgAuAHAk2NVIpE8Vuev2zol848xVOom
-i4FZ+aHRUxHFe50D9nQR4G2xLD8shpGZcZqmd4s0YNEUtCysna+MENOfxGr4bxP8c1n3ZkJ0Horj
-+NzSb5icy0eYlUAF++kCAwEAAaOBvzCBvDAPBgNVHRMBAf8EBTADAQH/MF0GCCsGAQUFBwEBBFEw
-TzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUHMAKGHGh0dHA6
-Ly93d3cuQ0FjZXJ0Lm9yZy9jYS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAzMDEGCCsGAQUF
-BwIBFiVodHRwOi8vd3d3LkNBY2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMA0GCSqGSIb3DQEBBAUA
-A4ICAQB/CIih2hpQSdqJ+6EIcvOK9x7EOrR5WyAwsUXewl3TZWnxwl1UVDyFX7l7QpHCmf0bUZur
-RqWhEFOebYisc24sM6bw9J7gdcE+iEWp4WZD/lZa0XpBePdA2ko68QtbpbsWBubC55O5hU2XT7Ee
-OEOA75sNjO+4p2AAh1d9HkQcyyPvmzyZna+1KRxFeRaWTSdt8Rxsw8JVZLO8FOLzpB8eMvwnFQXP
-3S6uPoJhe/AhEBj2ROpTOfnc0Jog4Ma74LtaT8SZyAe9tb2i2y5iDUI0Qbz/i4r1USKqiDAA4rDU
-vL5lutUDV3mb6NzITfhQ7ZGlUiiirPs2WD7plCuRUIcb1l7WjMz3DxAMUk7QFmHl5QpsvxfHckZX
-nJj1bGBjem9euU4vyLm5u2qFvJgN7fk+l4Q0lK4Ar6Hl55JuTr3z4tkUi1zS6wFsoBelLRDrnHpK
-vb3uzv3tIkCrcDiI9QqHasKrBWDJSAXaU8HeRHdqs/M8PO2AvKY4SikkX/5ZO5slelZjAGS5XaRi
-fVc2T62D7x+SU6COd1fd5WERPSMAkEw8+qNgkwSjrzX2DmqPT0pgp4UFbEahj/THduOhWVf3cbLE
-bhRcbW1BZt8bk7HUAMPuy888PSGAqV9jZfzd4F+k9CvwhXFB1Gcl+xqxl67WmYITQdJupRuZJ4Dn
-C6moADCCBo8wggR3oAMCAQICAwCyHTANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQg
-SW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xh
-c3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oXDTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhD
-aHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAiBgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlh
-Lm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEv
-MC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG
-9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4w
-LAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEzsTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiG
-JmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2zJ4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYi
-gMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/hNOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/Mu
-dT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7H
-zdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYshPV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IB
-nTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRp
-ZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0l
-BDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhC
-BAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6
-BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVudGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24u
-bWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9w
-aC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24u
-bWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEBBQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfS
-XpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlS
-GZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb95VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uB
-kAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRn
-oX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38BjULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV
-4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlYnAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD
-66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avqZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9
-uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPepTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQ
-EQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeGX3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY
-3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5bcp6cOPWgvzCCBo8wggR3oAMCAQICAwCyHTANBgkq
-hkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
-QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oX
-DTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhDaHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAi
-BgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlhLm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBj
-aHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEvMC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFu
-dG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0
-ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4wLAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50
-b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEz
-sTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiGJmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2z
-J4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYigMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/h
-NOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/MudT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/
-qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7HzdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYsh
-PV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IBnTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgB
-hvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0
-byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgor
-BgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUF
-BzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVu
-dGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFu
-dG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5p
-LW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEB
-BQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfSXpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK
-3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlSGZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb9
-5VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uBkAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8
-ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRnoX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38Bj
-ULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlY
-nAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avq
-ZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPe
-pTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQEQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeG
-X3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5b
-cp6cOPWgvzGCAr0wggK5AgEBMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0
-dHA6Ly93d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMAkG
-BSsOAwIaBQCgggE3MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEx
-MDkwMzEyNDUyMlowIwYJKoZIhvcNAQkEMRYEFMhCOhaCFJsRTijcbtHVyTcKjikAMGoGCSsGAQQB
-gjcQBDFdMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0Fj
-ZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMGwGCyqGSIb3DQEJEAIL
-MV2gWzBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQu
-b3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290AgMAsh0wDQYJKoZIhvcNAQEBBQAEggEA
-ihNDsoppCYKc4EUBBdRVrP50vIY8LgqPpN4zD00CcQQ+odfG59oeIoFTLLuI62FHyV97EFIP9jf0
-dxBg5cqs7tHYwSQDff7lwcKS6d9GO7ajrgN0l7mOWEON4p6bKNVJfe5urYRrJpPzcZ+3HyDHUSjU
-KdGiHc2jDfN74Op4rDfWV0ILQROJ498Rw0ignUcqdittResC9gXOKpF1BYIJuWJfgEvrimKAwmor
-LH+TawCErZnqdNxYHRLHMQa8whbUX+q0Wb4njQx9P4gfCgh0jHU82R6yHl5E77K76uwGyEIcwLxe
-ysaIXFv0OhHkI/FowWlVZZeBhm+WK4PqXtV16wAAAAAAAA==
-
-
---=-7lMY12b62GmNamfeFVw2--
-
+RnJvbSA1NGQ4YTVjNTkwYzA2ZjA3MGQ5YWRiZmZmYmEwYjMyMjQ2ZDcyN2UyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiAiWWFuLCBaaGVuZyIgPHlhbnpoZW5nQDIxY24uY29tPgpEYXRl
+OiBTYXQsIDMgU2VwIDIwMTEgMTQ6MzA6MTkgKzAyMDAKU3ViamVjdDogW1BBVENIXSBGaXggdW5p
+eCBzdHJlYW0gY3Jhc2hlcwoKVGhlIHNrYiBjYW4gYmUgZGVzdHJ1Y3RlZCBiZWZvcmUgdGhlIHdo
+aWxlIGxvb3AgaW4gdW5peF9zdHJlYW1fc2VuZG1zZyBzdG9wcy4KcGxlYXNlIHRyeSBiZWxvdyBw
+YXRjaC4KLS0tCiBuZXQvdW5peC9hZl91bml4LmMgfCAgIDI3ICsrKysrKysrKysrKysrKysrKy0t
+LS0tLS0tLQogMSBmaWxlcyBjaGFuZ2VkLCAxOCBpbnNlcnRpb25zKCspLCA5IGRlbGV0aW9ucygt
+KQoKZGlmZiAtLWdpdCBhL25ldC91bml4L2FmX3VuaXguYyBiL25ldC91bml4L2FmX3VuaXguYwpp
+bmRleCBlNmQ5ZDEwLi5mNmQ3ZWQ3IDEwMDY0NAotLS0gYS9uZXQvdW5peC9hZl91bml4LmMKKysr
+IGIvbmV0L3VuaXgvYWZfdW5peC5jCkBAIC0xNTc3LDYgKzE1NzcsNyBAQCBzdGF0aWMgaW50IHVu
+aXhfc3RyZWFtX3NlbmRtc2coc3RydWN0IGtpb2NiICpraW9jYiwgc3RydWN0IHNvY2tldCAqc29j
+aywKIAlpbnQgc2VudCA9IDA7CiAJc3RydWN0IHNjbV9jb29raWUgdG1wX3NjbTsKIAlib29sIGZk
+c19zZW50ID0gZmFsc2U7CisJYm9vbCBzY21fcmVmID0gdHJ1ZTsKIAlpbnQgbWF4X2xldmVsOwog
+CiAJaWYgKE5VTEwgPT0gc2lvY2ItPnNjbSkKQEAgLTE2MzcsMTIgKzE2MzgsMTkgQEAgc3RhdGlj
+IGludCB1bml4X3N0cmVhbV9zZW5kbXNnKHN0cnVjdCBraW9jYiAqa2lvY2IsIHN0cnVjdCBzb2Nr
+ZXQgKnNvY2ssCiAJCSAqLwogCQlzaXplID0gbWluX3QoaW50LCBzaXplLCBza2JfdGFpbHJvb20o
+c2tiKSk7CiAKKwkJLyoKKwkJICogcGFzcyB0aGUgc2NtIHJlZmVyZW5jZSB0byB0aGUgc2tiIGlm
+IGEgc2luZ2xlIHNrYiBpcyBsYXJnZQorCQkgKiBlbm91Z2ggdG8gaG9sZCBhbGwgZGF0YS4KKwkJ
+ICovCisJCWlmICghZmRzX3NlbnQgJiYgc2VudCArIHNpemUgPj0gbGVuKQorCQkJc2NtX3JlZiA9
+IGZhbHNlOwogCi0JCS8qIE9ubHkgc2VuZCB0aGUgZmRzIGFuZCBubyByZWYgdG8gcGlkIGluIHRo
+ZSBmaXJzdCBidWZmZXIgKi8KLQkJZXJyID0gdW5peF9zY21fdG9fc2tiKHNpb2NiLT5zY20sIHNr
+YiwgIWZkc19zZW50LCBmZHNfc2VudCk7CisJCS8qIE9ubHkgc2VuZCB0aGUgZmRzIGluIHRoZSBm
+aXJzdCBidWZmZXIgKi8KKwkJZXJyID0gdW5peF9zY21fdG9fc2tiKHNpb2NiLT5zY20sIHNrYiwg
+IWZkc19zZW50LAorCQkJCQlmZHNfc2VudCB8fCBzY21fcmVmKTsKIAkJaWYgKGVyciA8IDApIHsK
+IAkJCWtmcmVlX3NrYihza2IpOwotCQkJZ290byBvdXQ7CisJCQlnb3RvIG91dF9lcnI7CiAJCX0K
+IAkJbWF4X2xldmVsID0gZXJyICsgMTsKIAkJZmRzX3NlbnQgPSB0cnVlOwpAQCAtMTY1MCw3ICsx
+NjU4LDcgQEAgc3RhdGljIGludCB1bml4X3N0cmVhbV9zZW5kbXNnKHN0cnVjdCBraW9jYiAqa2lv
+Y2IsIHN0cnVjdCBzb2NrZXQgKnNvY2ssCiAJCWVyciA9IG1lbWNweV9mcm9taW92ZWMoc2tiX3B1
+dChza2IsIHNpemUpLCBtc2ctPm1zZ19pb3YsIHNpemUpOwogCQlpZiAoZXJyKSB7CiAJCQlrZnJl
+ZV9za2Ioc2tiKTsKLQkJCWdvdG8gb3V0OworCQkJZ290byBvdXRfZXJyOwogCQl9CiAKIAkJdW5p
+eF9zdGF0ZV9sb2NrKG90aGVyKTsKQEAgLTE2NjcsMTAgKzE2NzUsMTAgQEAgc3RhdGljIGludCB1
+bml4X3N0cmVhbV9zZW5kbXNnKHN0cnVjdCBraW9jYiAqa2lvY2IsIHN0cnVjdCBzb2NrZXQgKnNv
+Y2ssCiAJCXNlbnQgKz0gc2l6ZTsKIAl9CiAKLQlpZiAoc2tiKQotCQlzY21fcmVsZWFzZShzaW9j
+Yi0+c2NtKTsKLQllbHNlCisJaWYgKHNjbV9yZWYpCiAJCXNjbV9kZXN0cm95KHNpb2NiLT5zY20p
+OworCWVsc2UKKwkJc2NtX3JlbGVhc2Uoc2lvY2ItPnNjbSk7CiAJc2lvY2ItPnNjbSA9IE5VTEw7
+CiAKIAlyZXR1cm4gc2VudDsKQEAgLTE2ODMsOSArMTY5MSwxMCBAQCBwaXBlX2VycjoKIAkJc2Vu
+ZF9zaWcoU0lHUElQRSwgY3VycmVudCwgMCk7CiAJZXJyID0gLUVQSVBFOwogb3V0X2VycjoKLQlp
+ZiAoc2tiID09IE5VTEwpCisJaWYgKHNjbV9yZWYpCiAJCXNjbV9kZXN0cm95KHNpb2NiLT5zY20p
+Owotb3V0OgorCWVsc2UKKwkJc2NtX3JlbGVhc2Uoc2lvY2ItPnNjbSk7CiAJc2lvY2ItPnNjbSA9
+IE5VTEw7CiAJcmV0dXJuIHNlbnQgPyA6IGVycjsKIH0KLS0gCjEuNy42Cgo=
+--0016e652f4283e1cda04ac09b8b2--
