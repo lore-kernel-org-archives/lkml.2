@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab1ICWPf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 18:15:35 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60806 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab1ICWPe (ORCPT
+	id S1752334Ab1ICWWK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 18:22:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35463 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab1ICWWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 18:15:34 -0400
-Date: Sat, 3 Sep 2011 17:14:56 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Amit Shah <amit.shah@redhat.com>,
-        David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        Jean Schurger <jean@schurger.org>,
-        Jan =?utf-8?B?TMO8YmJl?= <jluebbe@debian.org>,
-        Matthijs Kooijman <matthijs@stdin.nl>,
-        Jameson Graef Rollins <jrollins@finestructure.net>,
-        Nacho Barrientos Arias <nacho@debian.org>
-Subject: [regression] CD-ROM polling blocks suspend on some machines (Re:
- [PATCH 1/2] cdrom: always check_disk_change() on open)
-Message-ID: <20110903221456.GA2877@elie>
-References: <20110406121920.GC4142@mtj.dyndns.org>
+	Sat, 3 Sep 2011 18:22:08 -0400
+Message-ID: <4E62A872.7070808@infradead.org>
+Date: Sat, 03 Sep 2011 19:21:38 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110406121920.GC4142@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "Ravi, Deepthy" <deepthy.ravi@ti.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
+References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com> <201108241329.48147.laurent.pinchart@ideasonboard.com> <19F8576C6E063C45BE387C64729E739404EC007BE3@dbde02.ent.ti.com> <201108241525.47332.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201108241525.47332.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em 24-08-2011 10:25, Laurent Pinchart escreveu:
+> Hi Vaibhav,
+> 
+> On Wednesday 24 August 2011 14:19:01 Hiremath, Vaibhav wrote:
+>> On Wednesday, August 24, 2011 5:00 PM Laurent Pinchart wrote: 
+>>> On Wednesday 24 August 2011 13:21:27 Ravi, Deepthy wrote:
+>>>> On Wed, Aug 24, 2011 at 4:47 PM, Laurent Pinchart wrote:
+>>>>> On Friday 19 August 2011 15:48:45 Deepthy Ravi wrote:
+>>>>>> From: Vaibhav Hiremath <hvaibhav@ti.com>
+>>>>>>
+>>>>>> Fix the build break caused when CONFIG_MEDIA_CONTROLLER
+>>>>>> option is disabled and if any sensor driver has to be used
+>>>>>> between MC and non MC framework compatible devices.
+>>>>>>
+>>>>>> For example,if tvp514x video decoder driver migrated to
+>>>>>> MC framework is being built without CONFIG_MEDIA_CONTROLLER
+>>>>>> option enabled, the following error messages will result.
+>>>>>> drivers/built-in.o: In function `tvp514x_remove':
+>>>>>> drivers/media/video/tvp514x.c:1285: undefined reference to
+>>>>>> `media_entity_cleanup'
+>>>>>> drivers/built-in.o: In function `tvp514x_probe':
+>>>>>> drivers/media/video/tvp514x.c:1237: undefined reference to
+>>>>>> `media_entity_init'
+>>>>>
+>>>>> If the tvp514x is migrated to the MC framework, its Kconfig option
+>>>>> should depend on MEDIA_CONTROLLER.
+>>>>
+>>>> The same TVP514x driver is being used for both MC and non MC compatible
+>>>> devices, for example OMAP3 and AM35x. So if it is made dependent on
+>>>> MEDIA CONTROLLER, we cannot enable the driver for MC independent
+>>>> devices.
+>>>
+>>> Then you should use conditional compilation in the tvp514x driver itself.
+>>> Or
+>>
+>> No. I am not in favor of conditional compilation in driver code.
+> 
+> Actually, thinking some more about this, you should make the tvp514x driver 
+> depend on CONFIG_MEDIA_CONTROLLER unconditionally. This doesn't mean that the 
+> driver will become unusable by applications that are not MC-aware. 
+> Hosts/bridges don't have to export subdev nodes, they can just call subdev 
+> pad-level operations internally and let applications control the whole device 
+> through a single V4L2 video node.
+> 
+>>> better, port the AM35x driver to the MC API.
+>>
+>> Why should we use MC if I have very simple device (like AM35x) which only
+>> supports single path? I can very well use simple V4L2 sub-dev based
+>> approach (master - slave), isn't it?
+> 
+> The AM35x driver should use the in-kernel MC and V4L2 subdev APIs, but it 
+> doesn't have to expose them to userspace.
 
-Various people[1] have been noticing a race (or races?) in which the
-cdrom_id and scsi_id programs from udev can get stuck in the D state
-if udev doesn't sleep a little while before running them.  This
-prevents the machine from suspending.  The problem was discovered with
-Debian kernels
+I don't agree. If AM35x doesn't expose the MC API to userspace, 
+CONFIG_MEDIA_CONTROLLER should not be required at all.
 
-  2.6.39-1
-  2.6.39-2
-  3.0.0-1
+Also, according with the Linux best practices, when  #if tests for config
+symbols are required, developers should put it into the header files, and
+not inside the code, as it helps to improve code readability. From
+Documentation/SubmittingPatches:
 
-and was not experienced with kernel
+	2) #ifdefs are ugly
 
-  2.6.38-5
+	Code cluttered with ifdefs is difficult to read and maintain.  Don't do
+	it.  Instead, put your ifdefs in a header, and conditionally define
+	'static inline' functions, or macros, which are used in the code.
+	Let the compiler optimize away the "no-op" case.
 
-(These kernels are closely based on v2.6.39, v2.6.39.1, v3.0, and
-v2.6.38.5, respectively.)  Reverting commit bf2253a6f00e (cdrom:
-always check_disk_change() on open, 2011-04-29) seems to avoid
-trouble.
+So, this patch is perfectly fine on my eyes.
 
-One common theme seems to be DVD drives.  Details at [1].
-
-Known problem?  Any ideas for tracking it down?
-
-Looking forward to your thoughts,
-Jonathan
-
-[1] <http://bugs.debian.org/628600>.  Submitters cc-ed.
+Regards,
+Mauro
