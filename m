@@ -1,62 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab1ICAv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 20:51:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51003 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab1ICAv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 20:51:26 -0400
-Message-ID: <4E617A3B.1090803@gmail.com>
-Date: Sat, 03 Sep 2011 04:52:11 +0400
-From: George Shuklin <george.shuklin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Icedove/3.1.12
+	id S1752676Ab1ICBIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 21:08:42 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:35030 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752279Ab1ICBIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 21:08:39 -0400
+Date: Sat, 3 Sep 2011 01:09:33 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        dhowells@redhat.com, rdunlap@xenotime.net
+Subject: Re: missing [PATCH 01/15]
+Message-ID: <20110903010933.GA14126@hallyn.com>
+References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
+ <1314993400-6910-3-git-send-email-serge@hallyn.com>
+ <m11uvyld2d.fsf_-_@fess.ebiederm.org>
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: linux-kernel@vger.kernel.org
-Subject: Re: si_swapinfo export
-References: <1314978089.11870.2.camel@mabase> <3187.1314993238@turing-police.cc.vt.edu>
-In-Reply-To: <3187.1314993238@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m11uvyld2d.fsf_-_@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, in my personal case it is some 'memory pressure service' for 
-virtual machines in xen environment.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> 
+> 
+> Was this blank email supposed to be patch 01/15?
 
-It check about 1-2 times per second memory state and report it to 
-management software outside VM. Right now this is userspace program, 
-which reads /proc/meminfo and sends it via xenstore (interdomain 
-communication system) to management domain. It works fine, but we need 
-to do double int-str conversion (/proc/meminfo do itoa, our daemon sens 
-this to control domain, daemon in control domain do atoi and math to get 
-right memory value). This is very inefficient, especially when we talks 
-about bunch of VM per host.
+Nope, that was <grr> a git-send-email misfire.  Sorry about that.  The
+patch #1 did go through, here: https://lkml.org/lkml/2011/9/2/314
 
-kernel module can do math internally with ints, not with strings (no 
-conversion at all) - this will save pretty much time (my calculation is 
-about one-two of CPU time per day for every virtualization host with 
-about 50-100 active VMs.
+I'm appending it here again too for easier feedback.
 
-The information I needs is amount of 'really free' memory. We calculate 
-it as (roughly) as  MemFree+Buffers+Cached+(SwapTotal-SwapFree), and our 
-management system trying to keep this value within expected values (f.e. 
-within interval 128-256Mb). This allows us to prevent VM's swapping and 
-allow VM to push to swap really rare used pages (and their place 
-actually used for caching).
+thanks,
+-serge
 
+ Subject: [PATCH 01/15] add Documentation/namespaces/user_namespace.txt (v3)
 
-On 02.09.2011 23:53, Valdis.Kletnieks@vt.edu wrote:
-> On Fri, 02 Sep 2011 19:41:29 +0400, George Shuklin said:
->> Good day.
->>
->> Why si_swapinfo (from include/linux/swap.h) is not marked as
->> EXPORT_SYMBOL_GPL? It's kinda hard to gain information about memory in
->> module.
-> Use case?  What information exactly are you trying to get in the module, and
-> equally important, why?  More likely, what you *actually* want isn't the
-> information, it's a new API (or using an existing one you didn't even know was
-> there) :)
+Quoting David Howells (dhowells@redhat.com):
+> Randy Dunlap <rdunlap@xenotime.net> wrote:
 >
+> > > +Any task in or resource belonging to the initial user namespace will, to this
+> > > +new task, appear to belong to UID and GID -1 - which is usually known as
+> >
+> > that extra hyphen is confusing.  how about:
+> >
+> >                               to UID and GID -1, which is
+>
+> 'which are'.
+>
+> David
+
+This will hold some info about the design.  Currently it contains
+future todos, issues and questions.
+
+Changelog:
+   jul 26: incorporate feedback from David Howells.
+   jul 29: incorporate feedback from Randy Dunlap.
+
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+---
+ Documentation/namespaces/user_namespace.txt |  107 +++++++++++++++++++++++++++
+ 1 files changed, 107 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/namespaces/user_namespace.txt
+
+diff --git a/Documentation/namespaces/user_namespace.txt b/Documentation/namespaces/user_namespace.txt
+new file mode 100644
+index 0000000..b0bc480
+--- /dev/null
++++ b/Documentation/namespaces/user_namespace.txt
+@@ -0,0 +1,107 @@
++Description
++===========
++
++Traditionally, each task is owned by a user ID (UID) and belongs to one or more
++groups (GID).  Both are simple numeric IDs, though userspace usually translates
++them to names.  The user namespace allows tasks to have different views of the
++UIDs and GIDs associated with tasks and other resources.  (See 'UID mapping'
++below for more.)
++
++The user namespace is a simple hierarchical one.  The system starts with all
++tasks belonging to the initial user namespace.  A task creates a new user
++namespace by passing the CLONE_NEWUSER flag to clone(2).  This requires the
++creating task to have the CAP_SETUID, CAP_SETGID, and CAP_CHOWN capabilities,
++but it does not need to be running as root.  The clone(2) call will result in a
++new task which to itself appears to be running as UID and GID 0, but to its
++creator seems to have the creator's credentials.
++
++To this new task, any resource belonging to the initial user namespace will
++appear to belong to user and group 'nobody', which are UID and GID -1.
++Permission to open such files will be granted according to world access
++permissions.  UID comparisons and group membership checks will return false,
++and privilege will be denied.
++
++When a task belonging to (for example) userid 500 in the initial user namespace
++creates a new user namespace, even though the new task will see itself as
++belonging to UID 0, any task in the initial user namespace will see it as
++belonging to UID 500.  Therefore, UID 500 in the initial user namespace will be
++able to kill the new task.  Files created by the new user will (eventually) be
++seen by tasks in its own user namespace as belonging to UID 0, but to tasks in
++the initial user namespace as belonging to UID 500.
++
++Note that this userid mapping for the VFS is not yet implemented, though the
++lkml and containers mailing list archives will show several previous
++prototypes.  In the end, those got hung up waiting on the concept of targeted
++capabilities to be developed, which, thanks to the insight of Eric Biederman,
++they finally did.
++
++Relationship between the User namespace and other namespaces
++============================================================
++
++Other namespaces, such as UTS and network, are owned by a user namespace.  When
++such a namespace is created, it is assigned to the user namespace of the task
++by which it was created.  Therefore, attempts to exercise privilege to
++resources in, for instance, a particular network namespace, can be properly
++validated by checking whether the caller has the needed privilege (i.e.
++CAP_NET_ADMIN) targeted to the user namespace which owns the network namespace.
++This is done using the ns_capable() function.
++
++As an example, if a new task is cloned with a private user namespace but
++no private network namespace, then the task's network namespace is owned
++by the parent user namespace.  The new task has no privilege to the
++parent user namespace, so it will not be able to create or configure
++network devices.  If, instead, the task were cloned with both private
++user and network namespaces, then the private network namespace is owned
++by the private user namespace, and so root in the new user namespace
++will have privilege targeted to the network namespace.  It will be able
++to create and configure network devices.
++
++UID Mapping
++===========
++The current plan (see 'flexible UID mapping' at
++https://wiki.ubuntu.com/UserNamespace) is:
++
++The UID/GID stored on disk will be that in the init_user_ns.  Most likely
++UID/GID in other namespaces will be stored in xattrs.  But Eric was advocating
++(a few years ago) leaving the details up to filesystems while providing a lib/
++stock implementation.  See the thread around here:
++http://www.mail-archive.com/devel@openvz.org/msg09331.html
++
++
++Working notes
++=============
++Capability checks for actions related to syslog must be against the
++init_user_ns until syslog is containerized.
++
++Same is true for reboot and power, control groups, devices, and time.
++
++Perf actions (kernel/event/core.c for instance) will always be constrained to
++init_user_ns.
++
++Q:
++Is accounting considered properly containerized with respect to pidns?  (it
++appears to be).  If so, then we can change the capable() check in
++kernel/acct.c to 'ns_capable(current_pid_ns()->user_ns, CAP_PACCT)'
++
++Q:
++For things like nice and schedaffinity, we could allow root in a container to
++control those, and leave only cgroups to constrain the container.  I'm not sure
++whether that is right, or whether it violates admin expectations.
++
++I deferred some of commoncap.c.  I'm punting on xattr stuff as they take
++dentries, not inodes.
++
++For drivers/tty/tty_io.c and drivers/tty/vt/vt.c, we'll want to (for some of
++them) target the capability checks at the user_ns owning the tty.  That will
++have to wait until we get userns owning files straightened out.
++
++We need to figure out how to label devices.  Should we just toss a user_ns
++right into struct device?
++
++capable(CAP_MAC_ADMIN) checks are always to be against init_user_ns, unless
++some day LSMs were to be containerized, near zero chance.
++
++inode_owner_or_capable() should probably take an optional ns and cap parameter.
++If cap is 0, then CAP_FOWNER is checked.  If ns is NULL, we derive the ns from
++inode.  But if ns is provided, then callers who need to derive
++inode_userns(inode) anyway can save a few cycles.
+-- 
+1.7.5.4
+
