@@ -1,33 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab1ICTH5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 15:07:57 -0400
-Received: from trx4.indiatimes.com ([223.165.24.215]:43583 "EHLO
-	trx4.indiatimes.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab1ICTHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 15:07:53 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Sep 2011 15:07:53 EDT
-Date: Sun, 4 Sep 2011 00:23:06 +0530 (IST)
-From: cindy patrick <cindyogwo@indiatimes.com>
-Reply-To: cindy <cindy.ogwo@yahoo.com>
-Message-ID: <1610868938.3196811315075986251.JavaMail.root@tilmb13.indiatimes.com>
-Subject: Hello my dear
+	id S1751949Ab1ICTVS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 15:21:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47240 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751692Ab1ICTVP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 15:21:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.83.13.6]
-X-Mailer: Zimbra 5.0.6_GA_2313.RHEL4_64 (zclient/5.0.6_GA_2313.RHEL4_64)
-To: undisclosed-recipients:;
+In-Reply-To: <20110903181719.GB3461@thunk.org>
+References: <E1Qyos7-0001in-99@tytso-glaptop.cam.corp.google.com>
+ <CA+55aFzFRo0vmuED2wbab6ZU9oH4Rriav6R13zGNtUnS2UStMA@mail.gmail.com>
+ <20110831214233.GA6666@thunk.org> <20110903181719.GB3461@thunk.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 3 Sep 2011 12:20:23 -0700
+Message-ID: <CA+55aFzGBkmksQ+p7NiZOiFr64Cw=60N60K3wy50BkDQA_7wuQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 fixes for 3.1-rc5
+To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 3, 2011 at 11:17 AM, Ted Ts'o <tytso@mit.edu> wrote:
+>
+> So I never got a reply about whether you wanted me to commend the
+> commit to include the Kernel Bugzilla.  If you didn't pull from the
+> for_linus branch, please do so now to get the following commit.
 
-Hello my dear,
-how are you doing today, how is your health and your family i hope they are fine. well my name is Cindy and i am a very nice, good looking, honest, loving, sincere, understanding and above all God fearing.
-I saw your email today when i was browsing in the internet today, so i decided to drop a few note with you to be my sincere and honest friend, well there is first time for every thing in life.
-Here is my direct email address (cindy.ogwo@yahoo.com) so that we can share picture and know more about my self's.
-Waiting for your responds with joy.
-from your dearest friend
-Cindy.
+I already pulled a few days ago, I just haven't pushed out since
+kernel.org is still down, and I didn't think that any of the stuff I
+have in my own tree is important enough that I'd need to publish it
+anywhere else..
+
+
+                       Linus
