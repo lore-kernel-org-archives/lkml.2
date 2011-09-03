@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab1ICSR0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 14:17:26 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:59450 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101Ab1ICSRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 14:17:23 -0400
-Date: Sat, 3 Sep 2011 14:17:19 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 fixes for 3.1-rc5
-Message-ID: <20110903181719.GB3461@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <E1Qyos7-0001in-99@tytso-glaptop.cam.corp.google.com>
- <CA+55aFzFRo0vmuED2wbab6ZU9oH4Rriav6R13zGNtUnS2UStMA@mail.gmail.com>
- <20110831214233.GA6666@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110831214233.GA6666@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1751576Ab1ICS4H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 14:56:07 -0400
+Received: from mail.ddl.dyc.edu ([67.151.215.230]:43419 "EHLO ddl.dyc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751334Ab1ICS4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 14:56:05 -0400
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Sep 2011 14:56:05 EDT
+From: "Anthony G. Basile" <basile@opensource.dyc.edu>
+To: davem@davemloft.net
+Cc: kaber@trash.net, basile@opensource.dyc.edu, blueness@gentoo.org,
+        gurligebis@gentoo.org, base-system@gentoo.org, kernel@gentoo.org,
+        toolchain@gentoo.org, mchehab@redhat.com, hverkuil@xs4all.nl,
+        laurent.pinchart@ideasonboard.com, arnd@arndb.de, eparis@redhat.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org
+Subject: [PATCH] netfilter: install nf_nat.h and related headers to INSTALL_HDR_PATH
+Date: Sat,  3 Sep 2011 14:49:44 -0400
+Message-Id: <1315075784-10163-1-git-send-email-basile@opensource.dyc.edu>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 05:42:33PM -0400, Ted Ts'o wrote:
-> 
-> I just realized I forgot to include the BZ URL in the commit
-> description; sigh, sorry about that.  Would you prefer that I ammend
-> the commit and send you a new pull request?
+Currently nf_nat.h, nf_conntrack_tuple.h and related headers under
+include/net/netfilter are not installed as part of the public kernel
+headers.   However, there are userland applications, other than iptables
+which ships with its own headers, which need these to make use of NAT in
+the kernel's netfilter API.  For example, miniupnpd, requires them and is
+forced to search /usr/src/linux when building.
 
-Hi Linus,
+This patch makes these headers public by installing them in
+INSTALL_HDR_PATH.
 
-So I never got a reply about whether you wanted me to commend the
-commit to include the Kernel Bugzilla.  If you didn't pull from the
-for_linus branch, please do so now to get the following commit.  It is
-also tagged with the signed tag for_linus-20110902, and has the commit
-id dc993e2060f0f.  If you have, no worries. The only difference was in
-the commit description where I added the URL of the Kernel Bugzilla.
+See: https://bugs.gentoo.org/376873
 
-Thanks,
+Signed-off-by: Anthony G. Basile <blueness@gentoo.org>
+---
+ include/Kbuild                    |    1 +
+ include/linux/Kbuild              |    1 +
+ include/net/Kbuild                |    1 +
+ include/net/netfilter/Kbuild      |    6 ++++++
+ include/net/netfilter/ipv4/Kbuild |    1 +
+ include/net/netfilter/ipv6/Kbuild |    2 ++
+ 6 files changed, 12 insertions(+), 0 deletions(-)
+ create mode 100644 include/net/Kbuild
+ create mode 100644 include/net/netfilter/Kbuild
+ create mode 100644 include/net/netfilter/ipv4/Kbuild
+ create mode 100644 include/net/netfilter/ipv6/Kbuild
 
-						- Ted
+diff --git a/include/Kbuild b/include/Kbuild
+index 8d226bf..9fb8300 100644
+--- a/include/Kbuild
++++ b/include/Kbuild
+@@ -5,6 +5,7 @@ header-y += asm-generic/
+ header-y += linux/
+ header-y += sound/
+ header-y += mtd/
++header-y += net/
+ header-y += rdma/
+ header-y += video/
+ header-y += drm/
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index 619b565..5569432 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -228,6 +228,7 @@ header-y += keyboard.h
+ header-y += keyctl.h
+ header-y += l2tp.h
+ header-y += limits.h
++header-y += list_nulls.h
+ header-y += llc.h
+ header-y += loop.h
+ header-y += lp.h
+diff --git a/include/net/Kbuild b/include/net/Kbuild
+new file mode 100644
+index 0000000..9546082
+--- /dev/null
++++ b/include/net/Kbuild
+@@ -0,0 +1 @@
++header-y += netfilter/
+diff --git a/include/net/netfilter/Kbuild b/include/net/netfilter/Kbuild
+new file mode 100644
+index 0000000..143f188
+--- /dev/null
++++ b/include/net/netfilter/Kbuild
+@@ -0,0 +1,6 @@
++header-y += nf_nat.h
++header-y += nf_conntrack.h
++header-y += nf_conntrack_tuple.h
++header-y += nf_conntrack_extend.h
++header-y += ipv4/
++header-y += ipv6/
+diff --git a/include/net/netfilter/ipv4/Kbuild b/include/net/netfilter/ipv4/Kbuild
+new file mode 100644
+index 0000000..a15e304
+--- /dev/null
++++ b/include/net/netfilter/ipv4/Kbuild
+@@ -0,0 +1 @@
++header-y += nf_conntrack_ipv4.h
+diff --git a/include/net/netfilter/ipv6/Kbuild b/include/net/netfilter/ipv6/Kbuild
+new file mode 100644
+index 0000000..07d43a4
+--- /dev/null
++++ b/include/net/netfilter/ipv6/Kbuild
+@@ -0,0 +1,2 @@
++header-y += nf_conntrack_icmpv6.h
++header-y += nf_conntrack_ipv6.h
+-- 
+1.7.0.4
 
-Jiaying Zhang (1):
-      ext4: remove i_mutex lock in ext4_evict_inode to fix lockdep complaining
-
- fs/ext4/ext4.h    |    1 +
- fs/ext4/inode.c   |    3 ---
- fs/ext4/page-io.c |   18 +++++++++++++++++-
- 3 files changed, 18 insertions(+), 4 deletions(-)
