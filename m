@@ -1,92 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1ICBLI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 21:11:08 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:35580 "HELO
+	id S1753002Ab1ICBL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 21:11:28 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41675 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752326Ab1ICBLE (ORCPT
+	with SMTP id S1752465Ab1ICBL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 21:11:04 -0400
+	Fri, 2 Sep 2011 21:11:26 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX18LKEp2aagLgLx68ygyXf6W9jQY8NX0TBOEIe+Aqp
-	1nZBZLU6+0lBgq
+X-Provags-ID: V01U2FsdGVkX1/QOIxYy9LQjNJpqWU2+s50LA1RTlVhBPs+aJ2fZp
+	4UolINn7JO8q+a
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fbdev@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
         Dave Airlie <airlied@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
         Bernie Thompson <bernie@plugable.com>, Martin Decky <martin@decky.cz>,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [RFC v2] allow multiple concurrent visible displays
-Date: Sat,  3 Sep 2011 01:29:19 +0000
-Message-Id: <1315013361-3191-1-git-send-email-FlorianSchandinat@gmx.de>
+Subject: [PATCH 1/2] fbdev: allow multiple concurrent visible consoles
+Date: Sat,  3 Sep 2011 01:29:20 +0000
+Message-Id: <1315013361-3191-2-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <1315013361-3191-1-git-send-email-FlorianSchandinat@gmx.de>
+References: <1315013361-3191-1-git-send-email-FlorianSchandinat@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This patch allows having multiple visible consoles that receive
+display updates. For example one can have running "top" to monitor
+the system on fb0 and at the same time work on a shell on fb1.
+At the moment that works only with consoles, not with console and
+graphical application nor with two graphical applications.
 
-this is the second version of my multi-display support.
-
-Compared to the first version:
-The bug reported in the first patch that prevented booting when 
-"fbcon=cmap:01" was given is fixed (annoying NULL pointer in vc)
-and a dummy vc_display_fg management was added to prevent 
-modifying vc structures we do not "own".
-The second patch is new and a hack that allows graphic and console 
-applications to work concurrently.
-
-Background:
-At the moment only one display (in multi-display setups) will be 
-updated when
-(1) multiple console applications run on different displays
-(2) a graphic application runs in the active vt on one display and a 
-    console application on another display
-(3) multiple graphic (framebuffer) applications run on different
-    displays (usually)
-
-The first patch fixes (1) and I'm pretty happy with it. Works well 
-for me except rarely cursor visibility glitches but that might be a 
-bug somewhere else.
-
-(2) requires some sort of policy change. At the moment we forbid 
-any console from working just because on one vt a graphic 
-application started. Obviously that's not what I want and also not 
-what most applications require. Therefore changing it to only allow 
-the application to use the graphic resource associated with the vt 
-it switches to KD_GRAPHIC seems reasonable to me. If there are 
-concerns about compatiblity we could make this change an option or 
-introduce a new KD_PGRAPHICS which behaves as I want (though the 
-last one would be ugly and require changing all userspace to work).
-My second patch gives this functionality but I do not expect it to 
-be acceptable as is. At first I wanted to revert f700d6e5 but for 
-some reason the result did not even boot so I hacked my way around 
-it. Basically my question here aside the policy change is why do we 
-blank when entering graphics mode and why do we not allow updates 
-to other consoles when one is blanked?
-
-(3) is a completly different beast which will probably require 
-changes in userspace applications. Most framebuffer applications at 
-the moment just access the framebuffer if they are in the current 
-vt and stop on vt change. To make this working concurrently the 
-applications would need a way to get a notification when its 
-visibility changes. As this one requires much more work and thought 
-than the (1) and (2) I'll at first concentrate on solving those.
-But if anyone has any suggestions on this one I'd be verry happy.
-
-
-Best regards,
-
-Florian Tobias Schandinat
-
-
-Florian Tobias Schandinat (2):
-  fbdev: allow multiple concurrent visible consoles
-  vt: dirty hack
-
- drivers/tty/vt/vt.c           |    4 +---
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+---
  drivers/video/console/fbcon.c |   34 ++++++++++++++++++++++++++++++----
  drivers/video/console/fbcon.h |    1 +
- 3 files changed, 32 insertions(+), 7 deletions(-)
+ 2 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index 8745637..ce9a686 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -94,6 +94,7 @@ enum {
+ };
+ 
+ static struct display fb_display[MAX_NR_CONSOLES];
++static struct vc_data *dummy_fg;
+ 
+ static signed char con2fb_map[MAX_NR_CONSOLES];
+ static signed char con2fb_map_boot[MAX_NR_CONSOLES];
+@@ -816,7 +817,8 @@ static int set_con2fb_map(int unit, int newidx, int user)
+ 	int oldidx = con2fb_map[unit];
+ 	struct fb_info *info = registered_fb[newidx];
+ 	struct fb_info *oldinfo = NULL;
+- 	int found, err = 0;
++	struct fbcon_ops *ops;
++	int found, err = 0, visible = vc && CON_IS_VISIBLE(vc);
+ 
+ 	if (oldidx == newidx)
+ 		return 0;
+@@ -839,6 +841,15 @@ static int set_con2fb_map(int unit, int newidx, int user)
+ 	if (!err && !found)
+  		err = con2fb_acquire_newinfo(vc, info, unit, oldidx);
+ 
++	if (!err && vc && oldinfo && oldinfo->fbcon_par) {
++		ops = oldinfo->fbcon_par;
++		if (vc->vc_display_fg == &ops->vc_fg) {
++			if (CON_IS_VISIBLE(vc))
++				ops->vc_fg = NULL;
++
++			vc->vc_display_fg = &dummy_fg;
++		}
++	}
+ 
+ 	/*
+ 	 * If old fb is not mapped to any of the consoles,
+@@ -852,6 +863,13 @@ static int set_con2fb_map(int unit, int newidx, int user)
+  		int show_logo = (fg_console == 0 && !user &&
+  				 logo_shown != FBCON_LOGO_DONTSHOW);
+ 
++		ops = info->fbcon_par;
++		if (!ops->vc_fg || visible)
++			ops->vc_fg = vc;
++
++		if (vc && vc->vc_display_fg == &dummy_fg)
++			vc->vc_display_fg = &ops->vc_fg;
++
+  		if (!found)
+  			fbcon_add_cursor_timer(info);
+  		con2fb_map_boot[unit] = newidx;
+@@ -1023,8 +1041,10 @@ static void fbcon_init(struct vc_data *vc, int init)
+ 	int logo = 1, new_rows, new_cols, rows, cols, charcnt = 256;
+ 	int cap, ret;
+ 
+-	if (info_idx == -1 || info == NULL)
+-	    return;
++	if (info_idx == -1 || info == NULL) {
++		vc->vc_display_fg = &dummy_fg;
++		return;
++	}
+ 
+ 	cap = info->flags;
+ 
+@@ -1089,6 +1109,10 @@ static void fbcon_init(struct vc_data *vc, int init)
+ 		con_copy_unimap(vc, svc);
+ 
+ 	ops = info->fbcon_par;
++	if (!ops->vc_fg)
++		ops->vc_fg = vc;
++
++	vc->vc_display_fg = &ops->vc_fg;
+ 	p->con_rotate = initial_rotation;
+ 	set_blitting_type(vc, info);
+ 
+@@ -1184,8 +1208,10 @@ static void fbcon_deinit(struct vc_data *vc)
+ 	if (!ops)
+ 		goto finished;
+ 
+-	if (CON_IS_VISIBLE(vc))
++	if (CON_IS_VISIBLE(vc)) {
+ 		fbcon_del_cursor_timer(info);
++		ops->vc_fg = NULL;
++	}
+ 
+ 	ops->flags &= ~FBCON_FLAGS_INIT;
+ finished:
+diff --git a/drivers/video/console/fbcon.h b/drivers/video/console/fbcon.h
+index 6bd2e0c..adc7316 100644
+--- a/drivers/video/console/fbcon.h
++++ b/drivers/video/console/fbcon.h
+@@ -69,6 +69,7 @@ struct fbcon_ops {
+ 	struct timer_list cursor_timer; /* Cursor timer */
+ 	struct fb_cursor cursor_state;
+ 	struct display *p;
++	struct vc_data *vc_fg;
+         int    currcon;	                /* Current VC. */
+ 	int    cursor_flash;
+ 	int    cursor_reset;
+-- 
+1.6.3.2
 
