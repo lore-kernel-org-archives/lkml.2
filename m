@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab1ICOkY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 10:40:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48023 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab1ICOkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 10:40:02 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <ccross@android.com>, <rjw@sisk.pl>, <khilman@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v2 0/5] CPU PM notifiers
-Date: Sat, 3 Sep 2011 20:09:10 +0530
-Message-ID: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752334Ab1ICOqs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 10:46:48 -0400
+Received: from mail-qw0-f42.google.com ([209.85.216.42]:55359 "EHLO
+	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab1ICOqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 10:46:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXULisfr6_EOrj8+q36UMo2mudcoJu3z0SX4T3x_OZQSg@mail.gmail.com>
+References: <4E5FEF28.60406@gmail.com>
+	<3179.1314924559@turing-police.cc.vt.edu>
+	<1314927645.2576.2939.camel@schen9-DESK>
+	<6805.1314979936@turing-police.cc.vt.edu>
+	<1315007703.2576.2965.camel@schen9-DESK>
+	<6043.1315028115@turing-police.cc.vt.edu>
+	<CA+icZUVuJWpLquLk4kHJzmMKtPw24oxud=u3Na0U0HhSYqwV1w@mail.gmail.com>
+	<4E61C7F2.3090902@gmail.com>
+	<CAAM7YAkB3VVNMmBMVuvEZuV6oGZeyog37_sjFGUunu+15apvZA@mail.gmail.com>
+	<CA+icZUXULisfr6_EOrj8+q36UMo2mudcoJu3z0SX4T3x_OZQSg@mail.gmail.com>
+Date: Sat, 3 Sep 2011 16:46:45 +0200
+Message-ID: <CA+icZUWTS4fM9ZjEvjpPUsEzSdtKnF9yZPMpLwQmOGDL6Z9D_Q@mail.gmail.com>
+Subject: Re: [next] unix stream crashes
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Yan, Zheng" <yanzheng@21cn.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Valdis.Kletnieks@vt.edu,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        ML netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updates V2:
-- The CPU PM notifiers are moved to generic level instead of keeping
-  it ARM specific as per Rafael's comment.
-- To avoid every driver duplicating the sys-core ops and cpu pm notfiers,
-  the CPU PM common notifier is registering it in one place so that
-  suspend is taken care.
-- CPU COMPLEX events are renamed to more appropriate CPU CLUSTER.
-- GIC distributor is not disabled to avoid the live locks. This is
-  observed with CPUIDLE cases where at time CPU cluster fails to
-  transition to low power states. As such there was no need to
-  disable distributor in first place since on cluster reset, it
-  will get disabled anyways.
-- In VFP code, syscore ops are dropped in favour of CPU PM
-  notifiers since S2R is already handled in core CPU PM notifiers.
-- The last patch is an independent patch but can be pushed along with
-  the other GIC changes done here. 
- 
-V1: [http://lwn.net/Articles/447259/]
+On Sat, Sep 3, 2011 at 3:47 PM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Sat, Sep 3, 2011 at 2:30 PM, Yan, Zheng <yanzheng@21cn.com> wrote:
+>> The skb can be destructed before the while loop in unix_stream_sendmsg stops.
+>> please try below patch.
+>>
+[...]
+>
+> I have tested your patch on i386 against:
+>
+> 1. linux-next/patch-v3.1-rc3-next-20110826
+> 2. scm-fix/0001-Revert-Scm-Remove-unnecessary-pid-credential-referen.patch
+> 3. scm-fix-2/scm_send.patch
+> 4. scm-fix-3/0001-Fix-unix-stream-crashes.patch
+>
+> So the BROKEN scm-send path seems to be fixed, now!
+>
+[...]
+> Doing now a 2nd run with:
+>
+> 1. linux-next/patch-v3.1-rc3-next-20110826
+> 2. scm-fix-3/0001-Fix-unix-stream-crashes.patch
+>
 
-This patch set tries to address concerns with platform pm code
-calling into the driver for every block in the Cortex A9s
-during idle, hotplug, and suspend.  The first patch adds cpu pm
-notifiers that can be called by platform code, the second uses
-the notifier to save and restore the GIC state, and the third
-saves the VFP state.
+2nd run is fine, too.
 
-The notifiers are used for two types of events, CPU PM events and
-CPU cluster PM events.  CPU PM events are used to save and restore
-per-cpu context when a single CPU is preparing to enter or has
-just exited a low power state.  For example, the VFP saves the
-last thread context, and the GIC saves banked CPU registers.
-
-CPU cluster events are used after all the CPUs in a power domain
-have been prepared for the low power state.  The GIC uses these
-events to save global register state.
-
-L2 cache is not covered by this patch set, as the determination
-of when the L2 is reset and when it is retained is
-platform-specific, and most of the APIs necessary are already
-
-
-The series is tested with OMAP4 with S2R and CPUIDLE. 
-
-The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
-
-  Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
-
-Colin Cross (5):
-      cpu_pm: Add cpu power management notifiers
-      cpu_pm: call notifiers during suspend
-      ARM: gic: Use cpu pm notifiers to save gic state
-      ARM: vfp: Use cpu pm notifiers to save vfp state
-      ARM: gic: Allow gic arch extensions to provide irqchip flags
-
- arch/arm/common/gic.c               |  188 +++++++++++++++++++++++++++++++++++
- arch/arm/include/asm/hardware/gic.h |    8 ++
- arch/arm/vfp/vfpmodule.c            |   29 ++++--
- include/linux/cpu_pm.h              |  123 +++++++++++++++++++++++
- kernel/Makefile                     |    1 +
- kernel/cpu_pm.c                     |  148 +++++++++++++++++++++++++++
- kernel/power/Kconfig                |    4 +
- 7 files changed, 493 insertions(+), 8 deletions(-)
- create mode 100644 include/linux/cpu_pm.h
- create mode 100644 kernel/cpu_pm.c
-
+- Sedat -
