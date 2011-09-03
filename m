@@ -1,42 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab1ICFaN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 01:30:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50356 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803Ab1ICFaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 01:30:11 -0400
-Message-ID: <4E61BB42.4090301@zytor.com>
-Date: Fri, 02 Sep 2011 22:29:38 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-Subject: Re: RFD: x32 ABI system call numbers
-References: <4E582577.2060805@zytor.com> <201108301409.27527.arnd@arndb.de> <4E5D1153.5030908@zytor.com> <201108311814.54906.arnd@arndb.de> <CA+55aFxfmwfB7jbbrXxa=K7VBYPfAvmu3XOkGrLbB1UFjX1+Ew@mail.gmail.com> <CAMe9rOpGxNWD=gdvyVpi7V7BrwwWrpLTWdkmTjPqJ1+SUvhA0A@mail.gmail.com> <CAMe9rOrPhCC97KV+7AO-z66XJ9R0gidTmRSLZdAOCYjGkJEdFQ@mail.gmail.com> <CA+55aFyBtp-iyexHy4ccTy-qW7KqCccFfSD5HzMD_9BaXT-wjg@mail.gmail.com> <CAMe9rOq_iXX0zcdVcCJvb=he3p4QmYKKOBB_Vf7WAz+ARz3KiA@mail.gmail.com> <4E61AD47.3040108@zytor.com> <CAMe9rOpP9Dt0FvHb0FDbHha0-fv2q4ahfMB_CejqcbWqxuYe8Q@mail.gmail.com>
-In-Reply-To: <CAMe9rOpP9Dt0FvHb0FDbHha0-fv2q4ahfMB_CejqcbWqxuYe8Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752581Ab1ICFcH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 01:32:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55617 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625Ab1ICFcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 01:32:04 -0400
+Subject: Re: [PATCH 3/3] Input: cyttsp - add support for Cypress TTSP
+ touchscreen SPI bus interface
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Kevin McNeely <kev@cypress.com>, Henrik Rydberg <rydberg@euromail.se>,
+        Srikar <ext-srikar.1.bhavanarayana@nokia.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110822024412.GC17891@core.coreip.homeip.net>
+References: <1313812912-2848-1-git-send-email-martinez.javier@gmail.com>
+	 <1313812912-2848-4-git-send-email-martinez.javier@gmail.com>
+	 <20110822024412.GC17891@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 03 Sep 2011 07:31:58 +0200
+Message-ID: <1315027918.11839.10.camel@sauron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02/2011 09:44 PM, H.J. Lu wrote:
+Hello Dmitry,
+
+On Sun, 2011-08-21 at 19:44 -0700, Dmitry Torokhov wrote:
+> Hi Javier,
 > 
-> Is there a way to support something similar to  __SNATIVE_LONG_TYPE
-> and  __UNATIVE_LONG_TYPE for kernel header files.
+> > +
+> > +	memset((void *)xfer, 0, sizeof(xfer));
+> > +	spi_message_init(&msg);
+> > +	xfer[0].tx_buf = wr_buf;
+> > +	xfer[0].rx_buf = rd_buf;
+> 
+> Since we are setting both TX and RX buffer here does this mean that the
+> device will not work with controllers in half-duplex mode? What is the
+> amount of data that will be placed in rd_buf?
 > 
 
-Again, what is the definition you're looking for?  We have __u64 and
-__s64, but the question is what alignment those types should be using,
-given that we're presumably stuck with using compat_ioctl for ioctl...
+Both TX and RX buffers are set because Cypress requires full duplex
+operation always.
 
-	-hpa
+> > +	retval = spi_sync_tmo(ts, &msg);
+> > +	if (retval < 0) {
+> > +		dev_dbg(ts->ops.dev, "%s: spi sync error %d, len=%d, op=%d\n",
+> > +			__func__, retval, xfer[1].len, op);
+> > +		retval = 0;
+> 
+> Why do we ignore the error?
+> 
 
+Fixed: In next version a following ACK check code return the status to
+the cyttsp core so it can retry after waiting with an msleep() call.
+
+> > +	}
+> > +
+> > +	if (op == CY_SPI_RD_OP) {
+> > +		if ((rd_buf[CY_SPI_SYNC_BYTE] == CY_SPI_SYNC_ACK1) &&
+> > +			(rd_buf[CY_SPI_SYNC_BYTE+1] == CY_SPI_SYNC_ACK2))
+> > +			retval = 0;
+> 
+> What about write operation? Does the device send anything in rd_buf for
+> write command?
+> 
+
+Fixed: Both read and write operations check the ACK bytes now.
+
+> > +
+> > +	if (op == CY_SPI_RD_OP) {
+> > +		for (tries = CY_NUM_RETRY; tries; tries--) {
+> > +			retval = cyttsp_spi_xfer_(op, ts, reg, buf, length);
+> > +			if (retval == 0)
+> > +				break;
+> > +			else
+> > +				msleep(20);
+> 
+> Why do we need retry in SPI case but do not need it when device is
+> connected via I2C? And not on writes?
+> 
+
+Fixed: The retries now are made in the cyttsp core so it works both for
+SPI and I2C.
+
+> > +
+> > +	if (retval == -EIO)
+> > +		return 0;
+> 
+> Why is -EIO special?
+> 
+
+Fixed: Now special EIO has been fixed to show meaning.
+
+> > +	else
+> > +		return retval;
+> > +}
+> > +
+> 
+> Thanks.
+> 
+> -- 
+> Dmitry
+
+Best regards,
+
+Javier Martinez Canillas
 
