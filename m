@@ -1,409 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab1ICBRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 21:17:52 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:55489 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752528Ab1ICBRv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 21:17:51 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/pYUYMAJ/pyWvmHyHcm4sjUV8s2lyOgWpOQp8ps0
-	NBCaepDVKrZDFU
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        James Simmons <jsimmons@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC] fbdev: remove display subsystem
-Date: Sat,  3 Sep 2011 01:36:08 +0000
-Message-Id: <1315013768-3235-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-X-Y-GMX-Trusted: 0
+	id S1753130Ab1ICBoS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 21:44:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38059 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377Ab1ICBoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Sep 2011 21:44:17 -0400
+Date: Sat, 3 Sep 2011 11:44:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bob Pearson <rpearson@systemfabricworks.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        fzago@systemfabricworks.com,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        George Spelvin <linux@horizon.com>
+Subject: Re: [PATCH v6 05/10] crc32-misc-cleanup.diff
+Message-Id: <20110903114403.027a9563c86eeaf1c0e4e80b@canb.auug.org.au>
+In-Reply-To: <20110902165047.6aaec238.akpm@linux-foundation.org>
+References: <20110831213729.395283830@systemfabricworks.com>
+	<4E5EB5F4.6010105@systemfabricworks.com>
+	<20110902165047.6aaec238.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__3_Sep_2011_11_44_03_+1000_LbiNHs/SQrsrdpP/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This four year old subsystem does not have a single in-tree user
-not even in staging and as far as I know also none out-of-tree.
-I think that justifies removing it which cleans the config up.
+--Signature=_Sat__3_Sep_2011_11_44_03_+1000_LbiNHs/SQrsrdpP/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: James Simmons <jsimmons@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- drivers/video/Kconfig                 |    1 -
- drivers/video/Makefile                |    2 +-
- drivers/video/display/Kconfig         |   24 ----
- drivers/video/display/Makefile        |    6 -
- drivers/video/display/display-sysfs.c |  219 ---------------------------------
- include/linux/display.h               |   61 ---------
- 6 files changed, 1 insertions(+), 312 deletions(-)
- delete mode 100644 drivers/video/display/Kconfig
- delete mode 100644 drivers/video/display/Makefile
- delete mode 100644 drivers/video/display/display-sysfs.c
- delete mode 100644 include/linux/display.h
+On Fri, 2 Sep 2011 16:50:47 -0700 Andrew Morton <akpm@linux-foundation.org>=
+ wrote:
+>
+> Sure, these these things may be accidentally dragged in via nested
+> includes but it's bad to depend upon that - such things regularly cause
+> breakage when configs are changed.
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 903ace5..62048ea 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -2397,7 +2397,6 @@ source "drivers/video/omap/Kconfig"
- source "drivers/video/omap2/Kconfig"
- 
- source "drivers/video/backlight/Kconfig"
--source "drivers/video/display/Kconfig"
- 
- if VT
- 	source "drivers/video/console/Kconfig"
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index 4307910..67e05c3 100644
---- a/drivers/video/Makefile
-+++ b/drivers/video/Makefile
-@@ -13,7 +13,7 @@ fb-objs                           := $(fb-y)
- 
- obj-$(CONFIG_VT)		  += console/
- obj-$(CONFIG_LOGO)		  += logo/
--obj-y				  += backlight/ display/
-+obj-y				  += backlight/
- 
- obj-$(CONFIG_FB_CFB_FILLRECT)  += cfbfillrect.o
- obj-$(CONFIG_FB_CFB_COPYAREA)  += cfbcopyarea.o
-diff --git a/drivers/video/display/Kconfig b/drivers/video/display/Kconfig
-deleted file mode 100644
-index f99af93..0000000
---- a/drivers/video/display/Kconfig
-+++ /dev/null
-@@ -1,24 +0,0 @@
--#
--# Display drivers configuration
--#
--
--menu "Display device support"
--
--config DISPLAY_SUPPORT
--	tristate "Display panel/monitor support"
--	---help---
--	  This framework adds support for low-level control of a display.
--	  This includes support for power.
--
--	  Enable this to be able to choose the drivers for controlling the
--	  physical display panel/monitor on some platforms. This not only
--	  covers LCD displays for PDAs but also other types of displays
--	  such as CRT, TVout etc.
--
--	  To have support for your specific display panel you will have to
--	  select the proper drivers which depend on this option.
--
--comment "Display hardware drivers"
--	depends on DISPLAY_SUPPORT
--
--endmenu
-diff --git a/drivers/video/display/Makefile b/drivers/video/display/Makefile
-deleted file mode 100644
-index c0ea832..0000000
---- a/drivers/video/display/Makefile
-+++ /dev/null
-@@ -1,6 +0,0 @@
--# Display drivers
--
--display-objs				:= display-sysfs.o
--
--obj-$(CONFIG_DISPLAY_SUPPORT)		+= display.o
--
-diff --git a/drivers/video/display/display-sysfs.c b/drivers/video/display/display-sysfs.c
-deleted file mode 100644
-index 0c647d7..0000000
---- a/drivers/video/display/display-sysfs.c
-+++ /dev/null
-@@ -1,219 +0,0 @@
--/*
-- *  display-sysfs.c - Display output driver sysfs interface
-- *
-- *  Copyright (C) 2007 James Simmons <jsimmons@infradead.org>
-- *
-- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- *
-- *  This program is free software; you can redistribute it and/or modify
-- *  it under the terms of the GNU General Public License as published by
-- *  the Free Software Foundation; either version 2 of the License, or (at
-- *  your option) any later version.
-- *
-- *  This program is distributed in the hope that it will be useful, but
-- *  WITHOUT ANY WARRANTY; without even the implied warranty of
-- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- *  General Public License for more details.
-- *
-- *  You should have received a copy of the GNU General Public License along
-- *  with this program; if not, write to the Free Software Foundation, Inc.,
-- *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-- *
-- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- */
--#include <linux/module.h>
--#include <linux/display.h>
--#include <linux/ctype.h>
--#include <linux/idr.h>
--#include <linux/err.h>
--#include <linux/kdev_t.h>
--#include <linux/slab.h>
--
--static ssize_t display_show_name(struct device *dev,
--				struct device_attribute *attr, char *buf)
--{
--	struct display_device *dsp = dev_get_drvdata(dev);
--	return snprintf(buf, PAGE_SIZE, "%s\n", dsp->name);
--}
--
--static ssize_t display_show_type(struct device *dev,
--				struct device_attribute *attr, char *buf)
--{
--	struct display_device *dsp = dev_get_drvdata(dev);
--	return snprintf(buf, PAGE_SIZE, "%s\n", dsp->type);
--}
--
--static ssize_t display_show_contrast(struct device *dev,
--				struct device_attribute *attr, char *buf)
--{
--	struct display_device *dsp = dev_get_drvdata(dev);
--	ssize_t rc = -ENXIO;
--
--	mutex_lock(&dsp->lock);
--	if (likely(dsp->driver) && dsp->driver->get_contrast)
--		rc = sprintf(buf, "%d\n", dsp->driver->get_contrast(dsp));
--	mutex_unlock(&dsp->lock);
--	return rc;
--}
--
--static ssize_t display_store_contrast(struct device *dev,
--					struct device_attribute *attr,
--					const char *buf, size_t count)
--{
--	struct display_device *dsp = dev_get_drvdata(dev);
--	ssize_t ret = -EINVAL, size;
--	int contrast;
--	char *endp;
--
--	contrast = simple_strtoul(buf, &endp, 0);
--	size = endp - buf;
--
--	if (isspace(*endp))
--		size++;
--
--	if (size != count)
--		return ret;
--
--	mutex_lock(&dsp->lock);
--	if (likely(dsp->driver && dsp->driver->set_contrast)) {
--		pr_debug("display: set contrast to %d\n", contrast);
--		dsp->driver->set_contrast(dsp, contrast);
--		ret = count;
--	}
--	mutex_unlock(&dsp->lock);
--	return ret;
--}
--
--static ssize_t display_show_max_contrast(struct device *dev,
--					struct device_attribute *attr,
--					char *buf)
--{
--	struct display_device *dsp = dev_get_drvdata(dev);
--	ssize_t rc = -ENXIO;
--
--	mutex_lock(&dsp->lock);
--	if (likely(dsp->driver))
--		rc = sprintf(buf, "%d\n", dsp->driver->max_contrast);
--	mutex_unlock(&dsp->lock);
--	return rc;
--}
--
--static struct device_attribute display_attrs[] = {
--	__ATTR(name, S_IRUGO, display_show_name, NULL),
--	__ATTR(type, S_IRUGO, display_show_type, NULL),
--	__ATTR(contrast, S_IRUGO | S_IWUSR, display_show_contrast, display_store_contrast),
--	__ATTR(max_contrast, S_IRUGO, display_show_max_contrast, NULL),
--};
--
--static int display_suspend(struct device *dev, pm_message_t state)
--{
--	struct display_device *dsp = dev_get_drvdata(dev);
--
--	mutex_lock(&dsp->lock);
--	if (likely(dsp->driver->suspend))
--		dsp->driver->suspend(dsp, state);
--	mutex_unlock(&dsp->lock);
--	return 0;
--};
--
--static int display_resume(struct device *dev)
--{
--	struct display_device *dsp = dev_get_drvdata(dev);
--
--	mutex_lock(&dsp->lock);
--	if (likely(dsp->driver->resume))
--		dsp->driver->resume(dsp);
--	mutex_unlock(&dsp->lock);
--	return 0;
--};
--
--static struct mutex allocated_dsp_lock;
--static DEFINE_IDR(allocated_dsp);
--static struct class *display_class;
--
--struct display_device *display_device_register(struct display_driver *driver,
--						struct device *parent, void *devdata)
--{
--	struct display_device *new_dev = NULL;
--	int ret = -EINVAL;
--
--	if (unlikely(!driver))
--		return ERR_PTR(ret);
--
--	mutex_lock(&allocated_dsp_lock);
--	ret = idr_pre_get(&allocated_dsp, GFP_KERNEL);
--	mutex_unlock(&allocated_dsp_lock);
--	if (!ret)
--		return ERR_PTR(ret);
--
--	new_dev = kzalloc(sizeof(struct display_device), GFP_KERNEL);
--	if (likely(new_dev) && unlikely(driver->probe(new_dev, devdata))) {
--		// Reserve the index for this display
--		mutex_lock(&allocated_dsp_lock);
--		ret = idr_get_new(&allocated_dsp, new_dev, &new_dev->idx);
--		mutex_unlock(&allocated_dsp_lock);
--
--		if (!ret) {
--			new_dev->dev = device_create(display_class, parent,
--						     MKDEV(0, 0), new_dev,
--						     "display%d", new_dev->idx);
--			if (!IS_ERR(new_dev->dev)) {
--				new_dev->parent = parent;
--				new_dev->driver = driver;
--				mutex_init(&new_dev->lock);
--				return new_dev;
--			}
--			mutex_lock(&allocated_dsp_lock);
--			idr_remove(&allocated_dsp, new_dev->idx);
--			mutex_unlock(&allocated_dsp_lock);
--			ret = -EINVAL;
--		}
--	}
--	kfree(new_dev);
--	return ERR_PTR(ret);
--}
--EXPORT_SYMBOL(display_device_register);
--
--void display_device_unregister(struct display_device *ddev)
--{
--	if (!ddev)
--		return;
--	// Free device
--	mutex_lock(&ddev->lock);
--	device_unregister(ddev->dev);
--	mutex_unlock(&ddev->lock);
--	// Mark device index as available
--	mutex_lock(&allocated_dsp_lock);
--	idr_remove(&allocated_dsp, ddev->idx);
--	mutex_unlock(&allocated_dsp_lock);
--	kfree(ddev);
--}
--EXPORT_SYMBOL(display_device_unregister);
--
--static int __init display_class_init(void)
--{
--	display_class = class_create(THIS_MODULE, "display");
--	if (IS_ERR(display_class)) {
--		printk(KERN_ERR "Failed to create display class\n");
--		display_class = NULL;
--		return -EINVAL;
--	}
--	display_class->dev_attrs = display_attrs;
--	display_class->suspend = display_suspend;
--	display_class->resume = display_resume;
--	mutex_init(&allocated_dsp_lock);
--	return 0;
--}
--
--static void __exit display_class_exit(void)
--{
--	class_destroy(display_class);
--}
--
--module_init(display_class_init);
--module_exit(display_class_exit);
--
--MODULE_DESCRIPTION("Display Hardware handling");
--MODULE_AUTHOR("James Simmons <jsimmons@infradead.org>");
--MODULE_LICENSE("GPL");
--
-diff --git a/include/linux/display.h b/include/linux/display.h
-deleted file mode 100644
-index 3bf70d6..0000000
---- a/include/linux/display.h
-+++ /dev/null
-@@ -1,61 +0,0 @@
--/*
-- *  Copyright (C) 2006 James Simmons <jsimmons@infradead.org>
-- *
-- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- *
-- *  This program is free software; you can redistribute it and/or modify
-- *  it under the terms of the GNU General Public License as published by
-- *  the Free Software Foundation; either version 2 of the License, or (at
-- *  your option) any later version.
-- *
-- *  This program is distributed in the hope that it will be useful, but
-- *  WITHOUT ANY WARRANTY; without even the implied warranty of
-- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-- *  General Public License for more details.
-- *
-- *  You should have received a copy of the GNU General Public License along
-- *  with this program; if not, write to the Free Software Foundation, Inc.,
-- *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-- *
-- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- */
--
--#ifndef _LINUX_DISPLAY_H
--#define _LINUX_DISPLAY_H
--
--#include <linux/device.h>
--
--struct display_device;
--
--/* This structure defines all the properties of a Display. */
--struct display_driver {
--	int  (*set_contrast)(struct display_device *, unsigned int);
--	int  (*get_contrast)(struct display_device *);
--	void (*suspend)(struct display_device *, pm_message_t state);
--	void (*resume)(struct display_device *);
--	int  (*probe)(struct display_device *, void *);
--	int  (*remove)(struct display_device *);
--	int  max_contrast;
--};
--
--struct display_device {
--	struct module *owner;			/* Owner module */
--	struct display_driver *driver;
--	struct device *parent;			/* This is the parent */
--	struct device *dev;			/* This is this display device */
--	struct mutex lock;
--	void *priv_data;
--	char type[16];
--	char *name;
--	int idx;
--};
--
--extern struct display_device *display_device_register(struct display_driver *driver,
--					struct device *dev, void *devdata);
--extern void display_device_unregister(struct display_device *dev);
--
--extern int probe_edid(struct display_device *dev, void *devdata);
--
--#define to_display_device(obj) container_of(obj, struct display_device, class_dev)
--
--#endif
--- 
-1.7.2.5
+And even the same config on different architectures or platforms.  That's
+why we have Rule 1 in Documentation/SubmitChecklist ...
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Sat__3_Sep_2011_11_44_03_+1000_LbiNHs/SQrsrdpP/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOYYZjAAoJEDMEi1NhKgbsBh8H/ipGz4miQXC+KgzTd15++qMC
+eAvIP/ta2Fg4SEl2HseJVkxCBOt6qi49s/iUsfy8ybUndnjHCmsNPG2NYGpp7+mF
+y8VE8vNFzyuPSuaDX+ch21LcUqmiZuACK9JcvgGKobNMbMsDiSwfaT1SPnv+wxIW
+mQOi/5+9KFKZdwlj3CXVkj+e8Tp5bkWf+iQIPUbelvkJ9UWaeqW6Z+92TI2FTaMQ
+QI9PWI0i4EmkaU95gLbEQA8kjWsKGXutdNZFf+WSBcsM9E/g6bYJ8c/tpUelzv8Z
+B1L0EbxED1uTc8WyIBlvKgJKKmGcx3eGTq451fKxW65NrRIgGSMAyXiZuPhE2Ls=
+=oGAd
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__3_Sep_2011_11_44_03_+1000_LbiNHs/SQrsrdpP/--
