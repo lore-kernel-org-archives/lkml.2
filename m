@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab1ICCht (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 22:37:49 -0400
-Received: from vm4.telegraphics.com.au ([98.124.60.149]:34405 "EHLO
-	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab1ICChs (ORCPT
+	id S1753416Ab1ICCpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 22:45:09 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63690 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab1ICCpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 22:37:48 -0400
-Date: Sat, 3 Sep 2011 12:40:28 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux/m68k <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: m68k: [v5] Convert to genirq (WIP)
-In-Reply-To: <CAMuHMdVmNAOSK+M9z-ySOR-oA4LwuS_N0SZ8XxzQ9_pYqM_vdQ@mail.gmail.com>
-Message-ID: <alpine.OSX.2.00.1109031232500.438@ibook.local>
-References: <CAMuHMdUZe0Y55ZPee+umJdEsmY5X-EB-KoC-w-SGEtbPMAcf3g@mail.gmail.com> <alpine.OSX.2.00.1108271506320.190@ibook.local> <alpine.OSX.2.00.1108300148040.435@ibook.local> <CAMuHMdVmNAOSK+M9z-ySOR-oA4LwuS_N0SZ8XxzQ9_pYqM_vdQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	Fri, 2 Sep 2011 22:45:06 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4E5B258D.9090904@intel.com>
+References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com>
+ <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
+ <4E520149.3010802@intel.com> <CAG1a4rtMnDXSGLkmwE+6N9smoghWp0W4b5-X_gogzJ9fDLTeBg@mail.gmail.com>
+ <4E571D66.1070302@intel.com> <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com>
+ <4E5B258D.9090904@intel.com>
+From: Pavel Ivanov <paivanof@gmail.com>
+Date: Fri, 2 Sep 2011 22:44:33 -0400
+Message-ID: <CAG1a4rtXhK-TtgayUDBK34kB2rEHUSN_6ZEX2B6Zg2-GprwCEA@mail.gmail.com>
+Subject: Re: APEI: Can not request iomem region for GARs
+To: Huang Ying <ying.huang@intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 29, 2011 at 1:37 AM, Huang Ying <ying.huang@intel.com> wrote:
+> On 08/27/2011 11:28 AM, Pavel Ivanov wrote:
+>> Also I noticed there's another suspicious message in dmesg and it was
+>> there earlier too (although it's not shown on console):
+>>
+>> GHES: Failed to enable APEI firmware first mode
+>>
+>> Is it bad? What does it mean?
+>
+> Maybe this has been fixed, please this patch,
+>
+> https://lkml.org/lkml/2011/8/11/297
 
-On Fri, 2 Sep 2011, Geert Uytterhoeven wrote:
+Yes, this patch indeed fixed this failure message. It's now replaced by
 
-> Since this is on Mac and mac_irq_chip is OK, I guess this is a non-PSC 
-> Mac, i.e. the IRQ number is IRQ_MAC_SCC == IRQ_AUTO_4?
+GHES: APEI firmware first mode is enabled by WHEA _OSC.
 
-Right. Similarly, the sonic driver was using IRQ_AUTO_3 when the same 
-issue cropped up there. (I was wondering why the PSC machine didn't 
-exhibit the problem -- as you point out, it's only auto vector interrupts 
-that are affected.)
+Can I ask you another question: what does the following message mean?
 
-Finn
+[Firmware Warn]: GHES: Poll interval is 0 for generic hardware error
+source: 1, disabled.
+
+
+Pavel
+
+
+P.S. No word from Asus yet on the ERST issue.
