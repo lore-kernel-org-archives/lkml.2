@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab1ICKKP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 06:10:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55277 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab1ICKKM (ORCPT
+	id S1753785Ab1ICK05 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 06:26:57 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41093 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753611Ab1ICK0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 06:10:12 -0400
-Date: Sat, 3 Sep 2011 12:09:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Shan Hai <haishan.bai@gmail.com>, eric.dumazet@gmail.com,
-        vapier@gentoo.org, asharma@fb.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH V3 1/1] lib/atomic64 using raw_spin_lock_irq[save|resotre]
- for atomicity
-In-Reply-To: <20110902155748.55b0dd1a.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1109031159450.2723@ionos>
-References: <1314925851-28163-1-git-send-email-haishan.bai@gmail.com> <1314925851-28163-2-git-send-email-haishan.bai@gmail.com> <20110902155748.55b0dd1a.akpm@linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 3 Sep 2011 06:26:54 -0400
+Date: Sat, 3 Sep 2011 11:25:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Bernie Thompson <bernie@plugable.com>,
+        Martin Decky <martin@decky.cz>
+Subject: Re: [PATCH 2/2] vt: dirty hack
+Message-ID: <20110903112542.5d3cbfcc@lxorguk.ukuu.org.uk>
+In-Reply-To: <1315013361-3191-3-git-send-email-FlorianSchandinat@gmx.de>
+References: <1315013361-3191-1-git-send-email-FlorianSchandinat@gmx.de>
+	<1315013361-3191-3-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Sep 2011, Andrew Morton wrote:
-> On Fri,  2 Sep 2011 09:10:51 +0800
-> Shan Hai <haishan.bai@gmail.com> wrote:
-> : [eb459b90] [c068b1e0] rt_spin_lock_slowlock+0x40/0x3a8 (unreliable)
-> : [eb459c20] [c068bdb0] rt_spin_lock+0x40/0x98
-> : [eb459c40] [c03d2a14] atomic64_read+0x48/0x84
-> : [eb459c60] [c001aaf4] perf_event_interrupt+0xec/0x28c
-> : [eb459d10] [c0010138] performance_monitor_exception+0x7c/0x150
-> : [eb459d30] [c0014170] ret_from_except_full+0x0/0x4c
-> 
-> But I don't think the patch is applicable to mainline anyway, is it?
+On Sat,  3 Sep 2011 01:29:21 +0000
+Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
 
-It is not necessary for mainline, but we have already quite a lot of
-these raw_spinlock conversions in tree. That helps us to keep the size
-and intrusiveness of RT lower.
+All of the vt stuff wants doing properly not as hacks.
 
-> What's actually going on here?  A spin_lock_irq() which doesn't disable
-> interrupts sounds fairly moronic.  Is it the case that preempt-rt
-> converts interrupt code to thread context, so spin_lock_irq() only
-> needs to lock against other thread-context code?
+I think the fundamental change you need is to instroduce some sort of
+vc->group pointer and vc group object that holds all the globals in the
+vt layer for each group (ie move fg_console, console_blanked etc).
 
-Right, as RT enforces threaded interrupts for almost everything we can
-convert the spinlocks (not the raw_ variant) to "sleeping spinlocks",
-i.e. rtmutex.
+That can be done in steps, and once done you can then start to use
+vc->group-> within the fbcon driver and possibly also have a per fb
+group data attached to vc->group->fb or similar.
 
-Now some interrupts cannot be threaded for various reasons and there
-we need to look at the locking and convert those locks to
-raw_spinlocks.
- 
-> If so, what's special about the ppc performance counter interrupt? 
-> Shouldn't that be covnerted to thread context as well?
+Hacks are fine for early prototyping but doing it right means thinking
+about the data structures you ultimately need so that existing systems
+work, multi-monitor continues to work and you can do proper multi-console
+stuff.
 
-No, we can't. We need to read out stuff when the interrupt happens and
-not at some random point afterwards. Also perf interrupts can come
-with high frequency when used for profiling.
+I'm all for it happening done right, and some things like being able to
+attach an fb console to arbitary GEM objects would allow very nice
+integration of the console into things like Wayland.
 
-> If that isn't possible, does this mean that all locking/atomic code
-> which runs in the perf counter interrupt needs to be converted to use
-> raw_irq_foo()?
-
-Pretty much. The perf code itself already uses the raw variants, we
-just missed this atomic64 emulation muck.
-
-> > @@ -29,7 +29,7 @@
-> >  * Ensure each lock is in a separate cacheline.
-> >  */
-> > static union {
-> > -	spinlock_t lock;
-> > +	raw_spinlock_t lock;
-> >  	char pad[L1_CACHE_BYTES];
-> >  } atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
-> 
-> There is no way on this little green earth that a reader of this code
-> will be able to work out that a raw_spinlock_t was used because of
-> something to do with ppc performance counter interrupts!
-> 
-> Therefore a code comment is needed.
-
-There is another reason why it makes sense to convert this to a raw
-spinlock. The protected code sections are just a few instructions, so
-making it a sleeping lock would be overkill - even if it wouldnt be
-used in the ppc performance counter interrupt .
-
-Thanks,
-
-	tglx
+Alan
