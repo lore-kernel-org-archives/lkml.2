@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab1ICAIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Sep 2011 20:08:00 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:49265 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab1ICAH6 (ORCPT
+	id S1752440Ab1ICAv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Sep 2011 20:51:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51003 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab1ICAv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Sep 2011 20:07:58 -0400
-From: Benson Leung <bleung@chromium.org>
-To: jkosina@suse.cz, linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: bleung@chromium.org
-Subject: [PATCH] HID: usbhid: fix suspend timeout due to RUNNING bits
-Date: Fri,  2 Sep 2011 17:07:27 -0700
-Message-Id: <1315008447-11012-1-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.7.1
+	Fri, 2 Sep 2011 20:51:26 -0400
+Message-ID: <4E617A3B.1090803@gmail.com>
+Date: Sat, 03 Sep 2011 04:52:11 +0400
+From: George Shuklin <george.shuklin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Icedove/3.1.12
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: linux-kernel@vger.kernel.org
+Subject: Re: si_swapinfo export
+References: <1314978089.11870.2.camel@mabase> <3187.1314993238@turing-police.cc.vt.edu>
+In-Reply-To: <3187.1314993238@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hid_submit_ctrl and hid_submit_out should return error
-codes when HID_REPORTED_IDLE is set by hid_suspend.
-This will allow the output and control completion
-handlers to clear HID_OUT_RUNNING and HID_CTRL_RUNNING
-so hid_suspend succeeds.
+Well, in my personal case it is some 'memory pressure service' for 
+virtual machines in xen environment.
 
-Previously, if there were outstanding out messages
-or control messages while hid_suspend was called,
-hid_suspend would fail because usbhid_wait_io would time
-out.
+It check about 1-2 times per second memory state and report it to 
+management software outside VM. Right now this is userspace program, 
+which reads /proc/meminfo and sends it via xenstore (interdomain 
+communication system) to management domain. It works fine, but we need 
+to do double int-str conversion (/proc/meminfo do itoa, our daemon sens 
+this to control domain, daemon in control domain do atoi and math to get 
+right memory value). This is very inefficient, especially when we talks 
+about bunch of VM per host.
 
-This condition happens with USB keyboards with both capslock and
-numlock leds enabled at suspend time. Control requests
-will come down to the hid-core to disable both leds, with
-hid_suspend being called between the two being submitted.
+kernel module can do math internally with ints, not with strings (no 
+conversion at all) - this will save pretty much time (my calculation is 
+about one-two of CPU time per day for every virtualization host with 
+about 50-100 active VMs.
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
----
- drivers/hid/usbhid/hid-core.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+The information I needs is amount of 'really free' memory. We calculate 
+it as (roughly) as  MemFree+Buffers+Cached+(SwapTotal-SwapFree), and our 
+management system trying to keep this value within expected values (f.e. 
+within interval 128-256Mb). This allows us to prevent VM's swapping and 
+allow VM to push to swap really rare used pages (and their place 
+actually used for caching).
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index a9fa294..cf5c106 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -326,6 +326,8 @@ static int hid_submit_out(struct hid_device *hid)
- 			return -1;
- 		}
- 		usbhid->last_out = jiffies;
-+	} else {
-+		return -1;
- 	}
- 
- 	return 0;
-@@ -385,6 +387,8 @@ static int hid_submit_ctrl(struct hid_device *hid)
- 			return -1;
- 		}
- 		usbhid->last_ctrl = jiffies;
-+	} else {
-+		return -1;
- 	}
- 
- 	return 0;
--- 
-1.7.1
 
+On 02.09.2011 23:53, Valdis.Kletnieks@vt.edu wrote:
+> On Fri, 02 Sep 2011 19:41:29 +0400, George Shuklin said:
+>> Good day.
+>>
+>> Why si_swapinfo (from include/linux/swap.h) is not marked as
+>> EXPORT_SYMBOL_GPL? It's kinda hard to gain information about memory in
+>> module.
+> Use case?  What information exactly are you trying to get in the module, and
+> equally important, why?  More likely, what you *actually* want isn't the
+> information, it's a new API (or using an existing one you didn't even know was
+> there) :)
+>
