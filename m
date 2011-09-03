@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab1ICJJm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 05:09:42 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33909 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab1ICJJj convert rfc822-to-8bit (ORCPT
+	id S1752046Ab1ICJSA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 05:18:00 -0400
+Received: from fed1rmfepi102.cox.net ([68.230.241.133]:57307 "EHLO
+	fed1rmfepi102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab1ICJR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 05:09:39 -0400
+	Sat, 3 Sep 2011 05:17:59 -0400
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A020207.4E61507B.000E,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=icikDAZ38uXJHzzUrPuKzegP6CJWJYpObRyFkWe6DYI=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=KKiOUAaYztQA:10 a=s7WxrzdoqFgA:10
+ a=IkcTkHD0fZMA:10 a=kTUvB0TWC4kfFd9n2t+ykg==:17 a=glCL4q5AAAAA:8
+ a=7EDbcY6EshqZBKVUJSsA:9 a=QEXdDO2ut3YA:10 a=kTUvB0TWC4kfFd9n2t+ykg==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110903051428.E7KUR.1825388.imail@fed1rmwml38>
+Date: Sat, 3 Sep 2011 2:14:28 -0700
+From: KA LING <frfrffrfrfrfrfrff6@cox.net>
+Reply-To: lingka1@ymail.com
+Subject: INVESTMENT $
 MIME-Version: 1.0
-In-Reply-To: <CADDb1s1A38RyioiehzbRCgjFQT-MhfoD7cutxkn+h_cvUcZpfg@mail.gmail.com>
-References: <CADDb1s1A38RyioiehzbRCgjFQT-MhfoD7cutxkn+h_cvUcZpfg@mail.gmail.com>
-Date: Sat, 3 Sep 2011 18:09:38 +0900
-Message-ID: <CAKYAXd8gLN4C54Ey5uuK+_FY0U+tBf4aHntX=B+d0eNgY=rNsA@mail.gmail.com>
-Subject: =?UTF-8?Q?Re=3A_vfat_filesystem=3A_Why_utf8=3D1_when_iocharset=3D=E2=80=9Dut?=
-	=?UTF-8?Q?f8=E2=80=9D_was_already_there=3F?=
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Amit Sahrawat <amit.sahrawat83@gmail.com>, hirofumi@mail.parknet.co.jp
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/2 Amit Sahrawat <amit.sahrawat83@gmail.com>:
-> From my opinion both should support the same functionality as the
-> motive behind this seems to introduce the complete support for utf8.
-> But, I am surprised to see the behavior changes in the ‘2’ options.
-> 1)      When using iocharset=”utf8” it makes vfat case sensitive, while
-> this is not the case with using utf8=1
-> 2)      Surrogate pair don’t work when using iocharset=”utf8”, because that
-> traverses a path like this:
-> xlate_to_uni()-->nls->char2uni()-->char2uni()-->utf8_to_utf32()
-> After this it returns EINVAL because Surrogate pair correct code is
-> greater than 0xFFFF (MAX_WCHAR_T – limit which is put)
-> But this is not the case with utf8=1
-> There are other places also where I can see usage different due to
-> usage of char2uni()
->
-> Can someone provide any help on this? Why do we have separate options
-> for using utf8 and if utf8=1 smoothly supports proper working then why
-> not discard iocharset=”utf8” ? and if this is not the case
-> why was utf8=1 introduced?
->
-> Please provide any guidance in this.
->
-> Thanks & Regards,
-> Amit Sahrawat
->
+I have an investment proposal of $23,500,000.00 for you.   kax118@yahoo.com.hk  for info
 
-I also am wondering this issue for long time.
-May be, Ogawa will know well.
+Ka Ling
