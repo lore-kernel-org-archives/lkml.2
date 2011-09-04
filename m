@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab1IDQg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 12:36:59 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41275 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab1IDQgv (ORCPT
+	id S1751930Ab1IDQyl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 12:54:41 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57413 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664Ab1IDQye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 12:36:51 -0400
+	Sun, 4 Sep 2011 12:54:34 -0400
+Message-ID: <6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org>
+In-Reply-To: <yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
+    <CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com>
+    <20110902182214.GC12086@tux1.beaverton.ibm.com>
+    <yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+Date: Sun, 4 Sep 2011 18:54:28 +0200
+Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: djwong@us.ibm.com, "Greg Freemyer" <greg.freemyer@gmail.com>,
+        "Andreas Dilger" <adilger.kernel@dilger.ca>,
+        "Theodore Tso" <tytso@mit.edu>,
+        "Sunil Mushran" <sunil.mushran@oracle.com>,
+        "Amir Goldstein" <amir73il@gmail.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Andi Kleen" <andi@firstfloor.org>, "Mingming Cao" <cmm@us.ibm.com>,
+        "Joel Becker" <jlbec@evilplan.org>,
+        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Coly Li" <colyli@gmail.com>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-In-Reply-To: <20110904155459.GC21528@opensource.wolfsonmicro.com>
-References: <1314971261.3699.0.camel@phoenix>
-	<20110904155459.GC21528@opensource.wolfsonmicro.com>
-Date: Sun, 4 Sep 2011 18:36:51 +0200
-Message-ID: <CACTFLANKizyLnK0JsOoSoySzKQ-cYOoYjHHfxjRVjbeqnec9xg@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: Add missing platform_device_put in
- raumfeld_audio_init error path
-From: Daniel Mack <zonque@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 4, 2011 at 5:55 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Sep 02, 2011 at 09:47:41PM +0800, Axel Lin wrote:
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Applied, thanks.
+> On Westmere and beyond it is possible to accelerate generic CRC
+> calculation using the PCLMULQDQ operation. There are many of our CRC
 
-Feel free to add my Acked-by as well, if it's not too late.
+Faster than the lookup table? That's hard to believe.
 
+-Andi
 
-Thanks,
-Daniel
