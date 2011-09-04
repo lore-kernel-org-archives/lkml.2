@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab1IDLmq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 07:42:46 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:64501 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab1IDLmh (ORCPT
+	id S1754238Ab1IDMwu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 08:52:50 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44426 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab1IDMwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 07:42:37 -0400
-To: djwong@us.ibm.com
-Cc: Greg Freemyer <greg.freemyer@gmail.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
-	<CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com>
-	<20110902182214.GC12086@tux1.beaverton.ibm.com>
-Date: Sun, 04 Sep 2011 07:41:03 -0400
-In-Reply-To: <20110902182214.GC12086@tux1.beaverton.ibm.com> (Darrick
-	J. Wong's message of "Fri, 2 Sep 2011 11:22:14 -0700")
-Message-ID: <yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E636402.00C1:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Sun, 4 Sep 2011 08:52:43 -0400
+Subject: [PATCH] ASoC: codecs: Remove unused mutex
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 04 Sep 2011 20:52:31 +0800
+Message-ID: <1315140751.8673.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Darrick" == Darrick J Wong <djwong@us.ibm.com> writes:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/alc5623.c |    2 --
+ sound/soc/codecs/wm9090.c  |    2 --
+ 2 files changed, 0 insertions(+), 4 deletions(-)
 
-Darrick,
-
-Darrick> Furthermore, the nice thing about the in-filesystem checksum is
-Darrick> that we bake in other things like the FS UUID and the inode
-Darrick> number, which gives you a somewhat better assurance that the
-Darrick> data block belongs to the fs and the file that the code think
-Darrick> it belongs to.
-
-Yeah, I view DIF/DIX mostly as in-flight protection for writes. Whereas
-FS metadata checksumming is great for problem detection at read time.
-
-Another problem with using the DIF app tag to store filesystem metadata
-is that many array vendors use it internally and thus only disk drives
-are likely to provide the app tag space.
-
-
-Darrick> The DIX interface allows for a 32-bit block number and a 16-bit
-Darrick> application tag ... which is unfortunately small given 64-bit
-Darrick> block numbers and 32-bit inode numbers.
-
-I never understood the 32-bit ref tag. Seems silly to have a check that
-wraps at the exact boundary where problems are most likely to occur.
-
-I advocated for a DIF Type with 16-bit guard tag and 48-bit ref tag but
-that never went anywhere. Too bad - would have been easy for the storage
-vendors to implement.
-
-
-Darrick> As a side note, the crc-t10dif implementation is quite slow --
-Darrick> the hardware accelerated crc32c is 15x faster, and the sw
-Darrick> implementation is usually 3-6x faster.  I suspect somebody will
-Darrick> want to fix that before DIF becomes more widespread...
-
-The CRC32C op on Nehalem and beyond is really, really fast. It's
-essentially free except for pulling the data through the cache. So it's
-not entirely fair to use that as baseline for a pure software
-implementation. What is the faster sw implementation are you referring
-to, btw.?
-
-lib/crc-t10dif is a regular 256-entry table-based CRC implementation. It
-is done pretty much like all our other software CRCs. I seem to recall
-attempting a bigger table but that yielded worse real life results due
-to cache pollution.
-
-On Westmere and beyond it is possible to accelerate generic CRC
-calculation using the PCLMULQDQ operation. There are many of our CRC
-functions that could benefit from this. However, so far intel have not
-been willing to contribute the relevant code to Linux.
-
-
-Darrick> The good news is that if you're really worried about integrity,
-Darrick> metadata_csum and DIF/DIX aren't mutually exclusive features.
-Darrick> Rejecting corrupted write commands at write time seems like a
-Darrick> useful feature. :)
-
-Yup!
-
+diff --git a/sound/soc/codecs/alc5623.c b/sound/soc/codecs/alc5623.c
+index eecffb5..0517315 100644
+--- a/sound/soc/codecs/alc5623.c
++++ b/sound/soc/codecs/alc5623.c
+@@ -41,7 +41,6 @@ MODULE_PARM_DESC(caps_charge, "ALC5623 cap charge time (msecs)");
+ struct alc5623_priv {
+ 	enum snd_soc_control_type control_type;
+ 	void *control_data;
+-	struct mutex mutex;
+ 	u8 id;
+ 	unsigned int sysclk;
+ 	u16 reg_cache[ALC5623_VENDOR_ID2+2];
+@@ -1052,7 +1051,6 @@ static int alc5623_i2c_probe(struct i2c_client *client,
+ 	i2c_set_clientdata(client, alc5623);
+ 	alc5623->control_data = client;
+ 	alc5623->control_type = SND_SOC_I2C;
+-	mutex_init(&alc5623->mutex);
+ 
+ 	ret =  snd_soc_register_codec(&client->dev,
+ 		&soc_codec_device_alc5623, &alc5623_dai, 1);
+diff --git a/sound/soc/codecs/wm9090.c b/sound/soc/codecs/wm9090.c
+index 4de1220..f2f3077 100644
+--- a/sound/soc/codecs/wm9090.c
++++ b/sound/soc/codecs/wm9090.c
+@@ -139,7 +139,6 @@ static const u16 wm9090_reg_defaults[] = {
+ 
+ /* This struct is used to save the context */
+ struct wm9090_priv {
+-	struct mutex mutex;
+ 	struct wm9090_platform_data pdata;
+ 	void *control_data;
+ };
+@@ -663,7 +662,6 @@ static int wm9090_i2c_probe(struct i2c_client *i2c,
+ 
+ 	i2c_set_clientdata(i2c, wm9090);
+ 	wm9090->control_data = i2c;
+-	mutex_init(&wm9090->mutex);
+ 
+ 	ret =  snd_soc_register_codec(&i2c->dev,
+ 			&soc_codec_dev_wm9090,  NULL, 0);
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.7.4.1
+
+
+
