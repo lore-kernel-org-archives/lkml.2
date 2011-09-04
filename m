@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab1IDWN0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 18:13:26 -0400
-Received: from mail-qw0-f42.google.com ([209.85.216.42]:47026 "EHLO
-	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab1IDWNT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 18:13:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <3634139.5BAXH7nXYb@wuerfel>
-References: <4E582577.2060805@zytor.com>
-	<33733402.CzI6MIxaEn@wuerfel>
-	<CAMe9rOrANCdgbhoY1F-hMc7Rbov_2O34A+MHTeYF3eieTP2EGw@mail.gmail.com>
-	<3634139.5BAXH7nXYb@wuerfel>
-Date: Sun, 4 Sep 2011 15:13:18 -0700
-Message-ID: <CAMe9rOrU0wcrRxPoTRcmVRd+2hDwjCta_73Ji-MMiRRXR-3ndw@mail.gmail.com>
-Subject: Re: RFD: x32 ABI system call numbers
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752115Ab1IDWPS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 18:15:18 -0400
+Received: from mail-out2.uio.no ([129.240.10.58]:36431 "EHLO mail-out2.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751072Ab1IDWPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 18:15:14 -0400
+X-Greylist: delayed 1279 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Sep 2011 18:15:14 EDT
+From: Hans A Eide <h.a.eide@usit.uio.no>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Subject: IRQ balancing on Sandy Bridge?
+Date: Sun, 4 Sep 2011 23:53:53 +0200
+Message-Id: <7EEBACB7-6D3C-41CA-B685-E48D5AD0FAB6@usit.uio.no>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1244.3)
+X-Mailer: Apple Mail (2.1244.3)
+X-UiO-Ratelimit-Test: rcpts/h 17 msgs/h 9 sum rcpts/h 17 sum msgs/h 9 total rcpts 18423 max rcpts/h 35 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, TVD_RCVD_IP=0.001,UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: FE64A74FE7233001C099C164A326CFF430777F51
+X-UiO-SPAM-Test: remote_host: 84.49.236.242 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 9 total 3956 max/h 12 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 4, 2011 at 2:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 04 September 2011 14:25:53 H.J. Lu wrote:
->> >> >> #define __NR_x32_recvfrom
->> >> >> #define __NR_x32_sendmsg
->> >> >> #define __NR_x32_recvmsg
->> >> >> #define __NR_x32_recvmmsg
->> >> >> #define __NR_x32_sendmmsg
->> >> >
->> >> > These today use the MSG_CMSG_COMPAT flag to distinguish native and compat
->> >> > calls. Do you plan to have another flag here to handle cmsg time values?
->> >>
->> >> I am using x86-32 calls for them.
->> >>
->> >> > What about things like mq_{get,set}attr, quotactl and semtimedop?
->> >> >
->> >>
->> >> I am using 64bit system calls for x32.
->> >
->> > But isn't that broken? These all pass u64 or time_t values at some point.
->> >
->>
->> time_t isn't a problem since time_t/timeval/timespec are identical for
->> x32 and x86-64.  As for u64, I added NATIVE_LONG_TYPE, which is
->> defined as long long for x32,  and use it instead of long in types for
->> 64bit system calls.
->
-> Sorry, I misread you as saying you use the compat syscalls for these.
-> If you use the native 64 bit syscalls, you have the opposite problem:
-> Some network protocols (e.g. netlink or rxrpc) use other data structures
-> that require conversion, e.g. 'long' members that x32 will get wrong.
 
-For those, I use x86-32 calls.
+Hi, just a quick question I haven't been able to google:
 
-> For quotactl I guess you are right, using the 64 bit call instead
-> of the x86_32 call will just work on x32 like they do on other compat
-> architectures. The same should be true for semtimedop, I had misinterpreted
-> that one thinking that you would still need to convert struct sembuf
-> (you would need that on another architecture which uses 32 bit struct
-> alignment in one ABI but the other).
+/proc/interrupts on my SB i5-2500 desktop running kernels up to 3.1.0-rc4+
+tells me there is no IRQ balancing going on, like f.ex. on my Nehalem i5-660.
+Same config (basically std. Debian wheezy conf.)
 
-I make sure that x32  struct sembuf is identical to 64bit struct sembuf.
+Shouldn't there be IRQ balancing for SB or did I miss something?
 
-> For mq_{get,set}attr, I think you will either have to use the 32 bit
-> call or conditionally define struct mq_attr to contain 'long long'
-> members.
-
-I have
-
-struct mq_attr
-{
-  __SNATIVE_LONG_TYPE mq_flags;		/* Message queue flags.  */
-  __SNATIVE_LONG_TYPE mq_maxmsg;	/* Maximum number of messages.  */
-  __SNATIVE_LONG_TYPE mq_msgsize;	/* Maximum message size.  */
-  __SNATIVE_LONG_TYPE mq_curmsgs;	/* Number of messages currently queued.
- */
-  __SNATIVE_LONG_TYPE __pad[4];
-};
-
-__SNATIVE_LONG_TYPE is long long for x32.
+Thanks,
 
 
--- 
-H.J.
+Hans
+
+
+--
+Hans A Eide, PhD.
+Research Computing Services, USIT
+University of Oslo, Norway
+
+
+
