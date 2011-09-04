@@ -1,146 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab1IDNcn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 09:32:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35651 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252Ab1IDNcg (ORCPT
+	id S1754475Ab1IDNtf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 09:49:35 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:53316 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753252Ab1IDNt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 09:32:36 -0400
-Message-ID: <4E637DEC.5080507@infradead.org>
-Date: Sun, 04 Sep 2011 10:32:28 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Sun, 4 Sep 2011 09:49:29 -0400
+Date: Sun, 4 Sep 2011 09:49:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Lin Ming <mlin@ss.pku.edu.cn>
+cc: Dave Young <hidave.darkstar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [BUG] D state process after unplug and umount usb disk
+In-Reply-To: <CAF1ivSbuRiY6Q75LUTGV6tN=KrKfVYjTV3=rZ51EiZY==707Uw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1109040945370.9175-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "Ravi, Deepthy" <deepthy.ravi@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com> <201108241525.47332.laurent.pinchart@ideasonboard.com> <4E62A872.7070808@infradead.org> <201109041101.05028.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201109041101.05028.laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 04-09-2011 06:01, Laurent Pinchart escreveu:
-> Hi Mauro,
-> 
-> On Sunday 04 September 2011 00:21:38 Mauro Carvalho Chehab wrote:
->> Em 24-08-2011 10:25, Laurent Pinchart escreveu:
->>> On Wednesday 24 August 2011 14:19:01 Hiremath, Vaibhav wrote:
->>>> On Wednesday, August 24, 2011 5:00 PM Laurent Pinchart wrote:
->>>>> On Wednesday 24 August 2011 13:21:27 Ravi, Deepthy wrote:
->>>>>> On Wed, Aug 24, 2011 at 4:47 PM, Laurent Pinchart wrote:
->>>>>>> On Friday 19 August 2011 15:48:45 Deepthy Ravi wrote:
->>>>>>>> From: Vaibhav Hiremath <hvaibhav@ti.com>
->>>>>>>>
->>>>>>>> Fix the build break caused when CONFIG_MEDIA_CONTROLLER
->>>>>>>> option is disabled and if any sensor driver has to be used
->>>>>>>> between MC and non MC framework compatible devices.
->>>>>>>>
->>>>>>>> For example,if tvp514x video decoder driver migrated to
->>>>>>>> MC framework is being built without CONFIG_MEDIA_CONTROLLER
->>>>>>>> option enabled, the following error messages will result.
->>>>>>>> drivers/built-in.o: In function `tvp514x_remove':
->>>>>>>> drivers/media/video/tvp514x.c:1285: undefined reference to
->>>>>>>> `media_entity_cleanup'
->>>>>>>> drivers/built-in.o: In function `tvp514x_probe':
->>>>>>>> drivers/media/video/tvp514x.c:1237: undefined reference to
->>>>>>>> `media_entity_init'
->>>>>>>
->>>>>>> If the tvp514x is migrated to the MC framework, its Kconfig option
->>>>>>> should depend on MEDIA_CONTROLLER.
->>>>>>
->>>>>> The same TVP514x driver is being used for both MC and non MC
->>>>>> compatible devices, for example OMAP3 and AM35x. So if it is made
->>>>>> dependent on MEDIA CONTROLLER, we cannot enable the driver for MC
->>>>>> independent devices.
->>>>>
->>>>> Then you should use conditional compilation in the tvp514x driver
->>>>> itself. Or
->>>>
->>>> No. I am not in favor of conditional compilation in driver code.
->>>
->>> Actually, thinking some more about this, you should make the tvp514x
->>> driver depend on CONFIG_MEDIA_CONTROLLER unconditionally. This doesn't
->>> mean that the driver will become unusable by applications that are not
->>> MC-aware. Hosts/bridges don't have to export subdev nodes, they can just
->>> call subdev pad-level operations internally and let applications control
->>> the whole device through a single V4L2 video node.
->>>
->>>>> better, port the AM35x driver to the MC API.
->>>>
->>>> Why should we use MC if I have very simple device (like AM35x) which
->>>> only supports single path? I can very well use simple V4L2 sub-dev
->>>> based approach (master - slave), isn't it?
->>>
->>> The AM35x driver should use the in-kernel MC and V4L2 subdev APIs, but it
->>> doesn't have to expose them to userspace.
->>
->> I don't agree. If AM35x doesn't expose the MC API to userspace,
->> CONFIG_MEDIA_CONTROLLER should not be required at all.
->>
->> Also, according with the Linux best practices, when  #if tests for config
->> symbols are required, developers should put it into the header files, and
->> not inside the code, as it helps to improve code readability. From
->> Documentation/SubmittingPatches:
->>
->> 	2) #ifdefs are ugly
->>
->> 	Code cluttered with ifdefs is difficult to read and maintain.  Don't do
->> 	it.  Instead, put your ifdefs in a header, and conditionally define
->> 	'static inline' functions, or macros, which are used in the code.
->> 	Let the compiler optimize away the "no-op" case.
->>
->> So, this patch is perfectly fine on my eyes.
-> 
-> I'm sorry, but I don't agree.
-> 
-> Regarding the V4L2 subdev pad-level API, the goal is to convert all host and 
-> subdev drivers to it, so that's definitely the way to go. This does *not* mean 
-> that subdevs must expose a subdev device node. That's entirely optional. What 
-> I'm talking about is switching from video::*_mbus_fmt operations to pad::*_fmt 
-> operations. The pad-level format operations are very similar to video-level 
-> format operations, and more generic. Drivers shouldn't implement both.
+On Sun, 4 Sep 2011, Lin Ming wrote:
 
-I agree that implementing two ways for doing the same thing is a bad idea, 
-but especially since your idea is to convert all subdevs to it, this type 
-of conversion should not require enabling CONFIG_MEDIA_CONTROLLER, as this
-feature is used to enable the MC userspace API.
+> On Sat, Sep 3, 2011 at 6:31 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> > Hi,
+> >
+> > Known issue?
+> >
+> > Reproduce by:
+> > mount /dev/sdb2 /mnt/sdb2 -t ext3
+> > cat /mnt/sdb2/* >/dev/null
+> > unplug usb disk
+> > umount -f /mnt/sdb2
+> >
+> > dmesg as below:
 
-> Regarding the MC API, drivers are not required to register a media_device 
-> instance. I have no issue with that. However, drivers should initialized the 
-> subdev's embedded media_entity, as that's required by subdev pad-level 
-> operations to get the number of pads for a subdev.
+BTW, this may or may not be related:
 
-There are two solutions:
+https://bugzilla.kernel.org/show_bug.cgi?id=25832  (kernel crashes when 
+a mounted ext3/4 file system is physically removed)
 
-1) add some "fallback" method at the core to use the video::*_mbus_fmt way, when
-MC is disabled;
+> > [ 1440.567271] SysRq : Show Blocked State
+> > [ 1440.567278]   task                        PC stack   pid father
+> > [ 1440.567312] cat             D ffff880037a1e378  4296  2381   2310 0x00000004
+> > [ 1440.567320]  ffff88003cca5838 0000000000000046 ffff88003cca57e8
+> > ffffffff00000000
+> > [ 1440.567332]  00000000000134c0 00000000000134c0 00000000000134c0
+> > ffff880037a1e000
+> > [ 1440.567339]  00000000000134c0 ffff88003cca5fd8 00000000000134c0
+> > 00000000000134c0
+> > [ 1440.567347] Call Trace:
+> > [ 1440.567357]  [<ffffffff810c0468>] ? lock_page+0x2a/0x2a
+> > [ 1440.567363]  [<ffffffff815e452d>] io_schedule+0x5e/0x79
+> > [ 1440.567368]  [<ffffffff810c0471>] sleep_on_page+0x9/0xd
+> > [ 1440.567373]  [<ffffffff815e4adf>] __wait_on_bit_lock+0x41/0x8a
+> > [ 1440.567378]  [<ffffffff810c0437>] __lock_page+0x61/0x68
+> > [ 1440.567384]  [<ffffffff81058739>] ? autoremove_wake_function+0x34/0x34
+> > [ 1440.567390]  [<ffffffff8102f704>] ? should_resched+0x9/0x29
+> > [ 1440.567395]  [<ffffffff810c9b0b>] lock_page+0x25/0x29
+> > [ 1440.567400]  [<ffffffff810ca1ac>] truncate_inode_pages_range+0x2a6/0x32d
+> > [ 1440.567406]  [<ffffffff810ca240>] truncate_inode_pages+0xd/0xf
+> > [ 1440.567411]  [<ffffffff811642cf>] ext3_evict_inode+0xc9/0x1d7
+> > [ 1440.567417]  [<ffffffff8111288e>] evict+0xa3/0x15e
+> > [ 1440.567422]  [<ffffffff81112b34>] dispose_list+0x3d/0x49
+> > [ 1440.567426]  [<ffffffff81113475>] evict_inodes+0xf1/0x100
+> > [ 1440.567431]  [<ffffffff810ffd21>] generic_shutdown_super+0x47/0xc7
+> > [ 1440.567436]  [<ffffffff810ffdc3>] kill_block_super+0x22/0x65
+> > [ 1440.567441]  [<ffffffff811000da>] deactivate_locked_super+0x21/0x52
+> > [ 1440.567445]  [<ffffffff811009ab>] deactivate_super+0x35/0x39
+> > [ 1440.567452]  [<ffffffff81116395>] mntput_no_expire+0xcb/0xd0
+> > [ 1440.567457]  [<ffffffff811163bb>] mntput+0x21/0x23
+> > [ 1440.567461]  [<ffffffff810ff8e7>] fput+0x196/0x1a5
+> > [ 1440.567467]  [<ffffffff810fc7a1>] filp_close+0x6b/0x76
+> > [ 1440.567472]  [<ffffffff8103fa8a>] put_files_struct+0x73/0xd1
+> > [ 1440.567477]  [<ffffffff8103fb7b>] exit_files+0x46/0x4f
+> > [ 1440.567481]  [<ffffffff8103fe01>] do_exit+0x27d/0x7b3
+> > [ 1440.567487]  [<ffffffff8104d97f>] ? get_signal_to_deliver+0x81/0x4ac
+> > [ 1440.567493]  [<ffffffff812e5e27>] ? do_raw_spin_lock+0x6b/0x122
+> > [ 1440.567497]  [<ffffffff810405c5>] do_group_exit+0x7d/0xa8
+> > [ 1440.567502]  [<ffffffff8104dd8b>] get_signal_to_deliver+0x48d/0x4ac
+> > [ 1440.567509]  [<ffffffff81001ea2>] do_signal+0x39/0x600
+> > [ 1440.567514]  [<ffffffff810fdb37>] ? fsnotify_access+0x5d/0x65
+> > [ 1440.567519]  [<ffffffff810024a4>] do_notify_resume+0x27/0x69
+> > [ 1440.567524]  [<ffffffff812e158e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> > [ 1440.567529]  [<ffffffff815ecd63>] int_signal+0x12/0x17
 
-2) split the config options into two: one configurable by the user to enable
-the userspace MC API, and another, used internally that would select the MC
-internal API when drivers need it.
+> Where does this exit signal come from?
+> Does USB interrupt handler will send kill signal to all processes
+> accessing it when it's unplugged(by hand)?
 
-As your plan is to convert all drivers to the new way, (2) doesn't make much
-sense in long term, as, at the end, all drivers will be selecting it.
+The USB stack does not send any signals at all unless a process 
+specifically asks for them.
 
-Also, I don't like the idea of increasing drivers complexity for the existing
-drivers that work properly without MC. All those core conversions that were
-done in the last two years caused already too much instability to them.
+Alan Stern
 
-We should really avoid touching on them again for something that won't be
-adding any new feature nor fixing any known bug.
-> 
-> This will result in no modification to the userspace.
-> 
-
-Regards,
-Mauro
