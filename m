@@ -1,232 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab1IDVL2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 17:11:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:56463 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab1IDVLX (ORCPT
+	id S1753790Ab1IDVNw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 17:13:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59348 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab1IDVNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 17:11:23 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>
-Subject: RFC: PTRACE_SEIZE needs API cleanup?
-Date: Sun, 4 Sep 2011 23:11:18 +0200
-User-Agent: KMail/1.8.2
-Cc: linux-kernel@vger.kernel.org, dvlasenk@redhat.com
+	Sun, 4 Sep 2011 17:13:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: RFD: x32 ABI system call numbers
+Date: Sun, 04 Sep 2011 23:13:10 +0200
+Message-ID: <33733402.CzI6MIxaEn@wuerfel>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <CAMe9rOofkcOarfWE1PcHcgLwM+hKdTkXZZr4e_n3v-Avb+bN=g@mail.gmail.com>
+References: <4E582577.2060805@zytor.com> <1914350.DTEPrFeNfA@wuerfel> <CAMe9rOofkcOarfWE1PcHcgLwM+hKdTkXZZr4e_n3v-Avb+bN=g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201109042311.18793.vda.linux@googlemail.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:hgllUivN902pEO+4iB4Anprv9sIH4ULPCyGyNNhm3Kn
+ wwDCR8V7Ag3zgsITIc7DQ0cCM49f8IcNwnYtttHSP3rjmiy4UN
+ Ba7HGlqBe/tLDNyeOK4/bkLiqvo0w0+T6vK/AJ/z1UqY73UsLL
+ Y+uMmLQw2EMB06mbiNsrxD9yZec7dStfTy+2MHSiMLonsjhspX
+ DRupwmb6EujXz7ggpAsj0MNRww0G+zFsFzLWVmN50T65QJdd/I
+ MCoaex+XNlxmJ+2aGfyvksCa5Ke039ONT3xtinmjKX3eSXB4vb
+ eUIS4aMf5UNoaV1CaO7iTeKJXdfmUyxYEM3tP/J8mt/ZYU1r2U
+ iZxKB1B+RPFVhUan3MfI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Sunday 04 September 2011 12:31:25 H.J. Lu wrote:
+> On Sun, Sep 4, 2011 at 12:06 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> #define __NR_x32_ioctl
+> >
+> > What do you plan to do for ioctl? Does this mean you want to
+> > have a third file_operations pointer besides ioctl and compat_ioctl?
+> > I would hope that you manage this by using different ioctl command
+> > numbers in the few cases where the x32 version has to differ from
+> > the x86-32 data structure.
+> 
+> This requires some kernel changes since x32 has 32bit pointers and 64bit
+> time_t/timespec/timeval.   We can't use straight x86-32 nor x86-64.
 
-I added code to use PTRACE_SEIZE in strace and in the process
-had tasted how API looks like from userspace POV.
+I understand that it's not easy, but how do you want to get there?
+There is no central implementation of ioctl, it's all in the device drivers!
 
-It is usable, but API feels somewhat quirky.
+My point was that the part that you do control is the ABI for x32, so
+you can change the driver's header files to do things like
 
-Consider the following: one of reasons why we added PTRACE_SEIZE
-is that existing ptrace API has unnecessary complications
-(quirks) such as SIGSTOP on attach, SIGTRAP after execve.
+#ifndef __x32__
+struct foo_ioctl_data {
+	time_t	time;
+	long		something_else;
+	__u64		something_big;
+};
+#else
+struct foo_ioctl_data {
+	time_t	time;
+	long long	something_else;
+	__u64		something_big;
+};
+#endif
 
-But whoever designed strace did not deliberately designed these quirks in,
-he thought it was a good, reasonable design. Only after a second, third,
-tenth look it became obvious in retrospect that some things are
-not exactly right.
+#define FOO_IOCTL_BAR _IOR('f', 0, struct foo_ioctl_data)
 
-Thankfully, quirks in new PTRACE_SEIZE code mostly have the nature of
-"unnecessarily invented entities" as opposed to problems
-in trying to use API in real world tasks, but I still think they are
-annoying enough to be looked at.
+#ifdef __KERNEL__
+struct compat_foo_ioctl_data {
+	compat_time_t	time;
+	compat_long_t	something_else;
+	compat_u64		something_big;
+};
+#define FOO_IOCTL32_BAR _IOR('f', 0, struct compat_foo_ioctl_data)
 
+static long foo_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	void __user *uptr = compat_ptr(arg)
 
-We already have a mechanism how to modify ptrace behavior: ptrace options.
-But now we introduce a different mechnism to do the same: by using SEIZE
-instead of ATTACH, we magically change some aspects of ptrace.
-In effect, SEIZE sets some options. And these "SEIZE options" can't be
-set or cleared by SETOPTIONS. This is stupid. Why can't we just add
-more options instead of inventing new entities? Why we overloaded
-SEIZE with two functions: "attach to, but don't SIGSTOP the tracee"
-and "change behaviour of ptrace on this tracee"?
-
-If the argument is that we want to set options immediately at attach,
-then I completely agree: yes, we do! Moreover, we want to set some
-_ordinary_ options too, such as PTRACE_O_TRACEEXEC, and we can't
-do that even now, in improved API! It needs more improving.
-
-So my proposal is:
-(a) make SEIZE take a parameter "immediately set these options on attach"
-(b) without any options, make SEIZE just do "ATTACH sans SIGSTOP" thing,
-    nothing more.
-(c) make the following new PTRACE_O_foo options:
-   (1) "flag stops with PTRACE_EVENT_STOP event value in waitpid status"
-   (2) "enable PTRACE_INTERRUPT. It either causes PTRACE_EVENT_STOP with sig=SIGTRAP
-        if (1) is enabled, or creates a group-stop with sig=SIGTRAP otherwise"
-       [if the second part is too weird to implement, make (2) require (1)]
-   (3) "enable PTRACE_LISTEN. Works on group-stops even without any other options"
-   (4) "make auto-attached children stop a-la INTERRUPT, not with SIGSTOP"
-   (5) "enable saner error codes"
-(d) Remove magic hidden 'I was SEIZEd, not ATTACHed' bit in kernel code.
-    Use bits 1,2,3,4 instead of it.
-(e) Make these bits settable with SETOPTIONS too, to keep API complete.
-
-In strace, I already implicitly use 1,2,3,4. With this proposal, I'd use
-all five, *explicitly*, and also use at least PTRACE_O_TRACEEXEC,
-to avoid the possibility SEIZE races with execve and we get that pesky SIGTRAP.
-Something along the lines:
-
-	ptrace(PTRACE_SEIZE, pid, 0,
-		PTRACE_O_TRACEEXEC
-		| PTRACE_O_TRACESTOP      /* (1) */
-		| PTRACE_O_TRACEINTERRUPT /* (2) */
-		| PTRACE_O_TRACELISTEN    /* (3) */
-		| PTRACE_O_TRACECHILDSTOP /* (4) */
-		| PTRACE_O_TRACEERRCODES  /* (5) */
-	);
-
-This will remove the need to set options on first ptrace stop.
-
-This will remove the asymmetry we just introduced in current SEIZE code:
-PTRACE_EVENT_STOP is the only event code which has no corresponding
-PTRACE_O_TRACESTOP option - situation which Occam disapproves.
-
-
-In fact, I am unsure why the new ops (points 2 and 3 above) need enabling.
-Maybe they can be simply be always allowed? Let's see...
-
-Re PTRACE_INTERRUPT: "old-style" check for group-stop,
-namely, "if ptrace(PTRACE_GETSIGINFO) fails, then it's group-stop",
-works just fine, therefore, from userspace POV there is no apparent reason
-why PTRACE_INTERRUPT can't work without "flag stops with PTRACE_EVENT_STOP"
-thingy: in this case it can create an
-"WIFSTOPPED(status) = true, ptrace(PTRACE_GETSIGINFO) fails"
-event which is detectable in userspace. PTRACE_EVENT_STOP is not needed for this,
-it's just a "nice to have" thing (it saves one ptrace call).
-
-Re PTRACE_LISTEN: similarly to above, we _do_ know when we are in
-group-stop, even without (1) "flag stops with PTRACE_EVENT_STOP" thingy.
-Therefore we do know when PTRACE_LISTEN makes sense.
-Moreover, we can make it so that kernel errors out if PTRACE_LISTEN
-is used in a ptrace stop of a wrong kind.
-
-
-Just to let you see the relevant userspace code which made me think about
-the above issues, here is abridged version of main waitpid loop in strace.
-Note that it is coded in a way that it works both on SEIZE-enabled
-kernels and on old kernels, which have no SEIZE and friends.
-"use_seize" variable is set if we are on a SEIZE-enabled kernel:
-
-	while (nprocs != 0) {
-		pid = waitpid(-1, &status, __WALL);
-		if (pid < 0) ...
-
-		/* Look up 'pid' in our table of known tracees */
-		tcp = pid2tcb(pid);
-		if (tcp == NULL) {  /* Not found. It's auto-attached child */
-			tcp = alloctcb(pid);
-// post_attach_sigstop is == 0 if use_seize, or == TCB_IGNORE_ONE_SIGSTOP otherwise
-// Basically, it's "do we expect to filter out one SIGSTOP"?
-			tcp->flags |= TCB_ATTACHED | TCB_STARTUP | post_attach_sigstop;
-		}
-
-		if (WIFSIGNALED(status)) {
-			...
-			continue;
-		}
-		if (WIFEXITED(status)) {
-			...
-			continue;
-		}
-		if (!WIFSTOPPED(status)) ... /* error, should not happen */
-
-		/* Is this the very first time we see this tracee stopped? */
-		if (tcp->flags & TCB_STARTUP) {
-			tcp->flags &= ~TCB_STARTUP;
-			if (ptrace(PTRACE_SETOPTIONS, tcp->pid, NULL, ptrace_setoptions) < 0)
-				if (errno != ESRCH)
-					perror_msg_and_die("PTRACE_SETOPTIONS");
-		}
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-this if() will not be needed if we set options on attach!
-
-		sig = WSTOPSIG(status);
-
-		if (((unsigned)status >> 16) != 0) { /* Ptrace event */
-			unsigned ev = (unsigned)status >> 16;
-			if (ev == PTRACE_EVENT_STOP && sig != SIGTRAP) {
-					stopped = 1;
-					goto show_stopsig;
-				}
-			}
-			goto restart_tracee_with_sig_0;
-		}
-
-		/* Is this post-attach SIGSTOP?
-		 * Interestingly, the process may stop
-		 * with STOPSIG equal to some other signal
-		 * than SIGSTOP if we happend to attach
-		 * just before the process takes a signal.
-		 */
-		if (sig == SIGSTOP && (tcp->flags & TCB_IGNORE_ONE_SIGSTOP)) {
-			tcp->flags &= ~TCB_IGNORE_ONE_SIGSTOP;
-			goto restart_tracee_with_sig_0;
-		}
-
-		if (sig != syscall_trap_sig) {
-			siginfo_t si;
-
-			/* Nonzero (true) if tracee is stopped by signal
-			 * (as opposed to "tracee received signal") */
-			stopped = ptrace(PTRACE_GETSIGINFO, pid, 0, &si);
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-here is how we determine whether it is group-stop or signal-delivery stop
-for the "we didn't use SEIZE" case (if we used SEIZE, we would not
-come here on group-stop: see ev == PTRACE_EVENT_STOP check
-and "goto show_stopsig" above).
-
- show_stopsig:
-			if (cflag != CFLAG_ONLY_STATS && (qual_flags[sig] & QUAL_SIGNAL)) {
-				printleader(tcp);
-				if (!stopped) {
-					tprints("--- ");
-					printsiginfo(&si, verbose(tcp));
-				} else
-					tprintf("--- stopped by %s ---", signame(sig));
-				printtrailer();
-			}
-
-...and here we decide to use either PTRACE_SYSCALL or PTRACE_LISTEN,
-_based on the value of "stopped" variable_. Here we PTRACE_LISTEN only if
-use_seize is true, but we use that flag only as indicator "this is a new kernel".
-It's easy to see that there are no intrisic reasons
-why it can't also work on newer kernels, but after using old-style ATTACH.
-vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-			if (!stopped)  /* It's signal-delivery-stop. Inject the signal */
-				goto restart_tracee;
-
-			/* It's group-stop */
-			if (use_seize) {
-				/* This ends ptrace-stop, but does _not_ end group-stop */
-				if (ptrace_restart(PTRACE_LISTEN, tcp, 0) < 0) ... /* err, doesn't happen */
-				continue;
-			}
-			/* Old kernel, no support for PTRACE_LISTEN */
-			goto restart_tracee;
-		}
-
-		/* This is syscall entry or exit */
-		if (trace_syscall(tcp) < 0 && !tcp->ptrace_errno) {
-			...drop this tracee, it died...
-			continue;
-		}
-
- restart_tracee_with_sig_0:
-		sig = 0;
- restart_tracee:
-		if (ptrace_restart(PTRACE_SYSCALL, tcp, sig) < 0) ... /* err, doesn't happen */
+	switch (cmd) {
+		case FOO_IOCTL32_BAR: /* regular compat case */
+			return foo_compat_ioctl_bar(filp, uptr);
+		case FOO_IOCTL_BAR: /* x32 passing native struct */
+			return foo_ioctl_bar(filp, uptr);
 	}
+	return -ENOIOCTLCMD;
+}
+
+This way, the same compat_ioctl function can easily support both x86-32 and
+x32. In fact, many compat_ioctl handlers already contain two code paths for the
+compat_u64 case, where they fall back on the native handler for anything but x86.
+
+> >> #define __NR_x32_recvfrom
+> >> #define __NR_x32_sendmsg
+> >> #define __NR_x32_recvmsg
+> >> #define __NR_x32_recvmmsg
+> >> #define __NR_x32_sendmmsg
+> >
+> > These today use the MSG_CMSG_COMPAT flag to distinguish native and compat
+> > calls. Do you plan to have another flag here to handle cmsg time values?
+> 
+> I am using x86-32 calls for them.
+>
+> > What about things like mq_{get,set}attr, quotactl and semtimedop?
+> >
+> 
+> I am using 64bit system calls for x32.
+
+But isn't that broken? These all pass u64 or time_t values at some point.
+
+	Arnd 
