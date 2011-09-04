@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab1IDENL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 00:13:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56168 "EHLO mga03.intel.com"
+	id S1751914Ab1IDF3R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 01:29:17 -0400
+Received: from mail.cis.rv.ua ([193.108.129.50]:61075 "EHLO mail.cis.rv.ua"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab1IDENI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 00:13:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,326,1312182000"; 
-   d="scan'208";a="45389820"
-Date: Sun, 4 Sep 2011 12:13:05 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Jens Axboe <jaxboe@fusionio.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] mm: Cleanup clearing of BDI_pending bit in
- bdi_forker_thread()
-Message-ID: <20110904041305.GA25981@localhost>
-References: <1315004059-9844-1-git-send-email-jack@suse.cz>
- <1315004059-9844-2-git-send-email-jack@suse.cz>
- <20110904030442.GA16361@localhost>
+	id S1751374Ab1IDF3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 01:29:15 -0400
+X-Greylist: delayed 1802 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Sep 2011 01:29:15 EDT
+Message-ID: <1497.82.128.14.88.1315112225.squirrel@mail.cis.rv.ua>
+Date: Sun, 4 Sep 2011 07:57:05 +0300 (EEST)
+Subject: Jackpot Joy!
+From: "Microsoft Award." <INFO@MIC.NET>
+Reply-To: microclaimsprocessinguint@live.com
+User-Agent: SquirrelMail/1.4.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110904030442.GA16361@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=windows-1251
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: INFO@MIC.NET
+X-SA-Exim-Scanned: No (on mail.cis.rv.ua); SAEximRunCond expanded to false
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 04, 2011 at 11:04:42AM +0800, Wu Fengguang wrote:
-> On Sat, Sep 03, 2011 at 06:54:18AM +0800, Jan Kara wrote:
-> > bdi_forker_thread() clears BDI_pending bit at the end of the main loop.
-> > However clearing of this bit must not be done in some cases which is handled by
-> > calling 'continue' from switch statement. That's kind of unusual construct and
-> > without a good reason so change the function into more intuitive code flow.
-> > 
-> > CC: Wu Fengguang <fengguang.wu@intel.com>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> 
-> It's pure code refactor.
-> 
-> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+Congratulations You have just won(five Hundred Thousand Pounds)Ticket
+Number 56475600545 188,in the ongoing Microsoft Award.UK Edition A
+blackberry Phone and Apple Laptop. A winning draft will be  issued,Contact
+Mrs.Ana Louis at, microclaimsprocessinguint@live.com ,Tel+44-702-402-9332.
 
-But I do suspect it will slightly increase the code size.
-What do you think?
+Form Claims Full Names:
+Address:
+Phone Number:
+Sex:
+Age:
+Occupation:
+Country of Residence:
 
-Thanks,
-Fengguang
+
