@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab1IDJex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 05:34:53 -0400
-Received: from mail-out2.unisa.it ([193.205.162.136]:15242 "EHLO fe03.unisa.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752974Ab1IDJet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 05:34:49 -0400
-X-Greylist: delayed 119651 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Sep 2011 05:34:49 EDT
-Message-Id: <201109030017.p830HEBZ007183@fe02.unisa.it>
-Reply-To: <lwc-cheung-help03@mhost2.net>
-From: "LEUNG Cheung" <cheunghelp003@mhost2.net>
-Subject: Business, reply needed.
-Date: Sat, 3 Sep 2011 08:17:22 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 100211-0, 02/11/2010), Outbound message
-X-Antivirus-Status: Clean
-To: unlisted-recipients:; (no To-header on input)
+	id S1753782Ab1IDK0R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 06:26:17 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:36226 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab1IDK0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 06:26:11 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        o.hartmann@telovital.com
+Subject: [PATCH 00/12] staging: et131x: Following mvoe to use phydev, remove detritus 
+Date: Sun,  4 Sep 2011 11:24:31 +0100
+Message-Id: <1315131883-11068-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, I am sending you this brief letter to solicit your assistance and partnership to transfer the sum of 
-2.5 million U.S Dollars from Hong Kong to your country. We shall share in the ratio of 40/60 which means 
-40% for you and 60% form me as the sole initiator of the business. I shall provide you the relevant information 
-about this business when I receive a positive response from you. Please reply for more details and procedures.
+These changes make a big cleanup of the PHY driver code, and removing stuff that isn't (hopefully) relevant anymore.  
 
-Thanks,
-Mr. LEUNG Cheung 
+Mark Einon (12):
+staging: et131x: Remove private adapter->linkspeed and
+staging: et131x: Remove private adapter->duplex_mode
+staging: et131x: Remove redundant struct adapter
+staging: et131x: Remove PHY interrupt handling code
+staging: et131x: remove calls to
+staging: et131x: Remove registry_rx_mem_end from
+staging: et131x: Remove cached_mask_value from
+staging: et131x: Remove duplicated register defines
+staging: et131x: Replace magic numbers in et1310_phy.c
+staging: et131x: Remove struct mi_regs from
+staging: et131x: Remove ai_force_[duplex|speed] from
+staging: et131x: Update README file
+
+ drivers/staging/et131x/README           |    2 -
+ drivers/staging/et131x/et1310_mac.c     |   15 ++-
+ drivers/staging/et131x/et1310_phy.c     |  105 ++++++++++-------------
+ drivers/staging/et131x/et1310_phy.h     |  143 +++++++++++++++----------------
+ drivers/staging/et131x/et1310_rx.c      |    9 ++-
+ drivers/staging/et131x/et1310_tx.c      |    6 +-
+ drivers/staging/et131x/et131x_adapter.h |   13 ---
+ drivers/staging/et131x/et131x_initpci.c |   16 ++--
+ drivers/staging/et131x/et131x_isr.c     |   40 ---------
+ 9 files changed, 143 insertions(+), 206 deletions(-)
+
