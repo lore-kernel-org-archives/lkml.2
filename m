@@ -1,112 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1IDCNy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 22:13:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49417 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752876Ab1IDCN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 22:13:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,326,1312182000"; 
-   d="scan'208";a="45377073"
-Message-Id: <20110904020915.664827035@intel.com>
-User-Agent: quilt/0.48-1
-Date: Sun, 04 Sep 2011 09:53:13 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-to: <linux-fsdevel@vger.kernel.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Wu Fengguang <fengguang.wu@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>
-CC: Christoph Hellwig <hch@lst.de>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Greg Thelen <gthelen@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-CC: Vivek Goyal <vgoyal@redhat.com>
-CC: Andrea Righi <arighi@develer.com>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 08/18] writeback: trace dirty_ratelimit
-References: <20110904015305.367445271@intel.com>
-Content-Disposition: inline; filename=writeback-trace-throttle-bandwidth.patch
+	id S1753128Ab1IDCmy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 22:42:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41938 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab1IDCmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 22:42:53 -0400
+Date: Sun, 4 Sep 2011 11:42:44 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Amit Shah <amit.shah@redhat.com>,
+        David Zeuthen <zeuthen@gmail.com>,
+        Martin Pitt <martin.pitt@ubuntu.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        Jean Schurger <jean@schurger.org>,
+        Jan =?iso-8859-1?Q?L=FCbbe?= <jluebbe@debian.org>,
+        Matthijs Kooijman <matthijs@stdin.nl>,
+        Jameson Graef Rollins <jrollins@finestructure.net>,
+        Nacho Barrientos Arias <nacho@debian.org>
+Subject: Re: [regression] CD-ROM polling blocks suspend on some machines (Re:
+ [PATCH 1/2] cdrom: always check_disk_change() on open)
+Message-ID: <20110904024244.GB3083@htj.dyndns.org>
+References: <20110406121920.GC4142@mtj.dyndns.org>
+ <20110903221456.GA2877@elie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110903221456.GA2877@elie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It helps understand how various throttle bandwidths are updated.
+Hello,
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/trace/events/writeback.h |   46 +++++++++++++++++++++++++++++
- mm/page-writeback.c              |    3 +
- 2 files changed, 49 insertions(+)
+On Sat, Sep 03, 2011 at 05:14:56PM -0500, Jonathan Nieder wrote:
+> Various people[1] have been noticing a race (or races?) in which the
+> cdrom_id and scsi_id programs from udev can get stuck in the D state
+> if udev doesn't sleep a little while before running them.  This
+> prevents the machine from suspending.  The problem was discovered with
+> Debian kernels
+> 
+>   2.6.39-1
+>   2.6.39-2
+>   3.0.0-1
+> 
+> and was not experienced with kernel
+> 
+>   2.6.38-5
+> 
+> (These kernels are closely based on v2.6.39, v2.6.39.1, v3.0, and
+> v2.6.38.5, respectively.)  Reverting commit bf2253a6f00e (cdrom:
+> always check_disk_change() on open, 2011-04-29) seems to avoid
+> trouble.
+> 
+> One common theme seems to be DVD drives.  Details at [1].
+> 
+> Known problem?  Any ideas for tracking it down?
 
---- linux-next.orig/mm/page-writeback.c	2011-08-29 19:51:30.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-08-29 19:52:11.000000000 +0800
-@@ -864,6 +864,9 @@ static void bdi_update_dirty_ratelimit(s
- 		dirty_ratelimit -= step;
- 
- 	bdi->dirty_ratelimit = max(dirty_ratelimit, 1UL);
-+
-+	trace_dirty_ratelimit(bdi, dirty_rate, task_ratelimit,
-+			      balanced_dirty_ratelimit);
- }
- 
- void __bdi_update_bandwidth(struct backing_dev_info *bdi,
---- linux-next.orig/include/trace/events/writeback.h	2011-08-29 19:51:30.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-08-29 19:52:11.000000000 +0800
-@@ -226,6 +226,52 @@ TRACE_EVENT(global_dirty_state,
- 	)
- );
- 
-+#define KBps(x)			((x) << (PAGE_SHIFT - 10))
-+
-+TRACE_EVENT(dirty_ratelimit,
-+
-+	TP_PROTO(struct backing_dev_info *bdi,
-+		 unsigned long dirty_rate,
-+		 unsigned long task_ratelimit,
-+		 unsigned long balanced_dirty_ratelimit),
-+
-+	TP_ARGS(bdi, dirty_rate, task_ratelimit, balanced_dirty_ratelimit),
-+
-+	TP_STRUCT__entry(
-+		__array(char,		bdi, 32)
-+		__field(unsigned long,	write_bw)
-+		__field(unsigned long,	avg_write_bw)
-+		__field(unsigned long,	dirty_rate)
-+		__field(unsigned long,	dirty_ratelimit)
-+		__field(unsigned long,	task_ratelimit)
-+		__field(unsigned long,	balanced_dirty_ratelimit)
-+	),
-+
-+	TP_fast_assign(
-+		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
-+		__entry->write_bw	= KBps(bdi->write_bandwidth);
-+		__entry->avg_write_bw	= KBps(bdi->avg_write_bandwidth);
-+		__entry->dirty_rate	= KBps(dirty_rate);
-+		__entry->dirty_ratelimit = KBps(bdi->dirty_ratelimit);
-+		__entry->task_ratelimit	= KBps(task_ratelimit);
-+		__entry->balanced_dirty_ratelimit =
-+					  KBps(balanced_dirty_ratelimit);
-+	),
-+
-+	TP_printk("bdi %s: "
-+		  "write_bw=%lu awrite_bw=%lu dirty_rate=%lu "
-+		  "dirty_ratelimit=%lu task_ratelimit=%lu "
-+		  "balanced_dirty_ratelimit=%lu",
-+		  __entry->bdi,
-+		  __entry->write_bw,		/* write bandwidth */
-+		  __entry->avg_write_bw,	/* avg write bandwidth */
-+		  __entry->dirty_rate,		/* bdi dirty rate */
-+		  __entry->dirty_ratelimit,	/* base ratelimit */
-+		  __entry->task_ratelimit, /* ratelimit with position control */
-+		  __entry->balanced_dirty_ratelimit /* the balanced ratelimit */
-+	)
-+);
-+
- DECLARE_EVENT_CLASS(writeback_congest_waited_template,
- 
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+Can you please build vanilla kernel with CONFIG_FRAME_POINTER turned
+on, reproduce the problem and attach full dmesg output?
 
+Thanks.
 
+-- 
+tejun
