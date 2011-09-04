@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab1IDK15 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 06:27:57 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:45915 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113Ab1IDK1A (ORCPT
+	id S1754477Ab1IDK2R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 06:28:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33421 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab1IDK03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 06:27:00 -0400
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Avi Kivity <avi@redhat.com>, <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: [PATCH] parse-events: Allow expressions in __print_symbolic() fields
-Date: Sun,  4 Sep 2011 11:25:59 +0100
-Message-Id: <1315131959-7452-1-git-send-email-stefanha@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 4 Sep 2011 06:26:29 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 10/12] staging: et131x: Remove struct mi_regs from et1310_phy.h
+Date: Sun,  4 Sep 2011 11:24:41 +0100
+Message-Id: <1315131883-11068-11-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1315131883-11068-1-git-send-email-mark.einon@gmail.com>
+References: <1315131883-11068-1-git-send-email-mark.einon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __print_symbolic() function takes a sequence of key-value pairs for
-pretty-printing a constant.  The new kvm:kvm_exit print fmt uses the
-expression:
+This structure is no longer used, and references registers defined in mii.h and other parts of et1310_phy.h
 
-  __print_symbolic(..., { 0x040 + 1, "DB excp" }, ...)
-
-Currently only atoms are supported and this print fmt fails to parse.
-This patch adds support for expressions instead of just atoms so that
-0x040 + 1 is parsed successfully.
-
-Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- parse-events.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/staging/et131x/et1310_phy.h |   34 +++++-----------------------------
+ 1 files changed, 5 insertions(+), 29 deletions(-)
 
-diff --git a/parse-events.c b/parse-events.c
-index 1cdc3a9..e9b7e7d 100644
---- a/parse-events.c
-+++ b/parse-events.c
-@@ -2110,6 +2110,13 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+diff --git a/drivers/staging/et131x/et1310_phy.h b/drivers/staging/et131x/et1310_phy.h
+index 104008e..82037ac 100644
+--- a/drivers/staging/et131x/et1310_phy.h
++++ b/drivers/staging/et131x/et1310_phy.h
+@@ -61,6 +61,11 @@
  
- 		free_token(token);
- 		type = process_arg(event, arg, &token);
+ #include "et1310_address_map.h"
+ 
++/*
++ * Defines for generic MII registers 0x00 -> 0x0F can be found in
++ * include/linux/mii.h
++ */
 +
-+		if (type == EVENT_OP)
-+			type = process_op(event, arg, &token);
-+
-+		if (type == EVENT_ERROR)
-+			goto out_free;
-+
- 		if (test_type_token(type, token, EVENT_DELIM, ","))
- 			goto out_free;
+ /* some defines for modem registers that seem to be 'reserved' */
+ #define PHY_INDEX_REG              0x10
+ #define PHY_DATA_REG               0x11
+@@ -80,35 +85,6 @@
+ 					/* TRU_VMI_LINK_CONTROL_REG       29 */
+ 					/* TRU_VMI_TIMING_CONTROL_REG        */
+ 
+-/* PHY Register Mapping(MI) Management Interface Regs */
+-struct mi_regs {
+-	u8 bmcr;	/* Basic mode control reg(Reg 0x00) */
+-	u8 bmsr;	/* Basic mode status reg(Reg 0x01) */
+-	u8 idr1;	/* Phy identifier reg 1(Reg 0x02) */
+-	u8 idr2;	/* Phy identifier reg 2(Reg 0x03) */
+-	u8 anar;	/* Auto-Negotiation advertisement(Reg 0x04) */
+-	u8 anlpar;	/* Auto-Negotiation link Partner Ability(Reg 0x05) */
+-	u8 aner;	/* Auto-Negotiation expansion reg(Reg 0x06) */
+-	u8 annptr;	/* Auto-Negotiation next page transmit reg(Reg 0x07) */
+-	u8 lpnpr;	/* link partner next page reg(Reg 0x08) */
+-	u8 gcr;		/* Gigabit basic mode control reg(Reg 0x09) */
+-	u8 gsr;		/* Gigabit basic mode status reg(Reg 0x0A) */
+-	u8 mi_res1[4];	/* Future use by MI working group(Reg 0x0B - 0x0E) */
+-	u8 esr;		/* Extended status reg(Reg 0x0F) */
+-	u8 mi_res2[3];	/* Future use by MI working group(Reg 0x10 - 0x12) */
+-	u8 loop_ctl;	/* Loopback Control Reg(Reg 0x13) */
+-	u8 mi_res3;	/* Future use by MI working group(Reg 0x14) */
+-	u8 mcr;		/* MI Control Reg(Reg 0x15) */
+-	u8 pcr;		/* Configuration Reg(Reg 0x16) */
+-	u8 phy_ctl;	/* PHY Control Reg(Reg 0x17) */
+-	u8 imr;		/* Interrupt Mask Reg(Reg 0x18) */
+-	u8 isr;		/* Interrupt Status Reg(Reg 0x19) */
+-	u8 psr;		/* PHY Status Reg(Reg 0x1A) */
+-	u8 lcr1;	/* LED Control 1 Reg(Reg 0x1B) */
+-	u8 lcr2;	/* LED Control 2 Reg(Reg 0x1C) */
+-	u8 mi_res4[3];	/* Future use by MI working group(Reg 0x1D - 0x1F) */
+-};
+-
+ /* MI Register 10: Gigabit basic mode status reg(Reg 0x0A) */
+ #define ET_1000BT_MSTR_SLV 0x4000
  
 -- 
-1.7.5.4
+1.7.6
 
