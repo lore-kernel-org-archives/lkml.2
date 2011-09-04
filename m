@@ -1,250 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab1IDXhE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 19:37:04 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:51059 "EHLO e9.ny.us.ibm.com"
+	id S1753490Ab1IDXjB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 19:39:01 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46532 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752568Ab1IDXgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 19:36:55 -0400
-Date: Sun, 4 Sep 2011 16:36:43 -0700
+	id S1752568Ab1IDXi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 19:38:56 -0400
+Date: Sun, 4 Sep 2011 16:38:46 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 1/4] nohz: Split extended quiescent state handling from
- nohz switch
-Message-ID: <20110904233643.GN2411@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 4/4] rcu: Fix early call to rcu_irq_exit()
+Message-ID: <20110904233846.GO2411@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
 References: <1313861452-24783-1-git-send-email-fweisbec@gmail.com>
- <1313861452-24783-2-git-send-email-fweisbec@gmail.com>
+ <1313861452-24783-5-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1313861452-24783-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1313861452-24783-5-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 20, 2011 at 07:30:49PM +0200, Frederic Weisbecker wrote:
-> It is assumed that rcu won't be used once we switch to tickless
-> mode and until we restart the tick. However this is not always
-> true, as in x86-64 where we dereference the idle notifiers after
-> the tick is stopped.
+On Sat, Aug 20, 2011 at 07:30:52PM +0200, Frederic Weisbecker wrote:
+> On the irq exit path, tick_nohz_stop_sched_tick()
+> may raise a softirq, which action leads to the wake up
+> path and select_task_rq_fair() that makes use of rcu
+> to iterate the domains.
 > 
-> To prepare for fixing this, split the tickless mode switching and
-> RCU extended quiescent state logics.
-> Make tick_nohz_stop/restart_sched_tick() RCU agnostic but provide
-> a new pair of APIs tick_nohz_enter/exit_idle() that keep the
-> old behaviour by handling both the nohz mode and RCU extended
-> quiescent states, then convert every archs to use these.
+> This is an illegal use of RCU because we may be in dyntick
+> idle mode:
+
+The rest of these look good!
+
+							Thanx, Paul
+
+> [  132.978883] ===============================
+> [  132.978883] [ INFO: suspicious RCU usage. ]
+> [  132.978883] -------------------------------
+> [  132.978883] kernel/sched_fair.c:1707 suspicious rcu_dereference_check() usage!
+> [  132.978883]
+> [  132.978883] other info that might help us debug this:
+> [  132.978883]
+> [  132.978883]
+> [  132.978883] rcu_scheduler_active = 1, debug_locks = 0
+> [  132.978883] RCU used illegally from extended quiescent state!
+> [  132.978883] 2 locks held by swapper/0:
+> [  132.978883]  #0:  (&p->pi_lock){-.-.-.}, at: [<ffffffff8105a729>] try_to_wake_up+0x39/0x2f0
+> [  132.978883]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8105556a>] select_task_rq_fair+0x6a/0xec0
+> [  132.978883]
+> [  132.978883] stack backtrace:
+> [  132.978883] Pid: 0, comm: swapper Tainted: G        W   3.0.0+ #178
+> [  132.978883] Call Trace:
+> [  132.978883]  <IRQ>  [<ffffffff810a01f6>] lockdep_rcu_suspicious+0xe6/0x100
+> [  132.978883]  [<ffffffff81055c49>] select_task_rq_fair+0x749/0xec0
+> [  132.978883]  [<ffffffff8105556a>] ? select_task_rq_fair+0x6a/0xec0
+> [  132.978883]  [<ffffffff812fe494>] ? do_raw_spin_lock+0x54/0x150
+> [  132.978883]  [<ffffffff810a1f2d>] ? trace_hardirqs_on+0xd/0x10
+> [  132.978883]  [<ffffffff8105a7c3>] try_to_wake_up+0xd3/0x2f0
+> [  132.978883]  [<ffffffff81094f98>] ? ktime_get+0x68/0xf0
+> [  132.978883]  [<ffffffff8105aa35>] wake_up_process+0x15/0x20
+> [  132.978883]  [<ffffffff81069dd5>] raise_softirq_irqoff+0x65/0x110
+> [  132.978883]  [<ffffffff8108eb65>] __hrtimer_start_range_ns+0x415/0x5a0
+> [  132.978883]  [<ffffffff812fe3ee>] ? do_raw_spin_unlock+0x5e/0xb0
+> [  132.978883]  [<ffffffff8108ed08>] hrtimer_start+0x18/0x20
+> [  132.978883]  [<ffffffff8109c9c3>] tick_nohz_stop_sched_tick+0x393/0x450
+> [  132.978883]  [<ffffffff810694f2>] irq_exit+0xd2/0x100
+> [  132.978883]  [<ffffffff81829e96>] do_IRQ+0x66/0xe0
+> [  132.978883]  [<ffffffff81820d53>] common_interrupt+0x13/0x13
+> [  132.978883]  <EOI>  [<ffffffff8103434b>] ? native_safe_halt+0xb/0x10
+> [  132.978883]  [<ffffffff810a1f2d>] ? trace_hardirqs_on+0xd/0x10
+> [  132.978883]  [<ffffffff810144ea>] default_idle+0xba/0x370
+> [  132.978883]  [<ffffffff810147fe>] amd_e400_idle+0x5e/0x130
+> [  132.978883]  [<ffffffff8100a9f6>] cpu_idle+0xb6/0x120
+> [  132.978883]  [<ffffffff817f217f>] rest_init+0xef/0x150
+> [  132.978883]  [<ffffffff817f20e2>] ? rest_init+0x52/0x150
+> [  132.978883]  [<ffffffff81ed9cf3>] start_kernel+0x3da/0x3e5
+> [  132.978883]  [<ffffffff81ed9346>] x86_64_start_reservations+0x131/0x135
+> [  132.978883]  [<ffffffff81ed944d>] x86_64_start_kernel+0x103/0x112
 > 
-> Archs that want to switch to RCU extended QS to some custom points
-> can do it later by changing the parameter in tick_nohz_enter,exit_idle()
-> to false and call rcu_enter,exit() separately.
-
-This approach looks quite good to me!  A few comments below.
-
+> Fix this by calling rcu_irq_exit() after tick_nohz_stop_sched_tick().
+> 
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
 > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > ---
-
-[ . . . ]
-
-> diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
-> index 39a2baa..b30ddf1 100644
-> --- a/arch/powerpc/kernel/idle.c
-> +++ b/arch/powerpc/kernel/idle.c
-> @@ -56,7 +56,7 @@ void cpu_idle(void)
+>  kernel/softirq.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
->  	set_thread_flag(TIF_POLLING_NRFLAG);
->  	while (1) {
-> -		tick_nohz_stop_sched_tick(1);
-> +		tick_nohz_enter_idle(true);
-
-This needs to pass false, as some variants of powerpc use event tracing
-(which in turn uses RCU) just before returning to the hypervisor.
-
->  		while (!need_resched() && !cpu_should_die()) {
->  			ppc64_runlatch_off();
+> diff --git a/kernel/softirq.c b/kernel/softirq.c
+> index fca82c3..d4047b8 100644
+> --- a/kernel/softirq.c
+> +++ b/kernel/softirq.c
+> @@ -347,12 +347,12 @@ void irq_exit(void)
+>  	if (!in_interrupt() && local_softirq_pending())
+>  		invoke_softirq();
 > 
-> @@ -93,7 +93,7 @@ void cpu_idle(void)
-> 
->  		HMT_medium();
->  		ppc64_runlatch_on();
-> -		tick_nohz_restart_sched_tick();
-> +		tick_nohz_exit_idle(true);
-
-As does this, as some variants of powerpc use event tracing just after
-the hypervisor returns control to the OS.
-
->  		preempt_enable_no_resched();
->  		if (cpu_should_die())
->  			cpu_die();
-> diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
-> index c25a081..aa2be7d 100644
-> --- a/arch/powerpc/platforms/iseries/setup.c
-> +++ b/arch/powerpc/platforms/iseries/setup.c
-> @@ -562,7 +562,7 @@ static void yield_shared_processor(void)
->  static void iseries_shared_idle(void)
->  {
->  	while (1) {
-> -		tick_nohz_stop_sched_tick(1);
-> +		tick_nohz_enter_idle(true);
-
-But I don't know enough about iseries to know whether or not this works.
-
->  		while (!need_resched() && !hvlpevent_is_pending()) {
->  			local_irq_disable();
->  			ppc64_runlatch_off();
-> @@ -576,7 +576,7 @@ static void iseries_shared_idle(void)
->  		}
-> 
->  		ppc64_runlatch_on();
-> -		tick_nohz_restart_sched_tick();
-> +		tick_nohz_exit_idle(true);
-> 
->  		if (hvlpevent_is_pending())
->  			process_iSeries_events();
-> @@ -592,7 +592,7 @@ static void iseries_dedicated_idle(void)
->  	set_thread_flag(TIF_POLLING_NRFLAG);
-> 
->  	while (1) {
-> -		tick_nohz_stop_sched_tick(1);
-> +		tick_nohz_enter_idle(true);
->  		if (!need_resched()) {
->  			while (!need_resched()) {
->  				ppc64_runlatch_off();
-> @@ -609,7 +609,7 @@ static void iseries_dedicated_idle(void)
->  		}
-> 
->  		ppc64_runlatch_on();
-> -		tick_nohz_restart_sched_tick();
-> +		tick_nohz_exit_idle(true);
->  		preempt_enable_no_resched();
->  		schedule();
->  		preempt_disable();
-
-[ . . . ]
-
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index eb98e55..609bb20 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -253,12 +253,13 @@ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
->   * Called either from the idle loop or from irq_exit() when an idle period was
->   * just interrupted by an interrupt which did not cause a reschedule.
->   */
-> -void tick_nohz_stop_sched_tick(int inidle)
-> +bool tick_nohz_stop_sched_tick(int inidle)
->  {
->  	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies, flags;
->  	struct tick_sched *ts;
->  	ktime_t last_update, expires, now;
->  	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
-> +	int stopped = false;
->  	u64 time_delta;
->  	int cpu;
-> 
-> @@ -405,7 +406,7 @@ void tick_nohz_stop_sched_tick(int inidle)
->  			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
->  			ts->tick_stopped = 1;
->  			ts->idle_jiffies = last_jiffies;
-> -			rcu_enter_nohz();
-> +			stopped = true;
->  		}
-> 
->  		ts->idle_sleeps++;
-> @@ -445,6 +446,24 @@ out:
->  	ts->sleep_length = ktime_sub(dev->next_event, now);
->  end:
->  	local_irq_restore(flags);
-> +
-> +	return stopped;
-> +}
-> +
-> +
-> +/**
-> + * tick_nohz_enter_idle - stop the tick from the idle task
-> + * @rcu_ext_qs: enter rcu dynticks idle mode
-> + *
-> + * When an arch doesn't make any use of rcu read side critical section
-> + * between tick_nohz_enter_idle() and tick_nohz_exit_idle() it can set
-> + * rcu_ext_qs to 1. Otherwise it needs to call rcu_enter_nohz() itself
-> + * later before the CPU goes to sleep.
-
-How about something like this?
-
-+ * When an arch doesn't make any use of rcu read side critical section
-+ * between tick_nohz_enter_idle() and the time the CPU is put to sleep,
-+ * it can set rcu_ext_qs to true. Otherwise it needs set rcu_ext_qs to
-+ * false, and then to call rcu_enter_nohz() itself later, but before the
-+ * CPU goes to sleep and after its last use of RCU.
-
-> + */
-> +void tick_nohz_enter_idle(bool rcu_ext_qs)
-> +{
-> +	if (tick_nohz_stop_sched_tick(1) && rcu_ext_qs)
-> +		rcu_enter_nohz();
+> -	rcu_irq_exit();
+>  #ifdef CONFIG_NO_HZ
+>  	/* Make sure that timer wheel updates are propagated */
+>  	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
+>  		tick_nohz_stop_sched_tick(0);
+>  #endif
+> +	rcu_irq_exit();
+>  	preempt_enable_no_resched();
 >  }
 > 
->  /**
-> @@ -486,11 +505,12 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
->  }
-> 
->  /**
-> - * tick_nohz_restart_sched_tick - restart the idle tick from the idle task
-> + * tick_nohz_exit_idle - restart the idle tick from the idle task
-> + * @rcu_ext_qs: exit rcu dynticks idle mode
->   *
->   * Restart the idle tick when the CPU is woken up from idle
-
-How about something like the following?
-
-+ * When an arch doesn't make any use of rcu read side critical section
-+ * between the time the CPU wakes up and tick_nohz_exit_idle(), it can set
-+ * rcu_ext_qs to true. Otherwise it needs set rcu_ext_qs to false, and it
-+ * must also have called rcu_enter_nohz() itself earlier, after the CPU
-+ * was awakened, but before its first use of RCU.
-
->   */
-> -void tick_nohz_restart_sched_tick(void)
-> +void tick_nohz_exit_idle(bool rcu_ext_qs)
->  {
->  	int cpu = smp_processor_id();
->  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-> @@ -514,7 +534,8 @@ void tick_nohz_restart_sched_tick(void)
-> 
->  	ts->inidle = 0;
-> 
-> -	rcu_exit_nohz();
-> +	if (rcu_ext_qs)
-> +		rcu_exit_nohz();
-> 
->  	/* Update jiffies first */
->  	select_nohz_load_balancer(0);
 > -- 
 > 1.7.5.4
 > 
