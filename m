@@ -1,72 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab1IDBvt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 21:51:49 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42193 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab1IDBvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 21:51:46 -0400
-Date: Sat, 3 Sep 2011 18:51:40 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Serge Hallyn <serge@hallyn.com>
-Cc: akpm@osdl.org, segooon@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        dhowells@redhat.com, ebiederm@xmission.com, rdunlap@xenotime.net
-Subject: Re: [PATCH 02/15] user ns: setns: move capable checks into per-ns
- attach helper
-Message-ID: <20110904015140.GB32295@count0.beaverton.ibm.com>
-References: <1314993400-6910-1-git-send-email-serge@hallyn.com>
- <1314993400-6910-5-git-send-email-serge@hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314993400-6910-5-git-send-email-serge@hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753027Ab1IDCN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 22:13:28 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25583 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752535Ab1IDCNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 22:13:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,326,1312182000"; 
+   d="scan'208";a="45377064"
+Message-Id: <20110904020915.112068407@intel.com>
+User-Agent: quilt/0.48-1
+Date: Sun, 04 Sep 2011 09:53:09 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+to: <linux-fsdevel@vger.kernel.org>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Greg Thelen <gthelen@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 04/18] writeback: stabilize bdi->dirty_ratelimit
+References: <20110904015305.367445271@intel.com>
+Content-Disposition: inline; filename=dirty-ratelimit-stablize
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 07:56:27PM +0000, Serge Hallyn wrote:
-> From: "Serge E. Hallyn" <serge@hallyn.com>
+There are some imperfections in balanced_dirty_ratelimit.
 
-I was confused about this patch until I realized that you're not
-simply "moving" the capability checks but "distributing" them. Then
-you're showing that you'll soon change some to nsown_capable() or
-ns_capable() using the strange cpp pattern in the snippet below.
+1) large fluctuations
 
-At least I think that's what you intended. A commit message would
-help :).
+The dirty_rate used for computing balanced_dirty_ratelimit is merely
+averaged in the past 200ms (very small comparing to the 3s estimation
+period for write_bw), which makes rather dispersed distribution of
+balanced_dirty_ratelimit.
 
-Cheers,
-	-Matt Helsley
+It's pretty hard to average out the singular points by increasing the
+estimation period. Considering that the averaging technique will
+introduce very undesirable time lags, I give it up totally. (btw, the 3s
+write_bw averaging time lag is much more acceptable because its impact
+is one-way and therefore won't lead to oscillations.)
 
-> 
-> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  ipc/namespace.c          |    7 +++++++
->  kernel/fork.c            |    5 +++++
->  kernel/nsproxy.c         |   11 ++++++++---
->  kernel/utsname.c         |    7 +++++++
->  net/core/net_namespace.c |    7 +++++++
->  5 files changed, 34 insertions(+), 3 deletions(-)
-> 
-> diff --git a/ipc/namespace.c b/ipc/namespace.c
-> index ce0a647..a0a7609 100644
-> --- a/ipc/namespace.c
-> +++ b/ipc/namespace.c
-> @@ -163,6 +163,13 @@ static void ipcns_put(void *ns)
-> 
->  static int ipcns_install(struct nsproxy *nsproxy, void *ns)
->  {
-> +#if 0
-> +	struct ipc_namespace *newns = ns;
-> +	if (!ns_capable(newns->user_ns, CAP_SYS_ADMIN))
-> +#else
-> +	if (!capable(CAP_SYS_ADMIN))
-> +#endif
-> +		return -1;
->  	/* Ditch state from the old ipc namespace */
->  	exit_sem(current);
->  	put_ipc_ns(nsproxy->ipc_ns);
+The more practical way is filtering -- most singular
+balanced_dirty_ratelimit points can be filtered out by remembering some
+prev_balanced_rate and prev_prev_balanced_rate. However the more
+reliable way is to guard balanced_dirty_ratelimit with task_ratelimit.
+
+2) due to truncates and fs redirties, the (write_bw <=> dirty_rate)
+match could become unbalanced, which may lead to large systematical
+errors in balanced_dirty_ratelimit. The truncates, due to its possibly
+bumpy nature, can hardly be compensated smoothly. So let's face it. When
+some over-estimated balanced_dirty_ratelimit brings dirty_ratelimit
+high, dirty pages will go higher than the setpoint. task_ratelimit will
+in turn become lower than dirty_ratelimit.  So if we consider both
+balanced_dirty_ratelimit and task_ratelimit and update dirty_ratelimit
+only when they are on the same side of dirty_ratelimit, the systematical
+errors in balanced_dirty_ratelimit won't be able to bring
+dirty_ratelimit far away.
+
+The balanced_dirty_ratelimit estimation may also be inaccurate near
+@limit or @freerun, however is less an issue.
+
+3) since we ultimately want to
+
+- keep the fluctuations of task ratelimit as small as possible
+- keep the dirty pages around the setpoint as long time as possible
+
+the update policy used for (2) also serves the above goals nicely:
+if for some reason the dirty pages are high (task_ratelimit < dirty_ratelimit),
+and dirty_ratelimit is low (dirty_ratelimit < balanced_dirty_ratelimit),
+there is no point to bring up dirty_ratelimit in a hurry only to hurt
+both the above two goals.
+
+So, we make use of task_ratelimit to limit the update of dirty_ratelimit
+in two ways:
+
+1) avoid changing dirty rate when it's against the position control target
+   (the adjusted rate will slow down the progress of dirty pages going
+   back to setpoint).
+
+2) limit the step size. task_ratelimit is changing values step by step,
+   leaving a consistent trace comparing to the randomly jumping
+   balanced_dirty_ratelimit. task_ratelimit also has the nice smaller
+   errors in stable state and typically larger errors when there are big
+   errors in rate.  So it's a pretty good limiting factor for the step
+   size of dirty_ratelimit.
+
+Note that bdi->dirty_ratelimit is always tracking balanced_dirty_ratelimit.
+task_ratelimit is merely used as a limiting factor.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   64 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 63 insertions(+), 1 deletion(-)
+
+--- linux-next.orig/mm/page-writeback.c	2011-08-26 16:22:48.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-26 16:23:06.000000000 +0800
+@@ -809,6 +809,7 @@ static void bdi_update_dirty_ratelimit(s
+ 	unsigned long task_ratelimit;
+ 	unsigned long balanced_dirty_ratelimit;
+ 	unsigned long pos_ratio;
++	unsigned long step;
+ 
+ 	/*
+ 	 * The dirty rate will match the writeout rate in long term, except
+@@ -857,7 +858,68 @@ static void bdi_update_dirty_ratelimit(s
+ 	balanced_dirty_ratelimit = div_u64((u64)task_ratelimit * write_bw,
+ 					   dirty_rate | 1);
+ 
+-	bdi->dirty_ratelimit = max(balanced_dirty_ratelimit, 1UL);
++	/*
++	 * We could safely do this and return immediately:
++	 *
++	 *	bdi->dirty_ratelimit = balanced_dirty_ratelimit;
++	 *
++	 * However to get a more stable dirty_ratelimit, the below elaborated
++	 * code makes use of task_ratelimit to filter out sigular points and
++	 * limit the step size.
++	 *
++	 * The below code essentially only uses the relative value of
++	 *
++	 *	task_ratelimit - dirty_ratelimit
++	 *	= (pos_ratio - 1) * dirty_ratelimit
++	 *
++	 * which reflects the direction and size of dirty position error.
++	 */
++
++	/*
++	 * dirty_ratelimit will follow balanced_dirty_ratelimit iff
++	 * task_ratelimit is on the same side of dirty_ratelimit, too.
++	 * For example, when
++	 * - dirty_ratelimit > balanced_dirty_ratelimit
++	 * - dirty_ratelimit > task_ratelimit (dirty pages are above setpoint)
++	 * lowering dirty_ratelimit will help meet both the position and rate
++	 * control targets. Otherwise, don't update dirty_ratelimit if it will
++	 * only help meet the rate target. After all, what the users ultimately
++	 * feel and care are stable dirty rate and small position error.
++	 *
++	 * |task_ratelimit - dirty_ratelimit| is used to limit the step size
++	 * and filter out the sigular points of balanced_dirty_ratelimit. Which
++	 * keeps jumping around randomly and can even leap far away at times
++	 * due to the small 200ms estimation period of dirty_rate (we want to
++	 * keep that period small to reduce time lags).
++	 */
++	step = 0;
++	if (dirty_ratelimit < balanced_dirty_ratelimit) {
++		if (dirty_ratelimit < task_ratelimit)
++			step = min(balanced_dirty_ratelimit,
++				   task_ratelimit) - dirty_ratelimit;
++	} else {
++		if (dirty_ratelimit > task_ratelimit)
++			step = dirty_ratelimit - max(balanced_dirty_ratelimit,
++						     task_ratelimit);
++	}
++
++	/*
++	 * Don't pursue 100% rate matching. It's impossible since the balanced
++	 * rate itself is constantly fluctuating. So decrease the track speed
++	 * when it gets close to the target. Helps eliminate pointless tremors.
++	 */
++	step >>= dirty_ratelimit / (8 * step + 1);
++	/*
++	 * Limit the tracking speed to avoid overshooting.
++	 */
++	step = (step + 7) / 8;
++
++	if (dirty_ratelimit < balanced_dirty_ratelimit)
++		dirty_ratelimit += step;
++	else
++		dirty_ratelimit -= step;
++
++	bdi->dirty_ratelimit = max(dirty_ratelimit, 1UL);
+ }
+ 
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+
+
