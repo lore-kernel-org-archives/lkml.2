@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab1IDTHv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 15:07:51 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35068 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab1IDTHq (ORCPT
+	id S1753211Ab1IDTb3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 15:31:29 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53893 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab1IDTbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 15:07:46 -0400
-Message-ID: <e3b9f4c07ac1f801dbbafe54aea43116.squirrel@www.firstfloor.org>
-In-Reply-To: <20110904165658.GA23948@redhat.com>
-References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
-    <1314661157-22173-4-git-send-email-andi@firstfloor.org>
-    <alpine.LFD.2.02.1109021135270.2723@ionos>
-    <20110904165658.GA23948@redhat.com>
-Date: Sun, 4 Sep 2011 21:07:43 +0200
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-From: "Andi Kleen" <andi@firstfloor.org>
-To: "Oleg Nesterov" <oleg@redhat.com>
-Cc: "Thomas Gleixner" <tglx@linutronix.de>, "Andi Kleen" <andi@firstfloor.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>, eric.dumazet@gmail.com,
-        "Andi Kleen" <ak@linux.intel.com>
-User-Agent: SquirrelMail/1.4.21
+	Sun, 4 Sep 2011 15:31:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <CAMe9rOqJoy=S4-=tZXrti7w_GtSqaTgX9i69FR92Tv6pPfSDRQ@mail.gmail.com>
+References: <4E582577.2060805@zytor.com>
+	<19229.1315070217@turing-police.cc.vt.edu>
+	<4E62638E.40308@zytor.com>
+	<3546423.kFMPx0aPCi@wuerfel>
+	<CAMe9rOqJoy=S4-=tZXrti7w_GtSqaTgX9i69FR92Tv6pPfSDRQ@mail.gmail.com>
+Date: Sun, 4 Sep 2011 21:31:22 +0200
+Message-ID: <CAFLxGvw3wB_fTqbZrKw69HxQ5OeNPOOwVQiFqgWvBDXjLqXALQ@mail.gmail.com>
+Subject: Re: RFD: x32 ABI system call numbers
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 4, 2011 at 8:40 PM, H.J. Lu <hjl.tools@gmail.com> wrote:
+> #define __NR_x32__sysctl
 
-> And why do we need to add signal->idr_lock ? It is only used to
-> serialize idr_get/idr_remove. Probably we can use ->siglock for that,
-> posix timers use this lock anyway.
+Do we really want sysctl?
 
-Ok. In fact idrs have an own lock too, I'll check that out.
+Some quotes from it's man-page:
+"Do not use this system call!  See NOTES."
 
->
-> Also. I am not sure, but perhaps it make sense to turn
-> signal->posix_timers_id into the pointer to "struct idr" and allocate
-> idr on demand?
+"Glibc does not provide a wrapper for this system call; call it using
+syscall(2).
 
-Probably not worth it, it's not big enough.
+ Or rather... don't call it: use of this system call has long been
+discouraged, and it is so unloved that it
+ is likely to disappear in a future kernel version.  Remove it from
+your programs  now;  use  the  /proc/sys
+ interface instead."
 
--Andi
-
+-- 
+Thanks,
+//richard
