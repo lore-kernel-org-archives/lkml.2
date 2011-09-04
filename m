@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab1IDNtf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 09:49:35 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:53316 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753252Ab1IDNt3 (ORCPT
+	id S1754492Ab1IDNxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 09:53:21 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40394 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab1IDNxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 09:49:29 -0400
-Date: Sun, 4 Sep 2011 09:49:26 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Lin Ming <mlin@ss.pku.edu.cn>
-cc: Dave Young <hidave.darkstar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [BUG] D state process after unplug and umount usb disk
-In-Reply-To: <CAF1ivSbuRiY6Q75LUTGV6tN=KrKfVYjTV3=rZ51EiZY==707Uw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1109040945370.9175-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 4 Sep 2011 09:53:15 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "H.J. Lu" <hjl.tools@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: RFD: x32 ABI system call numbers
+In-Reply-To: Your message of "Sat, 03 Sep 2011 10:27:42 PDT."
+             <4E62638E.40308@zytor.com>
+From: Valdis.Kletnieks@vt.edu
+References: <4E582577.2060805@zytor.com> <CAMe9rOpP9Dt0FvHb0FDbHha0-fv2q4ahfMB_CejqcbWqxuYe8Q@mail.gmail.com> <4E61BB42.4090301@zytor.com> <8179020.mG8hWW8BRr@wuerfel> <14427.1315058668@turing-police.cc.vt.edu> <9b6a2b8e-365f-4155-85ca-5f72b46a7f3e@email.android.com> <19229.1315070217@turing-police.cc.vt.edu>
+            <4E62638E.40308@zytor.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1315144296_5656P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sun, 04 Sep 2011 09:51:36 -0400
+Message-ID: <6467.1315144296@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.4E63826E.012F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Sep 2011, Lin Ming wrote:
+--==_Exmh_1315144296_5656P
+Content-Type: text/plain; charset=us-ascii
 
-> On Sat, Sep 3, 2011 at 6:31 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> > Hi,
-> >
-> > Known issue?
-> >
-> > Reproduce by:
-> > mount /dev/sdb2 /mnt/sdb2 -t ext3
-> > cat /mnt/sdb2/* >/dev/null
-> > unplug usb disk
-> > umount -f /mnt/sdb2
-> >
-> > dmesg as below:
+On Sat, 03 Sep 2011 10:27:42 PDT, "H. Peter Anvin" said:
 
-BTW, this may or may not be related:
+> About ioctl in particular, the ABI has dependencies into almost every 
+> single driver in the Linux kernel.  It is hard-coded in the kernel that 
+> there are two paths -- native and compat.  Since pointers are going to 
+> be 4 bytes, it means we have to use the compat path.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=25832  (kernel crashes when 
-a mounted ext3/4 file system is physically removed)
+Ah, that's the part I was missing, thanks.
 
-> > [ 1440.567271] SysRq : Show Blocked State
-> > [ 1440.567278]   task                        PC stack   pid father
-> > [ 1440.567312] cat             D ffff880037a1e378  4296  2381   2310 0x00000004
-> > [ 1440.567320]  ffff88003cca5838 0000000000000046 ffff88003cca57e8
-> > ffffffff00000000
-> > [ 1440.567332]  00000000000134c0 00000000000134c0 00000000000134c0
-> > ffff880037a1e000
-> > [ 1440.567339]  00000000000134c0 ffff88003cca5fd8 00000000000134c0
-> > 00000000000134c0
-> > [ 1440.567347] Call Trace:
-> > [ 1440.567357]  [<ffffffff810c0468>] ? lock_page+0x2a/0x2a
-> > [ 1440.567363]  [<ffffffff815e452d>] io_schedule+0x5e/0x79
-> > [ 1440.567368]  [<ffffffff810c0471>] sleep_on_page+0x9/0xd
-> > [ 1440.567373]  [<ffffffff815e4adf>] __wait_on_bit_lock+0x41/0x8a
-> > [ 1440.567378]  [<ffffffff810c0437>] __lock_page+0x61/0x68
-> > [ 1440.567384]  [<ffffffff81058739>] ? autoremove_wake_function+0x34/0x34
-> > [ 1440.567390]  [<ffffffff8102f704>] ? should_resched+0x9/0x29
-> > [ 1440.567395]  [<ffffffff810c9b0b>] lock_page+0x25/0x29
-> > [ 1440.567400]  [<ffffffff810ca1ac>] truncate_inode_pages_range+0x2a6/0x32d
-> > [ 1440.567406]  [<ffffffff810ca240>] truncate_inode_pages+0xd/0xf
-> > [ 1440.567411]  [<ffffffff811642cf>] ext3_evict_inode+0xc9/0x1d7
-> > [ 1440.567417]  [<ffffffff8111288e>] evict+0xa3/0x15e
-> > [ 1440.567422]  [<ffffffff81112b34>] dispose_list+0x3d/0x49
-> > [ 1440.567426]  [<ffffffff81113475>] evict_inodes+0xf1/0x100
-> > [ 1440.567431]  [<ffffffff810ffd21>] generic_shutdown_super+0x47/0xc7
-> > [ 1440.567436]  [<ffffffff810ffdc3>] kill_block_super+0x22/0x65
-> > [ 1440.567441]  [<ffffffff811000da>] deactivate_locked_super+0x21/0x52
-> > [ 1440.567445]  [<ffffffff811009ab>] deactivate_super+0x35/0x39
-> > [ 1440.567452]  [<ffffffff81116395>] mntput_no_expire+0xcb/0xd0
-> > [ 1440.567457]  [<ffffffff811163bb>] mntput+0x21/0x23
-> > [ 1440.567461]  [<ffffffff810ff8e7>] fput+0x196/0x1a5
-> > [ 1440.567467]  [<ffffffff810fc7a1>] filp_close+0x6b/0x76
-> > [ 1440.567472]  [<ffffffff8103fa8a>] put_files_struct+0x73/0xd1
-> > [ 1440.567477]  [<ffffffff8103fb7b>] exit_files+0x46/0x4f
-> > [ 1440.567481]  [<ffffffff8103fe01>] do_exit+0x27d/0x7b3
-> > [ 1440.567487]  [<ffffffff8104d97f>] ? get_signal_to_deliver+0x81/0x4ac
-> > [ 1440.567493]  [<ffffffff812e5e27>] ? do_raw_spin_lock+0x6b/0x122
-> > [ 1440.567497]  [<ffffffff810405c5>] do_group_exit+0x7d/0xa8
-> > [ 1440.567502]  [<ffffffff8104dd8b>] get_signal_to_deliver+0x48d/0x4ac
-> > [ 1440.567509]  [<ffffffff81001ea2>] do_signal+0x39/0x600
-> > [ 1440.567514]  [<ffffffff810fdb37>] ? fsnotify_access+0x5d/0x65
-> > [ 1440.567519]  [<ffffffff810024a4>] do_notify_resume+0x27/0x69
-> > [ 1440.567524]  [<ffffffff812e158e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> > [ 1440.567529]  [<ffffffff815ecd63>] int_signal+0x12/0x17
+--==_Exmh_1315144296_5656P
+Content-Type: application/pgp-signature
 
-> Where does this exit signal come from?
-> Does USB interrupt handler will send kill signal to all processes
-> accessing it when it's unplugged(by hand)?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-The USB stack does not send any signals at all unless a process 
-specifically asks for them.
+iD8DBQFOY4JocC3lWbTT17ARAkO4AJ91F5AV7vPU8V9MHWuZR+vgbkXiVwCgi/KQ
+MdkKMuZ3vGDXZieKhttvagY=
+=ddbp
+-----END PGP SIGNATURE-----
 
-Alan Stern
+--==_Exmh_1315144296_5656P--
 
