@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab1IDRAX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 13:00:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689Ab1IDRAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 13:00:19 -0400
-Date: Sun, 4 Sep 2011 18:56:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, eric.dumazet@gmail.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-Message-ID: <20110904165658.GA23948@redhat.com>
-References: <1314661157-22173-1-git-send-email-andi@firstfloor.org> <1314661157-22173-4-git-send-email-andi@firstfloor.org> <alpine.LFD.2.02.1109021135270.2723@ionos>
+	id S1752053Ab1IDRJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 13:09:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33049 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751689Ab1IDRJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 13:09:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1109021135270.2723@ionos>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <3546423.kFMPx0aPCi@wuerfel>
+References: <4E582577.2060805@zytor.com> <19229.1315070217@turing-police.cc.vt.edu>
+ <4E62638E.40308@zytor.com> <3546423.kFMPx0aPCi@wuerfel>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 4 Sep 2011 10:08:50 -0700
+Message-ID: <CA+55aFwmu8kqdMLK_wLbvKCqCbkS2AXOd7fBvupVcgzkcaC88Q@mail.gmail.com>
+Subject: Re: RFD: x32 ABI system call numbers
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
+        "H.J. Lu" <hjl.tools@gmail.com>, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/02, Thomas Gleixner wrote:
+On Sun, Sep 4, 2011 at 8:17 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 >
-> On Mon, 29 Aug 2011, Andi Kleen wrote:
->
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > Now that the timer IDR is per process we don't need to save
-> > the signal_struct in the timer anymore. Still need this
-> > as a flag for RCU, so turn it into a it_valid flag.
->
-> That's wrong. it_signal is not necessary for RCU, it's necessary for
-> protecting against a concurrent timer deletion.
+> For a lot of these cases, the best option is to change the
+> kernel headers to use new definitions on x32 before someone
+> tries to ship a distro, especially when the ioctl command code
+> is fixed. In case of the XFS ioctls, I think the only sane
+> way is define the x32 ABI to match the 64 bit ABI completely,
+> while for RAW_GETBIND and VIDEO_GET_EVENT it's probably enough
+> to make x32 match x86-32.
 
-The main reason for it_signal was the fact we use the global idr database,
-we should check that the timer was created by us. But yes, another reason
-was to check that the timer is "valid", we can race with create/delete.
-See 27af4245.
+Ack, ack, ack.
 
-> --- linux-2.6.orig/kernel/posix-timers.c
-> +++ linux-2.6/kernel/posix-timers.c
-> @@ -483,6 +483,7 @@ static struct k_itimer * alloc_posix_tim
->  	tmr = kmem_cache_zalloc(posix_timers_cache, GFP_KERNEL);
->  	if (!tmr)
->  		return tmr;
-> +	INIT_LIST_HEAD(&tmr->list);
->  	if (unlikely(!(tmr->sigq = sigqueue_alloc()))) {
->  		kmem_cache_free(posix_timers_cache, tmr);
->  		return NULL;
-> @@ -612,7 +613,6 @@ SYSCALL_DEFINE3(timer_create, const cloc
->  		goto out;
->
->  	spin_lock_irq(&current->sighand->siglock);
-> -	new_timer->it_signal = current->signal;
->  	list_add(&new_timer->list, &current->signal->posix_timers);
->  	spin_unlock_irq(&current->sighand->siglock);
->
-> @@ -643,7 +643,7 @@ static struct k_itimer *__lock_timer(tim
->  	timr = idr_find(&posix_timers_id, (int)timer_id);
->  	if (timr) {
->  		spin_lock_irqsave(&timr->it_lock, *flags);
-> -		if (timr->it_signal == current->signal) {
-> +		if (!list_empty(&timr->list)) {
+If we make the x32 ioctl system call first do "regular" ioctl, and
+then fall back to the compat ones if that fails, x32 can mix and
+match. It's not pretty, but I think it's better than the alternative
+(which would be to have to use one r the other and add lots of new
+compat handling).
 
-looks correct at first glance....
+Of course, we could also just have "compat_ioctl()" fall back to
+native mode in general, and not make a x32 special case.
 
-The problem is, now that we have signal->posix_timers_id, we can kill
-signal->posix_timers and k_itimer->list. Probably we can nullify
-k_itimer->it_id to mark it as invalid before idr_remove. Although I
-feel this all can be simplified even more.
-
-
-
-And why do we need to add signal->idr_lock ? It is only used to
-serialize idr_get/idr_remove. Probably we can use ->siglock for that,
-posix timers use this lock anyway.
-
-Also. I am not sure, but perhaps it make sense to turn
-signal->posix_timers_id into the pointer to "struct idr" and allocate
-idr on demand?
-
-Oleg.
-
+                     Linus
