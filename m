@@ -1,14 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab1IDRSd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 13:18:33 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:53568 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab1IDRS0 (ORCPT
+	id S1752259Ab1IDRpD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 13:45:03 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45430 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab1IDRpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 13:18:26 -0400
-To: "Andi Kleen" <andi@firstfloor.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, djwong@us.ibm.com,
+	Sun, 4 Sep 2011 13:45:00 -0400
+Message-ID: <88f8907569619968aa7b4a8c669d5aba.squirrel@www.firstfloor.org>
+In-Reply-To: <yq14o0scjmg.fsf@sermon.lab.mkp.net>
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
+    <CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com>
+    <20110902182214.GC12086@tux1.beaverton.ibm.com>
+    <yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+    <6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org>
+    <yq14o0scjmg.fsf@sermon.lab.mkp.net>
+Date: Sun, 4 Sep 2011 19:44:55 +0200
+Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: "Andi Kleen" <andi@firstfloor.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>, djwong@us.ibm.com,
         "Greg Freemyer" <greg.freemyer@gmail.com>,
         "Andreas Dilger" <adilger.kernel@dilger.ca>,
         "Theodore Tso" <tytso@mit.edu>,
@@ -18,40 +30,43 @@ Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, djwong@us.ibm.com,
         "Mingming Cao" <cmm@us.ibm.com>, "Joel Becker" <jlbec@evilplan.org>,
         "linux-fsdevel" <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, "Coly Li" <colyli@gmail.com>
-Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
-	<CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com>
-	<20110902182214.GC12086@tux1.beaverton.ibm.com>
-	<yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
-	<6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org>
-Date: Sun, 04 Sep 2011 13:17:27 -0400
-In-Reply-To: <6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org>
-	(Andi Kleen's message of "Sun, 4 Sep 2011 18:54:28 +0200")
-Message-ID: <yq14o0scjmg.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4E63B2D1.007D,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Andi" == Andi Kleen <andi@firstfloor.org> writes:
+>>>>>> "Andi" == Andi Kleen <andi@firstfloor.org> writes:
+>
+>>> On Westmere and beyond it is possible to accelerate generic CRC
+>>> calculation using the PCLMULQDQ operation. There are many of our CRC
+>
+> Andi> Faster than the lookup table? That's hard to believe.
+>
+> Using PCLMULQDQ you can parallelize the calculation. You can even boost
+> hw CRC32C performance that way.
+>
+>   http://download.intel.com/design/intarch/papers/323405.pdf
+>
+>   http://download.intel.com/design/intarch/papers/323102.pdf
 
->> On Westmere and beyond it is possible to accelerate generic CRC
->> calculation using the PCLMULQDQ operation. There are many of our CRC
+Doesn't have any performance numbers.
 
-Andi> Faster than the lookup table? That's hard to believe.
+You need to keep in mind that PCLMULQDQ uses FPU state, so any
+speedup for the kernel must be large enough to amortize the cost of
+saving the FPU state.
 
-Using PCLMULQDQ you can parallelize the calculation. You can even boost
-hw CRC32C performance that way.
+Typically that only works out for quite large buffers, but
+kernel buffers are relatively small.
 
-  http://download.intel.com/design/intarch/papers/323405.pdf
+For the ext4 metadata a better approach is probably some sort of
+incremental CRC, or possibly separate CRCs for very commonly
+changed fields. When I looked at this most changes were only for
+small fields.
 
-  http://download.intel.com/design/intarch/papers/323102.pdf
+-Andi
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
