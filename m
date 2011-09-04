@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab1IDOZy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 10:25:54 -0400
-Received: from mail.ss.pku.edu.cn ([211.101.48.138]:53485 "EHLO
-	mail.ss.pku.edu.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab1IDOZu (ORCPT
+	id S1754328Ab1IDOk2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 10:40:28 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33057 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753752Ab1IDOkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 10:25:50 -0400
+	Sun, 4 Sep 2011 10:40:25 -0400
+Date: Sun, 4 Sep 2011 07:10:15 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: codecs: Remove unused mutex
+Message-ID: <20110904141015.GB3668@opensource.wolfsonmicro.com>
+References: <1315140751.8673.1.camel@phoenix>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1109040945370.9175-100000@netrider.rowland.org>
-References: <CAF1ivSbuRiY6Q75LUTGV6tN=KrKfVYjTV3=rZ51EiZY==707Uw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1109040945370.9175-100000@netrider.rowland.org>
-Date: Sun, 4 Sep 2011 22:25:40 +0800
-Message-ID: <CAF1ivSaFt9ZBsM4s7NyjJWz6QBE7xcS21bXGADp4NPp=2XcYEA@mail.gmail.com>
-Subject: Re: [BUG] D state process after unplug and umount usb disk
-From: Lin Ming <mlin@ss.pku.edu.cn>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dave Young <hidave.darkstar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, fengguang.wu@intel.com,
-        linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315140751.8673.1.camel@phoenix>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 4, 2011 at 9:49 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
->> Where does this exit signal come from?
->> Does USB interrupt handler will send kill signal to all processes
->> accessing it when it's unplugged(by hand)?
->
-> The USB stack does not send any signals at all unless a process
-> specifically asks for them.
+On Sun, Sep 04, 2011 at 08:52:31PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  sound/soc/codecs/alc5623.c |    2 --
+>  sound/soc/codecs/wm9090.c  |    2 --
 
-How to ask?
-
-I have not checked, but think umount code path will not send signal to process.
-Curiously, where does the exit signal come from?
-
-Dave,
-Did you press "Ctrl + C" on cat?
-
-Lin Ming
+This has already been done for wm9090, can you resubmit with just the
+alc5623 change please?
