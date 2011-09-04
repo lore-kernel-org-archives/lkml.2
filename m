@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab1IDCOM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 22:14:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49417 "EHLO mga03.intel.com"
+	id S1753710Ab1IDCOG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 22:14:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25583 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753043Ab1IDCN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753047Ab1IDCN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Sep 2011 22:13:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,326,1312182000"; 
-   d="scan'208";a="45377100"
-Message-Id: <20110904020916.972004786@intel.com>
+   d="scan'208";a="45377098"
+Message-Id: <20110904020916.722525088@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 04 Sep 2011 09:53:23 +0800
+Date: Sun, 04 Sep 2011 09:53:21 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 to: <linux-fsdevel@vger.kernel.org>
 cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Chris Mason <chris.mason@oracle.com>,
         Wu Fengguang <fengguang.wu@intel.com>
 cc: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>
@@ -27,36 +26,42 @@ CC: Vivek Goyal <vgoyal@redhat.com>
 CC: Andrea Righi <arighi@develer.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 18/18] btrfs: fix dirtied pages accounting on sub-page writes
+Subject: [PATCH 16/18] writeback: fix dirtied pages accounting on sub-page writes
 References: <20110904015305.367445271@intel.com>
-Content-Disposition: inline; filename=btrfs-account-redirty
+Content-Disposition: inline; filename=writeback-accurate-task-dirtied.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing 1KB sequential writes to the same page,
-balance_dirty_pages_ratelimited_nr() should be called once instead of 4
-times, the latter makes the dirtier tasks be throttled much too heavy.
+When dd in 512bytes, generic_perform_write() calls
+balance_dirty_pages_ratelimited() 8 times for the same page, but
+obviously the page is only dirtied once.
 
-Fix it with proper de-accounting on clear_page_dirty_for_io().
+Fix it by accounting nr_dirtied at page dirty time.
 
-CC: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/btrfs/file.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/page-writeback.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- linux-next.orig/fs/btrfs/file.c	2011-08-29 19:14:32.000000000 +0800
-+++ linux-next/fs/btrfs/file.c	2011-08-29 19:14:40.000000000 +0800
-@@ -1138,7 +1138,8 @@ again:
- 				     GFP_NOFS);
+--- linux-next.orig/mm/page-writeback.c	2011-08-29 19:14:32.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-29 19:14:36.000000000 +0800
+@@ -1267,8 +1267,6 @@ void balance_dirty_pages_ratelimited_nr(
+ 	if (bdi->dirty_exceeded)
+ 		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
+ 
+-	current->nr_dirtied += nr_pages_dirtied;
+-
+ 	preempt_disable();
+ 	/*
+ 	 * This prevents one CPU to accumulate too many dirtied pages without
+@@ -1778,6 +1776,7 @@ void account_page_dirtied(struct page *p
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+ 		task_dirty_inc(current);
+ 		task_io_account_write(PAGE_CACHE_SIZE);
++		current->nr_dirtied++;
  	}
- 	for (i = 0; i < num_pages; i++) {
--		clear_page_dirty_for_io(pages[i]);
-+		if (clear_page_dirty_for_io(pages[i]))
-+			account_page_redirty(pages[i]);
- 		set_page_extent_mapped(pages[i]);
- 		WARN_ON(!PageLocked(pages[i]));
- 	}
+ }
+ EXPORT_SYMBOL(account_page_dirtied);
 
 
