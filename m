@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1IDOsr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 10:48:47 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36627 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267Ab1IDOsi (ORCPT
+	id S1754546Ab1IDPFh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 11:05:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54584 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1IDPFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 10:48:38 -0400
-Subject: [PATCH] ASoC: alc5623: Remove unused mutex
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 Sep 2011 22:48:27 +0800
-Message-ID: <1315147707.2662.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sun, 4 Sep 2011 11:05:30 -0400
+Date: Sun, 4 Sep 2011 10:05:25 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Amit Shah <amit.shah@redhat.com>,
+        David Zeuthen <zeuthen@gmail.com>,
+        Martin Pitt <martin.pitt@ubuntu.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        Jean Schurger <jean@schurger.org>,
+        Jan =?utf-8?B?TMO8YmJl?= <jluebbe@debian.org>,
+        Matthijs Kooijman <matthijs@stdin.nl>,
+        Jameson Graef Rollins <jrollins@finestructure.net>,
+        Nacho Barrientos Arias <nacho@debian.org>
+Subject: Re: [regression] CD-ROM polling blocks suspend on some machines
+Message-ID: <20110904150525.GE25587@elie>
+References: <20110406121920.GC4142@mtj.dyndns.org>
+ <20110903221456.GA2877@elie>
+ <20110904024244.GB3083@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110904024244.GB3083@htj.dyndns.org>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
----
- sound/soc/codecs/alc5623.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Tejun Heo wrote:
+> On Sat, Sep 03, 2011 at 05:14:56PM -0500, Jonathan Nieder wrote:
 
-diff --git a/sound/soc/codecs/alc5623.c b/sound/soc/codecs/alc5623.c
-index eecffb5..0517315 100644
---- a/sound/soc/codecs/alc5623.c
-+++ b/sound/soc/codecs/alc5623.c
-@@ -41,7 +41,6 @@ MODULE_PARM_DESC(caps_charge, "ALC5623 cap charge time (msecs)");
- struct alc5623_priv {
- 	enum snd_soc_control_type control_type;
- 	void *control_data;
--	struct mutex mutex;
- 	u8 id;
- 	unsigned int sysclk;
- 	u16 reg_cache[ALC5623_VENDOR_ID2+2];
-@@ -1052,7 +1051,6 @@ static int alc5623_i2c_probe(struct i2c_client *client,
- 	i2c_set_clientdata(client, alc5623);
- 	alc5623->control_data = client;
- 	alc5623->control_type = SND_SOC_I2C;
--	mutex_init(&alc5623->mutex);
- 
- 	ret =  snd_soc_register_codec(&client->dev,
- 		&soc_codec_device_alc5623, &alc5623_dai, 1);
--- 
-1.7.4.1
+>> Various people[1] have been noticing a race (or races?) in which the
+>> cdrom_id and scsi_id programs from udev can get stuck in the D state
+[...]
+> Can you please build vanilla kernel with CONFIG_FRAME_POINTER turned
+> on, reproduce the problem and attach full dmesg output?
 
-
-
+Thanks, Tejun.  I haven't been able to reproduce it here, but I'd be
+happy to help anyone cc-ed wanting to do that who has questions (feel
+free to email me privately).
