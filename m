@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab1IDP5a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 11:57:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50480 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751026Ab1IDP50 (ORCPT
+	id S1751672Ab1IDQZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 12:25:59 -0400
+Received: from 14.mo3.mail-out.ovh.net ([188.165.43.98]:40574 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751320Ab1IDQZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 11:57:26 -0400
-Date: Sun, 4 Sep 2011 08:57:22 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Samuel Oritz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/8] regmap: Introduce caching support
-Message-ID: <20110904155722.GD21528@opensource.wolfsonmicro.com>
-References: <1314978375-11539-1-git-send-email-dp@opensource.wolfsonmicro.com>
- <1314978375-11539-2-git-send-email-dp@opensource.wolfsonmicro.com>
- <4E61363A.9050607@metafoo.de>
- <20110902234827.GA31813@opensource.wolfsonmicro.com>
- <20110903011032.GA10060@opensource.wolfsonmicro.com>
+	Sun, 4 Sep 2011 12:25:51 -0400
+X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Sep 2011 12:25:51 EDT
+Message-ID: <4E63A0A8.4000103@example.com>
+Date: Sun, 04 Sep 2011 18:00:40 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110903011032.GA10060@opensource.wolfsonmicro.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Florian Mickler <florian@mickler.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: Some regression since rc3
+References: <4E5A651A.6020005@example.com> <20110904174627.7506c6ff@schatten.dmk.lab>
+In-Reply-To: <20110904174627.7506c6ff@schatten.dmk.lab>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 11576784317554323721
+X-Ovh-Remote: 178.36.159.122 (178-36-159-122.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -200
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfedvkedrtdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 03, 2011 at 02:10:32AM +0100, Dimitris Papastamos wrote:
-> On Sat, Sep 03, 2011 at 12:48:27AM +0100, Mark Brown wrote:
-> > On Fri, Sep 02, 2011 at 10:02:02PM +0200, Lars-Peter Clausen wrote:
+On 04.09.2011 17:46, Florian Mickler wrote:
+> On Sun, 28 Aug 2011 17:56:10 +0200
+> Piotr Hosowicz<piotr@hosowicz.com>  wrote:
+>
+>> Hi,
+>>
+>> I almost cannot work. I tried todays rc3-git3 and I see that icedove
+>> mailer keeps growing almost instantly to 100% cpu. I tried rc3-git3 but
+>> to no avail. I am booted on plain rc3 now and I can work, but not
+>> perfect still as before.
+>>
+>> Regards,
+>>
+>> Piotr Hosowicz
+>>
+>
+> Not enough information. It would be interesting to see what icedove is
+> doing. GDB or strace might give a hint.
+>
+> If this is still a problem with current git and it is reproducible, can
+> you bisect which change caused this?
 
-> > > It should be OK to provide no default register values, in this case regmap
-> > > should assume that the default for all registers is 0.
+Debian made me mad at last so I installed Ubuntu. The practical problem 
+is gone for me. Sorry for the noise.
 
-> > Yes - Dimitris, as we discussed offline it's pretty much essential for
-> > things like PMICs where the defaults aren't meaningful and may even be
-
-> That's implemented in patch 8/8.  I can of course squash that patch into
-> the other patch.
-
-Ah, good - I was a bit surprised as I did remember discussing this with
-you.  Please do move that code into the intial patch, in general it's
-usually OK to miss features out of early patches or simplify them but
-making them actively buggy isn't great.
+-- 
+- Jaka jest najwiêksza anomalia fizjologiczno-polityczna?
+- Cz³onek wysuniêty z ramienia na czo³o.
+NP: Caligula's Horse - Equally Flawed
+NB: 3.1.0-rc3
