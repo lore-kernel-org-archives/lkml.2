@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab1IDPFh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 11:05:37 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54584 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab1IDPFa (ORCPT
+	id S1754583Ab1IDPJT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 11:09:19 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:35152 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1IDPJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 11:05:30 -0400
-Date: Sun, 4 Sep 2011 10:05:25 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Amit Shah <amit.shah@redhat.com>,
-        David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        Jean Schurger <jean@schurger.org>,
-        Jan =?utf-8?B?TMO8YmJl?= <jluebbe@debian.org>,
-        Matthijs Kooijman <matthijs@stdin.nl>,
-        Jameson Graef Rollins <jrollins@finestructure.net>,
-        Nacho Barrientos Arias <nacho@debian.org>
-Subject: Re: [regression] CD-ROM polling blocks suspend on some machines
-Message-ID: <20110904150525.GE25587@elie>
-References: <20110406121920.GC4142@mtj.dyndns.org>
- <20110903221456.GA2877@elie>
- <20110904024244.GB3083@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110904024244.GB3083@htj.dyndns.org>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+	Sun, 4 Sep 2011 11:09:14 -0400
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-perf-users@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: [PATCH] perf tools: Allow expressions in __print_symbolic() fields
+Date: Sun,  4 Sep 2011 16:08:59 +0100
+Message-Id: <1315148939-14313-1-git-send-email-stefanha@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> On Sat, Sep 03, 2011 at 05:14:56PM -0500, Jonathan Nieder wrote:
+The __print_symbolic() function takes a sequence of key-value pairs for
+pretty-printing a constant.  The new kvm:kvm_exit print fmt uses the
+expression:
 
->> Various people[1] have been noticing a race (or races?) in which the
->> cdrom_id and scsi_id programs from udev can get stuck in the D state
-[...]
-> Can you please build vanilla kernel with CONFIG_FRAME_POINTER turned
-> on, reproduce the problem and attach full dmesg output?
+  __print_symbolic(..., { 0x040 + 1, "DB excp" }, ...)
 
-Thanks, Tejun.  I haven't been able to reproduce it here, but I'd be
-happy to help anyone cc-ed wanting to do that who has questions (feel
-free to email me privately).
+Currently only atoms are supported and this print fmt fails to parse.
+This patch adds support for expressions instead of just atoms so that
+0x040 + 1 is parsed successfully.  Also add arg_num_eval() support for
+the '+' operator.
+
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+---
+The kvm:kvm_exit event was not recording enough information to format it.  I
+recently fixed this by introducing a __print_symbolic(), this commit has not
+yet hit linux.git but I think it will soon.  In order to correctly format the
+new kvm:kvm_exit, this patch to extend event parsing is required.
+
+ tools/perf/util/trace-event-parse.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 0a7ed5b..d0a4548 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -1425,6 +1425,11 @@ static long long arg_num_eval(struct print_arg *arg)
+ 				die("unknown op '%s'", arg->op.op);
+ 			}
+ 			break;
++		case '+':
++			left = arg_num_eval(arg->op.left);
++			right = arg_num_eval(arg->op.right);
++			val = left + right;
++			break;
+ 		default:
+ 			die("unknown op '%s'", arg->op.op);
+ 		}
+@@ -1485,6 +1490,13 @@ process_fields(struct event *event, struct print_flag_sym **list, char **tok)
+ 
+ 		free_token(token);
+ 		type = process_arg(event, arg, &token);
++
++		if (type == EVENT_OP)
++			type = process_op(event, arg, &token);
++
++		if (type == EVENT_ERROR)
++			goto out_free;
++
+ 		if (test_type_token(type, token, EVENT_DELIM, ","))
+ 			goto out_free;
+ 
+-- 
+1.7.5.4
+
