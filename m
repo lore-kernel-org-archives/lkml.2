@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab1IDWPS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 18:15:18 -0400
-Received: from mail-out2.uio.no ([129.240.10.58]:36431 "EHLO mail-out2.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072Ab1IDWPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 18:15:14 -0400
-X-Greylist: delayed 1279 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Sep 2011 18:15:14 EDT
-From: Hans A Eide <h.a.eide@usit.uio.no>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Subject: IRQ balancing on Sandy Bridge?
-Date: Sun, 4 Sep 2011 23:53:53 +0200
-Message-Id: <7EEBACB7-6D3C-41CA-B685-E48D5AD0FAB6@usit.uio.no>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1244.3)
-X-Mailer: Apple Mail (2.1244.3)
-X-UiO-Ratelimit-Test: rcpts/h 17 msgs/h 9 sum rcpts/h 17 sum msgs/h 9 total rcpts 18423 max rcpts/h 35 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, TVD_RCVD_IP=0.001,UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: FE64A74FE7233001C099C164A326CFF430777F51
-X-UiO-SPAM-Test: remote_host: 84.49.236.242 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 9 total 3956 max/h 12 blacklist 0 greylist 0 ratelimit 0
+	id S1752460Ab1IDWU0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 18:20:26 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:52889 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab1IDWUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 18:20:19 -0400
+To: "Andi Kleen" <andi@firstfloor.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, djwong@us.ibm.com,
+        "Greg Freemyer" <greg.freemyer@gmail.com>,
+        "Andreas Dilger" <adilger.kernel@dilger.ca>,
+        "Theodore Tso" <tytso@mit.edu>,
+        "Sunil Mushran" <sunil.mushran@oracle.com>,
+        "Amir Goldstein" <amir73il@gmail.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Mingming Cao" <cmm@us.ibm.com>, "Joel Becker" <jlbec@evilplan.org>,
+        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Coly Li" <colyli@gmail.com>
+Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
+	<CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com>
+	<20110902182214.GC12086@tux1.beaverton.ibm.com>
+	<yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+	<6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org>
+	<yq14o0scjmg.fsf@sermon.lab.mkp.net>
+	<88f8907569619968aa7b4a8c669d5aba.squirrel@www.firstfloor.org>
+Date: Sun, 04 Sep 2011 18:19:16 -0400
+In-Reply-To: <88f8907569619968aa7b4a8c669d5aba.squirrel@www.firstfloor.org>
+	(Andi Kleen's message of "Sun, 4 Sep 2011 19:44:55 +0200")
+Message-ID: <yq139gcymqj.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090206.4E63F98E.0123,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Andi" == Andi Kleen <andi@firstfloor.org> writes:
 
-Hi, just a quick question I haven't been able to google:
+Andi> Doesn't have any performance numbers.
 
-/proc/interrupts on my SB i5-2500 desktop running kernels up to 3.1.0-rc4+
-tells me there is no IRQ balancing going on, like f.ex. on my Nehalem i5-660.
-Same config (basically std. Debian wheezy conf.)
-
-Shouldn't there be IRQ balancing for SB or did I miss something?
-
-Thanks,
+It's been a while since I read them. I thought they had some compelling
+numbers. Anyway, made a big difference in real life testing here. For
+sustained I/O we're talking an order of magnitude.
 
 
-Hans
+Andi> You need to keep in mind that PCLMULQDQ uses FPU state, so any
+Andi> speedup for the kernel must be large enough to amortize the cost
+Andi> of saving the FPU state.
+
+Yeah, my test cases were for bulk database I/O, not for writing a
+handful of fs metadata blocks. Plus for the DB tests the CRC was
+generated in userland.
+
+I seem to recall Joel picking something other than the hw-accelerated
+CRC32C for ocfs2 metadata and that didn't cause any problems.
+
+That said, I do see a difference between IP checksum and CRC on normal
+FS workloads with DIX enabled here.
 
 
---
-Hans A Eide, PhD.
-Research Computing Services, USIT
-University of Oslo, Norway
+Andi> Typically that only works out for quite large buffers, but kernel
+Andi> buffers are relatively small.
 
+*nod*
 
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
