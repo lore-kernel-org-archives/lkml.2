@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab1IDDky (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 23:40:54 -0400
-Received: from wobosm02.netvigator.com ([219.76.94.18]:41351 "EHLO
-	wobosm02.netvigator.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab1IDDkw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 23:40:52 -0400
-Date: Sun, 4 Sep 2011 11:28:51 +0800 (HKT)
-From: Peter Chow <petertse26@netvigator.com>
-Reply-To: Peter Chow <pchoww56@yahoo.com.hk>
-Message-ID: <1367523858.823826.1315106931381.JavaMail.root@yzbmbs01>
-Subject: Dear Friend Can I Trust You?
+	id S1751324Ab1IDENL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 00:13:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56168 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776Ab1IDENI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 00:13:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,326,1312182000"; 
+   d="scan'208";a="45389820"
+Date: Sun, 4 Sep 2011 12:13:05 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Jens Axboe <jaxboe@fusionio.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] mm: Cleanup clearing of BDI_pending bit in
+ bdi_forker_thread()
+Message-ID: <20110904041305.GA25981@localhost>
+References: <1315004059-9844-1-git-send-email-jack@suse.cz>
+ <1315004059-9844-2-git-send-email-jack@suse.cz>
+ <20110904030442.GA16361@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.12.42]
-X-Mailer: Zimbra 6.0.8_GA_2661 (ZimbraWebClient - FF3.0 (Win)/6.0.8_GA_2661)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110904030442.GA16361@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+On Sun, Sep 04, 2011 at 11:04:42AM +0800, Wu Fengguang wrote:
+> On Sat, Sep 03, 2011 at 06:54:18AM +0800, Jan Kara wrote:
+> > bdi_forker_thread() clears BDI_pending bit at the end of the main loop.
+> > However clearing of this bit must not be done in some cases which is handled by
+> > calling 'continue' from switch statement. That's kind of unusual construct and
+> > without a good reason so change the function into more intuitive code flow.
+> > 
+> > CC: Wu Fengguang <fengguang.wu@intel.com>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> 
+> It's pure code refactor.
+> 
+> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
 
-I bring you greetings. I am PETER CHOW, I work with BANK OF CHINA, HONG KONG. I have a Business Proposal of $17.3M for you to handle with me from my bank.I need you to assist me in executing this Business Project from Hong Kong to your country.I need to know if you will be able to handle this with me before I explain to you in details. Should you be interested please send me the required information below;
+But I do suspect it will slightly increase the code size.
+What do you think?
 
-(1). Full Names:
-(2). Current Residential Address/Country:
-(3). Private Telephone Number:
-(4). Age:
-
-I will want you to reach me on my private e-mail : (pchoww56@yahoo.com.hk) .Finally after that I shall provide you with more information.
-
-Regards,
-Peter Chow
+Thanks,
+Fengguang
