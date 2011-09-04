@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab1IDK04 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 06:26:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36791 "EHLO
+	id S1754134Ab1IDK1I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 06:27:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53453 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab1IDK0T (ORCPT
+	with ESMTP id S1753785Ab1IDK0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 06:26:19 -0400
+	Sun, 4 Sep 2011 06:26:17 -0400
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 04/12] staging: et131x: Remove PHY interrupt handling code from driver isr handler
-Date: Sun,  4 Sep 2011 11:24:35 +0100
-Message-Id: <1315131883-11068-5-git-send-email-mark.einon@gmail.com>
+Subject: [PATCH 03/12] staging: et131x: Remove redundant struct adapter members
+Date: Sun,  4 Sep 2011 11:24:34 +0100
+Message-Id: <1315131883-11068-4-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1315131883-11068-1-git-send-email-mark.einon@gmail.com>
 References: <1315131883-11068-1-git-send-email-mark.einon@gmail.com>
@@ -21,62 +21,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PHY interrupt is now handled by the phy_device, and the equivalent code is present in et131x_adjust_link, called from the phy_device when needed.
+adapter->speed_duplex was never referenced.
+adapter->registry_phy_coma was always set to zero, even in the vendor driver.
+
+Removing all member references and associated dead code.
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
- drivers/staging/et131x/et131x_isr.c |   38 -----------------------------------
- 1 files changed, 0 insertions(+), 38 deletions(-)
+ drivers/staging/et131x/et1310_phy.c     |    6 ------
+ drivers/staging/et131x/et131x_adapter.h |    2 --
+ drivers/staging/et131x/et131x_initpci.c |    4 +---
+ 3 files changed, 1 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x_isr.c b/drivers/staging/et131x/et131x_isr.c
-index 94565c1..b3290e9 100644
---- a/drivers/staging/et131x/et131x_isr.c
-+++ b/drivers/staging/et131x/et131x_isr.c
-@@ -364,44 +364,6 @@ void et131x_isr_handler(struct work_struct *work)
- 			dev_err(&adapter->pdev->dev, "WAKE_ON_LAN interrupt\n");
- 		}
+diff --git a/drivers/staging/et131x/et1310_phy.c b/drivers/staging/et131x/et1310_phy.c
+index 41f0afa..0fccb86 100644
+--- a/drivers/staging/et131x/et1310_phy.c
++++ b/drivers/staging/et131x/et1310_phy.c
+@@ -496,12 +496,6 @@ void et131x_mii_check(struct et131x_adapter *adapter,
  
--		/* Handle the PHY interrupt */
--		if (status & ET_INTR_PHY) {
--			u32 pm_csr;
--			u16 bmsr_ints;
--			u16 bmsr_data;
--			u16 myisr;
+ 			/* Setup ET1310 as per the documentation */
+ 			et131x_adapter_setup(adapter);
 -
--			/* If we are in coma mode when we get this interrupt,
--			 * we need to disable it.
+-			/* Setup the PHY into coma mode until the cable is
+-			 * plugged back in
 -			 */
--			pm_csr = readl(&iomem->global.pm_csr);
--			if (pm_csr & ET_PM_PHY_SW_COMA) {
--				/*
--				 * Check to see if we are in coma mode and if
--				 * so, disable it because we will not be able
--				 * to read PHY values until we are out.
--				 */
--				et1310_disable_phy_coma(adapter);
--			}
--
--			/* Read the PHY ISR to clear the reason for the
--			 * interrupt.
--			 */
--			et131x_mii_read(adapter,
--					(uint8_t) offsetof(struct mi_regs, isr),
--					&myisr);
--
--			et131x_mii_read(adapter,
--			       (uint8_t) offsetof(struct mi_regs, bmsr),
--			       &bmsr_data);
--
--			bmsr_ints = adapter->bmsr ^ bmsr_data;
--			adapter->bmsr = bmsr_data;
--
--			/* Do all the cable in / cable out stuff */
--			et131x_mii_check(adapter, bmsr_data, bmsr_ints);
--		}
--
- 		/* Let's move on to the TxMac */
- 		if (status & ET_INTR_TXMAC) {
- 			u32 err = readl(&iomem->txmac.err);
+-			if (adapter->registry_phy_coma == 1)
+-				et1310_enable_phy_coma(adapter);
+ 		}
+ 	}
+ 
+diff --git a/drivers/staging/et131x/et131x_adapter.h b/drivers/staging/et131x/et131x_adapter.h
+index a63f376..5656472 100644
+--- a/drivers/staging/et131x/et131x_adapter.h
++++ b/drivers/staging/et131x/et131x_adapter.h
+@@ -178,9 +178,7 @@ struct et131x_adapter {
+ 	struct address_map __iomem *regs;
+ 
+ 	/* Registry parameters */
+-	u8 speed_duplex;	/* speed/duplex */
+ 	u8 wanted_flow;		/* Flow we want for 802.3x flow control */
+-	u8 registry_phy_coma;	/* Phy Coma mode enable/disable */
+ 
+ 	u32 registry_rx_mem_end;	/* Size of internal rx memory */
+ 	u32 registry_jumbo_packet;	/* Max supported ethernet packet size */
+diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
+index eb08889..799aad6 100644
+--- a/drivers/staging/et131x/et131x_initpci.c
++++ b/drivers/staging/et131x/et131x_initpci.c
+@@ -250,14 +250,12 @@ void et131x_error_timer_handler(unsigned long data)
+ 		    "No interrupts, in PHY coma, pm_csr = 0x%x\n", pm_csr);
+ 
+ 	if (!(adapter->bmsr & BMSR_LSTATUS) &&
+-	    adapter->registry_phy_coma &&
+ 	    adapter->boot_coma < 11) {
+ 		adapter->boot_coma++;
+ 	}
+ 
+ 	if (adapter->boot_coma == 10) {
+-		if (!(adapter->bmsr & BMSR_LSTATUS)
+-		    && adapter->registry_phy_coma) {
++		if (!(adapter->bmsr & BMSR_LSTATUS)) {
+ 			if ((pm_csr & ET_PM_PHY_SW_COMA) == 0) {
+ 				/* NOTE - This was originally a 'sync with
+ 				 *  interrupt'. How to do that under Linux?
 -- 
 1.7.6
 
