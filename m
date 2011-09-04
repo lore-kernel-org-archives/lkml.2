@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab1IEAHA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 20:07:00 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52363 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829Ab1IEAGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 20:06:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 5 Sep 2011 08:59:13 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: drain all stocks for the cgroup before read
- usage
-Message-Id: <20110905085913.8f84278e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1315098933-29464-1-git-send-email-kirill@shutemov.name>
-References: <1315098933-29464-1-git-send-email-kirill@shutemov.name>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753870Ab1IEAJt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 20:09:49 -0400
+Received: from solitude.tty.gr ([95.154.208.37]:57302 "EHLO mx.tty.gr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752829Ab1IEAJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 20:09:44 -0400
+X-Greylist: delayed 2546 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Sep 2011 20:09:44 EDT
+Date: Mon, 5 Sep 2011 02:26:58 +0300
+From: Faidon Liambotis <paravoid@debian.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, seto.hidetoshi@jp.fujitsu.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        MINOURA Makoto <minoura@valinux.co.jp>, Ingo Molnar <mingo@elte.hu>,
+        stable@kernel.org,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        john stultz <johnstul@us.ibm.com>, Rand@jasper.es,
+        Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>
+Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
+Message-ID: <20110904232657.GC6749@tty.gr>
+References: <1310690138.3367.61.camel@work-vm>
+ <1310724097.2586.296.camel@twins>
+ <1310752795.2945.4.camel@work-vm>
+ <20110721072256.GE9216@elte.hu>
+ <1311251098.29152.130.camel@twins>
+ <20110721125008.GF11246@pcnci.linuxbox.cz>
+ <1311252799.29152.147.camel@twins>
+ <20110721184524.GB381@elte.hu>
+ <20110825185616.GA17078@faidon.noc.grnet.gr>
+ <20110830223829.GB17450@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110830223829.GB17450@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  4 Sep 2011 04:15:33 +0300
-"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-
-> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+On Tue, Aug 30, 2011 at 03:38:29PM -0700, Greg KH wrote:
+> On Thu, Aug 25, 2011 at 09:56:16PM +0300, Faidon Liambotis wrote:
+> > On Thu, Jul 21, 2011 at 08:45:25PM +0200, Ingo Molnar wrote:
+> > > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > On Thu, 2011-07-21 at 14:50 +0200, Nikola Ciprich wrote:
+> > > > > thanks for the patch! I'll put this on our testing boxes...
+> > > > 
+> > > > With a patch that frobs the starting value close to overflowing I hope,
+> > > > otherwise we'll not hear from you in like 7 months ;-)
+> > > > 
+> > > > > Are You going to push this upstream so we can ask Greg to push this to
+> > > > > -stable? 
+> > > > 
+> > > > Yeah, I think we want to commit this with a -stable tag, Ingo?
+> > > 
+> > > yeah - and we also want a Reported-by tag and an explanation of how 
+> > > it can crash and why it matters in practice. I can then stick it into 
+> > > the urgent branch for Linus. (probably will only hit upstream in the 
+> > > merge window though.)
+> > 
+> > Has this been pushed or has the problem been solved somehow? Time is
+> > against us on this bug as more boxes will crash as they reach 200 days
+> > of uptime...
+> > 
+> > In any case, feel free to use me as a Reported-by, my full report of the
+> > problem being <20110430173905.GA25641@tty.gr>.
+> > 
+> > FWIW and if I understand correctly, my symptoms were caused by *two*
+> > different bugs:
+> > a) the 54 bits wraparound at 208 days that Peter fixed above,
+> > b) a kernel crash at ~215 days related to RT tasks, fixed by
+> > 305e6835e05513406fa12820e40e4a8ecb63743c (already in -stable).
 > 
-> Currently, mem_cgroup_usage() for non-root cgroup returns usage
-> including stocks.
+> So, what do I do here as part of the .32-longterm kernel?  Is there a
+> fix that is in Linus's tree that I need to apply here?
 > 
-> Let's drain all socks before read resource counter value. It makes
-> memory{,.memcg}.usage_in_bytes and memory.stat consistent.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> confused,
 
-Hmm. This seems costly to me. 
+Is this even pushed upstream? I checked Linus' tree and the proposed
+patch is *not* merged there. I'm not really sure if it was fixed some
+other way, though. I thought this was intended to be an "urgent" fix or
+something?
 
-If a user chesk usage_in_bytes in a memcg once per 1sec, 
-the kernel will call schedule_work on cpus once per 1sec.
-So, IMHO, I don't like this.
-
-But if some other guys want this, I'll ack.
-
-BTW, how this affects memory.stat ?
-
-Thanks,
--Kame
-
+Regards,
+Faidon
