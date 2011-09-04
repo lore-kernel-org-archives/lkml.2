@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab1IDCOA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 22:14:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57046 "EHLO mga03.intel.com"
+	id S1753480Ab1IDCN6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 22:13:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25583 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912Ab1IDCN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 22:13:27 -0400
+	id S1752807Ab1IDCN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 22:13:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,326,1312182000"; 
-   d="scan'208";a="45377081"
-Message-Id: <20110904020915.942753370@intel.com>
+   d="scan'208";a="45377069"
+Message-Id: <20110904020914.980576896@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 04 Sep 2011 09:53:15 +0800
+Date: Sun, 04 Sep 2011 09:53:08 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 to: <linux-fsdevel@vger.kernel.org>
 cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,77 +26,283 @@ CC: Vivek Goyal <vgoyal@redhat.com>
 CC: Andrea Righi <arighi@develer.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/18] writeback: dirty position control - bdi reserve area
+Subject: [PATCH 03/18] writeback: dirty rate control
 References: <20110904015305.367445271@intel.com>
-Content-Disposition: inline; filename=bdi-reserve-area
+Content-Disposition: inline; filename=dirty-ratelimit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep a minimal pool of dirty pages for each bdi, so that the disk IO
-queues won't underrun.
+It's all about bdi->dirty_ratelimit, which aims to be (write_bw / N)
+when there are N dd tasks.
 
-It's particularly useful for JBOD and small memory system.
+On write() syscall, use bdi->dirty_ratelimit
+============================================
 
-Note that this is not enough when memory is really tight (in comparison
-to write bandwidth). It may result in (pos_ratio > 1) at the setpoint
-and push the dirty pages high. This is more or less intended because the
-bdi is in the danger of IO queue underflow. However the global dirty
-pages, when pushed close to limit, will eventually conteract our desire
-to push up the low bdi_dirty.
+    balance_dirty_pages(pages_dirtied)
+    {
+        task_ratelimit = bdi->dirty_ratelimit * bdi_position_ratio();
+        pause = pages_dirtied / task_ratelimit;
+        sleep(pause);
+    }
 
-In low memory JBOD tests we do see disks under-utilized from time to
-time. The additional fix may be to add a BDI_async_underrun flag to
-indicate that the block write queue is running low and it's time to
-quickly fill the queue by unthrottling the tasks regardless of the
-global limit.
+On every 200ms, update bdi->dirty_ratelimit
+===========================================
+
+    bdi_update_dirty_ratelimit()
+    {
+        task_ratelimit = bdi->dirty_ratelimit * bdi_position_ratio();
+        balanced_dirty_ratelimit = task_ratelimit * write_bw / dirty_rate;
+        bdi->dirty_ratelimit = balanced_dirty_ratelimit
+    }
+
+Estimation of balanced bdi->dirty_ratelimit
+===========================================
+
+balanced task_ratelimit
+-----------------------
+
+balance_dirty_pages() needs to throttle tasks dirtying pages such that
+the total amount of dirty pages stays below the specified dirty limit in
+order to avoid memory deadlocks. Furthermore we desire fairness in that
+tasks get throttled proportionally to the amount of pages they dirty.
+
+IOW we want to throttle tasks such that we match the dirty rate to the
+writeout bandwidth, this yields a stable amount of dirty pages:
+
+        dirty_rate == write_bw                                          (1)
+
+The fairness requirement gives us:
+
+        task_ratelimit = balanced_dirty_ratelimit
+                       == write_bw / N                                  (2)
+
+where N is the number of dd tasks.  We don't know N beforehand, but
+still can estimate balanced_dirty_ratelimit within 200ms.
+
+Start by throttling each dd task at rate
+
+        task_ratelimit = task_ratelimit_0                               (3)
+                         (any non-zero initial value is OK)
+
+After 200ms, we measured
+
+        dirty_rate = # of pages dirtied by all dd's / 200ms
+        write_bw   = # of pages written to the disk / 200ms
+
+For the aggressive dd dirtiers, the equality holds
+
+        dirty_rate == N * task_rate
+                   == N * task_ratelimit_0                              (4)
+Or
+        task_ratelimit_0 == dirty_rate / N                              (5)
+
+Now we conclude that the balanced task ratelimit can be estimated by
+
+                                                      write_bw
+        balanced_dirty_ratelimit = task_ratelimit_0 * ----------        (6)
+                                                      dirty_rate
+
+Because with (4) and (5) we can get the desired equality (1):
+
+                                                       write_bw
+        balanced_dirty_ratelimit == (dirty_rate / N) * ----------
+                                                       dirty_rate
+                                 == write_bw / N
+
+Then using the balanced task ratelimit we can compute task pause times like:
+
+        task_pause = task->nr_dirtied / task_ratelimit
+
+task_ratelimit with position control
+------------------------------------
+
+However, while the above gives us means of matching the dirty rate to
+the writeout bandwidth, it at best provides us with a stable dirty page
+count (assuming a static system). In order to control the dirty page
+count such that it is high enough to provide performance, but does not
+exceed the specified limit we need another control.
+
+The dirty position control works by extending (2) to
+
+        task_ratelimit = balanced_dirty_ratelimit * pos_ratio           (7)
+
+where pos_ratio is a negative feedback function that subjects to
+
+1) f(setpoint) = 1.0
+2) df/dx < 0
+
+That is, if the dirty pages are ABOVE the setpoint, we throttle each
+task a bit more HEAVY than balanced_dirty_ratelimit, so that the dirty
+pages are created less fast than they are cleaned, thus DROP to the
+setpoints (and the reverse).
+
+Based on (7) and the assumption that both dirty_ratelimit and pos_ratio
+remains CONSTANT for the past 200ms, we get
+
+        task_ratelimit_0 = balanced_dirty_ratelimit * pos_ratio         (8)
+
+Putting (8) into (6), we get the formula used in
+bdi_update_dirty_ratelimit():
+
+                                                write_bw
+        balanced_dirty_ratelimit *= pos_ratio * ----------              (9)
+                                                dirty_rate
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl> 
+---
+ include/linux/backing-dev.h |    7 ++
+ mm/backing-dev.c            |    1 
+ mm/page-writeback.c         |   82 +++++++++++++++++++++++++++++++++-
+ 3 files changed, 88 insertions(+), 2 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2011-08-26 20:12:19.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-08-26 20:13:21.000000000 +0800
-@@ -487,6 +487,16 @@ unsigned long bdi_dirty_limit(struct bac
-  *   0 +------------.------------------.----------------------*------------->
-  *           freerun^          setpoint^                 limit^   dirty pages
-  *
-+ * (o) bdi reserve area
-+ *
-+ * The bdi reserve area tries to keep a reasonable number of dirty pages for
-+ * preventing block queue underrun.
-+ *
-+ * reserve area, scale up rate as dirty pages drop low
-+ * |<----------------------------------------------->|
-+ * |-------------------------------------------------------*-------|----------
-+ * 0                                           bdi setpoint^       ^bdi_thresh
-+ *
-  * (o) bdi control lines
-  *
-  * The control lines for the global/bdi setpoints both stretch up to @limit.
-@@ -634,6 +644,22 @@ static unsigned long bdi_position_ratio(
- 	pos_ratio *= x_intercept - bdi_dirty;
- 	do_div(pos_ratio, x_intercept - bdi_setpoint + 1);
+--- linux-next.orig/include/linux/backing-dev.h	2011-08-26 13:53:40.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2011-08-26 13:54:13.000000000 +0800
+@@ -75,10 +75,17 @@ struct backing_dev_info {
+ 	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
+ 
+ 	unsigned long bw_time_stamp;	/* last time write bw is updated */
++	unsigned long dirtied_stamp;
+ 	unsigned long written_stamp;	/* pages written at bw_time_stamp */
+ 	unsigned long write_bandwidth;	/* the estimated write bandwidth */
+ 	unsigned long avg_write_bandwidth; /* further smoothed write bw */
  
 +	/*
-+	 * bdi reserve area, safeguard against dirty pool underrun and disk idle
-+	 *
-+	 * It may push the desired control point of global dirty pages higher
-+	 * than setpoint. It's not necessary in single-bdi case because a
-+	 * minimal pool of @freerun dirty pages will already be guaranteed.
++	 * The base dirty throttle rate, re-calculated on every 200ms.
++	 * All the bdi tasks' dirty rate will be curbed under it.
 +	 */
-+	x_intercept = min(write_bw, freerun);
-+	if (bdi_dirty < x_intercept) {
-+		if (bdi_dirty > x_intercept / 8) {
-+			pos_ratio *= x_intercept;
-+			do_div(pos_ratio, bdi_dirty);
-+		} else
-+			pos_ratio *= 8;
-+	}
++	unsigned long dirty_ratelimit;
 +
- 	return pos_ratio;
+ 	struct prop_local_percpu completions;
+ 	int dirty_exceeded;
+ 
+--- linux-next.orig/mm/backing-dev.c	2011-08-26 13:53:40.000000000 +0800
++++ linux-next/mm/backing-dev.c	2011-08-26 13:54:13.000000000 +0800
+@@ -670,6 +670,7 @@ int bdi_init(struct backing_dev_info *bd
+ 	bdi->bw_time_stamp = jiffies;
+ 	bdi->written_stamp = 0;
+ 
++	bdi->dirty_ratelimit = INIT_BW;
+ 	bdi->write_bandwidth = INIT_BW;
+ 	bdi->avg_write_bandwidth = INIT_BW;
+ 
+--- linux-next.orig/mm/page-writeback.c	2011-08-26 13:52:42.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-26 15:52:42.000000000 +0800
+@@ -787,6 +787,78 @@ static void global_update_bandwidth(unsi
+ 	spin_unlock(&dirty_lock);
  }
  
++/*
++ * Maintain bdi->dirty_ratelimit, the base dirty throttle rate.
++ *
++ * Normal bdi tasks will be curbed at or below it in long term.
++ * Obviously it should be around (write_bw / N) when there are N dd tasks.
++ */
++static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
++				       unsigned long thresh,
++				       unsigned long bg_thresh,
++				       unsigned long dirty,
++				       unsigned long bdi_thresh,
++				       unsigned long bdi_dirty,
++				       unsigned long dirtied,
++				       unsigned long elapsed)
++{
++	unsigned long write_bw = bdi->avg_write_bandwidth;
++	unsigned long dirty_ratelimit = bdi->dirty_ratelimit;
++	unsigned long dirty_rate;
++	unsigned long task_ratelimit;
++	unsigned long balanced_dirty_ratelimit;
++	unsigned long pos_ratio;
++
++	/*
++	 * The dirty rate will match the writeout rate in long term, except
++	 * when dirty pages are truncated by userspace or re-dirtied by FS.
++	 */
++	dirty_rate = (dirtied - bdi->dirtied_stamp) * HZ / elapsed;
++
++	pos_ratio = bdi_position_ratio(bdi, thresh, bg_thresh, dirty,
++				       bdi_thresh, bdi_dirty);
++	/*
++	 * task_ratelimit reflects each dd's dirty rate for the past 200ms.
++	 */
++	task_ratelimit = (u64)dirty_ratelimit *
++					pos_ratio >> RATELIMIT_CALC_SHIFT;
++
++	/*
++	 * A linear estimation of the "balanced" throttle rate. The theory is,
++	 * if there are N dd tasks, each throttled at task_ratelimit, the bdi's
++	 * dirty_rate will be measured to be (N * task_ratelimit). So the below
++	 * formula will yield the balanced rate limit (write_bw / N).
++	 *
++	 * Note that the expanded form is not a pure rate feedback:
++	 *	rate_(i+1) = rate_(i) * (write_bw / dirty_rate)		     (1)
++	 * but also takes pos_ratio into account:
++	 *	rate_(i+1) = rate_(i) * (write_bw / dirty_rate) * pos_ratio  (2)
++	 *
++	 * (1) is not realistic because pos_ratio also takes part in balancing
++	 * the dirty rate.  Consider the state
++	 *	pos_ratio = 0.5						     (3)
++	 *	rate = 2 * (write_bw / N)				     (4)
++	 * If (1) is used, it will stuck in that state! Because each dd will
++	 * be throttled at
++	 *	task_ratelimit = pos_ratio * rate = (write_bw / N)	     (5)
++	 * yielding
++	 *	dirty_rate = N * task_ratelimit = write_bw		     (6)
++	 * put (6) into (1) we get
++	 *	rate_(i+1) = rate_(i)					     (7)
++	 *
++	 * So we end up using (2) to always keep
++	 *	rate_(i+1) ~= (write_bw / N)				     (8)
++	 * regardless of the value of pos_ratio. As long as (8) is satisfied,
++	 * pos_ratio is able to drive itself to 1.0, which is not only where
++	 * the dirty count meet the setpoint, but also where the slope of
++	 * pos_ratio is most flat and hence task_ratelimit is least fluctuated.
++	 */
++	balanced_dirty_ratelimit = div_u64((u64)task_ratelimit * write_bw,
++					   dirty_rate | 1);
++
++	bdi->dirty_ratelimit = max(balanced_dirty_ratelimit, 1UL);
++}
++
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+ 			    unsigned long thresh,
+ 			    unsigned long bg_thresh,
+@@ -797,6 +869,7 @@ void __bdi_update_bandwidth(struct backi
+ {
+ 	unsigned long now = jiffies;
+ 	unsigned long elapsed = now - bdi->bw_time_stamp;
++	unsigned long dirtied;
+ 	unsigned long written;
+ 
+ 	/*
+@@ -805,6 +878,7 @@ void __bdi_update_bandwidth(struct backi
+ 	if (elapsed < BANDWIDTH_INTERVAL)
+ 		return;
+ 
++	dirtied = percpu_counter_read(&bdi->bdi_stat[BDI_DIRTIED]);
+ 	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]);
+ 
+ 	/*
+@@ -814,12 +888,16 @@ void __bdi_update_bandwidth(struct backi
+ 	if (elapsed > HZ && time_before(bdi->bw_time_stamp, start_time))
+ 		goto snapshot;
+ 
+-	if (thresh)
++	if (thresh) {
+ 		global_update_bandwidth(thresh, dirty, now);
+-
++		bdi_update_dirty_ratelimit(bdi, thresh, bg_thresh, dirty,
++					   bdi_thresh, bdi_dirty,
++					   dirtied, elapsed);
++	}
+ 	bdi_update_write_bandwidth(bdi, elapsed, written);
+ 
+ snapshot:
++	bdi->dirtied_stamp = dirtied;
+ 	bdi->written_stamp = written;
+ 	bdi->bw_time_stamp = now;
+ }
 
 
