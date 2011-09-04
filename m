@@ -1,128 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab1IDAWD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 20:22:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58437 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331Ab1IDAV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Sep 2011 20:21:59 -0400
-Message-ID: <4E62C488.6040209@infradead.org>
-Date: Sat, 03 Sep 2011 21:21:28 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1752630Ab1IDAho (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 20:37:44 -0400
+Received: from nm14-vm0.bullet.mail.ird.yahoo.com ([77.238.189.193]:34344 "HELO
+	nm14-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751140Ab1IDAhn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Sep 2011 20:37:43 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 873063.57336.bm@omp1013.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.uk;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=jn1haVDAfrbO2gupBwPwzigGjQrERwhelnw0jJ51uofzjLIP8+dDG8VXfER6rQY6F2ZK+CPUtKPK8wocVznApYDgKTKoBN2LJZPzsVtKXB57P+Sw62kvgtmd49lrEUOOsEqnPMYl2De1JlcUX/ApIDXf3fiGgZOydilpJITB2qQ=;
+X-YMail-OSG: fMZWMy4VM1kPQmL1nvYPXbTOTTT4xD7GYT6EW5m.cNnekvc
+ ZOQhE7GNyd.xDm70BWx7eZYxqKZ3LHxjA.37pjF.iEwstxCc8XJz71QO_Svq
+ Wnqncv.g.5nyCNpOJR6tvhdEqCbFaovIaDdbcDH8y6jR_Hyd3S68QlO7wUkX
+ SSElhEirDcjjyl80PIasbUQdnwh7wntEEWu.gwrYQT3EphoP5kXbO0Dp7NSG
+ dprzA1xiahnH86DhwPyGrafPostDjFoR7G5l_ZmUrcyhQvkN_4pCwv3jCts0
+ zy6Hdt0V0TC3vEIS4lB7nhu64oe8ip1BH0CZOBHG8KAmUFE307tOs.nNxp99
+ qb476iB2bORLrjn23.9i3zfU2ZrzyaPu0n_bpaigZa8EK4BHZ6OlWef249NS
+ yQEEwl8JViltaZege5zDf
+X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.113.315625
+Message-ID: <1315096661.23425.YahooMailClassic@web29510.mail.ird.yahoo.com>
+Date: Sun, 4 Sep 2011 01:37:41 +0100 (BST)
+From: Hin-Tak Leung <hintak_leung@yahoo.co.uk>
+Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAG1a4rscDrbiCKxSPvbkG7SutQ5HCU2tX9FJEv81nFuVxLWekg@mail.gmail.com>
 MIME-Version: 1.0
-To: Andy Walls <awalls@md.metrocast.net>
-CC: Joe Perches <joe@perches.com>, ivtv-devel@ivtvdriver.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean-Francois Moine <moinejf@free.fr>
-Subject: Re: [PATCH 06/14] [media] cx18: Use current logging styles
-References: <cover.1313966088.git.joe@perches.com> <29abc343c4fce5d019ce56f5a3882aedaeb092bc.1313966089.git.joe@perches.com> <1314182047.2253.3.camel@palomino.walls.org> <1314222175.15882.8.camel@Joe-Laptop> <1314451740.2244.7.camel@palomino.walls.org> <1314463352.6852.5.camel@Joe-Laptop> <40a27a5f-f4ec-4304-88a1-a254c7bc6c68@email.android.com>
-In-Reply-To: <40a27a5f-f4ec-4304-88a1-a254c7bc6c68@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-08-2011 14:23, Andy Walls escreveu:
-> Joe Perches <joe@perches.com> wrote:
+--- On Sun, 4/9/11, Pavel Ivanov <paivanof@gmail.com> wrote:
+
+> On Sat, Sep 3, 2011 at 7:35 PM,
+> >> So these 2 pointers are exactly what causing the
+> trouble.
+> >
+> > This is interesting... so it would appear that
+> hfsplus_read_wrapper() isn't working correctly, but enough
+> of correct information to pass checks. I just re-read your
+> e-mail and your device has a logical block size of 4096
+> bytes, whereas most of the hfsplus code uses a block size of
+> 512... you will need to look into hfsplus_submit_bio(),
+> which is in the same file wrapper.c.
 > 
->> On Sat, 2011-08-27 at 09:28 -0400, Andy Walls wrote:
->>> On Wed, 2011-08-24 at 14:42 -0700, Joe Perches wrote:
->>>> On Wed, 2011-08-24 at 06:34 -0400, Andy Walls wrote:
->>>>> On Sun, 2011-08-21 at 15:56 -0700, Joe Perches wrote:
->>>>>> Add pr_fmt.
->>>>>> Convert printks to pr_<level>.
->>>>>> Convert printks without KERN_<level> to appropriate pr_<level>.
->>>>>> Removed embedded prefixes when pr_fmt was added.
->>>>>> Use ##__VA_ARGS__ for variadic macros.
->>>>>> Coalesce format strings.
->>>>> 1. It is important to preserve the per-card prefixes emitted by
->> the
->>>>> driver: cx18-0, cx18-1, cx18-2, etc.  With a quick skim, I think
->> your
->>>>> change preserves the format of all output messages (except
->> removing
->>>>> periods).  Can you confirm this?
->>>> Here's the output diff of
->>>> strings built-in.o | grep "^<.>" | sort
->>>> new and old
->> []
->>> Yuck.
->>>>> 2. PLease don't add a pr_fmt() #define to exevry file.  Just put
->> one
->>>>> where all the other CX18_*() macros are defined.  Every file
->> picks those
->>>>> up.
->>>> It's not the first #include of every file.
->>>> printk.h has a default #define pr_fmt(fmt) fmt
->>> Well then don't use "pr_fmt(fmt)" in cx18, if it overloads a define
->>> somewhere else in the kernel and has a dependency on its order
->> relative
->>> to #include statements.  That sort of thing just ups maintenance
->> hours
->>> later.  That's not a good trade off for subjectively better log
->>> messages.
->>> Won't redifining the 'pr_fmt(fmt)' generate preprocessor warnings
->>> anyway?
->>
->> No.
->>
->> Andy, I fully understand how this stuff works.
->> You apparently don't (yet).
->>
->> Look at include/linux/printk.h
->>
->> #ifndef pr_fmt
->> #define pr_fmt(fmt) fmt
->> #endif
->>
->> A default empty define is used when one
->> is not specified before printk.h is
->> included.  kernel.h includes printk.h
->>
->> v4l2_<level> uses the "name" of the video
->> device in its output.  That name may not
->> be the same name as the module.
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-media"
->> in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I've looked into the code myself a little and here's what I
+> see.
+> hfsplus_read_wrapper() calls to hfsplus_submit_bio() twice
+> to fill
+> sbi->s_vhdr and sbi->s_backup_vhdr. And according to
+> parameters they
+> are filled with pointers into sbi->s_vhdr_buf and
+> sbi->s_backup_vhdr_buf respectively. It's done with the
+> following code
+> at fs/hfsplus/wrapper.c:79:
 > 
-> Hi Joe,
+>     if (!(rw & WRITE) && data)
+>         *data = (u8 *)buf +
+> offset;
 > 
-> I don't need to fully understand it.
+> So s_vhdr and s_backup_vhdr shouldn't be freed, s_vhdr_buf
+> and
+> s_backup_vhdr_buf should be freed instead. And indeed
+> changing in
+> hfsplus_fill_super()
 > 
-> This is a happy to glad change with no functional nor performance benefit.  It adds unneeded lines of code to the driver and mangles some of the log messages.
+>     kfree(sbi->s_vhdr);
+>     kfree(sbi->s_backup_vhdr);
 > 
-> I see no benefit from my perspective.
+> to
+> 
+>     kfree(sbi->s_vhdr_buf);
+>     kfree(sbi->s_backup_vhdr_buf);
+> 
+> fixes BUG reports from SLUB.
 
-Hi Andy and Jean-Francois,
+The code around there is a bit too dense, and both of the *_buf are recent introductions (and temp values, I think) as is hfsplus_submit_bio() itself, around the 2.6.39/3.0 time frame. I think the intention is to fill s_vhdr/s_backup_vhdr via mulitple fetches using *_buf as temp buffer.
 
->From my perspective, the advantage of using the standard macros for
-errors are:
+> Now, the problem with "too large" error is trickier.
+> According to this message
+> 
+> >> [   92.549197] hfs: filesystem size too large
+> blksz_shift=14, total_blocks=486494
+> 
+> HFS thinks that my iPod has block size of 16 KiB. But
+> generic_check_addressable() decides that everything with
+> blocks larger
+> than PAGE_CACHE_SHIFT (i.e. 4 KiB on my system) cannot be
+> addressable
+> and thus filesystem cannot be mounted. I guess it wasn't
+> supposed to
+> be that way. Is hfsplus_read_wrapper() wrong in determining
+> block size
+> or all iPods where this was tested actually had block size
+> 4 KiB or
+> less?
 
-1) Consistency. Except for patches 06 and 14, the other patches were
-acked by the maintainers or by me, for the drivers that I maintain
-or whose maintainer didn't nack. Also, the same sort of macros are
-being used on other places at the Kernel;
+Your logical sector size is 4k according to dmesg and hfs block size is 512 so that 16KiB is a bit dodgy.
 
-2) One of the proposed themes for discussion at the KS/2011 is how to
-improve the error reporting. While printk works, there are better
-ways of doing it than just printing the error at the console. I'm
-working on something like that with regards to hardware errors,
-reported via MCE and EDAC subsystems. The idea there is to convert
-the printk reports into structured trace events, making easier for
-userspace to deal with the errors.
+> > It is going to be difficult to do anything without the
+> actual device and 8GB is too large to be send around.
+> Assuming it is mostly music/media and there isn't too much
+> stuff which is too confident/private, can I ask you to send
+> me say, the first few MB of the disk?
+> 
+> I'll send it in a separate email bypassing lists.
 
-Making all places to use the same macros for it using a similar format
-seems to be the first step for replacing the current way for a better
-one.
-
-Regards,
-Mauro
+Thanks - I got them now. It will take a while to find my way around though...
