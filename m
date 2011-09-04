@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab1IDPhu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 11:37:50 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63100 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab1IDPhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 11:37:45 -0400
-From: Johannes Thumshirn <morbidrsa@googlemail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Johannes Thumshirn <morbidrsa@googlemail.com>
-Subject: [PATCH] Staging: comedi: Removed unnecessary "extern" from do_become_nonbusy()
-Date: Sun,  4 Sep 2011 17:36:29 +0200
-Message-Id: <1315150589-3434-1-git-send-email-morbidrsa@googlemail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751246Ab1IDPrA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 11:47:00 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:38333 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab1IDPq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 11:46:58 -0400
+Date: Sun, 4 Sep 2011 17:46:27 +0200
+From: Florian Mickler <florian@mickler.org>
+To: piotr@hosowicz.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Some regression since rc3
+Message-ID: <20110904174627.7506c6ff@schatten.dmk.lab>
+In-Reply-To: <4E5A651A.6020005@example.com>
+References: <4E5A651A.6020005@example.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed unnecessary "extern" label from do_become_nonbusy() function to make
-checkpatch.pl happy
+On Sun, 28 Aug 2011 17:56:10 +0200
+Piotr Hosowicz <piotr@hosowicz.com> wrote:
 
-Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
----
- drivers/staging/comedi/comedi_fops.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> Hi,
+> 
+> I almost cannot work. I tried todays rc3-git3 and I see that icedove 
+> mailer keeps growing almost instantly to 100% cpu. I tried rc3-git3 but 
+> to no avail. I am booted on plain rc3 now and I can work, but not 
+> perfect still as before.
+> 
+> Regards,
+> 
+> Piotr Hosowicz
+> 
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index e90e3cc..c46db8f 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -101,8 +101,7 @@ static int do_insn_ioctl(struct comedi_device *dev,
- static int do_poll_ioctl(struct comedi_device *dev, unsigned int subd,
- 			 void *file);
- 
--extern void do_become_nonbusy(struct comedi_device *dev,
--			      struct comedi_subdevice *s);
-+void do_become_nonbusy(struct comedi_device *dev, struct comedi_subdevice *s);
- static int do_cancel(struct comedi_device *dev, struct comedi_subdevice *s);
- 
- static int comedi_fasync(int fd, struct file *file, int on);
--- 
-1.7.4.1
+Not enough information. It would be interesting to see what icedove is
+doing. GDB or strace might give a hint. 
 
+If this is still a problem with current git and it is reproducible, can
+you bisect which change caused this?
+
+Regards,
+Flo
