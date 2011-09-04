@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab1IDMwu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 08:52:50 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44426 "EHLO
+	id S1753823Ab1IDNQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 09:16:29 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56529 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab1IDMwn (ORCPT
+	with ESMTP id S1753252Ab1IDNQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 08:52:43 -0400
-Subject: [PATCH] ASoC: codecs: Remove unused mutex
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 Sep 2011 20:52:31 +0800
-Message-ID: <1315140751.8673.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sun, 4 Sep 2011 09:16:21 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/3] blktrace: bio-based device tracing improvement
+Date: Sun,  4 Sep 2011 22:15:09 +0900
+Message-Id: <1315142112-2430-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- sound/soc/codecs/alc5623.c |    2 --
- sound/soc/codecs/wm9090.c  |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
+Hello,
 
-diff --git a/sound/soc/codecs/alc5623.c b/sound/soc/codecs/alc5623.c
-index eecffb5..0517315 100644
---- a/sound/soc/codecs/alc5623.c
-+++ b/sound/soc/codecs/alc5623.c
-@@ -41,7 +41,6 @@ MODULE_PARM_DESC(caps_charge, "ALC5623 cap charge time (msecs)");
- struct alc5623_priv {
- 	enum snd_soc_control_type control_type;
- 	void *control_data;
--	struct mutex mutex;
- 	u8 id;
- 	unsigned int sysclk;
- 	u16 reg_cache[ALC5623_VENDOR_ID2+2];
-@@ -1052,7 +1051,6 @@ static int alc5623_i2c_probe(struct i2c_client *client,
- 	i2c_set_clientdata(client, alc5623);
- 	alc5623->control_data = client;
- 	alc5623->control_type = SND_SOC_I2C;
--	mutex_init(&alc5623->mutex);
- 
- 	ret =  snd_soc_register_codec(&client->dev,
- 		&soc_codec_device_alc5623, &alc5623_dai, 1);
-diff --git a/sound/soc/codecs/wm9090.c b/sound/soc/codecs/wm9090.c
-index 4de1220..f2f3077 100644
---- a/sound/soc/codecs/wm9090.c
-+++ b/sound/soc/codecs/wm9090.c
-@@ -139,7 +139,6 @@ static const u16 wm9090_reg_defaults[] = {
- 
- /* This struct is used to save the context */
- struct wm9090_priv {
--	struct mutex mutex;
- 	struct wm9090_platform_data pdata;
- 	void *control_data;
- };
-@@ -663,7 +662,6 @@ static int wm9090_i2c_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, wm9090);
- 	wm9090->control_data = i2c;
--	mutex_init(&wm9090->mutex);
- 
- 	ret =  snd_soc_register_codec(&i2c->dev,
- 			&soc_codec_dev_wm9090,  NULL, 0);
+The blktrace is used to report block device activities to user space
+using kernel tracepoint but it was focused to block I/O request struct.
+Thus bio-based devices (i.e. loop, ram, md, ...) which don't make use
+of the request structure could not be supported well - the tool only
+can detect a limited number of events such as queuing, cloning and
+remapping but it cannot know when the I/O activity is completed.
+
+bio_endio(), the I/O completion callback, can be used to fix this
+problem by adding appropriate tracepoint in it. However it was called
+from other paths too (normal request-based block devices and some of
+nested block I/O handling routines) so that we should recognize such
+cases to prevent duplicated reports. In this series, BIO_IN_FLIGHT flag
+is introduced and used for that purpose.
+
+Note that (bio-based) dm already supported completion report by adding
+the tracepoint into the path manually. With this patches, it will be
+converted to use generic mechanism.
+
+Changes from v1:
+ * kill __bio_endio()
+ * use BIO_IN_FLIGHT flag
+
+Any feedbacks are welcome.
+
+Thanks.
+
+Namhyung Kim (3):
+  block: move trace_block_bio_remap() before blk_partition_remap
+  block: introduce BIO_IN_FLIGHT flag
+  block: don't export block_bio_complete tracepoint
+
+ block/blk-core.c          |   12 ++++++++----
+ drivers/md/dm.c           |    1 -
+ fs/bio.c                  |    9 +++++++++
+ include/linux/blk_types.h |    1 +
+ 4 files changed, 18 insertions(+), 5 deletions(-)
+
 -- 
-1.7.4.1
-
-
+1.7.6
 
