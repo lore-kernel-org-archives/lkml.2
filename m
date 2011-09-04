@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab1IDRJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 13:09:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33049 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751689Ab1IDRJU (ORCPT
+	id S1752130Ab1IDRSd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 13:18:33 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:53568 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab1IDRS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 13:09:20 -0400
+	Sun, 4 Sep 2011 13:18:26 -0400
+To: "Andi Kleen" <andi@firstfloor.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, djwong@us.ibm.com,
+        "Greg Freemyer" <greg.freemyer@gmail.com>,
+        "Andreas Dilger" <adilger.kernel@dilger.ca>,
+        "Theodore Tso" <tytso@mit.edu>,
+        "Sunil Mushran" <sunil.mushran@oracle.com>,
+        "Amir Goldstein" <amir73il@gmail.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Mingming Cao" <cmm@us.ibm.com>, "Joel Becker" <jlbec@evilplan.org>,
+        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Coly Li" <colyli@gmail.com>
+Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
+	<CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com>
+	<20110902182214.GC12086@tux1.beaverton.ibm.com>
+	<yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+	<6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org>
+Date: Sun, 04 Sep 2011 13:17:27 -0400
+In-Reply-To: <6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org>
+	(Andi Kleen's message of "Sun, 4 Sep 2011 18:54:28 +0200")
+Message-ID: <yq14o0scjmg.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <3546423.kFMPx0aPCi@wuerfel>
-References: <4E582577.2060805@zytor.com> <19229.1315070217@turing-police.cc.vt.edu>
- <4E62638E.40308@zytor.com> <3546423.kFMPx0aPCi@wuerfel>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 4 Sep 2011 10:08:50 -0700
-Message-ID: <CA+55aFwmu8kqdMLK_wLbvKCqCbkS2AXOd7fBvupVcgzkcaC88Q@mail.gmail.com>
-Subject: Re: RFD: x32 ABI system call numbers
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
-        "H.J. Lu" <hjl.tools@gmail.com>, Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090203.4E63B2D1.007D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 4, 2011 at 8:17 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->
-> For a lot of these cases, the best option is to change the
-> kernel headers to use new definitions on x32 before someone
-> tries to ship a distro, especially when the ioctl command code
-> is fixed. In case of the XFS ioctls, I think the only sane
-> way is define the x32 ABI to match the 64 bit ABI completely,
-> while for RAW_GETBIND and VIDEO_GET_EVENT it's probably enough
-> to make x32 match x86-32.
+>>>>> "Andi" == Andi Kleen <andi@firstfloor.org> writes:
 
-Ack, ack, ack.
+>> On Westmere and beyond it is possible to accelerate generic CRC
+>> calculation using the PCLMULQDQ operation. There are many of our CRC
 
-If we make the x32 ioctl system call first do "regular" ioctl, and
-then fall back to the compat ones if that fails, x32 can mix and
-match. It's not pretty, but I think it's better than the alternative
-(which would be to have to use one r the other and add lots of new
-compat handling).
+Andi> Faster than the lookup table? That's hard to believe.
 
-Of course, we could also just have "compat_ioctl()" fall back to
-native mode in general, and not make a x32 special case.
+Using PCLMULQDQ you can parallelize the calculation. You can even boost
+hw CRC32C performance that way.
 
-                     Linus
+  http://download.intel.com/design/intarch/papers/323405.pdf
+
+  http://download.intel.com/design/intarch/papers/323102.pdf
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
