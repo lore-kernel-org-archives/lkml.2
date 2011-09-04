@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1IDCOc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Sep 2011 22:14:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25583 "EHLO mga03.intel.com"
+	id S1754117Ab1IDCOZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Sep 2011 22:14:25 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49417 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab1IDCN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752977Ab1IDCN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Sep 2011 22:13:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,326,1312182000"; 
-   d="scan'208";a="45377088"
-Message-Id: <20110904020915.819947322@intel.com>
+   d="scan'208";a="45377090"
+Message-Id: <20110904020916.588150387@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 04 Sep 2011 09:53:14 +0800
+Date: Sun, 04 Sep 2011 09:53:20 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 to: <linux-fsdevel@vger.kernel.org>
 cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,151 +26,78 @@ CC: Vivek Goyal <vgoyal@redhat.com>
 CC: Andrea Righi <arighi@develer.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/18] writeback: trace balance_dirty_pages
+Subject: [PATCH 15/18] writeback: charge leaked page dirties to active tasks
 References: <20110904015305.367445271@intel.com>
-Content-Disposition: inline; filename=writeback-trace-balance_dirty_pages.patch
+Content-Disposition: inline; filename=writeback-save-leaks-at-exit.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Useful for analyzing the dynamics of the throttling algorithms and
-debugging user reported problems.
+It's a years long problem that a large number of short-lived dirtiers
+(eg. gcc instances in a fast kernel build) may starve long-run dirtiers
+(eg. dd) as well as pushing the dirty pages to the global hard limit.
 
+The solution is to charge the pages dirtied by the exited gcc to the
+other random gcc/dd instances. It sounds not perfect, however should
+behave good enough in practice.
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/trace/events/writeback.h |   81 +++++++++++++++++++++++++++++
- mm/page-writeback.c              |   24 ++++++++
- 2 files changed, 105 insertions(+)
+ include/linux/writeback.h |    2 ++
+ kernel/exit.c             |    2 ++
+ mm/page-writeback.c       |   12 ++++++++++++
+ 3 files changed, 16 insertions(+)
 
---- linux-next.orig/include/trace/events/writeback.h	2011-08-29 19:52:11.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-08-29 19:52:13.000000000 +0800
-@@ -272,6 +272,87 @@ TRACE_EVENT(dirty_ratelimit,
- 	)
- );
+--- linux-next.orig/include/linux/writeback.h	2011-08-29 19:14:22.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-08-29 19:14:32.000000000 +0800
+@@ -7,6 +7,8 @@
+ #include <linux/sched.h>
+ #include <linux/fs.h>
  
-+TRACE_EVENT(balance_dirty_pages,
++DECLARE_PER_CPU(int, dirty_leaks);
 +
-+	TP_PROTO(struct backing_dev_info *bdi,
-+		 unsigned long thresh,
-+		 unsigned long bg_thresh,
-+		 unsigned long dirty,
-+		 unsigned long bdi_thresh,
-+		 unsigned long bdi_dirty,
-+		 unsigned long dirty_ratelimit,
-+		 unsigned long task_ratelimit,
-+		 unsigned long dirtied,
-+		 unsigned long period,
-+		 long pause,
-+		 unsigned long start_time),
-+
-+	TP_ARGS(bdi, thresh, bg_thresh, dirty, bdi_thresh, bdi_dirty,
-+		dirty_ratelimit, task_ratelimit,
-+		dirtied, period, pause, start_time),
-+
-+	TP_STRUCT__entry(
-+		__array(	 char,	bdi, 32)
-+		__field(unsigned long,	limit)
-+		__field(unsigned long,	setpoint)
-+		__field(unsigned long,	dirty)
-+		__field(unsigned long,	bdi_setpoint)
-+		__field(unsigned long,	bdi_dirty)
-+		__field(unsigned long,	dirty_ratelimit)
-+		__field(unsigned long,	task_ratelimit)
-+		__field(unsigned int,	dirtied)
-+		__field(unsigned int,	dirtied_pause)
-+		__field(unsigned long,	period)
-+		__field(	 long,	think)
-+		__field(	 long,	pause)
-+		__field(unsigned long,	paused)
-+	),
-+
-+	TP_fast_assign(
-+		unsigned long freerun = (thresh + bg_thresh) / 2;
-+		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
-+
-+		__entry->limit		= global_dirty_limit;
-+		__entry->setpoint	= (global_dirty_limit + freerun) / 2;
-+		__entry->dirty		= dirty;
-+		__entry->bdi_setpoint	= __entry->setpoint *
-+						bdi_thresh / (thresh + 1);
-+		__entry->bdi_dirty	= bdi_dirty;
-+		__entry->dirty_ratelimit = KBps(dirty_ratelimit);
-+		__entry->task_ratelimit	= KBps(task_ratelimit);
-+		__entry->dirtied	= dirtied;
-+		__entry->dirtied_pause	= current->nr_dirtied_pause;
-+		__entry->think		= current->dirty_paused_when == 0 ? 0 :
-+			 (long)(jiffies - current->dirty_paused_when) * 1000/HZ;
-+		__entry->period		= period * 1000 / HZ;
-+		__entry->pause		= pause * 1000 / HZ;
-+		__entry->paused		= (jiffies - start_time) * 1000 / HZ;
-+	),
-+
-+
-+	TP_printk("bdi %s: "
-+		  "limit=%lu setpoint=%lu dirty=%lu "
-+		  "bdi_setpoint=%lu bdi_dirty=%lu "
-+		  "dirty_ratelimit=%lu task_ratelimit=%lu "
-+		  "dirtied=%u dirtied_pause=%u "
-+		  "period=%lu think=%ld pause=%ld paused=%lu",
-+		  __entry->bdi,
-+		  __entry->limit,
-+		  __entry->setpoint,
-+		  __entry->dirty,
-+		  __entry->bdi_setpoint,
-+		  __entry->bdi_dirty,
-+		  __entry->dirty_ratelimit,
-+		  __entry->task_ratelimit,
-+		  __entry->dirtied,
-+		  __entry->dirtied_pause,
-+		  __entry->period,	/* ms */
-+		  __entry->think,	/* ms */
-+		  __entry->pause,	/* ms */
-+		  __entry->paused	/* ms */
-+	  )
-+);
-+
- DECLARE_EVENT_CLASS(writeback_congest_waited_template,
+ /*
+  * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
+  *
+--- linux-next.orig/mm/page-writeback.c	2011-08-29 19:14:22.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-29 19:14:32.000000000 +0800
+@@ -1237,6 +1237,7 @@ void set_page_dirty_balance(struct page 
+ }
  
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
---- linux-next.orig/mm/page-writeback.c	2011-08-29 19:52:11.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-08-29 19:52:13.000000000 +0800
-@@ -1062,6 +1062,18 @@ static void balance_dirty_pages(struct a
- 		 * do a reset, as it may be a light dirtier.
- 		 */
- 		if (unlikely(pause <= 0)) {
-+			trace_balance_dirty_pages(bdi,
-+						  dirty_thresh,
-+						  background_thresh,
-+						  nr_dirty,
-+						  bdi_thresh,
-+						  bdi_dirty,
-+						  dirty_ratelimit,
-+						  task_ratelimit,
-+						  pages_dirtied,
-+						  period,
-+						  pause,
-+						  start_time);
- 			if (pause < -HZ) {
- 				current->dirty_paused_when = now;
- 				current->nr_dirtied = 0;
-@@ -1075,6 +1087,18 @@ static void balance_dirty_pages(struct a
- 		pause = min(pause, (long)MAX_PAUSE);
+ static DEFINE_PER_CPU(int, bdp_ratelimits);
++DEFINE_PER_CPU(int, dirty_leaks) = 0;
  
- pause:
-+		trace_balance_dirty_pages(bdi,
-+					  dirty_thresh,
-+					  background_thresh,
-+					  nr_dirty,
-+					  bdi_thresh,
-+					  bdi_dirty,
-+					  dirty_ratelimit,
-+					  task_ratelimit,
-+					  pages_dirtied,
-+					  period,
-+					  pause,
-+					  start_time);
- 		__set_current_state(TASK_UNINTERRUPTIBLE);
- 		io_schedule_timeout(pause);
+ /**
+  * balance_dirty_pages_ratelimited_nr - balance dirty memory state
+@@ -1285,6 +1286,17 @@ void balance_dirty_pages_ratelimited_nr(
+ 			ratelimit = 0;
+ 		}
+ 	}
++	/*
++	 * Pick up the dirtied pages by the exited tasks. This avoids lots of
++	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
++	 * the dirty throttling and livelock other long-run dirtiers.
++	 */
++	p = &__get_cpu_var(dirty_leaks);
++	if (*p > 0 && current->nr_dirtied < ratelimit) {
++		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
++		*p -= nr_pages_dirtied;
++		current->nr_dirtied += nr_pages_dirtied;
++	}
+ 	preempt_enable();
  
+ 	if (unlikely(current->nr_dirtied >= ratelimit))
+--- linux-next.orig/kernel/exit.c	2011-08-26 16:19:27.000000000 +0800
++++ linux-next/kernel/exit.c	2011-08-29 19:14:22.000000000 +0800
+@@ -1044,6 +1044,8 @@ NORET_TYPE void do_exit(long code)
+ 	validate_creds_for_do_exit(tsk);
+ 
+ 	preempt_disable();
++	if (tsk->nr_dirtied)
++		__this_cpu_add(dirty_leaks, tsk->nr_dirtied);
+ 	exit_rcu();
+ 	/* causes final put_task_struct in finish_task_switch(). */
+ 	tsk->state = TASK_DEAD;
 
 
