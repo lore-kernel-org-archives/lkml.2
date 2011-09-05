@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab1IEMpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 08:45:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54383 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab1IEMpC (ORCPT
+	id S1753349Ab1IEMrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 08:47:08 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:35410 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab1IEMq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 08:45:02 -0400
+	Mon, 5 Sep 2011 08:46:59 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E64C6B3.80105@cam.ac.uk>
+Date: Mon, 05 Sep 2011 13:55:15 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <1314559619-19923-1-git-send-email-peterhuewe@gmx.de>
-References: <E1Qvo1q-0000qv-TQ@rmk-PC.arm.linux.org.uk>
-	<1314559619-19923-1-git-send-email-peterhuewe@gmx.de>
-Date: Mon, 5 Sep 2011 14:45:00 +0200
-Message-ID: <CACRpkdb=Bt2j4iMV5NJHmPG8wDi6__CRD6kn_KOoaQ1R6uwrWQ@mail.gmail.com>
-Subject: Re: [PATCH] spi: Fix builderror in spi-pl022.c
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, Peter Huewe <peterhuewe@gmx.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: regmap module_put usage.
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 28, 2011 at 9:26 PM, Peter Huewe <peterhuewe@gmx.de> wrote:
+Hi Mark,
 
-> This patch fixes a build error, introduced by commit (67fc8b9f, "PM: add
-> runtime PM support to core Primecell driver") which unfortunately was a little
-> bit incomplete and did contain a typo (11 instead of 22).
-> I'm not sure how this patch could have been tested back then, if it
-> doesn't even compile ;)
+I'm playing around with converting an IIO driver over to regmap
+(to get a feel for when it makes sense and when it doesn't).
 
-Grant can you please apply this patch? Right now linux-next is
-breaking because of this missing patch...
+Right now, calling regmap_exit() results in a module_put of the
+regmap-spi module which never has a module_get and hence it's
+module use count wraps around and all hell breaks loose?
+
+Am I missing something about where that get should occur?
+
+It's entirely plausible I just have a local bug but I right
+now I can't see how the logic is supposed to function!
 
 Thanks,
-Linus Walleij
+
+Jonathan
