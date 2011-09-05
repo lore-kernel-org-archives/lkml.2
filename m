@@ -1,479 +1,589 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751097Ab1IEHH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 03:07:56 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:24384 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab1IEHHs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 03:07:48 -0400
-From: JJ Ding <jj_ding@emc.com.tw>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH v5 7/8] Input: elantech - add v3 hardware support
-In-Reply-To: <CAGS+omCTDb-y7Gut=KgU5wz70R9=75gkmruYpOOS5JUECOK_UA@mail.gmail.com>
-References: <1315189007-2179-1-git-send-email-jj_ding@emc.com.tw> <1315189007-2179-8-git-send-email-jj_ding@emc.com.tw> <CAGS+omCTDb-y7Gut=KgU5wz70R9=75gkmruYpOOS5JUECOK_UA@mail.gmail.com>
-User-Agent: Notmuch/0.7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Mon, 05 Sep 2011 15:10:01 +0800
-Message-ID: <874o0rqxbq.fsf@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1751201Ab1IEHaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 03:30:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46438 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751078Ab1IEHaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 03:30:13 -0400
+Date: Mon, 5 Sep 2011 17:29:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for Sept 5
+Message-Id: <20110905172958.e60d9a9101c3180b69ce2377@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__5_Sep_2011_17_29_58_+1000_tXWN=qp3/vjhn.G5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p8578620006396
 
-Hi Daniel,
+--Signature=_Mon__5_Sep_2011_17_29_58_+1000_tXWN=qp3/vjhn.G5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 5 Sep 2011 12:35:28 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> Hi JJ,
-> 
-> On Mon, Sep 5, 2011 at 10:16 AM, JJ Ding <jj_ding@emc.com.tw> wrote:
-> > diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-> > index 2ae7c49..c4ceefd 100644
-> > --- a/drivers/input/mouse/elantech.c
-> > +++ b/drivers/input/mouse/elantech.c
-> > @@ -108,6 +108,16 @@ static int elantech_read_reg(struct psmouse *psmouse, unsigned char reg,
-> >                        rc = -1;
-> >                }
-> >                break;
-> > +
-> > +       case 3:
-> > +               if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-> > +                   elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
-> > +                   elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-> > +                   elantech_ps2_command(psmouse, NULL, reg) ||
-> > +                   elantech_ps2_command(psmouse, param, PSMOUSE_CMD_GETINFO)) {
-> > +                       rc = -1;
-> > +               }
-> > +               break;
-> >        }
-> >
-> >        if (rc)
-> > @@ -154,6 +164,18 @@ static int elantech_write_reg(struct psmouse *psmouse, unsigned char reg,
-> >                        rc = -1;
-> >                }
-> >                break;
-> > +
-> > +       case 3:
-> > +               if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-> > +                   elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
-> > +                   elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-> > +                   elantech_ps2_command(psmouse, NULL, reg) ||
-> > +                   elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-> > +                   elantech_ps2_command(psmouse, NULL, val) ||
-> > +                   elantech_ps2_command(psmouse, NULL, PSMOUSE_CMD_SETSCALE11)) {
-> > +                       rc = -1;
-> > +               }
-> > +               break;
-> >        }
-> >
-> >        if (rc)
-> > @@ -350,6 +372,84 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
-> >        input_sync(dev);
-> >  }
-> >
-> > +/*
-> > + * Interpret complete data packets and report absolute mode input events for
-> > + * hardware version 3. (12 byte packets for two fingers)
-> > + */
-> > +static void elantech_report_absolute_v3(struct psmouse *psmouse,
-> > +                                       int packet_type)
-> > +{
-> > +       struct input_dev *dev = psmouse->dev;
-> > +       struct elantech_data *etd = psmouse->private;
-> > +       unsigned char *packet = psmouse->packet;
-> > +       unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-> > +       unsigned int width = 0, pres = 0;
-> > +
-> > +       /* byte 0: n1  n0   .   .   .   .   R   L */
-> > +       fingers = (packet[0] & 0xc0) >> 6;
-> > +
-> > +       switch (fingers) {
-> > +       case 3:
-> > +       case 1:
-> > +               /*
-> > +                * byte 1:  .   .   .   .  x11 x10 x9  x8
-> > +                * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
-> > +                */
-> > +               x1 = ((packet[1] & 0x0f) << 8) | packet[2];
-> > +               /*
-> > +                * byte 4:  .   .   .   .  y11 y10 y9  y8
-> > +                * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
-> > +                */
-> > +               y1 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
-> > +               break;
-> > +
-> > +       case 2:
-> > +               if (packet_type == PACKET_V3_HEAD) {
-> > +                       /*
-> > +                        * byte 1:   .    .    .    .  ax11 ax10 ax9  ax8
-> > +                        * byte 2: ax7  ax6  ax5  ax4  ax3  ax2  ax1  ax0
-> > +                        */
-> > +                       etd->prev_x = ((packet[1] & 0x0f) << 8) | packet[2];
-> > +                       /*
-> > +                        * byte 4:   .    .    .    .  ay11 ay10 ay9  ay8
-> > +                        * byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
-> > +                        */
-> > +                       etd->prev_y = etd->y_max -
-> > +                               (((packet[4] & 0x0f) << 8) | packet[5]);
-> > +                       /*
-> > +                        * wait for next packet
-> > +                        */
-> > +                       return;
-> > +               }
-> > +
-> > +               /* packet_type == PACKET_V3_TAIL */
-> > +               x1 = etd->prev_x;
-> > +               y1 = etd->prev_y;
-> > +               x2 = ((packet[1] & 0x0f) << 8) | packet[2];
-> > +               y2 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
-> > +               break;
-> > +       }
-> > +
-> > +       pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-> > +       width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
-> > +
-> > +       input_report_key(dev, BTN_TOUCH, fingers != 0);
-> > +       if (fingers != 0) {
-> > +               input_report_abs(dev, ABS_X, x1);
-> > +               input_report_abs(dev, ABS_Y, y1);
-> > +       }
-> > +       elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
-> 
-> Originally, v3 was using semi-mt, which reported corner coordinates of
-> a box containing at least two of the N touches on the touchpad.  I
-> thought this was due to hardware limitation.
-> 
-> If the hardware really can report true positions for (up to) 3
-> contacts, then using pure MT-B is a good approach.  This driver still
-> seems to mix semi-mt and MT-B together a bit.
-> 
-> Can you report all three contacts in their own slots, 0, 1 and 2,
-> instead of just reoprting two of them with 0,1?
-> 
-> Also, when reporting the 'legacy single touch' coordinate (ABS_X,
-> ABS_Y), please use:
-> input_mt_report_pointer_emulation(), instead of always reporting the
-> last (x1,y1).  Otherwise the single touch point will bounce back and
-> forth between 1st and 3rd touch.
+Hi all,
 
-v3 can only track the true positions of two fingers. With 3 finger
-touch, it reports the lowest value of x and the biggest value of y,
-among the three fingers. v3 changed the protocol so it could report
-2-finger touch data w/o reduced resolution and improved the hardware to
-truly track 2 fingers independently, otherwise it's pretty much the same
-as v2.
+With master.kernel.org down, there is not much change from September 1
+and the actual release will be delayed until master returns.  I will
+still do the overnight builds, though.
 
-> > +       input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
-> > +       input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
-> > +       input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
-> 
-> Use input_mt_report_pointer_emulation() with use_count = true.   This
-> will also report ABS_PRESURE (but not ABS_TOOL_WIDTH, unfortunately).
-> 
-> > +       input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-> > +       input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-> > +       input_report_abs(dev, ABS_PRESSURE, pres);
-> > +       input_report_abs(dev, ABS_TOOL_WIDTH, width);
-> > +
-> > +       input_sync(dev);
-> > +}
-> > +
-> >  static int elantech_packet_check_v1(struct psmouse *psmouse)
-> >  {
-> >        struct elantech_data *etd = psmouse->private;
-> > @@ -403,11 +503,37 @@ static int elantech_packet_check_v2(struct psmouse *psmouse)
-> >  }
-> >
-> >  /*
-> > + * We check the constant bits to determine what packet type we get,
-> > + * so packet checking is mandatory for v3 hardware.
-> > + */
-> > +static int elantech_packet_check_v3(struct psmouse *psmouse)
-> > +{
-> > +       const u8 debounce_packet[] = { 0xc4, 0xff, 0xff, 0x02, 0xff, 0xff };
-> > +       unsigned char *packet = psmouse->packet;
-> > +
-> > +       /*
-> > +        * check debounce first, it has the same signature in byte 0
-> > +        * and byte 3 as PACKET_V3_HEAD.
-> > +        */
-> > +       if (!memcmp(packet, debounce_packet, sizeof(debounce_packet)))
-> > +               return PACKET_DEBOUNCE;
-> > +
-> > +       if ((packet[0] & 0x0c) == 0x04 && (packet[3] & 0xcf) == 0x02)
-> > +               return PACKET_V3_HEAD;
-> > +
-> > +       if ((packet[0] & 0x0c) == 0x0c && (packet[3] & 0xce) == 0x0c)
-> > +               return PACKET_V3_TAIL;
-> > +
-> > +       return PACKET_UNKNOWN;
-> > +}
-> > +
-> > +/*
-> >  * Process byte stream from mouse and handle complete packets
-> >  */
-> >  static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
-> >  {
-> >        struct elantech_data *etd = psmouse->private;
-> > +       int packet_type;
-> >
-> >        if (psmouse->pktcnt < psmouse->pktsize)
-> >                return PSMOUSE_GOOD_DATA;
-> > @@ -429,6 +555,18 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
-> >
-> >                elantech_report_absolute_v2(psmouse);
-> >                break;
-> > +
-> > +       case 3:
-> > +               packet_type = elantech_packet_check_v3(psmouse);
-> > +               /* ignore debounce */
-> > +               if (packet_type == PACKET_DEBOUNCE)
-> > +                       return PSMOUSE_FULL_PACKET;
-> > +
-> > +               if (packet_type == PACKET_UNKNOWN)
-> > +                       return PSMOUSE_BAD_DATA;
-> > +
-> > +               elantech_report_absolute_v3(psmouse, packet_type);
-> > +               break;
-> >        }
-> >
-> >        return PSMOUSE_FULL_PACKET;
-> > @@ -463,8 +601,15 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
-> >                    elantech_write_reg(psmouse, 0x11, etd->reg_11) ||
-> >                    elantech_write_reg(psmouse, 0x21, etd->reg_21)) {
-> >                        rc = -1;
-> > -                       break;
-> >                }
-> > +               break;
-> > +
-> > +       case 3:
-> > +               etd->reg_10 = 0x0b;
-> > +               if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
-> > +                       rc = -1;
-> > +
-> > +               break;
-> >        }
-> >
-> >        if (rc == 0) {
-> > @@ -498,11 +643,12 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
-> >        return rc;
-> >  }
-> >
-> > -static void set_range(struct psmouse *psmouse, unsigned int *x_min,
-> > +static int set_range(struct psmouse *psmouse, unsigned int *x_min,
-> >                     unsigned int *y_min, unsigned int *x_max,
-> >                     unsigned int *y_max)
-> >  {
-> >        struct elantech_data *etd = psmouse->private;
-> > +       unsigned char param[3];
-> >        int i;
-> >
-> >        switch (etd->hw_version) {
-> > @@ -530,19 +676,30 @@ static void set_range(struct psmouse *psmouse, unsigned int *x_min,
-> >                        *y_max = (etd->capabilities[2] - i) * 64;
-> >                }
-> >                break;
-> > +
-> > +       case 3:
-> > +               if (synaptics_send_cmd(psmouse, ETP_FW_ID_QUERY, param))
-> > +                       return -1;
-> > +
-> > +               *x_max = (0x0f & param[0]) << 8 | param[1];
-> > +               *y_max = (0xf0 & param[0]) << 4 | param[2];
-> > +               break;
-> >        }
-> > +
-> > +       return 0;
-> >  }
-> >
-> >  /*
-> >  * Set the appropriate event bits for the input subsystem
-> >  */
-> > -static void elantech_set_input_params(struct psmouse *psmouse)
-> > +static int elantech_set_input_params(struct psmouse *psmouse)
-> >  {
-> >        struct input_dev *dev = psmouse->dev;
-> >        struct elantech_data *etd = psmouse->private;
-> >        unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0;
-> >
-> > -       set_range(psmouse, &x_min, &y_min, &x_max, &y_max);
-> > +       if (set_range(psmouse, &x_min, &y_min, &x_max, &y_max))
-> > +               return -1;
-> >
-> >        __set_bit(EV_KEY, dev->evbit);
-> >        __set_bit(EV_ABS, dev->evbit);
-> > @@ -570,6 +727,9 @@ static void elantech_set_input_params(struct psmouse *psmouse)
-> >
-> >        case 2:
-> >                __set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-> > +               __set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-> > +               /* fall through */
-> > +       case 3:
-> >                input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-> >                input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
-> >                if (etd->reports_pressure) {
-> > @@ -578,7 +738,6 @@ static void elantech_set_input_params(struct psmouse *psmouse)
-> >                        input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
-> >                                             ETP_WMAX_V2, 0, 0);
-> >                }
-> > -               __set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-> >                input_mt_init_slots(dev, 2);
-> 
-> Should this be 3?
-> 
-> >                input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
-> >                input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
-> > @@ -586,6 +745,8 @@ static void elantech_set_input_params(struct psmouse *psmouse)
-> >        }
-> >
-> >        etd->y_max = y_max;
-> > +
-> > +       return 0;
-> >  }
-> >
-> >  struct elantech_attr_data {
-> > @@ -727,7 +888,8 @@ int elantech_detect(struct psmouse *psmouse, bool set_properties)
-> >         * Report this in case there are Elantech models that use a different
-> >         * set of magic numbers
-> >         */
-> > -       if (param[0] != 0x3c || param[1] != 0x03 || param[2] != 0xc8) {
-> > +       if (param[0] != 0x3c || param[1] != 0x03 ||
-> > +           (param[2] != 0xc8 && param[2] != 0x00)) {
-> >                pr_debug("unexpected magic knock result 0x%02x, 0x%02x, 0x%02x.\n",
-> >                         param[0], param[1], param[2]);
-> >                return -1;
-> > @@ -793,16 +955,16 @@ static int elantech_reconnect(struct psmouse *psmouse)
-> >  /*
-> >  * determine hardware version and set some properties according to it.
-> >  */
-> > -static void elantech_set_properties(struct elantech_data *etd)
-> > +static int elantech_set_properties(struct elantech_data *etd)
-> >  {
-> > -       /*
-> > -        * Assume every version greater than 0x020030 is new EeePC style
-> > -        * hardware with 6 byte packets, except 0x020600
-> > -        */
-> >        if (etd->fw_version < 0x020030 || etd->fw_version == 0x020600)
-> >                etd->hw_version = 1;
-> > -       else
-> > +       else if (etd->fw_version < 0x150600)
-> >                etd->hw_version = 2;
-> > +       else if ((etd->fw_version & 0x0f0000) >> 16 == 5)
-> > +               etd->hw_version = 3;
-> > +       else
-> > +               return -1;
-> >
-> >        /*
-> >         * Turn on packet checking by default.
-> > @@ -817,13 +979,15 @@ static void elantech_set_properties(struct elantech_data *etd)
-> >        etd->jumpy_cursor =
-> >                (etd->fw_version == 0x020022 || etd->fw_version == 0x020600);
-> >
-> > -       if (etd->hw_version == 2) {
-> > +       if (etd->hw_version > 1) {
-> >                /* For now show extra debug information */
-> >                etd->debug = 1;
-> >
-> >                if (etd->fw_version >= 0x020800)
-> >                        etd->reports_pressure = true;
-> >        }
-> > +
-> > +       return 0;
-> >  }
-> >
-> >  /*
-> > @@ -850,9 +1014,12 @@ int elantech_init(struct psmouse *psmouse)
-> >                pr_err("failed to query firmware version.\n");
-> >                goto init_fail;
-> >        }
-> > -
-> >        etd->fw_version = (param[0] << 16) | (param[1] << 8) | param[2];
-> > -       elantech_set_properties(etd);
-> > +
-> > +       if (elantech_set_properties(etd)) {
-> > +               pr_err("unknown hardware version, aborting...\n");
-> > +               goto init_fail;
-> > +       }
-> >        pr_info("assuming hardware version %d "
-> >                "(with firmware version 0x%02x%02x%02x)\n",
-> >                etd->hw_version, param[0], param[1], param[2]);
-> > @@ -871,7 +1038,10 @@ int elantech_init(struct psmouse *psmouse)
-> >                goto init_fail;
-> >        }
-> >
-> > -       elantech_set_input_params(psmouse);
-> > +       if (elantech_set_input_params(psmouse)) {
-> > +               pr_err("failed to query touchpad range.\n");
-> > +               goto init_fail;
-> > +       }
-> >
-> >        error = sysfs_create_group(&psmouse->ps2dev.serio->dev.kobj,
-> >                                   &elantech_attr_group);
-> > @@ -883,7 +1053,7 @@ int elantech_init(struct psmouse *psmouse)
-> >        psmouse->protocol_handler = elantech_process_byte;
-> >        psmouse->disconnect = elantech_disconnect;
-> >        psmouse->reconnect = elantech_reconnect;
-> > -       psmouse->pktsize = etd->hw_version == 2 ? 6 : 4;
-> > +       psmouse->pktsize = etd->hw_version > 1 ? 6 : 4;
-> >
-> >        return 0;
-> >
-> > diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-> > index d9e6144..236c33c 100644
-> > --- a/drivers/input/mouse/elantech.h
-> > +++ b/drivers/input/mouse/elantech.h
-> > @@ -16,6 +16,7 @@
-> >  /*
-> >  * Command values for Synaptics style queries
-> >  */
-> > +#define ETP_FW_ID_QUERY                        0x00
-> >  #define ETP_FW_VERSION_QUERY           0x01
-> >  #define ETP_CAPABILITIES_QUERY         0x02
-> >
-> > @@ -24,6 +25,7 @@
-> >  */
-> >  #define ETP_REGISTER_READ              0x10
-> >  #define ETP_REGISTER_WRITE             0x11
-> > +#define ETP_REGISTER_READWRITE         0x00
-> >
-> >  /*
-> >  * Hardware version 2 custom PS/2 command value
-> > @@ -79,6 +81,14 @@
-> >  #define ETP_WMIN_V2                    0
-> >  #define ETP_WMAX_V2                    15
-> >
-> > +/*
-> > + * v3 hardware has 2 kinds of packet types.
-> > + */
-> > +#define PACKET_UNKNOWN                 0x01
-> > +#define PACKET_DEBOUNCE                        0x02
-> > +#define PACKET_V3_HEAD                 0x03
-> > +#define PACKET_V3_TAIL                 0x04
-> > +
-> >  struct elantech_data {
-> >        unsigned char reg_10;
-> >        unsigned char reg_11;
-> > @@ -98,6 +108,8 @@ struct elantech_data {
-> >        unsigned int fw_version;
-> >        unsigned int single_finger_reports;
-> >        unsigned int y_max;
-> > +       unsigned int prev_x;
-> > +       unsigned int prev_y;
-> >        unsigned char parity[256];
-> >  };
-> >
-> > --
-> > 1.7.4.1
-> >
-> 
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+The powerpc allyesconfig build still fails today.
+
+Changes since 20110901:
+
+Dropped tree: mips (acidentally, sorry)
+
+The slave-dma tree lost its conflict.
+
+The l2-mtd tree lost its conflict.
+
+I have still reverted the x86/spinlocks branch from the tip tree for
+today.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 199 trees (counting Linus' and 27 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+CONFLICT (content): Merge conflict in arch/arm/kernel/head.S
+CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
+CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
+Merging arm-soc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-u300/Makefile.boot
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+CONFLICT (delete/modify): arch/arm/mach-exynos4/mach-smdkc210.c deleted in =
+s5p/for-next and modified in HEAD. Version HEAD of arch/arm/mach-exynos4/ma=
+ch-smdkc210.c left in tree.
+$ git rm -f arch/arm/mach-exynos4/mach-smdkc210.c
+Applying: s5p: merge fixup for atags_offset use
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging openrisc/for-upstream
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+CONFLICT (content): Merge conflict in fs/xfs/xfs_super.c
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+CONFLICT (content): Merge conflict in drivers/hid/hid-core.c
+CONFLICT (content): Merge conflict in drivers/hid/hid-ids.h
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging iscsi-target/for-next
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (delete/modify): arch/powerpc/configs/40x/hcu4_defconfig deleted i=
+n HEAD and modified in net/master. Version net/master of arch/powerpc/confi=
+gs/40x/hcu4_defconfig left in tree.
+$ git rm -f arch/powerpc/configs/40x/hcu4_defconfig
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-pci.c
+Merging bluetooth/master
+Merging mtd/master
+Merging l2-mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/fbdev-next
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security/next
+CONFLICT (content): Merge conflict in fs/ocfs2/xattr.c
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging iommu/next
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging pm/linux-next
+CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-ap4evb.c
+CONFLICT (content): Merge conflict in arch/s390/include/asm/thread_info.h
+CONFLICT (content): Merge conflict in drivers/mfd/twl4030-irq.c
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/mcheck/mce.c
+Merging devicetree/devicetree/next
+CONFLICT (content): Merge conflict in drivers/of/base.c
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in arch/x86/mm/fault.c
+[master e9aaf9f] Revert "Merge branch 'x86/spinlocks' into auto-latest"
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging regmap/for-next
+Merging driver-core/driver-core-next
+CONFLICT (content): Merge conflict in arch/arm/plat-mxc/devices.c
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (delete/modify): drivers/staging/rtl8192e/r8192E_core.c deleted in=
+ staging/staging-next and modified in HEAD. Version HEAD of drivers/staging=
+/rtl8192e/r8192E_core.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/xgifb/XGI_main_26.c
+$ git rm -f drivers/staging/rtl8192e/r8192E_core.c
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging moduleh/module.h-split
+CONFLICT (content): Merge conflict in arch/arm/mach-bcmring/mm.c
+CONFLICT (content): Merge conflict in drivers/scsi/libfc/fc_lport.c
+CONFLICT (content): Merge conflict in include/linux/dmaengine.h
+Applying: dm: use export.h instead of module.h where possible
+Applying: block: bsg-lib.c needs export.h not module.h
+Applying: PM: EXPORT_SYMBOL needs export.h
+Merging kvmtool/master
+CONFLICT (content): Merge conflict in include/net/9p/9p.h
+Merging scsi-post-merge/merge-base:master
+$ git checkout akpm
+Applying: Because of x86-implement-strict-user-copy-checks-for-x86_64.patch
+Applying: When no floppy is found the module code can be released while a t=
+imer
+Applying: Fix kconfig unmet dependency warning.  BACKLIGHT_CLASS_DEVICE dep=
+ends on
+Applying: Fix the following memory leak:
+Applying: The parameter's origin type is long.  On an i386 architecture, it=
+ can
+Applying: Since the commit below which added O_PATH support to the *at() ca=
+lls, the
+Applying: Add support for Aspire 1410 BIOS v1.3314.  Fixes the following er=
+ror:
+Applying: This makes the iris driver use the platform API, so it is properl=
+y exposed
+Applying: On x86_32 casting the unsigned int result of get_random_int() to =
+long may
+Applying: This new driver replaces the old PCEngines Alix 2/3 LED driver wi=
+th a new
+Applying: Cc: Ed Wildgoose <git@wildgooses.com>
+Applying: Replace the bubble sort in sanitize_e820_map() with a call to the=
+ generic
+Applying: The x86 timer interrupt handler is the only handler not traced in=
+ the
+Applying: The current interrupt traces from irq_handler_entry and irq_handl=
+er_exit
+Applying: Don't allow everybody to use a modem.
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: A call to va_copy() should always be followed by a call to va_end=
+() in the
+Applying: Don't dereference em if it's NULL or an error pointer.
+Applying: Some messing with error codes to return 0 on out id's and match
+Applying: kbuf is a buffer that is local to this function, so all of the er=
+ror paths
+Applying: fb_set_suspend() must be called with the console semaphore held, =
+which
+Applying: hwmon was using an idr with a NULL pointer, so convert to an
+Applying: A straightforward looking use of idr for a device id.
+Applying: This patchset aims at addressing /proc/stat issue which has been
+Applying: update_ts_time_stat currently updates idle time even if we are in=
+ iowait
+Applying: get_cpu_{idle,iowait}_time_us update idle/iowait counters uncondi=
+tionally
+Applying: show_stat handler of the /proc/stat file relies on kstat_cpu(cpu)
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: Add new check (assert_init) to make sure objects are initialized =
+and
+Applying: del_timer_sync() calls debug_object_assert_init() to assert that =
+a timer
+Applying: ext4_{set,clear}_bit() is defined as __test_and_{set,clear}_bit_l=
+e() for
+Applying: The dqc_bitmap field of struct ocfs2_local_disk_chunk is 32-bit a=
+ligned,
+Applying: The address limit is already set in flush_old_exec() so those cal=
+ls to
+Applying: When do pci remove/rescan on system that have more iommus, got
+Applying: The current implementation of dmi_name_in_vendors() is an invitat=
+ion to
+Applying: For headers that get exported to userland and make use of u32 sty=
+le
+Applying: Fix sparse warnings of right shift bigger than source value size:
+Applying: We leak in drivers/scsi/aacraid/commctrl.c::aac_send_raw_srb() :
+Applying: Some mangling of errors was necessary to maintain current interfa=
+ce.
+Applying: This does involve additional use of the spin lock in idr.c.  Is t=
+his an
+Applying: Instead of open coding this function use kstrtoul_from_user() dir=
+ectly.
+Applying: brd_make_request() always returns 0, which doesn't make much sens=
+e.
+Applying: The address limit is already set in flush_old_exec() so this assi=
+gnment of
+Applying: Unbreak the alpha build.
+Applying: Unbreak alpha build.
+Applying: Unbreak alpha build.
+Applying: When we get corruption reports, it's useful to see if the kernel =
+was
+Applying: When we get corruption reports, it's useful to see if the kernel =
+was
+Applying: The basic idea behind cross memory attach is to allow MPI program=
+s doing
+Applying: - Add x86_64 specific wire up
+Applying: > You might get some speed benefit by optimising for the small co=
+pies
+Applying: acct_isolated of compaction uses page_lru_base_type which returns=
+ only
+Applying: Change ISOLATE_XXX macro with bitwise isolate_mode_t type.  Norma=
+lly,
+Applying: In async mode, compaction doesn't migrate dirty or writeback page=
+s.  So,
+Applying: In __zone_reclaim case, we don't want to shrink mapped page.  Non=
+etheless,
+Applying: unmap_and_move() is one a big messy function.  Clean it up.
+Applying: radix_tree_tag_get()'s BUG (when it sees a tag after saw_unset_ta=
+g) was
+Applying: per-task block plug can reduce block queue lock contention and in=
+crease
+Applying: The tracing ring-buffer used this function briefly, but not anymo=
+re.
+Applying: After selecting a task to kill, the oom killer iterates all proce=
+sses and
+Applying: Add the leading word "tmpfs" to the Kconfig string to make it bli=
+ndingly
+Applying: When we get a bad_page bug report, it's useful to see what module=
+s the
+Applying: Without swap, anonymous pages are not scanned.  As such, they sho=
+uld not
+Applying: fix comment
+Applying: The nr_force_scan[] tuple holds the effective scan numbers for an=
+on and
+Applying: Some kernel components pin user space memory (infiniband and perf=
+) (by
+Applying: Add comments to explain the page statistics field in the mm_struc=
+t.
+Applying: add missing ;
+Applying: Testing from the XFS folk revealed that there is still too much I=
+/O from
+Applying: Lumpy reclaim worked with two passes - the first which queued pag=
+es for IO
+Applying: Direct reclaim should never writeback pages.  For now, handle the
+Applying: Direct reclaim should never writeback pages.  Warn if an attempt =
+is made.
+Applying: It is preferable that no dirty pages are dispatched for cleaning =
+from the
+Applying: Workloads that are allocating frequently and writing files place =
+a large
+Applying: When direct reclaim encounters a dirty page, it gets recycled aro=
+und the
+Applying: It's possible a zone watermark is ok when entering the balance_pg=
+dat()
+Applying: printk_ratelimit() should not be used, because it shares ratelimi=
+ting
+Applying: memchr_inv() is mainly used to check whether the whole buffer is =
+filled
+Applying: Use newly introduced memchr_inv() for page verification.
+Applying: A shrinker function can return -1, means that it cannot do anythi=
+ng
+Applying: Use atomic-long operations instead of looping around cmpxchg().
+Applying: massage atomic.h inclusions
+Applying: The /proc/vmallocinfo shows information about vmalloc allocations=
+ in
+Applying: Commit 645747462435 ("vmscan: detect mapped file pages used only =
+once")
+Applying: Logic added in commit 8cab4754d24a0 ("vmscan: make mapped executa=
+ble pages
+Applying: SPARC32 require access to the start address.  Add a new helper
+Applying: With the NO_BOOTMEM symbol added architectures may now use the fo=
+llowing
+Applying: Using "- 1" relies on the old_end to be page aligned and PAGE_SIZ=
+E > 1,
+Applying: This replaces ptep_clear_flush() with ptep_get_and_clear() and a =
+single
+Applying: This adds THP support to mremap (decreases the number of split_hu=
+ge_page()
+Applying: coding-style nitpicking
+Applying: Cc: Andrea Arcangeli <aarcange@redhat.com>
+Applying: Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Applying: vmstat_text is only available when PROC_FS or SYSFS is enabled.  =
+This
+Applying: reduce ifdeffery
+Applying: Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Applying: Make the security_inode_init_security() initxattrs arg const, to =
+match the
+Applying: The current implementation of the /dev/hpet driver couples openin=
+g the
+Applying: smp_call_function() only lets all other CPUs execute a specific f=
+unction,
+Applying: auto_demotion_disable is called only for online CPUs.  For hotplu=
+gged
+Applying: Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following warni=
+ng:
+Applying: Strict user copy checks are only really supported on x86_32 even =
+though
+Applying: The help text for this config is duplicated across the x86, paris=
+c, and
+Applying: s/lib-/obj-/ for usercopy.o
+Applying: After an "unexpected" reboot, I found this Oops in my logs:
+Applying: In the move of the lis3 driver, the hp_accel.c file got dropped f=
+rom the
+Applying: Add axis correction for HP EliteBook 2730p.
+Applying: Add axis correction for HP EliteBook 8540w.
+Applying: Add axis correction for HP ProBook 6555b.
+Applying: Adapt the help text for CONFIG_HP_ACCEL to the move of
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: Change exported functions to use the device given as parameter
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: We are enabling some power features on medfield.  To test suspend=
+-2-RAM
+Applying: We are enabling some power features on medfield.  To test suspend=
+-2-RAM
+Applying: We are enabling some power features on medfield.  To test suspend=
+-2-RAM
+Applying: Cc: Al Viro <viro@zeniv.linux.org.uk>
+Applying: Add V2 of the LED driver for a single timer channel for the TPU h=
+ardware
+Applying: include linux/module.h
+Applying: The memory for struct led_trigger should be kfreed in the
+Applying: Currently termination logic (\0 or \n\0) is hardcoded in _kstrtou=
+ll(),
+Applying: Add support for slice by 8 to existing crc32 algorithm.  Also mod=
+ify
+Applying: don't include asm/msr.h
+Applying: epoll can acquire recursively acquire ep->mtx on multiple "struct
+Applying: Currently in oprofilefs, files that use ulong_fops mis-handle wri=
+tes of
+Applying: This is the one use of an ida that doesn't retry on receiving -EA=
+GAIN.
+Applying: One can get this information from minix/inode.c, but adding the
+Applying: The memcg code sometimes uses "struct mem_cgroup *mem" and someti=
+mes uses
+Applying: Before calling schedule_timeout(), task state should be changed.
+Applying: Signed-off-by: Bob Liu <lliubbo@gmail.com>
+Applying: While back-porting Johannes Weiner's patch "mm: memcg-aware global
+Applying: If somebody is touching data too early, it might be easier to dia=
+gnose a
+Applying: Both mem_cgroup_charge_statistics() and mem_cgroup_move_account()=
+ were
+Applying: On reading sysctl dirs we should return -EISDIR instead of -EINVA=
+L.
+Applying: Force this on for -next/mm testing purposes.
+Applying: Expand root=3DPARTUUID=3DUUID syntax to support selecting a root =
+partition by
+Applying: After merging the akpm tree, today's linux-next build (lost of th=
+em)
+Applying: The discovered bit in PGCCSR register indicates if the device has=
+ been
+Applying: Add RapidIO mport driver for IDT TSI721 PCI Express-to-SRIO bridg=
+e device.
+Applying: When I tried to send a patch to remove it, Andi told me we still =
+need to
+Applying: A default echo function has been provided so it is no longer an e=
+rror when
+Applying: This client driver allows you to use a GPIO pin as a source for P=
+PS
+Applying: remove unneeded cast of void*
+Applying: Straightforward.  As an aside, the ida_init calls are not needed =
+as far as
+Applying: Simply creates one point to call the w1 interface.
+Applying: Adds a nolock function to the w1 interface to avoid locking the
+Applying: Fixes the deadlock when inserting and removing the ds2780.
+Merging akpm
+
+--Signature=_Mon__5_Sep_2011_17_29_58_+1000_tXWN=qp3/vjhn.G5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOZHp2AAoJEDMEi1NhKgbsYYwH/jGwrzoIX0NyNFu45C4/YIJp
+Yq5BBHeiPnc7+3H/KNEcLVLNjIfE0uBMH8gA+hDehoKnu8zg9GEHFcwXxC/asHXu
+RigmSmn8eTI54NGwMeChXmlScYI3tqRKTzwPrel6PaYDcY/xFThWB9waDul5A16a
+HrpkBYsR821q0nWPts4tdBlUyR2muuJ1mGzPik6UN+8SeqfjCzr7nSVzYx2QFCME
+4AWGPiI1QEhoUzPYkQIWK/G4KoaRRYFzFKj7Y/76f/7nc2V6UDufiWZZmhi2u7mZ
+G/3XijUbcTqCszcuj+ftW2AfFrz/vZ2RCy4WRxs6x1cVU0wvAof6W94bvhgibDI=
+=+Kh2
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Sep_2011_17_29_58_+1000_tXWN=qp3/vjhn.G5--
