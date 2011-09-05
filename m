@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab1IELrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 07:47:09 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:59865 "EHLO
+	id S1753103Ab1IELrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 07:47:23 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:59870 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab1IELqG (ORCPT
+	with ESMTP id S1752823Ab1IELqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 07:46:06 -0400
+	Mon, 5 Sep 2011 07:46:07 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 39/54] drbd: drbd_recv_header(): Return 0 upon success and an error code otherwise
-Date: Mon,  5 Sep 2011 13:45:30 +0200
-Message-Id: <1315223145-20640-40-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 43/54] drbd: send_bitmap_rle_or_plain(): Error handling cleanup
+Date: Mon,  5 Sep 2011 13:45:34 +0200
+Message-Id: <1315223145-20640-44-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
 References: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,108 +25,51 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |   38 ++++++++++++++++++++---------------
- 1 files changed, 22 insertions(+), 16 deletions(-)
+ drivers/block/drbd/drbd_main.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 47c9c4d..d1a2dbf 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -974,19 +974,21 @@ static int decode_header(struct drbd_tconn *tconn, struct p_header *h, struct pa
- static int drbd_recv_header(struct drbd_tconn *tconn, struct packet_info *pi)
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 8b0cfe0..b995937 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -1123,8 +1123,7 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
  {
- 	struct p_header *h = &tconn->data.rbuf.header;
--	int r;
-+	int err;
+ 	struct p_compressed_bm *p = (void*)h;
+ 	unsigned long num_words;
+-	int len;
+-	int ok;
++	int len, err;
  
--	r = drbd_recv(tconn, h, sizeof(*h));
--	if (unlikely(r != sizeof(*h))) {
-+	err = drbd_recv(tconn, h, sizeof(*h));
-+	if (unlikely(err != sizeof(*h))) {
- 		if (!signal_pending(current))
--			conn_warn(tconn, "short read expecting header on sock: r=%d\n", r);
--		return false;
-+			conn_warn(tconn, "short read expecting header on sock: r=%d\n", err);
-+		if (err >= 0)
-+			err = -EIO;
-+		return err;
+ 	len = fill_bitmap_rle_bits(mdev, p, c);
+ 
+@@ -1133,7 +1132,8 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
+ 
+ 	if (len) {
+ 		DCBP_set_code(p, RLE_VLI_Bits);
+-		ok = !_drbd_send_cmd(mdev, mdev->tconn->data.socket, P_COMPRESSED_BITMAP, h,
++		err = _drbd_send_cmd(mdev, mdev->tconn->data.socket,
++				     P_COMPRESSED_BITMAP, h,
+ 				     sizeof(*p) + len, 0);
+ 
+ 		c->packets[0]++;
+@@ -1148,7 +1148,7 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
+ 		len = num_words * sizeof(long);
+ 		if (len)
+ 			drbd_bm_get_lel(mdev, c->word_offset, num_words, (unsigned long*)h->payload);
+-		ok = !_drbd_send_cmd(mdev, mdev->tconn->data.socket, P_BITMAP,
++		err = _drbd_send_cmd(mdev, mdev->tconn->data.socket, P_BITMAP,
+ 				     h, sizeof(struct p_header80) + len, 0);
+ 		c->word_offset += num_words;
+ 		c->bit_offset = c->word_offset * BITS_PER_LONG;
+@@ -1159,7 +1159,7 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
+ 		if (c->bit_offset > c->bm_bits)
+ 			c->bit_offset = c->bm_bits;
  	}
- 
--	r = !decode_header(tconn, h, pi);
-+	err = decode_header(tconn, h, pi);
- 	tconn->last_received = jiffies;
- 
--	return r;
-+	return err;
- }
- 
- static void drbd_flush(struct drbd_conf *mdev)
-@@ -3788,7 +3790,7 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packet cmd,
- 				goto out;
- 			break;
- 		}
--		if (!drbd_recv_header(mdev->tconn, &pi))
-+		if (drbd_recv_header(mdev->tconn, &pi))
- 			goto out;
- 		cmd = pi.cmd;
- 		data_size = pi.size;
-@@ -3939,7 +3941,7 @@ static void drbdd(struct drbd_tconn *tconn)
- 
- 	while (get_t_state(&tconn->receiver) == RUNNING) {
- 		drbd_thread_current_set_cpu(&tconn->receiver);
--		if (!drbd_recv_header(tconn, &pi))
-+		if (drbd_recv_header(tconn, &pi))
- 			goto err_out;
- 
- 		if (unlikely(pi.cmd >= ARRAY_SIZE(drbd_cmd_handler) ||
-@@ -4177,8 +4179,8 @@ static int drbd_do_handshake(struct drbd_tconn *tconn)
- 	if (err)
- 		return 0;
- 
--	rv = drbd_recv_header(tconn, &pi);
--	if (!rv)
-+	err = drbd_recv_header(tconn, &pi);
-+	if (err)
- 		return 0;
- 
- 	if (pi.cmd != P_HAND_SHAKE) {
-@@ -4252,7 +4254,7 @@ static int drbd_do_auth(struct drbd_tconn *tconn)
- 	unsigned int resp_size;
- 	struct hash_desc desc;
- 	struct packet_info pi;
--	int rv;
-+	int err, rv;
- 
- 	desc.tfm = tconn->cram_hmac_tfm;
- 	desc.flags = 0;
-@@ -4271,9 +4273,11 @@ static int drbd_do_auth(struct drbd_tconn *tconn)
- 	if (!rv)
- 		goto fail;
- 
--	rv = drbd_recv_header(tconn, &pi);
--	if (!rv)
-+	err = drbd_recv_header(tconn, &pi);
-+	if (err) {
-+		rv = 0;
- 		goto fail;
-+	}
- 
- 	if (pi.cmd != P_AUTH_CHALLENGE) {
- 		conn_err(tconn, "expected AuthChallenge packet, received: %s (0x%04x)\n",
-@@ -4326,9 +4330,11 @@ static int drbd_do_auth(struct drbd_tconn *tconn)
- 	if (!rv)
- 		goto fail;
- 
--	rv = drbd_recv_header(tconn, &pi);
--	if (!rv)
-+	err = drbd_recv_header(tconn, &pi);
-+	if (err) {
-+		rv = 0;
- 		goto fail;
-+	}
- 
- 	if (pi.cmd != P_AUTH_RESPONSE) {
- 		conn_err(tconn, "expected AuthResponse packet, received: %s (0x%04x)\n",
+-	if (ok) {
++	if (!err) {
+ 		if (len == 0) {
+ 			INFO_bm_xfer_stats(mdev, "send", c);
+ 			return 0;
 -- 
 1.7.4.1
 
