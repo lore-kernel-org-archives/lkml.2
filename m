@@ -1,230 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab1IESKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 14:10:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45425 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751724Ab1IESKP (ORCPT
+	id S1753266Ab1IESTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 14:19:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47753 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab1IESTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 14:10:15 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] backlight: Fix broken regulator API usage in l4f00242t03
-Date: Mon,  5 Sep 2011 11:10:08 -0700
-Message-Id: <1315246208-26006-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 5 Sep 2011 14:19:09 -0400
+Date: Mon, 5 Sep 2011 11:22:25 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
+Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Player Thread is not woken after period elapsed
+Message-ID: <20110905112225.72b46ac9@infradead.org>
+In-Reply-To: <3CA6C6D9F70D314CA34352990B57DA1507C420F15C@bgsmsx502.gar.corp.intel.com>
+References: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
+	<20110905105253.2787b91f@infradead.org>
+	<3CA6C6D9F70D314CA34352990B57DA1507C420F15C@bgsmsx502.gar.corp.intel.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulator support in the l4f00242t03 is very non-idiomatic, rather
-than requesting the regulators based on the device name and the supply
-names used by the device the driver requires boards to pass system
-specific supply names around through platform data. The driver also
-conditionally requests the regulators based on this platform data, adding
-unneeded conditional code to the driver.
+On Mon, 5 Sep 2011 23:38:49 +0530
+"Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com> wrote:
 
-Fix this by removing the platform data and converting to the standard idiom,
-also updating all in tree users of the driver. As no datasheet appears to
-be available for the LCD I'm guessing the names for the supplies based on
-the existing users and I've no ability to do anything more than compile
-test.
+please do not top post!
 
-The use of regulator_set_voltage() in the driver is also problematic, since
-fixed voltages are required the expectation would be that the voltages
-would be fixed in the constraints set by the machines rather than manually
-configured by the driver, but is less problematic.
+correcting that mistake for you for this time
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- arch/arm/mach-imx/mach-mx27_3ds.c     |    6 +--
- arch/arm/mach-imx/mach-mx31_3ds.c     |    6 +--
- drivers/video/backlight/l4f00242t03.c |   57 +++++++++++---------------------
- include/linux/spi/l4f00242t03.h       |    2 -
- 4 files changed, 24 insertions(+), 47 deletions(-)
 
-diff --git a/arch/arm/mach-imx/mach-mx27_3ds.c b/arch/arm/mach-imx/mach-mx27_3ds.c
-index 2eafbac..3772304 100644
---- a/arch/arm/mach-imx/mach-mx27_3ds.c
-+++ b/arch/arm/mach-imx/mach-mx27_3ds.c
-@@ -241,7 +241,7 @@ static struct regulator_init_data gpo_init = {
- };
- 
- static struct regulator_consumer_supply vmmc1_consumers[] = {
--	REGULATOR_SUPPLY("lcd_2v8", NULL),
-+	REGULATOR_SUPPLY("vcore", "spi0.0"),
- };
- 
- static struct regulator_init_data vmmc1_init = {
-@@ -257,7 +257,7 @@ static struct regulator_init_data vmmc1_init = {
- };
- 
- static struct regulator_consumer_supply vgen_consumers[] = {
--	REGULATOR_SUPPLY("vdd_lcdio", NULL),
-+	REGULATOR_SUPPLY("vdd", "spi0.0"),
- };
- 
- static struct regulator_init_data vgen_init = {
-@@ -348,8 +348,6 @@ static const struct imx_fb_platform_data mx27_3ds_fb_data __initconst = {
- static struct l4f00242t03_pdata mx27_3ds_lcd_pdata = {
- 	.reset_gpio		= LCD_RESET,
- 	.data_enable_gpio	= LCD_ENABLE,
--	.core_supply		= "lcd_2v8",
--	.io_supply		= "vdd_lcdio",
- };
- 
- static struct spi_board_info mx27_3ds_spi_devs[] __initdata = {
-diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
-index 589066f..6484db5 100644
---- a/arch/arm/mach-imx/mach-mx31_3ds.c
-+++ b/arch/arm/mach-imx/mach-mx31_3ds.c
-@@ -285,8 +285,6 @@ static struct mx3fb_platform_data mx3fb_pdata __initdata = {
- static struct l4f00242t03_pdata mx31_3ds_l4f00242t03_pdata = {
- 	.reset_gpio		= IOMUX_TO_GPIO(MX31_PIN_LCS1),
- 	.data_enable_gpio	= IOMUX_TO_GPIO(MX31_PIN_SER_RS),
--	.core_supply		= "lcd_2v8",
--	.io_supply		= "vdd_lcdio",
- };
- 
- /*
-@@ -411,7 +409,7 @@ static struct regulator_init_data vmmc2_init = {
- };
- 
- static struct regulator_consumer_supply vmmc1_consumers[] = {
--	REGULATOR_SUPPLY("lcd_2v8", NULL),
-+	REGULATOR_SUPPLY("vcore", "spi0.0"),
- 	REGULATOR_SUPPLY("cmos_2v8", "soc-camera-pdrv.0"),
- };
- 
-@@ -428,7 +426,7 @@ static struct regulator_init_data vmmc1_init = {
- };
- 
- static struct regulator_consumer_supply vgen_consumers[] = {
--	REGULATOR_SUPPLY("vdd_lcdio", NULL),
-+	REGULATOR_SUPPLY("vdd", "spi0.0"),
- };
- 
- static struct regulator_init_data vgen_init = {
-diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
-index 046c7aa..1ce32fd 100644
---- a/drivers/video/backlight/l4f00242t03.c
-+++ b/drivers/video/backlight/l4f00242t03.c
-@@ -53,15 +53,11 @@ static void l4f00242t03_lcd_init(struct spi_device *spi)
- 
- 	dev_dbg(&spi->dev, "initializing LCD\n");
- 
--	if (priv->io_reg) {
--		regulator_set_voltage(priv->io_reg, 1800000, 1800000);
--		regulator_enable(priv->io_reg);
--	}
-+	regulator_set_voltage(priv->io_reg, 1800000, 1800000);
-+	regulator_enable(priv->io_reg);
- 
--	if (priv->core_reg) {
--		regulator_set_voltage(priv->core_reg, 2800000, 2800000);
--		regulator_enable(priv->core_reg);
--	}
-+	regulator_set_voltage(priv->core_reg, 2800000, 2800000);
-+	regulator_enable(priv->core_reg);
- 
- 	l4f00242t03_reset(pdata->reset_gpio);
- 
-@@ -79,11 +75,8 @@ static void l4f00242t03_lcd_powerdown(struct spi_device *spi)
- 
- 	gpio_set_value(pdata->data_enable_gpio, 0);
- 
--	if (priv->io_reg)
--		regulator_disable(priv->io_reg);
--
--	if (priv->core_reg)
--		regulator_disable(priv->core_reg);
-+	regulator_disable(priv->io_reg);
-+	regulator_disable(priv->core_reg);
- }
- 
- static int l4f00242t03_lcd_power_get(struct lcd_device *ld)
-@@ -202,24 +195,18 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
- 	if (ret)
- 		goto err3;
- 
--	if (pdata->io_supply) {
--		priv->io_reg = regulator_get(NULL, pdata->io_supply);
--
--		if (IS_ERR(priv->io_reg)) {
--			pr_err("%s: Unable to get the IO regulator\n",
--								__func__);
--			goto err3;
--		}
-+	priv->io_reg = regulator_get(&spi->dev, "vdd");
-+	if (IS_ERR(priv->io_reg)) {
-+		dev_err(&spi->dev, "%s: Unable to get the IO regulator\n",
-+		       __func__);
-+		goto err3;
- 	}
- 
--	if (pdata->core_supply) {
--		priv->core_reg = regulator_get(NULL, pdata->core_supply);
--
--		if (IS_ERR(priv->core_reg)) {
--			pr_err("%s: Unable to get the core regulator\n",
--								__func__);
--			goto err4;
--		}
-+	priv->core_reg = regulator_get(&spi->dev, "vcore");
-+	if (IS_ERR(priv->core_reg)) {
-+		dev_err(&spi->dev, "%s: Unable to get the core regulator\n",
-+		       __func__);
-+		goto err4;
- 	}
- 
- 	priv->ld = lcd_device_register("l4f00242t03",
-@@ -239,11 +226,9 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
- 	return 0;
- 
- err5:
--	if (priv->core_reg)
--		regulator_put(priv->core_reg);
-+	regulator_put(priv->core_reg);
- err4:
--	if (priv->io_reg)
--		regulator_put(priv->io_reg);
-+	regulator_put(priv->io_reg);
- err3:
- 	gpio_free(pdata->data_enable_gpio);
- err2:
-@@ -267,10 +252,8 @@ static int __devexit l4f00242t03_remove(struct spi_device *spi)
- 	gpio_free(pdata->data_enable_gpio);
- 	gpio_free(pdata->reset_gpio);
- 
--	if (priv->io_reg)
--		regulator_put(priv->io_reg);
--	if (priv->core_reg)
--		regulator_put(priv->core_reg);
-+	regulator_put(priv->io_reg);
-+	regulator_put(priv->core_reg);
- 
- 	kfree(priv);
- 
-diff --git a/include/linux/spi/l4f00242t03.h b/include/linux/spi/l4f00242t03.h
-index aee1dbd..bc8677c 100644
---- a/include/linux/spi/l4f00242t03.h
-+++ b/include/linux/spi/l4f00242t03.h
-@@ -24,8 +24,6 @@
- struct l4f00242t03_pdata {
- 	unsigned int	reset_gpio;
- 	unsigned int	data_enable_gpio;
--	const char 	*io_supply;	/* will be set to 1.8 V */
--	const char 	*core_supply;	/* will be set to 2.8 V */
- };
- 
- #endif /* _INCLUDE_LINUX_SPI_L4F00242T03_H_ */
+>> > User thread which invokes the writei function which in turn
+>> > invokes a kernel function which waits for the free buffer to write
+>> > the audio data.  This kernel function adds this thread to a
+>> > wake(sleep) queue and calls a schedule_timeout
+>> > (msecs_to_jiffies(10000)).
+> 
+>> actually it doesn't... you must be on some really really old kernel
+>> or something.
+>> 
+
+> Sorry, I have not provided the kernel version. Kernel version is
+> 2.6.35. 
+
+Please always test bugs like this with a recent kernel. 2.6.35 is
+pretty much 6 versions (and 18 months) behind and at that point you
+really have to test with something newer first before asking others to
+help you and spend their time on your problem.
+
+
+>> > Will you provide some hint on how to go about identifying the root 
+>> > cause?
+
+>> https://lkml.org/lkml/2011/9/5/201
+
+> However, wait_for_avail() does not have the code similar to
+> the one provided in the patch below. 
+
+the patch is against a recent kernel; no surprise that the code has
+changed in the last 18 months....
+
+
 -- 
-1.7.5.4
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
