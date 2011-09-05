@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab1IEOSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 10:18:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42089 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753912Ab1IEOSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 10:18:00 -0400
-Date: Mon, 5 Sep 2011 16:17:53 +0200
-From: Jan Kara <jack@suse.cz>
-To: Harald Dunkel <harri@afaics.de>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: filesystem access vs 120 seconds timeouts
-Message-ID: <20110905141753.GG5466@quack.suse.cz>
-References: <4E4F5AC8.3060302@afaics.de>
+	id S1754173Ab1IEOTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 10:19:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:65271 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab1IEOTo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 10:19:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH 1/2] misc: remove CONFIG_MISC_DEVICES
+Date: Mon, 5 Sep 2011 16:19:35 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Luciano Coelho <coelho@ti.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        matti.j.aaltonen@nokia.com, johannes@sipsolutions.net,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <20110829102732.03f0f05d.rdunlap@xenotime.net> <201109021643.14275.arnd@arndb.de> <20110905144134.2c80c4b9@endymion.delvare>
+In-Reply-To: <20110905144134.2c80c4b9@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E4F5AC8.3060302@afaics.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109051619.35553.arnd@arndb.de>
+X-Provags-ID: V02:K0:AYj2s6fbwCsHfCYv3sVl4kvSs/iYPnQDkoojxz0huFR
+ PPcinIilpCezSJuOv3R+5J/thdKSiZ+lK02ZCC7kSrIAAYp4lg
+ MX6DupjCUfSEKjDS4JoFinB9LtKCdSZXlm10Y3lVe6LuCH5gj9
+ VWA4Q5kBzkAMMzNZ2QJqZ1t/anQpkUVkzdN+7zojRlSl2fPYwD
+ laAECv0mBDbrReCEWjp7hhACEe/OGtKKYMBDsjJyP/MBhHRDzw
+ AS9OxIp9P+UZTVLBs3VZm2+YXQm7rIjPZ70kPYOseMk2olcQFR
+ L420UaouWtZgY0TBmEJjW9N8PjLIL6FrV7f+YlEiQteTDeD57a
+ UP1dMmStDyTwFyjGLTG4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On Monday 05 September 2011, Jean Delvare wrote:
+> As said before, I'm not sure. Yes, it makes it easier to select misc
+> device drivers from Kconfig files. But it also makes it impossible to
+> deselect all misc device drivers at once.
+> 
+> I think that what we really need is the implementation in the Kconfig
+> system of smart selects, i.e. whenever an entry is selected, everything
+> it depends on gets selected as well. I don't know how feasible this is,
+> but if it can be done then I'd prefer this to your proposal.
+> 
+> Meanwhile, I am not in favor of applying your patch. The benefit is
+> relatively small IMHO (misc device drivers are rarely selected) and
+> there is one significant drawback.
 
-On Sat 20-08-11 08:57:12, Harald Dunkel wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> on huge disk IO operations I get something like this from time
-> to time:
-> 
-> [ 6220.508495] INFO: task jbd2/sdb3-8:1616 blocked for more than 120 seconds.
-> [ 6220.540831] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [ 6220.573046] jbd2/sdb3-8     D 0000000000000000     0  1616      2 0x00000000
-> [ 6220.573053]  ffff88021216e050 0000000000000046 ffff8801eab35a40 0000000000000000
-> [ 6220.573058]  ffffffff81401020 ffff8802121bbfd8 0000000000010300 0000000000004000
-> [ 6220.573063]  ffff8802106cbac0 ffff8802106cba70 ffff88020ec1c000 ffffffff81136cc1
-> [ 6220.573069] Call Trace:
-> [ 6220.573078]  [<ffffffff81136cc1>] ? cfq_add_rq_rb+0xb6/0xc7
-> [ 6220.573085]  [<ffffffff8113a973>] ? kobject_get+0x12/0x17
-> [ 6220.573093]  [<ffffffff811cf573>] ? scsi_request_fn+0x374/0x44f
-> [ 6220.573100]  [<ffffffff81083800>] ? find_get_page+0x4a/0x76
-> [ 6220.573105]  [<ffffffff810838f8>] ? __lock_page+0x66/0x66
-> [ 6220.573111]  [<ffffffff812a97aa>] ? io_schedule+0x4b/0x5d
-> [ 6220.573116]  [<ffffffff810838fe>] ? sleep_on_page+0x6/0xa
-> [ 6220.573121]  [<ffffffff812a9c8e>] ? __wait_on_bit+0x3e/0x71
-> [ 6220.573127]  [<ffffffff81083a54>] ? wait_on_page_bit+0x6e/0x73
-> [ 6220.573133]  [<ffffffff8104960b>] ? autoremove_wake_function+0x2a/0x2a
-> [ 6220.573138]  [<ffffffff81083b04>] ? filemap_fdatawait_range+0x73/0x121
-> [ 6220.573155]  [<ffffffff81129921>] ? submit_bio+0xb3/0xbc
-> [ 6220.573166]  [<ffffffffa017aabb>] ? jbd2_journal_commit_transaction+0x75f/0xf84 [jbd2]
-> [ 6220.573170]  [<ffffffff8103d6b7>] ? lock_timer_base.isra.25+0x22/0x47
-> [ 6220.573174]  [<ffffffffa017d70c>] ? kjournald2+0xc0/0x20a [jbd2]
-> [ 6220.573177]  [<ffffffff810495e1>] ? abort_exclusive_wait+0x79/0x79
-> [ 6220.573181]  [<ffffffffa017d64c>] ? commit_timeout+0x5/0x5 [jbd2]
-> [ 6220.573184]  [<ffffffff81049016>] ? kthread+0x76/0x7e
-> [ 6220.573187]  [<ffffffff812ac814>] ? kernel_thread_helper+0x4/0x10
-> [ 6220.573190]  [<ffffffff81048fa0>] ? kthread_worker_fn+0x139/0x139
-> [ 6220.573192]  [<ffffffff812ac810>] ? gs_change+0xb/0xb
-> 
-> 
-> Is the timeout of 120 seconds still reasonable? Should I simply switch
-> off the message, as suggested?
-  Hmm, yeah. The warning is in fact saying that some process blocked for
-more than 120s on some lock. Usually that indicates that something went
-really wrong but there are some cases like waiting for IO where it can
-simply take so long for IO to finish when the load is big enough... So if
-these messages annoy you, just switch the warning off.
+Before I made this patch, I started a different one that added about
+a dozen 'select MISC_DEVICES' statements sprinkled all over the kernel
+in order to silence the Kconfig warnings.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+The problem is that whenever you select that option, the misc directory
+suddenly becomes visible when it was disabled before, and things like
+'oldconfig' will start asking about all other misc drivers as well.
+
+I think it would simply be more consistent to have it enabled all
+the time. Well, even better would be to move the bulk of the misc
+drivers to a proper location sorted by their subsystems. A lot of them
+should never have been merged in their current state IMHO.
+
+> That being said, I'm not the one to decide, so if you can convince
+> someone with more power (aka Andrew Morton)...
+
+I think I should finally do what has been  talked about a few times and
+formally become the maintainer of drivers/char and drivers/misc ;-)
+
+The problem is that I'm not actually a good maintainer, but maybe it's
+better to just have someone instead of falling back to Andrew or
+some random subsystem maintainer to send any patches for drivers/misc.
+
+> >  config AD525X_DPOT
+> >       tristate "Analog Devices Digital Potentiometers"
+> > @@ -344,6 +328,12 @@ config ISL29020
+> >         This driver can also be built as a module.  If so, the module
+> >         will be called isl29020.
+> >  
+> > +config SENSORS_LIS3LV02D
+> > +     tristate
+> > +     depends on INPUT
+> > +     select INPUT_POLLDEV
+> > +     default n
+> > +
+> 
+> If you patch gets applied, then this one would better be moved to
+> drivers/misc/lis3lv02d/Kconfig.
+
+Ah, that's true.
+
+	Arnd
