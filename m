@@ -1,177 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab1IERas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:30:48 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33149 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab1IER1Y (ORCPT
+	id S1753054Ab1IERbA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:31:00 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40978 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab1IER1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:27:24 -0400
+	Mon, 5 Sep 2011 13:27:23 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V6 11/26] vfs: Add permission flags for setting file attributes
-Date: Mon,  5 Sep 2011 22:55:33 +0530
-Message-Id: <1315243548-18664-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V6 07/26] vfs: Optimize out IS_RICHACL() if CONFIG_FS_RICHACL is not defined
+Date: Mon,  5 Sep 2011 22:55:29 +0530
+Message-Id: <1315243548-18664-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 11090517-2674-0000-0000-00000042DAD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-Some permission models can allow processes to take ownership of a file,
-change the file permissions, and set the file timestamps.  Introduce new
-permission mask flags and check for those permissions in
-inode_change_ok().
+if CONFIG_FS_RICHACL is not defined optimize out
+the ACL check function.
 
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/attr.c          |   70 +++++++++++++++++++++++++++++++++++++++++++--------
- fs/namei.c         |    2 +-
- include/linux/fs.h |    4 +++
- 3 files changed, 64 insertions(+), 12 deletions(-)
+ fs/Kconfig         |    3 +++
+ include/linux/fs.h |    5 +++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index f15e9e3..00578b9 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -14,6 +14,55 @@
- #include <linux/fcntl.h>
- #include <linux/security.h>
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 9fe0b34..7939190 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -46,6 +46,9 @@ endif # BLOCK
+ config FS_POSIX_ACL
+ 	def_bool n
  
-+static int richacl_change_ok(struct inode *inode, int mask)
-+{
-+	if (!IS_RICHACL(inode))
-+		return -EPERM;
++config FS_RICHACL
++	def_bool n
 +
-+	if (inode->i_op->permission)
-+		return inode->i_op->permission(inode, mask);
-+
-+	return check_acl(inode, mask);
-+}
-+
-+static bool inode_uid_change_ok(struct inode *inode, uid_t ia_uid)
-+{
-+	if (current_fsuid() == inode->i_uid && ia_uid == inode->i_uid)
-+		return true;
-+	if (current_fsuid() == ia_uid &&
-+	    richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-+		return true;
-+	if (capable(CAP_CHOWN))
-+		return true;
-+	return false;
-+}
-+
-+static bool inode_gid_change_ok(struct inode *inode, gid_t ia_gid)
-+{
-+	int in_group = in_group_p(ia_gid);
-+	if (current_fsuid() == inode->i_uid &&
-+	    (in_group || ia_gid == inode->i_gid))
-+		return true;
-+	if (in_group && richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-+		return true;
-+	if (capable(CAP_CHOWN))
-+		return true;
-+	return false;
-+}
-+
-+static bool inode_owner_permitted_or_capable(struct inode *inode, int mask)
-+{
-+	struct user_namespace *ns = inode_userns(inode);
-+
-+	if (current_user_ns() == ns && current_fsuid() == inode->i_uid)
-+		return true;
-+	if (richacl_change_ok(inode, mask) == 0)
-+		return true;
-+	if (ns_capable(ns, CAP_FOWNER))
-+		return true;
-+	return false;
-+}
-+
- /**
-  * inode_change_ok - check if attribute changes to an inode are allowed
-  * @inode:	inode to check
-@@ -45,21 +94,20 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
- 		return 0;
+ config EXPORTFS
+ 	tristate
  
- 	/* Make sure a caller can chown. */
--	if ((ia_valid & ATTR_UID) &&
--	    (current_fsuid() != inode->i_uid ||
--	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
--		return -EPERM;
-+	if (ia_valid & ATTR_UID) {
-+		if (!inode_uid_change_ok(inode, attr->ia_uid))
-+			return -EPERM;
-+	}
- 
- 	/* Make sure caller can chgrp. */
--	if ((ia_valid & ATTR_GID) &&
--	    (current_fsuid() != inode->i_uid ||
--	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
--	    !capable(CAP_CHOWN))
--		return -EPERM;
-+	if (ia_valid & ATTR_GID) {
-+		if (!inode_gid_change_ok(inode, attr->ia_gid))
-+			return -EPERM;
-+	}
- 
- 	/* Make sure a caller can chmod. */
- 	if (ia_valid & ATTR_MODE) {
--		if (!inode_owner_or_capable(inode))
-+		if (!inode_owner_permitted_or_capable(inode, MAY_CHMOD))
- 			return -EPERM;
- 		/* Also check the setgid bit! */
- 		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
-@@ -69,7 +117,7 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
- 
- 	/* Check for setting the inode time. */
- 	if (ia_valid & (ATTR_MTIME_SET | ATTR_ATIME_SET | ATTR_TIMES_SET)) {
--		if (!inode_owner_or_capable(inode))
-+		if (!inode_owner_permitted_or_capable(inode, MAY_SET_TIMES))
- 			return -EPERM;
- 	}
- 
-diff --git a/fs/namei.c b/fs/namei.c
-index eacb530..a4d61d1 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -174,7 +174,7 @@ void putname(const char *name)
- EXPORT_SYMBOL(putname);
- #endif
- 
--static int check_acl(struct inode *inode, int mask)
-+int check_acl(struct inode *inode, int mask)
- {
- #ifdef CONFIG_FS_POSIX_ACL
- 	struct posix_acl *acl;
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8afb054..8d5d6e4 100644
+index 6eac730..1ddec24 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -71,6 +71,9 @@ struct inodes_stat_t {
- #define MAY_CREATE_DIR		0x00000200
- #define MAY_DELETE_CHILD	0x00000400
- #define MAY_DELETE_SELF		0x00000800
-+#define MAY_TAKE_OWNERSHIP	0x00001000
-+#define MAY_CHMOD		0x00002000
-+#define MAY_SET_TIMES		0x00004000
+@@ -273,7 +273,12 @@ struct inodes_stat_t {
+ #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
+ #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
+ #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
++
++#ifdef CONFIG_FS_RICHACL
+ #define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
++#else
++#define IS_RICHACL(inode)	0
++#endif
  
- /*
-  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
-@@ -2234,6 +2237,7 @@ extern sector_t bmap(struct inode *, sector_t);
- extern int notify_change(struct dentry *, struct iattr *);
- extern int inode_permission(struct inode *, int);
- extern int generic_permission(struct inode *, int);
-+extern int check_acl(struct inode *, int);
- 
- static inline bool execute_ok(struct inode *inode)
- {
+ #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
+ #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
 -- 
 1.7.4.1
 
