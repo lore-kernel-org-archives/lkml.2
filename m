@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1IELu2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 07:50:28 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:60363 "EHLO
+	id S1753496Ab1IELuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 07:50:16 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:60338 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab1IELqD (ORCPT
+	with ESMTP id S1752758Ab1IELqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 07:46:03 -0400
+	Mon, 5 Sep 2011 07:46:02 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 29/54] drbd: _drbd_send_page(): Return 0 upon success and an error code otherwise
-Date: Mon,  5 Sep 2011 13:45:20 +0200
-Message-Id: <1315223145-20640-30-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 26/54] drbd: drbd_send_drequest_csum(): Return 0 upon success and an error code otherwise
+Date: Mon,  5 Sep 2011 13:45:17 +0200
+Message-Id: <1315223145-20640-27-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
 References: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,102 +25,71 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c |   44 ++++++++++++++++++++-------------------
- 1 files changed, 23 insertions(+), 21 deletions(-)
+ drivers/block/drbd/drbd_main.c   |   12 +++++-------
+ drivers/block/drbd/drbd_worker.c |   12 ++++++------
+ 2 files changed, 11 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 1a8c3db..39d1cd1 100644
+index c0f6146..1e19f2e 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -1423,9 +1423,10 @@ static int _drbd_no_send_page(struct drbd_conf *mdev, struct page *page,
- static int _drbd_send_page(struct drbd_conf *mdev, struct page *page,
- 		    int offset, size_t size, unsigned msg_flags)
+@@ -1320,7 +1320,7 @@ int drbd_send_drequest(struct drbd_conf *mdev, int cmd,
+ int drbd_send_drequest_csum(struct drbd_conf *mdev, sector_t sector, int size,
+ 			    void *digest, int digest_size, enum drbd_packet cmd)
  {
-+	struct socket *socket = mdev->tconn->data.socket;
- 	mm_segment_t oldfs = get_fs();
--	int sent, ok;
- 	int len = size;
-+	int err = -EIO;
+-	int ok;
++	int err;
+ 	struct p_block_req p;
  
- 	/* e.g. XFS meta- & log-data is in slab pages, which have a
- 	 * page_count of 0 and/or have PageSlab() set.
-@@ -1434,25 +1435,25 @@ static int _drbd_send_page(struct drbd_conf *mdev, struct page *page,
- 	 * __page_cache_release a page that would actually still be referenced
- 	 * by someone, leading to some obscure delayed Oops somewhere else. */
- 	if (disable_sendpage || (page_count(page) < 1) || PageSlab(page))
--		return !_drbd_no_send_page(mdev, page, offset, size, msg_flags);
-+		return _drbd_no_send_page(mdev, page, offset, size, msg_flags);
+ 	prepare_header(mdev, &p.head, cmd, sizeof(p) - sizeof(struct p_header) + digest_size);
+@@ -1329,13 +1329,11 @@ int drbd_send_drequest_csum(struct drbd_conf *mdev, sector_t sector, int size,
+ 	p.blksize  = cpu_to_be32(size);
  
- 	msg_flags |= MSG_NOSIGNAL;
- 	drbd_update_congested(mdev->tconn);
- 	set_fs(KERNEL_DS);
- 	do {
--		sent = mdev->tconn->data.socket->ops->sendpage(mdev->tconn->data.socket, page,
--							offset, len,
--							msg_flags);
--		if (sent == -EAGAIN) {
--			if (we_should_drop_the_connection(mdev->tconn,
--							  mdev->tconn->data.socket))
--				break;
--			else
--				continue;
--		}
-+		int sent;
-+
-+		sent = socket->ops->sendpage(socket, page, offset, len, msg_flags);
- 		if (sent <= 0) {
-+			if (sent == -EAGAIN) {
-+				if (we_should_drop_the_connection(mdev->tconn, socket))
-+					break;
-+				continue;
-+			}
- 			dev_warn(DEV, "%s: size=%d len=%d sent=%d\n",
- 			     __func__, (int)size, len, sent);
-+			if (sent < 0)
-+				err = sent;
- 			break;
- 		}
- 		len    -= sent;
-@@ -1461,10 +1462,11 @@ static int _drbd_send_page(struct drbd_conf *mdev, struct page *page,
- 	set_fs(oldfs);
- 	clear_bit(NET_CONGESTED, &mdev->tconn->flags);
- 
--	ok = (len == 0);
--	if (likely(ok))
--		mdev->send_cnt += size>>9;
+ 	mutex_lock(&mdev->tconn->data.mutex);
+-
+-	ok = (sizeof(p) == drbd_send(mdev->tconn, mdev->tconn->data.socket, &p, sizeof(p), 0));
+-	ok = ok && (digest_size == drbd_send(mdev->tconn, mdev->tconn->data.socket, digest, digest_size, 0));
+-
++	err = drbd_send_all(mdev->tconn, mdev->tconn->data.socket, &p, sizeof(p), 0);
++	if (!err)
++		err = drbd_send_all(mdev->tconn, mdev->tconn->data.socket, digest, digest_size, 0);
+ 	mutex_unlock(&mdev->tconn->data.mutex);
+-
 -	return ok;
-+	if (len == 0) {
-+		err = 0;
-+		mdev->send_cnt += size >> 9;
-+	}
 +	return err;
  }
  
- static int _drbd_send_bio(struct drbd_conf *mdev, struct bio *bio)
-@@ -1487,9 +1489,9 @@ static int _drbd_send_zc_bio(struct drbd_conf *mdev, struct bio *bio)
- 	int i;
- 	/* hint all but last page with MSG_MORE */
- 	__bio_for_each_segment(bvec, bio, i, 0) {
--		if (!_drbd_send_page(mdev, bvec->bv_page,
--				     bvec->bv_offset, bvec->bv_len,
--				     i == bio->bi_vcnt -1 ? 0 : MSG_MORE))
-+		if (_drbd_send_page(mdev, bvec->bv_page,
-+				    bvec->bv_offset, bvec->bv_len,
-+				    i == bio->bi_vcnt -1 ? 0 : MSG_MORE))
- 			return 0;
- 	}
- 	return 1;
-@@ -1504,8 +1506,8 @@ static int _drbd_send_zc_ee(struct drbd_conf *mdev,
- 	/* hint all but last page with MSG_MORE */
- 	page_chain_for_each(page) {
- 		unsigned l = min_t(unsigned, len, PAGE_SIZE);
--		if (!_drbd_send_page(mdev, page, 0, l,
--				page_chain_next(page) ? MSG_MORE : 0))
-+		if (_drbd_send_page(mdev, page, 0, l,
-+				    page_chain_next(page) ? MSG_MORE : 0))
- 			return 0;
- 		len -= l;
- 	}
+ int drbd_send_ov_request(struct drbd_conf *mdev, sector_t sector, int size)
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index dc07437..e4874ae 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -324,9 +324,9 @@ static int w_e_send_csum(struct drbd_work *w, int cancel)
+ 		drbd_free_ee(mdev, peer_req);
+ 		peer_req = NULL;
+ 		inc_rs_pending(mdev);
+-		ok = drbd_send_drequest_csum(mdev, sector, size,
+-					     digest, digest_size,
+-					     P_CSUM_RS_REQUEST);
++		ok = !drbd_send_drequest_csum(mdev, sector, size,
++					      digest, digest_size,
++					      P_CSUM_RS_REQUEST);
+ 		kfree(digest);
+ 	} else {
+ 		dev_err(DEV, "kmalloc() of digest failed.\n");
+@@ -1089,9 +1089,9 @@ int w_e_end_ov_req(struct drbd_work *w, int cancel)
+ 	drbd_free_ee(mdev, peer_req);
+ 	peer_req = NULL;
+ 	inc_rs_pending(mdev);
+-	ok = drbd_send_drequest_csum(mdev, sector, size,
+-				     digest, digest_size,
+-				     P_OV_REPLY);
++	ok = !drbd_send_drequest_csum(mdev, sector, size,
++				      digest, digest_size,
++				      P_OV_REPLY);
+ 	if (!ok)
+ 		dec_rs_pending(mdev);
+ 	kfree(digest);
 -- 
 1.7.4.1
 
