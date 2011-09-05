@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab1IEIhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 04:37:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44758 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab1IEIhF (ORCPT
+	id S1751757Ab1IEIir (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 04:38:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49540 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab1IEIim convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 04:37:05 -0400
+	Mon, 5 Sep 2011 04:38:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E613F4B.8030502@kernel.dk>
-References: <1314982962-30271-1-git-send-email-maxim.patlasov@gmail.com>
-	<4E613F4B.8030502@kernel.dk>
-Date: Mon, 5 Sep 2011 12:37:04 +0400
-Message-ID: <CA+X1aCTPh0jORkk=xrOmQLiGokTTEW0y1Du0uXmqWQUa=W84Fw@mail.gmail.com>
-Subject: Re: [PATCH v2] cfq: queued/in_driver stats
-From: Maxim Patlasov <maxim.patlasov@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAJ8eaTxPRbEGbFtME9HEnR=vUtvCOzkDoRA51AudpcPKcGeOvQ@mail.gmail.com>
+References: <CAJ8eaTxPRbEGbFtME9HEnR=vUtvCOzkDoRA51AudpcPKcGeOvQ@mail.gmail.com>
+Date: Mon, 5 Sep 2011 14:08:41 +0530
+Message-ID: <CAJ8eaTxaUfdX7DiXuAA=18u_m+ESA7fwwkw1zCSF9HrsoC-ydQ@mail.gmail.com>
+Subject: Re: Kernel crash (2.6.35.13)
+From: naveen yadav <yad.naveen@gmail.com>
+To: linux-mm <linux-mm@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens,
+Adding linux-arm
 
->> The patch implements gathering and exporting statistics for cfqd->rq_queued
->> and cfqd->rq_in_driver. Average values of queued/in_driver are visible via
->> ...
-> Seems like an awful lot of code for something that could be gleaned
-> with blktrace?
-
-I agree, from the view of keeping code simple, it's simpler to extend
-existing blktrace logging like this:
-
--	cfq_log_cfqq(cfqd, RQ_CFQQ(rq), "activate rq, drv=%d",
--		     cfqd->rq_in_driver);
-+	cfq_log_cfqq(cfqd, RQ_CFQQ(rq), "activate rq, drv=%d queued=%d",
-+		     cfqd->rq_in_driver, cfqd->rq_queued);
-
-and to print cfqd->hw_tag somewhere.
-
-Thanks,
-Maxim
+On Thu, Sep 1, 2011 at 4:10 PM, naveen yadav <yad.naveen@gmail.com> wrote:
+> Dear All,
+>
+> I am running a simple test program that just do malloc and memset. The
+> testprogram is run using below attached script
+>
+> while true
+> do
+> ./stress &
+> ./stress &
+> ./stress &
+> ./stress &
+> sleep 1
+> done
+>
+>
+> we got this issue on embedded Target.
+>
+> After analysis we found that most of task(stress_application) is in D
+> for uninterruptible sleep.
+> application           state
+>
+> stress                  x
+> stress                  D
+> stress                  x
+> stress                  D
+> stress                  x
+> stress                  D
+> stress                  x
+> sleep                   D
+>
+> So I observe after 10-15 min Kernel crash with
+>
+> Kernel panic - not syncing: Out of memory and no killable processes...
+>
+>
+> I am attaching Kernel Crash log + Test application.
+>
+> Thanks
+>
