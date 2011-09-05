@@ -1,109 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab1IELwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 07:52:40 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:59827 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614Ab1IELpu (ORCPT
+	id S1753669Ab1IELwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 07:52:51 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:55356 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab1IELr7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 07:45:50 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 04/54] drbd: _conn_send_cmd(): Return 0 upon success and an error code otherwise
-Date: Mon,  5 Sep 2011 13:44:55 +0200
-Message-Id: <1315223145-20640-5-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
-References: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
+	Mon, 5 Sep 2011 07:47:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110905091540.GA22014@infradead.org>
+References: <4E5B4AAF.2040101@samsung.com>
+	<CAF1ivSaveqVs8dGF+HZBytJpUpTJPysUox=qmHDTFQvqBmm+rw@mail.gmail.com>
+	<4E5B65C6.6070300@samsung.com>
+	<CAH9JG2Xfh7JcdBdaCUuD9wFyNPTXg_0JbvVZkEWK5jT2=W3ybA@mail.gmail.com>
+	<CAF1ivSZxAuVaivJyoZ=gnMu-YY7AcnBwCWtD74DqPuYAASxTxA@mail.gmail.com>
+	<CAH9JG2W+wEfpL6baQmvigcH9LRn6p0wTszK+urPKxpNfHsjUCQ@mail.gmail.com>
+	<20110905091540.GA22014@infradead.org>
+Date: Mon, 5 Sep 2011 20:47:58 +0900
+X-Google-Sender-Auth: ao10f6k6sFe3lT_4KDpJEswr4Hk
+Message-ID: <CAH9JG2UevPYDOFycLGbh+zu9CyoDx8N8qnCzMy0Lq2b+06EatA@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] support ioctl for tunable user request
+From: Kyungmin Park <kmpark@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Jaehoon Chung <jh80.chung@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Lin Ming <lxy@ss.pku.edu.cn>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+Hi Christoph,
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_int.h      |    2 +-
- drivers/block/drbd/drbd_main.c     |   17 +++++++----------
- drivers/block/drbd/drbd_receiver.c |    6 +++---
- 3 files changed, 11 insertions(+), 14 deletions(-)
+On Mon, Sep 5, 2011 at 6:15 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> So what the heck is a tunable request supposed to be?  How does it
+> qualify for beeing a generic request/bio type?
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 32799ea..9badc52 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1926,7 +1926,7 @@ static inline int _drbd_send_cmd(struct drbd_conf *mdev, struct socket *sock,
- 				  enum drbd_packet cmd, struct p_header *h, size_t size,
- 				  unsigned msg_flags)
- {
--	return _conn_send_cmd(mdev->tconn, mdev->vnr, sock, cmd, h, size, msg_flags);
-+	return !_conn_send_cmd(mdev->tconn, mdev->vnr, sock, cmd, h, size, msg_flags);
- }
- 
- static inline int drbd_send_cmd(struct drbd_conf *mdev, int use_data_socket,
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 79389bf..58141ba 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -723,17 +723,14 @@ int _conn_send_cmd(struct drbd_tconn *tconn, int vnr, struct socket *sock,
- 		   enum drbd_packet cmd, struct p_header *h, size_t size,
- 		   unsigned msg_flags)
- {
--	int sent, ok;
-+	int err;
- 
- 	_prepare_header(tconn, vnr, h, cmd, size - sizeof(struct p_header));
--
--	sent = drbd_send(tconn, sock, h, size, msg_flags);
--
--	ok = (sent == size);
--	if (!ok && !signal_pending(current))
--		conn_warn(tconn, "short sent %s size=%d sent=%d\n",
--			  cmdname(cmd), (int)size, sent);
--	return ok;
-+	err = drbd_send_all(tconn, sock, h, size, msg_flags);
-+	if (err && !signal_pending(current))
-+		conn_warn(tconn, "short send %s size=%d\n",
-+			  cmdname(cmd), (int)size);
-+	return err;
- }
- 
- /* don't pass the socket. we may only look at it
-@@ -756,7 +753,7 @@ int conn_send_cmd(struct drbd_tconn *tconn, int vnr, int use_data_socket,
- 	/* drbd_disconnect() could have called drbd_free_sock()
- 	 * while we were waiting in down()... */
- 	if (likely(sock != NULL))
--		ok = _conn_send_cmd(tconn, vnr, sock, cmd, h, size, 0);
-+		ok = !_conn_send_cmd(tconn, vnr, sock, cmd, h, size, 0);
- 
- 	if (use_data_socket)
- 		mutex_unlock(&tconn->data.mutex);
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index e7e6ed6..7431e3c 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -711,7 +711,7 @@ static int drbd_send_fp(struct drbd_tconn *tconn, struct socket *sock, enum drbd
- {
- 	struct p_header *h = &tconn->data.sbuf.header;
- 
--	return _conn_send_cmd(tconn, 0, sock, cmd, h, sizeof(*h), 0);
-+	return !_conn_send_cmd(tconn, 0, sock, cmd, h, sizeof(*h), 0);
- }
- 
- static enum drbd_packet drbd_recv_fp(struct drbd_tconn *tconn, struct socket *sock)
-@@ -4148,8 +4148,8 @@ static int drbd_send_handshake(struct drbd_tconn *tconn)
- 	memset(p, 0, sizeof(*p));
- 	p->protocol_min = cpu_to_be32(PRO_VERSION_MIN);
- 	p->protocol_max = cpu_to_be32(PRO_VERSION_MAX);
--	ok = _conn_send_cmd(tconn, 0, tconn->data.socket, P_HAND_SHAKE,
--			    &p->head, sizeof(*p), 0);
-+	ok = !_conn_send_cmd(tconn, 0, tconn->data.socket, P_HAND_SHAKE,
-+			     &p->head, sizeof(*p), 0);
- 	mutex_unlock(&tconn->data.mutex);
- 	return ok;
- }
--- 
-1.7.4.1
+The concept is similar with DISCARD request except no-wait for request complete
 
+ #define REQ_DISCARD            (1 << __REQ_DISCARD)
++#define REQ_TUNE               (1 << __REQ_TUNE)
+
+As it's hard to detect the idle time at device level, user send the
+tune request to device when idle.
+
+Thank you,
+Kyungmin Park
