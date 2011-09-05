@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab1IEMko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 08:40:44 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:60677 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab1IEMkj convert rfc822-to-8bit (ORCPT
+	id S1753279Ab1IEMmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 08:42:47 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:22362 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab1IEMmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 08:40:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110905121840.GA4768@infradead.org>
-References: <4E5B4AAF.2040101@samsung.com>
-	<CAF1ivSaveqVs8dGF+HZBytJpUpTJPysUox=qmHDTFQvqBmm+rw@mail.gmail.com>
-	<4E5B65C6.6070300@samsung.com>
-	<CAH9JG2Xfh7JcdBdaCUuD9wFyNPTXg_0JbvVZkEWK5jT2=W3ybA@mail.gmail.com>
-	<CAF1ivSZxAuVaivJyoZ=gnMu-YY7AcnBwCWtD74DqPuYAASxTxA@mail.gmail.com>
-	<CAH9JG2W+wEfpL6baQmvigcH9LRn6p0wTszK+urPKxpNfHsjUCQ@mail.gmail.com>
-	<20110905091540.GA22014@infradead.org>
-	<CAH9JG2UevPYDOFycLGbh+zu9CyoDx8N8qnCzMy0Lq2b+06EatA@mail.gmail.com>
-	<20110905121840.GA4768@infradead.org>
-Date: Mon, 5 Sep 2011 21:40:39 +0900
-X-Google-Sender-Auth: j5Wg_5QU_DSZgA_YDkXoExqUHwM
-Message-ID: <CAH9JG2U9uWMQYVjyH1HOmefe2mdf79fpR5mkjPW9nj4v2MrcwQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] support ioctl for tunable user request
-From: Kyungmin Park <kmpark@infradead.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Lin Ming <lxy@ss.pku.edu.cn>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Sep 2011 08:42:40 -0400
+Date: Mon, 5 Sep 2011 14:41:34 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Luciano Coelho <coelho@ti.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        matti.j.aaltonen@nokia.com, johannes@sipsolutions.net,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-omap@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/2] misc: remove CONFIG_MISC_DEVICES
+Message-ID: <20110905144134.2c80c4b9@endymion.delvare>
+In-Reply-To: <201109021643.14275.arnd@arndb.de>
+References: <20110829102732.03f0f05d.rdunlap@xenotime.net>
+	<201108311849.37273.arnd@arndb.de>
+	<20110902143713.307bbebe@endymion.delvare>
+	<201109021643.14275.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 5, 2011 at 9:18 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Mon, Sep 05, 2011 at 08:47:58PM +0900, Kyungmin Park wrote:
->> The concept is similar with DISCARD request except no-wait for request complete
->>
->>  #define REQ_DISCARD            (1 << __REQ_DISCARD)
->> +#define REQ_TUNE               (1 << __REQ_TUNE)
->>
->> As it's hard to detect the idle time at device level, user send the
->> tune request to device when idle.
->
-> But what does a "tune" request actually do?  It's an overly generic
-> term, but I still can't even think of what it would do to a storage
+Hi Arnd,
 
-Yes, tune is generic term, that's reason to send the RFC patch, we
-consider the several names, but not found the proper name, if you
-suggest the proper name, it can change the proper one.
+On Fri, 2 Sep 2011 16:43:14 +0200, Arnd Bergmann wrote:
+> Since misc devices have nothing in common besides fitting in no
+> other category, there is no need to group them in one Kconfig
+> symbol. Simply removing the symbol gets rid of all sorts of
+> Kconfig warnings about missing dependencies when another driver
+> selects a misc driver without also selecting MISC_DEVICES.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/mach-davinci/Kconfig |    6 ------
+>  arch/unicore32/Kconfig        |    1 -
+>  drivers/misc/Kconfig          |   26 ++++++++------------------
+>  drivers/mmc/host/Kconfig      |    1 -
+>  4 files changed, 8 insertions(+), 26 deletions(-)
+> (...)
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -2,23 +2,7 @@
+>  # Misc strange devices
+>  #
+>  
+> -# This one has to live outside of the MISC_DEVICES conditional,
+> -# because it may be selected by drivers/platform/x86/hp_accel.
+> -config SENSORS_LIS3LV02D
+> -	tristate
+> -	depends on INPUT
+> -	select INPUT_POLLDEV
+> -	default n
+> -
+> -menuconfig MISC_DEVICES
+> -	bool "Misc devices"
+> -	---help---
+> -	  Say Y here to get to see options for device drivers from various
+> -	  different categories. This option alone does not add any kernel code.
+> -
+> -	  If you say N, all options in this submenu will be skipped and disabled.
+> -
+> -if MISC_DEVICES
+> +menu "Misc devices"
 
-and you can find the prototype at below URL
-http://marc.info/?l=linux-mmc&m=131407402925988&w=2
+As said before, I'm not sure. Yes, it makes it easier to select misc
+device drivers from Kconfig files. But it also makes it impossible to
+deselect all misc device drivers at once.
 
-In case of MMC, it supports the background operation (BKOPS) and these
-features can be extended at Universal Flash Storage (UFS) later.
+I think that what we really need is the implementation in the Kconfig
+system of smart selects, i.e. whenever an entry is selected, everything
+it depends on gets selected as well. I don't know how feasible this is,
+but if it can be done then I'd prefer this to your proposal.
 
-> device, nor why it would be a generic block layer concept.
-Do you mean the mmc specific ioctl is proper or other place? in case
-of ioctl, it's considered but hope to make it the generic request to
-use other storage devices.
+Meanwhile, I am not in favor of applying your patch. The benefit is
+relatively small IMHO (misc device drivers are rarely selected) and
+there is one significant drawback.
 
-Thank you,
-Kyungmin Park
+That being said, I'm not the one to decide, so if you can convince
+someone with more power (aka Andrew Morton)...
+
+>  
+>  config AD525X_DPOT
+>  	tristate "Analog Devices Digital Potentiometers"
+> @@ -344,6 +328,12 @@ config ISL29020
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called isl29020.
+>  
+> +config SENSORS_LIS3LV02D
+> +	tristate
+> +	depends on INPUT
+> +	select INPUT_POLLDEV
+> +	default n
+> +
+
+If you patch gets applied, then this one would better be moved to
+drivers/misc/lis3lv02d/Kconfig.
+
+-- 
+Jean Delvare
