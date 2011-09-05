@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab1IEJE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 05:04:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63554 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709Ab1IEJEv (ORCPT
+	id S1751874Ab1IEJIL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 05:08:11 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:36691 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1IEJIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 05:04:51 -0400
+	Mon, 5 Sep 2011 05:08:07 -0400
+Message-ID: <4E64916B.4090205@linux.vnet.ibm.com>
+Date: Mon, 05 Sep 2011 14:37:55 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1109040945370.9175-100000@netrider.rowland.org>
-References: <CAF1ivSbuRiY6Q75LUTGV6tN=KrKfVYjTV3=rZ51EiZY==707Uw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1109040945370.9175-100000@netrider.rowland.org>
-Date: Mon, 5 Sep 2011 17:04:50 +0800
-Message-ID: <CABqxG0dt74NfvsRAR5k+75UN085t_d90hOSCgqgHFTxLWgMqbg@mail.gmail.com>
-Subject: Re: [BUG] D state process after unplug and umount usb disk
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Lin Ming <mlin@ss.pku.edu.cn>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, fengguang.wu@intel.com,
-        linux-usb@vger.kernel.org
+To: maciej.rutecki@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [BUG] Soft-lockup during cpu-hotplug in VFS callpaths
+References: <4E550057.9070609@linux.vnet.ibm.com> <201108312040.32531.maciej.rutecki@gmail.com>
+In-Reply-To: <201108312040.32531.maciej.rutecki@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/4/11, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sun, 4 Sep 2011, Lin Ming wrote:
->
->> On Sat, Sep 3, 2011 at 6:31 PM, Dave Young <hidave.darkstar@gmail.com>
->> wrote:
->> > Hi,
->> >
->> > Known issue?
->> >
->> > Reproduce by:
->> > mount /dev/sdb2 /mnt/sdb2 -t ext3
->> > cat /mnt/sdb2/* >/dev/null
->> > unplug usb disk
->> > umount -f /mnt/sdb2
->> >
->> > dmesg as below:
->
-> BTW, this may or may not be related:
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=25832  (kernel crashes when
-> a mounted ext3/4 file system is physically removed)
+On 09/01/2011 12:10 AM, Maciej Rutecki wrote:
+> On środa, 24 sierpnia 2011 o 15:44:55 Srivatsa S. Bhat wrote:
+>> Hi,
+>>
+>> While running stressful cpu hotplug tests along with kernel compilation
+>> running in background, soft-lockups are detected on multiple CPUs.
+>> Sometimes this also leads to hard lockups and kernel panic.
+>> All the soft-lockups seem to occur at vfsmount_lock_local_cpu() or other
+>> VFS callpaths.
+>>
+>>
+>> [37108.410813] BUG: soft lockup - CPU#5 stuck for 22s! [cc1:29669]
+>> <snip>
+>> [37108.694781] Call Trace:
+>> [37108.697306]  [<ffffffff81199e70>] ?
+>> vfsmount_lock_local_lock_cpu+0x70/0x70 [37108.704258] 
+>> [<ffffffff81187cb5>] path_init+0x315/0x400
+>> [37108.709558]  [<ffffffff8127c398>] ? __raw_spin_lock_init+0x38/0x70
+>> [37108.715812]  [<ffffffff8118961c>] path_openat+0x8c/0x3f0
+>> [37108.721203]  [<ffffffff81012129>] ? sched_clock+0x9/0x10
+>> [37108.726597]  [<ffffffff8109416d>] ? sched_clock_cpu+0xcd/0x110
+>> [37108.732508]  [<ffffffff810a178d>] ? trace_hardirqs_off+0xd/0x10
+>> [37108.738498]  [<ffffffff8109421f>] ? local_clock+0x6f/0x80
+>> [37108.743970]  [<ffffffff81189a99>] do_filp_open+0x49/0xa0
+>> [37108.749362]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
+>> [37108.754665]  [<ffffffff8152584b>] ? _raw_spin_unlock+0x2b/0x40
+>> [37108.760575]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
+>> [37108.765875]  [<ffffffff81179607>] do_sys_open+0x107/0x1e0
+>> [37108.771352]  [<ffffffff810d610f>] ? audit_syscall_entry+0x1bf/0x1f0
+>> [37108.777695]  [<ffffffff81179720>] sys_open+0x20/0x30
+>> [37108.782741]  [<ffffffff8152e202>] system_call_fastpath+0x16/0x1b
+>>
+>> Kernel version: 3.0.1, 3.0.3
+>> Hardware: Dual socket quad-core hyper-threaded Intel x86 machine
+>> Scenario:
+>> (a) Stressful cpu hotplug tests + kernel compilation
+>>
+>> (b) IRQ balancing had been disabled and all the IRQs  were made to be
+>>     routed to CPU 0 (except the ones that couldn't be routed).
+>>
+>> (c) Lockdep was enabled during kernel configuration.
+>>
+>> Steps (b) and (c) were done to dig deeper into the issue. However the same
+>> issue was observed by just doing step (a).
+>>
+>> Definitely there seems to be a race condition occurring here, because this
+>> issue is hit after sometime, after starting the tests. And the time it
+>> takes to hit the issue increases as we increase the number of debug print
+>> statements. In some cases (especially when the number of debug print
+>> statements were quite high), the stress on the machine had to be increased
+>> in order to hit the issue within measurable time. In my tests, a maximum
+>> of about 2 to 2.5 hours was sufficient, to hit this bug.
+>>
+>> Please find the console log attached with this mail.
+>>
+>> Any ideas on how to go about fixing this bug?
+> 
+> It is a regression?
 
-Thanks for the info, but It seems a different problem. I can not
-reproduce it with 3.0 kernel for 30 times test. it can easily
-reproduce with recent kernel in 1-5 times test
+Hi Maciej,
 
->
->> > [ 1440.567271] SysRq : Show Blocked State
->> > [ 1440.567278]   task                        PC stack   pid father
->> > [ 1440.567312] cat             D ffff880037a1e378  4296  2381   2310
->> > 0x00000004
->> > [ 1440.567320]  ffff88003cca5838 0000000000000046 ffff88003cca57e8
->> > ffffffff00000000
->> > [ 1440.567332]  00000000000134c0 00000000000134c0 00000000000134c0
->> > ffff880037a1e000
->> > [ 1440.567339]  00000000000134c0 ffff88003cca5fd8 00000000000134c0
->> > 00000000000134c0
->> > [ 1440.567347] Call Trace:
->> > [ 1440.567357]  [<ffffffff810c0468>] ? lock_page+0x2a/0x2a
->> > [ 1440.567363]  [<ffffffff815e452d>] io_schedule+0x5e/0x79
->> > [ 1440.567368]  [<ffffffff810c0471>] sleep_on_page+0x9/0xd
->> > [ 1440.567373]  [<ffffffff815e4adf>] __wait_on_bit_lock+0x41/0x8a
->> > [ 1440.567378]  [<ffffffff810c0437>] __lock_page+0x61/0x68
->> > [ 1440.567384]  [<ffffffff81058739>] ?
->> > autoremove_wake_function+0x34/0x34
->> > [ 1440.567390]  [<ffffffff8102f704>] ? should_resched+0x9/0x29
->> > [ 1440.567395]  [<ffffffff810c9b0b>] lock_page+0x25/0x29
->> > [ 1440.567400]  [<ffffffff810ca1ac>]
->> > truncate_inode_pages_range+0x2a6/0x32d
->> > [ 1440.567406]  [<ffffffff810ca240>] truncate_inode_pages+0xd/0xf
->> > [ 1440.567411]  [<ffffffff811642cf>] ext3_evict_inode+0xc9/0x1d7
->> > [ 1440.567417]  [<ffffffff8111288e>] evict+0xa3/0x15e
->> > [ 1440.567422]  [<ffffffff81112b34>] dispose_list+0x3d/0x49
->> > [ 1440.567426]  [<ffffffff81113475>] evict_inodes+0xf1/0x100
->> > [ 1440.567431]  [<ffffffff810ffd21>] generic_shutdown_super+0x47/0xc7
->> > [ 1440.567436]  [<ffffffff810ffdc3>] kill_block_super+0x22/0x65
->> > [ 1440.567441]  [<ffffffff811000da>] deactivate_locked_super+0x21/0x52
->> > [ 1440.567445]  [<ffffffff811009ab>] deactivate_super+0x35/0x39
->> > [ 1440.567452]  [<ffffffff81116395>] mntput_no_expire+0xcb/0xd0
->> > [ 1440.567457]  [<ffffffff811163bb>] mntput+0x21/0x23
->> > [ 1440.567461]  [<ffffffff810ff8e7>] fput+0x196/0x1a5
->> > [ 1440.567467]  [<ffffffff810fc7a1>] filp_close+0x6b/0x76
->> > [ 1440.567472]  [<ffffffff8103fa8a>] put_files_struct+0x73/0xd1
->> > [ 1440.567477]  [<ffffffff8103fb7b>] exit_files+0x46/0x4f
->> > [ 1440.567481]  [<ffffffff8103fe01>] do_exit+0x27d/0x7b3
->> > [ 1440.567487]  [<ffffffff8104d97f>] ? get_signal_to_deliver+0x81/0x4ac
->> > [ 1440.567493]  [<ffffffff812e5e27>] ? do_raw_spin_lock+0x6b/0x122
->> > [ 1440.567497]  [<ffffffff810405c5>] do_group_exit+0x7d/0xa8
->> > [ 1440.567502]  [<ffffffff8104dd8b>] get_signal_to_deliver+0x48d/0x4ac
->> > [ 1440.567509]  [<ffffffff81001ea2>] do_signal+0x39/0x600
->> > [ 1440.567514]  [<ffffffff810fdb37>] ? fsnotify_access+0x5d/0x65
->> > [ 1440.567519]  [<ffffffff810024a4>] do_notify_resume+0x27/0x69
->> > [ 1440.567524]  [<ffffffff812e158e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->> > [ 1440.567529]  [<ffffffff815ecd63>] int_signal+0x12/0x17
->
->> Where does this exit signal come from?
->> Does USB interrupt handler will send kill signal to all processes
->> accessing it when it's unplugged(by hand)?
->
-> The USB stack does not send any signals at all unless a process
-> specifically asks for them.
->
-> Alan Stern
->
->
-
+Thank you for taking a look.
+Yes, it seems to be a regression. I tested out kernel 2.6.39.3 with similar test cases
+for quite a long time, and it did not hit any soft-lockup issues.
 
 -- 
-Regards
-Yang RuiRui
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
+
