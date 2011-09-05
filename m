@@ -1,135 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab1IEQqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 12:46:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50125 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab1IEQqa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 12:46:30 -0400
-Date: Mon, 5 Sep 2011 09:49:47 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: alsa-devel@alsa-project.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, perex@perex.cz,
-        tiwai@suse.de
-Subject: [PATCH] sound: Fix race condition in the pcm_lib "wait for space
- loop
-Message-ID: <20110905094947.6ece87c2@infradead.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+	id S1751735Ab1IEQvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 12:51:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751308Ab1IEQvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 12:51:15 -0400
+Subject: [PATCH 1/2] Fix pollution of task->ptrace if PTRACE_SETOPTIONS
+ fails.
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 05 Sep 2011 18:51:03 +0200
+References: <201109042311.18793.vda.linux@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1315241465.1888.49.camel@dhcp-25-63.brq.redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 2e37f0a4b2289962e1a45d8e02f8a7f7adad619f Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Mon, 5 Sep 2011 09:40:18 -0700
-Subject: [PATCH] sound: Fix race condition in the pcm_lib "wait for space" loop
+> A crude patch is below. It rolls points 1-4 from above into a single
+> new option, PTRACE_O_TRACESTOP.
 
-The wait_for_avail() function in pcm_lib.c has a race in it (observed in
-practice by an Intel validation group).
 
-The function is supposed to return once space in the buffer has become
-available, or if some timeout happens.  The entity that creates space (irq
-handler of sound driver and some such) will do a wake up on a waitqueue that
-this function registers for.
+For easier review, split it into two parts. Part 1 follows.
+(It is still not even compile-tested).
+-- 
+vda
 
-However there are two races in the existing code
-1) If space became available between the caller noticing there was no space and
-   this function actually sleeping, the wakeup is missed and the timeout
-   condition will happen instead
-2) If a wakeup happened but not sufficient space became available, the code will loop
-   again and wait for more space. However, if the second wake comes in prior
-   to hitting the schedule_timeout_interruptible(), it will be missed, and
-   potentially you'll wait out until the timeout happens.
 
-The fix consists of using more careful setting of the current state (so that
-if a wakeup happens in the main loop window, the schedule_timeout() falls
-through) and by checking for available space prior to going into the
-schedule_timeout() loop, but after being on the waitqueue and having the
-state set to interruptible.
+Fix pollution of task->ptrace if PTRACE_SETOPTIONS fails.
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-CC: Jaroslav Kysela <perex@perex.cz>
-CC: Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org
-CC: linux-kernel@vger.kernel.org
----
- sound/core/pcm_lib.c |   29 ++++++++++++++++++++++++++---
- 1 files changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
-index 86d0caf..8848080 100644
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -1761,6 +1761,10 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
- 	snd_pcm_uframes_t avail = 0;
- 	long wait_time, tout;
+If PTRACE_SETOPTIONS fails, options should not be affected.
+
+While at it, simplified ptrace_setoptions():
+
+Exchanged PT_TRACESYSGOOD and PT_PTRACE_CAP bit positions, which made
+PT_option bits contiguous and therefore made ptrace_setoptions much
+simpler.
+
+PT_EVENT_FLAG_SHIFT was not particularly useful, PT_OPT_FLAG_SHIFT with
+value of PT_EVENT_FLAG_SHIFT-1 is easier to use.
+
+PT_TRACE_MASK constant is nuked, the only its use is replaced by
+(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT).
+
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+
+
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 800f113..9aa669c 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -88,13 +88,12 @@
+ #define PT_SEIZED	0x00010000	/* SEIZE used, enable new behavior */
+ #define PT_PTRACED	0x00000001
+ #define PT_DTRACE	0x00000002	/* delayed trace (used on m68k, i386) */
+-#define PT_TRACESYSGOOD	0x00000004
+-#define PT_PTRACE_CAP	0x00000008	/* ptracer can follow suid-exec */
++#define PT_PTRACE_CAP	0x00000004	/* ptracer can follow suid-exec */
  
-+	init_waitqueue_entry(&wait, current);
-+	add_wait_queue(&runtime->tsleep, &wait);
-+	set_current_state(TASK_INTERRUPTIBLE);
-+
- 	if (runtime->no_period_wakeup)
- 		wait_time = MAX_SCHEDULE_TIMEOUT;
- 	else {
-@@ -1771,16 +1775,34 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
- 		}
- 		wait_time = msecs_to_jiffies(wait_time * 1000);
- 	}
--	init_waitqueue_entry(&wait, current);
--	add_wait_queue(&runtime->tsleep, &wait);
-+
-+	/*
-+	 * We need to check if space became available already (and thus the
-+	 * wakeup happened already) prior to going into the sleep loop to
-+	 * close the race of space already having become available.
-+	 * This check must happen after been added to the waitqueue and
-+	 * having current state be INTERRUPTIBLE.
-+	 */
-+
-+	if (is_playback)
-+		avail = snd_pcm_playback_avail(runtime);
-+	else
-+		avail = snd_pcm_capture_avail(runtime);
-+	if (avail >= runtime->twake)
-+		goto _endloop;
-+
-+
- 	for (;;) {
- 		if (signal_pending(current)) {
- 			err = -ERESTARTSYS;
- 			break;
- 		}
- 		snd_pcm_stream_unlock_irq(substream);
--		tout = schedule_timeout_interruptible(wait_time);
-+
-+		tout = schedule_timeout(wait_time);
-+
- 		snd_pcm_stream_lock_irq(substream);
-+		set_current_state(TASK_INTERRUPTIBLE);
- 		switch (runtime->status->state) {
- 		case SNDRV_PCM_STATE_SUSPENDED:
- 			err = -ESTRPIPE;
-@@ -1814,6 +1836,7 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
- 			break;
- 	}
-  _endloop:
-+	set_current_state(TASK_RUNNING);
- 	remove_wait_queue(&runtime->tsleep, &wait);
- 	*availp = avail;
- 	return err;
--- 
-1.7.6
++#define PT_OPT_FLAG_SHIFT	3
++#define PT_TRACESYSGOOD	0x00000008	/* must be directly before PT_TRACE_event bits! */
+ /* PT_TRACE_* event enable flags */
+-#define PT_EVENT_FLAG_SHIFT	4
+-#define PT_EVENT_FLAG(event)	(1 << (PT_EVENT_FLAG_SHIFT + (event) - 1))
+-
++#define PT_EVENT_FLAG(event)	(1 << (PT_OPT_FLAG_SHIFT + (event)))
+ #define PT_TRACE_FORK		PT_EVENT_FLAG(PTRACE_EVENT_FORK)
+ #define PT_TRACE_VFORK		PT_EVENT_FLAG(PTRACE_EVENT_VFORK)
+ #define PT_TRACE_CLONE		PT_EVENT_FLAG(PTRACE_EVENT_CLONE)
+@@ -102,8 +101,6 @@
+ #define PT_TRACE_VFORK_DONE	PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
+ #define PT_TRACE_EXIT		PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
+ 
+-#define PT_TRACE_MASK	0x000003f4
+-
+ /* single stepping state bits (used on ARM and PA-RISC) */
+ #define PT_SINGLESTEP_BIT	31
+ #define PT_SINGLESTEP		(1<<PT_SINGLESTEP_BIT)
+@@ -228,7 +225,7 @@ static inline void ptrace_init_task(struct task_struct *child, bool ptrace)
+ 		child->ptrace = current->ptrace;
+ 		__ptrace_link(child, current->parent);
+ 
+-		if (child->ptrace & PT_SEIZED)
++		if (child->ptrace & PTRACE_EVENT_STOP)
+ 			task_set_jobctl_pending(child, JOBCTL_TRAP_STOP);
+ 		else
+ 			sigaddset(&child->pending.signal, SIGSTOP);
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 9de3ecf..9c3536d 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -219,19 +219,23 @@ static int ptrace_attach(struct task_struct *task, long request,
+ 
+ 	/*
+ 	 * SEIZE will enable new ptrace behaviors which will be implemented
+-	 * gradually.  SEIZE_DEVEL is used to prevent applications
++	 * gradually.  SEIZE_DEVEL bit is used to prevent applications
+ 	 * expecting full SEIZE behaviors trapping on kernel commits which
+ 	 * are still in the process of implementing them.
+ 	 *
+ 	 * Only test programs for new ptrace behaviors being implemented
+ 	 * should set SEIZE_DEVEL.  If unset, SEIZE will fail with -EIO.
+ 	 *
+-	 * Once SEIZE behaviors are completely implemented, this flag and
+-	 * the following test will be removed.
++	 * Once SEIZE behaviors are completely implemented, this flag
++	 * will be removed.
+ 	 */
+ 	retval = -EIO;
+-	if (seize && !(flags & PTRACE_SEIZE_DEVEL))
+-		goto out;
++	if (seize) {
++		if ((flags & ~(long)PTRACE_O_MASK) != PTRACE_SEIZE_DEVEL)
++			goto out;
++		flags &= ~PTRACE_SEIZE_DEVEL;
++	} else
++		flags = 0;
+ 
+ 	audit_ptrace(task);
+ 
+@@ -243,7 +247,7 @@ static int ptrace_attach(struct task_struct *task, long request,
+ 
+ 	/*
+ 	 * Protect exec's credential calculations against our interference;
+-	 * interference; SUID, SGID and LSM creds get determined differently
++	 * SUID, SGID and LSM creds get determined differently
+ 	 * under ptrace.
+ 	 */
+ 	retval = -ERESTARTNOINTR;
+@@ -509,30 +513,13 @@ int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long ds
+ 
+ static int ptrace_setoptions(struct task_struct *child, unsigned long data)
+ {
+-	child->ptrace &= ~PT_TRACE_MASK;
+-
+-	if (data & PTRACE_O_TRACESYSGOOD)
+-		child->ptrace |= PT_TRACESYSGOOD;
+-
+-	if (data & PTRACE_O_TRACEFORK)
+-		child->ptrace |= PT_TRACE_FORK;
+-
+-	if (data & PTRACE_O_TRACEVFORK)
+-		child->ptrace |= PT_TRACE_VFORK;
+-
+-	if (data & PTRACE_O_TRACECLONE)
+-		child->ptrace |= PT_TRACE_CLONE;
+-
+-	if (data & PTRACE_O_TRACEEXEC)
+-		child->ptrace |= PT_TRACE_EXEC;
+-
+-	if (data & PTRACE_O_TRACEVFORKDONE)
+-		child->ptrace |= PT_TRACE_VFORK_DONE;
++	if (data & ~(long)PTRACE_O_MASK)
++		return -EINVAL;
+ 
+-	if (data & PTRACE_O_TRACEEXIT)
+-		child->ptrace |= PT_TRACE_EXIT;
++	child->ptrace &= ~(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT);
++	child->ptrace |= (data << PT_OPT_FLAG_SHIFT);
+ 
+-	return (data & ~PTRACE_O_MASK) ? -EINVAL : 0;
++	return 0;
+ }
+ 
+ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
 
 
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
