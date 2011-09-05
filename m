@@ -1,62 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753Ab1IECFs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 22:05:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24570 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751002Ab1IECFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 22:05:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,330,1312182000"; 
-   d="scan'208";a="48872322"
-Message-ID: <4E642E76.4010309@intel.com>
-Date: Mon, 05 Sep 2011 10:05:42 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
+	id S1752913Ab1IECPE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 22:15:04 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:4045 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab1IECOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Sep 2011 22:14:38 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        =?UTF-8?q?=C3=89ric=20Piel?= <E.A.B.Piel@tudelft.nl>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
+Subject: [PATCH v5 2/8] Input: elantech - get rid of ETP_2FT_* in elantech.h
+Date: Mon,  5 Sep 2011 10:16:41 +0800
+Message-Id: <1315189007-2179-3-git-send-email-jj_ding@emc.com.tw>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315189007-2179-1-git-send-email-jj_ding@emc.com.tw>
+References: <1315189007-2179-1-git-send-email-jj_ding@emc.com.tw>
 MIME-Version: 1.0
-To: Pavel Ivanov <paivanof@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: APEI: Can not request iomem region for GARs
-References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com> <4E520149.3010802@intel.com> <CAG1a4rtMnDXSGLkmwE+6N9smoghWp0W4b5-X_gogzJ9fDLTeBg@mail.gmail.com> <4E571D66.1070302@intel.com> <CAG1a4rtckCtpNjg9ApiLt4zQWArAu7N2ivoiMjueqYDRrr-G+g@mail.gmail.com> <4E5B258D.9090904@intel.com> <CAG1a4rtXhK-TtgayUDBK34kB2rEHUSN_6ZEX2B6Zg2-GprwCEA@mail.gmail.com>
-In-Reply-To: <CAG1a4rtXhK-TtgayUDBK34kB2rEHUSN_6ZEX2B6Zg2-GprwCEA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2011 10:44 AM, Pavel Ivanov wrote:
-> On Mon, Aug 29, 2011 at 1:37 AM, Huang Ying <ying.huang@intel.com> wrote:
->> On 08/27/2011 11:28 AM, Pavel Ivanov wrote:
->>> Also I noticed there's another suspicious message in dmesg and it was
->>> there earlier too (although it's not shown on console):
->>>
->>> GHES: Failed to enable APEI firmware first mode
->>>
->>> Is it bad? What does it mean?
->>
->> Maybe this has been fixed, please this patch,
->>
->> https://lkml.org/lkml/2011/8/11/297
-> 
-> Yes, this patch indeed fixed this failure message. It's now replaced by
-> 
-> GHES: APEI firmware first mode is enabled by WHEA _OSC.
-> 
-> Can I ask you another question: what does the following message mean?
-> 
-> [Firmware Warn]: GHES: Poll interval is 0 for generic hardware error
-> source: 1, disabled.
+For two finger touches the coordinate of each finger gets reported
+separately but with reduced resolution.
 
-This means:
+With this change, we now have the same range for ST and MT data and
+scale MT data because it has lower resolution to match ST.
 
-The generic hardware error source with ID 1 is notified by poll, that
-is, Linux should poll the specified address to check whether there is
-hardware error report from hardware.  But the poll interval specified by
-firmware is "0".  I think this should be a firmware error, and disabled
-it.  I think maybe you can contact firmware vendor to fix this.
+Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
+Acked-by: Daniel Kurtz <djkurtz@chromium.org>
+Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
+---
+ drivers/input/mouse/elantech.c |   28 +++++++++++++---------------
+ drivers/input/mouse/elantech.h |   11 -----------
+ 2 files changed, 13 insertions(+), 26 deletions(-)
 
-Best Regards,
-Huang Ying
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index da161da..cd8e2e5 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -273,11 +273,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 	struct elantech_data *etd = psmouse->private;
+ 	struct input_dev *dev = psmouse->dev;
+ 	unsigned char *packet = psmouse->packet;
+-	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0, width = 0, pres = 0;
++	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
++	unsigned int width = 0, pres = 0;
+ 
+ 	/* byte 0: n1  n0   .   .   .   .   R   L */
+ 	fingers = (packet[0] & 0xc0) >> 6;
+-	input_report_key(dev, BTN_TOUCH, fingers != 0);
+ 
+ 	switch (fingers) {
+ 	case 3:
+@@ -300,9 +300,6 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		 */
+ 		y1 = ETP_YMAX_V2 - (((packet[4] & 0x0f) << 8) | packet[5]);
+ 
+-		input_report_abs(dev, ABS_X, x1);
+-		input_report_abs(dev, ABS_Y, y1);
+-
+ 		pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+ 		width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+ 		break;
+@@ -314,22 +311,18 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		 * byte 0:  .   .  ay8 ax8  .   .   .   .
+ 		 * byte 1: ax7 ax6 ax5 ax4 ax3 ax2 ax1 ax0
+ 		 */
+-		x1 = ((packet[0] & 0x10) << 4) | packet[1];
++		x1 = (((packet[0] & 0x10) << 4) | packet[1]) << 2;
+ 		/* byte 2: ay7 ay6 ay5 ay4 ay3 ay2 ay1 ay0 */
+-		y1 = ETP_2FT_YMAX - (((packet[0] & 0x20) << 3) | packet[2]);
++		y1 = ETP_YMAX_V2 -
++			((((packet[0] & 0x20) << 3) | packet[2]) << 2);
+ 		/*
+ 		 * byte 3:  .   .  by8 bx8  .   .   .   .
+ 		 * byte 4: bx7 bx6 bx5 bx4 bx3 bx2 bx1 bx0
+ 		 */
+-		x2 = ((packet[3] & 0x10) << 4) | packet[4];
++		x2 = (((packet[3] & 0x10) << 4) | packet[4]) << 2;
+ 		/* byte 5: by7 by8 by5 by4 by3 by2 by1 by0 */
+-		y2 = ETP_2FT_YMAX - (((packet[3] & 0x20) << 3) | packet[5]);
+-		/*
+-		 * For compatibility with the X Synaptics driver scale up
+-		 * one coordinate and report as ordinary mouse movent
+-		 */
+-		input_report_abs(dev, ABS_X, x1 << 2);
+-		input_report_abs(dev, ABS_Y, y1 << 2);
++		y2 = ETP_YMAX_V2 -
++			((((packet[3] & 0x20) << 3) | packet[5]) << 2);
+ 
+ 		/* Unknown so just report sensible values */
+ 		pres = 127;
+@@ -337,6 +330,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		break;
+ 	}
+ 
++	input_report_key(dev, BTN_TOUCH, fingers != 0);
++	if (fingers != 0) {
++		input_report_abs(dev, ABS_X, x1);
++		input_report_abs(dev, ABS_Y, y1);
++	}
+ 	elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
+ 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+ 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
+index fabb2b9..1c5894e 100644
+--- a/drivers/input/mouse/elantech.h
++++ b/drivers/input/mouse/elantech.h
+@@ -82,17 +82,6 @@
+ #define ETP_WMIN_V2			0
+ #define ETP_WMAX_V2			15
+ 
+-/*
+- * For two finger touches the coordinate of each finger gets reported
+- * separately but with reduced resolution.
+- */
+-#define ETP_2FT_FUZZ			4
+-
+-#define ETP_2FT_XMIN			(  0 + ETP_2FT_FUZZ)
+-#define ETP_2FT_XMAX			(288 - ETP_2FT_FUZZ)
+-#define ETP_2FT_YMIN			(  0 + ETP_2FT_FUZZ)
+-#define ETP_2FT_YMAX			(192 - ETP_2FT_FUZZ)
+-
+ struct elantech_data {
+ 	unsigned char reg_10;
+ 	unsigned char reg_11;
+-- 
+1.7.4.1
+
