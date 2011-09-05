@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab1IEKBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 06:01:14 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:58574
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752223Ab1IEKBC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 06:01:02 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz98dKzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LR1NTH-01-3XV-02
-X-M-MSG: 
-Date: Mon, 5 Sep 2011 12:00:53 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 6/7] iommu/core: add fault reporting
-Message-ID: <20110905100053.GP16691@amd.com>
-References: <1314984756-4400-1-git-send-email-ohad@wizery.com>
- <1314984756-4400-7-git-send-email-ohad@wizery.com>
+	id S1752440Ab1IEKBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 06:01:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56023 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752182Ab1IEKBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 06:01:44 -0400
+Date: Mon, 5 Sep 2011 12:01:41 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] mm: Add comment explaining task state setting in
+ bdi_forker_thread()
+Message-ID: <20110905100141.GA5466@quack.suse.cz>
+References: <1315004059-9844-1-git-send-email-jack@suse.cz>
+ <1315004059-9844-3-git-send-email-jack@suse.cz>
+ <20110904030551.GB16361@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314984756-4400-7-git-send-email-ohad@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110904030551.GB16361@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 01:32:35PM -0400, Ohad Ben-Cohen wrote:
-> -struct iommu_domain *iommu_domain_alloc(void)
-> +/**
-> + * iommu_domain_alloc() - allocate and initialize a new iommu domain
-> + * @handler: an optional pointer to a fault handler, or NULL if not needed
-> + *
-> + * Returns the new domain, or NULL on error.
-> + */
-> +struct iommu_domain *iommu_domain_alloc(iommu_fault_handler_t handler)
+On Sun 04-09-11 11:05:51, Wu Fengguang wrote:
+> > @@ -401,6 +401,13 @@ static int bdi_forker_thread(void *ptr)
+> >  		}
+> >  
+> >  		spin_lock_bh(&bdi_lock);
+> > +		/*
+> > +		 * In the following loop we are going to check whether we have
+> > +		 * some work to do without any synchronization with tasks
+> > +		 * waking us up to do work for them. So we have to set task
+> > +		 * state already here so that we don't miss wakeups coming
+> 
+> s/already/early/ ?
+  Thanks for review. We'd have to substitute 'already here' with 'early'
+for the sentence to make make sense. But frankly I don't see why one would
+be better than the other one...
 
-Please add a seperate function for setting the fault-handler. It is
-optional, so no need to be a value of the alloc-function.
-
-> +/**
-> + * enum iommu_fault_types - iommu fault types
-> + *
-> + * @IOMMU_ERROR: Unrecoverable error
-> + * @IOMMU_TLBMISS: TLB miss while the page table walker is disabled
-> + * @IOMMU_NOPTE: TLB miss and no PTE for the requested address
-> + */
-> +enum iommu_fault_types {
-> +	IOMMU_ERROR,
-> +	IOMMU_TLBMISS,
-> +	IOMMU_NOPTE,
-> +};
-
-Can you elaborate a bit on what the user of the api will do different
-between IOMMU_TLBMISS and IOMMU_NOPTE?
-My feeling is that those differences should be handled internally in the
-IOMMU driver, but probably I miss a use-case.
-Also, we need some flags to distinguish between the type of the fault
-(read, write, ...).
-
-	Joerg
-
-
+								Honza
+> 
+> Acked-by: Wu Fengguang <fengguang.wu@intel.com>
+> 
+> > +		 * after we verify some condition.
+> > +		 */
+> >  		set_current_state(TASK_INTERRUPTIBLE);
+> >  
+> >  		list_for_each_entry(bdi, &bdi_list, bdi_list) {
+> > -- 
+> > 1.7.1
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
