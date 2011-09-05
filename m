@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab1IESzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 14:55:33 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:37452 "EHLO e5.ny.us.ibm.com"
+	id S1753001Ab1IETAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 15:00:42 -0400
+Received: from home.keithp.com ([63.227.221.253]:47608 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab1IESz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 14:55:28 -0400
-Date: Mon, 5 Sep 2011 11:55:24 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Greg Freemyer <greg.freemyer@gmail.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
-Message-ID: <20110905185524.GR12086@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com> <CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com> <20110902182214.GC12086@tux1.beaverton.ibm.com> <yq1d3fgwn5c.fsf@sermon.lab.mkp.net> <6fdb58aed1dae8020900e65cbfb34b28.squirrel@www.firstfloor.org> <yq14o0scjmg.fsf@sermon.lab.mkp.net> <88f8907569619968aa7b4a8c669d5aba.squirrel@www.firstfloor.org> <yq139gcymqj.fsf@sermon.lab.mkp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq139gcymqj.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1751651Ab1IETAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 15:00:37 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Oliver Hartkopp <socketcan@hartkopp.net>
+Subject: [PATCH] drm/i915: Enable dither whenever display bpc < frame buffer bpc
+Date: Mon,  5 Sep 2011 12:00:15 -0700
+Message-Id: <1315249215-13956-1-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <4E650BB8.8040507@hartkopp.net>
+References: <4E650BB8.8040507@hartkopp.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 04, 2011 at 06:19:16PM -0400, Martin K. Petersen wrote:
-> >>>>> "Andi" == Andi Kleen <andi@firstfloor.org> writes:
-> 
-> Andi> Doesn't have any performance numbers.
-> 
-> It's been a while since I read them. I thought they had some compelling
-> numbers. Anyway, made a big difference in real life testing here. For
-> sustained I/O we're talking an order of magnitude.
-> 
-> 
-> Andi> You need to keep in mind that PCLMULQDQ uses FPU state, so any
-> Andi> speedup for the kernel must be large enough to amortize the cost
-> Andi> of saving the FPU state.
-> 
-> Yeah, my test cases were for bulk database I/O, not for writing a
-> handful of fs metadata blocks. Plus for the DB tests the CRC was
-> generated in userland.
-> 
-> I seem to recall Joel picking something other than the hw-accelerated
-> CRC32C for ocfs2 metadata and that didn't cause any problems.
+We want to enable dithering on any pipe where the frame buffer has
+more color resolution than the output device.
 
-Yes, he picked regular CRC32, which has a reasonably fast slice-by-4
-software implementation.  For ext4, my original choices were hw acceleration or
-the slower single-byte lookup table.  With hw acceleration the overhead of
-adding the checksums is about ~10% (for just the metadata operations); with the
-single-byte table it was about 50%; and with the proposed slice-by-8 patch it's
-about 20%.  Hopefully I can optimize this even more in the future.
+The previous code was incorrectly clamping the frame buffer bpc to the
+display bpc, effectively disabling dithering all of the time as the
+computed frame buffer bpc would never be larger than the display bpc.
 
-> That said, I do see a difference between IP checksum and CRC on normal
-> FS workloads with DIX enabled here.
+Signed-off-by: Keith Packard <keithp@keithp.com>
+Reported-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Tested-by: Oliver Hartkopp <socketcan@hartkopp.net>
+---
+ drivers/gpu/drm/i915/intel_display.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-I would hope so, since the IP checksum is much simpler than any CRC...
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 56a8554..9fb4a40 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4687,13 +4687,13 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+ 		bpc = 6; /* min is 18bpp */
+ 		break;
+ 	case 24:
+-		bpc = min((unsigned int)8, display_bpc);
++		bpc = 8;
+ 		break;
+ 	case 30:
+-		bpc = min((unsigned int)10, display_bpc);
++		bpc = 10;
+ 		break;
+ 	case 48:
+-		bpc = min((unsigned int)12, display_bpc);
++		bpc = 12;
+ 		break;
+ 	default:
+ 		DRM_DEBUG("unsupported depth, assuming 24 bits\n");
+@@ -4701,10 +4701,12 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+ 		break;
+ 	}
+ 
++	display_bpc = min(display_bpc, bpc);
++
+ 	DRM_DEBUG_DRIVER("setting pipe bpc to %d (max display bpc %d)\n",
+ 			 bpc, display_bpc);
+ 
+-	*pipe_bpp = bpc * 3;
++	*pipe_bpp = display_bpc * 3;
+ 
+ 	return display_bpc != bpc;
+ }
+-- 
+1.7.5.4
 
---D
-
-> Andi> Typically that only works out for quite large buffers, but kernel
-> Andi> buffers are relatively small.
-> 
-> *nod*
-> 
-> -- 
-> Martin K. Petersen	Oracle Linux Engineering
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
