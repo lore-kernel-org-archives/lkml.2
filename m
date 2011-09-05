@@ -1,125 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1IENPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 09:15:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:58404 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753241Ab1IENPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 09:15:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,333,1312182000"; 
-   d="scan'208";a="14151138"
-Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
- channel ID
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Magnus Damm <damm@opensource.se>
-In-Reply-To: <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
-References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
-	 <1308916071.1536.4.camel@vkoul-udesk3>
-	 <20110829080047.GJ31809@linux-sh.org>
-	 <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com>
-	 <1314618931.1606.114.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
-	 <1314698522.1606.164.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
-	 <1314703426.1606.167.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1108301332190.19151@axis700.grange>
-	 <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Sep 2011 18:43:28 +0530
-Message-ID: <1315228408.26251.75.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753891Ab1IENSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 09:18:33 -0400
+Received: from smtp-out-051.synserver.de ([212.40.185.51]:1096 "EHLO
+	smtp-out-049.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753668Ab1IENSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 09:18:30 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 29850
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Scott Jiang <scott.jiang.linux@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/3] regmap: Add support for device specific write and read flag masks.
+Date: Mon,  5 Sep 2011 15:18:00 +0200
+Message-Id: <1315228682-1097-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-05 at 10:04 +0200, Guennadi Liakhovetski wrote:
-> Hi Vinod
-> 
-> On Tue, 30 Aug 2011, Guennadi Liakhovetski wrote:
-> 
-> > On Tue, 30 Aug 2011, Vinod Koul wrote:
-> > 
-> > > On Tue, 2011-08-30 at 13:20 +0200, Guennadi Liakhovetski wrote:
-> > > > On Tue, 30 Aug 2011, Vinod Koul wrote:
-> > > > 
-> > > > > On Tue, 2011-08-30 at 09:54 +0200, Guennadi Liakhovetski wrote:
-> > > > > > On Mon, 29 Aug 2011, Vinod Koul wrote:
-> > > > > > > > >> You should not assign chan->private.
-> > > > > > > > >> Please move this  to dma_slave_control API
-> > > > > > > > >
-> > > > > > > > > I haven't seen any reply to this comment and this patch seems to still be
-> > > > > > > > > outstanding, is there an updated version of this patch that I've missed?
-> > > > > > > I don't recall seeing any updated version fixing this 
-> > > > > > 
-> > > > > > As a matter of fact, when you say "use dma_slave_control API," you 
-> > > > > > actually mean the dma_slave_config, right? Then, how is one supposed to 
-> > > > > > use it in this case? Shall we be issuing a DMA_SLAVE_CONFIG call inside of 
-> > > > > > the filter and check the return code? The problem is, that not all DMA 
-> > > > > > controllers on sh-mobile SoCs can service the same slave devices. So, if 
-> > > > > > we don't check in the filter we might well get an unsuitable DMA channel.
-> > > > > Here you are assigning to chan->private your specific values, which
-> > > > > should be moved to the dma_slave_config. 
-> > > > > But here you are removing the checks, and accepting the first channel
-> > > > > you got, so how do you find channel is suitable or not.
-> > > > 
-> > > > That's done in the driver's .device_alloc_chan_resources() method. It 
-> > > > checkx the .private pointer, tries to find a suitable channel, if it fails 
-> > > > - it returns -EINVAL. See 
-> > > > drivers/dma/shdma.c::sh_dmae_alloc_chan_resources():
-> > > > 
-> > > > 	if (param) {
-> > > > 		const struct sh_dmae_slave_config *cfg;
-> > > > 
-> > > > 		cfg = sh_dmae_find_slave(sh_chan, param);
-> > > > 		if (!cfg) {
-> > > > 			ret = -EINVAL;
-> > > > 			goto efindslave;
-> > > > 		}
-> > > Now am doubly confused. Are you saying that you are using
-> > > alloc_chan_resources for doing filtering??
-> > 
-> > Let's look at __dma_request_channel(). It iterates over DMA devices and 
-> > calls private_candidate() for each of them, which in turn calls the filter 
-> > function for each free channel on the current device. As soon as the 
-> > filter returns "true" for one of channels, a private candidate is found. 
-> > And in my filter I do exactly this - assign the .private pointer and 
-> > return "true." Next dma_chan_get() is called, which in turn calls driver's 
-> > .device_alloc_chan_resources() method. There we check the previously set 
-> > .private pointer to see, if this slave can be served by this DMA device. 
-> > On sh-mobile you can freely configure single DMA channels for different 
-> > slaves, as long as this slave is at all supported by the current DMA 
-> > controller device. If this slave can be supported - all is good, we use 
-> > the private data to configure the channel. If not - we return an error and 
-> > __dma_request_channel() iterates to the next DMA controller device, which 
-> > is exactly what we need.
-> 
-> Haven't heard back from you after this my reply. Does this mean, that 
-> you're now satisfied with my explanation and are going to apply my patch?
-> 
-Sorry for the delay, we had a v long weekend here in India :)
-I am still not fully convinced yet. Why do you need the private pointer
-to be assigned in filter function? Once you return true for a channel in
-filter function, you should be able to use the channel properly.
-Assuming that you are calling for correct channel and you have set your
-private pointer (i don't understand for why/what), then above check
-seems to be bogus, why should you check again
-in .device_alloc_chan_resources?
+Some buses like SPI have no standard notation of read or write operations.
+The general scheme here is to set or clear specific bits in the register
+address to indicate whether the operation is a read or write. We already
+support having a read flag mask per bus, but as there is no standard
+the bits which need to be set or cleared differ between devices and vendors,
+thus we need a mechanism to specify them per device.
 
-> Thanks
-> Guennadi
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
+This patch adds two new entries to the regmap_config struct, read_flag_mask and
+write_flag_mask. These will be or'ed onto the top byte when doing a read or
+write operation. If both masks are empty the device will fallback to the
+regmap_bus masks.
 
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/base/regmap/internal.h |    3 +++
+ drivers/base/regmap/regmap.c   |   15 ++++++++++++---
+ include/linux/regmap.h         |    9 +++++++++
+ 3 files changed, 24 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 5ab3fef..7e14d5a 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -46,6 +46,9 @@ struct regmap {
+ 	bool (*readable_reg)(struct device *dev, unsigned int reg);
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
++
++	u8 read_flag_mask;
++	u8 write_flag_mask;
+ };
+ 
+ bool regmap_writeable(struct regmap *map, unsigned int reg);
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index fa2bd89..8ecf8bf 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -147,6 +147,13 @@ struct regmap *regmap_init(struct device *dev,
+ 	map->volatile_reg = config->volatile_reg;
+ 	map->precious_reg = config->precious_reg;
+ 
++	if (config->read_flag_mask || config->write_flag_mask) {
++		map->read_flag_mask = config->read_flag_mask;
++		map->write_flag_mask = config->write_flag_mask;
++	} else {
++		map->read_flag_mask = bus->read_flag_mask;
++	}
++
+ 	switch (config->reg_bits) {
+ 	case 4:
+ 		switch (config->val_bits) {
+@@ -229,6 +236,7 @@ EXPORT_SYMBOL_GPL(regmap_exit);
+ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
+ 			     const void *val, size_t val_len)
+ {
++	u8 *u8 = map->work_buf;
+ 	void *buf;
+ 	int ret = -ENOTSUPP;
+ 	size_t len;
+@@ -242,6 +250,8 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
+ 
+ 	map->format.format_reg(map->work_buf, reg);
+ 
++	u8[0] |= map->write_flag_mask;
++
+ 	trace_regmap_hw_write_start(map->dev, reg,
+ 				    val_len / map->format.val_bytes);
+ 
+@@ -369,13 +379,12 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	map->format.format_reg(map->work_buf, reg);
+ 
+ 	/*
+-	 * Some buses flag reads by setting the high bits in the
++	 * Some buses or devices flag reads by setting the high bits in the
+ 	 * register addresss; since it's always the high bits for all
+ 	 * current formats we can do this here rather than in
+ 	 * formatting.  This may break if we get interesting formats.
+ 	 */
+-	if (map->bus->read_flag_mask)
+-		u8[0] |= map->bus->read_flag_mask;
++	u8[0] |= map->read_flag_mask;
+ 
+ 	trace_regmap_hw_read_start(map->dev, reg,
+ 				   val_len / map->format.val_bytes);
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 449e264..f0b8d47 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -53,6 +53,12 @@ struct reg_default {
+  * @reg_defaults: Power on reset values for registers (for use with
+  *                register cache support).
+  * @num_reg_defaults: Number of elements in reg_defaults.
++ *
++ * @read_flag_mask: Mask to be set in the top byte of the register when doing
++ *                  a read.
++ * @write_flag_mask: Mask to be set in the top byte of the register when doing
++ *                   a write. If both read_flag_mask and write_flag_mask are
++ *                   empty the regmap_bus default masks are used.
+  */
+ struct regmap_config {
+ 	int reg_bits;
+@@ -66,6 +72,9 @@ struct regmap_config {
+ 	unsigned int max_register;
+ 	struct reg_default *reg_defaults;
+ 	int num_reg_defaults;
++
++	u8 read_flag_mask;
++	u8 write_flag_mask;
+ };
+ 
+ typedef int (*regmap_hw_write)(struct device *dev, const void *data,
 -- 
-~Vinod
+1.7.2.5
 
