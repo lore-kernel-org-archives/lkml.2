@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1IEObU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 10:31:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43142 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab1IEObQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 10:31:16 -0400
-Date: Mon, 5 Sep 2011 16:31:10 +0200
-From: Jan Kara <jack@suse.cz>
-To: awp47 <awp47.swjtu@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: a oops about orphan inode
-Message-ID: <20110905143110.GI5466@quack.suse.cz>
-References: <CAHq9w0JEe6+cqNTSOAQQZgVvtLdF-X6ic-3PZi14gVvunLQ-4g@mail.gmail.com>
+	id S1754263Ab1IEOgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 10:36:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47803 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab1IEOgE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 10:36:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHq9w0JEe6+cqNTSOAQQZgVvtLdF-X6ic-3PZi14gVvunLQ-4g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110905103925.GC5466@quack.suse.cz>
+References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
+	<20110901143333.51baf4ae.akpm@linux-foundation.org>
+	<CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
+	<20110902112133.GD12182@quack.suse.cz>
+	<CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
+	<CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
+	<20110902151450.GF12182@quack.suse.cz>
+	<CAFPAmTQxBK32zutyiX9DJLS2F+z6jxsV71xOwa0sivxSY5MD1Q@mail.gmail.com>
+	<20110905103925.GC5466@quack.suse.cz>
+Date: Mon, 5 Sep 2011 20:06:04 +0530
+Message-ID: <CAFPAmTR5f_GW_oha07Bf0_LNXhigZri_w2N_XTEqM+X+-Ae-Rw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of del_timer
+From: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-08-11 23:51:11, awp47 wrote:
-> hi ,all
-> recently, I meet a oops in a old kernel(2.6.5-suse9).
-> General process are:
-> 1.mount a block device: mount -t ext3 -o data=journal /dev/device
-> /some, it return ok.
-> 2.in userspace, execute the rm commond, and the rm will call sys_unlink():
-> 2.1.sys_unlink() will call path_lookup(), it will call
-> ext3_lookup()->ext3_read_inode(), it's get a inode from
->    disk, but it's inode->i_nlink and inode->i_mode are both 0, so it's
-> a bad inode(make_bad_inode()).
-> 2.2.after lookup path, sys_unlink() will call
-> vfs_unlink()->ext3_unlink(), in ext3_unlink() it will find the bad
->    inode, and put it in orphan inode list both memory and disk.
-> 2.3.after vfs_unlink(), sys_unlink() will call
-> iput()->ext3_delete_inode(), in ext3_delete_inode() it will check
->    the inode, if it is bad, it will goto end(don't remove orphan inode
-> from the memory and disk list)
-> 3.umount the block device, at this time, kernel oops in
-> ext3_put_super(): J_ASSERT(list_empty(&sbi->s_orphan));
-> 
-> can somebody tell me, how to deal with bad inode in kernel? if we get
-> a bad inode from disk, it will don't remove
-> from orphan inode list?
-> 
-> I checked the newest stable kernel 3.0.3. ext3_read_inode() change
-> into ext3_iget(): if we get a bad inode, it will
-> call iget_failed(), it will mark inode as bad(make_bad_inode) and call
-> iput(), at last will call ext3_evict_inode. now
-> in ext3_evict_inode also checked inode, if it is bad, don't remove
-> from orphan inode list.
-  Hmm, where does it check for bad inode and exit without removing inode
-from orphan list? I don't see anything like that in ext3_evict_inode().
+Hi,
 
-  BTW: Sending this question to linux-ext4@vger.kernel.org would have
-higher chances of getting some attention.
+>  OK, I don't care much whether we have there del_timer() or
+> del_timer_sync(). Let me just say that the race you are afraid of is
+> probably not going to happen in practice so I'm not sure it's valid to be
+> afraid of CPU cycles being burned needlessly. The timer is armed when an
+> dirty inode is first attached to default bdi's dirty list. Then the default
+> bdi flusher thread would have to be woken up so that following happens:
+>        CPU1                            CPU2
+>  timer fires -> wakeup_timer_fn()
+>                                        bdi_forker_thread()
+>                                          del_timer(&me->wakeup_timer);
+>                                          wb_do_writeback(me, 0);
+>                                          ...
+>                                          set_current_state(TASK_INTERRUPTIBLE);
+>  wake_up_process(default_backing_dev_info.wb.task);
+>
+>  Especially wb_do_writeback() is going to take a long time so just that
+> single thing makes the race unlikely. Given del_timer_sync() is slightly
+> more costly than del_timer() even for unarmed timer, it is questionable
+> whether (chance race happens * CPU spent in extra loop) > (extra CPU spent
+> in del_timer_sync() * frequency that code is executed in
+> bdi_forker_thread())...
+>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Ok, so this means that we can compare the following 2 paths of code:
+i)   One extra iteration of the bdi_forker_thread loop, versus
+ii)  The amount of time it takes for the del_timer_sync to wait till
+the timer_fn
+     on the other CPU finishes executing + schedule resulting in a
+guaranteed sleep.
+
+Considering both situations to be a race till the tasks are ejected
+from the runqueue
+(i.e., sleep), I think ii) should be a better option, don't you think ?
+Scenario i)  will result in execution of the entire schedule()
+function once without
+resulting in the "sleep" of the task. Also, if another task schedules,
+it could take a
+lot of CPU cycles before we return to this (bdi-default) task.
+Scenario ii) will result only in the execution of a couple of more
+iterations of the
+del_timer_sync loop which will quickly respond to completion of
+timer_fn on other CPU
+and lead to removal of current task as per the call to schedule with
+guaranteed sleep.
+
+Is my reasoning correct/adequate ?
+
+I know that the bdi_forker_thread anyways doesn't do much on its own,
+but I'm just
+understanding your expert opinion(s) on this aspect of the kernel code. :)
