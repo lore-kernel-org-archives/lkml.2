@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab1IERaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:30:20 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33166 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab1IER1c (ORCPT
+	id S1752745Ab1IERaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:30:13 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34220 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab1IER1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:27:32 -0400
+	Mon, 5 Sep 2011 13:27:38 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V6 17/26] richacl: Permission check algorithm
-Date: Mon,  5 Sep 2011 22:55:39 +0530
-Message-Id: <1315243548-18664-18-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V6 23/26] vfs: Add richacl permission check
+Date: Mon,  5 Sep 2011 22:55:45 +0530
+Message-Id: <1315243548-18664-24-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -22,149 +22,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@kernel.org>
-
-As in the standard POSIX file permission model, each process is the
-owner, group, or other file class.  A process is
-
-  - in the owner file class if it owns the file,
-  - in the group file class if it is in the file's owning group or it
-    matches any of the user or group entries, and
-  - in the other file class otherwise.
-
-Each file class is associated with a file mask.
-
-A richacl grants a requested access if the NFSv4 acl in the richacl
-grants the requested permissions (according to the NFSv4 permission
-check algorithm) and the file mask that applies to the process includes
-the requested permissions.
-
-Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/richacl_base.c       |   99 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/attr.c               |    6 +++-
+ fs/namei.c              |   13 ++++++++++-
+ fs/richacl_base.c       |   54 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h      |    2 +-
  include/linux/richacl.h |    2 +
- 2 files changed, 101 insertions(+), 0 deletions(-)
+ 5 files changed, 73 insertions(+), 4 deletions(-)
 
+diff --git a/fs/attr.c b/fs/attr.c
+index 00578b9..2b445ba 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -13,6 +13,7 @@
+ #include <linux/fsnotify.h>
+ #include <linux/fcntl.h>
+ #include <linux/security.h>
++#include <linux/richacl.h>
+ 
+ static int richacl_change_ok(struct inode *inode, int mask)
+ {
+@@ -21,8 +22,9 @@ static int richacl_change_ok(struct inode *inode, int mask)
+ 
+ 	if (inode->i_op->permission)
+ 		return inode->i_op->permission(inode, mask);
+-
+-	return check_acl(inode, mask);
++	if (inode->i_op->get_richacl)
++		return check_richacl(inode, mask);
++	return -EPERM;
+ }
+ 
+ static bool inode_uid_change_ok(struct inode *inode, uid_t ia_uid)
+diff --git a/fs/namei.c b/fs/namei.c
+index ce67eb1..1054bc3 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -33,6 +33,7 @@
+ #include <linux/device_cgroup.h>
+ #include <linux/fs_struct.h>
+ #include <linux/posix_acl.h>
++#include <linux/richacl.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -174,7 +175,7 @@ void putname(const char *name)
+ EXPORT_SYMBOL(putname);
+ #endif
+ 
+-int check_acl(struct inode *inode, int mask)
++static int check_posix_acl(struct inode *inode, int mask)
+ {
+ #ifdef CONFIG_FS_POSIX_ACL
+ 	struct posix_acl *acl;
+@@ -220,6 +221,16 @@ int check_acl(struct inode *inode, int mask)
+ 	return -EAGAIN;
+ }
+ 
++static int check_acl(struct inode *inode, int mask)
++{
++	if (IS_POSIXACL(inode))
++		return check_posix_acl(inode, mask);
++	else if (IS_RICHACL(inode))
++		return check_richacl(inode, mask);
++	else
++		return -EAGAIN;
++}
++
+ /*
+  * This does the basic permission checking
+  */
 diff --git a/fs/richacl_base.c b/fs/richacl_base.c
-index 60a65d7..1f885ad 100644
+index 2cdc244..b5b3227 100644
 --- a/fs/richacl_base.c
 +++ b/fs/richacl_base.c
-@@ -393,3 +393,102 @@ richacl_chmod(struct richacl *acl, mode_t mode)
- 	return clone;
+@@ -623,3 +623,57 @@ richacl_equiv_mode(const struct richacl *acl, mode_t *mode_p)
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(richacl_chmod);
+ EXPORT_SYMBOL_GPL(richacl_equiv_mode);
 +
-+/**
-+ * richacl_permission  -  richacl permission check algorithm
-+ * @inode:	inode to check
-+ * @acl:	rich acl of the inode
-+ * @mask:	requested access (ACE4_* bitmask)
-+ *
-+ * Checks if the current process is granted @mask flags in @acl.
-+ */
-+int
-+richacl_permission(struct inode *inode, const struct richacl *acl,
-+		   unsigned int mask)
++int check_richacl(struct inode *inode, int want)
 +{
-+	const struct richace *ace;
-+	unsigned int requested = mask, denied = 0;
-+	int in_owning_group = in_group_p(inode->i_gid);
-+	int in_owner_or_group_class = in_owning_group;
++#ifdef CONFIG_FS_RICHACL
++	struct richacl *acl;
++	int richacl_mask = richacl_want_to_mask(want);
 +
-+	/*
-+	 * We don't need to know which class the process is in when the acl is
-+	 * not masked.
-+	 */
-+	if (!(acl->a_flags & ACL4_MASKED))
-+		in_owner_or_group_class = 1;
-+
-+	/*
-+	 * A process is
-+	 *   - in the owner file class if it owns the file,
-+	 *   - in the group file class if it is in the file's owning group or
-+	 *     it matches any of the user or group entries, and
-+	 *   - in the other file class otherwise.
-+	 */
-+
-+	/*
-+	 * Check if the acl grants the requested access and determine which
-+	 * file class the process is in.
-+	 */
-+	richacl_for_each_entry(ace, acl) {
-+		unsigned int ace_mask = ace->e_mask;
-+
-+		if (richace_is_inherit_only(ace))
-+			continue;
-+		if (richace_is_owner(ace)) {
-+			if (current_fsuid() != inode->i_uid)
-+				continue;
-+			goto is_owner;
-+		} else if (richace_is_group(ace)) {
-+			if (!in_owning_group)
-+				continue;
-+		} else if (richace_is_unix_id(ace)) {
-+			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
-+				if (!in_group_p(ace->u.e_id))
-+					continue;
-+			} else {
-+				if (current_fsuid() != ace->u.e_id)
-+					continue;
-+			}
-+		} else
-+			goto is_everyone;
-+
-+is_owner:
-+		/* The process is in the owner or group file class. */
-+		in_owner_or_group_class = 1;
-+
-+is_everyone:
-+		/* Check which mask flags the ACE allows or denies. */
-+		if (richace_is_deny(ace))
-+			denied |= ace_mask & mask;
-+		mask &= ~ace_mask;
-+
-+		/*
-+		 * Keep going until we know which file class
-+		 * the process is in.
-+		 */
-+		if (!mask && in_owner_or_group_class)
-+			break;
++	if (want & MAY_NOT_BLOCK) {
++		acl = rcu_dereference(inode->i_richacl);
++		if (!acl)
++			return -EAGAIN;
++		/* no ->get_acl() calls in RCU mode... */
++		if (acl == ACL_NOT_CACHED)
++			return -ECHILD;
++		return richacl_permission(inode, acl, richacl_mask);
 +	}
-+	denied |= mask;
-+
-+	if (acl->a_flags & ACL4_MASKED) {
-+		unsigned int file_mask;
-+
-+		/*
-+		 * The file class a process is in determines which file mask
-+		 * applies.  Check if that file mask also grants the requested
-+		 * access.
-+		 */
-+		if (current_fsuid() == inode->i_uid)
-+			file_mask = acl->a_owner_mask;
-+		else if (in_owner_or_group_class)
-+			file_mask = acl->a_group_mask;
-+		else
-+			file_mask = acl->a_other_mask;
-+		denied |= requested & ~file_mask;
-+	}
-+
-+	return denied ? -EACCES : 0;
++	return richacl_check_acl(inode, richacl_mask);
++#endif
++	return -EAGAIN;
 +}
-+EXPORT_SYMBOL_GPL(richacl_permission);
++
++int richacl_check_acl(struct inode *inode, int richacl_mask)
++{
++
++#ifdef CONFIG_FS_RICHACL
++	struct richacl *acl;
++	acl = get_cached_richacl(inode);
++	/*
++	 * A filesystem can force a ACL callback by just never filling the
++	 * ACL cache. But normally you'd fill the cache either at inode
++	 * instantiation time, or on the first ->get_acl call.
++	 *
++	 * If the filesystem doesn't have a get_acl() function at all, we'll
++	 * just create the negative cache entry.
++	 */
++	if (acl == ACL_NOT_CACHED) {
++		if (inode->i_op->get_acl) {
++			acl = inode->i_op->get_richacl(inode);
++			if (IS_ERR(acl))
++				return PTR_ERR(acl);
++		} else {
++			set_cached_richacl(inode, NULL);
++			return -EAGAIN;
++		}
++	}
++	if (acl) {
++		int error = richacl_permission(inode, acl, richacl_mask);
++		richacl_put(acl);
++		return error;
++	}
++#endif
++	return -EAGAIN;
++}
++EXPORT_SYMBOL_GPL(richacl_check_acl);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index cfbe763..38ad50a 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1626,6 +1626,7 @@ struct inode_operations {
+ 	void * (*follow_link) (struct dentry *, struct nameidata *);
+ 	int (*permission) (struct inode *, int);
+ 	struct posix_acl * (*get_acl)(struct inode *, int);
++	struct richacl * (*get_richacl)(struct inode *);
+ 
+ 	int (*readlink) (struct dentry *, char __user *,int);
+ 	void (*put_link) (struct dentry *, struct nameidata *, void *);
+@@ -2245,7 +2246,6 @@ extern sector_t bmap(struct inode *, sector_t);
+ extern int notify_change(struct dentry *, struct iattr *);
+ extern int inode_permission(struct inode *, int);
+ extern int generic_permission(struct inode *, int);
+-extern int check_acl(struct inode *, int);
+ 
+ static inline bool execute_ok(struct inode *inode)
+ {
 diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index 6dd8eb2..f46e797 100644
+index a00a9a6..00d52a4 100644
 --- a/include/linux/richacl.h
 +++ b/include/linux/richacl.h
-@@ -289,5 +289,7 @@ extern unsigned int richacl_mode_to_mask(mode_t);
- extern unsigned int richacl_want_to_mask(int);
- extern void richacl_compute_max_masks(struct richacl *);
- extern struct richacl *richacl_chmod(struct richacl *, mode_t);
-+extern int richacl_permission(struct inode *, const struct richacl *,
-+			      unsigned int);
+@@ -367,6 +367,8 @@ extern int richacl_permission(struct inode *, const struct richacl *,
+ 			      unsigned int);
+ extern struct richacl *richacl_inherit(const struct richacl *, int);
+ extern int richacl_equiv_mode(const struct richacl *, mode_t *);
++extern int check_richacl(struct inode *, int);
++extern int richacl_check_acl(struct inode *, int);
  
- #endif /* __RICHACL_H */
+ /* richacl_inode.c */
+ extern struct richacl *richacl_inherit_inode(const struct richacl *,
 -- 
 1.7.4.1
 
