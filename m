@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab1IECPZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Sep 2011 22:15:25 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:65306 "EHLO
+	id S1754152Ab1IECPb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Sep 2011 22:15:31 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:39036 "EHLO
 	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab1IECOo (ORCPT
+	with ESMTP id S1752096Ab1IECOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Sep 2011 22:14:44 -0400
+	Sun, 4 Sep 2011 22:14:45 -0400
 From: JJ Ding <jj_ding@emc.com.tw>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Seth Forshee <seth.forshee@canonical.com>,
@@ -17,151 +17,128 @@ Cc: Seth Forshee <seth.forshee@canonical.com>,
         Chase Douglas <chase.douglas@canonical.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
-Subject: [PATCH v5 7/8] Input: elantech - add v3 hardware support
-Date: Mon,  5 Sep 2011 10:16:46 +0800
-Message-Id: <1315189007-2179-8-git-send-email-jj_ding@emc.com.tw>
+Subject: [PATCH v5 8/8] Input: elantech - add v4 hardware support
+Date: Mon,  5 Sep 2011 10:16:47 +0800
+Message-Id: <1315189007-2179-9-git-send-email-jj_ding@emc.com.tw>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315189007-2179-1-git-send-email-jj_ding@emc.com.tw>
 References: <1315189007-2179-1-git-send-email-jj_ding@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3 hardware's packet format is almost identical to v2 (one/three finger touch),
-except when sensing two finger touch, the hardware sends 12 bytes of data.
+v4 hardware is a true multitouch capable touchpad (up to 5 fingers).
+The packet format is quite complex, please see protocol document for
+reference.
 
 Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
-Acked-by: Daniel Kurtz <djkurtz@chromium.org>
-Acked-by: Éric Piel <eric.piel@tremplin-utc.net>
 ---
- Documentation/input/elantech.txt |  117 +++++++++++++++++++---
- drivers/input/mouse/elantech.c   |  204 ++++++++++++++++++++++++++++++++++---
- drivers/input/mouse/elantech.h   |   12 +++
- 3 files changed, 304 insertions(+), 29 deletions(-)
+ Documentation/input/elantech.txt |  170 ++++++++++++++++++++++++++
+ drivers/input/mouse/elantech.c   |  248 ++++++++++++++++++++++++++++++++++++--
+ drivers/input/mouse/elantech.h   |   29 ++++-
+ 3 files changed, 431 insertions(+), 16 deletions(-)
 
 diff --git a/Documentation/input/elantech.txt b/Documentation/input/elantech.txt
-index bce9941..cee08ee 100644
+index cee08ee..5602eb7 100644
 --- a/Documentation/input/elantech.txt
 +++ b/Documentation/input/elantech.txt
-@@ -16,15 +16,22 @@ Contents
- 
-  1. Introduction
-  2. Extra knobs
-- 3. Hardware version 1
--    3.1 Registers
--    3.2 Native relative mode 4 byte packet format
--    3.3 Native absolute mode 4 byte packet format
-- 4. Hardware version 2
-+ 3. Differentiating hardware versions
-+ 4. Hardware version 1
-     4.1 Registers
--    4.2 Native absolute mode 6 byte packet format
--        4.2.1 One finger touch
--        4.2.2 Two finger touch
-+    4.2 Native relative mode 4 byte packet format
-+    4.3 Native absolute mode 4 byte packet format
-+ 5. Hardware version 2
-+    5.1 Registers
-+    5.2 Native absolute mode 6 byte packet format
-+        5.2.1 Parity checking and packet re-synchronization
-+        5.2.2 One/Three finger touch
-+        5.2.3 Two finger touch
-+ 6. Hardware version 3
-+    6.1 Registers
-+    6.2 Native absolute mode 6 byte packet format
-+        6.2.1 One/Three finger touch
-+        6.2.2 Two finger touch
+@@ -32,6 +32,12 @@ Contents
+     6.2 Native absolute mode 6 byte packet format
+         6.2.1 One/Three finger touch
+         6.2.2 Two finger touch
++ 7. Hardware version 4
++    7.1 Registers
++    7.2 Native absolute mode 6 byte packet format
++        7.2.1 Status packet
++        7.2.2 Head packet
++        7.2.3 Motion packet
  
  
  
-@@ -375,7 +382,7 @@ For all the other ones, there are just a few constant bits:
- 
- In case an error is detected, all the packets are shifted by one (and packet[0] is discarded).
- 
--5.2.1 One/Three finger touch
-+5.2.2 One/Three finger touch
-       ~~~~~~~~~~~~~~~~
- 
- byte 0:
-@@ -384,7 +391,7 @@ byte 0:
- 	 n1  n0  w3  w2   .   .   R   L
- 
-          L, R = 1 when Left, Right mouse button pressed
--         n1..n0 = numbers of fingers on touchpad
-+         n1..n0 = number of fingers on touchpad
- 
- byte 1:
- 
-@@ -432,7 +439,7 @@ byte 5:
-          y11..y0 = absolute y value (vertical)
- 
- 
--4.2.2 Two finger touch
-+5.2.3 Two finger touch
-       ~~~~~~~~~~~~~~~~
- 
- Note that the two pairs of coordinates are not exactly the coordinates of the
-@@ -446,7 +453,7 @@ byte 0:
-         n1  n0  ay8 ax8  .   .   R   L
- 
-          L, R = 1 when Left, Right mouse button pressed
--         n1..n0 = numbers of fingers on touchpad
-+         n1..n0 = number of fingers on touchpad
- 
- byte 1:
- 
-@@ -480,3 +487,89 @@ byte 5:
-         by7 by8 by5 by4 by3 by2 by1 by0
- 
-          by8..by0 = upper-right finger absolute y value
+@@ -573,3 +579,167 @@ The packet format is exactly the same for two finger touch, except the hardware
+ sends two 6 byte packets. The first packet contains data for the first finger,
+ the second packet has data for the second finger. So for two finger touch a
+ total of 12 bytes are sent.
 +
 +/////////////////////////////////////////////////////////////////////////////
 +
-+6. Hardware version 3
++7. Hardware version 4
 +   ==================
 +
-+6.1 Registers
++7.1 Registers
 +    ~~~~~~~~~
-+* reg_10
++* reg_07
 +
 +   bit   7   6   5   4   3   2   1   0
 +         0   0   0   0   0   0   0   A
 +
 +         A: 1 = enable absolute tracking
 +
-+6.2 Native absolute mode 6 byte packet format
++7.2 Native absolute mode 6 byte packet format
 +    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+1 and 3 finger touch shares the same 6-byte packet format, except that
-+3 finger touch only reports the position of the center of all three fingers.
++v4 hardware is a true multitouch touchpad, capable of tracking up to 5 fingers.
++Unfortunately, due to PS/2's limited bandwidth, its packet format is rather
++complex.
 +
-+Firmware would send 12 bytes of data for 2 finger touch.
++Whenever the numbers or identities of the fingers changes, the hardware sends a
++status packet to indicate how many and which fingers is on touchpad, followed by
++head packets or motion packets. A head packet contains data of finger id, finger
++position (absolute x, y values), width, and pressure. A motion packet contains
++two fingers' position delta.
 +
-+Note on debounce:
-+In case the box has unstable power supply or other electricity issues, or
-+when number of finger changes, F/W would send "debounce packet" to inform
-+driver that the hardware is in debounce status.
-+The debouce packet has the following signature:
-+    byte 0: 0xc4
-+    byte 1: 0xff
-+    byte 2: 0xff
-+    byte 3: 0x02
-+    byte 4: 0xff
-+    byte 5: 0xff
-+When we encounter this kind of packet, we just ignore it.
++For example, when status packet tells there are 2 fingers on touchpad, then we
++can expect two following head packets. If the finger status doesn't change,
++the following packets would be motion packets, only sending delta of finger
++position, until we receive a status packet.
 +
-+6.2.1 One/Three finger touch
-+      ~~~~~~~~~~~~~~~~~~~~~~
++One exception is one finger touch. when a status packet tells us there is only
++one finger, the hardware would just send head packets afterwards.
++
++7.2.1 Status packet
++      ~~~~~~~~~~~~~
 +
 +byte 0:
 +
 +   bit   7   6   5   4   3   2   1   0
-+        n1  n0  w3  w2   0   1   R   L
++         .   .   .   .   0   1   R   L
++
++         L, R = 1 when Left, Right mouse button pressed
++
++byte 1:
++
++   bit   7   6   5   4   3   2   1   0
++         .   .   . ft4 ft3 ft2 ft1 ft0
++
++         ft4 ft3 ft2 ft1 ft0 ftn = 1 when finger n is on touchpad
++
++byte 2: not used
++
++byte 3:
++
++   bit   7   6   5   4   3   2   1   0
++         .   .   .   1   0   0   0   0
++
++         constant bits
++
++byte 4:
++
++   bit   7   6   5   4   3   2   1   0
++         p   .   .   .   .   .   .   .
++
++         p = 1 for palm
++
++byte 5: not used
++
++7.2.2 Head packet
++      ~~~~~~~~~~~
++
++byte 0:
++
++   bit   7   6   5   4   3   2   1   0
++        w3  w2  w1  w0   0   1   R   L
 +
 +        L, R = 1 when Left, Right mouse button pressed
-+        n1..n0 = number of fingers on touchpad
++        w3..w0 = finger width (spans how many trace lines)
 +
 +byte 1:
 +
@@ -178,9 +155,9 @@ index bce9941..cee08ee 100644
 +byte 3:
 +
 +   bit   7   6   5   4   3   2   1   0
-+         0   0  w1  w0   0   0   1   0
++       id2 id1 id0   1   0   0   0   1
 +
-+         w3..w0 = width of the finger touch
++       id2..id0 = finger id
 +
 +byte 4:
 +
@@ -196,44 +173,111 @@ index bce9941..cee08ee 100644
 +
 +        y11..y0 = absolute y value (vertical)
 +
-+6.2.2 Two finger touch
-+      ~~~~~~~~~~~~~~~~
++7.2.3 Motion packet
++      ~~~~~~~~~~~~~
 +
-+The packet format is exactly the same for two finger touch, except the hardware
-+sends two 6 byte packets. The first packet contains data for the first finger,
-+the second packet has data for the second finger. So for two finger touch a
-+total of 12 bytes are sent.
++byte 0:
++
++   bit   7   6   5   4   3   2   1   0
++       id2 id1 id0   w   0   1   R   L
++
++       L, R = 1 when Left, Right mouse button pressed
++       id2..id0 = finger id
++       w = 1 when delta overflows (> 127 or < -128), in this case
++       firmware sends us (delta x / 5) and (delta y  / 5)
++
++byte 1:
++
++   bit   7   6   5   4   3   2   1   0
++        x7  x6  x5  x4  x3  x2  x1  x0
++
++        x7..x0 = delta x (two's complement)
++
++byte 2:
++
++   bit   7   6   5   4   3   2   1   0
++        y7  y6  y5  y4  y3  y2  y1  y0
++
++        y7..y0 = delta y (two's complement)
++
++byte 3:
++
++   bit   7   6   5   4   3   2   1   0
++       id2 id1 id0   1   0   0   1   0
++
++       id2..id0 = finger id
++
++byte 4:
++
++   bit   7   6   5   4   3   2   1   0
++        x7  x6  x5  x4  x3  x2  x1  x0
++
++        x7..x0 = delta x (two's complement)
++
++byte 5:
++
++   bit   7   6   5   4   3   2   1   0
++        y7  y6  y5  y4  y3  y2  y1  y0
++
++        y7..y0 = delta y (two's complement)
++
++        byte 0 ~ 2 for one finger
++        byte 3 ~ 5 for another
 diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 2ae7c49..c4ceefd 100644
+index c4ceefd..38fb155 100644
 --- a/drivers/input/mouse/elantech.c
 +++ b/drivers/input/mouse/elantech.c
-@@ -108,6 +108,16 @@ static int elantech_read_reg(struct psmouse *psmouse, unsigned char reg,
- 			rc = -1;
+@@ -84,7 +84,7 @@ static int elantech_read_reg(struct psmouse *psmouse, unsigned char reg,
+ 	unsigned char param[3];
+ 	int rc = 0;
+ 
+-	if (reg < 0x10 || reg > 0x26)
++	if (reg < 0x07 || reg > 0x26)
+ 		return -1;
+ 
+ 	if (reg > 0x11 && reg < 0x20)
+@@ -109,7 +109,7 @@ static int elantech_read_reg(struct psmouse *psmouse, unsigned char reg,
  		}
  		break;
-+
-+	case 3:
-+		if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-+		    elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
-+		    elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
-+		    elantech_ps2_command(psmouse, NULL, reg) ||
-+		    elantech_ps2_command(psmouse, param, PSMOUSE_CMD_GETINFO)) {
-+			rc = -1;
-+		}
-+		break;
- 	}
+ 
+-	case 3:
++	case 3 ... 4:
+ 		if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+ 		    elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
+ 		    elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+@@ -122,8 +122,10 @@ static int elantech_read_reg(struct psmouse *psmouse, unsigned char reg,
  
  	if (rc)
-@@ -154,6 +164,18 @@ static int elantech_write_reg(struct psmouse *psmouse, unsigned char reg,
+ 		pr_err("failed to read register 0x%02x.\n", reg);
+-	else
++	else if (etd->hw_version != 4)
+ 		*val = param[0];
++	else
++		*val = param[1];
+ 
+ 	return rc;
+ }
+@@ -137,7 +139,7 @@ static int elantech_write_reg(struct psmouse *psmouse, unsigned char reg,
+ 	struct elantech_data *etd = psmouse->private;
+ 	int rc = 0;
+ 
+-	if (reg < 0x10 || reg > 0x26)
++	if (reg < 0x07 || reg > 0x26)
+ 		return -1;
+ 
+ 	if (reg > 0x11 && reg < 0x20)
+@@ -176,6 +178,20 @@ static int elantech_write_reg(struct psmouse *psmouse, unsigned char reg,
  			rc = -1;
  		}
  		break;
 +
-+	case 3:
++	case 4:
 +		if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
 +		    elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
 +		    elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
 +		    elantech_ps2_command(psmouse, NULL, reg) ||
++		    elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
++		    elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
 +		    elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
 +		    elantech_ps2_command(psmouse, NULL, val) ||
 +		    elantech_ps2_command(psmouse, NULL, PSMOUSE_CMD_SETSCALE11)) {
@@ -243,366 +287,402 @@ index 2ae7c49..c4ceefd 100644
  	}
  
  	if (rc)
-@@ -350,6 +372,84 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+@@ -409,12 +425,12 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
+ 			 * byte 1:   .    .    .    .  ax11 ax10 ax9  ax8
+ 			 * byte 2: ax7  ax6  ax5  ax4  ax3  ax2  ax1  ax0
+ 			 */
+-			etd->prev_x = ((packet[1] & 0x0f) << 8) | packet[2];
++			etd->mt[0].x = ((packet[1] & 0x0f) << 8) | packet[2];
+ 			/*
+ 			 * byte 4:   .    .    .    .  ay11 ay10 ay9  ay8
+ 			 * byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
+ 			 */
+-			etd->prev_y = etd->y_max -
++			etd->mt[0].y = etd->y_max -
+ 				(((packet[4] & 0x0f) << 8) | packet[5]);
+ 			/*
+ 			 * wait for next packet
+@@ -423,8 +439,8 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
+ 		}
+ 
+ 		/* packet_type == PACKET_V3_TAIL */
+-		x1 = etd->prev_x;
+-		y1 = etd->prev_y;
++		x1 = etd->mt[0].x;
++		y1 = etd->mt[0].y;
+ 		x2 = ((packet[1] & 0x0f) << 8) | packet[2];
+ 		y2 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+ 		break;
+@@ -450,6 +466,129 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
  	input_sync(dev);
  }
  
-+/*
-+ * Interpret complete data packets and report absolute mode input events for
-+ * hardware version 3. (12 byte packets for two fingers)
-+ */
-+static void elantech_report_absolute_v3(struct psmouse *psmouse,
-+					int packet_type)
++static void elantech_input_sync_v4(struct psmouse *psmouse)
++{
++	struct input_dev *dev = psmouse->dev;
++	unsigned char *packet = psmouse->packet;
++
++	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
++	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++	input_mt_report_pointer_emulation(dev, true);
++	input_sync(dev);
++}
++
++static void process_packet_status_v4(struct psmouse *psmouse)
++{
++	struct input_dev *dev = psmouse->dev;
++	unsigned char *packet = psmouse->packet;
++	unsigned fingers;
++	int i;
++
++	/* notify finger state change */
++	fingers = packet[1] & 0x1f;
++	for (i = 0; i < ETP_MAX_FINGERS; i++) {
++		if ((fingers & (1 << i)) == 0) {
++			input_mt_slot(dev, i);
++			input_mt_report_slot_state(dev, MT_TOOL_FINGER, false);
++		}
++	}
++
++	elantech_input_sync_v4(psmouse);
++}
++
++static void process_packet_head_v4(struct psmouse *psmouse)
 +{
 +	struct input_dev *dev = psmouse->dev;
 +	struct elantech_data *etd = psmouse->private;
 +	unsigned char *packet = psmouse->packet;
-+	unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-+	unsigned int width = 0, pres = 0;
++	int id = ((packet[3] & 0xe0) >> 5) - 1;
++	int pres, traces;
 +
-+	/* byte 0: n1  n0   .   .   .   .   R   L */
-+	fingers = (packet[0] & 0xc0) >> 6;
++	if (id < 0)
++		return;
 +
-+	switch (fingers) {
-+	case 3:
-+	case 1:
-+		/*
-+		 * byte 1:  .   .   .   .  x11 x10 x9  x8
-+		 * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
-+		 */
-+		x1 = ((packet[1] & 0x0f) << 8) | packet[2];
-+		/*
-+		 * byte 4:  .   .   .   .  y11 y10 y9  y8
-+		 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
-+		 */
-+		y1 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
-+		break;
-+
-+	case 2:
-+		if (packet_type == PACKET_V3_HEAD) {
-+			/*
-+			 * byte 1:   .    .    .    .  ax11 ax10 ax9  ax8
-+			 * byte 2: ax7  ax6  ax5  ax4  ax3  ax2  ax1  ax0
-+			 */
-+			etd->prev_x = ((packet[1] & 0x0f) << 8) | packet[2];
-+			/*
-+			 * byte 4:   .    .    .    .  ay11 ay10 ay9  ay8
-+			 * byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
-+			 */
-+			etd->prev_y = etd->y_max -
-+				(((packet[4] & 0x0f) << 8) | packet[5]);
-+			/*
-+			 * wait for next packet
-+			 */
-+			return;
-+		}
-+
-+		/* packet_type == PACKET_V3_TAIL */
-+		x1 = etd->prev_x;
-+		y1 = etd->prev_y;
-+		x2 = ((packet[1] & 0x0f) << 8) | packet[2];
-+		y2 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
-+		break;
-+	}
-+
++	etd->mt[id].x = ((packet[1] & 0x0f) << 8) | packet[2];
++	etd->mt[id].y = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
 +	pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-+	width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
++	traces = (packet[0] & 0xf0) >> 4;
 +
-+	input_report_key(dev, BTN_TOUCH, fingers != 0);
-+	if (fingers != 0) {
-+		input_report_abs(dev, ABS_X, x1);
-+		input_report_abs(dev, ABS_Y, y1);
++	input_mt_slot(dev, id);
++	input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
++
++	input_report_abs(dev, ABS_MT_POSITION_X, etd->mt[id].x);
++	input_report_abs(dev, ABS_MT_POSITION_Y, etd->mt[id].y);
++	input_report_abs(dev, ABS_MT_PRESSURE, pres);
++	input_report_abs(dev, ABS_MT_TOUCH_MAJOR, traces * etd->width);
++	/* report this for backwards compatibility */
++	input_report_abs(dev, ABS_TOOL_WIDTH, traces);
++
++	elantech_input_sync_v4(psmouse);
++}
++
++static void process_packet_motion_v4(struct psmouse *psmouse)
++{
++	struct input_dev *dev = psmouse->dev;
++	struct elantech_data *etd = psmouse->private;
++	unsigned char *packet = psmouse->packet;
++	int weight, delta_x1 = 0, delta_y1 = 0, delta_x2 = 0, delta_y2 = 0;
++	int id, sid;
++
++	id = ((packet[0] & 0xe0) >> 5) - 1;
++	if (id < 0)
++		return;
++
++	sid = ((packet[3] & 0xe0) >> 5) - 1;
++	weight = (packet[0] & 0x10) ? ETP_WEIGHT_VALUE : 1;
++	/*
++	 * Motion packets give us the delta of x, y values of specific fingers,
++	 * but in two's complement. Let the compiler do the conversion for us.
++	 * Also _enlarge_ the numbers to int, in case of overflow.
++	 */
++	delta_x1 = (signed char)packet[1];
++	delta_y1 = (signed char)packet[2];
++	delta_x2 = (signed char)packet[4];
++	delta_y2 = (signed char)packet[5];
++
++	etd->mt[id].x += delta_x1 * weight;
++	etd->mt[id].y -= delta_y1 * weight;
++	input_mt_slot(dev, id);
++	input_report_abs(dev, ABS_MT_POSITION_X, etd->mt[id].x);
++	input_report_abs(dev, ABS_MT_POSITION_Y, etd->mt[id].y);
++
++	if (sid >= 0) {
++		etd->mt[sid].x += delta_x2 * weight;
++		etd->mt[sid].y -= delta_y2 * weight;
++		input_mt_slot(dev, sid);
++		input_report_abs(dev, ABS_MT_POSITION_X, etd->mt[sid].x);
++		input_report_abs(dev, ABS_MT_POSITION_Y, etd->mt[sid].y);
 +	}
-+	elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
-+	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
-+	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
-+	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
-+	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	input_report_abs(dev, ABS_PRESSURE, pres);
-+	input_report_abs(dev, ABS_TOOL_WIDTH, width);
 +
-+	input_sync(dev);
++	elantech_input_sync_v4(psmouse);
++}
++
++static void elantech_report_absolute_v4(struct psmouse *psmouse,
++					int packet_type)
++{
++	switch (packet_type) {
++	case PACKET_V4_STATUS:
++		process_packet_status_v4(psmouse);
++		break;
++
++	case PACKET_V4_HEAD:
++		process_packet_head_v4(psmouse);
++		break;
++
++	case PACKET_V4_MOTION:
++		process_packet_motion_v4(psmouse);
++		break;
++
++	case PACKET_UNKNOWN:
++	default:
++		/* impossible to get here */
++		break;
++	}
 +}
 +
  static int elantech_packet_check_v1(struct psmouse *psmouse)
  {
  	struct elantech_data *etd = psmouse->private;
-@@ -403,11 +503,37 @@ static int elantech_packet_check_v2(struct psmouse *psmouse)
- }
+@@ -504,7 +643,7 @@ static int elantech_packet_check_v2(struct psmouse *psmouse)
  
  /*
-+ * We check the constant bits to determine what packet type we get,
-+ * so packet checking is mandatory for v3 hardware.
-+ */
-+static int elantech_packet_check_v3(struct psmouse *psmouse)
+  * We check the constant bits to determine what packet type we get,
+- * so packet checking is mandatory for v3 hardware.
++ * so packet checking is mandatory for v3 and later hardware.
+  */
+ static int elantech_packet_check_v3(struct psmouse *psmouse)
+ {
+@@ -527,6 +666,25 @@ static int elantech_packet_check_v3(struct psmouse *psmouse)
+ 	return PACKET_UNKNOWN;
+ }
+ 
++static int elantech_packet_check_v4(struct psmouse *psmouse)
 +{
-+	const u8 debounce_packet[] = { 0xc4, 0xff, 0xff, 0x02, 0xff, 0xff };
 +	unsigned char *packet = psmouse->packet;
 +
-+	/*
-+	 * check debounce first, it has the same signature in byte 0
-+	 * and byte 3 as PACKET_V3_HEAD.
-+	 */
-+	if (!memcmp(packet, debounce_packet, sizeof(debounce_packet)))
-+		return PACKET_DEBOUNCE;
++	if ((packet[0] & 0x0c) == 0x04 &&
++	    (packet[3] & 0x1f) == 0x11)
++		return PACKET_V4_HEAD;
 +
-+	if ((packet[0] & 0x0c) == 0x04 && (packet[3] & 0xcf) == 0x02)
-+		return PACKET_V3_HEAD;
++	if ((packet[0] & 0x0c) == 0x04 &&
++	    (packet[3] & 0x1f) == 0x12)
++		return PACKET_V4_MOTION;
 +
-+	if ((packet[0] & 0x0c) == 0x0c && (packet[3] & 0xce) == 0x0c)
-+		return PACKET_V3_TAIL;
++	if ((packet[0] & 0x0c) == 0x04 &&
++	    (packet[3] & 0x1f) == 0x10)
++		return PACKET_V4_STATUS;
 +
 +	return PACKET_UNKNOWN;
 +}
 +
-+/*
+ /*
   * Process byte stream from mouse and handle complete packets
   */
- static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
- {
- 	struct elantech_data *etd = psmouse->private;
-+	int packet_type;
+@@ -567,6 +725,14 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
  
- 	if (psmouse->pktcnt < psmouse->pktsize)
- 		return PSMOUSE_GOOD_DATA;
-@@ -429,6 +555,18 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
- 
- 		elantech_report_absolute_v2(psmouse);
+ 		elantech_report_absolute_v3(psmouse, packet_type);
  		break;
 +
-+	case 3:
-+		packet_type = elantech_packet_check_v3(psmouse);
-+		/* ignore debounce */
-+		if (packet_type == PACKET_DEBOUNCE)
-+			return PSMOUSE_FULL_PACKET;
-+
++	case 4:
++		packet_type = elantech_packet_check_v4(psmouse);
 +		if (packet_type == PACKET_UNKNOWN)
 +			return PSMOUSE_BAD_DATA;
 +
-+		elantech_report_absolute_v3(psmouse, packet_type);
++		elantech_report_absolute_v4(psmouse, packet_type);
 +		break;
  	}
  
  	return PSMOUSE_FULL_PACKET;
-@@ -463,8 +601,15 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
- 		    elantech_write_reg(psmouse, 0x11, etd->reg_11) ||
- 		    elantech_write_reg(psmouse, 0x21, etd->reg_21)) {
+@@ -610,6 +776,13 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
  			rc = -1;
--			break;
- 		}
-+		break;
+ 
+ 		break;
 +
-+	case 3:
-+		etd->reg_10 = 0x0b;
-+		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
++	case 4:
++		etd->reg_07 = 0x01;
++		if (elantech_write_reg(psmouse, 0x07, etd->reg_07))
 +			rc = -1;
 +
-+		break;
++		goto skip_readback_reg_10; /* v4 has no reg 0x10 to read */
  	}
  
  	if (rc == 0) {
-@@ -498,11 +643,12 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
- 	return rc;
- }
+@@ -637,6 +810,7 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+ 		}
+ 	}
  
--static void set_range(struct psmouse *psmouse, unsigned int *x_min,
-+static int set_range(struct psmouse *psmouse, unsigned int *x_min,
++ skip_readback_reg_10:
+ 	if (rc)
+ 		pr_err("failed to initialise registers.\n");
+ 
+@@ -645,10 +819,11 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+ 
+ static int set_range(struct psmouse *psmouse, unsigned int *x_min,
  		     unsigned int *y_min, unsigned int *x_max,
- 		     unsigned int *y_max)
+-		     unsigned int *y_max)
++		     unsigned int *y_max, unsigned int *width)
  {
  	struct elantech_data *etd = psmouse->private;
-+	unsigned char param[3];
+ 	unsigned char param[3];
++	unsigned char traces;
  	int i;
  
  	switch (etd->hw_version) {
-@@ -530,19 +676,30 @@ static void set_range(struct psmouse *psmouse, unsigned int *x_min,
- 			*y_max = (etd->capabilities[2] - i) * 64;
- 		}
+@@ -684,6 +859,19 @@ static int set_range(struct psmouse *psmouse, unsigned int *x_min,
+ 		*x_max = (0x0f & param[0]) << 8 | param[1];
+ 		*y_max = (0xf0 & param[0]) << 4 | param[2];
  		break;
 +
-+	case 3:
++	case 4:
 +		if (synaptics_send_cmd(psmouse, ETP_FW_ID_QUERY, param))
 +			return -1;
 +
 +		*x_max = (0x0f & param[0]) << 8 | param[1];
 +		*y_max = (0xf0 & param[0]) << 4 | param[2];
++		traces = etd->capabilities[1];
++		if ((traces < 2) || (traces > *x_max))
++			return -1;
++
++		*width = *x_max / (traces - 1);
 +		break;
  	}
-+
-+	return 0;
- }
  
- /*
-  * Set the appropriate event bits for the input subsystem
-  */
--static void elantech_set_input_params(struct psmouse *psmouse)
-+static int elantech_set_input_params(struct psmouse *psmouse)
+ 	return 0;
+@@ -696,9 +884,9 @@ static int elantech_set_input_params(struct psmouse *psmouse)
  {
  	struct input_dev *dev = psmouse->dev;
  	struct elantech_data *etd = psmouse->private;
- 	unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0;
+-	unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0;
++	unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0, width = 0;
  
--	set_range(psmouse, &x_min, &y_min, &x_max, &y_max);
-+	if (set_range(psmouse, &x_min, &y_min, &x_max, &y_max))
-+		return -1;
+-	if (set_range(psmouse, &x_min, &y_min, &x_max, &y_max))
++	if (set_range(psmouse, &x_min, &y_min, &x_max, &y_max, &width))
+ 		return -1;
  
  	__set_bit(EV_KEY, dev->evbit);
- 	__set_bit(EV_ABS, dev->evbit);
-@@ -570,6 +727,9 @@ static void elantech_set_input_params(struct psmouse *psmouse)
- 
- 	case 2:
- 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-+		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-+		/* fall through */
-+	case 3:
- 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
- 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
- 		if (etd->reports_pressure) {
-@@ -578,7 +738,6 @@ static void elantech_set_input_params(struct psmouse *psmouse)
- 			input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
- 					     ETP_WMAX_V2, 0, 0);
- 		}
--		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
- 		input_mt_init_slots(dev, 2);
+@@ -742,9 +930,37 @@ static int elantech_set_input_params(struct psmouse *psmouse)
  		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
  		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
-@@ -586,6 +745,8 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+ 		break;
++
++	case 4:
++		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
++		/* For X to recognize me as touchpad. */
++		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
++		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
++		/*
++		 * range of pressure and width is the same as v2,
++		 * report ABS_PRESSURE, ABS_TOOL_WIDTH for compatibility.
++		 */
++		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
++				     ETP_PMAX_V2, 0, 0);
++		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
++				     ETP_WMAX_V2, 0, 0);
++		/* Multitouch capable pad, up to 5 fingers. */
++		input_mt_init_slots(dev, ETP_MAX_FINGERS);
++		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
++		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
++		input_set_abs_params(dev, ABS_MT_PRESSURE, ETP_PMIN_V2,
++				     ETP_PMAX_V2, 0, 0);
++		/*
++		 * The firmware reports how many trace lines the finger spans,
++		 * convert to surface unit as Protocol-B requires.
++		 */
++		input_set_abs_params(dev, ABS_MT_TOUCH_MAJOR, 0,
++				     ETP_WMAX_V2 * width, 0, 0);
++		break;
  	}
  
  	etd->y_max = y_max;
-+
-+	return 0;
- }
- 
- struct elantech_attr_data {
-@@ -727,7 +888,8 @@ int elantech_detect(struct psmouse *psmouse, bool set_properties)
- 	 * Report this in case there are Elantech models that use a different
- 	 * set of magic numbers
- 	 */
--	if (param[0] != 0x3c || param[1] != 0x03 || param[2] != 0xc8) {
-+	if (param[0] != 0x3c || param[1] != 0x03 ||
-+	    (param[2] != 0xc8 && param[2] != 0x00)) {
- 		pr_debug("unexpected magic knock result 0x%02x, 0x%02x, 0x%02x.\n",
- 			 param[0], param[1], param[2]);
- 		return -1;
-@@ -793,16 +955,16 @@ static int elantech_reconnect(struct psmouse *psmouse)
- /*
-  * determine hardware version and set some properties according to it.
-  */
--static void elantech_set_properties(struct elantech_data *etd)
-+static int elantech_set_properties(struct elantech_data *etd)
- {
--	/*
--	 * Assume every version greater than 0x020030 is new EeePC style
--	 * hardware with 6 byte packets, except 0x020600
--	 */
- 	if (etd->fw_version < 0x020030 || etd->fw_version == 0x020600)
- 		etd->hw_version = 1;
--	else
-+	else if (etd->fw_version < 0x150600)
- 		etd->hw_version = 2;
-+	else if ((etd->fw_version & 0x0f0000) >> 16 == 5)
-+		etd->hw_version = 3;
-+	else
-+		return -1;
- 
- 	/*
- 	 * Turn on packet checking by default.
-@@ -817,13 +979,15 @@ static void elantech_set_properties(struct elantech_data *etd)
- 	etd->jumpy_cursor =
- 		(etd->fw_version == 0x020022 || etd->fw_version == 0x020600);
- 
--	if (etd->hw_version == 2) {
-+	if (etd->hw_version > 1) {
- 		/* For now show extra debug information */
- 		etd->debug = 1;
- 
- 		if (etd->fw_version >= 0x020800)
- 			etd->reports_pressure = true;
- 	}
-+
-+	return 0;
- }
- 
- /*
-@@ -850,9 +1014,12 @@ int elantech_init(struct psmouse *psmouse)
- 		pr_err("failed to query firmware version.\n");
- 		goto init_fail;
- 	}
--
- 	etd->fw_version = (param[0] << 16) | (param[1] << 8) | param[2];
--	elantech_set_properties(etd);
-+
-+	if (elantech_set_properties(etd)) {
-+		pr_err("unknown hardware version, aborting...\n");
-+		goto init_fail;
-+	}
- 	pr_info("assuming hardware version %d "
- 		"(with firmware version 0x%02x%02x%02x)\n",
- 		etd->hw_version, param[0], param[1], param[2]);
-@@ -871,7 +1038,10 @@ int elantech_init(struct psmouse *psmouse)
- 		goto init_fail;
- 	}
- 
--	elantech_set_input_params(psmouse);
-+	if (elantech_set_input_params(psmouse)) {
-+		pr_err("failed to query touchpad range.\n");
-+		goto init_fail;
-+	}
- 
- 	error = sysfs_create_group(&psmouse->ps2dev.serio->dev.kobj,
- 				   &elantech_attr_group);
-@@ -883,7 +1053,7 @@ int elantech_init(struct psmouse *psmouse)
- 	psmouse->protocol_handler = elantech_process_byte;
- 	psmouse->disconnect = elantech_disconnect;
- 	psmouse->reconnect = elantech_reconnect;
--	psmouse->pktsize = etd->hw_version == 2 ? 6 : 4;
-+	psmouse->pktsize = etd->hw_version > 1 ? 6 : 4;
++	etd->width = width;
  
  	return 0;
+ }
+@@ -816,6 +1032,7 @@ static ssize_t elantech_set_int_attr(struct psmouse *psmouse,
+ 			    elantech_show_int_attr,			\
+ 			    elantech_set_int_attr)
+ 
++ELANTECH_INT_ATTR(reg_07, 0x07);
+ ELANTECH_INT_ATTR(reg_10, 0x10);
+ ELANTECH_INT_ATTR(reg_11, 0x11);
+ ELANTECH_INT_ATTR(reg_20, 0x20);
+@@ -829,6 +1046,7 @@ ELANTECH_INT_ATTR(debug, 0);
+ ELANTECH_INT_ATTR(paritycheck, 0);
+ 
+ static struct attribute *elantech_attrs[] = {
++	&psmouse_attr_reg_07.dattr.attr,
+ 	&psmouse_attr_reg_10.dattr.attr,
+ 	&psmouse_attr_reg_11.dattr.attr,
+ 	&psmouse_attr_reg_20.dattr.attr,
+@@ -957,12 +1175,16 @@ static int elantech_reconnect(struct psmouse *psmouse)
+  */
+ static int elantech_set_properties(struct elantech_data *etd)
+ {
++	int ver = (etd->fw_version & 0x0f0000) >> 16;
++
+ 	if (etd->fw_version < 0x020030 || etd->fw_version == 0x020600)
+ 		etd->hw_version = 1;
+ 	else if (etd->fw_version < 0x150600)
+ 		etd->hw_version = 2;
+-	else if ((etd->fw_version & 0x0f0000) >> 16 == 5)
++	else if (ver == 5)
+ 		etd->hw_version = 3;
++	else if (ver == 6)
++		etd->hw_version = 4;
+ 	else
+ 		return -1;
  
 diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-index d9e6144..236c33c 100644
+index 236c33c..7ecaef0 100644
 --- a/drivers/input/mouse/elantech.h
 +++ b/drivers/input/mouse/elantech.h
-@@ -16,6 +16,7 @@
- /*
-  * Command values for Synaptics style queries
-  */
-+#define ETP_FW_ID_QUERY			0x00
- #define ETP_FW_VERSION_QUERY		0x01
- #define ETP_CAPABILITIES_QUERY		0x02
- 
-@@ -24,6 +25,7 @@
-  */
- #define ETP_REGISTER_READ		0x10
- #define ETP_REGISTER_WRITE		0x11
-+#define ETP_REGISTER_READWRITE		0x00
- 
- /*
-  * Hardware version 2 custom PS/2 command value
-@@ -79,6 +81,14 @@
- #define ETP_WMIN_V2			0
+@@ -82,14 +82,37 @@
  #define ETP_WMAX_V2			15
  
-+/*
-+ * v3 hardware has 2 kinds of packet types.
-+ */
-+#define PACKET_UNKNOWN			0x01
-+#define PACKET_DEBOUNCE			0x02
-+#define PACKET_V3_HEAD			0x03
-+#define PACKET_V3_TAIL			0x04
+ /*
+- * v3 hardware has 2 kinds of packet types.
++ * v3 hardware has 2 kinds of packet types,
++ * v4 hardware has 3.
+  */
+ #define PACKET_UNKNOWN			0x01
+ #define PACKET_DEBOUNCE			0x02
+ #define PACKET_V3_HEAD			0x03
+ #define PACKET_V3_TAIL			0x04
++#define PACKET_V4_HEAD			0x05
++#define PACKET_V4_MOTION		0x06
++#define PACKET_V4_STATUS		0x07
 +
++/*
++ * track up to 5 fingers for v4 hardware
++ */
++#define ETP_MAX_FINGERS			5
++
++/*
++ * weight value for v4 hardware
++ */
++#define ETP_WEIGHT_VALUE		5
++
++/*
++ * The base position for one finger, v4 hardware
++ */
++struct finger_pos {
++	unsigned int x;
++	unsigned int y;
++};
+ 
  struct elantech_data {
++	unsigned char reg_07;
  	unsigned char reg_10;
  	unsigned char reg_11;
-@@ -98,6 +108,8 @@ struct elantech_data {
+ 	unsigned char reg_20;
+@@ -108,8 +131,8 @@ struct elantech_data {
  	unsigned int fw_version;
  	unsigned int single_finger_reports;
  	unsigned int y_max;
-+	unsigned int prev_x;
-+	unsigned int prev_y;
+-	unsigned int prev_x;
+-	unsigned int prev_y;
++	unsigned int width;
++	struct finger_pos mt[ETP_MAX_FINGERS];
  	unsigned char parity[256];
  };
  
