@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab1IELty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 07:49:54 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:59856 "EHLO
+	id S1753484Ab1IELuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 07:50:11 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:59870 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab1IELqB (ORCPT
+	with ESMTP id S1752753Ab1IELqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 07:46:01 -0400
+	Mon, 5 Sep 2011 07:46:02 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 25/54] drbd: drbd_send_drequest(): Return 0 upon success and an error code otherwise
-Date: Mon,  5 Sep 2011 13:45:16 +0200
-Message-Id: <1315223145-20640-26-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 27/54] drbd: drbd_send_oos(): Return 0 upon success and an error code otherwise
+Date: Mon,  5 Sep 2011 13:45:18 +0200
+Message-Id: <1315223145-20640-28-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
 References: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,55 +25,36 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c   |    4 +---
- drivers/block/drbd/drbd_worker.c |    6 +++---
- 2 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/block/drbd/drbd_main.c   |    2 +-
+ drivers/block/drbd/drbd_worker.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index c120977..c0f6146 100644
+index 1e19f2e..c887ff7 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -1308,15 +1308,13 @@ int drbd_send_ack_ex(struct drbd_conf *mdev, enum drbd_packet cmd,
- int drbd_send_drequest(struct drbd_conf *mdev, int cmd,
- 		       sector_t sector, int size, u64 block_id)
- {
--	int ok;
- 	struct p_block_req p;
+@@ -1642,7 +1642,7 @@ int drbd_send_oos(struct drbd_conf *mdev, struct drbd_request *req)
+ 	p.sector  = cpu_to_be64(req->i.sector);
+ 	p.blksize = cpu_to_be32(req->i.size);
  
- 	p.sector   = cpu_to_be64(sector);
- 	p.block_id = block_id;
- 	p.blksize  = cpu_to_be32(size);
- 
--	ok = !drbd_send_cmd(mdev, &mdev->tconn->data, cmd, &p.head, sizeof(p));
--	return ok;
-+	return drbd_send_cmd(mdev, &mdev->tconn->data, cmd, &p.head, sizeof(p));
+-	return !drbd_send_cmd(mdev, &mdev->tconn->data, P_OUT_OF_SYNC, &p.head, sizeof(p));
++	return drbd_send_cmd(mdev, &mdev->tconn->data, P_OUT_OF_SYNC, &p.head, sizeof(p));
  }
  
- int drbd_send_drequest_csum(struct drbd_conf *mdev, sector_t sector, int size,
+ /*
 diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index 9b74086..dc07437 100644
+index e4874ae..a64cb99 100644
 --- a/drivers/block/drbd/drbd_worker.c
 +++ b/drivers/block/drbd/drbd_worker.c
-@@ -637,7 +637,7 @@ next_sector:
- 			}
- 		} else {
- 			inc_rs_pending(mdev);
--			if (!drbd_send_drequest(mdev, P_RS_DATA_REQUEST,
-+			if (drbd_send_drequest(mdev, P_RS_DATA_REQUEST,
- 					       sector, size, ID_SYNCER)) {
- 				dev_err(DEV, "drbd_send_drequest() failed, aborting...\n");
- 				dec_rs_pending(mdev);
-@@ -1287,8 +1287,8 @@ int w_send_read_req(struct drbd_work *w, int cancel)
+@@ -1241,7 +1241,7 @@ int w_send_oos(struct drbd_work *w, int cancel)
  		return 1;
  	}
  
--	ok = drbd_send_drequest(mdev, P_DATA_REQUEST, req->i.sector, req->i.size,
--				(unsigned long)req);
-+	ok = !drbd_send_drequest(mdev, P_DATA_REQUEST, req->i.sector, req->i.size,
-+				 (unsigned long)req);
+-	ok = drbd_send_oos(mdev, req);
++	ok = !drbd_send_oos(mdev, req);
+ 	req_mod(req, OOS_HANDED_TO_NETWORK);
  
- 	req_mod(req, ok ? HANDED_OVER_TO_NETWORK : SEND_FAILED);
- 
+ 	return ok;
 -- 
 1.7.4.1
 
