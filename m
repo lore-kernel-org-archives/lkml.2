@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab1IEOlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 10:41:01 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:43196 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab1IEOk7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 10:40:59 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E64E16A.6060401@cam.ac.uk>
-Date: Mon, 05 Sep 2011 15:49:14 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Regmap bulk read styles.
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754331Ab1IEOpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 10:45:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43855 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752182Ab1IEOpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 10:45:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,333,1312182000"; 
+   d="scan'208";a="48251025"
+Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
+ channel ID
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Magnus Damm <damm@opensource.se>
+In-Reply-To: <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
+References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
+	 <1308916071.1536.4.camel@vkoul-udesk3>
+	 <20110829080047.GJ31809@linux-sh.org>
+	 <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com>
+	 <1314618931.1606.114.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
+	 <1314698522.1606.164.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
+	 <1314703426.1606.167.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108301332190.19151@axis700.grange>
+	 <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
+	 <1315228408.26251.75.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Sep 2011 20:13:08 +0530
+Message-ID: <1315233788.26251.163.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Mon, 2011-09-05 at 15:48 +0200, Guennadi Liakhovetski wrote:
+> 
+> Let me try again. DMA channels on these DMA controllers are not dedicated. 
+> On one such SoC there can be several such DMA controllers of different 
+> kinds. One kind is "generic" - it can do memcpy(), besides channels can be 
+> freely configured for one of onboard peripherals: serial, mmc, etc. Some 
+> of them can also serve external DMA-capable devices. Another kind of DMA 
+> controllers, served by the same driver, can only be used with USB 
+> controllers. Now, if the MMC driver requests a DMA channel, let's say, the 
+> dmaengine core first finds the USB DMA controller. The MMC driver cannot 
+> know this. It assigns its MMC DMA configuration to the.private pointer and 
+> returns true. Next the DMA driver is entered, it checks the private 
+> pointer, sees an MMC channel request, looks at the DMA controller and 
+> sees, that it doesn't support MMC. So, .device_alloc_chan_resources() 
+> fails. When the same is attempted with a suitable DMA controller, the 
+> shdma driver recognises, that the controller can service MMC and uses the 
+> data, provided the MMC driver, to configure the DMA channel for MMC.
+Hmmm, Can't you know in filter function if the respective channel can do
+the dma for you or not? Maybe export a dma function or use platform data
+for this (wont you soc have these caps fixed), i prefer latter.
+That maybe a better approach. 
 
-I'm looking at the using your regmap stuff for IIO.
-Other than the minor queries in the other emails I've sent,
-the big issue for me is that of bulk reading.
+Once you have been allocated it should normally work, additional
+filtering confuses :(
 
-The two most common forms we have are 'burst read'
-and what might be termed a 'gather read'.
+-- 
+~Vinod
 
-The burst read is pretty much what you have covered by
-regmap_bulk_read. I assume an implementation for spi
-doing
-
-TX Addr1 XXXXX XXXXX XXXXX XXXXX
-RX XXXXX Data1 Data2 Data3 Data4 ...
-
-would be general enough to be worth providing? Any device
-that doesn't understand this should simply not use it.
-
-The second is more interesting.  It actually looks quite like
-your gather write.  We have a set of registers that we need
-to read.  A classic example is that a coherent set will only
-be received (e.g. valid at an instant in time) if we read
-all channels of an accelerometer in one go (between chip selects).
-
-typically involves either
-
-TX  Addr1  Addr2  Addr3  XXXXX
-RX  XXXXX  Data1  Data2  Data3
-
-Or
-
-TX Addr1  00000 Addr2 00000
-RX XXXXX  Data1 XXXXX Data2
-
-One slight complexity is cs_change, but that probably needs fixing
-in the spi core which doesn't currently allowing setting up a
-default for that.  This second case would be a set of transfers
-(read then writes effectively).
-
-Would you be in favour of an interface to handle this use case
-or is it better just to bypass regmap for this use case?
-(which would be a pity as it leads to duplication as all the
-configuration stuff fits nicely).
-
-As an aside, isn't your gather write more typically described
-as a scatter write?  (writes one coherent set to a number of
-disjoint locations?)
-
-Alternatively should I just be bypassing regmap entirely for
-read only data registers like these?  Caching is kind of pointless
-other than for debugging purposes (though that would be nice).
-
-Thanks,
-
-Jonathan
