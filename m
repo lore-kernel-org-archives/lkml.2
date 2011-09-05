@@ -1,83 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1IESdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 14:33:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37170 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab1IESdC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 14:33:02 -0400
-From: Ike Panhc <ike.pan@canonical.com>
-To: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH 5/5] ideapad: remove sysfs node for cfg
-Date: Tue,  6 Sep 2011 02:33:00 +0800
-Message-Id: <1315247580-9182-1-git-send-email-ike.pan@canonical.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1315247467-8812-1-git-send-email-ike.pan@canonical.com>
-References: <1315247467-8812-1-git-send-email-ike.pan@canonical.com>
+	id S1751737Ab1IESpl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 14:45:41 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43468 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235Ab1IESpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 14:45:33 -0400
+Date: Mon, 5 Sep 2011 11:45:24 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Greg Freemyer <greg.freemyer@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
+Message-ID: <20110905184524.GQ12086@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com> <CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com> <20110902182214.GC12086@tux1.beaverton.ibm.com> <yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced by the one in debugfs.
+On Sun, Sep 04, 2011 at 07:41:03AM -0400, Martin K. Petersen wrote:
+> >>>>> "Darrick" == Darrick J Wong <djwong@us.ibm.com> writes:
+> 
+> Darrick,
+> 
+> Darrick> Furthermore, the nice thing about the in-filesystem checksum is
+> Darrick> that we bake in other things like the FS UUID and the inode
+> Darrick> number, which gives you a somewhat better assurance that the
+> Darrick> data block belongs to the fs and the file that the code think
+> Darrick> it belongs to.
+> 
+> Yeah, I view DIF/DIX mostly as in-flight protection for writes. Whereas
+> FS metadata checksumming is great for problem detection at read time.
+> 
+> Another problem with using the DIF app tag to store filesystem metadata
+> is that many array vendors use it internally and thus only disk drives
+> are likely to provide the app tag space.
+> 
+> 
+> Darrick> The DIX interface allows for a 32-bit block number and a 16-bit
+> Darrick> application tag ... which is unfortunately small given 64-bit
+> Darrick> block numbers and 32-bit inode numbers.
+> 
+> I never understood the 32-bit ref tag. Seems silly to have a check that
+> wraps at the exact boundary where problems are most likely to occur.
+> 
+> I advocated for a DIF Type with 16-bit guard tag and 48-bit ref tag but
+> that never went anywhere. Too bad - would have been easy for the storage
+> vendors to implement.
 
-Signed-off-by: Ike Panhc <ike.pan@canonical.com>
----
- .../ABI/testing/sysfs-platform-ideapad-laptop      |   15 ---------------
- drivers/platform/x86/ideapad-laptop.c              |   12 ------------
- 2 files changed, 0 insertions(+), 27 deletions(-)
+> 
+> 
+> Darrick> As a side note, the crc-t10dif implementation is quite slow --
+> Darrick> the hardware accelerated crc32c is 15x faster, and the sw
+> Darrick> implementation is usually 3-6x faster.  I suspect somebody will
+> Darrick> want to fix that before DIF becomes more widespread...
+> 
+> The CRC32C op on Nehalem and beyond is really, really fast. It's
+> essentially free except for pulling the data through the cache. So it's
+> not entirely fair to use that as baseline for a pure software
+> implementation. What is the faster sw implementation are you referring
+> to, btw.?
 
-diff --git a/Documentation/ABI/testing/sysfs-platform-ideapad-laptop b/Documentation/ABI/testing/sysfs-platform-ideapad-laptop
-index ff53183..814b013 100644
---- a/Documentation/ABI/testing/sysfs-platform-ideapad-laptop
-+++ b/Documentation/ABI/testing/sysfs-platform-ideapad-laptop
-@@ -5,19 +5,4 @@ Contact:	"Ike Panhc <ike.pan@canonical.com>"
- Description:
- 		Control the power of camera module. 1 means on, 0 means off.
- 
--What:		/sys/devices/platform/ideapad/cfg
--Date:		Jun 2011
--KernelVersion:	3.1
--Contact:	"Ike Panhc <ike.pan@canonical.com>"
--Description:
--		Ideapad capability bits.
--		Bit 8-10: 1 - Intel graphic only
--		          2 - ATI graphic only
--		          3 - Nvidia graphic only
--		          4 - Intel and ATI graphic
--		          5 - Intel and Nvidia graphic
--		Bit 16: Bluetooth exist (1 for exist)
--		Bit 17: 3G exist (1 for exist)
--		Bit 18: Wifi exist (1 for exist)
--		Bit 19: Camera exist (1 for exist)
- 
-diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-index 1c8b506..a36addf 100644
---- a/drivers/platform/x86/ideapad-laptop.c
-+++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -363,20 +363,8 @@ static ssize_t store_ideapad_cam(struct device *dev,
- 
- static DEVICE_ATTR(camera_power, 0644, show_ideapad_cam, store_ideapad_cam);
- 
--static ssize_t show_ideapad_cfg(struct device *dev,
--				struct device_attribute *attr,
--				char *buf)
--{
--	struct ideapad_private *priv = dev_get_drvdata(dev);
--
--	return sprintf(buf, "0x%.8lX\n", priv->cfg);
--}
--
--static DEVICE_ATTR(cfg, 0444, show_ideapad_cfg, NULL);
--
- static struct attribute *ideapad_attributes[] = {
- 	&dev_attr_camera_power.attr,
--	&dev_attr_cfg.attr,
- 	NULL
- };
- 
--- 
-1.7.5.4
+I have some benchmarking data for various crc algorithms here:
+https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums#Benchmarking
 
+The "faster sw implementation" that I was talking about is the slice-by-8
+algorithm that I sent to the crypto list a few days ago that's based off of Bob
+Pearson's slice-by-8 crc32 patch.
+
+In the huge table, "crc32c-by8-le" is crc32c slice-by-8.
+
+> lib/crc-t10dif is a regular 256-entry table-based CRC implementation. It
+> is done pretty much like all our other software CRCs. I seem to recall
+> attempting a bigger table but that yielded worse real life results due
+> to cache pollution.
+
+Yes, the only downside to the slice-by-8 method is that it eats 8K of data
+cache for the table.  Not a huge issue on recent Intel and POWER where the L1D
+is 32K, but I imagine it could be painful elsewhere.
+
+Do you know of any faster crc16 algorithms?  I guess it wouldn't be hard to
+make a family of crcs, each with different cache/speed characteristics.
+
+> On Westmere and beyond it is possible to accelerate generic CRC
+> calculation using the PCLMULQDQ operation. There are many of our CRC
+> functions that could benefit from this. However, so far intel have not
+> been willing to contribute the relevant code to Linux.
+> 
+> 
+> Darrick> The good news is that if you're really worried about integrity,
+> Darrick> metadata_csum and DIF/DIX aren't mutually exclusive features.
+> Darrick> Rejecting corrupted write commands at write time seems like a
+> Darrick> useful feature. :)
+> 
+> Yup!
+> 
+> -- 
+> Martin K. Petersen	Oracle Linux Engineering
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
