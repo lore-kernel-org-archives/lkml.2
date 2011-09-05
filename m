@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1IEMeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 08:34:08 -0400
-Received: from lo.gmane.org ([80.91.229.12]:45614 "EHLO lo.gmane.org"
+	id S1753190Ab1IEMgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 08:36:19 -0400
+Received: from lucidpixels.com ([72.73.18.11]:53775 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714Ab1IEMeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 08:34:04 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S1751912Ab1IEMgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 08:36:12 -0400
+Date: Mon, 5 Sep 2011 08:36:11 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
 To: linux-kernel@vger.kernel.org
-From: el es <el.es.cr@gmail.com>
-Subject: Re: Linux as Bootloader
-Date: Mon, 5 Sep 2011 12:33:41 +0000 (UTC)
-Message-ID: <loom.20110905T143000-518@post.gmane.org>
-References: <CAH9NwWfGA7jLWDZcN=DfGN5H2g=dt6U8SBxAX_wJAk6MKKfZAA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 81.139.81.4 (Mozilla/5.0 (Windows NT 5.1; rv:6.0.1) Gecko/20100101 Firefox/6.0.1)
+cc: netdev@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: 3.1-rc2: (on a second machine): WARNING: at net/sched/sch_generic.c:255
+ dev_watchdog+0x23f/0x250()
+Message-ID: <alpine.DEB.2.02.1109050834430.23828@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Gmeiner <christian.gmeiner <at> gmail.com> writes:
+Hello,
 
-> 
-> Hi all,
-[...]
-> Now I run in some troubles as I need to be able to boot a MSDOS
-> application stored on
-> an usb stick. [...]
-> Are there some creative/working solutions for my problem?
-> 
+Kernel crash: 3.1-rc2:
 
-How about some DOS emulator (e.g. DosEmu or DosBox) (if you really
-have to run DOS program(s) and absolutely can't recompile/rewrite it for 
-Linux...) - but if you need low-level hw access I think you'd better
-create a kernel module...
+Sep  5 08:28:36 l1 kernel: [1194854.704017] ------------[ cut here ]------------
+Sep  5 08:28:36 l1 kernel: [1194854.704030] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x23f/0x250()
+Sep  5 08:28:36 l1 kernel: [1194854.704033] Hardware name: P35-DS4
+Sep  5 08:28:36 l1 kernel: [1194854.704036] NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
+Sep  5 08:28:36 l1 kernel: [1194854.704039] Modules linked in: tcp_diag ub ppdev lp inet_diag w83795 ipmi_msghandler dm_mod nouveau ttm snd_hda_codec_realtek snd_hda_intel snd_hda_codec drm_kms_helper snd_pcm_oss snd_mixer_oss drm snd_pcm i2c_algo_bit mxm_wmi wmi intel_agp intel_gtt agpgart floppy snd_timer firewire_ohci firewire_core video snd soundcore snd_page_alloc parport_pc parport
+Sep  5 08:28:36 l1 kernel: [1194854.704077] Pid: 19, comm: ksoftirqd/3 Not tainted 3.1.0-rc2 #1
+Sep  5 08:28:36 l1 kernel: [1194854.704080] Call Trace:
+Sep  5 08:28:36 l1 kernel: [1194854.704088]  [<ffffffff810372da>] warn_slowpath_common+0x7a/0xb0
+Sep  5 08:28:36 l1 kernel: [1194854.704093]  [<ffffffff810373b1>] warn_slowpath_fmt+0x41/0x50
+Sep  5 08:28:36 l1 kernel: [1194854.704099]  [<ffffffff815ee154>] ? schedule+0x2e4/0x950
+Sep  5 08:28:36 l1 kernel: [1194854.704103]  [<ffffffff814fbc7f>] dev_watchdog+0x23f/0x250
+Sep  5 08:28:36 l1 kernel: [1194854.704109]  [<ffffffff81043162>] run_timer_softirq+0xf2/0x220
+Sep  5 08:28:36 l1 kernel: [1194854.704113]  [<ffffffff814fba40>] ? qdisc_reset+0x50/0x50
+Sep  5 08:28:36 l1 kernel: Sep  5 08:31:47 l1 syslogd 1.5.0#6.1: restart (remote reception).
 
-> thanks
-> --
-> Christian Gmeiner, MSc
-> 
+Thoughts?
 
-L.
-
+Justin.
 
