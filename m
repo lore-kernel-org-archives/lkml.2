@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab1IEJoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 05:44:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41016 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752051Ab1IEJom (ORCPT
+	id S1752310Ab1IEJo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 05:44:58 -0400
+Received: from mailgw01.dd24.net ([193.46.215.41]:46712 "EHLO
+	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab1IEJov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 05:44:42 -0400
-Date: Mon, 5 Sep 2011 10:44:39 +0100
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
-        Samuel Oritz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/8] regmap: Introduce caching support
-Message-ID: <20110905094439.GB30114@opensource.wolfsonmicro.com>
-References: <1314978375-11539-1-git-send-email-dp@opensource.wolfsonmicro.com> <1314978375-11539-2-git-send-email-dp@opensource.wolfsonmicro.com> <4E61363A.9050607@metafoo.de> <20110902234827.GA31813@opensource.wolfsonmicro.com>
+	Mon, 5 Sep 2011 05:44:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110902234827.GA31813@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Date: Mon, 05 Sep 2011 09:42:01 +0000
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
+In-Reply-To: <20110905091918.GC2221@redhat.com>
+References: <bbdbd01d4965ae789384bc1f9d0a2426@imap.dd24.net> <20110902233806.GA22157@elie> <20110905091918.GC2221@redhat.com>
+Message-ID: <265f56a4dc9f5d3edeca3d101e445353@imap.dd24.net>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 03, 2011 at 12:48:27AM +0100, Mark Brown wrote:
-> On Fri, Sep 02, 2011 at 10:02:02PM +0200, Lars-Peter Clausen wrote:
-> > On 09/02/2011 05:46 PM, Dimitris Papastamos wrote:
-> 
-> > > +static const struct regcache_ops *cache_types[] = {
-> > > +};
-> 
-> > I wonder if it makes sense to keep a list of regcache_ops this way, or whether
-> > it is not better to just pass the ops we want to use to regcache_init directly.
-> 
-> Or have a function per cache type.  I'm keen to hide the ops from users
-> because I don't want to have to worry about them peering inside the
-> internals.
+On Mon, 5 Sep 2011 11:19:18 +0200, Stanislaw Gruszka <sgruszka@redhat.com>
+wrote:
+> this look like firmware hang. This happen just after module load, that's
+> good news, because it allow to log relative small amount debug messages
+> to see what possibly driver do wrong to crash firmware.
+Note, that the effects of - usually but not always - frozen system while
+the errors are printed (sometimes keyboard input seems still be possible
+during that) ... happen over and over again... say about every  10 minutes
+or so.
+Not just the first time the modules is loaded.
+Is the firmware loaded over and over again?
 
-Yes I guess I'll do that, sounds cleaner.
 
-Thanks,
-Dimitris
+> Please configure syslog to log kernel debug messages.
+Will mail it later.
+
+
+Cheers,
+Chris.
