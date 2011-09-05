@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1IERjH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:39:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53818 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930Ab1IERi7 convert rfc822-to-8bit (ORCPT
+	id S1753082Ab1IERoA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:44:00 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:44573 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752677Ab1IERny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:38:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,334,1312182000"; 
-   d="scan'208";a="45740262"
-From: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
-To: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 5 Sep 2011 23:08:53 +0530
-Subject: Player Thread is not woken after period elapsed
-Thread-Topic: Player Thread is not woken after period elapsed
-Thread-Index: Acxr8qpKdD/inT3XSSCim3TexQToDA==
-Message-ID: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Sep 2011 13:43:54 -0400
+Message-ID: <4E650A3A.5050807@metafoo.de>
+Date: Mon, 05 Sep 2011 19:43:22 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Scott Jiang <scott.jiang.linux@gmail.com>
+Subject: Re: [PATCH 2/3] ASoC: Allow codecs to provide their own regmap configuration
+References: <1315228682-1097-1-git-send-email-lars@metafoo.de> <1315228682-1097-2-git-send-email-lars@metafoo.de> <20110905172916.GG3889@opensource.wolfsonmicro.com>
+In-Reply-To: <20110905172916.GG3889@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 09/05/2011 07:29 PM, Mark Brown wrote:
+> On Mon, Sep 05, 2011 at 03:18:01PM +0200, Lars-Peter Clausen wrote:
+>> Currently a codec can either do the whole regmap initialization on its own or
+>> provide only the register and value bit size and let the core handle
+>> initialization. This patch allows a codec to provide a complete regmap
+>> configuration while still letting ASoC core handle the regmap initialization
+>> and setup.
+> 
+> I'd rather not do this, the only value is the copying of the word size
+> setup out of the regmap config is to allow us to use the ASoC cache code
+> but the idea is to push the cache down out of ASoC into the regmap code
+> so this function should just be a trivial indirection for the regmap
+> init which isn't useful.
+> 
 
-When I tried to root cause a glitch in the audio playback, I found a weird behavior. 
-
-User thread which invokes the writei function which in turn  invokes a kernel function which waits for the free buffer to write the audio data.  This kernel function adds this thread to a wake(sleep) queue  and calls a schedule_timeout (msecs_to_jiffies(10000)).
-
-When the audio playback of a period is completed, the hardware generates an interrupt. The handler in the path wake_up the thread added to the sleep queue.  Most of the time, the playback thread is woken up.
-
-During this error case, the thread is not getting woken up. However the sleep queue is not empty.  This continues until the playback enter into underrun due to all the periods in the buffer are played back. Audio playback continues after recovery from xrun. 
-
-Will you provide some hint on how to go about identifying the root cause?
-
-Thanks
--Sing
+I think it is useful, since we avoid duplicating that ugly switch statement
+and we also have to wrap regmap_write and regmap_read, duplicating that in each
+codec driver doesn't make sense.
