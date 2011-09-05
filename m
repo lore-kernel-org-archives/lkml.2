@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab1IER1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:27:18 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33123 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab1IER1O (ORCPT
+	id S1752889Ab1IERcQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:32:16 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50232 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1IER1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:27:14 -0400
+	Mon, 5 Sep 2011 13:27:22 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V6 03/26] vfs: Pass all mask flags down to iop->check_acl
-Date: Mon,  5 Sep 2011 22:55:25 +0530
-Message-Id: <1315243548-18664-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V6 10/26] vfs: Make the inode passed to inode_change_ok non-const
+Date: Mon,  5 Sep 2011 22:55:32 +0530
+Message-Id: <1315243548-18664-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,47 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-Some file permission models differentiate between writing to a file
-(MAY_WRITE) and appending to it (MAY_WRITE | MAY_APPEND).  Pass all the
-mask flags down to iop->check_acl so that filesystems can distinguish
-between writing and appending.
-
-All users of iop->check_acl pass the mask value back into
-posix_acl_permission(); strip off the additional mask flags there.
+We will need to call iop->permission and iop->get_acl from
+inode_change_ok() for additional permission checks, and both take a
+non-const inode.
 
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c     |    2 --
- fs/posix_acl.c |    2 ++
+ fs/attr.c          |    2 +-
+ include/linux/fs.h |    2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 9efc638..f34a4d4 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -227,8 +227,6 @@ static int acl_permission_check(struct inode *inode, int mask)
+diff --git a/fs/attr.c b/fs/attr.c
+index 538e279..f15e9e3 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -26,7 +26,7 @@
+  * Should be called as the first thing in ->setattr implementations,
+  * possibly after taking additional locks.
+  */
+-int inode_change_ok(const struct inode *inode, struct iattr *attr)
++int inode_change_ok(struct inode *inode, struct iattr *attr)
  {
- 	unsigned int mode = inode->i_mode;
+ 	unsigned int ia_valid = attr->ia_valid;
  
--	mask &= MAY_READ | MAY_WRITE | MAY_EXEC | MAY_NOT_BLOCK;
--
- 	if (current_user_ns() != inode_userns(inode))
- 		goto other_perms;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c5c98c5..8afb054 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2568,7 +2568,7 @@ extern int buffer_migrate_page(struct address_space *,
+ #define buffer_migrate_page NULL
+ #endif
  
-diff --git a/fs/posix_acl.c b/fs/posix_acl.c
-index 10027b4..cea4623 100644
---- a/fs/posix_acl.c
-+++ b/fs/posix_acl.c
-@@ -218,6 +218,8 @@ posix_acl_permission(struct inode *inode, const struct posix_acl *acl, int want)
- 	const struct posix_acl_entry *pa, *pe, *mask_obj;
- 	int found = 0;
+-extern int inode_change_ok(const struct inode *, struct iattr *);
++extern int inode_change_ok(struct inode *, struct iattr *);
+ extern int inode_newsize_ok(const struct inode *, loff_t offset);
+ extern void setattr_copy(struct inode *inode, const struct iattr *attr);
  
-+	want &= MAY_READ | MAY_WRITE | MAY_EXEC | MAY_NOT_BLOCK;
-+
- 	FOREACH_ACL_ENTRY(pa, acl, pe) {
-                 switch(pa->e_tag) {
-                         case ACL_USER_OBJ:
 -- 
 1.7.4.1
 
