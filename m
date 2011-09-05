@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab1IEWr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 18:47:57 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:41600 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab1IEWrv (ORCPT
+	id S1752629Ab1IEWsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 18:48:22 -0400
+Received: from nm28-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.234]:47213 "HELO
+	nm28-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751731Ab1IEWsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 18:47:51 -0400
-Date: Mon, 5 Sep 2011 23:47:50 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: BUG: unable to handle kernel paging request at 6b6b6c6f
- (bdi_lock_two+0x22/0x50)
-Message-ID: <20110905224749.GC26980@sucs.org>
-References: <20110901210442.GA9660@sucs.org>
+	Mon, 5 Sep 2011 18:48:13 -0400
+X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Sep 2011 18:48:13 EDT
+X-Yahoo-Newman-Id: 955415.78410.bm@omp1038.mail.sp2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: AR8W6bIVM1n0wE47YF_VV36lOZsxfT6c7Y7jb9xKzoozOZX
+ AU83fVxTkhnRFu5zNT_RQIRLKUIN20SMq82qWzEYp62db5OyiRJnswCUWZWe
+ etQKT9wAWciNm7QMVfWf5lxFGX9ETmXtfxTDFTIwc6y94ftITGebSynqOQ5j
+ .ekUTiVCw9x_0HhVsYou8A_1QGAlNER1XYQ_5_Kp20pAn1WeFNaXaNxCFmXV
+ WZBPm0_4V4NzHEbBjqvsG13kWauQMW_p.ilzvAPSejBG4_9c2rT.XU3srmK7
+ m8QYTwUeHujiKAZM5xRsM3rTWVdbfTxWQ6sJXtc3MGi4SRhZAWRmwQe8HxPM
+ aIPe_QL.L0tPhkR7rB0F4UibjVek85YeXDP0bwCFXCPHvrwfql5sJYvZyBkW
+ q0FHwA9n5tngkQqTFOTvBjiw8fABPCiXyBRxGT1cVscTZyXaFyWbC_zFkqSe
+ 7xS1xX5b8qyGT8DpgJsWdAndecOhIe0o1ynUs8CMzGiH0p9VFbCevKC0AxuQ
+ U1dmWw5if2hBzFbVcPEbKNQ6zC.mfCo8c91FF05O5K6dwFYX1MY7LdAIF
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <4E655049.6060507@schaufler-ca.com>
+Date: Mon, 05 Sep 2011 15:42:17 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:6.0.1) Gecko/20110830 Thunderbird/6.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110901210442.GA9660@sucs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        LSM <linux-security-module@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl interoperability
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 01, 2011 at 10:04:42PM +0100, Sitsofe Wheeler wrote:
-> When pulling out a USB flash disk formatted with a single FAT32
-> partition the following oops and errors are produced:
-> 
-> [  112.427744] FAT-fs (sdc1): FAT read failed (blocknr 685)
-> [  112.427832] FAT-fs (sdc1): unable to read inode block for updating (i_pos 209504275)
-> [  112.523097] BUG: unable to handle kernel paging request at 6b6b6c6f
-> [  112.523229] IP: [<b0157dbf>] __lock_acquire+0x23f/0x1740
-> [  112.523328] *pde = 00000000 
-> [  112.523381] Oops: 0002 [#1] DEBUG_PAGEALLOC
-> [  112.523459] 
-> [  112.523490] Pid: 1486, comm: nautilus Not tainted 3.1.0-rc4-00131-g9e79e3e-dirty #488 ASUSTeK Computer INC. 900/900
-> [  112.523665] EIP: 0060:[<b0157dbf>] EFLAGS: 00010002 CPU: 0
-> [  112.523751] EIP is at __lock_acquire+0x23f/0x1740
-> [  112.523826] EAX: 00000001 EBX: daa5b510 ECX: 6b6b6b6b EDX: 00000000
-> [  112.523922] ESI: 00000002 EDI: ee4f9e84 EBP: dae63d2c ESP: dae63cbc
-> [  112.524011]  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
-> [  112.524011] Process nautilus (pid: 1486, ti=dae62000 task=daa5b510 task.ti=dae62000)
-> [  112.524011] Stack:
-> [  112.524011]  dae63d38 00000246 b026be79 00000000 00160007 00000006 dc198958 00000282
-> [  112.524011]  daa5b528 daa5b950 b08ff1b0 00000000 b0afab18 00000001 00000000 000052d7
-> [  112.524011]  ee802280 ef513308 dc198e60 dc198958 00000282 dc198000 00160006 b0ca9414
-> [  112.524011] Call Trace:
-> [  112.524011]  [<b026be79>] ? kobject_release+0x49/0x90
-> [  112.524011]  [<b01597cb>] lock_acquire+0x7b/0x90
-> [  112.524011]  [<b0182b62>] ? bdi_lock_two+0x22/0x50
-> [  112.524011]  [<b055ef2a>] _raw_spin_lock_nested+0x3a/0x50
-> [  112.524011]  [<b0182b62>] ? bdi_lock_two+0x22/0x50
-> [  112.524011]  [<b0182b62>] bdi_lock_two+0x22/0x50
-> [  112.524011]  [<b01c7dde>] bdev_inode_switch_bdi+0x2e/0xa0
-> [  112.524011]  [<b01c8baf>] __blkdev_put+0xbf/0x160
-> [  112.524011]  [<b01c8be3>] __blkdev_put+0xf3/0x160
-> [  112.524011]  [<b01c8c92>] blkdev_put+0x42/0x120
-> [  112.524011]  [<b019d66f>] kill_block_super+0x3f/0x70
-> [  112.524011]  [<b019df1d>] deactivate_locked_super+0x3d/0x70
-> [  112.524011]  [<b019e890>] deactivate_super+0x50/0x70
-> [  112.524011]  [<b01b5a38>] mntput_no_expire+0x68/0xa0
-> [  112.524011]  [<b01b5a83>] mntput+0x13/0x30
-> [  112.524011]  [<b01a4525>] path_put+0x15/0x20
-> [  112.524011]  [<b01a574d>] terminate_walk+0x4d/0x60
-> [  112.524011]  [<b01a769f>] do_last+0x60f/0x6d0
-> [  112.524011]  [<b01a77f8>] path_openat+0x98/0x320
-> [  112.524011]  [<b0159317>] ? lock_release_non_nested+0x57/0x2e0
-> [  112.524011]  [<b01a7b60>] do_filp_open+0x30/0x80
-> [  112.524011]  [<b055f75d>] ? _raw_spin_unlock+0x1d/0x30
-> [  112.524011]  [<b01b404c>] ? alloc_fd+0xbc/0x100
-> [  112.524011]  [<b019ac61>] do_sys_open+0xf1/0x1c0
-> [  112.524011]  [<b019ad99>] sys_open+0x29/0x40
-> [  112.524011]  [<b055ff57>] sysenter_do_call+0x12/0x36
+On 9/5/2011 10:25 AM, Aneesh Kumar K.V wrote:
+> Hi,
+>
+> The following set of patches implements VFS and ext4 changes needed to implement
+> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> extended by file masks to fit into the standard POSIX file permission model.
+> They are designed to work seamlessly locally as well as across the NFSv4 and
+> CIFS/SMB2 network file system protocols.
 
-This Oops is still happening in 3.1.0-rc5.
+POSIX ACLs predate the LSM and can't be done as an LSM due to
+the interactions between mode bits and ACLs as defined by the
+POSIX DRAFT specification. Is there a reason that "rich" ACLs
+can not be done as an LSM?
 
--- 
-Sitsofe | http://sucs.org/~sits/
+>
+> A user-space utility for displaying and changing richacls is available at [4]
+> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+>
+> [4] git://git.kernel.org/pub/scm/fs/acl/kvaneesh/richacl.git master
+>
+> To test richacl on ext4 use -o richacl mount option. This mount option may later be
+> dropped in favour of a feature flag.
+>
+> More details regarding richacl can be found at
+> http://acl.bestbits.at/richacl/
+>
+> Changes from v5:
+> a) rebase to v3.1-rc4-131-g9e79e3e
+>
+> NOTE: The kernel changes will be pushed to
+> git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richacl
+> when kernel.org is back
+>
+> -aneesh
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
