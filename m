@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1IEPx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 11:53:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48285 "EHLO mx2.suse.de"
+	id S1751206Ab1IEQFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 12:05:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49492 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab1IEPxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 11:53:50 -0400
-Date: Mon, 5 Sep 2011 17:53:47 +0200
+	id S1750940Ab1IEQFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 12:05:41 -0400
+Date: Mon, 5 Sep 2011 18:05:34 +0200
 From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] mm: Add comment explaining task state setting in
- bdi_forker_thread()
-Message-ID: <20110905155347.GA17354@quack.suse.cz>
-References: <1315004059-9844-1-git-send-email-jack@suse.cz>
- <1315004059-9844-3-git-send-email-jack@suse.cz>
- <20110904030551.GB16361@localhost>
- <20110905100141.GA5466@quack.suse.cz>
- <20110905124411.GA794@localhost>
+To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
+ del_timer
+Message-ID: <20110905160534.GB17354@quack.suse.cz>
+References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
+ <20110901143333.51baf4ae.akpm@linux-foundation.org>
+ <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
+ <20110902112133.GD12182@quack.suse.cz>
+ <CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
+ <CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
+ <20110902151450.GF12182@quack.suse.cz>
+ <CAFPAmTQxBK32zutyiX9DJLS2F+z6jxsV71xOwa0sivxSY5MD1Q@mail.gmail.com>
+ <20110905103925.GC5466@quack.suse.cz>
+ <CAFPAmTR5f_GW_oha07Bf0_LNXhigZri_w2N_XTEqM+X+-Ae-Rw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110905124411.GA794@localhost>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFPAmTR5f_GW_oha07Bf0_LNXhigZri_w2N_XTEqM+X+-Ae-Rw@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-09-11 20:44:11, Wu Fengguang wrote:
-> On Mon, Sep 05, 2011 at 06:01:41PM +0800, Jan Kara wrote:
-> > On Sun 04-09-11 11:05:51, Wu Fengguang wrote:
-> > > > @@ -401,6 +401,13 @@ static int bdi_forker_thread(void *ptr)
-> > > >  		}
-> > > >  
-> > > >  		spin_lock_bh(&bdi_lock);
-> > > > +		/*
-> > > > +		 * In the following loop we are going to check whether we have
-> > > > +		 * some work to do without any synchronization with tasks
-> > > > +		 * waking us up to do work for them. So we have to set task
-> > > > +		 * state already here so that we don't miss wakeups coming
-> > > 
-> > > s/already/early/ ?
-> >   Thanks for review. We'd have to substitute 'already here' with 'early'
-> > for the sentence to make make sense. But frankly I don't see why one would
-> > be better than the other one...
-> 
-> You are the native English speaker?  OK, I have no more problems... ;)
-  No, I'm not a native English speaker. Maybe that's why I don't see that
-much difference :-))
+  Hi,
 
-									Honza
+On Mon 05-09-11 20:06:04, kautuk.c @samsung.com wrote:
+> >  OK, I don't care much whether we have there del_timer() or
+> > del_timer_sync(). Let me just say that the race you are afraid of is
+> > probably not going to happen in practice so I'm not sure it's valid to be
+> > afraid of CPU cycles being burned needlessly. The timer is armed when an
+> > dirty inode is first attached to default bdi's dirty list. Then the default
+> > bdi flusher thread would have to be woken up so that following happens:
+> >        CPU1                            CPU2
+> >  timer fires -> wakeup_timer_fn()
+> >                                        bdi_forker_thread()
+> >                                          del_timer(&me->wakeup_timer);
+> >                                          wb_do_writeback(me, 0);
+> >                                          ...
+> >                                          set_current_state(TASK_INTERRUPTIBLE);
+> >  wake_up_process(default_backing_dev_info.wb.task);
+> >
+> >  Especially wb_do_writeback() is going to take a long time so just that
+> > single thing makes the race unlikely. Given del_timer_sync() is slightly
+> > more costly than del_timer() even for unarmed timer, it is questionable
+> > whether (chance race happens * CPU spent in extra loop) > (extra CPU spent
+> > in del_timer_sync() * frequency that code is executed in
+> > bdi_forker_thread())...
+> >
+> 
+> Ok, so this means that we can compare the following 2 paths of code:
+> i)   One extra iteration of the bdi_forker_thread loop, versus
+> ii)  The amount of time it takes for the del_timer_sync to wait till the
+> timer_fn on the other CPU finishes executing + schedule resulting in a
+> guaranteed sleep.
+  No, ii) is going to be as rare. But instead you should compare i) against:
+iii) The amount of time it takes del_timer_sync() to check whether the
+timer_fn is running on a different CPU (which is work del_timer() doesn't
+do).
+
+  We are going to spend time in iii) each and every time
+if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list))
+  evaluates to true.
+
+  Now frequency of i) and iii) happening is hard to evaluate so it's not
+clear what's going to be better. Certainly I don't think such evaluation is
+worth my time...
+
+								Honza
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
