@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab1IEPGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 11:06:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41399 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab1IEPGN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 11:06:13 -0400
-Subject: Re: [PATCH 02/18] writeback: dirty position control
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Sep 2011 17:05:57 +0200
-In-Reply-To: <20110904020914.848566742@intel.com>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020914.848566742@intel.com>
+	id S1754512Ab1IEPLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 11:11:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31982 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754415Ab1IEPLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 11:11:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,333,1312182000"; 
+   d="scan'208";a="45715242"
+Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
+ channel ID
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Magnus Damm <damm@opensource.se>
+In-Reply-To: <Pine.LNX.4.64.1109051700030.1112@axis700.grange>
+References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
+	 <1308916071.1536.4.camel@vkoul-udesk3>
+	 <20110829080047.GJ31809@linux-sh.org>
+	 <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com>
+	 <1314618931.1606.114.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
+	 <1314698522.1606.164.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
+	 <1314703426.1606.167.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1108301332190.19151@axis700.grange>
+	 <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
+	 <1315228408.26251.75.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
+	 <1315233788.26251.163.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1109051700030.1112@axis700.grange>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315235157.3191.6.camel@twins>
+Date: Mon, 05 Sep 2011 20:38:55 +0530
+Message-ID: <1315235335.26251.194.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> @@ -591,6 +790,7 @@ static void global_update_bandwidth(unsi
->  
->  void __bdi_update_bandwidth(struct backing_dev_info *bdi,
->                             unsigned long thresh,
-> +                           unsigned long bg_thresh,
->                             unsigned long dirty,
->                             unsigned long bdi_thresh,
->                             unsigned long bdi_dirty,
-> @@ -627,6 +827,7 @@ snapshot:
->  
->  static void bdi_update_bandwidth(struct backing_dev_info *bdi,
->                                  unsigned long thresh,
-> +                                unsigned long bg_thresh,
->                                  unsigned long dirty,
->                                  unsigned long bdi_thresh,
->                                  unsigned long bdi_dirty,
-> @@ -635,8 +836,8 @@ static void bdi_update_bandwidth(struct 
->         if (time_is_after_eq_jiffies(bdi->bw_time_stamp + BANDWIDTH_INTERVAL))
->                 return;
->         spin_lock(&bdi->wb.list_lock);
-> -       __bdi_update_bandwidth(bdi, thresh, dirty, bdi_thresh, bdi_dirty,
-> -                              start_time);
-> +       __bdi_update_bandwidth(bdi, thresh, bg_thresh, dirty,
-> +                              bdi_thresh, bdi_dirty, start_time);
->         spin_unlock(&bdi->wb.list_lock);
->  }
->  
-> @@ -677,7 +878,8 @@ static void balance_dirty_pages(struct a
->                  * catch-up. This avoids (excessively) small writeouts
->                  * when the bdi limits are ramping up.
->                  */
-> -               if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
-> +               if (nr_dirty <= dirty_freerun_ceiling(dirty_thresh,
-> +                                                     background_thresh))
->                         break;
->  
->                 bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-> @@ -721,8 +923,9 @@ static void balance_dirty_pages(struct a
->                 if (!bdi->dirty_exceeded)
->                         bdi->dirty_exceeded = 1;
->  
-> -               bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty,
-> -                                    bdi_thresh, bdi_dirty, start_time);
-> +               bdi_update_bandwidth(bdi, dirty_thresh, background_thresh,
-> +                                    nr_dirty, bdi_thresh, bdi_dirty,
-> +                                    start_time);
->  
->                 /* Note: nr_reclaimable denotes nr_dirty + nr_unstable.
->                  * Unstable writes are a feature of certain networked
-> --- linux-next.orig/fs/fs-writeback.c   2011-08-26 15:57:18.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c        2011-08-26 15:57:20.000000000 +0800
-> @@ -675,7 +675,7 @@ static inline bool over_bground_thresh(v
->  static void wb_update_bandwidth(struct bdi_writeback *wb,
->                                 unsigned long start_time)
->  {
-> -       __bdi_update_bandwidth(wb->bdi, 0, 0, 0, 0, start_time);
-> +       __bdi_update_bandwidth(wb->bdi, 0, 0, 0, 0, 0, start_time);
->  }
->  
->  /*
-> --- linux-next.orig/include/linux/writeback.h   2011-08-26 15:57:18.000000000 +0800
-> +++ linux-next/include/linux/writeback.h        2011-08-26 15:57:20.000000000 +0800
-> @@ -141,6 +141,7 @@ unsigned long bdi_dirty_limit(struct bac
->  
->  void __bdi_update_bandwidth(struct backing_dev_info *bdi,
->                             unsigned long thresh,
-> +                           unsigned long bg_thresh,
->                             unsigned long dirty,
->                             unsigned long bdi_thresh,
->                             unsigned long bdi_dirty,
+On Mon, 2011-09-05 at 17:01 +0200, Guennadi Liakhovetski wrote:
+> On Mon, 5 Sep 2011, Vinod Koul wrote:
+> 
+> > On Mon, 2011-09-05 at 15:48 +0200, Guennadi Liakhovetski wrote:
+> > > 
+> > > Let me try again. DMA channels on these DMA controllers are not dedicated. 
+> > > On one such SoC there can be several such DMA controllers of different 
+> > > kinds. One kind is "generic" - it can do memcpy(), besides channels can be 
+> > > freely configured for one of onboard peripherals: serial, mmc, etc. Some 
+> > > of them can also serve external DMA-capable devices. Another kind of DMA 
+> > > controllers, served by the same driver, can only be used with USB 
+> > > controllers. Now, if the MMC driver requests a DMA channel, let's say, the 
+> > > dmaengine core first finds the USB DMA controller. The MMC driver cannot 
+> > > know this. It assigns its MMC DMA configuration to the.private pointer and 
+> > > returns true. Next the DMA driver is entered, it checks the private 
+> > > pointer, sees an MMC channel request, looks at the DMA controller and 
+> > > sees, that it doesn't support MMC. So, .device_alloc_chan_resources() 
+> > > fails. When the same is attempted with a suitable DMA controller, the 
+> > > shdma driver recognises, that the controller can service MMC and uses the 
+> > > data, provided the MMC driver, to configure the DMA channel for MMC.
+> > Hmmm, Can't you know in filter function if the respective channel can do
+> > the dma for you or not? Maybe export a dma function or use platform data
+> > for this (wont you soc have these caps fixed), i prefer latter.
+> > That maybe a better approach. 
+> 
+> How? On a system you can have 3 suitable DMA controllers and 2 unsuitable. 
+> Do you want to pass a list of 3 suitable DMA controllers to each 
+> peripheral driver?...
+The peripheral driver (client driver in slave-dma terminology) should
+already know which dmac it wants. (base on information in platform data
+etc) That is why the filter function is provided. Please use it properly
+Other soc have similar capabilities and they can filter properly so why
+cant you..?
 
+-- 
+~Vinod
 
-All this function signature muck doesn't seem immediately relevant to
-the introduction of bdi_position_ratio() since the new function isn't
-actually used.
+PS: This might well be my last post before Tue EOD PST, traveling to
+LPC, if you are there feel free to chat with me on this.
+
