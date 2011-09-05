@@ -1,81 +1,479 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab1IEGX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 02:23:58 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:62575 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab1IEGXu (ORCPT
+	id S1751097Ab1IEHH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 03:07:56 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:24384 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab1IEHHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 02:23:50 -0400
-Date: Mon, 05 Sep 2011 06:22:57 +0000
-From: Shen Canquan <shencanquan@huawei.com>
-Subject: Re : [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
-X-Originating-IP: [10.166.80.171]
-To: "lenb@kernel.org" <lenb@kernel.org>,
-        "rui.zhao@intel.com" <rui.zhao@intel.com>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "yakui.zhao@intel.com" <yakui.zhao@intel.com>
-Cc: "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
-        hanweidong <hanweidong@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Message-id: <F1F5DF04259F1B4A82BD6BDE1C479F74098285B0@szxeml527-mbx.china.huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-language: zh-CN
-Accept-Language: zh-CN, en-US
-Thread-topic: Re : [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
-Thread-index: AQHMa5Klrt6dbiK1O0qkk0+xwbGW1w==
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-CFilter-Loop: Reflected
+	Mon, 5 Sep 2011 03:07:48 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH v5 7/8] Input: elantech - add v3 hardware support
+In-Reply-To: <CAGS+omCTDb-y7Gut=KgU5wz70R9=75gkmruYpOOS5JUECOK_UA@mail.gmail.com>
+References: <1315189007-2179-1-git-send-email-jj_ding@emc.com.tw> <1315189007-2179-8-git-send-email-jj_ding@emc.com.tw> <CAGS+omCTDb-y7Gut=KgU5wz70R9=75gkmruYpOOS5JUECOK_UA@mail.gmail.com>
+User-Agent: Notmuch/0.7 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 05 Sep 2011 15:10:01 +0800
+Message-ID: <874o0rqxbq.fsf@emc.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p856O9Q7006282
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p8578620006396
 
-Hi Len,
-    I have tested more than 10000 times of cpu remove and  add function in the latest kernel. The result of test is ok. The flow of  my test program is bellow:
-    (1)  get random number of cpu .
-    (2)  call xm vcpu-set <n> . depend on current cpu number. it simulate the function of add or remove cpu at random.
-    (3) get the random number between 1 and 10.  
-    (4) sleep random seconds which get from step 3.
-    (5) repeat from step 1 to step 4.
+Hi Daniel,
 
-   what's your opinion of this patch?
+On Mon, 5 Sep 2011 12:35:28 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> Hi JJ,
+> 
+> On Mon, Sep 5, 2011 at 10:16 AM, JJ Ding <jj_ding@emc.com.tw> wrote:
+> > diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+> > index 2ae7c49..c4ceefd 100644
+> > --- a/drivers/input/mouse/elantech.c
+> > +++ b/drivers/input/mouse/elantech.c
+> > @@ -108,6 +108,16 @@ static int elantech_read_reg(struct psmouse *psmouse, unsigned char reg,
+> >                        rc = -1;
+> >                }
+> >                break;
+> > +
+> > +       case 3:
+> > +               if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+> > +                   elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
+> > +                   elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+> > +                   elantech_ps2_command(psmouse, NULL, reg) ||
+> > +                   elantech_ps2_command(psmouse, param, PSMOUSE_CMD_GETINFO)) {
+> > +                       rc = -1;
+> > +               }
+> > +               break;
+> >        }
+> >
+> >        if (rc)
+> > @@ -154,6 +164,18 @@ static int elantech_write_reg(struct psmouse *psmouse, unsigned char reg,
+> >                        rc = -1;
+> >                }
+> >                break;
+> > +
+> > +       case 3:
+> > +               if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+> > +                   elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
+> > +                   elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+> > +                   elantech_ps2_command(psmouse, NULL, reg) ||
+> > +                   elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+> > +                   elantech_ps2_command(psmouse, NULL, val) ||
+> > +                   elantech_ps2_command(psmouse, NULL, PSMOUSE_CMD_SETSCALE11)) {
+> > +                       rc = -1;
+> > +               }
+> > +               break;
+> >        }
+> >
+> >        if (rc)
+> > @@ -350,6 +372,84 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+> >        input_sync(dev);
+> >  }
+> >
+> > +/*
+> > + * Interpret complete data packets and report absolute mode input events for
+> > + * hardware version 3. (12 byte packets for two fingers)
+> > + */
+> > +static void elantech_report_absolute_v3(struct psmouse *psmouse,
+> > +                                       int packet_type)
+> > +{
+> > +       struct input_dev *dev = psmouse->dev;
+> > +       struct elantech_data *etd = psmouse->private;
+> > +       unsigned char *packet = psmouse->packet;
+> > +       unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+> > +       unsigned int width = 0, pres = 0;
+> > +
+> > +       /* byte 0: n1  n0   .   .   .   .   R   L */
+> > +       fingers = (packet[0] & 0xc0) >> 6;
+> > +
+> > +       switch (fingers) {
+> > +       case 3:
+> > +       case 1:
+> > +               /*
+> > +                * byte 1:  .   .   .   .  x11 x10 x9  x8
+> > +                * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
+> > +                */
+> > +               x1 = ((packet[1] & 0x0f) << 8) | packet[2];
+> > +               /*
+> > +                * byte 4:  .   .   .   .  y11 y10 y9  y8
+> > +                * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
+> > +                */
+> > +               y1 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+> > +               break;
+> > +
+> > +       case 2:
+> > +               if (packet_type == PACKET_V3_HEAD) {
+> > +                       /*
+> > +                        * byte 1:   .    .    .    .  ax11 ax10 ax9  ax8
+> > +                        * byte 2: ax7  ax6  ax5  ax4  ax3  ax2  ax1  ax0
+> > +                        */
+> > +                       etd->prev_x = ((packet[1] & 0x0f) << 8) | packet[2];
+> > +                       /*
+> > +                        * byte 4:   .    .    .    .  ay11 ay10 ay9  ay8
+> > +                        * byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
+> > +                        */
+> > +                       etd->prev_y = etd->y_max -
+> > +                               (((packet[4] & 0x0f) << 8) | packet[5]);
+> > +                       /*
+> > +                        * wait for next packet
+> > +                        */
+> > +                       return;
+> > +               }
+> > +
+> > +               /* packet_type == PACKET_V3_TAIL */
+> > +               x1 = etd->prev_x;
+> > +               y1 = etd->prev_y;
+> > +               x2 = ((packet[1] & 0x0f) << 8) | packet[2];
+> > +               y2 = etd->y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+> > +               break;
+> > +       }
+> > +
+> > +       pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+> > +       width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+> > +
+> > +       input_report_key(dev, BTN_TOUCH, fingers != 0);
+> > +       if (fingers != 0) {
+> > +               input_report_abs(dev, ABS_X, x1);
+> > +               input_report_abs(dev, ABS_Y, y1);
+> > +       }
+> > +       elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
+> 
+> Originally, v3 was using semi-mt, which reported corner coordinates of
+> a box containing at least two of the N touches on the touchpad.  I
+> thought this was due to hardware limitation.
+> 
+> If the hardware really can report true positions for (up to) 3
+> contacts, then using pure MT-B is a good approach.  This driver still
+> seems to mix semi-mt and MT-B together a bit.
+> 
+> Can you report all three contacts in their own slots, 0, 1 and 2,
+> instead of just reoprting two of them with 0,1?
+> 
+> Also, when reporting the 'legacy single touch' coordinate (ABS_X,
+> ABS_Y), please use:
+> input_mt_report_pointer_emulation(), instead of always reporting the
+> last (x1,y1).  Otherwise the single touch point will bounce back and
+> forth between 1st and 3rd touch.
 
---
-shencanquan
-________________________________________
-������: linux-kernel-owner@vger.kernel.org [linux-kernel-owner@vger.kernel.org] ���� Shen Canquan [shencanquan@huawei.com]
-����ʱ��: 2011��8��30�� 14:35
-��: lenb@kernel.org; rui.zhao@intel.com; shemminger@vyatta.com; yakui.zhao@intel.com
-Cc: xiaowei.yang@huawei.com; hanweidong; linux-kernel@vger.kernel.org; i@vger.kernel.org
-����: [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
+v3 can only track the true positions of two fingers. With 3 finger
+touch, it reports the lowest value of x and the biggest value of y,
+among the three fingers. v3 changed the protocol so it could report
+2-finger touch data w/o reduced resolution and improved the hardware to
+truly track 2 fingers independently, otherwise it's pretty much the same
+as v2.
 
-In Xen virtualization environment, When I used xen tools (xm vcpu-set vcpu_number ) to test the vcpu add and remove, I found it is failure on vcpu remove, I found the reason is that nothing to do when cpu remove in acpi_processor_hotplug_notify function, so I add the code of send the OFFLINE message to udev and add the rule of udev. it is ok on vcpu remove.
-Signed-off-by: Shen canquan <shencanquan@huawei.com>
----
- drivers/acpi/processor_driver.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index a4e0f1b..a1c564f 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -677,6 +677,8 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
-                                     "Driver data is NULL, dropping EJECT\n");
-                         return;
-                 }
-+
-+               kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-                 break;
-         default:
-                 ACPI_DEBUG_PRINT((ACPI_DB_INFO,
---
-1.7.6.msysgit.0
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+> > +       input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+> > +       input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+> > +       input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
+> 
+> Use input_mt_report_pointer_emulation() with use_count = true.   This
+> will also report ABS_PRESURE (but not ABS_TOOL_WIDTH, unfortunately).
+> 
+> > +       input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+> > +       input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
+> > +       input_report_abs(dev, ABS_PRESSURE, pres);
+> > +       input_report_abs(dev, ABS_TOOL_WIDTH, width);
+> > +
+> > +       input_sync(dev);
+> > +}
+> > +
+> >  static int elantech_packet_check_v1(struct psmouse *psmouse)
+> >  {
+> >        struct elantech_data *etd = psmouse->private;
+> > @@ -403,11 +503,37 @@ static int elantech_packet_check_v2(struct psmouse *psmouse)
+> >  }
+> >
+> >  /*
+> > + * We check the constant bits to determine what packet type we get,
+> > + * so packet checking is mandatory for v3 hardware.
+> > + */
+> > +static int elantech_packet_check_v3(struct psmouse *psmouse)
+> > +{
+> > +       const u8 debounce_packet[] = { 0xc4, 0xff, 0xff, 0x02, 0xff, 0xff };
+> > +       unsigned char *packet = psmouse->packet;
+> > +
+> > +       /*
+> > +        * check debounce first, it has the same signature in byte 0
+> > +        * and byte 3 as PACKET_V3_HEAD.
+> > +        */
+> > +       if (!memcmp(packet, debounce_packet, sizeof(debounce_packet)))
+> > +               return PACKET_DEBOUNCE;
+> > +
+> > +       if ((packet[0] & 0x0c) == 0x04 && (packet[3] & 0xcf) == 0x02)
+> > +               return PACKET_V3_HEAD;
+> > +
+> > +       if ((packet[0] & 0x0c) == 0x0c && (packet[3] & 0xce) == 0x0c)
+> > +               return PACKET_V3_TAIL;
+> > +
+> > +       return PACKET_UNKNOWN;
+> > +}
+> > +
+> > +/*
+> >  * Process byte stream from mouse and handle complete packets
+> >  */
+> >  static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
+> >  {
+> >        struct elantech_data *etd = psmouse->private;
+> > +       int packet_type;
+> >
+> >        if (psmouse->pktcnt < psmouse->pktsize)
+> >                return PSMOUSE_GOOD_DATA;
+> > @@ -429,6 +555,18 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
+> >
+> >                elantech_report_absolute_v2(psmouse);
+> >                break;
+> > +
+> > +       case 3:
+> > +               packet_type = elantech_packet_check_v3(psmouse);
+> > +               /* ignore debounce */
+> > +               if (packet_type == PACKET_DEBOUNCE)
+> > +                       return PSMOUSE_FULL_PACKET;
+> > +
+> > +               if (packet_type == PACKET_UNKNOWN)
+> > +                       return PSMOUSE_BAD_DATA;
+> > +
+> > +               elantech_report_absolute_v3(psmouse, packet_type);
+> > +               break;
+> >        }
+> >
+> >        return PSMOUSE_FULL_PACKET;
+> > @@ -463,8 +601,15 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+> >                    elantech_write_reg(psmouse, 0x11, etd->reg_11) ||
+> >                    elantech_write_reg(psmouse, 0x21, etd->reg_21)) {
+> >                        rc = -1;
+> > -                       break;
+> >                }
+> > +               break;
+> > +
+> > +       case 3:
+> > +               etd->reg_10 = 0x0b;
+> > +               if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
+> > +                       rc = -1;
+> > +
+> > +               break;
+> >        }
+> >
+> >        if (rc == 0) {
+> > @@ -498,11 +643,12 @@ static int elantech_set_absolute_mode(struct psmouse *psmouse)
+> >        return rc;
+> >  }
+> >
+> > -static void set_range(struct psmouse *psmouse, unsigned int *x_min,
+> > +static int set_range(struct psmouse *psmouse, unsigned int *x_min,
+> >                     unsigned int *y_min, unsigned int *x_max,
+> >                     unsigned int *y_max)
+> >  {
+> >        struct elantech_data *etd = psmouse->private;
+> > +       unsigned char param[3];
+> >        int i;
+> >
+> >        switch (etd->hw_version) {
+> > @@ -530,19 +676,30 @@ static void set_range(struct psmouse *psmouse, unsigned int *x_min,
+> >                        *y_max = (etd->capabilities[2] - i) * 64;
+> >                }
+> >                break;
+> > +
+> > +       case 3:
+> > +               if (synaptics_send_cmd(psmouse, ETP_FW_ID_QUERY, param))
+> > +                       return -1;
+> > +
+> > +               *x_max = (0x0f & param[0]) << 8 | param[1];
+> > +               *y_max = (0xf0 & param[0]) << 4 | param[2];
+> > +               break;
+> >        }
+> > +
+> > +       return 0;
+> >  }
+> >
+> >  /*
+> >  * Set the appropriate event bits for the input subsystem
+> >  */
+> > -static void elantech_set_input_params(struct psmouse *psmouse)
+> > +static int elantech_set_input_params(struct psmouse *psmouse)
+> >  {
+> >        struct input_dev *dev = psmouse->dev;
+> >        struct elantech_data *etd = psmouse->private;
+> >        unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0;
+> >
+> > -       set_range(psmouse, &x_min, &y_min, &x_max, &y_max);
+> > +       if (set_range(psmouse, &x_min, &y_min, &x_max, &y_max))
+> > +               return -1;
+> >
+> >        __set_bit(EV_KEY, dev->evbit);
+> >        __set_bit(EV_ABS, dev->evbit);
+> > @@ -570,6 +727,9 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+> >
+> >        case 2:
+> >                __set_bit(BTN_TOOL_QUADTAP, dev->keybit);
+> > +               __set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> > +               /* fall through */
+> > +       case 3:
+> >                input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+> >                input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+> >                if (etd->reports_pressure) {
+> > @@ -578,7 +738,6 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+> >                        input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
+> >                                             ETP_WMAX_V2, 0, 0);
+> >                }
+> > -               __set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> >                input_mt_init_slots(dev, 2);
+> 
+> Should this be 3?
+> 
+> >                input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+> >                input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+> > @@ -586,6 +745,8 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+> >        }
+> >
+> >        etd->y_max = y_max;
+> > +
+> > +       return 0;
+> >  }
+> >
+> >  struct elantech_attr_data {
+> > @@ -727,7 +888,8 @@ int elantech_detect(struct psmouse *psmouse, bool set_properties)
+> >         * Report this in case there are Elantech models that use a different
+> >         * set of magic numbers
+> >         */
+> > -       if (param[0] != 0x3c || param[1] != 0x03 || param[2] != 0xc8) {
+> > +       if (param[0] != 0x3c || param[1] != 0x03 ||
+> > +           (param[2] != 0xc8 && param[2] != 0x00)) {
+> >                pr_debug("unexpected magic knock result 0x%02x, 0x%02x, 0x%02x.\n",
+> >                         param[0], param[1], param[2]);
+> >                return -1;
+> > @@ -793,16 +955,16 @@ static int elantech_reconnect(struct psmouse *psmouse)
+> >  /*
+> >  * determine hardware version and set some properties according to it.
+> >  */
+> > -static void elantech_set_properties(struct elantech_data *etd)
+> > +static int elantech_set_properties(struct elantech_data *etd)
+> >  {
+> > -       /*
+> > -        * Assume every version greater than 0x020030 is new EeePC style
+> > -        * hardware with 6 byte packets, except 0x020600
+> > -        */
+> >        if (etd->fw_version < 0x020030 || etd->fw_version == 0x020600)
+> >                etd->hw_version = 1;
+> > -       else
+> > +       else if (etd->fw_version < 0x150600)
+> >                etd->hw_version = 2;
+> > +       else if ((etd->fw_version & 0x0f0000) >> 16 == 5)
+> > +               etd->hw_version = 3;
+> > +       else
+> > +               return -1;
+> >
+> >        /*
+> >         * Turn on packet checking by default.
+> > @@ -817,13 +979,15 @@ static void elantech_set_properties(struct elantech_data *etd)
+> >        etd->jumpy_cursor =
+> >                (etd->fw_version == 0x020022 || etd->fw_version == 0x020600);
+> >
+> > -       if (etd->hw_version == 2) {
+> > +       if (etd->hw_version > 1) {
+> >                /* For now show extra debug information */
+> >                etd->debug = 1;
+> >
+> >                if (etd->fw_version >= 0x020800)
+> >                        etd->reports_pressure = true;
+> >        }
+> > +
+> > +       return 0;
+> >  }
+> >
+> >  /*
+> > @@ -850,9 +1014,12 @@ int elantech_init(struct psmouse *psmouse)
+> >                pr_err("failed to query firmware version.\n");
+> >                goto init_fail;
+> >        }
+> > -
+> >        etd->fw_version = (param[0] << 16) | (param[1] << 8) | param[2];
+> > -       elantech_set_properties(etd);
+> > +
+> > +       if (elantech_set_properties(etd)) {
+> > +               pr_err("unknown hardware version, aborting...\n");
+> > +               goto init_fail;
+> > +       }
+> >        pr_info("assuming hardware version %d "
+> >                "(with firmware version 0x%02x%02x%02x)\n",
+> >                etd->hw_version, param[0], param[1], param[2]);
+> > @@ -871,7 +1038,10 @@ int elantech_init(struct psmouse *psmouse)
+> >                goto init_fail;
+> >        }
+> >
+> > -       elantech_set_input_params(psmouse);
+> > +       if (elantech_set_input_params(psmouse)) {
+> > +               pr_err("failed to query touchpad range.\n");
+> > +               goto init_fail;
+> > +       }
+> >
+> >        error = sysfs_create_group(&psmouse->ps2dev.serio->dev.kobj,
+> >                                   &elantech_attr_group);
+> > @@ -883,7 +1053,7 @@ int elantech_init(struct psmouse *psmouse)
+> >        psmouse->protocol_handler = elantech_process_byte;
+> >        psmouse->disconnect = elantech_disconnect;
+> >        psmouse->reconnect = elantech_reconnect;
+> > -       psmouse->pktsize = etd->hw_version == 2 ? 6 : 4;
+> > +       psmouse->pktsize = etd->hw_version > 1 ? 6 : 4;
+> >
+> >        return 0;
+> >
+> > diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
+> > index d9e6144..236c33c 100644
+> > --- a/drivers/input/mouse/elantech.h
+> > +++ b/drivers/input/mouse/elantech.h
+> > @@ -16,6 +16,7 @@
+> >  /*
+> >  * Command values for Synaptics style queries
+> >  */
+> > +#define ETP_FW_ID_QUERY                        0x00
+> >  #define ETP_FW_VERSION_QUERY           0x01
+> >  #define ETP_CAPABILITIES_QUERY         0x02
+> >
+> > @@ -24,6 +25,7 @@
+> >  */
+> >  #define ETP_REGISTER_READ              0x10
+> >  #define ETP_REGISTER_WRITE             0x11
+> > +#define ETP_REGISTER_READWRITE         0x00
+> >
+> >  /*
+> >  * Hardware version 2 custom PS/2 command value
+> > @@ -79,6 +81,14 @@
+> >  #define ETP_WMIN_V2                    0
+> >  #define ETP_WMAX_V2                    15
+> >
+> > +/*
+> > + * v3 hardware has 2 kinds of packet types.
+> > + */
+> > +#define PACKET_UNKNOWN                 0x01
+> > +#define PACKET_DEBOUNCE                        0x02
+> > +#define PACKET_V3_HEAD                 0x03
+> > +#define PACKET_V3_TAIL                 0x04
+> > +
+> >  struct elantech_data {
+> >        unsigned char reg_10;
+> >        unsigned char reg_11;
+> > @@ -98,6 +108,8 @@ struct elantech_data {
+> >        unsigned int fw_version;
+> >        unsigned int single_finger_reports;
+> >        unsigned int y_max;
+> > +       unsigned int prev_x;
+> > +       unsigned int prev_y;
+> >        unsigned char parity[256];
+> >  };
+> >
+> > --
+> > 1.7.4.1
+> >
+> 
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
