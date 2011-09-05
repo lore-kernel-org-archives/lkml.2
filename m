@@ -1,31 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750940Ab1IEEDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 00:03:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52357 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750706Ab1IEEDC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 00:03:02 -0400
+	id S1751206Ab1IEEEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 00:04:24 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38573 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706Ab1IEEEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 00:04:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <htejun@gmail.com>
+Subject: Re: [PATCHSET cgroup] extend threadgroup locking
+Date: Mon, 5 Sep 2011 06:05:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, fweisbec@gmail.com,
+        matthltc@us.ibm.com, akpm@linux-foundation.org
+References: <1315159280-25032-1-git-send-email-htejun@gmail.com>
+In-Reply-To: <1315159280-25032-1-git-send-email-htejun@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <loom.20110905T030456-543@post.gmane.org>
-References: <CA+55aFxDjVJwbpP5YT4o=qud=OcxtT3Ry4HfCtW-FvNdj+RFeQ@mail.gmail.com>
- <loom.20110905T030456-543@post.gmane.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 4 Sep 2011 21:02:39 -0700
-Message-ID: <CA+55aFyLa5kN4jXmVerki_f4uz0BLMoQ=0J4ksey4T9s+uNC0w@mail.gmail.com>
-Subject: Re: Linux 3.1-rc5
-To: Mithrandir <mithrandiragain@lavabit.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109050605.57360.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 4, 2011 at 6:09 PM, Mithrandir <mithrandiragain@lavabit.com> wrote:
-> Just wondering: when master.kernel.org gets back up, will this be 'just a
-> mirror' or a separate place to develop? Perhaps I'm thinking too far ahead. :-)
+Hi,
 
-Just a mirror.
+On Sunday, September 04, 2011, Tejun Heo wrote:
+> Hello,
+> 
+> cgroup currently only blocks new threads from joining the target
+> threadgroup during migration, and on-going migration could race
+> against exec and exit leading to interesting problems - the symmetry
+> between various attach methods, task exiting during method execution,
+> ->exit() racing against attach methods, migrating task switching basic
+> properties during exec and so on.
+> 
+> This patchset extends threadgroup locking such that it covers all
+> operations which can alter the threadgroup - fork, exit and exec, and
+> update cgroup to take advantage of it.  rwsem read ops are added to
+> exit path but exec is excluded by grabbing the existing
+> cred_guard_mutex from threadgroup locking helper.
+> 
+> This makes threadgroup locking complete and resolves cgroup issues
+> stemming from the target taskset being unstable.
+> 
+> This patchset is on top of the current pm-freezer + "freezer: fixes &
+> simplifications" patchset and contains the following four patches.
+> Patch list and diffstat follow.
 
-                 Linus
+OK
+
+I'm assuming that there will be a branch for me to pull from when
+kernel.org starts to work again, right?
+
+Rafael
