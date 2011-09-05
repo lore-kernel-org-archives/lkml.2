@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab1IERoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:44:00 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:44573 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752677Ab1IERny (ORCPT
+	id S1753084Ab1IERos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:44:48 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:37155 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab1IERom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:43:54 -0400
-Message-ID: <4E650A3A.5050807@metafoo.de>
-Date: Mon, 05 Sep 2011 19:43:22 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
+	Mon, 5 Sep 2011 13:44:42 -0400
+Message-ID: <a9c6784bdb67df6d1eb8ccbdefec4e7f.squirrel@webmail.greenhost.nl>
+In-Reply-To: <1315231572.1888.35.camel@dhcp-25-63.brq.redhat.com>
+References: <201109042311.18793.vda.linux@googlemail.com>
+    <d1aa7eeee449fe4402a999ab686ed921.squirrel@webmail.greenhost.nl>
+    <201109051124.09775.vda.linux@googlemail.com>
+    <bb2c259961b62bb8759df7d1f9ebc8f7.squirrel@webmail.greenhost.nl>
+    <1315231572.1888.35.camel@dhcp-25-63.brq.redhat.com>
+Date: Mon, 5 Sep 2011 19:44:20 +0200
+Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <dvlasenk@redhat.com>
+Cc: "Denys Vlasenko" <vda.linux@googlemail.com>,
+        "Oleg Nesterov" <oleg@redhat.com>, "Tejun Heo" <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        Scott Jiang <scott.jiang.linux@gmail.com>
-Subject: Re: [PATCH 2/3] ASoC: Allow codecs to provide their own regmap configuration
-References: <1315228682-1097-1-git-send-email-lars@metafoo.de> <1315228682-1097-2-git-send-email-lars@metafoo.de> <20110905172916.GG3889@opensource.wolfsonmicro.com>
-In-Reply-To: <20110905172916.GG3889@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 5a1627636b35b65657045ef62631cd80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2011 07:29 PM, Mark Brown wrote:
-> On Mon, Sep 05, 2011 at 03:18:01PM +0200, Lars-Peter Clausen wrote:
->> Currently a codec can either do the whole regmap initialization on its own or
->> provide only the register and value bit size and let the core handle
->> initialization. This patch allows a codec to provide a complete regmap
->> configuration while still letting ASoC core handle the regmap initialization
->> and setup.
-> 
-> I'd rather not do this, the only value is the copying of the word size
-> setup out of the regmap config is to allow us to use the ASoC cache code
-> but the idea is to push the cache down out of ASoC into the regmap code
-> so this function should just be a trivial indirection for the regmap
-> init which isn't useful.
-> 
+On Mon, September 5, 2011 16:06, Denys Vlasenko wrote:
+> In case you meant that "if we request group-stop notifications by using
+> __WALL | WSTOPPED, and we get group-stop notification, and we do
+> PTRACE_CONT, then task does not run (it sits in group-stop until SIGCONT
+> or death)", then we have a problem: gdb can't use this interface, it
+> needs to be able to restart the thread (only one thread, not all of
+> them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
+> weird, but it's the real requirement from gdb users.
+[...]
+> SIGCONT's side effect of waking up from group-stop can't be blocked.
+> SIGCONT always wakes up all threads in thread group.
+> Using SIGCONT to control tracee will race with SIGCONTs from other
+> sources.
+>
+> This makes SIGCONT a too coarse instrument for the job.
+[...]
+> Yes... until gdb will want to give user a choice after SIGSTOP: continue
+> to sit in group-stop until SIGCONT (wasn't possible until
+> PTRACE_LISTEN), or continue executing (gdb's current behavior if user
+> uses "continue" command). Therefore, gdb needs a way to do both.
 
-I think it is useful, since we avoid duplicating that ugly switch statement
-and we also have to wrap regmap_write and regmap_read, duplicating that in each
-codec driver doesn't make sense.
+Having thought a bit more about this, I think this is less of a problem
+than it seems, because for a group stop we get a ptrace event for each
+task, and this should be true for SIGCONT as well. So gdb could also
+always let the group stop happen, and only when prompted to do so by
+a user, continue one thread by sending SIGCONT and letting all the other
+threads hang in trapped state. So the above choice doesn't have to be
+given, it can be made explicitly by the user at SIGCONT time (continue
+all threads, or just one).
+
+Regards,
+
+Indan
+
+
