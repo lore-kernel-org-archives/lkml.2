@@ -1,126 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab1IEKRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 06:17:23 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:3934 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab1IEKRT (ORCPT
+	id S1752498Ab1IEKaR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 06:30:17 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:49862 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab1IEKaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 06:17:19 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb (v4l2_device_disconnect+0x11/0x30)
-Date: Mon, 5 Sep 2011 12:16:42 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0-3.slh.1-aptosid-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-References: <20110829204846.GA14699@sucs.org> <201109051159.08268.laurent.pinchart@ideasonboard.com> <201109051213.26482.hverkuil@xs4all.nl>
-In-Reply-To: <201109051213.26482.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109051216.42579.hverkuil@xs4all.nl>
+	Mon, 5 Sep 2011 06:30:13 -0400
+From: Josh Wu <josh.wu@atmel.com>
+To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org, plagnioj@jcrosoft.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Josh Wu <josh.wu@atmel.com>
+Subject: [PATCH] [media] at91: add code to initialize and manage the ISI_MCK for Atmel ISI driver.
+Date: Mon,  5 Sep 2011 18:29:53 +0800
+Message-Id: <1315218593-10822-1-git-send-email-josh.wu@atmel.com>
+X-Mailer: git-send-email 1.6.3.3
+X-OriginalArrivalTime: 05 Sep 2011 10:29:54.0592 (UTC) FILETIME=[C0921200:01CC6BB6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 05, 2011 12:13:26 Hans Verkuil wrote:
-> On Monday, September 05, 2011 11:59:03 Laurent Pinchart wrote:
-> > Hi Hans,
-> > 
-> > On Friday 02 September 2011 09:29:08 Sitsofe Wheeler wrote:
-> > > On Fri, Sep 02, 2011 at 01:35:49PM +0800, Dave Young wrote:
-> > > > On Fri, Sep 2, 2011 at 12:59 PM, Dave Young wrote:
-> > > > > On Fri, Sep 2, 2011 at 3:10 AM, Sitsofe Wheeler wrote:
-> > > > >> On Thu, Sep 01, 2011 at 05:02:51PM +0800, Dave Young wrote:
-> > > > >>> On Tue, Aug 30, 2011 at 4:48 AM, Sitsofe Wheeler wrote:
-> > > > >>> > I managed to produce an oops in 3.1.0-rc3-00270-g7a54f5e by
-> > > > >>> > unplugging a
-> > > > >>> 
-> > > > >>> > USB webcam. See below:
-> > > > >>> Could you try the attached patch?
-> > > > >> 
-> > > > >> This patch fixed the oops but extending the sequence (enable camera,
-> > > > >> start cheese, disable camera, watch cheese pause, enable camera, quit
-> > > > >> cheese, start cheese) causes the following "poison overwritten"
-> > > > >> warning
-> > > > > 
-> > > > >> to appear:
-> > > > > It seems another bug, I can reproduce this as well.
-> > > > > 
-> > > > > uvc_device is freed in uvc_delete,
-> > > > > 
-> > > > > struct v4l2_device vdev is the member of struct uvc_device, so vdev is
-> > > > > also freed. Later v4l2_device operations on vdev will overwrite the
-> > > > > poison memory area.
-> > > > 
-> > > > Please try attached patch on top of previous one,  in this patch I
-> > > > move v4l2_device_put after vdev->release in function
-> > > > v4l2_device_release
-> > > > 
-> > > > Not sure if this is a right fix, comments?
-> > 
-> > (inlining the patch's contents)
-> > 
-> > > > diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-
-> > > > dev.c
-> > > > index 98cee19..541dba3 100644
-> > > > --- a/drivers/media/video/v4l2-dev.c
-> > > > +++ b/drivers/media/video/v4l2-dev.c
-> > > > @@ -172,13 +172,14 @@ static void v4l2_device_release(struct device *cd)
-> > > >  		media_device_unregister_entity(&vdev->entity);
-> > > >  #endif
-> > > >  
-> > > > +	/* Decrease v4l2_device refcount */
-> > > > +	if (vdev->v4l2_dev)
-> > > > +		v4l2_device_put(vdev->v4l2_dev);
-> > > > +
-> > > >  	/* Release video_device and perform other
-> > > >  	   cleanups as needed. */
-> > > >  	vdev->release(vdev);
-> > > >  
-> > > > -	/* Decrease v4l2_device refcount */
-> > > > -	if (vdev->v4l2_dev)
-> > > > -		v4l2_device_put(vdev->v4l2_dev);
-> > > >  }
-> > > >  
-> > > >  static struct class video_class = {
-> > 
-> > v4l2_device_put() got introduced in commit 
-> > bedf8bcf6b4f90a6e31add3721a2e71877289381 ("v4l2-device: add kref and a release 
-> > function"). If I understand its purpose correctly, drivers that use a 
-> > v4l2_device instance should use the v4l2_device release callback to release 
-> > device structures instead of counting video_device release callbacks manually. 
-> > In that case I think the v4l2-dev.c code is correct, and all drivers that use 
-> > v4l2_device should be fixed.
-> > 
-> > The above patch fixes the problem in a central location, but seems to defeat 
-> > the original purpose of v4l2_device_get/put().
-> > 
-> > Hans, could you please comment on that ?
-> 
-> The original order is correct, but what I missed is that for drivers that release
-> (free) everything in the videodev release callback the v4l2_device struct is
-> also freed and v4l2_device_put will fail.
-> 
-> To fix this, add this code just before the vdev->release call:
-> 
-> 	/* Do not call v4l2_device_put if there is no release callback set. */
-> 	if (v4l2_dev->release == NULL)
-> 		v4l2_dev = NULL;
-> 
-> If there is no release callback, then the refcounting is pointless anyway.
-> 
-> This should work.
+This patch enable the configuration for ISI_MCK, which is provided by programmable clock.
 
-Note that in the long run using the v4l2_device release callback instead of the
-videodev release is better. But it's a lot of work to convert everything so that's
-long term. I'm quite surprised BTW that this bug wasn't found much earlier.
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+---
+ drivers/media/video/atmel-isi.c |   56 ++++++++++++++++++++++++++++++++++++++-
+ include/media/atmel-isi.h       |    4 +++
+ 2 files changed, 59 insertions(+), 1 deletions(-)
 
-Regards,
+diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
+index 7b89f00..8bb59a8 100644
+--- a/drivers/media/video/atmel-isi.c
++++ b/drivers/media/video/atmel-isi.c
+@@ -90,7 +90,10 @@ struct atmel_isi {
+ 	struct isi_dma_desc		dma_desc[MAX_BUFFER_NUM];
+ 
+ 	struct completion		complete;
++	/* ISI peripherial clock */
+ 	struct clk			*pclk;
++	/* ISI_MCK, provided by PCK */
++	struct clk			*mck;
+ 	unsigned int			irq;
+ 
+ 	struct isi_platform_data	*pdata;
+@@ -763,6 +766,10 @@ static int isi_camera_add_device(struct soc_camera_device *icd)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = clk_enable(isi->mck);
++	if (ret)
++		return ret;
++
+ 	isi->icd = icd;
+ 	dev_dbg(icd->parent, "Atmel ISI Camera driver attached to camera %d\n",
+ 		 icd->devnum);
+@@ -776,6 +783,7 @@ static void isi_camera_remove_device(struct soc_camera_device *icd)
+ 
+ 	BUG_ON(icd != isi->icd);
+ 
++	clk_disable(isi->mck);
+ 	clk_disable(isi->pclk);
+ 	isi->icd = NULL;
+ 
+@@ -882,6 +890,46 @@ static struct soc_camera_host_ops isi_soc_camera_host_ops = {
+ };
+ 
+ /* -----------------------------------------------------------------------*/
++static int initialize_mck(struct atmel_isi *isi,
++			struct isi_platform_data *pdata)
++{
++	int ret;
++	struct clk *pck_parent;
++
++	if (!strlen(pdata->pck_name) || !strlen(pdata->pck_parent_name))
++		return -EINVAL;
++
++	/* ISI_MCK is provided by PCK clock */
++	isi->mck = clk_get(NULL, pdata->pck_name);
++	if (IS_ERR(isi->mck)) {
++		printk(KERN_ERR "Failed to get PCK: %s\n", pdata->pck_name);
++		return PTR_ERR(isi->mck);
++	}
++
++	pck_parent = clk_get(NULL, pdata->pck_parent_name);
++	if (IS_ERR(pck_parent)) {
++		ret = PTR_ERR(pck_parent);
++		printk(KERN_ERR "Failed to get PCK parent: %s\n",
++				pdata->pck_parent_name);
++		goto err_init_mck;
++	}
++
++	ret = clk_set_parent(isi->mck, pck_parent);
++	clk_put(pck_parent);
++	if (ret)
++		goto err_init_mck;
++
++	ret = clk_set_rate(isi->mck, pdata->isi_mck_hz);
++	if (ret < 0)
++		goto err_init_mck;
++
++	return 0;
++
++err_init_mck:
++	clk_put(isi->mck);
++	return ret;
++}
++
+ static int __devexit atmel_isi_remove(struct platform_device *pdev)
+ {
+ 	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
+@@ -897,6 +945,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
+ 			isi->fb_descriptors_phys);
+ 
+ 	iounmap(isi->regs);
++	clk_put(isi->mck);
+ 	clk_put(isi->pclk);
+ 	kfree(isi);
+ 
+@@ -915,7 +964,8 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+ 	struct isi_platform_data *pdata;
+ 
+ 	pdata = dev->platform_data;
+-	if (!pdata || !pdata->data_width_flags) {
++	if (!pdata || !pdata->data_width_flags || !pdata->isi_mck_hz
++			|| !pdata->pck_name || !pdata->pck_parent_name) {
+ 		dev_err(&pdev->dev,
+ 			"No config available for Atmel ISI\n");
+ 		return -EINVAL;
+@@ -944,6 +994,10 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&isi->video_buffer_list);
+ 	INIT_LIST_HEAD(&isi->dma_desc_head);
+ 
++	ret = initialize_mck(isi, pdata);
++	if (ret)
++		goto err_alloc_descriptors;
++
+ 	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
+ 				sizeof(struct fbd) * MAX_BUFFER_NUM,
+ 				&isi->fb_descriptors_phys,
+diff --git a/include/media/atmel-isi.h b/include/media/atmel-isi.h
+index 26cece5..dcbb822 100644
+--- a/include/media/atmel-isi.h
++++ b/include/media/atmel-isi.h
+@@ -114,6 +114,10 @@ struct isi_platform_data {
+ 	u32 data_width_flags;
+ 	/* Using for ISI_CFG1 */
+ 	u32 frate;
++	/* Using for ISI_MCK, provided by PCK */
++	u32 isi_mck_hz;
++	const char *pck_name;
++	const char *pck_parent_name;
+ };
+ 
+ #endif /* __ATMEL_ISI_H__ */
+-- 
+1.6.3.3
 
-	Hans
