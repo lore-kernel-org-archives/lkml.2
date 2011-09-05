@@ -1,77 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1IETyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 15:54:35 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:39852 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686Ab1IETyc convert rfc822-to-8bit (ORCPT
+	id S1753792Ab1IETzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 15:55:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57210 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753087Ab1IETzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 15:54:32 -0400
+	Mon, 5 Sep 2011 15:55:46 -0400
+Date: Mon, 5 Sep 2011 12:55:37 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: Fix regmap compilation with CONFIG_DEBUGFS=n
+Message-ID: <20110905195536.GB11107@opensource.wolfsonmicro.com>
+References: <1315250978-4242-1-git-send-email-lars@metafoo.de>
+ <20110905194254.GA11107@opensource.wolfsonmicro.com>
+ <4E6528CD.7080003@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <CAMe9rOpYy5Y27G7anE82+_udYUf6JGA3N=hZdnf_FieLkRXdBA@mail.gmail.com>
-References: <4E582577.2060805@zytor.com>
-	<2722845.TegCUU4bu0@wuerfel>
-	<CAMe9rOo2JdzerzfTAFER8rZEOGZkp6HxstdT4_3_s0x6UwTPow@mail.gmail.com>
-	<201109051921.59776.arnd@arndb.de>
-	<CAMe9rOpYy5Y27G7anE82+_udYUf6JGA3N=hZdnf_FieLkRXdBA@mail.gmail.com>
-Date: Mon, 5 Sep 2011 12:54:31 -0700
-Message-ID: <CAMe9rOoDjV8UC++X50FtNvgAac23rWu1EEju-3aUE939u8Lv1w@mail.gmail.com>
-Subject: Re: RFD: x32 ABI system call numbers
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6528CD.7080003@metafoo.de>
+X-Cookie: You will wish you hadn't.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 5, 2011 at 12:34 PM, H.J. Lu <hjl.tools@gmail.com> wrote:
-> On Mon, Sep 5, 2011 at 10:21 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Monday 05 September 2011, H.J. Lu wrote:
->>> I added MSG_CMSG_COMPAT64 and new compat system calls with
->>> 64bit timespec/val to support it.  See the enclosed patch.
->>
->> Yes, looks good. Maybe there should be an #ifdef in there though,
->> so the other compat architectures don't get the extra code.
->>
->>> BTW, I also added
->>>
->>> compat_sys_preadv64(unsigned long fd, const struct compat_iovec __user *vec,
->>>          unsigned long vlen, loff_t pos)
->>> compat_sys_pwritev64(unsigned long fd, const struct compat_iovec __user *vec,
->>>          unsigned long vlen, loff_t pos)
->>>
->>> to support 32bit compat_iovec * and 64bit offset.
->>
->> Does that make much of a difference? I would guess that it's just as
->> easy to do in libc by splitting the pos argument and calling the
->> existing compat_sys_preadv. Alternatively, you could make glibc
->> copy the iovec array to the 64 bit format and call the native syscall,
->> because compat_rw_copy_check_uvector() otherwise just ends up doing that
->> in kernel space. Or you just define the x32 libc iovec to
->>
->> struct iovec {
->>        void *iov_base;
->>        unsigned int __pad; /* gets cleared by libc */
->>        __u64 iov_len;
->> }
->>
->
-> I need to clear __pad for every readv/writev/preadv/pwritev call
-> even if it has been cleared before.  Is compat_sys_xxx faster
-> than this?
->
->
+On Mon, Sep 05, 2011 at 09:53:49PM +0200, Lars-Peter Clausen wrote:
+> On 09/05/2011 09:42 PM, Mark Brown wrote:
 
-Since  readv/writev/preadv/pwritev have const struct iovec *iov, I
-have to copy the whole array.  compat_sys seems more efficient.
+> > I sense that this doesn't actually happen in mainline...
 
--- 
-H.J.
+> Uhm, yes... the patch is still valid though, want me to resubmit it with a
+> different patch description?
+
+Yes please, no problem with the patch itself but the description was
+obviously bogus (it's fixing a future problem, not a current one).
