@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206Ab1IEQFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 12:05:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49492 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940Ab1IEQFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 12:05:41 -0400
-Date: Mon, 5 Sep 2011 18:05:34 +0200
-From: Jan Kara <jack@suse.cz>
-To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
- del_timer
-Message-ID: <20110905160534.GB17354@quack.suse.cz>
-References: <1314892622-18267-1-git-send-email-consul.kautuk@gmail.com>
- <20110901143333.51baf4ae.akpm@linux-foundation.org>
- <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
- <20110902112133.GD12182@quack.suse.cz>
- <CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
- <CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
- <20110902151450.GF12182@quack.suse.cz>
- <CAFPAmTQxBK32zutyiX9DJLS2F+z6jxsV71xOwa0sivxSY5MD1Q@mail.gmail.com>
- <20110905103925.GC5466@quack.suse.cz>
- <CAFPAmTR5f_GW_oha07Bf0_LNXhigZri_w2N_XTEqM+X+-Ae-Rw@mail.gmail.com>
+	id S1751320Ab1IEQGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 12:06:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37613 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab1IEQGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 12:06:36 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
+CC: Leonardo Chiquitto <leonardo.lists@gmail.com>,
+        David Howells <dhowells@redhat.com>, Ian Kent <raven@themaw.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        autofs@linux.kernel.org
+Date: Mon, 05 Sep 2011 18:06:26 +0200
+Message-ID: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFPAmTR5f_GW_oha07Bf0_LNXhigZri_w2N_XTEqM+X+-Ae-Rw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-On Mon 05-09-11 20:06:04, kautuk.c @samsung.com wrote:
-> >  OK, I don't care much whether we have there del_timer() or
-> > del_timer_sync(). Let me just say that the race you are afraid of is
-> > probably not going to happen in practice so I'm not sure it's valid to be
-> > afraid of CPU cycles being burned needlessly. The timer is armed when an
-> > dirty inode is first attached to default bdi's dirty list. Then the default
-> > bdi flusher thread would have to be woken up so that following happens:
-> >        CPU1                            CPU2
-> >  timer fires -> wakeup_timer_fn()
-> >                                        bdi_forker_thread()
-> >                                          del_timer(&me->wakeup_timer);
-> >                                          wb_do_writeback(me, 0);
-> >                                          ...
-> >                                          set_current_state(TASK_INTERRUPTIBLE);
-> >  wake_up_process(default_backing_dev_info.wb.task);
-> >
-> >  Especially wb_do_writeback() is going to take a long time so just that
-> > single thing makes the race unlikely. Given del_timer_sync() is slightly
-> > more costly than del_timer() even for unarmed timer, it is questionable
-> > whether (chance race happens * CPU spent in extra loop) > (extra CPU spent
-> > in del_timer_sync() * frequency that code is executed in
-> > bdi_forker_thread())...
-> >
-> 
-> Ok, so this means that we can compare the following 2 paths of code:
-> i)   One extra iteration of the bdi_forker_thread loop, versus
-> ii)  The amount of time it takes for the del_timer_sync to wait till the
-> timer_fn on the other CPU finishes executing + schedule resulting in a
-> guaranteed sleep.
-  No, ii) is going to be as rare. But instead you should compare i) against:
-iii) The amount of time it takes del_timer_sync() to check whether the
-timer_fn is running on a different CPU (which is work del_timer() doesn't
-do).
+Prior to 2.6.38 automount would not trigger on either stat(2) or
+lstat(2) on the automount point.
 
-  We are going to spend time in iii) each and every time
-if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list))
-  evaluates to true.
+After 2.6.38, with the introduction of the ->d_automount()
+infrastructure, stat(2) and others would start triggering automount
+while lstat(2), etc. still would not.  This is a regression and a
+userspace ABI change.
 
-  Now frequency of i) and iii) happening is hard to evaluate so it's not
-clear what's going to be better. Certainly I don't think such evaluation is
-worth my time...
+Problem originally reported here:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+  http://thread.gmane.org/gmane.linux.kernel.autofs/6098
+
+It appears that there was an attempt at fixing various userspace tools
+to not trigger the automount.  But since the stat system call is
+rather common it is impossible to "fix" all userspace.
+
+This patch reverts the original behavior, which is to not trigger on
+stat(2) and other symlink following syscalls.
+
+Reported-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: David Howells <dhowells@redhat.com>
+CC: Ian Kent <raven@themaw.net>
+CC: stable@kernel.org
+---
+ fs/namei.c |   33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
+
+Index: linux-2.6/fs/namei.c
+===================================================================
+--- linux-2.6.orig/fs/namei.c	2011-09-05 14:37:25.000000000 +0200
++++ linux-2.6/fs/namei.c	2011-09-05 17:31:14.000000000 +0200
+@@ -727,25 +727,22 @@ static int follow_automount(struct path
+ 	if ((flags & LOOKUP_NO_AUTOMOUNT) && !(flags & LOOKUP_PARENT))
+ 		return -EISDIR; /* we actually want to stop here */
+ 
+-	/*
+-	 * We don't want to mount if someone's just doing a stat and they've
+-	 * set AT_SYMLINK_NOFOLLOW - unless they're stat'ing a directory and
+-	 * appended a '/' to the name.
++	/* We don't want to mount if someone's just doing a stat -
++	 * unless they're stat'ing a directory and appended a '/' to
++	 * the name.
++	 *
++	 * We do, however, want to mount if someone wants to open or
++	 * create a file of any type under the mountpoint, wants to
++	 * traverse through the mountpoint or wants to open the
++	 * mounted directory.  Also, autofs may mark negative dentries
++	 * as being automount points.  These will need the attentions
++	 * of the daemon to instantiate them before they can be used.
+ 	 */
+-	if (!(flags & LOOKUP_FOLLOW)) {
+-		/* We do, however, want to mount if someone wants to open or
+-		 * create a file of any type under the mountpoint, wants to
+-		 * traverse through the mountpoint or wants to open the mounted
+-		 * directory.
+-		 * Also, autofs may mark negative dentries as being automount
+-		 * points.  These will need the attentions of the daemon to
+-		 * instantiate them before they can be used.
+-		 */
+-		if (!(flags & (LOOKUP_PARENT | LOOKUP_DIRECTORY |
+-			     LOOKUP_OPEN | LOOKUP_CREATE)) &&
+-		    path->dentry->d_inode)
+-			return -EISDIR;
+-	}
++	if (!(flags & (LOOKUP_PARENT | LOOKUP_DIRECTORY |
++		     LOOKUP_OPEN | LOOKUP_CREATE)) &&
++	    path->dentry->d_inode)
++		return -EISDIR;
++
+ 	current->total_link_count++;
+ 	if (current->total_link_count >= 40)
+ 		return -ELOOP;
