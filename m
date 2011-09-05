@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab1IERyV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:54:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37050 "EHLO
+	id S1752990Ab1IERya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:54:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37053 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752051Ab1IERyQ (ORCPT
+	by vger.kernel.org with ESMTP id S1752056Ab1IERyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Sep 2011 13:54:16 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jonathan Cameron <jic23@cam.ac.uk>, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 3/3] regmap: Include the last register in debugfs output
-Date: Mon,  5 Sep 2011 10:54:10 -0700
-Message-Id: <1315245250-24292-3-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3] regmap: Remove bitrotted module_put()s
+Date: Mon,  5 Sep 2011 10:54:08 -0700
+Message-Id: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Off by one in the array iteration.
+The conversion to per bus type registration functions means we don't need
+to do module_get()s to hold the bus types in memory (their users will link
+to them) so we removed all those calls. This left module_put() calls in
+the cleanup paths which aren't needed and which cause unbalanced puts if
+we ever try to unload anything.
 
 Reported-by: Jonathan Cameron <jic23@cam.ac.uk>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regmap-debugfs.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/base/regmap/regmap.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 7a8d675..6f39747 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -57,7 +57,7 @@ static ssize_t regmap_map_read_file(struct file *file, char __user *user_buf,
- 	val_len = 2 * map->format.val_bytes;
- 	tot_len = reg_len + val_len + 3;      /* : \n */
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index fa2bd89..86b1847 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -198,15 +198,13 @@ struct regmap *regmap_init(struct device *dev,
+ 	map->work_buf = kmalloc(map->format.buf_size, GFP_KERNEL);
+ 	if (map->work_buf == NULL) {
+ 		ret = -ENOMEM;
+-		goto err_bus;
++		goto err_map;
+ 	}
  
--	for (i = 0; i < map->max_register; i++) {
-+	for (i = 0; i < map->max_register + 1; i++) {
- 		if (!regmap_readable(map, i))
- 			continue;
+ 	regmap_debugfs_init(map);
  
-@@ -132,7 +132,7 @@ static ssize_t regmap_access_read_file(struct file *file,
- 	reg_len = regmap_calc_reg_len(map->max_register, buf, count);
- 	tot_len = reg_len + 10; /* ': R W V P\n' */
+ 	return map;
  
--	for (i = 0; i < map->max_register; i++) {
-+	for (i = 0; i < map->max_register + 1; i++) {
- 		/* Ignore registers which are neither readable nor writable */
- 		if (!regmap_readable(map, i) && !regmap_writeable(map, i))
- 			continue;
+-err_bus:
+-	module_put(map->bus->owner);
+ err_map:
+ 	kfree(map);
+ err:
+@@ -221,7 +219,6 @@ void regmap_exit(struct regmap *map)
+ {
+ 	regmap_debugfs_exit(map);
+ 	kfree(map->work_buf);
+-	module_put(map->bus->owner);
+ 	kfree(map);
+ }
+ EXPORT_SYMBOL_GPL(regmap_exit);
 -- 
 1.7.5.4
 
