@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab1IETUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 15:20:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52806 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab1IETUQ (ORCPT
+	id S1753521Ab1IETaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 15:30:25 -0400
+Received: from smtp-out-051.synserver.de ([212.40.185.51]:1082 "HELO
+	smtp-out-049.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753401Ab1IETaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 15:20:16 -0400
-Date: Mon, 5 Sep 2011 23:20:09 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110905192009.GJ761@sun>
-References: <20110831075814.003575573@openvz.org>
- <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros>
- <20110831112642.GI25465@sun>
- <20110831140416.GA17626@shutemov.name>
- <20110831142622.GB30615@sun>
- <20110831151023.5b7e12da.akpm@linux-foundation.org>
- <20110901080508.GF30615@sun>
- <20110902163711.GA3124@albatros>
- <20110905185358.GA2103@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110905185358.GA2103@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 Sep 2011 15:30:20 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 6229
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] regmap: Fix regmap compilation with CONFIG_DEBUGFS=n
+Date: Mon,  5 Sep 2011 21:29:38 +0200
+Message-Id: <1315250978-4242-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 05, 2011 at 10:53:58PM +0400, Vasiliy Kulikov wrote:
-...
->  
-> +static int pid_no_revalidate(struct dentry *dentry, struct nameidata *nd)
-> +{
-> +	if (nd && nd->flags & LOOKUP_RCU)
-> +		return -ECHILD;
-> +
-> +	d_drop(dentry);
-> +	return 0;
-> +}
-> +
+With CONFIG_DEBUGFS disabled the regmap compilation fails with the following
+errors:
 
-Thanks Vasiliy! So every lookup will cause dcache to drop previous cached
-entry and alloc and hash new one instead, pretty dramatic, espec in case
-of huge number of files mapped ;) Still since it's not time critical operation
-(at least for now) I tend to agree.
+	drivers/base/regmap/regcache.o: In function `regmap_debugfs_initcall':
+	drivers/base/regmap/internal.h:96: multiple definition of `regmap_debugfs_initcall'
+	drivers/base/regmap/regmap.o:drivers/base/regmap/internal.h:96: first defined here
+	drivers/base/regmap/regcache.o: In function `regmap_debugfs_init':
+	drivers/base/regmap/internal.h:97: multiple definition of `regmap_debugfs_init'
+	drivers/base/regmap/regmap.o:drivers/base/regmap/internal.h:97: first
+	defined here drivers/base/regmap/regcache.o: In function `regmap_debugfs_exit':
+	...
 
-	Cyrill
+Make the debugfs stubs static inline to fix this.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/base/regmap/internal.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 5ab3fef..b4acd94 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -58,9 +58,9 @@ extern void regmap_debugfs_initcall(void);
+ extern void regmap_debugfs_init(struct regmap *map);
+ extern void regmap_debugfs_exit(struct regmap *map);
+ #else
+-void regmap_debugfs_initcall(void) { }
+-void regmap_debugfs_init(struct regmap *map) { }
+-void regmap_debugfs_exit(struct regmap *map) { }
++static inline void regmap_debugfs_initcall(void) { }
++static inline void regmap_debugfs_init(struct regmap *map) { }
++static inline void regmap_debugfs_exit(struct regmap *map) { }
+ #endif
+ 
+ #endif
+-- 
+1.7.2.5
+
