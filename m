@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab1IETpi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 15:45:38 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40747 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753439Ab1IETpb (ORCPT
+	id S1753683Ab1IETtb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 15:49:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62309 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab1IETtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 15:45:31 -0400
-Subject: Re: [PATCH 08/16] ext4: Calculate and verify checksums for inode
- bitmaps
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: djwong@us.ibm.com
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        Sunil Mushran <sunil.mushran@oracle.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-In-Reply-To: <20110905182250.GO12086@tux1.beaverton.ibm.com>
-References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
-	 <20110901003127.31048.13983.stgit@elm3c44.beaverton.ibm.com>
-	 <2A834E5A-F07E-4B1E-835B-FBEE3FD7A103@dilger.ca>
-	 <20110902191828.GL12086@tux1.beaverton.ibm.com>
-	 <8D646179-FD76-4362-A051-8C6ADB3CE1B3@dilger.ca>
-	 <20110905182250.GO12086@tux1.beaverton.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Sep 2011 14:45:28 -0500
-Message-ID: <1315251928.15087.74.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Sep 2011 15:49:25 -0400
+Date: Mon, 5 Sep 2011 23:49:08 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-ID: <20110905194908.GA2690@albatros>
+References: <20110831080229.100652529@openvz.org>
+ <20110831090612.GA3253@albatros>
+ <20110831112642.GI25465@sun>
+ <20110831140416.GA17626@shutemov.name>
+ <20110831142622.GB30615@sun>
+ <20110831151023.5b7e12da.akpm@linux-foundation.org>
+ <20110901080508.GF30615@sun>
+ <20110902163711.GA3124@albatros>
+ <20110905185358.GA2103@albatros>
+ <20110905192009.GJ761@sun>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110905192009.GJ761@sun>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-09-05 at 11:22 -0700, Darrick J. Wong wrote:
-> On Fri, Sep 02, 2011 at 03:27:21PM -0600, Andreas Dilger wrote:
-> > On 2011-09-02, at 1:18 PM, Darrick J. Wong wrote:
-> > > On Wed, Aug 31, 2011 at 10:49:05PM -0600, Andreas Dilger wrote:
-> > >> On 2011-08-31, at 6:31 PM, Darrick J. Wong wrote:
-> > >>> Compute and verify the checksum of the inode bitmap; the checkum is stored in
-> > >>> the block group descriptor.
-> > >> 
-> > >> I would prefer if there was a 16-bit checksum for the (most common)
-> > >> 32-byte group descriptors, and this was extended to a 32-bit checksum
-> > >> for the (much less common) 64-byte+ group descriptors.  For filesystems
-> > >> that are newly formatted with the 64bit feature it makes no difference,
-> > >> but virtually all ext3/4 filesystems have only the smaller group descriptors.
-> > >> 
-> > >> Regardless of whether using half of the crc32c is better or worse than
-> > >> using crc16 for the bitmap blocks, storing _any_ checksum is better than
-> > >> storing nothing at all.  I would propose the following:
-> > > 
-> > > That's an interesting reframing of the argument that I hadn't considered.
-> > > I'd fallen into the idea of needing crc32c because of its bit error
-> > > guarantees (all corruptions of odd numbers of bits and all corruptions of
-> > > fewer than ...4? bits) that I hadn't quite realized that even if crc16
-> > > can't guarantee to find any corruption at all, it still _might_, and that's
-> > > better than nothing.
-> > > 
-> > > Ok, let's split the 32-bit fields and use crc16 for the case of 32-byte block
-> > > group descriptors.
-> > 
-> > I noticed the crc16 calculation is actually _slower_ than crc32c,
-> > probably because the CPU cannot use 32-bit values when computing the
-> > result, so it has to do a lot of word masking, per your table at
-> > https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums.
-> > Also, there is the question of whether computing two different
-> > checksums is needlessly complicating the code, or if it is easier
-> > to just compute crc32c all the time and only make the storing of
-> > the high 16 bits conditional.
-> > 
-> > What I'm suggesting is always computing the crc32c, but for filesystems
-> > that are not formatted with the 64bit option just store the low 16 bits
-> > of the crc32c value into bg_{block,inode}_bitmap_csum_lo.  This is much
-> > better than not computing a checksum here at all.  The only open question
-> > is whether 1/2 of crc32c is substantially worse at detecting errors than
-> > crc16 or not?
+On Mon, Sep 05, 2011 at 23:20 +0400, Cyrill Gorcunov wrote:
+> On Mon, Sep 05, 2011 at 10:53:58PM +0400, Vasiliy Kulikov wrote:
+> ...
+> >  
+> > +static int pid_no_revalidate(struct dentry *dentry, struct nameidata *nd)
+> > +{
+> > +	if (nd && nd->flags & LOOKUP_RCU)
+> > +		return -ECHILD;
+> > +
+> > +	d_drop(dentry);
+> > +	return 0;
+> > +}
+> > +
 > 
-> All the literature I've read has suggested that crc16 can't guarantee any error
-> detection capability at all with data buffers longer than 256 bytes.
+> Thanks Vasiliy! So every lookup will cause dcache to drop previous cached
+> entry and alloc and hash new one instead, pretty dramatic, espec in case
+> of huge number of files mapped ;) Still since it's not time critical operation
+> (at least for now) I tend to agree.
 
-Um, so in a hashing algorithm that maps f:Z_m -> Z_n you can never
-guarantee error detection if m>n because of hash collisions.  All you
-can guarantee is that if f(a) != f(b) then a != b, so crc16 wouldn't be
-able to *guarantee* error detection in anything over 2 bytes.
-
-All of the rest of the magic in hashing functions goes into making sure
-that the collision sets don't include common errors (like bit flipping).
-In theory, for the correct polynomial, CRC-16 should be able to detect
-single, double and triple bit flip errors in blocks of up to 8191
-bytes ... of course, if those aren't your common errors, then this
-analysis is useless ...
-
-James
+Actually, it can be speed up by introducing the same ptrace check.  If
+ptrace check fails, then just drop the dentry, otherwise continue to use
+it.  Then each revalidate would trigger ptrace check instead of full
+drop-lookup-alloc cycle.  If one process actively looks into
+map_files/ or fd/, it will not become significantly slower.  However, it
+will trigger 2 capable() fail alerts in ptrace_may_access() instead of
+one :)
 
 
+But I still see one very nasty issue - one may trigger this ptrace check,
+trigger d_drop() and then look at /proc/slabinfo at "dentry" row.  If
+the number has changed, then the interested dentry existed before the
+revalidate call.  This infoleak is tricky to fix without any race.
+
+Probably it's time to close /proc/slabinfo infoleak?
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
