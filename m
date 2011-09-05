@@ -1,171 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab1IEKOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 06:14:20 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1677 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab1IEKOO (ORCPT
+	id S1752400Ab1IEKOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 06:14:44 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:41904 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752332Ab1IEKOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 06:14:14 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb (v4l2_device_disconnect+0x11/0x30)
-Date: Mon, 5 Sep 2011 12:13:26 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0-3.slh.1-aptosid-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-References: <20110829204846.GA14699@sucs.org> <20110902072908.GA523@sucs.org> <201109051159.08268.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201109051159.08268.laurent.pinchart@ideasonboard.com>
+	Mon, 5 Sep 2011 06:14:37 -0400
+Message-ID: <4E64A102.4060902@metafoo.de>
+Date: Mon, 05 Sep 2011 12:14:26 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Samuel Oritz <sameo@linux.intel.com>
+Subject: Re: [PATCH 2/8] regmap: Add the indexed cache support
+References: <1314978375-11539-1-git-send-email-dp@opensource.wolfsonmicro.com> <1314978375-11539-3-git-send-email-dp@opensource.wolfsonmicro.com> <4E613986.4040007@metafoo.de> <20110905095519.GC30114@opensource.wolfsonmicro.com>
+In-Reply-To: <20110905095519.GC30114@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109051213.26482.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 05, 2011 11:59:03 Laurent Pinchart wrote:
-> Hi Hans,
+On 09/05/2011 11:55 AM, Dimitris Papastamos wrote:
+> On Fri, Sep 02, 2011 at 10:16:06PM +0200, Lars-Peter Clausen wrote:
+>> On 09/02/2011 05:46 PM, Dimitris Papastamos wrote:
+>>> This is the simplest form of a cache available in regcache.  Any
+>>> registers whose default value is 0 are ignored.  If any of those
+>>> registers are modified in the future, they will be placed in the
+>>> cache on demand.  The cache layout is essentially using the provided
+>>> register defaults by the regcache core directly and does not re-map
+>>> it to another representation.
+>>>
+>>> Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+>>
+>> I wonder if we really still need indexed caches, because ...
+>>
+>>
+>>> ---
+>>>  drivers/base/regmap/Makefile           |    2 +-
+>>>  drivers/base/regmap/internal.h         |    1 +
+>>>  drivers/base/regmap/regcache-indexed.c |   65 ++++++++++++++++++++++++++++++++
+>>>  drivers/base/regmap/regcache.c         |    3 +
+>>>  include/linux/regmap.h                 |    1 +
+>>>  5 files changed, 71 insertions(+), 1 deletions(-)
+>>>  create mode 100644 drivers/base/regmap/regcache-indexed.c
+>>>
+>>> [...]
+>>> +static int regcache_indexed_read(struct regmap *map, unsigned int reg,
+>>> +				 unsigned int *value)
+>>> +{
+>>> +	int ret;
+>>> +
+>>> +	ret = regcache_lookup_reg(map, reg);
+>>
+>> ... this lookup will be slower than an rbtree lookup. And given that we use two
+>> integers per register doesn't give it much size advantage either.
 > 
-> On Friday 02 September 2011 09:29:08 Sitsofe Wheeler wrote:
-> > On Fri, Sep 02, 2011 at 01:35:49PM +0800, Dave Young wrote:
-> > > On Fri, Sep 2, 2011 at 12:59 PM, Dave Young wrote:
-> > > > On Fri, Sep 2, 2011 at 3:10 AM, Sitsofe Wheeler wrote:
-> > > >> On Thu, Sep 01, 2011 at 05:02:51PM +0800, Dave Young wrote:
-> > > >>> On Tue, Aug 30, 2011 at 4:48 AM, Sitsofe Wheeler wrote:
-> > > >>> > I managed to produce an oops in 3.1.0-rc3-00270-g7a54f5e by
-> > > >>> > unplugging a
-> > > >>> 
-> > > >>> > USB webcam. See below:
-> > > >>> Could you try the attached patch?
-> > > >> 
-> > > >> This patch fixed the oops but extending the sequence (enable camera,
-> > > >> start cheese, disable camera, watch cheese pause, enable camera, quit
-> > > >> cheese, start cheese) causes the following "poison overwritten"
-> > > >> warning
-> > > > 
-> > > >> to appear:
-> > > > It seems another bug, I can reproduce this as well.
-> > > > 
-> > > > uvc_device is freed in uvc_delete,
-> > > > 
-> > > > struct v4l2_device vdev is the member of struct uvc_device, so vdev is
-> > > > also freed. Later v4l2_device operations on vdev will overwrite the
-> > > > poison memory area.
-> > > 
-> > > Please try attached patch on top of previous one,  in this patch I
-> > > move v4l2_device_put after vdev->release in function
-> > > v4l2_device_release
-> > > 
-> > > Not sure if this is a right fix, comments?
+> The indexed cache grew out of the flat cache somehow.  Do you think the
+> flat cache would be more appropriate than the indexed cache?  One thing
+> with the flat cache is that we need to make a flat copy of the
+> cache_defaults (either partial or full).  With the indexed cache we can
+> use the cache_defaults directly.
 > 
-> (inlining the patch's contents)
+> I've got a patch that changes the regcache_lookup_reg() to actually use binary
+> search.  The array is kept sorted after insertions and since insertions
+> are less common than readbacks it should improve things a bit.
 > 
-> > > diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-
-> > > dev.c
-> > > index 98cee19..541dba3 100644
-> > > --- a/drivers/media/video/v4l2-dev.c
-> > > +++ b/drivers/media/video/v4l2-dev.c
-> > > @@ -172,13 +172,14 @@ static void v4l2_device_release(struct device *cd)
-> > >  		media_device_unregister_entity(&vdev->entity);
-> > >  #endif
-> > >  
-> > > +	/* Decrease v4l2_device refcount */
-> > > +	if (vdev->v4l2_dev)
-> > > +		v4l2_device_put(vdev->v4l2_dev);
-> > > +
-> > >  	/* Release video_device and perform other
-> > >  	   cleanups as needed. */
-> > >  	vdev->release(vdev);
-> > >  
-> > > -	/* Decrease v4l2_device refcount */
-> > > -	if (vdev->v4l2_dev)
-> > > -		v4l2_device_put(vdev->v4l2_dev);
-> > >  }
-> > >  
-> > >  static struct class video_class = {
-> 
-> v4l2_device_put() got introduced in commit 
-> bedf8bcf6b4f90a6e31add3721a2e71877289381 ("v4l2-device: add kref and a release 
-> function"). If I understand its purpose correctly, drivers that use a 
-> v4l2_device instance should use the v4l2_device release callback to release 
-> device structures instead of counting video_device release callbacks manually. 
-> In that case I think the v4l2-dev.c code is correct, and all drivers that use 
-> v4l2_device should be fixed.
-> 
-> The above patch fixes the problem in a central location, but seems to defeat 
-> the original purpose of v4l2_device_get/put().
-> 
-> Hans, could you please comment on that ?
 
-The original order is correct, but what I missed is that for drivers that release
-(free) everything in the videodev release callback the v4l2_device struct is
-also freed and v4l2_device_put will fail.
+Even with a binary search the lookup will most likely be more expensive then
+with an rbtree. Both have an log(n) running time, but the rbtree will most
+likely have less nodes than registers, while with the indexed cache we have one
+entry per register.
 
-To fix this, add this code just before the vdev->release call:
+An option would be to switch back to a flat cache, since here the lookup is
+basically free. But I don't think it is really worth the maintenance hassle,
+the gains are rather marginal. Especially with my patches which add support for
+merging adjacent nodes there is almost no overhead compared to the original
+ASoC flat cache. You'll end up with one rbnode, so the cached rbnode is always
+the one your were looking for and no rbtree lookup is necessary.
 
-	/* Do not call v4l2_device_put if there is no release callback set. */
-	if (v4l2_dev->release == NULL)
-		v4l2_dev = NULL;
+In my opinion we should work towards having rbtree as the only cache type, but
+with optional lzo compression on the rbtree node blocks.
 
-If there is no release callback, then the refcounting is pointless anyway.
-
-This should work.
-
-Regards,
-
-	Hans
-
-> 
-> > > 
-> > > >> [  191.240695] uvcvideo: Found UVC 1.00 device CNF7129 (04f2:b071)
-> > > >> [  191.277965] input: CNF7129 as
-> > > >> /devices/pci0000:00/0000:00:1d.7/usb1/1-8/1-8:1.0/input/input9 [
-> > > >>  220.287366]
-> > > >> =====================================================================
-> > > >> ======== [  220.287379] BUG kmalloc-512: Poison overwritten
-> > > >> [  220.287384]
-> > > >> ---------------------------------------------------------------------
-> > > >> -------- [  220.287387]
-> > > >> [  220.287394] INFO: 0xec90f150-0xec90f150. First byte 0x6a instead of
-> > > >> 0x6b [  220.287410] INFO: Allocated in uvc_probe+0x54/0xd50
-> > > >> age=210617 cpu=0 pid=16 [  220.287421]  T.974+0x29d/0x5e0
-> > > >> [  220.287427]  kmem_cache_alloc+0x167/0x180
-> > > >> [  220.287433]  uvc_probe+0x54/0xd50
-> > > >> [  220.287441]  usb_probe_interface+0xd5/0x1d0
-> > > >> [  220.287448]  driver_probe_device+0x80/0x1a0
-> > > >> [  220.287455]  __device_attach+0x41/0x50
-> > > >> [  220.287460]  bus_for_each_drv+0x53/0x80
-> > > >> [  220.287466]  device_attach+0x89/0xa0
-> > > >> [  220.287472]  bus_probe_device+0x25/0x40
-> > > >> [  220.287478]  device_add+0x5a9/0x660
-> > > >> [  220.287484]  usb_set_configuration+0x562/0x670
-> > > >> [  220.287491]  generic_probe+0x36/0x90
-> > > >> [  220.287497]  usb_probe_device+0x24/0x50
-> > > >> [  220.287503]  driver_probe_device+0x80/0x1a0
-> > > >> [  220.287509]  __device_attach+0x41/0x50
-> > > >> [  220.287515]  bus_for_each_drv+0x53/0x80
-> > > >> [  220.287522] INFO: Freed in uvc_delete+0xfe/0x110 age=22 cpu=0
-> > > >> pid=1645 [  220.287530]  __slab_free+0x1f8/0x300
-> > > >> [  220.287536]  kfree+0x100/0x140
-> > > >> [  220.287541]  uvc_delete+0xfe/0x110
-> > > >> [  220.287547]  uvc_release+0x25/0x30
-> > > >> [  220.287555]  v4l2_device_release+0x9d/0xc0
-> > > >> [  220.287560]  device_release+0x19/0x90
-> > > >> [  220.287567]  kobject_release+0x3c/0x90
-> > > >> [  220.287573]  kref_put+0x2c/0x60
-> > > >> [  220.287578]  kobject_put+0x1d/0x50
-> > > >> [  220.287587]  put_device+0xf/0x20
-> > > >> [  220.287593]  v4l2_release+0x56/0x60
-> > > >> [  220.287599]  fput+0xcc/0x220
-> > > >> [  220.287605]  filp_close+0x44/0x70
-> > > >> [  220.287613]  put_files_struct+0x158/0x180
-> > > >> [  220.287619]  exit_files+0x40/0x50
-> 
-> [snip]
-> 
-> 
+- Lars
