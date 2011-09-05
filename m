@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab1IELrP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 07:47:15 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:59856 "EHLO
+	id S1753130Ab1IELrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 07:47:36 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:60585 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab1IELqG (ORCPT
+	with ESMTP id S1752819Ab1IELqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 07:46:06 -0400
+	Mon, 5 Sep 2011 07:46:07 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 41/54] drbd: recv_dless_read(): Return 0 upon success and an error code otherwise
-Date: Mon,  5 Sep 2011 13:45:32 +0200
-Message-Id: <1315223145-20640-42-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 40/54] drbd: drbd_drain_block(): Return 0 upon success and an error code otherwise
+Date: Mon,  5 Sep 2011 13:45:31 +0200
+Message-Id: <1315223145-20640-41-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
 References: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,55 +25,80 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/block/drbd/drbd_receiver.c |   22 ++++++++++++----------
+ 1 files changed, 12 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index ceced15..6e5ffeb 100644
+index d1a2dbf..ceced15 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1429,7 +1429,7 @@ static int recv_dless_read(struct drbd_conf *mdev, struct drbd_request *req,
- 				dev_warn(DEV,
- 					"short read receiving data reply digest: read %d expected %d\n",
- 					rr, dgs);
--			return 0;
-+			return rr < 0 ? rr : -EIO;
- 		}
- 	}
+@@ -1382,30 +1382,32 @@ read_in_block(struct drbd_conf *mdev, u64 id, sector_t sector,
+ static int drbd_drain_block(struct drbd_conf *mdev, int data_size)
+ {
+ 	struct page *page;
+-	int rr, rv = 1;
++	int rr, err = 0;
+ 	void *data;
  
-@@ -1453,7 +1453,7 @@ static int recv_dless_read(struct drbd_conf *mdev, struct drbd_request *req,
- 				dev_warn(DEV, "short read receiving data reply: "
- 					"read %d expected %d\n",
- 					rr, expect);
--			return 0;
-+			return rr < 0 ? rr : -EIO;
+ 	if (!data_size)
+-		return true;
++		return 0;
+ 
+ 	page = drbd_pp_alloc(mdev, 1, 1);
+ 
+ 	data = kmap(page);
+ 	while (data_size) {
+-		rr = drbd_recv(mdev->tconn, data, min_t(int, data_size, PAGE_SIZE));
+-		if (rr != min_t(int, data_size, PAGE_SIZE)) {
+-			rv = 0;
++		unsigned int len = min_t(int, data_size, PAGE_SIZE);
++
++		rr = drbd_recv(mdev->tconn, data, len);
++		if (rr != len) {
+ 			if (!signal_pending(current))
+ 				dev_warn(DEV,
+ 					"short read receiving data: read %d expected %d\n",
+-					rr, min_t(int, data_size, PAGE_SIZE));
++					rr, len);
++			err = (rr < 0) ? rr : -EIO;
+ 			break;
  		}
  		data_size -= rr;
  	}
-@@ -1462,12 +1462,12 @@ static int recv_dless_read(struct drbd_conf *mdev, struct drbd_request *req,
- 		drbd_csum_bio(mdev, mdev->tconn->integrity_r_tfm, bio, dig_vv);
- 		if (memcmp(dig_in, dig_vv, dgs)) {
- 			dev_err(DEV, "Digest integrity check FAILED. Broken NICs?\n");
--			return 0;
-+			return -EINVAL;
- 		}
- 	}
- 
- 	D_ASSERT(data_size == 0);
--	return 1;
-+	return 0;
+ 	kunmap(page);
+ 	drbd_pp_free(mdev, page, 0);
+-	return rv;
++	return err;
  }
  
- /* e_end_resync_block() is called via
-@@ -1568,7 +1568,7 @@ static int receive_DataReply(struct drbd_conf *mdev, enum drbd_packet cmd,
- 	/* hlist_del(&req->collision) is done in _req_may_be_done, to avoid
- 	 * special casing it there for the various failure cases.
- 	 * still no race with drbd_fail_pending_reads */
--	ok = recv_dless_read(mdev, req, sector, data_size);
-+	ok = !recv_dless_read(mdev, req, sector, data_size);
+ static int recv_dless_read(struct drbd_conf *mdev, struct drbd_request *req,
+@@ -1596,7 +1598,7 @@ static int receive_RSDataReply(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 		if (__ratelimit(&drbd_ratelimit_state))
+ 			dev_err(DEV, "Can not write resync data to local disk.\n");
  
- 	if (ok)
- 		req_mod(req, DATA_RECEIVED);
+-		ok = drbd_drain_block(mdev, data_size);
++		ok = !drbd_drain_block(mdev, data_size);
+ 
+ 		drbd_send_ack_dp(mdev, P_NEG_ACK, p, data_size);
+ 	}
+@@ -1982,7 +1984,7 @@ static int receive_Data(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 		err = wait_for_and_update_peer_seq(mdev, peer_seq);
+ 		drbd_send_ack_dp(mdev, P_NEG_ACK, p, data_size);
+ 		atomic_inc(&mdev->current_epoch->epoch_size);
+-		return drbd_drain_block(mdev, data_size) && err == 0;
++		return !drbd_drain_block(mdev, data_size) && err == 0;
+ 	}
+ 
+ 	/*
+@@ -2191,7 +2193,7 @@ static int receive_DataRequest(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			    "no local data.\n");
+ 
+ 		/* drain possibly payload */
+-		return drbd_drain_block(mdev, digest_size);
++		return !drbd_drain_block(mdev, digest_size);
+ 	}
+ 
+ 	/* GFP_NOIO, because we must not cause arbitrary write-out: in a DRBD
 -- 
 1.7.4.1
 
