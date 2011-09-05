@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab1IERtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:49:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39903 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab1IERtf (ORCPT
+	id S1752541Ab1IERyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:54:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37050 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752051Ab1IERyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:49:35 -0400
-Date: Mon, 5 Sep 2011 10:52:53 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
-Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Player Thread is not woken after period elapsed
-Message-ID: <20110905105253.2787b91f@infradead.org>
-In-Reply-To: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
-References: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 5 Sep 2011 13:54:16 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/3] regmap: Include the last register in debugfs output
+Date: Mon,  5 Sep 2011 10:54:10 -0700
+Message-Id: <1315245250-24292-3-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Sep 2011 23:08:53 +0530
-"Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com> wrote:
+Off by one in the array iteration.
 
-> Hi,
-> 
-> When I tried to root cause a glitch in the audio playback, I found a
-> weird behavior. 
-> 
-> User thread which invokes the writei function which in turn  invokes
-> a kernel function which waits for the free buffer to write the audio
-> data.  This kernel function adds this thread to a wake(sleep) queue
-> and calls a schedule_timeout (msecs_to_jiffies(10000)).
+Reported-by: Jonathan Cameron <jic23@cam.ac.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-debugfs.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-actually it doesn't... you must be on some really really old kernel or
-something.
-
-
-> 
-> Will you provide some hint on how to go about identifying the root
-> cause?
-
-https://lkml.org/lkml/2011/9/5/201
-
-
-
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 7a8d675..6f39747 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -57,7 +57,7 @@ static ssize_t regmap_map_read_file(struct file *file, char __user *user_buf,
+ 	val_len = 2 * map->format.val_bytes;
+ 	tot_len = reg_len + val_len + 3;      /* : \n */
+ 
+-	for (i = 0; i < map->max_register; i++) {
++	for (i = 0; i < map->max_register + 1; i++) {
+ 		if (!regmap_readable(map, i))
+ 			continue;
+ 
+@@ -132,7 +132,7 @@ static ssize_t regmap_access_read_file(struct file *file,
+ 	reg_len = regmap_calc_reg_len(map->max_register, buf, count);
+ 	tot_len = reg_len + 10; /* ': R W V P\n' */
+ 
+-	for (i = 0; i < map->max_register; i++) {
++	for (i = 0; i < map->max_register + 1; i++) {
+ 		/* Ignore registers which are neither readable nor writable */
+ 		if (!regmap_readable(map, i) && !regmap_writeable(map, i))
+ 			continue;
 -- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+1.7.5.4
+
