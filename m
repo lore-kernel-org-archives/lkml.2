@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab1IEOzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 10:55:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:50563 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab1IEOzp (ORCPT
+	id S1754464Ab1IEO5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 10:57:22 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:52313
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754292Ab1IEO5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 10:55:45 -0400
+	Mon, 5 Sep 2011 10:57:17 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzzz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LR21J8-01-GDZ-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] Fixes for AMD-Vi
+Date: Mon, 5 Sep 2011 16:56:59 +0200
+Message-ID: <1315234621-26694-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Date: Mon, 5 Sep 2011 22:55:45 +0800
-Message-ID: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
-Subject: linux-3.1-0-rc4 bus error ... MPS configured higher than maximum
- supported by the device. If a bus issue occurs, try running with pci=pcie_bus_safe.
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: lkml <linux-kernel@vger.kernel.org>, Jordan_Hargrave@dell.com,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got the following error after upgrading from linux-2.6.36 to
-linux-3.1.0-rc4 on a Dell PowerEdge 2950 that has a PCIe fax card, and
-the system LED panel shows "Bus Fatal Error".
+Hi,
+
+here are two small fixes for the AMD IOMMU driver. They fix a small
+performance problem because of too many unnecessary completion-wait
+commands and a dead-lock when a driver allocates more than 1GB of dma
+address space.
+
+Regards,
+
+	Joerg
 
 
-Is is normal or should I try out "pci=pcie_bus_safe" or "pci=pci" as
-suggested in the dmesg?
-
-There was another error that also showed up on 2.6.36 but I'm ignoring
-that for now ( ... disabling ASPM on pre-1.1 PCIe device.  You can
-enable it with 'pcie_aspm=force')
-
-pci 0000:07:00.0: Dev MPS 128 MPSS 256 MRRS 4096
-pci 0000:07:00.0: Dev MPS 256 MPSS 256 MRRS 128
-pci 0000:08:00.0: Dev MPS 128 MPSS 128 MRRS 128
-pci 0000:08:00.0: MPS configured higher than maximum supported by the
-device.  If a bus issue occurs, try running with pci=pcie_bus_safe.
-pci 0000:08:00.0: Dev MPS 256 MPSS 256 MRRS 128
-Uhhuh. NMI received for unknown reason 31 on CPU 0.
-Do you have a strange power saving mode enabled?
-Dazed and confused, but trying to continue
-pci 0000:07:01.0: Dev MPS 128 MPSS 256 MRRS 4096
-pci 0000:07:01.0: Dev MPS 256 MPSS 256 MRRS 128
-pci 0000:00:06.0: Dev MPS 256 MPSS 256 MRRS 128
-pci 0000:0e:00.0: Dev MPS 128 MPSS 128 MRRS 512
-pci 0000:0e:00.0: MPS configured higher than maximum supported by the
-device.  If a bus issue occurs, try running with pci=pci
-
-
-Thanks,
-Jeff.
