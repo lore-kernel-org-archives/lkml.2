@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab1IEVDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 17:03:24 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:40523 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab1IEVDQ convert rfc822-to-8bit (ORCPT
+	id S1752932Ab1IEVKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 17:10:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55058 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab1IEVKR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 17:03:16 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Date: 05 Sep 2011 22:03:15 +0100
-From: "J.I. Cameron" <jic23@cam.ac.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/3] regmap: Remove bitrotted module_put()s
-Message-ID: <Prayer.1.3.4.1109052203150.9756@hermes-2.csi.cam.ac.uk>
-In-Reply-To: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: Prayer v1.3.4
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
+	Mon, 5 Sep 2011 17:10:17 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.113.217]
+In-Reply-To: <201104191810.18170.arnd@arndb.de>
+References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org>
+ <201104172239.57362.arnd@arndb.de> <4DADB2F1.1080405@linaro.org> <201104191810.18170.arnd@arndb.de>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 6 Sep 2011 00:09:56 +0300
+Message-ID: <CAK=WgbZVuw3ERa+sbm+RwdBL+JrxmZwpQtjk3mBvtUZVbiNu6g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality V2
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 5 2011, Mark Brown wrote:
+Hi Mathieu,
 
->The conversion to per bus type registration functions means we don't need
->to do module_get()s to hold the bus types in memory (their users will link
->to them) so we removed all those calls. This left module_put() calls in
->the cleanup paths which aren't needed and which cause unbalanced puts if
->we ever try to unload anything.
+On Tue, Apr 19, 2011 at 7:10 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 19 April 2011, Mathieu Poirier wrote:
+>> > One more thing I just noticed: the hwspinlock_internal.h file defines
+>> > the hwspinlock->id field as "a global, unique, system-wide, index of
+>> > the lock", but the u8500 hsem just sets it to an integer starting
+>> > at zero. If there are multiple devices providing hwspinlocks in the
+>> > same system, that cannot work.
+>> >
+>> I have to admit I'm not sure of what your asking here.  Hwspinlocks
+>> should be administered by only one entity and this is what this driver
+>> is doing.
+>>
+>> Please get back to me with a clarification.
 >
-Thanks Mark, all three look good to me.  Thanks also for your comments
-on my driver changes, I'll clean it up and repost tomorrow.
+> You could have a system with multiple instances of the hardware block
+> that holds your spinlock. I've seen SMP systems that basically take
+> multiple SOCs and put them into a common address space.
+>
+> More importantly, there could be a device on an external bus that also
+> provides a hwspinlock. The API can deal with this, but your driver will
+> conflict with any other driver trying to do the same.
 
->Reported-by: Jonathan Cameron <jic23@cam.ac.uk>
->Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Looks like this thread has died. Is this driver still needed ?
 
-> drivers/base/regmap/regmap.c |    5 +----
-> 1 files changed, 1 insertions(+), 4 deletions(-)
->
->diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
->index fa2bd89..86b1847 100644
->--- a/drivers/base/regmap/regmap.c
->+++ b/drivers/base/regmap/regmap.c
->@@ -198,15 +198,13 @@ struct regmap *regmap_init(struct device *dev,
-> 	map->work_buf = kmalloc(map->format.buf_size, GFP_KERNEL);
-> 	if (map->work_buf == NULL) {
-> 		ret = -ENOMEM;
->-		goto err_bus;
->+		goto err_map;
-> 	}
-> 
-> 	regmap_debugfs_init(map);
-> 
-> 	return map;
-> 
->-err_bus:
->-	module_put(map->bus->owner);
-> err_map:
-> 	kfree(map);
-> err:
->@@ -221,7 +219,6 @@ void regmap_exit(struct regmap *map)
-> {
-> 	regmap_debugfs_exit(map);
-> 	kfree(map->work_buf);
->-	module_put(map->bus->owner);
-> 	kfree(map);
-> }
-> EXPORT_SYMBOL_GPL(regmap_exit);
->
+If yes, I don't mind picking it up and fixing the outstanding issues,
+as I'm doing some hwspinlock cleanups/fixes right now anyway.
+
+Regards,
+Ohad.
