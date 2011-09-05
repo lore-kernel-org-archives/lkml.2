@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab1IELwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 07:52:51 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:55356 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab1IELr7 convert rfc822-to-8bit (ORCPT
+	id S1753612Ab1IELwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 07:52:06 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:60098 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab1IELp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 07:47:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110905091540.GA22014@infradead.org>
-References: <4E5B4AAF.2040101@samsung.com>
-	<CAF1ivSaveqVs8dGF+HZBytJpUpTJPysUox=qmHDTFQvqBmm+rw@mail.gmail.com>
-	<4E5B65C6.6070300@samsung.com>
-	<CAH9JG2Xfh7JcdBdaCUuD9wFyNPTXg_0JbvVZkEWK5jT2=W3ybA@mail.gmail.com>
-	<CAF1ivSZxAuVaivJyoZ=gnMu-YY7AcnBwCWtD74DqPuYAASxTxA@mail.gmail.com>
-	<CAH9JG2W+wEfpL6baQmvigcH9LRn6p0wTszK+urPKxpNfHsjUCQ@mail.gmail.com>
-	<20110905091540.GA22014@infradead.org>
-Date: Mon, 5 Sep 2011 20:47:58 +0900
-X-Google-Sender-Auth: ao10f6k6sFe3lT_4KDpJEswr4Hk
-Message-ID: <CAH9JG2UevPYDOFycLGbh+zu9CyoDx8N8qnCzMy0Lq2b+06EatA@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] support ioctl for tunable user request
-From: Kyungmin Park <kmpark@infradead.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Lin Ming <lxy@ss.pku.edu.cn>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Sep 2011 07:45:57 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 18/54] drbd: drbd_send_state_req(): Return 0 upon success and an error code otherwise
+Date: Mon,  5 Sep 2011 13:45:09 +0200
+Message-Id: <1315223145-20640-19-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
+References: <1315223145-20640-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+From: Andreas Gruenbacher <agruen@linbit.com>
 
-On Mon, Sep 5, 2011 at 6:15 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> So what the heck is a tunable request supposed to be?  How does it
-> qualify for beeing a generic request/bio type?
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_int.h   |    2 +-
+ drivers/block/drbd/drbd_state.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-The concept is similar with DISCARD request except no-wait for request complete
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index 14c54bf..a375133 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1955,7 +1955,7 @@ static inline int drbd_send_ping_ack(struct drbd_tconn *tconn)
+ static inline int drbd_send_state_req(struct drbd_conf *mdev,
+ 				      union drbd_state mask, union drbd_state val)
+ {
+-	return !_conn_send_state_req(mdev->tconn, mdev->vnr, P_STATE_CHG_REQ, mask, val);
++	return _conn_send_state_req(mdev->tconn, mdev->vnr, P_STATE_CHG_REQ, mask, val);
+ }
+ 
+ static inline int conn_send_state_req(struct drbd_tconn *tconn,
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index 7c548bd..46fee12 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -198,7 +198,7 @@ drbd_req_state(struct drbd_conf *mdev, union drbd_state mask,
+ 			goto abort;
+ 		}
+ 
+-		if (!drbd_send_state_req(mdev, mask, val)) {
++		if (drbd_send_state_req(mdev, mask, val)) {
+ 			rv = SS_CW_FAILED_BY_PEER;
+ 			if (f & CS_VERBOSE)
+ 				print_st_err(mdev, os, ns, rv);
+-- 
+1.7.4.1
 
- #define REQ_DISCARD            (1 << __REQ_DISCARD)
-+#define REQ_TUNE               (1 << __REQ_TUNE)
-
-As it's hard to detect the idle time at device level, user send the
-tune request to device when idle.
-
-Thank you,
-Kyungmin Park
