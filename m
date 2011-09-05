@@ -1,86 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab1IETtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 15:49:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62309 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab1IETtZ (ORCPT
+	id S1753678Ab1IETyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 15:54:16 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:51893 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753087Ab1IETyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 15:49:25 -0400
-Date: Mon, 5 Sep 2011 23:49:08 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110905194908.GA2690@albatros>
-References: <20110831080229.100652529@openvz.org>
- <20110831090612.GA3253@albatros>
- <20110831112642.GI25465@sun>
- <20110831140416.GA17626@shutemov.name>
- <20110831142622.GB30615@sun>
- <20110831151023.5b7e12da.akpm@linux-foundation.org>
- <20110901080508.GF30615@sun>
- <20110902163711.GA3124@albatros>
- <20110905185358.GA2103@albatros>
- <20110905192009.GJ761@sun>
+	Mon, 5 Sep 2011 15:54:12 -0400
+Message-ID: <4E6528CD.7080003@metafoo.de>
+Date: Mon, 05 Sep 2011 21:53:49 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110818 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110905192009.GJ761@sun>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: Fix regmap compilation with CONFIG_DEBUGFS=n
+References: <1315250978-4242-1-git-send-email-lars@metafoo.de> <20110905194254.GA11107@opensource.wolfsonmicro.com>
+In-Reply-To: <20110905194254.GA11107@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 05, 2011 at 23:20 +0400, Cyrill Gorcunov wrote:
-> On Mon, Sep 05, 2011 at 10:53:58PM +0400, Vasiliy Kulikov wrote:
-> ...
-> >  
-> > +static int pid_no_revalidate(struct dentry *dentry, struct nameidata *nd)
-> > +{
-> > +	if (nd && nd->flags & LOOKUP_RCU)
-> > +		return -ECHILD;
-> > +
-> > +	d_drop(dentry);
-> > +	return 0;
-> > +}
-> > +
+On 09/05/2011 09:42 PM, Mark Brown wrote:
+> On Mon, Sep 05, 2011 at 09:29:38PM +0200, Lars-Peter Clausen wrote:
+>> With CONFIG_DEBUGFS disabled the regmap compilation fails with the following
+>> errors:
 > 
-> Thanks Vasiliy! So every lookup will cause dcache to drop previous cached
-> entry and alloc and hash new one instead, pretty dramatic, espec in case
-> of huge number of files mapped ;) Still since it's not time critical operation
-> (at least for now) I tend to agree.
+>> 	drivers/base/regmap/regcache.o: In function `regmap_debugfs_initcall':
+>> 	drivers/base/regmap/internal.h:96: multiple definition of `regmap_debugfs_initcall'
+>> 	drivers/base/regmap/regmap.o:drivers/base/regmap/internal.h:96: first defined here
+>> 	drivers/base/regmap/regcache.o: In function `regmap_debugfs_init':
+> 
+> I sense that this doesn't actually happen in mainline...
 
-Actually, it can be speed up by introducing the same ptrace check.  If
-ptrace check fails, then just drop the dentry, otherwise continue to use
-it.  Then each revalidate would trigger ptrace check instead of full
-drop-lookup-alloc cycle.  If one process actively looks into
-map_files/ or fd/, it will not become significantly slower.  However, it
-will trigger 2 capable() fail alerts in ptrace_may_access() instead of
-one :)
-
-
-But I still see one very nasty issue - one may trigger this ptrace check,
-trigger d_drop() and then look at /proc/slabinfo at "dentry" row.  If
-the number has changed, then the interested dentry existed before the
-revalidate call.  This infoleak is tricky to fix without any race.
-
-Probably it's time to close /proc/slabinfo infoleak?
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Uhm, yes... the patch is still valid though, want me to resubmit it with a
+different patch description?
