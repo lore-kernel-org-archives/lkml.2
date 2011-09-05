@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab1IEJ1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 05:27:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61726 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab1IEJ1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 05:27:12 -0400
-From: Thomas Weber <weber@corscience.de>
-To: linux-kernel@vger.kernel.org
-Cc: peter.ujfalusi@ti.com, sameo@linux.intel.com, linux-omap@vger.kernel.org,
-        broonie@opensource.wolfsonicro.com, tiwai@suse.de,
-        alsa-devel@alsa-project.org, Thomas Weber <weber@corscience.de>
-Subject: [PATCH] ASoC/MFD: twl4030: Fix dependencies for audio codec
-Date: Mon,  5 Sep 2011 11:26:33 +0200
-Message-Id: <1315214793-661-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.6.1
-X-Provags-ID: V02:K0:a0RC5AaUC+OqgRHZYW4soSy2bc0XRi7pkg3kDpOOdmv
- BOSyHcnRFUUvEY4M8h64tDfRwEcZfsyljSTEaqeHtASktopL/w
- HEU1wwnJ8NxktZSy7F/JStYMb1TM1SQmD8J8/KaPgxBjjFtqr/
- tLxzckUnTKRXNiGOFthBujqZyiZ9Gy0UNKmDwWuPjIedk4eS3H
- R2AUWNiaR7Xp9IClB4CLNOK2GFTYlwxDvdPsRPj1K/1LHNIJVp
- CY2FeXpr02MTBoDAh8eoE1I4Rb7YViATBHmNF8NNj89Ua8KI+I
- uYBbAleYXgEsFCV+x/pEJLM00jKh0E6IBLy1+RycDdHBiSclLp
- D2LIds28fztFu4LF5Y6U/GNfiBmv06cplwEoak9YWCTRcjyqA/
- uBe4xKwPyFKng==
+	id S1752111Ab1IEJml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 05:42:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721Ab1IEJmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 05:42:37 -0400
+Message-ID: <4E649986.5060606@redhat.com>
+Date: Mon, 05 Sep 2011 12:42:30 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] KVM fix for 3.1-rc5
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The codec for Devkit8000 (TWL4030)  was not detected except
-when build with CONFIG_SND_SOC_ALL_CODECS.
+Linus, please pull from
 
-twl-core.c still uses the CONFIG_TWL4030_CODEC for
-twl_has_codec().
+   git://github.com/avikivity/kvm.git kvm-updates/3.1
 
-In commit 57fe7251f5bfc4332f24479376de48a1e8ca6211
-the CONFIG_TWL4030_CODEC was renamed
-into CONFIG_MFD_TWL4030_AUDIO, thatswhy the codec
-was not detected.
+to receive a fix for a build failure due to a missing instruction size 
+suffix in inline assembly.
 
-This patch renames the CONFIG_ TWL4030_CODEC into
-CONFIG_MFD_TWL4030_AUDIO in twl-core.c.
+Duncan Sands (1):
+       KVM: Fix instruction size issue in pvclock scaling
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
----
- drivers/mfd/twl-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  arch/x86/include/asm/pvclock.h |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 01ecfee..b8eef46 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -109,7 +109,7 @@
- #define twl_has_watchdog()        false
- #endif
- 
--#if defined(CONFIG_TWL4030_CODEC) || defined(CONFIG_TWL4030_CODEC_MODULE) ||\
-+#if defined(CONFIG_MFD_TWL4030_AUDIO) || defined(CONFIG_MFD_TWL4030_AUDIO_MODULE) ||\
- 	defined(CONFIG_TWL6040_CORE) || defined(CONFIG_TWL6040_CORE_MODULE)
- #define twl_has_codec()	true
- #else
 -- 
-1.7.6.1
+error compiling committee.c: too many arguments to function
 
