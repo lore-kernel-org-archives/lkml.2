@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1IET7W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 15:59:22 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:54128 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753601Ab1IET7Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 15:59:16 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+8qa1g5GG8aSwrQ9BI+pURR6Sh4S05wTOYDR9H2Z
-	C3alaqYyH5GPsV
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] ARM: Footbridge: Sort KConfig Options alphabetically
-Date: Mon,  5 Sep 2011 21:59:08 +0200
-Message-Id: <1315252748-5689-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	id S1753759Ab1IEUBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 16:01:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43447 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753493Ab1IEUBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 16:01:06 -0400
+Message-ID: <4E652A36.1070101@zytor.com>
+Date: Mon, 05 Sep 2011 12:59:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Valdis.Kletnieks@vt.edu,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
+        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
+Subject: Re: RFD: x32 ABI system call numbers
+References: <4E582577.2060805@zytor.com> <2722845.TegCUU4bu0@wuerfel> <CAMe9rOo2JdzerzfTAFER8rZEOGZkp6HxstdT4_3_s0x6UwTPow@mail.gmail.com> <201109051921.59776.arnd@arndb.de> <CAMe9rOpYy5Y27G7anE82+_udYUf6JGA3N=hZdnf_FieLkRXdBA@mail.gmail.com> <CAMe9rOoDjV8UC++X50FtNvgAac23rWu1EEju-3aUE939u8Lv1w@mail.gmail.com>
+In-Reply-To: <CAMe9rOoDjV8UC++X50FtNvgAac23rWu1EEju-3aUE939u8Lv1w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per request of rmk, the options should be sorted alphabetically.
+On 09/05/2011 12:54 PM, H.J. Lu wrote:
+> 
+> Since  readv/writev/preadv/pwritev have const struct iovec *iov, I
+> have to copy the whole array.  compat_sys seems more efficient.
+> 
 
-KernelVersion: Linux next-20110831
+compat_sys for these do exactly what we want, right?
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- arch/arm/mach-footbridge/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
-index c8e7afc..f643ef8 100644
---- a/arch/arm/mach-footbridge/Kconfig
-+++ b/arch/arm/mach-footbridge/Kconfig
-@@ -4,8 +4,8 @@ menu "Footbridge Implementations"
- 
- config ARCH_CATS
- 	bool "CATS"
--	select CLKSRC_I8253
- 	select CLKEVT_I8253
-+	select CLKSRC_I8253
- 	select FOOTBRIDGE_HOST
- 	select ISA
- 	select ISA_DMA
-@@ -61,8 +61,8 @@ config ARCH_EBSA285_HOST
- 
- config ARCH_NETWINDER
- 	bool "NetWinder"
--	select CLKSRC_I8253
- 	select CLKEVT_I8253
-+	select CLKSRC_I8253
- 	select FOOTBRIDGE_HOST
- 	select ISA
- 	select ISA_DMA
--- 
-1.7.3.4
-
+	-hpa
