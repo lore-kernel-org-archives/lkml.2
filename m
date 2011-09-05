@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab1IERya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:54:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37053 "EHLO
+	id S1753166Ab1IERyi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:54:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37054 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752056Ab1IERyQ (ORCPT
+	by vger.kernel.org with ESMTP id S1752122Ab1IERyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:54:16 -0400
+	Mon, 5 Sep 2011 13:54:17 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jonathan Cameron <jic23@cam.ac.uk>, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/3] regmap: Remove bitrotted module_put()s
-Date: Mon,  5 Sep 2011 10:54:08 -0700
-Message-Id: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/3] regmap: Remove redundant owner field from the bus type struct
+Date: Mon,  5 Sep 2011 10:54:09 -0700
+Message-Id: <1315245250-24292-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1315245250-24292-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The conversion to per bus type registration functions means we don't need
-to do module_get()s to hold the bus types in memory (their users will link
-to them) so we removed all those calls. This left module_put() calls in
-the cleanup paths which aren't needed and which cause unbalanced puts if
-we ever try to unload anything.
+No longer used as users link directly with the bus types so the core
+module infrastructure does refcounting for us.
 
-Reported-by: Jonathan Cameron <jic23@cam.ac.uk>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regmap.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/base/regmap/regmap-i2c.c |    1 -
+ drivers/base/regmap/regmap-spi.c |    1 -
+ include/linux/regmap.h           |    3 ---
+ 3 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index fa2bd89..86b1847 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -198,15 +198,13 @@ struct regmap *regmap_init(struct device *dev,
- 	map->work_buf = kmalloc(map->format.buf_size, GFP_KERNEL);
- 	if (map->work_buf == NULL) {
- 		ret = -ENOMEM;
--		goto err_bus;
-+		goto err_map;
- 	}
+diff --git a/drivers/base/regmap/regmap-i2c.c b/drivers/base/regmap/regmap-i2c.c
+index e7d916d..38621ec 100644
+--- a/drivers/base/regmap/regmap-i2c.c
++++ b/drivers/base/regmap/regmap-i2c.c
+@@ -93,7 +93,6 @@ static struct regmap_bus regmap_i2c = {
+ 	.write = regmap_i2c_write,
+ 	.gather_write = regmap_i2c_gather_write,
+ 	.read = regmap_i2c_read,
+-	.owner = THIS_MODULE,
+ };
  
- 	regmap_debugfs_init(map);
+ /**
+diff --git a/drivers/base/regmap/regmap-spi.c b/drivers/base/regmap/regmap-spi.c
+index fe831e3..2560658 100644
+--- a/drivers/base/regmap/regmap-spi.c
++++ b/drivers/base/regmap/regmap-spi.c
+@@ -51,7 +51,6 @@ static struct regmap_bus regmap_spi = {
+ 	.write = regmap_spi_write,
+ 	.gather_write = regmap_spi_gather_write,
+ 	.read = regmap_spi_read,
+-	.owner = THIS_MODULE,
+ 	.read_flag_mask = 0x80,
+ };
  
- 	return map;
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 449e264..9438a89e 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -85,8 +85,6 @@ typedef int (*regmap_hw_read)(struct device *dev,
+  *                if not implemented  on a given device.
+  * @read: Read operation.  Data is returned in the buffer used to transmit
+  *         data.
+- * @owner: Module with the bus implementation, used to pin the implementation
+- *         in memory.
+  * @read_flag_mask: Mask to be set in the top byte of the register when doing
+  *                  a read.
+  */
+@@ -94,7 +92,6 @@ struct regmap_bus {
+ 	regmap_hw_write write;
+ 	regmap_hw_gather_write gather_write;
+ 	regmap_hw_read read;
+-	struct module *owner;
+ 	u8 read_flag_mask;
+ };
  
--err_bus:
--	module_put(map->bus->owner);
- err_map:
- 	kfree(map);
- err:
-@@ -221,7 +219,6 @@ void regmap_exit(struct regmap *map)
- {
- 	regmap_debugfs_exit(map);
- 	kfree(map->work_buf);
--	module_put(map->bus->owner);
- 	kfree(map);
- }
- EXPORT_SYMBOL_GPL(regmap_exit);
 -- 
 1.7.5.4
 
