@@ -1,280 +1,1179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab1IESrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 14:47:04 -0400
-Received: from smtp-out-051.synserver.de ([212.40.185.51]:1083 "HELO
-	smtp-out-049.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751602Ab1IESqv (ORCPT
+	id S1753066Ab1IESyg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 14:54:36 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55576 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab1IESy2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 14:46:51 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 5786
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        Scott Jiang <scott.jiang.linux@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 2/2] ASoC: ad193x: Setup regmap read and write flag masks for SPI
-Date: Mon,  5 Sep 2011 20:46:33 +0200
-Message-Id: <1315248393-31791-2-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1315248393-31791-1-git-send-email-lars@metafoo.de>
-References: <1315248393-31791-1-git-send-email-lars@metafoo.de>
+	Mon, 5 Sep 2011 14:54:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Hbrwj4Sncz7I4LJEricUairA/IUFPTEd2inGnkWM+VyDloT0POul6df/t+FqQuHeS
+	xY2y4ka2zDThr78+KOqmg==
+MIME-Version: 1.0
+In-Reply-To: <20110905180017.GA4677@ghostprotocols.net>
+References: <20110905122402.GA9786@quad>
+	<20110905180017.GA4677@ghostprotocols.net>
+Date: Mon, 5 Sep 2011 20:54:22 +0200
+Message-ID: <CABPqkBQcAYDyyD_Z2fK+q=uX2XP7f8MbUiNg-44iytQg0pJf2Q@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ming.m.lin@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently register read-back for the ad193x is broken, because it expects bit 0
-of the upper byte to be set to indicate a read operation, while the regmap
-default for SPI is to use bit 7.
+On Mon, Sep 5, 2011 at 8:00 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Mon, Sep 05, 2011 at 02:24:02PM +0200, Stephane Eranian escreveu:
+>
+>> The goal of this patch is to include more information
+>> about the host environment into the perf.data so it is
+>> more self-descriptive. Overtime, profiles are captured
+>> on various machines and it becomes hard to track what
+>> was recorded, on what machine and when.
+>
+> I like it and indeed Ingo had requested a subset of this long ago :-)
+>
+Thanks, took me some time to figure out how to do this without breaking
+the format! It's good to know it's not just me feeling the need to have that
+information handy.
 
-This patch also addresses another oddity of the device. There are SPI and I2C
-versions of this codec. In both cases the registers are 8-bit wide and numbered
-from 0x0 to 0x10, but in the SPI case there is also a so called
-'global address' which is prefixed in-front of the register address. The global
-address mimics I2C behaviour and includes a static device address the and the
-read/write flag. This basically extends the register address to an 16-bit value
-numbered from 0x800 to 0x810. These are the register numbers which are
-currently used by the driver. This works, because I2C will ignore the upper
-8 bits of the register, but it is still a bit confusing, as there are no such
-register numbers in the I2C case.
+> Some comments on the implementation below.
+>
+>> This patch provides a way to solve this by extending
+>> the perf.data file with basic information about the
+>> host machine. To add those extensions, we leverage
+>> the feature bits capabilities of the perf.data format.
+>> The change is backward compatible with existing perf.data
+>> files.
+>>
+>> We define the following useful new extensions:
+>>  - HEADER_HOSTNAME: the hostname
+>>  - HEADER_OSRELEASE: the kernel release number
+>>  - HEADER_ARCH: the hw architecture
+>>  - HEADER_CPUID: the cpu model description
+>>  - HEADER_NRCPUS: number of online/avail cpus
+>>  - HEADER_CMDLINE: perf command line
+>>  - HEADER_VERSION: perf version
+>>  - HEADER_TOPOLOGY: cpu topology
+>>  - HEADER_EVENT_DESC: event name + perf_event_attr
+>>
+>> The small granularity for the entries is to make it easier
+>> to extend without breaking backward compatiblity. All entries
+>> are provided as ASCII strings, easy to parse, except for part of
+>> the event description.
+>
+> At some point I thought about a system where we would stash the rpm -qa,
+> etc and stash it in a database, say, git, and then get the SHA1 and add
+> in the perf.data header, so that we later could compare what system
+> components changed that may be related to changes in performance, a
+> project for later :)
+>
+You have a lot more features bit to play with, so we can extend it later.
 
-The approach taken by this patch is to number the registers from 0x00 to 0x10
-and encode the global address for SPI mode into the read and write flag masks.
+>> The capture of the extra information is optional. You need
+>> to pass -I to perf record. Similarly, you need to pass -I
+>> to perf report to print the information.
+>
+> Perhaps its better to make this more transparent and make it not
+> optional?
+>
+Actually, that's how I had it initially, then I changed my mind to be less
+disruptive. But OTOH,  it does not cost much to systematically record
+the info. It's better to have it in there and not use it, than to not save
+it and realize later you need it. I will resubmit without the option.
+I think we can probably do the same with perf report and drop the -I.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>> $ perf record -I noploop 1
+>> noploop for 1 seconds
+>> [ perf record: Woken up 1 times to write data ]
+>> [ perf record: Captured and wrote 0.043 MB perf.data (~1897 samples) ]
+>> $ perf report -I --stdio
+>> #
+>> # captured on: Mon Sep  5 11:40:06 2011
+>> # hostname : quad
+>> # os release : 3.1.0-rc4-tip
+>> # arch : x86_64
+>> # cpuid : Intel(R) Core(TM)2 Quad CPU Q6600 @ 2.40GHz
+>> # nrcpus online : 4
+>> # nrcpus avail : 4
+>> # event = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 9, 10, 11, 12 }
+>> # cmdline : perf record -I noploop 1
+>> # perf version : 3.1.0-rc4
+>> # CPU0 sibling cores  : 0-3
+>> # CPU0 sibling threads: 0
+>> # CPU1 sibling cores  : 0-3
+>> # CPU1 sibling threads: 1
+>> # CPU2 sibling cores  : 0-3
+>> # CPU2 sibling threads: 2
+>> # CPU3 sibling cores  : 0-3
+>> # CPU3 sibling threads: 3
+>> #
+>> # Events: 989  cycles
+>> #
+>> # Overhead  Command      Shared Object                Symbol
+>> # ........  .......  .................  ....................
+>> #
+>>     99.54%  noploop  noploop            [.] noploop
+>>      0.45%  noploop  [kernel.kallsyms]  [k] copy_page_c
+>>      0.01%  noploop  [kernel.kallsyms]  [k] do_raw_spin_unlock
+>>      0.00%  noploop  [kernel.kallsyms]  [k] intel_pmu_enable_all
+>>
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>> ---
+>>
+>> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+>> index 5a520f8..66acb75 100644
+>> --- a/tools/perf/Documentation/perf-record.txt
+>> +++ b/tools/perf/Documentation/perf-record.txt
+>> @@ -148,6 +148,12 @@ an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must ha
+>>  corresponding events, i.e., they always refer to events defined earlier on the command
+>>  line.
+>>
+>> +-I::
+>> +--machine-info::
+>> +Collect additional information about the host machine and kernel in an effort to
+>> +have perf.data be more self-descriptive. The type of information gathered include:
+>> +hostname, cpu model, cpu topology, kernel version, host architecture, event
+>> +descriptions and so on.
+>>  SEE ALSO
+>>  --------
+>>  linkperf:perf-stat[1], linkperf:perf-list[1]
+>> diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+>> index 04253c0..191e10e 100644
+>> --- a/tools/perf/Documentation/perf-report.txt
+>> +++ b/tools/perf/Documentation/perf-report.txt
+>> @@ -134,6 +134,11 @@ OPTIONS
+>>       CPUs are specified with -: 0-2. Default is to report samples on all
+>>       CPUs.
+>>
+>> +-I::
+>> +--show-info::
+>> +     Display information about the perf.data file, incl. hostname,
+>> +     os release, perf version, machine desc.
+>> +
+>>  SEE ALSO
+>>  --------
+>>  linkperf:perf-stat[1]
+>> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+>> index 6b0519f..f2a732f 100644
+>> --- a/tools/perf/builtin-record.c
+>> +++ b/tools/perf/builtin-record.c
+>> @@ -63,6 +63,7 @@ static bool                 sample_address                  =  false;
+>>  static bool                  sample_time                     =  false;
+>>  static bool                  no_buildid                      =  false;
+>>  static bool                  no_buildid_cache                =  false;
+>> +static bool                  machine_infos                   =  false;
+>>  static struct perf_evlist    *evsel_list;
+>>
+>>  static long                  samples                         =      0;
+>> @@ -513,6 +514,18 @@ static int __cmd_record(int argc, const char **argv)
+>>       if (have_tracepoints(&evsel_list->entries))
+>>               perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+>>
+>> +     if (machine_infos) {
+>> +             perf_header__set_feat(&session->header, HEADER_HOSTNAME);
+>> +             perf_header__set_feat(&session->header, HEADER_OSRELEASE);
+>> +             perf_header__set_feat(&session->header, HEADER_ARCH);
+>> +             perf_header__set_feat(&session->header, HEADER_CPUID);
+>> +             perf_header__set_feat(&session->header, HEADER_NRCPUS);
+>> +             perf_header__set_feat(&session->header, HEADER_EVENT_DESC);
+>> +             perf_header__set_feat(&session->header, HEADER_CMDLINE);
+>> +             perf_header__set_feat(&session->header, HEADER_VERSION);
+>> +             perf_header__set_feat(&session->header, HEADER_TOPOLOGY);
+>> +     }
+>> +
+>>       /* 512 kiB: default amount of unprivileged mlocked memory */
+>>       if (mmap_pages == UINT_MAX)
+>>               mmap_pages = (512 * 1024) / page_size;
+>> @@ -774,6 +787,8 @@ const struct option record_options[] = {
+>>       OPT_CALLBACK('G', "cgroup", &evsel_list, "name",
+>>                    "monitor event in cgroup name only",
+>>                    parse_cgroups),
+>> +     OPT_BOOLEAN('I', "machine-info", &machine_infos,
+>> +                 "collect information about host machine and kernel"),
+>>       OPT_END()
+>>  };
+>>
+>> @@ -782,6 +797,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+>>       int err = -ENOMEM;
+>>       struct perf_evsel *pos;
+>>
+>> +     perf_header__set_cmdline(argc, argv);
+>> +
+>>       evsel_list = perf_evlist__new(NULL, NULL);
+>>       if (evsel_list == NULL)
+>>               return -ENOMEM;
+>> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+>> index d7ff277..7721030 100644
+>> --- a/tools/perf/builtin-report.c
+>> +++ b/tools/perf/builtin-report.c
+>> @@ -40,6 +40,7 @@ static char         const *input_name = "perf.data";
+>>  static bool          force, use_tui, use_stdio;
+>>  static bool          hide_unresolved;
+>>  static bool          dont_use_callchains;
+>> +static bool          show_info;
+>>
+>>  static bool          show_threads;
+>>  static struct perf_read_values       show_threads_values;
+>> @@ -276,6 +277,9 @@ static int __cmd_report(void)
+>>                       goto out_delete;
+>>       }
+>>
+>> +     if (show_info)
+>> +             perf_session__fprintf_info(session, stdout);
+>> +
+>>       if (show_threads)
+>>               perf_read_values_init(&show_threads_values);
+>>
+>> @@ -487,6 +491,8 @@ static const struct option options[] = {
+>>       OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+>>                   "Look for files with symbols relative to this directory"),
+>>       OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+>> +     OPT_BOOLEAN('I', "show-info", &show_info,
+>> +                     "display information about perf.data file"),
+>>       OPT_END()
+>>  };
+>>
+>> diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+>> index 4702e24..b382bd5 100644
+>> --- a/tools/perf/builtin.h
+>> +++ b/tools/perf/builtin.h
+>> @@ -4,7 +4,6 @@
+>>  #include "util/util.h"
+>>  #include "util/strbuf.h"
+>>
+>> -extern const char perf_version_string[];
+>>  extern const char perf_usage_string[];
+>>  extern const char perf_more_info_string[];
+>>
+>> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+>> index a5fc660..90f9370 100644
+>> --- a/tools/perf/perf.h
+>> +++ b/tools/perf/perf.h
+>> @@ -9,18 +9,21 @@ void get_term_dimensions(struct winsize *ws);
+>>  #include "../../arch/x86/include/asm/unistd.h"
+>>  #define rmb()                asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+>>  #define cpu_relax()  asm volatile("rep; nop" ::: "memory");
+>> +#define CPUINFO_PROC "model name"
+>>  #endif
+>>
+>>  #if defined(__x86_64__)
+>>  #include "../../arch/x86/include/asm/unistd.h"
+>>  #define rmb()                asm volatile("lfence" ::: "memory")
+>>  #define cpu_relax()  asm volatile("rep; nop" ::: "memory");
+>> +#define CPUINFO_PROC "model name"
+>>  #endif
+>>
+>>  #ifdef __powerpc__
+>>  #include "../../arch/powerpc/include/asm/unistd.h"
+>>  #define rmb()                asm volatile ("sync" ::: "memory")
+>>  #define cpu_relax()  asm volatile ("" ::: "memory");
+>> +#define CPUINFO_PROC "cpu"
+>>  #endif
+>>
+>>  #ifdef __s390__
+>> @@ -37,30 +40,35 @@ void get_term_dimensions(struct winsize *ws);
+>>  # define rmb()               asm volatile("" ::: "memory")
+>>  #endif
+>>  #define cpu_relax()  asm volatile("" ::: "memory")
+>> +#define CPUINFO_PROC "cpu type"
+>>  #endif
+>>
+>>  #ifdef __hppa__
+>>  #include "../../arch/parisc/include/asm/unistd.h"
+>>  #define rmb()                asm volatile("" ::: "memory")
+>>  #define cpu_relax()  asm volatile("" ::: "memory");
+>> +#define CPUINFO_PROC "cpu"
+>>  #endif
+>>
+>>  #ifdef __sparc__
+>>  #include "../../arch/sparc/include/asm/unistd.h"
+>>  #define rmb()                asm volatile("":::"memory")
+>>  #define cpu_relax()  asm volatile("":::"memory")
+>> +#define CPUINFO_PROC "cpu"
+>>  #endif
+>>
+>>  #ifdef __alpha__
+>>  #include "../../arch/alpha/include/asm/unistd.h"
+>>  #define rmb()                asm volatile("mb" ::: "memory")
+>>  #define cpu_relax()  asm volatile("" ::: "memory")
+>> +#define CPUINFO_PROC "cpu model"
+>>  #endif
+>>
+>>  #ifdef __ia64__
+>>  #include "../../arch/ia64/include/asm/unistd.h"
+>>  #define rmb()                asm volatile ("mf" ::: "memory")
+>>  #define cpu_relax()  asm volatile ("hint @pause" ::: "memory")
+>> +#define CPUINFO_PROC "model name"
+>>  #endif
+>>
+>>  #ifdef __arm__
+>> @@ -71,6 +79,7 @@ void get_term_dimensions(struct winsize *ws);
+>>   */
+>>  #define rmb()                ((void(*)(void))0xffff0fa0)()
+>>  #define cpu_relax()  asm volatile("":::"memory")
+>> +#define CPUINFO_PROC "Processor"
+>>  #endif
+>>
+>>  #ifdef __mips__
+>> @@ -171,5 +180,6 @@ struct ip_callchain {
+>>  };
+>>
+>>  extern bool perf_host, perf_guest;
+>> +extern const char perf_version_string[];
+>>
+>>  #endif
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index a03a36b..db17196 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -341,7 +341,8 @@ static bool sample_overlap(const union perf_event *event,
+>>  }
+>>
+>>  int perf_event__parse_sample(const union perf_event *event, u64 type,
+>> -                          int sample_size, bool sample_id_all,
+>> +                          int sample_size,
+>> +                          bool sample_id_all,
+>>                            struct perf_sample *data)
+>>  {
+>>       const u64 *array;
+>> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+>> index b6c1ad1..6bac5ab 100644
+>> --- a/tools/perf/util/header.c
+>> +++ b/tools/perf/util/header.c
+>> @@ -7,6 +7,7 @@
+>>  #include <stdlib.h>
+>>  #include <linux/list.h>
+>>  #include <linux/kernel.h>
+>> +#include <sys/utsname.h>
+>>
+>>  #include "evlist.h"
+>>  #include "evsel.h"
+>> @@ -23,6 +24,9 @@ static bool no_buildid_cache = false;
+>>  static int event_count;
+>>  static struct perf_trace_event_type *events;
+>>
+>> +static int header_argc;
+>> +static const char **header_argv;
+>> +
+>
+> Here I suggest moving these variables to struct perf_header, to avoid
+> globals.
+>
+Will do that.
 
----
-Changes since v1:
-	* Setup regmap in the driver instead the ASoC core.
+>>  int perf_header__push_event(u64 id, const char *name)
+>>  {
+>>       if (strlen(name) > MAX_EVENT_NAME)
+>> @@ -110,6 +114,528 @@ static int write_padded(int fd, const void *bf, size_t count,
+>>       return err;
+>>  }
+>>
+>> +static int do_write_string(int fd, const char *str)
+>> +{
+>> +     int len, olen;
+>> +     int ret;
+>> +
+>> +     olen = strlen(str) + 1;
+>> +     len = ALIGN(olen, NAME_ALIGN);
+>> +
+>> +     /* write len, incl. \0 */
+>> +     ret = do_write(fd, &len, sizeof(len));
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     return write_padded(fd, str, olen, len);
+>> +}
+>> +
+>> +static char *do_read_string(int fd, struct perf_header *ph)
+>> +{
+>> +     ssize_t sz, ret;
+>> +     int len;
+>> +     char *buf;
+>> +
+>> +     sz = read(fd, &len, sizeof(len));
+>> +     if (sz < (ssize_t)sizeof(len))
+>> +             return NULL;
+>> +
+>> +     if (ph->needs_swap)
+>> +             sz = bswap_32(sz);
+>> +
+>> +     buf = malloc(len);
+>> +     if (!buf)
+>> +             return NULL;
+>> +
+>> +     ret = read(fd, buf, len);
+>> +     if (ret == len) {
+>> +             /* reduce to actual size (string is padded) */
+>> +             buf[strlen(buf)] = '\0';
+>> +             return buf;
+>> +     }
+>> +
+>> +     free(buf);
+>> +     return NULL;
+>> +}
+>> +
+>> +int
+>> +perf_header__set_cmdline(int argc, const char **argv)
+>
+> I.e. here the first argument would be struct perf_header *
+>
+okay.
 
-Scott, it would be nice if you could test these changes since I don't have a
-ad1936 board here right now. But I compared the generated SPI signals with what
-is in 3.1 and they look identical, so it should work.
----
- sound/soc/codecs/ad193x.c |   65 +++++++++++++++++++++++++++++++++++++-------
- sound/soc/codecs/ad193x.h |   34 ++++++++++++------------
- 2 files changed, 71 insertions(+), 28 deletions(-)
+>> +{
+>> +     int i;
+>> +
+>> +     header_argc = argc;
+>> +
+>> +     /* do not include NULL termination */
+>> +     header_argv = calloc(argc, sizeof(char *));
+>> +     if (!header_argv)
+>> +             return -ENOMEM;
+>> +
+>> +     /*
+>> +      * must copy argv contents because it gets moved
+>> +      * around during option parsing
+>> +      */
+>> +     for (i = 0; i < argc ; i++)
+>> +             header_argv[i] = argv[i];
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int write_hostname(int fd)
+>> +{
+>> +     struct utsname uts;
+>> +     const char *s = "N/A";
+>> +     int ret;
+>> +
+>> +     ret = uname(&uts);
+>> +     if (ret == 0)
+>> +             s = uts.nodename;
+>> +
+>> +     return do_write_string(fd, s);
+>> +}
+>> +
+>> +static int write_osrelease(int fd)
+>> +{
+>> +     struct utsname uts;
+>> +     const char *s = "N/A";
+>> +     int ret;
+>> +
+>> +     ret = uname(&uts);
+>> +     if (ret == 0)
+>> +             s = uts.release;
+>> +
+>> +     return do_write_string(fd, s);
+>> +}
+>> +
+>> +static int write_arch(int fd)
+>> +{
+>> +     struct utsname uts;
+>> +     const char *s = "N/A";
+>> +     int ret;
+>> +
+>> +     ret = uname(&uts);
+>> +     if (ret == 0)
+>> +             s = uts.machine;
+>> +
+>> +     return do_write_string(fd, s);
+>> +}
+>
+>
+> Can we avoid these multiple uname calls by having just one function for
+> all the uts fields we want in the perf header?
+>
+> I saw the reason for that, ok :-\
+>
+Calling uname() multiple times is not big deal. It's not on the critical
+path. It boils down to granularity. Once you set the format in perf.data
+you cannot change it for a given published bit. So make each bit fine
+grain.
 
-diff --git a/sound/soc/codecs/ad193x.c b/sound/soc/codecs/ad193x.c
-index eedb6f5..f934670 100644
---- a/sound/soc/codecs/ad193x.c
-+++ b/sound/soc/codecs/ad193x.c
-@@ -23,7 +23,7 @@
- 
- /* codec private data */
- struct ad193x_priv {
--	enum snd_soc_control_type control_type;
-+	struct regmap *regmap;
- 	int sysclk;
- };
- 
-@@ -349,10 +349,8 @@ static int ad193x_probe(struct snd_soc_codec *codec)
- 	struct snd_soc_dapm_context *dapm = &codec->dapm;
- 	int ret;
- 
--	if (ad193x->control_type == SND_SOC_I2C)
--		ret = snd_soc_codec_set_cache_io(codec, 8, 8, ad193x->control_type);
--	else
--		ret = snd_soc_codec_set_cache_io(codec, 16, 8, ad193x->control_type);
-+	codec->control_data = ad193x->regmap;
-+	ret = snd_soc_codec_set_cache_io(codec, 0, 0, SND_SOC_REGMAP);
- 	if (ret < 0) {
- 		dev_err(codec->dev, "failed to set cache I/O: %d\n", ret);
- 		return ret;
-@@ -388,6 +386,14 @@ static struct snd_soc_codec_driver soc_codec_dev_ad193x = {
- };
- 
- #if defined(CONFIG_SPI_MASTER)
-+
-+static const struct regmap_config ad193x_spi_regmap_config = {
-+	.val_bits = 8,
-+	.reg_bits = 16,
-+	.read_flag_mask = 0x09,
-+	.write_flag_mask = 0x08,
-+};
-+
- static int __devinit ad193x_spi_probe(struct spi_device *spi)
- {
- 	struct ad193x_priv *ad193x;
-@@ -397,20 +403,36 @@ static int __devinit ad193x_spi_probe(struct spi_device *spi)
- 	if (ad193x == NULL)
- 		return -ENOMEM;
- 
-+	ad193x->regmap = regmap_init_spi(spi, &ad193x_spi_regmap_config);
-+	if (IS_ERR(ad193x->regmap)) {
-+		ret = PTR_ERR(ad193x->regmap);
-+		goto err_free;
-+	}
-+
- 	spi_set_drvdata(spi, ad193x);
--	ad193x->control_type = SND_SOC_SPI;
- 
- 	ret = snd_soc_register_codec(&spi->dev,
- 			&soc_codec_dev_ad193x, &ad193x_dai, 1);
- 	if (ret < 0)
--		kfree(ad193x);
-+		goto err_regmap_exit;
-+
-+	return 0;
-+
-+err_regmap_exit:
-+	regmap_exit(ad193x->regmap);
-+err_free:
-+	kfree(ad193x);
-+
- 	return ret;
- }
- 
- static int __devexit ad193x_spi_remove(struct spi_device *spi)
- {
-+	struct ad193x_priv *ad193x = spi_get_drvdata(spi);
-+
- 	snd_soc_unregister_codec(&spi->dev);
--	kfree(spi_get_drvdata(spi));
-+	regmap_exit(ad193x->regmap);
-+	kfree(ad193x);
- 	return 0;
- }
- 
-@@ -425,6 +447,12 @@ static struct spi_driver ad193x_spi_driver = {
- #endif
- 
- #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
-+
-+static const struct regmap_config ad193x_i2c_regmap_config = {
-+	.val_bits = 8,
-+	.reg_bits = 8,
-+};
-+
- static const struct i2c_device_id ad193x_id[] = {
- 	{ "ad1936", 0 },
- 	{ "ad1937", 0 },
-@@ -442,20 +470,35 @@ static int __devinit ad193x_i2c_probe(struct i2c_client *client,
- 	if (ad193x == NULL)
- 		return -ENOMEM;
- 
-+	ad193x->regmap = regmap_init_i2c(client, &ad193x_i2c_regmap_config);
-+	if (IS_ERR(ad193x->regmap)) {
-+		ret = PTR_ERR(ad193x->regmap);
-+		goto err_free;
-+	}
-+
- 	i2c_set_clientdata(client, ad193x);
--	ad193x->control_type = SND_SOC_I2C;
- 
- 	ret =  snd_soc_register_codec(&client->dev,
- 			&soc_codec_dev_ad193x, &ad193x_dai, 1);
- 	if (ret < 0)
--		kfree(ad193x);
-+		goto err_regmap_exit;
-+
-+	return 0;
-+
-+err_regmap_exit:
-+	regmap_exit(ad193x->regmap);
-+err_free:
-+	kfree(ad193x);
- 	return ret;
- }
- 
- static int __devexit ad193x_i2c_remove(struct i2c_client *client)
- {
-+	struct ad193x_priv *ad193x = i2c_get_clientdata(client);
-+
- 	snd_soc_unregister_codec(&client->dev);
--	kfree(i2c_get_clientdata(client));
-+	regmap_exit(ad193x->regmap);
-+	kfree(ad193x);
- 	return 0;
- }
- 
-diff --git a/sound/soc/codecs/ad193x.h b/sound/soc/codecs/ad193x.h
-index cccc2e8..536e5f2 100644
---- a/sound/soc/codecs/ad193x.h
-+++ b/sound/soc/codecs/ad193x.h
-@@ -9,20 +9,20 @@
- #ifndef __AD193X_H__
- #define __AD193X_H__
- 
--#define AD193X_PLL_CLK_CTRL0    0x800
-+#define AD193X_PLL_CLK_CTRL0    0x00
- #define AD193X_PLL_POWERDOWN           0x01
- #define AD193X_PLL_INPUT_MASK   (~0x6)
- #define AD193X_PLL_INPUT_256    (0 << 1)
- #define AD193X_PLL_INPUT_384    (1 << 1)
- #define AD193X_PLL_INPUT_512    (2 << 1)
- #define AD193X_PLL_INPUT_768    (3 << 1)
--#define AD193X_PLL_CLK_CTRL1    0x801
--#define AD193X_DAC_CTRL0        0x802
-+#define AD193X_PLL_CLK_CTRL1    0x01
-+#define AD193X_DAC_CTRL0        0x02
- #define AD193X_DAC_POWERDOWN           0x01
- #define AD193X_DAC_SERFMT_MASK		0xC0
- #define AD193X_DAC_SERFMT_STEREO	(0 << 6)
- #define AD193X_DAC_SERFMT_TDM		(1 << 6)
--#define AD193X_DAC_CTRL1        0x803
-+#define AD193X_DAC_CTRL1        0x03
- #define AD193X_DAC_2_CHANNELS   0
- #define AD193X_DAC_4_CHANNELS   1
- #define AD193X_DAC_8_CHANNELS   2
-@@ -33,11 +33,11 @@
- #define AD193X_DAC_BCLK_MASTER  (1 << 5)
- #define AD193X_DAC_LEFT_HIGH    (1 << 3)
- #define AD193X_DAC_BCLK_INV     (1 << 7)
--#define AD193X_DAC_CTRL2        0x804
-+#define AD193X_DAC_CTRL2        0x04
- #define AD193X_DAC_WORD_LEN_SHFT        3
- #define AD193X_DAC_WORD_LEN_MASK        0x18
- #define AD193X_DAC_MASTER_MUTE  1
--#define AD193X_DAC_CHNL_MUTE    0x805
-+#define AD193X_DAC_CHNL_MUTE    0x05
- #define AD193X_DACL1_MUTE       0
- #define AD193X_DACR1_MUTE       1
- #define AD193X_DACL2_MUTE       2
-@@ -46,28 +46,28 @@
- #define AD193X_DACR3_MUTE       5
- #define AD193X_DACL4_MUTE       6
- #define AD193X_DACR4_MUTE       7
--#define AD193X_DAC_L1_VOL       0x806
--#define AD193X_DAC_R1_VOL       0x807
--#define AD193X_DAC_L2_VOL       0x808
--#define AD193X_DAC_R2_VOL       0x809
--#define AD193X_DAC_L3_VOL       0x80a
--#define AD193X_DAC_R3_VOL       0x80b
--#define AD193X_DAC_L4_VOL       0x80c
--#define AD193X_DAC_R4_VOL       0x80d
--#define AD193X_ADC_CTRL0        0x80e
-+#define AD193X_DAC_L1_VOL       0x06
-+#define AD193X_DAC_R1_VOL       0x07
-+#define AD193X_DAC_L2_VOL       0x08
-+#define AD193X_DAC_R2_VOL       0x09
-+#define AD193X_DAC_L3_VOL       0x0a
-+#define AD193X_DAC_R3_VOL       0x0b
-+#define AD193X_DAC_L4_VOL       0x0c
-+#define AD193X_DAC_R4_VOL       0x0d
-+#define AD193X_ADC_CTRL0        0x0e
- #define AD193X_ADC_POWERDOWN           0x01
- #define AD193X_ADC_HIGHPASS_FILTER	1
- #define AD193X_ADCL1_MUTE 		2
- #define AD193X_ADCR1_MUTE 		3
- #define AD193X_ADCL2_MUTE 		4
- #define AD193X_ADCR2_MUTE 		5
--#define AD193X_ADC_CTRL1        0x80f
-+#define AD193X_ADC_CTRL1        0x0f
- #define AD193X_ADC_SERFMT_MASK		0x60
- #define AD193X_ADC_SERFMT_STEREO	(0 << 5)
- #define AD193X_ADC_SERFMT_TDM		(1 << 5)
- #define AD193X_ADC_SERFMT_AUX		(2 << 5)
- #define AD193X_ADC_WORD_LEN_MASK	0x3
--#define AD193X_ADC_CTRL2        0x810
-+#define AD193X_ADC_CTRL2        0x10
- #define AD193X_ADC_2_CHANNELS   0
- #define AD193X_ADC_4_CHANNELS   1
- #define AD193X_ADC_8_CHANNELS   2
--- 
-1.7.2.5
+>> +
+>> +static int write_version(int fd)
+>> +{
+>> +     return do_write_string(fd, perf_version_string);
+>> +}
+>> +
+>> +static int write_cpuid(int fd)
+>> +{
+>> +#ifndef CPUINFO_PROC
+>> +#define CPUINFO_PROC NULL
+>> +#endif
+>> +     FILE *file;
+>> +     char buf[256];
+>> +     char *s, *p;
+>> +     const char *search = CPUINFO_PROC;
+>> +
+>> +     file = fopen("/proc/cpuinfo", "r");
+>> +     if (!file)
+>> +             return -1;
+>> +
+>> +     if (search) {
+>> +             while (fgets(buf, 255, file)) {
+>> +                     if (strstr(buf, search))
+>> +                             goto found;
+>> +             }
+>> +     }
+>> +     strcpy(buf, "unknown type");
+>> +found:
+>> +     fclose(file);
+>> +
+>> +     s = buf;
+>> +
+>> +     p = strchr(buf, ':');
+>> +     if (p && *(p+1) == ' ' && *(p+2))
+>> +             s = p + 2;
+>> +     p = strchr(s, '\n');
+>> +     if (p)
+>> +             *p = '\0';
+>> +
+>> +     /* squash extra space characters (branding string) */
+>> +     p = s;
+>> +     while (*p) {
+>> +             if (isspace(*p)) {
+>> +                     char *r = p + 1;
+>> +                     char *q = r;
+>> +                     *p = ' ';
+>> +                     while (*q && isspace(*q))
+>> +                             q++;
+>> +                     if (q != (p+1))
+>> +                             while ((*r++ = *q++));
+>> +             }
+>> +             p++;
+>> +     }
+>> +     return do_write_string(fd, s);
+>> +}
+>> +
+>> +static int write_nrcpus(int fd)
+>> +{
+>> +     int nr;
+>> +
+>> +     /* it is okay to write -1 into the file */
+>> +     nr = sysconf(_SC_NPROCESSORS_CONF);
+>> +     do_write(fd, &nr, sizeof(nr));
+>> +
+>> +     /* it is okay to write -1 into the file */
+>> +     nr = sysconf(_SC_NPROCESSORS_ONLN);
+>> +     do_write(fd, &nr, sizeof(nr));
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int write_event_desc(int fd, struct perf_evlist *evlist)
+>> +{
+>> +     int ret, nre = 0, nri;
+>> +     int sz;
+>> +     struct perf_evsel *attr;
+>> +
+>> +     list_for_each_entry(attr, &evlist->entries, node)
+>> +             nre++;
+>> +
+>> +     /*
+>> +      * write number of events
+>> +      */
+>> +     ret = do_write(fd, &nre, sizeof(nre));
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     /*
+>> +      * size of perf_event_attr struct
+>> +      */
+>> +     sz = sizeof(attr->attr);
+>> +     ret = do_write(fd, &sz, sizeof(sz));
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     list_for_each_entry(attr, &evlist->entries, node) {
+>> +
+>> +             ret = do_write(fd, &attr->attr, sz);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +             /*
+>> +              * write number of unique id per event
+>> +              * there is one id per instance of an event
+>> +              *
+>> +              * copy into an nri to be independent of the
+>> +              * type of ids,
+>> +              */
+>> +             nri = attr->ids;
+>> +             ret = do_write(fd, &nri, sizeof(nri));
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +
+>> +             /*
+>> +              * write event string as passed on cmdline
+>> +              */
+>> +             ret = do_write_string(fd, attr->name);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +             /*
+>> +              * write unique ids for this event
+>> +              */
+>> +             ret = do_write(fd, attr->id, attr->ids * sizeof(u64));
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>> +static int write_cmdline(int fd)
+>> +{
+>> +     int i, ret;
+>> +
+>> +     ret = do_write(fd, &header_argc, sizeof(header_argc));
+>> +     if (ret < 0)
+>> +             return ret;
+>> +     for (i = 0 ; i < header_argc; i++) {
+>> +             ret = do_write_string(fd, header_argv[i]);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>> +static const char *topo_fmt[] = {
+>> +     "/sys/devices/system/cpu/cpu%d/topology/core_siblings_list",
+>> +     "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list",
+>> +     NULL
+>> +};
+>> +
+>> +static int write_topo_cpu(int fd, int cpu)
+>> +{
+>> +     FILE *fp;
+>> +     char filename[256], buf[256], *p;
+>> +     const char *c, **q = topo_fmt;
+>> +     int ret;
+>> +
+>> +     while (*q) {
+>> +
+>> +             c = "N/A";
+>> +
+>> +             sprintf(filename, *q, cpu);
+>> +
+>> +             fp = fopen(filename, "r");
+>> +             if (fp) {
+>> +                     if (fgets(buf, 255, fp)) {
+>> +                             c = buf;
+>> +                             p = strchr(buf, '\n');
+>> +                             if (p)
+>> +                                     *p = '\0';
+>> +                     }
+>> +                     fclose(fp);
+>> +             }
+>> +             ret = do_write_string(fd, c);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +             q++;
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>> +static int write_topology(int fd)
+>> +{
+>> +     int i, nr, ret;
+>> +
+>> +     /* do not write entry on error */
+>> +     nr = sysconf(_SC_NPROCESSORS_CONF);
+>> +     if (nr < 0)
+>> +             return 0;
+>> +
+>> +     do_write(fd, &nr, sizeof(nr));
+>> +
+>> +     for (i = 0; i < nr; i++) {
+>> +             ret = do_write(fd, &i, sizeof(i));
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +
+>> +             ret = write_topo_cpu(fd, i);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>> +static int read_event_desc(int fd, struct perf_header *ph, FILE *fp)
+>> +{
+>> +     struct perf_event_attr attr;
+>> +     uint64_t id;
+>> +     void *buf;
+>> +     char *str;
+>> +     int ret, nre, sz, i, j, nr, msz;
+>> +     /* number of events */
+>> +     ret = read(fd, &nre, sizeof(nre));
+>> +     if (ret != (ssize_t)sizeof(nre))
+>> +             return -1;
+>> +
+>> +     if (ph->needs_swap)
+>> +             nre = bswap_32(nre);
+>> +
+>> +     ret = read(fd, &sz, sizeof(sz));
+>> +     if (ret != (ssize_t)sizeof(sz))
+>> +             return -1;
+>> +
+>> +     if (ph->needs_swap)
+>> +             sz = bswap_32(sz);
+>> +
+>> +     /*
+>> +      * ensure it is at least to our ABI rev
+>> +      */
+>> +     if (sz < (int)sizeof(attr))
+>> +             return -1;
+>> +
+>> +     memset(&attr, 0, sizeof(attr));
+>> +
+>> +     /* read entire region to sync up to next field */
+>> +     buf = malloc(sz);
+>> +     if (!buf)
+>> +             return -1;
+>> +
+>> +     msz = sizeof(attr);
+>> +     if (sz < msz)
+>> +             msz = sz;
+>> +
+>> +     for (i = 0 ; i < nre; i++) {
+>> +
+>> +             ret = read(fd, buf, sz);
+>> +             if (ret != (ssize_t)sz)
+>> +                     goto error;
+>> +
+>> +             if (ph->needs_swap)
+>> +                     perf_event__attr_swap(buf);
+>> +
+>> +             memcpy(&attr, buf, msz);
+>> +
+>> +             ret = read(fd, &nr, sizeof(nr));
+>> +             if (ret != (ssize_t)sizeof(nr))
+>> +                     goto error;
+>> +
+>> +             if (ph->needs_swap)
+>> +                     nr = bswap_32(nr);
+>> +
+>> +             str = do_read_string(fd, ph);
+>> +             fprintf(fp, "# event = %s, ", str);
+>> +             free(str);
+>> +
+>> +             fprintf(fp, "type = %d, config = 0x%"PRIx64
+>> +                         ", config1 = 0x%"PRIx64", config2 = 0x%"PRIx64,
+>> +                             attr.type,
+>> +                             (u64)attr.config,
+>> +                             (u64)attr.config1,
+>> +                             (u64)attr.config2);
+>> +
+>> +             fprintf(fp, ", excl_usr = %d, excl_kern = %d",
+>> +                             attr.exclude_user,
+>> +                             attr.exclude_kernel);
+>> +
+>> +             if (nr)
+>> +                     fprintf(fp, ", id = {");
+>> +
+>> +             for (j = 0 ; j < nr; j++) {
+>> +                     ret = read(fd, &id, sizeof(id));
+>> +                     if (ret != (ssize_t)sizeof(id))
+>> +                             goto error;
+>> +                     if (j)
+>> +                             fputc(',', fp);
+>> +
+>> +                     fprintf(fp, " %"PRIu64, id);
+>> +             }
+>> +             if (nr && j == nr)
+>> +                     fprintf(fp, " }");
+>> +             fputc('\n', fp);
+>> +     }
+>> +     ret = 0;
+>> +error:
+>> +     free(buf);
+>> +     return ret;
+>> +}
+>> +
+>> +static int perf_header_fprintf_info(struct perf_file_section *section,
+>> +                                 struct perf_header *ph __used,
+>
+> No need for __used, as ph is indeed used :-)
+>
+Will drop that.
 
+>> +                                 int feat, int fd, void *data)
+>> +{
+>> +     char *str;
+>> +     FILE *fp = data;
+>> +     int nr, i, j;
+>> +     ssize_t ret;
+>> +
+>> +     if (lseek(fd, section->offset, SEEK_SET) == (off_t)-1) {
+>> +             pr_debug("Failed to lseek to %" PRIu64 " offset for feature "
+>> +                             "%d, continuing...\n", section->offset, feat);
+>> +             return 0;
+>> +     }
+>> +
+>> +     switch (feat) {
+>> +     case HEADER_TRACE_INFO:
+>> +             break;
+>> +     case HEADER_BUILD_ID:
+>> +             break;
+>> +     case HEADER_HOSTNAME:
+>> +             str = do_read_string(fd, ph);
+>> +             fprintf(fp, "# hostname : %s\n", str);
+>> +             free(str);
+>> +             break;
+>> +     case HEADER_OSRELEASE:
+>> +             str = do_read_string(fd, ph);
+>> +             fprintf(fp, "# os release : %s\n", str);
+>> +             free(str);
+>> +             break;
+>> +     case HEADER_ARCH:
+>> +             str = do_read_string(fd, ph);
+>> +             fprintf(fp, "# arch : %s\n", str);
+>> +             free(str);
+>> +             break;
+>> +     case HEADER_CPUID:
+>> +             str = do_read_string(fd, ph);
+>> +             fprintf(fp, "# cpuid : %s\n", str);
+>> +             free(str);
+>> +             break;
+>> +     case HEADER_NRCPUS:
+>> +             ret = read(fd, &nr, sizeof(nr));
+>> +             if (ret != (ssize_t)sizeof(nr))
+>> +                     nr = -1;
+>> +
+>> +             if (ph->needs_swap)
+>> +                     nr = bswap_32(nr);
+>> +
+>> +             fprintf(fp, "# nrcpus online : %d\n", nr);
+>> +
+>> +             if (ph->needs_swap)
+>> +                     nr = bswap_32(nr);
+>> +
+>> +             ret = read(fd, &nr, sizeof(nr));
+>> +             if (ret != (ssize_t)sizeof(nr))
+>> +                     nr = -1;
+>> +             fprintf(fp, "# nrcpus avail : %d\n", nr);
+>> +             break;
+>> +     case HEADER_VERSION:
+>> +             str = do_read_string(fd, ph);
+>> +             fprintf(fp, "# perf version : %s\n", str);
+>> +             free(str);
+>> +             break;
+>> +     case HEADER_CMDLINE:
+>> +             ret = read(fd, &nr, sizeof(nr));
+>> +             if (ret != (ssize_t)sizeof(nr))
+>> +                     return -1;
+>> +
+>> +             if (ph->needs_swap)
+>> +                     nr = bswap_32(nr);
+>> +
+>> +             fprintf(fp, "# cmdline : perf ");
+>> +             for (i = 0; i < nr; i++) {
+>> +                     str = do_read_string(fd, ph);
+>> +                     fprintf(fp, "%s ", str);
+>> +                     free(str);
+>> +             }
+>> +             fputc('\n', fp);
+>> +             break;
+>> +     case HEADER_EVENT_DESC:
+>> +             ret = read_event_desc(fd, ph, fp);
+>> +             if (ret)
+>> +                     return -1;
+>> +             break;
+>> +     case HEADER_TOPOLOGY:
+>> +             ret = read(fd, &nr, sizeof(nr));
+>> +             if (ret != (ssize_t)sizeof(nr))
+>> +                     return -1;
+>> +             if (ph->needs_swap)
+>> +                     nr = bswap_32(nr);
+>> +             for (i = 0; i < nr; i++) {
+>> +                     ret = read(fd, &j, sizeof(j));
+>> +                     if (ret != (ssize_t)sizeof(j))
+>> +                             return -1;
+>> +
+>> +                     if (ph->needs_swap)
+>> +                             j = bswap_32(j);
+>> +
+>> +                     str = do_read_string(fd, ph);
+>> +                     fprintf(fp, "# CPU%d sibling cores  : %s\n", j, str);
+>> +                     free(str);
+>> +
+>> +                     str = do_read_string(fd, ph);
+>> +                     fprintf(fp, "# CPU%d sibling threads: %s\n", j, str);
+>> +                     free(str);
+>> +             }
+>> +             break;
+>> +     default:
+>> +             pr_warning("unknown feature %d\n", feat);
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>> +int perf_header__fprintf_info(struct perf_session *session, FILE *fp __used)
+>> +{
+>> +     int fd = session->fd;
+>> +     struct perf_header *header = &session->header;
+>> +     perf_header__process_sections(header, fd, fp, perf_header_fprintf_info);
+>> +     return 0;
+>> +}
+>> +
+>>  #define dsos__for_each_with_build_id(pos, head)      \
+>>       list_for_each_entry(pos, head, node)    \
+>>               if (!pos->has_build_id)         \
+>> @@ -356,15 +882,36 @@ static bool perf_session__read_build_ids(struct perf_session *session, bool with
+>>       return ret;
+>>  }
+>>
+>> +static int do_write_feat(int fd, struct perf_header *h, int type,
+>> +                      struct perf_file_section **p,
+>> +                      int (*func)(int fd))
+>> +{
+>> +     int err;
+>> +
+>> +     if (perf_header__has_feat(h, type)) {
+>> +
+>> +             (*p)->offset = lseek(fd, 0, SEEK_CUR);
+>> +
+>> +             err = (*func)(fd);
+>> +             if (err < 0) {
+>> +                     pr_debug("failed to write hostname\n");
+>> +                     return -1;
+>> +             }
+>> +             (*p)->size = lseek(fd, 0, SEEK_CUR) - (*p)->offset;
+>> +             (*p)++;
+>> +     }
+>> +     return 0;
+>> +}
+>> +
+>>  static int perf_header__adds_write(struct perf_header *header,
+>>                                  struct perf_evlist *evlist, int fd)
+>>  {
+>>       int nr_sections;
+>>       struct perf_session *session;
+>> -     struct perf_file_section *feat_sec;
+>> +     struct perf_file_section *feat_sec, *p;
+>>       int sec_size;
+>>       u64 sec_start;
+>> -     int idx = 0, err;
+>> +     int err;
+>>
+>>       session = container_of(header, struct perf_session, header);
+>>
+>> @@ -376,7 +923,7 @@ static int perf_header__adds_write(struct perf_header *header,
+>>       if (!nr_sections)
+>>               return 0;
+>>
+>> -     feat_sec = calloc(sizeof(*feat_sec), nr_sections);
+>> +     feat_sec = p = calloc(sizeof(*feat_sec), nr_sections);
+>>       if (feat_sec == NULL)
+>>               return -ENOMEM;
+>>
+>> @@ -386,34 +933,70 @@ static int perf_header__adds_write(struct perf_header *header,
+>>       lseek(fd, sec_start + sec_size, SEEK_SET);
+>>
+>>       if (perf_header__has_feat(header, HEADER_TRACE_INFO)) {
+>> -             struct perf_file_section *trace_sec;
+>> -
+>> -             trace_sec = &feat_sec[idx++];
+>> -
+>>               /* Write trace info */
+>> -             trace_sec->offset = lseek(fd, 0, SEEK_CUR);
+>> +             p->offset = lseek(fd, 0, SEEK_CUR);
+>>               read_tracing_data(fd, &evlist->entries);
+>> -             trace_sec->size = lseek(fd, 0, SEEK_CUR) - trace_sec->offset;
+>> +             p->size = lseek(fd, 0, SEEK_CUR) - p->offset;
+>> +             p++;
+>>       }
+>>
+>>       if (perf_header__has_feat(header, HEADER_BUILD_ID)) {
+>> -             struct perf_file_section *buildid_sec;
+>> -
+>> -             buildid_sec = &feat_sec[idx++];
+>> -
+>>               /* Write build-ids */
+>> -             buildid_sec->offset = lseek(fd, 0, SEEK_CUR);
+>> +             p->offset = lseek(fd, 0, SEEK_CUR);
+>>               err = dsos__write_buildid_table(header, fd);
+>>               if (err < 0) {
+>>                       pr_debug("failed to write buildid table\n");
+>>                       goto out_free;
+>>               }
+>> -             buildid_sec->size = lseek(fd, 0, SEEK_CUR) -
+>> -                                       buildid_sec->offset;
+>> +             p->size = lseek(fd, 0, SEEK_CUR) - p->offset;
+>> +             p++;
+>>               if (!no_buildid_cache)
+>>                       perf_session__cache_build_ids(session);
+>>       }
+>>
+>> +     err = do_write_feat(fd, header, HEADER_HOSTNAME, &p, write_hostname);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>> +     err = do_write_feat(fd, header, HEADER_OSRELEASE, &p, write_osrelease);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>> +     err = do_write_feat(fd, header, HEADER_ARCH, &p, write_arch);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>> +     err = do_write_feat(fd, header, HEADER_CPUID, &p, write_cpuid);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>> +     err = do_write_feat(fd, header, HEADER_NRCPUS, &p, write_nrcpus);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>> +     if (perf_header__has_feat(header, HEADER_EVENT_DESC)) {
+>> +             p->offset = lseek(fd, 0, SEEK_CUR);
+>> +             err = write_event_desc(fd, evlist);
+>> +             if (err < 0) {
+>> +                     pr_debug("failed to write event desc\n");
+>> +                     goto out_free;
+>> +             }
+>> +             p->size = lseek(fd, 0, SEEK_CUR) - p->offset;
+>> +             p++;
+>> +     }
+>> +
+>> +     err = do_write_feat(fd, header, HEADER_CMDLINE, &p, write_cmdline);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>> +     err = do_write_feat(fd, header, HEADER_VERSION, &p, write_version);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>> +     err = do_write_feat(fd, header, HEADER_TOPOLOGY, &p, write_topology);
+>> +     if (err)
+>> +             goto out_free;
+>> +
+>>       lseek(fd, sec_start, SEEK_SET);
+>>       err = do_write(fd, feat_sec, sec_size);
+>>       if (err < 0)
+>> @@ -554,9 +1137,10 @@ static int perf_header__getbuffer64(struct perf_header *header,
+>>  }
+>>
+>>  int perf_header__process_sections(struct perf_header *header, int fd,
+>> +                               void *data,
+>>                                 int (*process)(struct perf_file_section *section,
+>> -                                              struct perf_header *ph,
+>> -                                              int feat, int fd))
+>> +                               struct perf_header *ph,
+>> +                               int feat, int fd, void *data))
+>>  {
+>>       struct perf_file_section *feat_sec;
+>>       int nr_sections;
+>> @@ -584,7 +1168,7 @@ int perf_header__process_sections(struct perf_header *header, int fd,
+>>               if (perf_header__has_feat(header, feat)) {
+>>                       struct perf_file_section *sec = &feat_sec[idx++];
+>>
+>> -                     err = process(sec, header, feat, fd);
+>> +                     err = process(sec, header, feat, fd, data);
+>>                       if (err < 0)
+>>                               break;
+>>               }
+>> @@ -796,7 +1380,7 @@ out:
+>>
+>>  static int perf_file_section__process(struct perf_file_section *section,
+>>                                     struct perf_header *ph,
+>> -                                   int feat, int fd)
+>> +                                   int feat, int fd, void *data __used)
+>>  {
+>>       if (lseek(fd, section->offset, SEEK_SET) == (off_t)-1) {
+>>               pr_debug("Failed to lseek to %" PRIu64 " offset for feature "
+>> @@ -935,7 +1519,8 @@ int perf_session__read_header(struct perf_session *session, int fd)
+>>               event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
+>>       }
+>>
+>> -     perf_header__process_sections(header, fd, perf_file_section__process);
+>> +     perf_header__process_sections(header, fd, NULL,
+>> +                                   perf_file_section__process);
+>>
+>>       lseek(fd, header->data_offset, SEEK_SET);
+>>
+>> diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+>> index 1886256..3c74f7b 100644
+>> --- a/tools/perf/util/header.h
+>> +++ b/tools/perf/util/header.h
+>> @@ -12,6 +12,17 @@
+>>  enum {
+>>       HEADER_TRACE_INFO = 1,
+>>       HEADER_BUILD_ID,
+>> +
+>> +     HEADER_HOSTNAME,
+>> +     HEADER_OSRELEASE,
+>> +     HEADER_ARCH,
+>> +     HEADER_CPUID,
+>> +     HEADER_NRCPUS,
+>> +     HEADER_EVENT_DESC,
+>> +     HEADER_CMDLINE,
+>> +     HEADER_VERSION,
+>> +     HEADER_TOPOLOGY,
+>> +
+>>       HEADER_LAST_FEATURE,
+>>  };
+>>
+>> @@ -68,10 +79,15 @@ void perf_header__set_feat(struct perf_header *header, int feat);
+>>  void perf_header__clear_feat(struct perf_header *header, int feat);
+>>  bool perf_header__has_feat(const struct perf_header *header, int feat);
+>>
+>> +int perf_header__set_cmdline(int argc, const char **argv);
+>> +
+>>  int perf_header__process_sections(struct perf_header *header, int fd,
+>> +                               void *data,
+>>                                 int (*process)(struct perf_file_section *section,
+>> -                                              struct perf_header *ph,
+>> -                                              int feat, int fd));
+>> +                               struct perf_header *ph,
+>> +                               int feat, int fd, void *data));
+>> +
+>> +int perf_header__fprintf_info(struct perf_session *session, FILE *fp);
+>>
+>>  int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+>>                         const char *name, bool is_kallsyms);
+>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+>> index 72458d9..54613a2 100644
+>> --- a/tools/perf/util/session.c
+>> +++ b/tools/perf/util/session.c
+>> @@ -1326,3 +1326,21 @@ int perf_session__cpu_bitmap(struct perf_session *session,
+>>
+>>       return 0;
+>>  }
+>> +
+>> +void perf_session__fprintf_info(struct perf_session *session, FILE *fp)
+>> +{
+>> +     struct stat st;
+>> +     int ret;
+>> +
+>> +     if (session == NULL || fp == NULL)
+>> +             return;
+>> +
+>> +     ret = fstat(session->fd, &st);
+>> +     if (ret == -1)
+>> +             return;
+>> +
+>> +     fprintf(fp, "#\n# captured on: %s", ctime(&st.st_ctime));
+>> +     ret = perf_header__fprintf_info(session, fp);
+>> +     if (ret == 0)
+>> +             fprintf(fp, "#\n");
+>> +}
+>> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+>> index 170601e..33a3a46 100644
+>> --- a/tools/perf/util/session.h
+>> +++ b/tools/perf/util/session.h
+>> @@ -176,4 +176,5 @@ void perf_session__print_ip(union perf_event *event,
+>>  int perf_session__cpu_bitmap(struct perf_session *session,
+>>                            const char *cpu_list, unsigned long *cpu_bitmap);
+>>
+>> +void perf_session__fprintf_info(struct perf_session *session, FILE *fp);
+>>  #endif /* __PERF_SESSION_H */
+>
