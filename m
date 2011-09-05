@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab1IEPdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 11:33:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56688 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab1IEPdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 11:33:37 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        stable@kernel.org
-Subject: [PATCH] leds: ledtrig-timer: fix broken sysfs delay handling
-Date: Mon,  5 Sep 2011 17:33:03 +0200
-Message-Id: <1315236783-513-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	id S1754597Ab1IEPiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 11:38:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47712 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752850Ab1IEPiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 11:38:15 -0400
+Date: Mon, 5 Sep 2011 17:37:58 +0200
+From: Jan Kara <jack@suse.cz>
+To: martin f krafft <madduck@madduck.net>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: Abysmal I/O scheduling with dm-crypt
+Message-ID: <20110905153758.GJ5466@quack.suse.cz>
+References: <20110830071407.GA8165@albatross.gern.madduck.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110830071407.GA8165@albatross.gern.madduck.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix regression introduced by commit
-5ada28bf76752e33dce3d807bf0dfbe6d1b943ad (led-class: always implement
-blinking) which broke sysfs delay handling by not storing the updated
-value. Consequently it was only possible to set one of the delays
-through the sysfs interface as the other delay was automatically
-restored to it's default value. Reading the parameters always gave the
-defaults.
+  Hello,
 
-Cc: stable@kernel.org
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/leds/ledtrig-timer.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+On Tue 30-08-11 09:14:07, martin f krafft wrote:
+> for years I have been plagued by the following problem, and it is
+> almost out of last resort that I am turning to you. I have searched
+> the web over the months. There is talk of dirty_ratios, of caches,
+> and of write throttling, but I have not been able to find a way to
+> fix the problem.
+> 
+> I am using encrypted filesystems (dm-crypt) and the 3.0.0 kernel.
+> Underneath might be a RAID1 or a fast SSD. On top is usually LVM
+> with a few LVs holding the system.
+> 
+> Whenever an I/O-intensive task starts, such as:
+> 
+>   - tar -c or -x
+>   - dd
+>   - rsync
+>   - notmuch
+>   - …
+> 
+> the system becomes unusable for several seconds at a time, at least
+> once or twice per minute. What seems to happen is that Vim or the
+> Shell or Firefox or whatever else completely blocks, waiting for
+> I/O, but Linux is not satisfying those I/O requests because it's
+> busy servicing the aforementioned I/O-intensive task. As a result,
+> Vim or the Shell or Firefox or whatever do not update, forcing me to
+> wait for them to get an I/O service slot.
+>
+> People not running dm-crypt seem unable to reproduce this problem,
+> making me think that it must be due to dm-crypt, and I wouldn't find
+> it hard to imagine, because dm-crypt basically shields the
+> I/O-scheduler of the kernel, doesn't it? Worse, it probably doesn't
+> make any effort of scheduling I/O itself. Note: I know very little
+> about the internals, so please correct me if I am wrong.
+> 
+> I am wondering if this is the case, and if so, what could be done
+> about it.
+  So as a start can you provide blktrace of all the relevant devices (i.e.
+underlying SATA drive and dm-crypt device)? I.e. on my machine with
+dm-crypt I'd run
+  blktrace -d /dev/sda -d /dev/mapper/cr_sda3
 
-diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
-index d87c9d0..328c64c 100644
---- a/drivers/leds/ledtrig-timer.c
-+++ b/drivers/leds/ledtrig-timer.c
-@@ -41,6 +41,7 @@ static ssize_t led_delay_on_store(struct device *dev,
- 
- 	if (count == size) {
- 		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
-+		led_cdev->blink_delay_on = state;
- 		ret = count;
- 	}
- 
-@@ -69,6 +70,7 @@ static ssize_t led_delay_off_store(struct device *dev,
- 
- 	if (count == size) {
- 		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
-+		led_cdev->blink_delay_off = state;
- 		ret = count;
- 	}
- 
+  Also periodically getting list of blocked processes like
+while true; do ps axl | grep " D"; echo "------"; usleep 100000; done
+  might sched some light.
+
+								Honza
 -- 
-1.7.6
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
