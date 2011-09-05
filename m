@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1IERzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:55:36 -0400
-Received: from mail.us.es ([193.147.175.20]:55124 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122Ab1IERza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:55:30 -0400
-Date: Mon, 5 Sep 2011 19:48:47 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: "Anthony G. Basile" <basile@opensource.dyc.edu>
-Cc: davem@davemloft.net, kaber@trash.net, blueness@gentoo.org,
-        gurligebis@gentoo.org, base-system@gentoo.org, kernel@gentoo.org,
-        toolchain@gentoo.org, mchehab@redhat.com, hverkuil@xs4all.nl,
-        laurent.pinchart@ideasonboard.com, arnd@arndb.de, eparis@redhat.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org
-Subject: Re: [PATCH] netfilter: install nf_nat.h and related headers to
- INSTALL_HDR_PATH
-Message-ID: <20110905174847.GB32733@1984>
-References: <1315075784-10163-1-git-send-email-basile@opensource.dyc.edu>
+	id S1753216Ab1IER4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:56:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54946 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab1IER4A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 13:56:00 -0400
+From: Florian Fainelli <f.fainelli@gmail.com>
+To: Johan Hovold <jhovold@gmail.com>
+Subject: Re: [PATCH] leds: ledtrig-timer: fix broken sysfs delay handling
+Date: Mon, 5 Sep 2011 19:55:43 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-11-server; KDE/4.6.2; x86_64; ; )
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+References: <1315236783-513-1-git-send-email-jhovold@gmail.com>
+In-Reply-To: <1315236783-513-1-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315075784-10163-1-git-send-email-basile@opensource.dyc.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109051955.43420.f.fainelli@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 03, 2011 at 02:49:44PM -0400, Anthony G. Basile wrote:
-> Currently nf_nat.h, nf_conntrack_tuple.h and related headers under
-> include/net/netfilter are not installed as part of the public kernel
-> headers.   However, there are userland applications, other than iptables
-> which ships with its own headers, which need these to make use of NAT in
-> the kernel's netfilter API.  For example, miniupnpd, requires them and is
-> forced to search /usr/src/linux when building.
+On Monday 05 September 2011 17:33:03 Johan Hovold wrote:
+> Fix regression introduced by commit
+> 5ada28bf76752e33dce3d807bf0dfbe6d1b943ad (led-class: always implement
+> blinking) which broke sysfs delay handling by not storing the updated
+> value. Consequently it was only possible to set one of the delays
+> through the sysfs interface as the other delay was automatically
+> restored to it's default value. Reading the parameters always gave the
+> defaults.
+> 
+> Cc: stable@kernel.org
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-Could anyone clarify why miniupnpd (or any other application) require
-this?
+Acked-by: Florian Fainelli <florian@openwrt.org>
 
-Those headers contain structure layouts that may change along time
-without further notice, thus breaking backward compatibility.
+> ---
+>  drivers/leds/ledtrig-timer.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/leds/ledtrig-timer.c b/drivers/leds/ledtrig-timer.c
+> index d87c9d0..328c64c 100644
+> --- a/drivers/leds/ledtrig-timer.c
+> +++ b/drivers/leds/ledtrig-timer.c
+> @@ -41,6 +41,7 @@ static ssize_t led_delay_on_store(struct device *dev,
+> 
+>  	if (count == size) {
+>  		led_blink_set(led_cdev, &state, &led_cdev->blink_delay_off);
+> +		led_cdev->blink_delay_on = state;
+>  		ret = count;
+>  	}
+> 
+> @@ -69,6 +70,7 @@ static ssize_t led_delay_off_store(struct device *dev,
+> 
+>  	if (count == size) {
+>  		led_blink_set(led_cdev, &led_cdev->blink_delay_on, &state);
+> +		led_cdev->blink_delay_off = state;
+>  		ret = count;
+>  	}
 
-and BTW, no need to cross-post this message to such a huge list of CC.
-I guess you could simply use netfilter-devel for this.
+-- 
+Florian
