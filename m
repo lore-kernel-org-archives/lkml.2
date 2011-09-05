@@ -1,149 +1,491 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab1IENtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 09:49:12 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52251 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab1IENtJ (ORCPT
+	id S1754108Ab1IENvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 09:51:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39822 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754016Ab1IENvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 09:49:09 -0400
-Date: Mon, 5 Sep 2011 15:48:58 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@linux.intel.com>
-cc: Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>,
-        Magnus Damm <damm@opensource.se>
-Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
- channel ID
-In-Reply-To: <1315228408.26251.75.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
-References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange> 
- <1308916071.1536.4.camel@vkoul-udesk3>  <20110829080047.GJ31809@linux-sh.org>
-  <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com> 
- <1314618931.1606.114.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
-  <1314698522.1606.164.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
-  <1314703426.1606.167.camel@vkoul-udesk3>  <Pine.LNX.4.64.1108301332190.19151@axis700.grange>
-  <Pine.LNX.4.64.1109051002400.1112@axis700.grange> <1315228408.26251.75.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:c1eFj9OG662ThE4lmRW1yifBUQPtJQlyZd62ykUcch2
- 4LEpgeNZXvdDCPukTvxjKzwLnveUuzIBBuRkitBdoXBpZPm5CV
- eBirOPkO1pxbmGdwtBkBCQ0hxSUmOUFRDec8u6s+ltLRPODQpj
- s5J1HalD9P9ZHKlUkEC8aKWdi53DQClretu5q+LF0OYFmtJ/JJ
- rtJG6gWs+IbVL54mxHcEuvr7KKFaSowewnoFWOOZPScuF4nyBY
- BofnIMYS9PyUv4Mxc25nilZDqlHqHcNFe7cUuyPeoZstECg1AV
- i7kpVEWCWuezGZOwNrXXYPSiC9PFhgl5RwFiIKMD581Xr70Fgm
- 4Vik7NfO5dcziDVA4MNas64q6AdYBIM+f/EXtTUMzU4pOH3nQ9
- /iBVgPF/N7zBQ==
+	Mon, 5 Sep 2011 09:51:06 -0400
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Graeme Gregory <gg@slimlogic.co.uk>,
+        Samuel Oritz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/6] regmap: Introduce caching support
+Date: Mon,  5 Sep 2011 14:50:57 +0100
+Message-Id: <1315230662-12401-2-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1315230662-12401-1-git-send-email-dp@opensource.wolfsonmicro.com>
+References: <1315230662-12401-1-git-send-email-dp@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Sep 2011, Vinod Koul wrote:
+This patch introduces caching support for regmap.  The regcache API
+has evolved essentially out of ASoC soc-cache so most of the actual
+caching types (except LZO) have been tested in the past.
 
-> On Mon, 2011-09-05 at 10:04 +0200, Guennadi Liakhovetski wrote:
-> > Hi Vinod
-> > 
-> > On Tue, 30 Aug 2011, Guennadi Liakhovetski wrote:
-> > 
-> > > On Tue, 30 Aug 2011, Vinod Koul wrote:
-> > > 
-> > > > On Tue, 2011-08-30 at 13:20 +0200, Guennadi Liakhovetski wrote:
-> > > > > On Tue, 30 Aug 2011, Vinod Koul wrote:
-> > > > > 
-> > > > > > On Tue, 2011-08-30 at 09:54 +0200, Guennadi Liakhovetski wrote:
-> > > > > > > On Mon, 29 Aug 2011, Vinod Koul wrote:
-> > > > > > > > > >> You should not assign chan->private.
-> > > > > > > > > >> Please move this  to dma_slave_control API
-> > > > > > > > > >
-> > > > > > > > > > I haven't seen any reply to this comment and this patch seems to still be
-> > > > > > > > > > outstanding, is there an updated version of this patch that I've missed?
-> > > > > > > > I don't recall seeing any updated version fixing this 
-> > > > > > > 
-> > > > > > > As a matter of fact, when you say "use dma_slave_control API," you 
-> > > > > > > actually mean the dma_slave_config, right? Then, how is one supposed to 
-> > > > > > > use it in this case? Shall we be issuing a DMA_SLAVE_CONFIG call inside of 
-> > > > > > > the filter and check the return code? The problem is, that not all DMA 
-> > > > > > > controllers on sh-mobile SoCs can service the same slave devices. So, if 
-> > > > > > > we don't check in the filter we might well get an unsuitable DMA channel.
-> > > > > > Here you are assigning to chan->private your specific values, which
-> > > > > > should be moved to the dma_slave_config. 
-> > > > > > But here you are removing the checks, and accepting the first channel
-> > > > > > you got, so how do you find channel is suitable or not.
-> > > > > 
-> > > > > That's done in the driver's .device_alloc_chan_resources() method. It 
-> > > > > checkx the .private pointer, tries to find a suitable channel, if it fails 
-> > > > > - it returns -EINVAL. See 
-> > > > > drivers/dma/shdma.c::sh_dmae_alloc_chan_resources():
-> > > > > 
-> > > > > 	if (param) {
-> > > > > 		const struct sh_dmae_slave_config *cfg;
-> > > > > 
-> > > > > 		cfg = sh_dmae_find_slave(sh_chan, param);
-> > > > > 		if (!cfg) {
-> > > > > 			ret = -EINVAL;
-> > > > > 			goto efindslave;
-> > > > > 		}
-> > > > Now am doubly confused. Are you saying that you are using
-> > > > alloc_chan_resources for doing filtering??
-> > > 
-> > > Let's look at __dma_request_channel(). It iterates over DMA devices and 
-> > > calls private_candidate() for each of them, which in turn calls the filter 
-> > > function for each free channel on the current device. As soon as the 
-> > > filter returns "true" for one of channels, a private candidate is found. 
-> > > And in my filter I do exactly this - assign the .private pointer and 
-> > > return "true." Next dma_chan_get() is called, which in turn calls driver's 
-> > > .device_alloc_chan_resources() method. There we check the previously set 
-> > > .private pointer to see, if this slave can be served by this DMA device. 
-> > > On sh-mobile you can freely configure single DMA channels for different 
-> > > slaves, as long as this slave is at all supported by the current DMA 
-> > > controller device. If this slave can be supported - all is good, we use 
-> > > the private data to configure the channel. If not - we return an error and 
-> > > __dma_request_channel() iterates to the next DMA controller device, which 
-> > > is exactly what we need.
-> > 
-> > Haven't heard back from you after this my reply. Does this mean, that 
-> > you're now satisfied with my explanation and are going to apply my patch?
-> > 
-> Sorry for the delay, we had a v long weekend here in India :)
-> I am still not fully convinced yet. Why do you need the private pointer
-> to be assigned in filter function? Once you return true for a channel in
-> filter function, you should be able to use the channel properly.
-> Assuming that you are calling for correct channel and you have set your
-> private pointer (i don't understand for why/what), then above check
-> seems to be bogus, why should you check again
-> in .device_alloc_chan_resources?
+The purpose of regcache is to optimize in time and space the handling
+of register caches.  Time optimization is achieved by not having to go
+over a slow bus like I2C to read the value of a register, instead it is
+cached locally in memory and can be retrieved faster.  Regarding space
+optimization, some of the cache types are better at packing the caches,
+for e.g. the rbtree and the LZO caches.  By doing this the sacrifice in
+time still wins over doing I2C transactions.
 
-That's exactly what I tried to explain above:
-
-> > > On sh-mobile you can freely configure single DMA channels for different
-> > > slaves, as long as this slave is at all supported by the current DMA
-> > > controller device. If this slave can be supported - all is good, we use
-> > > the private data to configure the channel. If not - we return an error and
-> > > __dma_request_channel() iterates to the next DMA controller device, which
-> > > is exactly what we need.
-
-Let me try again. DMA channels on these DMA controllers are not dedicated. 
-On one such SoC there can be several such DMA controllers of different 
-kinds. One kind is "generic" - it can do memcpy(), besides channels can be 
-freely configured for one of onboard peripherals: serial, mmc, etc. Some 
-of them can also serve external DMA-capable devices. Another kind of DMA 
-controllers, served by the same driver, can only be used with USB 
-controllers. Now, if the MMC driver requests a DMA channel, let's say, the 
-dmaengine core first finds the USB DMA controller. The MMC driver cannot 
-know this. It assigns its MMC DMA configuration to the.private pointer and 
-returns true. Next the DMA driver is entered, it checks the private 
-pointer, sees an MMC channel request, looks at the DMA controller and 
-sees, that it doesn't support MMC. So, .device_alloc_chan_resources() 
-fails. When the same is attempted with a suitable DMA controller, the 
-shdma driver recognises, that the controller can service MMC and uses the 
-data, provided the MMC driver, to configure the DMA channel for MMC.
-
-Thanks
-Guennadi
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ drivers/base/regmap/Makefile   |    2 +-
+ drivers/base/regmap/internal.h |   52 +++++++
+ drivers/base/regmap/regcache.c |  302 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h         |   24 +++-
+ 4 files changed, 374 insertions(+), 6 deletions(-)
+ create mode 100644 drivers/base/regmap/regcache.c
+
+diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
+index 057c13f..2e103ea 100644
+--- a/drivers/base/regmap/Makefile
++++ b/drivers/base/regmap/Makefile
+@@ -1,4 +1,4 @@
+-obj-$(CONFIG_REGMAP) += regmap.o
++obj-$(CONFIG_REGMAP) += regmap.o regcache.o
+ obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
+ obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
+ obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 5ab3fef..dbeccd2 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -17,6 +17,7 @@
+ #include <linux/fs.h>
+ 
+ struct regmap;
++struct regcache_ops;
+ 
+ struct regmap_format {
+ 	size_t buf_size;
+@@ -46,6 +47,40 @@ struct regmap {
+ 	bool (*readable_reg)(struct device *dev, unsigned int reg);
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
++
++	/* regcache specific members */
++	const struct regcache_ops *cache_ops;
++	enum regcache_type cache_type;
++
++	/* number of bytes in cache_defaults_raw */
++	unsigned int cache_size_raw;
++	/* number of bytes per word in cache_defaults_raw */
++	unsigned int cache_word_size;
++	/* number of entries in cache_defaults */
++	unsigned int num_cache_defaults;
++	/* number of entries in cache_defaults_raw */
++	unsigned int num_cache_defaults_raw;
++
++	/* if set, only the cache is modified not the HW */
++	unsigned int cache_only:1;
++	/* if set, only the HW is modified not the cache */
++	unsigned int cache_bypass:1;
++	/* if set, remember to free cache_defaults_raw */
++	unsigned int cache_free:1;
++
++	struct reg_default *cache_defaults;
++	const void *cache_defaults_raw;
++	void *cache;
++};
++
++struct regcache_ops {
++	const char *name;
++	enum regcache_type type;
++	int (*init)(struct regmap *map);
++	int (*exit)(struct regmap *map);
++	int (*read)(struct regmap *map, unsigned int reg, unsigned int *value);
++	int (*write)(struct regmap *map, unsigned int reg, unsigned int value);
++	int (*sync)(struct regmap *map);
+ };
+ 
+ bool regmap_writeable(struct regmap *map, unsigned int reg);
+@@ -63,4 +98,21 @@ void regmap_debugfs_init(struct regmap *map) { }
+ void regmap_debugfs_exit(struct regmap *map) { }
+ #endif
+ 
++/* regcache core declarations */
++int regcache_init(struct regmap *map);
++void regcache_exit(struct regmap *map);
++int regcache_read(struct regmap *map,
++		       unsigned int reg, unsigned int *value);
++int regcache_write(struct regmap *map,
++			unsigned int reg, unsigned int value);
++int regcache_sync(struct regmap *map);
++
++unsigned int regcache_get_val(const void *base, unsigned int idx,
++			      unsigned int word_size);
++bool regcache_set_val(void *base, unsigned int idx,
++		      unsigned int val, unsigned int word_size);
++int regcache_lookup_reg(struct regmap *map, unsigned int reg);
++int regcache_insert_reg(struct regmap *map, unsigned int reg,
++			unsigned int val);
++
+ #endif
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+new file mode 100644
+index 0000000..f26df00
+--- /dev/null
++++ b/drivers/base/regmap/regcache.c
+@@ -0,0 +1,302 @@
++/*
++ * Register cache access API
++ *
++ * Copyright 2011 Wolfson Microelectronics plc
++ *
++ * Author: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/slab.h>
++#include <trace/events/regmap.h>
++
++#include "internal.h"
++
++static const struct regcache_ops *cache_types[] = {
++};
++
++int regcache_init(struct regmap *map)
++{
++	int i, j;
++	int count;
++	int ret;
++	unsigned int val;
++	void *tmp_buf;
++
++	if (map->cache_type == REGCACHE_NONE)
++		return 0;
++
++	for (i = 0; i < ARRAY_SIZE(cache_types); i++)
++		if (cache_types[i]->type == map->cache_type)
++			break;
++
++	if (i == ARRAY_SIZE(cache_types)) {
++		dev_err(map->dev, "Could not match compress type: %d\n",
++			map->cache_type);
++		return -EINVAL;
++	}
++
++	map->cache = NULL;
++	map->cache_ops = cache_types[i];
++
++	if (!map->cache_ops->read ||
++	    !map->cache_ops->write ||
++	    !map->cache_ops->name)
++		return -EINVAL;
++
++	/* We still need to ensure that the cache_defaults
++	 * won't vanish from under us.  We'll need to make
++	 * a copy of it.
++	 */
++	if (map->cache_defaults) {
++		if (!map->num_cache_defaults)
++			return -EINVAL;
++		tmp_buf = kmemdup(map->cache_defaults, map->num_cache_defaults *
++				  sizeof(struct reg_default), GFP_KERNEL);
++		if (!tmp_buf)
++			return -ENOMEM;
++		map->cache_defaults = tmp_buf;
++		goto cache_init;
++	}
++
++	/* Some devices such as PMIC's don't have cache defaults,
++	 * we cope with this by reading back the HW registers and
++	 * crafting the cache defaults by hand.
++	 */
++	if (!map->cache_defaults_raw) {
++		if (!map->num_cache_defaults_raw)
++			return -EINVAL;
++		dev_warn(map->dev, "No cache defaults, reading back from HW\n");
++		tmp_buf = kmalloc(map->cache_size_raw, GFP_KERNEL);
++		if (!tmp_buf)
++			return -EINVAL;
++		ret = regmap_bulk_read(map, 0, tmp_buf,
++				       map->num_cache_defaults_raw);
++		if (ret < 0) {
++			kfree(tmp_buf);
++			return ret;
++		}
++		map->cache_defaults_raw = tmp_buf;
++		map->cache_free = 1;
++	}
++
++	/* calculate the size of cache_defaults */
++	for (count = 0, i = 0; i < map->num_cache_defaults_raw; i++) {
++		val = regcache_get_val(map->cache_defaults_raw,
++				       i, map->cache_word_size);
++		if (!val)
++			continue;
++		count++;
++	}
++
++	map->cache_defaults = kmalloc(count * sizeof(struct reg_default),
++				      GFP_KERNEL);
++	if (!map->cache_defaults)
++		return -ENOMEM;
++
++	/* fill the cache_defaults */
++	map->num_cache_defaults = count;
++	for (i = 0, j = 0; i < map->num_cache_defaults_raw; i++) {
++		val = regcache_get_val(map->cache_defaults_raw,
++				       i, map->cache_word_size);
++		if (!val)
++			continue;
++		map->cache_defaults[j].reg = i;
++		map->cache_defaults[j].def = val;
++		j++;
++	}
++
++cache_init:
++	if (map->cache_ops->init) {
++		dev_dbg(map->dev, "Initializing %s cache\n",
++			map->cache_ops->name);
++		return map->cache_ops->init(map);
++	}
++	return 0;
++}
++
++void regcache_exit(struct regmap *map)
++{
++	if (map->cache_type == REGCACHE_NONE)
++		return;
++
++	BUG_ON(!map->cache_ops);
++
++	kfree(map->cache_defaults);
++	if (map->cache_free)
++		kfree(map->cache_defaults_raw);
++
++	if (map->cache_ops->exit) {
++		dev_dbg(map->dev, "Destroying %s cache\n",
++			map->cache_ops->name);
++		map->cache_ops->exit(map);
++	}
++}
++
++/**
++ * regcache_read: Fetch the value of a given register from the cache.
++ *
++ * @map: map to configure.
++ * @reg: The register index.
++ * @value: The value to be returned.
++ *
++ * Return a negative value on failure, 0 on success.
++ */
++int regcache_read(struct regmap *map,
++		  unsigned int reg, unsigned int *value)
++{
++	unsigned int max_reg;
++
++	if (map->cache_type == REGCACHE_NONE)
++		return 0;
++
++	BUG_ON(!map->cache_ops);
++
++	if (!regmap_readable(map, reg))
++		return 0;
++
++	if (map->max_register)
++		max_reg = map->max_register;
++	else
++		max_reg = map->num_cache_defaults_raw;
++
++
++	if (reg < max_reg && !regmap_volatile(map, reg))
++		return map->cache_ops->read(map, reg, value);
++	return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(regcache_read);
++
++/**
++ * regcache_write: Set the value of a given register in the cache.
++ *
++ * @map: map to configure.
++ * @reg: The register index.
++ * @value: The new register value.
++ *
++ * Return a negative value on failure, 0 on success.
++ */
++int regcache_write(struct regmap *map,
++		   unsigned int reg, unsigned int value)
++{
++	unsigned int max_reg;
++
++	if (map->cache_type == REGCACHE_NONE)
++		return 0;
++
++	BUG_ON(!map->cache_ops);
++
++	if (!regmap_writeable(map, reg))
++		return 0;
++
++	if (map->max_register)
++		max_reg = map->max_register;
++	else
++		max_reg = map->num_cache_defaults_raw;
++
++	if (reg < max_reg && !regmap_volatile(map, reg))
++		return map->cache_ops->write(map, reg, value);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(regcache_write);
++
++/**
++ * regcache_sync: Sync the register cache with the hardware.
++ *
++ * @map: map to configure.
++ *
++ * Any registers that should not be synced should be marked as
++ * volatile.  In general drivers can choose not to use the provided
++ * syncing functionality if they so require.
++ *
++ * Return a negative value on failure, 0 on success.
++ */
++int regcache_sync(struct regmap *map)
++{
++	BUG_ON(!map->cache_ops);
++
++	if (map->cache_ops->sync) {
++		dev_dbg(map->dev, "Syncing %s cache\n",
++			map->cache_ops->name);
++		return map->cache_ops->sync(map);
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(regcache_sync);
++
++bool regcache_set_val(void *base, unsigned int idx,
++		      unsigned int val, unsigned int word_size)
++{
++	switch (word_size) {
++	case 1: {
++		u8 *cache = base;
++		if (cache[idx] == val)
++			return true;
++		cache[idx] = val;
++		break;
++	}
++	case 2: {
++		u16 *cache = base;
++		if (cache[idx] == val)
++			return true;
++		cache[idx] = val;
++		break;
++	}
++	default:
++		BUG();
++	}
++	/* unreachable */
++	return false;
++}
++
++unsigned int regcache_get_val(const void *base, unsigned int idx,
++			      unsigned int word_size)
++{
++	if (!base)
++		return -EINVAL;
++
++	switch (word_size) {
++	case 1: {
++		const u8 *cache = base;
++		return cache[idx];
++	}
++	case 2: {
++		const u16 *cache = base;
++		return cache[idx];
++	}
++	default:
++		BUG();
++	}
++	/* unreachable */
++	return -1;
++}
++
++int regcache_lookup_reg(struct regmap *map, unsigned int reg)
++{
++	unsigned int i;
++
++	for (i = 0; i < map->num_cache_defaults; i++)
++		if (map->cache_defaults[i].reg == reg)
++			return i;
++	return -1;
++}
++
++int regcache_insert_reg(struct regmap *map, unsigned int reg,
++			unsigned int val)
++{
++	void *tmp;
++
++	tmp = krealloc(map->cache_defaults,
++		       (map->num_cache_defaults + 1) * sizeof(struct reg_default),
++		       GFP_KERNEL);
++	if (!tmp)
++		return -ENOMEM;
++	map->cache_defaults = tmp;
++	map->num_cache_defaults++;
++	map->cache_defaults[map->num_cache_defaults - 1].reg = reg;
++	map->cache_defaults[map->num_cache_defaults - 1].def = val;
++	return 0;
++}
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 449e264..7591e01 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -20,6 +20,11 @@
+ struct i2c_client;
+ struct spi_device;
+ 
++/* An enum of all the supported cache types */
++enum regcache_type {
++	REGCACHE_NONE,
++};
++
+ /**
+  * Default value for a register.  We use an array of structs rather
+  * than a simple array as many modern devices have very sparse
+@@ -50,9 +55,14 @@ struct reg_default {
+  *                (eg, a clear on read interrupt status register).
+  *
+  * @max_register: Optional, specifies the maximum valid register index.
+- * @reg_defaults: Power on reset values for registers (for use with
+- *                register cache support).
+- * @num_reg_defaults: Number of elements in reg_defaults.
++ *
++ * @cache_type: The actual cache type.
++ * @cache_defaults: Power on reset values for registers (for use with
++ *                  register cache support).
++ * @num_cache_defaults: Number of elements in cache_defaults.
++ * @cache_defaults_raw: Power on reset values for registers (for use with
++ *                 register cache support).
++ * @num_cache_defaults_raw: Number of elements in cache_defaults_raw.
+  */
+ struct regmap_config {
+ 	int reg_bits;
+@@ -64,8 +74,12 @@ struct regmap_config {
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
+ 
+ 	unsigned int max_register;
+-	struct reg_default *reg_defaults;
+-	int num_reg_defaults;
++
++	enum regcache_type cache_type;
++	struct reg_default *cache_defaults;
++	unsigned int num_cache_defaults;
++	const void *cache_defaults_raw;
++	unsigned int num_cache_defaults_raw;
+ };
+ 
+ typedef int (*regmap_hw_write)(struct device *dev, const void *data,
+-- 
+1.7.6.1
+
