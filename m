@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab1IERXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 13:23:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55494 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab1IERWy (ORCPT
+	id S1752096Ab1IER10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 13:27:26 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60639 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab1IER1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 13:22:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: RFD: x32 ABI system call numbers
-Date: Mon, 5 Sep 2011 19:21:59 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Valdis.Kletnieks@vt.edu,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Kuo <rkuo@codeaurora.org>, Mark Salter <msalter@redhat.com>,
-        Jonas Bonn <jonas@southpole.se>, Tobias Klauser <tklauser@distanz.ch>
-References: <4E582577.2060805@zytor.com> <2722845.TegCUU4bu0@wuerfel> <CAMe9rOo2JdzerzfTAFER8rZEOGZkp6HxstdT4_3_s0x6UwTPow@mail.gmail.com>
-In-Reply-To: <CAMe9rOo2JdzerzfTAFER8rZEOGZkp6HxstdT4_3_s0x6UwTPow@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109051921.59776.arnd@arndb.de>
-X-Provags-ID: V02:K0:iXYuxQLXrPMOI2KKogFYTSgOybQhFrNIEx4wuoJjryV
- qdXrfXasCev7yOwlKvQth2WJS/fC810anTcpmPbvwNqcrM1RkD
- 94Y+yGoQdm3qsTodaW/9wWSeEiOkgj+bVzbeoh4K16iCqQc1zJ
- hAmH89H6BbVSoyQBcnPhqOLfbNjhWdDpcsISFiWtqwhLfA6ooI
- 5MDYxDA5TSq34wXz0ciEikJ83Mp7gBA5Jn8qSt9IyzxyauAuoU
- 415b9Zub6neUTILlsF3VBV2H/X+R9lgUbHdCA8TYyzSqBSi5o/
- USoSZ1DElyaWP8vXWY3GCzPyD6QYCk1zOXwjAID8uC3/OmeMNl
- pxm2OmcFH4WBp5F9mbdk=
+	Mon, 5 Sep 2011 13:27:14 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        dhowells@redhat.com
+Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -V6 02/26] vfs: Add hex format for MAY_* flag values
+Date: Mon,  5 Sep 2011 22:55:24 +0530
+Message-Id: <1315243548-18664-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 September 2011, H.J. Lu wrote:
-> I added MSG_CMSG_COMPAT64 and new compat system calls with
-> 64bit timespec/val to support it.  See the enclosed patch.
+We are going to add more flags and having them in hex format
+make it simpler
 
-Yes, looks good. Maybe there should be an #ifdef in there though,
-so the other compat architectures don't get the extra code.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ include/linux/fs.h |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
-> BTW, I also added
-> 
-> compat_sys_preadv64(unsigned long fd, const struct compat_iovec __user *vec,
->          unsigned long vlen, loff_t pos)
-> compat_sys_pwritev64(unsigned long fd, const struct compat_iovec __user *vec,
->          unsigned long vlen, loff_t pos)
-> 
-> to support 32bit compat_iovec * and 64bit offset.
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index c2bd68f..45744ae 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -58,14 +58,15 @@ struct inodes_stat_t {
+ 
+ #define NR_FILE  8192	/* this can well be larger on a larger system */
+ 
+-#define MAY_EXEC 1
+-#define MAY_WRITE 2
+-#define MAY_READ 4
+-#define MAY_APPEND 8
+-#define MAY_ACCESS 16
+-#define MAY_OPEN 32
+-#define MAY_CHDIR 64
+-#define MAY_NOT_BLOCK 128	/* called from RCU mode, don't block */
++#define MAY_EXEC		0x00000001
++#define MAY_WRITE		0x00000002
++#define MAY_READ		0x00000004
++#define MAY_APPEND		0x00000008
++#define MAY_ACCESS		0x00000010
++#define MAY_OPEN		0x00000020
++#define MAY_CHDIR		0x00000040
++/* called from RCU mode, don't block */
++#define MAY_NOT_BLOCK		0x00000080
+ 
+ /*
+  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
+-- 
+1.7.4.1
 
-Does that make much of a difference? I would guess that it's just as
-easy to do in libc by splitting the pos argument and calling the
-existing compat_sys_preadv. Alternatively, you could make glibc
-copy the iovec array to the 64 bit format and call the native syscall,
-because compat_rw_copy_check_uvector() otherwise just ends up doing that
-in kernel space. Or you just define the x32 libc iovec to 
-
-struct iovec {
-	void *iov_base;
-	unsigned int __pad; /* gets cleared by libc */
-	__u64 iov_len;
-}
-
-	Arnd
