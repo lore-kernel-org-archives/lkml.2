@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab1IFSzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 14:55:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59621 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab1IFSzs convert rfc822-to-8bit (ORCPT
+	id S1754041Ab1IFS5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 14:57:16 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:19571 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab1IFS5I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 14:55:48 -0400
+	Tue, 6 Sep 2011 14:57:08 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=jyfsYntq27R2quPej3iRwA7D4dpeEh6pqfwL1QERVSj8xaKmC4PJY4Pew0wtBOVNw
+	q+k+XwN4cENbpiB0CU9EQ==
 MIME-Version: 1.0
-In-Reply-To: <CACqU3MUC-m7AgEPG2C-V2SVKEhHxdYE8tOSFJvqO9Vq+JJEchw@mail.gmail.com>
-References: <4E65DF36.6040507@parrot.com>
-	<CACqU3MU9nuW+a3AJfY_PRqFH_tgaKtBJrp1pU2xpB_dHYANBXg@mail.gmail.com>
-	<4E663882.4050404@parrot.com>
-	<CACqU3MUC-m7AgEPG2C-V2SVKEhHxdYE8tOSFJvqO9Vq+JJEchw@mail.gmail.com>
-Date: Tue, 6 Sep 2011 14:55:47 -0400
-Message-ID: <CACqU3MUL0t6RYDRDQuiyco-ME=ccW6p+_pEkuRm_e=VAZa5HzA@mail.gmail.com>
-Subject: Re: randconfig broken on choice
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Matthieu CASTET <matthieu.castet@parrot.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+In-Reply-To: <1315017933.21100.55.camel@gandalf.stny.rr.com>
+References: <1313531179-9323-4-git-send-email-vnagarnaik@google.com>
+ <1314062244-2997-1-git-send-email-vnagarnaik@google.com> <1315017933.21100.55.camel@gandalf.stny.rr.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Date: Tue, 6 Sep 2011 11:56:30 -0700
+Message-ID: <CAL26m8K8fusTUyvn_XwBs0OMoxMexG+t=M4kR3sWEOkc3rWOKQ@mail.gmail.com>
+Subject: Re: [PATCH v3] trace: Add per_cpu ring buffer control files
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Sep 6, 2011 at 11:32 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
+On Fri, Sep 2, 2011 at 7:45 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2011-08-22 at 18:17 -0700, Vaibhav Nagarnaik wrote:
+>> +     /* ring buffer pages to update, > 0 to add, < 0 to remove */
+>> +     int                             nr_pages_to_update;
+>> +     struct list_head                new_pages; /* new pages to add */
 >
-> On Tue, Sep 6, 2011 at 11:13 AM, Matthieu CASTET
-> <matthieu.castet@parrot.com> wrote:
->> Hi,
->>
->> Arnaud Lacombe a écrit :
->>> Hi,
->>>
->>> On Tue, Sep 6, 2011 at 4:52 AM, Matthieu CASTET
->>> <matthieu.castet@parrot.com> wrote:
->>>> Hi,
->>>>
->>>> I am using v3.1-rc4 and make randconfig look broken for choice.
->>>> The choice config is always the same or choice entry can have more than one entry.
->>>>
->>> Could you includes testcases showing that behavior, please ?
->> $ make randconfig
->>
->> $ grep -e SLUB -e SLAB -e SLOB .config
->> # CONFIG_SLAB is not set
->> CONFIG_SLUB=y
->> CONFIG_SLOB=y
->> # CONFIG_FAILSLAB is not set
->>
->> We have 2 choice selected (SLUB and SLOB). You may run randconfig (more than one
->> time to get this result).
->>
-> ok, I reproduced it with:
+> There's no reason for the added new_pages. And I'm not sure I even like
+> the 'nr_pages_to_update' either. These are only used for resizing and
+> are just wasting space otherwise.
 >
-> while true; do
->    make randconfig
->    CONFIG_SLAB=; CONFIG_SLOB=; CONFIG_SLUB=
->    source .config
->    if [ "${CONFIG_SLAB}${CONFIG_SLOB}${CONFIG_SLUB}" != "y" ]; then
->        break
->    fi
->    sleep 1
-> done
+> You could allocate an array of numbers for the nr_pages_to_update and
+> use that instead. As for the list, heck, you can still use a single list
+> and pass that around like the original code did.
 >
-> I wonder what set the flags originally...
+
+In this patch's context, I could still use the same logic of having a
+temporary list of new pages and passing the nr_pages_to_update as a
+parameter to the function. However, this comes in handy when considering
+the next 2 patches. The updates are meant to be per_cpu and so having
+separate list of new pages is better to handle. Same thing with
+nr_pages_to_update.
+
+>> +                             update_pages_handler(cpu_buffer);
+>> +                             cpu_buffer->nr_pages = nr_pages;
 >
-This is interesting; I'm always getting the following:
+> The two places that call update_pages_handler() also updates
+> cpu_buffer->nr_pages. Move that to the update_pages_handler() as well.
 
-CONFIG_SLUB=y
-CONFIG_SLOB=y
+Sure. I will update that.
 
-never CONFIG_SLAB and another one. Actually, the default of the choice
-ends up being selected along with the random one. Is this what you
-mean by "we don't take "sym->def[S_DEF_USER].tri" but the "default
-sym->cur.tri"" ? However, I do not see this behavior with the
-following reduced testcase:
+> I'm still very nervous about this patch. I'm going to hold off a release
+> cycle before even giving it up to Ingo.
 
-config EXPERT
-        bool
-        default y
+Sure. I agree that the patches need a rigorous review and your
+confidence in them is a necessary element.
 
-choice
-        prompt "Choose SLAB allocator"
-        default SLUB
+I am working on other projects now, so I might have a slower response
+time. But I will try to update the patch and send it to you in a timely
+manner.
 
-config SLAB
-        bool "SLAB"
 
-config SLUB
-        bool "SLUB (Unqueued Allocator)"
-
-config SLOB
-        depends on EXPERT
-        bool "SLOB (Simple Allocator)"
-
-endchoice
-
-Btw, you say that "we don't clean SYMBOL_VALID for choice entry", but
-AFAIU the code, we explicitly set the not-randomly-chosen choice value
-to 'no', so it's value should be valid.
-
- - Arnaud
+Vaibhav Nagarnaik
