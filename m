@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab1IFPcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:32:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61775 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754950Ab1IFPcB convert rfc822-to-8bit (ORCPT
+	id S1755061Ab1IFPeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:34:00 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:49344 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755030Ab1IFPdz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:32:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E663882.4050404@parrot.com>
-References: <4E65DF36.6040507@parrot.com>
-	<CACqU3MU9nuW+a3AJfY_PRqFH_tgaKtBJrp1pU2xpB_dHYANBXg@mail.gmail.com>
-	<4E663882.4050404@parrot.com>
-Date: Tue, 6 Sep 2011 11:32:00 -0400
-Message-ID: <CACqU3MUC-m7AgEPG2C-V2SVKEhHxdYE8tOSFJvqO9Vq+JJEchw@mail.gmail.com>
-Subject: Re: randconfig broken on choice
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Matthieu CASTET <matthieu.castet@parrot.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Sep 2011 11:33:55 -0400
+From: Mike Sterling <Mike.Sterling@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 1/1] staging: hv: Add support for >2 TB LUN in storage
+ driver.
+Thread-Topic: [PATCH 1/1] staging: hv: Add support for >2 TB LUN in storage
+ driver.
+Thread-Index: AQHMaPE6HyE5989VjkieUpg0tUSbZ5U5jp8AgAbzYPA=
+Date: Tue, 6 Sep 2011 15:33:53 +0000
+Message-ID: <A19259D4D4D02A429E578F34E2857F9D4D212A38@TK5EX14MBXC203.redmond.corp.microsoft.com>
+References: <1314915069-1796-1-git-send-email-mike.sterling@microsoft.com>
+ <20110901222206.GA18024@suse.de>
+In-Reply-To: <20110901222206.GA18024@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.76]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Sep 6, 2011 at 11:13 AM, Matthieu CASTET
-<matthieu.castet@parrot.com> wrote:
-> Hi,
+On Thu, Sep 1, 2011 at 03:22:00PM +0800, Greg KH wrote:
+>On Thu, Sep 01, 2011 at 03:11:09PM -0700, Mike Sterling wrote:
+>> If a LUN larger than 2 TB is attached to a Linux VM on Hyper-V, we 
+>> currently report a maximum size of 2 TB. This patch resolves the issue in hv_storvsc.
+>> Thanks to Robert Scheck <robert.scheck@etes.de> for reporting the issue.
+>> 
+>> Reported-by: Robert Scheck <robert.scheck@etes.de>
+>> Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
+>> Signed-off-by: K.Y. Srinivasan <kys@microsoft.com>
+>> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 >
-> Arnaud Lacombe a écrit :
->> Hi,
->>
->> On Tue, Sep 6, 2011 at 4:52 AM, Matthieu CASTET
->> <matthieu.castet@parrot.com> wrote:
->>> Hi,
->>>
->>> I am using v3.1-rc4 and make randconfig look broken for choice.
->>> The choice config is always the same or choice entry can have more than one entry.
->>>
->> Could you includes testcases showing that behavior, please ?
-> $ make randconfig
+>Much better, thanks.
 >
-> $ grep -e SLUB -e SLAB -e SLOB .config
-> # CONFIG_SLAB is not set
-> CONFIG_SLUB=y
-> CONFIG_SLOB=y
-> # CONFIG_FAILSLAB is not set
->
-> We have 2 choice selected (SLUB and SLOB). You may run randconfig (more than one
-> time to get this result).
->
-ok, I reproduced it with:
+>Is this something that needs to go to older kernels (3.0, 2.6.32, etc.) as well?
 
-while true; do
-    make randconfig
-    CONFIG_SLAB=; CONFIG_SLOB=; CONFIG_SLUB=
-    source .config
-    if [ "${CONFIG_SLAB}${CONFIG_SLOB}${CONFIG_SLUB}" != "y" ]; then
-        break
-    fi
-    sleep 1
-done
+I discussed this with Ky. Given the changes that have taken place with the hv_* code, it's unlikely that this patch would just work with downlevel kernels. I'll need to create separate patches for those kernels.
 
-I wonder what set the flags originally...
-
- - Arnaud
-
-> Matthieu
->
+-Mike
