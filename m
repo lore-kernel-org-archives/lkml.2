@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1IFOri (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 10:47:38 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:50438 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab1IFOrc (ORCPT
+	id S1754459Ab1IFOtR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 10:49:17 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:46725 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab1IFOtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 10:47:32 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-Date: Tue, 6 Sep 2011 16:47:31 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Ravi, Deepthy" <deepthy.ravi@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com> <201109051449.50744.laurent.pinchart@ideasonboard.com> <19F8576C6E063C45BE387C64729E739404EC6BEE0C@dbde02.ent.ti.com>
-In-Reply-To: <19F8576C6E063C45BE387C64729E739404EC6BEE0C@dbde02.ent.ti.com>
+	Tue, 6 Sep 2011 10:49:13 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109061647.31861.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <1315319837.2313.1.camel@deneb.redhat.com>
+References: <1314826214-22428-1-git-send-email-msalter@redhat.com>
+ <1314826214-22428-3-git-send-email-msalter@redhat.com> <CAHkRjk7ZMDQh8sYf7N_4LLS12JU2ps8dkC34gNWNH+-Zp0p8Rg@mail.gmail.com>
+ <1315319837.2313.1.camel@deneb.redhat.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Tue, 6 Sep 2011 15:48:51 +0100
+X-Google-Sender-Auth: EB74P0HU5tuIzqj5RJaaAKlnunI
+Message-ID: <CAHkRjk6TD4Qg-b3nkCE_wwj-tWr-_5evndxo3f+_6gtXEV6gNg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] define ARM-specific dma_coherent_write_sync
+To: Mark Salter <msalter@redhat.com>
+Cc: ming.lei@canonical.com, stern@rowland.harvard.edu,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vaibhav,
+On 6 September 2011 15:37, Mark Salter <msalter@redhat.com> wrote:
+> On Tue, 2011-09-06 at 15:32 +0100, Catalin Marinas wrote:
+>> That's what mb() and wmb() do already, at least on ARM. Why do we need
+>> another API? IIRC from past discussions on linux-arch around barriers,
+>> the mb() should be sufficient in the case of DMA coherent buffers.
+>> That's why macros like writel() on ARM have the mb() added by default
+>> (for cases where you start the DMA transfer by writing to a device
+>> register).
+>
+> For USB EHCI, the driver does not necessarily write to a register after
+> writing to DMA coherent memory. In some cases, the controller polls for
+> information written by the driver.
 
-On Tuesday 06 September 2011 16:12:35 Hiremath, Vaibhav wrote:
-> On Monday, September 05, 2011 6:20 PM Laurent Pinchart wrote:
-> > On Sunday 04 September 2011 15:32:28 Mauro Carvalho Chehab wrote:
-> 
-> <snip>
-> 
-> > I don't mind splitting the config option. An alternative would be to
-> > compile media_entity_init() and media_entity_cleanup() based on
-> > CONFIG_MEDIA_SUPPORT instead of CONFIG_MEDIA_CONTROLLER, but that looks a
-> > bit hackish to me.
-> > 
-> > > Also, I don't like the idea of increasing drivers complexity for the
-> > > existing drivers that work properly without MC. All those core
-> > > conversions that were done in the last two years caused already too much
-> > > instability to them.
-> > > 
-> > > We should really avoid touching on them again for something that won't
-> > > be adding any new feature nor fixing any known bug.
-> > 
-> > We don't have to convert them all in one go right now, we can implement
-> > pad-level operations support selectively when a subdev driver becomes used
-> > by an MC-enabled host/bridge driver.
-> 
-> I completely agree that we should not be duplicating the code just for sake
-> of it.
-> 
-> Isn't the wrapper approach seems feasible here?
-
-As explained in a previous e-mail, a wrapper sounds like a good approach to 
-me, to emulate video::* operations based on pad::* operations. We want to move 
-to pad::* operations, so we should not perform emulation the other way around.
+So as I understand, you would like to force the eviction from the
+write buffer rather than waiting for it to be drained. On ARM, the
+write buffer is eventually flushed, so there is no strict timing
+guarantee. It could take longer if the processor immediately starts
+polling some memory location for example, but in this case a simple
+barrier would do.
 
 -- 
-Regards,
-
-Laurent Pinchart
+Catalin
