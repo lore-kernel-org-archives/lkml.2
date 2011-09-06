@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1IFRDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 13:03:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47608 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab1IFRDM (ORCPT
+	id S1752584Ab1IFRD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 13:03:29 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:56807 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab1IFRDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 13:03:12 -0400
-Message-ID: <4E665249.2040602@canonical.com>
-Date: Tue, 06 Sep 2011 10:03:05 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	Tue, 6 Sep 2011 13:03:21 -0400
+Date: Tue, 6 Sep 2011 13:02:55 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: stefano.stabellini@eu.citrix.com, stefan.bader@canonical.com
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen: disable PV spinlocks on HVM
+Message-ID: <20110906170255.GA29839@dumpdata.com>
+References: <1315327307-392-1-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-To: JJ Ding <jj_ding@emc.com.tw>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw> <20110818074756.GE10093@core.coreip.homeip.net> <4E5FCE58.9060906@canonical.com> <87sjobk711.fsf@emc.com.tw>
-In-Reply-To: <87sjobk711.fsf@emc.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315327307-392-1-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020202.4E665252.0124:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2011 08:22 PM, JJ Ding wrote:
-> Hi Chase,
+On Tue, Sep 06, 2011 at 05:41:47PM +0100, stefano.stabellini@eu.citrix.com wrote:
+> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > 
-> On Thu, 01 Sep 2011 11:26:32 -0700, Chase Douglas <chase.douglas@canonical.com> wrote:
->> On 08/18/2011 12:47 AM, Dmitry Torokhov wrote:
->>> On Thu, Aug 18, 2011 at 09:57:05AM +0800, JJ Ding wrote:
->>>> +
->>>> +		i = (etd->fw_version > 0x020800 &&
->>>> +		     etd->fw_version < 0x020900) ? 1 : 2;
->>>> +		*x_max = (etd->capabilities[1] - i) * 64;
->>>> +		*y_max = (etd->capabilities[2] - i) * 64;
->>>> +		*y_2ft_max = (*y_max - i) * 64 / 4;
->>>
->>> Hmm, we should have the same range for ST and MT data and scale MT data
->>> if it has lower resolution to match ST.
->>
->> I saw this go by a while back and it made sense to me at the time.
->> However, I've had some thoughts that give me pause.
->>
->> Seth Forshee has been working on getting a semi-mt driver for ALPS
->> devices. The ALPS devices have an interesting mechanism for providing
->> multitouch data, but it boils down to having a resolution of only 15
->> values in the X axis and 11 in the Y axis (it looks possible to
->> extrapolate and get double the resolution, but my point will remain).
->>
->> Let's take the X synaptics module as an example of the repercussions of
->> in-kernel axis scaling. The X synaptics module translates two touch
->> drags into scroll events. Synaptics will want to use the highest
->> resolution axis for generating scroll events. If both the MT and ST axes
->> have the same resolution, it might pick the MT axes for scrolling. On
->> ALPS devices with in-kernel axis scaling that would be a bad choice.
-> I don't know about the ALPS devices, but since we already report
-> ABS_MT_POSITION_{X,Y} with elantech v2, we have to do the scaling in
-> kernel anyway to adhere to multitouch protocol. So I would say it is
-> still more appropriate to have the same resolution for ST and MT with
-> respect to elantech v2. Maybe ALPS should be considered an exception to this?
+> PV spinlocks cannot possibly work with the current code because they are
+> enabled after pvops patching has already been done, and because PV
+> spinlocks use a different data structure than native spinlocks so we
+> cannot switch between them dynamically. A spinlock that has been taken
+> once by the native code (__ticket_spin_lock) cannot be taken by
+> __xen_spin_lock even after it has been released.
 
-The multitouch protocol doesn't require scaling of axes to match, at
-least not according to the protocol documentation.
+Let me stick it on my 3.1-rc5 bug-fix list and add stable@kernel.org to it.
 
-I see that the current code scales the coordinates for v2, but it's only
-half-resolution. That's not a huge deal since the resolution of modern
-touchpads is very high. We could leave it scaled to not break abi, if
-that was a concern. However, with new devices it makes sense to state
-the ranges in terms of what the device actually supports. Otherwise,
-we're just masking out useful data that userspace could be using.
+Stefan, if you have some time this week, and can test it - I can also
+stick 'Tested-by' if you would like.
 
--- Chase
+Thinking to send the patches on Friday.
+
+> 
+> Reported-by: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/xen/smp.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index e79dbb9..51339b4 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -522,7 +522,6 @@ static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
+>  	WARN_ON(xen_smp_intr_init(0));
+>  
+>  	xen_init_lock_cpu(0);
+> -	xen_init_spinlocks();
+>  }
+>  
+>  static int __cpuinit xen_hvm_cpu_up(unsigned int cpu)
+> -- 
+> 1.7.2.3
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
