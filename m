@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab1IGGWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:22:46 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40330 "EHLO e7.ny.us.ibm.com"
+	id S1754196Ab1IGGWz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:22:55 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:38342 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755869Ab1IGGWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 02:22:20 -0400
+	id S1755821Ab1IGGWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 02:22:22 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,44 +13,49 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, Wanlong Gao <wanlong.gao@gmail.com>,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 12/55] rcu: Fix pathnames in documentation
-Date: Tue,  6 Sep 2011 11:00:06 -0700
-Message-Id: <1315332049-2604-12-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 13/55] rcu: Don't destroy rcu_torture_boost() callback until it is done
+Date: Tue,  6 Sep 2011 11:00:07 -0700
+Message-Id: <1315332049-2604-13-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110906180015.GA2560@linux.vnet.ibm.com>
 References: <20110906180015.GA2560@linux.vnet.ibm.com>
+x-cbid: 11090706-6078-0000-0000-000000711B16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <wanlong.gao@gmail.com>
+From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-The old "arch/i386" has long since become "arch/x86", so fix the
-RCU documentation accordingly.
+The rcu_torture_boost() cleanup code destroyed debug-objects state before
+waiting for the last RCU callback to be invoked, resulting in rare but
+very real debug-objects warnings.  Move the destruction to after the
+waiting to fix this problem.
 
-Signed-off-by: Wanlong Gao <wanlong.gao@gmail.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/NMI-RCU.txt |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/rcutorture.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/RCU/NMI-RCU.txt b/Documentation/RCU/NMI-RCU.txt
-index 84e4f9c..687777f 100644
---- a/Documentation/RCU/NMI-RCU.txt
-+++ b/Documentation/RCU/NMI-RCU.txt
-@@ -5,8 +5,8 @@ Although RCU is usually used to protect read-mostly data structures,
- it is possible to use RCU to provide dynamic non-maskable interrupt
- handlers, as well as dynamic irq handlers.  This document describes
- how to do this, drawing loosely from Zwane Mwaikambo's NMI-timer
--work in "arch/i386/oprofile/nmi_timer_int.c" and in
--"arch/i386/kernel/traps.c".
-+work in "arch/x86/oprofile/nmi_timer_int.c" and in
-+"arch/x86/kernel/traps.c".
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index e0f39ea..1194d6c 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -796,11 +796,11 @@ checkwait:	rcu_stutter_wait("rcu_torture_boost");
  
- The relevant pieces of code are listed below, each followed by a
- brief explanation.
+ 	/* Clean up and exit. */
+ 	VERBOSE_PRINTK_STRING("rcu_torture_boost task stopping");
+-	destroy_rcu_head_on_stack(&rbi.rcu);
+ 	rcutorture_shutdown_absorb("rcu_torture_boost");
+ 	while (!kthread_should_stop() || rbi.inflight)
+ 		schedule_timeout_uninterruptible(1);
+ 	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
++	destroy_rcu_head_on_stack(&rbi.rcu);
+ 	return 0;
+ }
+ 
 -- 
 1.7.3.2
 
