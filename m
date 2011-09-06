@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab1IFRT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 13:19:26 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:41618 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1IFRTV (ORCPT
+	id S1752907Ab1IFRUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 13:20:49 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:40516 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab1IFRUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 13:19:21 -0400
-Message-ID: <400150a2d773c6b7dd8f88e1b74c883d.squirrel@webmail.greenhost.nl>
-In-Reply-To: <201109060305.19607.vda.linux@googlemail.com>
-References: <201109042311.18793.vda.linux@googlemail.com>
-    <1315231572.1888.35.camel@dhcp-25-63.brq.redhat.com>
-    <a9c6784bdb67df6d1eb8ccbdefec4e7f.squirrel@webmail.greenhost.nl>
-    <201109060305.19607.vda.linux@googlemail.com>
-Date: Tue, 6 Sep 2011 19:19:00 +0200
-Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Denys Vlasenko" <vda.linux@googlemail.com>
-Cc: "Denys Vlasenko" <dvlasenk@redhat.com>, "Oleg Nesterov" <oleg@redhat.com>,
-        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 74bd734068bee68206891dc8710ce62a
+	Tue, 6 Sep 2011 13:20:45 -0400
+Message-id: <4E665653.7070807@acm.org>
+Date: Tue, 06 Sep 2011 12:20:19 -0500
+From: Corey Minyard <minyard@acm.org>
+Reply-to: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21)
+ Gecko/20110831 Thunderbird/3.1.13
+MIME-version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andi Kleen <ak@linux.intel.com>, Jack Steiner <steiner@sgi.com>
+Subject: Re: [V3][PATCH 3/6] x86, nmi: wire up NMI handlers to new routines
+References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
+ <1314290748-23569-4-git-send-email-dzickus@redhat.com>
+In-reply-to: <1314290748-23569-4-git-send-email-dzickus@redhat.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, September 6, 2011 03:05, Denys Vlasenko wrote:
-> On Monday 05 September 2011 19:44, Indan Zupancic wrote:
->> On Mon, September 5, 2011 16:06, Denys Vlasenko wrote:
->> > In case you meant that "if we request group-stop notifications by using
->> > __WALL | WSTOPPED, and we get group-stop notification, and we do
->> > PTRACE_CONT, then task does not run (it sits in group-stop until SIGCONT
->> > or death)", then we have a problem: gdb can't use this interface, it
->> > needs to be able to restart the thread (only one thread, not all of
->> > them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
->> > weird, but it's the real requirement from gdb users.
->> [...]
->> > SIGCONT's side effect of waking up from group-stop can't be blocked.
->> > SIGCONT always wakes up all threads in thread group.
->> > Using SIGCONT to control tracee will race with SIGCONTs from other
->> > sources.
->> >
->> > This makes SIGCONT a too coarse instrument for the job.
->> [...]
->> > Yes... until gdb will want to give user a choice after SIGSTOP: continue
->> > to sit in group-stop until SIGCONT (wasn't possible until
->> > PTRACE_LISTEN), or continue executing (gdb's current behavior if user
->> > uses "continue" command). Therefore, gdb needs a way to do both.
->>
->> Having thought a bit more about this, I think this is less of a problem
->> than it seems, because for a group stop we get a ptrace event for each
->> task, and this should be true for SIGCONT as well. So gdb could also
->> always let the group stop happen, and only when prompted to do so by
->> a user, continue one thread by sending SIGCONT and letting all the other
->> threads hang in trapped state.
+On 08/25/2011 11:45 AM, Don Zickus wrote:
+> diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
+> index 3302586..3dcab56 100644
+> --- a/drivers/char/ipmi/ipmi_watchdog.c
+> +++ b/drivers/char/ipmi/ipmi_watchdog.c
+> @@ -1077,17 +1077,8 @@ static void ipmi_unregister_watchdog(int ipmi_intf)
 >
-> Won't work. SIGCONT unpauses all threads in the thread group,
-> and _then_ it is delivered to one of the threads.
+>   #ifdef HAVE_DIE_NMI
+>   static int
+> -ipmi_nmi(struct notifier_block *self, unsigned long val, void *data)
+> +ipmi_nmi(unsigned int val, struct pt_regs *regs)
+>   {
+> -	struct die_args *args = data;
+> -
+> -	if (val != DIE_NMIUNKNOWN)
+> -		return NOTIFY_OK;
+> -
+> -	/* Hack, if it's a memory or I/O error, ignore it. */
+> -	if (args->err&  0xc0)
+> -		return NOTIFY_OK;
+> -
+>   	/*
+>   	 * If we get here, it's an NMI that's not a memory or I/O
+>   	 * error.  We can't truly tell if it's from IPMI or not
+ From the comment above, this will not actually work for the IPMI 
+watchdog.  The only way to tell if an NMI is from the IPMI controller is 
+to send a message to the IPMI controller and wait for the response.  Not 
+an option in an NMI handler.  So the IPMI watchdog driver relied on it 
+being last, and if nothing else handled the NMI, then it must have been 
+from the IPMI controller.
 
-No, it is delivered to _all_ threads. With current ptrace you never see a
-SIGCONT, but it should behave the same as SIGSTOP, which results in one
-ptrace event for each thread.
+This is stupid, I know, but that's the way it works in IPMI.  If we 
+decide to do what you are suggesting we will have to disable this 
+function in the IPMI watchdog driver or we need some way to say "if 
+nothing else handled the NMI, call this."
 
-> You can block
-> or ignore it, yes, but it is too late: the unpausing already happened,
-> and blocking/ignoring will only affect SIGCONT handler execution,
-> if the program has one.
-
-Not doing PTRACE_CONT will keep the thread hanging in trapped state.
-All threads get a SIGCONT, not only one, so you can pause all threads
-this way.
-
-Greetings,
-
-Indan
-
+-corey
 
