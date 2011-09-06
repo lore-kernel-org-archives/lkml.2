@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1IGAA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 20:00:59 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:39482 "EHLO
+	id S1755470Ab1IGABG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 20:01:06 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:55275 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755334Ab1IGAAw (ORCPT
+	by vger.kernel.org with ESMTP id S1755419Ab1IGAAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 20:00:52 -0400
-X-Sasl-enc: 3KRMK6CYShwnGJXAh4c7ZSlH7uRyvpG8X5jlUf60PKaw 1315353651
-Date: Tue, 6 Sep 2011 16:57:55 -0700
+	Tue, 6 Sep 2011 20:00:54 -0400
+X-Sasl-enc: Pfy3FfGufiWJIH02/WMvqx61S39VdOlSOQ6JQHXjHgoB 1315353653
+Date: Tue, 6 Sep 2011 16:58:46 -0700
 From: Greg KH <greg@kroah.com>
-To: Arvydas Sidorenko <asido4@gmail.com>
+To: Johannes Thumshirn <morbidrsa@googlemail.com>
 Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] one typo fix
-Message-ID: <20110906235755.GA10586@kroah.com>
-References: <1315166085-27984-1-git-send-email-asido4@gmail.com>
+Subject: Re: [PATCH] Staging: comedi: Removed unnecessary "extern" from
+ do_become_nonbusy()
+Message-ID: <20110906235846.GA10622@kroah.com>
+References: <1315150589-3434-1-git-send-email-morbidrsa@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315166085-27984-1-git-send-email-asido4@gmail.com>
+In-Reply-To: <1315150589-3434-1-git-send-email-morbidrsa@googlemail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 04, 2011 at 09:54:43PM +0200, Arvydas Sidorenko wrote:
-> Signed-off-by: Arvydas Sidorenko <asido4@gmail.com>
-> ---
->  drivers/staging/crystalhd/bc_dts_defs.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Sun, Sep 04, 2011 at 05:36:29PM +0200, Johannes Thumshirn wrote:
+> Removed unnecessary "extern" label from do_become_nonbusy() function to make
+> checkpatch.pl happy
 > 
-> diff --git a/drivers/staging/crystalhd/bc_dts_defs.h b/drivers/staging/crystalhd/bc_dts_defs.h
-> index 778e76a..8c6ac3e 100644
-> --- a/drivers/staging/crystalhd/bc_dts_defs.h
-> +++ b/drivers/staging/crystalhd/bc_dts_defs.h
-> @@ -84,7 +84,7 @@ enum BC_SW_OPTIONS {
->  	BC_OPT_LINK_OUT_ENCRYPT		= BC_BIT(29),
->  };
+> Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
+> ---
+>  drivers/staging/comedi/comedi_fops.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+> index e90e3cc..c46db8f 100644
+> --- a/drivers/staging/comedi/comedi_fops.c
+> +++ b/drivers/staging/comedi/comedi_fops.c
+> @@ -101,8 +101,7 @@ static int do_insn_ioctl(struct comedi_device *dev,
+>  static int do_poll_ioctl(struct comedi_device *dev, unsigned int subd,
+>  			 void *file);
 >  
-> -struct BC_REG_CONFIG{
-> +struct BC_REG_CONFIG {
+> -extern void do_become_nonbusy(struct comedi_device *dev,
+> -			      struct comedi_subdevice *s);
+> +void do_become_nonbusy(struct comedi_device *dev, struct comedi_subdevice *s);
 
-That's not a "typo", it's a style fix, right?
+This patch does not apply, what tree did you make it against?
 
-Also, please give a good Subject: line for your emails.  This one would
-be:
-	Subject: staging: crystalhd: bc_dts_defs.h: fix a coding style issue
-
-Care to redo all 3 patches in this series in this way, properly
-describing what you are doing, so I can apply them?
+Please try it against the latest linux-next tree and resend it.
 
 thanks,
 
