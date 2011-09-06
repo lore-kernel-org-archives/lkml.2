@@ -1,115 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1IFOKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 10:10:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38122 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754632Ab1IFOKD convert rfc822-to-8bit (ORCPT
+	id S1754695Ab1IFOMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 10:12:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50846 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab1IFOMt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 10:10:03 -0400
-Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
- area
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Sep 2011 16:09:39 +0200
-In-Reply-To: <20110904020915.942753370@intel.com>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020915.942753370@intel.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 6 Sep 2011 10:12:49 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: "Ravi, Deepthy" <deepthy.ravi@ti.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Tue, 6 Sep 2011 19:42:35 +0530
+Subject: RE: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
+Thread-Topic: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
+Thread-Index: AcxrylGG+5M5gKRuRBiJReCxdvlFKQAqONiw
+Message-ID: <19F8576C6E063C45BE387C64729E739404EC6BEE0C@dbde02.ent.ti.com>
+References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com>
+ <201109041101.05028.laurent.pinchart@ideasonboard.com>
+ <4E637DEC.5080507@infradead.org>
+ <201109051449.50744.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201109051449.50744.laurent.pinchart@ideasonboard.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315318179.14232.3.camel@twins>
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> plain text document attachment (bdi-reserve-area)
-> Keep a minimal pool of dirty pages for each bdi, so that the disk IO
-> queues won't underrun.
+
+> -----Original Message-----
+> From: Laurent Pinchart [mailto:laurent.pinchart@ideasonboard.com]
+> Sent: Monday, September 05, 2011 6:20 PM
+> To: Mauro Carvalho Chehab
+> Cc: Hiremath, Vaibhav; Ravi, Deepthy; linux-media@vger.kernel.org; linux-
+> kernel@vger.kernel.org; linux-omap@vger.kernel.org
+> Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
 > 
-> It's particularly useful for JBOD and small memory system.
+> Hi Mauro,
 > 
-> Note that this is not enough when memory is really tight (in comparison
-> to write bandwidth). It may result in (pos_ratio > 1) at the setpoint
-> and push the dirty pages high. This is more or less intended because the
-> bdi is in the danger of IO queue underflow. However the global dirty
-> pages, when pushed close to limit, will eventually conteract our desire
-> to push up the low bdi_dirty.
+> On Sunday 04 September 2011 15:32:28 Mauro Carvalho Chehab wrote:
+> > Em 04-09-2011 06:01, Laurent Pinchart escreveu:
+> > > On Sunday 04 September 2011 00:21:38 Mauro Carvalho Chehab wrote:
+> > >> Em 24-08-2011 10:25, Laurent Pinchart escreveu:
+> > >>> On Wednesday 24 August 2011 14:19:01 Hiremath, Vaibhav wrote:
+> > >>>> On Wednesday, August 24, 2011 5:00 PM Laurent Pinchart wrote:
+> > >>>>> On Wednesday 24 August 2011 13:21:27 Ravi, Deepthy wrote:
+> > >>>>>> On Wed, Aug 24, 2011 at 4:47 PM, Laurent Pinchart wrote:
+> > >>>>>>> On Friday 19 August 2011 15:48:45 Deepthy Ravi wrote:
+> > >>>>>>>> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> > >>>>>>>>
+> > >>>>>>>> Fix the build break caused when CONFIG_MEDIA_CONTROLLER
+> > >>>>>>>> option is disabled and if any sensor driver has to be used
+> > >>>>>>>> between MC and non MC framework compatible devices.
+> > >>>>>>>>
+> > >>>>>>>> For example,if tvp514x video decoder driver migrated to
+> > >>>>>>>> MC framework is being built without CONFIG_MEDIA_CONTROLLER
+> > >>>>>>>> option enabled, the following error messages will result.
+> > >>>>>>>> drivers/built-in.o: In function `tvp514x_remove':
+> > >>>>>>>> drivers/media/video/tvp514x.c:1285: undefined reference to
+> > >>>>>>>> `media_entity_cleanup'
+> > >>>>>>>> drivers/built-in.o: In function `tvp514x_probe':
+> > >>>>>>>> drivers/media/video/tvp514x.c:1237: undefined reference to
+> > >>>>>>>> `media_entity_init'
+<snip>
+> I don't mind splitting the config option. An alternative would be to
+> compile
+> media_entity_init() and media_entity_cleanup() based on
+> CONFIG_MEDIA_SUPPORT
+> instead of CONFIG_MEDIA_CONTROLLER, but that looks a bit hackish to me.
 > 
-> In low memory JBOD tests we do see disks under-utilized from time to
-> time. The additional fix may be to add a BDI_async_underrun flag to
-> indicate that the block write queue is running low and it's time to
-> quickly fill the queue by unthrottling the tasks regardless of the
-> global limit.
+> > Also, I don't like the idea of increasing drivers complexity for the
+> > existing drivers that work properly without MC. All those core
+> conversions
+> > that were done in the last two years caused already too much instability
+> > to them.
+> >
+> > We should really avoid touching on them again for something that won't
+> be
+> > adding any new feature nor fixing any known bug.
 > 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/page-writeback.c |   26 ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
+> We don't have to convert them all in one go right now, we can implement
+> pad-
+> level operations support selectively when a subdev driver becomes used by
+> an
+> MC-enabled host/bridge driver.
 > 
-> --- linux-next.orig/mm/page-writeback.c	2011-08-26 20:12:19.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2011-08-26 20:13:21.000000000 +0800
-> @@ -487,6 +487,16 @@ unsigned long bdi_dirty_limit(struct bac
->   *   0 +------------.------------------.----------------------*------------->
->   *           freerun^          setpoint^                 limit^   dirty pages
->   *
-> + * (o) bdi reserve area
-> + *
-> + * The bdi reserve area tries to keep a reasonable number of dirty pages for
-> + * preventing block queue underrun.
-> + *
-> + * reserve area, scale up rate as dirty pages drop low
-> + * |<----------------------------------------------->|
-> + * |-------------------------------------------------------*-------|----------
-> + * 0                                           bdi setpoint^       ^bdi_thresh
+[Hiremath, Vaibhav] I completely agree that we should not be duplicating the code just for sake of it.
 
+Isn't the wrapper approach seems feasible here? 
 
-So why not call the thing bdi freerun ?
+Thanks,
+Vaibhav
 
->   * (o) bdi control lines
->   *
->   * The control lines for the global/bdi setpoints both stretch up to @limit.
-> @@ -634,6 +644,22 @@ static unsigned long bdi_position_ratio(
->  	pos_ratio *= x_intercept - bdi_dirty;
->  	do_div(pos_ratio, x_intercept - bdi_setpoint + 1);
->  
-> +	/*
-> +	 * bdi reserve area, safeguard against dirty pool underrun and disk idle
-> +	 *
-> +	 * It may push the desired control point of global dirty pages higher
-> +	 * than setpoint. It's not necessary in single-bdi case because a
-> +	 * minimal pool of @freerun dirty pages will already be guaranteed.
-> +	 */
-> +	x_intercept = min(write_bw, freerun);
-> +	if (bdi_dirty < x_intercept) {
-
-So the point of the freerun point is that we never throttle before it,
-so basically all the below shouldn't be needed at all, right? 
-
-> +		if (bdi_dirty > x_intercept / 8) {
-> +			pos_ratio *= x_intercept;
-> +			do_div(pos_ratio, bdi_dirty);
-> +		} else
-> +			pos_ratio *= 8;
-> +	}
-> +
->  	return pos_ratio;
->  }
-
-
-So why not add:
-
-	if (likely(dirty < freerun))
-		return 2;
-
-at the start of this function and leave it at that?
-
-
+> > > This will result in no modification to the userspace.
+> 
+> --
+> Regards,
+> 
+> Laurent Pinchart
