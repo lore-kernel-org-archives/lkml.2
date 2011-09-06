@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab1IFIA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:00:27 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33657 "EHLO
+	id S1753459Ab1IFIAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:00:34 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33664 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753330Ab1IFIAT (ORCPT
+	by vger.kernel.org with ESMTP id S1753343Ab1IFIAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:00:19 -0400
+	Tue, 6 Sep 2011 04:00:20 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
         Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH 1/5] spi-topcliff-pch: add tx-memory clear after complete transmitting
-Date: Tue,  6 Sep 2011 16:58:30 +0900
-Message-Id: <1315295914-6862-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 2/5] spi-topcliff-pch: Fix SSN Control issue
+Date: Tue,  6 Sep 2011 16:58:31 +0900
+Message-Id: <1315295914-6862-2-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1315295914-6862-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1315295914-6862-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, in case of reading date from SPI flash,
-command is sent twice.
-The cause is that tx-memory clear processing is missing .
-This patch adds the tx-momory clear processing.
+During processing 1 command/data series,
+SSN should keep LOW.
+However, currently, SSN becomes HIGH.
+This patch fixes the issue.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/spi/spi-topcliff-pch.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/spi/spi-topcliff-pch.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 540c290..1b98b7e 100644
+index 1b98b7e..b5c681a 100644
 --- a/drivers/spi/spi-topcliff-pch.c
 +++ b/drivers/spi/spi-topcliff-pch.c
-@@ -839,6 +839,11 @@ static void pch_spi_start_transfer(struct pch_spi_data *data)
+@@ -58,6 +58,7 @@
+ #define PCH_SLEEP_TIME		10
  
- 	dma_sync_sg_for_cpu(&data->master->dev, dma->sg_rx_p, dma->nent,
- 			    DMA_FROM_DEVICE);
-+
-+	dma_sync_sg_for_cpu(&data->master->dev, dma->sg_tx_p, dma->nent,
-+			    DMA_FROM_DEVICE);
-+	memset(data->dma.tx_buf_virt, 0, PAGE_SIZE);
-+
- 	async_tx_ack(dma->desc_rx);
- 	async_tx_ack(dma->desc_tx);
- 	kfree(dma->sg_tx_p);
+ #define SSN_LOW			0x02U
++#define SSN_HIGH		0x03U
+ #define SSN_NO_CONTROL		0x00U
+ #define PCH_MAX_CS		0xFF
+ #define PCI_DEVICE_ID_GE_SPI	0x8816
+@@ -758,10 +759,6 @@ static void pch_spi_set_ir(struct pch_spi_data *data)
+ 
+ 	wait_event_interruptible(data->wait, data->transfer_complete);
+ 
+-	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
+-	dev_dbg(&data->master->dev,
+-		"%s:no more control over SSN-writing 0 to SSNXCR.", __func__);
+-
+ 	/* clear all interrupts */
+ 	pch_spi_writereg(data->master, PCH_SPSR,
+ 			 pch_spi_readreg(data->master, PCH_SPSR));
+@@ -850,9 +847,6 @@ static void pch_spi_start_transfer(struct pch_spi_data *data)
+ 	kfree(dma->sg_rx_p);
+ 
+ 	spin_lock_irqsave(&data->lock, flags);
+-	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
+-	dev_dbg(&data->master->dev,
+-		"%s:no more control over SSN-writing 0 to SSNXCR.", __func__);
+ 
+ 	/* clear fifo threshold, disable interrupts, disable SPI transfer */
+ 	pch_spi_setclr_reg(data->master, PCH_SPCR, 0,
+@@ -1162,6 +1156,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
+ 	if (data->use_dma)
+ 		pch_spi_request_dma(data,
+ 				    data->current_msg->spi->bits_per_word);
++	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
+ 	do {
+ 		/* If we are already processing a message get the next
+ 		transfer structure from the message otherwise retrieve
+@@ -1220,6 +1215,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
+ 
+ 	} while (data->cur_trans != NULL);
+ 
++	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_HIGH);
+ 	if (data->use_dma)
+ 		pch_spi_release_dma(data);
+ }
 -- 
 1.7.4.4
 
