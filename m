@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab1IFANr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 20:13:47 -0400
+	id S1753217Ab1IFAOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 20:14:09 -0400
 Received: from mail-vx0-f174.google.com ([209.85.220.174]:53143 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab1IFANj (ORCPT
+	with ESMTP id S1752667Ab1IFANz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 20:13:39 -0400
+	Mon, 5 Sep 2011 20:13:55 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,72 +16,95 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/12] cgroups: New resource counter inheritance API
-Date: Tue,  6 Sep 2011 02:12:56 +0200
-Message-Id: <1315267986-28937-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 00/12 v4][RESEND] cgroups: Task counter subsystem
+Date: Tue,  6 Sep 2011 02:12:54 +0200
+Message-Id: <1315267986-28937-1-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1315267986-28937-1-git-send-email-fweisbec@gmail.com>
-References: <1315267986-28937-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide an API to inherit a counter value from a parent.
-This can be useful to implement cgroup.clone_children on
-a resource counter.
+(Sorry, I had unbalanced "<" and ">" around email addresses so I need
+to resend otherwise LKML wouldn't take it.)
 
-Still the resources of the children are limited by those
-of the parent, so this is only to provide a default setting
-behaviour when clone_children is set.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Aditya Kali <adityakali@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tim Hockin <thockin@hockin.org>
-Cc: Tejun Heo <tj@kernel.org>
----
- include/linux/res_counter.h |    2 ++
- kernel/res_counter.c        |   12 ++++++++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+Reminder:
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index 1b3fe05..109d118 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -84,6 +84,8 @@ int res_counter_write(struct res_counter *counter, int member,
- 
- void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
- 
-+void res_counter_inherit(struct res_counter *counter, int member);
-+
- /*
-  * the field descriptors. one for each member of res_counter
-  */
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index 0faafcc..1349115 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -202,3 +202,15 @@ int res_counter_write(struct res_counter *counter, int member,
- 
- 	return 0;
- }
-+
-+void res_counter_inherit(struct res_counter *counter, int member)
-+{
-+	struct res_counter *parent;
-+	unsigned long long val;
-+
-+	parent = counter->parent;
-+	if (parent) {
-+		val = res_counter_read_u64(parent, member);
-+		res_counter_write_u64(counter, member, val);
-+	}
-+}
+The task counter is a cgroup subsystem that features an upper bound
+limitation on the number of tasks running inside cgroup.
+
+It has two desired usecases, but possibly more can be found:
+
+- Protect against forkbomb in the scope of a cgroup, this can be
+especially useful in the case of containers where traditional rlmit
+is too limited.
+
+- Kill all tasks inside a cgroup without worrying about races against
+concurrent forks.
+
+See documentation in patch 10/12 for more details.
+
+May be I should rebase the whole against Tejun's patches that use
+an iterator on tasks.
+
+Changes in v4:
+
+- Rebase on top of "cgroups: Don't attach task to subsystem if
+  migration failed" (https://lkml.org/lkml/2011/8/26/262), applied
+  in -mm.
+- Add comment about the use of spinlock in res_counter_write_u64() (patch 1)
+- Update documentation after [can_]attach_task() arguments changes (patch 3)
+- Update documentation for cancel_attach_task() new callback (patch 4)
+- Cancel task attachment on migration failure in cgroup_attach_proc() (patch 4)
+- Some function inlining (patch 5)
+- Move "Allow charge failure pointer to be null" earlier in the set for
+  sanity (patch 7)
+- Fix error return value (patch 8 and 9)
+- Whitespace fixes, comments added, improve config help section (patch 9)
+- Drop subsystem early init (patch 9)
+- Add subsystem documentation (patch 10)
+- Remove ad-hoc fork hook and reuse existing one for cgroup (patch 11 and 12)
+
+This can not be pulled from:                                                                                                     
+                                                                                                                             
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git                                                    
+        cgroup/nr_proc-v4
+
+Frederic Weisbecker (12):
+  cgroups: Add res_counter_write_u64() API
+  cgroups: New resource counter inheritance API
+  cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
+  cgroups: New cancel_attach_task subsystem callback
+  cgroups: Ability to stop res charge propagation on bounded ancestor
+  cgroups: Add res counter common ancestor searching
+  res_counter: Allow charge failure pointer to be null
+  cgroups: Pull up res counter charge failure interpretation to caller
+  cgroups: Add a task counter subsystem
+  cgroups: Add documentation for task counter subsystem
+  cgroups: Allow subsystems to cancel a fork
+  cgroups: Convert task counter to use the subsys fork callback
+
+ Documentation/cgroups/cgroups.txt      |   13 ++-
+ Documentation/cgroups/task_counter.txt |  126 ++++++++++++++++++++
+ block/blk-cgroup.c                     |   10 +-
+ include/linux/cgroup.h                 |   20 ++-
+ include/linux/cgroup_subsys.h          |    8 ++
+ include/linux/res_counter.h            |   25 ++++-
+ init/Kconfig                           |    7 +
+ kernel/Makefile                        |    1 +
+ kernel/cgroup.c                        |   56 +++++++--
+ kernel/cgroup_freezer.c                |    9 +-
+ kernel/cgroup_task_counter.c           |  200 ++++++++++++++++++++++++++++++++
+ kernel/cpuset.c                        |    6 +-
+ kernel/events/core.c                   |    5 +-
+ kernel/exit.c                          |    2 +-
+ kernel/fork.c                          |    7 +-
+ kernel/res_counter.c                   |   77 ++++++++++---
+ kernel/sched.c                         |    6 +-
+ 17 files changed, 524 insertions(+), 54 deletions(-)
+ create mode 100644 Documentation/cgroups/task_counter.txt
+ create mode 100644 kernel/cgroup_task_counter.c
+
 -- 
 1.7.5.4
 
