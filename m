@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab1IFEM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 00:12:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43268 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1IFEMw (ORCPT
+	id S1751681Ab1IFETk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 00:19:40 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:28586 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab1IFETc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 00:12:52 -0400
-Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: david.wagner@free-electrons.com, linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Tue, 06 Sep 2011 07:10:03 +0300
-In-Reply-To: <1315280704.19067.14.camel@sauron>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
-	 <201108241823.20904.arnd@arndb.de> <1314256010.18988.18.camel@sauron>
-	 <201108251712.40894.arnd@arndb.de> <1315280704.19067.14.camel@sauron>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1315282208.19067.24.camel@sauron>
-Mime-Version: 1.0
+	Tue, 6 Sep 2011 00:19:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=UzVvFZFWhQg1CkVPIfLJ12/BE++lnd9NjNvEt1/nNAPRyoxOvRdheazL2G5kws63F
+	aoQUTq9QIM08Oc61IBoCg==
+MIME-Version: 1.0
+In-Reply-To: <F1F5DF04259F1B4A82BD6BDE1C479F74098285B0@szxeml527-mbx.china.huawei.com>
+References: <F1F5DF04259F1B4A82BD6BDE1C479F74098285B0@szxeml527-mbx.china.huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 5 Sep 2011 22:19:09 -0600
+Message-ID: <CAErSpo4JsyHag24SH=zSRHt4c8kYwdcXEnCConGEi2u6dN-pnw@mail.gmail.com>
+Subject: Re: Re : [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
+To: Shen Canquan <shencanquan@huawei.com>
+Cc: "lenb@kernel.org" <lenb@kernel.org>,
+        "rui.zhao@intel.com" <rui.zhao@intel.com>,
+        "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-06 at 06:44 +0300, Artem Bityutskiy wrote:
-> > It's not a dummy bus, in this approach it would be a the bus that gets
-> > used by all ubiblk devices, which is a very common concept by itself.
-> > It's more like the classic understanding of a 'device class' that Greg
-> > wants to see get replaced by bus_types in the kernel.
-> 
-> Yes, this sounds OK. Although UBI already has notifiers, so we could
-> just add 2 more events.
+> 主题: [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
+>
+> In Xen virtualization environment, When I used xen tools (xm vcpu-set vcpu_number ) to test the vcpu add and remove, I found it is failure on vcpu remove, I found the reason is that nothing to do when cpu remove in acpi_processor_hotplug_notify function, so I add the code of send the OFFLINE message to udev and add the rule of udev. it is ok on vcpu remove.
+> Signed-off-by: Shen canquan <shencanquan@huawei.com>
+> ---
+>  drivers/acpi/processor_driver.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index a4e0f1b..a1c564f 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -677,6 +677,8 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+>                                     "Driver data is NULL, dropping EJECT\n");
+>                         return;
+>                 }
+> +
+> +               kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+>                 break;
+>         default:
+>                 ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 
-Hmm, with notifications the error handling becomes a problem - we want
-the ioctls for creating/removing the block device to be synchronous,
-and, should an error occur, we want to return the error code to the
-user-space. So the existing notifications mechanism does not work well.
+The processor driver used to generate ONLINE and OFFLINE messages.  I
+removed them with c1815e0740.  According to the changelog, the driver
+core still generates KOBJ_ADD and KOBJ_REMOVE events.
 
-Not sure about the bus approach - David, could you take a look at it
-please? If we can handle errors there - then we could indeed re-use the
-UBI control device. We could even re-use the ioctl data structures for
-UBI volumes creation/removal - we have plenty of space there reserved
-for future extensions.
+Could you fix the Xen vcpu add/remove problem by looking for
+ADD/REMOVE events rather than ONLINE/OFFLINE?
 
--- 
-Best Regards,
-Artem Bityutskiy
+I removed ONLINE/OFFLINE because I think hotplug should be handled in
+the ACPI core, not in the drivers.  Removing ONLINE/OFFLINE got rid of
+one small piece of driver-specific hotplug handling.  Obviously,
+there's still a lot to do.
 
+If using ADD/REMOVE is not sufficient, what is the justification for
+needing both REMOVE and OFFLINE, and how would they be different?
+
+Bjorn
