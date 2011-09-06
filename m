@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1IFF7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 01:59:46 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42046 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031Ab1IFF7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 01:59:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [BUG] CPU hotplug, freezer: Freezing of tasks failed after 20.00 seconds
-Date: Tue, 6 Sep 2011 08:01:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        oleg@redhat.com, arnd@arndb.de,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org> <20110905141512.GE9807@htj.dyndns.org> <20110906050831.GA16976@htj.dyndns.org>
-In-Reply-To: <20110906050831.GA16976@htj.dyndns.org>
+	id S1752774Ab1IFGJP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 02:09:15 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:47740 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab1IFGJI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 02:09:08 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109060801.09210.rjw@sisk.pl>
+In-Reply-To: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
+References: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
+Date: Tue, 6 Sep 2011 14:09:07 +0800
+Message-ID: <CAAJw_ZvP6m=3T0YoYq6VJdOKMxzm3fDcdJoDY8wqqDV8GZB+Dg@mail.gmail.com>
+Subject: Re: linux-3.1-0-rc4 bus error ... MPS configured higher than maximum
+ supported by the device. If a bus issue occurs, try running with pci=pcie_bus_safe.
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: lkml <linux-kernel@vger.kernel.org>, Jordan_Hargrave@dell.com,
+        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 06, 2011, Tejun Heo wrote:
-> Hello, again.
-> 
-> On Mon, Sep 05, 2011 at 11:15:12PM +0900, Tejun Heo wrote:
-> > >  Freezing of tasks failed after 20.01 seconds (2 tasks refusing to freeze, wq_busy=0):
-> > >  invert_cpu_stat D 0000000000000000  5304 20435  17329 0x00000084
-> > >   ffff8801f367bab8 0000000000000046 ffff8801f367bfd8 00000000001d3a00
-> > >   ffff8801f367a010 00000000001d3a00 00000000001d3a00 00000000001d3a00
-> > >   ffff8801f367bfd8 00000000001d3a00 ffff880414cc6840 ffff8801f36783c0
-> > >  Call Trace:
-> > >   [<ffffffff81532de5>] schedule_timeout+0x235/0x320
-> > >   [<ffffffff81532a0b>] wait_for_common+0x11b/0x170
-> > >   [<ffffffff81532b3d>] wait_for_completion+0x1d/0x20
-> > >   [<ffffffff81364486>] _request_firmware+0x156/0x2c0
-> > >   [<ffffffff81364686>] request_firmware+0x16/0x20
-> > >   [<ffffffffa01f0da0>] request_microcode_fw+0x70/0xf0 [microcode]
-> > >   [<ffffffffa01f0390>] microcode_init_cpu+0xc0/0x100 [microcode]
-> > >   [<ffffffffa01f14b4>] mc_cpu_callback+0x7c/0x11f [microcode]
-> > >   [<ffffffff815393a4>] notifier_call_chain+0x94/0xd0
-> > >   [<ffffffff8109770e>] __raw_notifier_call_chain+0xe/0x10
-> > >   [<ffffffff8106d000>] __cpu_notify+0x20/0x40
-> > >   [<ffffffff8152cf5b>] _cpu_up+0xc7/0x10e
-> > >   [<ffffffff8152d07b>] cpu_up+0xd9/0xec
-> > >   [<ffffffff8151e599>] store_online+0x99/0xd0
-> > >   [<ffffffff81355eb0>] sysdev_store+0x20/0x30
-> > >   [<ffffffff811f3096>] sysfs_write_file+0xe6/0x170
-> > >   [<ffffffff8117ee50>] vfs_write+0xd0/0x1a0
-> > >   [<ffffffff8117f024>] sys_write+0x54/0xa0
-> > >   [<ffffffff8153df02>] system_call_fastpath+0x16/0x1b
-> > 
-> > So, this task is trying to bring a CPU up, which triggers firmware
-> > helper to load microcode.  Firmware class currently sleeps
-> > non-interruptibly to wait for firmware load to complete, which is
-> > performed by another userland task.  Now, the PM freezer doesn't
-> > assume that there will be non-freezable wait dependencies among
-> > userland tasks.  It only knows two levels - userland and kernel tasks
-> > - and assumes that the former group may have non-freezable wait
-> > dependency on the latter but there's no such dependency among each
-> > group itself.  If there's such dependency, PM freezer may fail, which
-> > is what happened here.
-> > 
-> > ie. the firmware loader userland process got frozen first.
-> > invert_cpu_stat trying to bring up CPU was waiting for the firmware
-> > loader to finish in non-interruptible sleep, so the freezer couldn't
-> > proceed.
-> 
-> Hmmm... I went through the code again and usermodehelper_disable()
-> seems to be there to prevent deadlocks like this.  usermode helpers
-> are drained & plugged before freezing is tried.  Rafael, the above
-> shouldn't be happening, right?
+On Mon, Sep 5, 2011 at 10:55 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> Got the following error after upgrading from linux-2.6.36 to
+> linux-3.1.0-rc4 on a Dell PowerEdge 2950 that has a PCIe fax card, and
+> the system LED panel shows "Bus Fatal Error".
+>
+>
+> Is is normal or should I try out "pci=pcie_bus_safe" or "pci=pci" as
+> suggested in the dmesg?
+>
+> There was another error that also showed up on 2.6.36 but I'm ignoring
+> that for now ( ... disabling ASPM on pre-1.1 PCIe device.  You can
+> enable it with 'pcie_aspm=force')
+>
+> pci 0000:07:00.0: Dev MPS 128 MPSS 256 MRRS 4096
+> pci 0000:07:00.0: Dev MPS 256 MPSS 256 MRRS 128
+> pci 0000:08:00.0: Dev MPS 128 MPSS 128 MRRS 128
+> pci 0000:08:00.0: MPS configured higher than maximum supported by the
+> device.  If a bus issue occurs, try running with pci=pcie_bus_safe.
+> pci 0000:08:00.0: Dev MPS 256 MPSS 256 MRRS 128
+> Uhhuh. NMI received for unknown reason 31 on CPU 0.
+> Do you have a strange power saving mode enabled?
+> Dazed and confused, but trying to continue
+> pci 0000:07:01.0: Dev MPS 128 MPSS 256 MRRS 4096
+> pci 0000:07:01.0: Dev MPS 256 MPSS 256 MRRS 128
+> pci 0000:00:06.0: Dev MPS 256 MPSS 256 MRRS 128
+> pci 0000:0e:00.0: Dev MPS 128 MPSS 128 MRRS 512
+> pci 0000:0e:00.0: MPS configured higher than maximum supported by the
+> device.  If a bus issue occurs, try running with pci=pci
 
-No, it shouldn't in theory, but I'm not sure any more after the recent
-modifications of firmware loading related to the initialization.  I'll have
-a closer look tomorrow.
+The above aspm and bus error went away after I added pcie_aspm=force
+and pci=pcie_bus_safe.
+
+Instead of default to pcie_bus_perf that caused problems, why not
+default to the formal behavior (see commit
+b03e7495a862b028294f59fc87286d6d78ee7fa1).
 
 Thanks,
-Rafael
+Jeff
