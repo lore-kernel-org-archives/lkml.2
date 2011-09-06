@@ -1,93 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab1IFTqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 15:46:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44584 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab1IFTqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 15:46:04 -0400
-Date: Tue, 6 Sep 2011 21:45:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-In-Reply-To: <20110906192626.GA27362@redhat.com>
-Message-ID: <alpine.LFD.2.02.1109062134010.2723@ionos>
-References: <1314661157-22173-4-git-send-email-andi@firstfloor.org> <alpine.LFD.2.02.1109021135270.2723@ionos> <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com> <20110906031411.GA24024@alboin.amr.corp.intel.com> <20110906145124.GA15390@redhat.com>
- <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LFD.2.02.1109061823100.2723@ionos> <20110906184926.GA25997@redhat.com> <alpine.LFD.2.02.1109062110090.2723@ionos> <20110906192626.GA27362@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754807Ab1IFTtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 15:49:19 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:51472 "EHLO ja.ssi.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754108Ab1IFTtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 15:49:13 -0400
+Date: Tue, 6 Sep 2011 22:48:28 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+To: "Harris, Jeff" <Jeff_Harris@kentrox.com>
+cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] net: Prefer non link-local source addresses
+In-Reply-To: <A0C485B929C0994A889B2580ECDF807648D4D928@EXCHANGE.corp.kentrox.com>
+Message-ID: <alpine.LFD.2.00.1109061946170.1521@ja.ssi.bg>
+References: <1314908454-14359-1-git-send-email-jeff_harris@kentrox.com> <alpine.LFD.2.00.1109020041140.1799@ja.ssi.bg> <A0C485B929C0994A889B2580ECDF807648D4D928@EXCHANGE.corp.kentrox.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Sep 2011, Oleg Nesterov wrote:
 
-> On 09/06, Thomas Gleixner wrote:
-> >
-> > On Tue, 6 Sep 2011, Oleg Nesterov wrote:
-> > >
-> > > The problem is, it can be already dequeued.
-> >
-> > Right, but we can solve this by moving the whole detach code into rcu.
+	Hello,
+
+On Tue, 6 Sep 2011, Harris, Jeff wrote:
+
+> In this case, the address scope values are being set properly.  The link-local address has link scope and the routable address has global scope.  When the inet_select_addr function is called, the dst address is 0 and the scope is 253 (link scope).  So, in this case, both address could match.  It just happens that the link local address is first in the list for the device.
+
+	Yes, all primary addresses are sorted in decreasing
+scope, link before global. For non-gatewayed routes (nh_gw=0)
+inet_select_addr always selects the first address with
+scope <= the route's scope.
+
+> This condition looks to be arising from the use of interface routes on our device (e.g. ip route add default dev eth0).  The routes are being installed with link scope.  Forcing a scope of global causes a scope of 0 in inet_select_addr which then selects the routable address always.  I have not found any definite documentation on whether local or global should be used for the route, but the default behavior of the 'ip' command is to use link scope on these routes and global on routes with a gateway address. 
+
+	It is not good idea to have scope link for default route
+if you plan to contact the world because link routes can
+select link addresses for the target network. That is what
+you see as a problem. May be ip route should use scope
+global as default value for route 0.0.0.0/0.
+
+	You have 2 choices:
+
+1. Preferred: Use global scope for the default route:
+
+ip route add default scope global dev eth0
+or
+ip route add default nexthop dev eth0 (not recommended)
+
+	Global routes will not select link addresses.
+
+2. Specify prefsrc for the route
+
+ip route add default dev eth0 src <Global_IP>
+
+	but you risk to cause problems for MSG_DONTROUTE users if
+scope remains 'link' for target addresses that are not really
+onlink.
+
+> Also, I have only been able to test against 2.6.33 which we use on our embedded device.  It is not easy to update to a more recent version.  The patch, though, applied cleanly to the latest stable version.
 > 
-> Hmm, I don't understand...
+> Jeff
 > 
-> > --- linux-2.6.orig/kernel/posix-timers.c
-> > +++ linux-2.6/kernel/posix-timers.c
-> > @@ -495,22 +495,30 @@ static void k_itimer_rcu_free(struct rcu
-> >  {
-> >  	struct k_itimer *tmr = container_of(head, struct k_itimer, it.rcu);
-> >  
-> > +	put_pid(tmr->it_pid);
-> > +	sigqueue_free(tmr->sigq);
-> >  	kmem_cache_free(posix_timers_cache, tmr);
+> -----Original Message-----
+> From: Julian Anastasov [mailto:ja@ssi.bg] 
+> Sent: Thursday, September 01, 2011 6:15 PM
+> To: Harris, Jeff
+> Cc: David S. Miller; Alexey Kuznetsov; James Morris; Hideaki YOSHIFUJI; Patrick McHardy; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] net: Prefer non link-local source addresses
 > 
-> Why do we need to move put_pid/sigqueue_free ?
 > 
-> The caller of release_posix_timer() should cancel the timer, we can can
-> do this even before idr_remove() with or without this patch.
-
-All callers cancel the timer. Right, put_pid() and sigqueue_free() can
-stay where they are.
- 
-> >  static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
-> >  {
-> > -	if (it_id_set) {
-> > -		unsigned long flags;
-> > -		spin_lock_irqsave(&idr_lock, flags);
-> > -		idr_remove(&posix_timers_id, tmr->it_id);
-> > -		spin_unlock_irqrestore(&idr_lock, flags);
-> > -	}
-> > -	put_pid(tmr->it_pid);
-> > -	sigqueue_free(tmr->sigq);
-> > -	call_rcu(&tmr->it.rcu, k_itimer_rcu_free);
-> > +	if (it_id_set)
-> > +		call_rcu(&tmr->it.rcu, k_itimer_rcu_free_idr);
+> 	Hello,
 > 
-> But how this can help? Suppose that the task is preempted right
-> after dequeue_signal() drops ->siglock. We need rcu_read_lock()
-> before unlock then, no?
+> On Thu, 1 Sep 2011, Jeff Harris wrote:
+> 
+> > Section 2.6.1 of RFC 3927 specifies that if link-local and routable addresses
+> > are available on an interface, a routable address is preferred.  Update the
+> > IPv4 source address selection algorithm to use a 169.254.x.x address only if
+> > another matching address is not found.
+> > 
+> > Tested combinations of configured IP addresses with and without link-local to
+> > verify a link-local address was chosen only if no routable address was
+> > present.
+> 
+> 	As David Lamparter already said, isn't the scope value
+> suitable for this purpose? Eg.
+> ip addr add 169.254.5.5/16 brd + dev eth0 scope link
+> 
+> 	iproute2 already has function default_scope() in
+> ip/ipaddress.c that assigns scope if it is not specified
+> while adding address. May be we can add RT_SCOPE_LINK for
+> 169.254 there?
+> 
+> 	Another such place is inet_set_ifa() in
+> net/ipv4/devinet.c where we can assign scope, so that
+> ifconfig works too.
+> 
+> 	I see also that net/ipv6/addrconf.c (sit_add_v4_addrs)
+> avoids link-local addresses. What I mean is that the scope
+> can be checked at many places and it is a mechanism that
+> already works.
+> 
+> 	As result, we will not complicate inet_select_addr.
 
-Crap, you are right, but that's fortunately an easy to solve one :)
+Regards
 
-> And. This breaks the accounting logic. I mean the patch from Andi
-> which adds the limits.
-
-That's a different problem and really, it does not break it by any
-means. When the timer is released, then the count is decreased and we
-can safely assume that the memory is going to be freed in the next
-grace period. If that's not the case, then we have a totally different
-problem which is not fixable by any limits to the number of timers per
-process.
-
-Thanks,
-
-	tglx
+--
+Julian Anastasov <ja@ssi.bg>
