@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab1IFE4n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 00:56:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39919 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab1IFE4f (ORCPT
+	id S1752300Ab1IFFD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 01:03:58 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:35297 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab1IFFDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 00:56:35 -0400
-Subject: Re: [PATCH] document ubiblk's usage of the same ioctl magic as a
- part of UBI
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: David Wagner <david.wagner@free-electrons.com>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Tue, 06 Sep 2011 07:58:50 +0300
-In-Reply-To: <1314202916-6982-1-git-send-email-david.wagner@free-electrons.com>
-References: <1314202540-5562-1-git-send-email-david.wagner@free-electrons.com>
-	 <1314202916-6982-1-git-send-email-david.wagner@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1315285135.19067.59.camel@sauron>
-Mime-Version: 1.0
+	Tue, 6 Sep 2011 01:03:49 -0400
+Message-ID: <4E65A9AF.8080804@linux.vnet.ibm.com>
+Date: Tue, 06 Sep 2011 10:33:43 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: maciej.rutecki@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [BUG] Soft-lockup during cpu-hotplug in VFS callpaths
+References: <4E550057.9070609@linux.vnet.ibm.com> <201108312040.32531.maciej.rutecki@gmail.com> <4E64916B.4090205@linux.vnet.ibm.com> <201109052118.49293.maciej.rutecki@gmail.com>
+In-Reply-To: <201109052118.49293.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-24 at 18:21 +0200, David Wagner wrote:
-> ---
->  include/mtd/ubi-user.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+On 09/06/2011 12:48 AM, Maciej Rutecki wrote:
+> On poniedziałek, 5 września 2011 o 11:07:55 Srivatsa S. Bhat wrote:
+>> On 09/01/2011 12:10 AM, Maciej Rutecki wrote:
+>>> On środa, 24 sierpnia 2011 o 15:44:55 Srivatsa S. Bhat wrote:
+>>>> Hi,
+>>>>
+>>>> While running stressful cpu hotplug tests along with kernel compilation
+>>>> running in background, soft-lockups are detected on multiple CPUs.
+>>>> Sometimes this also leads to hard lockups and kernel panic.
+>>>> All the soft-lockups seem to occur at vfsmount_lock_local_cpu() or other
+>>>> VFS callpaths.
+>>>>
+>>>>
+>>>> [37108.410813] BUG: soft lockup - CPU#5 stuck for 22s! [cc1:29669]
+>>>> <snip>
+>>>> [37108.694781] Call Trace:
+>>>> [37108.697306]  [<ffffffff81199e70>] ?
+>>>> vfsmount_lock_local_lock_cpu+0x70/0x70 [37108.704258]
+>>>> [<ffffffff81187cb5>] path_init+0x315/0x400
+>>>> [37108.709558]  [<ffffffff8127c398>] ? __raw_spin_lock_init+0x38/0x70
+>>>> [37108.715812]  [<ffffffff8118961c>] path_openat+0x8c/0x3f0
+>>>> [37108.721203]  [<ffffffff81012129>] ? sched_clock+0x9/0x10
+>>>> [37108.726597]  [<ffffffff8109416d>] ? sched_clock_cpu+0xcd/0x110
+>>>> [37108.732508]  [<ffffffff810a178d>] ? trace_hardirqs_off+0xd/0x10
+>>>> [37108.738498]  [<ffffffff8109421f>] ? local_clock+0x6f/0x80
+>>>> [37108.743970]  [<ffffffff81189a99>] do_filp_open+0x49/0xa0
+>>>> [37108.749362]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
+>>>> [37108.754665]  [<ffffffff8152584b>] ? _raw_spin_unlock+0x2b/0x40
+>>>> [37108.760575]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
+>>>> [37108.765875]  [<ffffffff81179607>] do_sys_open+0x107/0x1e0
+>>>> [37108.771352]  [<ffffffff810d610f>] ? audit_syscall_entry+0x1bf/0x1f0
+>>>> [37108.777695]  [<ffffffff81179720>] sys_open+0x20/0x30
+>>>> [37108.782741]  [<ffffffff8152e202>] system_call_fastpath+0x16/0x1b
+>>>>
+>>>> Kernel version: 3.0.1, 3.0.3
+>>>> Hardware: Dual socket quad-core hyper-threaded Intel x86 machine
+>>>> Scenario:
+>>>> (a) Stressful cpu hotplug tests + kernel compilation
+>>>>
+>>>> (b) IRQ balancing had been disabled and all the IRQs  were made to be
+>>>>
+>>>>     routed to CPU 0 (except the ones that couldn't be routed).
+>>>>
+>>>> (c) Lockdep was enabled during kernel configuration.
+>>>>
+>>>> Steps (b) and (c) were done to dig deeper into the issue. However the
+>>>> same issue was observed by just doing step (a).
+>>>>
+>>>> Definitely there seems to be a race condition occurring here, because
+>>>> this issue is hit after sometime, after starting the tests. And the
+>>>> time it takes to hit the issue increases as we increase the number of
+>>>> debug print statements. In some cases (especially when the number of
+>>>> debug print statements were quite high), the stress on the machine had
+>>>> to be increased in order to hit the issue within measurable time. In my
+>>>> tests, a maximum of about 2 to 2.5 hours was sufficient, to hit this
+>>>> bug.
+>>>>
+>>>> Please find the console log attached with this mail.
+>>>>
+>>>> Any ideas on how to go about fixing this bug?
+>>>
+>>> It is a regression?
+>>
+>> Hi Maciej,
+>>
+>> Thank you for taking a look.
+>> Yes, it seems to be a regression. I tested out kernel 2.6.39.3 with similar
+>> test cases for quite a long time, and it did not hit any soft-lockup
+>> issues.
 > 
-> diff --git a/include/mtd/ubi-user.h b/include/mtd/ubi-user.h
-> index 3c41097..7c8bfe3 100644
-> --- a/include/mtd/ubi-user.h
-> +++ b/include/mtd/ubi-user.h
-> @@ -188,6 +188,7 @@
->  /* Set an UBI volume property */
->  #define UBI_IOCSETVOLPROP _IOW(UBI_VOL_IOC_MAGIC, 6, \
->  			       struct ubi_set_vol_prop_req)
-> +/* If you add ioctls here, please note that ubiblk uses 'O'/0x10-0x11 */
->  
->  /* Maximum MTD device name length supported by UBI */
->  #define MAX_UBI_MTD_NAME_LEN 127
+> Thanks for the answer. I create bug entry:
+> https://bugzilla.kernel.org/show_bug.cgi?id=42402
 
-Let's postpone this patch and the user-space tool until ubiblk is ready
-for inclusion. I sent you some comments - the main one is the block
-device reference counting and making sure that the underlying UBI volume
-does not disappear when you use it.
+Oh thank you. But I had created an entry myself in bugzilla, immediately after I posted on the
+mailing list. (https://bugzilla.kernel.org/show_bug.cgi?id=42382)
+I will however delete my entry since we don't want duplicates and moreover the 'Product'
+and 'Component' fields in your entry seems more appropriate with respect to the bug.
+
+Thanks again.
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
