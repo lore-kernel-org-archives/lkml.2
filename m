@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab1IFH2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 03:28:05 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58489 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062Ab1IFH16 (ORCPT
+	id S1753423Ab1IFIA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:00:27 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33657 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753330Ab1IFIAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 03:27:58 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.113.217]
-In-Reply-To: <CACRpkdY+b9L=9tt2z9Fm_4iM=MOUoRbgaex-UC1iaw=afV-J2w@mail.gmail.com>
-References: <1302535464-12294-1-git-send-email-mathieu.poirier@linaro.org>
- <201104172239.57362.arnd@arndb.de> <4DADB2F1.1080405@linaro.org>
- <201104191810.18170.arnd@arndb.de> <CAK=WgbZVuw3ERa+sbm+RwdBL+JrxmZwpQtjk3mBvtUZVbiNu6g@mail.gmail.com>
- <CACRpkdY+b9L=9tt2z9Fm_4iM=MOUoRbgaex-UC1iaw=afV-J2w@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 6 Sep 2011 10:27:37 +0300
-Message-ID: <CAK=WgbaWtbAf1MVVzRLok3F=70nm7oS7j7kTVKoD9a7Urg8Dmw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ux500: Adding support for u8500 Hsem functionality V2
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Sep 2011 04:00:19 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 1/5] spi-topcliff-pch: add tx-memory clear after complete transmitting
+Date: Tue,  6 Sep 2011 16:58:30 +0900
+Message-Id: <1315295914-6862-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 10:15 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Sep 5, 2011 at 11:09 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
->
->> Looks like this thread has died. Is this driver still needed ?
->
-> The driver is still needed.
->
->> If yes, I don't mind picking it up and fixing the outstanding issues,
->> as I'm doing some hwspinlock cleanups/fixes right now anyway.
->
-> Please do this!
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Currently, in case of reading date from SPI flash,
+command is sent twice.
+The cause is that tx-memory clear processing is missing .
+This patch adds the tx-momory clear processing.
 
-Will do. Thanks !
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/spi/spi-topcliff-pch.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 540c290..1b98b7e 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -839,6 +839,11 @@ static void pch_spi_start_transfer(struct pch_spi_data *data)
+ 
+ 	dma_sync_sg_for_cpu(&data->master->dev, dma->sg_rx_p, dma->nent,
+ 			    DMA_FROM_DEVICE);
++
++	dma_sync_sg_for_cpu(&data->master->dev, dma->sg_tx_p, dma->nent,
++			    DMA_FROM_DEVICE);
++	memset(data->dma.tx_buf_virt, 0, PAGE_SIZE);
++
+ 	async_tx_ack(dma->desc_rx);
+ 	async_tx_ack(dma->desc_tx);
+ 	kfree(dma->sg_tx_p);
+-- 
+1.7.4.4
+
