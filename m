@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1IFTEx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 15:04:53 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64531 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab1IFTEs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 15:04:48 -0400
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.02.1109061823100.2723@ionos>
-References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
-	 <1314661157-22173-4-git-send-email-andi@firstfloor.org>
-	 <alpine.LFD.2.02.1109021135270.2723@ionos>
-	 <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com>
-	 <20110906031411.GA24024@alboin.amr.corp.intel.com>
-	 <20110906145124.GA15390@redhat.com>
-	 <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <alpine.LFD.2.02.1109061823100.2723@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Sep 2011 21:04:38 +0200
-Message-ID: <1315335878.3400.8.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1754512Ab1IFTJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 15:09:26 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:41014 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754200Ab1IFTJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 15:09:22 -0400
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>, Chul Kim <chul.kim@idt.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>
+Subject: [PATCH] RapidIO, rionet: Fix ethernet address macros for LE platforms
+Date: Tue,  6 Sep 2011 15:07:39 -0400
+Message-Id: <1315336059-16156-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 06 septembre 2011 à 20:47 +0200, Thomas Gleixner a écrit :
-> On Tue, 6 Sep 2011, Eric Dumazet wrote:
-> 
-> > Le mardi 06 septembre 2011 à 16:51 +0200, Oleg Nesterov a écrit :
-> > > On 09/05, Andi Kleen wrote:
-> > > >
-> > > > > I forgot everything I knew about ->it_requeue_pending logic, but it
-> > > > > seems to me that do_schedule_next_timer()->lock_timer() can find and
-> > > > > lock successfully the wrong timer. Another thread can do timer_delete()
-> > > > > and then re-create the timer with the same id.
-> > > >
-> > > > Do you mean after my patches or even before?
-> > > 
-> > > Ah, sorry for confusion.
-> > > 
-> > > Before. And after. IOW, I think this has nothing to do with your patches.
-> > > 
-> > 
-> > Hmm, you mean following patch is needed ?
-> > 
-> > Before release of timer id to idr pool, we should make sure
-> > do_schedule_next_timer() wont be called, or it could find another timer
-> > reusing the just released id.
-> 
-> I don't see how that makes it sure. If the signal is queued, then it
-> stays queued and the put_pid() has no effect either.
+Modify Ethernet addess macros to be compatible with BE/LE platforms
+(applicable to kernel versions starting from 2.6.39).
 
-Indeed, this is a real old bug then...
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Chul Kim <chul.kim@idt.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>
+---
+ drivers/net/rionet.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-
+diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
+index 3bb1311..7145714 100644
+--- a/drivers/net/rionet.c
++++ b/drivers/net/rionet.c
+@@ -88,8 +88,8 @@ static struct rio_dev **rionet_active;
+ #define dev_rionet_capable(dev) \
+ 	is_rionet_capable(dev->src_ops, dev->dst_ops)
+ 
+-#define RIONET_MAC_MATCH(x)	(*(u32 *)x == 0x00010001)
+-#define RIONET_GET_DESTID(x)	(*(u16 *)(x + 4))
++#define RIONET_MAC_MATCH(x)	(!memcmp((x), "\00\01\00\01", 4))
++#define RIONET_GET_DESTID(x)	((*((u8 *)x + 4) << 8) | *((u8 *)x + 5))
+ 
+ static int rionet_rx_clean(struct net_device *ndev)
+ {
+-- 
+1.7.6
 
