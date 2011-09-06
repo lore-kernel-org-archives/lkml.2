@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab1IFWmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 18:42:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28820 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754537Ab1IFWmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 18:42:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,341,1312182000"; 
-   d="scan'208";a="46151963"
-Date: Tue, 6 Sep 2011 15:42:28 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] clockevents: Use an atomic RCU notifier for
- clockevents
-Message-ID: <20110906224228.GA5534@alboin.fm.intel.com>
-References: <1314652136-11350-1-git-send-email-andi@firstfloor.org>
- <alpine.LFD.2.02.1109062120420.2723@ionos>
- <20110906203338.GL7761@one.firstfloor.org>
- <alpine.LFD.2.02.1109062235530.2723@ionos>
+	id S1755289Ab1IFWnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 18:43:06 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:53397 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200Ab1IFWm5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 18:42:57 -0400
+Date: Tue, 6 Sep 2011 23:42:52 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: FUSE kmemleak report
+Message-ID: <20110906224252.GA20218@sucs.org>
+References: <20110905223734.GB26980@sucs.org>
+ <CAHkRjk4QXbzzS6_Ks8W_QF14ijQdrXUEN82ifnm8ecxenqYiKA@mail.gmail.com>
+ <874o0pkiao.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1109062235530.2723@ionos>
+In-Reply-To: <874o0pkiao.fsf@tucsk.pomaz.szeredi.hu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The idle code, at least the one in drivers/idle/intel_idle.c, does
-> _NOT_ call into that code at all when a reliable lapic timer is
-> available:
+On Tue, Sep 06, 2011 at 01:43:27PM +0200, Miklos Szeredi wrote:
+> 
+> Sitsofe, thanks for the report.
+> 
+> Could you please try the patch below?
 
-But the ACPI idle doesn't check that, so it still has a scalability problem.
+You're welcome. The patch resolves the leak for me on 3.1.0-rc5 on
+Ubuntu 10.04 using GNOME 2.30.2 (I could previously reproduce it my
+logging in as one user, logging out, logging in as another user and then
+as root doing echo scan > /sys/kernel/debug/kmemleak ).
 
-Hmm ok so could add that check into acpi idle too I guess, but then ACPI
-idle doesn't normally know anything about CPUs.
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 
-> Either you are using different code or your machine does not have that
-> ARAT flag set.
-
-The second test was using ACPI idle.
-
--Andi
+-- 
+Sitsofe | http://sucs.org/~sits/
