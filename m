@@ -1,67 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab1IFOC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 10:02:28 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:2686
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754618Ab1IFOCX (ORCPT
+	id S1754671Ab1IFOKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 10:10:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38122 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754632Ab1IFOKD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 10:02:23 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LR3TNR-01-EVV-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-media@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arm: omap: Fix build error in ispccdc.c
-Date: Tue, 6 Sep 2011 16:02:15 +0200
-Message-ID: <1315317735-5255-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Tue, 6 Sep 2011 10:10:03 -0400
+Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
+ area
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 06 Sep 2011 16:09:39 +0200
+In-Reply-To: <20110904020915.942753370@intel.com>
+References: <20110904015305.367445271@intel.com>
+	 <20110904020915.942753370@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315318179.14232.3.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following build error occurs with 3.1-rc5:
+On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
+> plain text document attachment (bdi-reserve-area)
+> Keep a minimal pool of dirty pages for each bdi, so that the disk IO
+> queues won't underrun.
+> 
+> It's particularly useful for JBOD and small memory system.
+> 
+> Note that this is not enough when memory is really tight (in comparison
+> to write bandwidth). It may result in (pos_ratio > 1) at the setpoint
+> and push the dirty pages high. This is more or less intended because the
+> bdi is in the danger of IO queue underflow. However the global dirty
+> pages, when pushed close to limit, will eventually conteract our desire
+> to push up the low bdi_dirty.
+> 
+> In low memory JBOD tests we do see disks under-utilized from time to
+> time. The additional fix may be to add a BDI_async_underrun flag to
+> indicate that the block write queue is running low and it's time to
+> quickly fill the queue by unthrottling the tasks regardless of the
+> global limit.
+> 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/page-writeback.c |   26 ++++++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2011-08-26 20:12:19.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-08-26 20:13:21.000000000 +0800
+> @@ -487,6 +487,16 @@ unsigned long bdi_dirty_limit(struct bac
+>   *   0 +------------.------------------.----------------------*------------->
+>   *           freerun^          setpoint^                 limit^   dirty pages
+>   *
+> + * (o) bdi reserve area
+> + *
+> + * The bdi reserve area tries to keep a reasonable number of dirty pages for
+> + * preventing block queue underrun.
+> + *
+> + * reserve area, scale up rate as dirty pages drop low
+> + * |<----------------------------------------------->|
+> + * |-------------------------------------------------------*-------|----------
+> + * 0                                           bdi setpoint^       ^bdi_thresh
 
-  CC      drivers/media/video/omap3isp/ispccdc.o
-/home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c: In function 'ccdc_lsc_config':
-/home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c:427:2: error: implicit declaration of function 'kzalloc' [-Werror=implicit-function-declaration]
-/home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c:427:6: warning: assignment makes pointer from integer without a cast [enabled by default]
 
-This patch adds the missing 'linux/slab.h' include to fix the problem.
+So why not call the thing bdi freerun ?
 
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org
-Cc: linux-omap@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/media/video/omap3isp/ispccdc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+>   * (o) bdi control lines
+>   *
+>   * The control lines for the global/bdi setpoints both stretch up to @limit.
+> @@ -634,6 +644,22 @@ static unsigned long bdi_position_ratio(
+>  	pos_ratio *= x_intercept - bdi_dirty;
+>  	do_div(pos_ratio, x_intercept - bdi_setpoint + 1);
+>  
+> +	/*
+> +	 * bdi reserve area, safeguard against dirty pool underrun and disk idle
+> +	 *
+> +	 * It may push the desired control point of global dirty pages higher
+> +	 * than setpoint. It's not necessary in single-bdi case because a
+> +	 * minimal pool of @freerun dirty pages will already be guaranteed.
+> +	 */
+> +	x_intercept = min(write_bw, freerun);
+> +	if (bdi_dirty < x_intercept) {
 
-diff --git a/drivers/media/video/omap3isp/ispccdc.c b/drivers/media/video/omap3isp/ispccdc.c
-index 9d3459d..80796eb 100644
---- a/drivers/media/video/omap3isp/ispccdc.c
-+++ b/drivers/media/video/omap3isp/ispccdc.c
-@@ -31,6 +31,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/mm.h>
- #include <linux/sched.h>
-+#include <linux/slab.h>
- #include <media/v4l2-event.h>
- 
- #include "isp.h"
--- 
-1.7.4.1
+So the point of the freerun point is that we never throttle before it,
+so basically all the below shouldn't be needed at all, right? 
+
+> +		if (bdi_dirty > x_intercept / 8) {
+> +			pos_ratio *= x_intercept;
+> +			do_div(pos_ratio, bdi_dirty);
+> +		} else
+> +			pos_ratio *= 8;
+> +	}
+> +
+>  	return pos_ratio;
+>  }
+
+
+So why not add:
+
+	if (likely(dirty < freerun))
+		return 2;
+
+at the start of this function and leave it at that?
 
 
