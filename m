@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab1IFFD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 01:03:58 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:35297 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab1IFFDt (ORCPT
+	id S1752178Ab1IFFIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 01:08:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:32885 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421Ab1IFFIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 01:03:49 -0400
-Message-ID: <4E65A9AF.8080804@linux.vnet.ibm.com>
-Date: Tue, 06 Sep 2011 10:33:43 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	Tue, 6 Sep 2011 01:08:39 -0400
+Date: Tue, 6 Sep 2011 14:08:31 +0900
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        oleg@redhat.com, arnd@arndb.de,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [BUG] CPU hotplug, freezer: Freezing of tasks failed after 20.00
+ seconds
+Message-ID: <20110906050831.GA16976@htj.dyndns.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+ <201108192300.55405.rjw@sisk.pl>
+ <4E648DDA.8080605@linux.vnet.ibm.com>
+ <20110905141512.GE9807@htj.dyndns.org>
 MIME-Version: 1.0
-To: maciej.rutecki@gmail.com
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [BUG] Soft-lockup during cpu-hotplug in VFS callpaths
-References: <4E550057.9070609@linux.vnet.ibm.com> <201108312040.32531.maciej.rutecki@gmail.com> <4E64916B.4090205@linux.vnet.ibm.com> <201109052118.49293.maciej.rutecki@gmail.com>
-In-Reply-To: <201109052118.49293.maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110905141512.GE9807@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2011 12:48 AM, Maciej Rutecki wrote:
-> On poniedziałek, 5 września 2011 o 11:07:55 Srivatsa S. Bhat wrote:
->> On 09/01/2011 12:10 AM, Maciej Rutecki wrote:
->>> On środa, 24 sierpnia 2011 o 15:44:55 Srivatsa S. Bhat wrote:
->>>> Hi,
->>>>
->>>> While running stressful cpu hotplug tests along with kernel compilation
->>>> running in background, soft-lockups are detected on multiple CPUs.
->>>> Sometimes this also leads to hard lockups and kernel panic.
->>>> All the soft-lockups seem to occur at vfsmount_lock_local_cpu() or other
->>>> VFS callpaths.
->>>>
->>>>
->>>> [37108.410813] BUG: soft lockup - CPU#5 stuck for 22s! [cc1:29669]
->>>> <snip>
->>>> [37108.694781] Call Trace:
->>>> [37108.697306]  [<ffffffff81199e70>] ?
->>>> vfsmount_lock_local_lock_cpu+0x70/0x70 [37108.704258]
->>>> [<ffffffff81187cb5>] path_init+0x315/0x400
->>>> [37108.709558]  [<ffffffff8127c398>] ? __raw_spin_lock_init+0x38/0x70
->>>> [37108.715812]  [<ffffffff8118961c>] path_openat+0x8c/0x3f0
->>>> [37108.721203]  [<ffffffff81012129>] ? sched_clock+0x9/0x10
->>>> [37108.726597]  [<ffffffff8109416d>] ? sched_clock_cpu+0xcd/0x110
->>>> [37108.732508]  [<ffffffff810a178d>] ? trace_hardirqs_off+0xd/0x10
->>>> [37108.738498]  [<ffffffff8109421f>] ? local_clock+0x6f/0x80
->>>> [37108.743970]  [<ffffffff81189a99>] do_filp_open+0x49/0xa0
->>>> [37108.749362]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
->>>> [37108.754665]  [<ffffffff8152584b>] ? _raw_spin_unlock+0x2b/0x40
->>>> [37108.760575]  [<ffffffff811982f3>] ? alloc_fd+0xc3/0x210
->>>> [37108.765875]  [<ffffffff81179607>] do_sys_open+0x107/0x1e0
->>>> [37108.771352]  [<ffffffff810d610f>] ? audit_syscall_entry+0x1bf/0x1f0
->>>> [37108.777695]  [<ffffffff81179720>] sys_open+0x20/0x30
->>>> [37108.782741]  [<ffffffff8152e202>] system_call_fastpath+0x16/0x1b
->>>>
->>>> Kernel version: 3.0.1, 3.0.3
->>>> Hardware: Dual socket quad-core hyper-threaded Intel x86 machine
->>>> Scenario:
->>>> (a) Stressful cpu hotplug tests + kernel compilation
->>>>
->>>> (b) IRQ balancing had been disabled and all the IRQs  were made to be
->>>>
->>>>     routed to CPU 0 (except the ones that couldn't be routed).
->>>>
->>>> (c) Lockdep was enabled during kernel configuration.
->>>>
->>>> Steps (b) and (c) were done to dig deeper into the issue. However the
->>>> same issue was observed by just doing step (a).
->>>>
->>>> Definitely there seems to be a race condition occurring here, because
->>>> this issue is hit after sometime, after starting the tests. And the
->>>> time it takes to hit the issue increases as we increase the number of
->>>> debug print statements. In some cases (especially when the number of
->>>> debug print statements were quite high), the stress on the machine had
->>>> to be increased in order to hit the issue within measurable time. In my
->>>> tests, a maximum of about 2 to 2.5 hours was sufficient, to hit this
->>>> bug.
->>>>
->>>> Please find the console log attached with this mail.
->>>>
->>>> Any ideas on how to go about fixing this bug?
->>>
->>> It is a regression?
->>
->> Hi Maciej,
->>
->> Thank you for taking a look.
->> Yes, it seems to be a regression. I tested out kernel 2.6.39.3 with similar
->> test cases for quite a long time, and it did not hit any soft-lockup
->> issues.
+Hello, again.
+
+On Mon, Sep 05, 2011 at 11:15:12PM +0900, Tejun Heo wrote:
+> >  Freezing of tasks failed after 20.01 seconds (2 tasks refusing to freeze, wq_busy=0):
+> >  invert_cpu_stat D 0000000000000000  5304 20435  17329 0x00000084
+> >   ffff8801f367bab8 0000000000000046 ffff8801f367bfd8 00000000001d3a00
+> >   ffff8801f367a010 00000000001d3a00 00000000001d3a00 00000000001d3a00
+> >   ffff8801f367bfd8 00000000001d3a00 ffff880414cc6840 ffff8801f36783c0
+> >  Call Trace:
+> >   [<ffffffff81532de5>] schedule_timeout+0x235/0x320
+> >   [<ffffffff81532a0b>] wait_for_common+0x11b/0x170
+> >   [<ffffffff81532b3d>] wait_for_completion+0x1d/0x20
+> >   [<ffffffff81364486>] _request_firmware+0x156/0x2c0
+> >   [<ffffffff81364686>] request_firmware+0x16/0x20
+> >   [<ffffffffa01f0da0>] request_microcode_fw+0x70/0xf0 [microcode]
+> >   [<ffffffffa01f0390>] microcode_init_cpu+0xc0/0x100 [microcode]
+> >   [<ffffffffa01f14b4>] mc_cpu_callback+0x7c/0x11f [microcode]
+> >   [<ffffffff815393a4>] notifier_call_chain+0x94/0xd0
+> >   [<ffffffff8109770e>] __raw_notifier_call_chain+0xe/0x10
+> >   [<ffffffff8106d000>] __cpu_notify+0x20/0x40
+> >   [<ffffffff8152cf5b>] _cpu_up+0xc7/0x10e
+> >   [<ffffffff8152d07b>] cpu_up+0xd9/0xec
+> >   [<ffffffff8151e599>] store_online+0x99/0xd0
+> >   [<ffffffff81355eb0>] sysdev_store+0x20/0x30
+> >   [<ffffffff811f3096>] sysfs_write_file+0xe6/0x170
+> >   [<ffffffff8117ee50>] vfs_write+0xd0/0x1a0
+> >   [<ffffffff8117f024>] sys_write+0x54/0xa0
+> >   [<ffffffff8153df02>] system_call_fastpath+0x16/0x1b
 > 
-> Thanks for the answer. I create bug entry:
-> https://bugzilla.kernel.org/show_bug.cgi?id=42402
+> So, this task is trying to bring a CPU up, which triggers firmware
+> helper to load microcode.  Firmware class currently sleeps
+> non-interruptibly to wait for firmware load to complete, which is
+> performed by another userland task.  Now, the PM freezer doesn't
+> assume that there will be non-freezable wait dependencies among
+> userland tasks.  It only knows two levels - userland and kernel tasks
+> - and assumes that the former group may have non-freezable wait
+> dependency on the latter but there's no such dependency among each
+> group itself.  If there's such dependency, PM freezer may fail, which
+> is what happened here.
+> 
+> ie. the firmware loader userland process got frozen first.
+> invert_cpu_stat trying to bring up CPU was waiting for the firmware
+> loader to finish in non-interruptible sleep, so the freezer couldn't
+> proceed.
 
-Oh thank you. But I had created an entry myself in bugzilla, immediately after I posted on the
-mailing list. (https://bugzilla.kernel.org/show_bug.cgi?id=42382)
-I will however delete my entry since we don't want duplicates and moreover the 'Product'
-and 'Component' fields in your entry seems more appropriate with respect to the bug.
+Hmmm... I went through the code again and usermodehelper_disable()
+seems to be there to prevent deadlocks like this.  usermode helpers
+are drained & plugged before freezing is tried.  Rafael, the above
+shouldn't be happening, right?
 
-Thanks again.
+Thanks.
 
 -- 
-Regards,
-Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
-Linux Technology Center,
-IBM India Systems and Technology Lab
+tejun
