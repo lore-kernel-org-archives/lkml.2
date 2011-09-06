@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab1IFRUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 13:20:49 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:40516 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757Ab1IFRUp (ORCPT
+	id S1752937Ab1IFRXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 13:23:41 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51535 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab1IFRXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 13:20:45 -0400
-Message-id: <4E665653.7070807@acm.org>
-Date: Tue, 06 Sep 2011 12:20:19 -0500
-From: Corey Minyard <minyard@acm.org>
-Reply-to: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21)
- Gecko/20110831 Thunderbird/3.1.13
-MIME-version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>, Jack Steiner <steiner@sgi.com>
-Subject: Re: [V3][PATCH 3/6] x86, nmi: wire up NMI handlers to new routines
-References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
- <1314290748-23569-4-git-send-email-dzickus@redhat.com>
-In-reply-to: <1314290748-23569-4-git-send-email-dzickus@redhat.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
+	Tue, 6 Sep 2011 13:23:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACqU3MXcZ72eYNd=duPYdR_gOe-ejnHoLSMqK_ZU3y=MR2-0+A@mail.gmail.com>
+References: <20110906164049.4dd3961cb82800b8d7cc8741@canb.auug.org.au>
+	<CACqU3MXcZ72eYNd=duPYdR_gOe-ejnHoLSMqK_ZU3y=MR2-0+A@mail.gmail.com>
+Date: Tue, 6 Sep 2011 13:23:33 -0400
+Message-ID: <CA+5PVA7CETUa0i3U20ifz5YjXAywTGD2NEQt1GcJz1OwY_DtEg@mail.gmail.com>
+Subject: Re: linux-next: no tree for Sept 6
+From: Josh Boyer <jwboyer@gmail.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/2011 11:45 AM, Don Zickus wrote:
-> diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
-> index 3302586..3dcab56 100644
-> --- a/drivers/char/ipmi/ipmi_watchdog.c
-> +++ b/drivers/char/ipmi/ipmi_watchdog.c
-> @@ -1077,17 +1077,8 @@ static void ipmi_unregister_watchdog(int ipmi_intf)
+On Tue, Sep 6, 2011 at 1:17 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
 >
->   #ifdef HAVE_DIE_NMI
->   static int
-> -ipmi_nmi(struct notifier_block *self, unsigned long val, void *data)
-> +ipmi_nmi(unsigned int val, struct pt_regs *regs)
->   {
-> -	struct die_args *args = data;
-> -
-> -	if (val != DIE_NMIUNKNOWN)
-> -		return NOTIFY_OK;
-> -
-> -	/* Hack, if it's a memory or I/O error, ignore it. */
-> -	if (args->err&  0xc0)
-> -		return NOTIFY_OK;
-> -
->   	/*
->   	 * If we get here, it's an NMI that's not a memory or I/O
->   	 * error.  We can't truly tell if it's from IPMI or not
- From the comment above, this will not actually work for the IPMI 
-watchdog.  The only way to tell if an NMI is from the IPMI controller is 
-to send a message to the IPMI controller and wait for the response.  Not 
-an option in an NMI handler.  So the IPMI watchdog driver relied on it 
-being last, and if nothing else handled the NMI, then it must have been 
-from the IPMI controller.
+> On Tue, Sep 6, 2011 at 2:40 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> With master.kernel.org down, there is not much change from yesterday and
+>> I cannot publish the resulting linux-next tree anyway, so there is no
+>> tree today.
+>>
+> What about github ? gitorious ?
+>
+> If you fork linus' tree on github, you should still be within the disk
+> usage limit. My linux-2.6-next.git bare tree mirror is about 303MB.
 
-This is stupid, I know, but that's the way it works in IPMI.  If we 
-decide to do what you are suggesting we will have to disable this 
-function in the IPMI watchdog driver or we need some way to say "if 
-nothing else handled the NMI, call this."
+Well... that would be helpful if all of the trees that linux-next
+pulls from are hosted somewhere other than kernel.org as well.  A lot
+of them are not, which means you would get an incomplete linux-next
+tree at best.  Probably better to just wait.
 
--corey
-
+josh
