@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1IFOMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 10:12:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50846 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754632Ab1IFOMt convert rfc822-to-8bit (ORCPT
+	id S1754689Ab1IFOUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 10:20:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:47028 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752322Ab1IFOUJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 10:12:49 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: "Ravi, Deepthy" <deepthy.ravi@ti.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Tue, 6 Sep 2011 19:42:35 +0530
-Subject: RE: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-Thread-Topic: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-Thread-Index: AcxrylGG+5M5gKRuRBiJReCxdvlFKQAqONiw
-Message-ID: <19F8576C6E063C45BE387C64729E739404EC6BEE0C@dbde02.ent.ti.com>
-References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com>
- <201109041101.05028.laurent.pinchart@ideasonboard.com>
- <4E637DEC.5080507@infradead.org>
- <201109051449.50744.laurent.pinchart@ideasonboard.com>
-In-Reply-To: <201109051449.50744.laurent.pinchart@ideasonboard.com>
+	Tue, 6 Sep 2011 10:20:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,338,1312182000"; 
+   d="scan'208";a="49482751"
+From: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
+To: Arjan van de Ven <arjan@infradead.org>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 6 Sep 2011 19:49:35 +0530
+Subject: RE: Player Thread is not woken after period elapsed
+Thread-Topic: Player Thread is not woken after period elapsed
+Thread-Index: Acxr+E+7B0E9ShsgR9yHhSUoJBu5MQApyKgg
+Message-ID: <3CA6C6D9F70D314CA34352990B57DA1507C4275D58@bgsmsx502.gar.corp.intel.com>
+References: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
+	<20110905105253.2787b91f@infradead.org>
+	<3CA6C6D9F70D314CA34352990B57DA1507C420F15C@bgsmsx502.gar.corp.intel.com>
+ <20110905112225.72b46ac9@infradead.org>
+In-Reply-To: <20110905112225.72b46ac9@infradead.org>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,74 +36,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> -----Original Message-----
-> From: Laurent Pinchart [mailto:laurent.pinchart@ideasonboard.com]
-> Sent: Monday, September 05, 2011 6:20 PM
-> To: Mauro Carvalho Chehab
-> Cc: Hiremath, Vaibhav; Ravi, Deepthy; linux-media@vger.kernel.org; linux-
-> kernel@vger.kernel.org; linux-omap@vger.kernel.org
-> Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
+> please do not top post!
 > 
-> Hi Mauro,
+Ok. 
+> correcting that mistake for you for this time
 > 
-> On Sunday 04 September 2011 15:32:28 Mauro Carvalho Chehab wrote:
-> > Em 04-09-2011 06:01, Laurent Pinchart escreveu:
-> > > On Sunday 04 September 2011 00:21:38 Mauro Carvalho Chehab wrote:
-> > >> Em 24-08-2011 10:25, Laurent Pinchart escreveu:
-> > >>> On Wednesday 24 August 2011 14:19:01 Hiremath, Vaibhav wrote:
-> > >>>> On Wednesday, August 24, 2011 5:00 PM Laurent Pinchart wrote:
-> > >>>>> On Wednesday 24 August 2011 13:21:27 Ravi, Deepthy wrote:
-> > >>>>>> On Wed, Aug 24, 2011 at 4:47 PM, Laurent Pinchart wrote:
-> > >>>>>>> On Friday 19 August 2011 15:48:45 Deepthy Ravi wrote:
-> > >>>>>>>> From: Vaibhav Hiremath <hvaibhav@ti.com>
-> > >>>>>>>>
-> > >>>>>>>> Fix the build break caused when CONFIG_MEDIA_CONTROLLER
-> > >>>>>>>> option is disabled and if any sensor driver has to be used
-> > >>>>>>>> between MC and non MC framework compatible devices.
-> > >>>>>>>>
-> > >>>>>>>> For example,if tvp514x video decoder driver migrated to
-> > >>>>>>>> MC framework is being built without CONFIG_MEDIA_CONTROLLER
-> > >>>>>>>> option enabled, the following error messages will result.
-> > >>>>>>>> drivers/built-in.o: In function `tvp514x_remove':
-> > >>>>>>>> drivers/media/video/tvp514x.c:1285: undefined reference to
-> > >>>>>>>> `media_entity_cleanup'
-> > >>>>>>>> drivers/built-in.o: In function `tvp514x_probe':
-> > >>>>>>>> drivers/media/video/tvp514x.c:1237: undefined reference to
-> > >>>>>>>> `media_entity_init'
-<snip>
-> I don't mind splitting the config option. An alternative would be to
-> compile
-> media_entity_init() and media_entity_cleanup() based on
-> CONFIG_MEDIA_SUPPORT
-> instead of CONFIG_MEDIA_CONTROLLER, but that looks a bit hackish to me.
+Thanks so much.
 > 
-> > Also, I don't like the idea of increasing drivers complexity for the
-> > existing drivers that work properly without MC. All those core
-> conversions
-> > that were done in the last two years caused already too much instability
-> > to them.
+> >> > User thread which invokes the writei function which in turn invokes
+> >> > a kernel function which waits for the free buffer to write the
+> >> > audio data.  This kernel function adds this thread to a
+> >> > wake(sleep) queue and calls a schedule_timeout
+> >> > (msecs_to_jiffies(10000)).
 > >
-> > We should really avoid touching on them again for something that won't
-> be
-> > adding any new feature nor fixing any known bug.
+> >> actually it doesn't... you must be on some really really old kernel
+> >> or something.
+> >>
 > 
-> We don't have to convert them all in one go right now, we can implement
-> pad-
-> level operations support selectively when a subdev driver becomes used by
-> an
-> MC-enabled host/bridge driver.
+> > Sorry, I have not provided the kernel version. Kernel version is
+> > 2.6.35.
 > 
-[Hiremath, Vaibhav] I completely agree that we should not be duplicating the code just for sake of it.
+> Please always test bugs like this with a recent kernel. 2.6.35 is pretty much 6
+> versions (and 18 months) behind and at that point you really have to test with
+> something newer first before asking others to help you and spend their time on
+> your problem.
+> 
+Unfortunately, I am stuck with that version as the product that I work on is on that version. 
+> 
+> >> > Will you provide some hint on how to go about identifying the root
+> >> > cause?
+> 
+> >> https://lkml.org/lkml/2011/9/5/201
+> 
+I manually ported the changes and verified. I still see the issue. Found more information which might throw more light into the problem. 
+p->state in try_to_wake_up() is 0 when it is expected to be 2 or 3.
 
-Isn't the wrapper approach seems feasible here? 
-
-Thanks,
-Vaibhav
-
-> > > This will result in no modification to the userspace.
+> > However, wait_for_avail() does not have the code similar to the one
+> > provided in the patch below.
+> 
+> the patch is against a recent kernel; no surprise that the code has changed in the
+> last 18 months....
+> 
 > 
 > --
-> Regards,
-> 
-> Laurent Pinchart
+> Arjan van de Ven 	Intel Open Source Technology Centre
+> For development, discussion and tips for power savings, visit
+> http://www.lesswatts.org
