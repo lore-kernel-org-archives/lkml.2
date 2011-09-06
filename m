@@ -1,97 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab1IFFRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 01:17:54 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:34888 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751648Ab1IFFRv (ORCPT
+	id S1752633Ab1IFFpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 01:45:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48517 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752031Ab1IFFpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 01:17:51 -0400
-Message-ID: <4E65ACF7.90501@ti.com>
-Date: Tue, 06 Sep 2011 10:47:43 +0530
-From: Santosh <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Tue, 6 Sep 2011 01:45:42 -0400
+Date: Mon, 5 Sep 2011 22:45:38 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>
+Subject: Re: [PATCH] backlight: Fix broken regulator API usage in l4f00242t03
+Message-ID: <20110906054537.GB20379@opensource.wolfsonmicro.com>
+References: <1315246208-26006-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <4E659A56.9060305@gmx.de>
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@freescale.com>
-CC: linux-arm-kernel@lists.infradead.org, khilman@ti.com,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        ccross@android.com
-Subject: Re: [PATCH v2 0/5] CPU PM notifiers
-References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com> <20110906023430.GA7651@S2100-06.ap.freescale.net>
-In-Reply-To: <20110906023430.GA7651@S2100-06.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E659A56.9060305@gmx.de>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 September 2011 08:04 AM, Shawn Guo wrote:
-> On Sat, Sep 03, 2011 at 08:09:10PM +0530, Santosh Shilimkar wrote:
->> Updates V2:
->> - The CPU PM notifiers are moved to generic level instead of keeping
->>    it ARM specific as per Rafael's comment.
->> - To avoid every driver duplicating the sys-core ops and cpu pm notfiers,
->>    the CPU PM common notifier is registering it in one place so that
->>    suspend is taken care.
->> - CPU COMPLEX events are renamed to more appropriate CPU CLUSTER.
->> - GIC distributor is not disabled to avoid the live locks. This is
->>    observed with CPUIDLE cases where at time CPU cluster fails to
->>    transition to low power states. As such there was no need to
->>    disable distributor in first place since on cluster reset, it
->>    will get disabled anyways.
->> - In VFP code, syscore ops are dropped in favour of CPU PM
->>    notifiers since S2R is already handled in core CPU PM notifiers.
->> - The last patch is an independent patch but can be pushed along with
->>    the other GIC changes done here.
->>
->> V1: [http://lwn.net/Articles/447259/]
->>
->> This patch set tries to address concerns with platform pm code
->> calling into the driver for every block in the Cortex A9s
->> during idle, hotplug, and suspend.  The first patch adds cpu pm
->> notifiers that can be called by platform code, the second uses
->> the notifier to save and restore the GIC state, and the third
->> saves the VFP state.
->>
->> The notifiers are used for two types of events, CPU PM events and
->> CPU cluster PM events.  CPU PM events are used to save and restore
->> per-cpu context when a single CPU is preparing to enter or has
->> just exited a low power state.  For example, the VFP saves the
->> last thread context, and the GIC saves banked CPU registers.
->>
->> CPU cluster events are used after all the CPUs in a power domain
->> have been prepared for the low power state.  The GIC uses these
->> events to save global register state.
->>
->> L2 cache is not covered by this patch set, as the determination
->> of when the L2 is reset and when it is retained is
->> platform-specific, and most of the APIs necessary are already
->>
->>
->> The series is tested with OMAP4 with S2R and CPUIDLE.
->>
->> The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
->>
->>    Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
->>
->> Colin Cross (5):
->>        cpu_pm: Add cpu power management notifiers
->>        cpu_pm: call notifiers during suspend
->>        ARM: gic: Use cpu pm notifiers to save gic state
->>        ARM: vfp: Use cpu pm notifiers to save vfp state
->>        ARM: gic: Allow gic arch extensions to provide irqchip flags
->>
-> Really appreciate the patches.  Now platform code needs to do nothing
-> to have GIC back to work across suspend/resume cycle.
->
-Yep.
+On Tue, Sep 06, 2011 at 03:58:14AM +0000, Florian Tobias Schandinat wrote:
+> Hm, it looks like Richard did not respond on this email address for months. But
+> I noticed there exists a Richard@linuxfoundation and according to
+> http://lwn.net/Articles/419640/rss
+> I'd guess it is the same person. If this is true, would you, Richard, *please*
+> update your email address in MAINTAINERS so people do not needlessly wait for
+> feedback for ages.
+> For the patch itself, it looks good to me, but I really feel not qualified to
+> handle the backlight things. So I'll let handle Andrew any backlight patches for
+> now but could carry patches in my tree if they get Richard's Ack/Signed-off.
 
-> On i.MX6Q:
->
-> Tested-and-Acked-by: Shawn Guo<shawn.guo@linaro.org>
->
-Thanks for testing.
-
-Regards
-Santosh
-
+They're both the same Richard and as far as I know both addresses work
+just as well, it's not an e-mail issue but more that Richard has been
+focusing on things other than kernel work recently and Andrew has been
+picking things up instead (as can be seen in the git history).
