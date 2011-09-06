@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab1IFRSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 13:18:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50887 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab1IFRSJ (ORCPT
+	id S1752847Ab1IFRT0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 13:19:26 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:41618 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab1IFRTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 13:18:09 -0400
-Message-ID: <4E6655D0.2080606@canonical.com>
-Date: Tue, 06 Sep 2011 10:18:08 -0700
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Lightning/1.0b2 Thunderbird/3.1.12
+	Tue, 6 Sep 2011 13:19:21 -0400
+Message-ID: <400150a2d773c6b7dd8f88e1b74c883d.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201109060305.19607.vda.linux@googlemail.com>
+References: <201109042311.18793.vda.linux@googlemail.com>
+    <1315231572.1888.35.camel@dhcp-25-63.brq.redhat.com>
+    <a9c6784bdb67df6d1eb8ccbdefec4e7f.squirrel@webmail.greenhost.nl>
+    <201109060305.19607.vda.linux@googlemail.com>
+Date: Tue, 6 Sep 2011 19:19:00 +0200
+Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <vda.linux@googlemail.com>
+Cc: "Denys Vlasenko" <dvlasenk@redhat.com>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: stefano.stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen: disable PV spinlocks on HVM
-References: <1315327307-392-1-git-send-email-stefano.stabellini@eu.citrix.com> <20110906170255.GA29839@dumpdata.com>
-In-Reply-To: <20110906170255.GA29839@dumpdata.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 74bd734068bee68206891dc8710ce62a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.09.2011 10:02, Konrad Rzeszutek Wilk wrote:
-> On Tue, Sep 06, 2011 at 05:41:47PM +0100, stefano.stabellini@eu.citrix.com wrote:
->> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->>
->> PV spinlocks cannot possibly work with the current code because they are
->> enabled after pvops patching has already been done, and because PV
->> spinlocks use a different data structure than native spinlocks so we
->> cannot switch between them dynamically. A spinlock that has been taken
->> once by the native code (__ticket_spin_lock) cannot be taken by
->> __xen_spin_lock even after it has been released.
-> 
-> Let me stick it on my 3.1-rc5 bug-fix list and add stable@kernel.org to it.
-> 
-> Stefan, if you have some time this week, and can test it - I can also
-> stick 'Tested-by' if you would like.
-> 
-> Thinking to send the patches on Friday.
-> 
->>
->> Reported-by: Stefan Bader <stefan.bader@canonical.com>
->> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->> ---
->>  arch/x86/xen/smp.c |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
->> index e79dbb9..51339b4 100644
->> --- a/arch/x86/xen/smp.c
->> +++ b/arch/x86/xen/smp.c
->> @@ -522,7 +522,6 @@ static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
->>  	WARN_ON(xen_smp_intr_init(0));
->>  
->>  	xen_init_lock_cpu(0);
->> -	xen_init_spinlocks();
->>  }
->>  
->>  static int __cpuinit xen_hvm_cpu_up(unsigned int cpu)
->> -- 
->> 1.7.2.3
->>
->>
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xensource.com
->> http://lists.xensource.com/xen-devel
+Hi,
 
-I'll try. Currently I only got a version tested that takes out the
-xen_init_lock_cpu calls as well.
+On Tue, September 6, 2011 03:05, Denys Vlasenko wrote:
+> On Monday 05 September 2011 19:44, Indan Zupancic wrote:
+>> On Mon, September 5, 2011 16:06, Denys Vlasenko wrote:
+>> > In case you meant that "if we request group-stop notifications by using
+>> > __WALL | WSTOPPED, and we get group-stop notification, and we do
+>> > PTRACE_CONT, then task does not run (it sits in group-stop until SIGCONT
+>> > or death)", then we have a problem: gdb can't use this interface, it
+>> > needs to be able to restart the thread (only one thread, not all of
+>> > them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
+>> > weird, but it's the real requirement from gdb users.
+>> [...]
+>> > SIGCONT's side effect of waking up from group-stop can't be blocked.
+>> > SIGCONT always wakes up all threads in thread group.
+>> > Using SIGCONT to control tracee will race with SIGCONTs from other
+>> > sources.
+>> >
+>> > This makes SIGCONT a too coarse instrument for the job.
+>> [...]
+>> > Yes... until gdb will want to give user a choice after SIGSTOP: continue
+>> > to sit in group-stop until SIGCONT (wasn't possible until
+>> > PTRACE_LISTEN), or continue executing (gdb's current behavior if user
+>> > uses "continue" command). Therefore, gdb needs a way to do both.
+>>
+>> Having thought a bit more about this, I think this is less of a problem
+>> than it seems, because for a group stop we get a ptrace event for each
+>> task, and this should be true for SIGCONT as well. So gdb could also
+>> always let the group stop happen, and only when prompted to do so by
+>> a user, continue one thread by sending SIGCONT and letting all the other
+>> threads hang in trapped state.
+>
+> Won't work. SIGCONT unpauses all threads in the thread group,
+> and _then_ it is delivered to one of the threads.
 
--Stefan
+No, it is delivered to _all_ threads. With current ptrace you never see a
+SIGCONT, but it should behave the same as SIGSTOP, which results in one
+ptrace event for each thread.
+
+> You can block
+> or ignore it, yes, but it is too late: the unpausing already happened,
+> and blocking/ignoring will only affect SIGCONT handler execution,
+> if the program has one.
+
+Not doing PTRACE_CONT will keep the thread hanging in trapped state.
+All threads get a SIGCONT, not only one, so you can pause all threads
+this way.
+
+Greetings,
+
+Indan
+
+
