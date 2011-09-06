@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab1IFKgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 06:36:21 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40619 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139Ab1IFKgP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 06:36:15 -0400
+	id S1754161Ab1IFKmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 06:42:24 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:18462 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab1IFKmS (ORCPT
+	<rfc822;groupwise-SJayaraman@suse.com:0:0>);
+	Tue, 6 Sep 2011 06:42:18 -0400
+Message-ID: <4E65F8B1.2090505@suse.de>
+Date: Tue, 06 Sep 2011 16:10:49 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+Reply-To: sjayaraman@suse.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <20110905223734.GB26980@sucs.org>
-References: <20110905223734.GB26980@sucs.org>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Tue, 6 Sep 2011 11:35:55 +0100
-X-Google-Sender-Auth: IriudZD_BDem3GqRumk6_jY_BF0
-Message-ID: <CAHkRjk4QXbzzS6_Ks8W_QF14ijQdrXUEN82ifnm8ecxenqYiKA@mail.gmail.com>
-Subject: Re: FUSE kmemleak report
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>
+CC: Shaohua Li <shaohua.li@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: [PATCH v3] block: document blk-plug
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 September 2011 23:37, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-> kmemleak is reporting that 32 bytes are being leaked by FUSE:
->
-> unreferenced object 0xe373b270 (size 32):
->  comm "fusermount", pid 1207, jiffies 4294707026 (age 2675.187s)
->  hex dump (first 32 bytes):
->    01 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00  ................
->    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->  backtrace:
->    [<b05517d7>] kmemleak_alloc+0x27/0x50
->    [<b0196435>] kmem_cache_alloc+0xc5/0x180
->    [<b02455be>] fuse_alloc_forget+0x1e/0x20
->    [<b0245670>] fuse_alloc_inode+0xb0/0xd0
->    [<b01b1a8c>] alloc_inode+0x1c/0x80
->    [<b01b290f>] iget5_locked+0x8f/0x1a0
->    [<b0246022>] fuse_iget+0x72/0x1a0
->    [<b02461da>] fuse_get_root_inode+0x8a/0x90
->    [<b02465cf>] fuse_fill_super+0x3ef/0x590
->    [<b019e56f>] mount_nodev+0x3f/0x90
->    [<b0244e95>] fuse_mount+0x15/0x20
->    [<b019d1bc>] mount_fs+0x1c/0xc0
->    [<b01b5811>] vfs_kern_mount+0x41/0x90
->    [<b01b5af9>] do_kern_mount+0x39/0xd0
->    [<b01b7585>] do_mount+0x2e5/0x660
->    [<b01b7966>] sys_mount+0x66/0xa0
->
-> This leak report is consistent and happens once per boot on
-> 3.1.0-rc5-dirty.
+Thus spake Andrew Morton:
 
-IIUC, kmemleak reports the fuse_forget_link that corresponds to the
-root inode (allocated via fuse_fill_super). The root inode is later
-freed (did the mount failed?) but not the forget link. I'm not
-familiar with this code, so note exactly sure where the forget link
-should have been freed.
+"And I have the usual maintainability whine.  If someone comes up to
+vmscan.c and sees it calling blk_start_plug(), how are they supposed to
+work out why that call is there?  They go look at the blk_start_plug()
+definition and it is undocumented.  I think we can do better than this?"
 
--- 
-Catalin
+Adapted from the LWN article - http://lwn.net/Articles/438256/ by Jens
+Axboe and from an earlier attempt by Shaohua Li attempted to document
+blk-plug.
+
+Changes since -v2:
+
+  * clarify why we need not disable preemption while modifying the plug list.
+
+Changes since -v1:
+
+  * explain how blk_plug helps with potential deadlock avoidance.
+  * explain why we need blk-plug.
+  * add a note that cb_list is required by md.
+
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+---
+ block/blk-core.c       |   14 ++++++++++++++
+ include/linux/blkdev.h |   24 +++++++++++++++---------
+ 2 files changed, 29 insertions(+), 9 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 90e1ffd..ea360c8 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2626,6 +2626,20 @@ EXPORT_SYMBOL(kblockd_schedule_delayed_work);
+ 
+ #define PLUG_MAGIC	0x91827364
+ 
++/**
++ * blk_start_plug - initialize blk_plug and track it inside the task_struct
++ * @plug:	The &struct blk_plug that needs to be initialized
++ *
++ * Description:
++ *   Tracking blk_plug inside the task_struct will help with auto-flushing the
++ *   pending I/O should the task end up blocking between blk_start_plug() and
++ *   blk_finish_plug(). This is important from a performance perspective, but
++ *   also ensures that we don't deadlock. For instance, if the task is blocking
++ *   for a memory allocation, memory reclaim could end up wanting to free a
++ *   page belonging to that request that is currently residing in our private
++ *   plug. By flushing the pending I/O when the process goes to sleep, we avoid
++ *   this kind of deadlocks.
++ */
+ void blk_start_plug(struct blk_plug *plug)
+ {
+ 	struct task_struct *tsk = current;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 84b15d5..15b205d 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -863,17 +863,23 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
+ extern void blk_put_queue(struct request_queue *);
+ 
+ /*
+- * Note: Code in between changing the blk_plug list/cb_list or element of such
+- * lists is preemptable, but such code can't do sleep (or be very careful),
+- * otherwise data is corrupted. For details, please check schedule() where
+- * blk_schedule_flush_plug() is called.
++ * blk_plug allows to build up a queue of related requests by holding the I/O
++ * fragments for a short period. This allows merging of sequential requests
++ * into single larger request. As the requests are moved from per-task list to
++ * the device's request_queue in a batch, this results in improved
++ * scalability as the lock contention for request_queue lock is reduced.
++ *
++ * It is ok not to disable preemption when adding the request to the plug list
++ * or when attempting merge, because blk_schedule_flush_list() will only flush
++ * the plug list when the task sleeps by itself. For details, please check
++ * schedule() where blk_schedule_flush_plug() is called.
+  */
+ struct blk_plug {
+-	unsigned long magic;
+-	struct list_head list;
+-	struct list_head cb_list;
+-	unsigned int should_sort;
+-	unsigned int count;
++	unsigned long magic; /* detect uninitialized use-cases */
++	struct list_head list; /* requests */
++	struct list_head cb_list; /* md requires an unplug callback */
++	unsigned int should_sort; /*list to be sorted before flushing? */
++	unsigned int count; /* request count to avoid list getting too big */
+ };
+ #define BLK_MAX_REQUEST_COUNT 16
+ 
