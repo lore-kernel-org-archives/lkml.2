@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab1IFKQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 06:16:26 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:13873
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753316Ab1IFKQT (ORCPT
+	id S1754167Ab1IFKgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 06:36:21 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40619 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754139Ab1IFKgP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 06:16:19 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LR3J5Y-02-0RG-02
-X-M-MSG: 
-Date: Tue, 6 Sep 2011 12:15:35 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH/RFC 0/7] iommu: fixes & extensions
-Message-ID: <20110906101535.GT16691@amd.com>
-References: <1314984756-4400-1-git-send-email-ohad@wizery.com>
+	Tue, 6 Sep 2011 06:36:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1314984756-4400-1-git-send-email-ohad@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110905223734.GB26980@sucs.org>
+References: <20110905223734.GB26980@sucs.org>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Tue, 6 Sep 2011 11:35:55 +0100
+X-Google-Sender-Auth: IriudZD_BDem3GqRumk6_jY_BF0
+Message-ID: <CAHkRjk4QXbzzS6_Ks8W_QF14ijQdrXUEN82ifnm8ecxenqYiKA@mail.gmail.com>
+Subject: Re: FUSE kmemleak report
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 01:32:29PM -0400, Ohad Ben-Cohen wrote:
-> 5 first patches are relatively small iommu fixes/cleanups.
-> 
-> 2 last patches are proposals for core iommu extensions:
-> - Add fault report mechanism, needed for recovery of remote processors
->   trying to access unmapped addresses.
-> - Add splitting of memory regions to pages in the iommu core itself
->   (according to hardware capabilities as advertised by the iommu drivers).
->   This is needed to prevent duplication of this logic by
->   the iommu users/drivers themselves.
-> 
-> The patches are based on Joerg's arm/omap branch.
-> 
-> Tested with OMAP3 (omap3isp) + OMAP4 (rpmsg/remoteproc).
-> 
-> Laurent Pinchart (1):
->   iommu/omap-iovmm: support non page-aligned buffers in iommu_vmap
-> 
-> Ohad Ben-Cohen (6):
->   iommu/omap: cleanup: remove a redundant 'return' statement
->   iommu/core: use the existing IS_ALIGNED macro
->   iommu/omap: ->unmap() should return order of unmapped page
->   iommu/msm: ->unmap() should return order of unmapped page
->   iommu/core: add fault reporting
->   iommu/core: split mapping to page sizes as supported by the hardware
+On 5 September 2011 23:37, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
+> kmemleak is reporting that 32 bytes are being leaked by FUSE:
+>
+> unreferenced object 0xe373b270 (size 32):
+>  comm "fusermount", pid 1207, jiffies 4294707026 (age 2675.187s)
+>  hex dump (first 32 bytes):
+>    01 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00  ................
+>    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>  backtrace:
+>    [<b05517d7>] kmemleak_alloc+0x27/0x50
+>    [<b0196435>] kmem_cache_alloc+0xc5/0x180
+>    [<b02455be>] fuse_alloc_forget+0x1e/0x20
+>    [<b0245670>] fuse_alloc_inode+0xb0/0xd0
+>    [<b01b1a8c>] alloc_inode+0x1c/0x80
+>    [<b01b290f>] iget5_locked+0x8f/0x1a0
+>    [<b0246022>] fuse_iget+0x72/0x1a0
+>    [<b02461da>] fuse_get_root_inode+0x8a/0x90
+>    [<b02465cf>] fuse_fill_super+0x3ef/0x590
+>    [<b019e56f>] mount_nodev+0x3f/0x90
+>    [<b0244e95>] fuse_mount+0x15/0x20
+>    [<b019d1bc>] mount_fs+0x1c/0xc0
+>    [<b01b5811>] vfs_kern_mount+0x41/0x90
+>    [<b01b5af9>] do_kern_mount+0x39/0xd0
+>    [<b01b7585>] do_mount+0x2e5/0x660
+>    [<b01b7966>] sys_mount+0x66/0xa0
+>
+> This leak report is consistent and happens once per boot on
+> 3.1.0-rc5-dirty.
 
-Ok, I applied 1-5 to their respective branches. Patch 6 needs some more
-discussion to make sure the interface is generally usable. Patch 7 seems
-to be a starting point for now. This definitly requires conversion of
-the other IOMMU drivers too.
-Please make individual patch-sets from patch 6 and 7 respectivly.
-
-	Joerg
+IIUC, kmemleak reports the fuse_forget_link that corresponds to the
+root inode (allocated via fuse_fill_super). The root inode is later
+freed (did the mount failed?) but not the forget link. I'm not
+familiar with this code, so note exactly sure where the forget link
+should have been freed.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Catalin
