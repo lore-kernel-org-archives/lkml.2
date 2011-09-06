@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab1IFVpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 17:45:39 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54629 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab1IFVpg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 17:45:36 -0400
-Date: Tue, 6 Sep 2011 23:45:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] clockevents: Use an atomic RCU notifier for
- clockevents
-In-Reply-To: <20110906203338.GL7761@one.firstfloor.org>
-Message-ID: <alpine.LFD.2.02.1109062235530.2723@ionos>
-References: <1314652136-11350-1-git-send-email-andi@firstfloor.org> <alpine.LFD.2.02.1109062120420.2723@ionos> <20110906203338.GL7761@one.firstfloor.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752333Ab1IFWM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 18:12:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26188 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab1IFWMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 18:12:22 -0400
+Date: Wed, 7 Sep 2011 00:08:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
+Message-ID: <20110906220827.GA1800@redhat.com>
+References: <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com> <20110906031411.GA24024@alboin.amr.corp.intel.com> <20110906145124.GA15390@redhat.com> <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LFD.2.02.1109061823100.2723@ionos> <20110906184926.GA25997@redhat.com> <alpine.LFD.2.02.1109062110090.2723@ionos> <20110906192626.GA27362@redhat.com> <alpine.LFD.2.02.1109062134010.2723@ionos>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1109062134010.2723@ionos>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Sep 2011, Andi Kleen wrote:
+On 09/06, Thomas Gleixner wrote:
+>
+> On Tue, 6 Sep 2011, Oleg Nesterov wrote:
+>
+> > But how this can help? Suppose that the task is preempted right
+> > after dequeue_signal() drops ->siglock. We need rcu_read_lock()
+> > before unlock then, no?
+>
+> Crap, you are right, but that's fortunately an easy to solve one :)
 
-> On Tue, Sep 06, 2011 at 09:23:55PM +0200, Thomas Gleixner wrote:
-> > On Mon, 29 Aug 2011, Andi Kleen wrote:
-> > 
-> > > From: Andi Kleen <ak@linux.intel.com>
-> > > 
-> > > Use an atomic_notifier instead of a raw_notifier for the clockevents
-> > > notification.
-> > > 
-> > > This avoids a global lock in the idle path, is a scalability
-> > > problem. With this patch we don't have a global lock anymore
-> > > at least on systems with an always running timer.
-> > 
-> > And why is that code called on a system with an always running local
-> > apic timer at all? The broadcast horror is explicitely only for those
-> > systems with wreckaged hardware.
-> 
-> Because the notifier is before the check for always running local apic timer.
+Yes, this is solvable. But I think we can do something better.
 
-The idle code, at least the one in drivers/idle/intel_idle.c, does
-_NOT_ call into that code at all when a reliable lapic timer is
-available:
+> > And. This breaks the accounting logic. I mean the patch from Andi
+> > which adds the limits.
+>
+> That's a different problem and really, it does not break it by any
+> means. When the timer is released, then the count is decreased and we
+> can safely assume that the memory is going to be freed in the next
+> grace period.
 
-        if (!(lapic_timer_reliable_states & (1 << (cstate))))
-	   clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+Yes, but this means we need the counter which we do not have.
 
-....
+I think we can avoid this problems. Although I am not sure, I am
+already sleeping.
 
-	if (boot_cpu_has(X86_FEATURE_ARAT))     /* Always Reliable APIC Timer */
-                lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
+	- we add rcu_read_lock() into dequeueu_signal().
 
-Same applies for drivers/acpi/processor_idle.c
+	- we add the new "struct k_itimer *my_timer" member into
+	 siginfo._timer. Like _sys_private it is not passed to
+	 user, and perhaps we can kill _sys_private later.
 
-Though according to your changelog something is calling that
-clockevents callchain despite of an ALWAYS RUNNING local apic
-timer. That means:
+	 It is initialized in sys_timer_create() along with
+	 info.si_tid/etc
 
-Either you are using different code or your machine does not have that
-ARAT flag set.
+	- release_posix_timer() nullifies tmr->sigq->my_timer
 
- - If your machine has the ARAT feature, then calling into the
-   clockevents code is fcking wrong.
+	- do_schedule_next_timer() does
 
- - If your machine does NOT have the ARAT feature, then removing that
-   lock is nice, but has ABSOLUTELY NOTHING TO DO WITH AN ALWAYS
-   RUNNING TIMER.
+	 	timr = info->my_timer;
+	 	if (!timr)
+	 		return;
 
-> You also get bonus points for a incredible convoluted call chain,
-> about 50% of it being unnecessary and full of scalability problems.
+		// protected by rcu
 
-I gladly accept those bonus points for writing correct code, which was
-never meant to be scalable on larger systems at all. Assuming that
-HPET broadcasting is scalable in any way is just hilarious.
+	 	spin_lock_irq(timr->it_lock);
+	 	if (!timr->it_signal) {
+	 		spin_unlock_irq();
+	 		return;
+	 	}
 
-I'm sorry that I'm not able to return the favour of bonus points for
-you. There are no bonus points for sloppy patches, sloppy changelogs
-and ignorance vs. the problems at hand.
+	 	....
 
-I'm reserving those bonus points for you once you come up with the
-patches which remove those 50 percent unnecessary code along with the
-scalability problems without breaking the world and some
-more. According to your profound analysis above and the other perfect
-patches (including the perfect changelogs) which I had the pleasure to
-review today, this should be a trivial to solve problem for you.
+This also avoids idr_find(), and we do not need to delay idr_remove().
 
-Thanks,
+Possible?
 
-	tglx
+Oleg.
+
