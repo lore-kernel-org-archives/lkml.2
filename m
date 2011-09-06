@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab1IFIO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:14:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58561 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab1IFIOW (ORCPT
+	id S1753802Ab1IFISV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:18:21 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38819 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753292Ab1IFISH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:14:22 -0400
-Date: Tue, 6 Sep 2011 10:14:16 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Weber <weber@corscience.de>
-Cc: silesh@ti.com, Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:OMAP SUPPORT" <linux-omap@vger.kernel.org>,
-        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] OMAP: hsmmc: Fix mux for non-OMAP pins
-Message-ID: <20110906081416.GC28816@pengutronix.de>
-References: <4E6538A1.5090204@gmail.com>
- <1315296483-8442-1-git-send-email-weber@corscience.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1315296483-8442-1-git-send-email-weber@corscience.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 6 Sep 2011 04:18:07 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 3/5 v2] spi-topcliff-pch: Fix CPU read complete condition issue
+Date: Tue,  6 Sep 2011 17:16:36 +0900
+Message-Id: <1315296998-7296-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1315296998-7296-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1315296998-7296-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
+We found Rx data sometimes drops.(with non-DMA transfer mode)
+The cause is read complete condition is not true.
 
-On Tue, Sep 06, 2011 at 10:08:03AM +0200, Thomas Weber wrote:
-> The Devkit8000 uses a TWL4030 pin for card detection.
-> Thats why the error:
-> _omap_mux_init_gpio: Could not set gpio192
-> occurs.
-> 
-> This patch checks that the pin is on OMAP before
-> calling omap_mux_init_gpio.
-> 
-> Signed-off-by: Thomas Weber <weber@corscience.de>
-> ---
->  arch/arm/mach-omap2/hsmmc.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/hsmmc.c b/arch/arm/mach-omap2/hsmmc.c
-> index a9b45c7..783d0f1 100644
-> --- a/arch/arm/mach-omap2/hsmmc.c
-> +++ b/arch/arm/mach-omap2/hsmmc.c
-> @@ -214,10 +214,12 @@ static int nop_mmc_set_power(struct device *dev, int slot, int power_on,
->  static inline void omap_hsmmc_mux(struct omap_mmc_platform_data *mmc_controller,
->  			int controller_nr)
->  {
-> -	if (gpio_is_valid(mmc_controller->slots[0].switch_pin))
-> +	if (gpio_is_valid(mmc_controller->slots[0].switch_pin) && \
-That backslash at the line end is not needed and looks ugly.
+This patch fixes the issue.
 
-> +		(mmc_controller->slots[0].switch_pin < OMAP_MAX_GPIO_LINES))
->  		omap_mux_init_gpio(mmc_controller->slots[0].switch_pin,
->  					OMAP_PIN_INPUT_PULLUP);
-> -	if (gpio_is_valid(mmc_controller->slots[0].gpio_wp))
-> +	if (gpio_is_valid(mmc_controller->slots[0].gpio_wp) && \
-> +		(mmc_controller->slots[0].gpio_wp < OMAP_MAX_GPIO_LINES))
->  		omap_mux_init_gpio(mmc_controller->slots[0].gpio_wp,
->  					OMAP_PIN_INPUT_PULLUP);
->  	if (cpu_is_omap34xx()) {
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+v2: v1 patch series are included invalid patch file
+---
+ drivers/spi/spi-topcliff-pch.c |   19 +++++++++++--------
+ 1 files changed, 11 insertions(+), 8 deletions(-)
 
-Best regards
-Uwe
-
-
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index c36d516..6cb2fdb 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -317,16 +317,19 @@ static void pch_spi_handler_sub(struct pch_spi_data *data, u32 reg_spsr_val,
+ 
+ 	/* if transfer complete interrupt */
+ 	if (reg_spsr_val & SPSR_FI_BIT) {
+-		if (tx_index < bpw_len)
++		if ((tx_index == bpw_len) && (rx_index == tx_index)) {
++			/* disable interrupts */
++			pch_spi_setclr_reg(data->master, PCH_SPCR, 0, PCH_ALL);
++
++			/* transfer is completed;
++			   inform pch_spi_process_messages */
++			data->transfer_complete = true;
++			data->transfer_active = false;
++			wake_up(&data->wait);
++		} else {
+ 			dev_err(&data->master->dev,
+ 				"%s : Transfer is not completed", __func__);
+-		/* disable interrupts */
+-		pch_spi_setclr_reg(data->master, PCH_SPCR, 0, PCH_ALL);
+-
+-		/* transfer is completed;inform pch_spi_process_messages */
+-		data->transfer_complete = true;
+-		data->transfer_active = false;
+-		wake_up(&data->wait);
++		}
+ 	}
+ }
+ 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.4.4
+
