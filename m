@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1IFDp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 23:45:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41916 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab1IFDpw (ORCPT
+	id S1752604Ab1IFDtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 23:49:14 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:33204 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036Ab1IFDtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 23:45:52 -0400
-Date: Tue, 6 Sep 2011 12:45:44 +0900
-From: Tejun Heo <htejun@gmail.com>
-To: Bruce Stenning <b.stenning@indigovision.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Message-ID: <20110906034544.GB18425@mtj.dyndns.org>
-References: <20110525094127.GF10146@htj.dyndns.org>
- <4DF20E03.9030502@teksavvy.com>
- <20110610140155.GJ15235@htj.dyndns.org>
- <4DF25526.9010800@teksavvy.com>
- <20110611121957.GA7980@mtj.dyndns.org>
- <4DF4F30B.70702@teksavvy.com>
- <20110613104856.GC16021@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
- <20110902011305.GE2752@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+	Mon, 5 Sep 2011 23:49:04 -0400
+Date: Tue, 6 Sep 2011 12:48:57 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, tytso@mit.edu,
+        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu_counter: Put a reasonable upper bound on
+ percpu_counter_batch
+Message-ID: <20110906034851.GC18425@mtj.dyndns.org>
+References: <20110826072622.406d3395@kryten>
+ <20110826072927.5b4781f9@kryten>
+ <1314347983.2563.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20110829214609.495ee299@kryten>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+In-Reply-To: <20110829214609.495ee299@kryten>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Sep 02, 2011 at 05:22:38PM +0100, Bruce Stenning wrote:
-> Unfortunately it has so far been quite difficult to reproduce when specifically
-> attempting to.  In normal use cases I reproduced it twice by unplugging a drive
-> from a RAID array with redundancy intact.  This was out of around a dozen
-> cycles of waiting until redundancy was restored while the unit was under load,
-> popping the disk, reinserting, and triggering a RAID rebuild.
-
-Hmm... that's unfortunate.
-
-> I have only twice managed to trigger a lockup deliberately.  In both cases the
-> tracing showed a scheduled EH which was subsequently not enacted.
+On Mon, Aug 29, 2011 at 09:46:09PM +1000, Anton Blanchard wrote:
 > 
-> How long could it take for the EH to be enacted?  In the lockups that I
-> have reproduced it did not seem to have recovered minutes later, but perhaps
-> if I had waited longer...?  I have noticed that error recovery sometimes backs
-> off for 8s and even 33s, but it always warns when that sort of delay is coming
-> up.
+> When testing on a 1024 thread ppc64 box I noticed a large amount of
+> CPU time in ext4 code.
+> 
+> ext4_has_free_blocks has a fast path to avoid summing every free and
+> dirty block per cpu counter, but only if the global count shows more
+> free blocks than the maximum amount that could be stored in all the
+> per cpu counters.
+> 
+> Since percpu_counter_batch scales with num_online_cpus() and the maximum
+> amount in all per cpu counters is percpu_counter_batch * num_online_cpus(),
+> this breakpoint grows at O(n^2).
+> 
+> This issue will also hit with users of percpu_counter_compare which
+> does a similar thing for one percpu counter.
+> 
+> I chose to cap percpu_counter_batch at 1024 as a conservative first
+> step, but we may want to reduce it further based on further benchmarking.
+> 
+> Signed-off-by: Anton Blanchard <anton@samba.org>
 
-It should happen pretty quickly.  In such cases, fastdrain is
-activated and all pending commands are aborted if they complete in 3
-secs and then EH should kick in.  The backoff is from reset path only
-to give breathing time for devices which take long time to spin up and
-doesn't apply in this case.
-
-> I shall continue to try to track down why the scheduled EH does not happen.
-
-Can you please add some debug printk's to scsi_schedule_eh() and see
-whether scsi_eh_wakeup() is invoked from there?  It seems likely that
-the problem is caused by race conditions around
-SHOST_[CANCEL_]RECOVERY flags.
+Applied to percpu/for-3.2.
 
 Thanks.
 
