@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab1IFOik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 10:38:40 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:55779 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754700Ab1IFOic (ORCPT
+	id S1754740Ab1IFOkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 10:40:53 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:22641 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957Ab1IFOkq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 10:38:32 -0400
-X-Sasl-enc: K/BwLx3b097vzAkeLhULJyZ6vRNU/E/RPm24WVxhCX+E 1315319911
-Subject: Re: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
-From: Ian Kent <raven@themaw.net>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Leonardo Chiquitto <leonardo.lists@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        autofs@linux.kernel.org
-In-Reply-To: <87mxeixfaq.fsf@tucsk.pomaz.szeredi.hu>
-References: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
-	 <17416.1315240659@redhat.com> <87hb4q9b3r.fsf@tucsk.pomaz.szeredi.hu>
-	 <1315281208.3210.26.camel@perseus.themaw.net>
-	 <87mxeixfaq.fsf@tucsk.pomaz.szeredi.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Sep 2011 22:38:23 +0800
-Message-ID: <1315319903.3210.51.camel@perseus.themaw.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Sep 2011 10:40:46 -0400
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Tejun Heo <htejun@gmail.com>
+CC: Mark Lord <kernel@teksavvy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Date: Tue, 6 Sep 2011 15:40:44 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: AcxsR3qVsma9kNrcQci6tuL3n+jr+gAR4xXgAATVpSA=
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32D8DA54B73@gretna.indigovision.com>
+References: <20110525094127.GF10146@htj.dyndns.org>
+ <4DF20E03.9030502@teksavvy.com> <20110610140155.GJ15235@htj.dyndns.org>
+ <4DF25526.9010800@teksavvy.com> <20110611121957.GA7980@mtj.dyndns.org>
+ <4DF4F30B.70702@teksavvy.com> <20110613104856.GC16021@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
+ <20110902011305.GE2752@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+ <20110906034544.GB18425@mtj.dyndns.org> 
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-06 at 10:09 +0200, Miklos Szeredi wrote:
-> Ian Kent <raven@themaw.net> writes:
-> 
-> > On Mon, 2011-09-05 at 19:02 +0200, Miklos Szeredi wrote:
-> >> 
-> >> If automounting on lstat(2) is the correct behavior (is it?  why?)  then at
-> >> least it should be enabled by a global switch or mount option, IMO.
-> >
-> > Ideally we wouldn't need to take special precautions for these
-> > operations at all but we can't, especially for GUI environments that
-> > constantly scan file systems on mount/umount activity.
-> >
-> > Historically for autofs, neither stat(2) or lstat(2) would trigger a
-> > mount. With the current implementation stat(2) now does but lstat(2)
-> > doesn't which is a step in the right direction IMHO. So, I recommend we
-> > continue to encourage user space to make the needed changes so we
-> > continue to move in the right direction, and yes, I acknowledge it is a
-> > pain but it'll never get done otherwise.
-> 
-> I'm not quite convinced.  What's the advantage of triggering automount
-> on stat(2)?
+I wrote:
+> Is it attempting to wake the scsi_eh_3 thread while scsi_error_handler
+> is still processing an EH, which then calls scsi_restart_operations and
+> puts the scsi_eh_3 thread back to sleep again?
 
-You get the information of the directory of the mounted fs and for many
-peoples purposes automounting should be transparent so that would be
-best.
- 
-> 
-> Has anybody complained that stat(2) on the mountpoint doesn't cause an
-> automount?
+It does look to me as if there is a potential race between the scsi_eh thread
+and the wake-up mechanism.
 
-Yes, based on the reasoning above.
+host_eh_scheduled is read here in scsi_error_handler:
 
-I have plead my case on that a number of times and because I have had no
-choice but to continue with it the users have no choice but to accept
-it. For these people I recommend not using the "browse" option with
-autofs mount maps.
+        set_current_state(TASK_INTERRUPTIBLE);
+        while (!kthread_should_stop()) {
+                if ((shost->host_failed == 0 && shost->host_eh_scheduled == 0) ||
 
-For autofs this is only a problem for mount maps that use "browse"
-option. Basically ones where the mount point directory already exists
-and is later mounted upon. When the dentry doesn't exist exist a mount
-needs to be performed, at least it is needed to maintain previous
-semantics. Other users of automounting are usually mounting on
-directories that already exist, such as NFS crossing mount point
-directories. I'm pretty sure the automount should be transparent for
-them and similarly for CIFS DFS mounts.
+For scheduling an EH, scsi_schedule_eh takes the shost->host_lock, increments
+shost->host_eh_scheduled, and then wakes the EH thread.  If this happens
+between the scsi_eh thread reading host_eh_scheduled and sending itself to
+sleep, then nothing will wake up the thread and host_eh_scheduled will not
+be inspected again.
 
-Ian
+Is there some mechanism that I've missed to prevent this from happening?
 
 
+Bruce.
+
+
+Latest News at: http://www.indigovision.com/index.php/en/news.html
