@@ -1,103 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab1IFSzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 14:55:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34443 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab1IFSzR (ORCPT
+	id S1754258Ab1IFSzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 14:55:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59621 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753427Ab1IFSzs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 14:55:17 -0400
-Date: Tue, 6 Sep 2011 20:55:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 3/3] tick-broadcast: push down tick_broadcast_lock
-In-Reply-To: <20110906174939.GK7761@one.firstfloor.org>
-Message-ID: <alpine.LFD.2.02.1109062048190.2723@ionos>
-References: <1314652136-11350-1-git-send-email-andi@firstfloor.org> <1314652136-11350-3-git-send-email-andi@firstfloor.org> <alpine.LFD.2.02.1109061652200.2723@ionos> <20110906174939.GK7761@one.firstfloor.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 6 Sep 2011 14:55:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CACqU3MUC-m7AgEPG2C-V2SVKEhHxdYE8tOSFJvqO9Vq+JJEchw@mail.gmail.com>
+References: <4E65DF36.6040507@parrot.com>
+	<CACqU3MU9nuW+a3AJfY_PRqFH_tgaKtBJrp1pU2xpB_dHYANBXg@mail.gmail.com>
+	<4E663882.4050404@parrot.com>
+	<CACqU3MUC-m7AgEPG2C-V2SVKEhHxdYE8tOSFJvqO9Vq+JJEchw@mail.gmail.com>
+Date: Tue, 6 Sep 2011 14:55:47 -0400
+Message-ID: <CACqU3MUL0t6RYDRDQuiyco-ME=ccW6p+_pEkuRm_e=VAZa5HzA@mail.gmail.com>
+Subject: Re: randconfig broken on choice
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Sep 2011, Andi Kleen wrote:
+Hi,
 
-> On Tue, Sep 06, 2011 at 06:19:00PM +0200, Thomas Gleixner wrote:
-> 
-> > 
-> > There is no full solution to that problem other than using sane
-> > hardware.
-> 
-> Not convinced.
-> 
-> BTW can you at least merge the first patch for the notifiers. 
-> This fixes the "fixed hardware" which is currently broken too.
-> 
-> >  raw_spin_lock(&tick_broadcast_lock);
-> >  bc->next_event = KTIME_MAX;
-> >  for_each_online_cpu() {
-> > 	next_event = ...;
-> >  }
-> >  ....                                if (dev->next_event < bc->next_event) {
-> >                                        raw_spin_lock(&tick_broadcast_lock);
-> > 
-> >  tick_broadcast_set_event(next_event, 0);
-> >    bc->next_event = next_event;
-> > 
-> >  raw_spin_unlock(&tick_broadcast_lock);
-> >                                        tick_broadcast_set_event(dev->next_event, 1);
-> > 
-> > So you unconditionally set the broadcast device to dev->next_event of
-> > CPU1 even if the current pending event which was evaluated on CPU0 is
-> > _BEFORE_ the CPU1 event. That can cause stalls and other hard to debug
-> > horror. We've been there before.
-> 
-> I don't understand. It only sets it if the new event is earlier.
-> So it can never be set back.
+On Tue, Sep 6, 2011 at 11:32 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Tue, Sep 6, 2011 at 11:13 AM, Matthieu CASTET
+> <matthieu.castet@parrot.com> wrote:
+>> Hi,
+>>
+>> Arnaud Lacombe a écrit :
+>>> Hi,
+>>>
+>>> On Tue, Sep 6, 2011 at 4:52 AM, Matthieu CASTET
+>>> <matthieu.castet@parrot.com> wrote:
+>>>> Hi,
+>>>>
+>>>> I am using v3.1-rc4 and make randconfig look broken for choice.
+>>>> The choice config is always the same or choice entry can have more than one entry.
+>>>>
+>>> Could you includes testcases showing that behavior, please ?
+>> $ make randconfig
+>>
+>> $ grep -e SLUB -e SLAB -e SLOB .config
+>> # CONFIG_SLAB is not set
+>> CONFIG_SLUB=y
+>> CONFIG_SLOB=y
+>> # CONFIG_FAILSLAB is not set
+>>
+>> We have 2 choice selected (SLUB and SLOB). You may run randconfig (more than one
+>> time to get this result).
+>>
+> ok, I reproduced it with:
+>
+> while true; do
+>    make randconfig
+>    CONFIG_SLAB=; CONFIG_SLOB=; CONFIG_SLUB=
+>    source .config
+>    if [ "${CONFIG_SLAB}${CONFIG_SLOB}${CONFIG_SLUB}" != "y" ]; then
+>        break
+>    fi
+>    sleep 1
+> done
+>
+> I wonder what set the flags originally...
+>
+This is interesting; I'm always getting the following:
 
-If you read the above you see that the broadcast handler sets the next
-event to KTIME_MAX first. Then it looks for the next event and
-programs it to that expiry time.
+CONFIG_SLUB=y
+CONFIG_SLOB=y
 
-So when the check on the other CPU happens after CPU0 does
-bc->next_event = KTIME_MAX and before CPU0 finished reprogramming,
-then CPU1 sees KTIME_MAX and the comparison evaluates true. So CPU1
-waits for the lock which is held by CPU0 and then sets the BC device
-to CPU1 next event unconditionally, which might be _AFTER_ the already
-pending event which was set by CPU0.
- 
-> You seem to say the opposite?
+never CONFIG_SLAB and another one. Actually, the default of the choice
+ends up being selected along with the random one. Is this what you
+mean by "we don't take "sym->def[S_DEF_USER].tri" but the "default
+sym->cur.tri"" ? However, I do not see this behavior with the
+following reduced testcase:
 
-No, that's racy because you do not hold the lock when doing the
-comparision.
- 
-> > 
-> > Further the unprotected comparison on 32bit is completely bogus.
-> 
-> Ok.  Just need a ordered read like i_size_read().
-> 
-> > > -			if (dev->next_event.tv64 != KTIME_MAX)
-> > > +
-> > > +			/* Only take the lock if the event changes */
-> > > +			if (dev->next_event.tv64 != KTIME_MAX) {
-> > > +				raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
-> > 
-> > Why would you take the global lock to program the cpu local device?
-> > Just because it happened to be under that lock before?
-> 
-> Yes, I didn't audit that code. But probably it can be dropped
-> you're right.
+config EXPERT
+        bool
+        default y
 
-That's not a question of auditing, it's a question of understanding
-the code which you modify.
+choice
+        prompt "Choose SLAB allocator"
+        default SLUB
 
-Thanks,
+config SLAB
+        bool "SLAB"
 
-	tglx
+config SLUB
+        bool "SLUB (Unqueued Allocator)"
+
+config SLOB
+        depends on EXPERT
+        bool "SLOB (Simple Allocator)"
+
+endchoice
+
+Btw, you say that "we don't clean SYMBOL_VALID for choice entry", but
+AFAIU the code, we explicitly set the not-randomly-chosen choice value
+to 'no', so it's value should be valid.
+
+ - Arnaud
