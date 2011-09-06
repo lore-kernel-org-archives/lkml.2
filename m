@@ -1,119 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab1IFA4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 20:56:02 -0400
-Received: from mail-qw0-f42.google.com ([209.85.216.42]:41795 "EHLO
-	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab1IFAz4 convert rfc822-to-8bit (ORCPT
+	id S1753179Ab1IFBAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 21:00:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37876 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab1IFBAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 20:55:56 -0400
+	Mon, 5 Sep 2011 21:00:04 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: "Indan Zupancic" <indan@nul.nu>
+Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
+Date: Tue, 6 Sep 2011 02:59:58 +0200
+User-Agent: KMail/1.8.2
+Cc: "Denys Vlasenko" <dvlasenk@redhat.com>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+References: <201109042311.18793.vda.linux@googlemail.com> <1315231572.1888.35.camel@dhcp-25-63.brq.redhat.com> <744dea57ff4cf2cc5a694b743e83e158.squirrel@webmail.greenhost.nl>
+In-Reply-To: <744dea57ff4cf2cc5a694b743e83e158.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
-In-Reply-To: <4E64C4B9.5060201@suse.de>
-References: <4E5B77D5.7090006@suse.de>
-	<20110829144843.c8e9d397.akpm@linux-foundation.org>
-	<4E5C7359.7070602@suse.de>
-	<1314687646.29510.52.camel@sli10-conroe>
-	<4E64C4B9.5060201@suse.de>
-Date: Tue, 6 Sep 2011 08:55:55 +0800
-X-Google-Sender-Auth: gR1uqslFOKCCu1PBOYvfi0YRLxU
-Message-ID: <CANejiEUthhDDWh2oBOfVoApcKZenOT-qaYmGsWFBVpaCrqW=aA@mail.gmail.com>
-Subject: Re: [PATCH v2] block: document blk-plug
-From: Shaohua Li <shli@kernel.org>
-To: sjayaraman@suse.de
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        LKML <linux-kernel@vger.kernel.org>, Jonathan Corbet <corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201109060259.58820.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/9/5 Suresh Jayaraman <sjayaraman@suse.de>:
-> On 08/30/2011 12:30 PM, Shaohua Li wrote:
->> On Tue, 2011-08-30 at 13:21 +0800, Suresh Jayaraman wrote:
->>> On 08/30/2011 03:18 AM, Andrew Morton wrote:
->>>> On Mon, 29 Aug 2011 16:58:21 +0530
->>>> Suresh Jayaraman <sjayaraman@suse.de> wrote:
->>>>
->>>>> --- a/include/linux/blkdev.h
->>>>> +++ b/include/linux/blkdev.h
->>>>> @@ -863,17 +863,23 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
->>>>>  extern void blk_put_queue(struct request_queue *);
->>>>>
->>>>>  /*
->>>>> + * blk_plug allows to build up a queue of related requests by holding the I/O
->>>>> + * fragments for a short period. This allows merging of sequential requests
->>>>> + * into single larger request. As the requests are moved from per-task list to
->>>>> + * the device's request_queue in a batch, this results in improved
->>>>> + * scalability as the lock contention for request_queue lock is reduced.
->>>>> + *
->>>>>   * Note: Code in between changing the blk_plug list/cb_list or element of such
->>>>>   * lists is preemptable, but such code can't do sleep (or be very careful),
->>>>>   * otherwise data is corrupted. For details, please check schedule() where
->>>>>   * blk_schedule_flush_plug() is called.
->>>>
->>>> What does the older part of this comment mean?  If a code section is
->>>> preemptible then it *will* sleep.  That's what preemption does.
->>>>
->>>
->>> From what I can understand, we don't need to explicitly disable preemption
->>> when modifying the blk_plug->list because interrupts are disabled when we
->>> are there.
->>>
->>> void blk_flush_plug_list(struct blk_plug *plug, bool from_schedule)
->>> {
->>>
->>> ..
->>>
->>>         /*
->>>          * Save and disable interrupts here, to avoid doing it for every
->>>          * queue lock we have to take.
->>>          */
->>>         local_irq_save(flags);
->>>         while (!list_empty(&list)) {
->>>                 rq = list_entry_rq(list.next);
->>>                 list_del_init(&rq->queuelist);
->>>                 BUG_ON(!rq->q);
->>>                 if (rq->q != q) {
->>>                         /*
->>>                          * This drops the queue lock
->>>                          */
->>>                         if (q)
->>>                                 queue_unplugged(q, depth, from_schedule);
->>>                         q = rq->q;
->>>                         depth = 0;
->>>                         spin_lock(q->queue_lock);
->>>                 }
->>>
->>>
->>> ..
->>>
->>> }
->>>
->>> When blk_flush_plug_list() is called from schedule() via
->>> blk_schedule_flush_plug() we must be very careful to not cause
->>> need_resched set and thus result in a preemption check?
->>>
->>> Does that what your comment intend to mean? Shaohua?
->> the code adding request to the plug list and doing merge doesn't disable
->> preempt. That is ok because blk_schedule_flush_plug() only flush the
->> list when the task truly enters sleep (setting task->state non-running
->> and call schedule()). That's why I mean the code can be preempted but
->> can't do sleep.
->>
->
-> Sorry, I'm not sure I understood the above after reading it multiple times.
->
-> Yes, preemption is not disabled when adding request to the plug list and
-> doing merge. But, still there is a possibility of corruption for
-> instance - when we are doing list_add_tail() in __make_request(), we get
-> preempted and then go to a sleep. Before we go to sleep,
-> blk_scheduler_flush_plug() via schedule() tries to flush the list
-> leading to corruption, no? What am I missing?
-Not possible. blk_scheduler_flush_plug() is called with
-prev->state && !(preempt_count() & PREEMPT_ACTIVE
-if it's a preempt, prev->state is TASK_RUNNING,
-blk_scheduler_flush_plug isn't called.
+On Monday 05 September 2011 19:21, Indan Zupancic wrote:
+> >> The ptrace users who do want group stop to work usually don't want to
+> >> interfere with it, they just want to know about it.
+> >
+> > The point is, they can't "not interfere" with it. __WALL
+> > implicitly reports group-stops.
+> 
+> That can be changed. That is not documented behaviour of __WALL,
+> __WALL is supposed to tell for which tasks to give notifications,
+> not what kind. At least that's the impression after reading the
+> manpage.
+> 
+> If people want group-stop reports, they set WUNTRACED/WSTOPPED.
 
-Thanks,
-Shaohua
+Well, that is your interpretation. The fact is, existing programs
+either deliberately use __WALL in order to see (among other things)
+group-stops of tracees; or use __WALL and don't really care about
+group-stops they are getting - but they were debugged and tested
+on the kernels where group-stops were delivered on __WALL,
+thus they might break if that will stop happening.
+
+
+
+> >>  PTRACE_EVENT_STOP
+> >> makes the knowing slightly easier, but it doesn't fix group stop.
+> >
+> > Correct. PTRACE_LISTEN fixes it.
+> 
+> In a very convoluted way. It fixes the symptomps, but it doesn't fix
+> the problem, it works around it.
+
+Well, as far as I am concerned, PTRACE_LISTEN allows me to achieve what I need.
+
+If you don't like it just on the conceptual grounds, it may be
+a matter of taste.
+
+Do you see an actual problem with it, as in "something doesn't work right"?
+
+
+> >> making SIGSTOP behaviour like any other signal behaves with ptrace. To get
+> >> there, when PTRACE_O_SANE is set, the user space behaviour changes seen are
+> >> as follows:
+> >>
+> >> - In cases that ptrace sends a SIGSTOP, SIGTRAP is sent instead.
+> >>
+> >>   (Your 4th proposal). So that ptrace never changes the group stop state of a task.
+> >
+> > Problem. Now we interfere with SIGSTRAPs. Yes, there are users who want
+> > to be able to see real SIGTRAPs they send to the program,
+> > or ones generated by, say, int3 instruction on x86.
+> 
+> But SIGTRAP is ours, ptrace already sends SIGTRAPS at execve.
+
+...whcih causes problems, and therefore we have PTRACE_O_TRACEEXEC to suppress
+this idiotic post-execve SIGTRAP.
+
+> Only change is 
+> that it also sends one for new childs instead of SIGSTOP.
+
+Racing with user's SIGTRAP does not fix the problem, it merely moves it
+to a different signal. PTRACE_EVENT_STOP thingy fixes the problem once
+and for all.
+
+
+> In any case, this is not a new problem.
+
+That the problem is old doesn't mean we can ignore it.
+
+> But in the normal case non-ptrace traps aren't seen by tracees, if the tracer
+> takes some care (if it doesn't, then current program don't get their SIGTRAP
+> either).
+
+I don't understand this part.
+
+
+> > How will strace or gdb show that process has stopped, if it doesn't know
+> > it? With SIGSTOP it's not really important (user can infer that), but
+> > what about SIGTSTP? If strace says "SIGTSTP was delivered", is process
+> > stopped now, or is it looping in the SIGTSTP handler?
+> 
+> Never heard of SIGTSTP, I don't know TTY black magic.
+> 
+> Tracers that want to get group stop notifications will set WSTOPPED and get
+> that information that way. But as ptrace won't generate any SIGSTOPs, they
+> don't have to use GETSIGINFO to know if it came from ptrace or not: It never
+> does.
+
+Drats. In your proposal, if I'd set WSTOPPED, I will get group-stops, right?
+
+How in your proposed solution can I "restart and cancel group-stop" after
+group-stop? And how can I "restart and wait for a SIGCONT"?
+
+
+> >>   This prevents duplicate SIGSTOP events and the need to distinguish them
+> >>   from each other. No need for C.1 (PTRACE_EVENT_STOP). But if you still
+> >>   want it, it should be enabled by PTRACE_O_SANE too.
+> >
+> > I'm confused now. Does PTRACE_O_SANE disable or enable group-stop
+> > notifications?
+> 
+> Neither, it makes waitid() honour the presence and absence of the WSTOPPED
+> flag. It gives that choice back to the tracer.
+> 
+> >
+> >> - PTRACE_CONT does not continue a stopped task.
+> >
+> > You just said we will not get group-stops. How we can PTRACE_CONT from
+> > group-stop if we don't get group-stop?
+> 
+> Why would you want to do that? I think I don't understand you.
+
+Today both strace and gdb want to know about group-stops.
+If you think they should not, well, tough luck: their maintainers
+think otherwise.
+
+
+> > In case you meant that "if we request group-stop notifications by using
+> > __WALL | WSTOPPED, and we get group-stop notification, and we do
+> > PTRACE_CONT, then task does not run (it sits in group-stop until SIGCONT
+> > or death)",
+> 
+> Exactly.
+> 
+> A group-stop notification is not really a ptrace event (maybe it is now),
+> so PTRACE_CONT wouldn't be needed. It's just a group stop notification,
+> not a freeze, report and wait event, like signals.
+
+Yes, this would be a reasonable API model. PTRACE_CONT cancels group-stop,
+and *doing nothing* leaves task in the group-stop. One problem with this:
+many ptrace ops (such as GETREGS) are only allowed in ptrace stops.
+If you don't consider group-stop to be a ptrace-stop, then no such
+ops are allowed. In fact, even restart ops need stopped tracee, so PTRACE_CONT
+is illegal too. IOW: in this model, kernel doesn't know when we decided
+to go down *do nothing* route. From kernel POW, it is confused. Maybe we do
+want to PTRACE_CONT, but just didn't get around to it?
+
+
+> > then we have a problem: gdb can't use this interface, it
+> > needs to be able to restart the thread (only one thread, not all of
+> > them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
+> > weird, but it's the real requirement from gdb users.
+> 
+> Is that true? Isn't a SIGCONT sent to the TID only for that thread instead
+> of the whole group? That's slightly inconvenient indeed. Perhaps this
+> limitation can be fixed? Might be troublesome for the main thread.
+
+This is how stopping/starting works. It's per-process, not per-thread.
+Regardless of the thread it is sent to, stop signals stop all threads,
+and SIGCONT restarts all of them.
+
+
+> But this is for a group stop initiated by gdb, I suppose?
+
+It is true for any king of group-stop.
+
+> In that case gdb 
+> can just let the threads hang in the signal delivery path, and continue them
+> one by one, like it does now.
+
+It can't, since it doesn't know about signal handlers.
+
+> Any group signal would work for this, doesn't 
+> have to be SIGSTOP. E.g. a queueing rt signal that is blocked and never seen
+> by the tracee.
+
+I repeat: it is not about signals sent by gdb. It is about siganls sent by anyone.
+
+
+> >>  No need for PTRACE_LISTEN. Tracer has
+> >>   still full control over stopped state of tracee because it can block SIGSTOP
+> >>   and SIGCONT signals, and send them itself.
+> >
+> > SIGCONT's side effect of waking up from group-stop can't be blocked.
+> > SIGCONT always wakes up all threads in thread group.
+> > Using SIGCONT to control tracee will race with SIGCONTs from other
+> > sources.
+> >
+> > This makes SIGCONT a too coarse instrument for the job.
+> 
+> No kidding. Perhaps the solution is to not use group stops for this in
+> the first place.
+> 
+> But PTRACE_CONT results in one traced task running while the rest is still
+> stopped, that could be called an often unwanted side effect too.
+
+Yes. But gdb people want that. I and Oleg tried to persuade them to stop
+wanting that. The end result is that they persuaded us that it's needed.
+
+
+> >>  but it
+> >> has to because it gets multiple events for one SIGSTOP. And strace would
+> >> much prefer it if a SIGCONT on the tracee would continue it again.
+> >
+> > Yes. But gdb prefers otherwise. That's why we need PTRACE_LISTEN for
+> > strace, and PTRACE_CONT for gdb.
+> 
+> Or gdb can stop using group stops to achieve what it wants. Gdb is the 
+> strange use case, strace-like ptrace usage is the more common one. So
+> make the more common case simpler instead of complicating everything
+> for a corner gdb use case (however important it is).
+> 
+> Gdb can't want to have both transparent group stop behaviour, and also
+> hijack group stops for thread running control. Letting it hang in ptrace
+> is fine for gdb, that's what it does now. Let it keep doing it, it can
+> even let it hang in SIGSTOP delivery path, it doesn't really matter.
+> Only change is that tasks are in trapped state instead of actually
+> stopped. That is an improvement, because then unrelated SIGCONT's can't
+> interfere with gdb's debugging. But with PTRACE_CONT not continuing group
+> stopped tasks it gives gdb the ability to transparently debug externally
+> stopped and started tasks. It still can stop all tasks and continue them
+> one by one as it does now.
+
+In short: "screw gdb needs, the elegance of my idea is more important
+that their real world needs". Sorry, but we tried that, and it leads nowhere.
+
+
+> >> > As I said, gdb already depends on current ptrace behavior. We can't break it.
+> >>
+> >> Then it won't use all those new flags either, and adding anything new makes
+> >> no sense.
+> >
+> > Yes... until gdb will want to give user a choice after SIGSTOP: continue
+> > to sit in group-stop until SIGCONT (wasn't possible until
+> > PTRACE_LISTEN), or continue executing (gdb's current behavior if user
+> > uses "continue" command). Therefore, gdb needs a way to do both.
+> 
+> But are users expected to send SIGSTOPs manually when debugging, instead
+> of hitting ctlr+z or whatever?
+
+We don't know. We should handle the widest possible set of scenarios:
+^Z, manual signals, signals sent by kernel on bg I/O (such as SIGTTIN)...
+
+
+> Anyway, gdb can give this choice when it receives the SIGSTOP:
+> If users want it to go into group stop, gdb does PTRACE_CONT.
+> If users want to selectively continue running, gdb continues
+> select threads while blocking the SIGSTOP delivery.
+
+Here we go again. If gdb would block signal delivery, HOW DOES
+IT KNOW THAT THIS SIGNAL IS GOING TO CAUSE GROUP-STOP?
+Think about receiving SIGTSTP. Will it cause group-stop?
+
+
+> >> The behaviour you're defending is generally subtle and unexpected behaviour
+> >> that most ptrace users don't expect.
+> >
+> > What behavior do I defend? That we get both signal-stops and
+> > group-stops? I don't "defend" it, it's just what we _already have_. We
+> > need to do minimal amount of changes.
+> 
+> The group stop interference behaviour. I don't think that adding
+> PTRACE_INTERRUPT, PTRACE_LISTEN and all those new options is the
+> minimal amount of change, especially not when including the user
+> space changes needed to make use of this.
+
+Current group-stop fix is EXACTLY one new ptrace command: PTRACE_LISTEN.
+How you can make it more minimal, I have no idea.
+
+
+> > In short, you propose to make it possible to switch off group-stop
+> > notification.
+> 
+> That is just part of the proposal, the main this is to not let PTRACE_CONT
+> continue a stopped task.
+
+This will break gdb. I told this several times already. Not acceptable.
+
+
+> Switching off group-stop notifications makes it 
+> only easier to use ptrace when not specifically interested in group stops.
+
+Solution in the search of a problem.
+
+
+> > (2) in gdb case, this may be too constraining for us: we want to be able
+> > to decide what to do on group-stop *after* group-stop has happened!
+> 
+> See above, that should be still possible. Or am I missing something?
+
+Yes, you miss the fact that inferring group-stop on signal delivery
+is not reliable. The correct way to do it is to not *infer* it, but
+*observe* it when it really happens.
+
+-- 
+vda
