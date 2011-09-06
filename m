@@ -1,54 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab1IFJFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 05:05:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63883 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753584Ab1IFJFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 05:05:40 -0400
-Message-ID: <4E65E284.50102@cn.fujitsu.com>
-Date: Tue, 06 Sep 2011 17:06:12 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753948Ab1IFJOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 05:14:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38832 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753709Ab1IFJOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 05:14:09 -0400
+Date: Tue, 6 Sep 2011 11:14:01 +0200
+From: Jan Kara <jack@suse.cz>
+To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
+ del_timer
+Message-ID: <20110906091401.GA23747@quack.suse.cz>
+References: <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
+ <20110902112133.GD12182@quack.suse.cz>
+ <CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
+ <CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
+ <20110902151450.GF12182@quack.suse.cz>
+ <CAFPAmTQxBK32zutyiX9DJLS2F+z6jxsV71xOwa0sivxSY5MD1Q@mail.gmail.com>
+ <20110905103925.GC5466@quack.suse.cz>
+ <CAFPAmTR5f_GW_oha07Bf0_LNXhigZri_w2N_XTEqM+X+-Ae-Rw@mail.gmail.com>
+ <20110905160534.GB17354@quack.suse.cz>
+ <CAFPAmTRdHaQFhbGCQAUhDEPXfaz95KnaX_pZ6xgK98BXL4nn1A@mail.gmail.com>
 MIME-Version: 1.0
-To: Paul Menage <paul@paulmenage.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [RFD] Task counter: cgroup core feature or cgroup subsystem?
- (was Re: [PATCH 0/8 v3] cgroups: Task counter subsystem)
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <20110801161900.1fe24b76.akpm@linux-foundation.org> <CAAAKZwupGmw_+EaApZFAqVcXWBF885Gsjx6tUWUdMuebXrt_Mg@mail.gmail.com> <CAPXgP11aUfdkq-SdaHc8=tfjA4W7DYXjSXG-asoZMi6hK4iOPQ@mail.gmail.com> <20110818143319.GC10441@somewhere> <CALdu-PA3+u-v1fj-DQuC-zyJ4Ud0Xi0sq0zcB0DLNcR_TMT6XQ@mail.gmail.com> <20110824175431.GA26417@somewhere.redhat.com> <4E574B09.6050108@cn.fujitsu.com> <CALdu-PD0EBK7YvxeuxVw5Z21JvfqbgiUoR5Wh3Of-FhG+VE3zg@mail.gmail.com>
-In-Reply-To: <CALdu-PD0EBK7YvxeuxVw5Z21JvfqbgiUoR5Wh3Of-FhG+VE3zg@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-06 17:04:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-06 17:04:27,
-	Serialize complete at 2011-09-06 17:04:27
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFPAmTRdHaQFhbGCQAUhDEPXfaz95KnaX_pZ6xgK98BXL4nn1A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-22:58, Paul Menage wrote:
-> On Fri, Aug 26, 2011 at 12:28 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
->>
->> I had a patchset that can make things even better. The patchset is
->> to bind/unbind a subsystem to/from an existing cgroup hierarchy.
+On Tue 06-09-11 09:41:42, kautuk.c @samsung.com wrote:
+> > On Mon 05-09-11 20:06:04, kautuk.c @samsung.com wrote:
+> >> >  OK, I don't care much whether we have there del_timer() or
+> >> > del_timer_sync(). Let me just say that the race you are afraid of is
+> >> > probably not going to happen in practice so I'm not sure it's valid to be
+> >> > afraid of CPU cycles being burned needlessly. The timer is armed when an
+> >> > dirty inode is first attached to default bdi's dirty list. Then the default
+> >> > bdi flusher thread would have to be woken up so that following happens:
+> >> >        CPU1                            CPU2
+> >> >  timer fires -> wakeup_timer_fn()
+> >> >                                        bdi_forker_thread()
+> >> >                                          del_timer(&me->wakeup_timer);
+> >> >                                          wb_do_writeback(me, 0);
+> >> >                                          ...
+> >> >                                          set_current_state(TASK_INTERRUPTIBLE);
+> >> >  wake_up_process(default_backing_dev_info.wb.task);
+> >> >
+> >> >  Especially wb_do_writeback() is going to take a long time so just that
+> >> > single thing makes the race unlikely. Given del_timer_sync() is slightly
+> >> > more costly than del_timer() even for unarmed timer, it is questionable
+> >> > whether (chance race happens * CPU spent in extra loop) > (extra CPU spent
+> >> > in del_timer_sync() * frequency that code is executed in
+> >> > bdi_forker_thread())...
+> >> >
+> >>
+> >> Ok, so this means that we can compare the following 2 paths of code:
+> >> i)   One extra iteration of the bdi_forker_thread loop, versus
+> >> ii)  The amount of time it takes for the del_timer_sync to wait till the
+> >> timer_fn on the other CPU finishes executing + schedule resulting in a
+> >> guaranteed sleep.
+> >  No, ii) is going to be as rare. But instead you should compare i) against:
+> > iii) The amount of time it takes del_timer_sync() to check whether the
+> > timer_fn is running on a different CPU (which is work del_timer() doesn't
+> > do).
 > 
-> Sigh, I'd been meaning to comment on that great patchset for ages, but
-> they kind of slipped out of my attention :-( I'll try to look over
-> them again - do they still apply cleanly after all the recent changes?
-> 
+> The amount of time it takes del_timer_sync to check the timer_fn should be
+> negligible.
+> In fact, try_to_del_timer_sync differs from del_timer_sync in only
+> that it performs
+> an additional check:
+> if (base->running_timer == timer)
+>     goto out;
+  Yes, but the probability the race happens is also negligible. So you are
+comparing two negligible things... 
 
-I was interrupted by other work at that time and didn't continue to push the
-patchset after that. I'll rebase the patchset and send it out.
+> >  We are going to spend time in iii) each and every time
+> > if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list))
+> >  evaluates to true.
+> 
+> The amount of time spent on this every time will not matter much, as the
+> task will still be preemptible. However, if you notice that in most of
+> the bdi_forker_thread loop, we disable preemption due to taking a
+> spinlock so an additional loop there might be more costly.
+  So either you speak about CPU cost in amount of cycles spent - and there
+I still don't buy that it's clear del_timer_sync() is better than
+del_timer() - or you speak about latency which is a different thing. From
+latency POV that additional loop might be worse. But still I don't think
+it's clear enough to change it without any measurement...
 
-> The bindability is orthogonal to the multi-subsystem support, I think
-> - they definitely complement each other.
+> >  Now frequency of i) and iii) happening is hard to evaluate so it's not
+> > clear what's going to be better. Certainly I don't think such evaluation is
+> > worth my time...
+> >
 > 
-> Paul
-> 
+> Ok. Anyways, thanks for explaining all this to me.
+> I really appreciate your time. :)
+  You are welcome. You made me refresh my memory about some parts of kernel
+which is also valuable so thanks goes also to you :)
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
