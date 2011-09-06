@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab1IFGgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 02:36:38 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:43167 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab1IFGgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 02:36:31 -0400
-From: John Sung <penmount.touch@gmail.com>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        John Sung <penmount.touch@gmail.com>
-Subject: [PATCH 3/3] Input: penmount - add PenMount 3000 support
-Date: Tue,  6 Sep 2011 14:36:20 +0800
-Message-Id: <1315290980-23608-1-git-send-email-penmount.touch@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752968Ab1IFGlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 02:41:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56268 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab1IFGlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 02:41:13 -0400
+Date: Tue, 6 Sep 2011 16:40:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: no tree for Sept 6
+Message-Id: <20110906164049.4dd3961cb82800b8d7cc8741@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__6_Sep_2011_16_40_49_+1000_mwibxRczhj4MV.5e"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add multi touch support for PenMount 3000 touch controller.
+--Signature=_Tue__6_Sep_2011_16_40_49_+1000_mwibxRczhj4MV.5e
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: John Sung <penmount.touch@gmail.com>
----
- drivers/input/touchscreen/penmount.c |   59 ++++++++++++++++++++++++++++++++++
- 1 files changed, 59 insertions(+), 0 deletions(-)
+Hi all,
 
-diff --git a/drivers/input/touchscreen/penmount.c b/drivers/input/touchscreen/penmount.c
-index b60796b..bbb7a20 100644
---- a/drivers/input/touchscreen/penmount.c
-+++ b/drivers/input/touchscreen/penmount.c
-@@ -19,6 +19,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/input.h>
-+#include <linux/input/mt.h>
- #include <linux/serio.h>
- #include <linux/init.h>
- 
-@@ -34,6 +35,16 @@ MODULE_LICENSE("GPL");
-  */
- 
- #define	PM_MAX_LENGTH	6
-+#define	PM_MAX_MTSLOT	2
-+
-+/*
-+ * Multi-touch slot
-+ */
-+
-+struct mt_slot {
-+	unsigned short x, y;
-+	unsigned char state; /* is the touch valid? */
-+};
- 
- /*
-  * Per-touchscreen data.
-@@ -46,8 +57,32 @@ struct pm {
- 	unsigned char data[PM_MAX_LENGTH];
- 	char phys[32];
- 	unsigned char packetsize;
-+	unsigned char maxcontacts;
-+	struct mt_slot slots[PM_MAX_MTSLOT];
- };
- 
-+/*
-+ * pm_mtevent() sends mt events and also emulates pointer movement
-+ */
-+
-+static void pm_mtevent(struct pm *pm, struct input_dev *input)
-+{
-+	int i;
-+
-+	for (i = 0; i < pm->maxcontacts; ++i) {
-+		input_mt_slot(input, i);
-+		input_mt_report_slot_state(input, MT_TOOL_FINGER,
-+				pm->slots[i].state);
-+		if (pm->slots[i].state) {
-+			input_event(input, EV_ABS, ABS_MT_POSITION_X, pm->slots[i].x);
-+			input_event(input, EV_ABS, ABS_MT_POSITION_Y, pm->slots[i].y);
-+		}
-+	}
-+
-+	input_mt_report_pointer_emulation(input, true);
-+	input_sync(input);
-+}
-+
- static irqreturn_t pm_interrupt(struct serio *serio,
- 		unsigned char data, unsigned int flags)
- {
-@@ -79,6 +114,19 @@ static irqreturn_t pm_interrupt(struct serio *serio,
- 			}
- 		}
- 		break;
-+	case 0x3000:
-+		if ((pm->data[0] == 0x70) || (pm->data[0] == 0x40)
-+				|| (pm->data[0] == 0x71) || (pm->data[0] == 0x41)) {
-+			if (pm->packetsize == ++pm->idx) {
-+				int slotnum = pm->data[0] & 0x0F;
-+				pm->slots[slotnum].state = ((pm->data[0] & 0xF0) == 0x70);
-+				pm->slots[slotnum].x = pm->data[2] * 256 + pm->data[1];
-+				pm->slots[slotnum].y = pm->data[4] * 256 + pm->data[3];
-+				pm_mtevent(pm, dev);
-+				pm->idx = 0;
-+			}
-+		}
-+		break;
- 	}
- 
- 	return IRQ_HANDLED;
-@@ -135,6 +183,7 @@ static int pm_connect(struct serio *serio, struct serio_driver *drv)
- 	pm->serio = serio;
- 	pm->dev = input_dev;
- 	snprintf(pm->phys, sizeof(pm->phys), "%s/input0", serio->phys);
-+	pm->maxcontacts = 1;
- 
- 	input_dev->name = "PenMount Serial TouchScreen";
- 	input_dev->phys = pm->phys;
-@@ -160,6 +209,16 @@ static int pm_connect(struct serio *serio, struct serio_driver *drv)
- 		input_dev->id.product = 0x6000;
- 		pm_enable(serio);
- 		break;
-+	case 2:
-+		pm->packetsize = 6;
-+		input_dev->id.product = 0x3000;
-+		input_set_abs_params(pm->dev, ABS_X, 0, 0x7ff, 0, 0);
-+		input_set_abs_params(pm->dev, ABS_Y, 0, 0x7ff, 0, 0);
-+		pm->maxcontacts = PM_MAX_MTSLOT;
-+		input_mt_init_slots(pm->dev, PM_MAX_MTSLOT);
-+		input_set_abs_params(pm->dev, ABS_MT_POSITION_X, 0, 0x7ff, 0, 0);
-+		input_set_abs_params(pm->dev, ABS_MT_POSITION_Y, 0, 0x7ff, 0, 0);
-+		break;
- 	}
- 
- 	serio_set_drvdata(serio, pm);
--- 
-1.7.4.1
+With master.kernel.org down, there is not much change from yesterday and
+I cannot publish the resulting linux-next tree anyway, so there is no
+tree today.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__6_Sep_2011_16_40_49_+1000_mwibxRczhj4MV.5e
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOZcBxAAoJEDMEi1NhKgbsoccH/RYuxGiGMPQfMIaTuBmq/qs0
+jwzW+97fSQlpcF0HgupFfVj2F2jyaaXHYKWlqD79XPg5+a4BcmBGD/aSnovQEX5h
+qoRhioAKJxDZjo5B+vWt1RByaUEQHW15bS4jaPpgVLyhzl61+Hj8sZaCd1AQX7Cg
+hPUsXRMQmX5h/9tOerOqNKDBsYcrw0ja8MVIdFjd2e9idclKUJx5JaUy4gTZzIwJ
+uB/BxT5I3ho06ULwedWKCBkf5Z/hRbnfm7Wp+b4TR9cwbRGLK2zS26QebMMttxd9
+v7rcjGNuwoEif6TWw0cFGx6D3VgeszfVoJ1HQ25b+nZo7IsxqWfg1ldGqXOocjY=
+=KPDe
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__6_Sep_2011_16_40_49_+1000_mwibxRczhj4MV.5e--
