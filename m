@@ -1,265 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab1IFQSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 12:18:17 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:10388
+	id S1751849Ab1IFQS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 12:18:57 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:2655
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab1IFQSF (ORCPT
+	by vger.kernel.org with ESMTP id S1751156Ab1IFQSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 12:18:05 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzz8275bh8275dhz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Tue, 6 Sep 2011 12:18:51 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-FB-SS: 13,
-X-WSS-ID: 0LR3ZUC-01-SZ3-02
+X-WSS-ID: 0LR3ZZ9-02-358-02
 X-M-MSG: 
-Date: Tue, 6 Sep 2011 18:15:45 +0200
+Date: Tue, 6 Sep 2011 18:18:42 +0200
 From: Robert Richter <robert.richter@amd.com>
 To: Don Zickus <dzickus@redhat.com>
 CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Peter Zijlstra <peterz@infradead.org>,
         "ying.huang@intel.com" <ying.huang@intel.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andi Kleen <ak@linux.intel.com>, Corey Minyard <minyard@acm.org>,
-        Jack Steiner <steiner@sgi.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [V3][PATCH 3/6] x86, nmi: wire up NMI handlers to new routines
-Message-ID: <20110906161545.GH14200@erda.amd.com>
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [V3][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+Message-ID: <20110906161842.GI14200@erda.amd.com>
 References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
- <1314290748-23569-4-git-send-email-dzickus@redhat.com>
+ <1314290748-23569-5-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1314290748-23569-4-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1314290748-23569-5-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.08.11 12:45:45, Don Zickus wrote:
-> Just convert all the files that have an nmi handler to the new routines.
-> Most of it is straight forward conversion.  A couple of places needed some
-> tweaking like kgdb which separates the debug notifier from the nmi handler
-> and mce removes a call to notify_die (as I couldn't figure out why it was
-> there).
-
-For mce, see my comment below.
-
+On 25.08.11 12:45:46, Don Zickus wrote:
+> Previous patches allow the NMI subsystem to process multipe NMI events
+> in one NMI.  As previously discussed this can cause issues when an event
+> triggered another NMI but is processed in the current NMI.  This causes the
+> next NMI to go unprocessed and become an 'unknown' NMI.
 > 
-> The things that get converted are the registeration/unregistration routines
-> and the nmi handler itself has its args changed along with code removal
-> to check which list it is on (most are on one NMI list except for kgdb
-> which has both an NMI routine and an NMI Unknown routine).
+> Having this print 'unknown' NMI to the console would be inaccurate and
+> scare users.  As a result I have copied the 'skip unknown' NMI logic
+> developed by Robert Richter (and simplfied a little because we can
+> track _all_ NMIs better instead of just the perf ones) to the main
+> NMI handling routine.
 > 
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Robert Richter <robert.richter@amd.com>
-> Cc: Huang Ying <ying.huang@intel.com>
-> Cc: Corey Minyard <minyard@acm.org>
-> Cc: Jack Steiner <steiner@sgi.com>
+> It is fairly simple, if when processing an NMI, the nmi_handle routine returns
+> more than one event handled, then set a flag for future use.  This flag just
+> says there might be a possible unknown NMI.  If an unknown NMI does come in,
+> then it is skipped (swallowed).  Otherwise just clear the flag on the next NMI
+> if it has events processed.
+> 
+> The algorithm isn't 100% accurate but for most loads we have seen in perf it
+> captures a large majority of unknown NMIs.  Under high workloads there still
+> is the chance that unknown NMIs can trigger because you can time it just right
+> such that you are generating NMIs as fast as you can process them and go four
+> or five NMIs before seeing the unknown NMI.
+> 
+> Without involving the concept of time when tracking these 'possible' NMIs,
+> we may never be 100% reliable.  The idea with time being that back-to-back
+> NMIs immediately follow each other.  Anything more than a micro second or so
+> on modern machines between when the first NMI finished to when the second one
+> starts, probably indicates a completely new event.
+> 
+> V2:
+>   - forgot to add the 'read' code for swallow_nmi (went into next patch)
+> 
 > Signed-off-by: Don Zickus <dzickus@redhat.com>
 > ---
->  arch/x86/include/asm/nmi.h              |   20 ----------
->  arch/x86/include/asm/reboot.h           |    2 +-
->  arch/x86/kernel/apic/hw_nmi.c           |   27 +++-----------
->  arch/x86/kernel/apic/x2apic_uv_x.c      |   20 ++--------
->  arch/x86/kernel/cpu/mcheck/mce-inject.c |   20 ++++-------
->  arch/x86/kernel/cpu/mcheck/mce.c        |    3 --
->  arch/x86/kernel/cpu/perf_event.c        |   60 +++----------------------------
->  arch/x86/kernel/crash.c                 |    5 +--
->  arch/x86/kernel/kgdb.c                  |   60 +++++++++++++++++++++++--------
->  arch/x86/kernel/nmi.c                   |   11 ++++--
->  arch/x86/kernel/reboot.c                |   23 ++++--------
->  arch/x86/oprofile/nmi_int.c             |   40 ++++++--------------
->  arch/x86/oprofile/nmi_timer_int.c       |   28 +++-----------
->  drivers/acpi/apei/ghes.c                |   22 ++++-------
->  drivers/char/ipmi/ipmi_watchdog.c       |   32 +++++-----------
->  drivers/watchdog/hpwdt.c                |   23 +++---------
->  16 files changed, 125 insertions(+), 271 deletions(-)
-
-
-> diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-> index adc66c3..88b0dbb 100644
-> --- a/arch/x86/kernel/apic/x2apic_uv_x.c
-> +++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-> @@ -673,18 +673,11 @@ void __cpuinit uv_cpu_init(void)
->  /*
->   * When NMI is received, print a stack trace.
->   */
-> -int uv_handle_nmi(struct notifier_block *self, unsigned long reason, void *data)
-> +int uv_handle_nmi(unsigned int reason, struct pt_regs *regs)
->  {
->         unsigned long real_uv_nmi;
->         int bid;
+>  arch/x86/kernel/nmi.c |   29 +++++++++++++++++++++++++++--
+>  1 files changed, 27 insertions(+), 2 deletions(-)
 > 
-> -       if (reason != DIE_NMIUNKNOWN)
-> -               return NOTIFY_OK;
-> -
-> -       if (in_crash_kexec)
-> -               /* do nothing if entering the crash kernel */
-> -               return NOTIFY_OK;
-
-Isn't this removed without a replacement so this check is missing now?
-Code will be executed now in case of in_crash_kexec.
-
-> -
->         /*
->          * Each blade has an MMR that indicates when an NMI has been sent
->          * to cpus on the blade. If an NMI is detected, atomically
-
-
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> index 0ed633c..6199232 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> @@ -78,27 +78,20 @@ static void raise_exception(struct mce *m, struct pt_regs *pregs)
-> 
->  static cpumask_var_t mce_inject_cpumask;
-> 
-> -static int mce_raise_notify(struct notifier_block *self,
-> -                           unsigned long val, void *data)
-> +static int mce_raise_notify(unsigned int cmd, struct pt_regs *regs)
->  {
-> -       struct die_args *args = (struct die_args *)data;
->         int cpu = smp_processor_id();
->         struct mce *m = &__get_cpu_var(injectm);
-> -       if (val != DIE_NMI || !cpumask_test_cpu(cpu, mce_inject_cpumask))
-> -               return NOTIFY_DONE;
-> +       if (!cpumask_test_cpu(cpu, mce_inject_cpumask))
-> +               return NMI_DONE;
->         cpumask_clear_cpu(cpu, mce_inject_cpumask);
->         if (m->inject_flags & MCJ_EXCEPTION)
-> -               raise_exception(m, args->regs);
-> +               raise_exception(m, regs);
->         else if (m->status)
->                 raise_poll(m);
-> -       return NOTIFY_STOP;
-> +       return NMI_HANDLED;
+> diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+> index 45fcd82..435dc71 100644
+> --- a/arch/x86/kernel/nmi.c
+> +++ b/arch/x86/kernel/nmi.c
+> @@ -270,6 +270,8 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+>  	pr_emerg("Dazed and confused, but trying to continue\n");
 >  }
-> 
-> -static struct notifier_block mce_raise_nb = {
-> -       .notifier_call = mce_raise_notify,
-> -       .priority = NMI_LOCAL_NORMAL_PRIOR,
-> -};
-> -
->  /* Inject mce on current CPU */
->  static int raise_local(void)
+>  
+> +DEFINE_PER_CPU(bool, swallow_nmi);
+> +
+>  static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
 >  {
-> @@ -216,7 +209,8 @@ static int inject_init(void)
->                 return -ENOMEM;
->         printk(KERN_INFO "Machine check injector initialized\n");
->         mce_chrdev_ops.write = mce_write;
-> -       register_die_notifier(&mce_raise_nb);
-> +       register_nmi_handler(NMI_LOCAL, mce_raise_notify, 0,
-> +                               "mce_notify");
->         return 0;
+>  	unsigned char reason = 0;
+> @@ -281,8 +283,28 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  	 * NMI can not be detected/processed on other CPUs.
+>  	 */
+>  	handled = nmi_handle(NMI_LOCAL, regs);
+> -	if (handled)
+> +	if (handled) {
+> +		/*
+> +		 * When handling multiple NMI events, we are not
+> +		 * sure if the second NMI was dropped (because of
+> +		 * too many NMIs), piggy-backed on the same NMI
+> +		 * (perf) or is queued right behind this NMI.
+> +		 * In the last case, we may accidentally get an
+> +		 * unknown NMI because the event is already handled.
+> +		 * Flag for this condition and swallow it later.
+> +		 *
+> +		 * FIXME: This detection has holes in it mainly
+> +		 * because we can't tell _when_ the next NMI comes
+> +		 * in.  A multi-handled NMI event followed by an 
+> +		 * unknown NMI a second later, clearly should not
+> +		 * be swallowed.
+> +		 */
+> +		if (handled > 1)
+> +			__this_cpu_write(swallow_nmi, true);
+> +		else
+> +			__this_cpu_write(swallow_nmi, false);
+
+See my comment for patch 3/6.
+
+>  		return;
+> +	}
+>  
+>  	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+>  	raw_spin_lock(&nmi_reason_lock);
+> @@ -305,7 +327,10 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  	}
+>  	raw_spin_unlock(&nmi_reason_lock);
+>  
+> -	unknown_nmi_error(reason, regs);
+> +	if (!__this_cpu_read(swallow_nmi))
+> +		unknown_nmi_error(reason, regs);
+> +
+> +	__this_cpu_write(swallow_nmi, false);
 >  }
+>  
+>  dotraplinkage notrace __kprobes void
+> -- 
+> 1.7.6
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 08363b0..3fc65b6 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -908,9 +908,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
 > 
->         percpu_inc(mce_exception_count);
-> 
-> -       if (notify_die(DIE_NMI, "machine check", regs, error_code,
-> -                          18, SIGKILL) == NOTIFY_STOP)
-> -               goto out;
-
-Yes, this code is strange. I checked all the nmi handlers but couldn't
-find one that is direct related to this call. But it could be to
-handle IPIs even in the case of an mce to let backtrace and reboot
-work. CC'ing mce guys.
-
-I would rather add an nmi_handle() call here.
-
->         if (!banks)
->                 goto out;
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 4ee3abf..767371f 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1375,68 +1375,18 @@ struct pmu_nmi_state {
->  static DEFINE_PER_CPU(struct pmu_nmi_state, pmu_nmi);
-> 
->  static int __kprobes
-> -perf_event_nmi_handler(struct notifier_block *self,
-> -                        unsigned long cmd, void *__args)
-> +perf_event_nmi_handler(unsigned int cmd, struct pt_regs *regs)
->  {
-> -       struct die_args *args = __args;
-> -       unsigned int this_nmi;
->         int handled;
-> 
->         if (!atomic_read(&active_events))
-> -               return NOTIFY_DONE;
-> +               return NMI_DONE;
-> 
-> -       switch (cmd) {
-> -       case DIE_NMI:
-> -               break;
-> -       case DIE_NMIUNKNOWN:
-> -               this_nmi = percpu_read(irq_stat.__nmi_count);
-> -               if (this_nmi != __this_cpu_read(pmu_nmi.marked))
-> -                       /* let the kernel handle the unknown nmi */
-> -                       return NOTIFY_DONE;
-> -               /*
-> -                * This one is a PMU back-to-back nmi. Two events
-> -                * trigger 'simultaneously' raising two back-to-back
-> -                * NMIs. If the first NMI handles both, the latter
-> -                * will be empty and daze the CPU. So, we drop it to
-> -                * avoid false-positive 'unknown nmi' messages.
-> -                */
-> -               return NOTIFY_STOP;
-> -       default:
-> -               return NOTIFY_DONE;
-> -       }
-> -
-> -       handled = x86_pmu.handle_irq(args->regs);
-> -       if (!handled)
-> -               return NOTIFY_DONE;
-> -
-> -       this_nmi = percpu_read(irq_stat.__nmi_count);
-> -       if ((handled > 1) ||
-> -               /* the next nmi could be a back-to-back nmi */
-> -           ((__this_cpu_read(pmu_nmi.marked) == this_nmi) &&
-> -            (__this_cpu_read(pmu_nmi.handled) > 1))) {
-> -               /*
-> -                * We could have two subsequent back-to-back nmis: The
-> -                * first handles more than one counter, the 2nd
-> -                * handles only one counter and the 3rd handles no
-> -                * counter.
-> -                *
-> -                * This is the 2nd nmi because the previous was
-> -                * handling more than one counter. We will mark the
-> -                * next (3rd) and then drop it if unhandled.
-> -                */
-> -               __this_cpu_write(pmu_nmi.marked, this_nmi + 1);
-> -               __this_cpu_write(pmu_nmi.handled, handled);
-
-You replace the back-to-back logic by using swallow_nmi later. The
-case above is not covered. Suppose a 2-1-0 sequence of handled nmis.
-Your new code only covers the 2-0 case and will trigger an unknown nmi
-error for 2-1-0.
-
-We should reimplement the logic above in nmi.c.
-
-Also, struct pmu_nmi_state and friends can be removed here.
-
--Robert
-
-> -       }
-> +       handled = x86_pmu.handle_irq(regs);
-> 
-> -       return NOTIFY_STOP;
-> +       return handled;
->  }
 
 -- 
 Advanced Micro Devices, Inc.
