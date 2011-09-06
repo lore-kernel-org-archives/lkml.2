@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab1IGGag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:30:36 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46458 "EHLO e9.ny.us.ibm.com"
+	id S1756090Ab1IGGam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:30:42 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38091 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755652Ab1IGGUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755645Ab1IGGUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Sep 2011 02:20:48 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,11 +13,12 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 38/55] rcu: Prohibit grace periods during early boot
-Date: Tue,  6 Sep 2011 11:00:32 -0700
-Message-Id: <1315332049-2604-38-git-send-email-paulmck@linux.vnet.ibm.com>
+        patches@linaro.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH tip/core/rcu 51/55] rcu: Warn when rcu_read_lock() is used in extended quiescent state
+Date: Tue,  6 Sep 2011 11:00:45 -0700
+Message-Id: <1315332049-2604-51-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110906180015.GA2560@linux.vnet.ibm.com>
 References: <20110906180015.GA2560@linux.vnet.ibm.com>
@@ -25,40 +26,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney <paul.mckenney@linaro.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Greater use of RCU during early boot (before the scheduler is operating)
-is causing RCU to attempt to start grace periods during that time, which
-in turn is resulting in both RCU and the callback functions attempting
-to use the scheduler before it is ready.
+We are currently able to detect uses of rcu_dereference_check() inside
+extended quiescent states (such as dyntick-idle mode). But rcu_read_lock()
+and friends can be used without rcu_dereference(), so that the earlier
+commit checking for use of rcu_dereference() and friends while in
+dyntick-idle mode miss some error conditions.  This commit therefore adds
+dyntick-idle checking to rcu_read_lock() and friends.
 
-This commit prevents these problems by prohibiting RCU grace periods
-until after the scheduler has spawned the first non-idle task.
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ include/linux/rcupdate.h |   52 +++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 42 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 0051dbf..9970116 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -838,8 +838,11 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
- 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
- 	struct rcu_node *rnp = rcu_get_root(rsp);
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7d8fa7c..a9bc36d 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -243,21 +243,53 @@ static inline bool rcu_check_extended_qs(void) { return false; }
  
--	if (!cpu_needs_another_gp(rsp, rdp) || rsp->fqs_active) {
--		if (cpu_needs_another_gp(rsp, rdp))
-+	if (!rcu_scheduler_fully_active ||
-+	    !cpu_needs_another_gp(rsp, rdp) ||
-+	    rsp->fqs_active) {
-+		if (rcu_scheduler_fully_active &&
-+		    cpu_needs_another_gp(rsp, rdp))
- 			rsp->fqs_need_gp = 1;
- 		if (rnp->completed == rsp->completed) {
- 			raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ #define PROVE_RCU(a) a
+ 
++static inline void rcu_lock_acquire(struct lockdep_map *map)
++{
++	WARN_ON_ONCE(rcu_check_extended_qs());
++	lock_acquire(map, 0, 0, 2, 1, NULL, _THIS_IP_);
++}
++
++static inline void rcu_lock_release(struct lockdep_map *map)
++{
++	WARN_ON_ONCE(rcu_check_extended_qs());
++	lock_release(map, 1, _THIS_IP_);
++}
++
+ extern struct lockdep_map rcu_lock_map;
+-# define rcu_read_acquire() \
+-		lock_acquire(&rcu_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release()	lock_release(&rcu_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire(void)
++{
++	rcu_lock_acquire(&rcu_lock_map);
++}
++
++static inline void rcu_read_release(void)
++{
++	rcu_lock_release(&rcu_lock_map);
++}
+ 
+ extern struct lockdep_map rcu_bh_lock_map;
+-# define rcu_read_acquire_bh() \
+-		lock_acquire(&rcu_bh_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release_bh()	lock_release(&rcu_bh_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire_bh(void)
++{
++	rcu_lock_acquire(&rcu_bh_lock_map);
++}
++
++static inline void rcu_read_release_bh(void)
++{
++	rcu_lock_release(&rcu_bh_lock_map);
++}
+ 
+ extern struct lockdep_map rcu_sched_lock_map;
+-# define rcu_read_acquire_sched() \
+-		lock_acquire(&rcu_sched_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release_sched() \
+-		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire_sched(void)
++{
++	rcu_lock_acquire(&rcu_sched_lock_map);
++}
++
++static inline void rcu_read_release_sched(void)
++{
++	rcu_lock_release(&rcu_sched_lock_map);
++}
+ 
+ extern int debug_lockdep_rcu_enabled(void);
+ 
 -- 
 1.7.3.2
 
