@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab1IFIIl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:08:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60563 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab1IFIIg (ORCPT
+	id S1753576Ab1IFIKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:10:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36017 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab1IFIKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:08:36 -0400
-From: Thomas Weber <weber@corscience.de>
-To: silesh@ti.com
-Cc: Thomas Weber <weber@corscience.de>,
-        Tony Lindgren <tony@atomide.com> (maintainer:OMAP SUPPORT),
-        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
-        linux-omap@vger.kernel.org (open list:OMAP SUPPORT),
-        linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] OMAP: hsmmc: Fix mux for non-OMAP pins
-Date: Tue,  6 Sep 2011 10:08:03 +0200
-Message-Id: <1315296483-8442-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <4E6538A1.5090204@gmail.com>
-References: <4E6538A1.5090204@gmail.com>
-X-Provags-ID: V02:K0:BoYgUfgDINg7hxJylg3Xd6CES37XbCptK9NoV13ftf5
- eRTyvVPMA5/m5nj4szp5ZQhuC8FiWWTYG5BU0l73zB9YRsCNAw
- cqiiJ/f3qfj3EbOEpsevJew0pFTaDHmMaLH+kL+s5p/0J7lsSF
- 0pfmq0YBGJ85M+qWyXN+3rdWXu/CWiPKjTrUK4PDWbvgiObSfm
- WTpLaFzt4PETtEuSfWqU3hWX5H4TqVKMB6FVvs8tn+qGithrdb
- NsxRK0bRUvGeJQP+Sev4A5JSy+VI+UltQW9wF7UJjfwpDT6Jmp
- HXtCpXcIryYvgH8tKAXSbP6tOtsufgt3i81svjo9SKENmXHJQm
- n5RyuieqeY/G4gRp32is7OZMFOy6lBuUER+Fp0wyEA+uKbkwyG
- b13kA+pIWenvA==
+	Tue, 6 Sep 2011 04:10:08 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ian Kent <raven@themaw.net>
+Cc: David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Leonardo Chiquitto <leonardo.lists@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        autofs@linux.kernel.org
+Subject: Re: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
+References: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
+	<17416.1315240659@redhat.com> <87hb4q9b3r.fsf@tucsk.pomaz.szeredi.hu>
+	<1315281208.3210.26.camel@perseus.themaw.net>
+Date: Tue, 06 Sep 2011 10:09:49 +0200
+In-Reply-To: <1315281208.3210.26.camel@perseus.themaw.net> (Ian Kent's message
+	of "Tue, 06 Sep 2011 11:53:28 +0800")
+Message-ID: <87mxeixfaq.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Devkit8000 uses a TWL4030 pin for card detection.
-Thats why the error:
-_omap_mux_init_gpio: Could not set gpio192
-occurs.
+Ian Kent <raven@themaw.net> writes:
 
-This patch checks that the pin is on OMAP before
-calling omap_mux_init_gpio.
+> On Mon, 2011-09-05 at 19:02 +0200, Miklos Szeredi wrote:
+>> 
+>> If automounting on lstat(2) is the correct behavior (is it?  why?)  then at
+>> least it should be enabled by a global switch or mount option, IMO.
+>
+> Ideally we wouldn't need to take special precautions for these
+> operations at all but we can't, especially for GUI environments that
+> constantly scan file systems on mount/umount activity.
+>
+> Historically for autofs, neither stat(2) or lstat(2) would trigger a
+> mount. With the current implementation stat(2) now does but lstat(2)
+> doesn't which is a step in the right direction IMHO. So, I recommend we
+> continue to encourage user space to make the needed changes so we
+> continue to move in the right direction, and yes, I acknowledge it is a
+> pain but it'll never get done otherwise.
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
----
- arch/arm/mach-omap2/hsmmc.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+I'm not quite convinced.  What's the advantage of triggering automount
+on stat(2)?
 
-diff --git a/arch/arm/mach-omap2/hsmmc.c b/arch/arm/mach-omap2/hsmmc.c
-index a9b45c7..783d0f1 100644
---- a/arch/arm/mach-omap2/hsmmc.c
-+++ b/arch/arm/mach-omap2/hsmmc.c
-@@ -214,10 +214,12 @@ static int nop_mmc_set_power(struct device *dev, int slot, int power_on,
- static inline void omap_hsmmc_mux(struct omap_mmc_platform_data *mmc_controller,
- 			int controller_nr)
- {
--	if (gpio_is_valid(mmc_controller->slots[0].switch_pin))
-+	if (gpio_is_valid(mmc_controller->slots[0].switch_pin) && \
-+		(mmc_controller->slots[0].switch_pin < OMAP_MAX_GPIO_LINES))
- 		omap_mux_init_gpio(mmc_controller->slots[0].switch_pin,
- 					OMAP_PIN_INPUT_PULLUP);
--	if (gpio_is_valid(mmc_controller->slots[0].gpio_wp))
-+	if (gpio_is_valid(mmc_controller->slots[0].gpio_wp) && \
-+		(mmc_controller->slots[0].gpio_wp < OMAP_MAX_GPIO_LINES))
- 		omap_mux_init_gpio(mmc_controller->slots[0].gpio_wp,
- 					OMAP_PIN_INPUT_PULLUP);
- 	if (cpu_is_omap34xx()) {
--- 
-1.7.6.1
+Has anybody complained that stat(2) on the mountpoint doesn't cause an
+automount?
+
+Thanks,
+Miklos
 
