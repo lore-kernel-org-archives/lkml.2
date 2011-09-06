@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab1IFXG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 19:06:58 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48365 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab1IFXGv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 19:06:51 -0400
-Date: Wed, 7 Sep 2011 08:06:45 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Add new PTRACE_O_TRACESTOP option, make it control
- new ptrace behavior.
-Message-ID: <20110906230645.GB16976@htj.dyndns.org>
-References: <201109042311.18793.vda.linux@googlemail.com>
- <1315242384.1888.64.camel@dhcp-25-63.brq.redhat.com>
- <20110906200818.GA28349@redhat.com>
+	id S1755346Ab1IFXJa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 19:09:30 -0400
+Received: from cpc7-stkp7-2-0-cust918.10-2.cable.virginmedia.com ([86.22.251.151]:39110
+	"EHLO freya" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755315Ab1IFXJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 19:09:26 -0400
+Date: Wed, 7 Sep 2011 00:09:01 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH RESEND] i2c-pxa2xx: return proper error code in
+ ce4100_i2c_probe error paths
+Message-ID: <20110906230901.GA25655@freya.fluff.org>
+References: <1314686257.3270.2.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110906200818.GA28349@redhat.com>
+In-Reply-To: <1314686257.3270.2.camel@phoenix>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Aug 30, 2011 at 02:37:37PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-On Tue, Sep 06, 2011 at 10:08:18PM +0200, Oleg Nesterov wrote:
-> On 09/05, Denys Vlasenko wrote:
-> > PTRACE_SEIZE does not assume PTRACE_O_TRACESTOP, but with this patch
-> > it allows any PTRACE_O_opts to be set at attach time
+A message in the patch description body is always useful.
+
+Will apply.
+
+> ---
+> Hi Ben,
+> Seems this patch is not yet upstream. Here is the resend.
 > 
-> Well. This assumes that the only difference with PTRACE_SEIZE is the
-> new stop/interrupt behaviour. I am not sure this is "safe" to assume.
+> Axel
 > 
-> Tejun, what do you think?
-
-The biggest problem would be locking against the tracee.  Currently,
-it's assumed that the behavior is determined at seize/attach time and
-stay that way.  Tracee behaves differently to maintain compatibility
-or show the new behavior.  If the state changes on the fly, we need to
-change how tracee behaves.  Maybe we'll need some re-trap trickery or
-can just get away with making tracee always behave in the new way and
-somehow present it differently if !TRACESTOP.
-
-That said, I can't see much point in this excercise.  Why does this
-even matter?  This is almost purely cosmetic and any effect on the
-usability of the API is so too.  The gained easiness of the API change
-is in the realm of a few if statements.  There's nothing to be gained
-by allowing flipping TRACESTOP.  Why would any program which is aware
-of the new behavior turn it off and if not why would we want to
-complicate things by supporting a feature which wouldn't be useful
-risking higher chance of breakage (both from increased complexity and
-lack of usage)?
-
-ptrace is an ugly interface.  Some of that is inherent but probably
-most of it is from how it was designed and has evolved over time.  As
-far as I'm concerned, the goals are making it feature-complete and not
-deviating too much from what's already there.
-
-ptrace is painful to use with or without PTRACE_O_TRACESTOP.  IMHO, if
-we want to address this issue, a better approach would be implementing
-a wrapper library which hides the silliness of the kernel interface
-and provides useable set of interface and information.
-
-Thanks.
-
--- 
-tejun
+>  drivers/i2c/busses/i2c-pxa-pci.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-pxa-pci.c b/drivers/i2c/busses/i2c-pxa-pci.c
+> index 6659d26..b73da6c 100644
+> --- a/drivers/i2c/busses/i2c-pxa-pci.c
+> +++ b/drivers/i2c/busses/i2c-pxa-pci.c
+> @@ -109,12 +109,15 @@ static int __devinit ce4100_i2c_probe(struct pci_dev *dev,
+>  		return -EINVAL;
+>  	}
+>  	sds = kzalloc(sizeof(*sds), GFP_KERNEL);
+> -	if (!sds)
+> +	if (!sds) {
+> +		ret = -ENOMEM;
+>  		goto err_mem;
+> +	}
+>  
+>  	for (i = 0; i < ARRAY_SIZE(sds->pdev); i++) {
+>  		sds->pdev[i] = add_i2c_device(dev, i);
+>  		if (IS_ERR(sds->pdev[i])) {
+> +			ret = PTR_ERR(sds->pdev[i]);
+>  			while (--i >= 0)
+>  				platform_device_unregister(sds->pdev[i]);
+>  			goto err_dev_add;
+> -- 
+> 1.7.4.1
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
