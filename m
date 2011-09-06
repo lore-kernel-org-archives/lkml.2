@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab1IFVId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 17:08:33 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61044 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab1IFVI0 (ORCPT
+	id S1755266Ab1IFVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 17:09:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47294 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab1IFVJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 17:08:26 -0400
-Message-ID: <4E668BBF.4020600@gmail.com>
-Date: Tue, 06 Sep 2011 23:08:15 +0200
-From: Sylwester Nawrocki <snjw23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Lightning/1.0b2 Thunderbird/3.1.12
-MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Josh Wu <josh.wu@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH v2] [media] at91: add code to initialize and manage the
- ISI_MCK for Atmel ISI driver.
-References: <1315288601-22384-1-git-send-email-josh.wu@atmel.com>	<Pine.LNX.4.64.1109060803590.14818@axis700.grange> <20110906200512.GA15083@game.jcrosoft.org>
-In-Reply-To: <20110906200512.GA15083@game.jcrosoft.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Sep 2011 17:09:22 -0400
+From: Dan McGee <dpmcgee@gmail.com>
+To: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Subject: [PATCH] pata_sis: enable MWDMA for UDMA 133 chipset
+Date: Tue,  6 Sep 2011 16:09:18 -0500
+Message-Id: <1315343358-12391-1-git-send-email-dpmcgee@gmail.com>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2011 10:05 PM, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> I'm not entirely sure on this one, but as we had a similar situation with
->> clocks, we decided to extablish the clock hierarchy in the board code, and
->> only deal with the actual device clocks in the driver itself. I.e., we
->> moved all clk_set_parent() and setting up the parent clock into the board.
->> And I do think, this makes more sense, than doing this in the driver, not
->> all users of this driver will need to manage the parent clock, right?
->
-> I don't like to manage the clock in the board except if it's manadatory otherwise
-> we manage this at soc level
-> 
-> the driver does not have to manage the clock hierachy or detail implementation
-> but manage the clock enable/disable and speed depending on it's need
+This ports the timing values over from the old IDE driver into the new
+PATA-based one. The comment was lying when it stated the old driver was
+not MWDMA capable.
 
-We had a similar problem in the past and we ended up having the boot loader
-setting up the parent clock for the device clock. The driver only controls clock
-gating and sets its clock frequency based on an internal IP version information,
-derived from the SoC revision.
+Boot tested on actual hardware using 'libata.force=mwdma2'.
 
-AFAIK there is also a generic API at the runtime PM core so the driver can
-register the clock(s) with it and only use pm_runtime_clk_* calls afterwards.
+Signed-off-by: Dan McGee <dpmcgee@gmail.com>
+---
+ drivers/ata/pata_sis.c |   27 +++++++++++++++++----------
+ 1 files changed, 17 insertions(+), 10 deletions(-)
 
---
-Regards,
-Sylwester
+diff --git a/drivers/ata/pata_sis.c b/drivers/ata/pata_sis.c
+index 810b7d6..9f11a8e 100644
+--- a/drivers/ata/pata_sis.c
++++ b/drivers/ata/pata_sis.c
+@@ -293,14 +293,14 @@ static void sis_133_set_piomode (struct ata_port *ap, struct ata_device *adev)
+ 	u32 t1;
+ 	int speed = adev->pio_mode - XFER_PIO_0;
+ 
+-	const u32 timing133[] = {
++	static const u32 timing133[] = {
+ 		0x28269000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
+ 		0x0C266000,
+ 		0x04263000,
+ 		0x0C0A3000,
+ 		0x05093000
+ 	};
+-	const u32 timing100[] = {
++	static const u32 timing100[] = {
+ 		0x1E1C6000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
+ 		0x091C4000,
+ 		0x031C2000,
+@@ -485,21 +485,28 @@ static void sis_133_set_dmamode (struct ata_port *ap, struct ata_device *adev)
+ 	int port;
+ 	u32 t1;
+ 
+-	/* bits 4- cycle time 8 - cvs time */
+-	static const u32 timing_u100[] = { 0x6B0, 0x470, 0x350, 0x140, 0x120, 0x110, 0x000 };
+-	static const u32 timing_u133[] = { 0x9F0, 0x6A0, 0x470, 0x250, 0x230, 0x220, 0x210 };
+-
+ 	port = sis_port_base(adev);
+ 	pci_read_config_dword(pdev, port, &t1);
+ 
+ 	if (adev->dma_mode < XFER_UDMA_0) {
++		/* Recovery << 24 | Act << 16 | Ini << 12, like PIO modes */
++		static const u32 timing_u100[] = { 0x19154000, 0x06072000, 0x04062000 };
++		static const u32 timing_u133[] = { 0x221C6000, 0x0C0A3000, 0x05093000 };
++		int speed = adev->dma_mode - XFER_MW_DMA_0;
++		t1 &= 0xC0C00FFF;
++		/* disable UDMA */
+ 		t1 &= ~0x00000004;
+-		/* FIXME: need data sheet to add MWDMA here. Also lacking on
+-		   ide/pci driver */
++		if (t1 & 0x08)
++			t1 |= timing_u133[speed];
++		else
++			t1 |= timing_u100[speed];
+ 	} else {
++		/* bits 4- cycle time 8 - cvs time */
++		static const u32 timing_u100[] = { 0x6B0, 0x470, 0x350, 0x140, 0x120, 0x110, 0x000 };
++		static const u32 timing_u133[] = { 0x9F0, 0x6A0, 0x470, 0x250, 0x230, 0x220, 0x210 };
+ 		int speed = adev->dma_mode - XFER_UDMA_0;
+-		/* if & 8 no UDMA133 - need info for ... */
+ 		t1 &= ~0x00000FF0;
++		/* enable UDMA */
+ 		t1 |= 0x00000004;
+ 		if (t1 & 0x08)
+ 			t1 |= timing_u133[speed];
+@@ -620,7 +627,7 @@ static const struct ata_port_info sis_info100_early = {
+ static const struct ata_port_info sis_info133 = {
+ 	.flags		= ATA_FLAG_SLAVE_POSS,
+ 	.pio_mask	= ATA_PIO4,
+-	/* No MWDMA */
++	.mwdma_mask	= ATA_MWDMA2,
+ 	.udma_mask	= ATA_UDMA6,
+ 	.port_ops	= &sis_133_ops,
+ };
+-- 
+1.7.6.1
+
