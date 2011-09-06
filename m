@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab1IFIUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:20:08 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:36032 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab1IFIUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:20:01 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb (v4l2_device_disconnect+0x11/0x30)
-Date: Tue, 6 Sep 2011 10:20:00 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, Dave Young <hidave.darkstar@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-References: <20110829204846.GA14699@sucs.org> <201109051216.42579.hverkuil@xs4all.nl> <20110905223102.GA26980@sucs.org>
-In-Reply-To: <20110905223102.GA26980@sucs.org>
+	id S1753838Ab1IFI2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:28:05 -0400
+Received: from david.siemens.de ([192.35.17.14]:27676 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753294Ab1IFI2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 04:28:01 -0400
+Message-ID: <4E65D981.7070201@siemens.com>
+Date: Tue, 06 Sep 2011 10:27:45 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [RFC] pci: Rework config space blocking services
+References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <4E5BDEAB.5000405@siemens.com> <20110829191858.GA9415@redhat.com> <4E608A51.70509@siemens.com> <20110906055810.GA13286@redhat.com> <4E65C935.9000803@siemens.com> <20110906080410.GD13286@redhat.com>
+In-Reply-To: <20110906080410.GD13286@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109061020.01208.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 September 2011 00:31:03 Sitsofe Wheeler wrote:
-> On Mon, Sep 05, 2011 at 12:16:42PM +0200, Hans Verkuil wrote:
-> > On Monday, September 05, 2011 12:13:26 Hans Verkuil wrote:
-> > > The original order is correct, but what I missed is that for drivers
-> > > that release (free) everything in the videodev release callback the
-> > > v4l2_device struct is also freed and v4l2_device_put will fail.
-> > > 
-> > > To fix this, add this code just before the vdev->release call:
-> > > 	/* Do not call v4l2_device_put if there is no release callback set. */
-> > > 	if (v4l2_dev->release == NULL)
-> > > 	
-> > > 		v4l2_dev = NULL;
-> > > 
-> > > If there is no release callback, then the refcounting is pointless
-> > > anyway.
-> > > 
-> > > This should work.
-> > 
-> > Note that in the long run using the v4l2_device release callback
-> > instead of the videodev release is better. But it's a lot of work to
-> > convert everything so that's long term. I'm quite surprised BTW that
-> > this bug wasn't found much earlier.
+On 2011-09-06 10:04, Michael S. Tsirkin wrote:
+> On Tue, Sep 06, 2011 at 09:18:13AM +0200, Jan Kiszka wrote:
+>>>> @@ -401,36 +403,58 @@ int pci_vpd_truncate(struct pci_dev *dev, size_t size)
+>>>>  EXPORT_SYMBOL(pci_vpd_truncate);
+>>>>
+>>>>  /**
+>>>> - * pci_block_user_cfg_access - Block userspace PCI config reads/writes
+>>>> + * pci_block_cfg_access - Block PCI config reads/writes
+>>>
+>>> This comment seems confusing. We don't in fact block all config
+>>> reads writes. Instead we block userspace accesses and
+>>> concurrent block requests.
+>>
+>> I'm open for a better suggestion that summarize the more verbose (and
+>> hopefully clearer) explanation below.
 > 
-> This inline patch fixes the second "poison overwritten" problem so:
-> Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+> I think the problem is, it doesn't block config access
+> and we call it pci_block_cfg_access.
 > 
-> However, it does not prevent the original oops that was reported in the
-> original message. Yang Ruirui's patch in
-> https://lkml.org/lkml/2011/9/1/74 seems to be required to resolve
-> that initial problem - can it be ACK'd? Yang's patch is reproduced
-> inline below:
+> Thinking about it, doesn't this behave somewhat like a lock?
+> How about
 > 
-> For uvc device, dev->vdev.dev is the &intf->dev,
-> uvc_delete code is as below:
-> 	usb_put_intf(dev->intf);
-> 	usb_put_dev(dev->udev);
+> pci_user_cfg_access_trylock
+> pci_user_cfg_access_lock
+> pci_user_cfg_access_unlock
 > 
-> 	uvc_status_cleanup(dev);
-> 	uvc_ctrl_cleanup_device(dev);
-> 
-> ## the intf dev is released above, so below code will oops.
-> 
-> 	if (dev->vdev.dev)
-> 		v4l2_device_unregister(&dev->vdev);
-> Fix it by get_device in v4l2_device_register and put_device in
-> v4l2_device_disconnect
+> And then:
+>  * pci_user_cfg_access_lock - Lock userspace PCI config access
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Except that the "userspace" here is still only half of the truth and I
+prefer to drop it, the naming locks good to me.
 
-> ---
->  drivers/media/video/v4l2-device.c |    2 ++
->  1 file changed, 2 insertions(+)
-> diff --git a/drivers/media/video/v4l2-device.c
-> b/drivers/media/video/v4l2-device.c index c72856c..e6a2c3b 100644
-> --- a/drivers/media/video/v4l2-device.c
-> +++ b/drivers/media/video/v4l2-device.c
-> @@ -38,6 +38,7 @@ int v4l2_device_register(struct device *dev, struct
-> v4l2_device *v4l2_dev) mutex_init(&v4l2_dev->ioctl_lock);
->  	v4l2_prio_init(&v4l2_dev->prio);
->  	kref_init(&v4l2_dev->ref);
-> +	get_device(dev);
->  	v4l2_dev->dev = dev;
->  	if (dev == NULL) {
->  		/* If dev == NULL, then name must be filled in by the caller */
-> @@ -93,6 +94,7 @@ void v4l2_device_disconnect(struct v4l2_device *v4l2_dev)
+>  *
+>  * When locked, any userspace reads or writes to config space
+>  * and concurrent lock requests will sleep, and trylock requests
+>  * will fail, until pci_user_cfg_access_unlock is called.
 > 
->  	if (dev_get_drvdata(v4l2_dev->dev) == v4l2_dev)
->  		dev_set_drvdata(v4l2_dev->dev, NULL);
-> +	put_device(v4l2_dev->dev);
->  	v4l2_dev->dev = NULL;
->  }
->  EXPORT_SYMBOL_GPL(v4l2_device_disconnect);
+> I had a brief thought of using an rwsem internally, but
+> this would make trylock fail if userspace does config read,
+> changing semantics.
+
+Also, I bet we would make lockdep unhappy when calling
+down_write_trylock from IRQ context.
+
+Jan
 
 -- 
-Regards,
-
-Laurent Pinchart
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
