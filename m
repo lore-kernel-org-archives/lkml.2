@@ -1,117 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1IFSU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 14:20:29 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58633 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796Ab1IFSUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 14:20:23 -0400
-Date: Tue, 6 Sep 2011 11:20:16 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
-Message-ID: <20110906182016.GB7419@core.coreip.homeip.net>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
- <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw>
- <20110818074756.GE10093@core.coreip.homeip.net>
- <4E5FCE58.9060906@canonical.com>
- <87sjobk711.fsf@emc.com.tw>
- <4E665249.2040602@canonical.com>
- <20110906173649.GA7419@core.coreip.homeip.net>
- <4E6660D7.9040800@canonical.com>
+	id S1754005Ab1IFSVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 14:21:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7909 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab1IFSVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 14:21:47 -0400
+Date: Tue, 6 Sep 2011 14:20:34 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/18] writeback: dirty position control
+Message-ID: <20110906182034.GA30513@redhat.com>
+References: <20110904015305.367445271@intel.com>
+ <20110904020914.848566742@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E6660D7.9040800@canonical.com>
+In-Reply-To: <20110904020914.848566742@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 11:05:11AM -0700, Chase Douglas wrote:
-> On 09/06/2011 10:36 AM, Dmitry Torokhov wrote:
-> > On Tue, Sep 06, 2011 at 10:03:05AM -0700, Chase Douglas wrote:
-> >> On 09/04/2011 08:22 PM, JJ Ding wrote:
-> >>> Hi Chase,
-> >>>
-> >>> On Thu, 01 Sep 2011 11:26:32 -0700, Chase Douglas <chase.douglas@canonical.com> wrote:
-> >>>> On 08/18/2011 12:47 AM, Dmitry Torokhov wrote:
-> >>>>> On Thu, Aug 18, 2011 at 09:57:05AM +0800, JJ Ding wrote:
-> >>>>>> +
-> >>>>>> +		i = (etd->fw_version > 0x020800 &&
-> >>>>>> +		     etd->fw_version < 0x020900) ? 1 : 2;
-> >>>>>> +		*x_max = (etd->capabilities[1] - i) * 64;
-> >>>>>> +		*y_max = (etd->capabilities[2] - i) * 64;
-> >>>>>> +		*y_2ft_max = (*y_max - i) * 64 / 4;
-> >>>>>
-> >>>>> Hmm, we should have the same range for ST and MT data and scale MT data
-> >>>>> if it has lower resolution to match ST.
-> >>>>
-> >>>> I saw this go by a while back and it made sense to me at the time.
-> >>>> However, I've had some thoughts that give me pause.
-> >>>>
-> >>>> Seth Forshee has been working on getting a semi-mt driver for ALPS
-> >>>> devices. The ALPS devices have an interesting mechanism for providing
-> >>>> multitouch data, but it boils down to having a resolution of only 15
-> >>>> values in the X axis and 11 in the Y axis (it looks possible to
-> >>>> extrapolate and get double the resolution, but my point will remain).
-> >>>>
-> >>>> Let's take the X synaptics module as an example of the repercussions of
-> >>>> in-kernel axis scaling. The X synaptics module translates two touch
-> >>>> drags into scroll events. Synaptics will want to use the highest
-> >>>> resolution axis for generating scroll events. If both the MT and ST axes
-> >>>> have the same resolution, it might pick the MT axes for scrolling. On
-> >>>> ALPS devices with in-kernel axis scaling that would be a bad choice.
-> >>> I don't know about the ALPS devices, but since we already report
-> >>> ABS_MT_POSITION_{X,Y} with elantech v2, we have to do the scaling in
-> >>> kernel anyway to adhere to multitouch protocol. So I would say it is
-> >>> still more appropriate to have the same resolution for ST and MT with
-> >>> respect to elantech v2. Maybe ALPS should be considered an exception to this?
-> >>
-> >> The multitouch protocol doesn't require scaling of axes to match, at
-> >> least not according to the protocol documentation.
-> >>
-> >> I see that the current code scales the coordinates for v2, but it's only
-> >> half-resolution. That's not a huge deal since the resolution of modern
-> >> touchpads is very high. We could leave it scaled to not break abi, if
-> >> that was a concern. However, with new devices it makes sense to state
-> >> the ranges in terms of what the device actually supports. Otherwise,
-> >> we're just masking out useful data that userspace could be using.
-> >>
-> > 
-> > I disagree. I believe that ST and MT ranges reported for the same
-> > working surface should match, especially since many devices derive ST
-> > data from MT.
-> > 
-> > As far as devices that have ranges 0-15 in MT mode - I am not sure how
-> > useful such MT steam anyway and if we are better of just ignore them
-> > (maybe just use the data to report number of fingers on the surface but
-> > otherwise use standard ST protocol).
+On Sun, Sep 04, 2011 at 09:53:07AM +0800, Wu Fengguang wrote:
+
+[..]
+> - in memory tight systems, (1) becomes strong enough to squeeze dirty
+>   pages inside the control scope
 > 
-> The MT data could still be useful for pinch to zoom or potentially
-> rotate (though most low res devices probably are only semi-mt). I don't
-> want to forsake pinch to zoom just because we can't pass on the
-> resolution of MT data properly.
+> - in large memory systems where the "gravity" of (1) for pulling the
+>   dirty pages to setpoint is too weak, (2) can back (1) up and drive
+>   dirty pages to bdi_setpoint ~= setpoint reasonably fast.
+> 
+> Unfortunately in JBOD setups, the fluctuation range of bdi threshold
+> is related to memory size due to the interferences between disks.  In
+> this case, the bdi slope will be weighted sum of write_bw and bdi_thresh.
 
-How would userspace know that MT data should only be used for gestures
-but nothign else? By examining range? What is the "too small range"
-then? It would be different for different devices. I do not want
-userspace portions of the drivers to turn into unmanageble collection of
-quirks.
+Can you please elaborate a little more that what changes in JBOD setup.
 
-Some hardware is just hopeless... And pinch to zoom is cute but hardly
-most used function on a laptop (as opposed to phone/tablet), I'd just
-leave it be.
+> 
+> Given equations
+> 
+>         span = x_intercept - bdi_setpoint
+>         k = df/dx = - 1 / span
+> 
+> and the extremum values
+> 
+>         span = bdi_thresh
+>         dx = bdi_thresh
+> 
+> we get
+> 
+>         df = - dx / span = - 1.0
+> 
+> That means, when bdi_dirty deviates bdi_thresh up, pos_ratio and hence
+> task ratelimit will fluctuate by -100%.
 
-Thanks.
+I am not sure I understand above calculation. I understood the part that
+for single bdi case, you want 12.5% varation of bdi_setpoint over a
+range of write_bw [SP-write_bw/2, SP+write_bw/2]. This requirement will
+lead to.
 
--- 
-Dmitry
+k = -1/8*write_bw
+
+OR span = 8*write_bw, hence
+k= -1/span
+
+Now I missed the part that what is different in case of JBOD setup and
+how do you come up with values for that setup so that slope of bdi
+setpoint is sharper.
+
+IIUC, in case of single bdi case you want to use k=-1/(8*write_bw) and in
+case of JBOD you want to use k=-1/(bdi_thresh)?
+
+That means for single bdi case you want to trust bdi, write_bw but in
+case of JBOD you stop trusting that and just switch to bdi_thresh. Not
+sure what does it mean.
+
+Thanks
+Vivek
