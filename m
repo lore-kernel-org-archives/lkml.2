@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab1IFD3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 23:29:08 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56411 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab1IFD3C (ORCPT
+	id S1752296Ab1IFDa3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 23:30:29 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:4438 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935Ab1IFDaX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 23:29:02 -0400
-Date: Tue, 6 Sep 2011 12:28:55 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: matthltc@us.ibm.com, rjw@sisk.pl, paul@paulmenage.org,
-        containers@lists.linux-foundation.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] freezer: kill unused set_freezable_with_signal()
-Message-ID: <20110906032846.GA18425@mtj.dyndns.org>
-References: <1314988070-12244-1-git-send-email-tj@kernel.org>
- <1314988070-12244-7-git-send-email-tj@kernel.org>
- <20110904184626.GA30101@redhat.com>
- <20110905023315.GB9807@htj.dyndns.org>
- <20110905162012.GA4445@redhat.com>
+	Mon, 5 Sep 2011 23:30:23 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110905162012.GA4445@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] [media] at91: add code to initialize and manage theISI_MCK for Atmel ISI driver.
+Date: Tue, 6 Sep 2011 11:29:50 +0800
+Message-ID: <4C79549CB6F772498162A641D92D532802A09D8F@penmb01.corp.atmel.com>
+In-Reply-To: <20110905103339.GG6619@n2100.arm.linux.org.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] [media] at91: add code to initialize and manage theISI_MCK for Atmel ISI driver.
+Thread-Index: Acxrt3pVF9ZTXohfS4myDps1GQjk+AAjCmmw
+References: <1315218593-10822-1-git-send-email-josh.wu@atmel.com> <20110905103339.GG6619@n2100.arm.linux.org.uk>
+From: "Wu, Josh" <Josh.wu@atmel.com>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Cc: <g.liakhovetski@gmx.de>, <linux-media@vger.kernel.org>,
+        <plagnioj@jcrosoft.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+X-OriginalArrivalTime: 06 Sep 2011 03:29:55.0262 (UTC) FILETIME=[3F0335E0:01CC6C45]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi, Russell
 
-On Mon, Sep 05, 2011 at 06:20:12PM +0200, Oleg Nesterov wrote:
-> Perhaps it is correct... Just I do not understand what it should do.
-> I thought it is "wait_for_event && do_not_block_freezer". And at first
-> glance the code looks as if it tries to do this. Say, in the "likely"
-> case we restart wait_event_interruptible() after refrigerator().
-> 
-> But this looks racy. Suppose that freezing() is already false when
-> try_to_freeze() or __refrigerator() is called. Say, cgroup_freezer does
-> freeze_task() + __thaw_task(). Why it returns -ERESTARTSYS in this case?
+On 09/05/2011 6:34 PM Russell King wrote:
 
-It may return -ERESTARTSYS when not strictly necessary but given that
-it's supposed to trigger restart anyway I don't think it's actually
-broken (it doesn't break the contract of the wait).  Another thing to
-note is that kthread freezing via cgroup is almost fundamentally
-broken.  With the removal of freezable_with_signal, this shouldn't be
-an issue anymore although cgroup_freezer still needs to be fixed to
-account for kthreads for xstate transitions (it currently triggers
-BUG_ON).
+> On Mon, Sep 05, 2011 at 06:29:53PM +0800, Josh Wu wrote:
+>> +static int initialize_mck(struct atmel_isi *isi,
+>> +			struct isi_platform_data *pdata)
+>> +{
+>> +	int ret;
+>> +	struct clk *pck_parent;
+>> +
+>> +	if (!strlen(pdata->pck_name) || !strlen(pdata->pck_parent_name))
+>> +		return -EINVAL;
+>> +
+>> +	/* ISI_MCK is provided by PCK clock */
+>> +	isi->mck = clk_get(NULL, pdata->pck_name);
 
-> And if it can be used by the userspace thread, then we should probably
-> do recalc_sigpending() somewhere, otherwise wait_event_freezable() will
-> always return -ERESTARTSYS after __refrigerator().
+> No, this is not how you use the clk API.  You do not pass clock names via
+> platform data.
 
-Thankfully, currently, all the few users are kthreads.  I don't think
-it makes sense for userland tasks at all.  Interruptible sleeps for
-userland tasks necessiate the ability to return to signal delivery
-path and restart or abort the current operation.  There's no point in
-using wait_event_freezable() instead of wait_event_interruptible().
+> You pass clk_get() the struct device.  You then pass clk_get() a
+> _connection id_ on that _device_ if you have more than one struct clk
+> associated with the _device_.  You then use clkdev to associate the
+> struct device plus the connection id with the appropriate struct clk.
 
-Thanks.
+I think I missed the struct device when called clk_get(). I will fix it in v2 version.
 
--- 
-tejun
+Best Regards,
+Josh Wu
