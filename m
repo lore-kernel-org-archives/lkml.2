@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab1IFXRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 19:17:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58150 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754830Ab1IFXRD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 19:17:03 -0400
+	id S1755341Ab1IFXTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 19:19:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58667 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754830Ab1IFXTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 19:19:08 -0400
+Date: Wed, 7 Sep 2011 01:19:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <ak@linux.intel.com>
+cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] clockevents: Use an atomic RCU notifier for
+ clockevents
+In-Reply-To: <20110906224228.GA5534@alboin.fm.intel.com>
+Message-ID: <alpine.LFD.2.02.1109070113090.2723@ionos>
+References: <1314652136-11350-1-git-send-email-andi@firstfloor.org> <alpine.LFD.2.02.1109062120420.2723@ionos> <20110906203338.GL7761@one.firstfloor.org> <alpine.LFD.2.02.1109062235530.2723@ionos> <20110906224228.GA5534@alboin.fm.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1315325608-17922-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1315325608-17922-1-git-send-email-guenter.roeck@ericsson.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Sep 2011 16:16:13 -0700
-Message-ID: <CA+55aFwy-YPNHnJp6C6BRA-QfEtMoVHuxN9Uxg=p=0PwaWyXaQ@mail.gmail.com>
-Subject: Re: [GIT PULL] hwmon fixes for 3.1
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 9:13 AM, Guenter Roeck
-<guenter.roeck@ericsson.com> wrote:
->
-> Please pull hwmon subsystem fixes for Linux 3.1 from:
->
->    git://github.com/groeck/linux.git hwmon-for-linus
+On Tue, 6 Sep 2011, Andi Kleen wrote:
 
-Guys, when using some general git hosting site, I really want some
-proof that you are you. Not just a "please pull".
+> > The idle code, at least the one in drivers/idle/intel_idle.c, does
+> > _NOT_ call into that code at all when a reliable lapic timer is
+> > available:
+> 
+> But the ACPI idle doesn't check that, so it still has a scalability problem.
+> 
+> Hmm ok so could add that check into acpi idle too I guess, but then ACPI
+> idle doesn't normally know anything about CPUs.
+> 
+> > Either you are using different code or your machine does not have that
+> > ARAT flag set.
+> 
+> The second test was using ACPI idle.
 
-Tell me *why* I should believe that this is a real pull request from
-the proper source. Otherwise I'll just wait until kernel.org is back
-to life, where random people can't just create repositories and send
-email.
+And as I said in that very same mail:
 
-                        Linus
+> > Same applies for drivers/acpi/processor_idle.c
+
+lapic_timer_check_state()
+{
+       if (cpu_has(&cpu_data(pr->id), X86_FEATURE_ARAT))
+                return;
+....
+
+WTF are you talking about? 
+
+Thanks,
+
+	tglx
