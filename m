@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab1IFVJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 17:09:29 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47294 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab1IFVJW (ORCPT
+	id S1754889Ab1IFVNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 17:13:17 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:38771 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab1IFVNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 17:09:22 -0400
-From: Dan McGee <dpmcgee@gmail.com>
-To: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH] pata_sis: enable MWDMA for UDMA 133 chipset
-Date: Tue,  6 Sep 2011 16:09:18 -0500
-Message-Id: <1315343358-12391-1-git-send-email-dpmcgee@gmail.com>
-X-Mailer: git-send-email 1.7.6.1
+	Tue, 6 Sep 2011 17:13:12 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Date: 06 Sep 2011 22:13:10 +0100
+From: "J.I. Cameron" <jic23@cam.ac.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Blockers on IIO usage of regmap.
+Message-ID: <Prayer.1.3.4.1109062213100.4243@hermes-2.csi.cam.ac.uk>
+In-Reply-To: <20110906175435.GA2924@opensource.wolfsonmicro.com>
+References: <4E6600A8.4020101@cam.ac.uk>
+ <20110906175435.GA2924@opensource.wolfsonmicro.com>
+X-Mailer: Prayer v1.3.4
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This ports the timing values over from the old IDE driver into the new
-PATA-based one. The comment was lying when it stated the old driver was
-not MWDMA capable.
+On Sep 6 2011, Mark Brown wrote:
 
-Boot tested on actual hardware using 'libata.force=mwdma2'.
+>On Tue, Sep 06, 2011 at 12:14:48PM +0100, Jonathan Cameron wrote:
+>
+>> Just a quick heads up that the big blocker for
+>> us making more use of regmap is lack of default
+>> control of cs_change for spi buses.  That leads to
+>
+>Looking at what you've got here there's nothing interesting with /CS
+>here, it's all about the data formatting.  Certainly you've not
+>mentioned anything odd with /CS in any of the code.
+Sorry, email got somewhat mashed up in editing (pesky
+dentist appointment in the middle!).
 
-Signed-off-by: Dan McGee <dpmcgee@gmail.com>
----
- drivers/ata/pata_sis.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
+you are quite correct. Two completely different issues.
+The spi one needs addressing in the spi core, so is a
+topic for another thread entirely (I have proposal but
+need to test that thoroughly before sending out). Here
+I was simply going to say there are issues with lack of
+control of that except on a individual transfer basis.
 
-diff --git a/drivers/ata/pata_sis.c b/drivers/ata/pata_sis.c
-index 810b7d6..9f11a8e 100644
---- a/drivers/ata/pata_sis.c
-+++ b/drivers/ata/pata_sis.c
-@@ -293,14 +293,14 @@ static void sis_133_set_piomode (struct ata_port *ap, struct ata_device *adev)
- 	u32 t1;
- 	int speed = adev->pio_mode - XFER_PIO_0;
- 
--	const u32 timing133[] = {
-+	static const u32 timing133[] = {
- 		0x28269000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
- 		0x0C266000,
- 		0x04263000,
- 		0x0C0A3000,
- 		0x05093000
- 	};
--	const u32 timing100[] = {
-+	static const u32 timing100[] = {
- 		0x1E1C6000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
- 		0x091C4000,
- 		0x031C2000,
-@@ -485,21 +485,28 @@ static void sis_133_set_dmamode (struct ata_port *ap, struct ata_device *adev)
- 	int port;
- 	u32 t1;
- 
--	/* bits 4- cycle time 8 - cvs time */
--	static const u32 timing_u100[] = { 0x6B0, 0x470, 0x350, 0x140, 0x120, 0x110, 0x000 };
--	static const u32 timing_u133[] = { 0x9F0, 0x6A0, 0x470, 0x250, 0x230, 0x220, 0x210 };
--
- 	port = sis_port_base(adev);
- 	pci_read_config_dword(pdev, port, &t1);
- 
- 	if (adev->dma_mode < XFER_UDMA_0) {
-+		/* Recovery << 24 | Act << 16 | Ini << 12, like PIO modes */
-+		static const u32 timing_u100[] = { 0x19154000, 0x06072000, 0x04062000 };
-+		static const u32 timing_u133[] = { 0x221C6000, 0x0C0A3000, 0x05093000 };
-+		int speed = adev->dma_mode - XFER_MW_DMA_0;
-+		t1 &= 0xC0C00FFF;
-+		/* disable UDMA */
- 		t1 &= ~0x00000004;
--		/* FIXME: need data sheet to add MWDMA here. Also lacking on
--		   ide/pci driver */
-+		if (t1 & 0x08)
-+			t1 |= timing_u133[speed];
-+		else
-+			t1 |= timing_u100[speed];
- 	} else {
-+		/* bits 4- cycle time 8 - cvs time */
-+		static const u32 timing_u100[] = { 0x6B0, 0x470, 0x350, 0x140, 0x120, 0x110, 0x000 };
-+		static const u32 timing_u133[] = { 0x9F0, 0x6A0, 0x470, 0x250, 0x230, 0x220, 0x210 };
- 		int speed = adev->dma_mode - XFER_UDMA_0;
--		/* if & 8 no UDMA133 - need info for ... */
- 		t1 &= ~0x00000FF0;
-+		/* enable UDMA */
- 		t1 |= 0x00000004;
- 		if (t1 & 0x08)
- 			t1 |= timing_u133[speed];
-@@ -620,7 +627,7 @@ static const struct ata_port_info sis_info100_early = {
- static const struct ata_port_info sis_info133 = {
- 	.flags		= ATA_FLAG_SLAVE_POSS,
- 	.pio_mask	= ATA_PIO4,
--	/* No MWDMA */
-+	.mwdma_mask	= ATA_MWDMA2,
- 	.udma_mask	= ATA_UDMA6,
- 	.port_ops	= &sis_133_ops,
- };
--- 
-1.7.6.1
+Anyhow, on to the actual email topic...
+>
+>> TX  Add0...Add7 XXXXXXXXXXX  XXXXXXXXXXX  XXXXXXXX
+>> RX  XXXXXXXXXXX Da0.....Da7  Db0.....Db7  etc
+>
+>This is the standard one that most things do so is already supported.
+>
+>> TX  Add0...Add7 XXXXXXXXXXX  XXXXXXXXXXX  XXXXXXXXXX
+>> RX  XXXXXXXXXXX XXXXXXXXXXX  Da0.....Da7  Db0....Db7
+>
+>This is just inserting a delay so should be trivial to implement and
+>doesn't even look terribly SPI specific, just set a flag and it should
+>be fine.  All we need here is someone to actually implement it.  I guess
+>the delay will be OK for any read?
 
+Yup. It tends to be required for all reads on a given device. Note it
+isn't typically required for writes on the devices I have but I can
+see some devices may need a 'gap' for that as well.  There is a slight
+kicker which is 'magic' address values that trigger a read of all
+registers whilst other addresses don't work for burst reads.
+>
+>> TX  Ada0...Ada7  Adb1...Adb7 Adc1...Adc7  etc
+>> RX  XXXXXXXXXXX  Da0.....Da7 Db0.....Db7  etc
+>
+>This one is much more of a contortion to implement - it's pretty SPI
+>specific to stream the register addresses and it's really not what the
+>system is set up for.  On the other hand if you can come up with a
+>taseful way to implement it then I don't see a problem.
+I'll have a play and get back to you. Another option might be a hook
+into regmap to push in register values from reads that regmap itself
+doesn't know how to do.  That way the debugfs stuff is useful and things
+aren't 'too' clunky + caching etc will work.  This sort of interleaved
+read write is vital for performance on some devices that otherwise fit
+perfectly into regmap so may be worth the effort!
+
+It may seem odd, but it might also be handy to have a regmap_get_bus
+hook in regmap for these odd cases as it saves on carrying a bonus
+pointer to the underlying bus around the code (often also needed to
+get you access to stuff that isn't really part of the bus at all
+such as auxiliary irq numbers).
+>
+>> So basically we need some bus specific 'mode' hook somewhere.
+>> Given we have separate init functions for the buses could we
+>> add a struct regmap_spi_config to the parameter list?
+>
+>Or just embed stuff into the main config structure at least for the
+>delay.  Nothing there seems too outrageous, and the delay sounds like
+>something someone might do on other buses (the delay will be to allow
+>time for the ADCs or whatever to set up).
+Delay indeed is general enough for this.  Might need to think a bit
+on the naming so it's clear it isn't a time value, but rather a
+case of 'don't care' data sitting before what you actually requested.
+
+I'll bash out a patch once I've sorted the CS stuff (as my test part
+adis16350 needs that before I can use regmap for it at all).
+
+Thanks
+
+Jonathan
