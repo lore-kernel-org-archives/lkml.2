@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab1IFTJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 15:09:26 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:41014 "EHLO mxout1.idt.com"
+	id S1754568Ab1IFTJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 15:09:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58048 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200Ab1IFTJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 15:09:22 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>, Chul Kim <chul.kim@idt.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>
-Subject: [PATCH] RapidIO, rionet: Fix ethernet address macros for LE platforms
-Date: Tue,  6 Sep 2011 15:07:39 -0400
-Message-Id: <1315336059-16156-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.6
+	id S1754374Ab1IFTJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 15:09:48 -0400
+Date: Tue, 6 Sep 2011 12:06:15 -0700
+From: Greg KH <greg@kroah.com>
+To: Mike Sterling <mike.sterling@microsoft.com>
+Cc: haiyangz@microsoft.com, hjanssen@microsoft.com, kys@microsoft.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org
+Subject: Re: [PATCH 1/1] staging: hv: Add support for >2 TB LUN in storage
+ driver.
+Message-ID: <20110906190615.GA31897@kroah.com>
+References: <1314915069-1796-1-git-send-email-mike.sterling@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314915069-1796-1-git-send-email-mike.sterling@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify Ethernet addess macros to be compatible with BE/LE platforms
-(applicable to kernel versions starting from 2.6.39).
+On Thu, Sep 01, 2011 at 03:11:09PM -0700, Mike Sterling wrote:
+> If a LUN larger than 2 TB is attached to a Linux VM on Hyper-V, we currently 
+> report a maximum size of 2 TB. This patch resolves the issue in hv_storvsc. 
+> Thanks to Robert Scheck <robert.scheck@etes.de> for reporting the issue.
+> 
+> Reported-by: Robert Scheck <robert.scheck@etes.de>
+> Signed-off-by: Mike Sterling <mike.sterling@microsoft.com>
+> Signed-off-by: K.Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  drivers/staging/hv/hyperv_storage.h |    1 +
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Chul Kim <chul.kim@idt.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
----
- drivers/net/rionet.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+This file is no longer in the latest kernel tree (linux-next or
+staging-next).  What tree did you generate this patch against?  And
+how come Haiyang and KY didn't catch such a basic mistake in their
+review...
 
-diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
-index 3bb1311..7145714 100644
---- a/drivers/net/rionet.c
-+++ b/drivers/net/rionet.c
-@@ -88,8 +88,8 @@ static struct rio_dev **rionet_active;
- #define dev_rionet_capable(dev) \
- 	is_rionet_capable(dev->src_ops, dev->dst_ops)
- 
--#define RIONET_MAC_MATCH(x)	(*(u32 *)x == 0x00010001)
--#define RIONET_GET_DESTID(x)	(*(u16 *)(x + 4))
-+#define RIONET_MAC_MATCH(x)	(!memcmp((x), "\00\01\00\01", 4))
-+#define RIONET_GET_DESTID(x)	((*((u8 *)x + 4) << 8) | *((u8 *)x + 5))
- 
- static int rionet_rx_clean(struct net_device *ndev)
- {
--- 
-1.7.6
+I'm guessing that this patch was not even tested :(
 
+Please fix this and resend.
+
+greg k-h
