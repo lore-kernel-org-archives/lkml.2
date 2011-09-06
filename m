@@ -1,119 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab1IFSjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 14:39:12 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:10103 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754128Ab1IFSjE convert rfc822-to-8bit (ORCPT
+	id S1754233Ab1IFSoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 14:44:54 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:34623 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab1IFSos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 14:39:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=lHupZ//TvbSNe13aQN7AV4oMDqXpOg9W+/I3BHPPtvDTNqpMtMApxQDxX4rS7+jx0
-	r3eReiJzFEUCDQnPlyX+A==
+	Tue, 6 Sep 2011 14:44:48 -0400
+X-SENDER-IP: [85.230.168.63]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjBpACFpZk5V5qg/PGdsb2JhbABDiRWeaAsBAQEBNzOBRgEBBAE6HCMQCANGFCUKGogGArliDoV8YASYS4ty
+X-IronPort-AV: E=Sophos;i="4.68,340,1312149600"; 
+   d="scan'208";a="39017673"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 6 Sep 2011 20:47:35 +0200
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, JJ Ding <jj_ding@emc.com.tw>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
+Message-ID: <20110906184735.GA3433@polaris.bitmath.org>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+ <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw>
+ <20110818074756.GE10093@core.coreip.homeip.net>
+ <4E5FCE58.9060906@canonical.com>
+ <87sjobk711.fsf@emc.com.tw>
+ <4E665249.2040602@canonical.com>
+ <20110906173649.GA7419@core.coreip.homeip.net>
+ <4E6660D7.9040800@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <4E65C254.8090107@huawei.com>
-References: <F1F5DF04259F1B4A82BD6BDE1C479F74098285B0@szxeml527-mbx.china.huawei.com>
- <CAErSpo4JsyHag24SH=zSRHt4c8kYwdcXEnCConGEi2u6dN-pnw@mail.gmail.com> <4E65C254.8090107@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 6 Sep 2011 11:38:39 -0700
-Message-ID: <CAErSpo5owGuYLP2-JR6uJsM+Pqwna+FUB--p4OhjLVAETqYpcw@mail.gmail.com>
-Subject: Re: Re : [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
-To: "canquan.shen" <shencanquan@huawei.com>
-Cc: "lenb@kernel.org" <lenb@kernel.org>,
-        "rui.zhao@intel.com" <rui.zhao@intel.com>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
-        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
-        hanweidong <hanweidong@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6660D7.9040800@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 5, 2011 at 11:48 PM, canquan.shen <shencanquan@huawei.com> wrote:
-> On 2011/9/6 12:19, Bjorn Helgaas wrote:
->>>
->>> 主题: [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
->>>
->>> In Xen virtualization environment, When I used xen tools (xm vcpu-set
->>> vcpu_number ) to test the vcpu add and remove, I found it is failure on vcpu
->>> remove, I found the reason is that nothing to do when cpu remove in
->>> acpi_processor_hotplug_notify function, so I add the code of send the
->>> OFFLINE message to udev and add the rule of udev. it is ok on vcpu remove.
->>> Signed-off-by: Shen canquan<shencanquan@huawei.com>
->>> ---
->>>  drivers/acpi/processor_driver.c |    2 ++
->>>  1 files changed, 2 insertions(+), 0 deletions(-)
->>> diff --git a/drivers/acpi/processor_driver.c
->>> b/drivers/acpi/processor_driver.c
->>> index a4e0f1b..a1c564f 100644
->>> --- a/drivers/acpi/processor_driver.c
->>> +++ b/drivers/acpi/processor_driver.c
->>> @@ -677,6 +677,8 @@ static void acpi_processor_hotplug_notify(acpi_handle
->>> handle,
->>>                                     "Driver data is NULL, dropping
->>> EJECT\n");
->>>                         return;
->>>                 }
->>> +
->>> +               kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
->>>                 break;
->>>         default:
->>>                 ACPI_DEBUG_PRINT((ACPI_DB_INFO,
->>
->> The processor driver used to generate ONLINE and OFFLINE messages.  I
->> removed them with c1815e0740.  According to the changelog, the driver
->> core still generates KOBJ_ADD and KOBJ_REMOVE events.
->
-> Thanks for your answer.
-> When I used xen tools (xm vcpu-set vcpu_numer) to reduce the cpu number. I
-> don't found any event . I use the following tool to capture the event:
-> udevadm monitor --env --kernel --udev.
->
-> If I used xen tools to add the cpu number , udev module will receive the
-> KOBJ_ADD event.
->
-> In my patch ,It is more fine to replace KOBJ_OFFLINE to KOBJ_REMOVE event .
+> >> I see that the current code scales the coordinates for v2, but it's only
+> >> half-resolution. That's not a huge deal since the resolution of modern
+> >> touchpads is very high. We could leave it scaled to not break abi, if
+> >> that was a concern. However, with new devices it makes sense to state
+> >> the ranges in terms of what the device actually supports. Otherwise,
+> >> we're just masking out useful data that userspace could be using.
+> >>
+> > 
+> > I disagree. I believe that ST and MT ranges reported for the same
+> > working surface should match, especially since many devices derive ST
+> > data from MT.
+> > 
+> > As far as devices that have ranges 0-15 in MT mode - I am not sure how
+> > useful such MT steam anyway and if we are better of just ignore them
+> > (maybe just use the data to report number of fingers on the surface but
+> > otherwise use standard ST protocol).
+> 
+> The MT data could still be useful for pinch to zoom or potentially
+> rotate (though most low res devices probably are only semi-mt). I don't
+> want to forsake pinch to zoom just because we can't pass on the
+> resolution of MT data properly.
 
-I don't think we should emit KOBJ_REMOVE from the ACPI processor
-driver.  KOBJ_ADD is emitted by the driver model core
-(device_register() -> device_add() path), and I think KOBJ_REMOVE
-should also be emitted from the driver model core.
+We are not forsaking anything. At best, the detail missed out by using
+the same scaling for ST and MT is the ability to distinguish the axis
+with the best or poorest resolution. However, some devices report
+higher MT than ST resolution, not because it is better (it is indeed
+worse), but simply to not lose bits in the filtering process. In other
+words: the logic is not without corner cases, and it only makes a
+difference to the transitional devices that are not fully MT
+capable. If this really was a concern, userspace could use the ST
+coordinates for some transformations instead.
 
-Is acpi_processor_remove() called when you remove a processor?  I see
-a path where it will be called via acpi_eject_store():
-
-    acpi_eject_store
-      acpi_os_hotplug_execute(acpi_bus_hot_remove_device)
-      acpi_bus_hot_remove_device
-        acpi_bus_trim
-          acpi_bus_remove
-            device_release_driver
-              dev->driver->remove (acpi_processor_remove())
-            acpi_device_unregister
-              device_unregister
-                device_del
-                  kobject_uevent(KOBJ_REMOVE)
-
-but as far as I can tell, this path is only used when we write
-something to the "eject" sysfs file.  I would think we'd want to use
-most of this same path when we hot remove a CPU via the ACPI SCI
-mechanism.
-
-If you change acpi_processor_hotplug_notify() to use acpi_bus_trim()
-for the removal case, you should get KOBJ_REMOVE events.  Would that
-be enough to make the xen vcpu remove work, or at least get you
-closer?
-
-> btw: how to find changelog of the c1815e0740.
-
-git show c1815e0740
-
-Bjorn
+Henrik
