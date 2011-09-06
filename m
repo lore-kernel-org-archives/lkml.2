@@ -1,102 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab1IFPKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:10:06 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41853 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab1IFPKA convert rfc822-to-8bit (ORCPT
+	id S1754820Ab1IFPMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:12:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62184 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114Ab1IFPMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:10:00 -0400
+	Tue, 6 Sep 2011 11:12:05 -0400
+Date: Wed, 7 Sep 2011 00:11:40 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] vmscan: Do reclaim stall in case of mlocked page.
+Message-ID: <20110906151140.GA1589@barrios-fedora.local>
+References: <1321285043-3470-1-git-send-email-minchan.kim@gmail.com>
+ <20110831173031.GA21571@redhat.com>
+ <CAEwNFnDcNqLvo=oyXXkxgFxs8wNc+WTLwot0qeru1VfQKmUYDQ@mail.gmail.com>
+ <20110905083321.GA15935@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1315285921.46647.YahooMailClassic@web29519.mail.ird.yahoo.com>
-References: <CAG1a4ruG8bL9j01RgSXuK2w9FV0izp8vdoQMLEZzc=qZfCNpzA@mail.gmail.com>
- <1315285921.46647.YahooMailClassic@web29519.mail.ird.yahoo.com>
-From: Pavel Ivanov <paivanof@gmail.com>
-Date: Tue, 6 Sep 2011 11:09:27 -0400
-Message-ID: <CAG1a4rttHKgp=nAjQ=7zUu=bURq9x7DdhL2fTAZKimicpfdYsw@mail.gmail.com>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-To: Hin-Tak Leung <hintak_leung@yahoo.co.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Christoph Hellwig <hch@tuxera.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110905083321.GA15935@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 1:12 AM, Hin-Tak Leung <hintak_leung@yahoo.co.uk> wrote:
->> Anyway the following patch worked for me and I've got my
->> iPod mounted
->> and navigateable (although only in read-only mode because
->> it has
->> journaled filesystem).
->
-> I worked on the netgear journalling patches a bit:
-> http://htl10.users.sourceforge.net/patchsets/hfsplus_3.0_rfc/patches/
-> But please *back up your data*, as well as reading my notes before trying them out:
-> http://www.spinics.net/lists/linux-fsdevel/msg47684.html
-> http://www.spinics.net/lists/linux-fsdevel/msg47734.html
+On Mon, Sep 05, 2011 at 10:33:21AM +0200, Johannes Weiner wrote:
+> On Fri, Sep 02, 2011 at 11:19:49AM +0900, Minchan Kim wrote:
+> > On Thu, Sep 1, 2011 at 2:30 AM, Johannes Weiner <jweiner@redhat.com> wrote:
+> > > On Tue, Nov 15, 2011 at 12:37:23AM +0900, Minchan Kim wrote:
+> > >> [1] made avoid unnecessary reclaim stall when second shrink_page_list(ie, synchronous
+> > >> shrink_page_list) try to reclaim page_list which has not-dirty pages.
+> > >> But it seems rather awkawrd on unevictable page.
+> > >> The unevictable page in shrink_page_list would be moved into unevictable lru from page_list.
+> > >> So it would be not on page_list when shrink_page_list returns.
+> > >> Nevertheless it skips reclaim stall.
+> > >>
+> > >> This patch fixes it so that it can do reclaim stall in case of mixing mlocked pages
+> > >> and writeback pages on page_list.
+> > >>
+> > >> [1] 7d3579e,vmscan: narrow the scenarios in whcih lumpy reclaim uses synchrounous reclaim
+> > >
+> > > Lumpy isolates physically contiguous in the hope to free a bunch of
+> > > pages that can be merged to a bigger page.  If an unevictable page is
+> > > encountered, the chance of that is gone.  Why invest the allocation
+> > > latency when we know it won't pay off anymore?
+> > >
+> > 
+> > Good point!
+> > 
+> > Except some cases, when we require higher orer page, we used zone
+> > defensive algorithm by zone_watermark_ok. So the number of fewer
+> > higher order pages would be factor of failure of allocation. If it was
+> > problem, we could rescue the situation by only reclaim part of the
+> > block in the hope to free fewer higher order pages.
+> 
+> You mean if we fail to get an order-4, we may still successfully free
+> some order-3?
+> 
+> I'm not sure we should speculatively do lumpy reclaim.  If someone
+> wants order-3, they have to get it themselves.
+> 
+> > I thought the lumpy was designed to consider the case.(I might be wrong).
+> > Why I thought is that when we isolate the pages for lumpy and found
+> > the page isn't able to isolate, we don't rollback the isolated pages
+> > in the lumpy phsyical block. It's very pointless to get a higher order
+> > pages.
+> > 
+> > If we consider that, we have to fix other reset_reclaim_mode cases as
+> > well as mlocked pages.
+> > Or
+> > fix isolataion logic for the lumpy? (When we find the page isn't able
+> > to isolate, rollback the pages in the lumpy block to the LRU)
+> > Or
+> > Nothing and wait to remove lumpy completely.
+> > 
+> > What do you think about it?
+> 
+> The rollback may be overkill and we already abort clustering the
+> isolation when one of the pages fails.
 
-I'd be happy to try them out and to help in testing/fixing/reviewing them.
+I think abort isn't enough
+Because we know the chace to make a bigger page is gone when we isolate page.
+But we still try to reclaim pages to make bigger space in a vain.
+It causes unnecessary unmap operation by try_to_unmap which is costly operation
+, evict some working set pages and make reclaim latency long.
 
->> diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
->> index c106ca2..5458be4 100644
->> --- a/fs/hfsplus/super.c
->> +++ b/fs/hfsplus/super.c
->> @@ -345,6 +345,8 @@ static int hfsplus_fill_super(struct
->> super_block
->> *sb, void *data, int silent)
->>      struct qstr str;
->>      struct nls_table *nls = NULL;
->>      int err;
->> +    unsigned check_blksz_bits;
->> +    u64 check_num_blocks;
->>
->>      err = -EINVAL;
->>      sbi = kzalloc(sizeof(*sbi),
->> GFP_KERNEL);
->> @@ -399,10 +401,15 @@ static int hfsplus_fill_super(struct
->> super_block
->> *sb, void *data, int silent)
->>      if (!sbi->rsrc_clump_blocks)
->>
->> sbi->rsrc_clump_blocks = 1;
->>
->> -    err =
->> generic_check_addressable(sbi->alloc_blksz_shift,
->> -
->>
->> sbi->total_blocks);
->> +    check_blksz_bits =
->> sbi->alloc_blksz_shift;
->> +    check_num_blocks =
->> sbi->total_blocks;
->> +    if (sbi->fs_shift != 0) {
->> +        check_num_blocks
->> <<= sbi->fs_shift;
->> +        check_blksz_bits -=
->> sbi->fs_shift;
->> +    }
->> +    err =
->> generic_check_addressable(check_blksz_bits,
->> check_num_blocks);
->>      if (err) {
->>         printk(KERN_ERR "hfs:
->> filesystem size too large.\n");
->>          goto out_free_vhdr;
->>
->>
->> I can format and submit both patches (plus a small cleanup
->> that I felt
->> is needed to be changed along the way). Tell me what you
->> think.
->
-> This is a bit ugly - what it does is massage the two values taking into account of sbi->fs_shift to pass check_addressable() . I think either check_addressable should be extended, or this be abstracted out say, to check_hfs_addressable() (with __inline__ if desired) to be cleaner.
+As a matter of fact, I though as follows patch to solve this problem(Totally, untested)
 
-Agreed. It was more of a quick hack to prove the correctness of such
-change direction. I'll think how to do it better.
+---
+ mm/vmscan.c |   35 +++++++++++++++++++++++++++++++----
+ 1 files changed, 31 insertions(+), 4 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 23256e8..ff2fe47 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1116,6 +1116,15 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 	unsigned long nr_lumpy_dirty = 0;
+ 	unsigned long nr_lumpy_failed = 0;
+ 	unsigned long scan;
++	/*
++	 * We keep high order page list to return pages of blocks
++	 * which have a pinned page
++	 */
++	LIST_HEAD(hop_isolated_list);
++
++	struct list_head *isolated_page_list = dst;
++	if (order)
++		isolated_page_list = &hop_isolated_list;
+ 
+ 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
+ 		struct page *page;
+@@ -1131,7 +1140,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 
+ 		switch (__isolate_lru_page(page, mode, file)) {
+ 		case 0:
+-			list_move(&page->lru, dst);
++			list_move(&page->lru, isolated_page_list);
+ 			mem_cgroup_del_lru(page);
+ 			nr_taken += hpage_nr_pages(page);
+ 			break;
+@@ -1189,7 +1198,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 				break;
+ 
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+-				list_move(&cursor_page->lru, dst);
++				list_move(&cursor_page->lru, isolated_page_list);
+ 				mem_cgroup_del_lru(cursor_page);
+ 				nr_taken += hpage_nr_pages(page);
+ 				nr_lumpy_taken++;
+@@ -1216,11 +1225,29 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 			}
+ 		}
+ 
+-		/* If we break out of the loop above, lumpy reclaim failed */
+-		if (pfn < end_pfn)
++		/*
++		 * If we succeed to isolate *all* pages of the block,
++		 * we will try to reclaim that pages.
++		 */
++		if (pfn >= end_pfn)
++			list_splice(isolated_page_list, dst);
++		else {
++			/*
++			 * If we break out of the loop above, lumpy reclaim failed
++			 * Let's rollback isolated pages.
++			 */
++			struct page *page, *page2;
++
++			list_for_each_entry_safe(page, page2, isolated_page_list, lru) {
++				list_del(&page->lru);
++				putback_lru_page(page);
++			}
++
+ 			nr_lumpy_failed++;
++		}
+ 	}
+ 
++
+ 	*scanned = scan;
+ 
+ 	trace_mm_vmscan_lru_isolate(order,
+-- 
+1.7.5.4
 
 
-Thank you,
-Pavel
+I think this concept could be applied to compaction in case of compact for high order pages.
+
+> 
+> I would go with the last option.  Lumpy reclaim is on its way out and
+> already disabled for a rather common configuration, so I would defer
+> non-obvious fixes like these until actual bug reports show up.
+
+It's hard to report above problem as it might not make big difference on normal worklaod.
+But I agree last option, too. Then, when does we suppose to remove lumpy?
+Mel, Could you have a any plan?
+
+
