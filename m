@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab1IFI4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:56:37 -0400
-Received: from www17.your-server.de ([213.133.104.17]:37823 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab1IFI4Y (ORCPT
+	id S1754080Ab1IFI41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:56:27 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:39277 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab1IFIzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:56:24 -0400
-Subject: binfmt_misc: hangs in syscall with x86 userland on x86_64 kernel
-From: Thomas Meyer <thomas@m3y3r.de>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Date: Tue, 06 Sep 2011 10:55:19 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1315299323.7365.10.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	Tue, 6 Sep 2011 04:55:35 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p868tSSo024459
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v5 2/5] r8169: define the early size for 8111evl
+Date: Tue, 6 Sep 2011 16:55:15 +0800
+X-BOX-Message-Id: p868tSSo024459
+Message-ID: <1315299318-1547-2-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1315299318-1547-1-git-send-email-hayeswang@realtek.com>
+References: <1315299318-1547-1-git-send-email-hayeswang@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello,
+For RTL8111EVL, the register of MaxTxPacketSize doesn't acctually
+limit the tx size. It influnces the feature of early tx.
 
-something in the binfmt_misc filesystem system seems to be broken when
-trying to use this driver with an x86 user land on an x86_64 kernel.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-the command "ls /proc/sys/fs/binfmt_misc" seems to hang in the stat64
-syscall:
-
-> stat64("/proc/sys/fs/binfmt_misc", 0x8bf68e8) = -1 EINTR (Interrupted system call)
-> --- {si_signo=SIGINT, si_code=SI_KERNEL, si_value={int=1248448068, ptr=0x4a69ce44}} (Interrupt) ---
-> +++ killed by SIGINT +++
-
-I had to remove the systemd-binfmt register service from my default
-runlevel to get to a shell/X11.
-
-any ideas what's going on here?
-
-the program "systemd-binfmt" seems to hang in this open() syscall:
-
-> open("/proc/sys/fs/binfmt_misc/status", O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE|O_CLOEXEC, 0666) = -1 EINTR (Interrupted system call)
-> --- {si_signo=SIGINT, si_code=SI_KERNEL, si_value={int=1248448068, ptr=0x4a69ce44}} (Interrupt) ---
-> +++ killed by SIGINT +++
-
-with kind regards
-thomas
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index aaae43e..db5ab2c 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -311,6 +311,7 @@ enum rtl_registers {
+ 	MaxTxPacketSize	= 0xec,	/* 8101/8168. Unit of 128 bytes. */
+ 
+ #define TxPacketMax	(8064 >> 7)
++#define EarlySize	0x27
+ 
+ 	FuncEvent	= 0xf0,
+ 	FuncEventMask	= 0xf4,
+@@ -4465,7 +4466,7 @@ static void rtl_hw_start_8168e_2(void __iomem *ioaddr, struct pci_dev *pdev)
+ 	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
+ 		     ERIAR_EXGMAC);
+ 
+-	RTL_W8(MaxTxPacketSize, 0x27);
++	RTL_W8(MaxTxPacketSize, EarlySize);
+ 
+ 	rtl_disable_clock_request(pdev);
+ 
+-- 
+1.7.6
 
