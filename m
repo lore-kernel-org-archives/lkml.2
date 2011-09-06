@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1IGGWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:22:55 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:38342 "EHLO e1.ny.us.ibm.com"
+	id S1755912Ab1IGGXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:23:04 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:45064 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab1IGGWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 02:22:22 -0400
+	id S1755876Ab1IGGWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 02:22:21 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,49 +13,68 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 13/55] rcu: Don't destroy rcu_torture_boost() callback until it is done
-Date: Tue,  6 Sep 2011 11:00:07 -0700
-Message-Id: <1315332049-2604-13-git-send-email-paulmck@linux.vnet.ibm.com>
+        patches@linaro.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH tip/core/rcu 50/55] rcu: Inform the user about dynticks-idle mode on PROVE_RCU warning
+Date: Tue,  6 Sep 2011 11:00:44 -0700
+Message-Id: <1315332049-2604-50-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110906180015.GA2560@linux.vnet.ibm.com>
 References: <20110906180015.GA2560@linux.vnet.ibm.com>
-x-cbid: 11090706-6078-0000-0000-000000711B16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney <paul.mckenney@linaro.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-The rcu_torture_boost() cleanup code destroyed debug-objects state before
-waiting for the last RCU callback to be invoked, resulting in rare but
-very real debug-objects warnings.  Move the destruction to after the
-waiting to fix this problem.
+Inform the user if an RCU usage error is detected by lockdep while in
+an extended quiescent state (in this case, dyntick-idle mode).  This
+is accomplished by adding a line to the RCU lockdep splat indicating
+whether or not the splat occurred in dyntick-idle mode.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutorture.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/lockdep.c |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index e0f39ea..1194d6c 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -796,11 +796,11 @@ checkwait:	rcu_stutter_wait("rcu_torture_boost");
- 
- 	/* Clean up and exit. */
- 	VERBOSE_PRINTK_STRING("rcu_torture_boost task stopping");
--	destroy_rcu_head_on_stack(&rbi.rcu);
- 	rcutorture_shutdown_absorb("rcu_torture_boost");
- 	while (!kthread_should_stop() || rbi.inflight)
- 		schedule_timeout_uninterruptible(1);
- 	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
-+	destroy_rcu_head_on_stack(&rbi.rcu);
- 	return 0;
- }
- 
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index df2ad37..ef5dd69 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -4008,6 +4008,26 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
+ 	printk("%s:%d %s!\n", file, line, s);
+ 	printk("\nother info that might help us debug this:\n\n");
+ 	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
++
++	/*
++	 * If a CPU is in dyntick-idle mode (CONFIG_NO_HZ), then RCU
++	 * considers that CPU to be in an "extended quiescent state",
++	 * which means that RCU will be completely ignoring that CPU.
++	 * Therefore, rcu_read_lock() and friends have absolutely no
++	 * effect on a dyntick-idle CPU.  In other words, even if a
++	 * dyntick-idle CPU has called rcu_read_lock(), RCU might well
++	 * delete data structures out from under it.  RCU really has no
++	 * choice here: if it were to consult the CPU, that would wake
++	 * the CPU up, and the whole point of dyntick-idle mode is to
++	 * allow CPUs to enter extremely deep sleep states.
++	 *
++	 * So complain bitterly if someone does call rcu_read_lock(),
++	 * rcu_read_lock_bh() and so on from extended quiescent states
++	 * such as dyntick-idle mode.
++	 */
++	if (rcu_check_extended_qs())
++		printk("RCU used illegally from extended quiescent state!\n");
++
+ 	lockdep_print_held_locks(curr);
+ 	printk("\nstack backtrace:\n");
+ 	dump_stack();
 -- 
 1.7.3.2
 
