@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1IFUSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 16:18:44 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:40207 "EHLO
-	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754854Ab1IFUSi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 16:18:38 -0400
-Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=bMtn2c2igAkA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=I1F__zEsIdw5GxcaiBcA:9 a=jRnCBcFTirTULPU3t4AA:7 a=CjuIK1q_8ugA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.79.195.91
-From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-Cc: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>,
-        <fzago@systemfabricworks.com>, "'George Spelvin'" <linux@horizon.com>,
-        <linux-kernel@vger.kernel.org>
-References: <20110831213729.395283830@systemfabricworks.com>	<4E5EB5F4.6010105@systemfabricworks.com>	<20110902165047.6aaec238.akpm@linux-foundation.org>	<20110903114403.027a9563c86eeaf1c0e4e80b@canb.auug.org.au>	<OF0B1D5F8A.D8D66C8A-ONC1257903.004A257F-C1257903.004B1700@transmode.se>	<20110907005013.e96fb5acd9f4b7c06ee70972@canb.auug.org.au> <20110906123851.dc4de9f5.akpm@linux-foundation.org>
-In-Reply-To: <20110906123851.dc4de9f5.akpm@linux-foundation.org>
-Subject: RE: [PATCH v6 05/10] crc32-misc-cleanup.diff
-Date: Tue, 6 Sep 2011 15:18:35 -0500
-Message-ID: <02a401cc6cd2$28ee4e60$7acaeb20$@systemfabricworks.com>
+	id S1755154Ab1IFUXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 16:23:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754907Ab1IFUXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 16:23:08 -0400
+Date: Tue, 6 Sep 2011 16:22:32 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mike Hommey <mh@glandium.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Problem with perf hardware counters grouping
+Message-ID: <20110906202232.GS5795@redhat.com>
+References: <20110831085718.GB13884@glandium.org>
+ <1314878012.11566.7.camel@twins>
+ <alpine.DEB.2.00.1109061538270.24588@cl320.eecs.utk.edu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQJdND57YfohkECc5nAnrPUtKDDU5gJZZUhmAFIMxcECHqI1yQJliP+MAsOhF3oCTbCit5O9L1MQ
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1109061538270.24588@cl320.eecs.utk.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 06, 2011 at 03:43:09PM -0400, Vince Weaver wrote:
+> On Thu, 1 Sep 2011, Peter Zijlstra wrote:
+> > 
+> > Both those have 4 generic hardware counters, but x86 defaults to
+> > enabling the NMI watchdog which takes one, leaving you with 3 (try: echo
+> > 0 > /proc/sys/kernel/nmi_watchdog). If you had looked at your dmesg
+> > output you'd have found lines like:
+> > 
+> >   NMI watchdog enabled, takes one hw-pmu counter.
+> > 
+> > The code can only check if the group as a whole could possibly fit on a
+> > PMU, which is where your failure on >4 comes from.
+> > 
+> > What happens with your >3 case is that while the group is valid and
+> > could fit on the PMU, it won't fit at runtime because the NMI watchdog
+> > is taking one and won't budge (cpu-pinned counter have precedence over
+> > any other kind), effectively starving your group of pmu runtime.
+> > 
+> > Also, we should fix that return to say -EINVAL or so.
 > 
-> Yup.  lib-crc-add-slice-by-8-algorithm-to-crc32c.patch is dead meat.  I
-> sometimes keep things like that around to get them a bit of testing
-> while reminding myself that there's an open issue to track.
+> So any hope of a fix on this?  
+> 
+> As mentioned this is a serious problem for PAPI and I am trying to find a 
+> good way to enable a workaround in a way that doesn't punish people who 
+> have the watchdog disabled.
+> 
+> Is there a "stable" API method of determining if the nmi_watchdog is 
+> present and stealing a perf-counter?  
+> 
+> If I find a "1" in /proc/sys/kernel/nmi_watchdog can I assume a counter is 
+> being stolen?
 
-I thought I was getting close until recently someone sent out a patch set
-for crc32c.c, the other 32 bit CRC in common use, based on an earlier
-version of the changes we have been working on for crc32.c. This has brought
-in other interested parties and created a bit of duplicated code. I am at a
-loss as to the best way to proceed. Personally I would like to see this
-change go upstream and then let the rest of the world figure out how to best
-merge things.
+Short answer: yes
 
-The list of needed changes based on recent comments I am aware of are:
- - put back in a couple of header files per Andrew
- - fix the summary phrases to conform to coding standards per Andrew
- - add signed off by for Joakim to patch 04/10 per Joakim
- - fix bug in patch 06/10 noted in my email by passing bits as a parameter
-to crc32_body
+Long answer: all that means is the nmi_watchdog is running on some
+counter, hopefully the hardware based performance counters.  In some rare
+cases where the hardware isn't available it may fallback to software based
+counters.  But if the hardware isn't available, I think PAPI will have
+bigger issues than the nmi_watchdog. :-)
 
-If anyone wants additional changes please let me know and I can put out a
-clean version.
-
-
+Cheers,
+Don
