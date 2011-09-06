@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab1IFP3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:29:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36262 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab1IFP3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:29:11 -0400
-Date: Tue, 6 Sep 2011 17:25:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: matthltc@us.ibm.com, rjw@sisk.pl, paul@paulmenage.org,
-        containers@lists.linux-foundation.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] freezer: kill unused set_freezable_with_signal()
-Message-ID: <20110906152539.GA16899@redhat.com>
-References: <1314988070-12244-1-git-send-email-tj@kernel.org> <1314988070-12244-7-git-send-email-tj@kernel.org> <20110904184626.GA30101@redhat.com> <20110905023315.GB9807@htj.dyndns.org> <20110905162012.GA4445@redhat.com> <20110906032846.GA18425@mtj.dyndns.org> <20110906151836.GA15568@redhat.com>
+	id S1755041Ab1IFPcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:32:06 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61775 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754950Ab1IFPcB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 11:32:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110906151836.GA15568@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E663882.4050404@parrot.com>
+References: <4E65DF36.6040507@parrot.com>
+	<CACqU3MU9nuW+a3AJfY_PRqFH_tgaKtBJrp1pU2xpB_dHYANBXg@mail.gmail.com>
+	<4E663882.4050404@parrot.com>
+Date: Tue, 6 Sep 2011 11:32:00 -0400
+Message-ID: <CACqU3MUC-m7AgEPG2C-V2SVKEhHxdYE8tOSFJvqO9Vq+JJEchw@mail.gmail.com>
+Subject: Re: randconfig broken on choice
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06, Oleg Nesterov wrote:
+Hi,
+
+On Tue, Sep 6, 2011 at 11:13 AM, Matthieu CASTET
+<matthieu.castet@parrot.com> wrote:
+> Hi,
 >
-> Yes, agreed. In this case I think it should be
+> Arnaud Lacombe a écrit :
+>> Hi,
+>>
+>> On Tue, Sep 6, 2011 at 4:52 AM, Matthieu CASTET
+>> <matthieu.castet@parrot.com> wrote:
+>>> Hi,
+>>>
+>>> I am using v3.1-rc4 and make randconfig look broken for choice.
+>>> The choice config is always the same or choice entry can have more than one entry.
+>>>
+>> Could you includes testcases showing that behavior, please ?
+> $ make randconfig
 >
-> 	#define wait_event_freezable(wq, condition)				\
-> 	({									\
-> 		int __retval;							\
-> 		for (;;) {							\
-> 			__retval = wait_event_interruptible(wq, 		\
-> 					(condition) || freezing(current));	\
-> 			if (__retval || (condition))				\
-> 				break;						\
-> 			try_to_freeze();					\
-> 		}								\
-> 		__retval;							\
-> 	})
+> $ grep -e SLUB -e SLAB -e SLOB .config
+> # CONFIG_SLAB is not set
+> CONFIG_SLUB=y
+> CONFIG_SLOB=y
+> # CONFIG_FAILSLAB is not set
 >
-> __retval/ERESTARTSYS is only needed for kthreads which play with allow_signal(),
-> probably nobody should do this.
+> We have 2 choice selected (SLUB and SLOB). You may run randconfig (more than one
+> time to get this result).
+>
+ok, I reproduced it with:
 
-I meant, unless the caller plays with allow_signal(), it has all rights to do
+while true; do
+    make randconfig
+    CONFIG_SLAB=; CONFIG_SLOB=; CONFIG_SLUB=
+    source .config
+    if [ "${CONFIG_SLAB}${CONFIG_SLOB}${CONFIG_SLUB}" != "y" ]; then
+        break
+    fi
+    sleep 1
+done
 
-	if (wait_event_freezable(...))
-		BUG();
+I wonder what set the flags originally...
 
-This becomes correct with the code above.
+ - Arnaud
 
-Oleg.
-
+> Matthieu
+>
