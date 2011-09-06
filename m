@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab1IFDmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 23:42:53 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38111 "EHLO
+	id S1752543Ab1IFDp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 23:45:59 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41916 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab1IFDmp (ORCPT
+	with ESMTP id S1752366Ab1IFDpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 23:42:45 -0400
-Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: david.wagner@free-electrons.com, linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Tue, 06 Sep 2011 06:44:58 +0300
-In-Reply-To: <201108251712.40894.arnd@arndb.de>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
-	 <201108241823.20904.arnd@arndb.de> <1314256010.18988.18.camel@sauron>
-	 <201108251712.40894.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1315280704.19067.14.camel@sauron>
-Mime-Version: 1.0
+	Mon, 5 Sep 2011 23:45:52 -0400
+Date: Tue, 6 Sep 2011 12:45:44 +0900
+From: Tejun Heo <htejun@gmail.com>
+To: Bruce Stenning <b.stenning@indigovision.com>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Message-ID: <20110906034544.GB18425@mtj.dyndns.org>
+References: <20110525094127.GF10146@htj.dyndns.org>
+ <4DF20E03.9030502@teksavvy.com>
+ <20110610140155.GJ15235@htj.dyndns.org>
+ <4DF25526.9010800@teksavvy.com>
+ <20110611121957.GA7980@mtj.dyndns.org>
+ <4DF4F30B.70702@teksavvy.com>
+ <20110613104856.GC16021@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
+ <20110902011305.GE2752@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, sorry for long delay, did not have time to read my mail.
+Hello,
 
-On Thu, 2011-08-25 at 17:12 +0200, Arnd Bergmann wrote:
-> > I think this wasteful. Why should I have block devices which I do not
-> > need? If I have 4 UBI volumes, and need only one ubiblk, why should I
-> > waste my resources for 3 more of them (e.g., I do not want to waste
-> > memory for struct inode for each sysfs entry which these useless block
-> > devices will add). Also, will this mean 3 more block devices registered?
-> > 
-> > I think it is much uglier to have 3 "dummy" block devices and confuse
-> > users than have one nice control character device. For the sake of not
-> > having a separate control chardev?
+On Fri, Sep 02, 2011 at 05:22:38PM +0100, Bruce Stenning wrote:
+> Unfortunately it has so far been quite difficult to reproduce when specifically
+> attempting to.  In normal use cases I reproduced it twice by unplugging a drive
+> from a RAID array with redundancy intact.  This was out of around a dozen
+> cycles of waiting until redundancy was restored while the unit was under load,
+> popping the disk, reinserting, and triggering a RAID rebuild.
+
+Hmm... that's unfortunate.
+
+> I have only twice managed to trigger a lockup deliberately.  In both cases the
+> tracing showed a scheduled EH which was subsequently not enacted.
 > 
-> The cost of a block device node in the kernel is rather low. Nowadays,
-> sysfs does not even permanently use inodes for entries, it has a much
-> more compact internal representation IIRC.
-> 
-> The main advantage of this approach is not having to set up the 
-> block device at all, it would just be there, which e.g. makes it
-> possible to put a root file system on it or do something else without
-> requiring a user space tool to issue an ioctl.
+> How long could it take for the EH to be enacted?  In the lockups that I
+> have reproduced it did not seem to have recovered minutes later, but perhaps
+> if I had waited longer...?  I have noticed that error recovery sometimes backs
+> off for 8s and even 33s, but it always warns when that sort of delay is coming
+> up.
 
-Yes, I understand, but the cost of each block device is not zero, I did
-not measure it, but I believe it would be in Kilobytes. Also, littering
-sysfs and /dev with useless block devices is not beautiful - why would
-a user want to have or see fake and useless block devices? And as David
-said, for some UBI volumes we do not want to have block devices at all.
+It should happen pretty quickly.  In such cases, fastdrain is
+activated and all pending commands are aborted if they complete in 3
+secs and then EH should kick in.  The backoff is from reset path only
+to give breathing time for devices which take long time to spin up and
+doesn't apply in this case.
 
-And BTW, mtdblock is uses exactly this technique, and I had to write
-many times to different confused people that they should not look at
-those "/dev/mtdblockX" devices, as if they did not exist...
+> I shall continue to try to track down why the scheduled EH does not happen.
 
-IOW, I think automatic creation for all UBI volumes has more drawbacks
-than advantages.
+Can you please add some debug printk's to scsi_schedule_eh() and see
+whether scsi_eh_wakeup() is invoked from there?  It seems likely that
+the problem is caused by race conditions around
+SHOST_[CANCEL_]RECOVERY flags.
 
-> Evidently you can do everything you need even with that user space
-> tool, but IMHO the complexity of doing that is way bigger than
-> just creating the block devices right away.
-
-Well, it is jut another step to a set of steps one usually needs to do
-to attach an MTD device, create an UBI volume, etc.
-
-> It's not a dummy bus, in this approach it would be a the bus that gets
-> used by all ubiblk devices, which is a very common concept by itself.
-> It's more like the classic understanding of a 'device class' that Greg
-> wants to see get replaced by bus_types in the kernel.
-
-Yes, this sounds OK. Although UBI already has notifiers, so we could
-just add 2 more events.
+Thanks.
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
+tejun
