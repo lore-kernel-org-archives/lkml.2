@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab1IFPBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:01:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49449 "EHLO mx1.redhat.com"
+	id S1754783Ab1IFPC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:02:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25145 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257Ab1IFPBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:01:11 -0400
-Date: Tue, 6 Sep 2011 17:01:31 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Greg Dietsche <gregory.dietsche@cuw.edu>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] iwlegacy: change IWL_WARN to IWL_DEBUG_HT in
- iwl4965_tx_agg_start
-Message-ID: <20110906150131.GA7322@redhat.com>
-References: <1314537977-20097-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <20110829122013.GA3597@redhat.com>
- <4E5B9533.6000109@cuw.edu>
- <20110829140032.GA1573@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110829140032.GA1573@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754257Ab1IFPCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 11:02:21 -0400
+Subject: Re: [PATCH 2/3] define ARM-specific dma_coherent_write_sync
+From: Mark Salter <msalter@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: ming.lei@canonical.com, stern@rowland.harvard.edu,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Tue, 06 Sep 2011 11:02:10 -0400
+In-Reply-To: <CAHkRjk6TD4Qg-b3nkCE_wwj-tWr-_5evndxo3f+_6gtXEV6gNg@mail.gmail.com>
+References: <1314826214-22428-1-git-send-email-msalter@redhat.com>
+	 <1314826214-22428-3-git-send-email-msalter@redhat.com>
+	 <CAHkRjk7ZMDQh8sYf7N_4LLS12JU2ps8dkC34gNWNH+-Zp0p8Rg@mail.gmail.com>
+	 <1315319837.2313.1.camel@deneb.redhat.com>
+	 <CAHkRjk6TD4Qg-b3nkCE_wwj-tWr-_5evndxo3f+_6gtXEV6gNg@mail.gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1315321331.2313.10.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-
-On Mon, Aug 29, 2011 at 04:00:33PM +0200, Stanislaw Gruszka wrote:
-> On Mon, Aug 29, 2011 at 08:33:39AM -0500, Greg Dietsche wrote:
-> > On 08/29/2011 07:20 AM, Stanislaw Gruszka wrote:
-> > >On Sun, Aug 28, 2011 at 08:26:16AM -0500, Greg Dietsche wrote:
-> > >>This message should be a debug message and not a warning. So
-> > >>change it from IWL_WARN to IWL_DEBUG_HT.
-> > >I'm currently doing massive iwlegacy driver cleanup. Would be easier
-> > >for me to apply these patches on top of my changes instead of rebase
-> > >my patches. I will queue these two patches and post them together with
-> > >my pending patches.
-> > >
-> > That sounds good to me. I have the 4065 card in my laptop and want
-> > to learn how it works. If you want someone to test your changes, I'm
-> > willing.
-> > 
-> > I have six other patches that are trivial in nature for the iwlegacy
-> > driver. One of those also applies to the iwlagn driver, so seven
-> > patches in total. They remove some null checks that aren't necessary
-> > and also cleanup a few unused variables. There are two patches in
-> > the set that I'm not 100% sure about. They remove null checks and I
-> > haven't been able to prove to myself that they are correct. However,
-> > if they aren't correct, then there are some null checks in other
-> > places that need to be added....
-> > 
-> > Anyway, I can hold off on these until you've done your cleanup and
-> > see what still applies,
+On Tue, 2011-09-06 at 15:48 +0100, Catalin Marinas wrote:
+> On 6 September 2011 15:37, Mark Salter <msalter@redhat.com> wrote:
+> > On Tue, 2011-09-06 at 15:32 +0100, Catalin Marinas wrote:
+> >> That's what mb() and wmb() do already, at least on ARM. Why do we need
+> >> another API? IIRC from past discussions on linux-arch around barriers,
+> >> the mb() should be sufficient in the case of DMA coherent buffers.
+> >> That's why macros like writel() on ARM have the mb() added by default
+> >> (for cases where you start the DMA transfer by writing to a device
+> >> register).
+> >
+> > For USB EHCI, the driver does not necessarily write to a register after
+> > writing to DMA coherent memory. In some cases, the controller polls for
+> > information written by the driver.
 > 
-> That would be great.
-> 
-> > or if you have a tree someplace, I'd be
-> > happy to rebase them for you.
-> 
-> I do not have publicly available tree. I'll probably try to get
-> one on git.kernel.org. I will let you know.
+> So as I understand, you would like to force the eviction from the
+> write buffer rather than waiting for it to be drained. On ARM, the
+> write buffer is eventually flushed, so there is no strict timing
+> guarantee. It could take longer if the processor immediately starts
+> polling some memory location for example, but in this case a simple
+> barrier would do.
 
-I requested for kernel.org account but admins there have much more
-troubles currently than adding new account :-/ 
+Yes, a memory barrier would have the same effect on ARM, but the
+purpose of a barrier is to guarantee ordering. What the patch does
+is add an interface to force a write buffer flush for performance,
+not ordering. If a memory barrier is used, it could have a negative
+impact on other arches.
 
-I put patches here:
-http://people.redhat.com/sgruszka/iwlegacy_cleanup.tar.bz2
+In any case, the current thinking is that the original problem with
+the USB performance seen on cortex A9 multicore is probably something
+more than just write buffer delays. Once the original problem is better
+understood, we can take another look at this patch if it is still
+needed.
 
-They are on top of wireless-testing tree. You can apply them 
-by something like that:
+--Mark
 
-cd wireless-testing
-for i in `ls -X ~/iwlegacy_cleanup/*.patch` ; do git am $i ; done
 
-Series include your 2 patches. You can test this cleanup and
-apply your new changes on top. I'll not do any further cleanup
-for some time now, perhaps continue when I got public git tree.
 
-Thanks
-Stanislaw
