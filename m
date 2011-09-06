@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab1IFMOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 08:14:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38111 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab1IFMOS convert rfc822-to-8bit (ORCPT
+	id S1754493Ab1IFMT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 08:19:56 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:38852 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178Ab1IFMTt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 08:14:18 -0400
-Subject: Re: [PATCH 06/18] writeback: IO-less balance_dirty_pages()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Sep 2011 14:13:53 +0200
-In-Reply-To: <20110904020915.383842632@intel.com>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020915.383842632@intel.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 6 Sep 2011 08:19:49 -0400
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Tejun Heo <htejun@gmail.com>
+CC: Mark Lord <kernel@teksavvy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Date: Tue, 6 Sep 2011 13:19:44 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: AcxsR3qVsma9kNrcQci6tuL3n+jr+gAR4xXg
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32D8DA54B00@gretna.indigovision.com>
+References: <20110525094127.GF10146@htj.dyndns.org>
+ <4DF20E03.9030502@teksavvy.com> <20110610140155.GJ15235@htj.dyndns.org>
+ <4DF25526.9010800@teksavvy.com> <20110611121957.GA7980@mtj.dyndns.org>
+ <4DF4F30B.70702@teksavvy.com> <20110613104856.GC16021@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
+ <20110902011305.GE2752@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+ <20110906034544.GB18425@mtj.dyndns.org>
+In-Reply-To: <20110906034544.GB18425@mtj.dyndns.org>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="Windows-1252"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315311233.12533.3.camel@twins>
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> -static inline void task_dirties_fraction(struct task_struct *tsk,
-> -               long *numerator, long *denominator)
-> -{
-> -       prop_fraction_single(&vm_dirties, &tsk->dirties,
-> -                               numerator, denominator);
-> -} 
+> Can you please add some debug printk's to scsi_schedule_eh() and see
+> whether scsi_eh_wakeup() is invoked from there?  It seems likely that
+> the problem is caused by race conditions around
+> SHOST_[CANCEL_]RECOVERY flags.
 
-it looks like this patch removes all users of tsk->dirties, but doesn't
-in fact remove the data member from task_struct.
+I did manage to reproduce the lockup again yesterday with a slightly
+different mix of tracing, including adding tracing to scsi_eh_wakeup()
+and scsi_schedule_eh().  It looks like the EH is being scheduled, but
+the EH thread goes immediately back to sleep and doesn't wake up:
+
+ata4: EH complete
+Waking error handler thread
+scsi_eh_wakeup: succeeded
+scsi_schedule_eh: succeeded
+scsi_restart_operations: waking up host to restart
+Error handler scsi_eh_3 sleeping
+
+Is it attempting to wake the scsi_eh_3 thread while scsi_error_handler
+is still processing an EH, which then calls scsi_restart_operations and
+puts the scsi_eh_3 thread back to sleep again?
+
+Some while after the lockup, there was some tracing relating to SCSI
+operations timing out, but the port was still unresponsive.  The unit
+is not entirely stable in this state, and our application software was
+no longer able to strobe softdog, so the unit rebooted.  Enough was
+running for the serial console to be responsive before the reboot,
+however.
+
+Thanks,
+
+Bruce.
+
+
+Latest News at: http://www.indigovision.com/index.php/en/news.html
