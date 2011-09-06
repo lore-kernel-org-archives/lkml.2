@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab1IFPFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:05:31 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:63078 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab1IFPFZ convert rfc822-to-8bit (ORCPT
+	id S1754826Ab1IFPGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:06:38 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:34787 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab1IFPGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:05:25 -0400
+	Tue, 6 Sep 2011 11:06:34 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH] arm: omap: Fix build error in ispccdc.c
+Date: Tue, 6 Sep 2011 17:06:23 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+References: <1315317735-5255-1-git-send-email-joerg.roedel@amd.com>
+In-Reply-To: <1315317735-5255-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CACqU3MXJafAX4Wee8goNtrKF3L1JPCz7xPaQwcQ6nynX60Rrow@mail.gmail.com>
-References: <1313472854-14426-1-git-send-email-lacombar@gmail.com>
-	<CACqU3MWx9Z+2dWP4OjVO+1T+3EsAE0geZhdRM2_B9osKw-Mw2A@mail.gmail.com>
-	<CACqU3MXJafAX4Wee8goNtrKF3L1JPCz7xPaQwcQ6nynX60Rrow@mail.gmail.com>
-Date: Tue, 6 Sep 2011 11:05:25 -0400
-Message-ID: <CACqU3MUnYHB34rtdetYZinknSr3KOEwK0MUdxci7_QPgJ2tnsg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Kbuild/Kconfig
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Arnaud Lacombe <lacombar@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109061706.26776.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Joerg,
 
-On Mon, Aug 29, 2011 at 8:29 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
+On Tuesday 06 September 2011 16:02:15 Joerg Roedel wrote:
+> The following build error occurs with 3.1-rc5:
 >
-> On Mon, Aug 22, 2011 at 11:49 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->> Hi,
->>
->> On Tue, Aug 16, 2011 at 1:34 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>> Hi Michal,
->>>
->>> The following small serie unexpose a few Kconfig variable from Kbuild, and
->>> vice-versa. The idea is that Kbuild is a user of Kconfig, not the other way
->>> around.
->>>
->>> In the same time, fix a couple of place where we hardcode the `.config' string.
->>>
->>> Comments Welcome !
->>>  - Arnaud
->>>
->> ping ?
->>
-> ping^2 ?
->
-ping^3 ?
+>   CC      drivers/media/video/omap3isp/ispccdc.o
+> /home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c: In
+> function 'ccdc_lsc_config':
+> /home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c:42
+> 7:2: error: implicit declaration of function 'kzalloc'
+> [-Werror=implicit-function-declaration]
+> /home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c:42
+> 7:6: warning: assignment makes pointer from integer without a cast [enabled
+> by default]
+> 
+> This patch adds the missing 'linux/slab.h' include to fix the problem.
 
- - Arnaud
+Thanks for the patch.
 
->  - Arnaud
->
->>  - Arnaud
->>
->>> Arnaud Lacombe (4):
->>>  kbuild: introduce KBUILD_CONFIG; unexpose KCONFIG_CONFIG
->>>  kbuild: reduce kbuild invasivity within kconfig
->>>  kbuild: do not hardcode .config
->>>  kconfig: do not hardcode .config
->>>
->>>  Makefile                                |   20 ++++++++++++++------
->>>  arch/arm/boot/compressed/Makefile       |    2 +-
->>>  arch/unicore32/boot/compressed/Makefile |    2 +-
->>>  scripts/kconfig/Makefile                |   31 ++++++++++++++++---------------
->>>  4 files changed, 32 insertions(+), 23 deletions(-)
->>>
->>> --
->>> 1.7.6.153.g78432
->>>
->>>
->>
->
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: linux-media@vger.kernel.org
+> Cc: linux-omap@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+Mauro, can you please pick this patch and push it to v3.1 ?
+
+> ---
+>  drivers/media/video/omap3isp/ispccdc.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/media/video/omap3isp/ispccdc.c
+> b/drivers/media/video/omap3isp/ispccdc.c index 9d3459d..80796eb 100644
+> --- a/drivers/media/video/omap3isp/ispccdc.c
+> +++ b/drivers/media/video/omap3isp/ispccdc.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/dma-mapping.h>
+>  #include <linux/mm.h>
+>  #include <linux/sched.h>
+> +#include <linux/slab.h>
+>  #include <media/v4l2-event.h>
+> 
+>  #include "isp.h"
+
+-- 
+Regards,
+
+Laurent Pinchart
