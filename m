@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814Ab1IFQPC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 12:15:02 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:35515 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab1IFQO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 12:14:56 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.1
-Date: Tue, 6 Sep 2011 09:13:28 -0700
-Message-ID: <1315325608-17922-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751314Ab1IFQRB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 12:17:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49849 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1IFQQy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 12:16:54 -0400
+Subject: Re: [PATCH 15/18] writeback: charge leaked page dirties to active
+ tasks
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 06 Sep 2011 18:16:36 +0200
+In-Reply-To: <20110904020916.588150387@intel.com>
+References: <20110904015305.367445271@intel.com>
+	 <20110904020916.588150387@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315325796.14232.20.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
+> The solution is to charge the pages dirtied by the exited gcc to the
+> other random gcc/dd instances.
 
-Please pull hwmon subsystem fixes for Linux 3.1 from:
+random dirtying task, seeing it lacks a !strcmp(t->comm, "gcc") || !
+strcmp(t->comm, "dd") clause.
 
-    git://github.com/groeck/linux.git hwmon-for-linus
+>  It sounds not perfect, however should
+> behave good enough in practice. 
 
-Thanks,
-Guenter Roeck
-
-------
-
-The following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
-
-  Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
-
-are available in the git repository at:
-  git://github.com/groeck/linux.git hwmon-for-linus
-
-Guenter Roeck (2):
-      hwmon: (max16065) Fix current calculation
-      hwmon: (max16065) Add chip access warning to documentation
-
-Jean Delvare (1):
-      hwmon: (ucd9000/ucd9200) Optimize array walk
-
- Documentation/hwmon/max16065  |    7 +++++++
- drivers/hwmon/max16065.c      |    2 +-
- drivers/hwmon/pmbus/ucd9000.c |    6 ++----
- drivers/hwmon/pmbus/ucd9200.c |    6 ++----
- 4 files changed, 12 insertions(+), 9 deletions(-)
+Seeing as that throttled tasks aren't actually running so those that are
+running are more likely to pick it up and get throttled, therefore
+promoting an equal spread.. ?
