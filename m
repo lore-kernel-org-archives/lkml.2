@@ -1,162 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab1IFF5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 01:57:15 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:30690 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab1IFF5F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 01:57:05 -0400
-From: Josh Wu <josh.wu@atmel.com>
-To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org, plagnioj@jcrosoft.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH v2] [media] at91: add code to initialize and manage the ISI_MCK for Atmel ISI driver.
-Date: Tue,  6 Sep 2011 13:56:41 +0800
-Message-Id: <1315288601-22384-1-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 06 Sep 2011 05:56:42.0837 (UTC) FILETIME=[C0BC8050:01CC6C59]
+	id S1752766Ab1IFF7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 01:59:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42046 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752031Ab1IFF7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 01:59:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [BUG] CPU hotplug, freezer: Freezing of tasks failed after 20.00 seconds
+Date: Tue, 6 Sep 2011 08:01:09 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        oleg@redhat.com, arnd@arndb.de,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <20110905141512.GE9807@htj.dyndns.org> <20110906050831.GA16976@htj.dyndns.org>
+In-Reply-To: <20110906050831.GA16976@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109060801.09210.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enable the configuration for ISI_MCK, which is provided by programmable clock.
+On Tuesday, September 06, 2011, Tejun Heo wrote:
+> Hello, again.
+> 
+> On Mon, Sep 05, 2011 at 11:15:12PM +0900, Tejun Heo wrote:
+> > >  Freezing of tasks failed after 20.01 seconds (2 tasks refusing to freeze, wq_busy=0):
+> > >  invert_cpu_stat D 0000000000000000  5304 20435  17329 0x00000084
+> > >   ffff8801f367bab8 0000000000000046 ffff8801f367bfd8 00000000001d3a00
+> > >   ffff8801f367a010 00000000001d3a00 00000000001d3a00 00000000001d3a00
+> > >   ffff8801f367bfd8 00000000001d3a00 ffff880414cc6840 ffff8801f36783c0
+> > >  Call Trace:
+> > >   [<ffffffff81532de5>] schedule_timeout+0x235/0x320
+> > >   [<ffffffff81532a0b>] wait_for_common+0x11b/0x170
+> > >   [<ffffffff81532b3d>] wait_for_completion+0x1d/0x20
+> > >   [<ffffffff81364486>] _request_firmware+0x156/0x2c0
+> > >   [<ffffffff81364686>] request_firmware+0x16/0x20
+> > >   [<ffffffffa01f0da0>] request_microcode_fw+0x70/0xf0 [microcode]
+> > >   [<ffffffffa01f0390>] microcode_init_cpu+0xc0/0x100 [microcode]
+> > >   [<ffffffffa01f14b4>] mc_cpu_callback+0x7c/0x11f [microcode]
+> > >   [<ffffffff815393a4>] notifier_call_chain+0x94/0xd0
+> > >   [<ffffffff8109770e>] __raw_notifier_call_chain+0xe/0x10
+> > >   [<ffffffff8106d000>] __cpu_notify+0x20/0x40
+> > >   [<ffffffff8152cf5b>] _cpu_up+0xc7/0x10e
+> > >   [<ffffffff8152d07b>] cpu_up+0xd9/0xec
+> > >   [<ffffffff8151e599>] store_online+0x99/0xd0
+> > >   [<ffffffff81355eb0>] sysdev_store+0x20/0x30
+> > >   [<ffffffff811f3096>] sysfs_write_file+0xe6/0x170
+> > >   [<ffffffff8117ee50>] vfs_write+0xd0/0x1a0
+> > >   [<ffffffff8117f024>] sys_write+0x54/0xa0
+> > >   [<ffffffff8153df02>] system_call_fastpath+0x16/0x1b
+> > 
+> > So, this task is trying to bring a CPU up, which triggers firmware
+> > helper to load microcode.  Firmware class currently sleeps
+> > non-interruptibly to wait for firmware load to complete, which is
+> > performed by another userland task.  Now, the PM freezer doesn't
+> > assume that there will be non-freezable wait dependencies among
+> > userland tasks.  It only knows two levels - userland and kernel tasks
+> > - and assumes that the former group may have non-freezable wait
+> > dependency on the latter but there's no such dependency among each
+> > group itself.  If there's such dependency, PM freezer may fail, which
+> > is what happened here.
+> > 
+> > ie. the firmware loader userland process got frozen first.
+> > invert_cpu_stat trying to bring up CPU was waiting for the firmware
+> > loader to finish in non-interruptible sleep, so the freezer couldn't
+> > proceed.
+> 
+> Hmmm... I went through the code again and usermodehelper_disable()
+> seems to be there to prevent deadlocks like this.  usermode helpers
+> are drained & plugged before freezing is tried.  Rafael, the above
+> shouldn't be happening, right?
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
----
- drivers/media/video/atmel-isi.c |   60 ++++++++++++++++++++++++++++++++++++++-
- include/media/atmel-isi.h       |    4 ++
- 2 files changed, 63 insertions(+), 1 deletions(-)
+No, it shouldn't in theory, but I'm not sure any more after the recent
+modifications of firmware loading related to the initialization.  I'll have
+a closer look tomorrow.
 
-diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
-index 7b89f00..768bf59 100644
---- a/drivers/media/video/atmel-isi.c
-+++ b/drivers/media/video/atmel-isi.c
-@@ -90,7 +90,10 @@ struct atmel_isi {
- 	struct isi_dma_desc		dma_desc[MAX_BUFFER_NUM];
- 
- 	struct completion		complete;
-+	/* ISI peripherial clock */
- 	struct clk			*pclk;
-+	/* ISI_MCK, provided by PCK */
-+	struct clk			*mck;
- 	unsigned int			irq;
- 
- 	struct isi_platform_data	*pdata;
-@@ -763,6 +766,10 @@ static int isi_camera_add_device(struct soc_camera_device *icd)
- 	if (ret)
- 		return ret;
- 
-+	ret = clk_enable(isi->mck);
-+	if (ret)
-+		return ret;
-+
- 	isi->icd = icd;
- 	dev_dbg(icd->parent, "Atmel ISI Camera driver attached to camera %d\n",
- 		 icd->devnum);
-@@ -776,6 +783,7 @@ static void isi_camera_remove_device(struct soc_camera_device *icd)
- 
- 	BUG_ON(icd != isi->icd);
- 
-+	clk_disable(isi->mck);
- 	clk_disable(isi->pclk);
- 	isi->icd = NULL;
- 
-@@ -882,6 +890,49 @@ static struct soc_camera_host_ops isi_soc_camera_host_ops = {
- };
- 
- /* -----------------------------------------------------------------------*/
-+/* Initialize ISI_MCK clock, called by atmel_isi_probe() function */
-+static int initialize_mck(struct platform_device *pdev,
-+			struct atmel_isi *isi)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct isi_platform_data *pdata = dev->platform_data;
-+	struct clk *pck_parent;
-+	int ret;
-+
-+	if (!strlen(pdata->pck_name) || !strlen(pdata->pck_parent_name))
-+		return -EINVAL;
-+
-+	/* ISI_MCK is provided by PCK clock */
-+	isi->mck = clk_get(dev, pdata->pck_name);
-+	if (IS_ERR(isi->mck)) {
-+		dev_err(dev, "Failed to get PCK: %s\n", pdata->pck_name);
-+		return PTR_ERR(isi->mck);
-+	}
-+
-+	pck_parent = clk_get(dev, pdata->pck_parent_name);
-+	if (IS_ERR(pck_parent)) {
-+		ret = PTR_ERR(pck_parent);
-+		dev_err(dev, "Failed to get PCK parent: %s\n",
-+				pdata->pck_parent_name);
-+		goto err_init_mck;
-+	}
-+
-+	ret = clk_set_parent(isi->mck, pck_parent);
-+	clk_put(pck_parent);
-+	if (ret)
-+		goto err_init_mck;
-+
-+	ret = clk_set_rate(isi->mck, pdata->isi_mck_hz);
-+	if (ret < 0)
-+		goto err_init_mck;
-+
-+	return 0;
-+
-+err_init_mck:
-+	clk_put(isi->mck);
-+	return ret;
-+}
-+
- static int __devexit atmel_isi_remove(struct platform_device *pdev)
- {
- 	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
-@@ -897,6 +948,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
- 			isi->fb_descriptors_phys);
- 
- 	iounmap(isi->regs);
-+	clk_put(isi->mck);
- 	clk_put(isi->pclk);
- 	kfree(isi);
- 
-@@ -915,7 +967,8 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	struct isi_platform_data *pdata;
- 
- 	pdata = dev->platform_data;
--	if (!pdata || !pdata->data_width_flags) {
-+	if (!pdata || !pdata->data_width_flags || !pdata->isi_mck_hz
-+			|| !pdata->pck_name || !pdata->pck_parent_name) {
- 		dev_err(&pdev->dev,
- 			"No config available for Atmel ISI\n");
- 		return -EINVAL;
-@@ -944,6 +997,11 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&isi->video_buffer_list);
- 	INIT_LIST_HEAD(&isi->dma_desc_head);
- 
-+	/* Initialize ISI_MCK clock */
-+	ret = initialize_mck(pdev, isi);
-+	if (ret)
-+		goto err_alloc_descriptors;
-+
- 	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
- 				sizeof(struct fbd) * MAX_BUFFER_NUM,
- 				&isi->fb_descriptors_phys,
-diff --git a/include/media/atmel-isi.h b/include/media/atmel-isi.h
-index 26cece5..dcbb822 100644
---- a/include/media/atmel-isi.h
-+++ b/include/media/atmel-isi.h
-@@ -114,6 +114,10 @@ struct isi_platform_data {
- 	u32 data_width_flags;
- 	/* Using for ISI_CFG1 */
- 	u32 frate;
-+	/* Using for ISI_MCK, provided by PCK */
-+	u32 isi_mck_hz;
-+	const char *pck_name;
-+	const char *pck_parent_name;
- };
- 
- #endif /* __ATMEL_ISI_H__ */
--- 
-1.6.3.3
-
+Thanks,
+Rafael
