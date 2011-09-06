@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626Ab1IFCL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 22:11:27 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:52028 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab1IFCLS convert rfc822-to-8bit (ORCPT
+	id S1751824Ab1IFCZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 22:25:40 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:5310
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751447Ab1IFCZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 22:11:18 -0400
+	Mon, 5 Sep 2011 22:25:33 -0400
+X-SpamScore: -17
+X-BigFish: VS-17(zz936eK1432N98dKzz1202hzz8275ch8275dh2ba5Mz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 6 Sep 2011 10:34:32 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <rjw@sisk.pl>, <ccross@android.com>
+Subject: Re: [PATCH v2 0/5] CPU PM notifiers
+Message-ID: <20110906023430.GA7651@S2100-06.ap.freescale.net>
+References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20110905224749.GC26980@sucs.org>
-References: <20110901210442.GA9660@sucs.org>
-	<20110905224749.GC26980@sucs.org>
-Date: Tue, 6 Sep 2011 10:11:17 +0800
-Message-ID: <CABqxG0efguhCqgz3hFyz9d1ouV84E-K1rK7BLJYsuvL13J1QZQ@mail.gmail.com>
-Subject: Re: BUG: unable to handle kernel paging request at 6b6b6c6f (bdi_lock_two+0x22/0x50)
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 6:47 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-> On Thu, Sep 01, 2011 at 10:04:42PM +0100, Sitsofe Wheeler wrote:
->> When pulling out a USB flash disk formatted with a single FAT32
->> partition the following oops and errors are produced:
+On Sat, Sep 03, 2011 at 08:09:10PM +0530, Santosh Shilimkar wrote:
+> Updates V2:
+> - The CPU PM notifiers are moved to generic level instead of keeping
+>   it ARM specific as per Rafael's comment.
+> - To avoid every driver duplicating the sys-core ops and cpu pm notfiers,
+>   the CPU PM common notifier is registering it in one place so that
+>   suspend is taken care.
+> - CPU COMPLEX events are renamed to more appropriate CPU CLUSTER.
+> - GIC distributor is not disabled to avoid the live locks. This is
+>   observed with CPUIDLE cases where at time CPU cluster fails to
+>   transition to low power states. As such there was no need to
+>   disable distributor in first place since on cluster reset, it
+>   will get disabled anyways.
+> - In VFP code, syscore ops are dropped in favour of CPU PM
+>   notifiers since S2R is already handled in core CPU PM notifiers.
+> - The last patch is an independent patch but can be pushed along with
+>   the other GIC changes done here. 
+>  
+> V1: [http://lwn.net/Articles/447259/]
+> 
+> This patch set tries to address concerns with platform pm code
+> calling into the driver for every block in the Cortex A9s
+> during idle, hotplug, and suspend.  The first patch adds cpu pm
+> notifiers that can be called by platform code, the second uses
+> the notifier to save and restore the GIC state, and the third
+> saves the VFP state.
+> 
+> The notifiers are used for two types of events, CPU PM events and
+> CPU cluster PM events.  CPU PM events are used to save and restore
+> per-cpu context when a single CPU is preparing to enter or has
+> just exited a low power state.  For example, the VFP saves the
+> last thread context, and the GIC saves banked CPU registers.
+> 
+> CPU cluster events are used after all the CPUs in a power domain
+> have been prepared for the low power state.  The GIC uses these
+> events to save global register state.
+> 
+> L2 cache is not covered by this patch set, as the determination
+> of when the L2 is reset and when it is retained is
+> platform-specific, and most of the APIs necessary are already
+> 
+> 
+> The series is tested with OMAP4 with S2R and CPUIDLE. 
+> 
+> The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
+> 
+>   Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
+> 
+> Colin Cross (5):
+>       cpu_pm: Add cpu power management notifiers
+>       cpu_pm: call notifiers during suspend
+>       ARM: gic: Use cpu pm notifiers to save gic state
+>       ARM: vfp: Use cpu pm notifiers to save vfp state
+>       ARM: gic: Allow gic arch extensions to provide irqchip flags
+> 
+Really appreciate the patches.  Now platform code needs to do nothing
+to have GIC back to work across suspend/resume cycle.
 
-Hi, please try patch in following thread:
-https://lkml.org/lkml/2011/8/31/23
+On i.MX6Q:
 
->>
->> [  112.427744] FAT-fs (sdc1): FAT read failed (blocknr 685)
->> [  112.427832] FAT-fs (sdc1): unable to read inode block for updating (i_pos 209504275)
->> [  112.523097] BUG: unable to handle kernel paging request at 6b6b6c6f
->> [  112.523229] IP: [<b0157dbf>] __lock_acquire+0x23f/0x1740
->> [  112.523328] *pde = 00000000
->> [  112.523381] Oops: 0002 [#1] DEBUG_PAGEALLOC
->> [  112.523459]
->> [  112.523490] Pid: 1486, comm: nautilus Not tainted 3.1.0-rc4-00131-g9e79e3e-dirty #488 ASUSTeK Computer INC. 900/900
->> [  112.523665] EIP: 0060:[<b0157dbf>] EFLAGS: 00010002 CPU: 0
->> [  112.523751] EIP is at __lock_acquire+0x23f/0x1740
->> [  112.523826] EAX: 00000001 EBX: daa5b510 ECX: 6b6b6b6b EDX: 00000000
->> [  112.523922] ESI: 00000002 EDI: ee4f9e84 EBP: dae63d2c ESP: dae63cbc
->> [  112.524011]  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
->> [  112.524011] Process nautilus (pid: 1486, ti=dae62000 task=daa5b510 task.ti=dae62000)
->> [  112.524011] Stack:
->> [  112.524011]  dae63d38 00000246 b026be79 00000000 00160007 00000006 dc198958 00000282
->> [  112.524011]  daa5b528 daa5b950 b08ff1b0 00000000 b0afab18 00000001 00000000 000052d7
->> [  112.524011]  ee802280 ef513308 dc198e60 dc198958 00000282 dc198000 00160006 b0ca9414
->> [  112.524011] Call Trace:
->> [  112.524011]  [<b026be79>] ? kobject_release+0x49/0x90
->> [  112.524011]  [<b01597cb>] lock_acquire+0x7b/0x90
->> [  112.524011]  [<b0182b62>] ? bdi_lock_two+0x22/0x50
->> [  112.524011]  [<b055ef2a>] _raw_spin_lock_nested+0x3a/0x50
->> [  112.524011]  [<b0182b62>] ? bdi_lock_two+0x22/0x50
->> [  112.524011]  [<b0182b62>] bdi_lock_two+0x22/0x50
->> [  112.524011]  [<b01c7dde>] bdev_inode_switch_bdi+0x2e/0xa0
->> [  112.524011]  [<b01c8baf>] __blkdev_put+0xbf/0x160
->> [  112.524011]  [<b01c8be3>] __blkdev_put+0xf3/0x160
->> [  112.524011]  [<b01c8c92>] blkdev_put+0x42/0x120
->> [  112.524011]  [<b019d66f>] kill_block_super+0x3f/0x70
->> [  112.524011]  [<b019df1d>] deactivate_locked_super+0x3d/0x70
->> [  112.524011]  [<b019e890>] deactivate_super+0x50/0x70
->> [  112.524011]  [<b01b5a38>] mntput_no_expire+0x68/0xa0
->> [  112.524011]  [<b01b5a83>] mntput+0x13/0x30
->> [  112.524011]  [<b01a4525>] path_put+0x15/0x20
->> [  112.524011]  [<b01a574d>] terminate_walk+0x4d/0x60
->> [  112.524011]  [<b01a769f>] do_last+0x60f/0x6d0
->> [  112.524011]  [<b01a77f8>] path_openat+0x98/0x320
->> [  112.524011]  [<b0159317>] ? lock_release_non_nested+0x57/0x2e0
->> [  112.524011]  [<b01a7b60>] do_filp_open+0x30/0x80
->> [  112.524011]  [<b055f75d>] ? _raw_spin_unlock+0x1d/0x30
->> [  112.524011]  [<b01b404c>] ? alloc_fd+0xbc/0x100
->> [  112.524011]  [<b019ac61>] do_sys_open+0xf1/0x1c0
->> [  112.524011]  [<b019ad99>] sys_open+0x29/0x40
->> [  112.524011]  [<b055ff57>] sysenter_do_call+0x12/0x36
->
-> This Oops is still happening in 3.1.0-rc5.
->
-> --
-> Sitsofe | http://sucs.org/~sits/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
+Tested-and-Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
 -- 
-Regards
-Yang RuiRui
+Regards,
+Shawn
+
