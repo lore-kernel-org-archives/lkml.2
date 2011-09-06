@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab1IFPkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:40:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59390 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab1IFPj4 (ORCPT
+	id S1755118Ab1IFPkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:40:10 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53527 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755088Ab1IFPkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:39:56 -0400
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110906145124.GA15390@redhat.com>
-References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
-	 <1314661157-22173-4-git-send-email-andi@firstfloor.org>
-	 <alpine.LFD.2.02.1109021135270.2723@ionos>
-	 <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com>
-	 <20110906031411.GA24024@alboin.amr.corp.intel.com>
-	 <20110906145124.GA15390@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Sep 2011 17:39:56 +0200
-Message-ID: <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 6 Sep 2011 11:40:01 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ian Kent <raven@themaw.net>
+Cc: David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Leonardo Chiquitto <leonardo.lists@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        autofs@linux.kernel.org
+Subject: Re: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
+References: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
+	<17416.1315240659@redhat.com> <87hb4q9b3r.fsf@tucsk.pomaz.szeredi.hu>
+	<1315281208.3210.26.camel@perseus.themaw.net>
+	<87mxeixfaq.fsf@tucsk.pomaz.szeredi.hu>
+	<1315319903.3210.51.camel@perseus.themaw.net>
+Date: Tue, 06 Sep 2011 17:39:53 +0200
+In-Reply-To: <1315319903.3210.51.camel@perseus.themaw.net> (Ian Kent's message
+	of "Tue, 06 Sep 2011 22:38:23 +0800")
+Message-ID: <87ipp5y912.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 06 septembre 2011 à 16:51 +0200, Oleg Nesterov a écrit :
-> On 09/05, Andi Kleen wrote:
-> >
-> > > I forgot everything I knew about ->it_requeue_pending logic, but it
-> > > seems to me that do_schedule_next_timer()->lock_timer() can find and
-> > > lock successfully the wrong timer. Another thread can do timer_delete()
-> > > and then re-create the timer with the same id.
-> >
-> > Do you mean after my patches or even before?
-> 
-> Ah, sorry for confusion.
-> 
-> Before. And after. IOW, I think this has nothing to do with your patches.
-> 
+Ian Kent <raven@themaw.net> writes:
 
-Hmm, you mean following patch is needed ?
+> On Tue, 2011-09-06 at 10:09 +0200, Miklos Szeredi wrote:
+>> Ian Kent <raven@themaw.net> writes:
+>> 
+>> > On Mon, 2011-09-05 at 19:02 +0200, Miklos Szeredi wrote:
+>> >> 
+>> >> If automounting on lstat(2) is the correct behavior (is it?  why?)  then at
+>> >> least it should be enabled by a global switch or mount option, IMO.
+>> >
+>> > Ideally we wouldn't need to take special precautions for these
+>> > operations at all but we can't, especially for GUI environments that
+>> > constantly scan file systems on mount/umount activity.
+>> >
+>> > Historically for autofs, neither stat(2) or lstat(2) would trigger a
+>> > mount. With the current implementation stat(2) now does but lstat(2)
+>> > doesn't which is a step in the right direction IMHO. So, I recommend we
+>> > continue to encourage user space to make the needed changes so we
+>> > continue to move in the right direction, and yes, I acknowledge it is a
+>> > pain but it'll never get done otherwise.
+>> 
+>> I'm not quite convinced.  What's the advantage of triggering automount
+>> on stat(2)?
+>
+> You get the information of the directory of the mounted fs and for many
+> peoples purposes automounting should be transparent so that would be
+> best.
 
-Before release of timer id to idr pool, we should make sure
-do_schedule_next_timer() wont be called, or it could find another timer
-reusing the just released id.
+The same is true for lstat(2).
 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 4556182..4369747 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -502,14 +502,14 @@ static void k_itimer_rcu_free(struct rcu_head *head)
- #define IT_ID_NOT_SET	0
- static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
- {
-+	put_pid(tmr->it_pid);
-+	sigqueue_free(tmr->sigq);
- 	if (it_id_set) {
- 		unsigned long flags;
- 		spin_lock_irqsave(&idr_lock, flags);
- 		idr_remove(&posix_timers_id, tmr->it_id);
- 		spin_unlock_irqrestore(&idr_lock, flags);
- 	}
--	put_pid(tmr->it_pid);
--	sigqueue_free(tmr->sigq);
- 	call_rcu(&tmr->it.rcu, k_itimer_rcu_free);
- }
- 
+>  
+>> 
+>> Has anybody complained that stat(2) on the mountpoint doesn't cause an
+>> automount?
+>
+> Yes, based on the reasoning above.
 
+Would any of those complaints go away if stat(2) did cause an
+automount and lstat(2) didn't?
 
+With AT_NO_AUTOMOUNT I can agree with, that's a flag specifically about
+not automounting.  Unlike AT_SYMLINK_NOFOLLOW which is about following
+symlinks and hasn't got a lot to do with automounts.
 
+Thanks,
+Miklos
