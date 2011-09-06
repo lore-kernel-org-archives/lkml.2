@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab1IFUZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 16:25:26 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:18349 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab1IFUZW convert rfc822-to-8bit (ORCPT
+	id S1755191Ab1IFU16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 16:27:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52149 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754921Ab1IFU1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 16:25:22 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-127.messagelabs.com!1315340250!30708436!439
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "art@ified.ca" <art@ified.ca>, "jslaby@suse.cz" <jslaby@suse.cz>
-Date: Tue, 6 Sep 2011 15:23:37 -0500
-Subject: RE: [PATCH] vt_ioctl.c: fix compile error with pm_set_vt_switch()
-Thread-Topic: [PATCH] vt_ioctl.c: fix compile error with pm_set_vt_switch()
-Thread-Index: Acxsy2dBPfFut1NVTySUHbFnhhR0lAABxzrQ
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F39D748C13@AUSP01VMBX24.collaborationhost.net>
-References: <201109021402.42503.hartleys@visionengravers.com>
- <201109051654.28682.arnd@arndb.de>
- <ADE657CA350FB648AAC2C43247A983F001F39D748B6E@AUSP01VMBX24.collaborationhost.net>
- <6392794.F5gNpf4v9p@wuerfel>
-In-Reply-To: <6392794.F5gNpf4v9p@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 6 Sep 2011 16:27:52 -0400
+Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.02.1109062146150.2723@ionos>
+References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>
+	 <1314661157-22173-4-git-send-email-andi@firstfloor.org>
+	 <alpine.LFD.2.02.1109021135270.2723@ionos>
+	 <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com>
+	 <20110906031411.GA24024@alboin.amr.corp.intel.com>
+	 <20110906145124.GA15390@redhat.com>
+	 <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <alpine.LFD.2.02.1109061823100.2723@ionos>
+	 <20110906184926.GA25997@redhat.com>
+	 <alpine.LFD.2.02.1109062110090.2723@ionos>
+	 <1315337411.3400.12.camel@edumazet-laptop>
+	 <alpine.LFD.2.02.1109062146150.2723@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Sep 2011 22:27:40 +0200
+Message-ID: <1315340860.3400.30.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 06, 2011 12:29 PM, Arnd Bergmann wrote:
-> On Tuesday 06 September 2011 13:26:12 H Hartley Sweeten wrote:
->> Your patch below does appear to fix the problem.
->> 
->> Tested-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> 
->> 
->> There is still a bit of #if ugliness with the pm_{prepare,restore}_console.
->> 
->> The source file kernel/power/console.c is compiled when CONFIG_PM_SLEEP is
->> enabled.  But that file ends up empty if CONFIG_VT and CONFIG_VT_CONSOLE are
->> not defined.
->> 
->> I wonder if it would be cleaner to make a new entry in kernel/power/Kconfig:
->> 
->> config PM_SLEEP_CONSOLE
->>         def_bool y
->>         depends on PM_SLEEP && VT && VT_CONSOLE
->> 
->> Then use that config option in the Makefile and in suspend.h.
->
-> Yes, that would be cleaner. I would probably move it to drivers/tty/vt
-> in the same step and name the option VT_CONSOLE_SLEEP.
+Le mardi 06 septembre 2011 à 22:10 +0200, Thomas Gleixner a écrit :
 
-Ok.
+> Vs. the refcounting, that should be solvable by a rcu_barrier() before
+> 
+> +   idr_destroy(&sig->posix_timers_id);
+> 
+> in exit_itimers().
 
-> Do you want to send a patch?
+Well, rcu_barrier() is too slow, please Andi dont try this :)
 
-Will do in just a minute.
 
-> Thanks for testing!
 
-Not a problem!
-
-Regards,
-Hartley
