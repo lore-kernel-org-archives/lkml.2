@@ -1,143 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab1IFPNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:13:00 -0400
-Received: from dubexchange.kentrox.com ([192.228.36.11]:4449 "EHLO
-	dubexchange.corp.kentrox.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754280Ab1IFPMw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:12:52 -0400
-From: "Harris, Jeff" <Jeff_Harris@kentrox.com>
-To: Julian Anastasov <ja@ssi.bg>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: Prefer non link-local source addresses
-Thread-Topic: [PATCH] net: Prefer non link-local source addresses
-Thread-Index: AQHMaOStIz1sKvG6kUeMRM5MKN0S7JU5WnGAgAb8tJA=
-Date: Tue, 6 Sep 2011 15:12:37 +0000
-Message-ID: <A0C485B929C0994A889B2580ECDF807648D4D928@EXCHANGE.corp.kentrox.com>
-References: <1314908454-14359-1-git-send-email-jeff_harris@kentrox.com>
- <alpine.LFD.2.00.1109020041140.1799@ja.ssi.bg>
-In-Reply-To: <alpine.LFD.2.00.1109020041140.1799@ja.ssi.bg>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754884Ab1IFPNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:13:10 -0400
+Received: from co202.xi-lite.net ([149.6.83.202]:34216 "EHLO co202.xi-lite.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754280Ab1IFPNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 11:13:09 -0400
+Message-ID: <4E663882.4050404@parrot.com>
+Date: Tue, 6 Sep 2011 17:13:06 +0200
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
 MIME-Version: 1.0
-X-OriginalArrivalTime: 06 Sep 2011 15:12:41.0001 (UTC) FILETIME=[6BC06190:01CC6CA7]
+To: Arnaud Lacombe <lacombar@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+Subject: Re: randconfig broken on choice
+References: <4E65DF36.6040507@parrot.com> <CACqU3MU9nuW+a3AJfY_PRqFH_tgaKtBJrp1pU2xpB_dHYANBXg@mail.gmail.com>
+In-Reply-To: <CACqU3MU9nuW+a3AJfY_PRqFH_tgaKtBJrp1pU2xpB_dHYANBXg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this case, the address scope values are being set properly.  The link-local address has link scope and the routable address has global scope.  When the inet_select_addr function is called, the dst address is 0 and the scope is 253 (link scope).  So, in this case, both address could match.  It just happens that the link local address is first in the list for the device.
+Hi,
 
-This condition looks to be arising from the use of interface routes on our device (e.g. ip route add default dev eth0).  The routes are being installed with link scope.  Forcing a scope of global causes a scope of 0 in inet_select_addr which then selects the routable address always.  I have not found any definite documentation on whether local or global should be used for the route, but the default behavior of the 'ip' command is to use link scope on these routes and global on routes with a gateway address. 
-
-Also, I have only been able to test against 2.6.33 which we use on our embedded device.  It is not easy to update to a more recent version.  The patch, though, applied cleanly to the latest stable version.
-
-Jeff
-
------Original Message-----
-From: Julian Anastasov [mailto:ja@ssi.bg] 
-Sent: Thursday, September 01, 2011 6:15 PM
-To: Harris, Jeff
-Cc: David S. Miller; Alexey Kuznetsov; James Morris; Hideaki YOSHIFUJI; Patrick McHardy; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: Prefer non link-local source addresses
-
-
-	Hello,
-
-On Thu, 1 Sep 2011, Jeff Harris wrote:
-
-> Section 2.6.1 of RFC 3927 specifies that if link-local and routable addresses
-> are available on an interface, a routable address is preferred.  Update the
-> IPv4 source address selection algorithm to use a 169.254.x.x address only if
-> another matching address is not found.
+Arnaud Lacombe a écrit :
+> Hi,
 > 
-> Tested combinations of configured IP addresses with and without link-local to
-> verify a link-local address was chosen only if no routable address was
-> present.
+> On Tue, Sep 6, 2011 at 4:52 AM, Matthieu CASTET
+> <matthieu.castet@parrot.com> wrote:
+>> Hi,
+>>
+>> I am using v3.1-rc4 and make randconfig look broken for choice.
+>> The choice config is always the same or choice entry can have more than one entry.
+>>
+> Could you includes testcases showing that behavior, please ?
+$ make randconfig
 
-	As David Lamparter already said, isn't the scope value
-suitable for this purpose? Eg.
-ip addr add 169.254.5.5/16 brd + dev eth0 scope link
+$ grep -e SLUB -e SLAB -e SLOB .config
+# CONFIG_SLAB is not set
+CONFIG_SLUB=y
+CONFIG_SLOB=y
+# CONFIG_FAILSLAB is not set
 
-	iproute2 already has function default_scope() in
-ip/ipaddress.c that assigns scope if it is not specified
-while adding address. May be we can add RT_SCOPE_LINK for
-169.254 there?
+We have 2 choice selected (SLUB and SLOB). You may run randconfig (more than one
+time to get this result).
 
-	Another such place is inet_set_ifa() in
-net/ipv4/devinet.c where we can assign scope, so that
-ifconfig works too.
-
-	I see also that net/ipv6/addrconf.c (sit_add_v4_addrs)
-avoids link-local addresses. What I mean is that the scope
-can be checked at many places and it is a mechanism that
-already works.
-
-	As result, we will not complicate inet_select_addr.
-
-> Signed-off-by: Jeff Harris <jeff_harris@kentrox.com>
-> ---
->  net/ipv4/devinet.c |   18 ++++++++++++++++--
->  1 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-> index bc19bd0..70ddf37 100644
-> --- a/net/ipv4/devinet.c
-> +++ b/net/ipv4/devinet.c
-> @@ -965,6 +965,8 @@ out:
->  __be32 inet_select_addr(const struct net_device *dev, __be32 dst, int scope)
->  {
->  	__be32 addr = 0;
-> +	__be32 lladdr = 0;
-> +	__be32 firstaddr = 0;
->  	struct in_device *in_dev;
->  	struct net *net = dev_net(dev);
->  
-> @@ -977,15 +979,27 @@ __be32 inet_select_addr(const struct net_device *dev, __be32 dst, int scope)
->  		if (ifa->ifa_scope > scope)
->  			continue;
->  		if (!dst || inet_ifa_match(dst, ifa)) {
-> +			if (ipv4_is_linklocal_169(ifa->ifa_address)) {
-> +				lladdr = ifa->ifa_local;
-> +				continue;
-> +			}
->  			addr = ifa->ifa_local;
->  			break;
->  		}
-> -		if (!addr)
-> -			addr = ifa->ifa_local;
-> +		if (!firstaddr)
-> +			firstaddr = ifa->ifa_local;
->  	} endfor_ifa(in_dev);
->  
->  	if (addr)
->  		goto out_unlock;
-> +	if (lladdr) {
-> +		addr = lladdr;
-> +		goto out_unlock;
-> +	}
-> +	if (firstaddr) {
-> +		addr = firstaddr;
-> +		goto out_unlock;
-> +	}
->  no_in_dev:
->  
->  	/* Not loopback addresses on loopback should be preferred
-> -- 
-> 1.7.0.5
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
-
+Matthieu
