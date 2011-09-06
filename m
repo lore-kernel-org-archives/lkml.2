@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab1IFQjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 12:39:20 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:23250
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751811Ab1IFQjM (ORCPT
+	id S1752158Ab1IFQmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 12:42:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:43624 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab1IFQmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 12:39:12 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LR40X6-02-57Q-02
-X-M-MSG: 
-Date: Tue, 6 Sep 2011 18:39:04 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [V3][PATCH 6/6] x86, nmi: print out NMI stats in /proc/interrupts
-Message-ID: <20110906163904.GJ14200@erda.amd.com>
-References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
- <1314290748-23569-7-git-send-email-dzickus@redhat.com>
+	Tue, 6 Sep 2011 12:42:32 -0400
+Date: Wed, 7 Sep 2011 01:42:21 +0900
+From: Tejun Heo <htejun@gmail.com>
+To: Bruce Stenning <b.stenning@indigovision.com>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Message-ID: <20110906164221.GH18425@mtj.dyndns.org>
+References: <4DF25526.9010800@teksavvy.com>
+ <20110611121957.GA7980@mtj.dyndns.org>
+ <4DF4F30B.70702@teksavvy.com>
+ <20110613104856.GC16021@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
+ <20110902011305.GE2752@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+ <20110906034544.GB18425@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8DA54B00@gretna.indigovision.com>
+ <20110906163355.GG18425@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314290748-23569-7-git-send-email-dzickus@redhat.com>
+In-Reply-To: <20110906163355.GG18425@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.08.11 12:45:48, Don Zickus wrote:
-> This is a cheap hack to add the stats to the middle of /proc/interrupts.
-> It is more of a conversation starter than anything as I am not sure
-> the right letters and place to put this stuff.
+On Wed, Sep 07, 2011 at 01:33:55AM +0900, Tejun Heo wrote:
+> Hello,
 > 
-> The benefit of these stats is a better breakdown of which list the NMIs
-> get handled in either a normal handler, unknown, or external.  It also
-> list the number of unknown NMIs swallowed to help check for false
-> positives or not.  Another benefit is the ability to actually see which
-> NMI handlers are currently registered in the system.
+> On Tue, Sep 06, 2011 at 01:19:44PM +0100, Bruce Stenning wrote:
+> > ata4: EH complete
+> > Waking error handler thread
+> > scsi_eh_wakeup: succeeded
+> > scsi_schedule_eh: succeeded
+> > scsi_restart_operations: waking up host to restart
+> > Error handler scsi_eh_3 sleeping
 > 
-> The output of 'cat /proc/interrupts/ will look like this:
-> 
-> <snip>
->  58:        275          0        864          0   PCI-MSI-edge      eth0
-> NMI:       4161       4155        158       4194   Non-maskable interrupts
-> SWA:          0          0          0          0   Unknown NMIs swallowed
->   0:       4161       4155        158       4194   NMI  PMI, arch_bt
+> I think the following should fix the problem.  The code there is from
+> the time when libata shared scsi_host->host_lock.  libata no longer
+> does that so, in the current state, host_eh_scheduled can be cleared
+> with actual pending EH condition.
 
-What does the "0" stand for?
+Hmmm... maybe not.  Such race condition exists iff host_eh_scheduled
+is incremented outside of ap->lock, which I can't see how.  Weird.
+Can you please instrument the followings?
 
-We could easily provide a statistic for each NMI handler, which would
-be more useful.
+* print the caller of scsi_eh_wakeup().  "%pF" w/ (void *)_RET_IP_
+  should do it.
 
-The syntax of the NMI printout is not yet perfect, so before adding it
-as a new interface I would rather wait a bit to discuss this more.
+* print why scsi_eh is going back to sleep immediately.
+  ie. shost->host_failed, host_eh_scheduled, host_busy in
+  scsi_error_handler().  It would also be nice to add some printks
+  around schedule() and enable PRINTK_TIME.
 
-People also could get confused because the handled count may be
-different to nmi count. This should be documented more clearly, maybe
-as event count instead of nmi count or so.
-
--Robert
-
-> UNK:          0          0          0          0   NMI
-> EXT:          0          0          0          0   NMI
-> LOC:      12653      13304      13974      12926   Local timer interrupts
-> SPU:          0          0          0          0   Spurious interrupts
-> PMI:          6          6          5          6   Performance monitoring interrupts
-> IWI:          0          0          0          0   IRQ work interrupts
-> RES:       1839       1897       1821       1854   Rescheduling interrupts
-> CAL:        524       2714        392        331   Function call interrupts
-> TLB:        217        146        593        576   TLB shootdowns
-> TRM:          0          0          0          0   Thermal event interrupts
-> THR:          0          0          0          0   Threshold APIC interrupts
-> MCE:          0          0          0          0   Machine check exceptions
-> MCP:          1          1          1          1   Machine check polls
-> ERR:          0
-> MIS:          0
+Thanks.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+tejun
