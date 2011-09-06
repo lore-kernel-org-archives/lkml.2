@@ -1,72 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab1IFGZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 02:25:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47598 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1IFGZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 02:25:22 -0400
-Subject: Re: linux-3.1-0-rc4 bus error ... MPS configured higher than
- maximum supported by the device. If a bus issue occurs, try running with
- pci=pcie_bus_safe.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jordan_Hargrave@dell.com,
-        Jon Mason <mason@myri.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <CAAJw_ZvP6m=3T0YoYq6VJdOKMxzm3fDcdJoDY8wqqDV8GZB+Dg@mail.gmail.com>
-References: <CAAJw_Zv9LaOut6+aQWki_-nCngEEfh-OVqF4rsUwb-LPfLk8Ug@mail.gmail.com>
-	 <CAAJw_ZvP6m=3T0YoYq6VJdOKMxzm3fDcdJoDY8wqqDV8GZB+Dg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Sep 2011 08:25:13 +0200
-Message-ID: <1315290313.2565.0.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1752793Ab1IFGZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 02:25:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60692 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752730Ab1IFGZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 02:25:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="45363864"
+From: Huang Ying <ying.huang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH -mm 1/4] llist, Make all llist functions inline
+Date: Tue,  6 Sep 2011 14:25:04 +0800
+Message-Id: <1315290307-25145-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 06 septembre 2011 à 14:09 +0800, Jeff Chua a écrit :
-> On Mon, Sep 5, 2011 at 10:55 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> > Got the following error after upgrading from linux-2.6.36 to
-> > linux-3.1.0-rc4 on a Dell PowerEdge 2950 that has a PCIe fax card, and
-> > the system LED panel shows "Bus Fatal Error".
-> >
-> >
-> > Is is normal or should I try out "pci=pcie_bus_safe" or "pci=pci" as
-> > suggested in the dmesg?
-> >
-> > There was another error that also showed up on 2.6.36 but I'm ignoring
-> > that for now ( ... disabling ASPM on pre-1.1 PCIe device.  You can
-> > enable it with 'pcie_aspm=force')
-> >
-> > pci 0000:07:00.0: Dev MPS 128 MPSS 256 MRRS 4096
-> > pci 0000:07:00.0: Dev MPS 256 MPSS 256 MRRS 128
-> > pci 0000:08:00.0: Dev MPS 128 MPSS 128 MRRS 128
-> > pci 0000:08:00.0: MPS configured higher than maximum supported by the
-> > device.  If a bus issue occurs, try running with pci=pcie_bus_safe.
-> > pci 0000:08:00.0: Dev MPS 256 MPSS 256 MRRS 128
-> > Uhhuh. NMI received for unknown reason 31 on CPU 0.
-> > Do you have a strange power saving mode enabled?
-> > Dazed and confused, but trying to continue
-> > pci 0000:07:01.0: Dev MPS 128 MPSS 256 MRRS 4096
-> > pci 0000:07:01.0: Dev MPS 256 MPSS 256 MRRS 128
-> > pci 0000:00:06.0: Dev MPS 256 MPSS 256 MRRS 128
-> > pci 0000:0e:00.0: Dev MPS 128 MPSS 128 MRRS 512
-> > pci 0000:0e:00.0: MPS configured higher than maximum supported by the
-> > device.  If a bus issue occurs, try running with pci=pci
-> 
-> The above aspm and bus error went away after I added pcie_aspm=force
-> and pci=pcie_bus_safe.
-> 
-> Instead of default to pcie_bus_perf that caused problems, why not
-> default to the formal behavior (see commit
-> b03e7495a862b028294f59fc87286d6d78ee7fa1).
+Because llist may be used in performance critical code path, make all
+llist functions inline to avoid function calling overhead.
 
-I believe a revert is in progress anyway, see my other thread (scsi:
-hpsa: how to destroy your files)
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ drivers/acpi/apei/Kconfig |    1 
+ include/linux/llist.h     |  122 +++++++++++++++++++++++++++++++++++++++++--
+ lib/Kconfig               |    3 -
+ lib/Makefile              |    2 
+ lib/llist.c               |  129 ----------------------------------------------
+ 5 files changed, 116 insertions(+), 141 deletions(-)
+ delete mode 100644 lib/llist.c
 
-
-
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -14,7 +14,6 @@ config ACPI_APEI_GHES
+ 	depends on ACPI_APEI && X86
+ 	select ACPI_HED
+ 	select IRQ_WORK
+-	select LLIST
+ 	select GENERIC_ALLOCATOR
+ 	help
+ 	  Generic Hardware Error Source provides a way to report
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -37,8 +37,28 @@
+  * architectures that don't have NMI-safe cmpxchg implementation, the
+  * list can NOT be used in NMI handler.  So code uses the list in NMI
+  * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
++ *
++ * Copyright 2010,2011 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
++#include <linux/kernel.h>
++#include <asm/system.h>
++#include <asm/processor.h>
++
+ struct llist_head {
+ 	struct llist_node *first;
+ };
+@@ -113,14 +133,104 @@ static inline void init_llist_head(struc
+  * test whether the list is empty without deleting something from the
+  * list.
+  */
+-static inline int llist_empty(const struct llist_head *head)
++static inline bool llist_empty(const struct llist_head *head)
+ {
+ 	return ACCESS_ONCE(head->first) == NULL;
+ }
+ 
+-void llist_add(struct llist_node *new, struct llist_head *head);
+-void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+-		     struct llist_head *head);
+-struct llist_node *llist_del_first(struct llist_head *head);
+-struct llist_node *llist_del_all(struct llist_head *head);
++/**
++ * llist_add - add a new entry
++ * @new:	new entry to be added
++ * @head:	the head for your lock-less list
++ */
++static inline void llist_add(struct llist_node *new, struct llist_head *head)
++{
++	struct llist_node *entry, *old_entry;
++
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
++
++	entry = head->first;
++	do {
++		old_entry = entry;
++		new->next = entry;
++		cpu_relax();
++	} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
++}
++
++/**
++ * llist_add_batch - add several linked entries in batch
++ * @new_first:	first entry in batch to be added
++ * @new_last:	last entry in batch to be added
++ * @head:	the head for your lock-less list
++ */
++static inline void llist_add_batch(struct llist_node *new_first,
++				   struct llist_node *new_last,
++				   struct llist_head *head)
++{
++	struct llist_node *entry, *old_entry;
++
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
++
++	entry = head->first;
++	do {
++		old_entry = entry;
++		new_last->next = entry;
++		cpu_relax();
++	} while ((entry = cmpxchg(&head->first, old_entry, new_first)) != old_entry);
++}
++
++/**
++ * llist_del_first - delete the first entry of lock-less list
++ * @head:	the head for your lock-less list
++ *
++ * If list is empty, return NULL, otherwise, return the first entry
++ * deleted, this is the newest added one.
++ *
++ * Only one llist_del_first user can be used simultaneously with
++ * multiple llist_add users without lock.  Because otherwise
++ * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
++ * llist_add) sequence in another user may change @head->first->next,
++ * but keep @head->first.  If multiple consumers are needed, please
++ * use llist_del_all or use lock between consumers.
++ */
++static inline struct llist_node *llist_del_first(struct llist_head *head)
++{
++	struct llist_node *entry, *old_entry, *next;
++
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
++
++	entry = head->first;
++	do {
++		if (entry == NULL)
++			return NULL;
++		old_entry = entry;
++		next = entry->next;
++		cpu_relax();
++	} while ((entry = cmpxchg(&head->first, old_entry, next)) != old_entry);
++
++	return entry;
++}
++
++/**
++ * llist_del_all - delete all entries from lock-less list
++ * @head:	the head of lock-less list to delete all entries
++ *
++ * If list is empty, return NULL, otherwise, delete all entries and
++ * return the pointer to the first entry.  The order of entries
++ * deleted is from the newest to the oldest added one.
++ */
++static inline struct llist_node *llist_del_all(struct llist_head *head)
++{
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
++
++	return xchg(&head->first, NULL);
++}
+ #endif /* LLIST_H */
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -276,7 +276,4 @@ config CORDIC
+ 	  so its calculations are in fixed point. Modules can select this
+ 	  when they require this function. Module will be called cordic.
+ 
+-config LLIST
+-	bool
+-
+ endmenu
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -116,8 +116,6 @@ obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
+ 
+ obj-$(CONFIG_CORDIC) += cordic.o
+ 
+-obj-$(CONFIG_LLIST) += llist.o
+-
+ hostprogs-y	:= gen_crc32table
+ clean-files	:= crc32table.h
+ 
+--- a/lib/llist.c
++++ /dev/null
+@@ -1,129 +0,0 @@
+-/*
+- * Lock-less NULL terminated single linked list
+- *
+- * The basic atomic operation of this list is cmpxchg on long.  On
+- * architectures that don't have NMI-safe cmpxchg implementation, the
+- * list can NOT be used in NMI handler.  So code uses the list in NMI
+- * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+- *
+- * Copyright 2010,2011 Intel Corp.
+- *   Author: Huang Ying <ying.huang@intel.com>
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License version
+- * 2 as published by the Free Software Foundation;
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/interrupt.h>
+-#include <linux/llist.h>
+-
+-#include <asm/system.h>
+-
+-/**
+- * llist_add - add a new entry
+- * @new:	new entry to be added
+- * @head:	the head for your lock-less list
+- */
+-void llist_add(struct llist_node *new, struct llist_head *head)
+-{
+-	struct llist_node *entry, *old_entry;
+-
+-#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+-	BUG_ON(in_nmi());
+-#endif
+-
+-	entry = head->first;
+-	do {
+-		old_entry = entry;
+-		new->next = entry;
+-		cpu_relax();
+-	} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
+-}
+-EXPORT_SYMBOL_GPL(llist_add);
+-
+-/**
+- * llist_add_batch - add several linked entries in batch
+- * @new_first:	first entry in batch to be added
+- * @new_last:	last entry in batch to be added
+- * @head:	the head for your lock-less list
+- */
+-void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+-		     struct llist_head *head)
+-{
+-	struct llist_node *entry, *old_entry;
+-
+-#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+-	BUG_ON(in_nmi());
+-#endif
+-
+-	entry = head->first;
+-	do {
+-		old_entry = entry;
+-		new_last->next = entry;
+-		cpu_relax();
+-	} while ((entry = cmpxchg(&head->first, old_entry, new_first)) != old_entry);
+-}
+-EXPORT_SYMBOL_GPL(llist_add_batch);
+-
+-/**
+- * llist_del_first - delete the first entry of lock-less list
+- * @head:	the head for your lock-less list
+- *
+- * If list is empty, return NULL, otherwise, return the first entry
+- * deleted, this is the newest added one.
+- *
+- * Only one llist_del_first user can be used simultaneously with
+- * multiple llist_add users without lock.  Because otherwise
+- * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
+- * llist_add) sequence in another user may change @head->first->next,
+- * but keep @head->first.  If multiple consumers are needed, please
+- * use llist_del_all or use lock between consumers.
+- */
+-struct llist_node *llist_del_first(struct llist_head *head)
+-{
+-	struct llist_node *entry, *old_entry, *next;
+-
+-#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+-	BUG_ON(in_nmi());
+-#endif
+-
+-	entry = head->first;
+-	do {
+-		if (entry == NULL)
+-			return NULL;
+-		old_entry = entry;
+-		next = entry->next;
+-		cpu_relax();
+-	} while ((entry = cmpxchg(&head->first, old_entry, next)) != old_entry);
+-
+-	return entry;
+-}
+-EXPORT_SYMBOL_GPL(llist_del_first);
+-
+-/**
+- * llist_del_all - delete all entries from lock-less list
+- * @head:	the head of lock-less list to delete all entries
+- *
+- * If list is empty, return NULL, otherwise, delete all entries and
+- * return the pointer to the first entry.  The order of entries
+- * deleted is from the newest to the oldest added one.
+- */
+-struct llist_node *llist_del_all(struct llist_head *head)
+-{
+-#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+-	BUG_ON(in_nmi());
+-#endif
+-
+-	return xchg(&head->first, NULL);
+-}
+-EXPORT_SYMBOL_GPL(llist_del_all);
