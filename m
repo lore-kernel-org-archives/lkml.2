@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1IFI41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:56:27 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:39277 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab1IFIzf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:55:35 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p868tSSo024459
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v5 2/5] r8169: define the early size for 8111evl
-Date: Tue, 6 Sep 2011 16:55:15 +0800
-X-BOX-Message-Id: p868tSSo024459
-Message-ID: <1315299318-1547-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1315299318-1547-1-git-send-email-hayeswang@realtek.com>
-References: <1315299318-1547-1-git-send-email-hayeswang@realtek.com>
+	id S1753562Ab1IFJAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 05:00:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50749 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753491Ab1IFI7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 04:59:55 -0400
+Message-ID: <4E65E132.9090201@cn.fujitsu.com>
+Date: Tue, 06 Sep 2011 17:00:34 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tejun Heo <htejun@gmail.com>
+CC: rjw@sisk.pl, paul@paulmenage.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        fweisbec@gmail.com, matthltc@us.ibm.com, akpm@linux-foundation.org
+Subject: Re: [PATCHSET cgroup] extend threadgroup locking
+References: <1315159280-25032-1-git-send-email-htejun@gmail.com>
+In-Reply-To: <1315159280-25032-1-git-send-email-htejun@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-06 16:58:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-09-06 16:58:49,
+	Serialize complete at 2011-09-06 16:58:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For RTL8111EVL, the register of MaxTxPacketSize doesn't acctually
-limit the tx size. It influnces the feature of early tx.
+Tejun Heo wrote:
+> Hello,
+> 
+> cgroup currently only blocks new threads from joining the target
+> threadgroup during migration, and on-going migration could race
+> against exec and exit leading to interesting problems - the symmetry
+> between various attach methods, task exiting during method execution,
+> ->exit() racing against attach methods, migrating task switching basic
+> properties during exec and so on.
+> 
+> This patchset extends threadgroup locking such that it covers all
+> operations which can alter the threadgroup - fork, exit and exec, and
+> update cgroup to take advantage of it.  rwsem read ops are added to
+> exit path but exec is excluded by grabbing the existing
+> cred_guard_mutex from threadgroup locking helper.
+> 
+> This makes threadgroup locking complete and resolves cgroup issues
+> stemming from the target taskset being unstable.
+> 
+> This patchset is on top of the current pm-freezer + "freezer: fixes &
+> simplifications" patchset and contains the following four patches.
+> Patch list and diffstat follow.
+> 
+> Thanks.
+> 
+>  [PATCH 1/4] cgroup: change locking order in attach_task_by_pid()
+>  [PATCH 2/4] threadgroup: rename signal->threadgroup_fork_lock to
+>  [PATCH 3/4] threadgroup: extend threadgroup_lock() to cover exit and
+>  [PATCH 4/4] cgroup: always lock threadgroup during migration
+> 
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+I've read through the whole patchset, and it looks good to me.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index aaae43e..db5ab2c 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -311,6 +311,7 @@ enum rtl_registers {
- 	MaxTxPacketSize	= 0xec,	/* 8101/8168. Unit of 128 bytes. */
- 
- #define TxPacketMax	(8064 >> 7)
-+#define EarlySize	0x27
- 
- 	FuncEvent	= 0xf0,
- 	FuncEventMask	= 0xf4,
-@@ -4465,7 +4466,7 @@ static void rtl_hw_start_8168e_2(void __iomem *ioaddr, struct pci_dev *pdev)
- 	rtl_w1w0_eri(ioaddr, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00,
- 		     ERIAR_EXGMAC);
- 
--	RTL_W8(MaxTxPacketSize, 0x27);
-+	RTL_W8(MaxTxPacketSize, EarlySize);
- 
- 	rtl_disable_clock_request(pdev);
- 
--- 
-1.7.6
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
 
+>  include/linux/init_task.h |    9 ++----
+>  include/linux/sched.h     |   58 ++++++++++++++++++++++++++++---------------
+>  kernel/cgroup.c           |   62 +++++++++++++++++++++-------------------------
+>  kernel/exit.c             |   16 ++++++++---
+>  kernel/fork.c             |    8 ++---
+>  5 files changed, 88 insertions(+), 65 deletions(-)
+> 
+> --
+> tejun
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel/1187553
+> 
