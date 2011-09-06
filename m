@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab1IFISP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:18:15 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38811 "EHLO
+	id S1753869Ab1IFISp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:18:45 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38833 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753286Ab1IFISH (ORCPT
+	by vger.kernel.org with ESMTP id S1753307Ab1IFISI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:18:07 -0400
+	Tue, 6 Sep 2011 04:18:08 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
         Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH 2/5 v2] spi-topcliff-pch: Fix SSN Control issue
-Date: Tue,  6 Sep 2011 17:16:35 +0900
-Message-Id: <1315296998-7296-2-git-send-email-tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 5/5 v2] spi-topcliff-pch: Fix overrun issue
+Date: Tue,  6 Sep 2011 17:16:38 +0900
+Message-Id: <1315296998-7296-5-git-send-email-tomoya-linux@dsn.okisemi.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1315296998-7296-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 References: <1315296998-7296-1-git-send-email-tomoya-linux@dsn.okisemi.com>
@@ -23,67 +23,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During processing 1 command/data series,
-SSN should keep LOW.
-However, currently, SSN becomes HIGH.
-This patch fixes the issue.
+We found that adding load, Rx data sometimes drops.(with DMA transfer mode)
+The cause is that before starting Rx-DMA processing, Tx-DMA processing starts.
+This causes FIFO overrun occurs.
+
+This patch fixes the issue by modifying FIFO tx-threshold and DMA descriptor
+size like below.
+
+                      Current                   this patch
+Rx-descriptor   4Byte+12Byte*341    -->    12Byte*340-4Byte-12Byte
+Rx-threshold                   (Not modified)
+Tx-descriptor   4Byte+12Byte*341    -->    16Byte-12Byte*340
+Rx-threshold    12Byte              -->    2Byte
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
 v2: v1 patch series are included invalid patch file
 ---
- drivers/spi/spi-topcliff-pch.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/spi/spi-topcliff-pch.c |   28 +++++++++++++++++++++++-----
+ 1 files changed, 23 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 7a98caa..c36d516 100644
+index c8efa75..6a80749 100644
 --- a/drivers/spi/spi-topcliff-pch.c
 +++ b/drivers/spi/spi-topcliff-pch.c
-@@ -58,6 +58,7 @@
- #define PCH_SLEEP_TIME		10
+@@ -50,6 +50,8 @@
+ #define PCH_RX_THOLD		7
+ #define PCH_RX_THOLD_MAX	15
  
- #define SSN_LOW			0x02U
-+#define SSN_HIGH		0x03U
- #define SSN_NO_CONTROL		0x00U
- #define PCH_MAX_CS		0xFF
- #define PCI_DEVICE_ID_GE_SPI	0x8816
-@@ -756,10 +757,6 @@ static void pch_spi_set_ir(struct pch_spi_data *data)
++#define PCH_TX_THOLD		2
++
+ #define PCH_MAX_BAUDRATE	5000000
+ #define PCH_MAX_FIFO_DEPTH	16
  
- 	wait_event_interruptible(data->wait, data->transfer_complete);
+@@ -1040,8 +1042,7 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 	/* set receive fifo threshold and transmit fifo threshold */
+ 	pch_spi_setclr_reg(data->master, PCH_SPCR,
+ 			   ((size - 1) << SPCR_RFIC_FIELD) |
+-			   ((PCH_MAX_FIFO_DEPTH - PCH_DMA_TRANS_SIZE) <<
+-			    SPCR_TFIC_FIELD),
++			   (PCH_TX_THOLD << SPCR_TFIC_FIELD),
+ 			   MASK_RFIC_SPCR_BITS | MASK_TFIC_SPCR_BITS);
  
--	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
--	dev_dbg(&data->master->dev,
--		"%s:no more control over SSN-writing 0 to SSNXCR.", __func__);
--
- 	/* clear all interrupts */
- 	pch_spi_writereg(data->master, PCH_SPSR,
- 			 pch_spi_readreg(data->master, PCH_SPSR));
-@@ -848,9 +845,6 @@ static void pch_spi_start_transfer(struct pch_spi_data *data)
- 	kfree(dma->sg_rx_p);
+ 	spin_unlock_irqrestore(&data->lock, flags);
+@@ -1052,13 +1053,20 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 	/* offset, length setting */
+ 	sg = dma->sg_rx_p;
+ 	for (i = 0; i < num; i++, sg++) {
+-		if (i == 0) {
+-			sg->offset = 0;
++		if (i == (num - 2)) {
++			sg->offset = size * i;
++			sg->offset = sg->offset * (*bpw / 8);
+ 			sg_set_page(sg, virt_to_page(dma->rx_buf_virt), rem,
+ 				    sg->offset);
+ 			sg_dma_len(sg) = rem;
++		} else if (i == (num - 1)) {
++			sg->offset = size * (i - 1) + rem;
++			sg->offset = sg->offset * (*bpw / 8);
++			sg_set_page(sg, virt_to_page(dma->rx_buf_virt), size,
++				    sg->offset);
++			sg_dma_len(sg) = size;
+ 		} else {
+-			sg->offset = rem + size * (i - 1);
++			sg->offset = size * i;
+ 			sg->offset = sg->offset * (*bpw / 8);
+ 			sg_set_page(sg, virt_to_page(dma->rx_buf_virt), size,
+ 				    sg->offset);
+@@ -1082,6 +1090,16 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
+ 	dma->desc_rx = desc_rx;
  
- 	spin_lock_irqsave(&data->lock, flags);
--	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
--	dev_dbg(&data->master->dev,
--		"%s:no more control over SSN-writing 0 to SSNXCR.", __func__);
- 
- 	/* clear fifo threshold, disable interrupts, disable SPI transfer */
- 	pch_spi_setclr_reg(data->master, PCH_SPCR, 0,
-@@ -1167,6 +1161,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
- 	if (data->use_dma)
- 		pch_spi_request_dma(data,
- 				    data->current_msg->spi->bits_per_word);
-+	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_NO_CONTROL);
- 	do {
- 		/* If we are already processing a message get the next
- 		transfer structure from the message otherwise retrieve
-@@ -1227,6 +1222,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
- 
- 	} while (data->cur_trans != NULL);
- 
-+	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_HIGH);
- 	if (data->use_dma)
- 		pch_spi_release_dma(data);
- }
+ 	/* TX */
++	if (data->bpw_len > PCH_DMA_TRANS_SIZE) {
++		num = data->bpw_len / PCH_DMA_TRANS_SIZE;
++		size = PCH_DMA_TRANS_SIZE;
++		rem = 16;
++	} else {
++		num = 1;
++		size = data->bpw_len;
++		rem = data->bpw_len;
++	}
++
+ 	dma->sg_tx_p = kzalloc(sizeof(struct scatterlist)*num, GFP_ATOMIC);
+ 	sg_init_table(dma->sg_tx_p, num); /* Initialize SG table */
+ 	/* offset, length setting */
 -- 
 1.7.4.4
 
