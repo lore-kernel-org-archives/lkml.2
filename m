@@ -1,123 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab1IFISs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:18:48 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38824 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753294Ab1IFISH (ORCPT
+	id S1753710Ab1IFIUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:20:08 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:36032 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab1IFIUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:18:07 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH 4/5 v2] spi-topcliff-pch: Add recovery processing in case FIFO overrun error occurs
-Date: Tue,  6 Sep 2011 17:16:37 +0900
-Message-Id: <1315296998-7296-4-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1315296998-7296-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-References: <1315296998-7296-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	Tue, 6 Sep 2011 04:20:01 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: Re: BUG: unable to handle kernel paging request at 6b6b6bcb (v4l2_device_disconnect+0x11/0x30)
+Date: Tue, 6 Sep 2011 10:20:00 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, Dave Young <hidave.darkstar@gmail.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <20110829204846.GA14699@sucs.org> <201109051216.42579.hverkuil@xs4all.nl> <20110905223102.GA26980@sucs.org>
+In-Reply-To: <20110905223102.GA26980@sucs.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109061020.01208.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add recovery processing in case FIFO overrun error occurs with DMA transfer mode.
+On Tuesday 06 September 2011 00:31:03 Sitsofe Wheeler wrote:
+> On Mon, Sep 05, 2011 at 12:16:42PM +0200, Hans Verkuil wrote:
+> > On Monday, September 05, 2011 12:13:26 Hans Verkuil wrote:
+> > > The original order is correct, but what I missed is that for drivers
+> > > that release (free) everything in the videodev release callback the
+> > > v4l2_device struct is also freed and v4l2_device_put will fail.
+> > > 
+> > > To fix this, add this code just before the vdev->release call:
+> > > 	/* Do not call v4l2_device_put if there is no release callback set. */
+> > > 	if (v4l2_dev->release == NULL)
+> > > 	
+> > > 		v4l2_dev = NULL;
+> > > 
+> > > If there is no release callback, then the refcounting is pointless
+> > > anyway.
+> > > 
+> > > This should work.
+> > 
+> > Note that in the long run using the v4l2_device release callback
+> > instead of the videodev release is better. But it's a lot of work to
+> > convert everything so that's long term. I'm quite surprised BTW that
+> > this bug wasn't found much earlier.
+> 
+> This inline patch fixes the second "poison overwritten" problem so:
+> Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+> 
+> However, it does not prevent the original oops that was reported in the
+> original message. Yang Ruirui's patch in
+> https://lkml.org/lkml/2011/9/1/74 seems to be required to resolve
+> that initial problem - can it be ACK'd? Yang's patch is reproduced
+> inline below:
+> 
+> For uvc device, dev->vdev.dev is the &intf->dev,
+> uvc_delete code is as below:
+> 	usb_put_intf(dev->intf);
+> 	usb_put_dev(dev->udev);
+> 
+> 	uvc_status_cleanup(dev);
+> 	uvc_ctrl_cleanup_device(dev);
+> 
+> ## the intf dev is released above, so below code will oops.
+> 
+> 	if (dev->vdev.dev)
+> 		v4l2_device_unregister(&dev->vdev);
+> Fix it by get_device in v4l2_device_register and put_device in
+> v4l2_device_disconnect
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
-v2: v1 patch series are included invalid patch file
----
- drivers/spi/spi-topcliff-pch.c |   31 ++++++++++++++++++++++++-------
- 1 files changed, 24 insertions(+), 7 deletions(-)
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 6cb2fdb..c8efa75 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -352,16 +352,26 @@ static irqreturn_t pch_spi_handler(int irq, void *dev_id)
- 			"%s returning due to suspend\n", __func__);
- 		return IRQ_NONE;
- 	}
--	if (data->use_dma)
--		return IRQ_NONE;
- 
- 	io_remap_addr = data->io_remap_addr;
- 	spsr = io_remap_addr + PCH_SPSR;
- 
- 	reg_spsr_val = ioread32(spsr);
- 
--	if (reg_spsr_val & SPSR_ORF_BIT)
--		dev_err(&board_dat->pdev->dev, "%s Over run error", __func__);
-+	if (reg_spsr_val & SPSR_ORF_BIT) {
-+		dev_err(&board_dat->pdev->dev, "%s Over run error\n", __func__);
-+		if (data->current_msg->complete != 0) {
-+			data->transfer_complete = true;
-+			data->current_msg->status = -EIO;
-+			data->current_msg->complete(data->current_msg->context);
-+			data->bcurrent_msg_processing = false;
-+			data->current_msg = NULL;
-+			data->cur_trans = NULL;
-+		}
-+	}
-+
-+	if (data->use_dma)
-+		return IRQ_NONE;
- 
- 	/* Check if the interrupt is for SPI device */
- 	if (reg_spsr_val & (SPSR_FI_BIT | SPSR_RFI_BIT)) {
-@@ -815,10 +825,11 @@ static void pch_spi_copy_rx_data_for_dma(struct pch_spi_data *data, int bpw)
- 	}
- }
- 
--static void pch_spi_start_transfer(struct pch_spi_data *data)
-+static int pch_spi_start_transfer(struct pch_spi_data *data)
- {
- 	struct pch_spi_dma_ctrl *dma;
- 	unsigned long flags;
-+	int rtn;
- 
- 	dma = &data->dma;
- 
-@@ -833,7 +844,9 @@ static void pch_spi_start_transfer(struct pch_spi_data *data)
- 				 initiating the transfer. */
- 	dev_dbg(&data->master->dev,
- 		"%s:waiting for transfer to get over\n", __func__);
--	wait_event_interruptible(data->wait, data->transfer_complete);
-+	rtn = wait_event_interruptible_timeout(data->wait,
-+					       data->transfer_complete,
-+					       msecs_to_jiffies(2 * HZ));
- 
- 	dma_sync_sg_for_cpu(&data->master->dev, dma->sg_rx_p, dma->nent,
- 			    DMA_FROM_DEVICE);
-@@ -860,6 +873,8 @@ static void pch_spi_start_transfer(struct pch_spi_data *data)
- 	pch_spi_clear_fifo(data->master);
- 
- 	spin_unlock_irqrestore(&data->lock, flags);
-+
-+	return rtn;
- }
- 
- static void pch_dma_rx_complete(void *arg)
-@@ -1187,7 +1202,8 @@ static void pch_spi_process_messages(struct work_struct *pwork)
- 
- 		if (data->use_dma) {
- 			pch_spi_handle_dma(data, &bpw);
--			pch_spi_start_transfer(data);
-+			if (!pch_spi_start_transfer(data))
-+				goto out;
- 			pch_spi_copy_rx_data_for_dma(data, bpw);
- 		} else {
- 			pch_spi_set_tx(data, &bpw);
-@@ -1225,6 +1241,7 @@ static void pch_spi_process_messages(struct work_struct *pwork)
- 
- 	} while (data->cur_trans != NULL);
- 
-+out:
- 	pch_spi_writereg(data->master, PCH_SSNXCR, SSN_HIGH);
- 	if (data->use_dma)
- 		pch_spi_release_dma(data);
+> ---
+>  drivers/media/video/v4l2-device.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> diff --git a/drivers/media/video/v4l2-device.c
+> b/drivers/media/video/v4l2-device.c index c72856c..e6a2c3b 100644
+> --- a/drivers/media/video/v4l2-device.c
+> +++ b/drivers/media/video/v4l2-device.c
+> @@ -38,6 +38,7 @@ int v4l2_device_register(struct device *dev, struct
+> v4l2_device *v4l2_dev) mutex_init(&v4l2_dev->ioctl_lock);
+>  	v4l2_prio_init(&v4l2_dev->prio);
+>  	kref_init(&v4l2_dev->ref);
+> +	get_device(dev);
+>  	v4l2_dev->dev = dev;
+>  	if (dev == NULL) {
+>  		/* If dev == NULL, then name must be filled in by the caller */
+> @@ -93,6 +94,7 @@ void v4l2_device_disconnect(struct v4l2_device *v4l2_dev)
+> 
+>  	if (dev_get_drvdata(v4l2_dev->dev) == v4l2_dev)
+>  		dev_set_drvdata(v4l2_dev->dev, NULL);
+> +	put_device(v4l2_dev->dev);
+>  	v4l2_dev->dev = NULL;
+>  }
+>  EXPORT_SYMBOL_GPL(v4l2_device_disconnect);
+
 -- 
-1.7.4.4
+Regards,
 
+Laurent Pinchart
