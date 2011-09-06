@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab1IFQTS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 12:19:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43217 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923Ab1IFQTJ convert rfc822-to-8bit (ORCPT
+	id S1751943Ab1IFQdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 12:33:43 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:54196 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab1IFQdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 12:19:09 -0400
-Subject: Re: [PATCH 17/18] writeback: fix dirtied pages accounting on redirty
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Sep 2011 18:18:56 +0200
-In-Reply-To: <20110904020916.841463184@intel.com>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020916.841463184@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315325936.14232.22.camel@twins>
-Mime-Version: 1.0
+	Tue, 6 Sep 2011 12:33:39 -0400
+X-IronPort-AV: E=Sophos;i="4.68,339,1312171200"; 
+   d="scan'208";a="161862817"
+From: <stefano.stabellini@eu.citrix.com>
+To: konrad.wilk@oracle.com
+CC: linux-kernel@vger.kernel.org, Stefano.Stabellini@eu.citrix.com,
+        xen-devel@lists.xensource.com,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH] xen: disable PV spinlocks on HVM
+Date: Tue, 6 Sep 2011 17:41:47 +0100
+Message-ID: <1315327307-392-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> De-account the accumulative dirty counters on page redirty.
-> 
-> Page redirties (very common in ext4) will introduce mismatch between
-> counters (a) and (b)
-> 
-> a) NR_DIRTIED, BDI_DIRTIED, tsk->nr_dirtied
-> b) NR_WRITTEN, BDI_WRITTEN
-> 
-> This will introduce systematic errors in balanced_rate and result in
-> dirty page position errors (ie. the dirty pages are no longer balanced
-> around the global/bdi setpoints).
-> 
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-So wtf is ext4 doing? Shouldn't a page stay dirty until its written out?
+PV spinlocks cannot possibly work with the current code because they are
+enabled after pvops patching has already been done, and because PV
+spinlocks use a different data structure than native spinlocks so we
+cannot switch between them dynamically. A spinlock that has been taken
+once by the native code (__ticket_spin_lock) cannot be taken by
+__xen_spin_lock even after it has been released.
 
-That is, should we really frob around this behaviour or fix ext4 because
-its on crack?
+Reported-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/x86/xen/smp.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index e79dbb9..51339b4 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -522,7 +522,6 @@ static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
+ 	WARN_ON(xen_smp_intr_init(0));
+ 
+ 	xen_init_lock_cpu(0);
+-	xen_init_spinlocks();
+ }
+ 
+ static int __cpuinit xen_hvm_cpu_up(unsigned int cpu)
+-- 
+1.7.2.3
+
