@@ -1,158 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab1IFO60 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 10:58:26 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:35435 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab1IFO6N (ORCPT
+	id S1754757Ab1IFPAm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:00:42 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:25527 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab1IFPAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 10:58:13 -0400
-Date: Tue, 6 Sep 2011 16:58:03 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 1/4] nohz: Split extended quiescent state handling from
- nohz switch
-Message-ID: <20110906145758.GD28205@somewhere.redhat.com>
-References: <1313861452-24783-1-git-send-email-fweisbec@gmail.com>
- <1313861452-24783-2-git-send-email-fweisbec@gmail.com>
- <20110904233643.GN2411@linux.vnet.ibm.com>
+	Tue, 6 Sep 2011 11:00:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:to:cc:subject:message-id:
+	mime-version:content-type:content-disposition:user-agent:x-system-of-record;
+	b=pvR40F4LSFeqFlZewoYquEnT4AmXy884CjSyeuWfFBvcY60K7q5T99KNx+0evPy1z
+	7WByB7qvV/gnxDUawcQ/Q==
+Date: Tue, 6 Sep 2011 17:00:24 +0200
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com
+Subject: [PATCH] perf: fix uninitialized variable in thread__set_comm()
+Message-ID: <20110906150024.GA18192@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110904233643.GN2411@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 04, 2011 at 04:36:43PM -0700, Paul E. McKenney wrote:
-> On Sat, Aug 20, 2011 at 07:30:49PM +0200, Frederic Weisbecker wrote:
-> > It is assumed that rcu won't be used once we switch to tickless
-> > mode and until we restart the tick. However this is not always
-> > true, as in x86-64 where we dereference the idle notifiers after
-> > the tick is stopped.
-> > 
-> > To prepare for fixing this, split the tickless mode switching and
-> > RCU extended quiescent state logics.
-> > Make tick_nohz_stop/restart_sched_tick() RCU agnostic but provide
-> > a new pair of APIs tick_nohz_enter/exit_idle() that keep the
-> > old behaviour by handling both the nohz mode and RCU extended
-> > quiescent states, then convert every archs to use these.
-> > 
-> > Archs that want to switch to RCU extended QS to some custom points
-> > can do it later by changing the parameter in tick_nohz_enter,exit_idle()
-> > to false and call rcu_enter,exit() separately.
-> 
-> This approach looks quite good to me!  A few comments below.
-> 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: David Miller <davem@davemloft.net>
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> > Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> > Cc: Mike Frysinger <vapier@gentoo.org>
-> > Cc: Ralf Baechle <ralf@linux-mips.org>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> > Cc: Paul Mundt <lethal@linux-sh.org>
-> > ---
-> 
-> [ . . . ]
-> 
-> > diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
-> > index 39a2baa..b30ddf1 100644
-> > --- a/arch/powerpc/kernel/idle.c
-> > +++ b/arch/powerpc/kernel/idle.c
-> > @@ -56,7 +56,7 @@ void cpu_idle(void)
-> > 
-> >  	set_thread_flag(TIF_POLLING_NRFLAG);
-> >  	while (1) {
-> > -		tick_nohz_stop_sched_tick(1);
-> > +		tick_nohz_enter_idle(true);
-> 
-> This needs to pass false, as some variants of powerpc use event tracing
-> (which in turn uses RCU) just before returning to the hypervisor.
 
-Right. But I wanted this patch to only perform the API conversion, then
-later pushdown the rcu_enter_nohz() things.
+In thread__set_comm(), a command string could be freed and then
+reused to point to a new command. Yet, the length was never reset
+nor recomputed. This could lead to bogus column formatting.
+
+This patch below fixes the problem by having thread__set_comm()
+immediately compute the string length in thread->comm_len. It
+gets rid of thread__comm_len() which is not needed anymore.
+It was doing the lazy eval of strlen() which could cause the
+issue.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 677e1da..b883821 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -61,7 +61,7 @@ static void hists__calc_col_len(struct hists *self, struct hist_entry *h)
+ 					   unresolved_col_width);
+ 	}
  
-> >  		while (!need_resched() && !cpu_should_die()) {
-> >  			ppc64_runlatch_off();
-> > 
-> > @@ -93,7 +93,7 @@ void cpu_idle(void)
-> > 
-> >  		HMT_medium();
-> >  		ppc64_runlatch_on();
-> > -		tick_nohz_restart_sched_tick();
-> > +		tick_nohz_exit_idle(true);
-> 
-> As does this, as some variants of powerpc use event tracing just after
-> the hypervisor returns control to the OS.
-
-Right
-
-<snip>
-> > +/**
-> > + * tick_nohz_enter_idle - stop the tick from the idle task
-> > + * @rcu_ext_qs: enter rcu dynticks idle mode
-> > + *
-> > + * When an arch doesn't make any use of rcu read side critical section
-> > + * between tick_nohz_enter_idle() and tick_nohz_exit_idle() it can set
-> > + * rcu_ext_qs to 1. Otherwise it needs to call rcu_enter_nohz() itself
-> > + * later before the CPU goes to sleep.
-> 
-> How about something like this?
-> 
-> + * When an arch doesn't make any use of rcu read side critical section
-> + * between tick_nohz_enter_idle() and the time the CPU is put to sleep,
-> + * it can set rcu_ext_qs to true. Otherwise it needs set rcu_ext_qs to
-> + * false, and then to call rcu_enter_nohz() itself later, but before the
-> + * CPU goes to sleep and after its last use of RCU.
-
-Better yeah, I'll use your version ;)
+-	len = thread__comm_len(h->thread);
++	len = h->thread->comm_len;
+ 	if (hists__new_col_len(self, HISTC_COMM, len))
+ 		hists__set_col_len(self, HISTC_THREAD, len + 6);
  
-> > + */
-> > +void tick_nohz_enter_idle(bool rcu_ext_qs)
-> > +{
-> > +	if (tick_nohz_stop_sched_tick(1) && rcu_ext_qs)
-> > +		rcu_enter_nohz();
-> >  }
-> > 
-> >  /**
-> > @@ -486,11 +505,12 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
-> >  }
-> > 
-> >  /**
-> > - * tick_nohz_restart_sched_tick - restart the idle tick from the idle task
-> > + * tick_nohz_exit_idle - restart the idle tick from the idle task
-> > + * @rcu_ext_qs: exit rcu dynticks idle mode
-> >   *
-> >   * Restart the idle tick when the CPU is woken up from idle
-> 
-> How about something like the following?
-> 
-> + * When an arch doesn't make any use of rcu read side critical section
-> + * between the time the CPU wakes up and tick_nohz_exit_idle(), it can set
-> + * rcu_ext_qs to true. Otherwise it needs set rcu_ext_qs to false, and it
-> + * must also have called rcu_enter_nohz() itself earlier, after the CPU
-> + * was awakened, but before its first use of RCU.
-
-Right, but to keep things clear, as long as we call tick_nohz_enter_idle(false)
-and rcu_enter_nohz() later, we should keep the same mirroring with rcu_exit_nohz()
-and tick_nohz_exit_idle(false).
+@@ -731,7 +731,7 @@ static size_t hist_entry__fprintf_callchain(struct hist_entry *self,
+ 		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
+ 							 typeof(*se), list);
+ 		left_margin = hists__col_len(hists, se->se_width_idx);
+-		left_margin -= thread__comm_len(self->thread);
++		left_margin -= self->thread->comm_len;
+ 	}
+ 
+ 	return hist_entry_callchain__fprintf(fp, self, session_total,
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index d5d3b22..3ce2a80 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -35,26 +35,18 @@ int thread__set_comm(struct thread *self, const char *comm)
+ 
+ 	if (self->comm)
+ 		free(self->comm);
++
+ 	self->comm = strdup(comm);
++
+ 	err = self->comm == NULL ? -ENOMEM : 0;
+ 	if (!err) {
+ 		self->comm_set = true;
++		self->comm_len = strlen(self->comm);
+ 		map_groups__flush(&self->mg);
+ 	}
+ 	return err;
+ }
+ 
+-int thread__comm_len(struct thread *self)
+-{
+-	if (!self->comm_len) {
+-		if (!self->comm)
+-			return 0;
+-		self->comm_len = strlen(self->comm);
+-	}
+-
+-	return self->comm_len;
+-}
+-
+ static size_t thread__fprintf(struct thread *self, FILE *fp)
+ {
+ 	return fprintf(fp, "Thread %d %s\n", self->pid, self->comm) +
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index e5f2401..701ea09 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -23,7 +23,6 @@ struct perf_session;
+ void thread__delete(struct thread *self);
+ 
+ int thread__set_comm(struct thread *self, const char *comm);
+-int thread__comm_len(struct thread *self);
+ struct thread *perf_session__findnew(struct perf_session *self, pid_t pid);
+ void thread__insert_map(struct thread *self, struct map *map);
+ int thread__fork(struct thread *self, struct thread *parent);
