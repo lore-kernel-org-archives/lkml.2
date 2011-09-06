@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab1IGG0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:26:08 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46550 "EHLO e9.ny.us.ibm.com"
+	id S1756009Ab1IGGZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:25:57 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:52601 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755736Ab1IGGVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755734Ab1IGGVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Sep 2011 02:21:01 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,11 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, Michal Hocko <mhocko@suse.cz>,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 24/55] rcu: Not necessary to pass rcu_read_lock_held() to rcu_dereference_protected()
-Date: Tue,  6 Sep 2011 11:00:18 -0700
-Message-Id: <1315332049-2604-24-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 16/55] rcu: Put names into TINY_RCU structures under RCU_TRACE
+Date: Tue,  6 Sep 2011 11:00:10 -0700
+Message-Id: <1315332049-2604-16-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20110906180015.GA2560@linux.vnet.ibm.com>
 References: <20110906180015.GA2560@linux.vnet.ibm.com>
@@ -25,48 +25,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-Since ca5ecddf (rcu: define __rcu address space modifier for sparse)
-rcu_dereference_check() use rcu_read_lock_held() as a part of condition
-automatically.  Therefore, callers of rcu_dereference_check() no longer
-need to pass rcu_read_lock_held() to rcu_dereference_check().
+In order to allow event tracing to distinguish between flavors of
+RCU, we need those names in the relevant RCU data structures.  TINY_RCU
+has avoided them for memory-footprint reasons, so add them only if
+CONFIG_RCU_TRACE=y.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/lockdep.txt |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+ kernel/rcu.h            |   10 ++++++++--
+ kernel/rcutiny.c        |   13 -------------
+ kernel/rcutiny_plugin.h |   10 ++++------
+ kernel/rcutree.c        |   10 +++++-----
+ kernel/rcutree_plugin.h |    2 +-
+ 5 files changed, 18 insertions(+), 27 deletions(-)
 
-diff --git a/Documentation/RCU/lockdep.txt b/Documentation/RCU/lockdep.txt
-index d7a49b2..4998c63 100644
---- a/Documentation/RCU/lockdep.txt
-+++ b/Documentation/RCU/lockdep.txt
-@@ -48,13 +48,11 @@ checking of rcu_dereference() primitives:
- 		value of the pointer itself, for example, against NULL.
+diff --git a/kernel/rcu.h b/kernel/rcu.h
+index 7bc1643..d7f00ec 100644
+--- a/kernel/rcu.h
++++ b/kernel/rcu.h
+@@ -23,6 +23,12 @@
+ #ifndef __LINUX_RCU_H
+ #define __LINUX_RCU_H
  
- The rcu_dereference_check() check expression can be any boolean
--expression, but would normally include one of the rcu_read_lock_held()
--family of functions and a lockdep expression.  However, any boolean
--expression can be used.  For a moderately ornate example, consider
--the following:
-+expression, but would normally include a lockdep expression.  However,
-+any boolean expression can be used.  For a moderately ornate example,
-+consider the following:
++#ifdef CONFIG_RCU_TRACE
++#define RCU_TRACE(stmt) stmt
++#else /* #ifdef CONFIG_RCU_TRACE */
++#define RCU_TRACE(stmt)
++#endif /* #else #ifdef CONFIG_RCU_TRACE */
++
+ /*
+  * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
+  * by call_rcu() and rcu callback execution, and are therefore not part of the
+@@ -68,10 +74,10 @@ static inline void __rcu_reclaim(struct rcu_head *head)
+ 	unsigned long offset = (unsigned long)head->func;
  
- 	file = rcu_dereference_check(fdt->fd[fd],
--				     rcu_read_lock_held() ||
- 				     lockdep_is_held(&files->file_lock) ||
- 				     atomic_read(&files->count) == 1);
+ 	if (__is_kfree_rcu_offset(offset)) {
+-		trace_rcu_invoke_kfree_callback(head, offset);
++		RCU_TRACE(trace_rcu_invoke_kfree_callback(head, offset));
+ 		kfree((void *)head - offset);
+ 	} else {
+-		trace_rcu_invoke_callback(head);
++		RCU_TRACE(trace_rcu_invoke_callback(head));
+ 		head->func(head);
+ 	}
+ }
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 19453ba..0d28974 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -38,20 +38,7 @@
+ #include <linux/prefetch.h>
  
-@@ -62,7 +60,7 @@ This expression picks up the pointer "fdt->fd[fd]" in an RCU-safe manner,
- and, if CONFIG_PROVE_RCU is configured, verifies that this expression
- is used in:
+ #ifdef CONFIG_RCU_TRACE
+-
+ #include <trace/events/rcu.h>
+-
+-#else /* #ifdef CONFIG_RCU_TRACE */
+-
+-/* No by-default tracing in TINY_RCU: Keep TINY_RCU tiny! */
+-static void trace_rcu_invoke_kfree_callback(struct rcu_head *rhp,
+-					    unsigned long offset)
+-{
+-}
+-static void trace_rcu_invoke_callback(struct rcu_head *head)
+-{
+-}
+-
+ #endif /* #else #ifdef CONFIG_RCU_TRACE */
  
--1.	An RCU read-side critical section, or
-+1.	An RCU read-side critical section (implicit), or
- 2.	with files->file_lock held, or
- 3.	on an unshared files_struct.
+ #include "rcu.h"
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 6b0cedb..791ddf7 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -26,29 +26,26 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ 
+-#ifdef CONFIG_RCU_TRACE
+-#define RCU_TRACE(stmt)	stmt
+-#else /* #ifdef CONFIG_RCU_TRACE */
+-#define RCU_TRACE(stmt)
+-#endif /* #else #ifdef CONFIG_RCU_TRACE */
+-
+ /* Global control variables for rcupdate callback mechanism. */
+ struct rcu_ctrlblk {
+ 	struct rcu_head *rcucblist;	/* List of pending callbacks (CBs). */
+ 	struct rcu_head **donetail;	/* ->next pointer of last "done" CB. */
+ 	struct rcu_head **curtail;	/* ->next pointer of last CB. */
+ 	RCU_TRACE(long qlen);		/* Number of pending CBs. */
++	RCU_TRACE(char *name);		/* Name of RCU type. */
+ };
+ 
+ /* Definition for rcupdate control block. */
+ static struct rcu_ctrlblk rcu_sched_ctrlblk = {
+ 	.donetail	= &rcu_sched_ctrlblk.rcucblist,
+ 	.curtail	= &rcu_sched_ctrlblk.rcucblist,
++	RCU_TRACE(.name = "rcu_sched")
+ };
+ 
+ static struct rcu_ctrlblk rcu_bh_ctrlblk = {
+ 	.donetail	= &rcu_bh_ctrlblk.rcucblist,
+ 	.curtail	= &rcu_bh_ctrlblk.rcucblist,
++	RCU_TRACE(.name = "rcu_bh")
+ };
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+@@ -131,6 +128,7 @@ static struct rcu_preempt_ctrlblk rcu_preempt_ctrlblk = {
+ 	.rcb.curtail = &rcu_preempt_ctrlblk.rcb.rcucblist,
+ 	.nexttail = &rcu_preempt_ctrlblk.rcb.rcucblist,
+ 	.blkd_tasks = LIST_HEAD_INIT(rcu_preempt_ctrlblk.blkd_tasks),
++	RCU_TRACE(.rcb.name = "rcu_preempt")
+ };
+ 
+ static int rcu_preempted_readers_exp(void);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 2a9643b..b953e2c 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -61,7 +61,7 @@
+ static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
+ 
+ #define RCU_STATE_INITIALIZER(structname) { \
+-	.level = { &structname.node[0] }, \
++	.level = { &structname##_state.node[0] }, \
+ 	.levelcnt = { \
+ 		NUM_RCU_LVL_0,  /* root of hierarchy. */ \
+ 		NUM_RCU_LVL_1, \
+@@ -72,17 +72,17 @@ static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
+ 	.signaled = RCU_GP_IDLE, \
+ 	.gpnum = -300, \
+ 	.completed = -300, \
+-	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&structname.onofflock), \
+-	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&structname.fqslock), \
++	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&structname##_state.onofflock), \
++	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&structname##_state.fqslock), \
+ 	.n_force_qs = 0, \
+ 	.n_force_qs_ngp = 0, \
+ 	.name = #structname, \
+ }
+ 
+-struct rcu_state rcu_sched_state = RCU_STATE_INITIALIZER(rcu_sched_state);
++struct rcu_state rcu_sched_state = RCU_STATE_INITIALIZER(rcu_sched);
+ DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
+ 
+-struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh_state);
++struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh);
+ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+ 
+ static struct rcu_state *rcu_state;
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 43daa46..a90bf3c 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -64,7 +64,7 @@ static void __init rcu_bootup_announce_oddness(void)
+ 
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+-struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
++struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt);
+ DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
+ static struct rcu_state *rcu_state = &rcu_preempt_state;
  
 -- 
 1.7.3.2
