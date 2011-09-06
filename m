@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab1IFSFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 14:05:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58917 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab1IFSFU (ORCPT
+	id S1753703Ab1IFSF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 14:05:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41996 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752435Ab1IFSFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 14:05:20 -0400
-Message-ID: <4E6660D7.9040800@canonical.com>
-Date: Tue, 06 Sep 2011 11:05:11 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	Tue, 6 Sep 2011 14:05:51 -0400
+Date: Tue, 6 Sep 2011 10:54:39 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Blockers on IIO usage of regmap.
+Message-ID: <20110906175435.GA2924@opensource.wolfsonmicro.com>
+References: <4E6600A8.4020101@cam.ac.uk>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw> <20110818074756.GE10093@core.coreip.homeip.net> <4E5FCE58.9060906@canonical.com> <87sjobk711.fsf@emc.com.tw> <4E665249.2040602@canonical.com> <20110906173649.GA7419@core.coreip.homeip.net>
-In-Reply-To: <20110906173649.GA7419@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6600A8.4020101@cam.ac.uk>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2011 10:36 AM, Dmitry Torokhov wrote:
-> On Tue, Sep 06, 2011 at 10:03:05AM -0700, Chase Douglas wrote:
->> On 09/04/2011 08:22 PM, JJ Ding wrote:
->>> Hi Chase,
->>>
->>> On Thu, 01 Sep 2011 11:26:32 -0700, Chase Douglas <chase.douglas@canonical.com> wrote:
->>>> On 08/18/2011 12:47 AM, Dmitry Torokhov wrote:
->>>>> On Thu, Aug 18, 2011 at 09:57:05AM +0800, JJ Ding wrote:
->>>>>> +
->>>>>> +		i = (etd->fw_version > 0x020800 &&
->>>>>> +		     etd->fw_version < 0x020900) ? 1 : 2;
->>>>>> +		*x_max = (etd->capabilities[1] - i) * 64;
->>>>>> +		*y_max = (etd->capabilities[2] - i) * 64;
->>>>>> +		*y_2ft_max = (*y_max - i) * 64 / 4;
->>>>>
->>>>> Hmm, we should have the same range for ST and MT data and scale MT data
->>>>> if it has lower resolution to match ST.
->>>>
->>>> I saw this go by a while back and it made sense to me at the time.
->>>> However, I've had some thoughts that give me pause.
->>>>
->>>> Seth Forshee has been working on getting a semi-mt driver for ALPS
->>>> devices. The ALPS devices have an interesting mechanism for providing
->>>> multitouch data, but it boils down to having a resolution of only 15
->>>> values in the X axis and 11 in the Y axis (it looks possible to
->>>> extrapolate and get double the resolution, but my point will remain).
->>>>
->>>> Let's take the X synaptics module as an example of the repercussions of
->>>> in-kernel axis scaling. The X synaptics module translates two touch
->>>> drags into scroll events. Synaptics will want to use the highest
->>>> resolution axis for generating scroll events. If both the MT and ST axes
->>>> have the same resolution, it might pick the MT axes for scrolling. On
->>>> ALPS devices with in-kernel axis scaling that would be a bad choice.
->>> I don't know about the ALPS devices, but since we already report
->>> ABS_MT_POSITION_{X,Y} with elantech v2, we have to do the scaling in
->>> kernel anyway to adhere to multitouch protocol. So I would say it is
->>> still more appropriate to have the same resolution for ST and MT with
->>> respect to elantech v2. Maybe ALPS should be considered an exception to this?
->>
->> The multitouch protocol doesn't require scaling of axes to match, at
->> least not according to the protocol documentation.
->>
->> I see that the current code scales the coordinates for v2, but it's only
->> half-resolution. That's not a huge deal since the resolution of modern
->> touchpads is very high. We could leave it scaled to not break abi, if
->> that was a concern. However, with new devices it makes sense to state
->> the ranges in terms of what the device actually supports. Otherwise,
->> we're just masking out useful data that userspace could be using.
->>
-> 
-> I disagree. I believe that ST and MT ranges reported for the same
-> working surface should match, especially since many devices derive ST
-> data from MT.
-> 
-> As far as devices that have ranges 0-15 in MT mode - I am not sure how
-> useful such MT steam anyway and if we are better of just ignore them
-> (maybe just use the data to report number of fingers on the surface but
-> otherwise use standard ST protocol).
+On Tue, Sep 06, 2011 at 12:14:48PM +0100, Jonathan Cameron wrote:
 
-The MT data could still be useful for pinch to zoom or potentially
-rotate (though most low res devices probably are only semi-mt). I don't
-want to forsake pinch to zoom just because we can't pass on the
-resolution of MT data properly.
+> Just a quick heads up that the big blocker for
+> us making more use of regmap is lack of default
+> control of cs_change for spi buses.  That leads to
 
--- Chase
+Looking at what you've got here there's nothing interesting with /CS
+here, it's all about the data formatting.  Certainly you've not
+mentioned anything odd with /CS in any of the code.
+
+> TX  Add0...Add7 XXXXXXXXXXX  XXXXXXXXXXX  XXXXXXXX
+> RX  XXXXXXXXXXX Da0.....Da7  Db0.....Db7  etc
+
+This is the standard one that most things do so is already supported.
+
+> TX  Add0...Add7 XXXXXXXXXXX  XXXXXXXXXXX  XXXXXXXXXX
+> RX  XXXXXXXXXXX XXXXXXXXXXX  Da0.....Da7  Db0....Db7
+
+This is just inserting a delay so should be trivial to implement and
+doesn't even look terribly SPI specific, just set a flag and it should
+be fine.  All we need here is someone to actually implement it.  I guess
+the delay will be OK for any read?
+
+> TX  Ada0...Ada7  Adb1...Adb7 Adc1...Adc7  etc
+> RX  XXXXXXXXXXX  Da0.....Da7 Db0.....Db7  etc
+
+This one is much more of a contortion to implement - it's pretty SPI
+specific to stream the register addresses and it's really not what the
+system is set up for.  On the other hand if you can come up with a
+taseful way to implement it then I don't see a problem.
+
+> So basically we need some bus specific 'mode' hook somewhere.
+> Given we have separate init functions for the buses could we
+> add a struct regmap_spi_config to the parameter list?
+
+Or just embed stuff into the main config structure at least for the
+delay.  Nothing there seems too outrageous, and the delay sounds like
+something someone might do on other buses (the delay will be to allow
+time for the ADCs or whatever to set up).
