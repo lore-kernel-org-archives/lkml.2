@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1IFJZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 05:25:50 -0400
-Received: from mail-qw0-f42.google.com ([209.85.216.42]:35827 "EHLO
-	mail-qw0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab1IFJZm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 05:25:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1109012112100.2723@ionos>
-References: <1314360393-13605-1-git-send-email-jkacur@redhat.com>
-	<alpine.LFD.2.02.1109012112100.2723@ionos>
-Date: Tue, 6 Sep 2011 11:25:41 +0200
-X-Google-Sender-Auth: ZatKpfeQr0Tjd1vcWeGdS5_A6tE
-Message-ID: <CAONaPpFpJJaKN=XKavQf0ZSG2Vht7pu3NH0a5YDZrxCmx7fMew@mail.gmail.com>
-Subject: Re: [PATCH] PREEMPT_RT_FULL Build error fix
-From: John Kacur <jkacur@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1754043Ab1IFJkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 05:40:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54935 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753413Ab1IFJkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 05:40:33 -0400
+Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl
+ interoperability
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Tue, 06 Sep 2011 10:41:06 +0100
+Message-ID: <1315302066.2741.12.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 1, 2011 at 9:14 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 26 Aug 2011, John Kacur wrote:
->
->> Problem:
->> make O=/bld/3.0.3-rt11/ kernel/fork.o
->> /home/jkacur/jk-2.6/kernel/fork.c:91: error: section of ‘name’ conflicts with previous declaration
->>
->> __cacheline_aligned is already part of the definition of DEFINE_RWLOCK
->> for -rt
->>
->> However it is not always used for the tasklist_lock in non-rt, so it can't
->> simply be added to the definition of DEFINE_RWLOCK in non-rt, so I modified
->> the definition in fork.c
->
-> -ENOPARSE
->
-> The real question is whether RWLOCKS should be cacheline aligned in
-> general or the RT addon is just overkill. Slapping an ifdef around
-> does not answer that.
->
+Hi,
 
-Right, this was just a "put out a build-break fire" for now patch and
-not a good long term patch. I noticed that of all the mainline
-DEFINE_RWLOCKs that only the tasklist_lock is cache aligned. I'm
-wondering if there is a reason for that, or just more of a historical
-accident.
+On Mon, 2011-09-05 at 22:55 +0530, Aneesh Kumar K.V wrote:
+> Hi,
+> 
+> The following set of patches implements VFS and ext4 changes needed to implement
+> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> extended by file masks to fit into the standard POSIX file permission model.
+> They are designed to work seamlessly locally as well as across the NFSv4 and
+> CIFS/SMB2 network file system protocols.
+> 
+> A user-space utility for displaying and changing richacls is available at [4]
+> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+> 
+> [4] git://git.kernel.org/pub/scm/fs/acl/kvaneesh/richacl.git master
+> 
+> To test richacl on ext4 use -o richacl mount option. This mount option may later be
+> dropped in favour of a feature flag.
+> 
+> More details regarding richacl can be found at
+> http://acl.bestbits.at/richacl/
+> 
+> Changes from v5:
+> a) rebase to v3.1-rc4-131-g9e79e3e
+> 
+> NOTE: The kernel changes will be pushed to
+> git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richacl
+> when kernel.org is back
+> 
+> -aneesh
+> 
 
-Regarding cache aligning the rwlocks in -rt, I also can't find the
-historical reason for it, do you remember if it was for latency
-performance, or did we have a atomicity issue on some architectures
-when we didn't cache align it?
+This looks like a really nice patch set. One question though is whether
+there are any test suites which can be used to gain confidence in the
+implementation? Obviously there is a fair amount of change here which
+has security implications, so it would be good to have some test results
+to go along with the patches,
 
-Thanks
+Steve.
+
+
