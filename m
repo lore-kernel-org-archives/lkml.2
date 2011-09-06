@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab1IFAOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 20:14:09 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53143 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1IFANz (ORCPT
+	id S1753056Ab1IFAOA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 20:14:00 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53534 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653Ab1IFANv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 20:13:55 -0400
+	Mon, 5 Sep 2011 20:13:51 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,95 +16,138 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 00/12 v4][RESEND] cgroups: Task counter subsystem
-Date: Tue,  6 Sep 2011 02:12:54 +0200
-Message-Id: <1315267986-28937-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 04/12] cgroups: New cancel_attach_task subsystem callback
+Date: Tue,  6 Sep 2011 02:12:58 +0200
+Message-Id: <1315267986-28937-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1315267986-28937-1-git-send-email-fweisbec@gmail.com>
+References: <1315267986-28937-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry, I had unbalanced "<" and ">" around email addresses so I need
-to resend otherwise LKML wouldn't take it.)
+To cancel a process attachment on a subsystem, we only call the
+cancel_attach() callback once on the leader but we have no
+way to cancel the attachment individually for each member of
+the process group.
 
+This is going to be needed for the max number of tasks susbystem
+that is coming.
 
-Reminder:
+To prepare for this integration, call a new cancel_attach_task()
+callback on each task of the group until we reach the member that
+failed to attach.
 
-The task counter is a cgroup subsystem that features an upper bound
-limitation on the number of tasks running inside cgroup.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Aditya Kali <adityakali@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tim Hockin <thockin@hockin.org>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ Documentation/cgroups/cgroups.txt |    7 +++++++
+ include/linux/cgroup.h            |    1 +
+ kernel/cgroup.c                   |   23 +++++++++++++++++++----
+ 3 files changed, 27 insertions(+), 4 deletions(-)
 
-It has two desired usecases, but possibly more can be found:
-
-- Protect against forkbomb in the scope of a cgroup, this can be
-especially useful in the case of containers where traditional rlmit
-is too limited.
-
-- Kill all tasks inside a cgroup without worrying about races against
-concurrent forks.
-
-See documentation in patch 10/12 for more details.
-
-May be I should rebase the whole against Tejun's patches that use
-an iterator on tasks.
-
-Changes in v4:
-
-- Rebase on top of "cgroups: Don't attach task to subsystem if
-  migration failed" (https://lkml.org/lkml/2011/8/26/262), applied
-  in -mm.
-- Add comment about the use of spinlock in res_counter_write_u64() (patch 1)
-- Update documentation after [can_]attach_task() arguments changes (patch 3)
-- Update documentation for cancel_attach_task() new callback (patch 4)
-- Cancel task attachment on migration failure in cgroup_attach_proc() (patch 4)
-- Some function inlining (patch 5)
-- Move "Allow charge failure pointer to be null" earlier in the set for
-  sanity (patch 7)
-- Fix error return value (patch 8 and 9)
-- Whitespace fixes, comments added, improve config help section (patch 9)
-- Drop subsystem early init (patch 9)
-- Add subsystem documentation (patch 10)
-- Remove ad-hoc fork hook and reuse existing one for cgroup (patch 11 and 12)
-
-This can not be pulled from:                                                                                                     
-                                                                                                                             
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git                                                    
-        cgroup/nr_proc-v4
-
-Frederic Weisbecker (12):
-  cgroups: Add res_counter_write_u64() API
-  cgroups: New resource counter inheritance API
-  cgroups: Add previous cgroup in can_attach_task/attach_task callbacks
-  cgroups: New cancel_attach_task subsystem callback
-  cgroups: Ability to stop res charge propagation on bounded ancestor
-  cgroups: Add res counter common ancestor searching
-  res_counter: Allow charge failure pointer to be null
-  cgroups: Pull up res counter charge failure interpretation to caller
-  cgroups: Add a task counter subsystem
-  cgroups: Add documentation for task counter subsystem
-  cgroups: Allow subsystems to cancel a fork
-  cgroups: Convert task counter to use the subsys fork callback
-
- Documentation/cgroups/cgroups.txt      |   13 ++-
- Documentation/cgroups/task_counter.txt |  126 ++++++++++++++++++++
- block/blk-cgroup.c                     |   10 +-
- include/linux/cgroup.h                 |   20 ++-
- include/linux/cgroup_subsys.h          |    8 ++
- include/linux/res_counter.h            |   25 ++++-
- init/Kconfig                           |    7 +
- kernel/Makefile                        |    1 +
- kernel/cgroup.c                        |   56 +++++++--
- kernel/cgroup_freezer.c                |    9 +-
- kernel/cgroup_task_counter.c           |  200 ++++++++++++++++++++++++++++++++
- kernel/cpuset.c                        |    6 +-
- kernel/events/core.c                   |    5 +-
- kernel/exit.c                          |    2 +-
- kernel/fork.c                          |    7 +-
- kernel/res_counter.c                   |   77 ++++++++++---
- kernel/sched.c                         |    6 +-
- 17 files changed, 524 insertions(+), 54 deletions(-)
- create mode 100644 Documentation/cgroups/task_counter.txt
- create mode 100644 kernel/cgroup_task_counter.c
-
+diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+index 0621e93..3bc1dc9 100644
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -623,6 +623,13 @@ function, so that the subsystem can implement a rollback. If not, not necessary.
+ This will be called only about subsystems whose can_attach() operation have
+ succeeded.
+ 
++void cancel_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
++(cgroup_mutex held by caller)
++
++As cancel_attach, but for operations that must be cancelled once per
++task that wanted to be attached. This typically revert the effect of
++can_attach_task().
++
+ void pre_attach(struct cgroup *cgrp);
+ (cgroup_mutex held by caller)
+ 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index ecda4a0..be66470 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -472,6 +472,7 @@ struct cgroup_subsys {
+ 			       struct task_struct *tsk);
+ 	void (*cancel_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+ 			      struct task_struct *tsk);
++	void (*cancel_attach_task)(struct cgroup *cgrp, struct task_struct *tsk);
+ 	void (*pre_attach)(struct cgroup *cgrp);
+ 	void (*attach_task)(struct cgroup *cgrp, struct cgroup *old_cgrp, struct task_struct *tsk);
+ 	void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 7a775c9..73ee2fd 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1883,6 +1883,9 @@ out:
+ 				 * remaining subsystems.
+ 				 */
+ 				break;
++
++			if (ss->cancel_attach_task)
++				ss->cancel_attach_task(cgrp, tsk);
+ 			if (ss->cancel_attach)
+ 				ss->cancel_attach(ss, cgrp, tsk);
+ 		}
+@@ -1992,7 +1995,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ {
+ 	int retval, i, group_size;
+ 	struct cgroup_subsys *ss, *failed_ss = NULL;
+-	bool cancel_failed_ss = false;
++	struct task_struct *failed_task = NULL;
+ 	/* guaranteed to be initialized later, but the compiler needs this */
+ 	struct cgroup *oldcgrp = NULL;
+ 	struct css_set *oldcg;
+@@ -2080,7 +2083,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 				retval = ss->can_attach_task(cgrp, oldcgrp, tsk);
+ 				if (retval) {
+ 					failed_ss = ss;
+-					cancel_failed_ss = true;
++					failed_task = tsk;
+ 					goto out_cancel_attach;
+ 				}
+ 			}
+@@ -2145,8 +2148,11 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 				if (ss->attach_task)
+ 					ss->attach_task(cgrp, oldcgrp, tsk);
+ 			}
++		} else if (retval == -ESRCH) {
++			if (ss->cancel_attach_task)
++				ss->cancel_attach_task(cgrp, tsk);
+ 		} else {
+-			BUG_ON(retval != -ESRCH);
++			BUG_ON(1);
+ 		}
+ 	}
+ 	/* nothing is sensitive to fork() after this point. */
+@@ -2178,8 +2184,17 @@ out_cancel_attach:
+ 	/* same deal as in cgroup_attach_task */
+ 	if (retval) {
+ 		for_each_subsys(root, ss) {
++			if (ss->cancel_attach_task && (ss != failed_ss || failed_task)) {
++				for (i = 0; i < group_size; i++) {
++					tsk = flex_array_get_ptr(group, i);
++					if (tsk == failed_task)
++						break;
++					ss->cancel_attach_task(cgrp, tsk);
++				}
++			}
++
+ 			if (ss == failed_ss) {
+-				if (cancel_failed_ss && ss->cancel_attach)
++				if (failed_task && ss->cancel_attach)
+ 					ss->cancel_attach(ss, cgrp, leader);
+ 				break;
+ 			}
 -- 
 1.7.5.4
 
