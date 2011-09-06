@@ -1,135 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab1IFKoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 06:44:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab1IFKn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 06:43:59 -0400
-Date: Tue, 6 Sep 2011 12:43:47 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] memcg: skip scanning active lists based on individual
- size
-Message-ID: <20110906104347.GB25053@redhat.com>
-References: <20110831090850.GA27345@redhat.com>
- <CAEwNFnBSg71QoLZbOqZbXK3fGEGneituU3PmiYTAw1VM3KcwcQ@mail.gmail.com>
- <20110901090931.c0721216.kamezawa.hiroyu@jp.fujitsu.com>
- <20110901061540.GA22561@redhat.com>
- <20110901153148.70452287.kamezawa.hiroyu@jp.fujitsu.com>
- <20110905182514.GA20793@redhat.com>
- <20110906183358.0a305900.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754184Ab1IFKrh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 06:47:37 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:52206 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753846Ab1IFKrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 06:47:33 -0400
+Date: Tue, 6 Sep 2011 06:47:28 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -mm 1/4] llist, Make all llist functions inline
+Message-ID: <20110906104728.GA21602@Krystal>
+References: <1315290307-25145-1-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110906183358.0a305900.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1315290307-25145-1-git-send-email-ying.huang@intel.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 06:46:59 up 286 days, 15:50,  1 user,  load average: 1.00, 1.00,
+	0.78
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 06:33:58PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Mon, 5 Sep 2011 20:25:14 +0200
-> Johannes Weiner <jweiner@redhat.com> wrote:
+* Huang Ying (ying.huang@intel.com) wrote:
+> Because llist may be used in performance critical code path, make all
+> llist functions inline to avoid function calling overhead.
+
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+Thanks,
+
+Mathieu
+
 > 
-> > On Thu, Sep 01, 2011 at 03:31:48PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > On Thu, 1 Sep 2011 08:15:40 +0200
-> > > Johannes Weiner <jweiner@redhat.com> wrote:
-> > > Old implemenation was supporsed to make vmscan to see only memcg and
-> > > ignore zones. memcg doesn't take care of any zones. Then, it uses
-> > > global numbers rather than zones.
-> > > 
-> > > Assume a system with 2 nodes and the whole memcg's inactive/active ratio
-> > > is unbalaned. 
-> > > 
-> > >    Node      0     1
-> > >    Active   800M   30M
-> > >    Inactive 100M   200M
-> > > 
-> > > If we judge 'unbalance' based on zones, Node1's Active will not rotate
-> > > even if it's not accessed for a while.
-> > > If we judge unbalance based on total stat, Both of Node0 and Node 1
-> > > will be rotated.
-> > 
-> > But why should we deactivate on Node 1?  We have good reasons not to
-> > on the global level, why should memcgs silently behave differently?
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  drivers/acpi/apei/Kconfig |    1 
+>  include/linux/llist.h     |  122 +++++++++++++++++++++++++++++++++++++++++--
+>  lib/Kconfig               |    3 -
+>  lib/Makefile              |    2 
+>  lib/llist.c               |  129 ----------------------------------------------
+>  5 files changed, 116 insertions(+), 141 deletions(-)
+>  delete mode 100644 lib/llist.c
 > 
-> One reason was I thought that memcg should behave as to have one LRU list,
-> which is not devided by zones and wanted to ignore zones as much
-> as possible. Second reason was that I don't want to increase swap-out
-> caused by memcg limit.
+> --- a/drivers/acpi/apei/Kconfig
+> +++ b/drivers/acpi/apei/Kconfig
+> @@ -14,7 +14,6 @@ config ACPI_APEI_GHES
+>  	depends on ACPI_APEI && X86
+>  	select ACPI_HED
+>  	select IRQ_WORK
+> -	select LLIST
+>  	select GENERIC_ALLOCATOR
+>  	help
+>  	  Generic Hardware Error Source provides a way to report
+> --- a/include/linux/llist.h
+> +++ b/include/linux/llist.h
+> @@ -37,8 +37,28 @@
+>   * architectures that don't have NMI-safe cmpxchg implementation, the
+>   * list can NOT be used in NMI handler.  So code uses the list in NMI
+>   * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+> + *
+> + * Copyright 2010,2011 Intel Corp.
+> + *   Author: Huang Ying <ying.huang@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License version
+> + * 2 as published by the Free Software Foundation;
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+>   */
+>  
+> +#include <linux/kernel.h>
+> +#include <asm/system.h>
+> +#include <asm/processor.h>
+> +
+>  struct llist_head {
+>  	struct llist_node *first;
+>  };
+> @@ -113,14 +133,104 @@ static inline void init_llist_head(struc
+>   * test whether the list is empty without deleting something from the
+>   * list.
+>   */
+> -static inline int llist_empty(const struct llist_head *head)
+> +static inline bool llist_empty(const struct llist_head *head)
+>  {
+>  	return ACCESS_ONCE(head->first) == NULL;
+>  }
+>  
+> -void llist_add(struct llist_node *new, struct llist_head *head);
+> -void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+> -		     struct llist_head *head);
+> -struct llist_node *llist_del_first(struct llist_head *head);
+> -struct llist_node *llist_del_all(struct llist_head *head);
+> +/**
+> + * llist_add - add a new entry
+> + * @new:	new entry to be added
+> + * @head:	the head for your lock-less list
+> + */
+> +static inline void llist_add(struct llist_node *new, struct llist_head *head)
+> +{
+> +	struct llist_node *entry, *old_entry;
+> +
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	entry = head->first;
+> +	do {
+> +		old_entry = entry;
+> +		new->next = entry;
+> +		cpu_relax();
+> +	} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
+> +}
+> +
+> +/**
+> + * llist_add_batch - add several linked entries in batch
+> + * @new_first:	first entry in batch to be added
+> + * @new_last:	last entry in batch to be added
+> + * @head:	the head for your lock-less list
+> + */
+> +static inline void llist_add_batch(struct llist_node *new_first,
+> +				   struct llist_node *new_last,
+> +				   struct llist_head *head)
+> +{
+> +	struct llist_node *entry, *old_entry;
+> +
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	entry = head->first;
+> +	do {
+> +		old_entry = entry;
+> +		new_last->next = entry;
+> +		cpu_relax();
+> +	} while ((entry = cmpxchg(&head->first, old_entry, new_first)) != old_entry);
+> +}
+> +
+> +/**
+> + * llist_del_first - delete the first entry of lock-less list
+> + * @head:	the head for your lock-less list
+> + *
+> + * If list is empty, return NULL, otherwise, return the first entry
+> + * deleted, this is the newest added one.
+> + *
+> + * Only one llist_del_first user can be used simultaneously with
+> + * multiple llist_add users without lock.  Because otherwise
+> + * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
+> + * llist_add) sequence in another user may change @head->first->next,
+> + * but keep @head->first.  If multiple consumers are needed, please
+> + * use llist_del_all or use lock between consumers.
+> + */
+> +static inline struct llist_node *llist_del_first(struct llist_head *head)
+> +{
+> +	struct llist_node *entry, *old_entry, *next;
+> +
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	entry = head->first;
+> +	do {
+> +		if (entry == NULL)
+> +			return NULL;
+> +		old_entry = entry;
+> +		next = entry->next;
+> +		cpu_relax();
+> +	} while ((entry = cmpxchg(&head->first, old_entry, next)) != old_entry);
+> +
+> +	return entry;
+> +}
+> +
+> +/**
+> + * llist_del_all - delete all entries from lock-less list
+> + * @head:	the head of lock-less list to delete all entries
+> + *
+> + * If list is empty, return NULL, otherwise, delete all entries and
+> + * return the pointer to the first entry.  The order of entries
+> + * deleted is from the newest to the oldest added one.
+> + */
+> +static inline struct llist_node *llist_del_all(struct llist_head *head)
+> +{
+> +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> +	BUG_ON(in_nmi());
+> +#endif
+> +
+> +	return xchg(&head->first, NULL);
+> +}
+>  #endif /* LLIST_H */
+> --- a/lib/Kconfig
+> +++ b/lib/Kconfig
+> @@ -276,7 +276,4 @@ config CORDIC
+>  	  so its calculations are in fixed point. Modules can select this
+>  	  when they require this function. Module will be called cordic.
+>  
+> -config LLIST
+> -	bool
+> -
+>  endmenu
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -116,8 +116,6 @@ obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
+>  
+>  obj-$(CONFIG_CORDIC) += cordic.o
+>  
+> -obj-$(CONFIG_LLIST) += llist.o
+> -
+>  hostprogs-y	:= gen_crc32table
+>  clean-files	:= crc32table.h
+>  
+> --- a/lib/llist.c
+> +++ /dev/null
+> @@ -1,129 +0,0 @@
+> -/*
+> - * Lock-less NULL terminated single linked list
+> - *
+> - * The basic atomic operation of this list is cmpxchg on long.  On
+> - * architectures that don't have NMI-safe cmpxchg implementation, the
+> - * list can NOT be used in NMI handler.  So code uses the list in NMI
+> - * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+> - *
+> - * Copyright 2010,2011 Intel Corp.
+> - *   Author: Huang Ying <ying.huang@intel.com>
+> - *
+> - * This program is free software; you can redistribute it and/or
+> - * modify it under the terms of the GNU General Public License version
+> - * 2 as published by the Free Software Foundation;
+> - *
+> - * This program is distributed in the hope that it will be useful,
+> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> - * GNU General Public License for more details.
+> - *
+> - * You should have received a copy of the GNU General Public License
+> - * along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> - */
+> -#include <linux/kernel.h>
+> -#include <linux/module.h>
+> -#include <linux/interrupt.h>
+> -#include <linux/llist.h>
+> -
+> -#include <asm/system.h>
+> -
+> -/**
+> - * llist_add - add a new entry
+> - * @new:	new entry to be added
+> - * @head:	the head for your lock-less list
+> - */
+> -void llist_add(struct llist_node *new, struct llist_head *head)
+> -{
+> -	struct llist_node *entry, *old_entry;
+> -
+> -#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> -	BUG_ON(in_nmi());
+> -#endif
+> -
+> -	entry = head->first;
+> -	do {
+> -		old_entry = entry;
+> -		new->next = entry;
+> -		cpu_relax();
+> -	} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
+> -}
+> -EXPORT_SYMBOL_GPL(llist_add);
+> -
+> -/**
+> - * llist_add_batch - add several linked entries in batch
+> - * @new_first:	first entry in batch to be added
+> - * @new_last:	last entry in batch to be added
+> - * @head:	the head for your lock-less list
+> - */
+> -void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
+> -		     struct llist_head *head)
+> -{
+> -	struct llist_node *entry, *old_entry;
+> -
+> -#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> -	BUG_ON(in_nmi());
+> -#endif
+> -
+> -	entry = head->first;
+> -	do {
+> -		old_entry = entry;
+> -		new_last->next = entry;
+> -		cpu_relax();
+> -	} while ((entry = cmpxchg(&head->first, old_entry, new_first)) != old_entry);
+> -}
+> -EXPORT_SYMBOL_GPL(llist_add_batch);
+> -
+> -/**
+> - * llist_del_first - delete the first entry of lock-less list
+> - * @head:	the head for your lock-less list
+> - *
+> - * If list is empty, return NULL, otherwise, return the first entry
+> - * deleted, this is the newest added one.
+> - *
+> - * Only one llist_del_first user can be used simultaneously with
+> - * multiple llist_add users without lock.  Because otherwise
+> - * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
+> - * llist_add) sequence in another user may change @head->first->next,
+> - * but keep @head->first.  If multiple consumers are needed, please
+> - * use llist_del_all or use lock between consumers.
+> - */
+> -struct llist_node *llist_del_first(struct llist_head *head)
+> -{
+> -	struct llist_node *entry, *old_entry, *next;
+> -
+> -#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> -	BUG_ON(in_nmi());
+> -#endif
+> -
+> -	entry = head->first;
+> -	do {
+> -		if (entry == NULL)
+> -			return NULL;
+> -		old_entry = entry;
+> -		next = entry->next;
+> -		cpu_relax();
+> -	} while ((entry = cmpxchg(&head->first, old_entry, next)) != old_entry);
+> -
+> -	return entry;
+> -}
+> -EXPORT_SYMBOL_GPL(llist_del_first);
+> -
+> -/**
+> - * llist_del_all - delete all entries from lock-less list
+> - * @head:	the head of lock-less list to delete all entries
+> - *
+> - * If list is empty, return NULL, otherwise, delete all entries and
+> - * return the pointer to the first entry.  The order of entries
+> - * deleted is from the newest to the oldest added one.
+> - */
+> -struct llist_node *llist_del_all(struct llist_head *head)
+> -{
+> -#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
+> -	BUG_ON(in_nmi());
+> -#endif
+> -
+> -	return xchg(&head->first, NULL);
+> -}
+> -EXPORT_SYMBOL_GPL(llist_del_all);
 
-You can think of it like this: if every active list is only balanced
-when its inactive counterpart is too small, then the memcg-wide
-proportion of inactive vs. active pages is as desired, too.  So even
-after my change, the 'one big LRU' has the right inactive/active ratio.
-
-On the other hand, the old way could allow for the memcg-level to have
-the right proportion and still thrash one workload that is bound to
-another node even though its inactive > active, but is overshadowed by
-inactive < active workloads on other nodes.
-
-> > I mostly don't understand it on a semantic level.  vmscan needs to
-> > know whether a certain inactive LRU list has enough reclaim candidates
-> > to skip scanning its corresponding active list.  The global state is
-> > not useful to find out if a single inactive list has enough pages.
-> 
-> Ok, I agree to this. I should add other logic to do what I want.
-> In my series,
->   - passing nodemask
->   - avoid overscan
->   - calculating node weight
-> These will allow me to see what I want.
-
-What /do/ you want? :) I just don't see your concern.  I mean, yes, no
-increased swapout, but in what concrete scenario could you suspect
-swapping to increase because of this change?
-
-> > > > > I'll ack when you add performance numbers in changelog.
-> > > > 
-> > > > It's not exactly a performance optimization but I'll happily run some
-> > > > workloads.  Do you have suggestions what to test for?  I.e. where
-> > > > would you expect regressions?
-> > > > 
-> > > Some comparison about amount of swap-out before/after change will be good.
-> > > 
-> > > Hm. If I do...
-> > >   - set up x86-64 NUMA box. (fake numa is ok.)
-> > >   - create memcg with 500M limit.
-> > >   - running kernel make with make -j 6(or more)
-> > > 
-> > > see time of make and amount of swap-out.
-> > 
-> > 4G ram, 500M swap on SSD, numa=fake=16, 10 runs of make -j11 in 500M
-> > memcg, standard deviation in parens:
-> > 
-> > 		seconds		pswpin			pswpout
-> > vanilla:	175.359(0.106)	6906.900(1779.135)	8913.200(1917.369)
-> > patched:	176.144(0.243)	8581.500(1833.432)	10872.400(2124.104)
-> 
-> Hmm. swapin/out seems increased. But hmm...stddev is large.
-> Is this expected ? reason ?
-
-It's kind of expected because there is only a small number of parallel
-jobs that have bursty memory usage, so the slightest timing variations
-can make the difference between an episode of heavy thrashing and the
-tasks having their bursts at different times and getting along fine.
-
-So we are basically looking at test results that are clustered around
-not one, but several different mean values.  The arithmetic mean is
-not really meaningful for these samples.
-
-> Anyway, I don't want to disturb you more. Thanks.
-
-I am happy to test if my changes introduce regressions, I don't want
-that, obviously.  But do you have a theory behind your concern that
-swapping could increase?  Just saying, this test request seemed a bit
-random because I don't see where my change would affect this
-particular workload.
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
