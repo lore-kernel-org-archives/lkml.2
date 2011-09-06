@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab1IFQhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 12:37:07 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:38741 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab1IFQg6 (ORCPT
+	id S1752176Ab1IFQjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 12:39:20 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:23250
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751811Ab1IFQjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 12:36:58 -0400
-Date: Tue, 6 Sep 2011 12:35:53 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "rientjes@google.com" <rientjes@google.com>,
+	Tue, 6 Sep 2011 12:39:12 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LR40X6-02-57Q-02
+X-M-MSG: 
+Date: Tue, 6 Sep 2011 18:39:04 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
- space page tables in alloc_vm_area()
-Message-ID: <20110906163553.GA28971@dumpdata.com>
-References: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com>
- <20110901161134.GA8979@dumpdata.com>
- <4E5FED1A.1000300@goop.org>
- <20110901141754.76cef93b.akpm@linux-foundation.org>
- <4E60C067.4010600@citrix.com>
- <20110902153204.59a928c1.akpm@linux-foundation.org>
+Subject: Re: [V3][PATCH 6/6] x86, nmi: print out NMI stats in /proc/interrupts
+Message-ID: <20110906163904.GJ14200@erda.amd.com>
+References: <1314290748-23569-1-git-send-email-dzickus@redhat.com>
+ <1314290748-23569-7-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110902153204.59a928c1.akpm@linux-foundation.org>
+In-Reply-To: <1314290748-23569-7-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E664C01.01A0:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 03:32:04PM -0700, Andrew Morton wrote:
-> On Fri, 2 Sep 2011 12:39:19 +0100
-> David Vrabel <david.vrabel@citrix.com> wrote:
+On 25.08.11 12:45:48, Don Zickus wrote:
+> This is a cheap hack to add the stats to the middle of /proc/interrupts.
+> It is more of a conversation starter than anything as I am not sure
+> the right letters and place to put this stuff.
 > 
-> > Xen backend drivers (e.g., blkback and netback) would sometimes fail
-> > to map grant pages into the vmalloc address space allocated with
-> > alloc_vm_area().  The GNTTABOP_map_grant_ref would fail because Xen
-> > could not find the page (in the L2 table) containing the PTEs it
-> > needed to update.
-> > 
-> > (XEN) mm.c:3846:d0 Could not find L1 PTE for address fbb42000
-> > 
-> > netback and blkback were making the hypercall from a kernel thread
-> > where task->active_mm != &init_mm and alloc_vm_area() was only
-> > updating the page tables for init_mm.  The usual method of deferring
-> > the update to the page tables of other processes (i.e., after taking a
-> > fault) doesn't work as a fault cannot occur during the hypercall.
-> > 
-> > This would work on some systems depending on what else was using
-> > vmalloc.
-> > 
-> > Fix this by reverting ef691947d8a3d479e67652312783aedcf629320a
-> > (vmalloc: remove vmalloc_sync_all() from alloc_vm_area()) and add a
-> > comment to explain why it's needed.
+> The benefit of these stats is a better breakdown of which list the NMIs
+> get handled in either a normal handler, unknown, or external.  It also
+> list the number of unknown NMIs swallowed to help check for false
+> positives or not.  Another benefit is the ability to actually see which
+> NMI handlers are currently registered in the system.
 > 
-> oookay, I queued this for 3.1 and tagged it for a 3.0.x backport.  I
-> *think* that's the outcome of this discussion, for the short-term?
+> The output of 'cat /proc/interrupts/ will look like this:
+> 
+> <snip>
+>  58:        275          0        864          0   PCI-MSI-edge      eth0
+> NMI:       4161       4155        158       4194   Non-maskable interrupts
+> SWA:          0          0          0          0   Unknown NMIs swallowed
+>   0:       4161       4155        158       4194   NMI  PMI, arch_bt
 
-<nods> Yup. Thanks!
+What does the "0" stand for?
+
+We could easily provide a statistic for each NMI handler, which would
+be more useful.
+
+The syntax of the NMI printout is not yet perfect, so before adding it
+as a new interface I would rather wait a bit to discuss this more.
+
+People also could get confused because the handled count may be
+different to nmi count. This should be documented more clearly, maybe
+as event count instead of nmi count or so.
+
+-Robert
+
+> UNK:          0          0          0          0   NMI
+> EXT:          0          0          0          0   NMI
+> LOC:      12653      13304      13974      12926   Local timer interrupts
+> SPU:          0          0          0          0   Spurious interrupts
+> PMI:          6          6          5          6   Performance monitoring interrupts
+> IWI:          0          0          0          0   IRQ work interrupts
+> RES:       1839       1897       1821       1854   Rescheduling interrupts
+> CAL:        524       2714        392        331   Function call interrupts
+> TLB:        217        146        593        576   TLB shootdowns
+> TRM:          0          0          0          0   Thermal event interrupts
+> THR:          0          0          0          0   Threshold APIC interrupts
+> MCE:          0          0          0          0   Machine check exceptions
+> MCP:          1          1          1          1   Machine check polls
+> ERR:          0
+> MIS:          0
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
