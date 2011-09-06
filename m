@@ -1,57 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab1IFPMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:12:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58411 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab1IFPMO (ORCPT
+	id S1754855Ab1IFPMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:12:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62184 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab1IFPMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:12:14 -0400
-From: Thomas Weber <weber@corscience.de>
-To: linux-omap@vger.kernel.org
-Cc: Thomas Weber <weber@corscience.de>,
-        Tony Lindgren <tony@atomide.com> (maintainer:OMAP SUPPORT),
-        Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT),
-        linux-arm-kernel@lists.infradead.org (open list:ARM PORT),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] OMAP2: Devkit8000: Remove double omap_mux_init_gpio
-Date: Tue,  6 Sep 2011 17:11:49 +0200
-Message-Id: <1315321909-5593-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.6.1
-X-Provags-ID: V02:K0:W4GLDas8UJtlY/oqzX5LyNHRvW9YNPeALw6ttOBODms
- 3Co0HWz2KmRI9vV9veSzuuZ9n22K34ANT/TBQ74OTCm7556jqD
- Z0r+U1muIW//hbxhkjilssk9FMrzvMiv0vNBOctzFLHvJng9SM
- 1x7IYolPcLFS4KEI8ijLccnP2vR8kyCoPxxjb0LYka2DlZM0RX
- +1E1Vv5hnRiUmVquvJO1mHwwrOUa55dK6e3CZNBomfK/zW6ZdU
- /yljVvHWFYlO0GFjdXvM5aeV7+gW+VUXASTfFQBSiooA/h3QCA
- ZYOZipGS3Ppa6SO6mHiQVeoFD8jk18xi4JVWDJYW1h2Y9X/HAG
- bUNUDfYqs0eb/7KRT+d5syTL3g06QbnLDbNmR03XJQuHPmoepC
- O5kKzVMyoDL6w==
+	Tue, 6 Sep 2011 11:12:34 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
+        tglx@linutronix.de, anton@samba.org, David Ahern <dsahern@gmail.com>
+Subject: [PATCH v4] perf tool: fix endianness handling of u32 data in samples
+Date: Tue,  6 Sep 2011 09:12:26 -0600
+Message-Id: <1315321946-16993-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the init of card detect pin because
-omap_mux_init_gpio() is called during hsmmc initialization
-for the write protect and card detect pin.
+Currently, analyzing PPC data files on x86 the cpu field is always 0 and
+the tid and pid are backwards. For example, analyzing a PPC file on PPC
+the pid/tid fields show:
+        rsyslogd  1210/1212
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
+and analyzing the same PPC file using an x86 perf binary shows:
+        rsyslogd  1212/1210
+
+The problem is that the swap_op method for samples is
+perf_event__all64_swap which assumes all elements in the sample_data
+struct are u64s. cpu, tid and pid are u32s and need to be handled
+individually. Given that the swap is done before the sample is parsed,
+the simplest solution is to undo the 64-bit swap of those elements when
+the sample is parsed and do the proper swap.
+
+The RAW data field is generic and perf cannot have programmatic knowledge
+of how to treat that data. Instead a warning is given to the user.
+
+Thanks to Anton Blanchard for providing a data file for a mult-CPU
+PPC system so I could verify the fix for the CPU fields.
+
+v3 -> v4:
+- fixed use of WARN_ONCE
+
+v2 -> v3:
+- used WARN_ONCE for message regarding raw data
+- removed struct wrapper around union
+- fixed whitespace issues
+
+v1 -> v2:
+- added a union for undoing the byte-swap on u64 and redoing swap on
+  u32's to address compiler errors (see git commit 65014ab3)
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
 ---
- arch/arm/mach-omap2/board-devkit8000.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ tools/perf/builtin-test.c |    2 +-
+ tools/perf/util/event.h   |    2 +-
+ tools/perf/util/evsel.c   |   54 +++++++++++++++++++++++++++++++++++---------
+ tools/perf/util/session.h |    3 +-
+ 4 files changed, 47 insertions(+), 14 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index f15f2a2..029c08a 100644
---- a/arch/arm/mach-omap2/board-devkit8000.c
-+++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -226,7 +226,6 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
- {
- 	int ret;
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 55f4c76..efe696f 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -561,7 +561,7 @@ static int test__basic_mmap(void)
+ 		}
  
--	omap_mux_init_gpio(29, OMAP_PIN_INPUT);
- 	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
- 	mmc[0].gpio_cd = gpio + 0;
- 	omap2_hsmmc_init(mmc);
+ 		err = perf_event__parse_sample(event, attr.sample_type, sample_size,
+-					       false, &sample);
++					       false, &sample, false);
+ 		if (err) {
+ 			pr_err("Can't parse sample, err = %d\n", err);
+ 			goto out_munmap;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 1d7f664..357a85b 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -186,6 +186,6 @@ const char *perf_event__name(unsigned int id);
+ 
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *sample);
++			     struct perf_sample *sample, bool swapped);
+ 
+ #endif /* __PERF_RECORD_H */
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a03a36b..c5748c5 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -7,6 +7,8 @@
+  * Released under the GPL v2. (and only v2, not any later version)
+  */
+ 
++#include <byteswap.h>
++#include "asm/bug.h"
+ #include "evsel.h"
+ #include "evlist.h"
+ #include "util.h"
+@@ -342,10 +344,20 @@ static bool sample_overlap(const union perf_event *event,
+ 
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+-			     struct perf_sample *data)
++			     struct perf_sample *data, bool swapped)
+ {
+ 	const u64 *array;
+ 
++	/*
++	 * used for cross-endian analysis. See git commit 65014ab3
++	 * for why this goofiness is needed.
++	 */
++	union {
++		u64 val64;
++		u32 val32[2];
++	} u;
++
++
+ 	data->cpu = data->pid = data->tid = -1;
+ 	data->stream_id = data->id = data->time = -1ULL;
+ 
+@@ -366,9 +378,16 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_TID) {
+-		u32 *p = (u32 *)array;
+-		data->pid = p[0];
+-		data->tid = p[1];
++		u.val64 = *array;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++		}
++
++		data->pid = u.val32[0];
++		data->tid = u.val32[1];
+ 		array++;
+ 	}
+ 
+@@ -395,8 +414,15 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_CPU) {
+-		u32 *p = (u32 *)array;
+-		data->cpu = *p;
++
++		u.val64 = *array;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++		}
++
++		data->cpu = u.val32[0];
+ 		array++;
+ 	}
+ 
+@@ -423,18 +449,24 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_RAW) {
+-		u32 *p = (u32 *)array;
++		u.val64 = *array;
++		if (WARN_ONCE(swapped,
++			      "Endianness of raw data not corrected!\n")) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val64 = bswap_64(u.val64);
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++		}
+ 
+ 		if (sample_overlap(event, array, sizeof(u32)))
+ 			return -EFAULT;
+ 
+-		data->raw_size = *p;
+-		p++;
++		data->raw_size = u.val32[0];
+ 
+-		if (sample_overlap(event, p, data->raw_size))
++		if (sample_overlap(event, &u.val32[1], data->raw_size))
+ 			return -EFAULT;
+ 
+-		data->raw_data = p;
++		data->raw_data = &u.val32[1];
+ 	}
+ 
+ 	return 0;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 170601e..974d0cb 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -162,7 +162,8 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+ {
+ 	return perf_event__parse_sample(event, session->sample_type,
+ 					session->sample_size,
+-					session->sample_id_all, sample);
++					session->sample_id_all, sample,
++					session->header.needs_swap);
+ }
+ 
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
 -- 
-1.7.6.1
+1.7.6
 
