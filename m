@@ -1,114 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1IFKmY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 06:42:24 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:18462 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab1IFKmS (ORCPT
-	<rfc822;groupwise-SJayaraman@suse.com:0:0>);
-	Tue, 6 Sep 2011 06:42:18 -0400
-Message-ID: <4E65F8B1.2090505@suse.de>
-Date: Tue, 06 Sep 2011 16:10:49 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-Reply-To: sjayaraman@suse.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	id S1754177Ab1IFKoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 06:44:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23239 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753846Ab1IFKn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 06:43:59 -0400
+Date: Tue, 6 Sep 2011 12:43:47 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] memcg: skip scanning active lists based on individual
+ size
+Message-ID: <20110906104347.GB25053@redhat.com>
+References: <20110831090850.GA27345@redhat.com>
+ <CAEwNFnBSg71QoLZbOqZbXK3fGEGneituU3PmiYTAw1VM3KcwcQ@mail.gmail.com>
+ <20110901090931.c0721216.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110901061540.GA22561@redhat.com>
+ <20110901153148.70452287.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110905182514.GA20793@redhat.com>
+ <20110906183358.0a305900.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>
-CC: Shaohua Li <shaohua.li@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH v3] block: document blk-plug
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110906183358.0a305900.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thus spake Andrew Morton:
+On Tue, Sep 06, 2011 at 06:33:58PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Mon, 5 Sep 2011 20:25:14 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
+> 
+> > On Thu, Sep 01, 2011 at 03:31:48PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 1 Sep 2011 08:15:40 +0200
+> > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > Old implemenation was supporsed to make vmscan to see only memcg and
+> > > ignore zones. memcg doesn't take care of any zones. Then, it uses
+> > > global numbers rather than zones.
+> > > 
+> > > Assume a system with 2 nodes and the whole memcg's inactive/active ratio
+> > > is unbalaned. 
+> > > 
+> > >    Node      0     1
+> > >    Active   800M   30M
+> > >    Inactive 100M   200M
+> > > 
+> > > If we judge 'unbalance' based on zones, Node1's Active will not rotate
+> > > even if it's not accessed for a while.
+> > > If we judge unbalance based on total stat, Both of Node0 and Node 1
+> > > will be rotated.
+> > 
+> > But why should we deactivate on Node 1?  We have good reasons not to
+> > on the global level, why should memcgs silently behave differently?
+> 
+> One reason was I thought that memcg should behave as to have one LRU list,
+> which is not devided by zones and wanted to ignore zones as much
+> as possible. Second reason was that I don't want to increase swap-out
+> caused by memcg limit.
 
-"And I have the usual maintainability whine.  If someone comes up to
-vmscan.c and sees it calling blk_start_plug(), how are they supposed to
-work out why that call is there?  They go look at the blk_start_plug()
-definition and it is undocumented.  I think we can do better than this?"
+You can think of it like this: if every active list is only balanced
+when its inactive counterpart is too small, then the memcg-wide
+proportion of inactive vs. active pages is as desired, too.  So even
+after my change, the 'one big LRU' has the right inactive/active ratio.
 
-Adapted from the LWN article - http://lwn.net/Articles/438256/ by Jens
-Axboe and from an earlier attempt by Shaohua Li attempted to document
-blk-plug.
+On the other hand, the old way could allow for the memcg-level to have
+the right proportion and still thrash one workload that is bound to
+another node even though its inactive > active, but is overshadowed by
+inactive < active workloads on other nodes.
 
-Changes since -v2:
+> > I mostly don't understand it on a semantic level.  vmscan needs to
+> > know whether a certain inactive LRU list has enough reclaim candidates
+> > to skip scanning its corresponding active list.  The global state is
+> > not useful to find out if a single inactive list has enough pages.
+> 
+> Ok, I agree to this. I should add other logic to do what I want.
+> In my series,
+>   - passing nodemask
+>   - avoid overscan
+>   - calculating node weight
+> These will allow me to see what I want.
 
-  * clarify why we need not disable preemption while modifying the plug list.
+What /do/ you want? :) I just don't see your concern.  I mean, yes, no
+increased swapout, but in what concrete scenario could you suspect
+swapping to increase because of this change?
 
-Changes since -v1:
+> > > > > I'll ack when you add performance numbers in changelog.
+> > > > 
+> > > > It's not exactly a performance optimization but I'll happily run some
+> > > > workloads.  Do you have suggestions what to test for?  I.e. where
+> > > > would you expect regressions?
+> > > > 
+> > > Some comparison about amount of swap-out before/after change will be good.
+> > > 
+> > > Hm. If I do...
+> > >   - set up x86-64 NUMA box. (fake numa is ok.)
+> > >   - create memcg with 500M limit.
+> > >   - running kernel make with make -j 6(or more)
+> > > 
+> > > see time of make and amount of swap-out.
+> > 
+> > 4G ram, 500M swap on SSD, numa=fake=16, 10 runs of make -j11 in 500M
+> > memcg, standard deviation in parens:
+> > 
+> > 		seconds		pswpin			pswpout
+> > vanilla:	175.359(0.106)	6906.900(1779.135)	8913.200(1917.369)
+> > patched:	176.144(0.243)	8581.500(1833.432)	10872.400(2124.104)
+> 
+> Hmm. swapin/out seems increased. But hmm...stddev is large.
+> Is this expected ? reason ?
 
-  * explain how blk_plug helps with potential deadlock avoidance.
-  * explain why we need blk-plug.
-  * add a note that cb_list is required by md.
+It's kind of expected because there is only a small number of parallel
+jobs that have bursty memory usage, so the slightest timing variations
+can make the difference between an episode of heavy thrashing and the
+tasks having their bursts at different times and getting along fine.
 
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
----
- block/blk-core.c       |   14 ++++++++++++++
- include/linux/blkdev.h |   24 +++++++++++++++---------
- 2 files changed, 29 insertions(+), 9 deletions(-)
+So we are basically looking at test results that are clustered around
+not one, but several different mean values.  The arithmetic mean is
+not really meaningful for these samples.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 90e1ffd..ea360c8 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2626,6 +2626,20 @@ EXPORT_SYMBOL(kblockd_schedule_delayed_work);
- 
- #define PLUG_MAGIC	0x91827364
- 
-+/**
-+ * blk_start_plug - initialize blk_plug and track it inside the task_struct
-+ * @plug:	The &struct blk_plug that needs to be initialized
-+ *
-+ * Description:
-+ *   Tracking blk_plug inside the task_struct will help with auto-flushing the
-+ *   pending I/O should the task end up blocking between blk_start_plug() and
-+ *   blk_finish_plug(). This is important from a performance perspective, but
-+ *   also ensures that we don't deadlock. For instance, if the task is blocking
-+ *   for a memory allocation, memory reclaim could end up wanting to free a
-+ *   page belonging to that request that is currently residing in our private
-+ *   plug. By flushing the pending I/O when the process goes to sleep, we avoid
-+ *   this kind of deadlocks.
-+ */
- void blk_start_plug(struct blk_plug *plug)
- {
- 	struct task_struct *tsk = current;
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 84b15d5..15b205d 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -863,17 +863,23 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
- extern void blk_put_queue(struct request_queue *);
- 
- /*
-- * Note: Code in between changing the blk_plug list/cb_list or element of such
-- * lists is preemptable, but such code can't do sleep (or be very careful),
-- * otherwise data is corrupted. For details, please check schedule() where
-- * blk_schedule_flush_plug() is called.
-+ * blk_plug allows to build up a queue of related requests by holding the I/O
-+ * fragments for a short period. This allows merging of sequential requests
-+ * into single larger request. As the requests are moved from per-task list to
-+ * the device's request_queue in a batch, this results in improved
-+ * scalability as the lock contention for request_queue lock is reduced.
-+ *
-+ * It is ok not to disable preemption when adding the request to the plug list
-+ * or when attempting merge, because blk_schedule_flush_list() will only flush
-+ * the plug list when the task sleeps by itself. For details, please check
-+ * schedule() where blk_schedule_flush_plug() is called.
-  */
- struct blk_plug {
--	unsigned long magic;
--	struct list_head list;
--	struct list_head cb_list;
--	unsigned int should_sort;
--	unsigned int count;
-+	unsigned long magic; /* detect uninitialized use-cases */
-+	struct list_head list; /* requests */
-+	struct list_head cb_list; /* md requires an unplug callback */
-+	unsigned int should_sort; /*list to be sorted before flushing? */
-+	unsigned int count; /* request count to avoid list getting too big */
- };
- #define BLK_MAX_REQUEST_COUNT 16
- 
+> Anyway, I don't want to disturb you more. Thanks.
+
+I am happy to test if my changes introduce regressions, I don't want
+that, obviously.  But do you have a theory behind your concern that
+swapping could increase?  Just saying, this test request seemed a bit
+random because I don't see where my change would affect this
+particular workload.
+
