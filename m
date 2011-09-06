@@ -1,313 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab1IFBAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 21:00:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37876 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab1IFBAE (ORCPT
+	id S1753502Ab1IFBDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 21:03:40 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:62187 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab1IFBDf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 21:00:04 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: "Indan Zupancic" <indan@nul.nu>
-Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
-Date: Tue, 6 Sep 2011 02:59:58 +0200
-User-Agent: KMail/1.8.2
-Cc: "Denys Vlasenko" <dvlasenk@redhat.com>, "Oleg Nesterov" <oleg@redhat.com>,
-        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
-References: <201109042311.18793.vda.linux@googlemail.com> <1315231572.1888.35.camel@dhcp-25-63.brq.redhat.com> <744dea57ff4cf2cc5a694b743e83e158.squirrel@webmail.greenhost.nl>
-In-Reply-To: <744dea57ff4cf2cc5a694b743e83e158.squirrel@webmail.greenhost.nl>
+	Mon, 5 Sep 2011 21:03:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201109060259.58820.vda.linux@googlemail.com>
+In-Reply-To: <CA+X1aCSMb9CTpoHWv=UiMg-mHkB2ssmKRACtbDofWG=QSxXOdg@mail.gmail.com>
+References: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
+	<1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
+	<CANejiEWadFK9GdXSwKgzNoj1Da_4QTUidTp-6FGkBtZwhbKvfw@mail.gmail.com>
+	<CA+X1aCRSADrUB+YVJ9j5u+VgGn=8fKw7A1eVVzPtODg+hK-B-w@mail.gmail.com>
+	<CANejiEX=S8tyPDhAjm84+9xBNt08Q0mjWHjqh-kFqL4H1ME-RA@mail.gmail.com>
+	<CA+X1aCSMb9CTpoHWv=UiMg-mHkB2ssmKRACtbDofWG=QSxXOdg@mail.gmail.com>
+Date: Tue, 6 Sep 2011 09:03:34 +0800
+X-Google-Sender-Auth: zaeDwYvL7DGsy7yyI-1fEQgBpJA
+Message-ID: <CANejiEV7UfEHEMwokKwE+Pwqn_HRUT0_9wHakhOYj8r0roGYuw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] CFQ: fix handling 'deep' cfqq
+From: Shaohua Li <shli@kernel.org>
+To: Maxim Patlasov <maxim.patlasov@gmail.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 September 2011 19:21, Indan Zupancic wrote:
-> >> The ptrace users who do want group stop to work usually don't want to
-> >> interfere with it, they just want to know about it.
-> >
-> > The point is, they can't "not interfere" with it. __WALL
-> > implicitly reports group-stops.
-> 
-> That can be changed. That is not documented behaviour of __WALL,
-> __WALL is supposed to tell for which tasks to give notifications,
-> not what kind. At least that's the impression after reading the
-> manpage.
-> 
-> If people want group-stop reports, they set WUNTRACED/WSTOPPED.
+2011/8/31 Maxim Patlasov <maxim.patlasov@gmail.com>:
+> Shaohua,
+>
+> Sorry for not getting back to you for long. See please inline comments below.
+>
+>> but the cfq_disk_looks_slow isn't updated if the queue doesn't have 4 requests
+>> or doesn't dispatch > 4 requests, so you always have CFQD_DISK_LOOKS_FAST()
+>> return true if the first slice gets it to true. And if the queue does
+>> dispatch > 4 requests in one jiffy, only cfq_disk_looks_fast is updated,
+>> CFQD_DISK_LOOKS_FAST returns true too. I don't understand when
+>> CFQD_DISK_LOOKS_FAST can be false.
+>
+> The patch essentially gathers events when cfqq experiences deep queue
+> early and dispatches 4 requests in one dispatch round. As soon as such
+> an event detected, we're drop inside outer 'if' clause:
+>
+>> +     if (cfq_cfqq_deep_early(cfqq) && cfqq->n_dispatched >= CFQQ_DEEP_THR) {
+>> +             if (cfqq->first_dispatch == jiffies)
+>> +                     cfqd->cfq_disk_looks_fast++;
+>> +             else
+>> +                     cfqd->cfq_disk_looks_slow++;
+>> +
+>> +             cfqq->first_dispatch = 0;
+>> +             cfqq->n_dispatched = 0;
+>> +             cfq_clear_cfqq_deep_early(cfqq);
+>> +             cfqd->cfq_disk_last_updated = jiffies;
+>> +     }
+>
+> and either increment disk_looks_fast or disk_looks_slow.
+>
+> If the queue doesn't have 4 requests, cfqq is not 'deep' - no events
+> to gather. Neither disk_looks_fast nor disk_looks_slow is updated.
+>
+> If the queue doesn't dispatch 4 requests in a raw, the event will be
+> discarded, and again, neither disk_looks_fast nor disk_looks_slow is
+> updated.
+>
+> If the queue does dispatch > 4 requests in one jiffy, only
+> cfq_disk_looks_fast is updated - that's right. But if the queue
+> dispatches first 4 requests in *more* than one jiffy,
+> cfq_disk_looks_slow is updated.
+So the case is in first round, the queue dispatch > 4 requests in one jiffy,
+looks_fast gets updated. Later, if the queue always only dispatch < 4 requests
+or has < 4 requests queued, no looks_fast/looks_slow gets updated till
+10*HZ later.
+CFQD_DISK_LOOKS_FAST() always returns true in the period. is this sane?
 
-Well, that is your interpretation. The fact is, existing programs
-either deliberately use __WALL in order to see (among other things)
-group-stops of tracees; or use __WALL and don't really care about
-group-stops they are getting - but they were debugged and tested
-on the kernels where group-stops were delivered on __WALL,
-thus they might break if that will stop happening.
-
-
-
-> >>  PTRACE_EVENT_STOP
-> >> makes the knowing slightly easier, but it doesn't fix group stop.
-> >
-> > Correct. PTRACE_LISTEN fixes it.
-> 
-> In a very convoluted way. It fixes the symptomps, but it doesn't fix
-> the problem, it works around it.
-
-Well, as far as I am concerned, PTRACE_LISTEN allows me to achieve what I need.
-
-If you don't like it just on the conceptual grounds, it may be
-a matter of taste.
-
-Do you see an actual problem with it, as in "something doesn't work right"?
-
-
-> >> making SIGSTOP behaviour like any other signal behaves with ptrace. To get
-> >> there, when PTRACE_O_SANE is set, the user space behaviour changes seen are
-> >> as follows:
-> >>
-> >> - In cases that ptrace sends a SIGSTOP, SIGTRAP is sent instead.
-> >>
-> >>   (Your 4th proposal). So that ptrace never changes the group stop state of a task.
-> >
-> > Problem. Now we interfere with SIGSTRAPs. Yes, there are users who want
-> > to be able to see real SIGTRAPs they send to the program,
-> > or ones generated by, say, int3 instruction on x86.
-> 
-> But SIGTRAP is ours, ptrace already sends SIGTRAPS at execve.
-
-...whcih causes problems, and therefore we have PTRACE_O_TRACEEXEC to suppress
-this idiotic post-execve SIGTRAP.
-
-> Only change is 
-> that it also sends one for new childs instead of SIGSTOP.
-
-Racing with user's SIGTRAP does not fix the problem, it merely moves it
-to a different signal. PTRACE_EVENT_STOP thingy fixes the problem once
-and for all.
-
-
-> In any case, this is not a new problem.
-
-That the problem is old doesn't mean we can ignore it.
-
-> But in the normal case non-ptrace traps aren't seen by tracees, if the tracer
-> takes some care (if it doesn't, then current program don't get their SIGTRAP
-> either).
-
-I don't understand this part.
-
-
-> > How will strace or gdb show that process has stopped, if it doesn't know
-> > it? With SIGSTOP it's not really important (user can infer that), but
-> > what about SIGTSTP? If strace says "SIGTSTP was delivered", is process
-> > stopped now, or is it looping in the SIGTSTP handler?
-> 
-> Never heard of SIGTSTP, I don't know TTY black magic.
-> 
-> Tracers that want to get group stop notifications will set WSTOPPED and get
-> that information that way. But as ptrace won't generate any SIGSTOPs, they
-> don't have to use GETSIGINFO to know if it came from ptrace or not: It never
-> does.
-
-Drats. In your proposal, if I'd set WSTOPPED, I will get group-stops, right?
-
-How in your proposed solution can I "restart and cancel group-stop" after
-group-stop? And how can I "restart and wait for a SIGCONT"?
-
-
-> >>   This prevents duplicate SIGSTOP events and the need to distinguish them
-> >>   from each other. No need for C.1 (PTRACE_EVENT_STOP). But if you still
-> >>   want it, it should be enabled by PTRACE_O_SANE too.
-> >
-> > I'm confused now. Does PTRACE_O_SANE disable or enable group-stop
-> > notifications?
-> 
-> Neither, it makes waitid() honour the presence and absence of the WSTOPPED
-> flag. It gives that choice back to the tracer.
-> 
-> >
-> >> - PTRACE_CONT does not continue a stopped task.
-> >
-> > You just said we will not get group-stops. How we can PTRACE_CONT from
-> > group-stop if we don't get group-stop?
-> 
-> Why would you want to do that? I think I don't understand you.
-
-Today both strace and gdb want to know about group-stops.
-If you think they should not, well, tough luck: their maintainers
-think otherwise.
-
-
-> > In case you meant that "if we request group-stop notifications by using
-> > __WALL | WSTOPPED, and we get group-stop notification, and we do
-> > PTRACE_CONT, then task does not run (it sits in group-stop until SIGCONT
-> > or death)",
-> 
-> Exactly.
-> 
-> A group-stop notification is not really a ptrace event (maybe it is now),
-> so PTRACE_CONT wouldn't be needed. It's just a group stop notification,
-> not a freeze, report and wait event, like signals.
-
-Yes, this would be a reasonable API model. PTRACE_CONT cancels group-stop,
-and *doing nothing* leaves task in the group-stop. One problem with this:
-many ptrace ops (such as GETREGS) are only allowed in ptrace stops.
-If you don't consider group-stop to be a ptrace-stop, then no such
-ops are allowed. In fact, even restart ops need stopped tracee, so PTRACE_CONT
-is illegal too. IOW: in this model, kernel doesn't know when we decided
-to go down *do nothing* route. From kernel POW, it is confused. Maybe we do
-want to PTRACE_CONT, but just didn't get around to it?
-
-
-> > then we have a problem: gdb can't use this interface, it
-> > needs to be able to restart the thread (only one thread, not all of
-> > them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
-> > weird, but it's the real requirement from gdb users.
-> 
-> Is that true? Isn't a SIGCONT sent to the TID only for that thread instead
-> of the whole group? That's slightly inconvenient indeed. Perhaps this
-> limitation can be fixed? Might be troublesome for the main thread.
-
-This is how stopping/starting works. It's per-process, not per-thread.
-Regardless of the thread it is sent to, stop signals stop all threads,
-and SIGCONT restarts all of them.
-
-
-> But this is for a group stop initiated by gdb, I suppose?
-
-It is true for any king of group-stop.
-
-> In that case gdb 
-> can just let the threads hang in the signal delivery path, and continue them
-> one by one, like it does now.
-
-It can't, since it doesn't know about signal handlers.
-
-> Any group signal would work for this, doesn't 
-> have to be SIGSTOP. E.g. a queueing rt signal that is blocked and never seen
-> by the tracee.
-
-I repeat: it is not about signals sent by gdb. It is about siganls sent by anyone.
-
-
-> >>  No need for PTRACE_LISTEN. Tracer has
-> >>   still full control over stopped state of tracee because it can block SIGSTOP
-> >>   and SIGCONT signals, and send them itself.
-> >
-> > SIGCONT's side effect of waking up from group-stop can't be blocked.
-> > SIGCONT always wakes up all threads in thread group.
-> > Using SIGCONT to control tracee will race with SIGCONTs from other
-> > sources.
-> >
-> > This makes SIGCONT a too coarse instrument for the job.
-> 
-> No kidding. Perhaps the solution is to not use group stops for this in
-> the first place.
-> 
-> But PTRACE_CONT results in one traced task running while the rest is still
-> stopped, that could be called an often unwanted side effect too.
-
-Yes. But gdb people want that. I and Oleg tried to persuade them to stop
-wanting that. The end result is that they persuaded us that it's needed.
-
-
-> >>  but it
-> >> has to because it gets multiple events for one SIGSTOP. And strace would
-> >> much prefer it if a SIGCONT on the tracee would continue it again.
-> >
-> > Yes. But gdb prefers otherwise. That's why we need PTRACE_LISTEN for
-> > strace, and PTRACE_CONT for gdb.
-> 
-> Or gdb can stop using group stops to achieve what it wants. Gdb is the 
-> strange use case, strace-like ptrace usage is the more common one. So
-> make the more common case simpler instead of complicating everything
-> for a corner gdb use case (however important it is).
-> 
-> Gdb can't want to have both transparent group stop behaviour, and also
-> hijack group stops for thread running control. Letting it hang in ptrace
-> is fine for gdb, that's what it does now. Let it keep doing it, it can
-> even let it hang in SIGSTOP delivery path, it doesn't really matter.
-> Only change is that tasks are in trapped state instead of actually
-> stopped. That is an improvement, because then unrelated SIGCONT's can't
-> interfere with gdb's debugging. But with PTRACE_CONT not continuing group
-> stopped tasks it gives gdb the ability to transparently debug externally
-> stopped and started tasks. It still can stop all tasks and continue them
-> one by one as it does now.
-
-In short: "screw gdb needs, the elegance of my idea is more important
-that their real world needs". Sorry, but we tried that, and it leads nowhere.
-
-
-> >> > As I said, gdb already depends on current ptrace behavior. We can't break it.
-> >>
-> >> Then it won't use all those new flags either, and adding anything new makes
-> >> no sense.
-> >
-> > Yes... until gdb will want to give user a choice after SIGSTOP: continue
-> > to sit in group-stop until SIGCONT (wasn't possible until
-> > PTRACE_LISTEN), or continue executing (gdb's current behavior if user
-> > uses "continue" command). Therefore, gdb needs a way to do both.
-> 
-> But are users expected to send SIGSTOPs manually when debugging, instead
-> of hitting ctlr+z or whatever?
-
-We don't know. We should handle the widest possible set of scenarios:
-^Z, manual signals, signals sent by kernel on bg I/O (such as SIGTTIN)...
-
-
-> Anyway, gdb can give this choice when it receives the SIGSTOP:
-> If users want it to go into group stop, gdb does PTRACE_CONT.
-> If users want to selectively continue running, gdb continues
-> select threads while blocking the SIGSTOP delivery.
-
-Here we go again. If gdb would block signal delivery, HOW DOES
-IT KNOW THAT THIS SIGNAL IS GOING TO CAUSE GROUP-STOP?
-Think about receiving SIGTSTP. Will it cause group-stop?
-
-
-> >> The behaviour you're defending is generally subtle and unexpected behaviour
-> >> that most ptrace users don't expect.
-> >
-> > What behavior do I defend? That we get both signal-stops and
-> > group-stops? I don't "defend" it, it's just what we _already have_. We
-> > need to do minimal amount of changes.
-> 
-> The group stop interference behaviour. I don't think that adding
-> PTRACE_INTERRUPT, PTRACE_LISTEN and all those new options is the
-> minimal amount of change, especially not when including the user
-> space changes needed to make use of this.
-
-Current group-stop fix is EXACTLY one new ptrace command: PTRACE_LISTEN.
-How you can make it more minimal, I have no idea.
-
-
-> > In short, you propose to make it possible to switch off group-stop
-> > notification.
-> 
-> That is just part of the proposal, the main this is to not let PTRACE_CONT
-> continue a stopped task.
-
-This will break gdb. I told this several times already. Not acceptable.
-
-
-> Switching off group-stop notifications makes it 
-> only easier to use ptrace when not specifically interested in group stops.
-
-Solution in the search of a problem.
-
-
-> > (2) in gdb case, this may be too constraining for us: we want to be able
-> > to decide what to do on group-stop *after* group-stop has happened!
-> 
-> See above, that should be still possible. Or am I missing something?
-
-Yes, you miss the fact that inferring group-stop on signal delivery
-is not reliable. The correct way to do it is to not *infer* it, but
-*observe* it when it really happens.
-
--- 
-vda
+Thanks,
+Shaohua
