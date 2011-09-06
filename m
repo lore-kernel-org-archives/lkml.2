@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab1IFMoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 08:44:17 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:42565 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab1IFMoM (ORCPT
+	id S1754484Ab1IFNBG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 09:01:06 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51482 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956Ab1IFNA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 08:44:12 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LR3Q0B-01-8L4-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH] iommu/core: Use PAGE_SIZE instead of hard-coded value
-Date: Tue, 6 Sep 2011 14:42:06 +0200
-Message-ID: <1315312926-8064-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 6 Sep 2011 09:00:56 -0400
+To: djwong@us.ibm.com
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH v1 00/16] ext4: Add metadata checksumming
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20110901003030.31048.99467.stgit@elm3c44.beaverton.ibm.com>
+	<CAGpXXZ+Cq9_aS4BPC5BKNj6aWHzzL7+e8ZQKO3=C7UV+xcnqWA@mail.gmail.com>
+	<20110902182214.GC12086@tux1.beaverton.ibm.com>
+	<yq1d3fgwn5c.fsf@sermon.lab.mkp.net>
+	<20110905184524.GQ12086@tux1.beaverton.ibm.com>
+Date: Tue, 06 Sep 2011 08:59:53 -0400
+In-Reply-To: <20110905184524.GQ12086@tux1.beaverton.ibm.com> (Darrick
+	J. Wong's message of "Mon, 5 Sep 2011 11:45:24 -0700")
+Message-ID: <yq18vq17rna.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-OriginatorOrg: amd.com
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E66197B.016D:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the hard-coded 4kb by PAGE_SIZE to make iommu-api
-implementations possible on architectures where
-PAGE_SIZE != 4kb.
+>>>>> "Darrick" == Darrick J Wong <djwong@us.ibm.com> writes:
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/iommu.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Darrick> I have some benchmarking data for various crc algorithms here:
+Darrick> https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums#Benchmarking
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index e61a9ba..30b0644 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -100,7 +100,7 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
- {
- 	size_t size;
- 
--	size         = 0x1000UL << gfp_order;
-+	size         = PAGE_SIZE << gfp_order;
- 
- 	BUG_ON(!IS_ALIGNED(iova | paddr, size));
- 
-@@ -112,7 +112,7 @@ int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
- {
- 	size_t size;
- 
--	size         = 0x1000UL << gfp_order;
-+	size         = PAGE_SIZE << gfp_order;
- 
- 	BUG_ON(!IS_ALIGNED(iova, size));
- 
+I've been meaning to update my own benchmark results from a few years
+ago but your table is much more comprehensive. Nice work!
+
+
+Darrick> Yes, the only downside to the slice-by-8 method is that it eats
+Darrick> 8K of data cache for the table.  Not a huge issue on recent
+Darrick> Intel and POWER where the L1D is 32K, but I imagine it could be
+Darrick> painful elsewhere.
+
+I'll see if I can come up with something better for the DIF CRC. It's
+always calculated over either 512 or 4096-byte buffers.
+
 -- 
-1.7.4.1
-
-
+Martin K. Petersen	Oracle Linux Engineering
