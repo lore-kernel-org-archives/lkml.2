@@ -1,98 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab1IFCZk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Sep 2011 22:25:40 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:5310
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751447Ab1IFCZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Sep 2011 22:25:33 -0400
-X-SpamScore: -17
-X-BigFish: VS-17(zz936eK1432N98dKzz1202hzz8275ch8275dh2ba5Mz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 6 Sep 2011 10:34:32 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <khilman@ti.com>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <rjw@sisk.pl>, <ccross@android.com>
-Subject: Re: [PATCH v2 0/5] CPU PM notifiers
-Message-ID: <20110906023430.GA7651@S2100-06.ap.freescale.net>
-References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	id S1751766Ab1IFCfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Sep 2011 22:35:18 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33123 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751280Ab1IFCfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Sep 2011 22:35:11 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: Glauber Costa <glommer@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] nitpick: enclose hotplug only variables in hotplug ifdef
+Date: Mon,  5 Sep 2011 23:34:19 -0300
+Message-Id: <1315276459-10775-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 03, 2011 at 08:09:10PM +0530, Santosh Shilimkar wrote:
-> Updates V2:
-> - The CPU PM notifiers are moved to generic level instead of keeping
->   it ARM specific as per Rafael's comment.
-> - To avoid every driver duplicating the sys-core ops and cpu pm notfiers,
->   the CPU PM common notifier is registering it in one place so that
->   suspend is taken care.
-> - CPU COMPLEX events are renamed to more appropriate CPU CLUSTER.
-> - GIC distributor is not disabled to avoid the live locks. This is
->   observed with CPUIDLE cases where at time CPU cluster fails to
->   transition to low power states. As such there was no need to
->   disable distributor in first place since on cluster reset, it
->   will get disabled anyways.
-> - In VFP code, syscore ops are dropped in favour of CPU PM
->   notifiers since S2R is already handled in core CPU PM notifiers.
-> - The last patch is an independent patch but can be pushed along with
->   the other GIC changes done here. 
->  
-> V1: [http://lwn.net/Articles/447259/]
-> 
-> This patch set tries to address concerns with platform pm code
-> calling into the driver for every block in the Cortex A9s
-> during idle, hotplug, and suspend.  The first patch adds cpu pm
-> notifiers that can be called by platform code, the second uses
-> the notifier to save and restore the GIC state, and the third
-> saves the VFP state.
-> 
-> The notifiers are used for two types of events, CPU PM events and
-> CPU cluster PM events.  CPU PM events are used to save and restore
-> per-cpu context when a single CPU is preparing to enter or has
-> just exited a low power state.  For example, the VFP saves the
-> last thread context, and the GIC saves banked CPU registers.
-> 
-> CPU cluster events are used after all the CPUs in a power domain
-> have been prepared for the low power state.  The GIC uses these
-> events to save global register state.
-> 
-> L2 cache is not covered by this patch set, as the determination
-> of when the L2 is reset and when it is retained is
-> platform-specific, and most of the APIs necessary are already
-> 
-> 
-> The series is tested with OMAP4 with S2R and CPUIDLE. 
-> 
-> The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
-> 
->   Linux 3.1-rc4 (2011-08-28 21:16:01 -0700)
-> 
-> Colin Cross (5):
->       cpu_pm: Add cpu power management notifiers
->       cpu_pm: call notifiers during suspend
->       ARM: gic: Use cpu pm notifiers to save gic state
->       ARM: vfp: Use cpu pm notifiers to save vfp state
->       ARM: gic: Allow gic arch extensions to provide irqchip flags
-> 
-Really appreciate the patches.  Now platform code needs to do nothing
-to have GIC back to work across suspend/resume cycle.
+These variables are only used when CONFIG_HOTPLUG is enabled,
+they are ifdef'ed everywhere else. So don't define them when
+CONFIG_HOTPLUG is not enabled.
 
-On i.MX6Q:
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ lib/percpu_counter.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Tested-and-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index 28f2c33..30cbe47 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -10,8 +10,10 @@
+ #include <linux/module.h>
+ #include <linux/debugobjects.h>
+ 
++#ifdef CONFIG_HOTPLUG_CPU
+ static LIST_HEAD(percpu_counters);
+ static DEFINE_MUTEX(percpu_counters_lock);
++#endif
+ 
+ #ifdef CONFIG_DEBUG_OBJECTS_PERCPU_COUNTER
+ 
 -- 
-Regards,
-Shawn
+1.7.6
 
