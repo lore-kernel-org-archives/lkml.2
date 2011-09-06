@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab1IFPkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:40:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53527 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab1IFPkB (ORCPT
+	id S1755122Ab1IFPnF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:43:05 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34245 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab1IFPm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:40:01 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Ian Kent <raven@themaw.net>
-Cc: David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Leonardo Chiquitto <leonardo.lists@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        autofs@linux.kernel.org
-Subject: Re: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
-References: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
-	<17416.1315240659@redhat.com> <87hb4q9b3r.fsf@tucsk.pomaz.szeredi.hu>
-	<1315281208.3210.26.camel@perseus.themaw.net>
-	<87mxeixfaq.fsf@tucsk.pomaz.szeredi.hu>
-	<1315319903.3210.51.camel@perseus.themaw.net>
-Date: Tue, 06 Sep 2011 17:39:53 +0200
-In-Reply-To: <1315319903.3210.51.camel@perseus.themaw.net> (Ian Kent's message
-	of "Tue, 06 Sep 2011 22:38:23 +0800")
-Message-ID: <87ipp5y912.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 6 Sep 2011 11:42:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CANejiEV7UfEHEMwokKwE+Pwqn_HRUT0_9wHakhOYj8r0roGYuw@mail.gmail.com>
+References: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
+	<1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
+	<CANejiEWadFK9GdXSwKgzNoj1Da_4QTUidTp-6FGkBtZwhbKvfw@mail.gmail.com>
+	<CA+X1aCRSADrUB+YVJ9j5u+VgGn=8fKw7A1eVVzPtODg+hK-B-w@mail.gmail.com>
+	<CANejiEX=S8tyPDhAjm84+9xBNt08Q0mjWHjqh-kFqL4H1ME-RA@mail.gmail.com>
+	<CA+X1aCSMb9CTpoHWv=UiMg-mHkB2ssmKRACtbDofWG=QSxXOdg@mail.gmail.com>
+	<CANejiEV7UfEHEMwokKwE+Pwqn_HRUT0_9wHakhOYj8r0roGYuw@mail.gmail.com>
+Date: Tue, 6 Sep 2011 19:42:56 +0400
+Message-ID: <CA+X1aCR6Rptj_7bKf7O7TJ8a9z7AH0vXL90XAgY=+054WegsgQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] CFQ: fix handling 'deep' cfqq
+From: Maxim Patlasov <maxim.patlasov@gmail.com>
+To: Shaohua Li <shli@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Kent <raven@themaw.net> writes:
+Shaohua,
 
-> On Tue, 2011-09-06 at 10:09 +0200, Miklos Szeredi wrote:
->> Ian Kent <raven@themaw.net> writes:
->> 
->> > On Mon, 2011-09-05 at 19:02 +0200, Miklos Szeredi wrote:
->> >> 
->> >> If automounting on lstat(2) is the correct behavior (is it?  why?)  then at
->> >> least it should be enabled by a global switch or mount option, IMO.
->> >
->> > Ideally we wouldn't need to take special precautions for these
->> > operations at all but we can't, especially for GUI environments that
->> > constantly scan file systems on mount/umount activity.
->> >
->> > Historically for autofs, neither stat(2) or lstat(2) would trigger a
->> > mount. With the current implementation stat(2) now does but lstat(2)
->> > doesn't which is a step in the right direction IMHO. So, I recommend we
->> > continue to encourage user space to make the needed changes so we
->> > continue to move in the right direction, and yes, I acknowledge it is a
->> > pain but it'll never get done otherwise.
->> 
->> I'm not quite convinced.  What's the advantage of triggering automount
->> on stat(2)?
->
-> You get the information of the directory of the mounted fs and for many
-> peoples purposes automounting should be transparent so that would be
-> best.
+>> If the queue does dispatch > 4 requests in one jiffy, only
+>> cfq_disk_looks_fast is updated - that's right. But if the queue
+>> dispatches first 4 requests in *more* than one jiffy,
+>> cfq_disk_looks_slow is updated.
+> So the case is in first round, the queue dispatch > 4 requests in one jiffy,
+> looks_fast gets updated. Later, if the queue always only dispatch < 4 requests
+> or has < 4 requests queued, no looks_fast/looks_slow gets updated till
+> 10*HZ later.
+> CFQD_DISK_LOOKS_FAST() always returns true in the period. is this sane?
 
-The same is true for lstat(2).
+Thanks a lot for feedback. I agree, a single accidental event should
+not affect the whole system for so long. What do you think about
+making positive decision only if some amount of events were gathered
+recently:
 
->  
->> 
->> Has anybody complained that stat(2) on the mountpoint doesn't cause an
->> automount?
->
-> Yes, based on the reasoning above.
+#define CFQD_DISK_LOOKS_FAST(cfqd)				    \
+	(cfqd->cfq_disk_looks_fast > cfqd->cfq_disk_looks_slow &&   \
+	 cfqd->cfq_disk_looks_fast + cfqd->cfq_disk_looks_slow > 10)
 
-Would any of those complaints go away if stat(2) did cause an
-automount and lstat(2) didn't?
-
-With AT_NO_AUTOMOUNT I can agree with, that's a flag specifically about
-not automounting.  Unlike AT_SYMLINK_NOFOLLOW which is about following
-symlinks and hasn't got a lot to do with automounts.
+Btw, CFQD_DISK_LOOKS_FAST() affects only idle/noidle behaviour for
+seeky&deep queues. The question is which queues should be regarded as
+'deep'. I tend to think that they experience deep queue quite often
+and regularly. Then the chances to update looks_fast/looks_slow in
+timely manner are high. At least "always ...  has < 4 requests queued"
+is not the case for really 'deep' queues. As for "always only dispatch
+< 4 requests", it's theoretically possible but should not happen often
+for really 'deep' queues. And conversely, if a queue experienced deep
+queue only once, is it good idea to regard it as 'deep' and grant
+idle-window to it?
 
 Thanks,
-Miklos
+Maxim
