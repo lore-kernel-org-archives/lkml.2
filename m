@@ -1,40 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab1IFPE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:04:26 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:56072 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754780Ab1IFPER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:04:17 -0400
-Date: Tue, 6 Sep 2011 17:03:43 +0200
-From: Florian Mickler <florian@mickler.org>
-To: mcarlson@broadcom.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, benli@broadcom.com,
-        mchan@broadcom.com, davem@davemloft.net,
-        Francesco Piccinno <stack.box@gmail.com>
-Subject: re add support for bcm5750
-Message-ID: <20110906170343.09252578@schatten.dmk.lab>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-In-Reply-To: <1280784368-4226-8-git-send-email-mcarlson@broadcom.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754816Ab1IFPFb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:05:31 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:63078 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620Ab1IFPFZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 11:05:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACqU3MXJafAX4Wee8goNtrKF3L1JPCz7xPaQwcQ6nynX60Rrow@mail.gmail.com>
+References: <1313472854-14426-1-git-send-email-lacombar@gmail.com>
+	<CACqU3MWx9Z+2dWP4OjVO+1T+3EsAE0geZhdRM2_B9osKw-Mw2A@mail.gmail.com>
+	<CACqU3MXJafAX4Wee8goNtrKF3L1JPCz7xPaQwcQ6nynX60Rrow@mail.gmail.com>
+Date: Tue, 6 Sep 2011 11:05:25 -0400
+Message-ID: <CACqU3MUnYHB34rtdetYZinknSr3KOEwK0MUdxci7_QPgJ2tnsg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Kbuild/Kconfig
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Arnaud Lacombe <lacombar@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-in https://bugzilla.kernel.org/show_bug.cgi?id=42132 Francesco wrote: 
+On Mon, Aug 29, 2011 at 8:29 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Mon, Aug 22, 2011 at 11:49 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> Hi,
+>>
+>> On Tue, Aug 16, 2011 at 1:34 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>> Hi Michal,
+>>>
+>>> The following small serie unexpose a few Kconfig variable from Kbuild, and
+>>> vice-versa. The idea is that Kbuild is a user of Kconfig, not the other way
+>>> around.
+>>>
+>>> In the same time, fix a couple of place where we hardcode the `.config' string.
+>>>
+>>> Comments Welcome !
+>>>  - Arnaud
+>>>
+>> ping ?
+>>
+> ping^2 ?
+>
+ping^3 ?
 
-> I have a notebook (HP TC4400) which has a BCM5750 ethernet card inside. The
-> ouput of lspci is:
-> 
-> 08:00.0 Ethernet controller [0200]: Broadcom Corporation NetXtreme BCM5750M
-> Gigabit Ethernet [14e4:167c]
-> 
-> Commit 67b284d476bcb3d100e946da23d6cf9acfd0465c removed the support for this
-> device. I wish to have the support for this network card back again. Thanks!
+ - Arnaud
 
-Regards,
-Flo
+>  - Arnaud
+>
+>>  - Arnaud
+>>
+>>> Arnaud Lacombe (4):
+>>>  kbuild: introduce KBUILD_CONFIG; unexpose KCONFIG_CONFIG
+>>>  kbuild: reduce kbuild invasivity within kconfig
+>>>  kbuild: do not hardcode .config
+>>>  kconfig: do not hardcode .config
+>>>
+>>>  Makefile                                |   20 ++++++++++++++------
+>>>  arch/arm/boot/compressed/Makefile       |    2 +-
+>>>  arch/unicore32/boot/compressed/Makefile |    2 +-
+>>>  scripts/kconfig/Makefile                |   31 ++++++++++++++++---------------
+>>>  4 files changed, 32 insertions(+), 23 deletions(-)
+>>>
+>>> --
+>>> 1.7.6.153.g78432
+>>>
+>>>
+>>
+>
