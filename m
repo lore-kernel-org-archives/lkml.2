@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab1IFIsg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:48:36 -0400
-Received: from david.siemens.de ([192.35.17.14]:18600 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753810Ab1IFIsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:48:31 -0400
-Message-ID: <4E65DE44.5090002@siemens.com>
-Date: Tue, 06 Sep 2011 10:48:04 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753942Ab1IFIuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:50:14 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56505 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab1IFIuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 04:50:10 -0400
+Date: Tue, 6 Sep 2011 09:49:38 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>
+Subject: Re: [PATCH] gpio: rewrite U300 GPIO to use gpiolib
+Message-ID: <20110906084938.GI6619@n2100.arm.linux.org.uk>
+References: <1315297950-12720-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [RFC] pci: Rework config space blocking services
-References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <4E5BDEAB.5000405@siemens.com> <20110829191858.GA9415@redhat.com> <4E608A51.70509@siemens.com> <20110906055810.GA13286@redhat.com> <4E65C935.9000803@siemens.com> <20110906080410.GD13286@redhat.com> <4E65D981.7070201@siemens.com> <20110906084728.GA16091@redhat.com>
-In-Reply-To: <20110906084728.GA16091@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315297950-12720-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-06 10:47, Michael S. Tsirkin wrote:
-> On Tue, Sep 06, 2011 at 10:27:45AM +0200, Jan Kiszka wrote:
->> On 2011-09-06 10:04, Michael S. Tsirkin wrote:
->>> On Tue, Sep 06, 2011 at 09:18:13AM +0200, Jan Kiszka wrote:
->>>>>> @@ -401,36 +403,58 @@ int pci_vpd_truncate(struct pci_dev *dev, size_t size)
->>>>>>  EXPORT_SYMBOL(pci_vpd_truncate);
->>>>>>
->>>>>>  /**
->>>>>> - * pci_block_user_cfg_access - Block userspace PCI config reads/writes
->>>>>> + * pci_block_cfg_access - Block PCI config reads/writes
->>>>>
->>>>> This comment seems confusing. We don't in fact block all config
->>>>> reads writes. Instead we block userspace accesses and
->>>>> concurrent block requests.
->>>>
->>>> I'm open for a better suggestion that summarize the more verbose (and
->>>> hopefully clearer) explanation below.
->>>
->>> I think the problem is, it doesn't block config access
->>> and we call it pci_block_cfg_access.
->>>
->>> Thinking about it, doesn't this behave somewhat like a lock?
->>> How about
->>>
->>> pci_user_cfg_access_trylock
->>> pci_user_cfg_access_lock
->>> pci_user_cfg_access_unlock
->>>
->>> And then:
->>>  * pci_user_cfg_access_lock - Lock userspace PCI config access
->>
->> Except that the "userspace" here is still only half of the truth
-> 
-> It's the name of the lock :)
+On Tue, Sep 06, 2011 at 10:32:30AM +0200, Linus Walleij wrote:
+> This is based on top of the pending GPIO cleanups in Russells
+> tree, if I can get some ACK on this I presume Russell can
+> apply it to his branch.
 
-Ah, blind. That has to be change as well of course (pci_cfg_access_*lock).
+> diff --git a/arch/arm/mach-u300/include/mach/gpio.h b/arch/arm/mach-u300/include/mach/gpio.h
+> index 430a054..ba224b5 100644
+> --- a/arch/arm/mach-u300/include/mach/gpio.h
+> +++ b/arch/arm/mach-u300/include/mach/gpio.h
+> @@ -13,35 +13,15 @@
+>  #ifndef __MACH_U300_GPIO_H
+>  #define __MACH_U300_GPIO_H
+>  
+> +#include <linux/io.h>
+> +#include <mach/hardware.h>
+> +#include <asm/irq.h>
+> +#include <asm-generic/gpio.h>
+>  
+> +/* Map these overrides to gpiolib functions, simply */
+> +#define gpio_get_value  __gpio_get_value
+> +#define gpio_set_value  __gpio_set_value
+> +#define gpio_cansleep   __gpio_cansleep
+> +#define gpio_to_irq     __gpio_to_irq
+>  
+> +#endif
 
-Jan
+This is how mach/gpio.h ends up looking - two things:
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+1. is there any reason for asm/irq.h and linux/io.h in there?
+2. asm/gpio.h already includes asm-generic/gpio.h and defines
+   the dispatchers for the trivial case.
+
+So, I think this is how it should look:
+
+#ifndef __MACH_U300_GPIO_H
+#define __MACH_U300_GPIO_H
+#include <mach/hardware.h>
+#endif
+
+Or even just:
+
+/* empty */
+
+if mach/hardware.h include is not required for ARCH_NR_GPIOS.
