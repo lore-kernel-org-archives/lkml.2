@@ -1,15 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1IFIq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 04:46:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33550 "EHLO mx1.redhat.com"
+	id S1753936Ab1IFIsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 04:48:36 -0400
+Received: from david.siemens.de ([192.35.17.14]:18600 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753296Ab1IFIqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 04:46:53 -0400
-Date: Tue, 6 Sep 2011 11:47:28 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
+	id S1753810Ab1IFIsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 04:48:31 -0400
+Message-ID: <4E65DE44.5090002@siemens.com>
+Date: Tue, 06 Sep 2011 10:48:04 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
@@ -17,81 +20,53 @@ Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Brian King <brking@us.ibm.com>,
         "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>
 Subject: Re: [RFC] pci: Rework config space blocking services
-Message-ID: <20110906084728.GA16091@redhat.com>
-References: <20110829150552.GA6851@redhat.com>
- <4E5BB358.3060705@siemens.com>
- <4E5BDEAB.5000405@siemens.com>
- <20110829191858.GA9415@redhat.com>
- <4E608A51.70509@siemens.com>
- <20110906055810.GA13286@redhat.com>
- <4E65C935.9000803@siemens.com>
- <20110906080410.GD13286@redhat.com>
- <4E65D981.7070201@siemens.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E65D981.7070201@siemens.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <4E5BDEAB.5000405@siemens.com> <20110829191858.GA9415@redhat.com> <4E608A51.70509@siemens.com> <20110906055810.GA13286@redhat.com> <4E65C935.9000803@siemens.com> <20110906080410.GD13286@redhat.com> <4E65D981.7070201@siemens.com> <20110906084728.GA16091@redhat.com>
+In-Reply-To: <20110906084728.GA16091@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 10:27:45AM +0200, Jan Kiszka wrote:
-> On 2011-09-06 10:04, Michael S. Tsirkin wrote:
-> > On Tue, Sep 06, 2011 at 09:18:13AM +0200, Jan Kiszka wrote:
-> >>>> @@ -401,36 +403,58 @@ int pci_vpd_truncate(struct pci_dev *dev, size_t size)
-> >>>>  EXPORT_SYMBOL(pci_vpd_truncate);
-> >>>>
-> >>>>  /**
-> >>>> - * pci_block_user_cfg_access - Block userspace PCI config reads/writes
-> >>>> + * pci_block_cfg_access - Block PCI config reads/writes
-> >>>
-> >>> This comment seems confusing. We don't in fact block all config
-> >>> reads writes. Instead we block userspace accesses and
-> >>> concurrent block requests.
-> >>
-> >> I'm open for a better suggestion that summarize the more verbose (and
-> >> hopefully clearer) explanation below.
-> > 
-> > I think the problem is, it doesn't block config access
-> > and we call it pci_block_cfg_access.
-> > 
-> > Thinking about it, doesn't this behave somewhat like a lock?
-> > How about
-> > 
-> > pci_user_cfg_access_trylock
-> > pci_user_cfg_access_lock
-> > pci_user_cfg_access_unlock
-> > 
-> > And then:
-> >  * pci_user_cfg_access_lock - Lock userspace PCI config access
+On 2011-09-06 10:47, Michael S. Tsirkin wrote:
+> On Tue, Sep 06, 2011 at 10:27:45AM +0200, Jan Kiszka wrote:
+>> On 2011-09-06 10:04, Michael S. Tsirkin wrote:
+>>> On Tue, Sep 06, 2011 at 09:18:13AM +0200, Jan Kiszka wrote:
+>>>>>> @@ -401,36 +403,58 @@ int pci_vpd_truncate(struct pci_dev *dev, size_t size)
+>>>>>>  EXPORT_SYMBOL(pci_vpd_truncate);
+>>>>>>
+>>>>>>  /**
+>>>>>> - * pci_block_user_cfg_access - Block userspace PCI config reads/writes
+>>>>>> + * pci_block_cfg_access - Block PCI config reads/writes
+>>>>>
+>>>>> This comment seems confusing. We don't in fact block all config
+>>>>> reads writes. Instead we block userspace accesses and
+>>>>> concurrent block requests.
+>>>>
+>>>> I'm open for a better suggestion that summarize the more verbose (and
+>>>> hopefully clearer) explanation below.
+>>>
+>>> I think the problem is, it doesn't block config access
+>>> and we call it pci_block_cfg_access.
+>>>
+>>> Thinking about it, doesn't this behave somewhat like a lock?
+>>> How about
+>>>
+>>> pci_user_cfg_access_trylock
+>>> pci_user_cfg_access_lock
+>>> pci_user_cfg_access_unlock
+>>>
+>>> And then:
+>>>  * pci_user_cfg_access_lock - Lock userspace PCI config access
+>>
+>> Except that the "userspace" here is still only half of the truth
 > 
-> Except that the "userspace" here is still only half of the truth
+> It's the name of the lock :)
 
-It's the name of the lock :)
+Ah, blind. That has to be change as well of course (pci_cfg_access_*lock).
 
-> and I
-> prefer to drop it, the naming locks good to me.
+Jan
 
-OK, I think it's acceptable.
-
-> >  *
-> >  * When locked, any userspace reads or writes to config space
-> >  * and concurrent lock requests will sleep, and trylock requests
-> >  * will fail, until pci_user_cfg_access_unlock is called.
-> > 
-> > I had a brief thought of using an rwsem internally, but
-> > this would make trylock fail if userspace does config read,
-> > changing semantics.
-> 
-> Also, I bet we would make lockdep unhappy when calling
-> down_write_trylock from IRQ context.
-> 
-> Jan
-
-I think I did this at some point, should be fine.
-But whatever.
-
-> -- 
-> Siemens AG, Corporate Technology, CT T DE IT 1
-> Corporate Competence Center Embedded Linux
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
