@@ -1,94 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab1IFWeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 18:34:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47255 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1IFWeO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 18:34:14 -0400
-Date: Wed, 7 Sep 2011 00:34:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-In-Reply-To: <20110906220827.GA1800@redhat.com>
-Message-ID: <alpine.LFD.2.02.1109070032380.2723@ionos>
-References: <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com> <20110906031411.GA24024@alboin.amr.corp.intel.com> <20110906145124.GA15390@redhat.com> <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <alpine.LFD.2.02.1109061823100.2723@ionos>
- <20110906184926.GA25997@redhat.com> <alpine.LFD.2.02.1109062110090.2723@ionos> <20110906192626.GA27362@redhat.com> <alpine.LFD.2.02.1109062134010.2723@ionos> <20110906220827.GA1800@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753727Ab1IFWiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 18:38:17 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:55762 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752621Ab1IFWiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 18:38:13 -0400
+Message-ID: <4E66A0A9.3060403@parallels.com>
+Date: Tue, 6 Sep 2011 19:37:29 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Greg Thelen <gthelen@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
+        <xemul@parallels.com>, "David S. Miller" <davem@davemloft.net>,
+        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] per-cgroup tcp buffer limitation
+References: <1315276556-10970-1-git-send-email-glommer@parallels.com> <CAHH2K0aJxjinSu0Ek6jzsZ5dBmm5mEU-typuwYWYWEudF2F3Qg@mail.gmail.com> <4E664766.40200@parallels.com> <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com>
+In-Reply-To: <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.132.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011, Oleg Nesterov wrote:
+On 09/06/2011 07:12 PM, Greg Thelen wrote:
+> On Tue, Sep 6, 2011 at 9:16 AM, Glauber Costa<glommer@parallels.com>  wrote:
+>> On 09/06/2011 01:08 PM, Greg Thelen wrote:
+>>>
+>>> On Mon, Sep 5, 2011 at 7:35 PM, Glauber Costa<glommer@parallels.com>
+>>>   wrote:
+>>>>
+>>>> This patch introduces per-cgroup tcp buffers limitation. This allows
+>>>> sysadmins to specify a maximum amount of kernel memory that
+>>>> tcp connections can use at any point in time. TCP is the main interest
+>>>> in this work, but extending it to other protocols would be easy.
+>>
+>> Hello Greg,
+>>
+>>> With this approach we would be giving admins the ability to
+>>> independently limit user memory with memcg and kernel memory with this
+>>> new kmem cgroup.
+>>>
+>>> At least in some situations admins prefer to give a particular
+>>> container X bytes without thinking about the kernel vs user split.
+>>> Sometimes the admin would prefer the kernel to keep the total
+>>> user+kernel memory below a certain threshold.  To achieve this with
+>>> this approach would we need a user space agent to monitor both kernel
+>>> and user usage for a container and grow/shrink memcg/kmem limits?
+>>
+>> Yes, I believe so. And this is not only valid for containers: the
+>> information we expose in proc, sys, cgroups, etc, is always much more fine
+>> grained than a considerable part of the users want. Tools come to fill this
+>> gap.
+>
+> In your use cases do jobs separately specify independent kmem usage
+> limits and user memory usage limits?
 
-> On 09/06, Thomas Gleixner wrote:
-> >
-> > On Tue, 6 Sep 2011, Oleg Nesterov wrote:
-> >
-> > > But how this can help? Suppose that the task is preempted right
-> > > after dequeue_signal() drops ->siglock. We need rcu_read_lock()
-> > > before unlock then, no?
-> >
-> > Crap, you are right, but that's fortunately an easy to solve one :)
-> 
-> Yes, this is solvable. But I think we can do something better.
-> 
-> > > And. This breaks the accounting logic. I mean the patch from Andi
-> > > which adds the limits.
-> >
-> > That's a different problem and really, it does not break it by any
-> > means. When the timer is released, then the count is decreased and we
-> > can safely assume that the memory is going to be freed in the next
-> > grace period.
-> 
-> Yes, but this means we need the counter which we do not have.
-> 
-> I think we can avoid this problems. Although I am not sure, I am
-> already sleeping.
-> 
-> 	- we add rcu_read_lock() into dequeueu_signal().
-> 
-> 	- we add the new "struct k_itimer *my_timer" member into
-> 	 siginfo._timer. Like _sys_private it is not passed to
-> 	 user, and perhaps we can kill _sys_private later.
-> 
-> 	 It is initialized in sys_timer_create() along with
-> 	 info.si_tid/etc
-> 
-> 	- release_posix_timer() nullifies tmr->sigq->my_timer
-> 
-> 	- do_schedule_next_timer() does
-> 
-> 	 	timr = info->my_timer;
-> 	 	if (!timr)
-> 	 		return;
-> 
-> 		// protected by rcu
-> 
-> 	 	spin_lock_irq(timr->it_lock);
-> 	 	if (!timr->it_signal) {
-> 	 		spin_unlock_irq();
-> 	 		return;
-> 	 	}
-> 
-> 	 	....
-> 
-> This also avoids idr_find(), and we do not need to delay idr_remove().
-> 
-> Possible?
+Yes, because they are different in nature: user memory can be 
+overcommited, kernel memory is pinned by its objects, and can't go to swap.
 
-Sounds reasonable, though I have the same sleep deprivation problem as
-you :) Will have a closer look when awake.
+> I presume for people who want to simply dedicate X bytes of memory to
+> container C that a user-space agent would need to poll both
+> memcg/X/memory.usage_in_bytes and kmem/X/kmem.usage_in_bytes (or some
+> other file) to determine if memory limits should be adjusted (i.e. if
+> kernel memory is growing, then user memory would need to shrink).
+Ok.
 
-Thanks,
+I think memcg's usage is really all you need here. In the end of the 
+day, it tells you how many pages your container has available. The whole
+point of kmem cgroup is not any kind of reservation or accounting.
 
-	tglx
+Once a container (or cgroup) reaches a number of objects *pinned* in 
+memory (therefore, non-reclaimable), you won't be able to grab anything 
+from it.
+> So
+> far my use cases involve a single memory limit which includes both
+> kernel and user memory.  So I would need a user space agent to poll
+> {memcg,kmem}.usage_in_bytes to apply pressure to memcg if kmem grows
+> and visa versa.
+
+Maybe not.
+If userspace memory works for you today (supposing it does), why change?
+Right now you assign X bytes of user memory to a container, and the 
+kernel memory is shared among all of them. If this works for you, 
+kmem_cgroup won't change that. It just will impose limits over which
+your kernel objects can't grow.
+
+So you don't *need* a userspace agent doing this calculation, because 
+fundamentally, nothing changed: I am not unbilling memory in memcg to 
+bill it back in kmem_cg. Of course, once it is in, you will be able to 
+do it in such a fine grained fashion if you decide to do so.
+
+> Do you foresee instantiation of multiple kmem cgroups, so that a
+> process could be added into kmem/K1 or kmem/K2?  If so do you plan on
+> supporting migration between cgroups and/or migration of kmem charge
+> between K1 to K2?
+Yes, each container should have its own cgroup, so at least in the use
+cases I am concerned, we will have a lot of them. But the usual 
+lifecycle, is create, execute and die. Mobility between them
+is not something I am overly concerned right now.
+
+
+>>> Do you foresee the kmem cgroup growing to include reclaimable slab,
+>>> where freeing one type of memory allows for reclaim of the other?
+>>
+>> Yes, absolutely.
+>
+> Small comments below.
+>
+
+>>>>   };
+>>>>
+>>>> +#define sk_memory_pressure(sk)                                         \
+>>>> +({                                                                     \
+>>>> +       int *__ret = NULL;                                              \
+>>>> +       if ((sk)->sk_prot->memory_pressure)                             \
+>>>> +               __ret = (sk)->sk_prot->memory_pressure(sk->sk_cgrp);    \
+>>>> +       __ret;                                                          \
+>>>> +})
+>>>> +
+>>>> +#define sk_sockets_allocated(sk)                               \
+>>>> +({                                                             \
+>>>> +       struct percpu_counter *__p;                             \
+>>>> +       __p = (sk)->sk_prot->sockets_allocated(sk->sk_cgrp);    \
+>>>> +       __p;                                                    \
+>>>> +})
+>
+> Could this be simplified as (same applies to following few macros):
+>
+> static inline struct percpu_counter *sk_sockets_allocated(struct sock *sk)
+> {
+>          return sk->sk_prot->sockets_allocated(sk->sk_cgrp);
+> }
+Yes and no. Right now, I need them to be valid lvalues. But in the 
+upcoming version of the patch, I will drop this requirement. Then
+I will move to inline functions.
+
