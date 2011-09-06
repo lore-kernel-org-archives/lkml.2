@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab1IFVTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 17:19:32 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24526 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425Ab1IFVT1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 17:19:27 -0400
-Date: Tue, 6 Sep 2011 23:21:04 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        J Freyensee <james_p_freyensee@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Rocher <rocher.jeremy@gmail.com>,
-        Sergei Trofimovich <slyfox@gentoo.org>
-Subject: [PATCH] misc/pti: give 'comm' function scope in
- pti_control_frame_built_and_sent()
-Message-ID: <alpine.LNX.2.00.1109062317580.7016@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751366Ab1IFVgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 17:36:37 -0400
+Received: from ka.mail.enyo.de ([87.106.162.201]:45719 "EHLO ka.mail.enyo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791Ab1IFVgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 17:36:31 -0400
+X-Greylist: delayed 3357 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Sep 2011 17:36:31 EDT
+From: Florian Weimer <fw@deneb.enyo.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: RFD: x32 ABI system call numbers
+References: <4E582577.2060805@zytor.com>
+	<CA+55aFzkpt48EPdVrs3aoALXnqAwqHfUCeZOpvf874O8Y8+POQ@mail.gmail.com>
+	<4E582EAA.1040108@zytor.com>
+	<CA+55aFxdRMxWLh1B_8v29qFafM425uH7kbYRfqoPe3TpVwOx-w@mail.gmail.com>
+	<CA+55aFyVmA_26LYaJH8dnFhwo7LWM6Ck7qFxCQvnROEHSuV_aA@mail.gmail.com>
+Date: Tue, 06 Sep 2011 22:40:21 +0200
+In-Reply-To: <CA+55aFyVmA_26LYaJH8dnFhwo7LWM6Ck7qFxCQvnROEHSuV_aA@mail.gmail.com>
+	(Linus Torvalds's message of "Fri, 26 Aug 2011 17:43:40 -0700")
+Message-ID: <877h5lh0ay.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/misc/pti.c::pti_control_frame_built_and_sent() we assign
-'comm' to 'thread_name_p' if (!thread_name). The problem is that 'comm'
-then goes out of scope and later we use 'thread_name_p' which now
-refers to an out-of-scope variable.
-To fix that, simply move 'comm' up to have function scope.
+* Linus Torvalds:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/misc/pti.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+> On Fri, Aug 26, 2011 at 5:36 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> There is *ZERO* reason to not use it. Use the standard 64-bit
+>> structure layout. Why the hell would it be a new system call?
+>
+> Oh, I see why you do that. It's because our 64-bit 'struct stat' uses
+> "unsigned long" etc.
+>
+> Just fix that. Make it use __u64 instead of "unsigned long", and
+> everything should "just work". The 64-bit kernel will not change any
+> ABI, and when you compile your new ia32 model, it will do the right
+> thing too.
 
- Only compile tested.
-
-diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
-index 06df187..0b56e3f 100644
---- a/drivers/misc/pti.c
-+++ b/drivers/misc/pti.c
-@@ -165,6 +165,11 @@ static void pti_write_to_aperture(struct pti_masterchannel *mc,
- static void pti_control_frame_built_and_sent(struct pti_masterchannel *mc,
- 					     const char *thread_name)
- {
-+	/*
-+	 * Since we access the comm member in current's task_struct, we only
-+	 * need to be as large as what 'comm' in that structure is.
-+	 */
-+	char comm[TASK_COMM_LEN];
- 	struct pti_masterchannel mccontrol = {.master = CONTROL_ID,
- 					      .channel = 0};
- 	const char *thread_name_p;
-@@ -172,13 +177,6 @@ static void pti_control_frame_built_and_sent(struct pti_masterchannel *mc,
- 	u8 control_frame[CONTROL_FRAME_LEN];
- 
- 	if (!thread_name) {
--		/*
--		 * Since we access the comm member in current's task_struct,
--		 * we only need to be as large as what 'comm' in that
--		 * structure is.
--		 */
--		char comm[TASK_COMM_LEN];
--
- 		if (!in_interrupt())
- 			get_task_comm(comm, current);
- 		else
--- 
-1.7.6.1
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+And even if you don't want to do that (probably somebody wants to
+recompile broken applications, same rationale as for n32, see
+<http://gcc.gnu.org/ml/gcc/2011-02/msg00243.html>), you can still do
+the translation in user space.  Then tools like strace and valgrind
+just work, and you don't risk introducing kernel vulnerabilities
+through broken translation code.
