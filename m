@@ -1,57 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab1IFNnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 09:43:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35525 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab1IFNnF (ORCPT
+	id S1754623Ab1IFNxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 09:53:15 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:48681 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab1IFNxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 09:43:05 -0400
-MIME-Version: 1.0
-From: Eric Van Hensbergen <ericvh@gmail.com>
-Date: Tue, 6 Sep 2011 08:42:44 -0500
-Message-ID: <CAFkjPTmqABteR=n3x+AVnmn4JZBjsf1EHBvKXkGmv4zK=nUqAw@mail.gmail.com>
-Subject: [GIT PULL] v9fs fixes for 3.1-rc6
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Sep 2011 09:53:11 -0400
+From: Yang Ruirui <hidave.darkstar@gmail.com>
+Reply-To: Yang Ruirui <hidave.darkstar@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH] v4l2: uvcvideo use after free bug fix
+X-Mailer: Modest 3.2
+References: <20110906120808.GC2321@darkstar>
+	 <201109061412.16088.laurent.pinchart@ideasonboard.com>
+	 <201109061502.54340.hverkuil@xs4all.nl>
+	  <201109061530.24925.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201109061530.24925.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=utf-8
+Content-ID: <1315318192.1794.1.camel@Nokia-N900>
+Date: Tue, 06 Sep 2011 22:09:52 +0800
+Message-Id: <1315318192.1794.2.camel@Nokia-N900>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(also sent as a github internal pull-request for fun)
 
-First off, let me apologize.  Vacations and kernel.org disruptions
-have delayed me from getting you these bug fixes sooner in the cycle.
-Beyond the typical bug fixes, there are a couple of protocol "bugs"
-fixed here dealing with lack of foresight in developing some of the
-new protocol extensions that we wanted to fix as soon as possible.
+----- Original message -----
+> Hi,
+> 
+> On Tuesday 06 September 2011 15:02:54 Hans Verkuil wrote:
+> > On Tuesday, September 06, 2011 14:12:14 Laurent Pinchart wrote:
+> > > On Tuesday 06 September 2011 14:08:08 Dave Young wrote:
+> > > > Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+> > > > Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
+> > > > Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+> > > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > > 
+> > > > Unplugging uvc video camera trigger following oops:
+> > > > 
+> > > > eeepc kernel: [ 1393.500719] usb 3-2: USB disconnect, device
+> > > > number 4 eeepc kernel: [ 1393.504351] uvcvideo: Failed to resubmit
+> > > > video URB (-19). eeepc kernel: [ 1495.428853] BUG: unable to
+> > > > handle kernel paging request at 6b6b6bcb eeepc kernel: [
+> > > > 1495.429017] IP: [<b0358d37>]
+> > > > dev_get_drvdata+0x17/0x20 eeepc kernel: [ 1495.429017] *pde =
+> > > > 00000000 eeepc kernel: [ 1495.429017] Oops: 0000 [#1]
+> > > > DEBUG_PAGEALLOC eeepc kernel: [ 1495.429017]
+> > > > eeepc kernel: [ 1495.429017] Pid: 3476, comm: cheese Not tainted
+> > > > 3.1.0-rc3-00270-g7a54f5e-dirty #485 ASUSTeK Computer INC. 900/900
+> > > > eeepc kernel: [ 1495.429017] EIP: 0060:[<b0358d37>] EFLAGS:
+> > > > 00010202 CPU: 0 eeepc kernel: [ 1495.429017] EIP is at
+> > > > dev_get_drvdata+0x17/0x20 eeepc kernel: [ 1495.429017] EAX:
+> > > > 6b6b6b6b EBX: eb08d870 ECX: 00000000 EDX: eb08d930 eeepc kernel: [
+> > > > 1495.429017] ESI: eb08d870 EDI: eb08d870 EBP: d3249cac ESP:
+> > > > d3249cac eeepc kernel: [ 1495.429017]   DS: 007b ES: 007b FS: 0000
+> > > > GS: 00e0 SS: 0068 eeepc kernel: [ 1495.429017] Process cheese
+> > > > (pid: 3476, ti=d3248000 task=df46d870 task.ti=d3248000) eeepc
+> > > > kernel: [ 1495.429017] Stack: eeepc kernel: [ 1495.429017] 
+> > > > d3249cb8 b03e77a1 d307b840 d3249ccc b03e77d1 d307b840 eb08d870
+> > > > eb08d830 eeepc kernel: [ 1495.429017]   d3249ce4 b03ed3b7 00000246
+> > > > d307b840 eb08d870 d3021b80 d3249cec b03ed565 eeepc kernel: [
+> > > > 1495.429017]   d3249cfc b03e044d e8323d10 b06e013c d3249d18
+> > > > b0355fb9 fffffffe d3249d1c eeepc kernel: [ 1495.429017] Call Trace:
+> > > > eeepc kernel: [ 1495.429017]   [<b03e77a1>]
+> > > > v4l2_device_disconnect+0x11/0x30 eeepc kernel: [ 1495.429017] 
+> > > > [<b03e77d1>] v4l2_device_unregister+0x11/0x50 eeepc kernel: [
+> > > > 1495.429017]   [<b03ed3b7>] uvc_delete+0x37/0x110 eeepc kernel: [
+> > > > 1495.429017]   [<b03ed565>] uvc_release+0x25/0x30 eeepc kernel: [
+> > > > 1495.429017]   [<b03e044d>] v4l2_device_release+0x9d/0xc0 eeepc
+> > > > kernel: [ 1495.429017]   [<b0355fb9>] device_release+0x19/0x90
+> > > > eeepc kernel: [ 1495.429017]   [<b03adfdc>] ?
+> > > > usb_hcd_unlink_urb+0x7c/0x90 eeepc kernel: [ 1495.429017] 
+> > > > [<b026b99c>] kobject_release+0x3c/0x90 eeepc kernel: [
+> > > > 1495.429017]   [<b026b960>] ? kobject_del+0x30/0x30 eeepc kernel: [
+> > > > 1495.429017]   [<b026ca4c>] kref_put+0x2c/0x60 eeepc kernel: [
+> > > > 1495.429017]   [<b026b88d>] kobject_put+0x1d/0x50 eeepc kernel: [
+> > > > 1495.429017]   [<b03b2385>] ? usb_autopm_put_interface+0x25/0x30
+> > > > eeepc kernel: [ 1495.429017] [<b03f0e5d>] ?
+> > > > uvc_v4l2_release+0x5d/0xd0 eeepc kernel: [ 1495.429017]
+> > > > [<b0355d2f>] put_device+0xf/0x20 eeepc kernel: [ 1495.429017] 
+> > > > [<b03dfa96>] v4l2_release+0x56/0x60 eeepc kernel: [ 1495.429017] 
+> > > > [<b019c8dc>] fput+0xcc/0x220 eeepc kernel: [ 1495.429017] 
+> > > > [<b01990f4>] filp_close+0x44/0x70 eeepc kernel: [ 1495.429017] 
+> > > > [<b012b238>] put_files_struct+0x158/0x180 eeepc kernel: [
+> > > > 1495.429017]   [<b012b100>] ? put_files_struct+0x20/0x180 eeepc
+> > > > kernel: [ 1495.429017]   [<b012b2a0>] exit_files+0x40/0x50 eeepc
+> > > > kernel: [ 1495.429017]   [<b012b9e7>] do_exit+0x5a7/0x660 eeepc
+> > > > kernel: [ 1495.429017]   [<b0135f72>] ? __dequeue_signal+0x12/0x120
+> > > > eeepc kernel: [ 1495.429017]   [<b055edf2>] ?
+> > > > _raw_spin_unlock_irq+0x22/0x30 eeepc kernel: [ 1495.429017] 
+> > > > [<b012badc>] do_group_exit+0x3c/0xb0 eeepc kernel: [ 1495.429017] 
+> > > > [<b015792b>] ? trace_hardirqs_on+0xb/0x10 eeepc kernel: [
+> > > > 1495.429017] [<b013755f>] get_signal_to_deliver+0x18f/0x570 eeepc
+> > > > kernel: [ 1495.429017] [<b01020f7>] do_signal+0x47/0x9e0
+> > > > eeepc kernel: [ 1495.429017]   [<b055edf2>] ?
+> > > > _raw_spin_unlock_irq+0x22/0x30 eeepc kernel: [ 1495.429017] 
+> > > > [<b015792b>] ? trace_hardirqs_on+0xb/0x10 eeepc kernel: [
+> > > > 1495.429017] [<b0123300>] ? T.1034+0x30/0xc0
+> > > > eeepc kernel: [ 1495.429017]   [<b055c45f>] ? schedule+0x29f/0x640
+> > > > eeepc kernel: [ 1495.429017]   [<b0102ac8>]
+> > > > do_notify_resume+0x38/0x40 eeepc kernel: [ 1495.429017] 
+> > > > [<b055f154>] work_notifysig+0x9/0x11 eeepc kernel: [ 1495.429017]
+> > > > Code: e5 5d 83 f8 01 19 c0 f7 d0 83 e0 f0 c3 8d b4 26 00 00 00 00
+> > > > 55 85 c0 89 e5 75 09 31 c0 5d c3 90 8d 74 26 00 8b 40 04 85 c0 74
+> > > > f0 <8b> 40 60 5d c3 8d 74 26 00 55 89 e5 53 89 c3 83 ec 04 8b 40
+> > > > 04 eeepc kernel: [ 1495.429017] EIP: [<b0358d37>]
+> > > > dev_get_drvdata+0x17/0x20 SS:ESP 0068:d3249cac eeepc kernel: [
+> > > > 1495.429017] CR2: 000000006b6b6bcb eeepc kernel: [ 1495.466975]
+> > > > uvcvideo: Failed to resubmit video URB (-27). eeepc kernel: [
+> > > > 1495.467860] uvcvideo: Failed to resubmit video URB (-27). eeepc
+> > > > kernel: last message repeated 3 times eeepc kernel: [ 1495.512610]
+> > > > ---[ end trace 73ec16848794e5a5 ]---
+> > > > 
+> > > > For uvc device, dev->vdev.dev is the &intf->dev,
+> > > > 
+> > > > uvc_delete code is as below:
+> > > >     usb_put_intf(dev->intf);
+> > > >     usb_put_dev(dev->udev);
+> > > >    
+> > > >     uvc_status_cleanup(dev);
+> > > >     uvc_ctrl_cleanup_device(dev);
+> > > > 
+> > > > ## the intf dev is released above, so below code will oops.
+> > > > 
+> > > >     if (dev->vdev.dev)
+> > > >    
+> > > >         v4l2_device_unregister(&dev->vdev);
+> > > > 
+> > > > Fix it by get_device in v4l2_device_register and put_device in
+> > > > v4l2_device_disconnect ---
+> > > > 
+> > > > drivers/media/video/v4l2-device.c |       2 ++
+> > > > 1 file changed, 2 insertions(+)
+> > > > 
+> > > > diff --git a/drivers/media/video/v4l2-device.c
+> > > > b/drivers/media/video/v4l2-device.c index c72856c..e6a2c3b 100644
+> > > > --- a/drivers/media/video/v4l2-device.c
+> > > > +++ b/drivers/media/video/v4l2-device.c
+> > > > @@ -38,6 +38,7 @@ int v4l2_device_register(struct device *dev,
+> > > > struct v4l2_device *v4l2_dev) mutex_init(&v4l2_dev->ioctl_lock);
+> > > > 
+> > > >     v4l2_prio_init(&v4l2_dev->prio);
+> > > >     kref_init(&v4l2_dev->ref);
+> > > > 
+> > > > +    get_device(dev);
+> > > > 
+> > > >     v4l2_dev->dev = dev;
+> > > 
+> > > We store a reference to the device in v4l2_dev, and we use it later.
+> > > We thus need either get a reference to the device (like done by this
+> > > patch), or mandate drivers not to release their reference to the
+> > > device before calling v4l2_device_unregister and/or
+> > > v4l2_device_disconnect (in this case that would mean moving the
+> > > usb_put_intf call after the v4l2_device_unregister call in the
+> > > uvcvideo driver).
+> > > 
+> > > Do you have a preference ?
+> > 
+> > My preference would be to get a reference ourselves,
+> 
+> Sounds good to me.
+> 
+> > but I don't have the time to fully analyze this. So I leave that to
+> > you.
+> 
+> I will pick the patch and push it to v3.1. Dave, your patch fixes a
+> problem   that is not UVC-specific. Do you mind if I rephrase the (pretty
+> verbose)   commit message to explain the v4l issue instead ?
 
-Thanks.
+It's fine for me, thank you.
 
-The following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
+> 
+> Hans, can I get your SoB line for
+> 
+> From face69e36b00c0e461a4b894f46213091515defd Mon Sep 17 00:00:00 2001
+> From: Hans Verkuil <hverkuil@xs4all.nl>
+> Date: Tue, 6 Sep 2011 15:23:18 +0200
+> Subject: [PATCH] v4l: Fix use-after-free case in v4l2_device_release
+> 
+> Drivers that have no v4l2_device release callback might free the
+> v4l2_device instance in the video_device release callback. Make sure we
+> don't access the v4l2_device instance after it gets freed.
+> 
+> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> ---
+>   drivers/media/video/v4l2-dev.c |     11 +++++++++++
+>   1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/media/video/v4l2-dev.c
+> b/drivers/media/video/v4l2-dev.c index 06f1400..d721565 100644
+> --- a/drivers/media/video/v4l2-dev.c
+> +++ b/drivers/media/video/v4l2-dev.c
+> @@ -173,6 +173,17 @@ static void v4l2_device_release(struct device *cd)
+>           media_device_unregister_entity(&vdev->entity);
+>   #endif
+>   
+> +    /* Do not call v4l2_device_put if there is no release callback set.
+> +     * Drivers that have no v4l2_device release callback might free the
+> +     * v4l2_dev instance in the video_device release callback below, so we
+> +     * must perform this check here.
+> +     *
+> +     * TODO: In the long run all drivers that use v4l2_device should use
+> the +     * v4l2_device release callback. This check will then be
+> unnecessary. +     */
+> +    if (v4l2_dev->release == NULL)
+> +        v4l2_dev = NULL;
+> +
+>       /* Release video_device and perform other
+>            cleanups as needed. */
+>       vdev->release(vdev);
+> -- 
+> 1.7.3.4
+> 
+> -- 
+> Regards,
+> 
+> Laurent Pinchart
 
-  Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
-
-are available in the git repository at:
-  git://github.com/ericvh/linux.git for-linus
-
-Aneesh Kumar K.V (5):
-      fs/9p: Add fid before dentry instantiation
-      fs/9p: Don't update file type when updating file attributes
-      net/9p: Fix kernel crash with msize 512K
-      fs/9p: Add OS dependent open flags in 9p protocol
-      fs/9p: Always ask new inode in lookup for cache mode disabled
-
-Jim Garlick (1):
-      fs/9p: Use protocol-defined value for lock/getlock 'type' field.
-
- fs/9p/v9fs_vfs.h       |    6 ++-
- fs/9p/vfs_file.c       |   36 ++++++++++---
- fs/9p/vfs_inode.c      |  139 ++++++++++++++++++++++++++++++------------------
- fs/9p/vfs_inode_dotl.c |   86 +++++++++++++++++++++++++-----
- fs/9p/vfs_super.c      |    2 +-
- include/net/9p/9p.h    |   29 ++++++++++
- net/9p/trans_virtio.c  |   17 ++++--
- 7 files changed, 234 insertions(+), 81 deletions(-)
