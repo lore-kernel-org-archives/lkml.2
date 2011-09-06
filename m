@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1IFJOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 05:14:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38832 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753709Ab1IFJOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 05:14:09 -0400
-Date: Tue, 6 Sep 2011 11:14:01 +0200
-From: Jan Kara <jack@suse.cz>
-To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <dchinner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mm/backing-dev.c: Call del_timer_sync instead of
- del_timer
-Message-ID: <20110906091401.GA23747@quack.suse.cz>
-References: <CAFPAmTQbdhNgFNoP0RyS0E9Gm4djA-W_4JWwpWZ7U=XnTKR+cg@mail.gmail.com>
- <20110902112133.GD12182@quack.suse.cz>
- <CAFPAmTSh-WWJjtuNjZsdEcaK-zSf8CvBmrRGFTmd_HZQNAKUCw@mail.gmail.com>
- <CAFPAmTTJQddd-vHjCpvyfsHhursRXBwNzF4zoVHL3=ggztE8Qg@mail.gmail.com>
- <20110902151450.GF12182@quack.suse.cz>
- <CAFPAmTQxBK32zutyiX9DJLS2F+z6jxsV71xOwa0sivxSY5MD1Q@mail.gmail.com>
- <20110905103925.GC5466@quack.suse.cz>
- <CAFPAmTR5f_GW_oha07Bf0_LNXhigZri_w2N_XTEqM+X+-Ae-Rw@mail.gmail.com>
- <20110905160534.GB17354@quack.suse.cz>
- <CAFPAmTRdHaQFhbGCQAUhDEPXfaz95KnaX_pZ6xgK98BXL4nn1A@mail.gmail.com>
+	id S1753986Ab1IFJPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 05:15:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39238 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab1IFJPn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 05:15:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFPAmTRdHaQFhbGCQAUhDEPXfaz95KnaX_pZ6xgK98BXL4nn1A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110906084938.GI6619@n2100.arm.linux.org.uk>
+References: <1315297950-12720-1-git-send-email-linus.walleij@stericsson.com>
+	<20110906084938.GI6619@n2100.arm.linux.org.uk>
+Date: Tue, 6 Sep 2011 11:15:42 +0200
+Message-ID: <CACRpkda0-SU5rUYkg7MyNSDpYZPmKYuosfJDh=yHA+Skac1Upg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: rewrite U300 GPIO to use gpiolib
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06-09-11 09:41:42, kautuk.c @samsung.com wrote:
-> > On Mon 05-09-11 20:06:04, kautuk.c @samsung.com wrote:
-> >> >  OK, I don't care much whether we have there del_timer() or
-> >> > del_timer_sync(). Let me just say that the race you are afraid of is
-> >> > probably not going to happen in practice so I'm not sure it's valid to be
-> >> > afraid of CPU cycles being burned needlessly. The timer is armed when an
-> >> > dirty inode is first attached to default bdi's dirty list. Then the default
-> >> > bdi flusher thread would have to be woken up so that following happens:
-> >> >        CPU1                            CPU2
-> >> >  timer fires -> wakeup_timer_fn()
-> >> >                                        bdi_forker_thread()
-> >> >                                          del_timer(&me->wakeup_timer);
-> >> >                                          wb_do_writeback(me, 0);
-> >> >                                          ...
-> >> >                                          set_current_state(TASK_INTERRUPTIBLE);
-> >> >  wake_up_process(default_backing_dev_info.wb.task);
-> >> >
-> >> >  Especially wb_do_writeback() is going to take a long time so just that
-> >> > single thing makes the race unlikely. Given del_timer_sync() is slightly
-> >> > more costly than del_timer() even for unarmed timer, it is questionable
-> >> > whether (chance race happens * CPU spent in extra loop) > (extra CPU spent
-> >> > in del_timer_sync() * frequency that code is executed in
-> >> > bdi_forker_thread())...
-> >> >
-> >>
-> >> Ok, so this means that we can compare the following 2 paths of code:
-> >> i)   One extra iteration of the bdi_forker_thread loop, versus
-> >> ii)  The amount of time it takes for the del_timer_sync to wait till the
-> >> timer_fn on the other CPU finishes executing + schedule resulting in a
-> >> guaranteed sleep.
-> >  No, ii) is going to be as rare. But instead you should compare i) against:
-> > iii) The amount of time it takes del_timer_sync() to check whether the
-> > timer_fn is running on a different CPU (which is work del_timer() doesn't
-> > do).
-> 
-> The amount of time it takes del_timer_sync to check the timer_fn should be
-> negligible.
-> In fact, try_to_del_timer_sync differs from del_timer_sync in only
-> that it performs
-> an additional check:
-> if (base->running_timer == timer)
->     goto out;
-  Yes, but the probability the race happens is also negligible. So you are
-comparing two negligible things... 
+On Tue, Sep 6, 2011 at 10:49 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-> >  We are going to spend time in iii) each and every time
-> > if (wb_has_dirty_io(me) || !list_empty(&me->bdi->work_list))
-> >  evaluates to true.
-> 
-> The amount of time spent on this every time will not matter much, as the
-> task will still be preemptible. However, if you notice that in most of
-> the bdi_forker_thread loop, we disable preemption due to taking a
-> spinlock so an additional loop there might be more costly.
-  So either you speak about CPU cost in amount of cycles spent - and there
-I still don't buy that it's clear del_timer_sync() is better than
-del_timer() - or you speak about latency which is a different thing. From
-latency POV that additional loop might be worse. But still I don't think
-it's clear enough to change it without any measurement...
+>> +#include <linux/io.h>
+>> +#include <mach/hardware.h>
+>> +#include <asm/irq.h>
+>> +#include <asm-generic/gpio.h>
+>>
+>> +/* Map these overrides to gpiolib functions, simply */
+>> +#define gpio_get_value  __gpio_get_value
+>> +#define gpio_set_value  __gpio_set_value
+>> +#define gpio_cansleep   __gpio_cansleep
+>> +#define gpio_to_irq     __gpio_to_irq
+>>
+>> +#endif
+>
+> This is how mach/gpio.h ends up looking - two things:
+>
+> 1. is there any reason for asm/irq.h and linux/io.h in there?
 
-> >  Now frequency of i) and iii) happening is hard to evaluate so it's not
-> > clear what's going to be better. Certainly I don't think such evaluation is
-> > worth my time...
-> >
-> 
-> Ok. Anyways, thanks for explaining all this to me.
-> I really appreciate your time. :)
-  You are welcome. You made me refresh my memory about some parts of kernel
-which is also valuable so thanks goes also to you :)
+No.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> 2. asm/gpio.h already includes asm-generic/gpio.h and defines
+>   the dispatchers for the trivial case.
+
+Yep.
+
+> So, I think this is how it should look:
+>
+> #ifndef __MACH_U300_GPIO_H
+> #define __MACH_U300_GPIO_H
+> #include <mach/hardware.h>
+> #endif
+>
+> Or even just:
+>
+> /* empty */
+
+It works fine when left empty, so respinning it like
+that.
+
+> if mach/hardware.h include is not required for ARCH_NR_GPIOS.
+
+It'll survive with just the default number of GPIOs.
+
+Thanks,
+Linus Walleij
