@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab1IFN7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 09:59:48 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:60839 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab1IFN7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 09:59:43 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <1315302066.2741.12.camel@menhir>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315302066.2741.12.camel@menhir>
-User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Tue, 06 Sep 2011 19:28:51 +0530
-Message-ID: <87obyxdb6s.fsf@skywalker.in.ibm.com>
+	id S1754667Ab1IFOC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 10:02:28 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:2686
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754618Ab1IFOCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 10:02:23 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bh8275dhz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LR3TNR-01-EVV-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: Joerg Roedel <joerg.roedel@amd.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        <linux-media@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arm: omap: Fix build error in ispccdc.c
+Date: Tue, 6 Sep 2011 16:02:15 +0200
+Message-ID: <1315317735-5255-1-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Sep 2011 10:41:06 +0100, Steven Whitehouse <swhiteho@redhat.com> wrote:
-> Hi,
-> 
-> On Mon, 2011-09-05 at 22:55 +0530, Aneesh Kumar K.V wrote:
-> > Hi,
-> > 
-> > The following set of patches implements VFS and ext4 changes needed to implement
-> > a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> > extended by file masks to fit into the standard POSIX file permission model.
-> > They are designed to work seamlessly locally as well as across the NFSv4 and
-> > CIFS/SMB2 network file system protocols.
-> > 
-> > A user-space utility for displaying and changing richacls is available at [4]
-> > (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-> > 
-> > [4] git://git.kernel.org/pub/scm/fs/acl/kvaneesh/richacl.git master
-> > 
-> > To test richacl on ext4 use -o richacl mount option. This mount option may later be
-> > dropped in favour of a feature flag.
-> > 
-> > More details regarding richacl can be found at
-> > http://acl.bestbits.at/richacl/
-> > 
-> > Changes from v5:
-> > a) rebase to v3.1-rc4-131-g9e79e3e
-> > 
-> > NOTE: The kernel changes will be pushed to
-> > git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richacl
-> > when kernel.org is back
-> > 
-> > -aneesh
-> > 
-> 
-> This looks like a really nice patch set. One question though is whether
-> there are any test suites which can be used to gain confidence in the
-> implementation? Obviously there is a fair amount of change here which
-> has security implications, so it would be good to have some test results
-> to go along with the patches,
+The following build error occurs with 3.1-rc5:
 
-You can find the tests at 
+  CC      drivers/media/video/omap3isp/ispccdc.o
+/home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c: In function 'ccdc_lsc_config':
+/home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c:427:2: error: implicit declaration of function 'kzalloc' [-Werror=implicit-function-declaration]
+/home/data/repos/linux.trees.git/drivers/media/video/omap3isp/ispccdc.c:427:6: warning: assignment makes pointer from integer without a cast [enabled by default]
 
-http://git.kernel.org/?p=fs/acl/kvaneesh/richacl.git;a=tree;f=test;h=3bedf00ac69c79ae7a433996e729d4afb366b229;hb=HEAD
+This patch adds the missing 'linux/slab.h' include to fix the problem.
 
--aneesh
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-media@vger.kernel.org
+Cc: linux-omap@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/media/video/omap3isp/ispccdc.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/omap3isp/ispccdc.c b/drivers/media/video/omap3isp/ispccdc.c
+index 9d3459d..80796eb 100644
+--- a/drivers/media/video/omap3isp/ispccdc.c
++++ b/drivers/media/video/omap3isp/ispccdc.c
+@@ -31,6 +31,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/mm.h>
+ #include <linux/sched.h>
++#include <linux/slab.h>
+ #include <media/v4l2-event.h>
+ 
+ #include "isp.h"
+-- 
+1.7.4.1
+
+
