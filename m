@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab1IFPPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 11:15:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49322 "EHLO mx1.redhat.com"
+	id S1754881Ab1IFPWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 11:22:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52015 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754766Ab1IFPP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 11:15:27 -0400
-Date: Tue, 6 Sep 2011 11:14:09 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
-Message-ID: <20110906151408.GA7459@redhat.com>
-References: <cover.1314922370.git.jeremy.fitzhardinge@citrix.com>
- <38bb37e15f6e5056d5238adac945bc1837a996ec.1314922370.git.jeremy.fitzhardinge@citrix.com>
- <1314974826.1861.1.camel@twins>
- <4E612EA1.20007@goop.org>
- <1314996468.8255.0.camel@twins>
- <4E614FBD.2030509@goop.org>
+	id S1754114Ab1IFPWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 11:22:05 -0400
+Date: Tue, 6 Sep 2011 17:18:36 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: matthltc@us.ibm.com, rjw@sisk.pl, paul@paulmenage.org,
+        containers@lists.linux-foundation.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] freezer: kill unused set_freezable_with_signal()
+Message-ID: <20110906151836.GA15568@redhat.com>
+References: <1314988070-12244-1-git-send-email-tj@kernel.org> <1314988070-12244-7-git-send-email-tj@kernel.org> <20110904184626.GA30101@redhat.com> <20110905023315.GB9807@htj.dyndns.org> <20110905162012.GA4445@redhat.com> <20110906032846.GA18425@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E614FBD.2030509@goop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110906032846.GA18425@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 02, 2011 at 02:50:53PM -0700, Jeremy Fitzhardinge wrote:
-> On 09/02/2011 01:47 PM, Peter Zijlstra wrote:
-> > On Fri, 2011-09-02 at 12:29 -0700, Jeremy Fitzhardinge wrote:
-> >>> I know that its generally considered bad form, but there's at least one
-> >>> spinlock that's only taken from NMI context and thus hasn't got any
-> >>> deadlock potential.
-> >> Which one? 
-> > arch/x86/kernel/traps.c:nmi_reason_lock
+Hi,
+
+On 09/06, Tejun Heo wrote:
+>
+> Hello,
+>
+> On Mon, Sep 05, 2011 at 06:20:12PM +0200, Oleg Nesterov wrote:
+> > Perhaps it is correct... Just I do not understand what it should do.
+> > I thought it is "wait_for_event && do_not_block_freezer". And at first
+> > glance the code looks as if it tries to do this. Say, in the "likely"
+> > case we restart wait_event_interruptible() after refrigerator().
 > >
-> > It serializes NMI access to the NMI reason port across CPUs.
-> 
-> Ah, OK.  Well, that will never happen in a PV Xen guest.  But PV
-> ticketlocks are equally applicable to an HVM Xen domain (and KVM guest),
-> so I guess there's at least some chance there could be a virtual
-> emulated NMI.  Maybe?  Does qemu do that kind of thing?
-> 
-> But, erm, does that even make sense?  I'm assuming the NMI reason port
-> tells the CPU why it got an NMI.  If multiple CPUs can get NMIs and
-> there's only a single reason port, then doesn't that mean that either 1)
-> they all got the NMI for the same reason, or 2) having a single port is
-> inherently racy?  How does the locking actually work there?
+> > But this looks racy. Suppose that freezing() is already false when
+> > try_to_freeze() or __refrigerator() is called. Say, cgroup_freezer does
+> > freeze_task() + __thaw_task(). Why it returns -ERESTARTSYS in this case?
+>
+> It may return -ERESTARTSYS when not strictly necessary but given that
+> it's supposed to trigger restart anyway I don't think it's actually
+> broken (it doesn't break the contract of the wait).
 
-The reason port is for an external/system NMI.  All the IPI-NMI don't need
-to access this register to process their handlers, ie perf.  I think in
-general the IOAPIC is configured to deliver the external NMI to one cpu,
-usually the bsp cpu.  However, there has been a slow movement to free the
-bsp cpu from exceptions like this to allow one to eventually hot-swap the
-bsp cpu.  The spin locks in that code were an attempt to be more abstract
-about who really gets the external NMI.  Of course SGI's box is setup to
-deliver an external NMI to all cpus to dump the stack when the system
-isn't behaving.
+OK, but still this doesn't look right.
 
-This is a very low usage NMI (in fact almost all cases lead to loud
-console messages).
+> Another thing to
+> note is that kthread freezing via cgroup is almost fundamentally
+> broken.
 
-Hope that clears up some of the confusion.
+OK, let it be freeze_processes()+thaw_tasks(). Of course this is mostly
+theoretical.
 
-Cheers,
-Don
+> > And if it can be used by the userspace thread, then we should probably
+> > do recalc_sigpending() somewhere, otherwise wait_event_freezable() will
+> > always return -ERESTARTSYS after __refrigerator().
+>
+> Thankfully, currently, all the few users are kthreads.  I don't think
+> it makes sense for userland tasks at all.
+
+Yes, agreed. In this case I think it should be
+
+	#define wait_event_freezable(wq, condition)				\
+	({									\
+		int __retval;							\
+		for (;;) {							\
+			__retval = wait_event_interruptible(wq, 		\
+					(condition) || freezing(current));	\
+			if (__retval || (condition))				\
+				break;						\
+			try_to_freeze();					\
+		}								\
+		__retval;							\
+	})
+
+__retval/ERESTARTSYS is only needed for kthreads which play with allow_signal(),
+probably nobody should do this.
+
+Oleg.
+
