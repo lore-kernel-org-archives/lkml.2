@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab1IFSoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 14:44:54 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:34623 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab1IFSos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 14:44:48 -0400
-X-SENDER-IP: [85.230.168.63]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjBpACFpZk5V5qg/PGdsb2JhbABDiRWeaAsBAQEBNzOBRgEBBAE6HCMQCANGFCUKGogGArliDoV8YASYS4ty
-X-IronPort-AV: E=Sophos;i="4.68,340,1312149600"; 
-   d="scan'208";a="39017673"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 6 Sep 2011 20:47:35 +0200
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, JJ Ding <jj_ding@emc.com.tw>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
-Message-ID: <20110906184735.GA3433@polaris.bitmath.org>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
- <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw>
- <20110818074756.GE10093@core.coreip.homeip.net>
- <4E5FCE58.9060906@canonical.com>
- <87sjobk711.fsf@emc.com.tw>
- <4E665249.2040602@canonical.com>
- <20110906173649.GA7419@core.coreip.homeip.net>
- <4E6660D7.9040800@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E6660D7.9040800@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752086Ab1IFSqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 14:46:06 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:39798 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136Ab1IFSqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 14:46:00 -0400
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Dan Carpenter <error27@gmail.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Matt Porter <mporter@kernel.crashing.org>, Chul Kim <chul.kim@idt.com>
+Subject: [PATCH] RapidIO: fix potential null deref in rio_setup_device()
+Date: Tue,  6 Sep 2011 14:44:15 -0400
+Message-Id: <1315334655-12356-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> I see that the current code scales the coordinates for v2, but it's only
-> >> half-resolution. That's not a huge deal since the resolution of modern
-> >> touchpads is very high. We could leave it scaled to not break abi, if
-> >> that was a concern. However, with new devices it makes sense to state
-> >> the ranges in terms of what the device actually supports. Otherwise,
-> >> we're just masking out useful data that userspace could be using.
-> >>
-> > 
-> > I disagree. I believe that ST and MT ranges reported for the same
-> > working surface should match, especially since many devices derive ST
-> > data from MT.
-> > 
-> > As far as devices that have ranges 0-15 in MT mode - I am not sure how
-> > useful such MT steam anyway and if we are better of just ignore them
-> > (maybe just use the data to report number of fingers on the surface but
-> > otherwise use standard ST protocol).
-> 
-> The MT data could still be useful for pinch to zoom or potentially
-> rotate (though most low res devices probably are only semi-mt). I don't
-> want to forsake pinch to zoom just because we can't pass on the
-> resolution of MT data properly.
+The "goto cleanup" path can deference "rswitch" when it is NULL.
 
-We are not forsaking anything. At best, the detail missed out by using
-the same scaling for ST and MT is the ability to distinguish the axis
-with the best or poorest resolution. However, some devices report
-higher MT than ST resolution, not because it is better (it is indeed
-worse), but simply to not lose bits in the filtering process. In other
-words: the logic is not without corner cases, and it only makes a
-difference to the transitional devices that are not fully MT
-capable. If this really was a concern, userspace could use the ST
-coordinates for some transformations instead.
+Reported-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Dan Carpenter <error27@gmail.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Chul Kim <chul.kim@idt.com>
+---
+ drivers/rapidio/rio-scan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Henrik
+diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
+index ebe77dd..5b2cb53 100644
+--- a/drivers/rapidio/rio-scan.c
++++ b/drivers/rapidio/rio-scan.c
+@@ -516,7 +516,7 @@ static struct rio_dev __devinit *rio_setup_device(struct rio_net *net,
+ 	return rdev;
+ 
+ cleanup:
+-	if (rio_is_switch(rdev))
++	if (rswitch)
+ 		kfree(rswitch->route_table);
+ 
+ 	kfree(rdev);
+-- 
+1.7.6
+
