@@ -1,115 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1IFSEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 14:04:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:62256 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab1IFSEl convert rfc822-to-8bit (ORCPT
+	id S1753661Ab1IFSFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 14:05:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58917 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab1IFSFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 14:04:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=UeqK+ei9Y6gF6QG31D2YaR7fsYL68n9JoDH5vLAx7SaPHufdZKgqFPTJ+yGusBiTM
-	jUDBOB3h5KRNJqd77JFOQ==
+	Tue, 6 Sep 2011 14:05:20 -0400
+Message-ID: <4E6660D7.9040800@canonical.com>
+Date: Tue, 06 Sep 2011 11:05:11 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <20110906095852.GA25053@redhat.com>
-References: <1313650253-21794-1-git-send-email-gthelen@google.com> <20110906095852.GA25053@redhat.com>
-From: Greg Thelen <gthelen@google.com>
-Date: Tue, 6 Sep 2011 11:04:16 -0700
-Message-ID: <CAHH2K0ZpBMwqmPBQ6Eh_7drEN6dcqG+fvPdY7kyE1t5eBk+hrw@mail.gmail.com>
-Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw> <20110818074756.GE10093@core.coreip.homeip.net> <4E5FCE58.9060906@canonical.com> <87sjobk711.fsf@emc.com.tw> <4E665249.2040602@canonical.com> <20110906173649.GA7419@core.coreip.homeip.net>
+In-Reply-To: <20110906173649.GA7419@core.coreip.homeip.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 2:58 AM, Johannes Weiner <jweiner@redhat.com> wrote:
-> On Wed, Aug 17, 2011 at 11:50:53PM -0700, Greg Thelen wrote:
->> Both mem_cgroup_charge_statistics() and mem_cgroup_move_account() were
->> unnecessarily disabling preemption when adjusting per-cpu counters:
->>     preempt_disable()
->>     __this_cpu_xxx()
->>     __this_cpu_yyy()
->>     preempt_enable()
+On 09/06/2011 10:36 AM, Dmitry Torokhov wrote:
+> On Tue, Sep 06, 2011 at 10:03:05AM -0700, Chase Douglas wrote:
+>> On 09/04/2011 08:22 PM, JJ Ding wrote:
+>>> Hi Chase,
+>>>
+>>> On Thu, 01 Sep 2011 11:26:32 -0700, Chase Douglas <chase.douglas@canonical.com> wrote:
+>>>> On 08/18/2011 12:47 AM, Dmitry Torokhov wrote:
+>>>>> On Thu, Aug 18, 2011 at 09:57:05AM +0800, JJ Ding wrote:
+>>>>>> +
+>>>>>> +		i = (etd->fw_version > 0x020800 &&
+>>>>>> +		     etd->fw_version < 0x020900) ? 1 : 2;
+>>>>>> +		*x_max = (etd->capabilities[1] - i) * 64;
+>>>>>> +		*y_max = (etd->capabilities[2] - i) * 64;
+>>>>>> +		*y_2ft_max = (*y_max - i) * 64 / 4;
+>>>>>
+>>>>> Hmm, we should have the same range for ST and MT data and scale MT data
+>>>>> if it has lower resolution to match ST.
+>>>>
+>>>> I saw this go by a while back and it made sense to me at the time.
+>>>> However, I've had some thoughts that give me pause.
+>>>>
+>>>> Seth Forshee has been working on getting a semi-mt driver for ALPS
+>>>> devices. The ALPS devices have an interesting mechanism for providing
+>>>> multitouch data, but it boils down to having a resolution of only 15
+>>>> values in the X axis and 11 in the Y axis (it looks possible to
+>>>> extrapolate and get double the resolution, but my point will remain).
+>>>>
+>>>> Let's take the X synaptics module as an example of the repercussions of
+>>>> in-kernel axis scaling. The X synaptics module translates two touch
+>>>> drags into scroll events. Synaptics will want to use the highest
+>>>> resolution axis for generating scroll events. If both the MT and ST axes
+>>>> have the same resolution, it might pick the MT axes for scrolling. On
+>>>> ALPS devices with in-kernel axis scaling that would be a bad choice.
+>>> I don't know about the ALPS devices, but since we already report
+>>> ABS_MT_POSITION_{X,Y} with elantech v2, we have to do the scaling in
+>>> kernel anyway to adhere to multitouch protocol. So I would say it is
+>>> still more appropriate to have the same resolution for ST and MT with
+>>> respect to elantech v2. Maybe ALPS should be considered an exception to this?
 >>
->> This change does not disable preemption and thus CPU switch is possible
->> within these routines.  This does not cause a problem because the total
->> of all cpu counters is summed when reporting stats.  Now both
->> mem_cgroup_charge_statistics() and mem_cgroup_move_account() look like:
->>     this_cpu_xxx()
->>     this_cpu_yyy()
+>> The multitouch protocol doesn't require scaling of axes to match, at
+>> least not according to the protocol documentation.
 >>
->> Reported-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->
-> I just noticed that both cases have preemption disabled anyway because
-> of the page_cgroup bit spinlock.
->
-> So removing the preempt_disable() is fine but we can even keep the
-> non-atomic __this_cpu operations.
->
-> Something like this instead?
->
-> ---
-> From: Johannes Weiner <jweiner@redhat.com>
-> Subject: mm: memcg: remove needless recursive preemption disabling
->
-> Callsites of mem_cgroup_charge_statistics() hold the page_cgroup bit
-> spinlock, which implies disabled preemption.
->
-> The same goes for the explicit preemption disabling to account mapped
-> file pages in mem_cgroup_move_account().
->
-> The explicit disabling of preemption in both cases is redundant.
->
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+>> I see that the current code scales the coordinates for v2, but it's only
+>> half-resolution. That's not a huge deal since the resolution of modern
+>> touchpads is very high. We could leave it scaled to not break abi, if
+>> that was a concern. However, with new devices it makes sense to state
+>> the ranges in terms of what the device actually supports. Otherwise,
+>> we're just masking out useful data that userspace could be using.
+>>
+> 
+> I disagree. I believe that ST and MT ranges reported for the same
+> working surface should match, especially since many devices derive ST
+> data from MT.
+> 
+> As far as devices that have ranges 0-15 in MT mode - I am not sure how
+> useful such MT steam anyway and if we are better of just ignore them
+> (maybe just use the data to report number of fingers on the surface but
+> otherwise use standard ST protocol).
 
-Looks good, thanks.
+The MT data could still be useful for pinch to zoom or potentially
+rotate (though most low res devices probably are only semi-mt). I don't
+want to forsake pinch to zoom just because we can't pass on the
+resolution of MT data properly.
 
-Reviewed-by: Greg Thelen <gthelen@google.com>
-
-> ---
->  mm/memcontrol.c |    6 ------
->  1 file changed, 6 deletions(-)
->
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -618,8 +618,6 @@ static unsigned long mem_cgroup_read_eve
->  static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
->                                         bool file, int nr_pages)
->  {
-> -       preempt_disable();
-> -
->        if (file)
->                __this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], nr_pages);
->        else
-> @@ -634,8 +632,6 @@ static void mem_cgroup_charge_statistics
->        }
->
->        __this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_COUNT], nr_pages);
-> -
-> -       preempt_enable();
->  }
->
->  unsigned long
-> @@ -2582,10 +2578,8 @@ static int mem_cgroup_move_account(struc
->
->        if (PageCgroupFileMapped(pc)) {
->                /* Update mapped_file data for mem_cgroup */
-> -               preempt_disable();
->                __this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
->                __this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -               preempt_enable();
->        }
->        mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
->        if (uncharge)
->
+-- Chase
