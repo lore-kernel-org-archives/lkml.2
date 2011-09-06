@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab1IFOXd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 10:23:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33447 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab1IFOX0 convert rfc822-to-8bit (ORCPT
+	id S1754721Ab1IFOcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 10:32:09 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33462 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab1IFOcD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 10:23:26 -0400
-Subject: Re: [PATCH 11/18] block: add bdi flag to indicate risk of io queue
- underrun
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Li Shaohua <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Sep 2011 16:22:48 +0200
-In-Reply-To: <20110904020916.070059502@intel.com>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020916.070059502@intel.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 6 Sep 2011 10:32:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1314880595.1439.13.camel@deneb.redhat.com>
+References: <1314826214-22428-1-git-send-email-msalter@redhat.com>
+ <1314826214-22428-2-git-send-email-msalter@redhat.com> <CAHXqBFJ6tEkn+iW3ZBAiWu5Sx9y9MQdnJt5Gfnv5Xc3UB78uLw@mail.gmail.com>
+ <1314880595.1439.13.camel@deneb.redhat.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Tue, 6 Sep 2011 15:30:42 +0100
+X-Google-Sender-Auth: kLOFRdomzBJDi1eCTx-l-ySdB70
+Message-ID: <CAHkRjk7QWCkKKT8BErRsS_ZASChOyGuh04PM2qP3pQnp+KhJVw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] add dma_coherent_write_sync to DMA API
+To: Mark Salter <msalter@redhat.com>
+Cc: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>,
+        ming.lei@canonical.com, stern@rowland.harvard.edu,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315318968.14232.6.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> +++ linux-next/mm/page-writeback.c      2011-08-31 14:40:58.000000000 +0800
-> @@ -1067,6 +1067,9 @@ static void balance_dirty_pages(struct a
->                                      nr_dirty, bdi_thresh, bdi_dirty,
->                                      start_time);
->  
-> +               if (unlikely(!dirty_exceeded && bdi_async_underrun(bdi)))
-> +                       break;
-> +
->                 dirty_ratelimit = bdi->dirty_ratelimit;
->                 pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
->                                                background_thresh, nr_dirty,
+(coming late to this thread due to holidays)
 
-So dirty_exceeded looks like:
+2011/9/1 Mark Salter <msalter@redhat.com>:
+> On Thu, 2011-09-01 at 11:57 +0200, Michał Mirosław wrote:
+>> BTW, if there's no time limit on write buffers flushing, or if write
+>> buffers can cause reordering of the writes, then the memory accesses
+>> need to be managed just like non-DMA-coherent memory. So what differs
+>> then in DMA-coherent vs non-DMA-coherent mappings then?
+>
+> My understanding is that ordering is preserved, but an ARM guy should
+> probably verify that.
 
+On ARMv6 onwards the coherent DMA is Normal Non-cacheable memory and
+this is buffered and can be reordered.
 
-1109                 dirty_exceeded = (bdi_dirty > bdi_thresh) ||
-1110                                   (nr_dirty > dirty_thresh);
-
-Would it make sense to write it as:
-
-	if (nr_dirty > dirty_thresh || 
-	    (nr_dirty > freerun && bdi_dirty > bdi_thresh))
-		dirty_exceeded = 1;
-
-So that we don't actually throttle bdi thingies when we're still in the
-freerun area?
-
+-- 
+Catalin
