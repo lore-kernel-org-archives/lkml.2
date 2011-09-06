@@ -1,77 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1IFK56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 06:57:58 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:39503 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751450Ab1IFK5w (ORCPT
+	id S1754302Ab1IFK7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 06:59:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54481 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab1IFK7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 06:57:52 -0400
-Date: Tue, 6 Sep 2011 06:57:50 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -mm 4/4] irq_work, Use llist in irq_work
-Message-ID: <20110906105750.GD21602@Krystal>
-References: <1315290307-25145-1-git-send-email-ying.huang@intel.com> <1315290307-25145-4-git-send-email-ying.huang@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315290307-25145-4-git-send-email-ying.huang@intel.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 06:53:47 up 286 days, 15:56,  1 user,  load average: 1.00, 1.00,
-	0.84
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 6 Sep 2011 06:59:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 6 Sep 2011 19:52:11 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] memcg: skip scanning active lists based on individual
+ size
+Message-Id: <20110906195211.d2a2c082.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110906104347.GB25053@redhat.com>
+References: <20110831090850.GA27345@redhat.com>
+	<CAEwNFnBSg71QoLZbOqZbXK3fGEGneituU3PmiYTAw1VM3KcwcQ@mail.gmail.com>
+	<20110901090931.c0721216.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110901061540.GA22561@redhat.com>
+	<20110901153148.70452287.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110905182514.GA20793@redhat.com>
+	<20110906183358.0a305900.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110906104347.GB25053@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Huang Ying (ying.huang@intel.com) wrote:
-> Use llist in irq_work instead of the lock-less linked list
-> implementation in irq_work to avoid the code duplication.
+On Tue, 6 Sep 2011 12:43:47 +0200
+Johannes Weiner <jweiner@redhat.com> wrote:
+
+> On Tue, Sep 06, 2011 at 06:33:58PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Mon, 5 Sep 2011 20:25:14 +0200
+> > Johannes Weiner <jweiner@redhat.com> wrote:
+> > 
+> > > On Thu, Sep 01, 2011 at 03:31:48PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > On Thu, 1 Sep 2011 08:15:40 +0200
+> > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > Old implemenation was supporsed to make vmscan to see only memcg and
+> > > > ignore zones. memcg doesn't take care of any zones. Then, it uses
+> > > > global numbers rather than zones.
+> > > > 
+> > > > Assume a system with 2 nodes and the whole memcg's inactive/active ratio
+> > > > is unbalaned. 
+> > > > 
+> > > >    Node      0     1
+> > > >    Active   800M   30M
+> > > >    Inactive 100M   200M
+> > > > 
+> > > > If we judge 'unbalance' based on zones, Node1's Active will not rotate
+> > > > even if it's not accessed for a while.
+> > > > If we judge unbalance based on total stat, Both of Node0 and Node 1
+> > > > will be rotated.
+> > > 
+> > > But why should we deactivate on Node 1?  We have good reasons not to
+> > > on the global level, why should memcgs silently behave differently?
+> > 
+> > One reason was I thought that memcg should behave as to have one LRU list,
+> > which is not devided by zones and wanted to ignore zones as much
+> > as possible. Second reason was that I don't want to increase swap-out
+> > caused by memcg limit.
 > 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> ---
->  include/linux/irq_work.h |   15 ++++---
->  kernel/irq_work.c        |   92 ++++++++++++++++-------------------------------
->  2 files changed, 41 insertions(+), 66 deletions(-)
+> You can think of it like this: if every active list is only balanced
+> when its inactive counterpart is too small, then the memcg-wide
+> proportion of inactive vs. active pages is as desired, too.  So even
+> after my change, the 'one big LRU' has the right inactive/active ratio.
 > 
-[...]
-> -static void __irq_work_queue(struct irq_work *entry)
-> +static void __irq_work_queue(struct irq_work *work)
->  {
-> -	struct irq_work *next;
-> -
->  	preempt_disable();
->  
-> -	do {
-> -		next = __this_cpu_read(irq_work_list);
-> -		/* Can assign non-atomic because we keep the flags set. */
-> -		entry->next = next_flags(next, IRQ_WORK_FLAGS);
-> -	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
-> -
-> +	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
->  	/* The list was empty, raise self-interrupt to start processing. */
-> -	if (!irq_work_next(entry))
-> +	if (!work->llnode.next)
+> On the other hand, the old way could allow for the memcg-level to have
+> the right proportion and still thrash one workload that is bound to
+> another node even though its inactive > active, but is overshadowed by
+> inactive < active workloads on other nodes.
+> 
+ok.
+
+> > > I mostly don't understand it on a semantic level.  vmscan needs to
+> > > know whether a certain inactive LRU list has enough reclaim candidates
+> > > to skip scanning its corresponding active list.  The global state is
+> > > not useful to find out if a single inactive list has enough pages.
+> > 
+> > Ok, I agree to this. I should add other logic to do what I want.
+> > In my series,
+> >   - passing nodemask
+> >   - avoid overscan
+> >   - calculating node weight
+> > These will allow me to see what I want.
+> 
+> What /do/ you want? :) I just don't see your concern.  I mean, yes, no
+> increased swapout, but in what concrete scenario could you suspect
+> swapping to increase because of this change?
+> 
+
+Ah, sorry. Maybe I was merged other concerns and this talk. This change
+itseld doesn't related to my scenario.
+
+Please forget. I'm a bit tired in these days...
 
 
-Hrm. What happens if this function gets delayed between llist_add and
-"if (!work->llnode.next)" ? It seems like the threads performing
-llist_del_all would be within its right to free the memory pointed to by
-work in the meantime.
+
+> > > > > > I'll ack when you add performance numbers in changelog.
+> > > > > 
+> > > > > It's not exactly a performance optimization but I'll happily run some
+> > > > > workloads.  Do you have suggestions what to test for?  I.e. where
+> > > > > would you expect regressions?
+> > > > > 
+> > > > Some comparison about amount of swap-out before/after change will be good.
+> > > > 
+> > > > Hm. If I do...
+> > > >   - set up x86-64 NUMA box. (fake numa is ok.)
+> > > >   - create memcg with 500M limit.
+> > > >   - running kernel make with make -j 6(or more)
+> > > > 
+> > > > see time of make and amount of swap-out.
+> > > 
+> > > 4G ram, 500M swap on SSD, numa=fake=16, 10 runs of make -j11 in 500M
+> > > memcg, standard deviation in parens:
+> > > 
+> > > 		seconds		pswpin			pswpout
+> > > vanilla:	175.359(0.106)	6906.900(1779.135)	8913.200(1917.369)
+> > > patched:	176.144(0.243)	8581.500(1833.432)	10872.400(2124.104)
+> > 
+> > Hmm. swapin/out seems increased. But hmm...stddev is large.
+> > Is this expected ? reason ?
+> 
+> It's kind of expected because there is only a small number of parallel
+> jobs that have bursty memory usage, so the slightest timing variations
+> can make the difference between an episode of heavy thrashing and the
+> tasks having their bursts at different times and getting along fine.
+> 
+> So we are basically looking at test results that are clustered around
+> not one, but several different mean values.  The arithmetic mean is
+> not really meaningful for these samples.
+> 
+ok.
+
+> > Anyway, I don't want to disturb you more. Thanks.
+> 
+> I am happy to test if my changes introduce regressions, I don't want
+> that, obviously.  But do you have a theory behind your concern that
+> swapping could increase?  Just saying, this test request seemed a bit
+> random because I don't see where my change would affect this
+> particular workload.
+> 
+> 
+
+the patch is on mm queue and this may be too late, but..
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
 
 Thanks,
+-Kame
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
