@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab1IFUKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 16:10:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40107 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab1IFUKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 16:10:13 -0400
-Date: Tue, 6 Sep 2011 22:10:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Oleg Nesterov <oleg@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4] posix-timers: turn it_signal into it_valid flag
-In-Reply-To: <1315337411.3400.12.camel@edumazet-laptop>
-Message-ID: <alpine.LFD.2.02.1109062146150.2723@ionos>
-References: <1314661157-22173-1-git-send-email-andi@firstfloor.org>  <1314661157-22173-4-git-send-email-andi@firstfloor.org>  <alpine.LFD.2.02.1109021135270.2723@ionos>  <20110904165658.GA23948@redhat.com> <20110904202907.GA3404@redhat.com> 
- <20110906031411.GA24024@alboin.amr.corp.intel.com>  <20110906145124.GA15390@redhat.com>  <1315323596.2899.6.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>  <alpine.LFD.2.02.1109061823100.2723@ionos>  <20110906184926.GA25997@redhat.com>  <alpine.LFD.2.02.1109062110090.2723@ionos>
- <1315337411.3400.12.camel@edumazet-laptop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754990Ab1IFULh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 16:11:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754123Ab1IFULd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 16:11:33 -0400
+Date: Tue, 6 Sep 2011 22:08:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Add new PTRACE_O_TRACESTOP option, make it control
+	new ptrace behavior.
+Message-ID: <20110906200818.GA28349@redhat.com>
+References: <201109042311.18793.vda.linux@googlemail.com> <1315242384.1888.64.camel@dhcp-25-63.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1298013382-1315339803=:2723"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315242384.1888.64.camel@dhcp-25-63.brq.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 09/05, Denys Vlasenko wrote:
+>
+> Add new PTRACE_O_TRACESTOP option, make it control new ptrace behavior.
+>
+> Introduce new ptrace option, PTRACE_O_TRACESTOP. This makes API
+> more symmetric: every PTRACE_EVENT_event has corresponding PTRACE_O_TRACEevent now,
+> as it used to have before PTRACE_SEIZE was introduced.
+>
+> PTRACE_SEIZE does not assume PTRACE_O_TRACESTOP, but with this patch
+> it allows any PTRACE_O_opts to be set at attach time
 
---8323328-1298013382-1315339803=:2723
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Well. This assumes that the only difference with PTRACE_SEIZE is the
+new stop/interrupt behaviour. I am not sure this is "safe" to assume.
 
-On Tue, 6 Sep 2011, Eric Dumazet wrote:
-> Le mardi 06 septembre 2011 à 21:16 +0200, Thomas Gleixner a écrit :
-> > On Tue, 6 Sep 2011, Oleg Nesterov wrote:
-> > Right, but we can solve this by moving the whole detach code into rcu.
-> > 
-> 
-> Why ? Is the dequeue thing guaranteed in the rcu grace period ?
+Tejun, what do you think?
 
-No, as Oleg pointed out we need an rcu_read_lock() in dequeue_signal()
- 
-> ALso, delaying the idr_remove() probably makes next Andi patch more
-> complex (move global timer id management to signal_struct)
-> 
-> struct k_itimer will need a backpointer to signal_struct, and an
-> additional refcount on it.
+>From the correctness pov, the patch is mostly correct. but you forgot
+to update ptrace_init_task(). I bet you didn't try to test the patch ;)
 
-Well, first of all we need that problem at hand to be fixed.
+>  int ptrace_request(struct task_struct *child, long request,
+>  		   unsigned long addr, unsigned long data)
+>  {
+> -	bool seized = child->ptrace & PT_SEIZED;
+> +	bool stop_events_enabled = child->ptrace & PT_TRACE_STOP;
 
-And the backpointer is not rocket science at all.
+May be ptrace_event_enabled(child, PTRACE_EVENT_STOP) looks better...
+The same about other PT_TRACE_STOP checks, although this is cosmetic.
 
---- linux-2.6.orig/include/linux/posix-timers.h
-+++ linux-2.6/include/linux/posix-timers.h
-@@ -82,7 +82,10 @@ struct k_itimer {
- 			unsigned long expires;
- 		} mmtimer;
- 		struct alarm alarmtimer;
--		struct rcu_head rcu;
-+		struct {
-+			struct rcu_head rcu;
-+			struct signal_struct *it_signal;
-+		} rcu;
- 	} it;
- };
- 
-Solves that nicely and we still can get rid of the original *it_signal
-and rely on the list_head.
 
-Vs. the refcounting, that should be solvable by a rcu_barrier() before
+And. Given that you can set/clear PT_TRACE_STOP in ptrace_setoptions(),
+you need the locking.
 
-+   idr_destroy(&sig->posix_timers_id);
+Just for example. do_signal_stop() calls ptrace_trap_notify() and hits
+WARN_ON_ONCE(!PT_TRACE_STOP) because it was cleared in between.
 
-in exit_itimers().
+Oleg.
 
-Thanks,
-
-	tglx
---8323328-1298013382-1315339803=:2723--
