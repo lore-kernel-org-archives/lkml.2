@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab1IFNkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 09:40:18 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:50750 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300Ab1IFNkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 09:40:14 -0400
-In-Reply-To: <20110903114403.027a9563c86eeaf1c0e4e80b@canb.auug.org.au>
-References: <20110831213729.395283830@systemfabricworks.com>	<4E5EB5F4.6010105@systemfabricworks.com>
-	<20110902165047.6aaec238.akpm@linux-foundation.org> <20110903114403.027a9563c86eeaf1c0e4e80b@canb.auug.org.au>
-Subject: Re: [PATCH v6 05/10] crc32-misc-cleanup.diff
-X-KeepSent: 0B1D5F8A:D8D66C8A-C1257903:004A257F;
- type=4; name=$KeepSent
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, fzago@systemfabricworks.com,
-        George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
-        Bob Pearson <rpearson@systemfabricworks.com>
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF0B1D5F8A.D8D66C8A-ONC1257903.004A257F-C1257903.004B1700@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Tue, 6 Sep 2011 15:40:10 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 09/06/2011 15:40:12
+	id S1754616Ab1IFNnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 09:43:13 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35525 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530Ab1IFNnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 09:43:05 -0400
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+From: Eric Van Hensbergen <ericvh@gmail.com>
+Date: Tue, 6 Sep 2011 08:42:44 -0500
+Message-ID: <CAFkjPTmqABteR=n3x+AVnmn4JZBjsf1EHBvKXkGmv4zK=nUqAw@mail.gmail.com>
+Subject: [GIT PULL] v9fs fixes for 3.1-rc6
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> wrote on 2011/09/03 03:44:03:
->
-> On Fri, 2 Sep 2011 16:50:47 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > Sure, these these things may be accidentally dragged in via nested
-> > includes but it's bad to depend upon that - such things regularly cause
-> > breakage when configs are changed.
->
-> And even the same config on different architectures or platforms.  That's
-> why we have Rule 1 in Documentation/SubmitChecklist ...
+(also sent as a github internal pull-request for fun)
 
-It seems like an early version of the slice-by-8 crc32 algo. is in linux-next,
-committed by you.
-That version is crap, whats the plan?
+First off, let me apologize.  Vacations and kernel.org disruptions
+have delayed me from getting you these bug fixes sooner in the cycle.
+Beyond the typical bug fixes, there are a couple of protocol "bugs"
+fixed here dealing with lack of foresight in developing some of the
+new protocol extensions that we wanted to fix as soon as possible.
 
+Thanks.
+
+The following changes since commit ddf28352b80c86754a6424e3a61e8bdf9213b3c7:
+
+  Linux 3.1-rc5 (2011-09-04 15:45:10 -0700)
+
+are available in the git repository at:
+  git://github.com/ericvh/linux.git for-linus
+
+Aneesh Kumar K.V (5):
+      fs/9p: Add fid before dentry instantiation
+      fs/9p: Don't update file type when updating file attributes
+      net/9p: Fix kernel crash with msize 512K
+      fs/9p: Add OS dependent open flags in 9p protocol
+      fs/9p: Always ask new inode in lookup for cache mode disabled
+
+Jim Garlick (1):
+      fs/9p: Use protocol-defined value for lock/getlock 'type' field.
+
+ fs/9p/v9fs_vfs.h       |    6 ++-
+ fs/9p/vfs_file.c       |   36 ++++++++++---
+ fs/9p/vfs_inode.c      |  139 ++++++++++++++++++++++++++++++------------------
+ fs/9p/vfs_inode_dotl.c |   86 +++++++++++++++++++++++++-----
+ fs/9p/vfs_super.c      |    2 +-
+ include/net/9p/9p.h    |   29 ++++++++++
+ net/9p/trans_virtio.c  |   17 ++++--
+ 7 files changed, 234 insertions(+), 81 deletions(-)
