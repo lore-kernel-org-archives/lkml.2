@@ -1,229 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab1IFQL1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 12:11:27 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:11060 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab1IFQLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 12:11:16 -0400
-X-IronPort-AV: E=Sophos;i="4.68,339,1312171200"; 
-   d="scan'208";a="16726481"
-From: <stefano.stabellini@eu.citrix.com>
-To: linux-kernel@vger.kernel.org
-CC: konrad.wilk@oracle.com, xen-devel@lists.xensource.com,
-        stefano.stabellini@eu.citrix.com, Ian.Campbell@eu.citrix.com,
-        Jeremy.Fitzhardinge@citrix.com
-Subject: [PATCH v2 2/2] xen: use multicalls for m2p override grant table ops
-Date: Tue, 6 Sep 2011 17:19:29 +0100
-Message-ID: <1315325969-32346-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1315325969-32346-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <1315325969-32346-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1751517Ab1IFQOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 12:14:17 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:46404 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751093Ab1IFQOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 12:14:11 -0400
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=RmUpoYie-B4A:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=Z4Rwk6OoAAAA:8 a=VwQbUJbxAAAA:8 a=YORvzBCaAAAA:8 a=sPejSFesklKhB2IOTOAA:9 a=CjuIK1q_8ugA:10 a=jbrJJM5MRmoA:10 a=VV2__AUApEoA:10 a=4rFDyhIadlM4Uw60:21 a=-binJxhYVX_1sH8i:21 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.79.195.91
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <fzago@systemfabricworks.com>,
+        "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>,
+        "'George Spelvin'" <linux@horizon.com>
+References: <20110831213729.395283830@systemfabricworks.com>	<4E5EB5E6.3040202@systemfabricworks.com> <20110902165138.927100ce.akpm@linux-foundation.org>
+In-Reply-To: <20110902165138.927100ce.akpm@linux-foundation.org>
+Subject: RE: [PATCH v6 03/10] crc32-replace-self-test.diff
+Date: Tue, 6 Sep 2011 11:14:09 -0500
+Message-ID: <01cb01cc6cb0$02c1c900$08455b00$@systemfabricworks.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQJdND57YfohkECc5nAnrPUtKDDU5gJdGMoNAnJYZ3KT+HmywA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Replace the HYPERVISOR_grant_table_op hypercalls with multicalls.
 
-Use the kmap_op pointer directly as argument to do the mapping as it is
-guaranteed to be present up until the unmapping is done.
-The mapping can be done either by m2p_add_override, in case of
-!PageHighMem, or in __xen_set_pte otherwise.
+> -----Original Message-----
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Sent: Friday, September 02, 2011 6:52 PM
+> To: Bob Pearson
+> Cc: linux-kernel@vger.kernel.org; fzago@systemfabricworks.com; Joakim
+> Tjernlund; George Spelvin
+> Subject: Re: [PATCH v6 03/10] crc32-replace-self-test.diff
+> 
+> On Wed, 31 Aug 2011 17:29:58 -0500
+> Bob Pearson <rpearson@systemfabricworks.com> wrote:
+> 
+> > Replaced the unit test provided in crc32.c, which doesn't have a
+> > makefile and doesn't compile with current headers, with a simpler
+> > self test routine that also gives a measure of performance and
+> > runs at module init time. The self test option can be enabled
+> > through a configuration option CONFIG_CRC32_SELFTEST.
+> >
+> > The test stresses the pre and post loops and is thus not very
+> > realistic since actual uses will likely have addresses and lengths
+> > that are at least 4 byte aligned. However, the main loop is long
+> > enough so that the performance is dominated by that loop.
+> >
+> > The expected values for crc32_le and crc32_be were generated
+> > with the original version of crc32.c using CRC_BITS_LE = 8 and
+> > CRC_BITS_BE = 8. These values were then used to check all the
+> > values of the BITS parameters in both the original and new versions.
+> >
+> > The performance results show some variability from run to run
+> > in spite of attempts to both warm the cache and reduce the amount
+> > of OS noise by limiting interrutps during the test. To get comparable
+> > results and to analyse options wrt performance the best time
+> > reported over a small sample of runs has been taken.
+> >
+> 
+> I don't object to a self-test which actually works, but it seems pretty
+> lame that the self-test exists in kernel mode when it is so simple to
+> prepare a much more useful and powerful correctness/performance test
+> harness in userspace.
+> 
+> > ...
+> >
+> > -static u32 test_step(u32 init, unsigned char *buf, size_t len)
+> > -{
+> > -	u32 crc1, crc2;
+> > -	size_t i;
+> > +		crc ^= crc32_be(test[i].crc, test_buf +
+> > +		    test[i].start, test[i].length);
+> > +	}
+> >
+> > -	crc1 = crc32_be(init, buf, len);
+> > -	store_be(crc1, buf + len);
+> > -	crc2 = crc32_be(init, buf, len + 4);
+> > -	if (crc2)
+> > -		printf("\nCRC cancellation fail: 0x%08x should be 0\n",
+> > -		       crc2);
+> > -
+> > -	for (i = 0; i <= len + 4; i++) {
+> > -		crc2 = crc32_be(init, buf, i);
+> > -		crc2 = crc32_be(crc2, buf + i, len + 4 - i);
+> > -		if (crc2)
+> > -			printf("\nCRC split fail: 0x%08x\n", crc2);
+> > +	/* reduce OS noise */
+> 
+> This comment is useless.
 
-Before issuing any unmapping multicalls, we need to make sure that the
-mapping has already being done, because we need the kmap->handle to be
-set correctly.
-Also we need to do the unmapping before the page is removed from the m2p
-override, so we force the unmapping in m2p_remove_override even if
-PageHighMem. The value of map_op->host_addr can be used to know if the
-unmapping has already happened.
+I wasn't trying to claim perfection here. The variance in resulting
+performance results was significantly reduced. I didn't make a detailed
+statistical study but the range of outliers was smaller by at least 10X.
+Without this change the effect of the coding changes that were being debated
+was swamped by random variation.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/xen/mmu.c |   49 +++++++++++++++++++++++++++++-------------
- arch/x86/xen/p2m.c |   60 ++++++++++++++++++++++++++++++++-------------------
- 2 files changed, 72 insertions(+), 37 deletions(-)
+> 
+> > +	local_irq_save(flags);
+> > +	local_irq_disable();
+> 
+> local_irq_save() already does local_irq_disable().
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index e80dad5..b142315 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -317,18 +317,36 @@ static int xen_unmap_granted_page(pte_t *ptep)
- 	mfn = (ptep->pte & PTE_PFN_MASK) >> PAGE_SHIFT;
- 	page = m2p_find_override(mfn);
- 	if (page != NULL && (page->private & GRANT_FRAME_BIT)) {
--		int ret;
--		struct gnttab_unmap_grant_ref kunmap_op;
- 		struct gnttab_map_grant_ref *kmap_op =
- 			(struct gnttab_map_grant_ref *) page->index;
--		kunmap_op.host_addr = kmap_op->host_addr;
--		kunmap_op.handle = kmap_op->handle;
--		kunmap_op.dev_bus_addr = 0;
--		ret = HYPERVISOR_grant_table_op(
--				GNTTABOP_unmap_grant_ref, &kunmap_op, 1);
--		WARN(ret, "m2p_remove_override: pfn %lx mfn %lx, failed to "
--			"modify kernel mappings", page_to_pfn(page), mfn);
--		return ret;
-+		struct multicall_space mcs =
-+			xen_mc_entry(sizeof(struct gnttab_unmap_grant_ref));
-+		struct gnttab_unmap_grant_ref *kunmap_op = mcs.args;
-+
-+		if (kmap_op->host_addr == 0)
-+			return 0;
-+		/* 
-+		 * Has the grant_op mapping multicall being issued? If not,
-+		 * make sure it is called now.
-+		 */
-+		if (kmap_op->handle == -1)
-+			xen_mc_flush();
-+		if (kmap_op->handle == -1) {
-+			printk(KERN_WARNING "xen_unmap_granted_page: mfn %lx, "
-+					"failed to modify kernel mappings", mfn);
-+			return -1;
-+		}
-+
-+		kunmap_op->host_addr = kmap_op->host_addr;
-+		kunmap_op->handle = kmap_op->handle;
-+		kunmap_op->dev_bus_addr = 0;
-+
-+		MULTI_grant_table_op(mcs.mc,
-+				GNTTABOP_unmap_grant_ref, kunmap_op, 1);
-+
-+		xen_mc_issue(PARAVIRT_LAZY_MMU);
-+		kmap_op->host_addr = 0;
-+		return 0;
- 	}
- 	return 1;
- }
-@@ -345,7 +363,6 @@ static inline void __xen_set_pte(pte_t *ptep, pte_t pteval)
- 	xen_unmap_granted_page(ptep);
- 
- 	if (!(pte_flags(pteval) & _PAGE_USER)) {
--		int ret;
- 		struct page *page;
- 		unsigned long mfn = (pteval.pte & PTE_PFN_MASK) >> PAGE_SHIFT;
- 		page = m2p_find_override(mfn);
-@@ -354,17 +371,19 @@ static inline void __xen_set_pte(pte_t *ptep, pte_t pteval)
- 		 * hypercall to map it instead
- 		 */
- 		if (page != NULL && (page->private & GRANT_FRAME_BIT)) {
-+			struct multicall_space mcs =
-+				xen_mc_entry(sizeof(struct gnttab_unmap_grant_ref));
- 			struct gnttab_map_grant_ref *kmap_op =
- 				(struct gnttab_map_grant_ref *) page->index;
- 			unsigned long old_mfn = kmap_op->dev_bus_addr;
- 			kmap_op->host_addr =
- 				arbitrary_virt_to_machine(ptep).maddr;
- 			kmap_op->dev_bus_addr = 0;
--			ret = HYPERVISOR_grant_table_op(
-+
-+			MULTI_grant_table_op(mcs.mc,
- 					GNTTABOP_map_grant_ref, kmap_op, 1);
--			WARN(ret, "xen_set_pte: pfn %lx mfn %lx, failed to "
--				"modify kernel mappings",
--				page_to_pfn(page), mfn);
-+
-+			xen_mc_issue(PARAVIRT_LAZY_MMU);
- 			kmap_op->dev_bus_addr = old_mfn;
- 			return;
- 		}
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 1c4d2b5..287fa77 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -163,6 +163,7 @@
- #include <asm/xen/hypervisor.h>
- #include <xen/grant_table.h>
- 
-+#include "multicalls.h"
- #include "xen-ops.h"
- 
- static void __init m2p_override_init(void);
-@@ -703,10 +704,12 @@ int m2p_add_override(unsigned long mfn, struct page *page,
- 
- 	if (kmap_op != NULL) {
- 		if (!PageHighMem(page)) {
--			int ret = HYPERVISOR_grant_table_op(
-+			struct multicall_space mcs = xen_mc_entry(sizeof(*kmap_op));
-+
-+			MULTI_grant_table_op(mcs.mc,
- 					GNTTABOP_map_grant_ref, kmap_op, 1);
--			WARN(ret, "m2p_add_override: pfn %lx mfn %lx, "
--				"failed to modify kernel mappings", pfn, mfn);
-+
-+			xen_mc_issue(PARAVIRT_LAZY_MMU);
- 		}
- 		page->private |= GRANT_FRAME_BIT;
- 		/* let's use dev_bus_addr to record the old mfn instead */
-@@ -734,15 +737,6 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 	if (mfn == INVALID_P2M_ENTRY || !(mfn & FOREIGN_FRAME_BIT))
- 		return -EINVAL;
- 
--	if (!PageHighMem(page)) {
--		address = (unsigned long)__va(pfn << PAGE_SHIFT);
--		ptep = lookup_address(address, &level);
--
--		if (WARN(ptep == NULL || level != PG_LEVEL_4K,
--					"m2p_remove_override: pfn %lx not mapped", pfn))
--			return -EINVAL;
--	}
--
- 	spin_lock_irqsave(&m2p_override_lock, flags);
- 	list_del(&page->lru);
- 	spin_unlock_irqrestore(&m2p_override_lock, flags);
-@@ -751,16 +745,38 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 		struct gnttab_map_grant_ref *map_op =
- 			(struct gnttab_map_grant_ref *) page->index;
- 		set_phys_to_machine(pfn, map_op->dev_bus_addr);
--		if (!PageHighMem(page)) {
--			int ret;
--			struct gnttab_unmap_grant_ref unmap_op;
--			unmap_op.host_addr = map_op->host_addr;
--			unmap_op.handle = map_op->handle;
--			unmap_op.dev_bus_addr = 0;
--			ret = HYPERVISOR_grant_table_op(
--					GNTTABOP_unmap_grant_ref, &unmap_op, 1);
--			WARN(ret, "m2p_remove_override: pfn %lx mfn %lx, "
--				"failed to modify kernel mappings", pfn, mfn);
-+		if (map_op->host_addr != 0) {
-+			struct multicall_space mcs =
-+				xen_mc_entry(sizeof(struct gnttab_unmap_grant_ref));
-+			struct gnttab_unmap_grant_ref *unmap_op = mcs.args;
-+
-+			/* 
-+			 * Has the grant_op mapping multicall being issued? If not,
-+			 * make sure it is called now.
-+			 */
-+			if (map_op->handle == -1)
-+				xen_mc_flush();
-+			if (map_op->handle == -1) {
-+				printk(KERN_WARNING "m2p_remove_override: pfn %lx mfn %lx, "
-+						"failed to modify kernel mappings", pfn, mfn);
-+				return -1;
-+			}
-+
-+			unmap_op->host_addr = map_op->host_addr;
-+			unmap_op->handle = map_op->handle;
-+			unmap_op->dev_bus_addr = 0;
-+
-+			MULTI_grant_table_op(mcs.mc,
-+					GNTTABOP_unmap_grant_ref, unmap_op, 1);
-+
-+			xen_mc_issue(PARAVIRT_LAZY_MMU);
-+
-+			map_op->host_addr = 0;
-+			address = (unsigned long)__va(pfn << PAGE_SHIFT);
-+			ptep = lookup_address(address, &level);
-+			if (WARN(ptep == NULL || level != PG_LEVEL_4K,
-+						"m2p_remove_override: pfn %lx not mapped", pfn))
-+				return -2;
- 			set_pte_at(&init_mm, address, ptep,
- 					pfn_pte(pfn, PAGE_KERNEL));
- 			__flush_tlb_single(address);
--- 
-1.7.2.3
+OK
+
+> 
+> local_irq_disable() doesn't protect against actions of other CPUs.  I'd
+> know if this was a bug if the comment wasn't useless :)
+> 
+> > +	getnstimeofday(&start);
+> > +	for (i = 0; i < 100; i++) {
+> > +		if (test[i].crc_le != crc32_le(test[i].crc, test_buf +
+> > +		    test[i].start, test[i].length))
+> > +			errors++;
+> > +
+> > +		if (test[i].crc_be != crc32_be(test[i].crc, test_buf +
+> > +		    test[i].start, test[i].length))
+> > +			errors++;
+> >  	}
+> > ...
 
