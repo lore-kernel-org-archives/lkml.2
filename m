@@ -1,72 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab1IFRD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 13:03:29 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:56807 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab1IFRDV (ORCPT
+	id S1752524Ab1IFRJN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 13:09:13 -0400
+Received: from smarthost1.greenhost.nl ([195.190.28.78]:54917 "EHLO
+	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab1IFRJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 13:03:21 -0400
-Date: Tue, 6 Sep 2011 13:02:55 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: stefano.stabellini@eu.citrix.com, stefan.bader@canonical.com
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen: disable PV spinlocks on HVM
-Message-ID: <20110906170255.GA29839@dumpdata.com>
-References: <1315327307-392-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	Tue, 6 Sep 2011 13:09:11 -0400
+Message-ID: <f7d410e3306c6b13dbee153d2eb3cbd1.squirrel@webmail.greenhost.nl>
+In-Reply-To: <201109060259.58820.vda.linux@googlemail.com>
+References: <201109042311.18793.vda.linux@googlemail.com>
+    <1315231572.1888.35.camel@dhcp-25-63.brq.redhat.com>
+    <744dea57ff4cf2cc5a694b743e83e158.squirrel@webmail.greenhost.nl>
+    <201109060259.58820.vda.linux@googlemail.com>
+Date: Tue, 6 Sep 2011 19:08:48 +0200
+Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
+From: "Indan Zupancic" <indan@nul.nu>
+To: "Denys Vlasenko" <vda.linux@googlemail.com>
+Cc: "Denys Vlasenko" <dvlasenk@redhat.com>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315327307-392-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020202.4E665252.0124:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 0.0
+X-Scan-Signature: 1dd296a9bb0294cb961bb32a6c7b75f7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 05:41:47PM +0100, stefano.stabellini@eu.citrix.com wrote:
-> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> PV spinlocks cannot possibly work with the current code because they are
-> enabled after pvops patching has already been done, and because PV
-> spinlocks use a different data structure than native spinlocks so we
-> cannot switch between them dynamically. A spinlock that has been taken
-> once by the native code (__ticket_spin_lock) cannot be taken by
-> __xen_spin_lock even after it has been released.
+Hello,
 
-Let me stick it on my 3.1-rc5 bug-fix list and add stable@kernel.org to it.
+On Tue, September 6, 2011 02:59, Denys Vlasenko wrote:
+> On Monday 05 September 2011 19:21, Indan Zupancic wrote:
+>> >> The ptrace users who do want group stop to work usually don't want to
+>> >> interfere with it, they just want to know about it.
+>> >
+>> > The point is, they can't "not interfere" with it. __WALL
+>> > implicitly reports group-stops.
+>>
+>> That can be changed. That is not documented behaviour of __WALL,
+>> __WALL is supposed to tell for which tasks to give notifications,
+>> not what kind. At least that's the impression after reading the
+>> manpage.
+>>
+>> If people want group-stop reports, they set WUNTRACED/WSTOPPED.
+>
+> Well, that is your interpretation. The fact is, existing programs
+> either deliberately use __WALL in order to see (among other things)
+> group-stops of tracees; or use __WALL and don't really care about
+> group-stops they are getting - but they were debugged and tested
+> on the kernels where group-stops were delivered on __WALL,
+> thus they might break if that will stop happening.
 
-Stefan, if you have some time this week, and can test it - I can also
-stick 'Tested-by' if you would like.
+It's very unlike that something that doesn't want group stops breaks
+when it stops getting them. Especially not when asking for new behaviour
+with some new option. Keep in mind that this group stop thing is not
+documented in any manpage!
 
-Thinking to send the patches on Friday.
+>> >>  PTRACE_EVENT_STOP
+>> >> makes the knowing slightly easier, but it doesn't fix group stop.
+>> >
+>> > Correct. PTRACE_LISTEN fixes it.
+>>
+>> In a very convoluted way. It fixes the symptomps, but it doesn't fix
+>> the problem, it works around it.
+>
+> Well, as far as I am concerned, PTRACE_LISTEN allows me to achieve what I need.
 
-> 
-> Reported-by: Stefan Bader <stefan.bader@canonical.com>
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/xen/smp.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index e79dbb9..51339b4 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -522,7 +522,6 @@ static void __init xen_hvm_smp_prepare_cpus(unsigned int max_cpus)
->  	WARN_ON(xen_smp_intr_init(0));
->  
->  	xen_init_lock_cpu(0);
-> -	xen_init_spinlocks();
->  }
->  
->  static int __cpuinit xen_hvm_cpu_up(unsigned int cpu)
-> -- 
-> 1.7.2.3
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+I hope to convince you that there is a better way.
+
+> If you don't like it just on the conceptual grounds, it may be
+> a matter of taste.
+
+Of course it is a matter of taste, we're talking about ABI here!
+
+My goal is to simplify ptrace usage for most use cases. And that
+includes the ptrace users' code, not only the kernel/API changes.
+
+> Do you see an actual problem with it, as in "something doesn't work right"?
+
+I'll have to take a better look at PTRACE_LISTEN to be sure.
+
+I just think it's the wrong way around of doing things.
+
+>> > Problem. Now we interfere with SIGSTRAPs. Yes, there are users who want
+>> > to be able to see real SIGTRAPs they send to the program,
+>> > or ones generated by, say, int3 instruction on x86.
+>>
+>> But SIGTRAP is ours, ptrace already sends SIGTRAPS at execve.
+>
+> ...whcih causes problems, and therefore we have PTRACE_O_TRACEEXEC to suppress
+> this idiotic post-execve SIGTRAP.
+
+The SIGTRAP is still there, there is just an extra bit to distinguish
+it from normal SIGTRAPs. Sending another SIGTRAP with another bit set,
+just as with PTRACE_O_TRACEEXEC, solves this issue.
+
+>> Only change is
+>> that it also sends one for new childs instead of SIGSTOP.
+>
+> Racing with user's SIGTRAP does not fix the problem, it merely moves it
+> to a different signal. PTRACE_EVENT_STOP thingy fixes the problem once
+> and for all.
+
+It doesn't really matter if it's SIGSTOP with an extra flag, or SIGTRAP
+with an extra flag set. But SIGTRAP is already used this way for fork
+and exec, so using it always instead of sometimes SIGSTOP would be more
+consistent. It's also clearer what to do with the SIGTRAP as tracer: Block
+it so the tracee doesn't see it. With SIGSTOP it's less clear what to do.
+In current trace it doesn't matter what you do, in practice, and that's also
+what the manpage says. So using SIGTRAP with an extra bit set is cleaner.
+
+>
+>> In any case, this is not a new problem.
+>
+> That the problem is old doesn't mean we can ignore it.
+>
+>> But in the normal case non-ptrace traps aren't seen by tracees, if the tracer
+>> takes some care (if it doesn't, then current program don't get their SIGTRAP
+>> either).
+>
+> I don't understand this part.
+
+"Tracer taking some care" means checking those ptrace bits when handling
+a SIGTRAP: PTRACE_EVENT_EXEC, etc.
+
+If the tracer doesn't use PTRACE_O_TRACEEXEC etc. then it will just block
+all SIGTRAPS blindly, and real SIGTRAP don't make it to the tracee.
+
+>
+>> > How will strace or gdb show that process has stopped, if it doesn't know
+>> > it? With SIGSTOP it's not really important (user can infer that), but
+>> > what about SIGTSTP? If strace says "SIGTSTP was delivered", is process
+>> > stopped now, or is it looping in the SIGTSTP handler?
+>>
+>> Never heard of SIGTSTP, I don't know TTY black magic.
+>>
+>> Tracers that want to get group stop notifications will set WSTOPPED and get
+>> that information that way. But as ptrace won't generate any SIGSTOPs, they
+>> don't have to use GETSIGINFO to know if it came from ptrace or not: It never
+>> does.
+>
+> Drats. In your proposal, if I'd set WSTOPPED, I will get group-stops, right?
+
+Group stop notifications, yes, that was the idea.
+
+> How in your proposed solution can I "restart and cancel group-stop" after
+> group-stop? And how can I "restart and wait for a SIGCONT"?
+
+Not sure what you mean with restart, just send another SIGSTOP?
+
+Blocking a group stop happens by blocking the SIGSTOP delivery to the tracee.
+Each tracee gets a SIGSTOP ptrace event, it's not like only one gets it and
+that controls the state of the whole group. Same for SIGCONT. I'll have to
+double check this, but I think this is how it works.
+
+To restart, send a SIGCONT.
+
+> Today both strace and gdb want to know about group-stops.
+> If you think they should not, well, tough luck: their maintainers
+> think otherwise.
+
+I'm not saying that. I just want an option to not get them, so that strace
+behaves less unexpected.
+
+>> A group-stop notification is not really a ptrace event (maybe it is now),
+>> so PTRACE_CONT wouldn't be needed. It's just a group stop notification,
+>> not a freeze, report and wait event, like signals.
+>
+> Yes, this would be a reasonable API model. PTRACE_CONT cancels group-stop,
+> and *doing nothing* leaves task in the group-stop. One problem with this:
+> many ptrace ops (such as GETREGS) are only allowed in ptrace stops.
+> If you don't consider group-stop to be a ptrace-stop, then no such
+> ops are allowed. In fact, even restart ops need stopped tracee, so PTRACE_CONT
+> is illegal too. IOW: in this model, kernel doesn't know when we decided
+> to go down *do nothing* route. From kernel POW, it is confused. Maybe we do
+> want to PTRACE_CONT, but just didn't get around to it?
+
+It's probably best to not change the current model for group stop notifications
+(when requested via WSTOPPED), as that is confusing, even if the new behaviour
+is better (which it probably isn't).
+
+You're right that if a tracee requests group stop notifications, it probably
+wants to be able to poke around too sometimes, and then a ptrace slightly
+entwined with group stops is preferred. But it's not elegant. :-/
+
+>> > then we have a problem: gdb can't use this interface, it
+>> > needs to be able to restart the thread (only one thread, not all of
+>> > them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
+>> > weird, but it's the real requirement from gdb users.
+>>
+>> Is that true? Isn't a SIGCONT sent to the TID only for that thread instead
+>> of the whole group? That's slightly inconvenient indeed. Perhaps this
+>> limitation can be fixed? Might be troublesome for the main thread.
+>
+> This is how stopping/starting works. It's per-process, not per-thread.
+> Regardless of the thread it is sent to, stop signals stop all threads,
+> and SIGCONT restarts all of them.
+
+Yes, but every thread gets a SIGCONT and the tracee will get a ptrace
+event for each thread. It can let the threads it doesn't want to continue
+hang in the ptrace handling, and continue only one with PTRACE_CONT.
+
+Any reason why this can't work?
+
+This way there is a clear distinction between trapped and group stops.
+When traced tasks are stopped, they're in a group stop. When gdb is poking
+around, they're in trapped state.
+
+>
+>> But this is for a group stop initiated by gdb, I suppose?
+>
+> It is true for any king of group-stop.
+>
+>> In that case gdb
+>> can just let the threads hang in the signal delivery path, and continue them
+>> one by one, like it does now.
+>
+> It can't, since it doesn't know about signal handlers.
+
+The SIGTSTP thing, right? That is indeed a problem of using SIGSTOP.
+
+Is the same true for SIGCONT? Is there any other way to continue a stopped task?
+If not, then do what I proposed after a SIGCONT sent by gdb instead.
+
+That has the great advantage that normal group stops just work and gdb doesn't
+have to ask at group stop time what the user wants. Instead, it just waits till
+the user tells gdb whether to continue all threads or just one, and then do the
+appropriate action at SIGCONT time.
+
+The reason we all forget SIGCONT is because in current ptrace you never see it.
+
+> I repeat: it is not about signals sent by gdb. It is about siganls sent by anyone.
+
+Okay.
+
+>
+>> >>  No need for PTRACE_LISTEN. Tracer has
+>> >>   still full control over stopped state of tracee because it can block SIGSTOP
+>> >>   and SIGCONT signals, and send them itself.
+>> >
+>> > SIGCONT's side effect of waking up from group-stop can't be blocked.
+>> > SIGCONT always wakes up all threads in thread group.
+>> > Using SIGCONT to control tracee will race with SIGCONTs from other
+>> > sources.
+>> >
+>> > This makes SIGCONT a too coarse instrument for the job.
+>>
+>> No kidding. Perhaps the solution is to not use group stops for this in
+>> the first place.
+>>
+>> But PTRACE_CONT results in one traced task running while the rest is still
+>> stopped, that could be called an often unwanted side effect too.
+>
+> Yes. But gdb people want that. I and Oleg tried to persuade them to stop
+> wanting that. The end result is that they persuaded us that it's needed.
+
+I agree that the gdb people should be happy with any changes.
+
+> In short: "screw gdb needs, the elegance of my idea is more important
+> that their real world needs". Sorry, but we tried that, and it leads nowhere.
+
+No! If gdb can't do what it needs then it's no good.
+
+> We don't know. We should handle the widest possible set of scenarios:
+> ^Z, manual signals, signals sent by kernel on bg I/O (such as SIGTTIN)...
+
+Okay.
+
+>
+>> Anyway, gdb can give this choice when it receives the SIGSTOP:
+>> If users want it to go into group stop, gdb does PTRACE_CONT.
+>> If users want to selectively continue running, gdb continues
+>> select threads while blocking the SIGSTOP delivery.
+>
+> Here we go again. If gdb would block signal delivery, HOW DOES
+> IT KNOW THAT THIS SIGNAL IS GOING TO CAUSE GROUP-STOP?
+> Think about receiving SIGTSTP. Will it cause group-stop?
+
+Sorry. It's painfully clear now.
+
+>
+>> >> The behaviour you're defending is generally subtle and unexpected behaviour
+>> >> that most ptrace users don't expect.
+>> >
+>> > What behavior do I defend? That we get both signal-stops and
+>> > group-stops? I don't "defend" it, it's just what we _already have_. We
+>> > need to do minimal amount of changes.
+>>
+>> The group stop interference behaviour. I don't think that adding
+>> PTRACE_INTERRUPT, PTRACE_LISTEN and all those new options is the
+>> minimal amount of change, especially not when including the user
+>> space changes needed to make use of this.
+>
+> Current group-stop fix is EXACTLY one new ptrace command: PTRACE_LISTEN.
+> How you can make it more minimal, I have no idea.
+
+But look at the example code you sent that is needed to make normal
+group stop/continuation work. The minimal change is to make that
+work by default when setting a new option, without taking away the
+means to selectively continue single threads.
+
+>
+>
+>> > In short, you propose to make it possible to switch off group-stop
+>> > notification.
+>>
+>> That is just part of the proposal, the main this is to not let PTRACE_CONT
+>> continue a stopped task.
+>
+> This will break gdb. I told this several times already. Not acceptable.
+
+It probably can use SIGCONT to achieve what it wants. Letting PTRACE_CONT
+not resume stopped tasks would fix normal group stops without any changes.
+Only programs that want to resume single threads while holding the rest
+need to change their code slightly to let the tasks hang in SIGCONT instead
+of group stop notification.
+
+>
+>> Switching off group-stop notifications makes it
+>> only easier to use ptrace when not specifically interested in group stops.
+>
+> Solution in the search of a problem.
+
+You're probably right that it's not worth the trouble. I'm fine if tracers
+always get a group stop notification, but if so, there should be an option
+that makes PTRACE_CONT not continue group stopped tasks.
+
+What I want to avoid is adding extra specific code in the tracer when all
+it wants is to be transparent to group stops. (Except the setting of an
+extra option, of course.)
+
+One way is to not get the group stop notifications, so the tracer doesn't
+accidentally continues the stopped tasks. To me this seems the simplest
+solution, but it has the problem that it only works for tracers not
+interested in group stop. To also make it work with group stops, my idea
+was to let PTRACE_CONT not continue stopped tasks. Instead of trapping
+tasks at the beginning of group stop, they can trap the tasks at group
+stop exit time, which is much more natural anyway (because it is group
+continuation that gdb wants to prevent, not group stop).
+
+With PTRACE_LISTEN the tracee has to handle group stops specially, then,
+instead of doing nothing for group stop notifications, it has to use
+PTRACE_LISTEN to emulate group stop and continuation for the tracee. No
+one is going to bother to add code for this when they're not interested
+in group stops, especially not if the code is portable at all. It's just
+not worth the trouble. The behaviour is too strange and different with
+PTRACE_LISTEN.
+
+So yes, you fix the problem with PTRACE_LISTEN, but in practice the problem
+won't be fixed and group stop will be still broken. Read the decription of
+PTRACE_LISTEN! How big and complicated do you want to make the ptrace manpage?
+
+Compare that to:
+
+ "PTRACE_O_FOO makes PTRACE_CONT/PTRACE_SYSCALL/etc. not automatically
+  continue a group stopped process, so that SIGSTOP and SIGCONT work for
+  ptraced processes. Tracers that want to control thread continuation
+  can do that at SIGCONT time."
+
+>
+>> > (2) in gdb case, this may be too constraining for us: we want to be able
+>> > to decide what to do on group-stop *after* group-stop has happened!
+>>
+>> See above, that should be still possible. Or am I missing something?
+>
+> Yes, you miss the fact that inferring group-stop on signal delivery
+> is not reliable. The correct way to do it is to not *infer* it, but
+> *observe* it when it really happens.
+
+You're right about that. You've convinced me that group stop notification
+is often needed.
+
+As gdb actually wants to control thread continuation, not group stopping
+(as you said, that can happen in many ways), it can use SIGCONT to control
+which thread to run, at thread continuation time when it knows what the user
+wants. That way normal, external group stops and continuations keep working,
+but gdb still has the means to take total control and only run one thread,
+without external SIGCONT messing it up. Changes to gdb are minimal, it just
+has to do what it does for group stops now at SIGCONT time instead. And all
+others don't have to emulate group stops in user space with PTRACE_LISTEN.
+
+I'm probably still missing something, but not as much as before.
+
+Greetings,
+
+Indan
+
+
