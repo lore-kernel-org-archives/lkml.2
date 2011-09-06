@@ -1,162 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab1IFGwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 02:52:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33729 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752743Ab1IFGwc (ORCPT
+	id S1753150Ab1IFGzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 02:55:05 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61295 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab1IFGzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 02:52:32 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Support software initiated shutdown of WM831x PMICs
-Date: Mon,  5 Sep 2011 23:52:28 -0700
-Message-Id: <1315291948-3188-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 6 Sep 2011 02:55:00 -0400
+Date: Tue, 6 Sep 2011 08:54:55 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Josh Wu <josh.wu@atmel.com>
+cc: linux-media@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] [media] at91: add code to initialize and manage the
+ ISI_MCK for Atmel ISI driver.
+In-Reply-To: <1315288601-22384-1-git-send-email-josh.wu@atmel.com>
+Message-ID: <Pine.LNX.4.64.1109060803590.14818@axis700.grange>
+References: <1315288601-22384-1-git-send-email-josh.wu@atmel.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:0Se8kOZvRr+bItFUQxB8OBAahLrQfpnbNwIYhBCXaGs
+ gqeHowW4Lz6Q1YN+PkhU5CJVjiwb+fKlJWM8wRJw4VndzLX6il
+ w850Hz/2XPwA6Uh3rTxcaw1MF7w8ebyriwKHOhnlFkBEJxYgxL
+ 8dgSWYUsk2VuHPK9UOp1ReTZc0DItr0jLo+a02798bVwA5WMPV
+ Q35RjcfuhRS6VZ7NuCqyIdLUILgSdmeUZhqi/iL8myjP/tUalg
+ lMPuFrk3ab7sFSU2EkesNnsBAe8HcxBVNDVorYdW4vkEX12jvn
+ hysVKqAcPz15vghnRvzhnn0xIGGSuPG+IFCYIc0s/xBw1mFz0V
+ C0uYENtQmvsYgiaI/8Olessp6LwYQI0iTJtvsCQvMWNGBMBSXp
+ qmEQwTbVfS2Gw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In systems where there is no hardware signal from the processor to the
-PMIC to initiate the final power off sequence we must initiate the
-shutdown with a register write to the PMIC. Support such systems in the
-driver. Since this may prevent a full shutdown of the system platform
-data is used to enable the feature.
+On Tue, 6 Sep 2011, Josh Wu wrote:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> This patch enable the configuration for ISI_MCK, which is provided by programmable clock.
+> 
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> ---
+>  drivers/media/video/atmel-isi.c |   60 ++++++++++++++++++++++++++++++++++++++-
+>  include/media/atmel-isi.h       |    4 ++
+>  2 files changed, 63 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
+> index 7b89f00..768bf59 100644
+> --- a/drivers/media/video/atmel-isi.c
+> +++ b/drivers/media/video/atmel-isi.c
+> @@ -90,7 +90,10 @@ struct atmel_isi {
+>  	struct isi_dma_desc		dma_desc[MAX_BUFFER_NUM];
+>  
+>  	struct completion		complete;
+> +	/* ISI peripherial clock */
+>  	struct clk			*pclk;
+> +	/* ISI_MCK, provided by PCK */
+> +	struct clk			*mck;
+>  	unsigned int			irq;
+>  
+>  	struct isi_platform_data	*pdata;
+> @@ -763,6 +766,10 @@ static int isi_camera_add_device(struct soc_camera_device *icd)
+>  	if (ret)
+>  		return ret;
+>  
+> +	ret = clk_enable(isi->mck);
+> +	if (ret)
+> +		return ret;
+> +
+
+Don't you have to disable the pixel clock (isi->pclk), that you just have 
+enabled above this hunk, on the above error path?
+
+>  	isi->icd = icd;
+>  	dev_dbg(icd->parent, "Atmel ISI Camera driver attached to camera %d\n",
+>  		 icd->devnum);
+> @@ -776,6 +783,7 @@ static void isi_camera_remove_device(struct soc_camera_device *icd)
+>  
+>  	BUG_ON(icd != isi->icd);
+>  
+> +	clk_disable(isi->mck);
+>  	clk_disable(isi->pclk);
+>  	isi->icd = NULL;
+>  
+> @@ -882,6 +890,49 @@ static struct soc_camera_host_ops isi_soc_camera_host_ops = {
+>  };
+>  
+>  /* -----------------------------------------------------------------------*/
+> +/* Initialize ISI_MCK clock, called by atmel_isi_probe() function */
+> +static int initialize_mck(struct platform_device *pdev,
+> +			struct atmel_isi *isi)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct isi_platform_data *pdata = dev->platform_data;
+> +	struct clk *pck_parent;
+> +	int ret;
+> +
+> +	if (!strlen(pdata->pck_name) || !strlen(pdata->pck_parent_name))
+> +		return -EINVAL;
+> +
+> +	/* ISI_MCK is provided by PCK clock */
+> +	isi->mck = clk_get(dev, pdata->pck_name);
+
+I think, it's still not what Russell meant. Look at 
+drivers/mmc/host/atmel-mci.c:
+
+	host->mck = clk_get(&pdev->dev, "mci_clk");
+
+and in arch/arm/mach-at91/at91sam9g45.c they've got
+
+	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.0", &mmc0_clk),
+	CLKDEV_CON_DEV_ID("mci_clk", "atmel_mci.1", &mmc1_clk),
+
+where
+
+#define CLKDEV_CON_DEV_ID(_con_id, _dev_id, _clk)	\
+	{						\
+		.con_id = _con_id,			\
+		.dev_id = _dev_id,			\
+		.clk = _clk,				\
+	}
+
+I.e., in the device driver (mmc in this case) you only use the (platform) 
+device instance, whose dev_name(dev) is then matched against one of clock 
+lookups above, and a connection ID, which is used in case your device is 
+using more than one clock. In the ISI case, your pck1 clock, that you seem 
+to need here, doesn't have a clock lookup object, so, you might have to 
+add one, and then use its connection ID.
+
+> +	if (IS_ERR(isi->mck)) {
+> +		dev_err(dev, "Failed to get PCK: %s\n", pdata->pck_name);
+> +		return PTR_ERR(isi->mck);
+> +	}
+> +
+> +	pck_parent = clk_get(dev, pdata->pck_parent_name);
+> +	if (IS_ERR(pck_parent)) {
+> +		ret = PTR_ERR(pck_parent);
+> +		dev_err(dev, "Failed to get PCK parent: %s\n",
+> +				pdata->pck_parent_name);
+> +		goto err_init_mck;
+> +	}
+> +
+> +	ret = clk_set_parent(isi->mck, pck_parent);
+
+I'm not entirely sure on this one, but as we had a similar situation with 
+clocks, we decided to extablish the clock hierarchy in the board code, and 
+only deal with the actual device clocks in the driver itself. I.e., we 
+moved all clk_set_parent() and setting up the parent clock into the board. 
+And I do think, this makes more sense, than doing this in the driver, not 
+all users of this driver will need to manage the parent clock, right?
+
+> +	clk_put(pck_parent);
+> +	if (ret)
+> +		goto err_init_mck;
+> +
+> +	ret = clk_set_rate(isi->mck, pdata->isi_mck_hz);
+> +	if (ret < 0)
+> +		goto err_init_mck;
+> +
+> +	return 0;
+> +
+> +err_init_mck:
+> +	clk_put(isi->mck);
+> +	return ret;
+> +}
+> +
+>  static int __devexit atmel_isi_remove(struct platform_device *pdev)
+>  {
+>  	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
+> @@ -897,6 +948,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
+>  			isi->fb_descriptors_phys);
+>  
+>  	iounmap(isi->regs);
+> +	clk_put(isi->mck);
+>  	clk_put(isi->pclk);
+>  	kfree(isi);
+>  
+> @@ -915,7 +967,8 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+>  	struct isi_platform_data *pdata;
+>  
+>  	pdata = dev->platform_data;
+> -	if (!pdata || !pdata->data_width_flags) {
+> +	if (!pdata || !pdata->data_width_flags || !pdata->isi_mck_hz
+> +			|| !pdata->pck_name || !pdata->pck_parent_name) {
+
+These names you won't need either.
+
+>  		dev_err(&pdev->dev,
+>  			"No config available for Atmel ISI\n");
+>  		return -EINVAL;
+> @@ -944,6 +997,11 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+>  	INIT_LIST_HEAD(&isi->video_buffer_list);
+>  	INIT_LIST_HEAD(&isi->dma_desc_head);
+>  
+> +	/* Initialize ISI_MCK clock */
+> +	ret = initialize_mck(pdev, isi);
+> +	if (ret)
+> +		goto err_alloc_descriptors;
+> +
+>  	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
+>  				sizeof(struct fbd) * MAX_BUFFER_NUM,
+>  				&isi->fb_descriptors_phys,
+> diff --git a/include/media/atmel-isi.h b/include/media/atmel-isi.h
+> index 26cece5..dcbb822 100644
+> --- a/include/media/atmel-isi.h
+> +++ b/include/media/atmel-isi.h
+> @@ -114,6 +114,10 @@ struct isi_platform_data {
+>  	u32 data_width_flags;
+>  	/* Using for ISI_CFG1 */
+>  	u32 frate;
+> +	/* Using for ISI_MCK, provided by PCK */
+> +	u32 isi_mck_hz;
+> +	const char *pck_name;
+> +	const char *pck_parent_name;
+>  };
+>  
+>  #endif /* __ATMEL_ISI_H__ */
+> -- 
+> 1.6.3.3
+> 
+
+Thanks
+Guennadi
 ---
- drivers/mfd/wm831x-core.c        |   11 +++++++++++
- drivers/mfd/wm831x-i2c.c         |    8 ++++++++
- drivers/mfd/wm831x-spi.c         |    8 ++++++++
- include/linux/mfd/wm831x/core.h  |    3 +++
- include/linux/mfd/wm831x/pdata.h |    3 +++
- 5 files changed, 33 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 9338f8d..e758c89 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -25,6 +25,7 @@
- #include <linux/mfd/wm831x/irq.h>
- #include <linux/mfd/wm831x/auxadc.h>
- #include <linux/mfd/wm831x/otp.h>
-+#include <linux/mfd/wm831x/pmu.h>
- #include <linux/mfd/wm831x/regulator.h>
- 
- /* Current settings - values are 2*2^(reg_val/4) microamps.  These are
-@@ -1621,6 +1622,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	mutex_init(&wm831x->io_lock);
- 	mutex_init(&wm831x->key_lock);
- 	dev_set_drvdata(wm831x->dev, wm831x);
-+	wm831x->soft_shutdown = pdata->soft_shutdown;
- 
- 	ret = wm831x_reg_read(wm831x, WM831X_PARENT_ID);
- 	if (ret < 0) {
-@@ -1922,6 +1924,15 @@ int wm831x_device_suspend(struct wm831x *wm831x)
- 	return 0;
- }
- 
-+void wm831x_device_shutdown(struct wm831x *wm831x)
-+{
-+	if (wm831x->soft_shutdown) {
-+		dev_info(wm831x->dev, "Initiating shutdown...\n");
-+		wm831x_set_bits(wm831x, WM831X_POWER_STATE, WM831X_CHIP_ON, 0);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(wm831x_device_shutdown);
-+
- MODULE_DESCRIPTION("Core support for the WM831X AudioPlus PMIC");
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Mark Brown");
-diff --git a/drivers/mfd/wm831x-i2c.c b/drivers/mfd/wm831x-i2c.c
-index 3ec6085..ac8da1d 100644
---- a/drivers/mfd/wm831x-i2c.c
-+++ b/drivers/mfd/wm831x-i2c.c
-@@ -65,6 +65,13 @@ static int wm831x_i2c_suspend(struct device *dev)
- 	return wm831x_device_suspend(wm831x);
- }
- 
-+static void wm831x_i2c_shutdown(struct i2c_client *i2c)
-+{
-+	struct wm831x *wm831x = i2c_get_clientdata(i2c);
-+
-+	wm831x_device_shutdown(wm831x);
-+}
-+
- static const struct i2c_device_id wm831x_i2c_id[] = {
- 	{ "wm8310", WM8310 },
- 	{ "wm8311", WM8311 },
-@@ -89,6 +96,7 @@ static struct i2c_driver wm831x_i2c_driver = {
- 	},
- 	.probe = wm831x_i2c_probe,
- 	.remove = wm831x_i2c_remove,
-+	.shutdown = wm831x_i2c_shutdown,
- 	.id_table = wm831x_i2c_id,
- };
- 
-diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
-index 5ea60cd..8d6a9a9 100644
---- a/drivers/mfd/wm831x-spi.c
-+++ b/drivers/mfd/wm831x-spi.c
-@@ -68,6 +68,13 @@ static int wm831x_spi_suspend(struct device *dev)
- 	return wm831x_device_suspend(wm831x);
- }
- 
-+static void wm831x_spi_shutdown(struct spi_device *spi)
-+{
-+	struct wm831x *wm831x = dev_get_drvdata(&spi->dev);
-+
-+	wm831x_device_shutdown(wm831x);
-+}
-+
- static const struct dev_pm_ops wm831x_spi_pm = {
- 	.freeze = wm831x_spi_suspend,
- 	.suspend = wm831x_spi_suspend,
-@@ -95,6 +102,7 @@ static struct spi_driver wm831x_spi_driver = {
- 	.id_table	= wm831x_spi_ids,
- 	.probe		= wm831x_spi_probe,
- 	.remove		= __devexit_p(wm831x_spi_remove),
-+	.shutdown	= wm831x_spi_shutdown,
- };
- 
- static int __init wm831x_spi_init(void)
-diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
-index 44acdb2..ed8fe0d 100644
---- a/include/linux/mfd/wm831x/core.h
-+++ b/include/linux/mfd/wm831x/core.h
-@@ -371,6 +371,8 @@ struct wm831x {
- 	int irq_masks_cur[WM831X_NUM_IRQ_REGS];   /* Currently active value */
- 	int irq_masks_cache[WM831X_NUM_IRQ_REGS]; /* Cached hardware value */
- 
-+	bool soft_shutdown;
-+
- 	/* Chip revision based flags */
- 	unsigned has_gpio_ena:1;         /* Has GPIO enable bit */
- 	unsigned has_cs_sts:1;           /* Has current sink status bit */
-@@ -409,6 +411,7 @@ int wm831x_bulk_read(struct wm831x *wm831x, unsigned short reg,
- int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq);
- void wm831x_device_exit(struct wm831x *wm831x);
- int wm831x_device_suspend(struct wm831x *wm831x);
-+void wm831x_device_shutdown(struct wm831x *wm831x);
- int wm831x_irq_init(struct wm831x *wm831x, int irq);
- void wm831x_irq_exit(struct wm831x *wm831x);
- void wm831x_auxadc_init(struct wm831x *wm831x);
-diff --git a/include/linux/mfd/wm831x/pdata.h b/include/linux/mfd/wm831x/pdata.h
-index 0ba2459..1d7a3f7 100644
---- a/include/linux/mfd/wm831x/pdata.h
-+++ b/include/linux/mfd/wm831x/pdata.h
-@@ -123,6 +123,9 @@ struct wm831x_pdata {
- 	/** Disable the touchscreen */
- 	bool disable_touch;
- 
-+	/** The driver should initiate a power off sequence during shutdown */
-+	bool soft_shutdown;
-+
- 	int irq_base;
- 	int gpio_base;
- 	int gpio_defaults[WM831X_GPIO_NUM];
--- 
-1.7.5.4
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
