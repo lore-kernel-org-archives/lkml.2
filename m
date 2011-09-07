@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab1IGRE0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:04:26 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:61390 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab1IGREV (ORCPT
+	id S1755221Ab1IGRFL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:05:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36268 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851Ab1IGRFH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:04:21 -0400
-X-AuditID: cbfee611-b7c50ae0000047db-b9-4e672e132ee9
-Date: Wed, 07 Sep 2011 08:47:20 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042
- fuel gauge
-To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20110907083858341@myungjoo.ham
-Msgkey: 20110907083858341@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20110907083858341@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <14735031.596001315385240106.JavaMail.weblogic@epml15>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 7 Sep 2011 13:05:07 -0400
+Subject: Re: [PATCH 11/18] block: add bdi flag to indicate risk of io queue
+ underrun
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 07 Sep 2011 09:31:09 +0200
+In-Reply-To: <20110907023719.GC13755@localhost>
+References: <20110904015305.367445271@intel.com>
+	 <20110904020916.070059502@intel.com> <1315318968.14232.6.camel@twins>
+	 <20110907023719.GC13755@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315380669.11101.4.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p87H54g4021319
 
-Sender : Pallala, Ramakrishna<ramakrishna.pallala@intel.com> Date : 2011-09-07 17:30 (GMT+09:00)
-> Hi MyungJoo,
-> 
-> > -----Original Message-----
-> > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
-> > Sent: Monday, September 05, 2011 6:55 AM
-> > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
-> > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
-> > Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
+On Wed, 2011-09-07 at 10:37 +0800, Wu Fengguang wrote:
+> On Tue, Sep 06, 2011 at 10:22:48PM +0800, Peter Zijlstra wrote:
+> > On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
+> > > +++ linux-next/mm/page-writeback.c      2011-08-31 14:40:58.000000000 +0800
+> > > @@ -1067,6 +1067,9 @@ static void balance_dirty_pages(struct a
+> > >                                      nr_dirty, bdi_thresh, bdi_dirty,
+> > >                                      start_time);
+> > >  
+> > > +               if (unlikely(!dirty_exceeded && bdi_async_underrun(bdi)))
+> > > +                       break;
+> > > +
+> > >                 dirty_ratelimit = bdi->dirty_ratelimit;
+> > >                 pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
+> > >                                                background_thresh, nr_dirty,
 > > 
-> > Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02 15:45
-> > (GMT+09:00)
-> > >
-> > > In max17042_get_property(...), the values returned by
-> > > max17042_read_reg are directly assigned to the variables,
-> > > even if the read results in an error.
-> > >
-> > > This patch checks for the return code from max17042_read_reg and
-> > > exits the function if there is any error.
-> > >
-> > > Signed-off-by: Ramakrishna Pallala
-> > > ---
-> > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
-> > > 1 files changed, 58 insertions(+), 27 deletions(-)
-> > >
+> > So dirty_exceeded looks like:
 > > 
-> > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> > 
+> > 1109                 dirty_exceeded = (bdi_dirty > bdi_thresh) ||
+> > 1110                                   (nr_dirty > dirty_thresh);
+> > 
+> > Would it make sense to write it as:
+> > 
+> > 	if (nr_dirty > dirty_thresh || 
+> > 	    (nr_dirty > freerun && bdi_dirty > bdi_thresh))
+> > 		dirty_exceeded = 1;
+> > 
+> > So that we don't actually throttle bdi thingies when we're still in the
+> > freerun area?
 > 
-> Thanks for the Ack.
-> When can I expect the patch to be merged ?
+> Sounds not necessary -- (nr_dirty > freerun) is implicitly true
+> because there is a big break early in the loop:
 > 
-> Thanks,
-> Ram
-> 
+>         if (nr_dirty > freerun)
+>                 break;
 
-Hello Ram,
-
-Although I'd be so glad to be able to merge patches of MAX17042 (and MAX8997/8998/8952/8903/...?) by myself; however, I'm not a maintainer of MAX17042.
-
-I guess you need to wait for Anton.
-
-Cheers,
-MyungJoo
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Ah, totally didn't see that. Thanks!
