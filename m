@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1IGQMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:12:00 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:48747 "EHLO
+	id S1756185Ab1IGQLs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:11:48 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:48707 "EHLO
 	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab1IGQLq (ORCPT
+	with ESMTP id S1752991Ab1IGQLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:11:46 -0400
+	Wed, 7 Sep 2011 12:11:43 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
@@ -14,9 +14,9 @@ From: Jonathan Cameron <jic23@cam.ac.uk>
 To: broonie@opensource.wolfsonmicro.com
 Cc: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
         linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 6/6] staging:iio:imu:adis16400 make use of regmap bulk read capabilities
-Date: Wed,  7 Sep 2011 17:19:47 +0100
-Message-Id: <1315412387-5765-7-git-send-email-jic23@cam.ac.uk>
+Subject: [PATCH 2/6] regmap: Add a magic bus type to handle quirks of analog devices ADIS sensors.
+Date: Wed,  7 Sep 2011 17:19:43 +0100
+Message-Id: <1315412387-5765-3-git-send-email-jic23@cam.ac.uk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <4E679770.4090008@cam.ac.uk>
 References: <4E679770.4090008@cam.ac.uk>
@@ -24,158 +24,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note this only works because of the spi cs change default fun.
+These devices look like 8 bit registers for writes and 16 bit registers for
+reads.  As you might imagine this causes some 'issues' hence this regmap
+bus implementation claims they are always 16bit and does the mangling to
+make the writes work.
 ---
- drivers/staging/iio/imu/adis16400.h      |    4 +-
- drivers/staging/iio/imu/adis16400_ring.c |   67 +++++-------------------------
- 2 files changed, 13 insertions(+), 58 deletions(-)
+ drivers/base/regmap/Kconfig          |    5 ++-
+ drivers/base/regmap/Makefile         |    1 +
+ drivers/base/regmap/regmap-spi-adi.c |   70 ++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h               |    2 +
+ 4 files changed, 77 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/iio/imu/adis16400.h b/drivers/staging/iio/imu/adis16400.h
-index 919d6fa..d1b7b3e 100644
---- a/drivers/staging/iio/imu/adis16400.h
-+++ b/drivers/staging/iio/imu/adis16400.h
-@@ -122,7 +122,7 @@
- /* SLP_CNT */
- #define ADIS16400_SLP_CNT_POWER_OFF	(1<<8)
+diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
+index fabbf6c..e4991fe 100644
+--- a/drivers/base/regmap/Kconfig
++++ b/drivers/base/regmap/Kconfig
+@@ -3,7 +3,7 @@
+ # subsystems should select the appropriate symbols.
  
--#define ADIS16400_MAX_TX 24
-+#define ADIS16400_MAX_TX 2
- #define ADIS16400_MAX_RX 24
+ config REGMAP
+-	default y if (REGMAP_I2C || REGMAP_SPI)
++	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPI_ADI)
+ 	bool
  
- #define ADIS16400_SPI_SLOW	(u32)(300 * 1000)
-@@ -158,7 +158,7 @@ struct adis16400_state {
- 	struct adis16400_chip_info	*variant;
+ config REGMAP_I2C
+@@ -11,3 +11,6 @@ config REGMAP_I2C
  
- 	u8	tx[ADIS16400_MAX_TX] ____cacheline_aligned;
--	u8	rx[ADIS16400_MAX_RX] ____cacheline_aligned;
-+	u16	rx[ADIS16400_MAX_RX >> 1] ____cacheline_aligned;
- };
- 
- int adis16400_set_irq(struct iio_dev *indio_dev, bool enable);
-diff --git a/drivers/staging/iio/imu/adis16400_ring.c b/drivers/staging/iio/imu/adis16400_ring.c
-index e1cd1bf..84c539b 100644
---- a/drivers/staging/iio/imu/adis16400_ring.c
-+++ b/drivers/staging/iio/imu/adis16400_ring.c
-@@ -4,6 +4,7 @@
- #include <linux/spi/spi.h>
- #include <linux/slab.h>
- #include <linux/bitops.h>
-+#include <linux/regmap.h>
- 
- #include "../iio.h"
- #include "../ring_sw.h"
-@@ -15,7 +16,7 @@
-  * @dev: device associated with child of actual device (iio_dev or iio_trig)
-  * @rx: somewhere to pass back the value read (min size is 24 bytes)
-  **/
--static int adis16400_spi_read_burst(struct device *dev, u8 *rx)
-+static int adis16400_spi_read_burst(struct device *dev, u16 *rx)
- {
- 	struct spi_message msg;
- 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-@@ -56,55 +57,6 @@ static int adis16400_spi_read_burst(struct device *dev, u8 *rx)
- 	return ret;
- }
- 
--static const u16 read_all_tx_array[] = {
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_SUPPLY_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_XGYRO_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_YGYRO_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_ZGYRO_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_XACCL_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_YACCL_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_ZACCL_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16350_XTEMP_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16350_YTEMP_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16350_ZTEMP_OUT << 1)),
--	cpu_to_be16(ADIS16400_READ_REG(ADIS16400_AUX_ADC << 1)),
--};
--
--static int adis16350_spi_read_all(struct device *dev, u8 *rx)
--{
--	struct iio_dev *indio_dev = dev_get_drvdata(dev);
--	struct adis16400_state *st = iio_priv(indio_dev);
--
--	struct spi_message msg;
--	int i, j = 0, ret;
--	struct spi_transfer *xfers;
--
--	xfers = kzalloc(sizeof(*xfers)*indio_dev->ring->scan_count + 1,
--			GFP_KERNEL);
--	if (xfers == NULL)
--		return -ENOMEM;
--
--	for (i = 0; i < ARRAY_SIZE(read_all_tx_array); i++)
--		if (test_bit(i, indio_dev->ring->scan_mask)) {
--			xfers[j].tx_buf = &read_all_tx_array[i];
--			xfers[j].bits_per_word = 16;
--			xfers[j].len = 2;
--			xfers[j + 1].rx_buf = rx + j*2;
--			j++;
--		}
--	xfers[j].bits_per_word = 16;
--	xfers[j].len = 2;
--
--	spi_message_init(&msg);
--	for (j = 0; j < indio_dev->ring->scan_count + 1; j++)
--		spi_message_add_tail(&xfers[j], &msg);
--
--	ret = spi_sync(st->us, &msg);
--	kfree(xfers);
--
--	return ret;
--}
--
- /* Whilst this makes a lot of calls to iio_sw_ring functions - it is to device
-  * specific to be rolled into the core.
-  */
-@@ -120,7 +72,7 @@ static irqreturn_t adis16400_trigger_handler(int irq, void *p)
- 	/* Asumption that long is enough for maximum channels */
- 	unsigned long mask = *ring->scan_mask;
- 
--	data = kmalloc(datasize , GFP_KERNEL);
-+	data = kmalloc(datasize, GFP_KERNEL);
- 	if (data == NULL) {
- 		dev_err(&st->us->dev, "memory alloc failed in ring bh");
- 		return -ENOMEM;
-@@ -128,11 +80,14 @@ static irqreturn_t adis16400_trigger_handler(int irq, void *p)
- 
- 	if (ring->scan_count) {
- 		if (st->variant->flags & ADIS16400_NO_BURST) {
--			ret = adis16350_spi_read_all(&indio_dev->dev, st->rx);
-+			ret = regmap_bulk_read(st->regmap, ADIS16400_SUPPLY_OUT, st->rx, 12);
- 			if (ret < 0)
- 				goto err;
--			for (; i < ring->scan_count; i++)
--				data[i]	= *(s16 *)(st->rx + i*2);
-+			for (; i < indio_dev->ring->scan_count; i++) {
-+				j = __ffs(mask);
-+				mask &= ~(1 << j);
-+				data[i] = st->rx[j];
-+			}
- 		} else {
- 			ret = adis16400_spi_read_burst(&indio_dev->dev, st->rx);
- 			if (ret < 0)
-@@ -141,9 +96,10 @@ static irqreturn_t adis16400_trigger_handler(int irq, void *p)
- 				j = __ffs(mask);
- 				mask &= ~(1 << j);
- 				data[i] = be16_to_cpup(
--					(__be16 *)&(st->rx[j*2]));
-+					(__be16 *)&(st->rx[j]));
- 			}
- 		}
+ config REGMAP_SPI
+ 	tristate
 +
- 	}
- 	/* Guaranteed to be aligned with 8 byte boundary */
- 	if (ring->scan_timestamp)
-@@ -175,7 +131,6 @@ static const struct iio_ring_setup_ops adis16400_ring_setup_ops = {
- int adis16400_configure_ring(struct iio_dev *indio_dev)
- {
- 	int ret = 0;
--	struct adis16400_state *st = iio_priv(indio_dev);
- 	struct iio_ring_buffer *ring;
++config REGMAP_SPI_ADI
++	tristate
+diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
+index 057c13f..9e71bf8 100644
+--- a/drivers/base/regmap/Makefile
++++ b/drivers/base/regmap/Makefile
+@@ -2,3 +2,4 @@ obj-$(CONFIG_REGMAP) += regmap.o
+ obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
+ obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
+ obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
++obj-$(CONFIG_REGMAP_SPI_ADI) += regmap-spi-adi.o
+diff --git a/drivers/base/regmap/regmap-spi-adi.c b/drivers/base/regmap/regmap-spi-adi.c
+new file mode 100644
+index 0000000..a98c000
+--- /dev/null
++++ b/drivers/base/regmap/regmap-spi-adi.c
+@@ -0,0 +1,70 @@
++/*
++ * Register map access API - SPI support
++ *
++ * Copyright 2011 Wolfson Microelectronics plc
++ *
++ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/regmap.h>
++#include <linux/spi/spi.h>
++#include <linux/init.h>
++#include <linux/module.h>
++
++static int regmap_spi_write(struct device *dev, const void *data, size_t count)
++{
++/* Now this only works for 8 bit addresss 16 bit register first byte of data
++ * is the lower address, second two the value */
++	struct spi_device *spi = to_spi_device(dev);
++	int ret;
++	u8 *rawdata = (u8 *)data;
++
++	BUG_ON(count != 3);
++	/* Fiddling needed as the value is bigendian */
++	rawdata[0] += 1;
++	ret = spi_write(spi, data, 2);
++	if (ret < 0)
++		return ret;
++
++	rawdata[1] = rawdata[0] - 1;
++	ret = spi_write(spi, data + 1, 2);
++	return ret;
++}
++
++static int regmap_spi_read(struct device *dev,
++			   const void *reg, size_t reg_size,
++			   void *val, size_t val_size)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	BUG_ON(reg_size != 1 || val_size != 2);
++
++	return spi_write_then_read(spi, reg, 2, val, val_size);
++}
++
++static struct regmap_bus regmap_spi_adi = {
++	.write = regmap_spi_write,
++	.read = regmap_spi_read,
++};
++
++/**
++ * regmap_init_spi_adi(): Initialise register map
++ *
++ * @spi: Device that will be interacted with
++ * @config: Configuration for register map
++ *
++ * The return value will be an ERR_PTR() on error or a valid pointer to
++ * a struct regmap.
++ */
++struct regmap *regmap_init_spi_adi(struct spi_device *spi,
++				   const struct regmap_config *config)
++{
++	return regmap_init(&spi->dev, &regmap_spi_adi, config);
++}
++EXPORT_SYMBOL_GPL(regmap_init_spi_adi);
++
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 18d4afa..a827c30 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -111,6 +111,8 @@ struct regmap *regmap_init_i2c(struct i2c_client *i2c,
+ 			       const struct regmap_config *config);
+ struct regmap *regmap_init_spi(struct spi_device *dev,
+ 			       const struct regmap_config *config);
++struct regmap *regmap_init_spi_adi(struct spi_device *dev,
++			       const struct regmap_config *config);
  
- 	ring = iio_sw_rb_allocate(indio_dev);
+ void regmap_exit(struct regmap *map);
+ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
 -- 
 1.7.3.4
 
