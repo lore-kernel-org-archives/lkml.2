@@ -1,225 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab1IGQmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:42:11 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:8060
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752314Ab1IGQk0 (ORCPT
+	id S1753452Ab1IGQm2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:42:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50933 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab1IGQmK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:40:26 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LR5VN6-01-AZB-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 5/7] perf, x86: Implement IBS pmu control ops
-Date: Wed, 7 Sep 2011 18:36:14 +0200
-Message-ID: <1315413376-769-6-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1315413376-769-1-git-send-email-robert.richter@amd.com>
-References: <1315413376-769-1-git-send-email-robert.richter@amd.com>
+	Wed, 7 Sep 2011 12:42:10 -0400
+From: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "Ravi, Deepthy" <deepthy.ravi@ti.com>
+CC: "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mchehab@infradead.org" <mchehab@infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Wed, 7 Sep 2011 15:40:23 +0530
+Subject: RE: [PATCH 1/2] omap3: ISP: Fix the failure of CCDC capture during
+ suspend/resume
+Thread-Topic: [PATCH 1/2] omap3: ISP: Fix the failure of CCDC capture during
+ suspend/resume
+Thread-Index: AcxnWNIS/oDxFYU1TtivNbQMcsIyhAF7YjzA
+Message-ID: <FCCFB4CDC6E5564B9182F639FC356087037AF843C7@dbde02.ent.ti.com>
+References: <1312984992-19315-1-git-send-email-deepthy.ravi@ti.com>,<201108302307.47564.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201108302307.47564.laurent.pinchart@ideasonboard.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add code to control the IBS pmu. We need to maintain per-cpu
-states. Since some states are used and changed by the nmi handler,
-access to these states must be atomic.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |  106 +++++++++++++++++++++++++++++-
- 1 files changed, 103 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index ffa53c9..f31f868 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -22,6 +22,19 @@ static u32 ibs_caps;
- #define IBS_FETCH_CONFIG_MASK	(IBS_FETCH_RAND_EN | IBS_FETCH_MAX_CNT)
- #define IBS_OP_CONFIG_MASK	IBS_OP_MAX_CNT
- 
-+enum ibs_states {
-+	IBS_ENABLED	= 0,
-+	IBS_STARTED	= 1,
-+	IBS_STOPPING	= 2,
-+
-+	IBS_MAX_STATES,
-+};
-+
-+struct cpu_perf_ibs {
-+	struct perf_event	*event;
-+	unsigned long		state[BITS_TO_LONGS(IBS_MAX_STATES)];
-+};
-+
- struct perf_ibs {
- 	struct pmu	pmu;
- 	unsigned int	msr;
-@@ -31,6 +44,7 @@ struct perf_ibs {
- 	u64		valid_mask;
- 	unsigned long	offset_mask[1];
- 	int		offset_max;
-+	struct cpu_perf_ibs __percpu *pcpu;
- };
- 
- struct perf_ibs_data {
-@@ -95,20 +109,74 @@ static int perf_ibs_init(struct perf_event *event)
- 	return 0;
- }
- 
-+static void perf_ibs_start(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	struct perf_ibs *perf_ibs = container_of(event->pmu, struct perf_ibs, pmu);
-+	struct cpu_perf_ibs *pcpu = this_cpu_ptr(perf_ibs->pcpu);
-+
-+	if (test_and_set_bit(IBS_STARTED, pcpu->state))
-+		return;
-+
-+	wrmsrl(hwc->config_base, hwc->config | perf_ibs->enable_mask);
-+}
-+
-+static void perf_ibs_stop(struct perf_event *event, int flags)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	struct perf_ibs *perf_ibs = container_of(event->pmu, struct perf_ibs, pmu);
-+	struct cpu_perf_ibs *pcpu = this_cpu_ptr(perf_ibs->pcpu);
-+	u64 val;
-+
-+	if (!test_and_clear_bit(IBS_STARTED, pcpu->state))
-+		return;
-+
-+	set_bit(IBS_STOPPING, pcpu->state);
-+
-+	rdmsrl(hwc->config_base, val);
-+	val &= ~perf_ibs->enable_mask;
-+	wrmsrl(hwc->config_base, val);
-+}
-+
- static int perf_ibs_add(struct perf_event *event, int flags)
- {
-+	struct perf_ibs *perf_ibs = container_of(event->pmu, struct perf_ibs, pmu);
-+	struct cpu_perf_ibs *pcpu = this_cpu_ptr(perf_ibs->pcpu);
-+
-+	if (test_and_set_bit(IBS_ENABLED, pcpu->state))
-+		return -ENOSPC;
-+
-+	pcpu->event = event;
-+
-+	if (flags & PERF_EF_START)
-+		perf_ibs_start(event, PERF_EF_RELOAD);
-+
- 	return 0;
- }
- 
- static void perf_ibs_del(struct perf_event *event, int flags)
- {
-+	struct perf_ibs *perf_ibs = container_of(event->pmu, struct perf_ibs, pmu);
-+	struct cpu_perf_ibs *pcpu = this_cpu_ptr(perf_ibs->pcpu);
-+
-+	if (!test_and_clear_bit(IBS_ENABLED, pcpu->state))
-+		return;
-+
-+	perf_ibs_stop(event, 0);
-+
-+	pcpu->event = NULL;
- }
- 
-+static void perf_ibs_read(struct perf_event *event) { }
-+
- static struct perf_ibs perf_ibs_fetch = {
- 	.pmu = {
- 		.event_init	= perf_ibs_init,
- 		.add		= perf_ibs_add,
- 		.del		= perf_ibs_del,
-+		.start		= perf_ibs_start,
-+		.stop		= perf_ibs_stop,
-+		.read		= perf_ibs_read,
- 	},
- 	.msr			= MSR_AMD64_IBSFETCHCTL,
- 	.config_mask		= IBS_FETCH_CONFIG_MASK,
-@@ -124,6 +192,9 @@ static struct perf_ibs perf_ibs_op = {
- 		.event_init	= perf_ibs_init,
- 		.add		= perf_ibs_add,
- 		.del		= perf_ibs_del,
-+		.start		= perf_ibs_start,
-+		.stop		= perf_ibs_stop,
-+		.read		= perf_ibs_read,
- 	},
- 	.msr			= MSR_AMD64_IBSOPCTL,
- 	.config_mask		= IBS_OP_CONFIG_MASK,
-@@ -136,7 +207,8 @@ static struct perf_ibs perf_ibs_op = {
- 
- static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
- {
--	struct perf_event *event = NULL;
-+	struct cpu_perf_ibs *pcpu = this_cpu_ptr(perf_ibs->pcpu);
-+	struct perf_event *event = pcpu->event;
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct perf_sample_data data;
- 	struct perf_raw_record raw;
-@@ -146,6 +218,14 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
- 	unsigned int msr;
- 	u64 *buf;
- 
-+	if (!test_bit(IBS_STARTED, pcpu->state)) {
-+		/* Catch spurious interrupts after stopping IBS: */
-+		if (!test_and_clear_bit(IBS_STOPPING, pcpu->state))
-+			return 0;
-+		rdmsrl(perf_ibs->msr, *ibs_data.regs);
-+		return (*ibs_data.regs & perf_ibs->valid_mask);
-+	}
-+
- 	msr = hwc->config_base;
- 	buf = ibs_data.regs;
- 	rdmsrl(msr, *buf);
-@@ -194,13 +274,33 @@ perf_ibs_nmi_handler(unsigned int cmd, struct pt_regs *regs)
- 	return handled;
- }
- 
-+static __init int perf_ibs_pmu_init(struct perf_ibs *perf_ibs, char *name)
-+{
-+	struct cpu_perf_ibs __percpu *pcpu;
-+	int ret;
-+
-+	pcpu = alloc_percpu(struct cpu_perf_ibs);
-+	if (!pcpu)
-+		return -ENOMEM;
-+
-+	perf_ibs->pcpu = pcpu;
-+
-+	ret = perf_pmu_register(&perf_ibs->pmu, name, -1);
-+	if (ret) {
-+		perf_ibs->pcpu = NULL;
-+		free_percpu(pcpu);
-+	}
-+
-+	return ret;
-+}
-+
- static __init int perf_event_ibs_init(void)
- {
- 	if (!ibs_caps)
- 		return -ENODEV;	/* ibs not supported by the cpu */
- 
--	perf_pmu_register(&perf_ibs_fetch.pmu, "ibs_fetch", -1);
--	perf_pmu_register(&perf_ibs_op.pmu, "ibs_op", -1);
-+	perf_ibs_pmu_init(&perf_ibs_fetch, "ibs_fetch");
-+	perf_ibs_pmu_init(&perf_ibs_op, "ibs_op");
- 	register_nmi_handler(NMI_LOCAL, &perf_ibs_nmi_handler, 0, "perf_ibs");
- 	printk(KERN_INFO "perf: AMD IBS detected (0x%08x)\n", ibs_caps);
- 
--- 
-1.7.6.1
-
+On Tue, Aug 30, 2011  Laurent Pinchart wrote:
+> Hi,
+>
+> On Wednesday 10 August 2011 16:03:12 Deepthy Ravi wrote:
+>> From: Abhilash K V <abhilash.kv@ti.com>
+>>
+>> While resuming from the "suspended to memory" state,
+>> occasionally CCDC fails to get enabled and thus fails
+>> to capture frames any more till the next suspend/resume
+>> is issued.
+>> This is a race condition which happens only when a CCDC
+>> frame-completion ISR is pending even as ISP device's
+>> isp_pm_prepare() is getting called and only one buffer
+>> is left on the DMA queue.
+>> The DMA queue buffers are thus depleted which results in
+>> its underrun.So when ISP resumes there are no buffers on
+>> the queue (as the application which can issue buffers is
+>> yet to resume) to start video capture.
+>> This fix addresses this issue by dequeuing and enqueing
+>> the last buffer in isp_pm_prepare() after its DMA gets
+>> completed. Thus,when ISP resumes it always finds atleast
+>> one buffer on the DMA queue - this is true if application
+>> uses only 3 buffers.
+>
+> How is that problem specific to the CCDC ? Can't it be reproduce at the
+> preview engine or resizer output as well ?
+[Abhilash K V]Yes,  I believe this issue would crop with preview and resizer too though I have
+not been able to try these out.
+>
+> --
+> Regards,
+>
+> Laurent Pinchart
+>
 
