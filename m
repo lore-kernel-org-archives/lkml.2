@@ -1,118 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab1IGWmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 18:42:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43525 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008Ab1IGWml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 18:42:41 -0400
-Date: Thu, 8 Sep 2011 02:42:34 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-ID: <20110907224234.GD28162@sun>
-References: <20110905192009.GJ761@sun>
- <20110905194908.GA2690@albatros>
- <20110905203627.GL761@sun>
- <20110906101518.GA4799@albatros>
- <20110906165144.GJ18425@mtj.dyndns.org>
- <20110906172952.GA28055@albatros>
- <20110906173341.GM18425@mtj.dyndns.org>
- <20110907112301.GA12157@albatros>
- <20110907215329.GB28162@sun>
- <20110907151323.613e62e7.akpm@linux-foundation.org>
+	id S1757401Ab1IGWqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 18:46:36 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59340 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756985Ab1IGWqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 18:46:35 -0400
+Date: Wed, 7 Sep 2011 15:46:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Shakthi Kannan <shakthimaan@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: CRC calculation in Module.symvers
+Message-ID: <20110907224632.GE4387@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CABG-yt0t0sgAvcDDLhjyNFGpY22tL0CtDvXV9+CxYJMf0MdVfA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110907151323.613e62e7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABG-yt0t0sgAvcDDLhjyNFGpY22tL0CtDvXV9+CxYJMf0MdVfA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 03:13:23PM -0700, Andrew Morton wrote:
-...
-> > > 
-> > > Andrew, are you OK with closing the hole with pid_no_revalidate()
-> > > and 0600 /proc/slabinfo?  If so, I feel I have to start this discussion
-> > > with people participating in the discussion above: Theodore, Dan, Linus, etc.
+On Wed, Sep 07, 2011 at 11:28:46AM +0530, Shakthi Kannan wrote:
+> Greetings!
 > 
-> I fell asleep a long time ago and don't know what pid_no_revalidate()
-> and slabinfo permissions have to do with this.  Perhaps summarising the
-> issues in the changelog would be appropriate, dunno.
-
-Well, time to poke Vasiliy ;)
-
-...
-> > 
-> > I fear we still need to use two passes in proc_map_files_readdir, I found no way
-> > to escape lockdep complains when doing all work in one pass with mmap_sem taken.
-> > The /maps does the same thing -- ie it fills maps file with mmap_sem taken to produce
-> > robust data.
+> I would like to know as to:
 > 
-> The code's using three passes.
-
-Yes, and I didn't find thy way to escape it (actually if there would not
-be filldir+might_fault tuple I would create this all under mmap_sem and
-would not need this flex_array or any temporary storage at all and code
-would be a way simplier).
-
+> 1. How the CRC is computed for an exported symbol present in
+> Module.symvers file, and
+> 2. Given a kernel .c file, how can I obtain the CRC checksums for a symbol.
 > 
-> > And I'm not really sure what you mean with problematic put_filp?
+> For linux-3.0.2 (example), I compiled with CONFIG_MODVERSIONS=y, and
+> running 'make' built vmlinux, and generated the Module.symvers file. I
+> believe genksyms is used to create the Module.symvers file?
 > 
-> I was thinking fput(), which can do a hell of a lot of stuff if it's
-> the final put on the inode.
-
-Ouch, somehow missed it, thanks!
-
-> > +err:
-> > +		up_read(&mm->mmap_sem);
-> > +
-> > +		for (i = 0; i < used && !ret; i++) {
+> I had referred the "Kernel Symbols and CONFIG_MODVERSIONS"
+> documentation [1] written by Mark McLoughlin. I tried the following in
+> the top-level kernel sources:
 > 
-> The "&& !ret" is unneeded?
-
-No, it's needed, since it makes sure that if "impossible"
-scenario happens and flex-arrays fails with preallocated
-data so we will reach this point with used > 0 and ret = -ENOMEM
-and thus will not call for proc_map_files_instantiate as needed.
-
+>  $ gcc -E -D__GENKSYMS__ -DCONFIG_MODVERSIONS -DEXPORT_SYMTAB
+> crypto/api.c -I/tmp/linux-3.0.2/include
+> -I/tmp/linux-3.0.2/arch/x86/include | ./scripts/genksyms/genksyms
 > 
-> > +			p = flex_array_get(fa, i);
-> > +			ret = proc_fill_cache(filp, dirent, filldir,
-> > +					      p->name, p->len,
-> > +					      proc_map_files_instantiate,
-> > +					      task, p->file);
-> > +			if (ret)
-> > +				break;
-
-1: Say we failed here
-
-> > +			filp->f_pos++;
-> > +			put_filp(p->file);
-> > +		}
-> > +
-> > +		for (; i < used; i++) {
-> > +			p = flex_array_get(fa, i);
-> > +			put_filp(p->file);
-> > +		}
+> and I get the following error output:
 > 
-> Still unclear why we need the third loop.
+> === Output ===
+> 
+> /tmp/linux-3.0.2/include/linux/jiffies.h:43:42: error: division by zero in #if
+> In file included from /tmp/linux-3.0.2/include/linux/tracepoint.h:19:0,
+>                 from /tmp/linux-3.0.2/include/linux/module.h:18,
+>                 from crypto/api.c:22:
+> /tmp/linux-3.0.2/include/linux/rcupdate.h:160:2: error: #error
+> "Unknown RCU implementation specified to kernel configuration"
 
-Due to (1) -- so we will have a number of files reference
-taken and need to put them back.
+The above error message is emitted if none of CONFIG_TINY_RCU,
+CONFIG_TINY_PREEMPT_RCU, CONFIG_TREE_RCU, and CONFIG_TREE_PREEMPT_RCU
+is defined.  Given that these four are in a "choice", I suspect that
+you have broken the kernel build pretty impressively.
 
-	Cyrill
+							Thanx, Paul
+
+> In file included from /tmp/linux-3.0.2/include/linux/module.h:21:0,
+>                 from crypto/api.c:22:
+> /tmp/linux-3.0.2/arch/x86/include/asm/module.h:59:2: error: #error
+> unknown processor family
+> 
+> === End ===
+> 
+> The documentation for genksyms is old, and now there is no -k option?
+> 
+> Appreciate any inputs in this regard,
+> 
+> Thanks!
+> 
+> SK
+> 
+> [1] Kernel Symbols and CONFIG_MODVERSIONS.
+> http://www.skynet.ie/~mark/pub/symbols.txt
+> 
+> -- 
+> Shakthi Kannan
+> http://www.shakthimaan.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
