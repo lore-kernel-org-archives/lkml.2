@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab1IGQmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:42:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42235 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442Ab1IGQm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:42:29 -0400
-Date: Wed, 7 Sep 2011 18:42:16 +0200
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Christoph Hellwig <hch@lst.de>, Jan Kara <jack@suse.cz>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/18] writeback: fix dirtied pages accounting on
- redirty
-Message-ID: <20110907164216.GA7725@quack.suse.cz>
-References: <20110904015305.367445271@intel.com>
- <20110904020916.841463184@intel.com>
- <1315325936.14232.22.camel@twins>
- <20110907002222.GF31945@quack.suse.cz>
- <20110907065635.GA12619@lst.de>
- <1315383587.11101.18.camel@twins>
+	id S1752980Ab1IGQne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:43:34 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41448 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab1IGQnc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:43:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315383587.11101.18.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110907162857.GB2327@n2100.arm.linux.org.uk>
+References: <87ehzstr07.fsf@vostro.fn.ogness.net> <20110907144016.GA30719@e102109-lin.cambridge.arm.com>
+ <20110907162857.GB2327@n2100.arm.linux.org.uk>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Wed, 7 Sep 2011 17:43:12 +0100
+X-Google-Sender-Auth: kPzkN2A7W4YMgyfn294TkuuZrgI
+Message-ID: <CAHkRjk4CQAMb5GdGxKY3oASQYA6a3w0dCNXbD3pF4NFKgmPfQQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: alignment: setup alignment handler earlier
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        John Ogness <john.ogness@linutronix.de>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-09-11 10:19:47, Peter Zijlstra wrote:
-> On Wed, 2011-09-07 at 08:56 +0200, Christoph Hellwig wrote:
-> > On Wed, Sep 07, 2011 at 02:22:22AM +0200, Jan Kara wrote:
-> > > > So wtf is ext4 doing? Shouldn't a page stay dirty until its written out?
-> > > > 
-> > > > That is, should we really frob around this behaviour or fix ext4 because
-> > > > its on crack?
-> > >   Fengguang, could you please verify your findings with recent kernel? I
-> > > believe ext4 got fixed in this regard some time ago already (and yes, old
-> > > delalloc writeback code in ext4 was terrible).
-> > 
-> > The pattern we do in writeback is:
-> > 
-> > in pageout / write_cache_pages:
-> > 	lock_page();
-> > 	clear_page_dirty_for_io();
-> > 
-> > in ->writepage:
-> > 	set_page_writeback();
-> > 	unlock_page();
-> > 	end_page_writeback();
-> > 
-> > So whenever ->writepage decides it doesn't want to write things back
-> > we have to redirty pages.  We have this happen quite a bit in every
-> > filesystem, but ext4 hits it a lot more than usual because it refuses
-> > to write out delalloc pages from plain ->writepage and only allows
-> > ->writepages to do it.
-> 
-> Ah, right, so it is a fairly common thing and not something easily fixed
-> in filesystems.
-  Well, it depends on what you call common - usually, ->writepage is called
-from kswapd which shouldn't be common compared to writeback from a flusher
-thread. But now I've realized that JBD2 also calls ->writepage to fulfill
-data=ordered mode guarantees and that's what causes most of redirtying of
-pages on ext4. That's going away eventually but it will take some time. So
-for now writeback has to handle redirtying...
+On 7 September 2011 17:28, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Sep 07, 2011 at 03:40:16PM +0100, Catalin Marinas wrote:
+>> On Wed, Sep 07, 2011 at 02:35:04PM +0100, John Ogness wrote:
+>> > From 6f3f381800367127dc6430d9b9fa9bd6fc6d8ed0 Mon Sep 17 00:00:00 2001
+>> > From: John Ogness <john.ogness@linutronix.de>
+>> >
+>> > The alignment exception handler is setup fairly late in
+>> > the boot process (fs_initcall). However, with newer gcc
+>> > versions and the compiler option -fconserve-stack, code
+>> > accessing unaligned data is generated in functions that
+>> > are called earlier, for example pcpu_dump_alloc_info().
+>> > This results in unhandled alignment exceptions during
+>> > boot. By setting up the exception handler sooner, we
+>> > reduce the window where a compiler may generate code
+>> > accessing unaligned data.
+>>
+>> While this reduces the window and fixes this particular case, it still
+>> doesn't solve the problem. We never know when some unaligned access
+>> would be generated for some earlier code.
+>
+> Is the problem even solvable?  There are instructions on ARMv6+ which
+> always produce an alignment fault (eg, ldrd) irrespective of strict
+> alignment checking.
 
-								Honza
+We can just hope that the compiler isn't that bad as to generate
+unaligned accesses with those instructions that are known to fault.
+That's what I would consider a compiler bug.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Catalin
