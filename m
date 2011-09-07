@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab1IGV2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:28:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757074Ab1IGV2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:28:46 -0400
-From: Steve Grubb <sgrubb@redhat.com>
-Organization: Red Hat
-To: Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH] random: add blocking facility to urandom
-Date: Wed, 7 Sep 2011 17:28:30 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.35.14-96.fc14.x86_64; KDE/4.6.5; x86_64; ; )
-Cc: "Ted Ts'o" <tytso@mit.edu>, Jarod Wilson <jarod@redhat.com>,
-        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com> <201109071656.49758.sgrubb@redhat.com> <1315429827.3576.61.camel@lappy>
-In-Reply-To: <1315429827.3576.61.camel@lappy>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757151Ab1IGVaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:30:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56208 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757108Ab1IGVaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 17:30:18 -0400
+Date: Wed, 7 Sep 2011 14:30:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Frank van Maarseveen <frankvm@frankvm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: 3.0.3 kernel BUG at kernel/timer.c:1035
+Message-Id: <20110907143006.0d0922dd.akpm@linux-foundation.org>
+In-Reply-To: <1315398979.2938.0.camel@hp6530s>
+References: <20110824130238.GA24543@janus>
+	<20110902011058.c5bad476.akpm@linux-foundation.org>
+	<20110905123813.GA29763@janus>
+	<CAF1ivSYui_=tHbxHiy15a9wfiphHcpoY+J1MmAJ=dMQsAfEVLw@mail.gmail.com>
+	<1315320518.4235.3.camel@hp6530s>
+	<20110907102425.GA3423@janus>
+	<1315398979.2938.0.camel@hp6530s>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109071728.31162.sgrubb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 07, 2011 05:10:27 PM Sasha Levin wrote:
-> > > > > Something similar probably happens for getting junk on disks before
-> > > > > creating an encrypted filesystem on top of them.
-> > > > 
-> > > > During system install, this sysctl is not likely to be applied.
+On Wed, 07 Sep 2011 20:36:19 +0800
+Lin Ming <ming.m.lin@intel.com> wrote:
+
+> On Wed, 2011-09-07 at 18:24 +0800, Frank van Maarseveen wrote:
+> > On Tue, Sep 06, 2011 at 10:48:38PM +0800, Lin Ming wrote:
+> > > Does below patch help?
 > > > 
-> > > It may happen at any time you need to create a new filesystem, which
-> > > won't necessarily happen during system install.
+> > > >From a98b874437f871d5ecc3f6fe409b2b474b1f2731 Mon Sep 17 00:00:00 2001
+> > > From: Lin Ming <ming.m.lin@intel.com>
+> > > Date: Tue, 6 Sep 2011 22:45:43 +0800
+> > > Subject: [PATCH] block: delete bdi writeback wakup_timer in blk_cleanup_queue()
 > > > 
-> > > See for example the instructions on how to set up a LUKS filesystem:
-> > > https://wiki.archlinux.org/index.php/System_Encryption_with_LUKS#Prepar
-> > > atio n_and_mapping
+> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > > ---
+> > >  block/blk-core.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/block/blk-core.c b/block/blk-core.c
+> > > index 90e1ffd..22529a3 100644
+> > > --- a/block/blk-core.c
+> > > +++ b/block/blk-core.c
+> > > @@ -363,6 +363,7 @@ void blk_cleanup_queue(struct request_queue *q)
+> > >  	blk_sync_queue(q);
+> > >  
+> > >  	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+> > > +	del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
+> > >  	mutex_lock(&q->sysfs_lock);
+> > >  	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+> > >  	mutex_unlock(&q->sysfs_lock);
+> > > -- 
+> > > 1.7.2.3
+> > > 
 > > 
-> > Those instructions might need to be changed. That is one way of many to
-> > get random numbers on the disk. Anyone really needing the security to
-> > have the sysctl on will also probably accept that its doing its job and
-> > keeping the numbers random. Again, no effect unless you turn it on.
+> > No, bug still present. Stack trace is the same and I double checked that
+> > it was the new kernel (this time with a lot more debug enabled).
 > 
-> There are bunch of other places that would need to be changed in that
-> case :)
-> 
-> Why not implement it as a user mode CUSE driver that would
-> wrap /dev/urandom and make it behave any way you want to? why push it
-> into the kernel?
+> Thanks for test.
+> I'll try to reproduce this bug.
 
-For one, auditing does not work for FUSE or things like that. We have to be able to 
-audit who is using what. Then there are the FIPS-140 requirements and this will spread 
-it. There are problems sending crypto audit events from user space, too.
+Probably this will "fix" it:
 
--Steve
+--- a/block/blk-sysfs.c~a
++++ a/block/blk-sysfs.c
+@@ -4,6 +4,7 @@
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#include <linux/timer.h>
+ #include <linux/bio.h>
+ #include <linux/blkdev.h>
+ #include <linux/blktrace_api.h>
+@@ -486,7 +487,7 @@ static void blk_release_queue(struct kob
+ 		__blk_queue_free_tags(q);
+ 
+ 	blk_trace_shutdown(q);
+-
++	del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
+ 	bdi_destroy(&q->backing_dev_info);
+ 	kmem_cache_free(blk_requestq_cachep, q);
+ }
+_
+
+Jens, can you please take a look at this regression? 
+blk_release_queue() is freeing a pending timer.
