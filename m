@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576Ab1IGQXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:23:42 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:57783 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756479Ab1IGQXj (ORCPT
+	id S1756602Ab1IGQXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:23:54 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55418 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab1IGQXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:23:39 -0400
+	Wed, 7 Sep 2011 12:23:40 -0400
 From: Dan McGee <dpmcgee@gmail.com>
 To: linux-ide@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
         Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH 1/5] pata_sis: extract a sis_port_base() method
-Date: Wed,  7 Sep 2011 11:23:18 -0500
-Message-Id: <1315412602-6560-2-git-send-email-dpmcgee@gmail.com>
+Subject: [PATCH 3/5] pata_sis: enable MWDMA for UDMA 133 chipset
+Date: Wed,  7 Sep 2011 11:23:20 -0500
+Message-Id: <1315412602-6560-4-git-send-email-dpmcgee@gmail.com>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1315412602-6560-1-git-send-email-dpmcgee@gmail.com>
 References: <1315412602-6560-1-git-send-email-dpmcgee@gmail.com>
@@ -21,108 +21,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is similar to the existing sis_old_port_base() method. We do this
-same calculation and logic in multiple places (with one more to come in
-a future patch), so extracting it into a method makes sense.
+This ports the timing values over from the old IDE driver into the new
+PATA-based one. The comment was lying when it stated the old driver was
+not MWDMA capable.
 
-Reviewed-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Boot tested on actual hardware using 'libata.force=mwdma2'.
+
 Signed-off-by: Dan McGee <dpmcgee@gmail.com>
 ---
- drivers/ata/pata_sis.c |   46 ++++++++++++++++++++++++++++------------------
- 1 files changed, 28 insertions(+), 18 deletions(-)
+ drivers/ata/pata_sis.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/ata/pata_sis.c b/drivers/ata/pata_sis.c
-index 533f2ae..10af293 100644
+index fb4e90f..a42668b 100644
 --- a/drivers/ata/pata_sis.c
 +++ b/drivers/ata/pata_sis.c
-@@ -89,6 +89,29 @@ static int sis_old_port_base(struct ata_device *adev)
- }
- 
- /**
-+ *	sis_port_base		-	return PCI configuration base for dev
-+ *	@adev: device
-+ *
-+ *	Returns the base of the PCI configuration registers for this port
-+ *	number.
-+ */
-+
-+static int sis_port_base(struct ata_device *adev)
-+{
-+	struct ata_port *ap = adev->link->ap;
-+	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
-+	int port = 0x40;
-+	u32 reg54;
-+
-+	/* If bit 30 is set then the registers are mapped at 0x70 not 0x40 */
-+	pci_read_config_dword(pdev, 0x54, &reg54);
-+	if (reg54 & 0x40000000)
-+		port = 0x70;
-+
-+	return port + (8 * ap->port_no) + (4 * adev->devno);
-+}
-+
-+/**
-  *	sis_133_cable_detect	-	check for 40/80 pin
-  *	@ap: Port
-  *	@deadline: deadline jiffies for the operation
-@@ -266,9 +289,8 @@ static void sis_100_set_piomode (struct ata_port *ap, struct ata_device *adev)
- static void sis_133_set_piomode (struct ata_port *ap, struct ata_device *adev)
- {
- 	struct pci_dev *pdev	= to_pci_dev(ap->host->dev);
--	int port = 0x40;
-+	int port;
+@@ -485,21 +485,30 @@ static void sis_133_set_dmamode (struct ata_port *ap, struct ata_device *adev)
+ 	int port;
  	u32 t1;
--	u32 reg54;
- 	int speed = adev->pio_mode - XFER_PIO_0;
  
- 	const u32 timing133[] = {
-@@ -288,12 +310,7 @@ static void sis_133_set_piomode (struct ata_port *ap, struct ata_device *adev)
- 
- 	sis_set_fifo(ap, adev);
- 
--	/* If bit 14 is set then the registers are mapped at 0x70 not 0x40 */
--	pci_read_config_dword(pdev, 0x54, &reg54);
--	if (reg54 & 0x40000000)
--		port = 0x70;
--	port += 8 * ap->port_no +  4 * adev->devno;
+-	/* bits 4- cycle time 8 - cvs time */
+-	static const u32 timing_u100[] = { 0x6B0, 0x470, 0x350, 0x140, 0x120, 0x110, 0x000 };
+-	static const u32 timing_u133[] = { 0x9F0, 0x6A0, 0x470, 0x250, 0x230, 0x220, 0x210 };
 -
-+	port = sis_port_base(adev);
- 	pci_read_config_dword(pdev, port, &t1);
- 	t1 &= 0xC0C00FFF;	/* Mask out timing */
- 
-@@ -465,21 +482,14 @@ static void sis_133_early_set_dmamode (struct ata_port *ap, struct ata_device *a
- static void sis_133_set_dmamode (struct ata_port *ap, struct ata_device *adev)
- {
- 	struct pci_dev *pdev	= to_pci_dev(ap->host->dev);
--	int speed = adev->dma_mode - XFER_MW_DMA_0;
--	int port = 0x40;
-+	int port;
- 	u32 t1;
--	u32 reg54;
- 
- 	/* bits 4- cycle time 8 - cvs time */
- 	static const u32 timing_u100[] = { 0x6B0, 0x470, 0x350, 0x140, 0x120, 0x110, 0x000 };
- 	static const u32 timing_u133[] = { 0x9F0, 0x6A0, 0x470, 0x250, 0x230, 0x220, 0x210 };
- 
--	/* If bit 14 is set then the registers are mapped at 0x70 not 0x40 */
--	pci_read_config_dword(pdev, 0x54, &reg54);
--	if (reg54 & 0x40000000)
--		port = 0x70;
--	port += (8 * ap->port_no) +  (4 * adev->devno);
--
-+	port = sis_port_base(adev);
+ 	port = sis_port_base(adev);
  	pci_read_config_dword(pdev, port, &t1);
  
  	if (adev->dma_mode < XFER_UDMA_0) {
-@@ -487,7 +497,7 @@ static void sis_133_set_dmamode (struct ata_port *ap, struct ata_device *adev)
- 		/* FIXME: need data sheet to add MWDMA here. Also lacking on
- 		   ide/pci driver */
++		/* Recovery << 24 | Act << 16 | Ini << 12, like PIO modes */
++		static const u32 timing_u100[] = { 0x19154000, 0x06072000, 0x04062000 };
++		static const u32 timing_u133[] = { 0x221C6000, 0x0C0A3000, 0x05093000 };
++		int speed = adev->dma_mode - XFER_MW_DMA_0;
++
++		t1 &= 0xC0C00FFF;
++		/* disable UDMA */
+ 		t1 &= ~0x00000004;
+-		/* FIXME: need data sheet to add MWDMA here. Also lacking on
+-		   ide/pci driver */
++		if (t1 & 0x08)
++			t1 |= timing_u133[speed];
++		else
++			t1 |= timing_u100[speed];
  	} else {
--		speed = adev->dma_mode - XFER_UDMA_0;
-+		int speed = adev->dma_mode - XFER_UDMA_0;
- 		/* if & 8 no UDMA133 - need info for ... */
++		/* bits 4- cycle time 8 - cvs time */
++		static const u32 timing_u100[] = { 0x6B0, 0x470, 0x350, 0x140, 0x120, 0x110, 0x000 };
++		static const u32 timing_u133[] = { 0x9F0, 0x6A0, 0x470, 0x250, 0x230, 0x220, 0x210 };
+ 		int speed = adev->dma_mode - XFER_UDMA_0;
+-		/* if & 8 no UDMA133 - need info for ... */
++
  		t1 &= ~0x00000FF0;
++		/* enable UDMA */
  		t1 |= 0x00000004;
+ 		if (t1 & 0x08)
+ 			t1 |= timing_u133[speed];
+@@ -620,7 +629,7 @@ static const struct ata_port_info sis_info100_early = {
+ static const struct ata_port_info sis_info133 = {
+ 	.flags		= ATA_FLAG_SLAVE_POSS,
+ 	.pio_mask	= ATA_PIO4,
+-	/* No MWDMA */
++	.mwdma_mask	= ATA_MWDMA2,
+ 	.udma_mask	= ATA_UDMA6,
+ 	.port_ops	= &sis_133_ops,
+ };
 -- 
 1.7.6.1
 
