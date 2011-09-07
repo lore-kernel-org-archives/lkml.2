@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab1IGSNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:13:25 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51823 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347Ab1IGSNX (ORCPT
+	id S1756150Ab1IGSPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:15:43 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38436 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab1IGSPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:13:23 -0400
-Subject: Re: [PATCH] random: add blocking facility to urandom
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Steve Grubb <sgrubb@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1315417137-12093-1-git-send-email-jarod@redhat.com>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
-	 <1315417137-12093-1-git-send-email-jarod@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 07 Sep 2011 21:12:59 +0300
-Message-ID: <1315419179.3576.6.camel@lappy>
+	Wed, 7 Sep 2011 14:15:41 -0400
+Date: Wed, 07 Sep 2011 14:14:24 -0400 (EDT)
+Message-Id: <20110907.141424.1469075127690660949.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: yong.zhang0@gmail.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        joe@perches.com, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 20/62] sparc: irq: Remove IRQF_DISABLED
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LFD.2.02.1109071954200.2723@ionos>
+References: <alpine.LFD.2.02.1109071933080.2723@ionos>
+	<20110907.135110.2069876782156753239.davem@davemloft.net>
+	<alpine.LFD.2.02.1109071954200.2723@ionos>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Sep 2011 11:14:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-07 at 13:38 -0400, Jarod Wilson wrote:
-> Certain security-related certifications and their respective review
-> bodies have said that they find use of /dev/urandom for certain
-> functions, such as setting up ssh connections, is acceptable, but if and
-> only if /dev/urandom can block after a certain threshold of bytes have
-> been read from it with the entropy pool exhausted. Initially, we were
-> investigating increasing entropy pool contributions, so that we could
-> simply use /dev/random, but since that hasn't (yet) panned out, and
-> upwards of five minutes to establsh an ssh connection using an
-> entropy-starved /dev/random is unacceptable, we started looking at the
-> blocking urandom approach.
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 7 Sep 2011 19:57:21 +0200 (CEST)
 
-Can't you accomplish this in userspace by trying to read as much as you
-can out of /dev/random without blocking, then reading out
-of /dev/urandom the minimum between allowed threshold and remaining
-bytes, and then blocking on /dev/random?
+> On Wed, 7 Sep 2011, David Miller wrote:
+>> From: Thomas Gleixner <tglx@linutronix.de>
+>> Date: Wed, 7 Sep 2011 19:33:52 +0200 (CEST)
+>> 
+>> We had big problems when openning thousands of virtual network
+>> devices, each with their own unique IRQ, and pointed all at the same
+>> cpu, and we'd get IRQ stack overflows.
+>> 
+>> See commit c58543c869606532c2382f027d6466f4672ea756
+>> 
+>> So this change to make IRQF_DISABLED a nop has reintroduced this bug.
+> 
+> See commit e58aa3d2d0cc01ad8d6f7f640a0670433f794922
+> 
+> We run ALL interrupt handlers with interrupts disabled for that reason
+> and we even check and yell when an interrupt handler returns with
+> interrupts enabled. That's why IRQF_DISABLED became meaningless.
 
-For example, lets say you need 100 bytes of randomness, and your
-threshold is 30 bytes. You try reading out of /dev/random and get 50
-bytes, at that point you'll read another 30 (=threshold) bytes
-out /dev/urandom and then you'll need to block on /dev/random until you
-get the remaining 20 bytes.
+Awesome.
 
--- 
+Can I politely ask that a reference to that commit and something like
+your paragraph here explaining things is added to these IRQF_DISABLED
+removal patches?
 
-Sasha.
-
+Thanks!
