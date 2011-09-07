@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab1IGSMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:12:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60823 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754153Ab1IGSMr (ORCPT
+	id S1756175Ab1IGSNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:13:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51823 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab1IGSNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:12:47 -0400
-Date: Wed, 7 Sep 2011 11:12:37 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 1/6] SPI: add ability to say we want a cs change after
- every transfer.
-Message-ID: <20110907181236.GI2906@opensource.wolfsonmicro.com>
-References: <4E679770.4090008@cam.ac.uk>
- <1315412387-5765-2-git-send-email-jic23@cam.ac.uk>
- <20110907173515.GF2906@opensource.wolfsonmicro.com>
- <4E67B477.7060602@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E67B477.7060602@cam.ac.uk>
-X-Cookie: Cold hands, no gloves.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Sep 2011 14:13:23 -0400
+Subject: Re: [PATCH] random: add blocking facility to urandom
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1315417137-12093-1-git-send-email-jarod@redhat.com>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
+	 <1315417137-12093-1-git-send-email-jarod@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Wed, 07 Sep 2011 21:12:59 +0300
+Message-ID: <1315419179.3576.6.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 07:14:15PM +0100, Jonathan Cameron wrote:
-> On 09/07/11 18:35, Mark Brown wrote:
+On Wed, 2011-09-07 at 13:38 -0400, Jarod Wilson wrote:
+> Certain security-related certifications and their respective review
+> bodies have said that they find use of /dev/urandom for certain
+> functions, such as setting up ssh connections, is acceptable, but if and
+> only if /dev/urandom can block after a certain threshold of bytes have
+> been read from it with the entropy pool exhausted. Initially, we were
+> investigating increasing entropy pool contributions, so that we could
+> simply use /dev/random, but since that hasn't (yet) panned out, and
+> upwards of five minutes to establsh an ssh connection using an
+> entropy-starved /dev/random is unacceptable, we started looking at the
+> blocking urandom approach.
 
-> > We could add this in regmap if required.
+Can't you accomplish this in userspace by trying to read as much as you
+can out of /dev/random without blocking, then reading out
+of /dev/urandom the minimum between allowed threshold and remaining
+bytes, and then blocking on /dev/random?
 
-> Makes more sense in spi and has been in their 'may be needed comment'
-> from the first.  Also, lots of other users who don't fit into regmap
-> (because they don't have any registers to speak of :)
+For example, lets say you need 100 bytes of randomness, and your
+threshold is 30 bytes. You try reading out of /dev/random and get 50
+bytes, at that point you'll read another 30 (=threshold) bytes
+out /dev/urandom and then you'll need to block on /dev/random until you
+get the remaining 20 bytes.
 
-Right, but obviously anything doing SPI transfers can just set the flag
-in the transfers anyway.  It looked like you were adding this to the
-core due to other intervening abstractions, probably this is just a
-problem with your changelog.
+-- 
+
+Sasha.
+
