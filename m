@@ -1,169 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab1IGVgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:36:43 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58787 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757176Ab1IGVgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:36:41 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] Simplify PTRACE_foo constants and PTRACE_SETOPTIONS code
-Date: Wed, 7 Sep 2011 23:36:37 +0200
-User-Agent: KMail/1.8.2
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
+	id S1757220Ab1IGViD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:38:03 -0400
+Received: from mga14.intel.com ([143.182.124.37]:46989 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757145Ab1IGViA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 17:38:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,347,1312182000"; 
+   d="scan'208";a="14966884"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "damm@opensource.se" <damm@opensource.se>
+Date: Thu, 8 Sep 2011 03:07:53 +0530
+Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
+ channel ID
+Thread-Topic: [PATCH] serial: sh-sci: don't filter on DMA device, use only
+ channel ID
+Thread-Index: AcxtpmadIXWI7yePQS6D3bJ+dcSVIQ==
+Message-ID: <438BB0150E931F4B9CE701519A4463010871804A4F@bgsmsx502.gar.corp.intel.com>
+References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
+ <1308916071.1536.4.camel@vkoul-udesk3> <20110829080047.GJ31809@linux-sh.org>
+ <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com>
+ <1314618931.1606.114.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
+ <1314698522.1606.164.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
+ <1314703426.1606.167.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1108301332190.19151@axis700.grange>
+ <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
+ <1315228408.26251.75.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
+ <1315233788.26251.163.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1109051700030.1112@axis700.grange>
+ <1315235335.26251.194.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1109051716530.1112@axis700.grange>
+ <438BB0150E931F4B9CE701519A4463010871804A4B@bgsmsx502.gar.corp.intel.com>
+ <alpine.DEB.2.00.1109072048310.30407@axis700.grange>
+In-Reply-To: <alpine.DEB.2.00.1109072048310.30407@axis700.grange>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201109072336.37300.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p87LcGPh022733
 
-Simplify PTRACE_foo constants and PTRACE_SETOPTIONS code
-    
-Exchange PT_TRACESYSGOOD and PT_PTRACE_CAP bit positions, which makes
-PT_option bits contiguous and therefore makes code in ptrace_setoptions()
-much simpler.
-    
-Every PTRACE_O_TRACEevent is defined to (1 << PTRACE_EVENT_event)
-instead of using explicit numeric constants, to ensure we don't
-mess up relationship between bit positions and event ids.
-    
-PT_EVENT_FLAG_SHIFT was not particularly useful, PT_OPT_FLAG_SHIFT with
-value of PT_EVENT_FLAG_SHIFT-1 is easier to use.
-    
-PT_TRACE_MASK constant is nuked, the only its use is replaced by
-(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT).
-    
-Clearly buggy behavior of PTRACE_SETOPTIONS with unknown bits in flags
-is preseved. The comment about bug is added.
-    
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+On Wed, 2011-09-07 at 22:01 +0200, Guennadi Liakhovetski wrote:
+> On Thu, 8 Sep 2011, Koul, Vinod wrote:
+> You're seriously suggesting to export and use an additional shdma private 
+> function, bypassing the dmaengine API?... That really doesn't sound like a 
+> good idea to me, sorry. How about using .device_control(DMA_SLAVE_CONFIG) 
+> from the filter function directly to verify channel suitability?
+Yes see stedma40, coh90138 drivers
+.device_control is not right place as channel is already allocated.
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 800f113..0911100 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -54,17 +54,6 @@
- /* flags in @data for PTRACE_SEIZE */
- #define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
- 
--/* options set using PTRACE_SETOPTIONS */
--#define PTRACE_O_TRACESYSGOOD	0x00000001
--#define PTRACE_O_TRACEFORK	0x00000002
--#define PTRACE_O_TRACEVFORK	0x00000004
--#define PTRACE_O_TRACECLONE	0x00000008
--#define PTRACE_O_TRACEEXEC	0x00000010
--#define PTRACE_O_TRACEVFORKDONE	0x00000020
--#define PTRACE_O_TRACEEXIT	0x00000040
--
--#define PTRACE_O_MASK		0x0000007f
--
- /* Wait extended result codes for the above trace options.  */
- #define PTRACE_EVENT_FORK	1
- #define PTRACE_EVENT_VFORK	2
-@@ -74,6 +63,17 @@
- #define PTRACE_EVENT_EXIT	6
- #define PTRACE_EVENT_STOP	7
- 
-+/* options set using PTRACE_SETOPTIONS */
-+#define PTRACE_O_TRACESYSGOOD	1
-+#define PTRACE_O_TRACEFORK	(1 << PTRACE_EVENT_FORK)
-+#define PTRACE_O_TRACEVFORK	(1 << PTRACE_EVENT_VFORK)
-+#define PTRACE_O_TRACECLONE	(1 << PTRACE_EVENT_CLONE)
-+#define PTRACE_O_TRACEEXEC	(1 << PTRACE_EVENT_EXEC)
-+#define PTRACE_O_TRACEVFORKDONE	(1 << PTRACE_EVENT_VFORK_DONE)
-+#define PTRACE_O_TRACEEXIT	(1 << PTRACE_EVENT_EXIT)
-+
-+#define PTRACE_O_MASK		0x0000007f
-+
- #include <asm/ptrace.h>
- 
- #ifdef __KERNEL__
-@@ -88,13 +88,12 @@
- #define PT_SEIZED	0x00010000	/* SEIZE used, enable new behavior */
- #define PT_PTRACED	0x00000001
- #define PT_DTRACE	0x00000002	/* delayed trace (used on m68k, i386) */
--#define PT_TRACESYSGOOD	0x00000004
--#define PT_PTRACE_CAP	0x00000008	/* ptracer can follow suid-exec */
-+#define PT_PTRACE_CAP	0x00000004	/* ptracer can follow suid-exec */
- 
-+#define PT_OPT_FLAG_SHIFT	3
- /* PT_TRACE_* event enable flags */
--#define PT_EVENT_FLAG_SHIFT	4
--#define PT_EVENT_FLAG(event)	(1 << (PT_EVENT_FLAG_SHIFT + (event) - 1))
--
-+#define PT_EVENT_FLAG(event)	(1 << (PT_OPT_FLAG_SHIFT + (event)))
-+#define PT_TRACESYSGOOD		PT_EVENT_FLAG(0)
- #define PT_TRACE_FORK		PT_EVENT_FLAG(PTRACE_EVENT_FORK)
- #define PT_TRACE_VFORK		PT_EVENT_FLAG(PTRACE_EVENT_VFORK)
- #define PT_TRACE_CLONE		PT_EVENT_FLAG(PTRACE_EVENT_CLONE)
-@@ -102,8 +101,6 @@
- #define PT_TRACE_VFORK_DONE	PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
- #define PT_TRACE_EXIT		PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
- 
--#define PT_TRACE_MASK	0x000003f4
--
- /* single stepping state bits (used on ARM and PA-RISC) */
- #define PT_SINGLESTEP_BIT	31
- #define PT_SINGLESTEP		(1<<PT_SINGLESTEP_BIT)
-diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 9de3ecf..0316200 100644
---- a/kernel/ptrace.c
-+++ b/kernel/ptrace.c
-@@ -243,7 +243,7 @@ static int ptrace_attach(struct task_struct *task, long request,
- 
- 	/*
- 	 * Protect exec's credential calculations against our interference;
--	 * interference; SUID, SGID and LSM creds get determined differently
-+	 * SUID, SGID and LSM creds get determined differently
- 	 * under ptrace.
- 	 */
- 	retval = -ERESTARTNOINTR;
-@@ -509,30 +509,20 @@ int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long ds
- 
- static int ptrace_setoptions(struct task_struct *child, unsigned long data)
- {
--	child->ptrace &= ~PT_TRACE_MASK;
-+	unsigned flags;
- 
--	if (data & PTRACE_O_TRACESYSGOOD)
--		child->ptrace |= PT_TRACESYSGOOD;
--
--	if (data & PTRACE_O_TRACEFORK)
--		child->ptrace |= PT_TRACE_FORK;
--
--	if (data & PTRACE_O_TRACEVFORK)
--		child->ptrace |= PT_TRACE_VFORK;
--
--	if (data & PTRACE_O_TRACECLONE)
--		child->ptrace |= PT_TRACE_CLONE;
--
--	if (data & PTRACE_O_TRACEEXEC)
--		child->ptrace |= PT_TRACE_EXEC;
--
--	if (data & PTRACE_O_TRACEVFORKDONE)
--		child->ptrace |= PT_TRACE_VFORK_DONE;
-+	if (data & ~(long)PTRACE_O_MASK) {
-+		child->ptrace &= ~PT_TRACE_MASK; /* historical bug */
-+		return -EINVAL;
-+	}
- 
--	if (data & PTRACE_O_TRACEEXIT)
--		child->ptrace |= PT_TRACE_EXIT;
-+	/* Avoid intermediate state when all opts are cleared */
-+	flags = child->ptrace;
-+	flags &= ~(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT);
-+	flags |= (data << PT_OPT_FLAG_SHIFT);
-+	child->ptrace = flags;
- 
--	return (data & ~PTRACE_O_MASK) ? -EINVAL : 0;
-+	return 0;
- }
- 
- static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
+You are basically moving filter fn from all clients to dmac driver.
+
+> 
+> > I cant agree to the whole point of filtering in alloc
+> > 
+> > One channel is allocated, we should _not_ do any further filtering
+> 
+> Sorry, I do not understand this argumentation. Filtering and resource 
+> allocation are parts of the channel-acquisition process, either of them 
+> can fail, in which case the channel remains free for future requests.
+DMA drivers set caps for each channel
+Client requests a channel and dmaengine matches channel based on caps
+and filer function is called so that additional filtering can take
+place.
+And .alloc_chan_resources is supposed to allocate the channel resource
+and not do anything else.
+
+--
+~Vinod
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
