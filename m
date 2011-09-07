@@ -1,54 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab1IGQBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:01:11 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:56435 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570Ab1IGQBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:01:01 -0400
-Date: Wed, 7 Sep 2011 06:50:52 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [GIT PULL] hwmon fixes for 3.1
-Message-ID: <20110907135052.GA26868@ericsson.com>
-References: <1315325608-17922-1-git-send-email-guenter.roeck@ericsson.com>
- <CA+55aFwy-YPNHnJp6C6BRA-QfEtMoVHuxN9Uxg=p=0PwaWyXaQ@mail.gmail.com>
- <20110907014725.GC22609@ericsson.com>
- <20110907092816.4634b657@endymion.delvare>
+	id S1754016Ab1IGMT2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 08:19:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49401 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab1IGMTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 08:19:25 -0400
+Date: Wed, 7 Sep 2011 11:25:29 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frank Rowand <frank.rowand@am.sony.com>
+cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@tglx.de>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+In-Reply-To: <4E66DCAB.8090801@am.sony.com>
+Message-ID: <alpine.LFD.2.02.1109071115410.2723@ionos>
+References: <1313232790.25267.7.camel@twins> <4E559039.8060209@am.sony.com> <20110826235507.GJ2342@linux.vnet.ibm.com> <4E66DCAB.8090801@am.sony.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110907092816.4634b657@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 03:28:16AM -0400, Jean Delvare wrote:
-[ ... ]
-> 
-> When you created this account on kernel.org, you used a PGP key to
-> identify yourself, didn't you? If you sign your message with that key,
-> then a few people (basically the kernel.org maintainers) will be able
-> to confirm that you are the same person who had a trusted kernel.org
-> account. I don't know if Linus has the list though.
-> 
-> What surprises me a little is that I don't have your public key in my
-> keyring, and I can't seem to be able to find it on public servers
-> either. You really should push your key to public key servers,
-> otherwise a signed message from you has no value in general.
-> 
-Yeah, one may notice that I am not a security guy and don't pay sufficient
-attention to such matters.
+On Tue, 6 Sep 2011, Frank Rowand wrote:
 
-> Obviously it's a little late now though. The whole idea of trust and
-> signatures is to keep the level of trust after odd events such as the
-> kernel.org break-in. For this, keys must have been exchanged, tested
-> and trusted long before said event happens.
+> On 08/26/11 16:55, Paul E. McKenney wrote:
+> > On Wed, Aug 24, 2011 at 04:58:49PM -0700, Frank Rowand wrote:
+> >> On 08/13/11 03:53, Peter Zijlstra wrote:
+> >>>
+> >>> Whee, I can skip release announcements too!
+> >>>
+> >>> So no the subject ain't no mistake its not, 3.0.1-rt11 is there for the
+> >>> grabs.
 > 
-Agreed.
+> < snip >
+> 
+> >> I have a consistent (every boot) hang on boot.  With a few
+> >> hacks to get console output, I get the
+> >>
+> >>   rcu_preempt_state detected stalls on CPUs/tasks
+> 
+> < snip >
+> 
+> >> This is an ARM NaviEngine (out of tree, so I also have applied
+> >> a series of pages for platform support).
+> >>
+> >> CONFIG_PREEMPT_RT_FULL is set.  Full config is attached.
+> 
+> I have also replicated the problem on the ARM RealView (in tree) and
+> without the RT patches.
+> 
+> > 
+> > Hmmm...  The last few that I have seen that looked like this were
+> > due to my messing up rcutorture so that the RCU-boost testing kthreads
+> > ran CPU-bound at real-time priority.
+> > 
+> > Is it possible that something similar is happening on your system?
+> > 
+> >                                                         Thanx, Paul
+> 
+> The problem ended up being caused by the allowed cpus mask being set
+> to all possible cpus for the ksoftirqd on the secondary processors.
+> So the RCU softirq was never executing on cpu 2.
+> 
+> I'll test the following patch on 3.1 tomorrow.
+> 
+> -Frank Rowand
+> 
+> 
+> Symptom: rcu stall
+> 
+> The problem was that ksoftirqd was woken on the secondary processors before
+> the secondary processors were online.  This led to allowed cpus being set
+> to all cpus.
+> 
+>    wake_up_process()
+>       try_to_wake_up()
+>          select_task_rq()
+>             if (... || !cpu_online(cpu))
+>                select_fallback_rq(task_cpu(p), p)
+>                   ...
+>                   /* No more Mr. Nice Guy. */
+>                   dest_cpu = cpuset_cpus_allowed_fallback(p)
+>                      do_set_cpus_allowed(p, cpu_possible_mask)
+>                         #  Thus ksoftirqd can now run on any cpu...
 
-Guenter
+This smells badly like the problem we've seen on x86 before. And
+looking at the arm SMP boot code:
+
+asmlinkage void __cpuinit secondary_start_kernel(void)
+{
+	.....
+
+	/*
+	 * Give the platform a chance to do its own initialisation.
+	 */
+	platform_secondary_init(cpu);
+
+	/*
+	 * Enable local interrupts.
+	 */
+	notify_cpu_starting(cpu);
+	local_irq_enable();
+
+Here we enable interrupts, but the CPU is neither online nor active.
+
+	local_fiq_enable();
+
+	/*
+	 * Setup the percpu timer for this CPU.
+	 */
+	percpu_timer_setup();
+
+	calibrate_delay();
+
+	smp_store_cpu_info(cpu);
+
+	/*
+	 * OK, now it's safe to let the boot CPU continue.  Wait for
+	 * the CPU migration code to notice that the CPU is online
+	 * before we continue.
+	 */
+	set_cpu_online(cpu, true);
+	while (!cpu_active(cpu))
+		cpu_relax();
+
+That's the same thing as x86 is doing, just with interrupts enabled
+and therefor it does not help. And the softirq is only part of the
+problem, the same can happen with worker threads and other cpu bound
+nasties.
+
+	/*
+	 * OK, it's off to the idle thread for us
+	 */
+	cpu_idle();
+}
+
+So that wants to be ordered differently. Patch below.
+
+Thanks,
+
+	tglx
+
+Index: linux-2.6/arch/arm/kernel/smp.c
+===================================================================
+--- linux-2.6.orig/arch/arm/kernel/smp.c
++++ linux-2.6/arch/arm/kernel/smp.c
+@@ -305,6 +305,16 @@ asmlinkage void __cpuinit secondary_star
+ 	 * Enable local interrupts.
+ 	 */
+ 	notify_cpu_starting(cpu);
++
++	/*
++	 * OK, now it's safe to let the boot CPU continue.  Wait for
++	 * the CPU migration code to notice that the CPU is online
++	 * before we continue.
++	 */
++	set_cpu_online(cpu, true);
++	while (!cpu_active(cpu))
++		cpu_relax();
++
+ 	local_irq_enable();
+ 	local_fiq_enable();
+ 
+@@ -318,15 +328,6 @@ asmlinkage void __cpuinit secondary_star
+ 	smp_store_cpu_info(cpu);
+ 
+ 	/*
+-	 * OK, now it's safe to let the boot CPU continue.  Wait for
+-	 * the CPU migration code to notice that the CPU is online
+-	 * before we continue.
+-	 */
+-	set_cpu_online(cpu, true);
+-	while (!cpu_active(cpu))
+-		cpu_relax();
+-
+-	/*
+ 	 * OK, it's off to the idle thread for us
+ 	 */
+ 	cpu_idle();
+
