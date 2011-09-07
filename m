@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab1IGRFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:05:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36268 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851Ab1IGRFH convert rfc822-to-8bit (ORCPT
+	id S1754463Ab1IGRFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:05:25 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51078 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754851Ab1IGRFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:05:07 -0400
-Subject: Re: [PATCH 11/18] block: add bdi flag to indicate risk of io queue
- underrun
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 07 Sep 2011 09:31:09 +0200
-In-Reply-To: <20110907023719.GC13755@localhost>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020916.070059502@intel.com> <1315318968.14232.6.camel@twins>
-	 <20110907023719.GC13755@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315380669.11101.4.camel@twins>
-Mime-Version: 1.0
+	Wed, 7 Sep 2011 13:05:19 -0400
+Date: Wed, 7 Sep 2011 18:04:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        John Ogness <john.ogness@linutronix.de>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: alignment: setup alignment handler earlier
+Message-ID: <20110907170452.GC2327@n2100.arm.linux.org.uk>
+References: <87ehzstr07.fsf@vostro.fn.ogness.net> <20110907144016.GA30719@e102109-lin.cambridge.arm.com> <20110907162857.GB2327@n2100.arm.linux.org.uk> <yw1xipp4cnis.fsf@unicorn.mansr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <yw1xipp4cnis.fsf@unicorn.mansr.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-07 at 10:37 +0800, Wu Fengguang wrote:
-> On Tue, Sep 06, 2011 at 10:22:48PM +0800, Peter Zijlstra wrote:
-> > On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> > > +++ linux-next/mm/page-writeback.c      2011-08-31 14:40:58.000000000 +0800
-> > > @@ -1067,6 +1067,9 @@ static void balance_dirty_pages(struct a
-> > >                                      nr_dirty, bdi_thresh, bdi_dirty,
-> > >                                      start_time);
-> > >  
-> > > +               if (unlikely(!dirty_exceeded && bdi_async_underrun(bdi)))
-> > > +                       break;
-> > > +
-> > >                 dirty_ratelimit = bdi->dirty_ratelimit;
-> > >                 pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
-> > >                                                background_thresh, nr_dirty,
-> > 
-> > So dirty_exceeded looks like:
-> > 
-> > 
-> > 1109                 dirty_exceeded = (bdi_dirty > bdi_thresh) ||
-> > 1110                                   (nr_dirty > dirty_thresh);
-> > 
-> > Would it make sense to write it as:
-> > 
-> > 	if (nr_dirty > dirty_thresh || 
-> > 	    (nr_dirty > freerun && bdi_dirty > bdi_thresh))
-> > 		dirty_exceeded = 1;
-> > 
-> > So that we don't actually throttle bdi thingies when we're still in the
-> > freerun area?
-> 
-> Sounds not necessary -- (nr_dirty > freerun) is implicitly true
-> because there is a big break early in the loop:
-> 
->         if (nr_dirty > freerun)
->                 break;
+On Wed, Sep 07, 2011 at 05:42:19PM +0100, Måns Rullgård wrote:
+> There are such instructions (ldrd, ldm), but gcc will not emit those
+> unless the address is known to be aligned.  For ARMv6 and later, gcc 4.6
+> *will* emit potentially unaligned ldr and ldrh since these very clearly
+> allow an unaligned address and are faster than the alternatives in all
+> implementations to date.  This is unless strict alignment checking is
+> explicitly enabled, which unfortunately the Linux kernel does for no
+> apparent reason at all.
 
-Ah, totally didn't see that. Thanks!
+"no apparant reason at all" heh.  The reason is to keep the code
+simple and free from bugs.  To do otherwise means that each of the
+CPU files needs to be littered with ifdefs to deal with the alignment
+fault configuration, of which there are 16 of them (ignoring v6 and v7.)
+
+If you think code maintanence of the same thing in 16 places is efficient
+then I guess there is "no apparant reason".  I beg to differ, being one
+of those folk who have had to edit 18 different places several times.
+
+So no, I do not intend to move this:
+
+#ifdef CONFIG_ALIGNMENT_TRAP
+        orr     r0, r0, #CR_A
+#else
+        bic     r0, r0, #CR_A
+#endif
+
+into 16 separate places in the kernel.
