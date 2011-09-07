@@ -1,271 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab1IGVJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:09:26 -0400
-Received: from web01.techboom.com ([67.205.80.219]:50695 "EHLO
-	web01.techboom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab1IGVJZ (ORCPT
+	id S1757036Ab1IGVKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:10:53 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48541 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757011Ab1IGVKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:09:25 -0400
-X-Greylist: delayed 3705 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 17:09:25 EDT
-Message-ID: <4E67CEF9.9090808@techboom.com>
-Date: Wed, 07 Sep 2011 16:07:21 -0400
-From: TB <lkml@techboom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: BUG: unable to handle kernel NULL pointer dereference at (null) /
- scsi_eh_0: page allocation failure: order:6, mode:0x20
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Sep 2011 17:10:50 -0400
+Subject: Re: [PATCH] random: add blocking facility to urandom
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Jarod Wilson <jarod@redhat.com>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <201109071656.49758.sgrubb@redhat.com>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
+	 <201109071630.15261.sgrubb@redhat.com> <1315427877.3576.46.camel@lappy>
+	 <201109071656.49758.sgrubb@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 08 Sep 2011 00:10:27 +0300
+Message-ID: <1315429827.3576.61.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - web01.techboom.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - techboom.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please CC me as I am not subscribed to the mailing list.
+On Wed, 2011-09-07 at 16:56 -0400, Steve Grubb wrote:
+> On Wednesday, September 07, 2011 04:37:57 PM Sasha Levin wrote:
+> > On Wed, 2011-09-07 at 16:30 -0400, Steve Grubb wrote:
+> > > On Wednesday, September 07, 2011 04:23:13 PM Sasha Levin wrote:
+> > > > On Wed, 2011-09-07 at 16:02 -0400, Steve Grubb wrote:
+> > > > > On Wednesday, September 07, 2011 03:27:37 PM Ted Ts'o wrote:
+> > > > > > On Wed, Sep 07, 2011 at 02:26:35PM -0400, Jarod Wilson wrote:
+> > > > > > > We're looking for a generic solution here that doesn't require
+> > > > > > > re-educating every single piece of userspace. And anything done
+> > > > > > > in userspace is going to be full of possible holes -- there
+> > > > > > > needs to be something in place that actually *enforces* the
+> > > > > > > policy, and centralized accounting/tracking, lest you wind up
+> > > > > > > with multiple processes racing to grab the entropy.
+> > > > > > 
+> > > > > > Yeah, but there are userspace programs that depend on urandom not
+> > > > > > blocking... so your proposed change would break them.
+> > > > > 
+> > > > > The only time this kicks in is when a system is under attack. If you
+> > > > > have set this and the system is running as normal, you will never
+> > > > > notice it even there. Almost all uses of urandom grab 4 bytes and
+> > > > > seed openssl or libgcrypt or nss. It then uses those libraries.
+> > > > > There are the odd cases where something uses urandom to generate a
+> > > > > key or otherwise grab a chunk of bytes, but these are still small
+> > > > > reads in the scheme of things. Can you think of any legitimate use
+> > > > > of urandom that grabs 100K or 1M from urandom? Even those numbers
+> > > > > still won't hit the sysctl on a normally function system.
+> > > > 
+> > > > As far as I remember, several wipe utilities are using /dev/urandom to
+> > > > overwrite disks (possibly several times).
+> > > 
+> > > Which should generate disk activity and feed entropy to urandom.
+> > 
+> > I thought you need to feed random, not urandom.
+> 
+> I think they draw from the same pool.
 
-After this, the hard drives were inaccessible on the server and it had
-to be sys-rq rebooted.
+There is a blocking and a non blocking pool.
 
-Kernel: 3.0.0
-# gcc --version
-gcc (Debian 4.3.2-1.1) 4.3.2
+>  
+> > Anyway, it won't happen fast enough to actually not block.
+> > 
+> > Writing 1TB of urandom into a disk won't generate 1TB (or anything close
+> > to that) of randomness to cover for itself.
+> 
+> We don't need a 1:1 mapping of RNG used to entropy acquired. Its more on the scale of 
+> 8,000,000:1 or higher.
 
+I'm just saying that writing 1TB into a disk using urandom will start to
+block, it won't generate enough randomness by itself.
 
-# as --version
-GNU assembler (GNU Binutils for Debian) 2.18.0.20080103
-This assembler was configured for a target of `x86_64-linux-gnu'.
+> 
+> > > > Something similar probably happens for getting junk on disks before
+> > > > creating an encrypted filesystem on top of them.
+> > > 
+> > > During system install, this sysctl is not likely to be applied.
+> > 
+> > It may happen at any time you need to create a new filesystem, which
+> > won't necessarily happen during system install.
+> > 
+> > See for example the instructions on how to set up a LUKS filesystem:
+> > https://wiki.archlinux.org/index.php/System_Encryption_with_LUKS#Preparatio
+> > n_and_mapping
+> 
+> Those instructions might need to be changed. That is one way of many to get random 
+> numbers on the disk. Anyone really needing the security to have the sysctl on will 
+> also probably accept that its doing its job and keeping the numbers random. Again, no 
+> effect unless you turn it on.
 
+There are bunch of other places that would need to be changed in that
+case :)
 
-[138321.660418] aacraid: Host adapter abort request (0,0,0,0)
-[138321.660597] aacraid: Host adapter reset request. SCSI hang ?
-[138381.804920] aacraid: SCSI bus appears hung
-[138476.667838] scsi_eh_0: page allocation failure: order:6, mode:0x20
-[138476.667841] Pid: 1073, comm: scsi_eh_0 Not tainted 3.0.0 #1
-[138476.667843] Call Trace:
-[138476.667850]  [<ffffffff8108fd42>] ? warn_alloc_failed+0x112/0x127
-[138476.667854]  [<ffffffff8109049e>] ? __alloc_pages_nodemask+0x698/0x704
-[138476.667858]  [<ffffffff8108f3f1>] ? __get_free_pages+0x9/0x46
-[138476.667862]  [<ffffffff812fd9ea>] ? intel_alloc_coherent+0x83/0xdb
-[138476.667866]  [<ffffffff81387c35>] ? aac_fib_setup+0xf8/0x227
-[138476.667868]  [<ffffffff813879d5>] ? aac_init_adapter+0x7a9/0x7d7
-[138476.667871]  [<ffffffff8138c263>] ? aac_src_init+0x26b/0x3bb
-[138476.667875]  [<ffffffff810bdfc9>] ? add_partial+0x11/0x57
-[138476.667877]  [<ffffffff81388bf7>] ? _aac_reset_adapter+0x29e/0x465
-[138476.667880]  [<ffffffff81389c32>] ? aac_reset_adapter+0x10e/0x248
-[138476.667882]  [<ffffffff8138298e>] ? aac_eh_reset+0x154/0x17b
-[138476.667887]  [<ffffffff8136afe8>] ? scsi_try_host_reset+0x51/0xc5
-[138476.667889]  [<ffffffff8136c472>] ? scsi_eh_ready_devs+0x694/0x80e
-[138476.667892]  [<ffffffff8136cb52>] ? scsi_error_handler+0x3be/0x5c0
-[138476.667894]  [<ffffffff8136c794>] ? scsi_eh_get_sense+0x1a8/0x1a8
-[138476.667898]  [<ffffffff8104f09e>] ? kthread+0x7e/0x86
-[138476.667902]  [<ffffffff8159c6d4>] ? kernel_thread_helper+0x4/0x10
-[138476.667905]  [<ffffffff8104f020>] ? kthread_worker_fn+0x10d/0x10d
-[138476.667907]  [<ffffffff8159c6d0>] ? gs_change+0xb/0xb
-[138476.667908] Mem-Info:
-[138476.667910] Node 0 DMA per-cpu:
-[138476.667912] CPU    0: hi:    0, btch:   1 usd:   0
-[138476.667913] CPU    1: hi:    0, btch:   1 usd:   0
-[138476.667915] CPU    2: hi:    0, btch:   1 usd:   0
-[138476.667917] CPU    3: hi:    0, btch:   1 usd:   0
-[138476.667919] CPU    4: hi:    0, btch:   1 usd:   0
-[138476.667920] CPU    5: hi:    0, btch:   1 usd:   0
-[138476.667922] CPU    6: hi:    0, btch:   1 usd:   0
-[138476.667924] CPU    7: hi:    0, btch:   1 usd:   0
-[138476.667925] CPU    8: hi:    0, btch:   1 usd:   0
-[138476.667927] CPU    9: hi:    0, btch:   1 usd:   0
-[138476.667929] CPU   10: hi:    0, btch:   1 usd:   0
-[138476.667930] CPU   11: hi:    0, btch:   1 usd:   0
-[138476.667932] CPU   12: hi:    0, btch:   1 usd:   0
-[138476.667934] CPU   13: hi:    0, btch:   1 usd:   0
-[138476.667935] CPU   14: hi:    0, btch:   1 usd:   0
-[138476.667937] CPU   15: hi:    0, btch:   1 usd:   0
-[138476.667938] Node 0 DMA32 per-cpu:
-[138476.667940] CPU    0: hi:  186, btch:  31 usd: 180
-[138476.667942] CPU    1: hi:  186, btch:  31 usd: 157
-[138476.667944] CPU    2: hi:  186, btch:  31 usd:  47
-[138476.667946] CPU    3: hi:  186, btch:  31 usd: 181
-[138476.667947] CPU    4: hi:  186, btch:  31 usd:   0
-[138476.667949] CPU    5: hi:  186, btch:  31 usd:   0
-[138476.667951] CPU    6: hi:  186, btch:  31 usd:   0
-[138476.667952] CPU    7: hi:  186, btch:  31 usd:   0
-[138476.667954] CPU    8: hi:  186, btch:  31 usd: 162
-[138476.667956] CPU    9: hi:  186, btch:  31 usd: 166
-[138476.667957] CPU   10: hi:  186, btch:  31 usd: 164
-[138476.667959] CPU   11: hi:  186, btch:  31 usd: 176
-[138476.667961] CPU   12: hi:  186, btch:  31 usd:  24
-[138476.667962] CPU   13: hi:  186, btch:  31 usd:   0
-[138476.667964] CPU   14: hi:  186, btch:  31 usd:   0
-[138476.667966] CPU   15: hi:  186, btch:  31 usd:   0
-[138476.667967] Node 0 Normal per-cpu:
-[138476.667969] CPU    0: hi:  186, btch:  31 usd: 162
-[138476.667971] CPU    1: hi:  186, btch:  31 usd: 186
-[138476.667972] CPU    2: hi:  186, btch:  31 usd: 153
-[138476.667974] CPU    3: hi:  186, btch:  31 usd:  46
-[138476.667976] CPU    4: hi:  186, btch:  31 usd:  97
-[138476.667977] CPU    5: hi:  186, btch:  31 usd:  99
-[138476.667979] CPU    6: hi:  186, btch:  31 usd:  58
-[138476.667981] CPU    7: hi:  186, btch:  31 usd:   1
-[138476.667982] CPU    8: hi:  186, btch:  31 usd:  46
-[138476.667984] CPU    9: hi:  186, btch:  31 usd:  50
-[138476.667985] CPU   10: hi:  186, btch:  31 usd: 181
-[138476.667987] CPU   11: hi:  186, btch:  31 usd:  29
-[138476.667989] CPU   12: hi:  186, btch:  31 usd:   0
-[138476.667990] CPU   13: hi:  186, btch:  31 usd:  68
-[138476.667992] CPU   14: hi:  186, btch:  31 usd:  58
-[138476.667994] CPU   15: hi:  186, btch:  31 usd:   0
-[138476.667995] Node 1 Normal per-cpu:
-[138476.667997] CPU    0: hi:  186, btch:  31 usd:  99
-[138476.667999] CPU    1: hi:  186, btch:  31 usd: 172
-[138476.668001] CPU    2: hi:  186, btch:  31 usd: 110
-[138476.668002] CPU    3: hi:  186, btch:  31 usd:  52
-[138476.668004] CPU    4: hi:  186, btch:  31 usd: 157
-[138476.668006] CPU    5: hi:  186, btch:  31 usd:  65
-[138476.668008] CPU    6: hi:  186, btch:  31 usd:  78
-[138476.668010] CPU    7: hi:  186, btch:  31 usd: 173
-[138476.668011] CPU    8: hi:  186, btch:  31 usd:   0
-[138476.668013] CPU    9: hi:  186, btch:  31 usd:   0
-[138476.668014] CPU   10: hi:  186, btch:  31 usd:   8
-[138476.668016] CPU   11: hi:  186, btch:  31 usd:   1
-[138476.668018] CPU   12: hi:  186, btch:  31 usd: 157
-[138476.668020] CPU   13: hi:  186, btch:  31 usd:  84
-[138476.668021] CPU   14: hi:  186, btch:  31 usd:  91
-[138476.668023] CPU   15: hi:  186, btch:  31 usd: 165
-[138476.668028] active_anon:970040 inactive_anon:112827 isolated_anon:0
-[138476.668029]  active_file:3246082 inactive_file:3465017 isolated_file:35
-[138476.668030]  unevictable:945 dirty:23 writeback:94285 unstable:0
-[138476.668030]  free:227592 slab_reclaimable:128687
-slab_unreclaimable:56834
-[138476.668031]  mapped:4490 shmem:2843 pagetables:20763 bounce:0
-[138476.668033] Node 0 DMA free:15880kB min:40kB low:48kB high:60kB
-active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB
-unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15656kB
-mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-all_unreclaimable? yes
-[138476.668043] lowmem_reserve[]: 0 2991 16121 16121
-[138476.668046] Node 0 DMA32 free:103184kB min:8344kB low:10428kB
-high:12516kB active_anon:574636kB inactive_anon:144044kB
-active_file:1032176kB inactive_file:1057608kB unevictable:384kB
-isolated(anon):0kB isolated(file):0kB present:3063520kB mlocked:384kB
-dirty:0kB writeback:17400kB mapped:48kB shmem:0kB
-slab_reclaimable:91152kB slab_unreclaimable:97176kB kernel_stack:1280kB
-pagetables:2628kB unstable:0kB bounce:0kB writeback_tmp:0kB
-pages_scanned:0 all_unreclaimable? no
-[138476.668056] lowmem_reserve[]: 0 0 13130 13130
-[138476.668058] Node 0 Normal free:302680kB min:36632kB low:45788kB
-high:54948kB active_anon:1844360kB inactive_anon:184904kB
-active_file:4910564kB inactive_file:5760864kB unevictable:1300kB
-isolated(anon):0kB isolated(file):140kB present:13445120kB
-mlocked:1300kB dirty:28kB writeback:27132kB mapped:7096kB shmem:5172kB
-slab_reclaimable:193112kB slab_unreclaimable:63508kB kernel_stack:1880kB
-pagetables:58580kB unstable:0kB bounce:0kB writeback_tmp:0kB
-pages_scanned:32 all_unreclaimable? no
-[138476.668069] lowmem_reserve[]: 0 0 0 0
-[138476.668071] Node 1 Normal free:489244kB min:45088kB low:56360kB
-high:67632kB active_anon:1461164kB inactive_anon:122360kB
-active_file:7041588kB inactive_file:7041092kB unevictable:2096kB
-isolated(anon):0kB isolated(file):0kB present:16547840kB mlocked:2096kB
-dirty:64kB writeback:332608kB mapped:10816kB shmem:6200kB
-slab_reclaimable:230484kB slab_unreclaimable:66652kB kernel_stack:776kB
-pagetables:21844kB unstable:0kB bounce:0kB writeback_tmp:0kB
-pages_scanned:69 all_unreclaimable? no
-[138476.668082] lowmem_reserve[]: 0 0 0 0
-[138476.668084] Node 0 DMA: 0*4kB 1*8kB 0*16kB 0*32kB 2*64kB 1*128kB
-1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15880kB
-[138476.668091] Node 0 DMA32: 6456*4kB 4893*8kB 2133*16kB 134*32kB
-1*64kB 1*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 103576kB
-[138476.668098] Node 0 Normal: 34828*4kB 10905*8kB 4332*16kB 211*32kB
-0*64kB 0*128kB 0*256kB 0*512kB 1*1024kB 0*2048kB 0*4096kB = 303640kB
-[138476.668105] Node 1 Normal: 53146*4kB 21707*8kB 5935*16kB 264*32kB
-0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 489648kB
-[138476.668113] 6714269 total pagecache pages
-[138476.668114] 207 pages in swap cache
-[138476.668116] Swap cache stats: add 30314, delete 30107, find 48439/49664
-[138476.668117] Free swap  = 7975932kB
-[138476.668118] Total swap = 7999416kB
-[138476.777700] 8388592 pages RAM
-[138476.777702] 119966 pages reserved
-[138476.777703] 2963225 pages shared
-[138476.777704] 5620884 pages non-shared
-[138496.749132] aacraid: Host adapter abort request (0,0,0,0)
-[138506.733854] aacraid: Host adapter abort request (0,0,1,0)
-[138506.733917] aacraid: Host adapter reset request. SCSI hang ?
-[138506.734001] AAC: Host adapter BLINK LED 0x10
-[138506.734033] BUG: unable to handle kernel NULL pointer dereference at
-          (null)
-[138506.734092] IP: [<ffffffff810542ac>] exit_creds+0x12/0x78
-[138506.734131] PGD 42dd36067 PUD 42d47e067 PMD 0
-[138506.734174] Oops: 0000 [#1] SMP
-[138506.734210] CPU 10
-[138506.734219] Modules linked in: i2c_i801 evdev i2c_core button [last
-unloaded: scsi_wait_scan]
-[138506.734319]
-[138506.734342] Pid: 1073, comm: scsi_eh_0 Not tainted 3.0.0 #1
-Supermicro X8DTH-i/6/iF/6F/X8DTH
-[138506.734408] RIP: 0010:[<ffffffff810542ac>]  [<ffffffff810542ac>]
-exit_creds+0x12/0x78
-[138506.734463] RSP: 0000:ffff88042e9f7b30  EFLAGS: 00010287
-[138506.734493] RAX: 0000000000000000 RBX: ffff88042f491700 RCX:
-ffff88042fa19000
-[138506.734541] RDX: 0000000000000432 RSI: 0000000000000000 RDI:
-0000000000000000
-[138506.734589] RBP: ffff88042f491700 R08: 000000000010c8c7 R09:
-0000000000000000
-[138506.734637] R10: 0000000000000000 R11: 0000000000000000 R12:
-0000000000000000
-[138506.734685] R13: ffff88042fa19450 R14: ffff88042fa194b0 R15:
-ffff88042fa19000
-[138506.734733] FS:  0000000000000000(0000) GS:ffff88043fcc0000(0000)
-knlGS:0000000000000000
-[138506.734783] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[138506.734814] CR2: 0000000000000000 CR3: 000000042e35e000 CR4:
-00000000000006e0
-[138506.734862] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[138506.734910] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[138506.734959] Process scsi_eh_0 (pid: 1073, threadinfo
-ffff88042e9f6000, task ffff88042f492840)
-[138506.735010] Stack:
-[138506.735033]  ffff88042f491700 ffffffff81035758 ffff88042f491710
-ffffffff8104f21d
-[138506.735101]  ffff88042fa19000 0000000000000000 ffff88042fa19450
-ffffffff813889be
-[138506.735166]  ffff88042ea16f90 00000000000000ef 0000000000002002
-ffff88042fa19000
-[138506.735231] Call Trace:
-[138506.735259]  [<ffffffff81035758>] ? __put_task_struct+0x5d/0x83
-[138506.735291]  [<ffffffff8104f21d>] ? kthread_stop+0x7b/0xac
-[138506.735324]  [<ffffffff813889be>] ? _aac_reset_adapter+0x65/0x465
-[138506.735356]  [<ffffffff81389051>] ? aac_check_health+0x293/0x2f4
-[138506.735388]  [<ffffffff813828bb>] ? aac_eh_reset+0x81/0x17b
-[138506.735420]  [<ffffffff8136afe8>] ? scsi_try_host_reset+0x51/0xc5
-[138506.735452]  [<ffffffff8136bb8f>] ? scsi_send_eh_cmnd+0x225/0x28d
-[138506.735485]  [<ffffffff81042223>] ? del_timer_sync+0x34/0x3e
-[138506.735517]  [<ffffffff81599c31>] ? schedule_timeout+0x1dc/0x1fc
-[138506.735549]  [<ffffffff81042333>] ? del_timer+0xb1/0xb1
-[138506.735579]  [<ffffffff8136bc85>] ? scsi_eh_tur+0x28/0x78
-[138506.735609]  [<ffffffff8136bd32>] ? scsi_eh_test_devices+0x5d/0x109
-[138506.735641]  [<ffffffff8136c552>] ? scsi_eh_ready_devs+0x774/0x80e
-[138506.735673]  [<ffffffff8136cb52>] ? scsi_error_handler+0x3be/0x5c0
-[138506.735705]  [<ffffffff8136c794>] ? scsi_eh_get_sense+0x1a8/0x1a8
-[138506.735736]  [<ffffffff8104f09e>] ? kthread+0x7e/0x86
-[138506.735768]  [<ffffffff8159c6d4>] ? kernel_thread_helper+0x4/0x10
-[138506.735800]  [<ffffffff8104f020>] ? kthread_worker_fn+0x10d/0x10d
-[138506.735832]  [<ffffffff8159c6d0>] ? gs_change+0xb/0xb
-[138506.743720] Code: ff 4d 00 0f 94 c0 84 c0 74 08 48 89 ef e8 60 fd ff
-ff 31 c0 5b 5d 41 5c c3 53 48 89 fb 48 8b 87 00 03 00 00 48 8b bf f8 02
-00 00 <8b> 00 48 c7 83 f8 02 00 00 00 00 00 00 f0 ff 0f 0f 94 c0 84 c0
-[138506.744099] RIP  [<ffffffff810542ac>] exit_creds+0x12/0x78
-[138506.744134]  RSP <ffff88042e9f7b30>
-[138506.744160] CR2: 0000000000000000
-[138506.744743] ---[ end trace 82be210c3648ecce ]---
+Why not implement it as a user mode CUSE driver that would
+wrap /dev/urandom and make it behave any way you want to? why push it
+into the kernel?
+
+-- 
+
+Sasha.
 
