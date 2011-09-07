@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab1IGRv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:51:29 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:44862 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755512Ab1IGRv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:51:27 -0400
-In-Reply-To: <035901cc6d7b$77065350$6512f9f0$@systemfabricworks.com>
-References: <20110831213729.395283830@systemfabricworks.com>	<4E5EB5F4.6010105@systemfabricworks.com>
-	<20110902165047.6aaec238.akpm@linux-foundation.org>	<20110903114403.027a9563c86eeaf1c0e4e80b@canb.auug.org.au>
-	<OF0B1D5F8A.D8D66C8A-ONC1257903.004A257F-C1257903.004B1700@transmode.se>	<20110907005013.e96fb5acd9f4b7c06ee70972@canb.auug.org.au> <20110906123851.dc4de9f5.akpm@linux-foundation.org> <035901cc6d7b$77065350$6512f9f0$@systemfabricworks.com>
-Subject: RE: [PATCH v6 05/10] crc32-misc-cleanup.diff
-X-KeepSent: 1BC44A31:C055969E-C1257904:0061969E;
- type=4; name=$KeepSent
-To: "Bob Pearson" <rpearson@systemfabricworks.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, fzago@systemfabricworks.com,
-        "'George Spelvin'" <linux@horizon.com>, linux-kernel@vger.kernel.org,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF1BC44A31.C055969E-ONC1257904.0061969E-C1257904.0062171D@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Wed, 7 Sep 2011 19:51:24 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 09/07/2011 19:51:25
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+	id S1755497Ab1IGRw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:52:28 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:56997 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab1IGRw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:52:26 -0400
+Date: Wed, 07 Sep 2011 13:51:10 -0400 (EDT)
+Message-Id: <20110907.135110.2069876782156753239.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: yong.zhang0@gmail.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        joe@perches.com, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 20/62] sparc: irq: Remove IRQF_DISABLED
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LFD.2.02.1109071933080.2723@ionos>
+References: <20110907.131217.2301665763990232637.davem@davemloft.net>
+	<alpine.LFD.2.02.1109071924510.2723@ionos>
+	<alpine.LFD.2.02.1109071933080.2723@ionos>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Sep 2011 10:51:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/09/07 18:30:31:
->
-> >
-> > The list of needed changes based on recent comments I am aware of are:
-> >  - put back in a couple of header files per Andrew
-> >  - fix the summary phrases to conform to coding standards per Andrew
-> >  - add signed off by for Joakim to patch 04/10 per Joakim
-> >  - fix bug in patch 06/10 noted in my email by passing bits as a parameter
-> to
-> > crc32_body
-> Adding three additional changes:
->  - update macro per Joakim
->  - shorter generator code per George
->  - remove unneeded local_irq_disable per Andrew
-> Any more?
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 7 Sep 2011 19:33:52 +0200 (CEST)
 
-There was more in my comments. Don't you scroll through the whole reply
-when you read it? Especially this one:
-  "BTW, is the 64 CRC bits on 32 bits BE arch bug fixed?"
+> 
+> 
+> On Wed, 7 Sep 2011, Thomas Gleixner wrote:
+> 
+>> On Wed, 7 Sep 2011, David Miller wrote:
+>> 
+>> > From: Yong Zhang <yong.zhang0@gmail.com>
+>> > Date: Wed,  7 Sep 2011 16:10:17 +0800
+>> > 
+>> > > This flag is a NOOP and can be removed now.
+>> > > 
+>> > > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+>> > 
+>> > How are things working now, if that is the case?
+>> > 
+>> > Specifically in the ldc_bind() case, we're passing iRQF_DISABLED here
+>> > so that the IRQ is not turned on when we request the IRQ, we later do
+>> > enable_irq() on these after we've take the spinlock in this function.
+>> > 
+>> > The IRQ cannot be allowed to be delivered between the request_irq()
+>> > call and the enable_irq() calls.
+>> > 
+>> > This sequence is necessary to deal with some lock ordering issues.
+>> 
+>> IRQF_DISABLED was telling the core code that the interrupt must run
+>> with interrupts disabled. As we enforced running all handlers with
+>> interrupts disabled the flag is meaningless. It was defined as 0
+>> anyway.
+>> 
+>> What you need to prevent that request_irq() enables the interrupt
+>> unconditionally, is to set IRQ_NOAUTOEN on the interrupt, which can't
+>> be handed in to request_irq(). You want to call
+>> 
+>>    irq_set_status_flags(irq, IRQ_NOAUTOEN);
+>> 
+>> for that irq. That tells request_irq() to leave the interrupt disabled
+>> and you have to explicitely enable it. That has not changed since we
+>> generalized the irq core code back in 2006.
+> 
+> If that's an issue, then we can create an IRQF_NOAUTOEN flag, which
+> can be handed into request_irq().
 
->
-> Can we finish crc32 before we start boiling the ocean with crc32c, crc16
-> etc.? I am happy to pitch in on those but I would like to see something
-> actually get done. I actually need this one.
+Actually, the issue is that I wanted the interrupt handler to run with
+interrupts disabled.
 
-Yes, lets get this cleared first. The other stuff depends on this.
+We had big problems when openning thousands of virtual network
+devices, each with their own unique IRQ, and pointed all at the same
+cpu, and we'd get IRQ stack overflows.
 
+See commit c58543c869606532c2382f027d6466f4672ea756
+
+So this change to make IRQF_DISABLED a nop has reintroduced this bug.
