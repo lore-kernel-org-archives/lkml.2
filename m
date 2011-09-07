@@ -1,158 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab1IGQLs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:11:48 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:48707 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab1IGQLn (ORCPT
+	id S1756207Ab1IGQMa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:12:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:46765 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754327Ab1IGQM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:11:43 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-From: Jonathan Cameron <jic23@cam.ac.uk>
-To: broonie@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
-        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH 2/6] regmap: Add a magic bus type to handle quirks of analog devices ADIS sensors.
-Date: Wed,  7 Sep 2011 17:19:43 +0100
-Message-Id: <1315412387-5765-3-git-send-email-jic23@cam.ac.uk>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <4E679770.4090008@cam.ac.uk>
-References: <4E679770.4090008@cam.ac.uk>
+	Wed, 7 Sep 2011 12:12:26 -0400
+Date: Wed, 7 Sep 2011 08:48:00 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Jackson <Ian.Jackson@eu.citrix.com>
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jens Axboe <jaxboe@fusionio.com>, Marsden <greg.marsden@oracle.com>,
+        Joe Jin <joe.jin@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, Greg@acsinet13.oracle.com,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>
+Subject: Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend
+ disconnected
+Message-ID: <20110907124800.GC32190@dumpdata.com>
+References: <4E48A6A6.4040706@oracle.com>
+ <20110815144610.GA3707@infradead.org>
+ <m2n.s.1QsyrJ-132485@chiark.greenend.org.uk>
+ <20054.29964.556177.999449@mariner.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20054.29964.556177.999449@mariner.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E6797E9.0009:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These devices look like 8 bit registers for writes and 16 bit registers for
-reads.  As you might imagine this causes some 'issues' hence this regmap
-bus implementation claims they are always 16bit and does the mangling to
-make the writes work.
----
- drivers/base/regmap/Kconfig          |    5 ++-
- drivers/base/regmap/Makefile         |    1 +
- drivers/base/regmap/regmap-spi-adi.c |   70 ++++++++++++++++++++++++++++++++++
- include/linux/regmap.h               |    2 +
- 4 files changed, 77 insertions(+), 1 deletions(-)
+On Thu, Aug 25, 2011 at 05:15:08PM +0100, Ian Jackson wrote:
+> Konrad Rzeszutek Wilk writes ("Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend disconnected"):
+> > And the guest would normally issues a FLUSH when unmounting the
+> > disk. Hm, I wonder what the conditions are when we forcibly kill the
+> > guest - there might be outstanding I/Os in the disk's cache -
+> > at which point we should probably sync the write cache, no?
+> 
+> If we forcibly kill the guest we don't care about its IO in flight.
 
-diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-index fabbf6c..e4991fe 100644
---- a/drivers/base/regmap/Kconfig
-+++ b/drivers/base/regmap/Kconfig
-@@ -3,7 +3,7 @@
- # subsystems should select the appropriate symbols.
- 
- config REGMAP
--	default y if (REGMAP_I2C || REGMAP_SPI)
-+	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPI_ADI)
- 	bool
- 
- config REGMAP_I2C
-@@ -11,3 +11,6 @@ config REGMAP_I2C
- 
- config REGMAP_SPI
- 	tristate
-+
-+config REGMAP_SPI_ADI
-+	tristate
-diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-index 057c13f..9e71bf8 100644
---- a/drivers/base/regmap/Makefile
-+++ b/drivers/base/regmap/Makefile
-@@ -2,3 +2,4 @@ obj-$(CONFIG_REGMAP) += regmap.o
- obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
- obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
- obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
-+obj-$(CONFIG_REGMAP_SPI_ADI) += regmap-spi-adi.o
-diff --git a/drivers/base/regmap/regmap-spi-adi.c b/drivers/base/regmap/regmap-spi-adi.c
-new file mode 100644
-index 0000000..a98c000
---- /dev/null
-+++ b/drivers/base/regmap/regmap-spi-adi.c
-@@ -0,0 +1,70 @@
-+/*
-+ * Register map access API - SPI support
-+ *
-+ * Copyright 2011 Wolfson Microelectronics plc
-+ *
-+ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/regmap.h>
-+#include <linux/spi/spi.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+
-+static int regmap_spi_write(struct device *dev, const void *data, size_t count)
-+{
-+/* Now this only works for 8 bit addresss 16 bit register first byte of data
-+ * is the lower address, second two the value */
-+	struct spi_device *spi = to_spi_device(dev);
-+	int ret;
-+	u8 *rawdata = (u8 *)data;
-+
-+	BUG_ON(count != 3);
-+	/* Fiddling needed as the value is bigendian */
-+	rawdata[0] += 1;
-+	ret = spi_write(spi, data, 2);
-+	if (ret < 0)
-+		return ret;
-+
-+	rawdata[1] = rawdata[0] - 1;
-+	ret = spi_write(spi, data + 1, 2);
-+	return ret;
-+}
-+
-+static int regmap_spi_read(struct device *dev,
-+			   const void *reg, size_t reg_size,
-+			   void *val, size_t val_size)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+
-+	BUG_ON(reg_size != 1 || val_size != 2);
-+
-+	return spi_write_then_read(spi, reg, 2, val, val_size);
-+}
-+
-+static struct regmap_bus regmap_spi_adi = {
-+	.write = regmap_spi_write,
-+	.read = regmap_spi_read,
-+};
-+
-+/**
-+ * regmap_init_spi_adi(): Initialise register map
-+ *
-+ * @spi: Device that will be interacted with
-+ * @config: Configuration for register map
-+ *
-+ * The return value will be an ERR_PTR() on error or a valid pointer to
-+ * a struct regmap.
-+ */
-+struct regmap *regmap_init_spi_adi(struct spi_device *spi,
-+				   const struct regmap_config *config)
-+{
-+	return regmap_init(&spi->dev, &regmap_spi_adi, config);
-+}
-+EXPORT_SYMBOL_GPL(regmap_init_spi_adi);
-+
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index 18d4afa..a827c30 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -111,6 +111,8 @@ struct regmap *regmap_init_i2c(struct i2c_client *i2c,
- 			       const struct regmap_config *config);
- struct regmap *regmap_init_spi(struct spi_device *dev,
- 			       const struct regmap_config *config);
-+struct regmap *regmap_init_spi_adi(struct spi_device *dev,
-+			       const struct regmap_config *config);
- 
- void regmap_exit(struct regmap *map);
- int regmap_write(struct regmap *map, unsigned int reg, unsigned int val);
--- 
-1.7.3.4
+Why don't we care about it? It might have become wedged but that does
+not mean we don't want to preserve as much as possible.
 
+> After all we are throwing away everything that the guest has in its
+> queue.
+
+We end up finishing all of the outstanding I/Os that guest has sent.
+When all of the bio_submit callbacks have finished then we release
+the guest backend. So adding in a 'SYNC' to the queue would force
+the disk cache to flush all the writes at least.
+
+> 
+> Bear in mind that the reason for forcibly killing (or perhaps forcibly
+> detaching) might be that the underlying device has wedged somehow.  It
+> would be annoying if that prevented even a force detach.
+> 
+> Or to put it in other words: force detach and force kill should be
+> lossy.  Their whole point is to be the lossy version.
+
+Hm, I think you still end up holding on the request queue and not
+freeing the blkback thread and all of its goodies until the bio callbacks
+have completed. When the device gets wedged they become wedged too.
+You have to wait for the error handler to give up and then the avalanche
+of 'write page lost' and 'error secxtor XX' along with the -ENXIO being
+returned ends up in the bio callbacks.
+
+What I am saying is that the force detach is still stuck waiting
+if the device has wedged - irregardless of this patch.
+
+> 
+> Ian.
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
