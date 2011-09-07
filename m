@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab1IGQtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:49:23 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:48575 "EHLO
+	id S1753438Ab1IGQtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:49:20 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:48576 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab1IGQp7 (ORCPT
+	with ESMTP id S1753388Ab1IGQp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Sep 2011 12:45:59 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 14/14] drbd: Map from (connection, volume number) to device in the receive handlers
-Date: Wed,  7 Sep 2011 16:17:41 +0200
-Message-Id: <1315405061-1473-15-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 07/14] drbd: Preallocate one page per drbd_socket as a receive buffer
+Date: Wed,  7 Sep 2011 16:17:34 +0200
+Message-Id: <1315405061-1473-8-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
 References: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,466 +22,364 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@linbit.com>
 
-The receive handlers do not all handle unknown volume numbers the same
-way.
-
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |  262 ++++++++++++++++++++++--------------
- 1 files changed, 164 insertions(+), 98 deletions(-)
+ drivers/block/drbd/drbd_int.h      |    4 ++-
+ drivers/block/drbd/drbd_main.c     |   22 ++++++++++++
+ drivers/block/drbd/drbd_receiver.c |   65 ++++++++++++++++--------------------
+ 3 files changed, 54 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 856ac23..218d97d7 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1235,13 +1235,17 @@ static void drbd_remove_epoch_entry_interval(struct drbd_conf *mdev,
- 		wake_up(&mdev->misc_wait);
- }
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index 47a435a..4a4ecec 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -554,6 +554,8 @@ struct p_delay_probe93 {
+ #error "PAGE_SIZE too small"
+ #endif
  
--static int receive_Barrier(struct drbd_conf *mdev, enum drbd_packet cmd,
--			   unsigned int data_size)
-+static int receive_Barrier(struct drbd_tconn *tconn, struct packet_info *pi)
- {
-+	struct drbd_conf *mdev;
- 	int rv;
--	struct p_barrier *p = mdev->tconn->data.rbuf;
-+	struct p_barrier *p = tconn->data.rbuf;
- 	struct drbd_epoch *epoch;
- 
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
++#define DRBD_SOCKET_BUFFER_SIZE 4096
 +
- 	inc_unacked(mdev);
+ union p_polymorph {
+         struct p_header           header;
+         struct p_handshake       handshake;
+@@ -803,7 +805,7 @@ struct drbd_socket {
+ 	/* this way we get our
+ 	 * send/receive buffers off the stack */
+ 	union p_polymorph sbuf;
+-	union p_polymorph rbuf;
++	void *rbuf;
+ };
  
- 	mdev->current_epoch->barrier_nr = p->barrier;
-@@ -1543,12 +1547,17 @@ find_request(struct drbd_conf *mdev, struct rb_root *root, u64 id,
- 	return NULL;
+ struct drbd_md {
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 54778e9..7b6da0e 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2274,6 +2274,19 @@ found:
+ 	return tconn;
  }
  
--static int receive_DataReply(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_DataReply(struct drbd_tconn *tconn, struct packet_info *pi)
- {
-+	struct drbd_conf *mdev;
- 	struct drbd_request *req;
- 	sector_t sector;
- 	int err;
--	struct p_data *p = mdev->tconn->data.rbuf;
-+	struct p_data *p = tconn->data.rbuf;
-+
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
- 
- 	sector = be64_to_cpu(p->sector);
- 
-@@ -1571,11 +1580,16 @@ static int receive_DataReply(struct drbd_conf *mdev, struct packet_info *pi)
- 	return err;
- }
- 
--static int receive_RSDataReply(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_RSDataReply(struct drbd_tconn *tconn, struct packet_info *pi)
- {
-+	struct drbd_conf *mdev;
- 	sector_t sector;
- 	int err;
--	struct p_data *p = mdev->tconn->data.rbuf;
-+	struct p_data *p = tconn->data.rbuf;
-+
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
- 
- 	sector = be64_to_cpu(p->sector);
- 	D_ASSERT(p->block_id == ID_SYNCER);
-@@ -1959,16 +1973,21 @@ static int handle_write_conflicts(struct drbd_conf *mdev,
- }
- 
- /* mirrored write */
--static int receive_Data(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_Data(struct drbd_tconn *tconn, struct packet_info *pi)
- {
-+	struct drbd_conf *mdev;
- 	sector_t sector;
- 	struct drbd_peer_request *peer_req;
--	struct p_data *p = mdev->tconn->data.rbuf;
-+	struct p_data *p = tconn->data.rbuf;
- 	u32 peer_seq = be32_to_cpu(p->seq_num);
- 	int rw = WRITE;
- 	u32 dp_flags;
- 	int err;
- 
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
-+
- 	if (!get_ldev(mdev)) {
- 		int err2;
- 
-@@ -2138,15 +2157,21 @@ int drbd_rs_should_slow_down(struct drbd_conf *mdev, sector_t sector)
- }
- 
- 
--static int receive_DataRequest(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_DataRequest(struct drbd_tconn *tconn, struct packet_info *pi)
- {
-+	struct drbd_conf *mdev;
- 	sector_t sector;
--	const sector_t capacity = drbd_get_capacity(mdev->this_bdev);
-+	sector_t capacity;
- 	struct drbd_peer_request *peer_req;
- 	struct digest_info *di = NULL;
- 	int size, verb;
- 	unsigned int fault_type;
--	struct p_block_req *p =	mdev->tconn->data.rbuf;
-+	struct p_block_req *p =	tconn->data.rbuf;
-+
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
-+	capacity = drbd_get_capacity(mdev->this_bdev);
- 
- 	sector = be64_to_cpu(p->sector);
- 	size   = be32_to_cpu(p->blksize);
-@@ -2960,17 +2985,60 @@ struct crypto_hash *drbd_crypto_alloc_digest_safe(const struct drbd_conf *mdev,
- 	return tfm;
- }
- 
--static int receive_SyncParam(struct drbd_conf *mdev, struct packet_info *pi)
-+static int ignore_remaining_packet(struct drbd_tconn *tconn, struct packet_info *pi)
++static int drbd_alloc_socket(struct drbd_socket *socket)
 +{
-+	void *buffer = tconn->data.rbuf;
-+	int size = pi->size;
-+
-+	while (size) {
-+		int s = min_t(int, size, DRBD_SOCKET_BUFFER_SIZE);
-+		s = drbd_recv(tconn, buffer, s);
-+		if (s <= 0) {
-+			if (s < 0)
-+				return s;
-+			break;
-+		}
-+		size -= s;
-+	}
-+	if (size)
-+		return -EIO;
++	socket->rbuf = (void *) __get_free_page(GFP_KERNEL);
++	if (!socket->rbuf)
++		return -ENOMEM;
 +	return 0;
 +}
 +
-+/*
-+ * config_unknown_volume  -  device configuration command for unknown volume
-+ *
-+ * When a device is added to an existing connection, the node on which the
-+ * device is added first will send configuration commands to its peer but the
-+ * peer will not know about the device yet.  It will warn and ignore these
-+ * commands.  Once the device is added on the second node, the second node will
-+ * send the same device configuration commands, but in the other direction.
-+ *
-+ * (We can also end up here if drbd is misconfigured.)
-+ */
-+static int config_unknown_volume(struct drbd_tconn *tconn, struct packet_info *pi)
++static void drbd_free_socket(struct drbd_socket *socket)
 +{
-+	conn_warn(tconn, "Volume %u unknown; ignoring %s packet\n",
-+		  pi->vnr, cmdname(pi->cmd));
-+	return ignore_remaining_packet(tconn, pi);
++	free_page((unsigned long) socket->rbuf);
 +}
 +
-+static int receive_SyncParam(struct drbd_tconn *tconn, struct packet_info *pi)
+ struct drbd_tconn *drbd_new_tconn(const char *name)
  {
--	struct p_rs_param_95 *p = mdev->tconn->data.rbuf;
-+	struct drbd_conf *mdev;
-+	struct p_rs_param_95 *p = tconn->data.rbuf;
+ 	struct drbd_tconn *tconn;
+@@ -2286,6 +2299,11 @@ struct drbd_tconn *drbd_new_tconn(const char *name)
+ 	if (!tconn->name)
+ 		goto fail;
+ 
++	if (drbd_alloc_socket(&tconn->data))
++		goto fail;
++	if (drbd_alloc_socket(&tconn->meta))
++		goto fail;
++
+ 	if (!zalloc_cpumask_var(&tconn->cpu_mask, GFP_KERNEL))
+ 		goto fail;
+ 
+@@ -2324,6 +2342,8 @@ struct drbd_tconn *drbd_new_tconn(const char *name)
+ fail:
+ 	tl_cleanup(tconn);
+ 	free_cpumask_var(tconn->cpu_mask);
++	drbd_free_socket(&tconn->meta);
++	drbd_free_socket(&tconn->data);
+ 	kfree(tconn->name);
+ 	kfree(tconn);
+ 
+@@ -2336,6 +2356,8 @@ void drbd_free_tconn(struct drbd_tconn *tconn)
+ 	idr_destroy(&tconn->volumes);
+ 
+ 	free_cpumask_var(tconn->cpu_mask);
++	drbd_free_socket(&tconn->meta);
++	drbd_free_socket(&tconn->data);
+ 	kfree(tconn->name);
+ 	kfree(tconn->int_dig_out);
+ 	kfree(tconn->int_dig_in);
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 08140d9..3738d56 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -743,7 +743,7 @@ static int drbd_send_fp(struct drbd_tconn *tconn, struct socket *sock, enum drbd
+ 
+ static enum drbd_packet drbd_recv_fp(struct drbd_tconn *tconn, struct socket *sock)
+ {
+-	struct p_header80 *h = &tconn->data.rbuf.header.h80;
++	struct p_header80 *h = tconn->data.rbuf;
+ 	int rr;
+ 
+ 	rr = drbd_recv_short(sock, h, sizeof(*h), 0);
+@@ -997,7 +997,7 @@ static int decode_header(struct drbd_tconn *tconn, struct p_header *h, struct pa
+ 
+ static int drbd_recv_header(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_header *h = &tconn->data.rbuf.header;
++	struct p_header *h = tconn->data.rbuf;
+ 	int err;
+ 
+ 	err = drbd_recv_all_warn(tconn, h, sizeof(*h));
+@@ -1239,7 +1239,7 @@ static int receive_Barrier(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			   unsigned int data_size)
+ {
+ 	int rv;
+-	struct p_barrier *p = &mdev->tconn->data.rbuf.barrier;
++	struct p_barrier *p = mdev->tconn->data.rbuf;
+ 	struct drbd_epoch *epoch;
+ 
+ 	inc_unacked(mdev);
+@@ -1549,7 +1549,7 @@ static int receive_DataReply(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 	struct drbd_request *req;
+ 	sector_t sector;
+ 	int err;
+-	struct p_data *p = &mdev->tconn->data.rbuf.data;
++	struct p_data *p = mdev->tconn->data.rbuf;
+ 
+ 	sector = be64_to_cpu(p->sector);
+ 
+@@ -1577,7 +1577,7 @@ static int receive_RSDataReply(struct drbd_conf *mdev, enum drbd_packet cmd,
+ {
+ 	sector_t sector;
+ 	int err;
+-	struct p_data *p = &mdev->tconn->data.rbuf.data;
++	struct p_data *p = mdev->tconn->data.rbuf;
+ 
+ 	sector = be64_to_cpu(p->sector);
+ 	D_ASSERT(p->block_id == ID_SYNCER);
+@@ -1966,7 +1966,7 @@ static int receive_Data(struct drbd_conf *mdev, enum drbd_packet cmd,
+ {
+ 	sector_t sector;
+ 	struct drbd_peer_request *peer_req;
+-	struct p_data *p = &mdev->tconn->data.rbuf.data;
++	struct p_data *p = mdev->tconn->data.rbuf;
+ 	u32 peer_seq = be32_to_cpu(p->seq_num);
+ 	int rw = WRITE;
+ 	u32 dp_flags;
+@@ -2150,7 +2150,7 @@ static int receive_DataRequest(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 	struct digest_info *di = NULL;
+ 	int size, verb;
+ 	unsigned int fault_type;
+-	struct p_block_req *p =	&mdev->tconn->data.rbuf.block_req;
++	struct p_block_req *p =	mdev->tconn->data.rbuf;
+ 
+ 	sector = be64_to_cpu(p->sector);
+ 	size   = be32_to_cpu(p->blksize);
+@@ -2870,7 +2870,7 @@ static int cmp_after_sb(enum drbd_after_sb_p peer, enum drbd_after_sb_p self)
+ static int receive_protocol(struct drbd_tconn *tconn, enum drbd_packet cmd,
+ 			    unsigned int data_size)
+ {
+-	struct p_protocol *p = &tconn->data.rbuf.protocol;
++	struct p_protocol *p = tconn->data.rbuf;
+ 	int p_proto, p_after_sb_0p, p_after_sb_1p, p_after_sb_2p;
+ 	int p_want_lose, p_two_primaries, cf;
+ 	char p_integrity_alg[SHARED_SECRET_MAX] = "";
+@@ -2972,7 +2972,7 @@ struct crypto_hash *drbd_crypto_alloc_digest_safe(const struct drbd_conf *mdev,
+ static int receive_SyncParam(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			     unsigned int packet_size)
+ {
+-	struct p_rs_param_95 *p = &mdev->tconn->data.rbuf.rs_param_95;
++	struct p_rs_param_95 *p = mdev->tconn->data.rbuf;
  	unsigned int header_size, data_size, exp_max_sz;
  	struct crypto_hash *verify_tfm = NULL;
  	struct crypto_hash *csums_tfm = NULL;
--	const int apv = mdev->tconn->agreed_pro_version;
-+	const int apv = tconn->agreed_pro_version;
- 	int *rs_plan_s = NULL;
- 	int fifo_size = 0;
- 	int err;
- 
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return config_unknown_volume(tconn, pi);
-+
- 	exp_max_sz  = apv <= 87 ? sizeof(struct p_rs_param)
- 		    : apv == 88 ? sizeof(struct p_rs_param)
- 					+ SHARED_SECRET_MAX
-@@ -3126,14 +3194,19 @@ static void warn_if_differ_considerably(struct drbd_conf *mdev,
- 		     (unsigned long long)a, (unsigned long long)b);
- }
- 
--static int receive_sizes(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_sizes(struct drbd_tconn *tconn, struct packet_info *pi)
+@@ -3139,7 +3139,7 @@ static void warn_if_differ_considerably(struct drbd_conf *mdev,
+ static int receive_sizes(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			 unsigned int data_size)
  {
--	struct p_sizes *p = mdev->tconn->data.rbuf;
-+	struct drbd_conf *mdev;
-+	struct p_sizes *p = tconn->data.rbuf;
+-	struct p_sizes *p = &mdev->tconn->data.rbuf.sizes;
++	struct p_sizes *p = mdev->tconn->data.rbuf;
  	enum determine_dev_size dd = unchanged;
  	sector_t p_size, p_usize, my_usize;
  	int ldsc = 0; /* local disk size changed */
- 	enum dds_flags ddsf;
- 
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return config_unknown_volume(tconn, pi);
-+
- 	p_size = be64_to_cpu(p->d_size);
- 	p_usize = be64_to_cpu(p->u_size);
- 
-@@ -3223,12 +3296,17 @@ static int receive_sizes(struct drbd_conf *mdev, struct packet_info *pi)
- 	return 0;
- }
- 
--static int receive_uuids(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_uuids(struct drbd_tconn *tconn, struct packet_info *pi)
+@@ -3237,7 +3237,7 @@ static int receive_sizes(struct drbd_conf *mdev, enum drbd_packet cmd,
+ static int receive_uuids(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			 unsigned int data_size)
  {
--	struct p_uuids *p = mdev->tconn->data.rbuf;
-+	struct drbd_conf *mdev;
-+	struct p_uuids *p = tconn->data.rbuf;
+-	struct p_uuids *p = &mdev->tconn->data.rbuf.uuids;
++	struct p_uuids *p = mdev->tconn->data.rbuf;
  	u64 *p_uuid;
  	int i, updated_uuids = 0;
  
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return config_unknown_volume(tconn, pi);
-+
- 	p_uuid = kmalloc(sizeof(u64)*UI_EXTENDED_SIZE, GFP_NOIO);
- 
- 	for (i = UI_CURRENT; i < UI_EXTENDED_SIZE; i++)
-@@ -3318,12 +3396,17 @@ static union drbd_state convert_state(union drbd_state ps)
- 	return ms;
- }
- 
--static int receive_req_state(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_req_state(struct drbd_tconn *tconn, struct packet_info *pi)
+@@ -3333,7 +3333,7 @@ static union drbd_state convert_state(union drbd_state ps)
+ static int receive_req_state(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			     unsigned int data_size)
  {
--	struct p_req_state *p = mdev->tconn->data.rbuf;
-+	struct drbd_conf *mdev;
+-	struct p_req_state *p = &mdev->tconn->data.rbuf.req_state;
++	struct p_req_state *p = mdev->tconn->data.rbuf;
+ 	union drbd_state mask, val;
+ 	enum drbd_state_rv rv;
+ 
+@@ -3360,7 +3360,7 @@ static int receive_req_state(struct drbd_conf *mdev, enum drbd_packet cmd,
+ static int receive_req_conn_state(struct drbd_tconn *tconn, enum drbd_packet cmd,
+ 				  unsigned int data_size)
+ {
+-	struct p_req_state *p = &tconn->data.rbuf.req_state;
 +	struct p_req_state *p = tconn->data.rbuf;
  	union drbd_state mask, val;
  	enum drbd_state_rv rv;
  
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
-+
- 	mask.i = be32_to_cpu(p->mask);
- 	val.i = be32_to_cpu(p->val);
- 
-@@ -3368,14 +3451,19 @@ static int receive_req_conn_state(struct drbd_tconn *tconn, struct packet_info *
- 	return 0;
- }
- 
--static int receive_state(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_state(struct drbd_tconn *tconn, struct packet_info *pi)
+@@ -3385,7 +3385,7 @@ static int receive_req_conn_state(struct drbd_tconn *tconn, enum drbd_packet cmd
+ static int receive_state(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			 unsigned int data_size)
  {
--	struct p_state *p = mdev->tconn->data.rbuf;
-+	struct drbd_conf *mdev;
-+	struct p_state *p = tconn->data.rbuf;
+-	struct p_state *p = &mdev->tconn->data.rbuf.state;
++	struct p_state *p = mdev->tconn->data.rbuf;
  	union drbd_state os, ns, peer_state;
  	enum drbd_disk_state real_peer_disk;
  	enum chg_state_flags cs_flags;
- 	int rv;
- 
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return config_unknown_volume(tconn, pi);
-+
- 	peer_state.i = be32_to_cpu(p->state);
- 
- 	real_peer_disk = peer_state.disk;
-@@ -3520,9 +3608,14 @@ static int receive_state(struct drbd_conf *mdev, struct packet_info *pi)
- 	return 0;
- }
- 
--static int receive_sync_uuid(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_sync_uuid(struct drbd_tconn *tconn, struct packet_info *pi)
+@@ -3538,7 +3538,7 @@ static int receive_state(struct drbd_conf *mdev, enum drbd_packet cmd,
+ static int receive_sync_uuid(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			     unsigned int data_size)
  {
--	struct p_rs_uuid *p = mdev->tconn->data.rbuf;
-+	struct drbd_conf *mdev;
-+	struct p_rs_uuid *p = tconn->data.rbuf;
-+
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
+-	struct p_rs_uuid *p = &mdev->tconn->data.rbuf.rs_uuid;
++	struct p_rs_uuid *p = mdev->tconn->data.rbuf;
  
  	wait_event(mdev->misc_wait,
  		   mdev->state.conn == C_WF_SYNC_UUID ||
-@@ -3729,11 +3822,16 @@ void INFO_bm_xfer_stats(struct drbd_conf *mdev,
-    in order to be agnostic to the 32 vs 64 bits issue.
- 
-    returns 0 on failure, 1 if we successfully received it. */
--static int receive_bitmap(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_bitmap(struct drbd_tconn *tconn, struct packet_info *pi)
- {
-+	struct drbd_conf *mdev;
+@@ -3750,7 +3750,7 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packet cmd,
  	struct bm_xfer_ctx c;
+ 	void *buffer;
  	int err;
--	struct p_header *h = mdev->tconn->data.rbuf;
-+	struct p_header *h = tconn->data.rbuf;
-+
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
+-	struct p_header *h = &mdev->tconn->data.rbuf.header;
++	struct p_header *h = mdev->tconn->data.rbuf;
+ 	struct packet_info pi;
  
  	drbd_bm_lock(mdev, "receive bitmap", BM_LOCKED_SET_ALLOWED);
- 	/* you are supposed to send additional out-of-sync information
-@@ -3813,51 +3911,31 @@ static int receive_bitmap(struct drbd_conf *mdev, struct packet_info *pi)
- 	return err;
- }
- 
--static int _tconn_receive_skip(struct drbd_tconn *tconn, unsigned int data_size)
--{
--	/* TODO zero copy sink :) */
--	static char sink[128];
--	int size, want, r;
--
--	size = data_size;
--	while (size > 0) {
--		want = min_t(int, size, sizeof(sink));
--		r = drbd_recv(tconn, sink, want);
--		if (r <= 0)
--			break;
--		size -= r;
--	}
--	return size ? -EIO : 0;
--}
--
--static int receive_skip(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_skip(struct drbd_tconn *tconn, struct packet_info *pi)
+@@ -3891,7 +3891,7 @@ static int receive_UnplugRemote(struct drbd_conf *mdev, enum drbd_packet cmd,
+ static int receive_out_of_sync(struct drbd_conf *mdev, enum drbd_packet cmd,
+ 			       unsigned int data_size)
  {
--	dev_warn(DEV, "skipping unknown optional packet type %d, l: %d!\n",
-+	conn_warn(tconn, "skipping unknown optional packet type %d, l: %d!\n",
- 		 pi->cmd, pi->size);
- 
--	return _tconn_receive_skip(mdev->tconn, pi->size);
-+	return ignore_remaining_packet(tconn, pi);
- }
- 
--static int tconn_receive_skip(struct drbd_tconn *tconn, struct packet_info *pi)
--{
--	conn_warn(tconn, "skipping packet for non existing volume type %d, l: %d!\n",
--		  pi->cmd, pi->size);
--
--	return _tconn_receive_skip(tconn, pi->size);
--}
--
--static int receive_UnplugRemote(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_UnplugRemote(struct drbd_tconn *tconn, struct packet_info *pi)
- {
- 	/* Make sure we've acked all the TCP data associated
- 	 * with the data requests being unplugged */
--	drbd_tcp_quickack(mdev->tconn->data.socket);
-+	drbd_tcp_quickack(tconn->data.socket);
- 
- 	return 0;
- }
- 
--static int receive_out_of_sync(struct drbd_conf *mdev, struct packet_info *pi)
-+static int receive_out_of_sync(struct drbd_tconn *tconn, struct packet_info *pi)
- {
--	struct p_block_desc *p = mdev->tconn->data.rbuf;
-+	struct drbd_conf *mdev;
-+	struct p_block_desc *p = tconn->data.rbuf;
-+
-+	mdev = vnr_to_mdev(tconn, pi->vnr);
-+	if (!mdev)
-+		return -EIO;
+-	struct p_block_desc *p = &mdev->tconn->data.rbuf.block_desc;
++	struct p_block_desc *p = mdev->tconn->data.rbuf;
  
  	switch (mdev->state.conn) {
  	case C_WF_SYNC_UUID:
-@@ -3877,37 +3955,33 @@ static int receive_out_of_sync(struct drbd_conf *mdev, struct packet_info *pi)
- struct data_cmd {
- 	int expect_payload;
- 	size_t pkt_size;
--	enum mdev_or_conn fa_type; /* first argument's type */
--	union {
--		int (*mdev_fn)(struct drbd_conf *, struct packet_info *);
--		int (*conn_fn)(struct drbd_tconn *, struct packet_info *);
--	};
-+	int (*fn)(struct drbd_tconn *, struct packet_info *);
+@@ -3946,16 +3946,9 @@ static struct data_cmd drbd_cmd_handler[] = {
+ 	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), CONN, { .conn_fn = receive_req_conn_state } },
  };
  
- static struct data_cmd drbd_cmd_handler[] = {
--	[P_DATA]	    = { 1, sizeof(struct p_data), MDEV, { receive_Data } },
--	[P_DATA_REPLY]	    = { 1, sizeof(struct p_data), MDEV, { receive_DataReply } },
--	[P_RS_DATA_REPLY]   = { 1, sizeof(struct p_data), MDEV, { receive_RSDataReply } } ,
--	[P_BARRIER]	    = { 0, sizeof(struct p_barrier), MDEV, { receive_Barrier } } ,
--	[P_BITMAP]	    = { 1, sizeof(struct p_header), MDEV, { receive_bitmap } } ,
--	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header), MDEV, { receive_bitmap } } ,
--	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header), MDEV, { receive_UnplugRemote } },
--	[P_DATA_REQUEST]    = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
--	[P_RS_DATA_REQUEST] = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
--	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header), MDEV, { receive_SyncParam } },
--	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header), MDEV, { receive_SyncParam } },
--	[P_PROTOCOL]        = { 1, sizeof(struct p_protocol), CONN, { .conn_fn = receive_protocol } },
--	[P_UUIDS]	    = { 0, sizeof(struct p_uuids), MDEV, { receive_uuids } },
--	[P_SIZES]	    = { 0, sizeof(struct p_sizes), MDEV, { receive_sizes } },
--	[P_STATE]	    = { 0, sizeof(struct p_state), MDEV, { receive_state } },
--	[P_STATE_CHG_REQ]   = { 0, sizeof(struct p_req_state), MDEV, { receive_req_state } },
--	[P_SYNC_UUID]       = { 0, sizeof(struct p_rs_uuid), MDEV, { receive_sync_uuid } },
--	[P_OV_REQUEST]      = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
--	[P_OV_REPLY]        = { 1, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
--	[P_CSUM_RS_REQUEST] = { 1, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
--	[P_DELAY_PROBE]     = { 0, sizeof(struct p_delay_probe93), MDEV, { receive_skip } },
--	[P_OUT_OF_SYNC]     = { 0, sizeof(struct p_block_desc), MDEV, { receive_out_of_sync } },
--	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), CONN, { .conn_fn = receive_req_conn_state } },
-+	[P_DATA]	    = { 1, sizeof(struct p_data), receive_Data },
-+	[P_DATA_REPLY]	    = { 1, sizeof(struct p_data), receive_DataReply },
-+	[P_RS_DATA_REPLY]   = { 1, sizeof(struct p_data), receive_RSDataReply } ,
-+	[P_BARRIER]	    = { 0, sizeof(struct p_barrier), receive_Barrier } ,
-+	[P_BITMAP]	    = { 1, sizeof(struct p_header), receive_bitmap } ,
-+	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header), receive_bitmap } ,
-+	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header), receive_UnplugRemote },
-+	[P_DATA_REQUEST]    = { 0, sizeof(struct p_block_req), receive_DataRequest },
-+	[P_RS_DATA_REQUEST] = { 0, sizeof(struct p_block_req), receive_DataRequest },
-+	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header), receive_SyncParam },
-+	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header), receive_SyncParam },
-+	[P_PROTOCOL]        = { 1, sizeof(struct p_protocol), receive_protocol },
-+	[P_UUIDS]	    = { 0, sizeof(struct p_uuids), receive_uuids },
-+	[P_SIZES]	    = { 0, sizeof(struct p_sizes), receive_sizes },
-+	[P_STATE]	    = { 0, sizeof(struct p_state), receive_state },
-+	[P_STATE_CHG_REQ]   = { 0, sizeof(struct p_req_state), receive_req_state },
-+	[P_SYNC_UUID]       = { 0, sizeof(struct p_rs_uuid), receive_sync_uuid },
-+	[P_OV_REQUEST]      = { 0, sizeof(struct p_block_req), receive_DataRequest },
-+	[P_OV_REPLY]        = { 1, sizeof(struct p_block_req), receive_DataRequest },
-+	[P_CSUM_RS_REQUEST] = { 1, sizeof(struct p_block_req), receive_DataRequest },
-+	[P_DELAY_PROBE]     = { 0, sizeof(struct p_delay_probe93), receive_skip },
-+	[P_OUT_OF_SYNC]     = { 0, sizeof(struct p_block_desc), receive_out_of_sync },
-+	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), receive_req_conn_state },
- };
- 
- static void drbdd(struct drbd_tconn *tconn)
-@@ -3925,7 +3999,7 @@ static void drbdd(struct drbd_tconn *tconn)
- 			goto err_out;
- 
- 		cmd = &drbd_cmd_handler[pi.cmd];
--		if (unlikely(pi.cmd >= ARRAY_SIZE(drbd_cmd_handler) || !cmd->mdev_fn)) {
-+		if (unlikely(pi.cmd >= ARRAY_SIZE(drbd_cmd_handler) || !cmd->fn)) {
- 			conn_err(tconn, "unknown packet type %d, l: %d!\n", pi.cmd, pi.size);
- 			goto err_out;
- 		}
-@@ -3943,16 +4017,8 @@ static void drbdd(struct drbd_tconn *tconn)
- 			pi.size -= shs;
- 		}
- 
--		if (cmd->fa_type == CONN)
--			err = cmd->conn_fn(tconn, &pi);
--		else {
--			struct drbd_conf *mdev = vnr_to_mdev(tconn, pi.vnr);
--			err = mdev ?
--				cmd->mdev_fn(mdev, &pi) :
--				tconn_receive_skip(tconn, &pi);
--		}
+-/* All handler functions that expect a sub-header get that sub-heder in
+-   mdev->tconn->data.rbuf.header.head.payload.
 -
--		if (unlikely(err)) {
-+		err = cmd->fn(tconn, &pi);
-+		if (err) {
- 			conn_err(tconn, "error receiving %s, l: %d!\n",
- 			    cmdname(pi.cmd), pi.size);
- 			goto err_out;
+-   Usually in mdev->tconn->data.rbuf.header.head the callback can find the usual
+-   p_header, but they may not rely on that. Since there is also p_header95 !
+- */
+-
+ static void drbdd(struct drbd_tconn *tconn)
+ {
+-	struct p_header *header = &tconn->data.rbuf.header;
++	struct p_header *header = tconn->data.rbuf;
+ 	struct packet_info pi;
+ 	size_t shs; /* sub header size */
+ 	int err;
+@@ -4186,7 +4179,7 @@ static int drbd_send_handshake(struct drbd_tconn *tconn)
+ static int drbd_do_handshake(struct drbd_tconn *tconn)
+ {
+ 	/* ASSERT current == tconn->receiver ... */
+-	struct p_handshake *p = &tconn->data.rbuf.handshake;
++	struct p_handshake *p = tconn->data.rbuf;
+ 	const int expect = sizeof(struct p_handshake) - sizeof(struct p_header80);
+ 	struct packet_info pi;
+ 	int err;
+@@ -4433,7 +4426,7 @@ int drbdd_init(struct drbd_thread *thi)
+ 
+ static int got_conn_RqSReply(struct drbd_tconn *tconn, enum drbd_packet cmd)
+ {
+-	struct p_req_state_reply *p = &tconn->meta.rbuf.req_state_reply;
++	struct p_req_state_reply *p = tconn->meta.rbuf;
+ 	int retcode = be32_to_cpu(p->retcode);
+ 
+ 	if (retcode >= SS_SUCCESS) {
+@@ -4450,7 +4443,7 @@ static int got_conn_RqSReply(struct drbd_tconn *tconn, enum drbd_packet cmd)
+ 
+ static int got_RqSReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+-	struct p_req_state_reply *p = &mdev->tconn->meta.rbuf.req_state_reply;
++	struct p_req_state_reply *p = mdev->tconn->meta.rbuf;
+ 	int retcode = be32_to_cpu(p->retcode);
+ 
+ 	if (retcode >= SS_SUCCESS) {
+@@ -4483,7 +4476,7 @@ static int got_PingAck(struct drbd_tconn *tconn, enum drbd_packet cmd)
+ 
+ static int got_IsInSync(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+-	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
++	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+ 	int blksize = be32_to_cpu(p->blksize);
+ 
+@@ -4528,7 +4521,7 @@ validate_req_change_req_state(struct drbd_conf *mdev, u64 id, sector_t sector,
+ 
+ static int got_BlockAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+-	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
++	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+ 	int blksize = be32_to_cpu(p->blksize);
+ 	enum drbd_req_event what;
+@@ -4573,7 +4566,7 @@ static int got_BlockAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 
+ static int got_NegAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+-	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
++	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+ 	int size = be32_to_cpu(p->blksize);
+ 	bool missing_ok = mdev->tconn->net_conf->wire_protocol == DRBD_PROT_A ||
+@@ -4606,7 +4599,7 @@ static int got_NegAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 
+ static int got_NegDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+-	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
++	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+ 
+ 	update_peer_seq(mdev, be32_to_cpu(p->seq_num));
+@@ -4623,7 +4616,7 @@ static int got_NegRSDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+ 	sector_t sector;
+ 	int size;
+-	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
++	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 
+ 	sector = be64_to_cpu(p->sector);
+ 	size = be32_to_cpu(p->blksize);
+@@ -4652,7 +4645,7 @@ static int got_NegRSDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 
+ static int got_BarrierAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+-	struct p_barrier_ack *p = &mdev->tconn->meta.rbuf.barrier_ack;
++	struct p_barrier_ack *p = mdev->tconn->meta.rbuf;
+ 
+ 	tl_release(mdev->tconn, p->barrier, be32_to_cpu(p->set_size));
+ 
+@@ -4668,7 +4661,7 @@ static int got_BarrierAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 
+ static int got_OVResult(struct drbd_conf *mdev, enum drbd_packet cmd)
+ {
+-	struct p_block_ack *p = &mdev->tconn->meta.rbuf.block_ack;
++	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	struct drbd_work *w;
+ 	sector_t sector;
+ 	int size;
+@@ -4774,7 +4767,7 @@ static struct asender_cmd asender_tbl[] = {
+ int drbd_asender(struct drbd_thread *thi)
+ {
+ 	struct drbd_tconn *tconn = thi->tconn;
+-	struct p_header *h = &tconn->meta.rbuf.header;
++	struct p_header *h = tconn->meta.rbuf;
+ 	struct asender_cmd *cmd = NULL;
+ 	struct packet_info pi;
+ 	int rv;
 -- 
 1.7.4.1
 
