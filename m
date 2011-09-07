@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab1IGQbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:31:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58521 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab1IGQbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:31:31 -0400
-X-IronPort-AV: E=Sophos;i="4.68,346,1312171200"; 
-   d="scan'208";a="16768368"
-From: <stefano.stabellini@eu.citrix.com>
-To: konrad.wilk@oracle.com
-CC: jeremy@goop.org, Stefano.Stabellini@eu.citrix.com,
-        Ian.Campbell@eu.citrix.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 1/2] xen: add an "highmem" parameter to alloc_xenballooned_pages
-Date: Wed, 7 Sep 2011 17:39:30 +0100
-Message-ID: <1315413571-10938-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1109071723470.12963@kaball-desktop>
-References: <alpine.DEB.2.00.1109071723470.12963@kaball-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752682Ab1IGQcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:32:05 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41495 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab1IGQcA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:32:00 -0400
+From: Dan McGee <dpmcgee@gmail.com>
+To: linux-ide@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Subject: [PATCH 4/5] pata_sis: mark most const data static as well
+Date: Wed,  7 Sep 2011 11:23:21 -0500
+Message-Id: <1315412602-6560-5-git-send-email-dpmcgee@gmail.com>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1315412602-6560-1-git-send-email-dpmcgee@gmail.com>
+References: <1315412602-6560-1-git-send-email-dpmcgee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+This pushes timing and other values into preinitialized read-only data
+sections rather than being inlined into the code. None of these
+functions are called more than a handful of times, so reducing code size
+makes sense.
 
-Add an highmem parameter to alloc_xenballooned_pages, to allow callers to
-request lowmem or highmem pages.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Dan McGee <dpmcgee@gmail.com>
 ---
- drivers/xen/balloon.c |   12 ++++++++----
- drivers/xen/gntdev.c  |    2 +-
- include/xen/balloon.h |    3 ++-
- 3 files changed, 11 insertions(+), 6 deletions(-)
+ drivers/ata/pata_sis.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 5dfd8f8..7f7d463 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -501,20 +501,24 @@ EXPORT_SYMBOL_GPL(balloon_set_new_target);
-  * alloc_xenballooned_pages - get pages that have been ballooned out
-  * @nr_pages: Number of pages to get
-  * @pages: pages returned
-+ * @highmem: highmem or lowmem pages
-  * @return 0 on success, error otherwise
-  */
--int alloc_xenballooned_pages(int nr_pages, struct page** pages)
-+int alloc_xenballooned_pages(int nr_pages, struct page** pages, bool highmem)
- {
- 	int pgno = 0;
- 	struct page* page;
- 	mutex_lock(&balloon_mutex);
- 	while (pgno < nr_pages) {
--		page = balloon_retrieve(true);
--		if (page) {
-+		page = balloon_retrieve(highmem);
-+		if (page && PageHighMem(page) == highmem) {
- 			pages[pgno++] = page;
- 		} else {
- 			enum bp_state st;
--			st = decrease_reservation(nr_pages - pgno, GFP_HIGHUSER);
-+			if (page)
-+				balloon_append(page);
-+			st = decrease_reservation(nr_pages - pgno,
-+					highmem ? GFP_HIGHUSER : GFP_USER);
- 			if (st != BP_DONE)
- 				goto out_undo;
- 		}
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index f914b26..07a56c2 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -123,7 +123,7 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
- 	    NULL == add->pages)
- 		goto err;
+diff --git a/drivers/ata/pata_sis.c b/drivers/ata/pata_sis.c
+index a42668b..d886b0b 100644
+--- a/drivers/ata/pata_sis.c
++++ b/drivers/ata/pata_sis.c
+@@ -231,8 +231,8 @@ static void sis_old_set_piomode (struct ata_port *ap, struct ata_device *adev)
+ 	u8 t1, t2;
+ 	int speed = adev->pio_mode - XFER_PIO_0;
  
--	if (alloc_xenballooned_pages(count, add->pages))
-+	if (alloc_xenballooned_pages(count, add->pages, 0 /* lowmem */))
- 		goto err;
+-	const u8 active[]   = { 0x00, 0x07, 0x04, 0x03, 0x01 };
+-	const u8 recovery[] = { 0x00, 0x06, 0x04, 0x03, 0x03 };
++	static const u8 active[]   = { 0x00, 0x07, 0x04, 0x03, 0x01 };
++	static const u8 recovery[] = { 0x00, 0x06, 0x04, 0x03, 0x03 };
  
- 	for (i = 0; i < count; i++) {
-diff --git a/include/xen/balloon.h b/include/xen/balloon.h
-index 76f7538..b1a8233 100644
---- a/include/xen/balloon.h
-+++ b/include/xen/balloon.h
-@@ -25,7 +25,8 @@ extern struct balloon_stats balloon_stats;
+ 	sis_set_fifo(ap, adev);
  
- void balloon_set_new_target(unsigned long target);
+@@ -267,7 +267,7 @@ static void sis_100_set_piomode (struct ata_port *ap, struct ata_device *adev)
+ 	int port = sis_old_port_base(adev);
+ 	int speed = adev->pio_mode - XFER_PIO_0;
  
--int alloc_xenballooned_pages(int nr_pages, struct page** pages);
-+int alloc_xenballooned_pages(int nr_pages, struct page** pages,
-+		bool highmem);
- void free_xenballooned_pages(int nr_pages, struct page** pages);
+-	const u8 actrec[] = { 0x00, 0x67, 0x44, 0x33, 0x31 };
++	static const u8 actrec[] = { 0x00, 0x67, 0x44, 0x33, 0x31 };
  
- struct sys_device;
+ 	sis_set_fifo(ap, adev);
+ 
+@@ -293,14 +293,14 @@ static void sis_133_set_piomode (struct ata_port *ap, struct ata_device *adev)
+ 	u32 t1;
+ 	int speed = adev->pio_mode - XFER_PIO_0;
+ 
+-	const u32 timing133[] = {
++	static const u32 timing133[] = {
+ 		0x28269000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
+ 		0x0C266000,
+ 		0x04263000,
+ 		0x0C0A3000,
+ 		0x05093000
+ 	};
+-	const u32 timing100[] = {
++	static const u32 timing100[] = {
+ 		0x1E1C6000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
+ 		0x091C4000,
+ 		0x031C2000,
+@@ -341,8 +341,8 @@ static void sis_old_set_dmamode (struct ata_port *ap, struct ata_device *adev)
+ 	int drive_pci = sis_old_port_base(adev);
+ 	u16 timing;
+ 
+-	const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
+-	const u16 udma_bits[]  = { 0xE000, 0xC000, 0xA000 };
++	static const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
++	static const u16 udma_bits[]  = { 0xE000, 0xC000, 0xA000 };
+ 
+ 	pci_read_config_word(pdev, drive_pci, &timing);
+ 
+@@ -381,8 +381,8 @@ static void sis_66_set_dmamode (struct ata_port *ap, struct ata_device *adev)
+ 	u16 timing;
+ 
+ 	/* MWDMA 0-2 and UDMA 0-5 */
+-	const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
+-	const u16 udma_bits[]  = { 0xF000, 0xD000, 0xB000, 0xA000, 0x9000, 0x8000 };
++	static const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
++	static const u16 udma_bits[]  = { 0xF000, 0xD000, 0xB000, 0xA000, 0x9000, 0x8000 };
+ 
+ 	pci_read_config_word(pdev, drive_pci, &timing);
+ 
+@@ -419,7 +419,7 @@ static void sis_100_set_dmamode (struct ata_port *ap, struct ata_device *adev)
+ 	int drive_pci = sis_old_port_base(adev);
+ 	u8 timing;
+ 
+-	const u8 udma_bits[]  = { 0x8B, 0x87, 0x85, 0x83, 0x82, 0x81};
++	static const u8 udma_bits[]  = { 0x8B, 0x87, 0x85, 0x83, 0x82, 0x81};
+ 
+ 	pci_read_config_byte(pdev, drive_pci + 1, &timing);
+ 
 -- 
-1.7.2.3
+1.7.6.1
 
