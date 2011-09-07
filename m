@@ -1,84 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab1IGRw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:52:28 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56997 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab1IGRw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:52:26 -0400
-Date: Wed, 07 Sep 2011 13:51:10 -0400 (EDT)
-Message-Id: <20110907.135110.2069876782156753239.davem@davemloft.net>
-To: tglx@linutronix.de
-Cc: yong.zhang0@gmail.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        joe@perches.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 20/62] sparc: irq: Remove IRQF_DISABLED
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LFD.2.02.1109071933080.2723@ionos>
-References: <20110907.131217.2301665763990232637.davem@davemloft.net>
-	<alpine.LFD.2.02.1109071924510.2723@ionos>
-	<alpine.LFD.2.02.1109071933080.2723@ionos>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1756013Ab1IGRwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:52:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab1IGRww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:52:52 -0400
+Message-ID: <4E67AF6A.9090400@redhat.com>
+Date: Wed, 07 Sep 2011 19:52:42 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Paul Clements <paul.clements@us.sios.com>
+CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        nbd-general@lists.sourceforge.net
+Subject: Re: [PATCH 2/3] nbd: add support for feature negotiation
+References: <1315406503-7883-1-git-send-email-pbonzini@redhat.com> <1315406503-7883-3-git-send-email-pbonzini@redhat.com> <CAECXXi4YW++_302mcSTX=cPjbguSqcw3Weec85VrLFv1qNHXug@mail.gmail.com>
+In-Reply-To: <CAECXXi4YW++_302mcSTX=cPjbguSqcw3Weec85VrLFv1qNHXug@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Sep 2011 10:51:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 7 Sep 2011 19:33:52 +0200 (CEST)
+On 09/07/2011 06:30 PM, Paul Clements wrote:
+> Could you name this as NBD_SET_FLAGS, as that's more consistent with
+> what it's really doing?
 
-> 
-> 
-> On Wed, 7 Sep 2011, Thomas Gleixner wrote:
-> 
->> On Wed, 7 Sep 2011, David Miller wrote:
->> 
->> > From: Yong Zhang <yong.zhang0@gmail.com>
->> > Date: Wed,  7 Sep 2011 16:10:17 +0800
->> > 
->> > > This flag is a NOOP and can be removed now.
->> > > 
->> > > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
->> > 
->> > How are things working now, if that is the case?
->> > 
->> > Specifically in the ldc_bind() case, we're passing iRQF_DISABLED here
->> > so that the IRQ is not turned on when we request the IRQ, we later do
->> > enable_irq() on these after we've take the spinlock in this function.
->> > 
->> > The IRQ cannot be allowed to be delivered between the request_irq()
->> > call and the enable_irq() calls.
->> > 
->> > This sequence is necessary to deal with some lock ordering issues.
->> 
->> IRQF_DISABLED was telling the core code that the interrupt must run
->> with interrupts disabled. As we enforced running all handlers with
->> interrupts disabled the flag is meaningless. It was defined as 0
->> anyway.
->> 
->> What you need to prevent that request_irq() enables the interrupt
->> unconditionally, is to set IRQ_NOAUTOEN on the interrupt, which can't
->> be handed in to request_irq(). You want to call
->> 
->>    irq_set_status_flags(irq, IRQ_NOAUTOEN);
->> 
->> for that irq. That tells request_irq() to leave the interrupt disabled
->> and you have to explicitely enable it. That has not changed since we
->> generalized the irq core code back in 2006.
-> 
-> If that's an issue, then we can create an IRQF_NOAUTOEN flag, which
-> can be handed into request_irq().
+I named it differently intentionally, actually, because it should not 
+use the flags field from the network protocol as is.  Also, "features" 
+sounds more like something that is optional, while unrecognized "flags" 
+should probably cause a failure.
 
-Actually, the issue is that I wanted the interrupt handler to run with
-interrupts disabled.
+What about renaming the struct field and leaving this as 
+NBD_SET_FEATURES or NBD_ENABLE_FEATURES?
 
-We had big problems when openning thousands of virtual network
-devices, each with their own unique IRQ, and pointed all at the same
-cpu, and we'd get IRQ stack overflows.
-
-See commit c58543c869606532c2382f027d6466f4672ea756
-
-So this change to make IRQF_DISABLED a nop has reintroduced this bug.
+Paolo
