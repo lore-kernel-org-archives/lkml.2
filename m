@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab1IGS4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:56:36 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:31240 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756724Ab1IGS4f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:56:35 -0400
-Date: Wed, 7 Sep 2011 09:16:02 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [GIT PULL] hwmon fixes for 3.1
-Message-ID: <20110907091602.56e4192b@endymion.delvare>
-In-Reply-To: <CA+55aFwy-YPNHnJp6C6BRA-QfEtMoVHuxN9Uxg=p=0PwaWyXaQ@mail.gmail.com>
-References: <1315325608-17922-1-git-send-email-guenter.roeck@ericsson.com>
-	<CA+55aFwy-YPNHnJp6C6BRA-QfEtMoVHuxN9Uxg=p=0PwaWyXaQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756748Ab1IGTF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 15:05:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37728 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756708Ab1IGTF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 15:05:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="45991879"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 8 Sep 2011 00:35:09 +0530
+Subject: [GIT PULL] slave-dmaengine fixes
+Thread-Topic: [GIT PULL] slave-dmaengine fixes
+Thread-Index: AcxtkRCRNFr1UMEVRUifymBGhg7YEg==
+Message-ID: <438BB0150E931F4B9CE701519A4463010871804A4D@bgsmsx502.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p87J5qNF022007
 
-On Tue, 6 Sep 2011 16:16:13 -0700, Linus Torvalds wrote:
-> On Tue, Sep 6, 2011 at 9:13 AM, Guenter Roeck
-> <guenter.roeck@ericsson.com> wrote:
-> >
-> > Please pull hwmon subsystem fixes for Linux 3.1 from:
-> >
-> >    git://github.com/groeck/linux.git hwmon-for-linus
-> 
-> Guys, when using some general git hosting site, I really want some
-> proof that you are you. Not just a "please pull".
-> 
-> Tell me *why* I should believe that this is a real pull request from
-> the proper source. Otherwise I'll just wait until kernel.org is back
-> to life, where random people can't just create repositories and send
-> email.
+Hi Linus,
 
-FWIW:
-* This pull request from Guenter matches the recent patch reviews on
-  the lm-sensors list.
-* I have reviewed the 3 patches as they exist in the mentioned
-  repository and branch and they match what has been approved on the
-  list.
-* All the e-mail headers are exactly as I would expect from Guenter.
+The following changes since commit
+c6a389f123b9f68d605bb7e0f9b32ec1e3e14132 include fixing an OOPS and a
+memory leak in ste_dma40 driver
 
-So while I can't guarantee that Guenter is Guenter, the pull request
-definitely looks sane and safe.
+are available in the git repository at:
+  git://git.infradead.org/users/vkoul/slave-dma.git fixes
 
--- 
-Jean Delvare
+Per Forlin (4):
+      dmaengine/ste_dma40: add missing kernel doc for pending_queue
+      dmaengine/ste_dma40: remove duplicate call to d40_pool_lli_free().
+      dmaengine/ste_dma40: fix Oops due to double free of client descriptor
+      dmaengine/ste_dma40: fix memory leak due to prepared descriptors
+
+ drivers/dma/ste_dma40.c |   42
++++++++++++++++++++++++++++++-------------
+ 1 files changed, 29 insertions(+), 13 deletions(-)
+
+--
+Thanks
+~Vinod
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
