@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452Ab1IGXRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 19:17:48 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:10780 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab1IGXRr (ORCPT
+	id S1757448Ab1IGXUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 19:20:33 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:49317 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509Ab1IGXUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 19:17:47 -0400
-Message-ID: <4E67FB8E.5030009@cavium.com>
-Date: Wed, 07 Sep 2011 16:17:34 -0700
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Wed, 7 Sep 2011 19:20:32 -0400
 MIME-Version: 1.0
-To: Someone Something <fordhaivat@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Epoll as kernel module?
-References: <CAG11QsKymopV9bcUFBgDCEYdJ3Wwa0gCAov3gkXqYFXL22OxCw@mail.gmail.com>
-In-Reply-To: <CAG11QsKymopV9bcUFBgDCEYdJ3Wwa0gCAov3gkXqYFXL22OxCw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Sep 2011 23:17:46.0705 (UTC) FILETIME=[5A841C10:01CC6DB4]
+Date: Thu, 8 Sep 2011 00:20:31 +0100
+Message-ID: <CANq10gueekcQ+zF0iNG5fO2NKhTphuOT6gP3OZipB4z1ts8zWQ@mail.gmail.com>
+Subject: All interrupts going to CPU 1 on a Pentium D system
+From: Mikhail Ramendik <mr@ramendik.ru>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2011 03:45 PM, Someone Something wrote:
-> There are lots of old deployments that don't have epoll, and its a
-> real pain writing code for these systems. Is it a good idea to write a
-> module for epoll since it is basically poll running in the kernel
-> space?I think it would be an excellent idea, and if there is approval
-> in the community, I would be glad to start working on it, I just
-> wanted your opinions before I do that.
+ello,
 
-Normally only bug fixes are applied to older kernel versions.  So as I 
-see it, there are two real problems you would have:
+I have a Pentium D system with a SiS 661FX chipset.
 
-1)  Since lack of epoll is unlikely to be viewed as a bug, I doubt any 
-such patch would ever be applied to the kernels hosted on kernel.org.
+I found that most IRQs are always processed by CPU 1 only. This
+happens even if I explicitly set the smp_ffinity value for the IRQ to
+1, so it would be processed by CPU 0. This happens n both 2.6.32 and
+3.0 kernels (Debian builds).
 
-2) Most of the kernels hosted on kernel.org already have working epoll, 
-so no patch is needed.
+Is this normal? And can this be changed?
 
-But if you want to do something to the kernels you maintain, nobody 
-would object.
+(I am debugging stability issues on this system; I don't know if they
+can be linked to this).
 
-David Daney
+$ cat /proc/interrupts
+            CPU0       CPU1
+   0:         41          1   IO-APIC-edge      timer
+   1:          0          4   IO-APIC-edge      i8042
+   3:          0          2   IO-APIC-edge
+   4:          0          2   IO-APIC-edge
+   6:          0          2   IO-APIC-edge      floppy
+   7:          0          0   IO-APIC-edge      parport0
+   8:          0          0   IO-APIC-edge      rtc0
+   9:          0          0   IO-APIC-fasteoi   acpi
+  12:          0          6   IO-APIC-edge      i8042
+  14:          0        425   IO-APIC-edge      pata_sis
+  15:          0          0   IO-APIC-edge      pata_sis
+  17:          0       8086   IO-APIC-fasteoi   sata_sis
+  18:          0        824   IO-APIC-fasteoi   SiS SI7012, 0000:00:09.0
+  19:          0          0   IO-APIC-fasteoi   saa7133[0], saa7133[0]
+  20:          0        183   IO-APIC-fasteoi   ohci_hcd:usb2
+  21:          0        171   IO-APIC-fasteoi   ohci_hcd:usb3
+  22:          0          0   IO-APIC-fasteoi   ohci_hcd:usb4
+  23:          0          3   IO-APIC-fasteoi   ehci_hcd:usb1
+ NMI:          0          0   Non-maskable interrupts
+ LOC:       6337       7518   Local timer interrupts
+ SPU:          0          0   Spurious interrupts
+ PMI:          0          0   Performance monitoring interrupts
+ IWI:          0          0   IRQ work interrupts
+ RES:        981        703   Rescheduling interrupts
+ CAL:       3511        578   Function call interrupts
+ TLB:        681        492   TLB shootdowns
+ TRM:          0          0   Thermal event interrupts
+ THR:          0          0   Threshold APIC interrupts
+ MCE:          0          0   Machine check exceptions
+ MCP:          1          1   Machine check polls
+ ERR:          0
+ MIS:          0
+
+--
+Yours, Mikhail Ramendik
+
+Unless explicitly stated, all opinions in my mail are my own and do
+not reflect the views of any organization
