@@ -1,280 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab1IGRK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:10:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12781 "EHLO mga02.intel.com"
+	id S1755371Ab1IGRLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:11:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34788 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab1IGQ7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:59:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="45953743"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
-        Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
-Subject: [PATCHv4 04/19] usb: otg: ab8500: Start using struct usb_otg
-Date: Wed,  7 Sep 2011 10:15:57 +0300
-Message-Id: <1315379772-8830-5-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1754356Ab1IGRLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:11:22 -0400
+Message-ID: <4E67A551.4000502@redhat.com>
+Date: Wed, 07 Sep 2011 20:09:37 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+References: <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com>
+In-Reply-To: <20110907165203.GQ6838@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use struct usb_otg members with OTG specific functions instead
-of usb_phy members.
+On 09/07/2011 07:52 PM, Don Zickus wrote:
+> >
+> >  May I ask how?  Detecting a back-to-back NMI?
+>
+> Pretty boring actually.  Currently we execute an NMI handler until one of
+> them returns handled.  Then we stop.  This may cause us to miss an NMI in
+> the case of multiple NMIs at once.  Now we are changing it to execute
+> _all_ the handlers to make sure we didn't miss one.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
----
- drivers/usb/otg/ab8500-usb.c |   87 +++++++++++++++++++++++-------------------
- 1 files changed, 48 insertions(+), 39 deletions(-)
+That's going to be pretty bad for kvm - those handlers become a lot more 
+expensive since they involve reading MSRs.  Even worse if we start using 
+NMIs as a wakeup for pv spinlocks as provided by this patchset.
 
-diff --git a/drivers/usb/otg/ab8500-usb.c b/drivers/usb/otg/ab8500-usb.c
-index 366c3af..3d659c3 100644
---- a/drivers/usb/otg/ab8500-usb.c
-+++ b/drivers/usb/otg/ab8500-usb.c
-@@ -68,7 +68,7 @@ enum ab8500_usb_link_status {
- };
- 
- struct ab8500_usb {
--	struct usb_phy otg;
-+	struct usb_phy xceiv;
- 	struct device *dev;
- 	int irq_num_id_rise;
- 	int irq_num_id_fall;
-@@ -84,7 +84,7 @@ struct ab8500_usb {
- 
- static inline struct ab8500_usb *xceiv_to_ab(struct usb_phy *x)
- {
--	return container_of(x, struct ab8500_usb, otg);
-+	return container_of(x, struct ab8500_usb, xceiv);
- }
- 
- static void ab8500_usb_wd_workaround(struct ab8500_usb *ab)
-@@ -169,8 +169,8 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
- 		/* TODO: Disable regulators. */
- 		ab8500_usb_host_phy_dis(ab);
- 		ab8500_usb_peri_phy_dis(ab);
--		ab->otg.state = USB_PHY_STATE_B_IDLE;
--		ab->otg.default_a = false;
-+		ab->xceiv.state = USB_PHY_STATE_B_IDLE;
-+		ab->xceiv.otg->default_a = false;
- 		ab->vbus_draw = 0;
- 		event = USB_EVENT_NONE;
- 		break;
-@@ -181,22 +181,22 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
- 	case USB_LINK_HOST_CHG_NM:
- 	case USB_LINK_HOST_CHG_HS:
- 	case USB_LINK_HOST_CHG_HS_CHIRP:
--		if (ab->otg.gadget) {
-+		if (ab->xceiv.otg->gadget) {
- 			/* TODO: Enable regulators. */
- 			ab8500_usb_peri_phy_en(ab);
--			v = ab->otg.gadget;
-+			v = ab->xceiv.otg->gadget;
- 		}
- 		event = USB_EVENT_VBUS;
- 		break;
- 
- 	case USB_LINK_HM_IDGND:
--		if (ab->otg.host) {
-+		if (ab->xceiv.otg->host) {
- 			/* TODO: Enable regulators. */
- 			ab8500_usb_host_phy_en(ab);
--			v = ab->otg.host;
-+			v = ab->xceiv.otg->host;
- 		}
--		ab->otg.state = USB_PHY_STATE_A_IDLE;
--		ab->otg.default_a = true;
-+		ab->xceiv.state = USB_PHY_STATE_A_IDLE;
-+		ab->xceiv.otg->default_a = true;
- 		event = USB_EVENT_ID;
- 		break;
- 
-@@ -212,7 +212,7 @@ static int ab8500_usb_link_status_update(struct ab8500_usb *ab)
- 		break;
- 	}
- 
--	atomic_notifier_call_chain(&ab->otg.notifier, event, v);
-+	atomic_notifier_call_chain(&ab->xceiv.notifier, event, v);
- 
- 	return 0;
- }
-@@ -262,27 +262,27 @@ static void ab8500_usb_phy_disable_work(struct work_struct *work)
- 	struct ab8500_usb *ab = container_of(work, struct ab8500_usb,
- 						phy_dis_work);
- 
--	if (!ab->otg.host)
-+	if (!ab->xceiv.otg->host)
- 		ab8500_usb_host_phy_dis(ab);
- 
--	if (!ab->otg.gadget)
-+	if (!ab->xceiv.otg->gadget)
- 		ab8500_usb_peri_phy_dis(ab);
- }
- 
--static int ab8500_usb_set_power(struct usb_phy *otg, unsigned mA)
-+static int ab8500_usb_set_power(struct usb_phy *xceiv, unsigned mA)
- {
- 	struct ab8500_usb *ab;
- 
--	if (!otg)
-+	if (!xceiv)
- 		return -ENODEV;
- 
--	ab = xceiv_to_ab(otg);
-+	ab = xceiv_to_ab(xceiv);
- 
- 	ab->vbus_draw = mA;
- 
- 	if (mA)
--		atomic_notifier_call_chain(&ab->otg.notifier,
--				USB_EVENT_ENUMERATED, ab->otg.gadget);
-+		atomic_notifier_call_chain(&ab->xceiv.notifier,
-+				USB_EVENT_ENUMERATED, ab->xceiv.otg->gadget);
- 	return 0;
- }
- 
-@@ -296,15 +296,15 @@ static int ab8500_usb_set_suspend(struct usb_phy *x, int suspend)
- 	return 0;
- }
- 
--static int ab8500_usb_set_peripheral(struct usb_phy *otg,
--		struct usb_gadget *gadget)
-+static int ab8500_usb_set_peripheral(struct usb_otg *otg,
-+					struct usb_gadget *gadget)
- {
- 	struct ab8500_usb *ab;
- 
- 	if (!otg)
- 		return -ENODEV;
- 
--	ab = xceiv_to_ab(otg);
-+	ab = xceiv_to_ab(otg->xceiv);
- 
- 	/* Some drivers call this function in atomic context.
- 	 * Do not update ab8500 registers directly till this
-@@ -313,11 +313,11 @@ static int ab8500_usb_set_peripheral(struct usb_phy *otg,
- 
- 	if (!gadget) {
- 		/* TODO: Disable regulators. */
--		ab->otg.gadget = NULL;
-+		otg->gadget = NULL;
- 		schedule_work(&ab->phy_dis_work);
- 	} else {
--		ab->otg.gadget = gadget;
--		ab->otg.state = USB_PHY_STATE_B_IDLE;
-+		otg->gadget = gadget;
-+		otg->xceiv->state = USB_PHY_STATE_B_IDLE;
- 
- 		/* Phy will not be enabled if cable is already
- 		 * plugged-in. Schedule to enable phy.
-@@ -329,15 +329,14 @@ static int ab8500_usb_set_peripheral(struct usb_phy *otg,
- 	return 0;
- }
- 
--static int ab8500_usb_set_host(struct usb_phy *otg,
--					struct usb_bus *host)
-+static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
- {
- 	struct ab8500_usb *ab;
- 
- 	if (!otg)
- 		return -ENODEV;
- 
--	ab = xceiv_to_ab(otg);
-+	ab = xceiv_to_ab(otg->xceiv);
- 
- 	/* Some drivers call this function in atomic context.
- 	 * Do not update ab8500 registers directly till this
-@@ -346,10 +345,10 @@ static int ab8500_usb_set_host(struct usb_phy *otg,
- 
- 	if (!host) {
- 		/* TODO: Disable regulators. */
--		ab->otg.host = NULL;
-+		otg->host = NULL;
- 		schedule_work(&ab->phy_dis_work);
- 	} else {
--		ab->otg.host = host;
-+		otg->host = host;
- 		/* Phy will not be enabled if cable is already
- 		 * plugged-in. Schedule to enable phy.
- 		 * Use same delay to avoid any race condition.
-@@ -488,19 +487,27 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
- 	if (!ab)
- 		return -ENOMEM;
- 
-+	ab->xceiv.otg = kzalloc(sizeof *ab->xceiv.otg, GFP_KERNEL);
-+	if (!ab->xceiv.otg) {
-+		kfree(ab);
-+		return -ENOMEM;
-+	}
-+
- 	ab->dev			= &pdev->dev;
- 	ab->rev			= rev;
--	ab->otg.dev		= ab->dev;
--	ab->otg.label		= "ab8500";
--	ab->otg.state		= USB_PHY_STATE_UNDEFINED;
--	ab->otg.set_host	= ab8500_usb_set_host;
--	ab->otg.set_peripheral	= ab8500_usb_set_peripheral;
--	ab->otg.set_suspend	= ab8500_usb_set_suspend;
--	ab->otg.set_power	= ab8500_usb_set_power;
-+	ab->xceiv.dev		= ab->dev;
-+	ab->xceiv.label		= "ab8500";
-+	ab->xceiv.set_suspend	= ab8500_usb_set_suspend;
-+	ab->xceiv.set_power	= ab8500_usb_set_power;
-+	ab->xceiv.state		= USB_PHY_STATE_UNDEFINED;
-+
-+	ab->xceiv.otg->xceiv		= &ab->xceiv;
-+	ab->xceiv.otg->set_host		= ab8500_usb_set_host;
-+	ab->xceiv.otg->set_peripheral	= ab8500_usb_set_peripheral;
- 
- 	platform_set_drvdata(pdev, ab);
- 
--	ATOMIC_INIT_NOTIFIER_HEAD(&ab->otg.notifier);
-+	ATOMIC_INIT_NOTIFIER_HEAD(&ab->xceiv.notifier);
- 
- 	/* v1: Wait for link status to become stable.
- 	 * all: Updates form set_host and set_peripheral as they are atomic.
-@@ -520,7 +527,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
- 	if (err < 0)
- 		goto fail0;
- 
--	err = otg_set_transceiver(&ab->otg);
-+	err = usb_set_transceiver(&ab->xceiv);
- 	if (err) {
- 		dev_err(&pdev->dev, "Can't register transceiver\n");
- 		goto fail1;
-@@ -532,6 +539,7 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
- fail1:
- 	ab8500_usb_irq_free(ab);
- fail0:
-+	kfree(ab->xceiv.otg);
- 	kfree(ab);
- 	return err;
- }
-@@ -546,13 +554,14 @@ static int __devexit ab8500_usb_remove(struct platform_device *pdev)
- 
- 	cancel_work_sync(&ab->phy_dis_work);
- 
--	otg_set_transceiver(NULL);
-+	usb_set_transceiver(NULL);
- 
- 	ab8500_usb_host_phy_dis(ab);
- 	ab8500_usb_peri_phy_dis(ab);
- 
- 	platform_set_drvdata(pdev, NULL);
- 
-+	kfree(ab->xceiv.otg);
- 	kfree(ab);
- 
- 	return 0;
+> But then the downside
+> here is we accidentally handle an NMI that was latched.  This would cause
+> a 'Dazed on confused' message as that NMI was already handled by the
+> previous NMI.
+>
+> We are working on an algorithm to detect this condition and flag it
+> (nothing complicated).  But it may never be perfect.
+>
+> On the other hand, what else are we going to do with an edge-triggered
+> shared interrupt line?
+>
+
+How about, during NMI, save %rip to a per-cpu variable.  Handle just one 
+cause.  If, on the next NMI, we hit the same %rip, assume back-to-back 
+NMI has occured and now handle all causes.
+
 -- 
-1.7.4.1
+error compiling committee.c: too many arguments to function
 
