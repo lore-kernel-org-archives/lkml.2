@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab1IGBiB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 21:38:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36583 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753439Ab1IGBhy (ORCPT
+	id S1754633Ab1IGBiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 21:38:07 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:44253 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753843Ab1IGBhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 21:37:54 -0400
+	Tue, 6 Sep 2011 21:37:55 -0400
+X-Sasl-enc: zicRHSnlnxKPhMsu1IdMj3x7+2HQk/yW9WKzZLenvO1P 1315359474
+Date: Tue, 6 Sep 2011 22:37:50 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        git@vger.kernel.org
+Subject: Re: Linux 3.1-rc5
+Message-ID: <20110907013750.GA25150@khazad-dum.debian.net>
+References: <CA+55aFxDjVJwbpP5YT4o=qud=OcxtT3Ry4HfCtW-FvNdj+RFeQ@mail.gmail.com>
+ <4E65307F.5020103@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA4qTNpHOpr0nC9VyGGg8hCT8OS6F35m_+s=C7QSYLVnMg@mail.gmail.com>
-References: <4E649986.5060606@redhat.com> <CA+55aFw+EJr9FhZZnj0re8hyH5+gFesDso2mX+PWck31ivnWYQ@mail.gmail.com>
- <CA+5PVA4qTNpHOpr0nC9VyGGg8hCT8OS6F35m_+s=C7QSYLVnMg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Sep 2011 18:37:02 -0700
-Message-ID: <CA+55aFzCtE=cOnvDguDOgfjEV9mXQTYJbSi_CaGcPXWtzvadpw@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM fix for 3.1-rc5
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E65307F.5020103@redhat.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 6:19 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->
-> Maybe asking for some extra warm fuzzies from now on wouldn't be a
-> horrible idea as general practice.
+On Mon, 05 Sep 2011, Mauro Carvalho Chehab wrote:
+> It would be great if "git remote update" could also verify the tag
+> signature (if present), as most of us just do a "git remote update".
 
-I think that realistically we should definitely look at our practices,
-but at the same time, I personally do put a lot of trust in "human
-relationships".
+That helps, and it really should be all that matter for a power-end-user
+that just wants to build his kernel from a git tree.
 
-Often way more than "technical models".
+However, one can still try to trick someone to base the tree he's going to
+use for a future pull request on a tree with a rogue commit, in order to
+try to get the rogue commit into mainline through an indirect path, for
+example.
 
-So there is a lot of safety in just a purely human "this looks like
-the kind of pull request I expect". A lot of kernel developers write
-nice messages explaining the pull, and there may not be a
-cryptographic signature in text like that, but there is definitely a
-"human signature" that you start to expect.
+Yeah, it is very obvious, and not a real major point of concern around
+LKML: we all check the diff, log or shortlog between the tree we're
+offering upstream to pull from) and the current upstream tree for any
+stray commits after all (if only to avoid embarassing mistakes).   And
+upstream does his/her own checks before keeping the merged tree, and so
+forth.
 
-So one of the reasons I react to the github pulls is that even though
-I'm actually pretty damn certain they are all the people they purport
-to be, the "expected signature" is kind of missing. That's especially
-true with a pull request that has just the minimal technically
-required information - that is 99% script-generated to begin with.
+It's just that the security of the kernel source trees are not a simple
+consequence of how git works: the workflow matters.  I feel that point
+deserves to be stressed every once in a while, however obvious it might
+be.
 
-Put another way: I'm not necessarily looking for cryptography. A reply
-to a personal email of mine (that didn't go out to any mailing list)
-is already a *much* stronger sign of identity: the person having
-access to their email account. And once I know that yes, that github
-repository was really set up by Xyz, then getting a pull request from
-that is already much more sane and safe.
-
-                         Linus
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
