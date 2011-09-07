@@ -1,123 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab1IGWLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 18:11:30 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:51223 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757319Ab1IGWL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 18:11:29 -0400
-Date: Wed, 7 Sep 2011 15:11:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 05/55] rcu: Move rcu_head definition to
- types.h
-Message-ID: <20110907221117.GA4387@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <1315332049-2604-5-git-send-email-paulmck@linux.vnet.ibm.com>
- <4E67B897.90407@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E67B897.90407@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757339Ab1IGWOi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 18:14:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45488 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752758Ab1IGWOh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 18:14:37 -0400
+Date: Wed, 7 Sep 2011 15:13:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-Id: <20110907151323.613e62e7.akpm@linux-foundation.org>
+In-Reply-To: <20110907215329.GB28162@sun>
+References: <20110902163711.GA3124@albatros>
+	<20110905185358.GA2103@albatros>
+	<20110905192009.GJ761@sun>
+	<20110905194908.GA2690@albatros>
+	<20110905203627.GL761@sun>
+	<20110906101518.GA4799@albatros>
+	<20110906165144.GJ18425@mtj.dyndns.org>
+	<20110906172952.GA28055@albatros>
+	<20110906173341.GM18425@mtj.dyndns.org>
+	<20110907112301.GA12157@albatros>
+	<20110907215329.GB28162@sun>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 02:31:51PM -0400, Paul Gortmaker wrote:
-> On 11-09-06 01:59 PM, Paul E. McKenney wrote:
-> > Take a first step towards untangling Linux kernel header files by
-> > placing the struct rcu_head definition into include/linux/types.h
-> > and including include/linux/types.h in include/linux/rcupdate.h
-> > where struct rcu_head used to be defined.  The actual inclusion point
-> > for include/linux/types.h is with the rest of the #include directives
-> > rather than at the point where struct rcu_head used to be defined,
-> > as suggested by Mathieu Desnoyers.
-> > 
-> > Once this is in place, then header files that need only rcu_head
-> > can include types.h rather than rcupdate.h.
-> 
-> Good to see more of this untangle work taking place.
-> 
-> The only comment I have is whether there is any sort of implicit
-> categorization in place for what is appropriate for types.h.
-> 
-> At the moment it seems to only contain really core primary types
-> (and the list/hlist structs which are almost core types...)
+On Thu, 8 Sep 2011 01:53:29 +0400
+Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-Actually, it was the presence of the list/hlist structs that convinced
-me that types.h was a good place for rcu_head.
-
-							Thanx, Paul
-
-> Are there any other alternative places - does linux/kernel.h make
-> more sense?
-> 
-> Paul.
-> 
+> On Wed, Sep 07, 2011 at 03:23:01PM +0400, Vasiliy Kulikov wrote:
+> > Hi,
 > > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > ---
-> >  include/linux/rcupdate.h |   11 +----------
-> >  include/linux/types.h    |   10 ++++++++++
-> >  2 files changed, 11 insertions(+), 10 deletions(-)
+> > On Wed, Sep 07, 2011 at 02:33 +0900, Tejun Heo wrote:
+> > > On Tue, Sep 06, 2011 at 09:29:52PM +0400, Vasiliy Kulikov wrote:
+> > > > I agree with you.  I don't think that showing system-global debug
+> > > > information to all users by default is the right thing.  But some people
+> > > > doesn't agree with this point of view:
+> > > > 
+> > > > http://thread.gmane.org/gmane.linux.kernel/1108378
+> > > 
+> > > Yeap, I know there are two sides of the discussion but if one takes
+> > > the position that hiding such global debug info is more harmful, it's
+> > > only crazier to hide such information from each individual users of
+> > > the said global facility.  So, let's just forget about information
+> > > leak via freeing or not freeing here.  It's the wrong battle field.
 > > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 8be0433..2516555 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -33,6 +33,7 @@
-> >  #ifndef __LINUX_RCUPDATE_H
-> >  #define __LINUX_RCUPDATE_H
-> >  
-> > +#include <linux/types.h>
-> >  #include <linux/cache.h>
-> >  #include <linux/spinlock.h>
-> >  #include <linux/threads.h>
-> > @@ -64,16 +65,6 @@ static inline void rcutorture_record_progress(unsigned long vernum)
-> >  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
-> >  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
-> >  
-> > -/**
-> > - * struct rcu_head - callback structure for use with RCU
-> > - * @next: next update requests in a list
-> > - * @func: actual update function to call after the grace period.
-> > - */
-> > -struct rcu_head {
-> > -	struct rcu_head *next;
-> > -	void (*func)(struct rcu_head *head);
-> > -};
-> > -
-> >  /* Exported common interfaces */
-> >  extern void call_rcu_sched(struct rcu_head *head,
-> >  			   void (*func)(struct rcu_head *rcu));
-> > diff --git a/include/linux/types.h b/include/linux/types.h
-> > index 176da8c..57a9723 100644
-> > --- a/include/linux/types.h
-> > +++ b/include/linux/types.h
-> > @@ -238,6 +238,16 @@ struct ustat {
-> >  	char			f_fpack[6];
-> >  };
-> >  
-> > +/**
-> > + * struct rcu_head - callback structure for use with RCU
-> > + * @next: next update requests in a list
-> > + * @func: actual update function to call after the grace period.
-> > + */
-> > +struct rcu_head {
-> > +	struct rcu_head *next;
-> > +	void (*func)(struct rcu_head *head);
-> > +};
-> > +
-> >  #endif	/* __KERNEL__ */
-> >  #endif /*  __ASSEMBLY__ */
-> >  #endif /* _LINUX_TYPES_H */
+> > Andrew, are you OK with closing the hole with pid_no_revalidate()
+> > and 0600 /proc/slabinfo?  If so, I feel I have to start this discussion
+> > with people participating in the discussion above: Theodore, Dan, Linus, etc.
+
+I fell asleep a long time ago and don't know what pid_no_revalidate()
+and slabinfo permissions have to do with this.  Perhaps summarising the
+issues in the changelog would be appropriate, dunno.
+
+> > By Andrew Morton
+> >
+> > But do we *really* need to do it in two passes?  Avoiding the temporary
+> > storage would involve doing more work under mmap_sem, and a put_filp()
+> > under mmap_sem might be problematic.
+> 
+> I fear we still need to use two passes in proc_map_files_readdir, I found no way
+> to escape lockdep complains when doing all work in one pass with mmap_sem taken.
+> The /maps does the same thing -- ie it fills maps file with mmap_sem taken to produce
+> robust data.
+
+The code's using three passes.
+
+> And I'm not really sure what you mean with problematic put_filp?
+
+I was thinking fput(), which can do a hell of a lot of stuff if it's
+the final put on the inode.
+
+>
+> ...
+>
+> +static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
+> +{
+> +	struct dentry *dentry = filp->f_path.dentry;
+> +	struct inode *inode = dentry->d_inode;
+> +	struct vm_area_struct *vma;
+> +	struct task_struct *task;
+> +	struct mm_struct *mm;
+> +	ino_t ino;
+> +	int ret;
+> +
+> +	ret = -ENOENT;
+> +	task = get_proc_task(inode);
+> +	if (!task)
+> +		goto out_no_task;
+> +
+> +	ret = -EPERM;
+> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+> +		goto out;
+> +
+> +	ret = 0;
+> +	switch (filp->f_pos) {
+> +	case 0:
+> +		ino = inode->i_ino;
+> +		if (filldir(dirent, ".", 1, 0, ino, DT_DIR) < 0)
+> +			goto out;
+> +		filp->f_pos++;
+> +	case 1:
+> +		ino = parent_ino(dentry);
+> +		if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
+> +			goto out;
+> +		filp->f_pos++;
+> +	default:
+> +	{
+> +		unsigned long nr_files, used, pos, i;
+> +		struct flex_array *fa = NULL;
+> +		struct map_files_info info;
+> +		struct map_files_info *p;
+> +
+> +		mm = get_task_mm(task);
+> +		if (!mm)
+> +			goto out;
+> +		down_read(&mm->mmap_sem);
+> +
+> +		nr_files = 0;
+> +		used = 0;
+> +
+> +		/*
+> +		 * We need two passes here:
+> +		 *
+> +		 *  1) Collect vmas of mapped files with mmap_sem taken
+> +		 *  2) Release mmap_sem and instantiate entries
+> +		 *
+> +		 * otherwise we get lockdep complained, since filldir()
+> +		 * routine might require mmap_sem taken in might_fault().
+> +		 */
+> +
+> +		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> +			if (vma->vm_file)
+> +				nr_files++;
+> +		}
+> +
+> +		if (nr_files) {
+> +			ret = -ENOMEM;
+> +			fa = flex_array_alloc(sizeof(info), nr_files, GFP_KERNEL);
+> +			if (!fa)
+> +				goto err;
+> +			if (flex_array_prealloc(fa, 0, nr_files, GFP_KERNEL))
+> +				goto err;
+> +			for (vma = mm->mmap, pos = 2; vma; vma = vma->vm_next) {
+> +				if (!vma->vm_file)
+> +					continue;
+> +				if (++pos <= filp->f_pos)
+> +					continue;
+> +
+> +				get_file(vma->vm_file);
+> +				info.file = vma->vm_file;
+> +				info.len = snprintf(info.name, sizeof(info.name),
+> +						    "%lx-%lx", vma->vm_start,
+> +						    vma->vm_end);
+> +				if (flex_array_put(fa, used, &info, GFP_KERNEL)) {
+> +					/*
+> +					 * This must never happen on preallocated array,
+> +					 * but just to be sure.
+> +					 */
+> +					WARN_ON_ONCE(1);
+> +					put_filp(vma->vm_file);
+> +					goto err;
+> +				}
+> +				used++;
+> +			}
+> +			ret = 0;
+> +		}
+> +err:
+> +		up_read(&mm->mmap_sem);
+> +
+> +		for (i = 0; i < used && !ret; i++) {
+
+The "&& !ret" is unneeded?
+
+> +			p = flex_array_get(fa, i);
+> +			ret = proc_fill_cache(filp, dirent, filldir,
+> +					      p->name, p->len,
+> +					      proc_map_files_instantiate,
+> +					      task, p->file);
+> +			if (ret)
+> +				break;
+> +			filp->f_pos++;
+> +			put_filp(p->file);
+> +		}
+> +
+> +		for (; i < used; i++) {
+> +			p = flex_array_get(fa, i);
+> +			put_filp(p->file);
+> +		}
+
+Still unclear why we need the third loop.
+
+> +		if (fa)
+> +			flex_array_free(fa);
+> +
+> +		mmput(mm);
+> +	}
+> +	}
+> +
+> +out:
+> +	put_task_struct(task);
+> +out_no_task:
+> +	return ret;
+> +}
+>
+> ...
+>
