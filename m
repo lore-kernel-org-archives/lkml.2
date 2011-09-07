@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab1IGQIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:08:07 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:52662 "EHLO e4.ny.us.ibm.com"
+	id S1756378Ab1IGQIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:08:25 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:52663 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756478Ab1IGQH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:07:58 -0400
+	id S1756482Ab1IGQH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:07:59 -0400
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: gregkh@suse.de
 Cc: dan.magenheimer@oracle.com, ngupta@vflare.org, cascardo@holoscopio.com,
@@ -13,84 +13,105 @@ Cc: dan.magenheimer@oracle.com, ngupta@vflare.org, cascardo@holoscopio.com,
         rdunlap@xenotime.net, linux-mm@kvack.org, rcj@linux.vnet.ibm.com,
         dave@linux.vnet.ibm.com, brking@linux.vnet.ibm.com,
         Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH v2 3/3] staging: zcache: add zv_page_count and zv_desc_count
-Date: Wed,  7 Sep 2011 09:09:07 -0500
-Message-Id: <1315404547-20075-4-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/3] staging: zcache: xcfmalloc support
+Date: Wed,  7 Sep 2011 09:09:04 -0500
+Message-Id: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the zv_page_count and zv_desc_count attributes
-to the zcache sysfs.  They are read-only attributes and return
-the number of pages and the number of block descriptors in use
-by the pool respectively.
+Changelog:
+v2: fix bug in find_remove_block()
+    fix whitespace warning at EOF
 
-These statistics can be used to calculate effective compression
-and block descriptor overhead for the xcfmalloc allocator.
+This patchset introduces a new memory allocator for persistent
+pages for zcache.  The current allocator is xvmalloc.  xvmalloc
+has two notable limitations:
+* High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
+* No compaction support which reduces page reclaimation
 
-Using the frontswap curr_pages attribute, effective compression
-is: zv_page_count / curr_pages
+xcfmalloc seeks to fix these issues by using scatter-gather model that
+allows for cross-page allocations and relocatable data blocks.
 
-Using /proc/slabinfo to get the objsize for a xcf_desc_cache
-object, descriptor overhead is: zv_desc_count * objsize
+In tests, with pages that only compress to 75% of their original
+size, xvmalloc had an effective compression (pages stored / pages used by the
+compressed memory pool) of ~95% (~20% lost to fragmentation). Almost nothing
+was gained by the compression in this case. xcfmalloc had an effective
+compression of ~77% (about ~2% lost to fragmentation and metadata overhead).
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+xcfmalloc uses the same locking scheme as xvmalloc; a single pool-level
+spinlock.  This can lead to some contention.  However, in my tests on a 4
+way SMP system, the contention was minimal (200 contentions out of 600k
+aquisitions).  The locking scheme may be able to be improved in the future.
+In tests, xcfmalloc and xvmalloc had identical throughputs.
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index b07377b..6adbbbe 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -789,6 +789,24 @@ static int zv_cumul_dist_counts_show(char *buf)
- 	return p - buf;
- }
- 
-+static int zv_page_count_show(char *buf)
-+{
-+	char *p = buf;
-+	unsigned long count;
-+	count = xcf_get_total_size_bytes(zcache_host.xcfmpool) >> PAGE_SHIFT;
-+	p += sprintf(p, "%lu\n", count);
-+	return p - buf;
-+}
-+
-+static int zv_desc_count_show(char *buf)
-+{
-+	char *p = buf;
-+	unsigned long count;
-+	count = xcf_get_desc_count(zcache_host.xcfmpool);
-+	p += sprintf(p, "%lu\n", count);
-+	return p - buf;
-+}
-+
- /*
-  * setting zv_max_zsize via sysfs causes all persistent (e.g. swap)
-  * pages that don't compress to less than this value (including metadata
-@@ -1477,6 +1495,10 @@ ZCACHE_SYSFS_RO_CUSTOM(zv_curr_dist_counts,
- 			zv_curr_dist_counts_show);
- ZCACHE_SYSFS_RO_CUSTOM(zv_cumul_dist_counts,
- 			zv_cumul_dist_counts_show);
-+ZCACHE_SYSFS_RO_CUSTOM(zv_page_count,
-+			zv_page_count_show);
-+ZCACHE_SYSFS_RO_CUSTOM(zv_desc_count,
-+			zv_desc_count_show);
- 
- static struct attribute *zcache_attrs[] = {
- 	&zcache_curr_obj_count_attr.attr,
-@@ -1513,6 +1535,8 @@ static struct attribute *zcache_attrs[] = {
- 	&zcache_zv_max_zsize_attr.attr,
- 	&zcache_zv_max_mean_zsize_attr.attr,
- 	&zcache_zv_page_count_policy_percent_attr.attr,
-+	&zcache_zv_page_count_attr.attr,
-+	&zcache_zv_desc_count_attr.attr,
- 	NULL,
- };
- 
+While the xcfmalloc design lends itself to compaction, this is not yet
+implemented.  Support will be added in a follow-on patch.
+
+Based on 3.1-rc4.
+
+=== xvmalloc vs xcfmalloc ===
+Here are some comparison metrics vs xvmalloc.  The tests were done on
+a 32-bit system in a a cgroup with a memory.limit_in_bytes of 256MB.
+I ran a program that allocates 512MB, one 4k page a time.  The pages
+can be filled with zeros or text depending on the command arguments.
+The text is english text that has an average compression ratio, using 
+lzo1x, of 75% with little deviation.  zv_max_mean_zsize and zv_max_zsize are
+both set to 3584 (7 * PAGE_SIZE / 8).
+
+xvmalloc
+		curr_pages	zv_page_count	effective compression
+zero filled	65859		1269		1.93%
+text (75%)	65925		65892		99.95%
+
+xcfmalloc (descriptors are 24 bytes, 170 per 4k page)
+		curr_pages	zv_page_count	zv_desc_count	effective compression
+zero filled	65845		2068		65858		3.72% (+1.79)
+text (75%)	65965		50848		114980		78.11% (-21.84)
+
+This shows that xvmalloc is 1.79 points better on zero filled pages.
+This is because xcfmalloc has higher internal fragmentation because
+the block sizes aren't as granular as xvmalloc.  This contributes
+to 1.21 points of the delta. xcfmalloc also has block descriptors,
+which contributes to the remaining 0.58 points.
+
+It also shows that xcfmalloc is 21.84 points better on text filled 
+pages. This is because of xcfmalloc allocations can span different
+pages which greatly reduces external fragmentation compared to xvmalloc.
+
+I did some quick tests with "time" using the same program and the
+timings are very close (3 run average, little deviation):
+
+xvmalloc:
+zero filled	0m0.852s
+text (75%)	0m14.415s
+
+xcfmalloc:
+zero filled	0m0.870s
+text (75%)	0m15.089s
+
+I suspect that the small decrease in throughput is due to the
+extra memcpy in xcfmalloc.  However, these timing, more than 
+anything, demonstrate that the throughput is GREATLY effected
+by the compressibility of the data.
+
+In all cases, all swapped pages where captured by frontswap with
+no put failures.
+
+Seth Jennings (3):
+  staging: zcache: xcfmalloc memory allocator for zcache
+  staging: zcache: replace xvmalloc with xcfmalloc
+  staging: zcache: add zv_page_count and zv_desc_count
+
+ drivers/staging/zcache/Makefile      |    2 +-
+ drivers/staging/zcache/xcfmalloc.c   |  652 ++++++++++++++++++++++++++++++++++
+ drivers/staging/zcache/xcfmalloc.h   |   28 ++
+ drivers/staging/zcache/zcache-main.c |  154 ++++++---
+ 4 files changed, 789 insertions(+), 47 deletions(-)
+ create mode 100644 drivers/staging/zcache/xcfmalloc.c
+ create mode 100644 drivers/staging/zcache/xcfmalloc.h
+
 -- 
 1.7.4.1
 
