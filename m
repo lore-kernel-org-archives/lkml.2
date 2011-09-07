@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab1IGR51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:57:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39696 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436Ab1IGR5Z (ORCPT
+	id S1756051Ab1IGR6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:58:06 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36737 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755712Ab1IGR6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:57:25 -0400
-Date: Wed, 7 Sep 2011 19:57:21 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: David Miller <davem@davemloft.net>
-cc: yong.zhang0@gmail.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        joe@perches.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 20/62] sparc: irq: Remove IRQF_DISABLED
-In-Reply-To: <20110907.135110.2069876782156753239.davem@davemloft.net>
-Message-ID: <alpine.LFD.2.02.1109071954200.2723@ionos>
-References: <20110907.131217.2301665763990232637.davem@davemloft.net> <alpine.LFD.2.02.1109071924510.2723@ionos> <alpine.LFD.2.02.1109071933080.2723@ionos> <20110907.135110.2069876782156753239.davem@davemloft.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 7 Sep 2011 13:58:03 -0400
+Date: Wed, 7 Sep 2011 10:57:56 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: Blockers on IIO usage of regmap.
+Message-ID: <20110907175756.GH2906@opensource.wolfsonmicro.com>
+References: <4E6600A8.4020101@cam.ac.uk>
+ <20110906175435.GA2924@opensource.wolfsonmicro.com>
+ <Prayer.1.3.4.1109062213100.4243@hermes-2.csi.cam.ac.uk>
+ <4E679770.4090008@cam.ac.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E679770.4090008@cam.ac.uk>
+X-Cookie: Cold hands, no gloves.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011, David Miller wrote:
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Wed, 7 Sep 2011 19:33:52 +0200 (CEST)
+On Wed, Sep 07, 2011 at 05:10:24PM +0100, Jonathan Cameron wrote:
+
+Please fix your mailer to word wrap at less than 80 colums, they're
+really quite hard to read as a result of this.
+
+> CS -_______________________-
+> TX  Ada0...Ada7  Da0....Da7
+> RX XXXXXXXXXXXXXXXXXXXXXXXXX
 > 
-> We had big problems when openning thousands of virtual network
-> devices, each with their own unique IRQ, and pointed all at the same
-> cpu, and we'd get IRQ stack overflows.
+> Reads are 16 bit with either of the two 8 bit register addresses given the same value
 > 
-> See commit c58543c869606532c2382f027d6466f4672ea756
-> 
-> So this change to make IRQF_DISABLED a nop has reintroduced this bug.
+> CS -______________________-_____________________-
+> TX  Ada0....Ada7 XXXXXXXX
+> RX  XXXXXXXXXXXXXXXXXXXXX  Da0...Da7  Db0....Db7  
 
-See commit e58aa3d2d0cc01ad8d6f7f640a0670433f794922
+> Can interpret Da0...Da7 and Db0....Db7 as single 16 bit register and consider this device
+> to just have a weird write method and normal read.  Might be easier.  I'll define Ax<n> as
+> 16 bit address for the burst read.
 
-We run ALL interrupt handlers with interrupts disabled for that reason
-and we even check and yell when an interrupt handler returns with
-interrupts enabled. That's why IRQF_DISABLED became meaningless.
+This is starting to seem pretty far off the reservation.
 
-Thanks,
+> Perhaps the burst mode thing is better handled by just providing a hook to allow data to be pushed
+> into regmap (from 'magic' sources), but the weird write read combination looks to me like something
+> that makes sense to have in regmap (be it as another bus variant).
 
-	tglx
-
+Probably not as a bus, it sounds like a marshalling difference rather
+than a bus - the buses should really only understand byte streams.  I
+don't have any bright ideas on how to deal with this, it's fairly far
+away from the problem space I'm worried about.
