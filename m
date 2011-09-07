@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757499Ab1IGXZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 19:25:58 -0400
-Received: from claw.goop.org ([74.207.240.146]:53781 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755695Ab1IGXZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 19:25:56 -0400
-Message-ID: <4E67FD7E.3060300@goop.org>
-Date: Wed, 07 Sep 2011 16:25:50 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH RFC 0/7] x86: convert ticketlocks to C and remove duplicate
- code
-References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com> <m2pqlw1i70.fsf@firstfloor.org>
-In-Reply-To: <m2pqlw1i70.fsf@firstfloor.org>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932084Ab1IGX1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 19:27:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34123 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751868Ab1IGX1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 19:27:38 -0400
+Date: Wed, 7 Sep 2011 16:27:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org, konrad.wilk@oracle.com,
+        JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@kernel.dk,
+        riel@redhat.com, hannes@cmpxchg.org, matthew@wil.cx,
+        chris.mason@oracle.com, sjenning@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
+        cyclonusj@gmail.com, levinsasha928@gmail.com
+Subject: Re: [PATCH V8 3/4] mm: frontswap: add swap hooks and extend
+ try_to_unuse
+Message-Id: <20110907162703.7f8116b9.akpm@linux-foundation.org>
+In-Reply-To: <20110829164929.GA27216@ca-server1.us.oracle.com>
+References: <20110829164929.GA27216@ca-server1.us.oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 01:44 PM, Andi Kleen wrote:
-> Jeremy Fitzhardinge <jeremy@goop.org> writes:
->> I couldn't measure a consistent performance difference between the two
->> implemenations; there seemed to be +/- ~1% +/-, which is the level of
->> variation I see from simply recompiling the kernel with slightly
->> different code alignment.
-> I ran your new locks in my lock tester and I have a similar experience.
-> There's some variation, but it seems to be in the usual variance.
-> In some cases the C locks were actually faster.
+On Mon, 29 Aug 2011 09:49:29 -0700
+Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 
-Is your test harness available?
+> -static int try_to_unuse(unsigned int type)
+> +int try_to_unuse(unsigned int type, bool frontswap,
 
-    J
-
-
+Are patches 2 and 3 in the wrong order?
