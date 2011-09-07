@@ -1,61 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611Ab1IGBso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 21:48:44 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:40165 "EHLO imr3.ericy.com"
+	id S1753312Ab1IGCCW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 22:02:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43540 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753685Ab1IGBsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 21:48:37 -0400
-Date: Tue, 6 Sep 2011 18:47:25 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [GIT PULL] hwmon fixes for 3.1
-Message-ID: <20110907014725.GC22609@ericsson.com>
-References: <1315325608-17922-1-git-send-email-guenter.roeck@ericsson.com>
- <CA+55aFwy-YPNHnJp6C6BRA-QfEtMoVHuxN9Uxg=p=0PwaWyXaQ@mail.gmail.com>
+	id S1751093Ab1IGCCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 22:02:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,342,1312182000"; 
+   d="scan'208";a="46205287"
+Date: Wed, 7 Sep 2011 10:02:14 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/18] writeback: control dirty pause time
+Message-ID: <20110907020214.GA13755@localhost>
+References: <20110904015305.367445271@intel.com>
+ <20110904020916.460538138@intel.com>
+ <1315324285.14232.16.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwy-YPNHnJp6C6BRA-QfEtMoVHuxN9Uxg=p=0PwaWyXaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1315324285.14232.16.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 07:16:13PM -0400, Linus Torvalds wrote:
-> On Tue, Sep 6, 2011 at 9:13 AM, Guenter Roeck
-> <guenter.roeck@ericsson.com> wrote:
-> >
-> > Please pull hwmon subsystem fixes for Linux 3.1 from:
-> >
-> >    git://github.com/groeck/linux.git hwmon-for-linus
+On Tue, Sep 06, 2011 at 11:51:25PM +0800, Peter Zijlstra wrote:
+> On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
+> > plain text document attachment (max-pause-adaption)
+> > The dirty pause time shall ultimately be controlled by adjusting
+> > nr_dirtied_pause, since there is relationship
+> > 
+> > 	pause = pages_dirtied / task_ratelimit
+> > 
+> > Assuming
+> > 
+> > 	pages_dirtied ~= nr_dirtied_pause
+> > 	task_ratelimit ~= dirty_ratelimit
+> > 
+> > We get
+> > 
+> > 	nr_dirtied_pause ~= dirty_ratelimit * desired_pause
+> > 
+> > Here dirty_ratelimit is preferred over task_ratelimit because it's
+> > more stable.
+> > 
+> > It's also important to limit possible large transitional errors:
+> > 
+> > - bw is changing quickly
+> > - pages_dirtied << nr_dirtied_pause on entering dirty exceeded area
+> > - pages_dirtied >> nr_dirtied_pause on btrfs (to be improved by a
+> >   separate fix, but still expect non-trivial errors)
+> > 
+> > So we end up using the above formula inside clamp_val().
+> > 
+> > The best test case for this code is to run 100 "dd bs=4M" tasks on
+> > btrfs and check its pause time distribution.
 > 
-> Guys, when using some general git hosting site, I really want some
-> proof that you are you. Not just a "please pull".
 > 
-> Tell me *why* I should believe that this is a real pull request from
-> the proper source. Otherwise I'll just wait until kernel.org is back
-> to life, where random people can't just create repositories and send
-> email.
 > 
-Hi Linus,
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  mm/page-writeback.c |   15 ++++++++++++++-
+> >  1 file changed, 14 insertions(+), 1 deletion(-)
+> > 
+> > --- linux-next.orig/mm/page-writeback.c	2011-08-29 19:08:43.000000000 +0800
+> > +++ linux-next/mm/page-writeback.c	2011-08-29 19:08:44.000000000 +0800
+> > @@ -1193,7 +1193,20 @@ pause:
+> >  	if (!dirty_exceeded && bdi->dirty_exceeded)
+> >  		bdi->dirty_exceeded = 0;
+> >  
+> > -	current->nr_dirtied_pause = dirty_poll_interval(nr_dirty, dirty_thresh);
+> > +	if (pause == 0)
+> > +		current->nr_dirtied_pause =
+> > +				dirty_poll_interval(nr_dirty, dirty_thresh);
+> > +	else if (period <= max_pause / 4 &&
+> > +		 pages_dirtied >= current->nr_dirtied_pause)
+> > +		current->nr_dirtied_pause = clamp_val(
+> > +					dirty_ratelimit * (max_pause / 2) / HZ,
+> > +					pages_dirtied + pages_dirtied / 8,
+> > +					pages_dirtied * 4);
+> > +	else if (pause >= max_pause)
+> > +		current->nr_dirtied_pause = 1 | clamp_val(
+> > +					dirty_ratelimit * (max_pause * 3/8)/HZ,
+> > +					pages_dirtied / 4,
+> > +					pages_dirtied * 7/8);
+> >  
+> 
+> I very much prefer { } over multi line stmts, even if not strictly
+> needed.
 
-sorry, I didn't think that far. You are absolutely right. No idea if and how
-I can prove that I am me. Generate a PGP signature ? Can't everyone do that 
-and subsequently claim to be me ? All I represent (technically) is an account
-on kernel.org, which might not even exist anymore.
+Yeah, that does look better.
 
-On the high side, there is only one "Guenter Roeck" in the US, so if you want
-you can look me up and give me a call. But even if you would do that, you still
-won't know for sure if the person talking to you is the electronic "me".
-So I guess we are stuck.
+> I'm also not quite sure why pause==0 is a special case,
 
-The fixes are not that important and can wait. Please ignore my pull request;
-I'll re-send it after kernel.org is up and running again.
+Good question, it covers the important case that dirty pages are still
+in the freerun area, where we don't do pause at all and hence cannot
+adaptively adjust current->nr_dirtied_pause based on the pause time.
+
+I'll add a simple comment for that condition:
+
+        if (pause == 0) { /* in freerun area */
+
+> also, do the two other line segments connect on the transition
+> point?
+
+I guess we can simply unify the other two formulas into one:
+
+        } else if (period <= max_pause / 4 &&
+                 pages_dirtied >= current->nr_dirtied_pause) {
+                current->nr_dirtied_pause = clamp_val(
+==>                                     dirty_ratelimit * (max_pause / 2) / HZ,
+                                        pages_dirtied + pages_dirtied / 8,
+                                        pages_dirtied * 4);
+        } else if (pause >= max_pause) {
+                current->nr_dirtied_pause = 1 | clamp_val(
+==>                                     dirty_ratelimit * (max_pause / 2) / HZ,
+                                        pages_dirtied / 4,
+                                        pages_dirtied - pages_dirtied / 8);
+        }
 
 Thanks,
-
-Guenter
+Fengguang
