@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1IGQg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:36:27 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36829 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab1IGQgX (ORCPT
+	id S1753264Ab1IGQhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:37:15 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42453 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab1IGQhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:36:23 -0400
+	Wed, 7 Sep 2011 12:37:12 -0400
 MIME-Version: 1.0
-X-Originating-IP: [46.116.113.217]
-In-Reply-To: <20110905100053.GP16691@amd.com>
-References: <1314984756-4400-1-git-send-email-ohad@wizery.com>
- <1314984756-4400-7-git-send-email-ohad@wizery.com> <20110905100053.GP16691@amd.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 7 Sep 2011 19:36:01 +0300
-Message-ID: <CAK=WgbafsdQ1MCai05jPsggJ72-jRh1w3OJ4hnuHyYMQauVvKw@mail.gmail.com>
-Subject: Re: [RFC 6/7] iommu/core: add fault reporting
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CADDb1s1pLQMMipe-zoHM6u4C_ZmUm_r4rsYxfft9mFQ56+Wgaw@mail.gmail.com>
+References: <CADDb1s1pLQMMipe-zoHM6u4C_ZmUm_r4rsYxfft9mFQ56+Wgaw@mail.gmail.com>
+Date: Wed, 7 Sep 2011 22:07:10 +0530
+Message-ID: <CADDb1s2hN0Pi336_gn_+HxJ+i4kd6Ce5XBOjEKoPzdovxVBt5g@mail.gmail.com>
+Subject: Re: Issue with lazy umount and closing file descriptor in between
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Cc: linkinjeon@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 5, 2011 at 1:00 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> Please add a seperate function for setting the fault-handler. It is
-> optional, so no need to be a value of the alloc-function.
+I know that lazy umount was designed keeping in mind that the
+mountpoint is not accesible to all future I/O but for the ongoing I/O
+it will continute to work. It is only after the I/O is finished that
+the umount will actually occur. But this can be tricky at times
+considering there are situations where the operation will continue to
+be executed than what is expected duration, and you cannot unplug the
+device during that period because there are chances of filesystem
+corruption on doing so.
+Is there anything which could be done in this context? because simply
+reading the fd-table and closing fd's will not serve the purpose and
+there is every chance of a OOPs occuring due to this closing.
+Signalling from this point to the all the process's with open fd's on
+that mountpoint to close fd i.e., handling needs to be done from the
+user space applications...? Does this make sense
 
-Will do.
+Please through some insight into this. I am not looking for exact
+solution it is just mere opinion's on this that can add to this.
 
-> Can you elaborate a bit on what the user of the api will do different
-> between IOMMU_TLBMISS and IOMMU_NOPTE?
-> My feeling is that those differences should be handled internally in the
-> IOMMU driver, but probably I miss a use-case.
+Thanks & Regards,
+Amit Sahrawat
 
-I actually agree. Moreover, since we're not planning on implementing
-this (dynamic PTE/TLB loading is supported by the hardware, but we're
-not really using it ATM), and I don't see any other user doing so at
-this point, I'll just remove those two fault types altogether.
-
-> Also, we need some flags to distinguish between the type of the fault
-> (read, write, ...).
-
-I'll add it (though it won't be used by OMAP since the hardware
-doesn't tell us this info).
-
-Thanks!
-Ohad.
+On Tue, Sep 6, 2011 at 10:56 PM, Amit Sahrawat
+<amit.sahrawat83@gmail.com> wrote:
+> We have observed below issues in busybox umount:
+> 1. force umount (umount -f): it does not work as expected.
+> 2. lazy umount(umount -l): it detaches the mount point but waits for
+> current mount point users(processes) to finish.
+> Corruption happens when we powerdown, while lazy umount is waiting for
+> a process to finish.
+> (e.g. #dd if=/dev/zero of=/mnt/test.txt ).
+> What could be the ideal way so as to avoid file system corruption in
+> above scenario?
+> Is it fine to close all open file descriptors on umount system call
+> before attempting umount? But this results in OOPS in certain
+> situations like:
+> 1. User app issue a write/read request
+> 2. Write reaches in kernel space but sleeps for some time e.g. it is
+> not available in dentry cache.
+> 3. In the meanwhile, we issue umount. This will close open file
+> descriptor, free file/dentry object and then umount.
+> 4. Now write wakes up and finds NULL file/dentry object and triggers oops.
+> Please offer some advice on this issue.
+> Thanks & Regards,
+> Amit Sahrawat
+>
