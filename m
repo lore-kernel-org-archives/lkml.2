@@ -1,183 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab1IGQWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:22:41 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37577 "EHLO e9.ny.us.ibm.com"
+	id S932116Ab1IGQWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:22:54 -0400
+Received: from verein.lst.de ([213.95.11.211]:48494 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756382Ab1IGQWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:22:38 -0400
-Date: Wed, 7 Sep 2011 16:30:47 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Paul Turner <pjt@google.com>
-Cc: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
-Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned
- vs unpinned
-Message-ID: <20110907110046.GC7768@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <20110503092846.022272244@google.com>
- <20110607154542.GA2991@linux.vnet.ibm.com>
- <1307529966.4928.8.camel@dhcp-10-30-22-158.sw.ru>
- <20110608163234.GA23031@linux.vnet.ibm.com>
- <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com>
- <20110610181719.GA30330@linux.vnet.ibm.com>
- <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
- <20110615053716.GA390@linux.vnet.ibm.com>
- <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
+	id S1756382Ab1IGQWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:22:51 -0400
+Date: Wed, 7 Sep 2011 08:56:35 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/18] writeback: fix dirtied pages accounting on
+	redirty
+Message-ID: <20110907065635.GA12619@lst.de>
+References: <20110904015305.367445271@intel.com> <20110904020916.841463184@intel.com> <1315325936.14232.22.camel@twins> <20110907002222.GF31945@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110907002222.GF31945@quack.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 12:48:17PM -0700, Paul Turner wrote:
-> Hi Kamalesh,
-> 
-> Can you see what things look like under v7?
-> 
-> There's been a few improvements to quota re-distribution that should
-> hopefully help your test case.
-> 
-> The remaining idle% I see on my machines appear to be a product of
-> load-balancer inefficiency.
+On Wed, Sep 07, 2011 at 02:22:22AM +0200, Jan Kara wrote:
+> > So wtf is ext4 doing? Shouldn't a page stay dirty until its written out?
+> > 
+> > That is, should we really frob around this behaviour or fix ext4 because
+> > its on crack?
+>   Fengguang, could you please verify your findings with recent kernel? I
+> believe ext4 got fixed in this regard some time ago already (and yes, old
+> delalloc writeback code in ext4 was terrible).
 
-which is quite a complex problem to solve! I am still surprised that
-we can't handle 32 cpuhogs on a 16-cpu system very easily. The tasks seem to
-hop around madly rather than settle down as 2 tasks/cpu. Kamalesh, can you post
-the exact count of migrations we saw on latest tip over a 20-sec window?
+The pattern we do in writeback is:
 
-Anyway, here's a "hack" to minimize the idle time induced due to load-balance 
-issues. It brings down idle time from 7+% to ~0% ..I am not too happy about
-this, but I don't see any other simpler solutions to solve the idle time issue
-completely (other than making load-balancer completely fair!).
+in pageout / write_cache_pages:
+	lock_page();
+	clear_page_dirty_for_io();
 
---
+in ->writepage:
+	set_page_writeback();
+	unlock_page();
+	end_page_writeback();
 
-Fix excessive idle time reported when cgroups are capped.  The patch
-introduces the notion of "steal" (or "grace") time which is the surplus
-time/bandwidth each cgroup is allowed to consume, subject to a maximum
-steal time (sched_cfs_max_steal_time_us). Cgroups are allowed this "steal"
-or "grace" time when the lone task running on a cpu is about to be throttled.
-
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-
-Index: linux-3.1-rc4/include/linux/sched.h
-===================================================================
---- linux-3.1-rc4.orig/include/linux/sched.h	2011-09-07 14:57:49.529602231 +0800
-+++ linux-3.1-rc4/include/linux/sched.h	2011-09-07 14:58:49.952418107 +0800
-@@ -2042,6 +2042,7 @@
- 
- #ifdef CONFIG_CFS_BANDWIDTH
- extern unsigned int sysctl_sched_cfs_bandwidth_slice;
-+extern unsigned int sysctl_sched_cfs_max_steal_time;
- #endif
- 
- #ifdef CONFIG_RT_MUTEXES
-Index: linux-3.1-rc4/kernel/sched.c
-===================================================================
---- linux-3.1-rc4.orig/kernel/sched.c	2011-09-07 14:57:49.532854588 +0800
-+++ linux-3.1-rc4/kernel/sched.c	2011-09-07 14:58:49.955453578 +0800
-@@ -254,7 +254,7 @@
- #ifdef CONFIG_CFS_BANDWIDTH
- 	raw_spinlock_t lock;
- 	ktime_t period;
--	u64 quota, runtime;
-+	u64 quota, runtime, steal_time;
- 	s64 hierarchal_quota;
- 	u64 runtime_expires;
- 
-Index: linux-3.1-rc4/kernel/sched_fair.c
-===================================================================
---- linux-3.1-rc4.orig/kernel/sched_fair.c	2011-09-07 14:57:49.533644483 +0800
-+++ linux-3.1-rc4/kernel/sched_fair.c	2011-09-07 15:16:09.338824132 +0800
-@@ -101,6 +101,18 @@
-  * default: 5 msec, units: microseconds
-   */
- unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
-+
-+/*
-+ * "Surplus" quota given to a cgroup to prevent a CPU from becoming idle.
-+ *
-+ * This would have been unnecessary had the load-balancer been "ideal" in
-+ * loading tasks uniformly across all CPUs, which would have allowed
-+ * all cgroups to claim their "quota" completely. In the absence of an
-+ * "ideal" load-balancer, cgroups are unable to utilize their quota, leading
-+ * to unexpected idle time. This knob allows a CPU to keep running a
-+ * task beyond its throttled point before becoming idle.
-+ */
-+unsigned int sysctl_sched_cfs_max_steal_time = 100000UL;
- #endif
- 
- static const struct sched_class fair_sched_class;
-@@ -1288,6 +1300,11 @@
- 	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
- }
- 
-+static inline u64 sched_cfs_max_steal_time(void)
-+{
-+	return (u64)sysctl_sched_cfs_max_steal_time * NSEC_PER_USEC;
-+}
-+
- /*
-  * Replenish runtime according to assigned quota and update expiration time.
-  * We use sched_clock_cpu directly instead of rq->clock to avoid adding
-@@ -1303,6 +1320,7 @@
- 		return;
- 
- 	now = sched_clock_cpu(smp_processor_id());
-+	cfs_b->steal_time = 0;
- 	cfs_b->runtime = cfs_b->quota;
- 	cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
- }
-@@ -1337,6 +1355,12 @@
- 			cfs_b->runtime -= amount;
- 			cfs_b->idle = 0;
- 		}
-+
-+		if (!amount && rq_of(cfs_rq)->nr_running == 1 &&
-+				cfs_b->steal_time < sched_cfs_max_steal_time()) {
-+			amount = min_amount;
-+			cfs_b->steal_time += amount;
-+		}
- 	}
- 	expires = cfs_b->runtime_expires;
- 	raw_spin_unlock(&cfs_b->lock);
-@@ -1378,7 +1402,8 @@
- 	 * whether the global deadline has advanced.
- 	 */
- 
--	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0) {
-+	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0 ||
-+		(rq_of(cfs_rq)->nr_running == 1 && cfs_b->steal_time < sched_cfs_max_steal_time())) {
- 		/* extend local deadline, drift is bounded above by 2 ticks */
- 		cfs_rq->runtime_expires += TICK_NSEC;
- 	} else {
-Index: linux-3.1-rc4/kernel/sysctl.c
-===================================================================
---- linux-3.1-rc4.orig/kernel/sysctl.c	2011-09-07 14:57:49.534454409 +0800
-+++ linux-3.1-rc4/kernel/sysctl.c	2011-09-07 14:58:49.958452846 +0800
-@@ -388,6 +388,14 @@
- 		.proc_handler	= proc_dointvec_minmax,
- 		.extra1		= &one,
- 	},
-+	{
-+		.procname	= "sched_cfs_max_steal_time_us",
-+		.data		= &sysctl_sched_cfs_max_steal_time,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
-+	},
- #endif
- #ifdef CONFIG_PROVE_LOCKING
- 	{
+So whenever ->writepage decides it doesn't want to write things back
+we have to redirty pages.  We have this happen quite a bit in every
+filesystem, but ext4 hits it a lot more than usual because it refuses
+to write out delalloc pages from plain ->writepage and only allows
+->writepages to do it.
 
