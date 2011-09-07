@@ -1,105 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab1IGTeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 15:34:37 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:58004 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab1IGTeg convert rfc822-to-8bit (ORCPT
+	id S1755811Ab1IGTeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 15:34:44 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:57783 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab1IGTem convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 15:34:36 -0400
+	Wed, 7 Sep 2011 15:34:42 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=K+KufFdyYzX9FNduK1kPoguTASwF3wyT4rjEozam4fMBScKseNiEe/9p+khn7vYYq
+	+DMgjOiQeFG4FI+uBt3dw==
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1109071437400.20358@xanadu.home>
-References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-	<alpine.LFD.2.00.1109071437400.20358@xanadu.home>
-Date: Wed, 7 Sep 2011 15:34:35 -0400
-Message-ID: <CACqU3MVF8XSdKi0PeZF5SFaH9i2HPqCjkMqccyb83x4V_1Vs1g@mail.gmail.com>
-Subject: Re: [RFC] Kbuild: allow code re-use across different directories
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1315423726.11101.27.camel@twins>
+References: <20110906204637.GA31826@quad>
+	<1315383151.11101.13.camel@twins>
+	<CABPqkBRzA32PW2E_wZrESrCQB2KPJqqomZD0M3x4ZBDzWJGi+Q@mail.gmail.com>
+	<1315423726.11101.27.camel@twins>
+Date: Wed, 7 Sep 2011 21:34:38 +0200
+Message-ID: <CABPqkBRW3kXAkrHxZpBXg=UPD3y4b6U2_dKC_yWNfuABj+=B5g@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v3)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, mingo@elte.hu,
+        dsahern@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Sep 7, 2011 at 3:07 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> On Fri, 19 Aug 2011, Arnaud Lacombe wrote:
+On Wed, Sep 7, 2011 at 9:28 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-09-07 at 14:55 +0200, Stephane Eranian wrote:
+>> On Wed, Sep 7, 2011 at 10:12 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, 2011-09-06 at 22:46 +0200, Stephane Eranian wrote:
+>> >> +static const char *topo_fmt[] = {
+>> >> + Â  Â  Â  "/sys/devices/system/cpu/cpu%d/topology/core_siblings_list",
+>> >> + Â  Â  Â  "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list",
+>> >> + Â  Â  Â  NULL
+>> >> +};
+>> >
+>> > No nodes?
+>> >
+>> To record what information? core/thread siblings or memory stuff?
 >
->> Hi folks,
->>
->> The attached patch modify Kbuild to allow to directly re-use code in multiple
->> directory without having to go through a copy. Technically, it changes Kbuild to
->> use by default the VPATH feature of GNU make and provides accessors for Makefile
->> to change it indirectly.
->>
->> Considering:
->>
->> arch/foo/lib:
->> fancy.c
->>
->> We want to be able to build it with -DPANTS=32 in the kernel, but the
->> bootloader requires -DPANTS_SIZE=30.
->>
->> Currently we would do, either:
->>
->> arch/foo/lib/Makefile
->> LDFLAGS_fancy.o := -DPANTS=32
->> obj-y += fancy.o
->>
->> and, either:
->>
->> arch/foo/boot/Makefile:
->> LDFLAGS_fancy.o := -DPANTS=30
->> obj-y += fancy.o
->> $(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
->>       $(call cmd,shipped)
->>
->> or
->>
->> arch/foo/boot/Makefile:
->> LDFLAGS_fancy.o := -DPANTS=30
->> obj-y += fancy.o
->> $(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
->>       $(call cmd,cc_c_o)
->>
->> The former implies an extra copy of the source file, the latter expose Kbuild
->> internal function.
->>
->> With the attached patch, we would do:
->>
->> arch/foo/boot/Makefile:
->> LDFLAGS_fancy.o := -DPANTS=30
->> obj-y += fancy.o
->> vpath-y += $(srctree)/arch/foo/lib
->>
->> and let GNU make do the job.
->>
->> Comments welcome,
+> Dunno really,.. but nodes are part of the topology and with people
+> interested in all this uncore business it might make sense to have that.
+> Maybe even record the node-distance table so you can reconstruct the
+> interconnect topology.
 >
-> It doesn't work.  Whatever I do to arch/arm/boot/compressed/Makefile
-> (which admittedly looks a bit hairy and could benefit from a shave) in
-> order to remove the $(call cmd,shipped) used with lib1funcs.S, I always
-> end up with:
 >
-> make[2]: *** No rule to make target `arch/arm/boot/compressed/lib1funcs.S', needed by `arch/arm/boot/compressed/lib1funcs.o'.  Stop.
->
-What was the exact change you made which triggered this ?
-
-Thanks,
- - Arnaud
-
-> Obviously, restoring the explicit dependency with a $(call cmd,as_o_S)
-> does make it work, but this is rather against the point of your patch.
->
-> Do you have an example of how arch/arm/boot/compressed/Makefile should
-> be changed to benefit from your patch?
->
-
-
->
-> Nicolas
+I posted v4 which captures the numa topology (meminfo, cpulist). When you
+combine with what I already had, you get the complete picture.
 >
