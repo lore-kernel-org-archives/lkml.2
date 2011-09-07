@@ -1,72 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab1IGScg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:32:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55652 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756425Ab1IGScf (ORCPT
+	id S1756500Ab1IGSei (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:34:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:44388 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab1IGSeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:32:35 -0400
-Date: Wed, 7 Sep 2011 11:32:31 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 2/6] regmap: Add a magic bus type to handle quirks of
- analog devices ADIS sensors.
-Message-ID: <20110907183230.GA4423@opensource.wolfsonmicro.com>
-References: <4E679770.4090008@cam.ac.uk>
- <1315412387-5765-3-git-send-email-jic23@cam.ac.uk>
- <20110907174713.GG2906@opensource.wolfsonmicro.com>
- <4E67B742.6030302@cam.ac.uk>
+	Wed, 7 Sep 2011 14:34:37 -0400
+Message-ID: <4E67B897.90407@windriver.com>
+Date: Wed, 7 Sep 2011 14:31:51 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E67B742.6030302@cam.ac.uk>
-X-Cookie: So you're back... about time...
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <mingo@elte.hu>, <laijs@cn.fujitsu.com>,
+        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
+        <mathieu.desnoyers@polymtl.ca>, <josh@joshtriplett.org>,
+        <niv@us.ibm.com>, <tglx@linutronix.de>, <peterz@infradead.org>,
+        <rostedt@goodmis.org>, <Valdis.Kletnieks@vt.edu>,
+        <dhowells@redhat.com>, <eric.dumazet@gmail.com>, <darren@dvhart.com>,
+        <patches@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 05/55] rcu: Move rcu_head definition to types.h
+References: <20110906180015.GA2560@linux.vnet.ibm.com> <1315332049-2604-5-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1315332049-2604-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 07:26:10PM +0100, Jonathan Cameron wrote:
-> On 09/07/11 18:47, Mark Brown wrote:
-> > On Wed, Sep 07, 2011 at 05:19:43PM +0100, Jonathan Cameron wrote:
+On 11-09-06 01:59 PM, Paul E. McKenney wrote:
+> Take a first step towards untangling Linux kernel header files by
+> placing the struct rcu_head definition into include/linux/types.h
+> and including include/linux/types.h in include/linux/rcupdate.h
+> where struct rcu_head used to be defined.  The actual inclusion point
+> for include/linux/types.h is with the rest of the #include directives
+> rather than at the point where struct rcu_head used to be defined,
+> as suggested by Mathieu Desnoyers.
+> 
+> Once this is in place, then header files that need only rcu_head
+> can include types.h rather than rcupdate.h.
 
-> > To be honest I'm not terribly happy about
-> > pushing this into the regmap core code; if we start needing to do stuff
-> > like this we should expose the bus interface.
+Good to see more of this untangle work taking place.
 
-> That's certainly an option, but I'd really like to use the regmap caching
-> stuff in here.  These things can have quite a few registers that other than
-> their weird read / write quirks look much like any other register based
-> device. (particularly ignoring the burst reads but they tend to apply
-> to volatile registers only so caching is probably irrelevant).
+The only comment I have is whether there is any sort of implicit
+categorization in place for what is appropriate for types.h.
 
-> At the moment, the only hooks AFAIKS to allow this are at the bus level.
-> I'm not sure where else they could go. (I haven't actually looked much
-> at the cache code yet though).
+At the moment it seems to only contain really core primary types
+(and the list/hlist structs which are almost core types...)
 
-Well, if there's not hooks they could be added if it's not too painful.
-However I'm not convinced that's sane.
+Are there any other alternative places - does linux/kernel.h make
+more sense?
 
-> Actually I may have misunderstood, do you mean expose the bus interface
-> within regmap or just not use regmap at all?
+Paul.
 
-Either.  Or either expose marshalling or add configuration for the
-marshalling depending on what's being done, I'm not convinced you need
-to be working at SPI level at all.
-
-> >> +static struct regmap_bus regmap_spi_adi = {
-> >> +	.write = regmap_spi_write,
-> >> +	.read = regmap_spi_read,
-> >> +};
-
-> > You want to implement the gather write too if you can.
-
-> Doesn't really exist other than by linearising them into a series
-> of calls to the write function. (assuming I understand what those
-> functions are doing right!)
-
-If you build up a series of SPI transfers you just need to control when
-/CS gets bounced appropriately.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> ---
+>  include/linux/rcupdate.h |   11 +----------
+>  include/linux/types.h    |   10 ++++++++++
+>  2 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 8be0433..2516555 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -33,6 +33,7 @@
+>  #ifndef __LINUX_RCUPDATE_H
+>  #define __LINUX_RCUPDATE_H
+>  
+> +#include <linux/types.h>
+>  #include <linux/cache.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/threads.h>
+> @@ -64,16 +65,6 @@ static inline void rcutorture_record_progress(unsigned long vernum)
+>  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
+>  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
+>  
+> -/**
+> - * struct rcu_head - callback structure for use with RCU
+> - * @next: next update requests in a list
+> - * @func: actual update function to call after the grace period.
+> - */
+> -struct rcu_head {
+> -	struct rcu_head *next;
+> -	void (*func)(struct rcu_head *head);
+> -};
+> -
+>  /* Exported common interfaces */
+>  extern void call_rcu_sched(struct rcu_head *head,
+>  			   void (*func)(struct rcu_head *rcu));
+> diff --git a/include/linux/types.h b/include/linux/types.h
+> index 176da8c..57a9723 100644
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -238,6 +238,16 @@ struct ustat {
+>  	char			f_fpack[6];
+>  };
+>  
+> +/**
+> + * struct rcu_head - callback structure for use with RCU
+> + * @next: next update requests in a list
+> + * @func: actual update function to call after the grace period.
+> + */
+> +struct rcu_head {
+> +	struct rcu_head *next;
+> +	void (*func)(struct rcu_head *head);
+> +};
+> +
+>  #endif	/* __KERNEL__ */
+>  #endif /*  __ASSEMBLY__ */
+>  #endif /* _LINUX_TYPES_H */
