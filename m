@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab1IGEZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 00:25:51 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:11380 "EHLO relay.sw.ru"
+	id S1755375Ab1IGE0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 00:26:04 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28499 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752919Ab1IGEZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 00:25:34 -0400
+	id S1752778Ab1IGEZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 00:25:53 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, containers@lists.osdl.org, netdev@vger.kernel.org,
@@ -13,9 +13,9 @@ Cc: linux-mm@kvack.org, containers@lists.osdl.org, netdev@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH v2 2/9] Kernel Memory cgroup
-Date: Wed,  7 Sep 2011 01:23:12 -0300
-Message-Id: <1315369399-3073-3-git-send-email-glommer@parallels.com>
+Subject: [PATCH v2 7/9] tcp buffer limitation: per-cgroup limit
+Date: Wed,  7 Sep 2011 01:23:17 -0300
+Message-Id: <1315369399-3073-8-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1315369399-3073-1-git-send-email-glommer@parallels.com>
 References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
@@ -23,196 +23,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the kernel memory cgroup. Its purpose
-is to track and control/limit allocation of kernel objects.
-Kernel objects are very different in nature than user memory,
-because they can't be swapped out, so can't be overcommited.
+This patch uses the "tcp_max_mem" field of the kmem_cgroup to
+effectively control the amount of kernel memory pinned by a cgroup.
 
-The first incarnation is very simple. The current patch doesn't
-add any objects to be tracked, but rather, just the cgroup
-structure.
+We have to make sure that none of the memory pressure thresholds
+specified in the namespace are bigger than the current cgroup.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: David S. Miller <davem@davemloft.net>
 CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Eric W. Biederman <ebiederm@xmission.com>
 ---
- include/linux/cgroup_subsys.h |    4 +++
- include/linux/kmem_cgroup.h   |   53 +++++++++++++++++++++++++++++++++++++++++
- init/Kconfig                  |   11 ++++++++
- mm/Makefile                   |    1 +
- mm/kmem_cgroup.c              |   53 +++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 122 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/kmem_cgroup.h
- create mode 100644 mm/kmem_cgroup.c
+ include/linux/kmem_cgroup.h |    1 +
+ net/ipv4/sysctl_net_ipv4.c  |    8 ++++++
+ net/ipv4/tcp.c              |   56 ++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 64 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index ac663c1..363b8e8 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -35,6 +35,10 @@ SUBSYS(cpuacct)
- SUBSYS(mem_cgroup)
- #endif
- 
-+#ifdef CONFIG_CGROUP_KMEM
-+SUBSYS(kmem)
-+#endif
-+
- /* */
- 
- #ifdef CONFIG_CGROUP_DEVICE
 diff --git a/include/linux/kmem_cgroup.h b/include/linux/kmem_cgroup.h
-new file mode 100644
-index 0000000..0e4a74b
---- /dev/null
+index 89ad0a1..57a432b 100644
+--- a/include/linux/kmem_cgroup.h
 +++ b/include/linux/kmem_cgroup.h
-@@ -0,0 +1,53 @@
-+/* kmem_cgroup.h - Kernel Memory Controller
-+ *
-+ * Copyright Parallels Inc., 2011
-+ * Author: Glauber Costa <glommer@parallels.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _LINUX_KMEM_CGROUP_H
-+#define _LINUX_KMEM_CGROUP_H
-+#include <linux/cgroup.h>
-+#include <linux/atomic.h>
-+#include <linux/percpu_counter.h>
-+
-+struct kmem_cgroup {
-+	struct cgroup_subsys_state css;
-+	struct kmem_cgroup *parent;
-+};
-+
-+
-+#ifdef CONFIG_CGROUP_KMEM
-+static inline struct kmem_cgroup *kcg_from_cgroup(struct cgroup *cgrp)
-+{
-+	return container_of(cgroup_subsys_state(cgrp, kmem_subsys_id),
-+		struct kmem_cgroup, css);
-+}
-+
-+static inline struct kmem_cgroup *kcg_from_task(struct task_struct *tsk)
-+{
-+	return container_of(task_subsys_state(tsk, kmem_subsys_id),
-+		struct kmem_cgroup, css);
-+}
-+#else
-+static inline struct kmem_cgroup *kcg_from_cgroup(struct cgroup *cgrp)
-+{
-+	return NULL;
-+}
-+
-+static inline struct kmem_cgroup *kcg_from_task(struct task_struct *tsk)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_CGROUP_KMEM */
-+#endif /* _LINUX_KMEM_CGROUP_H */
-+
-diff --git a/init/Kconfig b/init/Kconfig
-index d627783..5955ac2 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -690,6 +690,17 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
- 	  select this option (if, for some reason, they need to disable it
- 	  then swapaccount=0 does the trick).
+@@ -26,6 +26,7 @@ struct kmem_cgroup {
  
-+config CGROUP_KMEM
-+	bool "Kernel Memory Resource Controller for Control Groups"
-+	depends on CGROUPS
-+	help
-+	  The Kernel Memory cgroup can limit the amount of memory used by
-+	  certain kernel objects in the system. Those are fundamentally
-+	  different from the entities handled by the Memory Controller,
-+	  which are page-based, and can be swapped. Users of the kmem
-+	  cgroup can use it to guarantee that no group of processes will
-+	  ever exhaust kernel resources alone.
-+
- config CGROUP_PERF
- 	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
- 	depends on PERF_EVENTS && CGROUPS
-diff --git a/mm/Makefile b/mm/Makefile
-index 836e416..1b1aa24 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -45,6 +45,7 @@ obj-$(CONFIG_MIGRATION) += migrate.o
- obj-$(CONFIG_QUICKLIST) += quicklist.o
- obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
- obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
-+obj-$(CONFIG_CGROUP_KMEM) += kmem_cgroup.o
- obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
- obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
- obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
-diff --git a/mm/kmem_cgroup.c b/mm/kmem_cgroup.c
-new file mode 100644
-index 0000000..7950e69
---- /dev/null
-+++ b/mm/kmem_cgroup.c
-@@ -0,0 +1,53 @@
-+/* kmem_cgroup.c - Kernel Memory Controller
-+ *
-+ * Copyright Parallels Inc, 2011
-+ * Author: Glauber Costa <glommer@parallels.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/cgroup.h>
-+#include <linux/slab.h>
+ #ifdef CONFIG_INET
+ 	int tcp_memory_pressure;
++	int tcp_max_memory;
+ 	atomic_long_t tcp_memory_allocated;
+ 	struct percpu_counter tcp_sockets_allocated;
+ 	long tcp_prot_mem[3];
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 0d74b9d..5e89480 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -14,6 +14,7 @@
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/nsproxy.h>
 +#include <linux/kmem_cgroup.h>
+ #include <linux/swap.h>
+ #include <net/snmp.h>
+ #include <net/icmp.h>
+@@ -181,6 +182,7 @@ static int ipv4_tcp_mem(ctl_table *ctl, int write,
+ {
+ 	int ret;
+ 	unsigned long vec[3];
++	struct kmem_cgroup *kmem = kcg_from_task(current);
+ 	struct net *net = current->nsproxy->net_ns;
+ 	int i;
+ 
+@@ -200,7 +202,13 @@ static int ipv4_tcp_mem(ctl_table *ctl, int write,
+ 		return ret;
+ 
+ 	for (i = 0; i < 3; i++)
++		if (vec[i] > kmem->tcp_max_memory)
++			return -EINVAL;
 +
-+static int kmem_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
++	for (i = 0; i < 3; i++) {
+ 		net->ipv4.sysctl_tcp_mem[i] = vec[i];
++		kmem->tcp_prot_mem[i] = net->ipv4.sysctl_tcp_mem[i];
++	}
+ 
+ 	return 0;
+ }
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 0725dc4..e1918fa 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -324,6 +324,55 @@ atomic_long_t *memory_allocated_tcp(struct kmem_cgroup *sg)
+ 	return &(sg->tcp_memory_allocated);
+ }
+ 
++static int tcp_write_maxmem(struct cgroup *cgrp, struct cftype *cft, u64 val)
 +{
++	struct kmem_cgroup *sg = kcg_from_cgroup(cgrp);
++	struct net *net = current->nsproxy->net_ns;
++	int i;
++
++	if (!cgroup_lock_live_group(cgrp))
++		return -ENODEV;
++
++	/*
++	 * We can't allow more memory than our parents. Since this
++	 * will be tested for all calls, by induction, there is no need
++	 * to test any parent other than our own
++	 * */
++	if (sg->parent && (val > sg->parent->tcp_max_memory))
++		val = sg->parent->tcp_max_memory;
++
++	sg->tcp_max_memory = val;
++
++	for (i = 0; i < 3; i++)
++		sg->tcp_prot_mem[i]  = min_t(long, val,
++					     net->ipv4.sysctl_tcp_mem[i]);
++
++	cgroup_unlock();
++
 +	return 0;
 +}
 +
-+static void
-+kmem_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
++static u64 tcp_read_maxmem(struct cgroup *cgrp, struct cftype *cft)
 +{
-+	struct kmem_cgroup *cg = kcg_from_cgroup(cgrp);
-+	kfree(cg);
++	struct kmem_cgroup *sg = kcg_from_cgroup(cgrp);
++	u64 ret;
++
++	if (!cgroup_lock_live_group(cgrp))
++		return -ENODEV;
++	ret = sg->tcp_max_memory;
++
++	cgroup_unlock();
++	return ret;
 +}
 +
-+static struct cgroup_subsys_state *kmem_create(
-+	struct cgroup_subsys *ss, struct cgroup *cgrp)
-+{
-+	struct kmem_cgroup *sk = kzalloc(sizeof(*sk), GFP_KERNEL);
-+
-+	if (!sk)
-+		return ERR_PTR(-ENOMEM);
-+
-+	if (cgrp->parent)
-+		sk->parent = kcg_from_cgroup(cgrp->parent);
-+
-+	return &sk->css;
-+}
-+
-+struct cgroup_subsys kmem_subsys = {
-+	.name = "kmem",
-+	.create = kmem_create,
-+	.destroy = kmem_destroy,
-+	.populate = kmem_populate,
-+	.subsys_id = kmem_subsys_id,
++static struct cftype tcp_files[] = {
++	{
++		.name = "tcp_maxmem",
++		.write_u64 = tcp_write_maxmem,
++		.read_u64 = tcp_read_maxmem,
++	},
 +};
++
+ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ {
+ 	struct kmem_cgroup *sg = kcg_from_cgroup(cgrp);
+@@ -337,11 +386,16 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	limit = nr_free_buffer_pages() / 8;
+ 	limit = max(limit, 128UL);
+ 
++	if (sg->parent)
++		sg->tcp_max_memory = sg->parent->tcp_max_memory;
++	else
++		sg->tcp_max_memory = limit * 2;
++
+ 	sg->tcp_prot_mem[0] = net->ipv4.sysctl_tcp_mem[0];
+ 	sg->tcp_prot_mem[1] = net->ipv4.sysctl_tcp_mem[1];
+ 	sg->tcp_prot_mem[2] = net->ipv4.sysctl_tcp_mem[2];
+ 
+-	return 0;
++	return cgroup_add_files(cgrp, ss, tcp_files, ARRAY_SIZE(tcp_files));
+ }
+ EXPORT_SYMBOL(tcp_init_cgroup);
+ 
 -- 
 1.7.6
 
