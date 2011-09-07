@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1IGS05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:26:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33261 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756494Ab1IGS04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:26:56 -0400
-Date: Wed, 7 Sep 2011 20:21:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: matthltc@us.ibm.com, paul@paulmenage.org,
-        containers@lists.linux-foundation.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] freezer: fix wait_event_freezable/__thaw_task races
-Message-ID: <20110907182156.GA13909@redhat.com>
-References: <1314988070-12244-1-git-send-email-tj@kernel.org> <1314988070-12244-7-git-send-email-tj@kernel.org> <20110904184626.GA30101@redhat.com> <20110905023315.GB9807@htj.dyndns.org> <20110905162012.GA4445@redhat.com> <20110906032846.GA18425@mtj.dyndns.org> <20110906151836.GA15568@redhat.com> <20110906152539.GA16899@redhat.com> <20110906155332.GF18425@mtj.dyndns.org>
+	id S1756482Ab1IGS3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:29:31 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25776 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab1IGS3a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 14:29:30 -0400
+Date: Wed, 7 Sep 2011 14:27:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: hch@infradead.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        jbeulich@novell.com, linux-kernel@vger.kernel.org, JBeulich@suse.com
+Subject: Re: Help with implementing some form of barriers in 3.0 kernels.
+Message-ID: <20110907182748.GC5888@dumpdata.com>
+References: <20110907174832.GN32190@dumpdata.com>
+ <20110907181740.GG31726@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110906155332.GF18425@mtj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110907181740.GG31726@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4E67B7BF.00B3,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Sep 07, 2011 at 02:17:40PM -0400, Vivek Goyal wrote:
+> On Wed, Sep 07, 2011 at 01:48:32PM -0400, Konrad Rzeszutek Wilk wrote:
+> > Hey Christoph,
+> > 
+> > I was wondering what you think is the proper way of implementing a
+> > backend to support the 'barrier' type requests? We have this issue were
+> > there are 2.6.36 type guests that still use barriers and we would like
+> > to support them properly. But in 3.0 there are no barriers - hence
+> > the question whether WRITE_fLUSH_FUA would be equal to WRITE_BARRIER?
+> 
+> I think WRITE_FLUSH_FUA is not same as WRITE_BARRIER. Because it does
+> not ensure request ordering. A request rq2 which is issued after rq1 (with
+> WRITE_flush_FUA), can still finish before rq1. In the past WRITE_BARRIER
+> would not allow that.
+> 
+> So AFAIK, WRITE_flush_fua is not WRITE_BARRIER.
 
-On 09/07, Tejun Heo wrote:
-> >
-> > I meant, unless the caller plays with allow_signal(), it has all rights to do
-> >
-> > 	if (wait_event_freezable(...))
-> > 		BUG();
-> >
-> > This becomes correct with the code above.
->
-> Yeap, sure, w/ freezable_with_signal gone, the above should work fine.
-> Care to create a patch?
+Ok, any thoughts on how to emulate it then perhaps? Mark each request after
+rq1 with WRITE_FUA? .. But then how long should the _FUA bit be set - perhaps
+until the rq1 has completed?
 
-Sure.
-
-But. Tejun, Rafael, I have to rely on your review. I have no idea how
-can I test this change. Hopfully it is simple enough, though.
-
-And. wait_event_freezable_timeout() obviously has another problem,
-although I hope this is fine. The caller can spend a lot of time in
-refrigerator, shouldn't we update "timeout" in this case? I hope we
-shouldn't.
-
-Oleg.
-
+> 
+> Thanks
+> Vivek
