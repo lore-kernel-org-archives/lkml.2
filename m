@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab1IGQcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:32:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41495 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323Ab1IGQcA (ORCPT
+	id S1752582Ab1IGQct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:32:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42928 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab1IGQcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:32:00 -0400
-From: Dan McGee <dpmcgee@gmail.com>
-To: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH 4/5] pata_sis: mark most const data static as well
-Date: Wed,  7 Sep 2011 11:23:21 -0500
-Message-Id: <1315412602-6560-5-git-send-email-dpmcgee@gmail.com>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <1315412602-6560-1-git-send-email-dpmcgee@gmail.com>
-References: <1315412602-6560-1-git-send-email-dpmcgee@gmail.com>
+	Wed, 7 Sep 2011 12:32:47 -0400
+Date: Wed, 7 Sep 2011 18:32:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Frank Rowand <frank.rowand@am.sony.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@tglx.de>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+In-Reply-To: <20110907140130.GT6619@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1109071818350.2723@ionos>
+References: <1313232790.25267.7.camel@twins> <4E559039.8060209@am.sony.com> <20110826235507.GJ2342@linux.vnet.ibm.com> <4E66DCAB.8090801@am.sony.com> <alpine.LFD.2.02.1109071115410.2723@ionos> <20110907104633.GR6619@n2100.arm.linux.org.uk>
+ <20110907104747.GA29282@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1109071254010.2723@ionos> <20110907140130.GT6619@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This pushes timing and other values into preinitialized read-only data
-sections rather than being inlined into the code. None of these
-functions are called more than a handful of times, so reducing code size
-makes sense.
+On Wed, 7 Sep 2011, Russell King - ARM Linux wrote:
 
-Signed-off-by: Dan McGee <dpmcgee@gmail.com>
----
- drivers/ata/pata_sis.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+> On Wed, Sep 07, 2011 at 12:57:44PM +0200, Thomas Gleixner wrote:
+> > The problem is that if you enable interrupts on the CPU _BEFORE_ it is
+> > set online AND active, then you can end up waking up kernel threads
+> > which are bound to that CPU and the scheduler will happily schedule
+> > them on an online CPU. That makes them lose the cpu affinity to the
+> > CPU as well and hell breaks lose.
+> 
+> How can that happen?
+> 
+> 1. The only interrupts we're likely to receive are the local timer
+>    interrupts - we have not routed any other interrupts to this CPU.
 
-diff --git a/drivers/ata/pata_sis.c b/drivers/ata/pata_sis.c
-index a42668b..d886b0b 100644
---- a/drivers/ata/pata_sis.c
-+++ b/drivers/ata/pata_sis.c
-@@ -231,8 +231,8 @@ static void sis_old_set_piomode (struct ata_port *ap, struct ata_device *adev)
- 	u8 t1, t2;
- 	int speed = adev->pio_mode - XFER_PIO_0;
+Fair enough, on x86 this can happen when we enable interrupts.
  
--	const u8 active[]   = { 0x00, 0x07, 0x04, 0x03, 0x01 };
--	const u8 recovery[] = { 0x00, 0x06, 0x04, 0x03, 0x03 };
-+	static const u8 active[]   = { 0x00, 0x07, 0x04, 0x03, 0x01 };
-+	static const u8 recovery[] = { 0x00, 0x06, 0x04, 0x03, 0x03 };
- 
- 	sis_set_fifo(ap, adev);
- 
-@@ -267,7 +267,7 @@ static void sis_100_set_piomode (struct ata_port *ap, struct ata_device *adev)
- 	int port = sis_old_port_base(adev);
- 	int speed = adev->pio_mode - XFER_PIO_0;
- 
--	const u8 actrec[] = { 0x00, 0x67, 0x44, 0x33, 0x31 };
-+	static const u8 actrec[] = { 0x00, 0x67, 0x44, 0x33, 0x31 };
- 
- 	sis_set_fifo(ap, adev);
- 
-@@ -293,14 +293,14 @@ static void sis_133_set_piomode (struct ata_port *ap, struct ata_device *adev)
- 	u32 t1;
- 	int speed = adev->pio_mode - XFER_PIO_0;
- 
--	const u32 timing133[] = {
-+	static const u32 timing133[] = {
- 		0x28269000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
- 		0x0C266000,
- 		0x04263000,
- 		0x0C0A3000,
- 		0x05093000
- 	};
--	const u32 timing100[] = {
-+	static const u32 timing100[] = {
- 		0x1E1C6000,	/* Recovery << 24 | Act << 16 | Ini << 12 */
- 		0x091C4000,
- 		0x031C2000,
-@@ -341,8 +341,8 @@ static void sis_old_set_dmamode (struct ata_port *ap, struct ata_device *adev)
- 	int drive_pci = sis_old_port_base(adev);
- 	u16 timing;
- 
--	const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
--	const u16 udma_bits[]  = { 0xE000, 0xC000, 0xA000 };
-+	static const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
-+	static const u16 udma_bits[]  = { 0xE000, 0xC000, 0xA000 };
- 
- 	pci_read_config_word(pdev, drive_pci, &timing);
- 
-@@ -381,8 +381,8 @@ static void sis_66_set_dmamode (struct ata_port *ap, struct ata_device *adev)
- 	u16 timing;
- 
- 	/* MWDMA 0-2 and UDMA 0-5 */
--	const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
--	const u16 udma_bits[]  = { 0xF000, 0xD000, 0xB000, 0xA000, 0x9000, 0x8000 };
-+	static const u16 mwdma_bits[] = { 0x008, 0x302, 0x301 };
-+	static const u16 udma_bits[]  = { 0xF000, 0xD000, 0xB000, 0xA000, 0x9000, 0x8000 };
- 
- 	pci_read_config_word(pdev, drive_pci, &timing);
- 
-@@ -419,7 +419,7 @@ static void sis_100_set_dmamode (struct ata_port *ap, struct ata_device *adev)
- 	int drive_pci = sis_old_port_base(adev);
- 	u8 timing;
- 
--	const u8 udma_bits[]  = { 0x8B, 0x87, 0x85, 0x83, 0x82, 0x81};
-+	static const u8 udma_bits[]  = { 0x8B, 0x87, 0x85, 0x83, 0x82, 0x81};
- 
- 	pci_read_config_byte(pdev, drive_pci + 1, &timing);
- 
--- 
-1.7.6.1
+> 2. We will not schedule on this CPU except at explicit scheduling
+>    points (such as contended mutexes or explicit calls to schedule)
+>    as we have a call to preempt_disable().
 
+Right, you don't schedule. But a wakeup of a thread which has its
+affinity set to the new online CPU runs (as Frank pointed out)
+through:
+
+   wake_up_process()
+      try_to_wake_up()
+         select_task_rq()
+            if (... || !cpu_online(cpu))
+               select_fallback_rq(task_cpu(p), p)
+                  ...
+                  /* No more Mr. Nice Guy. */
+                  dest_cpu = cpuset_cpus_allowed_fallback(p)
+                     do_set_cpus_allowed(p, cpu_possible_mask)
+                        #  Thus ksoftirqd can now run on any cpu...
+
+So the problem is not scheduling, it's the wakeup code. Sorry for
+being imprecise.
+
+We can't do anything about it in the scheduler code, so we have to
+make sure that the cpu startup code enables interrupts after the
+online AND active bits have been set.
+ 
+> > Frank has observed this with softirq threads, but the same thing is
+> > true for any other CPU bound thread like the worker stuff.
+> 
+> So who is scheduling a workqueue from the local timer?
+
+The problem are timer callbacks which might be executed in the softirq
+code on return from interrupt. We had one case observed on x86 where
+an expired timer was queued on the about to go online cpu and the
+callback scheduled work on that CPU which then caused the cpu affine
+worker thread to move away :(
+
+> > So moving the online, active thing BEFORE enabling interrupt is the
+> > only sensible solution.
+> 
+> Yes, that'll be why even x86 enables interrupts before setting the CPU
+> online for the delay calibration.
+
+Correct.
+
+Thanks,
+
+	tglx
