@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab1IGRIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:08:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9086 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754304Ab1IGQ7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:59:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="45953881"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Chen <peter.chen@freescale.com>,
-        Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCHv4 14/19] arm: imx: Start using struct usb_otg
-Date: Wed,  7 Sep 2011 10:16:07 +0300
-Message-Id: <1315379772-8830-15-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1754883Ab1IGRJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:09:14 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38439 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754350Ab1IGRJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:09:10 -0400
+Date: Wed, 7 Sep 2011 11:23:27 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 4/5] mce: remove TIF_MCE_NOTIFY
+Message-ID: <20110907092327.GC7725@aftab>
+References: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
+ <4e5eb4fd21057689fc@agluck-desktop.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4e5eb4fd21057689fc@agluck-desktop.sc.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use struct usb_otg members with OTG specific functions instead
-of usb_phy members.
+On Wed, Aug 31, 2011 at 06:26:05PM -0400, Luck, Tony wrote:
+> From: Tony Luck <tony.luck@intel.com>
+> 
+> Hidetoshi Seto has re-worked the notification code to use a
+> worker thread for propagating notifications. So TIF_MCE_NOTIFY
+> is unused. Previous plans to use this to somehow switch from
+> "machine check context" to a more friendly environment to
+> deal with immediate errors look like they will never pan out.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
----
- arch/arm/mach-imx/mx31moboard-devboard.c |    2 +-
- arch/arm/mach-imx/mx31moboard-marxbot.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Err, I don't get it: patch 1/5 says:
 
-diff --git a/arch/arm/mach-imx/mx31moboard-devboard.c b/arch/arm/mach-imx/mx31moboard-devboard.c
-index 9cd4a97..cb792d0 100644
---- a/arch/arm/mach-imx/mx31moboard-devboard.c
-+++ b/arch/arm/mach-imx/mx31moboard-devboard.c
-@@ -203,7 +203,7 @@ static int __init devboard_usbh1_init(void)
- 
- 	otg->label	= "ISP1105";
- 	otg->init	= devboard_isp1105_init;
--	otg->set_vbus	= devboard_isp1105_set_vbus;
-+	otg->otg->set_vbus	= devboard_isp1105_set_vbus;
- 
- 	usbh1_pdata.otg = otg;
- 
-diff --git a/arch/arm/mach-imx/mx31moboard-marxbot.c b/arch/arm/mach-imx/mx31moboard-marxbot.c
-index 2be769b..f921e47 100644
---- a/arch/arm/mach-imx/mx31moboard-marxbot.c
-+++ b/arch/arm/mach-imx/mx31moboard-marxbot.c
-@@ -317,7 +317,7 @@ static int __init marxbot_usbh1_init(void)
- 
- 	otg->label	= "ISP1105";
- 	otg->init	= marxbot_isp1105_init;
--	otg->set_vbus	= marxbot_isp1105_set_vbus;
-+	otg->otg->set_vbus	= marxbot_isp1105_set_vbus;
- 
- 	usbh1_pdata.otg = otg;
- 
+"So keep the [TIF_MCE_NOTIFY] flag for such possible future use, until
+better mechanism is introduced."
+
+and here you remove it. AFAIR, last time we agreed on the irq_work ->
+realtime recovery thread approach so why not drop this flag in patch 1/5
+and forget this one.
+
+Thanks.
+
 -- 
-1.7.4.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
