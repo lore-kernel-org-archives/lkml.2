@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab1IGSRV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:17:21 -0400
-Received: from unicorn.mansr.com ([78.86.181.103]:42988 "EHLO
-	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab1IGSRU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:17:20 -0400
-X-Greylist: delayed 4206 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 14:17:20 EDT
-From: Mans Rullgard <mans.rullgard@linaro.org>
-To: linux-omap@vger.kernel.org
-Cc: linaro-dev@lists.linaro.org, Jarkko Nikula <jhnikula@gmail.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ASoC: omap: add MODULE_ALIAS to mcbsp and pcm drivers
-Date: Wed,  7 Sep 2011 12:07:21 +0100
-Message-Id: <1315393641-21261-1-git-send-email-mans.rullgard@linaro.org>
-X-Mailer: git-send-email 1.7.6.1
+	id S1756289Ab1IGSRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:17:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53583 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756113Ab1IGSRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 14:17:49 -0400
+Date: Wed, 7 Sep 2011 14:17:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: hch@infradead.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        jbeulich@novell.com, linux-kernel@vger.kernel.org, JBeulich@suse.com
+Subject: Re: Help with implementing some form of barriers in 3.0 kernels.
+Message-ID: <20110907181740.GG31726@redhat.com>
+References: <20110907174832.GN32190@dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110907174832.GN32190@dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds MODULE_ALIAS directives to the omap-mcbsp-dai and
-omap-pcm-audio drivers so they can be auto-loaded when platform
-devices are scanned.
+On Wed, Sep 07, 2011 at 01:48:32PM -0400, Konrad Rzeszutek Wilk wrote:
+> Hey Christoph,
+> 
+> I was wondering what you think is the proper way of implementing a
+> backend to support the 'barrier' type requests? We have this issue were
+> there are 2.6.36 type guests that still use barriers and we would like
+> to support them properly. But in 3.0 there are no barriers - hence
+> the question whether WRITE_fLUSH_FUA would be equal to WRITE_BARRIER?
 
-Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
----
- sound/soc/omap/omap-mcbsp.c |    1 +
- sound/soc/omap/omap-pcm.c   |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+I think WRITE_FLUSH_FUA is not same as WRITE_BARRIER. Because it does
+not ensure request ordering. A request rq2 which is issued after rq1 (with
+WRITE_flush_FUA), can still finish before rq1. In the past WRITE_BARRIER
+would not allow that.
 
-diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
-index 07b7723..5ddfadd 100644
---- a/sound/soc/omap/omap-mcbsp.c
-+++ b/sound/soc/omap/omap-mcbsp.c
-@@ -783,3 +783,4 @@ module_exit(snd_omap_mcbsp_exit);
- MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
- MODULE_DESCRIPTION("OMAP I2S SoC Interface");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:omap-mcbsp-dai");
-diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
-index e6a6b99..f19ccc1 100644
---- a/sound/soc/omap/omap-pcm.c
-+++ b/sound/soc/omap/omap-pcm.c
-@@ -437,3 +437,4 @@ module_exit(snd_omap_pcm_exit);
- MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
- MODULE_DESCRIPTION("OMAP PCM DMA module");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:omap-pcm-audio");
--- 
-1.7.6.1
+So AFAIK, WRITE_flush_fua is not WRITE_BARRIER.
 
+Thanks
+Vivek
