@@ -1,66 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab1IGQ1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:27:18 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37556 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750859Ab1IGQ1Q (ORCPT
+	id S1751498Ab1IGQ1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:27:49 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41651 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1IGQ1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:27:16 -0400
-X-Sasl-enc: eNex+BM8/Z1jGoF0j/5YisPeBelojDHNgcM/qvB3J82o 1315408225
-Date: Wed, 7 Sep 2011 08:10:17 -0700
-From: Greg KH <greg@kroah.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "hverkuil@xs4all.nl" <hverkuil@xs4all.nl>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "mchehab@redhat.com" <mchehab@redhat.com>
-Subject: Re: [PATCH] Staging: dt3155v4l: Convert printk's to pr_<level>
-Message-ID: <20110907151017.GB30361@kroah.com>
-References: <201109011653.56089.hartleys@visionengravers.com>
- <20110906235253.GC26281@kroah.com>
- <ADE657CA350FB648AAC2C43247A983F001F39D748D0C@AUSP01VMBX24.collaborationhost.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F39D748D0C@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Sep 2011 12:27:47 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, Paul Clements <Paul.Clements@steeleye.com>
+Subject: [PATCH 2/3] nbd: add support for feature negotiation
+Date: Wed,  7 Sep 2011 16:41:42 +0200
+Message-Id: <1315406503-7883-3-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
+References: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 07:15:38PM -0500, H Hartley Sweeten wrote:
-> On Tuesday, September 06, 2011 4:53 PM, Greg KH wrote:
-> > On Thu, Sep 01, 2011 at 04:53:55PM -0700, H Hartley Sweeten wrote:
-> >> Convert all the printk(KERN_<level>) messages in the driver to pr_<level>()
-> >> and use pr_fmt to provide the module name.
-> >
-> > What's wrong with using dev_* instead of pr_*?  Lots of these should be
-> > converted to that format instead, right?
-> 
-> Nothing... dev_* should be used when possible.
-> 
-> Actually all of the messages look like they are just plain noise and should
-> be removed.  Especially the ones in dt3155_{init,exit}_module.  A lot of the
-> ones in dt3155_probe look like noise also.
-> 
-> The ones in {read,write,wait}_i2c_reg just look messy.  Those functions also
-> don't have a device pointer to use the dev_* functions.
+Add a IOCTL to negotiate features between the server and the
+kernel module (mediated by the usermode client).  Features are
+stored in the pre-existing flags field.
 
-Really?  It should have an i2c device somewhere.
+Also zero out the flags when NBD_DO_IT completes.
 
-> The ones in dt3155_irq_handler seem troublesome.  Isn't it a bad idea to output
-> a kernel message in an interrupt handler?
+Cc: Paul Clements <Paul.Clements@steeleye.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/block/nbd.c |    8 ++++++++
+ include/linux/nbd.h |   24 +++++++++++++++---------
+ 2 files changed, 23 insertions(+), 9 deletions(-)
 
-Yes, don't do that.
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index be23aec..c4fe9c8 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -85,6 +85,7 @@ static const char *ioctl_cmd_to_ascii(int cmd)
+ 	case NBD_PRINT_DEBUG: return "print-debug";
+ 	case NBD_SET_SIZE_BLOCKS: return "set-size-blocks";
+ 	case NBD_DISCONNECT: return "disconnect";
++	case NBD_SET_FEATURES: return "set-features";
+ 	case BLKROSET: return "set-read-only";
+ 	case BLKFLSBUF: return "flush-buffer-cache";
+ 	}
+@@ -634,6 +635,12 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+ 		lo->xmit_timeout = arg * HZ;
+ 		return 0;
+ 
++	case NBD_SET_FEATURES:
++		if (((u64) arg) & NBD_FEATURE_RESERVED)
++			return -EINVAL;
++		lo->flags = (lo->flags & NBD_FEATURE_RESERVED) | (u64)arg;
++		return 0;
++
+ 	case NBD_SET_SIZE_BLOCKS:
+ 		lo->bytesize = ((u64) arg) * lo->blksize;
+ 		bdev->bd_inode->i_size = lo->bytesize;
+@@ -672,6 +679,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+ 		printk(KERN_WARNING "%s: queue cleared\n", lo->disk->disk_name);
+ 		if (file)
+ 			fput(file);
++		lo->flags = 0;
+ 		lo->bytesize = 0;
+ 		bdev->bd_inode->i_size = 0;
+ 		set_capacity(lo->disk, 0);
+diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+index 0582054..926f19d 100644
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -17,16 +17,22 @@
+ 
+ #include <linux/types.h>
+ 
+-#define NBD_SET_SOCK	_IO( 0xab, 0 )
+-#define NBD_SET_BLKSIZE	_IO( 0xab, 1 )
+-#define NBD_SET_SIZE	_IO( 0xab, 2 )
+-#define NBD_DO_IT	_IO( 0xab, 3 )
+-#define NBD_CLEAR_SOCK	_IO( 0xab, 4 )
+-#define NBD_CLEAR_QUE	_IO( 0xab, 5 )
+-#define NBD_PRINT_DEBUG	_IO( 0xab, 6 )
+-#define NBD_SET_SIZE_BLOCKS	_IO( 0xab, 7 )
+-#define NBD_DISCONNECT  _IO( 0xab, 8 )
+-#define NBD_SET_TIMEOUT _IO( 0xab, 9 )
++#define NBD_SET_SOCK		_IO(0xab, 0)
++#define NBD_SET_BLKSIZE		_IO(0xab, 1)
++#define NBD_SET_SIZE		_IO(0xab, 2)
++#define NBD_DO_IT		_IO(0xab, 3)
++#define NBD_CLEAR_SOCK		_IO(0xab, 4)
++#define NBD_CLEAR_QUE		_IO(0xab, 5)
++#define NBD_PRINT_DEBUG		_IO(0xab, 6)
++#define NBD_SET_SIZE_BLOCKS	_IO(0xab, 7)
++#define NBD_DISCONNECT		_IO(0xab, 8)
++#define NBD_SET_TIMEOUT		_IO(0xab, 9)
++#define NBD_SET_FEATURES	_IO(0xab, 10)
++
++/* bits 0 and 1 are already used for flags in the protocol, we do
++ * not want any overlap.  Bits 32-63 are reserved because they
++ * are inaccessible on 32-bit platforms.  */
++#define NBD_FEATURE_RESERVED	0xFFFFFFFF00000003LL
+ 
+ enum {
+ 	NBD_CMD_READ = 0,
+-- 
+1.7.6
 
-> dt3155_{open,close} also look like noise.  Same with dt3155_init_board.
-> 
-> Maybe I should just submit a patch removing all of them?
 
-Please do :)
-
-thanks,
-
-greg k-h
