@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab1IGRNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:13:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60675 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab1IGRNr (ORCPT
+	id S1754212Ab1IGRNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:13:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51869 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751618Ab1IGRNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:13:47 -0400
-X-Authority-Analysis: v=1.1 cv=hYZYwEn6AKazWLoXuCKKTQjUqAdcGu6fIqD+Oh7rMYo= c=1 sm=0 a=WwlJiVmu3h4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=17wjrS5wAhQaEczCPkpxpQ==:17 a=VwQbUJbxAAAA:8 a=hrwGGV-ZLk-i46KatoQA:9 a=QEXdDO2ut3YA:10 a=U62fhAwekXMA:10 a=17wjrS5wAhQaEczCPkpxpQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.83.30
-Subject: Re: [PATCH v3] trace: Add per_cpu ring buffer control files
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAL26m8K8fusTUyvn_XwBs0OMoxMexG+t=M4kR3sWEOkc3rWOKQ@mail.gmail.com>
-References: <1313531179-9323-4-git-send-email-vnagarnaik@google.com>
-	 <1314062244-2997-1-git-send-email-vnagarnaik@google.com>
-	 <1315017933.21100.55.camel@gandalf.stny.rr.com>
-	 <CAL26m8K8fusTUyvn_XwBs0OMoxMexG+t=M4kR3sWEOkc3rWOKQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Sep 2011 13:13:42 -0400
-Message-ID: <1315415622.31407.0.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Sep 2011 13:13:01 -0400
+Date: Wed, 7 Sep 2011 10:12:56 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>, Geoff Levand <geoff@infradead.org>,
+        Liam Girdwood <lrg@ti.com>, Jassi Brar <jassisinghbrar@gmail.com>,
+        Sangbeom Kim <sbkim73@samsung.com>, Joe Perches <joe@perches.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Jarkko Nikula <jhnikula@gmail.com>, Axel Lin <axel.lin@gmail.com>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>, Simon Horman <simon@horms.net>,
+        Grant Likely <grant.likely@secretlab.ca>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH 60/62] sound: irq: Remove IRQF_DISABLED
+Message-ID: <20110907171256.GB2906@opensource.wolfsonmicro.com>
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
+ <1315383059-3673-61-git-send-email-yong.zhang0@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315383059-3673-61-git-send-email-yong.zhang0@gmail.com>
+X-Cookie: Cold hands, no gloves.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-06 at 11:56 -0700, Vaibhav Nagarnaik wrote:
+On Wed, Sep 07, 2011 at 04:10:57PM +0800, Yong Zhang wrote:
+> This flag is a NOOP and can be removed now.
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 
-> I am working on other projects now, so I might have a slower response
-> time. But I will try to update the patch and send it to you in a timely
-> manner.
-
-Take your time. I'm currently at plumbers, and I'm also not pushing
-anything while kernel.org is down.
-
--- Steve
-
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
