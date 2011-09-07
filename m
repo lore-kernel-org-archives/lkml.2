@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab1IGRuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:50:07 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:24049 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab1IGRuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:50:06 -0400
-Date: Wed, 7 Sep 2011 13:48:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: hch@infradead.org
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, jbeulich@novell.com,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com
-Subject: Help with implementing some form of barriers in 3.0 kernels.
-Message-ID: <20110907174832.GN32190@dumpdata.com>
+	id S1754951Ab1IGRvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:51:23 -0400
+Received: from corega.com.ru ([195.178.208.66]:33487 "EHLO tservice.net.ru"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751223Ab1IGRvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:51:22 -0400
+Date: Wed, 7 Sep 2011 21:50:59 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Jan Weitzel <j.weitzel@phytec.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] w1: Disable irqs in critical section
+Message-ID: <20110907175059.GA12074@ioremap.net>
+References: <1315385312-1176-1-git-send-email-j.weitzel@phytec.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E67AE86.0023:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <1315385312-1176-1-git-send-email-j.weitzel@phytec.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Christoph,
+On Wed, Sep 07, 2011 at 10:48:32AM +0200, Jan Weitzel (j.weitzel@phytec.de) wrote:
+> Interrupting w1_delay in w1_read_bit results in missing the low level
+> on the w1 line and receiving "1" instead of "0".
+> Adding local_irq_save / local_irq_restore around the critical section
 
-I was wondering what you think is the proper way of implementing a
-backend to support the 'barrier' type requests? We have this issue were
-there are 2.6.36 type guests that still use barriers and we would like
-to support them properly. But in 3.0 there are no barriers - hence
-the question whether WRITE_fLUSH_FUA would be equal to WRITE_BARRIER?
+This means that CPU will be essentially stuck for 15 useconds for every
+bit transferred, doesn't really look like a good idea.
 
-Or is there some other things that we should take in consideration?
+Are you absolutely sure that missing bit is because of timings and not
+some other bug?
 
-Thanks!
+-- 
+	Evgeniy Polyakov
