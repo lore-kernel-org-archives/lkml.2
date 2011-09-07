@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab1IGXGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 19:06:08 -0400
-Received: from msvr2.muchs.ac.tz ([41.216.220.100]:52096 "EHLO
-	msvr2.muchs.ac.tz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616Ab1IGXGF (ORCPT
+	id S1757217Ab1IGXOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 19:14:24 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:42737 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab1IGXOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 19:06:05 -0400
-Message-ID: <20110908014038.18464jf6auaffoys@msvr2.muhas.ac.tz>
-Date: Thu, 08 Sep 2011 01:40:38 +0300
-From: Mail Administrator <samuelwolton@gmail.com>
-Reply-to: info@support.com
-To: undisclosed-recipients:;
-Subject: Your Mail Quota
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3)
+	Wed, 7 Sep 2011 19:14:23 -0400
+From: Jim Cromie <jim.cromie@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [patch 0/5] perf stat --log-fd=N
+Date: Wed,  7 Sep 2011 17:13:59 -0600
+Message-Id: <1315437244-3788-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <20110902185857.GE17970@ghostprotocols.net>
+References: <20110902185857.GE17970@ghostprotocols.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hi Arnaldo,
 
-Your Mail Quota Has Exceeded The Set Quota/Limit. You Are Currently,
-Running On 23GB Due To Hidden Files And Folder On Your Mailbox,
-you may not be able to receive or send new mails until you re-validate.
+Heres the "update" to the patchset I promised.
 
-Please Click the link Below or copy paste to your browser To  
-ValidateYour Mailbox And Increase Your Quota.
+[PATCH 1/5] perf stat: add --log-fd <N> option to redirect stderr
+[PATCH 2/5] perf-stat: fix +- nan% in --no-aggr runs
+[PATCH 3/5] perf stat: suppress printing std-dev when its 0
+[PATCH 4/5] perf stat: allow tab as cvs delimiter
+[PATCH 5/5] perf stat: fix spelling in comment
 
-http://buzurl.com/bg29
+Ive dropped the 'print-ops' patches for a few reasons:
 
-Failure To Validate Your Quota May Result In Loss Of Important  
-Information InYour Mailbox Or Cause Limited Access To It.
+- pretty and cvs outputs have diverged further, pretty has added info,
+  cvs has dropped the final timing line (probably cuz it didnt fit in
+  the table). I presume there are good reasons for this.
 
-Mail Quota alert -Error Code #1997142DDE
-System Administrator.
+- Id be parsing with perl anyway, so cvs regularity isnt important, and
+  the richer info in pretty mode is useful.
 
-
-
-
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+- fiddling with output format is just as likely to break somebodys parsing,
+  minor aesthetic improvements arent worth it. Its easier to do nothing.
