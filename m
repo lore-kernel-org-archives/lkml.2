@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab1IGShU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:37:20 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:46284 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829Ab1IGShS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:37:18 -0400
-Date: Wed, 7 Sep 2011 20:36:46 +0200
-From: Florian Mickler <florian@mickler.org>
-To: "Matt Carlson" <mcarlson@broadcom.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Benjamin Li" <benli@broadcom.com>,
-        "Michael Chan" <mchan@broadcom.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "Francesco Piccinno" <stack.box@gmail.com>
-Subject: Re: re add support for bcm5750
-Message-ID: <20110907203646.2a7b7833@schatten.dmk.lab>
-In-Reply-To: <20110907012515.GA9038@mcarlson.broadcom.com>
-References: <1280784368-4226-8-git-send-email-mcarlson@broadcom.com>
-	<20110906170343.09252578@schatten.dmk.lab>
-	<20110907012515.GA9038@mcarlson.broadcom.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756636Ab1IGSlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:41:55 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:60365 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab1IGSlx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 14:41:53 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E67BCDF.3020108@cam.ac.uk>
+Date: Wed, 07 Sep 2011 19:50:07 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 2/6] regmap: Add a magic bus type to handle quirks of
+ analog devices ADIS sensors.
+References: <4E679770.4090008@cam.ac.uk> <1315412387-5765-3-git-send-email-jic23@cam.ac.uk> <20110907174713.GG2906@opensource.wolfsonmicro.com> <4E67B742.6030302@cam.ac.uk> <20110907183230.GA4423@opensource.wolfsonmicro.com>
+In-Reply-To: <20110907183230.GA4423@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Sep 2011 18:25:15 -0700
-"Matt Carlson" <mcarlson@broadcom.com> wrote:
-
-> On Tue, Sep 06, 2011 at 08:03:43AM -0700, Florian Mickler wrote:
-> > Hi,
-> > 
-> > in https://bugzilla.kernel.org/show_bug.cgi?id=42132 Francesco wrote: 
-> > 
-> > > I have a notebook (HP TC4400) which has a BCM5750 ethernet card inside. The
-> > > ouput of lspci is:
-> > > 
-> > > 08:00.0 Ethernet controller [0200]: Broadcom Corporation NetXtreme BCM5750M
-> > > Gigabit Ethernet [14e4:167c]
-> > > 
-> > > Commit 67b284d476bcb3d100e946da23d6cf9acfd0465c removed the support for this
-> > > device. I wish to have the support for this network card back again. Thanks!
+On 09/07/11 19:32, Mark Brown wrote:
+> On Wed, Sep 07, 2011 at 07:26:10PM +0100, Jonathan Cameron wrote:
+>> On 09/07/11 18:47, Mark Brown wrote:
+>>> On Wed, Sep 07, 2011 at 05:19:43PM +0100, Jonathan Cameron wrote:
 > 
-> Hi Florian.  Are you experiencing the same problem?  We found that
-> Francesco's problem was that the firmware of his device was missing.  Do
-> you see :
+>>> To be honest I'm not terribly happy about
+>>> pushing this into the regmap core code; if we start needing to do stuff
+>>> like this we should expose the bus interface.
 > 
-> eth0: No firmware running
+>> That's certainly an option, but I'd really like to use the regmap caching
+>> stuff in here.  These things can have quite a few registers that other than
+>> their weird read / write quirks look much like any other register based
+>> device. (particularly ignoring the burst reads but they tend to apply
+>> to volatile registers only so caching is probably irrelevant).
 > 
-> messages?
+>> At the moment, the only hooks AFAIKS to allow this are at the bus level.
+>> I'm not sure where else they could go. (I haven't actually looked much
+>> at the cache code yet though).
+> 
+> Well, if there's not hooks they could be added if it's not too painful.
+> However I'm not convinced that's sane.
+> 
+>> Actually I may have misunderstood, do you mean expose the bus interface
+>> within regmap or just not use regmap at all?
+> 
+> Either.  Or either expose marshalling or add configuration for the
+> marshalling depending on what's being done, I'm not convinced you need
+> to be working at SPI level at all.
+I'm a little unclear what you mean by 'marshalling'.  Could you expand
+on how that might work?
+> 
+>>>> +static struct regmap_bus regmap_spi_adi = {
+>>>> +	.write = regmap_spi_write,
+>>>> +	.read = regmap_spi_read,
+>>>> +};
+> 
+>>> You want to implement the gather write too if you can.
+> 
+>> Doesn't really exist other than by linearising them into a series
+>> of calls to the write function. (assuming I understand what those
+>> functions are doing right!)
+> 
+> If you build up a series of SPI transfers you just need to control when
+> /CS gets bounced appropriately.
+Sure, might be worth doing.  To be honest I don't really care about writes
+as these are write rarely read often devices other than single register
+writes to clear interrupts (even that is often a read).
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
-Hi Matt!
-No, I was just browsing the regression list and found this entry but
-couldn't associate any action with it. 
-
-This clears that up, thanks for the information and I will close this
-bug. 
-
-Regards,
-Flo
