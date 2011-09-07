@@ -1,184 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab1IGRDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:03:18 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:42674 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab1IGRDO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:03:14 -0400
+	id S1754999Ab1IGRDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:03:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14777 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754309Ab1IGQ7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:59:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="45975723"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Anton Vorontsov <cbouatmailru@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Date: Wed, 7 Sep 2011 14:00:29 +0530
+Subject: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042
+ fuel gauge
+Thread-Topic: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042
+ fuel gauge
+Thread-Index: AcxrapbRfrSfCsf3TGGOCBkhDXnD3ABzTGLw
+Message-ID: <12D0C12AF19E15409D57F22566E88EF50975BF4F98@bgsmsx501.gar.corp.intel.com>
+References: <18021216.478661315185875229.JavaMail.weblogic@epml15>
+In-Reply-To: <18021216.478661315185875229.JavaMail.weblogic@epml15>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="ks_c_5601-1987"
 MIME-Version: 1.0
-In-Reply-To: <1315402251.3124.0.camel@offbook>
-References: <1313975049.2393.8.camel@offbook>
-	<1315402251.3124.0.camel@offbook>
-Date: Wed, 7 Sep 2011 10:18:21 -0400
-Message-ID: <CACqU3MU5_VyG6urMwkDnf3h5bOP-Mbv+vkhNzf_1zyR2KL5v7g@mail.gmail.com>
-Subject: Re: [PATCH v2] kconfig: handle SIGINT in menuconfig
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: dave@gnu.org
-Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p87H4xWU021300
 
-Hi,
+Hi MyungJoo,
 
-On Wed, Sep 7, 2011 at 9:30 AM, Davidlohr Bueso <dave@gnu.org> wrote:
-> Hi Michal
->
-> If you have no objections, can you pick this one up?
->
-I picked up in my tree while Michal was in vacation, he then merged
-that in his tree. I should have notified you.
+> -----Original Message-----
+> From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
+> Sent: Monday, September 05, 2011 6:55 AM
+> To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
+> Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
+> 
+> Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02 15:45
+> (GMT+09:00)
+> >
+> > In max17042_get_property(...), the values returned by
+> > max17042_read_reg are directly assigned to the variables,
+> > even if the read results in an error.
+> >
+> > This patch checks for the return code from max17042_read_reg and
+> > exits the function if there is any error.
+> >
+> > Signed-off-by: Ramakrishna Pallala
+> > ---
+> > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
+> > 1 files changed, 58 insertions(+), 27 deletions(-)
+> >
+> 
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
- - Arnaud
+Thanks for the Ack.
+When can I expect the patch to be merged ?
 
-> Thanks.
-> Davidlohr
->
-> On Sun, 2011-08-21 at 22:04 -0300, Davidlohr Bueso wrote:
->> From: Davidlohr Bueso <dave@gnu.org>
->>
->> I recently got bitten in the ass when pressing Ctrl-C and lost all my current configuration changes. This patch captures SIGINT and allows the user to save any changes.
->> Some code refactoring was made in order to handle the exit behavior.
->>
->> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
->> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
->> ---
->>  scripts/kconfig/mconf.c |   86 ++++++++++++++++++++++++++++------------------
->>  1 files changed, 52 insertions(+), 34 deletions(-)
->>
->> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
->> index 820d2b6..19e200d 100644
->> --- a/scripts/kconfig/mconf.c
->> +++ b/scripts/kconfig/mconf.c
->> @@ -15,6 +15,7 @@
->>  #include <stdarg.h>
->>  #include <stdlib.h>
->>  #include <string.h>
->> +#include <signal.h>
->>  #include <unistd.h>
->>  #include <locale.h>
->>
->> @@ -272,6 +273,7 @@ static struct menu *current_menu;
->>  static int child_count;
->>  static int single_menu_mode;
->>  static int show_all_options;
->> +static int saved_x, saved_y;
->>
->>  static void conf(struct menu *menu);
->>  static void conf_choice(struct menu *menu);
->> @@ -792,9 +794,54 @@ static void conf_save(void)
->>       }
->>  }
->>
->> +static int handle_exit(void)
->> +{
->> +     int res;
->> +
->> +     dialog_clear();
->> +     if (conf_get_changed())
->> +             res = dialog_yesno(NULL,
->> +                                _("Do you wish to save your new configuration ?\n"
->> +                                  "<ESC><ESC> to continue."),
->> +                                6, 60);
->> +     else
->> +             res = -1;
->> +
->> +     end_dialog(saved_x, saved_y);
->> +
->> +     switch (res) {
->> +     case 0:
->> +             if (conf_write(filename)) {
->> +                     fprintf(stderr, _("\n\n"
->> +                                       "Error while writing of the configuration.\n"
->> +                                       "Your configuration changes were NOT saved."
->> +                                       "\n\n"));
->> +                     return 1;
->> +             }
->> +             /* fall through */
->> +     case -1:
->> +             printf(_("\n\n"
->> +                      "*** End of the configuration.\n"
->> +                      "*** Execute 'make' to start the build or try 'make help'."
->> +                      "\n\n"));
->> +             res = 0;
->> +             break;
->> +     default:
->> +             fprintf(stderr, _("\n\n"
->> +                               "Your configuration changes were NOT saved."
->> +                               "\n\n"));
->> +     }
->> +
->> +     return res;
->> +}
->> +
->> +static void sig_handler(int signo)
->> +{
->> +     exit(handle_exit());
->> +}
->> +
->>  int main(int ac, char **av)
->>  {
->> -     int saved_x, saved_y;
->>       char *mode;
->>       int res;
->>
->> @@ -802,6 +849,8 @@ int main(int ac, char **av)
->>       bindtextdomain(PACKAGE, LOCALEDIR);
->>       textdomain(PACKAGE);
->>
->> +     signal(SIGINT, sig_handler);
->> +
->>       conf_parse(av[1]);
->>       conf_read(NULL);
->>
->> @@ -823,40 +872,9 @@ int main(int ac, char **av)
->>       set_config_filename(conf_get_configname());
->>       do {
->>               conf(&rootmenu);
->> -             dialog_clear();
->> -             if (conf_get_changed())
->> -                     res = dialog_yesno(NULL,
->> -                                        _("Do you wish to save your "
->> -                                          "new configuration?\n"
->> -                                          "<ESC><ESC> to continue."),
->> -                                        6, 60);
->> -             else
->> -                     res = -1;
->> +             res = handle_exit();
->>       } while (res == KEY_ESC);
->> -     end_dialog(saved_x, saved_y);
->> -
->> -     switch (res) {
->> -     case 0:
->> -             if (conf_write(filename)) {
->> -                     fprintf(stderr, _("\n\n"
->> -                             "Error while writing of the configuration.\n"
->> -                             "Your configuration changes were NOT saved."
->> -                             "\n\n"));
->> -                     return 1;
->> -             }
->> -             /* fall through */
->> -     case -1:
->> -             printf(_("\n\n"
->> -                     "*** End of the configuration.\n"
->> -                     "*** Execute 'make' to start the build or try 'make help'."
->> -                     "\n\n"));
->> -             break;
->> -     default:
->> -             fprintf(stderr, _("\n\n"
->> -                     "Your configuration changes were NOT saved."
->> -                     "\n\n"));
->> -     }
->>
->> -     return 0;
->> +     return res;
->>  }
->>
->
->
->
+Thanks,
+Ram
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
