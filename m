@@ -1,183 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab1IGQTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:19:12 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34800 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756303Ab1IGQTH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:19:07 -0400
-Date: Wed, 7 Sep 2011 11:11:45 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 1/5] x86, mce: rework use of TIF_MCE_NOTIFY
-Message-ID: <20110907091145.GB7725@aftab>
-References: <4e5eb3f12101199595@agluck-desktop.sc.intel.com>
- <4e5eb4de21045898f1@agluck-desktop.sc.intel.com>
+	id S1756299Ab1IGQTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:19:05 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:56940 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755727Ab1IGQTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:19:01 -0400
+Date: Wed, 7 Sep 2011 06:44:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org, anton@samba.org,
+        paulus@samba.org
+Subject: Re: [PATCH tip/core/rcu 55/55] powerpc: Work around tracing from
+ dyntick-idle mode
+Message-ID: <20110907134400.GJ3610@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+ <1315332049-2604-55-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1315389622.26118.17.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4e5eb4de21045898f1@agluck-desktop.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1315389622.26118.17.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 31, 2011 at 06:25:34PM -0400, Luck, Tony wrote:
-> From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-
-Looks ok, just minor nitpicks and spelling fixes below.
-
-> The basic flow of MCE handler is summarized as follows:
->  1) from NMI context:
-> 	check hardware error registers, determine error severity,
-> 	and then panic or request non-NMI context by irq_work() to
-> 	continue the system.
->  2) from (irq) context:
-> 	call non-NMI safe functions,
-> 	wake up loggers and schedule work if required
->  3) from worker thread:
-
-	from process context:
-
-> 	process some time-consuming works like memory poisoning.
-
-Scrub paragraph style:
-
-> TIF_MCE_NOTIFY flag is relatively legacy and have used to do tasks of
-
-TIF_MCE_NOTIFY is a legacy flag and has been used to do 2) and 3) in
-
-> 2) and 3) on the thread context that interrupted by MCE.  However now
-
-the context of the process which got interrupted by an MCE.
-
-> use of irq_work() and work-queue is enough for these tasks, so this
-> patch removes duplicated tasks in mce_notify_process().
-
-Now that irq_work()/workqueues are used for those tasks, remove
-duplicated work from mce_notify_process().
-
-> As the result there is no task to be done in the interrupted context,
-
-	       , there is no work to be done in the interrupted task's context
-
-> but soon if SRAR is supported there would be some thread-specific thing
-
-								    handling of Action Required errors.
-
-> for action required.  So keep the flag for such possible future use,
-> until better mechanism is introduced.
+On Wed, Sep 07, 2011 at 07:00:22AM -0300, Benjamin Herrenschmidt wrote:
+> On Tue, 2011-09-06 at 11:00 -0700, Paul E. McKenney wrote:
+> > PowerPC LPAR's __trace_hcall_exit() can invoke event tracing at a
+> > point where RCU has been told that the CPU is in dyntick-idle mode.
+> > Because event tracing uses RCU, this can result in failures.
+> > 
+> > A correct fix would arrange for RCU to be told about dyntick-idle
+> > mode after tracing had completed, however, this will require some care
+> > because it appears that __trace_hcall_exit() can also be called from
+> > non-dyntick-idle mode.
 > 
-> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
-> ---
+> This obviously needs to be fixed properly. hcall tracing is very useful
+> and if I understand your patch properly, it just comments it out :-)
+
+That is exactly what it does, and I completely agree that this patch
+is nothing but a short-term work-around to allow my RCU tests to find
+other bugs.
+
+> I'm not sure what the best approach is, maybe have the hcall tracing
+> test for the dyntick-idle mode and skip tracing in that case ?
+
+Another approach would be to update Frederic Weisbecker's patch at:
+
+	https://lkml.org/lkml/2011/8/20/83
+
+so that powerpc does tick_nohz_enter_idle(false), and then uses
+rcu_enter_nohz() explicitly just after doing the hcall tracing.
+If pseries is the only powerpc architecture requiring this, then
+the argument to tick_nohz_enter_idle() could depend on the powerpc
+sub-architecture.
+
+The same thing would be needed for tick_nohz_exit_idle() and
+rcu_exit_nohz(): powerpc would need to invoke rcu_exit_nohz() after
+gaining control from the hypervisor but before doing its first tracing,
+and then it would need the idle loop to to tick_nohz_exit_idle(false).
+Again, if pseries is the only powerpc architecture requiring this,
+the argument to tick_nohz_exit_idle() could depend on the architecture.
+
+Would this approach work?
+
+							Thanx, Paul
+
+> Cheers,
+> Ben.
 > 
-> This is the combination of two patches by Seto-san - with Boris'
-> suggestion to not create a 2-line function mce_memory_failure_process()
-> but to leave those inline.
-> Message-ID: <4DFB1476.40804@jp.fujitsu.com>
-> [PATCH 6/8] x86, mce: introduce mce_memory_failure_process()
-> Message-ID: <4DFB1509.7020402@jp.fujitsu.com>
-> [PATCH 7/8] x86, mce: rework use of TIF_MCE_NOTIFY
-
-You need a double "Link: http://lkml.kernel.org/r/..." tag here.
-
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: anton@samba.org
+> > Cc: benh@kernel.crashing.org
+> > Cc: paulus@samba.org
+> > ---
+> >  arch/powerpc/platforms/pseries/lpar.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
+> > index 39e6e0a..668f300 100644
+> > --- a/arch/powerpc/platforms/pseries/lpar.c
+> > +++ b/arch/powerpc/platforms/pseries/lpar.c
+> > @@ -715,12 +715,14 @@ EXPORT_SYMBOL(arch_free_page);
+> >  /* NB: reg/unreg are called while guarded with the tracepoints_mutex */
+> >  extern long hcall_tracepoint_refcount;
+> >  
+> > +#if 0 /* work around buggy use of RCU from dyntick-idle mode */
+> >  /* 
+> >   * Since the tracing code might execute hcalls we need to guard against
+> >   * recursion. One example of this are spinlocks calling H_YIELD on
+> >   * shared processor partitions.
+> >   */
+> >  static DEFINE_PER_CPU(unsigned int, hcall_trace_depth);
+> > +#endif /* #if 0 work around buggy use of RCU from dyntick-idle mode */
+> >  
+> >  void hcall_tracepoint_regfunc(void)
+> >  {
+> > @@ -734,6 +736,7 @@ void hcall_tracepoint_unregfunc(void)
+> >  
+> >  void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
+> >  {
+> > +#if 0 /* work around buggy use of RCU from dyntick-idle mode */
+> >  	unsigned long flags;
+> >  	unsigned int *depth;
+> >  
+> > @@ -750,11 +753,13 @@ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
+> >  
+> >  out:
+> >  	local_irq_restore(flags);
+> > +#endif /* #if 0 work around buggy use of RCU from dyntick-idle mode */
+> >  }
+> >  
+> >  void __trace_hcall_exit(long opcode, unsigned long retval,
+> >  			unsigned long *retbuf)
+> >  {
+> > +#if 0 /* work around buggy use of RCU from dyntick-idle mode */
+> >  	unsigned long flags;
+> >  	unsigned int *depth;
+> >  
+> > @@ -771,6 +776,7 @@ void __trace_hcall_exit(long opcode, unsigned long retval,
+> >  
+> >  out:
+> >  	local_irq_restore(flags);
+> > +#endif /* #if 0 work around buggy use of RCU from dyntick-idle mode */
+> >  }
+> >  #endif
+> >  
 > 
->  arch/x86/kernel/cpu/mcheck/mce.c |   35 ++++++++++++++++-------------------
->  1 files changed, 16 insertions(+), 19 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 08363b0..91bb983 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1037,8 +1037,9 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->  	if (kill_it && tolerant < 3)
->  		force_sig(SIGBUS, current);
->  
-> -	/* notify userspace ASAP */
-> -	set_thread_flag(TIF_MCE_NOTIFY);
-> +	/* Trap this thread before returning to user, for action required */
-> +	if (worst == MCE_AR_SEVERITY)
-> +		set_thread_flag(TIF_MCE_NOTIFY);
->  
->  	if (worst > 0)
->  		mce_report_event(regs);
-> @@ -1052,31 +1053,29 @@ EXPORT_SYMBOL_GPL(do_machine_check);
->  /* dummy to break dependency. actual code is in mm/memory-failure.c */
->  void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
->  {
-> -	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
-> +	pr_err("Action optional memory failure at %lx ignored\n", pfn);
->  }
->  
->  /*
-> - * Called after mce notification in process context. This code
-> - * is allowed to sleep. Call the high level VM handler to process
-> - * any corrupted pages.
-> - * Assume that the work queue code only calls this one at a time
-> - * per CPU.
-> - * Note we don't disable preemption, so this code might run on the wrong
-> - * CPU. In this case the event is picked up by the scheduled work queue.
-> - * This is merely a fast path to expedite processing in some common
-> - * cases.
-> + * Called in process context that interrupted by MCE and marked with
-> + * TIF_MCE_NOTFY, just before returning to errorneous userland.
-
-Polish expression:
-
-"Called in process context which got interrupted by an MCE and marked
-with TIF_MCE_NOTIFY, just before..."
-
-> + * This code is allowed to sleep.
-> + * Attempt possible recovery such as calling the high level VM handler to
-> + * process any corrupted pages, and kill/signal current process if required.
-
-This last sentence needs to go over mce_process_work() below.
-
->   */
->  void mce_notify_process(void)
->  {
-> -	unsigned long pfn;
-> -	mce_notify_irq();
-> -	while (mce_ring_get(&pfn))
-> -		memory_failure(pfn, MCE_VECTOR);
-> +	clear_thread_flag(TIF_MCE_NOTIFY);
-> +
-> +	/* TBD: do recovery for action required event */
->  }
->  
->  static void mce_process_work(struct work_struct *dummy)
->  {
-> -	mce_notify_process();
-> +	unsigned long pfn;
-> +
-> +	while (mce_ring_get(&pfn))
-> +		memory_failure(pfn, MCE_VECTOR);
->  }
->  
->  #ifdef CONFIG_X86_MCE_INTEL
-> @@ -1157,8 +1156,6 @@ int mce_notify_irq(void)
->  	/* Not more than two messages every minute */
->  	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
->  
-> -	clear_thread_flag(TIF_MCE_NOTIFY);
-> -
->  	if (test_and_clear_bit(0, &mce_need_notify)) {
->  		/* wake processes polling /dev/mcelog */
->  		wake_up_interruptible(&mce_chrdev_wait);
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
