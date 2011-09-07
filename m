@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab1IGQqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:46:25 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:48580 "EHLO
+	id S1753659Ab1IGQq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:46:27 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:48578 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab1IGQqA (ORCPT
+	with ESMTP id S1753431Ab1IGQqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Sep 2011 12:46:00 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 12/14] drbd: Remove useless error messages
-Date: Wed,  7 Sep 2011 16:17:39 +0200
-Message-Id: <1315405061-1473-13-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 03/14] drbd: Move drbd_send_ping() and drbd_send_ping_ack() to drbd_main.c
+Date: Wed,  7 Sep 2011 16:17:30 +0200
+Message-Id: <1315405061-1473-4-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
 References: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,41 +22,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@linbit.com>
 
-These messages can only trigger in case there is a pretty obvious
-internal programming error.
-
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/block/drbd/drbd_int.h  |   13 ++-----------
+ drivers/block/drbd/drbd_main.c |   12 ++++++++++++
+ 2 files changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index a4b24f9..227cddc 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -2183,8 +2183,7 @@ static int receive_DataRequest(struct drbd_conf *mdev, enum drbd_packet cmd,
- 			drbd_send_ack_ex(mdev, P_OV_RESULT, sector, size, ID_IN_SYNC);
- 			break;
- 		default:
--			dev_err(DEV, "unexpected command (%s) in receive_DataRequest\n",
--				cmdname(cmd));
-+			BUG();
- 		}
- 		if (verb && __ratelimit(&drbd_ratelimit_state))
- 			dev_err(DEV, "Can not satisfy peer's read request, "
-@@ -2270,10 +2269,7 @@ static int receive_DataRequest(struct drbd_conf *mdev, enum drbd_packet cmd,
- 		break;
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index 72df107..1aec096 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -1939,17 +1939,8 @@ static inline int drbd_send_short_cmd(struct drbd_conf *mdev,
+ 	return drbd_send_cmd(mdev, &mdev->tconn->data, cmd, &h, sizeof(h));
+ }
  
- 	default:
--		dev_err(DEV, "unexpected command (%s) in receive_DataRequest\n",
--		    cmdname(cmd));
--		fault_type = DRBD_FAULT_MAX;
--		goto out_free_e;
-+		BUG();
- 	}
+-static inline int drbd_send_ping(struct drbd_tconn *tconn)
+-{
+-	struct p_header h;
+-	return !conn_send_cmd(tconn, 0, &tconn->meta, P_PING, &h, sizeof(h));
+-}
+-
+-static inline int drbd_send_ping_ack(struct drbd_tconn *tconn)
+-{
+-	struct p_header h;
+-	return !conn_send_cmd(tconn, 0, &tconn->meta, P_PING_ACK, &h, sizeof(h));
+-}
++extern int drbd_send_ping(struct drbd_tconn *tconn);
++extern int drbd_send_ping_ack(struct drbd_tconn *tconn);
  
- 	/* Throttle, drbd_rs_begin_io and submit should become asynchronous
+ static inline int drbd_send_state_req(struct drbd_conf *mdev,
+ 				      union drbd_state mask, union drbd_state val)
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 0028b60ca..34627ae 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -765,6 +765,18 @@ int conn_send_cmd2(struct drbd_tconn *tconn, enum drbd_packet cmd, char *data,
+ 	return err;
+ }
+ 
++int drbd_send_ping(struct drbd_tconn *tconn)
++{
++	struct p_header h;
++	return !conn_send_cmd(tconn, 0, &tconn->meta, P_PING, &h, sizeof(h));
++}
++
++int drbd_send_ping_ack(struct drbd_tconn *tconn)
++{
++	struct p_header h;
++	return !conn_send_cmd(tconn, 0, &tconn->meta, P_PING_ACK, &h, sizeof(h));
++}
++
+ int drbd_send_sync_param(struct drbd_conf *mdev)
+ {
+ 	struct p_rs_param_95 *p;
 -- 
 1.7.4.1
 
