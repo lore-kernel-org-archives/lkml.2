@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab1IGSUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:20:09 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:45561 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab1IGSUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:20:08 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E67B7C7.8060800@cam.ac.uk>
-Date: Wed, 07 Sep 2011 19:28:23 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
+	id S1756445Ab1IGS0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:26:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751337Ab1IGS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 14:26:40 -0400
+Message-ID: <4E67B75B.8010500@redhat.com>
+Date: Wed, 07 Sep 2011 14:26:35 -0400
+From: Jarod Wilson <jarod@redhat.com>
+User-Agent: Postbox 2.5.2 (Macintosh/20110804)
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 1/6] SPI: add ability to say we want a cs change after
- every transfer.
-References: <4E679770.4090008@cam.ac.uk> <1315412387-5765-2-git-send-email-jic23@cam.ac.uk> <20110907173515.GF2906@opensource.wolfsonmicro.com> <4E67B477.7060602@cam.ac.uk> <20110907181236.GI2906@opensource.wolfsonmicro.com>
-In-Reply-To: <20110907181236.GI2906@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Steve Grubb <sgrubb@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com>  <1315417137-12093-1-git-send-email-jarod@redhat.com> <1315419179.3576.6.camel@lappy>
+In-Reply-To: <1315419179.3576.6.camel@lappy>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/11 19:12, Mark Brown wrote:
-> On Wed, Sep 07, 2011 at 07:14:15PM +0100, Jonathan Cameron wrote:
->> On 09/07/11 18:35, Mark Brown wrote:
-> 
->>> We could add this in regmap if required.
-> 
->> Makes more sense in spi and has been in their 'may be needed comment'
->> from the first.  Also, lots of other users who don't fit into regmap
->> (because they don't have any registers to speak of :)
-> 
-> Right, but obviously anything doing SPI transfers can just set the flag
-> in the transfers anyway.  It looked like you were adding this to the
-> core due to other intervening abstractions, probably this is just a
-> problem with your changelog.
-I'll make it clearer that it has uses there elsewhere as well not to
-mention merely stopping stupid bugs in drivers where this is always
-needed.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Sasha Levin wrote:
+> On Wed, 2011-09-07 at 13:38 -0400, Jarod Wilson wrote:
+>> Certain security-related certifications and their respective review
+>> bodies have said that they find use of /dev/urandom for certain
+>> functions, such as setting up ssh connections, is acceptable, but if and
+>> only if /dev/urandom can block after a certain threshold of bytes have
+>> been read from it with the entropy pool exhausted. Initially, we were
+>> investigating increasing entropy pool contributions, so that we could
+>> simply use /dev/random, but since that hasn't (yet) panned out, and
+>> upwards of five minutes to establsh an ssh connection using an
+>> entropy-starved /dev/random is unacceptable, we started looking at the
+>> blocking urandom approach.
+>
+> Can't you accomplish this in userspace by trying to read as much as you
+> can out of /dev/random without blocking, then reading out
+> of /dev/urandom the minimum between allowed threshold and remaining
+> bytes, and then blocking on /dev/random?
+>
+> For example, lets say you need 100 bytes of randomness, and your
+> threshold is 30 bytes. You try reading out of /dev/random and get 50
+> bytes, at that point you'll read another 30 (=threshold) bytes
+> out /dev/urandom and then you'll need to block on /dev/random until you
+> get the remaining 20 bytes.
+
+We're looking for a generic solution here that doesn't require 
+re-educating every single piece of userspace. And anything done in 
+userspace is going to be full of possible holes -- there needs to be 
+something in place that actually *enforces* the policy, and centralized 
+accounting/tracking, lest you wind up with multiple processes racing to 
+grab the entropy.
+
+-- 
+Jarod Wilson
+jarod@redhat.com
+
 
