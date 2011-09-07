@@ -1,83 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab1IGUiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 16:38:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53279 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348Ab1IGUiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 16:38:20 -0400
-Subject: Re: [PATCH] random: add blocking facility to urandom
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Jarod Wilson <jarod@redhat.com>,
-        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <201109071630.15261.sgrubb@redhat.com>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
-	 <201109071602.24519.sgrubb@redhat.com> <1315426993.3576.38.camel@lappy>
-	 <201109071630.15261.sgrubb@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 07 Sep 2011 23:37:57 +0300
-Message-ID: <1315427877.3576.46.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1756872Ab1IGUjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 16:39:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755739Ab1IGUjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 16:39:47 -0400
+Date: Wed, 7 Sep 2011 22:35:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Fix clearing of task->ptrace if PTRACE_SETOPTIONS
+	fails
+Message-ID: <20110907203540.GA20917@redhat.com>
+References: <201109042311.18793.vda.linux@googlemail.com> <1315327963.29637.1.camel@dhcp-25-63.brq.redhat.com> <20110906184346.GA25904@redhat.com> <201109070645.00481.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109070645.00481.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-07 at 16:30 -0400, Steve Grubb wrote:
-> On Wednesday, September 07, 2011 04:23:13 PM Sasha Levin wrote:
-> > On Wed, 2011-09-07 at 16:02 -0400, Steve Grubb wrote:
-> > > On Wednesday, September 07, 2011 03:27:37 PM Ted Ts'o wrote:
-> > > > On Wed, Sep 07, 2011 at 02:26:35PM -0400, Jarod Wilson wrote:
-> > > > > We're looking for a generic solution here that doesn't require
-> > > > > re-educating every single piece of userspace. And anything done in
-> > > > > userspace is going to be full of possible holes -- there needs to be
-> > > > > something in place that actually *enforces* the policy, and
-> > > > > centralized accounting/tracking, lest you wind up with multiple
-> > > > > processes racing to grab the entropy.
-> > > > 
-> > > > Yeah, but there are userspace programs that depend on urandom not
-> > > > blocking... so your proposed change would break them.
-> > > 
-> > > The only time this kicks in is when a system is under attack. If you have
-> > > set this and the system is running as normal, you will never notice it
-> > > even there. Almost all uses of urandom grab 4 bytes and seed openssl or
-> > > libgcrypt or nss. It then uses those libraries. There are the odd cases
-> > > where something uses urandom to generate a key or otherwise grab a chunk
-> > > of bytes, but these are still small reads in the scheme of things. Can
-> > > you think of any legitimate use of urandom that grabs 100K or 1M from
-> > > urandom? Even those numbers still won't hit the sysctl on a normally
-> > > function system.
-> > 
-> > As far as I remember, several wipe utilities are using /dev/urandom to
-> > overwrite disks (possibly several times).
-> 
-> Which should generate disk activity and feed entropy to urandom.
+On 09/07, Denys Vlasenko wrote:
+>
+> Fix clearing of task->ptrace if PTRACE_SETOPTIONS fails.
+>
+> If PTRACE_SETOPTIONS fails, options should not be affected.
+> This patch makes it so.
 
-I thought you need to feed random, not urandom.
+Heh, OK. You won ;)
 
-Anyway, it won't happen fast enough to actually not block.
+> While at it, simplify a few things:
 
-Writing 1TB of urandom into a disk won't generate 1TB (or anything close
-to that) of randomness to cover for itself.
+No, no, Denys. Please make a separate patch which changes the
+current behaviour, please. Then cleanups.
 
-> > Something similar probably happens for getting junk on disks before
-> > creating an encrypted filesystem on top of them.
-> 
-> During system install, this sysctl is not likely to be applied.
+Otherwise looks correct.
 
-It may happen at any time you need to create a new filesystem, which
-won't necessarily happen during system install. 
-
-See for example the instructions on how to set up a LUKS filesystem:
-https://wiki.archlinux.org/index.php/System_Encryption_with_LUKS#Preparation_and_mapping
-
--- 
-
-Sasha.
+Oleg.
 
