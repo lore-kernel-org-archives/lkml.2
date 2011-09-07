@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab1IGWyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 18:54:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53391 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756985Ab1IGWyp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 18:54:45 -0400
-Date: Wed, 7 Sep 2011 15:53:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-Id: <20110907155332.beda7d3d.akpm@linux-foundation.org>
-In-Reply-To: <20110907224234.GD28162@sun>
-References: <20110905192009.GJ761@sun>
-	<20110905194908.GA2690@albatros>
-	<20110905203627.GL761@sun>
-	<20110906101518.GA4799@albatros>
-	<20110906165144.GJ18425@mtj.dyndns.org>
-	<20110906172952.GA28055@albatros>
-	<20110906173341.GM18425@mtj.dyndns.org>
-	<20110907112301.GA12157@albatros>
-	<20110907215329.GB28162@sun>
-	<20110907151323.613e62e7.akpm@linux-foundation.org>
-	<20110907224234.GD28162@sun>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757439Ab1IGW6K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 18:58:10 -0400
+Received: from mail.sdinet.de ([78.47.32.153]:34222 "EHLO mail.sdinet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757071Ab1IGW6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 18:58:09 -0400
+X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 18:58:09 EDT
+Date: Thu, 8 Sep 2011 00:46:23 +0200 (CEST)
+From: Sven-Haegar Koch <haegar@sdinet.de>
+X-X-Sender: haegar@aurora
+To: Steve Grubb <sgrubb@redhat.com>
+cc: Jarod Wilson <jarod@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, linux-crypto@vger.kernel.org,
+        Matt Mackall <mpm@selenic.com>, Neil Horman <nhorman@redhat.com>,
+        Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+In-Reply-To: <201109071743.16811.sgrubb@redhat.com>
+Message-ID: <alpine.DEB.2.02.1109080042270.20323@aurora>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com> <1315429827.3576.61.camel@lappy> <4E67E396.702@redhat.com> <201109071743.16811.sgrubb@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011 02:42:34 +0400
-Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+On Wed, 7 Sep 2011, Steve Grubb wrote:
 
-> > > +err:
-> > > +		up_read(&mm->mmap_sem);
-> > > +
-> > > +		for (i = 0; i < used && !ret; i++) {
-> > 
-> > The "&& !ret" is unneeded?
+> On Wednesday, September 07, 2011 05:35:18 PM Jarod Wilson wrote:
+> > Another proposal that has been kicked around: a 3rd random chardev, 
+> > which implements this functionality, leaving urandom unscathed. Some 
+> > udev magic or a driver param could move/disable/whatever urandom and put 
+> > this alternate device in its place. Ultimately, identical behavior, but 
+> > the true urandom doesn't get altered at all.
 > 
-> No, it's needed, since it makes sure that if "impossible"
-> scenario happens and flex-arrays fails with preallocated
-> data so we will reach this point with used > 0 and ret = -ENOMEM
-> and thus will not call for proc_map_files_instantiate as needed.
+> Right, and that's what I was trying to say is that if we do all that and switch out 
+> urandom with something new that does what we need, what's the difference in just 
+> patching the behavior into urandom and calling it a day? Its simpler, less fragile, 
+> admins won't make mistakes setting up the wrong one in a chroot, already has the 
+> FIPS-140 dressing, and is auditable.
 
-Well, it doesn't need to be tested on each pass around the loop - that's
-misleading and inefficient (unless the compiler is being particularly clever).
+I as a 0815 admin would never want such a thing by default.
+
+I already replace /dev/random with /dev/urandom to keep stupid sshd from 
+dying because there just is no entropy - I care more about all my 
+services staying alive than about perfect random.
+
+c'ya
+sven-haegar
+
+-- 
+Three may keep a secret, if two of them are dead.
+- Ben F.
