@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab1IGRGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:06:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14777 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab1IGQ7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754375Ab1IGQ7r (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 Sep 2011 12:59:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30955 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754209Ab1IGQ7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:59:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="45953908"
+   d="scan'208";a="45953774"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Grazvydas Ignotas <notasas@gmail.com>
-Subject: [PATCHv4 16/19] power_supply: Convert all users to new usb_phy
-Date: Wed,  7 Sep 2011 10:16:09 +0300
-Message-Id: <1315379772-8830-17-git-send-email-heikki.krogerus@linux.intel.com>
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCHv4 07/19] usb: otg: isp1301_omap: Start using struct usb_otg
+Date: Wed,  7 Sep 2011 10:16:00 +0300
+Message-Id: <1315379772-8830-8-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -27,402 +25,730 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new usb_phy_* functions instead of the old
-otg_* ones.
+Use struct usb_otg members with OTG specific functions instead
+of usb_phy members.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Grazvydas Ignotas <notasas@gmail.com>
 ---
- drivers/power/isp1704_charger.c |  108 +++++++++++++++++++++-----------------
- drivers/power/pda_power.c       |    6 +-
- drivers/power/twl4030_charger.c |   18 +++---
- 3 files changed, 72 insertions(+), 60 deletions(-)
+ drivers/usb/otg/isp1301_omap.c |  236 +++++++++++++++++++++-------------------
+ 1 files changed, 123 insertions(+), 113 deletions(-)
 
-diff --git a/drivers/power/isp1704_charger.c b/drivers/power/isp1704_charger.c
-index 9230bdd..ba2a647 100644
---- a/drivers/power/isp1704_charger.c
-+++ b/drivers/power/isp1704_charger.c
-@@ -56,7 +56,7 @@ static u16 isp170x_id[] = {
- struct isp1704_charger {
- 	struct device		*dev;
- 	struct power_supply	psy;
--	struct usb_phy		*otg;
-+	struct usb_phy		*xceiv;
- 	struct notifier_block	nb;
- 	struct work_struct	work;
+diff --git a/drivers/usb/otg/isp1301_omap.c b/drivers/usb/otg/isp1301_omap.c
+index 175922a..4645970 100644
+--- a/drivers/usb/otg/isp1301_omap.c
++++ b/drivers/usb/otg/isp1301_omap.c
+@@ -52,7 +52,7 @@ MODULE_DESCRIPTION("ISP1301 USB OTG Transceiver Driver");
+ MODULE_LICENSE("GPL");
  
-@@ -71,6 +71,18 @@ struct isp1704_charger {
- 	unsigned		max_power;
- };
+ struct isp1301 {
+-	struct usb_phy		otg;
++	struct usb_phy		xceiv;
+ 	struct i2c_client	*client;
+ 	void			(*i2c_release)(struct device *dev);
  
-+static inline int
-+isp1704_read(struct isp1704_charger *isp, u32 reg)
-+{
-+	return usb_phy_io_read(isp->xceiv, reg);
-+}
-+
-+static inline int
-+isp1704_write(struct isp1704_charger *isp, u32 val, u32 reg)
-+{
-+	return usb_phy_io_read(isp->xceiv, val, reg);
-+}
-+
- /*
-  * Disable/enable the power from the isp1704 if a function for it
-  * has been provided with platform data.
-@@ -97,31 +109,31 @@ static inline int isp1704_charger_type(struct isp1704_charger *isp)
- 	u8 otg_ctrl;
- 	int type = POWER_SUPPLY_TYPE_USB_DCP;
+@@ -236,7 +236,7 @@ isp1301_clear_bits(struct isp1301 *isp, u8 reg, u8 bits)
  
--	func_ctrl = otg_io_read(isp->otg, ULPI_FUNC_CTRL);
--	otg_ctrl = otg_io_read(isp->otg, ULPI_OTG_CTRL);
-+	func_ctrl = isp1704_read(isp, ULPI_FUNC_CTRL);
-+	otg_ctrl = isp1704_read(isp, ULPI_OTG_CTRL);
- 
- 	/* disable pulldowns */
- 	reg = ULPI_OTG_CTRL_DM_PULLDOWN | ULPI_OTG_CTRL_DP_PULLDOWN;
--	otg_io_write(isp->otg, ULPI_CLR(ULPI_OTG_CTRL), reg);
-+	isp1704_write(isp, ULPI_CLR(ULPI_OTG_CTRL), reg);
- 
- 	/* full speed */
--	otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
-+	isp1704_write(isp, ULPI_CLR(ULPI_FUNC_CTRL),
- 			ULPI_FUNC_CTRL_XCVRSEL_MASK);
--	otg_io_write(isp->otg, ULPI_SET(ULPI_FUNC_CTRL),
-+	isp1704_write(isp, ULPI_SET(ULPI_FUNC_CTRL),
- 			ULPI_FUNC_CTRL_FULL_SPEED);
- 
- 	/* Enable strong pull-up on DP (1.5K) and reset */
- 	reg = ULPI_FUNC_CTRL_TERMSELECT | ULPI_FUNC_CTRL_RESET;
--	otg_io_write(isp->otg, ULPI_SET(ULPI_FUNC_CTRL), reg);
-+	isp1704_write(isp, ULPI_SET(ULPI_FUNC_CTRL), reg);
- 	usleep_range(1000, 2000);
- 
--	reg = otg_io_read(isp->otg, ULPI_DEBUG);
-+	reg = isp1704_read(isp, ULPI_DEBUG);
- 	if ((reg & 3) != 3)
- 		type = POWER_SUPPLY_TYPE_USB_CDP;
- 
- 	/* recover original state */
--	otg_io_write(isp->otg, ULPI_FUNC_CTRL, func_ctrl);
--	otg_io_write(isp->otg, ULPI_OTG_CTRL, otg_ctrl);
-+	isp1704_write(isp, ULPI_FUNC_CTRL, func_ctrl);
-+	isp1704_write(isp, ULPI_OTG_CTRL, otg_ctrl);
- 
- 	return type;
+ static inline const char *state_name(struct isp1301 *isp)
+ {
+-	return usb_phy_state_string(isp->otg.state);
++	return usb_phy_state_string(isp->xceiv.state);
  }
-@@ -136,28 +148,28 @@ static inline int isp1704_charger_verify(struct isp1704_charger *isp)
- 	u8	r;
  
- 	/* Reset the transceiver */
--	r = otg_io_read(isp->otg, ULPI_FUNC_CTRL);
-+	r = isp1704_read(isp, ULPI_FUNC_CTRL);
- 	r |= ULPI_FUNC_CTRL_RESET;
--	otg_io_write(isp->otg, ULPI_FUNC_CTRL, r);
-+	isp1704_write(isp, ULPI_FUNC_CTRL, r);
- 	usleep_range(1000, 2000);
+ /*-------------------------------------------------------------------------*/
+@@ -251,7 +251,7 @@ static inline const char *state_name(struct isp1301 *isp)
  
- 	/* Set normal mode */
- 	r &= ~(ULPI_FUNC_CTRL_RESET | ULPI_FUNC_CTRL_OPMODE_MASK);
--	otg_io_write(isp->otg, ULPI_FUNC_CTRL, r);
-+	isp1704_write(isp, ULPI_FUNC_CTRL, r);
+ static void power_down(struct isp1301 *isp)
+ {
+-	isp->otg.state = USB_PHY_STATE_UNDEFINED;
++	isp->xceiv.state = USB_PHY_STATE_UNDEFINED;
  
- 	/* Clear the DP and DM pull-down bits */
- 	r = ULPI_OTG_CTRL_DP_PULLDOWN | ULPI_OTG_CTRL_DM_PULLDOWN;
--	otg_io_write(isp->otg, ULPI_CLR(ULPI_OTG_CTRL), r);
-+	isp1704_write(isp, ULPI_CLR(ULPI_OTG_CTRL), r);
+ 	// isp1301_set_bits(isp, ISP1301_MODE_CONTROL_2, MC2_GLOBAL_PWR_DN);
+ 	isp1301_set_bits(isp, ISP1301_MODE_CONTROL_1, MC1_SUSPEND);
+@@ -280,13 +280,13 @@ static int host_suspend(struct isp1301 *isp)
+ #else
+ 	struct device	*dev;
  
- 	/* Enable strong pull-up on DP (1.5K) and reset */
- 	r = ULPI_FUNC_CTRL_TERMSELECT | ULPI_FUNC_CTRL_RESET;
--	otg_io_write(isp->otg, ULPI_SET(ULPI_FUNC_CTRL), r);
-+	isp1704_write(isp, ULPI_SET(ULPI_FUNC_CTRL), r);
- 	usleep_range(1000, 2000);
+-	if (!isp->otg.host)
++	if (!isp->xceiv.otg->host)
+ 		return -ENODEV;
  
- 	/* Read the line state */
--	if (!otg_io_read(isp->otg, ULPI_DEBUG)) {
-+	if (!isp1704_read(isp, ULPI_DEBUG)) {
- 		/* Disable strong pull-up on DP (1.5K) */
--		otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
-+		isp1704_write(isp, ULPI_CLR(ULPI_FUNC_CTRL),
- 				ULPI_FUNC_CTRL_TERMSELECT);
- 		return 1;
+ 	/* Currently ASSUMES only the OTG port matters;
+ 	 * other ports could be active...
+ 	 */
+-	dev = isp->otg.host->controller;
++	dev = isp->xceiv.otg->host->controller;
+ 	return dev->driver->suspend(dev, 3, 0);
+ #endif
+ }
+@@ -298,20 +298,20 @@ static int host_resume(struct isp1301 *isp)
+ #else
+ 	struct device	*dev;
+ 
+-	if (!isp->otg.host)
++	if (!isp->xceiv.otg->host)
+ 		return -ENODEV;
+ 
+-	dev = isp->otg.host->controller;
++	dev = isp->xceiv.otg->host->controller;
+ 	return dev->driver->resume(dev, 0);
+ #endif
+ }
+ 
+ static int gadget_suspend(struct isp1301 *isp)
+ {
+-	isp->otg.gadget->b_hnp_enable = 0;
+-	isp->otg.gadget->a_hnp_support = 0;
+-	isp->otg.gadget->a_alt_hnp_support = 0;
+-	return usb_gadget_vbus_disconnect(isp->otg.gadget);
++	isp->xceiv.otg->gadget->b_hnp_enable = 0;
++	isp->xceiv.otg->gadget->a_hnp_support = 0;
++	isp->xceiv.otg->gadget->a_alt_hnp_support = 0;
++	return usb_gadget_vbus_disconnect(isp->xceiv.otg->gadget);
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -341,19 +341,19 @@ static void a_idle(struct isp1301 *isp, const char *tag)
+ {
+ 	u32 l;
+ 
+-	if (isp->otg.state == USB_PHY_STATE_A_IDLE)
++	if (isp->xceiv.state == USB_PHY_STATE_A_IDLE)
+ 		return;
+ 
+-	isp->otg.default_a = 1;
+-	if (isp->otg.host) {
+-		isp->otg.host->is_b_host = 0;
++	isp->xceiv.otg->default_a = 1;
++	if (isp->xceiv.otg->host) {
++		isp->xceiv.otg->host->is_b_host = 0;
+ 		host_suspend(isp);
  	}
-@@ -165,23 +177,23 @@ static inline int isp1704_charger_verify(struct isp1704_charger *isp)
- 	/* Is it a charger or PS/2 connection */
+-	if (isp->otg.gadget) {
+-		isp->otg.gadget->is_a_peripheral = 1;
++	if (isp->xceiv.otg->gadget) {
++		isp->xceiv.otg->gadget->is_a_peripheral = 1;
+ 		gadget_suspend(isp);
+ 	}
+-	isp->otg.state = USB_PHY_STATE_A_IDLE;
++	isp->xceiv.state = USB_PHY_STATE_A_IDLE;
+ 	l = omap_readl(OTG_CTRL) & OTG_XCEIV_OUTPUTS;
+ 	omap_writel(l, OTG_CTRL);
+ 	isp->last_otg_ctrl = l;
+@@ -365,19 +365,19 @@ static void b_idle(struct isp1301 *isp, const char *tag)
+ {
+ 	u32 l;
  
- 	/* Enable weak pull-up resistor on DP */
--	otg_io_write(isp->otg, ULPI_SET(ISP1704_PWR_CTRL),
-+	isp1704_write(isp, ULPI_SET(ISP1704_PWR_CTRL),
- 			ISP1704_PWR_CTRL_DP_WKPU_EN);
+-	if (isp->otg.state == USB_PHY_STATE_B_IDLE)
++	if (isp->xceiv.state == USB_PHY_STATE_B_IDLE)
+ 		return;
  
- 	/* Disable strong pull-up on DP (1.5K) */
--	otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
-+	isp1704_write(isp, ULPI_CLR(ULPI_FUNC_CTRL),
- 			ULPI_FUNC_CTRL_TERMSELECT);
+-	isp->otg.default_a = 0;
+-	if (isp->otg.host) {
+-		isp->otg.host->is_b_host = 1;
++	isp->xceiv.otg->default_a = 0;
++	if (isp->xceiv.otg->host) {
++		isp->xceiv.otg->host->is_b_host = 1;
+ 		host_suspend(isp);
+ 	}
+-	if (isp->otg.gadget) {
+-		isp->otg.gadget->is_a_peripheral = 0;
++	if (isp->xceiv.otg->gadget) {
++		isp->xceiv.otg->gadget->is_a_peripheral = 0;
+ 		gadget_suspend(isp);
+ 	}
+-	isp->otg.state = USB_PHY_STATE_B_IDLE;
++	isp->xceiv.state = USB_PHY_STATE_B_IDLE;
+ 	l = omap_readl(OTG_CTRL) & OTG_XCEIV_OUTPUTS;
+ 	omap_writel(l, OTG_CTRL);
+ 	isp->last_otg_ctrl = l;
+@@ -478,7 +478,7 @@ static void check_state(struct isp1301 *isp, const char *tag)
+ 	default:
+ 		break;
+ 	}
+-	if (isp->otg.state == state && !extra)
++	if (isp->xceiv.state == state && !extra)
+ 		return;
+ 	pr_debug("otg: %s FSM %s/%02x, %s, %06x\n", tag,
+ 		usb_phy_state_string(state), fsm, state_name(isp),
+@@ -502,22 +502,23 @@ static void update_otg1(struct isp1301 *isp, u8 int_src)
  
- 	/* Enable weak pull-down resistor on DM */
--	otg_io_write(isp->otg, ULPI_SET(ULPI_OTG_CTRL),
-+	isp1704_write(isp, ULPI_SET(ULPI_OTG_CTRL),
- 			ULPI_OTG_CTRL_DM_PULLDOWN);
- 
- 	/* It's a charger if the line states are clear */
--	if (!(otg_io_read(isp->otg, ULPI_DEBUG)))
-+	if (!(isp1704_read(isp, ULPI_DEBUG)))
- 		ret = 1;
- 
- 	/* Disable weak pull-up resistor on DP */
--	otg_io_write(isp->otg, ULPI_CLR(ISP1704_PWR_CTRL),
-+	isp1704_write(isp, ULPI_CLR(ISP1704_PWR_CTRL),
- 			ISP1704_PWR_CTRL_DP_WKPU_EN);
- 
- 	return ret;
-@@ -193,14 +205,14 @@ static inline int isp1704_charger_detect(struct isp1704_charger *isp)
- 	u8		pwr_ctrl;
- 	int		ret = 0;
- 
--	pwr_ctrl = otg_io_read(isp->otg, ISP1704_PWR_CTRL);
-+	pwr_ctrl = isp1704_read(isp, ISP1704_PWR_CTRL);
- 
- 	/* set SW control bit in PWR_CTRL register */
--	otg_io_write(isp->otg, ISP1704_PWR_CTRL,
-+	isp1704_write(isp, ISP1704_PWR_CTRL,
- 			ISP1704_PWR_CTRL_SWCTRL);
- 
- 	/* enable manual charger detection */
--	otg_io_write(isp->otg, ULPI_SET(ISP1704_PWR_CTRL),
-+	isp1704_write(isp, ULPI_SET(ISP1704_PWR_CTRL),
- 			ISP1704_PWR_CTRL_SWCTRL
- 			| ISP1704_PWR_CTRL_DPVSRC_EN);
- 	usleep_range(1000, 2000);
-@@ -208,7 +220,7 @@ static inline int isp1704_charger_detect(struct isp1704_charger *isp)
- 	timeout = jiffies + msecs_to_jiffies(300);
- 	do {
- 		/* Check if there is a charger */
--		if (otg_io_read(isp->otg, ISP1704_PWR_CTRL)
-+		if (isp1704_read(isp, ISP1704_PWR_CTRL)
- 				& ISP1704_PWR_CTRL_VDAT_DET) {
- 			ret = isp1704_charger_verify(isp);
- 			break;
-@@ -216,7 +228,7 @@ static inline int isp1704_charger_detect(struct isp1704_charger *isp)
- 	} while (!time_after(jiffies, timeout) && isp->online);
- 
- 	/* recover original state */
--	otg_io_write(isp->otg, ISP1704_PWR_CTRL, pwr_ctrl);
-+	isp1704_write(isp, ISP1704_PWR_CTRL, pwr_ctrl);
- 
- 	return ret;
- }
-@@ -264,8 +276,8 @@ static void isp1704_charger_work(struct work_struct *data)
- 		case POWER_SUPPLY_TYPE_USB:
- 		default:
- 			/* enable data pullups */
--			if (isp->otg->gadget)
--				usb_gadget_connect(isp->otg->gadget);
-+			if (isp->xceiv->gadget)
-+				usb_gadget_connect(isp->xceiv->gadget);
+ 	if (int_src & INTR_SESS_VLD)
+ 		otg_ctrl |= OTG_ASESSVLD;
+-	else if (isp->otg.state == USB_PHY_STATE_A_WAIT_VFALL) {
++	else if (isp->xceiv.state == USB_PHY_STATE_A_WAIT_VFALL) {
+ 		a_idle(isp, "vfall");
+ 		otg_ctrl &= ~OTG_CTRL_BITS;
+ 	}
+ 	if (int_src & INTR_VBUS_VLD)
+ 		otg_ctrl |= OTG_VBUSVLD;
+ 	if (int_src & INTR_ID_GND) {		/* default-A */
+-		if (isp->otg.state == USB_PHY_STATE_B_IDLE
+-				|| isp->otg.state == USB_PHY_STATE_UNDEFINED) {
++		if (isp->xceiv.state == USB_PHY_STATE_B_IDLE
++				|| isp->xceiv.state
++					== USB_PHY_STATE_UNDEFINED) {
+ 			a_idle(isp, "init");
+ 			return;
  		}
+ 	} else {				/* default-B */
+ 		otg_ctrl |= OTG_ID;
+-		if (isp->otg.state == USB_PHY_STATE_A_IDLE
+-				|| isp->otg.state == USB_PHY_STATE_UNDEFINED) {
++		if (isp->xceiv.state == USB_PHY_STATE_A_IDLE
++			|| isp->xceiv.state == USB_PHY_STATE_UNDEFINED) {
+ 			b_idle(isp, "init");
+ 			return;
+ 		}
+@@ -551,14 +552,14 @@ static void otg_update_isp(struct isp1301 *isp)
+ 	isp->last_otg_ctrl = otg_ctrl;
+ 	otg_ctrl = otg_ctrl & OTG_XCEIV_INPUTS;
+ 
+-	switch (isp->otg.state) {
++	switch (isp->xceiv.state) {
+ 	case USB_PHY_STATE_B_IDLE:
+ 	case USB_PHY_STATE_B_PERIPHERAL:
+ 	case USB_PHY_STATE_B_SRP_INIT:
+ 		if (!(otg_ctrl & OTG_PULLUP)) {
+ 			// if (otg_ctrl & OTG_B_HNPEN) {
+-			if (isp->otg.gadget->b_hnp_enable) {
+-				isp->otg.state = USB_PHY_STATE_B_WAIT_ACON;
++			if (isp->xceiv.otg->gadget->b_hnp_enable) {
++				isp->xceiv.state = USB_PHY_STATE_B_WAIT_ACON;
+ 				pr_debug("  --> b_wait_acon\n");
+ 			}
+ 			goto pulldown;
+@@ -585,10 +586,10 @@ pulldown:
+ 		else clr |= ISP; \
+ 		} while (0)
+ 
+-	if (!(isp->otg.host))
++	if (!(isp->xceiv.otg->host))
+ 		otg_ctrl &= ~OTG_DRV_VBUS;
+ 
+-	switch (isp->otg.state) {
++	switch (isp->xceiv.state) {
+ 	case USB_PHY_STATE_A_SUSPEND:
+ 		if (otg_ctrl & OTG_DRV_VBUS) {
+ 			set |= OTG1_VBUS_DRV;
+@@ -599,7 +600,7 @@ pulldown:
+ 
+ 		/* FALLTHROUGH */
+ 	case USB_PHY_STATE_A_VBUS_ERR:
+-		isp->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
++		isp->xceiv.state = USB_PHY_STATE_A_WAIT_VFALL;
+ 		pr_debug("  --> a_wait_vfall\n");
+ 		/* FALLTHROUGH */
+ 	case USB_PHY_STATE_A_WAIT_VFALL:
+@@ -608,7 +609,7 @@ pulldown:
  		break;
- 	case USB_EVENT_NONE:
-@@ -283,8 +295,8 @@ static void isp1704_charger_work(struct work_struct *data)
- 		 * chargers. The pullups may be enabled elsewhere, so this can
- 		 * not be the final solution.
+ 	case USB_PHY_STATE_A_IDLE:
+ 		if (otg_ctrl & OTG_DRV_VBUS) {
+-			isp->otg.state = USB_PHY_STATE_A_WAIT_VRISE;
++			isp->xceiv.state = USB_PHY_STATE_A_WAIT_VRISE;
+ 			pr_debug("  --> a_wait_vrise\n");
+ 		}
+ 		/* FALLTHROUGH */
+@@ -628,17 +629,17 @@ pulldown:
+ 	if (otg_change & OTG_PULLUP) {
+ 		u32 l;
+ 
+-		switch (isp->otg.state) {
++		switch (isp->xceiv.state) {
+ 		case USB_PHY_STATE_B_IDLE:
+ 			if (clr & OTG1_DP_PULLUP)
+ 				break;
+-			isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++			isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 			pr_debug("  --> b_peripheral\n");
+ 			break;
+ 		case USB_PHY_STATE_A_SUSPEND:
+ 			if (clr & OTG1_DP_PULLUP)
+ 				break;
+-			isp->otg.state = USB_PHY_STATE_A_PERIPHERAL;
++			isp->xceiv.state = USB_PHY_STATE_A_PERIPHERAL;
+ 			pr_debug("  --> a_peripheral\n");
+ 			break;
+ 		default:
+@@ -659,6 +660,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 	u32		otg_ctrl;
+ 	int		ret = IRQ_NONE;
+ 	struct isp1301	*isp = _isp;
++	struct usb_otg	*otg = isp->xceiv.otg;
+ 
+ 	/* update ISP1301 transceiver from OTG controller */
+ 	if (otg_irq & OPRT_CHG) {
+@@ -675,7 +677,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		 * remote wakeup (SRP, normal) using their own timer
+ 		 * to give "check cable and A-device" messages.
  		 */
--		if (isp->otg->gadget)
--			usb_gadget_disconnect(isp->otg->gadget);
-+		if (isp->xceiv->gadget)
-+			usb_gadget_disconnect(isp->xceiv->gadget);
+-		if (isp->otg.state == USB_PHY_STATE_B_SRP_INIT)
++		if (isp->xceiv.state == USB_PHY_STATE_B_SRP_INIT)
+ 			b_idle(isp, "srp_timeout");
  
- 		isp1704_charger_set_power(isp, 0);
+ 		omap_writew(B_SRP_TMROUT, OTG_IRQ_SRC);
+@@ -693,7 +695,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		omap_writel(otg_ctrl, OTG_CTRL);
+ 
+ 		/* subset of b_peripheral()... */
+-		isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++		isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 		pr_debug("  --> b_peripheral\n");
+ 
+ 		omap_writew(B_HNP_FAIL, OTG_IRQ_SRC);
+@@ -705,9 +707,9 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 				state_name(isp), omap_readl(OTG_CTRL));
+ 
+ 		isp1301_defer_work(isp, WORK_UPDATE_OTG);
+-		switch (isp->otg.state) {
++		switch (isp->xceiv.state) {
+ 		case USB_PHY_STATE_A_IDLE:
+-			if (!isp->otg.host)
++			if (!otg->host)
+ 				break;
+ 			isp1301_defer_work(isp, WORK_HOST_RESUME);
+ 			otg_ctrl = omap_readl(OTG_CTRL);
+@@ -736,7 +738,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		otg_ctrl |= OTG_BUSDROP;
+ 		otg_ctrl &= ~OTG_A_BUSREQ & OTG_CTRL_MASK & ~OTG_XCEIV_INPUTS;
+ 		omap_writel(otg_ctrl, OTG_CTRL);
+-		isp->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
++		isp->xceiv.state = USB_PHY_STATE_A_WAIT_VFALL;
+ 
+ 		omap_writew(A_REQ_TMROUT, OTG_IRQ_SRC);
+ 		ret = IRQ_HANDLED;
+@@ -750,7 +752,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		otg_ctrl |= OTG_BUSDROP;
+ 		otg_ctrl &= ~OTG_A_BUSREQ & OTG_CTRL_MASK & ~OTG_XCEIV_INPUTS;
+ 		omap_writel(otg_ctrl, OTG_CTRL);
+-		isp->otg.state = USB_PHY_STATE_A_VBUS_ERR;
++		isp->xceiv.state = USB_PHY_STATE_A_VBUS_ERR;
+ 
+ 		omap_writew(A_VBUS_ERR, OTG_IRQ_SRC);
+ 		ret = IRQ_HANDLED;
+@@ -771,7 +773,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 
+ 		/* role is peripheral */
+ 		if (otg_ctrl & OTG_DRIVER_SEL) {
+-			switch (isp->otg.state) {
++			switch (isp->xceiv.state) {
+ 			case USB_PHY_STATE_A_IDLE:
+ 				b_idle(isp, __func__);
+ 				break;
+@@ -787,20 +789,20 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 				omap_writel(otg_ctrl | OTG_A_BUSREQ, OTG_CTRL);
+ 			}
+ 
+-			if (isp->otg.host) {
+-				switch (isp->otg.state) {
++			if (otg->host) {
++				switch (isp->xceiv.state) {
+ 				case USB_PHY_STATE_B_WAIT_ACON:
+-					isp->otg.state = USB_PHY_STATE_B_HOST;
++					isp->xceiv.state = USB_PHY_STATE_B_HOST;
+ 					pr_debug("  --> b_host\n");
+ 					kick = 1;
+ 					break;
+ 				case USB_PHY_STATE_A_WAIT_BCON:
+-					isp->otg.state = USB_PHY_STATE_A_HOST;
++					isp->xceiv.state = USB_PHY_STATE_A_HOST;
+ 					pr_debug("  --> a_host\n");
+ 					break;
+ 				case USB_PHY_STATE_A_PERIPHERAL:
+-					isp->otg.state =
+-						USB_PHY_STATE_A_WAIT_BCON;
++					isp->xceiv.state
++						= USB_PHY_STATE_A_WAIT_BCON;
+ 					pr_debug("  --> a_wait_bcon\n");
+ 					break;
+ 				default:
+@@ -814,8 +816,7 @@ static irqreturn_t omap_otg_irq(int irq, void *_isp)
+ 		ret = IRQ_HANDLED;
+ 
+ 		if (kick)
+-			usb_bus_start_enum(isp->otg.host,
+-						isp->otg.host->otg_port);
++			usb_bus_start_enum(otg->host, otg->host->otg_port);
+ 	}
+ 
+ 	check_state(isp, __func__);
+@@ -931,7 +932,7 @@ static void b_peripheral(struct isp1301 *isp)
+ 	l = omap_readl(OTG_CTRL) & OTG_XCEIV_OUTPUTS;
+ 	omap_writel(l, OTG_CTRL);
+ 
+-	usb_gadget_vbus_connect(isp->otg.gadget);
++	usb_gadget_vbus_connect(isp->xceiv.otg->gadget);
+ 
+ #ifdef	CONFIG_USB_OTG
+ 	enable_vbus_draw(isp, 8);
+@@ -941,7 +942,7 @@ static void b_peripheral(struct isp1301 *isp)
+ 	/* UDC driver just set OTG_BSESSVLD */
+ 	isp1301_set_bits(isp, ISP1301_OTG_CONTROL_1, OTG1_DP_PULLUP);
+ 	isp1301_clear_bits(isp, ISP1301_OTG_CONTROL_1, OTG1_DP_PULLDOWN);
+-	isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++	isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 	pr_debug("  --> b_peripheral\n");
+ 	dump_regs(isp, "2periph");
+ #endif
+@@ -949,8 +950,9 @@ static void b_peripheral(struct isp1301 *isp)
+ 
+ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ {
++	struct usb_otg		*otg = isp->xceiv.otg;
+ 	u8			isp_stat, isp_bstat;
+-	enum usb_phy_state	state = isp->otg.state;
++	enum usb_phy_state	state = isp->xceiv.state;
+ 
+ 	if (stat & INTR_BDIS_ACON)
+ 		pr_debug("OTG:  BDIS_ACON, %s\n", state_name(isp));
+@@ -958,7 +960,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 	/* start certain state transitions right away */
+ 	isp_stat = isp1301_get_u8(isp, ISP1301_INTERRUPT_SOURCE);
+ 	if (isp_stat & INTR_ID_GND) {
+-		if (isp->otg.default_a) {
++		if (otg->default_a) {
+ 			switch (state) {
+ 			case USB_PHY_STATE_B_IDLE:
+ 				a_idle(isp, "idle");
+@@ -973,7 +975,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 				 * when HNP is used.
+ 				 */
+ 				if (isp_stat & INTR_VBUS_VLD)
+-					isp->otg.state = USB_PHY_STATE_A_HOST;
++					isp->xceiv.state = USB_PHY_STATE_A_HOST;
+ 				break;
+ 			case USB_PHY_STATE_A_WAIT_VFALL:
+ 				if (!(isp_stat & INTR_SESS_VLD))
+@@ -981,8 +983,8 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 				break;
+ 			default:
+ 				if (!(isp_stat & INTR_VBUS_VLD))
+-					isp->otg.state =
+-						USB_PHY_STATE_A_VBUS_ERR;
++					isp->xceiv.state
++						= USB_PHY_STATE_A_VBUS_ERR;
+ 				break;
+ 			}
+ 			isp_bstat = isp1301_get_u8(isp, ISP1301_OTG_STATUS);
+@@ -991,14 +993,14 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 			case USB_PHY_STATE_B_PERIPHERAL:
+ 			case USB_PHY_STATE_B_HOST:
+ 			case USB_PHY_STATE_B_WAIT_ACON:
+-				usb_gadget_vbus_disconnect(isp->otg.gadget);
++				usb_gadget_vbus_disconnect(otg->gadget);
+ 				break;
+ 			default:
+ 				break;
+ 			}
+ 			if (state != USB_PHY_STATE_A_IDLE)
+ 				a_idle(isp, "id");
+-			if (isp->otg.host && state == USB_PHY_STATE_A_IDLE)
++			if (otg->host && state == USB_PHY_STATE_A_IDLE)
+ 				isp1301_defer_work(isp, WORK_HOST_RESUME);
+ 			isp_bstat = 0;
+ 		}
+@@ -1008,10 +1010,10 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 		/* if user unplugged mini-A end of cable,
+ 		 * don't bypass A_WAIT_VFALL.
+ 		 */
+-		if (isp->otg.default_a) {
++		if (otg->default_a) {
+ 			switch (state) {
+ 			default:
+-				isp->otg.state = USB_PHY_STATE_A_WAIT_VFALL;
++				isp->xceiv.state = USB_PHY_STATE_A_WAIT_VFALL;
+ 				break;
+ 			case USB_PHY_STATE_A_WAIT_VFALL:
+ 				state = USB_PHY_STATE_A_IDLE;
+@@ -1024,7 +1026,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 				host_suspend(isp);
+ 				isp1301_clear_bits(isp, ISP1301_MODE_CONTROL_1,
+ 						MC1_BDIS_ACON_EN);
+-				isp->otg.state = USB_PHY_STATE_B_IDLE;
++				isp->xceiv.state = USB_PHY_STATE_B_IDLE;
+ 				l = omap_readl(OTG_CTRL) & OTG_CTRL_MASK;
+ 				l &= ~OTG_CTRL_BITS;
+ 				omap_writel(l, OTG_CTRL);
+@@ -1035,7 +1037,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 		}
+ 		isp_bstat = isp1301_get_u8(isp, ISP1301_OTG_STATUS);
+ 
+-		switch (isp->otg.state) {
++		switch (isp->xceiv.state) {
+ 		case USB_PHY_STATE_B_PERIPHERAL:
+ 		case USB_PHY_STATE_B_WAIT_ACON:
+ 		case USB_PHY_STATE_B_HOST:
+@@ -1057,7 +1059,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 			omap_writel(l, OTG_CTRL);
+ 			/* FALLTHROUGH */
+ 		case USB_PHY_STATE_B_IDLE:
+-			if (isp->otg.gadget && (isp_bstat & OTG_B_SESS_VLD)) {
++			if (otg->gadget && (isp_bstat & OTG_B_SESS_VLD)) {
+ #ifdef	CONFIG_USB_OTG
+ 				update_otg1(isp, isp_stat);
+ 				update_otg2(isp, isp_bstat);
+@@ -1075,7 +1077,7 @@ static void isp_update_otg(struct isp1301 *isp, u8 stat)
+ 		}
+ 	}
+ 
+-	if (state != isp->otg.state)
++	if (state != isp->xceiv.state)
+ 		pr_debug("  isp, %s -> %s\n",
+ 				usb_phy_state_string(state), state_name(isp));
+ 
+@@ -1133,10 +1135,10 @@ isp1301_work(struct work_struct *work)
+ 			 * skip A_WAIT_VRISE; hc transitions invisibly
+ 			 * skip A_WAIT_BCON; same.
+ 			 */
+-			switch (isp->otg.state) {
++			switch (isp->xceiv.state) {
+ 			case USB_PHY_STATE_A_WAIT_BCON:
+ 			case USB_PHY_STATE_A_WAIT_VRISE:
+-				isp->otg.state = USB_PHY_STATE_A_HOST;
++				isp->xceiv.state = USB_PHY_STATE_A_HOST;
+ 				pr_debug("  --> a_host\n");
+ 				otg_ctrl = omap_readl(OTG_CTRL);
+ 				otg_ctrl |= OTG_A_BUSREQ;
+@@ -1145,7 +1147,7 @@ isp1301_work(struct work_struct *work)
+ 				omap_writel(otg_ctrl, OTG_CTRL);
+ 				break;
+ 			case USB_PHY_STATE_B_WAIT_ACON:
+-				isp->otg.state = USB_PHY_STATE_B_HOST;
++				isp->xceiv.state = USB_PHY_STATE_B_HOST;
+ 				pr_debug("  --> b_host (acon)\n");
+ 				break;
+ 			case USB_PHY_STATE_B_HOST:
+@@ -1206,6 +1208,7 @@ static void isp1301_release(struct device *dev)
+ 	/* ugly -- i2c hijacks our memory hook to wait_for_completion() */
+ 	if (isp->i2c_release)
+ 		isp->i2c_release(dev);
++	kfree(isp->xceiv.otg);
+ 	kfree (isp);
+ }
+ 
+@@ -1276,9 +1279,9 @@ static int isp1301_otg_enable(struct isp1301 *isp)
+ 
+ /* add or disable the host device+driver */
+ static int
+-isp1301_set_host(struct usb_phy *otg, struct usb_bus *host)
++isp1301_set_host(struct usb_otg *otg, struct usb_bus *host)
+ {
+-	struct isp1301	*isp = container_of(otg, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ 
+ 	if (!otg || isp != the_transceiver)
+ 		return -ENODEV;
+@@ -1286,21 +1289,21 @@ isp1301_set_host(struct usb_phy *otg, struct usb_bus *host)
+ 	if (!host) {
+ 		omap_writew(0, OTG_IRQ_EN);
+ 		power_down(isp);
+-		isp->otg.host = NULL;
++		otg->host = NULL;
+ 		return 0;
+ 	}
+ 
+ #ifdef	CONFIG_USB_OTG
+-	isp->otg.host = host;
++	otg->host = host;
+ 	dev_dbg(&isp->client->dev, "registered host\n");
+ 	host_suspend(isp);
+-	if (isp->otg.gadget)
++	if (otg->gadget)
+ 		return isp1301_otg_enable(isp);
+ 	return 0;
+ 
+ #elif	!defined(CONFIG_USB_GADGET_OMAP)
+ 	// FIXME update its refcount
+-	isp->otg.host = host;
++	otg->host = host;
+ 
+ 	power_up(isp);
+ 
+@@ -1332,9 +1335,9 @@ isp1301_set_host(struct usb_phy *otg, struct usb_bus *host)
+ }
+ 
+ static int
+-isp1301_set_peripheral(struct usb_phy *otg, struct usb_gadget *gadget)
++isp1301_set_peripheral(struct usb_otg *otg, struct usb_gadget *gadget)
+ {
+-	struct isp1301	*isp = container_of(otg, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ #ifndef	CONFIG_USB_OTG
+ 	u32 l;
+ #endif
+@@ -1344,24 +1347,24 @@ isp1301_set_peripheral(struct usb_phy *otg, struct usb_gadget *gadget)
+ 
+ 	if (!gadget) {
+ 		omap_writew(0, OTG_IRQ_EN);
+-		if (!isp->otg.default_a)
++		if (!otg->default_a)
+ 			enable_vbus_draw(isp, 0);
+-		usb_gadget_vbus_disconnect(isp->otg.gadget);
+-		isp->otg.gadget = NULL;
++		usb_gadget_vbus_disconnect(otg->gadget);
++		otg->gadget = NULL;
+ 		power_down(isp);
+ 		return 0;
+ 	}
+ 
+ #ifdef	CONFIG_USB_OTG
+-	isp->otg.gadget = gadget;
++	otg->gadget = gadget;
+ 	dev_dbg(&isp->client->dev, "registered gadget\n");
+ 	/* gadget driver may be suspended until vbus_connect () */
+-	if (isp->otg.host)
++	if (otg->host)
+ 		return isp1301_otg_enable(isp);
+ 	return 0;
+ 
+ #elif	!defined(CONFIG_USB_OHCI_HCD) && !defined(CONFIG_USB_OHCI_HCD_MODULE)
+-	isp->otg.gadget = gadget;
++	otg->gadget = gadget;
+ 	// FIXME update its refcount
+ 
+ 	l = omap_readl(OTG_CTRL) & OTG_CTRL_MASK;
+@@ -1370,7 +1373,7 @@ isp1301_set_peripheral(struct usb_phy *otg, struct usb_gadget *gadget)
+ 	omap_writel(l, OTG_CTRL);
+ 
+ 	power_up(isp);
+-	isp->otg.state = USB_PHY_STATE_B_IDLE;
++	isp->xceiv.state = USB_PHY_STATE_B_IDLE;
+ 
+ 	if (machine_is_omap_h2() || machine_is_omap_h3())
+ 		isp1301_set_bits(isp, ISP1301_MODE_CONTROL_1, MC1_DAT_SE0);
+@@ -1411,13 +1414,13 @@ isp1301_set_power(struct usb_phy *dev, unsigned mA)
+ }
+ 
+ static int
+-isp1301_start_srp(struct usb_phy *dev)
++isp1301_start_srp(struct usb_otg *otg)
+ {
+-	struct isp1301	*isp = container_of(dev, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ 	u32		otg_ctrl;
+ 
+-	if (!dev || isp != the_transceiver
+-			|| isp->otg.state != USB_PHY_STATE_B_IDLE)
++	if (!otg || isp != the_transceiver
++			|| isp->xceiv.state != USB_PHY_STATE_B_IDLE)
+ 		return -ENODEV;
+ 
+ 	otg_ctrl = omap_readl(OTG_CTRL);
+@@ -1427,7 +1430,7 @@ isp1301_start_srp(struct usb_phy *dev)
+ 	otg_ctrl |= OTG_B_BUSREQ;
+ 	otg_ctrl &= ~OTG_A_BUSREQ & OTG_CTRL_MASK;
+ 	omap_writel(otg_ctrl, OTG_CTRL);
+-	isp->otg.state = USB_PHY_STATE_B_SRP_INIT;
++	isp->xceiv.state = USB_PHY_STATE_B_SRP_INIT;
+ 
+ 	pr_debug("otg: SRP, %s ... %06x\n", state_name(isp),
+ 			omap_readl(OTG_CTRL));
+@@ -1438,27 +1441,26 @@ isp1301_start_srp(struct usb_phy *dev)
+ }
+ 
+ static int
+-isp1301_start_hnp(struct usb_phy *dev)
++isp1301_start_hnp(struct usb_otg *otg)
+ {
+ #ifdef	CONFIG_USB_OTG
+-	struct isp1301	*isp = container_of(dev, struct isp1301, otg);
++	struct isp1301	*isp = container_of(otg->xceiv, struct isp1301, xceiv);
+ 	u32 l;
+ 
+-	if (!dev || isp != the_transceiver)
++	if (!otg || isp != the_transceiver)
+ 		return -ENODEV;
+-	if (isp->otg.default_a && (isp->otg.host == NULL
+-			|| !isp->otg.host->b_hnp_enable))
++	if (otg->default_a && (otg->host == NULL || !otg->host->b_hnp_enable))
+ 		return -ENOTCONN;
+-	if (!isp->otg.default_a && (isp->otg.gadget == NULL
+-			|| !isp->otg.gadget->b_hnp_enable))
++	if (!otg->default_a && (otg->gadget == NULL
++			|| !otg->gadget->b_hnp_enable))
+ 		return -ENOTCONN;
+ 
+ 	/* We want hardware to manage most HNP protocol timings.
+ 	 * So do this part as early as possible...
+ 	 */
+-	switch (isp->otg.state) {
++	switch (isp->xceiv.state) {
+ 	case USB_PHY_STATE_B_HOST:
+-		isp->otg.state = USB_PHY_STATE_B_PERIPHERAL;
++		isp->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
+ 		/* caller will suspend next */
  		break;
-@@ -364,11 +376,11 @@ static inline int isp1704_test_ulpi(struct isp1704_charger *isp)
- 	int ret = -ENODEV;
- 
- 	/* Test ULPI interface */
--	ret = otg_io_write(isp->otg, ULPI_SCRATCH, 0xaa);
-+	ret = isp1704_write(isp, ULPI_SCRATCH, 0xaa);
- 	if (ret < 0)
- 		return ret;
- 
--	ret = otg_io_read(isp->otg, ULPI_SCRATCH);
-+	ret = isp1704_read(isp, ULPI_SCRATCH);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -376,13 +388,13 @@ static inline int isp1704_test_ulpi(struct isp1704_charger *isp)
- 		return -ENODEV;
- 
- 	/* Verify the product and vendor id matches */
--	vendor = otg_io_read(isp->otg, ULPI_VENDOR_ID_LOW);
--	vendor |= otg_io_read(isp->otg, ULPI_VENDOR_ID_HIGH) << 8;
-+	vendor = isp1704_read(isp, ULPI_VENDOR_ID_LOW);
-+	vendor |= isp1704_read(isp, ULPI_VENDOR_ID_HIGH) << 8;
- 	if (vendor != NXP_VENDOR_ID)
- 		return -ENODEV;
- 
--	product = otg_io_read(isp->otg, ULPI_PRODUCT_ID_LOW);
--	product |= otg_io_read(isp->otg, ULPI_PRODUCT_ID_HIGH) << 8;
-+	product = isp1704_read(isp, ULPI_PRODUCT_ID_LOW);
-+	product |= isp1704_read(isp, ULPI_PRODUCT_ID_HIGH) << 8;
- 
- 	for (i = 0; i < ARRAY_SIZE(isp170x_id); i++) {
- 		if (product == isp170x_id[i]) {
-@@ -405,8 +417,8 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
+ 	case USB_PHY_STATE_A_HOST:
+@@ -1468,7 +1470,7 @@ isp1301_start_hnp(struct usb_phy *dev)
+ 				MC1_BDIS_ACON_EN);
+ #endif
+ 		/* caller must suspend then clear A_BUSREQ */
+-		usb_gadget_vbus_connect(isp->otg.gadget);
++		usb_gadget_vbus_connect(otg->gadget);
+ 		l = omap_readl(OTG_CTRL);
+ 		l |= OTG_A_SETB_HNPEN;
+ 		omap_writel(l, OTG_CTRL);
+@@ -1505,6 +1507,12 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
  	if (!isp)
- 		return -ENOMEM;
+ 		return 0;
  
--	isp->otg = otg_get_transceiver();
--	if (!isp->otg)
-+	isp->xceiv = usb_get_transceiver();
-+	if (!isp->xceiv)
- 		goto fail0;
- 
- 	isp->dev = &pdev->dev;
-@@ -429,14 +441,14 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
- 		goto fail1;
- 
- 	/*
--	 * REVISIT: using work in order to allow the otg notifications to be
-+	 * REVISIT: using work in order to allow the usb notifications to be
- 	 * made atomically in the future.
- 	 */
- 	INIT_WORK(&isp->work, isp1704_charger_work);
- 
- 	isp->nb.notifier_call = isp1704_notifier_call;
- 
--	ret = otg_register_notifier(isp->otg, &isp->nb);
-+	ret = usb_register_notifier(isp->xceiv, &isp->nb);
- 	if (ret)
- 		goto fail2;
- 
-@@ -449,13 +461,13 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
- 	 * enumerated. The charger driver should be always loaded before any
- 	 * gadget is loaded.
- 	 */
--	if (isp->otg->gadget)
--		usb_gadget_disconnect(isp->otg->gadget);
-+	if (isp->xceiv->gadget)
-+		usb_gadget_disconnect(isp->xceiv->gadget);
- 
- 	/* Detect charger if VBUS is valid (the cable was already plugged). */
--	ret = otg_io_read(isp->otg, ULPI_USB_INT_STS);
-+	ret = isp1704_read(isp, ULPI_USB_INT_STS);
- 	isp1704_charger_set_power(isp, 0);
--	if ((ret & ULPI_INT_VBUS_VALID) && !isp->otg->default_a) {
-+	if ((ret & ULPI_INT_VBUS_VALID) && !isp->xceiv->otg->default_a) {
- 		isp->event = USB_EVENT_VBUS;
- 		schedule_work(&isp->work);
- 	}
-@@ -464,7 +476,7 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
- fail2:
- 	power_supply_unregister(&isp->psy);
- fail1:
--	otg_put_transceiver(isp->otg);
-+	usb_put_transceiver(isp->xceiv);
- fail0:
- 	kfree(isp);
- 
-@@ -477,9 +489,9 @@ static int __devexit isp1704_charger_remove(struct platform_device *pdev)
- {
- 	struct isp1704_charger *isp = platform_get_drvdata(pdev);
- 
--	otg_unregister_notifier(isp->otg, &isp->nb);
-+	usb_unregister_notifier(isp->xceiv, &isp->nb);
- 	power_supply_unregister(&isp->psy);
--	otg_put_transceiver(isp->otg);
-+	usb_put_transceiver(isp->xceiv);
- 	isp1704_charger_set_power(isp, 0);
- 	kfree(isp);
- 
-diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
-index 60433b7..69e3a86 100644
---- a/drivers/power/pda_power.c
-+++ b/drivers/power/pda_power.c
-@@ -304,7 +304,7 @@ static int pda_power_probe(struct platform_device *pdev)
++	isp->xceiv.otg = kzalloc(sizeof *isp->xceiv.otg, GFP_KERNEL);
++	if (!isp->xceiv.otg) {
++		kfree(isp);
++		return 0;
++	}
++
+ 	INIT_WORK(&isp->work, isp1301_work);
+ 	init_timer(&isp->timer);
+ 	isp->timer.function = isp1301_timer;
+@@ -1578,14 +1586,15 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 		goto fail;
  	}
  
- #ifdef CONFIG_USB_OTG_UTILS
--	transceiver = otg_get_transceiver();
-+	transceiver = usb_get_transceiver();
- 	if (transceiver && !pdata->is_usb_online) {
- 		pdata->is_usb_online = otg_is_usb_online;
- 	}
-@@ -351,7 +351,7 @@ usb_supply_failed:
- 		free_irq(ac_irq->start, &pda_psy_ac);
- #ifdef CONFIG_USB_OTG_UTILS
- 	if (transceiver)
--		otg_put_transceiver(transceiver);
-+		usb_put_transceiver(transceiver);
+-	isp->otg.dev = &i2c->dev;
+-	isp->otg.label = DRIVER_NAME;
++	isp->xceiv.dev = &i2c->dev;
++	isp->xceiv.label = DRIVER_NAME;
++	isp->xceiv.set_power = isp1301_set_power,
+ 
+-	isp->otg.set_host = isp1301_set_host,
+-	isp->otg.set_peripheral = isp1301_set_peripheral,
+-	isp->otg.set_power = isp1301_set_power,
+-	isp->otg.start_srp = isp1301_start_srp,
+-	isp->otg.start_hnp = isp1301_start_hnp,
++	isp->xceiv.otg->xceiv = &isp->xceiv;
++	isp->xceiv.otg->set_host = isp1301_set_host,
++	isp->xceiv.otg->set_peripheral = isp1301_set_peripheral,
++	isp->xceiv.otg->start_srp = isp1301_start_srp,
++	isp->xceiv.otg->start_hnp = isp1301_start_hnp,
+ 
+ 	enable_vbus_draw(isp, 0);
+ 	power_down(isp);
+@@ -1603,7 +1612,7 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 	dev_dbg(&i2c->dev, "scheduled timer, %d min\n", TIMER_MINUTES);
  #endif
- ac_irq_failed:
- 	if (pdata->is_ac_online)
-@@ -386,7 +386,7 @@ static int pda_power_remove(struct platform_device *pdev)
- 		power_supply_unregister(&pda_psy_ac);
- #ifdef CONFIG_USB_OTG_UTILS
- 	if (transceiver)
--		otg_put_transceiver(transceiver);
-+		usb_put_transceiver(transceiver);
- #endif
- 	if (ac_draw) {
- 		regulator_put(ac_draw);
-diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
-index b3ead23..fdad850 100644
---- a/drivers/power/twl4030_charger.c
-+++ b/drivers/power/twl4030_charger.c
-@@ -70,7 +70,7 @@ struct twl4030_bci {
- 	struct power_supply	ac;
- 	struct power_supply	usb;
- 	struct usb_phy		*transceiver;
--	struct notifier_block	otg_nb;
-+	struct notifier_block	usb_nb;
- 	struct work_struct	work;
- 	int			irq_chg;
- 	int			irq_bci;
-@@ -279,7 +279,7 @@ static void twl4030_bci_usb_work(struct work_struct *data)
- static int twl4030_bci_usb_ncb(struct notifier_block *nb, unsigned long val,
- 			       void *priv)
+ 
+-	status = otg_set_transceiver(&isp->otg);
++	status = usb_set_transceiver(&isp->xceiv);
+ 	if (status < 0)
+ 		dev_err(&i2c->dev, "can't register transceiver, %d\n",
+ 			status);
+@@ -1611,6 +1620,7 @@ isp1301_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 	return 0;
+ 
+ fail:
++	kfree(isp->xceiv.otg);
+ 	kfree(isp);
+ 	return -ENODEV;
+ }
+@@ -1641,7 +1651,7 @@ subsys_initcall(isp_init);
+ static void __exit isp_exit(void)
  {
--	struct twl4030_bci *bci = container_of(nb, struct twl4030_bci, otg_nb);
-+	struct twl4030_bci *bci = container_of(nb, struct twl4030_bci, usb_nb);
- 
- 	dev_dbg(bci->dev, "OTG notify %lu\n", val);
- 
-@@ -479,10 +479,10 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
- 
- 	INIT_WORK(&bci->work, twl4030_bci_usb_work);
- 
--	bci->transceiver = otg_get_transceiver();
-+	bci->transceiver = usb_get_transceiver();
- 	if (bci->transceiver != NULL) {
--		bci->otg_nb.notifier_call = twl4030_bci_usb_ncb;
--		otg_register_notifier(bci->transceiver, &bci->otg_nb);
-+		bci->usb_nb.notifier_call = twl4030_bci_usb_ncb;
-+		usb_register_notifier(bci->transceiver, &bci->usb_nb);
- 	}
- 
- 	/* Enable interrupts now. */
-@@ -508,8 +508,8 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
- 
- fail_unmask_interrupts:
- 	if (bci->transceiver != NULL) {
--		otg_unregister_notifier(bci->transceiver, &bci->otg_nb);
--		otg_put_transceiver(bci->transceiver);
-+		usb_unregister_notifier(bci->transceiver, &bci->usb_nb);
-+		usb_put_transceiver(bci->transceiver);
- 	}
- 	free_irq(bci->irq_bci, bci);
- fail_bci_irq:
-@@ -539,8 +539,8 @@ static int __exit twl4030_bci_remove(struct platform_device *pdev)
- 			 TWL4030_INTERRUPTS_BCIIMR2A);
- 
- 	if (bci->transceiver != NULL) {
--		otg_unregister_notifier(bci->transceiver, &bci->otg_nb);
--		otg_put_transceiver(bci->transceiver);
-+		usb_unregister_notifier(bci->transceiver, &bci->usb_nb);
-+		usb_put_transceiver(bci->transceiver);
- 	}
- 	free_irq(bci->irq_bci, bci);
- 	free_irq(bci->irq_chg, bci);
+ 	if (the_transceiver)
+-		otg_set_transceiver(NULL);
++		usb_set_transceiver(NULL);
+ 	i2c_del_driver(&isp1301_driver);
+ }
+ module_exit(isp_exit);
 -- 
 1.7.4.1
 
