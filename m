@@ -1,94 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1IGQgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:36:55 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13749
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752801Ab1IGQgw (ORCPT
+	id S1752000Ab1IGQ33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:29:29 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:25536
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751693Ab1IGQ30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:36:52 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzzz2fh668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E679CE5.3050001@am.sony.com>
-Date: Wed, 7 Sep 2011 09:33:41 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Wed, 7 Sep 2011 12:29:26 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h63h)
+X-Spam-TCS-SCL: 2:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LR5SXX-02-DW8-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
+        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 04/10] iommu/core: Convert iommu_found to iommu_present
+Date: Wed, 7 Sep 2011 17:41:47 +0200
+Message-ID: <1315410113-26608-5-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
+References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@tglx.de>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [ANNOUNCE] 3.0.1-rt11
-References: <1313232790.25267.7.camel@twins> <4E559039.8060209@am.sony.com> <20110826235507.GJ2342@linux.vnet.ibm.com> <4E66DCAB.8090801@am.sony.com> <alpine.LFD.2.02.1109071115410.2723@ionos> <20110907104633.GR6619@n2100.arm.linux.org.uk> <20110907104747 <20110907140130.GT6619@n2100.arm.linux.org.uk>
-In-Reply-To: <20110907140130.GT6619@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/11 07:01, Russell King - ARM Linux wrote:
-> On Wed, Sep 07, 2011 at 12:57:44PM +0200, Thomas Gleixner wrote:
->> The problem is that if you enable interrupts on the CPU _BEFORE_ it is
->> set online AND active, then you can end up waking up kernel threads
->> which are bound to that CPU and the scheduler will happily schedule
->> them on an online CPU. That makes them lose the cpu affinity to the
->> CPU as well and hell breaks lose.
-> 
-> How can that happen?
-> 
-> 1. The only interrupts we're likely to receive are the local timer
->    interrupts - we have not routed any other interrupts to this CPU.
+With per-bus iommu_ops the iommu_found function needs to
+work on a bus_type too. This patch adds a bus_type parameter
+to that function and converts all call-places.
+The function is also renamed to iommu_present because the
+function now checks if an iommu is present for a given bus
+and does not check for a global iommu anymore.
 
-Yes, it is the local timer interrupt.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/ia64/kvm/kvm-ia64.c |    3 ++-
+ arch/x86/kvm/x86.c       |    3 ++-
+ drivers/iommu/iommu.c    |    9 ++++++---
+ include/linux/iommu.h    |    4 ++--
+ virt/kvm/iommu.c         |    2 +-
+ 5 files changed, 13 insertions(+), 8 deletions(-)
 
-> 
-> 2. We will not schedule on this CPU except at explicit scheduling
->    points (such as contended mutexes or explicit calls to schedule)
->    as we have a call to preempt_disable().
+diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
+index 8213efe..43f4c92 100644
+--- a/arch/ia64/kvm/kvm-ia64.c
++++ b/arch/ia64/kvm/kvm-ia64.c
+@@ -33,6 +33,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/iommu.h>
+ #include <linux/intel-iommu.h>
++#include <linux/pci.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/gcc_intrin.h>
+@@ -204,7 +205,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 		r = KVM_COALESCED_MMIO_PAGE_OFFSET;
+ 		break;
+ 	case KVM_CAP_IOMMU:
+-		r = iommu_found();
++		r = iommu_present(&pci_bus_type);
+ 		break;
+ 	default:
+ 		r = 0;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 84a28ea..73c6a42 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -44,6 +44,7 @@
+ #include <linux/perf_event.h>
+ #include <linux/uaccess.h>
+ #include <linux/hash.h>
++#include <linux/pci.h>
+ #include <trace/events/kvm.h>
+ 
+ #define CREATE_TRACE_POINTS
+@@ -2095,7 +2096,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 		r = 0;
+ 		break;
+ 	case KVM_CAP_IOMMU:
+-		r = iommu_found();
++		r = iommu_present(&pci_bus_type);
+ 		break;
+ 	case KVM_CAP_MCE:
+ 		r = KVM_MAX_MCE_BANKS;
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index adaee9b..2270127 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -39,11 +39,14 @@ void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops)
+ {
+ }
+ 
+-bool iommu_found(void)
++bool iommu_present(struct bus_type *bus)
+ {
+-	return iommu_ops != NULL;
++	if (bus->iommu_ops != NULL)
++		return true;
++	else
++		return iommu_ops != NULL;
+ }
+-EXPORT_SYMBOL_GPL(iommu_found);
++EXPORT_SYMBOL_GPL(iommu_present);
+ 
+ struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
+ {
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 3bd6892..de73219 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -56,7 +56,7 @@ struct iommu_ops {
+ 
+ extern void register_iommu(struct iommu_ops *ops);
+ extern void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops);
+-extern bool iommu_found(void);
++extern bool iommu_present(struct bus_type *bus);
+ extern struct iommu_domain *iommu_domain_alloc(struct bus_type *bus);
+ extern void iommu_domain_free(struct iommu_domain *domain);
+ extern int iommu_attach_device(struct iommu_domain *domain,
+@@ -76,7 +76,7 @@ extern int iommu_domain_has_cap(struct iommu_domain *domain,
+ 
+ struct iommu_ops {};
+ 
+-static inline bool iommu_found(void)
++static inline bool iommu_present(struct bus_type *bus)
+ {
+ 	return false;
+ }
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 20115b1..d149940 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -228,7 +228,7 @@ int kvm_iommu_map_guest(struct kvm *kvm)
+ {
+ 	int r;
+ 
+-	if (!iommu_found()) {
++	if (!iommu_present(&pci_bus_type)) {
+ 		printk(KERN_ERR "%s: iommu not found\n", __func__);
+ 		return -ENODEV;
+ 	}
+-- 
+1.7.4.1
 
-It is not a schedule.  It is wake_up_process():
-
-   wake_up_process()
-      try_to_wake_up()
-         select_task_rq()
-            if (... || !cpu_online(cpu))
-               select_fallback_rq(task_cpu(p), p)
-                  ...
-                  /* No more Mr. Nice Guy. */
-                  dest_cpu = cpuset_cpus_allowed_fallback(p)
-                     do_set_cpus_allowed(p, cpu_possible_mask)
-                        #  Thus ksoftirqd can now run on any cpu...
-
-
-> 
->> Frank has observed this with softirq threads, but the same thing is
->> true for any other CPU bound thread like the worker stuff.
-> 
-> So who is scheduling a workqueue from the local timer?
-
-   do_local_timer()
-      ipi_timer()
-         irq_exit()
-            invoke_softirq()
-               wakeup_softirqd()
-                  wake_up_process()
-
-> 
->> So moving the online, active thing BEFORE enabling interrupt is the
->> only sensible solution.
-> 
-> Yes, that'll be why even x86 enables interrupts before setting the CPU
-> online for the delay calibration.
-
--Frank
 
