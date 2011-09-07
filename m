@@ -1,145 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab1IGQTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:19:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:32278 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756362Ab1IGQT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:19:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,344,1312182000"; 
-   d="scan'208";a="46353067"
-Date: Wed, 7 Sep 2011 20:31:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/18] writeback: dirty position control - bdi reserve
- area
-Message-ID: <20110907123108.GB6862@localhost>
-References: <20110904015305.367445271@intel.com>
- <20110904020915.942753370@intel.com>
- <1315318179.14232.3.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315318179.14232.3.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932084Ab1IGQTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:19:39 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:47762 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756335Ab1IGQTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:19:09 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, Paul Clements <Paul.Clements@steeleye.com>
+Subject: [PATCH 3/3] nbd: map DISCARD requests to a new nbd request type
+Date: Wed,  7 Sep 2011 16:41:43 +0200
+Message-Id: <1315406503-7883-4-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
+References: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 10:09:39PM +0800, Peter Zijlstra wrote:
-> On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> > plain text document attachment (bdi-reserve-area)
-> > Keep a minimal pool of dirty pages for each bdi, so that the disk IO
-> > queues won't underrun.
-> > 
-> > It's particularly useful for JBOD and small memory system.
-> > 
-> > Note that this is not enough when memory is really tight (in comparison
-> > to write bandwidth). It may result in (pos_ratio > 1) at the setpoint
-> > and push the dirty pages high. This is more or less intended because the
-> > bdi is in the danger of IO queue underflow. However the global dirty
-> > pages, when pushed close to limit, will eventually conteract our desire
-> > to push up the low bdi_dirty.
-> > 
-> > In low memory JBOD tests we do see disks under-utilized from time to
-> > time. The additional fix may be to add a BDI_async_underrun flag to
-> > indicate that the block write queue is running low and it's time to
-> > quickly fill the queue by unthrottling the tasks regardless of the
-> > global limit.
-> > 
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  mm/page-writeback.c |   26 ++++++++++++++++++++++++++
-> >  1 file changed, 26 insertions(+)
-> > 
-> > --- linux-next.orig/mm/page-writeback.c	2011-08-26 20:12:19.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c	2011-08-26 20:13:21.000000000 +0800
-> > @@ -487,6 +487,16 @@ unsigned long bdi_dirty_limit(struct bac
-> >   *   0 +------------.------------------.----------------------*------------->
-> >   *           freerun^          setpoint^                 limit^   dirty pages
-> >   *
-> > + * (o) bdi reserve area
-> > + *
-> > + * The bdi reserve area tries to keep a reasonable number of dirty pages for
-> > + * preventing block queue underrun.
-> > + *
-> > + * reserve area, scale up rate as dirty pages drop low
-> > + * |<----------------------------------------------->|
-> > + * |-------------------------------------------------------*-------|----------
-> > + * 0                                           bdi setpoint^       ^bdi_thresh
-> 
-> 
-> So why not call the thing bdi freerun ?
+When the feature is enabled, set QUEUE_FLAG_DISCARD and transmit those as
+NBD_CMD_TRIM requests.
 
-Yeah I remember tried the "bdi freerun" concept in some earlier
-version. The main problem is, comparing to the global freerun, it
-risks exceeding the dirty limit. So if we are to do any bdi freerun
-area, it must be kept as small as possible.
+I used "trim" instead of "discard" to avoid confusion with the existing
+NBD_CMD_DISC that is used for disconnect.
 
-Or we can do conditional bdi freerun area as long as under global
-dirty limit. Something like
+Cc: Paul Clements <Paul.Clements@steeleye.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ drivers/block/nbd.c |   15 ++++++++++++---
+ include/linux/nbd.h |    4 +++-
+ 2 files changed, 15 insertions(+), 4 deletions(-)
 
-        bdi_freerun = min(limit - nr_dirty, write_bw + 4MBps) / 8
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index c4fe9c8..71ebaab 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -98,6 +98,7 @@ static const char *nbdcmd_to_ascii(int cmd)
+ 	case  NBD_CMD_READ: return "read";
+ 	case NBD_CMD_WRITE: return "write";
+ 	case  NBD_CMD_DISC: return "disconnect";
++	case  NBD_CMD_TRIM: return "trim (discard)";
+ 	}
+ 	return "invalid";
+ }
+@@ -454,9 +455,13 @@ static void nbd_handle_req(struct nbd_device *lo, struct request *req)
+ 	if (req->cmd_type != REQ_TYPE_FS)
+ 		goto error_out;
+ 
+-	if (rq_data_dir(req) == WRITE)
+-		nbd_cmd(req) = NBD_CMD_WRITE;
+-	else
++	if (rq_data_dir(req) == WRITE) {
++		if ((req->cmd_flags & REQ_DISCARD)) {
++			WARN_ON(!(lo->flags & NBD_FEATURE_TRIM));
++			nbd_cmd(req) = NBD_CMD_TRIM;
++		} else
++			nbd_cmd(req) = NBD_CMD_WRITE;
++	} else
+ 		nbd_cmd(req) = NBD_CMD_READ;
+ 
+ 	req->errors = 0;
+@@ -659,6 +664,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+ 			return -EINVAL;
+ 
+ 		mutex_unlock(&lo->tx_lock);
++		if (lo->flags & NBD_FEATURE_TRIM)
++			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
++						lo->disk->queue);
+ 
+ 		thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+@@ -677,6 +685,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+ 		lo->file = NULL;
+ 		nbd_clear_que(lo);
+ 		printk(KERN_WARNING "%s: queue cleared\n", lo->disk->disk_name);
++		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, lo->disk->queue);
+ 		if (file)
+ 			fput(file);
+ 		lo->flags = 0;
+@@ -796,6 +805,9 @@ static int __init nbd_init(void)
+ 		 * Tell the block layer that we are not a rotational device
+ 		 */
+ 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
++		disk->queue->limits.discard_granularity = 512;
++		disk->queue->limits.max_discard_sectors = UINT_MAX;
++		disk->queue->limits.discard_zeroes_data = 0;
+ 	}
+ 
+ 	if (register_blkdev(NBD_MAJOR, "nbd")) {
+diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+index 926f19d..7048463 100644
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -33,11 +33,13 @@
+  * not want any overlap.  Bits 32-63 are reserved because they
+  * are inaccessible on 32-bit platforms.  */
+ #define NBD_FEATURE_RESERVED	0xFFFFFFFF00000003LL
++#define NBD_FEATURE_TRIM	(1 << 2)
+ 
+ enum {
+ 	NBD_CMD_READ = 0,
+ 	NBD_CMD_WRITE = 1,
+-	NBD_CMD_DISC = 2
++	NBD_CMD_DISC = 2,
++	NBD_CMD_TRIM = 3
+ };
+ 
+ #define nbd_cmd(req) ((req)->cmd[0])
+-- 
+1.7.6
 
-I'll do some experiments and check how well it performs in JBOD setups.
-
-It's not likely to obsolete the bdi underrun flag, because the latter
-helps a lot the 1-disk dirty_bytes=1MB case, where the bdi freerun
-should be a NOP as there is already the global freerun.
-
-> >   * (o) bdi control lines
-> >   *
-> >   * The control lines for the global/bdi setpoints both stretch up to @limit.
-> > @@ -634,6 +644,22 @@ static unsigned long bdi_position_ratio(
-> >  	pos_ratio *= x_intercept - bdi_dirty;
-> >  	do_div(pos_ratio, x_intercept - bdi_setpoint + 1);
-> >  
-> > +	/*
-> > +	 * bdi reserve area, safeguard against dirty pool underrun and disk idle
-> > +	 *
-> > +	 * It may push the desired control point of global dirty pages higher
-> > +	 * than setpoint. It's not necessary in single-bdi case because a
-> > +	 * minimal pool of @freerun dirty pages will already be guaranteed.
-> > +	 */
-> > +	x_intercept = min(write_bw, freerun);
-> > +	if (bdi_dirty < x_intercept) {
-> 
-> So the point of the freerun point is that we never throttle before it,
-> so basically all the below shouldn't be needed at all, right? 
-
-Yes!
-
-> > +		if (bdi_dirty > x_intercept / 8) {
-> > +			pos_ratio *= x_intercept;
-> > +			do_div(pos_ratio, bdi_dirty);
-> > +		} else
-> > +			pos_ratio *= 8;
-> > +	}
-> > +
-> >  	return pos_ratio;
-> >  }
-> 
-> 
-> So why not add:
-> 
-> 	if (likely(dirty < freerun))
-> 		return 2;
-> 
-> at the start of this function and leave it at that?
-
-Because we already has
-
-        if (nr_dirty < freerun)
-                break;
-
-in the main balance_dirty_pages() loop ;)
-
-Thanks,
-Fengguang
