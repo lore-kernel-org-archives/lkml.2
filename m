@@ -1,114 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1IGQTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:19:39 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:47762 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756335Ab1IGQTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:19:09 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-api@vger.kernel.org, Paul Clements <Paul.Clements@steeleye.com>
-Subject: [PATCH 3/3] nbd: map DISCARD requests to a new nbd request type
-Date: Wed,  7 Sep 2011 16:41:43 +0200
-Message-Id: <1315406503-7883-4-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
-References: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
+	id S932070Ab1IGQTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:19:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56233 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756364Ab1IGQT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:19:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,345,1312182000"; 
+   d="scan'208";a="46370749"
+Date: Wed, 7 Sep 2011 21:32:11 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [PATCH 00/18] IO-less dirty throttling v11
+Message-ID: <20110907133211.GA28442@localhost>
+References: <20110904015305.367445271@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110904015305.367445271@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the feature is enabled, set QUEUE_FLAG_DISCARD and transmit those as
-NBD_CMD_TRIM requests.
+> Finally, the complete IO-less balance_dirty_pages(). NFS is observed to perform
+> better or worse depending on the memory size. Otherwise the added patches can
+> address all known regressions.
 
-I used "trim" instead of "discard" to avoid confusion with the existing
-NBD_CMD_DISC that is used for disconnect.
+I find that the NFS performance regressions on large memory system can
+be fixed by this patch. It tries to make the progress more smooth by
+reasonably reducing the commit size.
 
-Cc: Paul Clements <Paul.Clements@steeleye.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Thanks,
+Fengguang
 ---
- drivers/block/nbd.c |   15 ++++++++++++---
- include/linux/nbd.h |    4 +++-
- 2 files changed, 15 insertions(+), 4 deletions(-)
+Subject: nfs: limit the commit size to reduce fluctuations
+Date: Thu Dec 16 13:22:43 CST 2010
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index c4fe9c8..71ebaab 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -98,6 +98,7 @@ static const char *nbdcmd_to_ascii(int cmd)
- 	case  NBD_CMD_READ: return "read";
- 	case NBD_CMD_WRITE: return "write";
- 	case  NBD_CMD_DISC: return "disconnect";
-+	case  NBD_CMD_TRIM: return "trim (discard)";
- 	}
- 	return "invalid";
- }
-@@ -454,9 +455,13 @@ static void nbd_handle_req(struct nbd_device *lo, struct request *req)
- 	if (req->cmd_type != REQ_TYPE_FS)
- 		goto error_out;
+Limit the commit size to half the dirty control scope, so that the
+arrival of one commit will not knock the overall dirty pages off the
+scope.
+
+Also limit the commit size to one second worth of data. This will
+obviously help make the pipeline run more smoothly.
+
+Also change "<=" to "<": if an inode has only one dirty page in the end,
+it should be committed. I wonder why the "<=" didn't cause a bug...
+
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/nfs/write.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+After patch, there are still drop offs from the control scope,
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/NFS/nfs-1dd-1M-8p-2945M-20%25-2.6.38-rc6-dt6+-2011-02-22-21-09/balance_dirty_pages-pages.png
+
+due to bursty arrival of commits:
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/NFS/nfs-1dd-1M-8p-2945M-20%25-2.6.38-rc6-dt6+-2011-02-22-21-09/nfs-commit.png
+
+--- linux-next.orig/fs/nfs/write.c	2011-09-07 21:29:15.000000000 +0800
++++ linux-next/fs/nfs/write.c	2011-09-07 21:29:32.000000000 +0800
+@@ -1543,10 +1543,14 @@ static int nfs_commit_unstable_pages(str
+ 	int ret = 0;
  
--	if (rq_data_dir(req) == WRITE)
--		nbd_cmd(req) = NBD_CMD_WRITE;
--	else
-+	if (rq_data_dir(req) == WRITE) {
-+		if ((req->cmd_flags & REQ_DISCARD)) {
-+			WARN_ON(!(lo->flags & NBD_FEATURE_TRIM));
-+			nbd_cmd(req) = NBD_CMD_TRIM;
-+		} else
-+			nbd_cmd(req) = NBD_CMD_WRITE;
-+	} else
- 		nbd_cmd(req) = NBD_CMD_READ;
- 
- 	req->errors = 0;
-@@ -659,6 +664,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
- 			return -EINVAL;
- 
- 		mutex_unlock(&lo->tx_lock);
-+		if (lo->flags & NBD_FEATURE_TRIM)
-+			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
-+						lo->disk->queue);
- 
- 		thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
- 		if (IS_ERR(thread)) {
-@@ -677,6 +685,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
- 		lo->file = NULL;
- 		nbd_clear_que(lo);
- 		printk(KERN_WARNING "%s: queue cleared\n", lo->disk->disk_name);
-+		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, lo->disk->queue);
- 		if (file)
- 			fput(file);
- 		lo->flags = 0;
-@@ -796,6 +805,9 @@ static int __init nbd_init(void)
- 		 * Tell the block layer that we are not a rotational device
+ 	if (wbc->sync_mode == WB_SYNC_NONE) {
++		unsigned long bw = MIN_WRITEBACK_PAGES +
++			NFS_SERVER(inode)->backing_dev_info.avg_write_bandwidth;
++
+ 		/* Don't commit yet if this is a non-blocking flush and there
+-		 * are a lot of outstanding writes for this mapping.
++		 * are a lot of outstanding writes for this mapping, until
++		 * collected enough pages to commit.
  		 */
- 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
-+		disk->queue->limits.discard_granularity = 512;
-+		disk->queue->limits.max_discard_sectors = UINT_MAX;
-+		disk->queue->limits.discard_zeroes_data = 0;
- 	}
+-		if (nfsi->ncommit <= (nfsi->npages >> 1))
++		if (nfsi->ncommit < min(nfsi->npages / DIRTY_SCOPE, bw))
+ 			goto out_mark_dirty;
  
- 	if (register_blkdev(NBD_MAJOR, "nbd")) {
-diff --git a/include/linux/nbd.h b/include/linux/nbd.h
-index 926f19d..7048463 100644
---- a/include/linux/nbd.h
-+++ b/include/linux/nbd.h
-@@ -33,11 +33,13 @@
-  * not want any overlap.  Bits 32-63 are reserved because they
-  * are inaccessible on 32-bit platforms.  */
- #define NBD_FEATURE_RESERVED	0xFFFFFFFF00000003LL
-+#define NBD_FEATURE_TRIM	(1 << 2)
- 
- enum {
- 	NBD_CMD_READ = 0,
- 	NBD_CMD_WRITE = 1,
--	NBD_CMD_DISC = 2
-+	NBD_CMD_DISC = 2,
-+	NBD_CMD_TRIM = 3
- };
- 
- #define nbd_cmd(req) ((req)->cmd[0])
--- 
-1.7.6
-
+ 		/* don't wait for the COMMIT response */
