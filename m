@@ -1,227 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab1IGWOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 18:14:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45488 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752758Ab1IGWOh (ORCPT
+	id S1757349Ab1IGWPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 18:15:15 -0400
+Received: from peace.netnation.com ([204.174.223.2]:33371 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab1IGWPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 18:14:37 -0400
-Date: Wed, 7 Sep 2011 15:13:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Glauber Costa <glommer@parallels.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
- directory v6
-Message-Id: <20110907151323.613e62e7.akpm@linux-foundation.org>
-In-Reply-To: <20110907215329.GB28162@sun>
-References: <20110902163711.GA3124@albatros>
-	<20110905185358.GA2103@albatros>
-	<20110905192009.GJ761@sun>
-	<20110905194908.GA2690@albatros>
-	<20110905203627.GL761@sun>
-	<20110906101518.GA4799@albatros>
-	<20110906165144.GJ18425@mtj.dyndns.org>
-	<20110906172952.GA28055@albatros>
-	<20110906173341.GM18425@mtj.dyndns.org>
-	<20110907112301.GA12157@albatros>
-	<20110907215329.GB28162@sun>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Sep 2011 18:15:12 -0400
+Date: Wed, 7 Sep 2011 15:15:05 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com, xfs@oss.sgi.com
+Subject: [3.1-rc4] XFS+DRBD hangs
+Message-ID: <20110907221505.GC21603@hostway.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011 01:53:29 +0400
-Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+We will try again with most recent Linus HEAD, but with a build of Linus
+e9208a4eec8acbde7ede6516c39dea05f3b700dc (3.1-rc4), we are seeing awesome
+VM performance (low memory fragmentation, good caching), followed quickly
+by a hard lockup. APEI and pstore stuff just doesn't seem to like this
+PowerEdge 2950 (ERST: Failed to get Error Log Address Range.), so this
+was captured over an old-fashioned serial cable:
 
-> On Wed, Sep 07, 2011 at 03:23:01PM +0400, Vasiliy Kulikov wrote:
-> > Hi,
-> > 
-> > On Wed, Sep 07, 2011 at 02:33 +0900, Tejun Heo wrote:
-> > > On Tue, Sep 06, 2011 at 09:29:52PM +0400, Vasiliy Kulikov wrote:
-> > > > I agree with you.  I don't think that showing system-global debug
-> > > > information to all users by default is the right thing.  But some people
-> > > > doesn't agree with this point of view:
-> > > > 
-> > > > http://thread.gmane.org/gmane.linux.kernel/1108378
-> > > 
-> > > Yeap, I know there are two sides of the discussion but if one takes
-> > > the position that hiding such global debug info is more harmful, it's
-> > > only crazier to hide such information from each individual users of
-> > > the said global facility.  So, let's just forget about information
-> > > leak via freeing or not freeing here.  It's the wrong battle field.
-> > 
-> > Andrew, are you OK with closing the hole with pid_no_revalidate()
-> > and 0600 /proc/slabinfo?  If so, I feel I have to start this discussion
-> > with people participating in the discussion above: Theodore, Dan, Linus, etc.
+[   93.004364] block drbd0: Resync done (total 52 sec; paused 0 sec; 3884 K/sec)
+[   93.008004] block drbd0: updated UUIDs D1D6A96AAE5E394E:0000000000000000:264787A8207F2376:7E86E22A1F92B7FB
+[   93.008004] block drbd0: conn( SyncTarget -> Connected ) disk( Inconsistent -> UpToDate ) 
+[   93.030394] block drbd0: helper command: /sbin/drbdadm after-resync-target minor-0
+[   93.044631] block drbd0: helper command: /sbin/drbdadm after-resync-target minor-0 exit code 0 (0x0)
+[   93.102981] block drbd0: bitmap WRITE of 3382 pages took 10 jiffies
+[   93.109462] block drbd0: 0 KB (0 bits) marked out-of-sync by on disk bit-map.
+[ 1114.600102] block drbd0: peer( Primary -> Secondary ) 
+[ 1114.904031] block drbd0: role( Secondary -> Primary ) 
+[ 1115.284503] XFS (drbd0): Mounting Filesystem
+[ 1115.928766] XFS (drbd0): Ending clean mount
+[ 1116.324036] NFSD: Using /var/lib/nfs/v4recovery as the NFSv4 state recovery directory
+[ 1116.336050] NFSD: starting 90-second grace period
+[ 1532.427149] Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 1
+[ 1532.427149] Pid: 3590, comm: lmtp Not tainted 3.1.0-rc4-hw+ #28
+[ 1532.427149] Call Trace:
+[ 1532.427149]  <NMI>  [<ffffffff816aa954>] panic+0xba/0x1f5
+[ 1532.427149]  [<ffffffff8108f6d1>] watchdog_overflow_callback+0xb1/0xc0
+[ 1532.427149]  [<ffffffff810bb442>] __perf_event_overflow+0xa2/0x1f0
+[ 1532.427149]  [<ffffffff810b4981>] ? perf_event_update_userpage+0x11/0xc0
+[ 1532.427149]  [<ffffffff810bb994>] perf_event_overflow+0x14/0x20
+[ 1532.427149]  [<ffffffff81014bcb>] intel_pmu_handle_irq+0x21b/0x460
+[ 1532.427149]  [<ffffffff816af286>] perf_event_nmi_handler+0x36/0xb0
+[ 1532.427149]  [<ffffffff816b132f>] notifier_call_chain+0x3f/0x80
+[ 1532.427149]  [<ffffffff816b1395>] atomic_notifier_call_chain+0x15/0x20
+[ 1532.427149]  [<ffffffff816b13ce>] notify_die+0x2e/0x30
+[ 1532.427149]  [<ffffffff816ae9e2>] do_nmi+0xa2/0x250
+[ 1532.427149]  [<ffffffff816ae3ca>] nmi+0x1a/0x20
+[ 1532.427149]  [<ffffffff8103d512>] ? try_to_wake_up+0xc2/0x270
+[ 1532.427149]  <<EOE>>  <IRQ>  [<ffffffff8103d6cd>] default_wake_function+0xd/0x10
+[ 1532.427149]  [<ffffffff81067041>] autoremove_wake_function+0x11/0x40
+[ 1532.427149]  [<ffffffff8103075a>] __wake_up_common+0x5a/0x90
+[ 1532.427149]  [<ffffffff81037c43>] __wake_up+0x43/0x70
+[ 1532.427149]  [<ffffffffa0060579>] drbd_al_complete_io+0x99/0xd0 [drbd]
+[ 1532.427149]  [<ffffffffa005b9b5>] _req_may_be_done+0x325/0x560 [drbd]
+[ 1532.427149]  [<ffffffff810fabe1>] ? kmem_cache_free+0xe1/0xf0
+[ 1532.427149]  [<ffffffffa005bc0d>] _req_may_be_done_not_susp+0x1d/0x30 [drbd]
+[ 1532.427149]  [<ffffffffa005c0cb>] __req_mod+0x4ab/0xee0 [drbd]
+[ 1532.427149]  [<ffffffffa004f22e>] drbd_endio_pri+0xae/0x120 [drbd]
+[ 1532.427149]  [<ffffffff81130b6c>] bio_endio+0x1c/0x40
+[ 1532.427149]  [<ffffffff813737d3>] req_bio_endio+0x83/0xb0
+[ 1532.427149]  [<ffffffff81373900>] blk_update_request+0x100/0x470
+[ 1532.427149]  [<ffffffff81373c92>] blk_update_bidi_request+0x22/0x90
+[ 1532.427149]  [<ffffffff81374e5a>] blk_end_bidi_request+0x2a/0x80
+[ 1532.427149]  [<ffffffff81374efb>] blk_end_request+0xb/0x10
+[ 1532.427149]  [<ffffffff8146744d>] scsi_io_completion+0x11d/0x620
+[ 1532.427149]  [<ffffffff8145f2ff>] scsi_finish_command+0xbf/0x120
+[ 1532.427149]  [<ffffffff81467a9e>] scsi_softirq_done+0x13e/0x160
+[ 1532.427149]  [<ffffffff8137ab7d>] blk_done_softirq+0x6d/0x80
+[ 1532.427149]  [<ffffffff8104d0f0>] __do_softirq+0xd0/0x1c0
+[ 1532.427149]  [<ffffffff816b726c>] call_softirq+0x1c/0x30
+[ 1532.427149]  [<ffffffff81004035>] do_softirq+0x55/0x90
+[ 1532.427149]  [<ffffffff8104ce2d>] irq_exit+0xad/0xe0
+[ 1532.427149]  [<ffffffff81003824>] do_IRQ+0x64/0xe0
+[ 1532.427149]  [<ffffffff816adf6b>] common_interrupt+0x6b/0x6b
+[ 1532.427149]  <EOI> 
+[ 1545.171011] Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 0
+[ 1545.171011] Pid: 20283, comm: xfsbufd/drbd0 Not tainted 3.1.0-rc4-hw+ #28
+[ 1545.171011] Call Trace:
+[ 1545.171011]  <NMI>  [<ffffffff816aa954>] panic+0xba/0x1f5
+[ 1545.171011]  [<ffffffff8108f6d1>] watchdog_overflow_callback+0xb1/0xc0
+[ 1545.171011]  [<ffffffff810bb442>] __perf_event_overflow+0xa2/0x1f0
+[ 1545.171011]  [<ffffffff810b4981>] ? perf_event_update_userpage+0x11/0xc0
+[ 1545.171011]  [<ffffffff810bb994>] perf_event_overflow+0x14/0x20
+[ 1545.171011]  [<ffffffff81014bcb>] intel_pmu_handle_irq+0x21b/0x460
+[ 1545.171011]  [<ffffffff816af286>] perf_event_nmi_handler+0x36/0xb0
+[ 1545.171011]  [<ffffffff816b132f>] notifier_call_chain+0x3f/0x80
+[ 1545.171011]  [<ffffffff816b1395>] atomic_notifier_call_chain+0x15/0x20
+[ 1545.171011]  [<ffffffff816b13ce>] notify_die+0x2e/0x30
+[ 1545.171011]  [<ffffffff816ae9e2>] do_nmi+0xa2/0x250
+[ 1545.171011]  [<ffffffff816ae3ca>] nmi+0x1a/0x20
+[ 1545.171011]  [<ffffffff816adb07>] ? _raw_spin_lock_irqsave+0x17/0x20
+[ 1545.171011]  <<EOE>>  <IRQ>  [<ffffffffa004f21c>] drbd_endio_pri+0x9c/0x120 [drbd]
+[ 1545.171011]  [<ffffffff814302d2>] ? put_device+0x12/0x20
+[ 1545.171011]  [<ffffffff81130b6c>] bio_endio+0x1c/0x40
+[ 1545.171011]  [<ffffffff813737d3>] req_bio_endio+0x83/0xb0
+[ 1545.171011]  [<ffffffff81373900>] blk_update_request+0x100/0x470
+[ 1545.171011]  [<ffffffff81373c92>] blk_update_bidi_request+0x22/0x90
+[ 1545.171011]  [<ffffffff81374e5a>] blk_end_bidi_request+0x2a/0x80
+[ 1545.171011]  [<ffffffff81374efb>] blk_end_request+0xb/0x10
+[ 1545.171011]  [<ffffffff8146744d>] scsi_io_completion+0x11d/0x620
+[ 1545.171011]  [<ffffffff8145f2ff>] scsi_finish_command+0xbf/0x120
+[ 1545.171011]  [<ffffffff81467a9e>] scsi_softirq_done+0x13e/0x160
+[ 1545.171011]  [<ffffffff8137ab7d>] blk_done_softirq+0x6d/0x80
+[ 1545.171011]  [<ffffffff8104d0f0>] __do_softirq+0xd0/0x1c0
+[ 1545.171011]  [<ffffffff816b726c>] call_softirq+0x1c/0x30
+[ 1545.171011]  [<ffffffff81004035>] do_softirq+0x55/0x90
+[ 1545.171011]  [<ffffffff8104ce2d>] irq_exit+0xad/0xe0
+[ 1545.171011]  [<ffffffff8101cd0f>] smp_call_function_single_interrupt+0x2f/0x40
+[ 1545.171011]  [<ffffffff816b6d4b>] call_function_single_interrupt+0x6b/0x70
+[ 1545.171011]  <EOI>  [<ffffffff8146635c>] ? scsi_request_fn+0xec/0x510
+[ 1545.171011]  [<ffffffff8136fd25>] __blk_run_queue+0x15/0x20
+[ 1545.171011]  [<ffffffff813876ec>] cfq_insert_request+0x49c/0x5c0
+[ 1545.171011]  [<ffffffff8136f658>] __elv_add_request+0x198/0x2a0
+[ 1545.171011]  [<ffffffff81376410>] blk_flush_plug_list+0x1d0/0x210
+[ 1545.171011]  [<ffffffff816ab70a>] schedule+0x62a/0xad0
+[ 1545.171011]  [<ffffffff810fb26e>] ? kmem_cache_alloc+0xee/0x100
+[ 1545.171011]  [<ffffffffa0042199>] ? lc_get+0x49/0x250 [lru_cache]
+[ 1545.171011]  [<ffffffffa0061815>] drbd_al_begin_io+0x1c5/0x200 [drbd]
+[ 1545.171011]  [<ffffffff81132784>] ? bio_alloc_bioset+0x54/0xe0
+[ 1545.171011]  [<ffffffff81067030>] ? wake_up_bit+0x40/0x40
+[ 1545.171011]  [<ffffffff81131591>] ? __bio_clone+0x21/0x60
+[ 1545.171011]  [<ffffffffa005d825>] drbd_make_request_common+0xd25/0x1650 [drbd]
+[ 1545.171011]  [<ffffffff8136e916>] ? elv_set_request+0x16/0x40
+[ 1545.171011]  [<ffffffffa005e48a>] drbd_make_request+0x33a/0x1150 [drbd]
+[ 1545.171011]  [<ffffffff8137a175>] ? blk_recount_segments+0x25/0x40
+[ 1545.171011]  [<ffffffff81131b81>] ? bio_phys_segments+0x21/0x30
+[ 1545.171011]  [<ffffffff8137410e>] ? drive_stat_acct+0x11e/0x180
+[ 1545.171011]  [<ffffffff8137665d>] ? __make_request+0x1bd/0x330
+[ 1545.171011]  [<ffffffff81374713>] generic_make_request+0x3f3/0x540
+[ 1545.171011]  [<ffffffff8138c327>] ? kobject_put+0x27/0x60
+[ 1545.171011]  [<ffffffff813748d6>] submit_bio+0x76/0xf0
+[ 1545.171011]  [<ffffffff81278a57>] _xfs_buf_ioapply+0xb7/0x1f0
+[ 1545.171011]  [<ffffffff8127a3a5>] ? xfs_bdstrat_cb+0x85/0xb0
+[ 1545.171011]  [<ffffffff8127a251>] xfs_buf_iorequest+0x71/0xc0
+[ 1545.171011]  [<ffffffff8127a3a5>] xfs_bdstrat_cb+0x85/0xb0
+[ 1545.171011]  [<ffffffff8127a4c6>] xfsbufd+0xf6/0x130
+[ 1545.171011]  [<ffffffff8127a3d0>] ? xfs_bdstrat_cb+0xb0/0xb0
+[ 1545.171011]  [<ffffffff81066b16>] kthread+0x96/0xb0
+[ 1545.171011]  [<ffffffff816b7174>] kernel_thread_helper+0x4/0x10
+[ 1545.171011]  [<ffffffff81066a80>] ? kthread_worker_fn+0x130/0x130
+[ 1545.171011]  [<ffffffff816b7170>] ? gs_change+0xb/0xb
 
-I fell asleep a long time ago and don't know what pid_no_revalidate()
-and slabinfo permissions have to do with this.  Perhaps summarising the
-issues in the changelog would be appropriate, dunno.
+We upgraded from 2.6.36 which seemed to have a page leak (file pages left
+on the LRU) and so would eventually perform very poorly. 2.6.37 and
+2.6.38 seemed to have some unix socket issue that caused heartbeat to
+wedge. Shall we enable lock debugging or something here?
 
-> > By Andrew Morton
-> >
-> > But do we *really* need to do it in two passes?  Avoiding the temporary
-> > storage would involve doing more work under mmap_sem, and a put_filp()
-> > under mmap_sem might be problematic.
-> 
-> I fear we still need to use two passes in proc_map_files_readdir, I found no way
-> to escape lockdep complains when doing all work in one pass with mmap_sem taken.
-> The /maps does the same thing -- ie it fills maps file with mmap_sem taken to produce
-> robust data.
+More bits at http://0x.ca/sim/ref/3.1-rc4/.
 
-The code's using three passes.
-
-> And I'm not really sure what you mean with problematic put_filp?
-
-I was thinking fput(), which can do a hell of a lot of stuff if it's
-the final put on the inode.
-
->
-> ...
->
-> +static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
-> +{
-> +	struct dentry *dentry = filp->f_path.dentry;
-> +	struct inode *inode = dentry->d_inode;
-> +	struct vm_area_struct *vma;
-> +	struct task_struct *task;
-> +	struct mm_struct *mm;
-> +	ino_t ino;
-> +	int ret;
-> +
-> +	ret = -ENOENT;
-> +	task = get_proc_task(inode);
-> +	if (!task)
-> +		goto out_no_task;
-> +
-> +	ret = -EPERM;
-> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> +		goto out;
-> +
-> +	ret = 0;
-> +	switch (filp->f_pos) {
-> +	case 0:
-> +		ino = inode->i_ino;
-> +		if (filldir(dirent, ".", 1, 0, ino, DT_DIR) < 0)
-> +			goto out;
-> +		filp->f_pos++;
-> +	case 1:
-> +		ino = parent_ino(dentry);
-> +		if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
-> +			goto out;
-> +		filp->f_pos++;
-> +	default:
-> +	{
-> +		unsigned long nr_files, used, pos, i;
-> +		struct flex_array *fa = NULL;
-> +		struct map_files_info info;
-> +		struct map_files_info *p;
-> +
-> +		mm = get_task_mm(task);
-> +		if (!mm)
-> +			goto out;
-> +		down_read(&mm->mmap_sem);
-> +
-> +		nr_files = 0;
-> +		used = 0;
-> +
-> +		/*
-> +		 * We need two passes here:
-> +		 *
-> +		 *  1) Collect vmas of mapped files with mmap_sem taken
-> +		 *  2) Release mmap_sem and instantiate entries
-> +		 *
-> +		 * otherwise we get lockdep complained, since filldir()
-> +		 * routine might require mmap_sem taken in might_fault().
-> +		 */
-> +
-> +		for (vma = mm->mmap; vma; vma = vma->vm_next) {
-> +			if (vma->vm_file)
-> +				nr_files++;
-> +		}
-> +
-> +		if (nr_files) {
-> +			ret = -ENOMEM;
-> +			fa = flex_array_alloc(sizeof(info), nr_files, GFP_KERNEL);
-> +			if (!fa)
-> +				goto err;
-> +			if (flex_array_prealloc(fa, 0, nr_files, GFP_KERNEL))
-> +				goto err;
-> +			for (vma = mm->mmap, pos = 2; vma; vma = vma->vm_next) {
-> +				if (!vma->vm_file)
-> +					continue;
-> +				if (++pos <= filp->f_pos)
-> +					continue;
-> +
-> +				get_file(vma->vm_file);
-> +				info.file = vma->vm_file;
-> +				info.len = snprintf(info.name, sizeof(info.name),
-> +						    "%lx-%lx", vma->vm_start,
-> +						    vma->vm_end);
-> +				if (flex_array_put(fa, used, &info, GFP_KERNEL)) {
-> +					/*
-> +					 * This must never happen on preallocated array,
-> +					 * but just to be sure.
-> +					 */
-> +					WARN_ON_ONCE(1);
-> +					put_filp(vma->vm_file);
-> +					goto err;
-> +				}
-> +				used++;
-> +			}
-> +			ret = 0;
-> +		}
-> +err:
-> +		up_read(&mm->mmap_sem);
-> +
-> +		for (i = 0; i < used && !ret; i++) {
-
-The "&& !ret" is unneeded?
-
-> +			p = flex_array_get(fa, i);
-> +			ret = proc_fill_cache(filp, dirent, filldir,
-> +					      p->name, p->len,
-> +					      proc_map_files_instantiate,
-> +					      task, p->file);
-> +			if (ret)
-> +				break;
-> +			filp->f_pos++;
-> +			put_filp(p->file);
-> +		}
-> +
-> +		for (; i < used; i++) {
-> +			p = flex_array_get(fa, i);
-> +			put_filp(p->file);
-> +		}
-
-Still unclear why we need the third loop.
-
-> +		if (fa)
-> +			flex_array_free(fa);
-> +
-> +		mmput(mm);
-> +	}
-> +	}
-> +
-> +out:
-> +	put_task_struct(task);
-> +out_no_task:
-> +	return ret;
-> +}
->
-> ...
->
+Simon-
