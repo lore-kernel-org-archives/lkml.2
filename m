@@ -1,208 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab1IGQc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:32:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38245 "EHLO
+	id S1752790Ab1IGQdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:33:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38263 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab1IGQcx convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752749Ab1IGQdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:32:53 -0400
-Subject: Re: v3.1-rc5: Weird kernel log message when resuming avout NMI
- received
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Wed, 07 Sep 2011 10:00:51 +0200
-In-Reply-To: <CAC9WiBiNj-NS2mb8SaR1pK2JQdJOAbnN_rCXk1ZEMNaWQWZwxQ@mail.gmail.com>
-References: <CAC9WiBiNj-NS2mb8SaR1pK2JQdJOAbnN_rCXk1ZEMNaWQWZwxQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315382451.11101.12.camel@twins>
-Mime-Version: 1.0
+	Wed, 7 Sep 2011 12:33:08 -0400
+Message-ID: <4E677AF5.7050903@infradead.org>
+Date: Wed, 07 Sep 2011 11:08:53 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Arnaud Lacombe <lacombar@gmail.com>
+CC: Josh Boyer <jwboyer@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: no tree for Sept 6
+References: <20110906164049.4dd3961cb82800b8d7cc8741@canb.auug.org.au> <CACqU3MXcZ72eYNd=duPYdR_gOe-ejnHoLSMqK_ZU3y=MR2-0+A@mail.gmail.com> <CA+5PVA7CETUa0i3U20ifz5YjXAywTGD2NEQt1GcJz1OwY_DtEg@mail.gmail.com> <CACqU3MXQw4+QyBmCPcO8ZmYu0T6N+DStXBoa=JUv+ej6cWMTnw@mail.gmail.com> <CA+5PVA7Oj9BNTA93m8-rj4a7Ze_N7m3mG0-+GLG1zUSG+ekqJQ@mail.gmail.com> <CACqU3MW3w10LsZvyY4RNQ1-0TgrW39PaGeVnj78bk+p6c=1uFQ@mail.gmail.com>
+In-Reply-To: <CACqU3MW3w10LsZvyY4RNQ1-0TgrW39PaGeVnj78bk+p6c=1uFQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-07 at 08:37 +0200, Francis Moreau wrote:
+Em 06-09-2011 15:30, Arnaud Lacombe escreveu:
+> Hi,
 > 
-> > After the second suspend/resume sequence I still have the same warning
-> > except that the reason has changed to '2d':
-> >
-> >  kernel:[  404.091393] Uhhuh. NMI received for unknown reason 2d on CPU 0.
-> >  kernel:[  404.091394] Do you have a strange power saving mode enabled?
-> >  kernel:[  404.091396] Dazed and confused, but trying to continue
+> On Tue, Sep 6, 2011 at 2:18 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>> On Tue, Sep 6, 2011 at 1:29 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> On Tue, Sep 6, 2011 at 1:23 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>>>> On Tue, Sep 6, 2011 at 1:17 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>>>> Hi,
+>>>>>
+>>>>> On Tue, Sep 6, 2011 at 2:40 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>>>> Hi all,
+>>>>>>
+>>>>>> With master.kernel.org down, there is not much change from yesterday and
+>>>>>> I cannot publish the resulting linux-next tree anyway, so there is no
+>>>>>> tree today.
+>>>>>>
+>>>>> What about github ? gitorious ?
+>>>>>
+>>>>> If you fork linus' tree on github, you should still be within the disk
+>>>>> usage limit. My linux-2.6-next.git bare tree mirror is about 303MB.
+>>>>
+>>>> Well... that would be helpful if all of the trees that linux-next
+>>>> pulls from are hosted somewhere other than kernel.org as well.  A lot
+>>>> of them are not, which means you would get an incomplete linux-next
+>>>> tree at best.  Probably better to just wait.
+>>>>
+>>> That's just insane...
+>>
+>> It's insane for people to host their git trees for kernel work on kernel.org?
+>>
+> Yes. It is looking for trouble by creating a wonderful single point of
+> failure. Which happened to have failed.
 
-I'm somewhat out of ideas there..  I guess I'll have to go debug on my
-laptop which hasn't got a serial port :-(
+It seems that we need a backup plan. In my case, I could put the tree
+for -next at infradead or at linuxtv, but that means to re-configure
+everything at Stephen's side.
 
-Rafael, can you see anything obviously broken in the below patch from a
-s2r pov?
+Does anyone have an ETA for hera to come back to live? If they're
+planning to recover it into one or two days, then it is probably better
+to wait. Otherwise, I think it would be wiser to move the repo to
+some other place while they're preparing a new infrastructure.
 
----
->From 144060fee07e9c22e179d00819c83c86fbcbf82c Mon Sep 17 00:00:00 2001
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 1 Aug 2011 12:49:14 +0200
-Subject: [PATCH] perf: Add PM notifiers to fix CPU hotplug races
+> If I were to be really paranoid, I would no longer trust any code on
+> git.kernel.org unless all the current repository were to be destroyed,
+> and re-uploaded by their owner.
 
-Francis reports that s2r gets him spurious NMIs, this is because the
-suspend code leaves the boot cpu up and running.
+In any case, I'll just do a push -f after hera return, and do a 
+git repack -A -d on my repository there, to remove any bad object
+that might be inserted by someone's else.
 
-Cure this by adding a suspend notifier. The problem is that hotplug
-and suspend are completely un-serialized and the PM notifiers run
-before the suspend cpu unplug of all but the boot cpu.
-
-This leaves a window where the user can initialize another hotplug
-operation (either remove or add a cpu) resulting in either one too
-many or one too few hotplug ops. Thus we cannot use the hotplug code
-for the suspend case.
-
-There's another reason to not use the hotplug code, which is that the
-hotplug code totally destroys the perf state, we can do better for
-suspend and simply remove all counters from the PMU so that we can
-re-instate them on resume.
-
-Reported-by: Francis Moreau <francis.moro@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-1cvevybkgmv4s6v5y37t4847@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b8785e2..d4c8542 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -29,6 +29,7 @@
- #include <linux/hardirq.h>
- #include <linux/rculist.h>
- #include <linux/uaccess.h>
-+#include <linux/suspend.h>
- #include <linux/syscalls.h>
- #include <linux/anon_inodes.h>
- #include <linux/kernel_stat.h>
-@@ -6809,7 +6810,7 @@ static void __cpuinit perf_event_init_cpu(int cpu)
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
- 	mutex_lock(&swhash->hlist_mutex);
--	if (swhash->hlist_refcount > 0) {
-+	if (swhash->hlist_refcount > 0 && !swhash->swevent_hlist) {
- 		struct swevent_hlist *hlist;
- 
- 		hlist = kzalloc_node(sizeof(*hlist), GFP_KERNEL, cpu_to_node(cpu));
-@@ -6898,7 +6899,14 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
- {
- 	unsigned int cpu = (long)hcpu;
- 
--	switch (action & ~CPU_TASKS_FROZEN) {
-+	/*
-+	 * Ignore suspend/resume action, the perf_pm_notifier will
-+	 * take care of that.
-+	 */
-+	if (action & CPU_TASKS_FROZEN)
-+		return NOTIFY_OK;
-+
-+	switch (action) {
- 
- 	case CPU_UP_PREPARE:
- 	case CPU_DOWN_FAILED:
-@@ -6917,6 +6925,90 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
- 	return NOTIFY_OK;
- }
- 
-+static void perf_pm_resume_cpu(void *unused)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	struct perf_event_context *ctx;
-+	struct pmu *pmu;
-+	int idx;
-+
-+	idx = srcu_read_lock(&pmus_srcu);
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		ctx = cpuctx->task_ctx;
-+
-+		perf_ctx_lock(cpuctx, ctx);
-+		perf_pmu_disable(cpuctx->ctx.pmu);
-+
-+		cpu_ctx_sched_out(cpuctx, EVENT_ALL);
-+		if (ctx)
-+			ctx_sched_out(ctx, cpuctx, EVENT_ALL);
-+
-+		perf_pmu_enable(cpuctx->ctx.pmu);
-+		perf_ctx_unlock(cpuctx, ctx);
-+	}
-+	srcu_read_unlock(&pmus_srcu, idx);
-+}
-+
-+static void perf_pm_suspend_cpu(void *unused)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	struct perf_event_context *ctx;
-+	struct pmu *pmu;
-+	int idx;
-+
-+	idx = srcu_read_lock(&pmus_srcu);
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+		ctx = cpuctx->task_ctx;
-+
-+		perf_ctx_lock(cpuctx, ctx);
-+		perf_pmu_disable(cpuctx->ctx.pmu);
-+
-+		perf_event_sched_in(cpuctx, ctx, current);
-+
-+		perf_pmu_enable(cpuctx->ctx.pmu);
-+		perf_ctx_unlock(cpuctx, ctx);
-+	}
-+	srcu_read_unlock(&pmus_srcu, idx);
-+}
-+
-+static int perf_resume(void)
-+{
-+	get_online_cpus();
-+	smp_call_function(perf_pm_resume_cpu, NULL, 1);
-+	put_online_cpus();
-+
-+	return NOTIFY_OK;
-+}
-+
-+static int perf_suspend(void)
-+{
-+	get_online_cpus();
-+	smp_call_function(perf_pm_suspend_cpu, NULL, 1);
-+	put_online_cpus();
-+
-+	return NOTIFY_OK;
-+}
-+
-+static int perf_pm(struct notifier_block *self, unsigned long action, void *ptr)
-+{
-+	switch (action) {
-+	case PM_POST_HIBERNATION:
-+	case PM_POST_SUSPEND:
-+		return perf_resume();
-+	case PM_HIBERNATION_PREPARE:
-+	case PM_SUSPEND_PREPARE:
-+		return perf_suspend();
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+}
-+
-+static struct notifier_block perf_pm_notifier = {
-+	.notifier_call = perf_pm,
-+};
-+
- void __init perf_event_init(void)
- {
- 	int ret;
-@@ -6931,6 +7023,7 @@ void __init perf_event_init(void)
- 	perf_tp_register();
- 	perf_cpu_notifier(perf_cpu_notify);
- 	register_reboot_notifier(&perf_reboot_notifier);
-+	register_pm_notifier(&perf_pm_notifier);
- 
- 	ret = init_hw_breakpoint();
- 	WARN(ret, "hw_breakpoint initialization failed with: %d", ret);
+> 
+>  - Arnaud
+> 
+>>> git is distributed, but still used centrally. Kernel development
+>>> should just not be impacted by such issues.
+>>
+>> No... git is still used in a distributed fashion.  It's just that most
+>> maintainers host the public trees that people pull from on kernel.org.
+>>  Some have pushed public trees to github or elsewhere, but not all of
+>> them.
+>>
+>> josh
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
