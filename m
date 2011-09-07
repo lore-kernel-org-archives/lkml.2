@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab1IGO6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 10:58:25 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:51584 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754310Ab1IGO6V (ORCPT
+	id S1754072Ab1IGMFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 08:05:55 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54544 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab1IGMFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 10:58:21 -0400
-Date: Wed, 7 Sep 2011 17:16:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: no tree for Sept 6
-Message-Id: <20110907171624.19b6acabb6f819ecb0e66826@canb.auug.org.au>
-In-Reply-To: <CACqU3MXcZ72eYNd=duPYdR_gOe-ejnHoLSMqK_ZU3y=MR2-0+A@mail.gmail.com>
-References: <20110906164049.4dd3961cb82800b8d7cc8741@canb.auug.org.au>
-	<CACqU3MXcZ72eYNd=duPYdR_gOe-ejnHoLSMqK_ZU3y=MR2-0+A@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__7_Sep_2011_17_16_24_+1000_uWafU./mqQ1qQ5r2"
+	Wed, 7 Sep 2011 08:05:51 -0400
+Date: Wed, 7 Sep 2011 11:46:33 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frank Rowand <frank.rowand@am.sony.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@tglx.de>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+Message-ID: <20110907104633.GR6619@n2100.arm.linux.org.uk>
+References: <1313232790.25267.7.camel@twins> <4E559039.8060209@am.sony.com> <20110826235507.GJ2342@linux.vnet.ibm.com> <4E66DCAB.8090801@am.sony.com> <alpine.LFD.2.02.1109071115410.2723@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1109071115410.2723@ionos>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__7_Sep_2011_17_16_24_+1000_uWafU./mqQ1qQ5r2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 07, 2011 at 11:25:29AM +0200, Thomas Gleixner wrote:
+> This smells badly like the problem we've seen on x86 before. And
+> looking at the arm SMP boot code:
+> 
+> asmlinkage void __cpuinit secondary_start_kernel(void)
+> {
+> 	.....
+> 
+> 	/*
+> 	 * Give the platform a chance to do its own initialisation.
+> 	 */
+> 	platform_secondary_init(cpu);
+> 
+> 	/*
+> 	 * Enable local interrupts.
+> 	 */
+> 	notify_cpu_starting(cpu);
+> 	local_irq_enable();
+> 
+> Here we enable interrupts, but the CPU is neither online nor active.
+> 
+> 	local_fiq_enable();
 
-Hi Arnaud,
+That's intentional.  Some of the code below needs IRQs enabled.
 
-On Tue, 6 Sep 2011 13:17:21 -0400 Arnaud Lacombe <lacombar@gmail.com> wrote:
->
-> On Tue, Sep 6, 2011 at 2:40 AM, Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
-> >
-> > With master.kernel.org down, there is not much change from yesterday and
-> > I cannot publish the resulting linux-next tree anyway, so there is no
-> > tree today.
-> >
-> What about github ? gitorious ?
-
-I am restricted by my employer as to where I can publish the linux-next
-tree.
-
-Besides, I am having a nice restful time :-)
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__7_Sep_2011_17_16_24_+1000_uWafU./mqQ1qQ5r2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOZxpIAAoJEDMEi1NhKgbsn30H/3/H8jHzJccMq1S21puGKZTd
-2KAq9mTI+Qbb7OwCckPnX6HPXgahZXYyIoCp3xJCpP+X3h5NriVW2QGCyCCPgj3C
-RXHyLThNpWZwy+GPHvXWacTFm31ljzLyCAYT/aYy+pcyZ7FFqmymL5qKA7BnQAqm
-bVqyh/sJL0flaBgOts4vaxxfIGlhEh0fgQTordHI1hw/c6euzPEAI9D+UmEbOgYo
-188bc7jM9nZxZyKxDDFmnDJQAggRj4pgMxWmlAy3fAZwOMDjg7FlqpdDR1j0sQbI
-fsy/PU+9VqReBARa7E+bl4ffxMl11R4dS/8f9M537NKflIVtC4oP/I5uHwMALgs=
-=F/2G
------END PGP SIGNATURE-----
-
---Signature=_Wed__7_Sep_2011_17_16_24_+1000_uWafU./mqQ1qQ5r2--
+I think we had this reported before and I got to the bottom of it - the
+platform was doing something it shouldn't.  I don't remember the details,
+maybe when all the emails come through I can see the original bug report
+I'll remember.
