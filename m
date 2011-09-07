@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab1IGS0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43352 "EHLO mx1.redhat.com"
+	id S1756579Ab1IGS1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:27:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25276 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab1IGS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:26:40 -0400
-Message-ID: <4E67B75B.8010500@redhat.com>
-Date: Wed, 07 Sep 2011 14:26:35 -0400
-From: Jarod Wilson <jarod@redhat.com>
-User-Agent: Postbox 2.5.2 (Macintosh/20110804)
+	id S1756435Ab1IGS1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 14:27:01 -0400
+Date: Wed, 7 Sep 2011 20:22:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: matthltc@us.ibm.com, paul@paulmenage.org,
+        containers@lists.linux-foundation.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] freezer: fix wait_event_freezable/__thaw_task races
+Message-ID: <20110907182217.GB13909@redhat.com>
+References: <1314988070-12244-1-git-send-email-tj@kernel.org> <1314988070-12244-7-git-send-email-tj@kernel.org> <20110904184626.GA30101@redhat.com> <20110905023315.GB9807@htj.dyndns.org> <20110905162012.GA4445@redhat.com> <20110906032846.GA18425@mtj.dyndns.org> <20110906151836.GA15568@redhat.com> <20110906152539.GA16899@redhat.com> <20110906155332.GF18425@mtj.dyndns.org> <20110907182156.GA13909@redhat.com>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Steve Grubb <sgrubb@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: add blocking facility to urandom
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>  <1315417137-12093-1-git-send-email-jarod@redhat.com> <1315419179.3576.6.camel@lappy>
-In-Reply-To: <1315419179.3576.6.camel@lappy>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110907182156.GA13909@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin wrote:
-> On Wed, 2011-09-07 at 13:38 -0400, Jarod Wilson wrote:
->> Certain security-related certifications and their respective review
->> bodies have said that they find use of /dev/urandom for certain
->> functions, such as setting up ssh connections, is acceptable, but if and
->> only if /dev/urandom can block after a certain threshold of bytes have
->> been read from it with the entropy pool exhausted. Initially, we were
->> investigating increasing entropy pool contributions, so that we could
->> simply use /dev/random, but since that hasn't (yet) panned out, and
->> upwards of five minutes to establsh an ssh connection using an
->> entropy-starved /dev/random is unacceptable, we started looking at the
->> blocking urandom approach.
->
-> Can't you accomplish this in userspace by trying to read as much as you
-> can out of /dev/random without blocking, then reading out
-> of /dev/urandom the minimum between allowed threshold and remaining
-> bytes, and then blocking on /dev/random?
->
-> For example, lets say you need 100 bytes of randomness, and your
-> threshold is 30 bytes. You try reading out of /dev/random and get 50
-> bytes, at that point you'll read another 30 (=threshold) bytes
-> out /dev/urandom and then you'll need to block on /dev/random until you
-> get the remaining 20 bytes.
+wait_event_freezable() and wait_event_freezable_timeout() stop
+the waiting if try_to_freeze() fails. This is not right, we can
+race with __thaw_task() and in this case
 
-We're looking for a generic solution here that doesn't require 
-re-educating every single piece of userspace. And anything done in 
-userspace is going to be full of possible holes -- there needs to be 
-something in place that actually *enforces* the policy, and centralized 
-accounting/tracking, lest you wind up with multiple processes racing to 
-grab the entropy.
+	- wait_event_freezable() returns the wrong ERESTARTSYS
 
--- 
-Jarod Wilson
-jarod@redhat.com
+	- wait_event_freezable_timeout() can return the positive
+	  value while condition == F
 
+Change the code to always check __retval/condition before return.
+
+Note: with or without this patch the timeout logic looks strange,
+probably we should recalc timeout if try_to_freeze() returns T.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ include/linux/freezer.h |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+--- 3.1/include/linux/freezer.h~w_e_f	2011-09-04 20:23:30.000000000 +0200
++++ 3.1/include/linux/freezer.h	2011-09-07 20:00:27.000000000 +0200
+@@ -107,32 +107,33 @@ static inline int freezer_should_skip(st
+  * Freezer-friendly wrappers around wait_event_interruptible() and
+  * wait_event_interruptible_timeout(), originally defined in <linux/wait.h>
+  */
+-
+ #define wait_event_freezable(wq, condition)				\
+ ({									\
+ 	int __retval;							\
+-	do {								\
++	for (;;) {							\
+ 		__retval = wait_event_interruptible(wq, 		\
+ 				(condition) || freezing(current));	\
+-		if (__retval && !freezing(current))			\
++		if (__retval || (condition))				\
+ 			break;						\
+-		else if (!(condition))					\
+-			__retval = -ERESTARTSYS;			\
+-	} while (try_to_freeze());					\
++		try_to_freeze();					\
++	}								\
+ 	__retval;							\
+ })
+ 
+-
+ #define wait_event_freezable_timeout(wq, condition, timeout)		\
+ ({									\
+ 	long __retval = timeout;					\
+-	do {								\
++	for (;;) {							\
+ 		__retval = wait_event_interruptible_timeout(wq,		\
+ 				(condition) || freezing(current),	\
+ 				__retval); 				\
+-	} while (try_to_freeze());					\
++		if (__retval <= 0 || (condition))			\
++			break;						\
++		try_to_freeze();					\
++	}								\
+ 	__retval;							\
+ })
++
+ #else /* !CONFIG_FREEZER */
+ static inline bool frozen(struct task_struct *p) { return false; }
+ static inline bool freezing(struct task_struct *p) { return false; }
 
