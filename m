@@ -1,104 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab1IGQZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:25:26 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:8999 "EHLO sjogate2.atmel.com"
+	id S1751323Ab1IGQ0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:26:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37517 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754680Ab1IGQZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:25:24 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [RFC PATCH] mmc: sdio: rw extended, use a sg entry for each block
-Date: Wed,  7 Sep 2011 13:40:20 +0200
-Message-Id: <1315395620-22641-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
+	id S1750791Ab1IGQ0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:26:48 -0400
+Message-ID: <4E679AF4.50209@redhat.com>
+Date: Wed, 07 Sep 2011 19:25:24 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+References: <1314974826.1861.1.camel@twins> <4E612EA1.20007@goop.org> <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com>
+In-Reply-To: <20110907155657.GX5795@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While using io multiple blocks operations, change the way that sg is built:
-use one sg entry for each block instead of aggregating the whole buffer
-in a single sg entry.
-Using a single sg entry for a multiple block command may lead to
-misunderstanding between the sd/mmc and the DMA controllers. In fact, the
-knowledge of the block length will allow both controllers to optimize burst
-sizes on internal bus while dealing with those data.
+On 09/07/2011 06:56 PM, Don Zickus wrote:
+> >
+> >  And hope that no other NMI was generated while we're handling this
+> >  one.  It's a little... fragile?
+>
+> No.  If another NMI is generated while we are processing the current one
+> it should get latched.  Upon completion of the current one, the cpu should
+> jump right back into the nmi exception routine again.  The only downside
+> is when multiple NMIs come in during the processing of the current one.
+> Only one can be latched, so the others get dropped.
 
-Use a sg table to store start addresses of blocks within the data buffer.
+Ah, yes, I remember now.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/mmc/core/sdio_ops.c |   38 +++++++++++++++++++++++++++++---------
- 1 files changed, 29 insertions(+), 9 deletions(-)
+> But we are addressing
+> that.
+>
 
-diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
-index f087d87..aea6978 100644
---- a/drivers/mmc/core/sdio_ops.c
-+++ b/drivers/mmc/core/sdio_ops.c
-@@ -124,7 +124,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
- 	struct mmc_request mrq = {0};
- 	struct mmc_command cmd = {0};
- 	struct mmc_data data = {0};
--	struct scatterlist sg;
-+	struct sg_table sgt;
- 
- 	BUG_ON(!card);
- 	BUG_ON(fn > 7);
-@@ -144,24 +144,44 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
- 	cmd.arg |= fn << 28;
- 	cmd.arg |= incr_addr ? 0x04000000 : 0x00000000;
- 	cmd.arg |= addr << 9;
--	if (blocks == 1 && blksz <= 512)
--		cmd.arg |= (blksz == 512) ? 0 : blksz;	/* byte mode */
--	else
--		cmd.arg |= 0x08000000 | blocks;		/* block mode */
-+	if (blocks == 1 && blksz <= 512) {
-+		/* byte mode */
-+		struct scatterlist sg;
-+
-+		cmd.arg |= (blksz == 512) ? 0 : blksz;
-+		sg_init_one(&sg, buf, blksz * blocks);
-+
-+		data.sg = &sg;
-+		data.sg_len = 1;
-+	} else {
-+		/* block mode */
-+		struct scatterlist *sg_ptr;
-+		int i;
-+
-+		cmd.arg |= 0x08000000 | blocks;
-+		if (sg_alloc_table(&sgt, blocks, GFP_KERNEL))
-+			return -ENOMEM;
-+		for_each_sg(sgt.sgl, sg_ptr, sgt.nents, i) {
-+			sg_set_buf(sg_ptr, buf + i * blksz, blksz);
-+		}
-+
-+		data.sg = sgt.sgl;
-+		data.sg_len = sgt.nents;
-+	}
-+
- 	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_ADTC;
- 
- 	data.blksz = blksz;
- 	data.blocks = blocks;
- 	data.flags = write ? MMC_DATA_WRITE : MMC_DATA_READ;
--	data.sg = &sg;
--	data.sg_len = 1;
--
--	sg_init_one(&sg, buf, blksz * blocks);
- 
- 	mmc_set_data_timeout(&data, card);
- 
- 	mmc_wait_for_req(card->host, &mrq);
- 
-+	if (blocks != 1 || blksz > 512)
-+		sg_free_table(&sgt);
-+
- 	if (cmd.error)
- 		return cmd.error;
- 	if (data.error)
+May I ask how?  Detecting a back-to-back NMI?
+
 -- 
-1.7.3
+error compiling committee.c: too many arguments to function
 
