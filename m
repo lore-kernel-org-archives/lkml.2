@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab1IGXpH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 19:45:07 -0400
-Received: from fieldses.org ([174.143.236.118]:43116 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757461Ab1IGXpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 19:45:05 -0400
-Date: Wed, 7 Sep 2011 19:44:08 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeremy Allison <jra@samba.org>
-Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20110907234408.GA10982@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757524Ab1IGXvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 19:51:16 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54639 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756647Ab1IGXvO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 19:51:14 -0400
+Date: Wed, 7 Sep 2011 16:51:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: viro@zeniv.linux.org.uk, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-media" <linux-media@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Can you review or ack this patch?
+Message-Id: <20110907165103.41b8b252.akpm@linux-foundation.org>
+In-Reply-To: <201108230833.25812.hverkuil@xs4all.nl>
+References: <201108230833.25812.hverkuil@xs4all.nl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 05, 2011 at 10:55:22PM +0530, Aneesh Kumar K.V wrote:
-> Hi,
-> 
-> The following set of patches implements VFS and ext4 changes needed to implement
-> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> extended by file masks to fit into the standard POSIX file permission model.
-> They are designed to work seamlessly locally as well as across the NFSv4 and
-> CIFS/SMB2 network file system protocols.
+On Tue, 23 Aug 2011 08:33:25 +0200
+Hans Verkuil <hverkuil@xs4all.nl> wrote:
 
-The posix acl mapping that samba and nfsd currently have to do is
-painful for everyone and I'm delighted to get away from it.
+> (and resent again, this time with the correct linux-fsdevel mail address)
+> (Resent as requested by Andrew Morton since this is still stuck)
+> 
+> Hi Al, Andrew,
+> 
+> Can you take a look at this patch and send an Ack or review comments?
+> 
+> It's already been reviewed by Jon Corbet and we really need this functionality
+> for v3.1. You were in the CC list in earlier postings:
+> 
+> Here: http://www.spinics.net/lists/linux-fsdevel/msg46753.html
+> and here: http://www.mail-archive.com/linux-media@vger.kernel.org/msg34546.html
+> 
+> The patch also featured on LWN: http://lwn.net/Articles/450658/
+> 
+> Without your ack Mauro can't upstream this and we have a number of other
+> patches that depend on this and are currently blocked.
+> 
+> We would prefer to upstream this patch through the linux-media git tree
+> due to these dependencies.
+> 
+> My git branch containing this and the dependent patches is here:
+> 
+> http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/poll
+> 
+> Your help would be greatly appreciated (and your ack even more :-) )!
 
-My main remaining worry (besides the fact that cifs/v4 acls are too
-complicated--but what can we do about that?)--is about how exactly the
-(acl, mask)->acl mapping is going to work for nfsd and samba.
-
-If we assume that filesystems are going to mostly use acls or mostly
-mode bits, then maybe that part doesn't matter a whole lot.  I don't
-know.
-
---b.
+I'll grab the patch to get it a bit of testing while Al cogitates.
 
 > 
-> A user-space utility for displaying and changing richacls is available at [4]
-> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
 > 
-> [4] git://git.kernel.org/pub/scm/fs/acl/kvaneesh/richacl.git master
+> [PATCH] poll: add poll_requested_events() function
 > 
-> To test richacl on ext4 use -o richacl mount option. This mount option may later be
-> dropped in favour of a feature flag.
+> In some cases the poll() implementation in a driver has to do different
+> things depending on the events the caller wants to poll for. An example is
+> when a driver needs to start a DMA engine if the caller polls for POLLIN,
+> but doesn't want to do that if POLLIN is not requested but instead only
+> POLLOUT or POLLPRI is requested. This is something that can happen in the
+> video4linux subsystem.
 > 
-> More details regarding richacl can be found at
-> http://acl.bestbits.at/richacl/
+> Unfortunately, the current epoll/poll/select implementation doesn't provide
+> that information reliably. The poll_table_struct does have it: it has a key
+> field with the event mask. But once a poll() call matches one or more bits
+> of that mask any following poll() calls are passed a NULL poll_table_struct
+> pointer.
 > 
-> Changes from v5:
-> a) rebase to v3.1-rc4-131-g9e79e3e
+> The solution is to set the qproc field to NULL in poll_table_struct once
+> poll() matches the events, not the poll_table_struct pointer itself. That
+> way drivers can obtain the mask through a new poll_requested_events inline.
 > 
-> NOTE: The kernel changes will be pushed to
-> git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richacl
-> when kernel.org is back
+> The poll_table_struct can still be NULL since some kernel code calls it
+> internally (netfs_state_poll() in ./drivers/staging/pohmelfs/netfs.h). In
+> that case poll_requested_events() returns ~0 (i.e. all events).
 > 
-> -aneesh
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+> Since eventpoll always leaves the key field at ~0 instead of using the
+> requested events mask, that source was changed as well to properly fill in
+> the key field.
+
+It would be nice to find some suitable place in the code where we can
+explain all this to other potential users of the capability.  Perhaps
+the implementation site for the currently undocumented
+poll_requested_events() would be a suitable place.
+
+>
+> ...
+>
+> -	epi->event.events = event->events;
+> +	epi->event.events = pt.key = event->events;
+
+coding style nit: we generally try to avoid multiple assignemnts like this.
+
+>
+> ...
+>
+
