@@ -1,110 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab1IGVKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:10:53 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48541 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757011Ab1IGVKu (ORCPT
+	id S1757060Ab1IGVLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:11:03 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56503 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab1IGVLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:10:50 -0400
-Subject: Re: [PATCH] random: add blocking facility to urandom
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Jarod Wilson <jarod@redhat.com>,
-        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <201109071656.49758.sgrubb@redhat.com>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
-	 <201109071630.15261.sgrubb@redhat.com> <1315427877.3576.46.camel@lappy>
-	 <201109071656.49758.sgrubb@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Thu, 08 Sep 2011 00:10:27 +0300
-Message-ID: <1315429827.3576.61.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Sep 2011 17:11:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110907205856.GB21603@hostway.ca>
+References: <20110906173605.GA12577@hostway.ca>
+	<87aaag9vb8.fsf@begreifnix.stackframe.org>
+	<CA+5PVA5aEAgdKexWK_cg2zRJk5CFsg6rhp9Wx+80GjR7iaLkOA@mail.gmail.com>
+	<20110907104432.2f9d8b0a@jbarnes-x220>
+	<20110907191859.GB14950@hostway.ca>
+	<20110907204754.GA21603@hostway.ca>
+	<CAMaF-rOrA==mN-BaPVr8SB14XgXZWd0wMb0WP=-Xqzf7-w73Ag@mail.gmail.com>
+	<20110907205856.GB21603@hostway.ca>
+Date: Wed, 7 Sep 2011 14:10:59 -0700
+Message-ID: <CAMaF-rOZ28UdUUMPjL_4v-_Tqk26otyhzVAmjvRXyE0tqc8odg@mail.gmail.com>
+Subject: Re: [3.1-rc4] Bus Fatal Error caused by "PCI: Set PCI-E Max Payload
+ Size on fabric"
+From: Jon Mason <mason@myri.com>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Josh Boyer <jwboyer@gmail.com>,
+        Sven Schnelle <svens@stackframe.org>, linux-kernel@vger.kernel.org,
+        Jordan_Hargrave@dell.com
+Content-Type: multipart/mixed; boundary=001636ed65fd84a35b04ac60611b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-07 at 16:56 -0400, Steve Grubb wrote:
-> On Wednesday, September 07, 2011 04:37:57 PM Sasha Levin wrote:
-> > On Wed, 2011-09-07 at 16:30 -0400, Steve Grubb wrote:
-> > > On Wednesday, September 07, 2011 04:23:13 PM Sasha Levin wrote:
-> > > > On Wed, 2011-09-07 at 16:02 -0400, Steve Grubb wrote:
-> > > > > On Wednesday, September 07, 2011 03:27:37 PM Ted Ts'o wrote:
-> > > > > > On Wed, Sep 07, 2011 at 02:26:35PM -0400, Jarod Wilson wrote:
-> > > > > > > We're looking for a generic solution here that doesn't require
-> > > > > > > re-educating every single piece of userspace. And anything done
-> > > > > > > in userspace is going to be full of possible holes -- there
-> > > > > > > needs to be something in place that actually *enforces* the
-> > > > > > > policy, and centralized accounting/tracking, lest you wind up
-> > > > > > > with multiple processes racing to grab the entropy.
-> > > > > > 
-> > > > > > Yeah, but there are userspace programs that depend on urandom not
-> > > > > > blocking... so your proposed change would break them.
-> > > > > 
-> > > > > The only time this kicks in is when a system is under attack. If you
-> > > > > have set this and the system is running as normal, you will never
-> > > > > notice it even there. Almost all uses of urandom grab 4 bytes and
-> > > > > seed openssl or libgcrypt or nss. It then uses those libraries.
-> > > > > There are the odd cases where something uses urandom to generate a
-> > > > > key or otherwise grab a chunk of bytes, but these are still small
-> > > > > reads in the scheme of things. Can you think of any legitimate use
-> > > > > of urandom that grabs 100K or 1M from urandom? Even those numbers
-> > > > > still won't hit the sysctl on a normally function system.
-> > > > 
-> > > > As far as I remember, several wipe utilities are using /dev/urandom to
-> > > > overwrite disks (possibly several times).
-> > > 
-> > > Which should generate disk activity and feed entropy to urandom.
-> > 
-> > I thought you need to feed random, not urandom.
-> 
-> I think they draw from the same pool.
+--001636ed65fd84a35b04ac60611b
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-There is a blocking and a non blocking pool.
+On Wed, Sep 7, 2011 at 1:58 PM, Simon Kirby <sim@hostway.ca> wrote:
+> On Wed, Sep 07, 2011 at 01:57:28PM -0700, Jon Mason wrote:
+>
+>> On Wed, Sep 7, 2011 at 1:47 PM, Simon Kirby <sim@hostway.ca> wrote:
+>> > On Wed, Sep 07, 2011 at 12:18:59PM -0700, Simon Kirby wrote:
+>> >
+>> >> On Wed, Sep 07, 2011 at 10:44:32AM -0700, Jesse Barnes wrote:
+>> >>
+>> >> > On Wed, 7 Sep 2011 12:52:25 -0400
+>> >> > Josh Boyer <jwboyer@gmail.com> wrote:
+>> >> >
+>> >> > > On Wed, Sep 7, 2011 at 12:22 PM, Sven Schnelle <svens@stackframe.=
+org>
+>> >> > > wrote:
+>> >> > > > Simon Kirby <sim@hostway.ca> writes:
+>> >> > > >
+>> >> > > >> Hello!
+>> >> > > >>
+>> >> > > >> Since trying 3.1-rc4 on a few Dell servers, all of them have
+>> >> > > >> booted up with the amber error LED lit. "ipmitool sel list" sh=
+ows:
+>> >> > > >>
+>> >> > > >> ?? ??1 | 09/06/2011 | 17:21:56 | Event Logging Disabled #0x72 =
+| Log
+>> >> > > >> area reset/cleared | Asserted 2 | 09/06/2011 | 17:25:38 | Crit=
+ical
+>> >> > > >> Interrupt #0x18 | Bus Fatal Error | Asserted 3 | 09/06/2011 |
+>> >> > > >> 17:25:38 | Unknown #0x1a | 4 | 09/06/2011 | 17:25:38 | Unknown
+>> >> > > >> #0x1a |
+>> >> > > >
+>> >> > > > I'm seeing exact the same issue on a Dell 1950 Server. If anyon=
+e
+>> >> > > > wants me to try additional debugging/patches, feel free to do
+>> >> > > > so. Unfortunately i don't have the time/knowledge to debug that=
+ by
+>> >> > > > myself.
+>> >> > >
+>> >> > > I thought Jesse or Jon had a revert or partial fix queued up to s=
+end
+>> >> > > to Linus, but I don't see anything in or post -rc5 yet. ?That was
+>> >> > > indicated in https://bugzilla.kernel.org/show_bug.cgi?id=3D42162
+>> >> > >
+>> >> > > Jesse, Jon?
+>> >> >
+>> >> > kernel.org is still down and I haven't pushed anything to github. ?=
+I
+>> >> > asked Jon to send his patch directly to Linus today instead.
+>> >>
+>> >> FWIW, this patch didn't seem to fix it:
+>> >> https://bugzilla.kernel.org/attachment.cgi?id=3D71222
+>> >>
+>> >> dmesg used to say:
+>> >>
+>> >> pci 0000:00:02.0: Dev MPS 128 MPSS 256 MRRS 128
+>> >> pci 0000:00:02.0: Dev MPS 256 MPSS 256 MRRS 128
+>> >> pci 0000:06:00.0: Dev MPS 128 MPSS 256 MRRS 4096
+>> >> pci 0000:06:00.0: Dev MPS 256 MPSS 256 MRRS 128
+>> >> pci 0000:07:00.0: Dev MPS 128 MPSS 256 MRRS 4096
+>> >> pci 0000:07:00.0: Dev MPS 256 MPSS 256 MRRS 128
+>> >> pci 0000:08:00.0: Dev MPS 128 MPSS 128 MRRS 128
+>> >> pci 0000:08:00.0: MPS configured higher than maximum supported by the=
+ device. ?If a bus issue occurs, try running with pci=3Dpcie_bus_safe.
+>> >> pci 0000:08:00.0: Dev MPS 256 MPSS 256 MRRS 128
+>> >> Uhhuh. NMI received for unknown reason 21 on CPU 0.
+>> >> Do you have a strange power saving mode enabled?
+>> >> Dazed and confused, but trying to continue
+>> >
+>> > Ok, I commented out the "pcie_write_mps(dev, mps);" line and the error
+>> > stopped, but this made me realize that the pci=3Dpcie_bus_safe option =
+must
+>> > have been missing. It turns out I had hacked a custom grub entry to lo=
+ad
+>> > the newest kernel into grub instead of the one with the highest versio=
+n
+>> > number (grumble), so the default kopt didn't apply there.
+>> >
+>> > So, pci=3Dpcie_bus_safe DOES fix this case, and I've confirmed that th=
+e
+>> > MRRS-dissabling patch makes no difference in this case.
+>> >
+>> > Can we just make pci=3Dpcie_bus_safe (as in previous behavior) the def=
+ault,
+>> > or make it not change where it would otherwise warn, or does that
+>> > basically make the thing useless?
+>>
+>> I have a patch that does does pcie_bus_safe as the default behavior
+>> and does not modify the MRRS. =A0Would you be willing to test this patch
+>> for me?
+>
+> Sure, of course. (It compiles, ship it. :))
 
->  
-> > Anyway, it won't happen fast enough to actually not block.
-> > 
-> > Writing 1TB of urandom into a disk won't generate 1TB (or anything close
-> > to that) of randomness to cover for itself.
-> 
-> We don't need a 1:1 mapping of RNG used to entropy acquired. Its more on the scale of 
-> 8,000,000:1 or higher.
+Great, thanks!  I've attached a patch file to this e-mail.
 
-I'm just saying that writing 1TB into a disk using urandom will start to
-block, it won't generate enough randomness by itself.
+Thanks,
+Jon
 
-> 
-> > > > Something similar probably happens for getting junk on disks before
-> > > > creating an encrypted filesystem on top of them.
-> > > 
-> > > During system install, this sysctl is not likely to be applied.
-> > 
-> > It may happen at any time you need to create a new filesystem, which
-> > won't necessarily happen during system install.
-> > 
-> > See for example the instructions on how to set up a LUKS filesystem:
-> > https://wiki.archlinux.org/index.php/System_Encryption_with_LUKS#Preparatio
-> > n_and_mapping
-> 
-> Those instructions might need to be changed. That is one way of many to get random 
-> numbers on the disk. Anyone really needing the security to have the sysctl on will 
-> also probably accept that its doing its job and keeping the numbers random. Again, no 
-> effect unless you turn it on.
+>
+> Simon-
+>
 
-There are bunch of other places that would need to be changed in that
-case :)
+--001636ed65fd84a35b04ac60611b
+Content-Type: text/x-patch; charset=US-ASCII; name="test.patch"
+Content-Disposition: attachment; filename="test.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gsasvlel0
 
-Why not implement it as a user mode CUSE driver that would
-wrap /dev/urandom and make it behave any way you want to? why push it
-into the kernel?
-
--- 
-
-Sasha.
-
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvcGNpL3BjaS5jIGIvZHJpdmVycy9wY2kvcGNpLmMKaW5kZXgg
+MGNlNjc0Mi4uNGU4NGZkNCAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvcGNpLmMKKysrIGIvZHJp
+dmVycy9wY2kvcGNpLmMKQEAgLTc3LDcgKzc3LDcgQEAgdW5zaWduZWQgbG9uZyBwY2lfY2FyZGJ1
+c19tZW1fc2l6ZSA9IERFRkFVTFRfQ0FSREJVU19NRU1fU0laRTsKIHVuc2lnbmVkIGxvbmcgcGNp
+X2hvdHBsdWdfaW9fc2l6ZSAgPSBERUZBVUxUX0hPVFBMVUdfSU9fU0laRTsKIHVuc2lnbmVkIGxv
+bmcgcGNpX2hvdHBsdWdfbWVtX3NpemUgPSBERUZBVUxUX0hPVFBMVUdfTUVNX1NJWkU7CiAKLWVu
+dW0gcGNpZV9idXNfY29uZmlnX3R5cGVzIHBjaWVfYnVzX2NvbmZpZyA9IFBDSUVfQlVTX1BFUkZP
+Uk1BTkNFOworZW51bSBwY2llX2J1c19jb25maWdfdHlwZXMgcGNpZV9idXNfY29uZmlnID0gUENJ
+RV9CVVNfU0FGRTsKIAogLyoKICAqIFRoZSBkZWZhdWx0IENMUyBpcyB1c2VkIGlmIGFyY2ggZGlk
+bid0IHNldCBDTFMgZXhwbGljaXRseSBhbmQgbm90CmRpZmYgLS1naXQgYS9kcml2ZXJzL3BjaS9w
+cm9iZS5jIGIvZHJpdmVycy9wY2kvcHJvYmUuYwppbmRleCA4NDczNzI3Li44NDdlZTVkIDEwMDY0
+NAotLS0gYS9kcml2ZXJzL3BjaS9wcm9iZS5jCisrKyBiL2RyaXZlcnMvcGNpL3Byb2JlLmMKQEAg
+LTEzOTYsMzQgKzEzOTYsMzcgQEAgc3RhdGljIHZvaWQgcGNpZV93cml0ZV9tcHMoc3RydWN0IHBj
+aV9kZXYgKmRldiwgaW50IG1wcykKIAogc3RhdGljIHZvaWQgcGNpZV93cml0ZV9tcnJzKHN0cnVj
+dCBwY2lfZGV2ICpkZXYsIGludCBtcHMpCiB7Ci0JaW50IHJjLCBtcnJzOworCWludCByYywgbXJy
+cywgZGV2X21wc3M7CiAKLQlpZiAocGNpZV9idXNfY29uZmlnID09IFBDSUVfQlVTX1BFUkZPUk1B
+TkNFKSB7Ci0JCWludCBkZXZfbXBzcyA9IDEyOCA8PCBkZXYtPnBjaWVfbXBzczsKKwkvKiBJbiB0
+aGUgInNhZmUiIGNhc2UsIGRvIG5vdCBjb25maWd1cmUgdGhlIE1SUlMuICBUaGVyZSBhcHBlYXIg
+dG8gYmUKKwkgKiBpc3N1ZXMgd2l0aCBzZXR0aW5nIE1SUlMgdG8gMCBvbiBhIG51bWJlciBvZiBk
+ZXZpY2VzLgorCSAqLwogCi0JCS8qIEZvciBNYXggcGVyZm9ybWFuY2UsIHRoZSBNUlJTIG11c3Qg
+YmUgc2V0IHRvIHRoZSBsYXJnZXN0Ci0JCSAqIHN1cHBvcnRlZCB2YWx1ZS4gIEhvd2V2ZXIsIGl0
+IGNhbm5vdCBiZSBjb25maWd1cmVkIGxhcmdlcgotCQkgKiB0aGFuIHRoZSBNUFMgdGhlIGRldmlj
+ZSBvciB0aGUgYnVzIGNhbiBzdXBwb3J0LiAgVGhpcyBhc3N1bWVzCi0JCSAqIHRoYXQgdGhlIGxh
+cmdlc3QgTVJSUyBhdmFpbGFibGUgb24gdGhlIGRldmljZSBjYW5ub3QgYmUKLQkJICogc21hbGxl
+ciB0aGFuIHRoZSBkZXZpY2UgTVBTUy4KLQkJICovCi0JCW1ycnMgPSBtcHMgPCBkZXZfbXBzcyA/
+IG1wcyA6IGRldl9tcHNzOwotCX0gZWxzZQotCQkvKiBJbiB0aGUgInNhZmUiIGNhc2UsIGNvbmZp
+Z3VyZSB0aGUgTVJSUyBmb3IgZmFpcm5lc3Mgb24gdGhlCi0JCSAqIGJ1cyBieSBtYWtpbmcgYWxs
+IGRldmljZXMgaGF2ZSB0aGUgc2FtZSBzaXplCi0JCSAqLwotCQltcnJzID0gbXBzOworCWlmIChw
+Y2llX2J1c19jb25maWcgIT0gUENJRV9CVVNfUEVSRk9STUFOQ0UpCisJCXJldHVybjsKKworCWRl
+dl9tcHNzID0gMTI4IDw8IGRldi0+cGNpZV9tcHNzOwogCisJLyogRm9yIE1heCBwZXJmb3JtYW5j
+ZSwgdGhlIE1SUlMgbXVzdCBiZSBzZXQgdG8gdGhlIGxhcmdlc3Qgc3VwcG9ydGVkCisJICogdmFs
+dWUuICBIb3dldmVyLCBpdCBjYW5ub3QgYmUgY29uZmlndXJlZCBsYXJnZXIgdGhhbiB0aGUgTVBT
+IHRoZQorCSAqIGRldmljZSBvciB0aGUgYnVzIGNhbiBzdXBwb3J0LiAgVGhpcyBhc3N1bWVzIHRo
+YXQgdGhlIGxhcmdlc3QgTVJSUworCSAqIGF2YWlsYWJsZSBvbiB0aGUgZGV2aWNlIGNhbm5vdCBi
+ZSBzbWFsbGVyIHRoYW4gdGhlIGRldmljZSBNUFNTLgorCSAqLworCW1ycnMgPSBtaW4obXBzLCBk
+ZXZfbXBzcyk7CiAKIAkvKiBNUlJTIGlzIGEgUi9XIHJlZ2lzdGVyLiAgSW52YWxpZCB2YWx1ZXMg
+Y2FuIGJlIHdyaXR0ZW4sIGJ1dCBhCi0JICogc3Vic2lxdWVudCByZWFkIHdpbGwgdmVyaWZ5IGlm
+IHRoZSB2YWx1ZSBpcyBhY2NlcHRhYmxlIG9yIG5vdC4KLQkgKiBJZiB0aGUgTVJSUyB2YWx1ZSBw
+cm92aWRlZCBpcyBub3QgYWNjZXB0YWJsZSAoZS5nLiwgdG9vIGxhcmdlKSwKLQkgKiBzaHJpbmsg
+dGhlIHZhbHVlIHVudGlsIGl0IGlzIGFjY2VwdGFibGUgdG8gdGhlIEhXLgorCSAqIHN1YnNpcXVl
+bnQgcmVhZCB3aWxsIHZlcmlmeSBpZiB0aGUgdmFsdWUgaXMgYWNjZXB0YWJsZSBvciBub3QuICBJ
+ZgorCSAqIHRoZSBNUlJTIHZhbHVlIHByb3ZpZGVkIGlzIG5vdCBhY2NlcHRhYmxlIChlZywgdG9v
+IGxhcmdlKSwgc2hyaW5rIHRoZQorCSAqIHZhbHVlIHVudGlsIGl0IGlzIGFjY2VwdGFibGUgdG8g
+dGhlIEhXLgogIAkgKi8KIAl3aGlsZSAobXJycyAhPSBwY2llX2dldF9yZWFkcnEoZGV2KSAmJiBt
+cnJzID49IDEyOCkgeworCQlkZXZfd2FybigmZGV2LT5kZXYsICJBdHRlbXB0aW5nIHRvIG1vZGlm
+eSB0aGUgUENJLUUgTVJSUyB2YWx1ZSIKKwkJCSAiIHRvICVkLiAgSWYgYW55IGlzc3VlcyBhcmUg
+ZW5jb3VudGVyZWQsIHBsZWFzZSB0cnkgIgorCQkJICJydW5uaW5nIHdpdGggcGNpPXBjaWVfYnVz
+X3NhZmVcbiIsIG1ycnMpOwogCQlyYyA9IHBjaWVfc2V0X3JlYWRycShkZXYsIG1ycnMpOwogCQlp
+ZiAocmMpCi0JCQlkZXZfZXJyKCZkZXYtPmRldiwgIkZhaWxlZCBhdHRlbXB0aW5nIHRvIHNldCB0
+aGUgTVJSU1xuIik7CisJCQlkZXZfZXJyKCZkZXYtPmRldiwKKwkJCQkiRmFpbGVkIGF0dGVtcHRp
+bmcgdG8gc2V0IHRoZSBNUlJTXG4iKTsKIAogCQltcnJzIC89IDI7CiAJfQpAQCAtMTQzNiwxMyAr
+MTQzOSwxMyBAQCBzdGF0aWMgaW50IHBjaWVfYnVzX2NvbmZpZ3VyZV9zZXQoc3RydWN0IHBjaV9k
+ZXYgKmRldiwgdm9pZCAqZGF0YSkKIAlpZiAoIXBjaV9pc19wY2llKGRldikpCiAJCXJldHVybiAw
+OwogCi0JZGV2X2luZm8oJmRldi0+ZGV2LCAiRGV2IE1QUyAlZCBNUFNTICVkIE1SUlMgJWRcbiIs
+CisJZGV2X2RiZygmZGV2LT5kZXYsICJEZXYgTVBTICVkIE1QU1MgJWQgTVJSUyAlZFxuIiwKIAkJ
+IHBjaWVfZ2V0X21wcyhkZXYpLCAxMjg8PGRldi0+cGNpZV9tcHNzLCBwY2llX2dldF9yZWFkcnEo
+ZGV2KSk7CiAKIAlwY2llX3dyaXRlX21wcyhkZXYsIG1wcyk7CiAJcGNpZV93cml0ZV9tcnJzKGRl
+diwgbXBzKTsKIAotCWRldl9pbmZvKCZkZXYtPmRldiwgIkRldiBNUFMgJWQgTVBTUyAlZCBNUlJT
+ICVkXG4iLAorCWRldl9kYmcoJmRldi0+ZGV2LCAiRGV2IE1QUyAlZCBNUFNTICVkIE1SUlMgJWRc
+biIsCiAJCSBwY2llX2dldF9tcHMoZGV2KSwgMTI4PDxkZXYtPnBjaWVfbXBzcywgcGNpZV9nZXRf
+cmVhZHJxKGRldikpOwogCiAJcmV0dXJuIDA7Cg==
+--001636ed65fd84a35b04ac60611b--
