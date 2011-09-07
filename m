@@ -1,118 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314Ab1IGQ3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:29:03 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33808 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab1IGQ3B (ORCPT
+	id S1751611Ab1IGQ3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:29:17 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:52632
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751765Ab1IGQ3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:29:01 -0400
-Date: Wed, 7 Sep 2011 15:25:00 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Chen Gong <gong.chen@linux.intel.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 5/5] mce: recover from "action required" errors reported
- in data path in usermode
-Message-ID: <20110907132500.GA8928@aftab>
-References: <4e5eb50721061dbb1b@agluck-desktop.sc.intel.com>
- <4E6709B2.7020401@linux.intel.com>
+	Wed, 7 Sep 2011 12:29:10 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LR5SY1-01-4FL-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <iommu@lists.linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        David Brown <davidb@codeaurora.org>, <joro@8bytes.org>,
+        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 05/10] iommu/core: Use bus->iommu_ops in the iommu-api
+Date: Wed, 7 Sep 2011 17:41:48 +0200
+Message-ID: <1315410113-26608-6-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
+References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E6709B2.7020401@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 02:05:38AM -0400, Chen Gong wrote:
+Use the per-bus iommu-ops in the functions of the iommu-api
+instead of the global iommu_ops.
 
-[..]
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ drivers/iommu/iommu.c |   34 +++++++++++++++++++++++++++-------
+ 1 files changed, 27 insertions(+), 7 deletions(-)
 
-> > +	/* known AR MCACODs: */
-> > +	MCESEV(
-> > +		KEEP, "HT thread notices Action required: data load error",
-> > +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
-> > +		MCGMASK(MCG_STATUS_EIPV, 0)
-> > +		),
-> > +	MCESEV(
-> > +		AR, "Action required: data load error",
-> > +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
-> > +		USER
-> > +		),
-> 
-> I don't think *AR* makes sense here because the following codes have a 
-> assumption that it means *user space* condition. If so, in the future a 
-> new *AR* severity for kernel usage is created, we can't distinguish 
-> which one can call "memory_failure" as below. At least, it should have a 
-> suffix such as AR_USER/AR_KERN:
-> 
-> enum severity_level {
->          MCE_NO_SEVERITY,
->          MCE_KEEP_SEVERITY,
->          MCE_SOME_SEVERITY,
->          MCE_AO_SEVERITY,
->          MCE_UC_SEVERITY,
->          MCE_AR_USER_SEVERITY,
-> 	MCE_AR_KERN_SEVERITY,
->          MCE_PANIC_SEVERITY,
-> };
-
-Are you saying you need action required handling for when the data load
-error happens in kernel space? If so, I don't see how you can replay the
-data load (assuming this is a data load from DRAM). In that case, we're
-fatal and need to panic. If it is a different type of data load coming
-from a lower cache level, then we could be able to recover...?
-
-[..]
-
-> > +	if (worst == MCE_AR_SEVERITY) {
-> > +		unsigned long pfn = m.addr>>  PAGE_SHIFT;
-> > +
-> > +		pr_err("Uncorrected hardware memory error in user-access at %llx",
-> > +			m.addr);
-> 
-> print in the MCE handler maybe makes a deadlock ? say, when other CPUs 
-> are printing something, suddently they received MCE broadcast from 
-> Monarch CPU, when Monarch CPU runs above codes, a deadlock happens ?
-> Please fix me if I miss something :-)
-
-sounds like it can happen if the other CPUs have grabbed some console
-semaphore/mutex (I don't know what exactly we're using there) and the
-monarch tries to grab it.
-
-> > +		if (__memory_failure(pfn, MCE_VECTOR, 0)<  0) {
-> > +			pr_err("Memory error not recovered");
-> > +			force_sig(SIGBUS, current);
-> > +		} else
-> > +			pr_err("Memory error recovered");
-> > +	}
->
-> as you mentioned in the comment, the biggest concern is that when
-> __memory_failure runs too long, if another MCE happens at the same
-> time, (assuming this MCE is happened on its sibling CPU which has the
-> same banks), the 2nd MCE will crash the system. Why not delaying the
-> process in a safer context, such as using user_return_notifer ?
-
-The user_return_notifier won't work, as we concluded in the last
-discussion round: http://marc.info/?l=linux-kernel&m=130765542330349
-
-AFAIR, we want to have a realtime thread dealing with that recovery
-so that we exit #MC context as fast as possible. The code then should
-be able to deal with a follow-up #MC. Tony, whatever happened to that
-approach?
-
-Thanks.
-
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 2270127..f2ced4c 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -83,34 +83,48 @@ EXPORT_SYMBOL_GPL(iommu_domain_alloc);
+ 
+ void iommu_domain_free(struct iommu_domain *domain)
+ {
+-	iommu_ops->domain_destroy(domain);
++	if (likely(domain->ops->domain_destroy != NULL))
++		domain->ops->domain_destroy(domain);
++
+ 	kfree(domain);
+ }
+ EXPORT_SYMBOL_GPL(iommu_domain_free);
+ 
+ int iommu_attach_device(struct iommu_domain *domain, struct device *dev)
+ {
+-	return iommu_ops->attach_dev(domain, dev);
++	if (unlikely(domain->ops->attach_dev == NULL))
++		return -ENODEV;
++
++	return domain->ops->attach_dev(domain, dev);
+ }
+ EXPORT_SYMBOL_GPL(iommu_attach_device);
+ 
+ void iommu_detach_device(struct iommu_domain *domain, struct device *dev)
+ {
+-	iommu_ops->detach_dev(domain, dev);
++	if (unlikely(domain->ops->detach_dev == NULL))
++		return;
++
++	domain->ops->detach_dev(domain, dev);
+ }
+ EXPORT_SYMBOL_GPL(iommu_detach_device);
+ 
+ phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
+ 			       unsigned long iova)
+ {
+-	return iommu_ops->iova_to_phys(domain, iova);
++	if (unlikely(domain->ops->iova_to_phys == NULL))
++		return 0;
++
++	return domain->ops->iova_to_phys(domain, iova);
+ }
+ EXPORT_SYMBOL_GPL(iommu_iova_to_phys);
+ 
+ int iommu_domain_has_cap(struct iommu_domain *domain,
+ 			 unsigned long cap)
+ {
+-	return iommu_ops->domain_has_cap(domain, cap);
++	if (unlikely(domain->ops->domain_has_cap == NULL))
++		return 0;
++
++	return domain->ops->domain_has_cap(domain, cap);
+ }
+ EXPORT_SYMBOL_GPL(iommu_domain_has_cap);
+ 
+@@ -119,11 +133,14 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+ {
+ 	size_t size;
+ 
++	if (unlikely(domain->ops->map == NULL))
++		return -ENODEV;
++
+ 	size         = PAGE_SIZE << gfp_order;
+ 
+ 	BUG_ON(!IS_ALIGNED(iova | paddr, size));
+ 
+-	return iommu_ops->map(domain, iova, paddr, gfp_order, prot);
++	return domain->ops->map(domain, iova, paddr, gfp_order, prot);
+ }
+ EXPORT_SYMBOL_GPL(iommu_map);
+ 
+@@ -131,10 +148,13 @@ int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
+ {
+ 	size_t size;
+ 
++	if (unlikely(domain->ops->unmap == NULL))
++		return -ENODEV;
++
+ 	size         = PAGE_SIZE << gfp_order;
+ 
+ 	BUG_ON(!IS_ALIGNED(iova, size));
+ 
+-	return iommu_ops->unmap(domain, iova, gfp_order);
++	return domain->ops->unmap(domain, iova, gfp_order);
+ }
+ EXPORT_SYMBOL_GPL(iommu_unmap);
 -- 
-Regards/Gruss,
-Boris.
+1.7.4.1
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
