@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab1IGViD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:38:03 -0400
-Received: from mga14.intel.com ([143.182.124.37]:46989 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757145Ab1IGViA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:38:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,347,1312182000"; 
-   d="scan'208";a="14966884"
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>
-CC: "Williams, Dan J" <dan.j.williams@intel.com>,
-        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>
-Date: Thu, 8 Sep 2011 03:07:53 +0530
-Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
- channel ID
-Thread-Topic: [PATCH] serial: sh-sci: don't filter on DMA device, use only
- channel ID
-Thread-Index: AcxtpmadIXWI7yePQS6D3bJ+dcSVIQ==
-Message-ID: <438BB0150E931F4B9CE701519A4463010871804A4F@bgsmsx502.gar.corp.intel.com>
-References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
- <1308916071.1536.4.camel@vkoul-udesk3> <20110829080047.GJ31809@linux-sh.org>
- <CANqRtoRn-Csu+Rns6dn6=cJmRqbZfLKXA9brs8Ug9rFvGRn78w@mail.gmail.com>
- <1314618931.1606.114.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1108300931220.19151@axis700.grange>
- <1314698522.1606.164.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1108301317280.19151@axis700.grange>
- <1314703426.1606.167.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1108301332190.19151@axis700.grange>
- <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
- <1315228408.26251.75.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
- <1315233788.26251.163.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1109051700030.1112@axis700.grange>
- <1315235335.26251.194.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1109051716530.1112@axis700.grange>
- <438BB0150E931F4B9CE701519A4463010871804A4B@bgsmsx502.gar.corp.intel.com>
- <alpine.DEB.2.00.1109072048310.30407@axis700.grange>
-In-Reply-To: <alpine.DEB.2.00.1109072048310.30407@axis700.grange>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1757249Ab1IGVi7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:38:59 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48110 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757175Ab1IGVix (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 17:38:53 -0400
+Subject: Re: [PATCH] random: add blocking facility to urandom
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Jarod Wilson <jarod@redhat.com>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <201109071728.31162.sgrubb@redhat.com>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
+	 <201109071656.49758.sgrubb@redhat.com> <1315429827.3576.61.camel@lappy>
+	 <201109071728.31162.sgrubb@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 08 Sep 2011 00:38:31 +0300
+Message-ID: <1315431511.3576.66.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p87LcGPh022733
 
-On Wed, 2011-09-07 at 22:01 +0200, Guennadi Liakhovetski wrote:
-> On Thu, 8 Sep 2011, Koul, Vinod wrote:
-> You're seriously suggesting to export and use an additional shdma private 
-> function, bypassing the dmaengine API?... That really doesn't sound like a 
-> good idea to me, sorry. How about using .device_control(DMA_SLAVE_CONFIG) 
-> from the filter function directly to verify channel suitability?
-Yes see stedma40, coh90138 drivers
-.device_control is not right place as channel is already allocated.
-
-You are basically moving filter fn from all clients to dmac driver.
-
-> 
-> > I cant agree to the whole point of filtering in alloc
+On Wed, 2011-09-07 at 17:28 -0400, Steve Grubb wrote:
+> On Wednesday, September 07, 2011 05:10:27 PM Sasha Levin wrote:
+> > > > > > Something similar probably happens for getting junk on disks before
+> > > > > > creating an encrypted filesystem on top of them.
+> > > > > 
+> > > > > During system install, this sysctl is not likely to be applied.
+> > > > 
+> > > > It may happen at any time you need to create a new filesystem, which
+> > > > won't necessarily happen during system install.
+> > > > 
+> > > > See for example the instructions on how to set up a LUKS filesystem:
+> > > > https://wiki.archlinux.org/index.php/System_Encryption_with_LUKS#Prepar
+> > > > atio n_and_mapping
+> > > 
+> > > Those instructions might need to be changed. That is one way of many to
+> > > get random numbers on the disk. Anyone really needing the security to
+> > > have the sysctl on will also probably accept that its doing its job and
+> > > keeping the numbers random. Again, no effect unless you turn it on.
 > > 
-> > One channel is allocated, we should _not_ do any further filtering
+> > There are bunch of other places that would need to be changed in that
+> > case :)
+> > 
+> > Why not implement it as a user mode CUSE driver that would
+> > wrap /dev/urandom and make it behave any way you want to? why push it
+> > into the kernel?
 > 
-> Sorry, I do not understand this argumentation. Filtering and resource 
-> allocation are parts of the channel-acquisition process, either of them 
-> can fail, in which case the channel remains free for future requests.
-DMA drivers set caps for each channel
-Client requests a channel and dmaengine matches channel based on caps
-and filer function is called so that additional filtering can take
-place.
-And .alloc_chan_resources is supposed to allocate the channel resource
-and not do anything else.
+> For one, auditing does not work for FUSE or things like that. We have to be able to 
+> audit who is using what. Then there are the FIPS-140 requirements and this will spread 
+> it. There are problems sending crypto audit events from user space, too.
 
---
-~Vinod
+auditd doesn't work with FUSE? afaik it should, FUSE is a filesystem
+like any other.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+
+Sasha.
+
