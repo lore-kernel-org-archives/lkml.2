@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab1IGGFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:05:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39453 "EHLO mga01.intel.com"
+	id S1755588Ab1IGGF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:05:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6922 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755232Ab1IGGEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 02:04:50 -0400
+	id S1755521Ab1IGGFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 02:05:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,343,1312182000"; 
-   d="scan'208";a="48789601"
+   d="scan'208";a="48789655"
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
         tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 01/12 v2] staging: mei: removing dependency between WD and AMTHI init function.
-Date: Wed,  7 Sep 2011 09:03:07 +0300
-Message-Id: <1315375398-29529-2-git-send-email-oren.jer.weil@intel.com>
+Subject: [PATCH 05/12 v2] staging: mei: adding watchdog ping
+Date: Wed,  7 Sep 2011 09:03:11 +0300
+Message-Id: <1315375398-29529-6-git-send-email-oren.jer.weil@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315375398-29529-1-git-send-email-oren.jer.weil@intel.com>
 References: <1315375398-29529-1-git-send-email-oren.jer.weil@intel.com>
@@ -24,101 +24,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMTHI need to be initialized after WD Client was initialized, moving the AMTHI outside
-of the WD initialization function.
-in order to remove the coupling between the initialization of those clients.
+adding watchdog ping to send ping/heartbeat to the the AMT watchdog client.
+in addition removing the heartbeat sending from the driver timers function.
 
-AMTHI is getting initialized (getting connected to the FW feature/client) in two ways:
- 1) if mei driver fails to send connect message to watchdog client (WD initialization), then
-    immediately the AMTHI client getting initialized right after the watchdog initialization function.
- 2) if Watchdog client success to send connect message to watchdog client, then only after
-    the driver is getting the connect response message the AMTHI client is getting initialized
 
 Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
 Acked-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/staging/mei/init.c      |    8 +++++++-
- drivers/staging/mei/interface.h |    2 +-
- drivers/staging/mei/wd.c        |   16 ++++++++++++----
- 3 files changed, 20 insertions(+), 6 deletions(-)
+ drivers/staging/mei/interrupt.c |   27 -------------------
+ drivers/staging/mei/wd.c        |   54 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/staging/mei/init.c b/drivers/staging/mei/init.c
-index 0fa8216..69a57e7 100644
---- a/drivers/staging/mei/init.c
-+++ b/drivers/staging/mei/init.c
-@@ -521,7 +521,13 @@ void mei_host_client_properties(struct mei_device *dev)
- 	bitmap_set(dev->host_clients_map, 0, 3);
- 	dev->mei_state = MEI_ENABLED;
+diff --git a/drivers/staging/mei/interrupt.c b/drivers/staging/mei/interrupt.c
+index 958a7e2..62b8001 100644
+--- a/drivers/staging/mei/interrupt.c
++++ b/drivers/staging/mei/interrupt.c
+@@ -1430,33 +1430,6 @@ void mei_wd_timer(struct work_struct *work)
+ 		}
+ 	}
  
--	mei_wd_host_init(dev);
-+	/* if wd initialization fails, initialization the AMTHI client,
-+	 * otherwise the AMTHI client will be initialized after the WD client connect response
-+	 * will be received
-+	 */
-+	if (mei_wd_host_init(dev))
-+		mei_host_init_iamthif(dev);
-+
- 	return;
- }
- 
-diff --git a/drivers/staging/mei/interface.h b/drivers/staging/mei/interface.h
-index d0bf5cf..7bcf096 100644
---- a/drivers/staging/mei/interface.h
-+++ b/drivers/staging/mei/interface.h
-@@ -48,7 +48,7 @@ int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl);
- 
- int mei_wd_send(struct mei_device *dev);
- int mei_wd_stop(struct mei_device *dev, bool preserve);
--void mei_wd_host_init(struct mei_device *dev);
-+bool mei_wd_host_init(struct mei_device *dev);
- void mei_wd_start_setup(struct mei_device *dev);
- 
- int mei_flow_ctrl_reduce(struct mei_device *dev, struct mei_cl *cl);
+-	if (dev->wd_cl.state != MEI_FILE_CONNECTED)
+-		goto out;
+-
+-	/* Watchdog */
+-	if (dev->wd_due_counter && !dev->wd_bypass) {
+-		if (--dev->wd_due_counter == 0) {
+-			if (dev->mei_host_buffer_is_empty &&
+-			    mei_flow_ctrl_creds(dev, &dev->wd_cl) > 0) {
+-				dev->mei_host_buffer_is_empty = false;
+-				dev_dbg(&dev->pdev->dev, "send watchdog.\n");
+-
+-				if (mei_wd_send(dev))
+-					dev_dbg(&dev->pdev->dev, "wd send failed.\n");
+-				else
+-					if (mei_flow_ctrl_reduce(dev, &dev->wd_cl))
+-						goto out;
+-
+-				if (dev->wd_timeout)
+-					dev->wd_due_counter = 2;
+-				else
+-					dev->wd_due_counter = 0;
+-
+-			} else
+-				dev->wd_pending = true;
+-
+-		}
+-	}
+ 	if (dev->iamthif_stall_timer) {
+ 		if (--dev->iamthif_stall_timer == 0) {
+ 			dev_dbg(&dev->pdev->dev, "reseting because of hang to amthi.\n");
 diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
-index 42f04ef..721487d 100644
+index fb2bd3d..9338394 100644
 --- a/drivers/staging/mei/wd.c
 +++ b/drivers/staging/mei/wd.c
-@@ -63,8 +63,10 @@ void mei_wd_start_setup(struct mei_device *dev)
-  *
-  * @dev: the device structure
-  */
--void mei_wd_host_init(struct mei_device *dev)
-+bool mei_wd_host_init(struct mei_device *dev)
- {
-+	bool ret = false;
-+
- 	mei_cl_init(&dev->wd_cl, dev);
- 
- 	/* look for WD client and connect to it */
-@@ -83,19 +85,25 @@ void mei_wd_host_init(struct mei_device *dev)
- 				dev_dbg(&dev->pdev->dev, "Failed to connect to WD client\n");
- 				dev->wd_cl.state = MEI_FILE_DISCONNECTED;
- 				dev->wd_cl.host_client_id = 0;
--				mei_host_init_iamthif(dev) ;
-+				ret = false;
-+				goto end;
- 			} else {
- 				dev->wd_cl.timer_count = CONNECT_TIMEOUT;
- 			}
- 		} else {
- 			dev_dbg(&dev->pdev->dev, "Failed to find WD client\n");
--			mei_host_init_iamthif(dev) ;
-+			ret = false;
-+			goto end;
- 		}
- 	} else {
- 		dev->wd_bypass = true;
- 		dev_dbg(&dev->pdev->dev, "WD requested to be disabled\n");
--		mei_host_init_iamthif(dev) ;
-+		ret = false;
-+		goto end;
- 	}
-+
-+end:
-+	return ret;
+@@ -255,15 +255,69 @@ static int mei_wd_ops_stop(struct watchdog_device *wd_dev)
  }
  
- /**
+ /*
++ * mei_wd_ops_ping - wd ping command from the watchdog core.
++ *
++ * @wd_dev - watchdog device struct
++ *
++ * returns 0 if success, negative errno code for failure
++ */
++static int mei_wd_ops_ping(struct watchdog_device *wd_dev)
++{
++	int ret = 0;
++	struct mei_device *dev;
++	dev = pci_get_drvdata(mei_device);
++
++	if (!dev)
++		return -ENODEV;
++
++	mutex_lock(&dev->device_lock);
++
++	if (dev->wd_cl.state != MEI_FILE_CONNECTED) {
++		dev_dbg(&dev->pdev->dev, "wd is not connected.\n");
++		ret = -ENODEV;
++		goto end;
++	}
++
++	/* Check if we can send the ping to HW*/
++	if (dev->mei_host_buffer_is_empty &&
++		mei_flow_ctrl_creds(dev, &dev->wd_cl) > 0) {
++
++		dev->mei_host_buffer_is_empty = false;
++		dev_dbg(&dev->pdev->dev, "sending watchdog ping\n");
++
++		if (mei_wd_send(dev)) {
++			dev_dbg(&dev->pdev->dev, "wd send failed.\n");
++			ret = -EIO;
++			goto end;
++		}
++
++		if (mei_flow_ctrl_reduce(dev, &dev->wd_cl)) {
++			dev_dbg(&dev->pdev->dev, "mei_flow_ctrl_reduce() failed.\n");
++			ret = -EIO;
++			goto end;
++		}
++
++	} else {
++		dev->wd_pending = true;
++	}
++
++end:
++	mutex_unlock(&dev->device_lock);
++	return ret;
++}
++
++/*
+  * Watchdog Device structs
+  */
+ const struct watchdog_ops wd_ops = {
+ 		.owner = THIS_MODULE,
+ 		.start = mei_wd_ops_start,
+ 		.stop = mei_wd_ops_stop,
++		.ping = mei_wd_ops_ping,
+ };
+ const struct watchdog_info wd_info = {
+ 		.identity = INTEL_AMT_WATCHDOG_ID,
++		.options = WDIOF_KEEPALIVEPING,
+ };
+ 
+ struct watchdog_device amt_wd_dev = {
 -- 
 1.7.4.1
 
