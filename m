@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab1IGSei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:34:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:44388 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab1IGSeh (ORCPT
+	id S1756624Ab1IGSgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:36:38 -0400
+Received: from drsnuggles.stderr.nl ([94.142.244.14]:34382 "EHLO
+	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756599Ab1IGSgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:34:37 -0400
-Message-ID: <4E67B897.90407@windriver.com>
-Date: Wed, 7 Sep 2011 14:31:51 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
+	Wed, 7 Sep 2011 14:36:36 -0400
+X-Greylist: delayed 5403 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 14:36:36 EDT
+Date: Wed, 7 Sep 2011 10:50:37 +0200
+From: Matthijs Kooijman <matthijs@stdin.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jameson Graef Rollins <jrollins@finestructure.net>,
+        Jonathan Nieder <jrnieder@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
+        Martin Pitt <martin.pitt@ubuntu.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        Jean Schurger <jean@schurger.org>,
+        Jan =?iso-8859-1?Q?L=FCbbe?= <jluebbe@debian.org>,
+        Nacho Barrientos Arias <nacho@debian.org>
+Subject: Re: [regression] CD-ROM polling blocks suspend on some machines
+	(Re: [PATCH 1/2] cdrom: always check_disk_change() on open)
+Message-ID: <20110907085037.GX10237@login.drsnuggles.stderr.nl>
+Mail-Followup-To: Matthijs Kooijman <matthijs@stdin.nl>,
+	Tejun Heo <tj@kernel.org>,
+	Jameson Graef Rollins <jrollins@finestructure.net>,
+	Jonathan Nieder <jrnieder@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+	Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
+	Martin Pitt <martin.pitt@ubuntu.com>,
+	Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+	Jean Schurger <jean@schurger.org>,
+	Jan =?iso-8859-1?Q?L=FCbbe?= <jluebbe@debian.org>,
+	Nacho Barrientos Arias <nacho@debian.org>
+References: <20110406121920.GC4142@mtj.dyndns.org> <20110903221456.GA2877@elie> <20110904024244.GB3083@htj.dyndns.org> <87y5y37o7h.fsf@servo.factory.finestructure.net> <20110906174524.GN18425@mtj.dyndns.org>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <mingo@elte.hu>, <laijs@cn.fujitsu.com>,
-        <dipankar@in.ibm.com>, <akpm@linux-foundation.org>,
-        <mathieu.desnoyers@polymtl.ca>, <josh@joshtriplett.org>,
-        <niv@us.ibm.com>, <tglx@linutronix.de>, <peterz@infradead.org>,
-        <rostedt@goodmis.org>, <Valdis.Kletnieks@vt.edu>,
-        <dhowells@redhat.com>, <eric.dumazet@gmail.com>, <darren@dvhart.com>,
-        <patches@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 05/55] rcu: Move rcu_head definition to types.h
-References: <20110906180015.GA2560@linux.vnet.ibm.com> <1315332049-2604-5-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1315332049-2604-5-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YY58jJdr0zvR1wPt"
+Content-Disposition: inline
+In-Reply-To: <20110906174524.GN18425@mtj.dyndns.org>
+X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
+X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Spam-Score: -2.6 (--)
+X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
+	pts  rule name              description
+	---- ---------------------- -------------------------------------------
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-09-06 01:59 PM, Paul E. McKenney wrote:
-> Take a first step towards untangling Linux kernel header files by
-> placing the struct rcu_head definition into include/linux/types.h
-> and including include/linux/types.h in include/linux/rcupdate.h
-> where struct rcu_head used to be defined.  The actual inclusion point
-> for include/linux/types.h is with the rest of the #include directives
-> rather than at the point where struct rcu_head used to be defined,
-> as suggested by Mathieu Desnoyers.
-> 
-> Once this is in place, then header files that need only rcu_head
-> can include types.h rather than rcupdate.h.
 
-Good to see more of this untangle work taking place.
+--YY58jJdr0zvR1wPt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The only comment I have is whether there is any sort of implicit
-categorization in place for what is appropriate for types.h.
+Hi Tejun,
 
-At the moment it seems to only contain really core primary types
-(and the list/hlist structs which are almost core types...)
+> Also, can you please explain the steps needed to trigger this problem?
+I'm not the one that supplied the backtraces, but I'm having the same
+problem. I did a fairly extensive writeup on the Debian bug report,
+perhaps this could (help to) answer your question:
 
-Are there any other alternative places - does linux/kernel.h make
-more sense?
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=628600#23
 
-Paul.
+I'll leave the other questions to Jameson for now.
 
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> ---
->  include/linux/rcupdate.h |   11 +----------
->  include/linux/types.h    |   10 ++++++++++
->  2 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 8be0433..2516555 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -33,6 +33,7 @@
->  #ifndef __LINUX_RCUPDATE_H
->  #define __LINUX_RCUPDATE_H
->  
-> +#include <linux/types.h>
->  #include <linux/cache.h>
->  #include <linux/spinlock.h>
->  #include <linux/threads.h>
-> @@ -64,16 +65,6 @@ static inline void rcutorture_record_progress(unsigned long vernum)
->  #define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
->  #define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
->  
-> -/**
-> - * struct rcu_head - callback structure for use with RCU
-> - * @next: next update requests in a list
-> - * @func: actual update function to call after the grace period.
-> - */
-> -struct rcu_head {
-> -	struct rcu_head *next;
-> -	void (*func)(struct rcu_head *head);
-> -};
-> -
->  /* Exported common interfaces */
->  extern void call_rcu_sched(struct rcu_head *head,
->  			   void (*func)(struct rcu_head *rcu));
-> diff --git a/include/linux/types.h b/include/linux/types.h
-> index 176da8c..57a9723 100644
-> --- a/include/linux/types.h
-> +++ b/include/linux/types.h
-> @@ -238,6 +238,16 @@ struct ustat {
->  	char			f_fpack[6];
->  };
->  
-> +/**
-> + * struct rcu_head - callback structure for use with RCU
-> + * @next: next update requests in a list
-> + * @func: actual update function to call after the grace period.
-> + */
-> +struct rcu_head {
-> +	struct rcu_head *next;
-> +	void (*func)(struct rcu_head *head);
-> +};
-> +
->  #endif	/* __KERNEL__ */
->  #endif /*  __ASSEMBLY__ */
->  #endif /* _LINUX_TYPES_H */
+Gr.
+
+Matthijs
+
+--YY58jJdr0zvR1wPt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk5nMF0ACgkQz0nQ5oovr7xxCgCg0iJBeWjYHtrjuDXkSvzTCwt7
+08kAoJ3vLiFJFV0c9mixBxfJrPKmKVis
+=GYU6
+-----END PGP SIGNATURE-----
+
+--YY58jJdr0zvR1wPt--
