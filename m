@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1IGR76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:59:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52031 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab1IGR75 (ORCPT
+	id S1755774Ab1IGSEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:04:24 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:45247 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab1IGSEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:59:57 -0400
-Date: Wed, 7 Sep 2011 10:59:52 -0700
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: Hin-Tak Leung <hintak_leung@yahoo.co.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@tuxera.com>
-Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
-Message-ID: <20110907175952.GC23829@thinkpad-t410>
-Mail-Followup-To: Pavel Ivanov <paivanof@gmail.com>,
-	Hin-Tak Leung <hintak_leung@yahoo.co.uk>,
-	linux-fsdevel@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Christoph Hellwig <hch@tuxera.com>
-References: <CAG1a4rscDrbiCKxSPvbkG7SutQ5HCU2tX9FJEv81nFuVxLWekg@mail.gmail.com>
- <1315096661.23425.YahooMailClassic@web29510.mail.ird.yahoo.com>
- <CAG1a4ruG8bL9j01RgSXuK2w9FV0izp8vdoQMLEZzc=qZfCNpzA@mail.gmail.com>
+	Wed, 7 Sep 2011 14:04:22 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E67B415.6000106@cam.ac.uk>
+Date: Wed, 07 Sep 2011 19:12:37 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAG1a4ruG8bL9j01RgSXuK2w9FV0izp8vdoQMLEZzc=qZfCNpzA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: Blockers on IIO usage of regmap.
+References: <4E6600A8.4020101@cam.ac.uk> <20110906175435.GA2924@opensource.wolfsonmicro.com> <Prayer.1.3.4.1109062213100.4243@hermes-2.csi.cam.ac.uk> <4E679770.4090008@cam.ac.uk> <20110907175756.GH2906@opensource.wolfsonmicro.com>
+In-Reply-To: <20110907175756.GH2906@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 12:35:22AM -0400, Pavel Ivanov wrote:
-> On Sat, Sep 3, 2011 at 8:37 PM, Hin-Tak Leung <hintak_leung@yahoo.co.uk> wrote:
-> >> I've looked into the code myself a little and here's what I
-> >> see.
-> >> hfsplus_read_wrapper() calls to hfsplus_submit_bio() twice
-> >> to fill
-> >> sbi->s_vhdr and sbi->s_backup_vhdr. And according to
-> >> parameters they
-> >> are filled with pointers into sbi->s_vhdr_buf and
-> >> sbi->s_backup_vhdr_buf respectively. It's done with the
-> >> following code
-> >> at fs/hfsplus/wrapper.c:79:
-> >>
-> >>     if (!(rw & WRITE) && data)
-> >>         *data = (u8 *)buf +
-> >> offset;
-> >>
-> >> So s_vhdr and s_backup_vhdr shouldn't be freed, s_vhdr_buf
-> >> and
-> >> s_backup_vhdr_buf should be freed instead. And indeed
-> >> changing in
-> >> hfsplus_fill_super()
-> >>
-> >>     kfree(sbi->s_vhdr);
-> >>     kfree(sbi->s_backup_vhdr);
-> >>
-> >> to
-> >>
-> >>     kfree(sbi->s_vhdr_buf);
-> >>     kfree(sbi->s_backup_vhdr_buf);
-> >>
-> >> fixes BUG reports from SLUB.
-> >
-> > The code around there is a bit too dense, and both of the *_buf are recent introductions (and temp values, I think) as is hfsplus_submit_bio() itself, around the 2.6.39/3.0 time frame. I think the intention is to fill s_vhdr/s_backup_vhdr via mulitple fetches using *_buf as temp buffer.
+On 09/07/11 18:57, Mark Brown wrote:
+> On Wed, Sep 07, 2011 at 05:10:24PM +0100, Jonathan Cameron wrote:
 > 
-> Well, look at the commit 6596528e. It clearly shows that result of
-> kmalloc() is no longer assigned to sbi->s_vhdr and sbi->s_backup_vhdr,
-> but is assigned to sbi->s_vhdr_buf and sbi->s_backup_vhdr_buf. Also
-> this commit clearly changes hfsplus_put_super() so that it doesn't
-> free sbi->s_vhdr and sbi->s_backup_vhdr, but frees sbi->s_vhdr_buf and
-> sbi->s_backup_vhdr_buf instead. I guess Seth just missed
-> hfsplus_fill_super() in there as it's pretty unusual exit path.
+> Please fix your mailer to word wrap at less than 80 colums, they're
+> really quite hard to read as a result of this.
+> 
+>> CS -_______________________-
+>> TX  Ada0...Ada7  Da0....Da7
+>> RX XXXXXXXXXXXXXXXXXXXXXXXXX
+>>
+>> Reads are 16 bit with either of the two 8 bit register addresses given the same value
+>>
+>> CS -______________________-_____________________-
+>> TX  Ada0....Ada7 XXXXXXXX
+>> RX  XXXXXXXXXXXXXXXXXXXXX  Da0...Da7  Db0....Db7  
+> 
+>> Can interpret Da0...Da7 and Db0....Db7 as single 16 bit register and consider this device
+>> to just have a weird write method and normal read.  Might be easier.  I'll define Ax<n> as
+>> 16 bit address for the burst read.
+> 
+> This is starting to seem pretty far off the reservation.
+Indeed.
+> 
+>> Perhaps the burst mode thing is better handled by just providing a hook to allow data to be pushed
+>> into regmap (from 'magic' sources), but the weird write read combination looks to me like something
+>> that makes sense to have in regmap (be it as another bus variant).
+> 
+> Probably not as a bus, it sounds like a marshalling difference rather
+> than a bus - the buses should really only understand byte streams.  I
+> don't have any bright ideas on how to deal with this, it's fairly far
+> away from the problem space I'm worried about.
+The right answer maybe that it isn't a good idea to do it at all, but it
+wasn't obvious until I tried! Having done it I'm not sure either way.
 
-Yes, that was definitely just an oversight. Has anyone provided a patch
-yet? If not I've pasted a patch below. Seems like a fix should be
-applied ASAP.
-
-
->From d27825b880028e9a45ba640d86c9e8101db0606b Mon Sep 17 00:00:00 2001
-From: Seth Forshee <seth.forshee@canonical.com>
-Date: Wed, 7 Sep 2011 10:38:35 -0700
-Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in hfsplus_fill_super() error path
-
-Commit 6596528 (hfsplus: ensure bio requests are not smaller than
-the hardware sectors) changed the pointers used for volume header
-allocations but failed to change the pointer freed in the error
-path of hfsplus_fill_super(). This patch fixes the problem.
-
-Reported-by: Pavel Ivanov <paivanof@gmail.com>
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: <stable@kernel.org>
----
- fs/hfsplus/super.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
-index c106ca2..cadbb8c 100644
---- a/fs/hfsplus/super.c
-+++ b/fs/hfsplus/super.c
-@@ -525,8 +525,8 @@ out_close_cat_tree:
- out_close_ext_tree:
- 	hfs_btree_close(sbi->ext_tree);
- out_free_vhdr:
--	kfree(sbi->s_vhdr);
--	kfree(sbi->s_backup_vhdr);
-+	kfree(sbi->s_vhdr_buf);
-+	kfree(sbi->s_backup_vhdr_buf);
- out_unload_nls:
- 	unload_nls(sbi->nls);
- 	unload_nls(nls);
--- 
-1.7.4.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
