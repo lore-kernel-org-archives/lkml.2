@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab1IGF4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 01:56:38 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33820 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754196Ab1IGF4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 01:56:31 -0400
-Message-ID: <4E670764.1040805@parallels.com>
-Date: Wed, 7 Sep 2011 02:55:48 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1754845Ab1IGF6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 01:58:54 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:56258 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab1IGF6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 01:58:47 -0400
 MIME-Version: 1.0
-To: Paul Menage <paul@paulmenage.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
-        <xemul@parallels.com>, "David S. Miller" <davem@davemloft.net>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v2 2/9] Kernel Memory cgroup
-References: <1315369399-3073-1-git-send-email-glommer@parallels.com> <1315369399-3073-3-git-send-email-glommer@parallels.com> <CALdu-PCosvJ-SfVROLLM29RoMfxxRyW9E-_Za9A7LTAZwmkPeg@mail.gmail.com>
-In-Reply-To: <CALdu-PCosvJ-SfVROLLM29RoMfxxRyW9E-_Za9A7LTAZwmkPeg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.132.238]
+Date: Wed, 7 Sep 2011 11:28:46 +0530
+Message-ID: <CABG-yt0t0sgAvcDDLhjyNFGpY22tL0CtDvXV9+CxYJMf0MdVfA@mail.gmail.com>
+Subject: CRC calculation in Module.symvers
+From: Shakthi Kannan <shakthimaan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2011 02:24 AM, Paul Menage wrote:
-> On Tue, Sep 6, 2011 at 9:23 PM, Glauber Costa<glommer@parallels.com>  wrote:
->> +
->> +struct kmem_cgroup {
->> +       struct cgroup_subsys_state css;
->> +       struct kmem_cgroup *parent;
->> +};
->
-> There's a parent pointer in css.cgroup, so you shouldn't need a
-> separate one here.
+Greetings!
 
-Ok, I missed that. Thanks
+I would like to know as to:
 
-> Most cgroup subsystems define this structure (and the below accessor
-> functions) in their .c file rather than exposing it to the world? Does
-> this subsystem particularly need it exposed?
+1. How the CRC is computed for an exported symbol present in
+Module.symvers file, and
+2. Given a kernel .c file, how can I obtain the CRC checksums for a symbol.
 
-Originally I was using it in sock.c and friends. Now, from the last 
-submission to this one, most of those uses were substituted. The 
-acessors, however, are in kmem_cgroup.h. Reason being I want most of 
-them to be inline.
+For linux-3.0.2 (example), I compiled with CONFIG_MODVERSIONS=y, and
+running 'make' built vmlinux, and generated the Module.symvers file. I
+believe genksyms is used to create the Module.symvers file?
 
->> +
->> +static struct cgroup_subsys_state *kmem_create(
->> +       struct cgroup_subsys *ss, struct cgroup *cgrp)
->> +{
->> +       struct kmem_cgroup *sk = kzalloc(sizeof(*sk), GFP_KERNEL);
->
-> kcg or just cg would be a better name?
+I had referred the "Kernel Symbols and CONFIG_MODVERSIONS"
+documentation [1] written by Mark McLoughlin. I tried the following in
+the top-level kernel sources:
 
-I'll go with kcg.
+ $ gcc -E -D__GENKSYMS__ -DCONFIG_MODVERSIONS -DEXPORT_SYMTAB
+crypto/api.c -I/tmp/linux-3.0.2/include
+-I/tmp/linux-3.0.2/arch/x86/include | ./scripts/genksyms/genksyms
+
+and I get the following error output:
+
+=== Output ===
+
+/tmp/linux-3.0.2/include/linux/jiffies.h:43:42: error: division by zero in #if
+In file included from /tmp/linux-3.0.2/include/linux/tracepoint.h:19:0,
+                from /tmp/linux-3.0.2/include/linux/module.h:18,
+                from crypto/api.c:22:
+/tmp/linux-3.0.2/include/linux/rcupdate.h:160:2: error: #error
+"Unknown RCU implementation specified to kernel configuration"
+In file included from /tmp/linux-3.0.2/include/linux/module.h:21:0,
+                from crypto/api.c:22:
+/tmp/linux-3.0.2/arch/x86/include/asm/module.h:59:2: error: #error
+unknown processor family
+
+=== End ===
+
+The documentation for genksyms is old, and now there is no -k option?
+
+Appreciate any inputs in this regard,
+
+Thanks!
+
+SK
+
+[1] Kernel Symbols and CONFIG_MODVERSIONS.
+http://www.skynet.ie/~mark/pub/symbols.txt
+
+-- 
+Shakthi Kannan
+http://www.shakthimaan.com
