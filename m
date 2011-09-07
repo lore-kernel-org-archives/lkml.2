@@ -1,87 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab1IGRBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:01:54 -0400
-Received: from claw.goop.org ([74.207.240.146]:52667 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754656Ab1IGRBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:01:52 -0400
-Message-ID: <4E67A377.3090004@goop.org>
-Date: Wed, 07 Sep 2011 10:01:43 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1754906Ab1IGRCA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:02:00 -0400
+Received: from mail2.nsc.com ([12.238.8.132]:53796 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754656Ab1IGRB5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:01:57 -0400
+X-WSS-ID: 0LR5A4R-0A-CNC-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@nsc.com>
+To: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "cbou@mail.ru" <cbou@mail.ru>
+Date: Wed, 7 Sep 2011 01:55:27 -0700
+Subject: [PATCH 2/3] power: Add LP8727 charger driver
+Thread-Topic: [PATCH 2/3] power: Add LP8727 charger driver
+Thread-Index: AcxtOZHwsfRfFQT8RpKYDbb2wllC3QAAAS8gAAAQ+JAAAHvAgA==
+Message-ID: <B567DBAB974C0544994013492B949F8E380F619DE2@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: HeUw KdXq RSKD R5Me STUN S15i WdWS XVxZ XcgC YJi+
+ ZtLL bZZa hvJR pdSC qmaQ
+ vOeZ;4;YwBiAG8AdQBAAG0AYQBpAGwALgByAHUAOwBjAGIAbwB1AGEAdABtAGEAaQBsAHIAdQBAAGcAbQBhAGkAbAAuAGMAbwBtADsAZAB3AG0AdwAyAEAAaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{8D32209F-429C-4194-AF28-B679D07D49B1};bQBpAGwAbwAuAGsAaQBtAEAAbgBzAGMALgBjAG8AbQA=;Wed,
+ 07 Sep 2011 08:55:27
+ GMT;WwBQAEEAVABDAEgAIAAyAC8AMwBdACAAcABvAHcAZQByADoAIABBAGQAZAAgAEwAUAA4ADcAMgA3ACAAYwBoAGEAcgBnAGUAcgAgAGQAcgBpAHYAZQByAA==
+x-cr-puzzleid: {8D32209F-429C-4194-AF28-B679D07D49B1}
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-To: stefano.stabellini@eu.citrix.com
-CC: konrad.wilk@oracle.com, Ian.Campbell@eu.citrix.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [PATCH v3 1/2] xen: add an "highmem" parameter to alloc_xenballooned_pages
-References: <alpine.DEB.2.00.1109071723470.12963@kaball-desktop> <1315413571-10938-1-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1315413571-10938-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+X-WSS-ID: 6279EE001LS6373941-02-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2011 09:39 AM, stefano.stabellini@eu.citrix.com wrote:
-> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->
-> Add an highmem parameter to alloc_xenballooned_pages, to allow callers to
-> request lowmem or highmem pages.
->
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  drivers/xen/balloon.c |   12 ++++++++----
->  drivers/xen/gntdev.c  |    2 +-
->  include/xen/balloon.h |    3 ++-
->  3 files changed, 11 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-> index 5dfd8f8..7f7d463 100644
-> --- a/drivers/xen/balloon.c
-> +++ b/drivers/xen/balloon.c
-> @@ -501,20 +501,24 @@ EXPORT_SYMBOL_GPL(balloon_set_new_target);
->   * alloc_xenballooned_pages - get pages that have been ballooned out
->   * @nr_pages: Number of pages to get
->   * @pages: pages returned
-> + * @highmem: highmem or lowmem pages
->   * @return 0 on success, error otherwise
->   */
-> -int alloc_xenballooned_pages(int nr_pages, struct page** pages)
-> +int alloc_xenballooned_pages(int nr_pages, struct page** pages, bool highmem)
->  {
->  	int pgno = 0;
->  	struct page* page;
->  	mutex_lock(&balloon_mutex);
->  	while (pgno < nr_pages) {
-> -		page = balloon_retrieve(true);
-> -		if (page) {
-> +		page = balloon_retrieve(highmem);
-> +		if (page && PageHighMem(page) == highmem) {
->  			pages[pgno++] = page;
->  		} else {
->  			enum bp_state st;
-> -			st = decrease_reservation(nr_pages - pgno, GFP_HIGHUSER);
-> +			if (page)
-> +				balloon_append(page);
-> +			st = decrease_reservation(nr_pages - pgno,
-> +					highmem ? GFP_HIGHUSER : GFP_USER);
->  			if (st != BP_DONE)
->  				goto out_undo;
->  		}
-> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-> index f914b26..07a56c2 100644
-> --- a/drivers/xen/gntdev.c
-> +++ b/drivers/xen/gntdev.c
-> @@ -123,7 +123,7 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
->  	    NULL == add->pages)
->  		goto err;
->  
-> -	if (alloc_xenballooned_pages(count, add->pages))
-> +	if (alloc_xenballooned_pages(count, add->pages, 0 /* lowmem */))
 
-If the parameter is "bool" you should pass true/false.  But it might be
-better to just make it take a GFP_ constant directly.
+diff --git a/drivers/power/lp8727_charger.c b/drivers/power/lp8727_charger.c
+new file mode 100755
+index 0000000..2a649e0
+--- /dev/null
++++ b/drivers/power/lp8727_charger.c
+@@ -0,0 +1,491 @@
++/*
++ * Driver for LP8727 Micro/Mini USB IC with intergrated charger
++ *
++ *			Copyright (C) 2011 National Semiconductor
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
++#include <linux/i2c.h>
++#include <linux/power_supply.h>
++#include <linux/lp8727.h>
++
++#define DEBOUNCE_MSEC	270
++
++/* Registers */
++#define CTRL1		0x1
++#define CTRL2		0x2
++#define	SWCTRL		0x3
++#define INT1		0x4
++#define INT2		0x5
++#define STATUS1		0x6
++#define STATUS2 	0x7
++#define CHGCTRL2	0x9
++
++/* CTRL1 register */
++#define CP_EN		(1 << 0)
++#define ADC_EN		(1 << 1)
++#define ID200_EN	(1 << 4)
++
++/* CTRL2 register */
++#define CHGDET_EN	(1 << 1)
++#define INT_EN		(1 << 6)
++
++/* SWCTRL register */
++#define SW_DM1_DM	(0x0 << 0)
++#define SW_DM1_U1	(0x1 << 0)
++#define SW_DM1_HiZ	(0x7 << 0)
++#define SW_DP2_DP	(0x0 << 3)
++#define SW_DP2_U2	(0x1 << 3)
++#define SW_DP2_HiZ	(0x7 << 3)
++
++/* INT1 register */
++#define IDNO		(0xF << 0)
++#define VBUS		(1 << 4)
++
++/* STATUS1 register */
++#define CHGSTAT		(3 << 4)
++#define CHPORT		(1 << 6)
++#define DCPORT		(1 << 7)
++
++/* STATUS2 register */
++#define TEMP_STAT	(3 << 5)
++
++enum lp8727_dev_id {
++	ID_NONE,
++	ID_TA,
++	ID_DEDICATED_CHG,
++	ID_USB_CHG,
++	ID_USB_DS,
++	ID_MAX,
++};
++
++enum lp8727_chg_stat {
++	PRECHG,
++	CC,
++	CV,
++	EOC,
++};
++
++struct lp8727_psy {
++	struct power_supply ac;
++	struct power_supply usb;
++	struct power_supply batt;
++};
++
++struct lp8727_chg {
++	struct device *dev;
++	struct i2c_client *client;
++	struct mutex xfer_lock;
++	struct delayed_work work;
++	struct workqueue_struct *irqthread;
++	struct lp8727_platform_data *pdata;
++	struct lp8727_psy *psy;
++	struct lp8727_chg_param *chg_parm;
++	enum lp8727_dev_id devid;
++};
++
++static int lp8727_i2c_read(struct lp8727_chg *pchg, u8 reg, u8 * data, u8 len)
++{
++	s32 ret;
++
++	mutex_lock(&pchg->xfer_lock);
++	ret = i2c_smbus_read_i2c_block_data(pchg->client, reg, len, data);
++	mutex_unlock(&pchg->xfer_lock);
++
++	return (ret != len) ? -EIO : 0;
++}
++
++static int lp8727_i2c_write(struct lp8727_chg *pchg, u8 reg, u8 * data, u8 len)
++{
++	s32 ret;
++
++	mutex_lock(&pchg->xfer_lock);
++	ret = i2c_smbus_write_i2c_block_data(pchg->client, reg, len, data);
++	mutex_unlock(&pchg->xfer_lock);
++
++	return ret;
++}
++
++static inline int lp8727_i2c_read_byte(struct lp8727_chg *pchg, u8 reg,
++				       u8 * data)
++{
++	return lp8727_i2c_read(pchg, reg, data, 1);
++}
++
++static inline int lp8727_i2c_write_byte(struct lp8727_chg *pchg, u8 reg,
++					u8 * data)
++{
++	return lp8727_i2c_write(pchg, reg, data, 1);
++}
++
++static int lp8727_is_charger_attached(const char *name, int id)
++{
++	if (name) {
++		if (!strcmp(name, "ac"))
++			return (id == ID_TA || id == ID_DEDICATED_CHG) ? 1 : 0;
++		else if (!strcmp(name, "usb"))
++			return (id == ID_USB_CHG) ? 1 : 0;
++	}
++
++	return (id >= ID_TA && id <= ID_USB_CHG) ? 1 : 0;
++}
++
++static void lp8727_init_device(struct lp8727_chg *pchg)
++{
++	u8 val;
++
++	val = ID200_EN | ADC_EN | CP_EN;
++	if (lp8727_i2c_write_byte(pchg, CTRL1, &val))
++		dev_err(pchg->dev, "i2c write err : addr=0x%.2x\n", CTRL1);
++
++	val = INT_EN | CHGDET_EN;
++	if (lp8727_i2c_write_byte(pchg, CTRL2, &val))
++		dev_err(pchg->dev, "i2c write err : addr=0x%.2x\n", CTRL2);
++}
++
++static int lp8727_is_dedicated_charger(struct lp8727_chg *pchg)
++{
++	u8 val;
++	(void)lp8727_i2c_read_byte(pchg, STATUS1, &val);
++	return (val & DCPORT);
++}
++
++static int lp8727_is_usb_charger(struct lp8727_chg *pchg)
++{
++	u8 val;
++	(void)lp8727_i2c_read_byte(pchg, STATUS1, &val);
++	return (val & CHPORT);
++}
++
++static void lp8727_ctrl_switch(struct lp8727_chg *pchg, u8 sw)
++{
++	u8 val = sw;
++	(void)lp8727_i2c_write_byte(pchg, SWCTRL, &val);
++}
++
++static void lp8727_id_detection(struct lp8727_chg *pchg, u8 id, int vbusin)
++{
++	u8 devid = ID_NONE;
++	u8 swctrl = SW_DM1_HiZ | SW_DP2_HiZ;
++
++	switch (id) {
++	case 0x5:
++		devid = ID_TA;
++		pchg->chg_parm = &pchg->pdata->ac;
++		break;
++	case 0xB:
++		if (lp8727_is_dedicated_charger(pchg)) {
++			pchg->chg_parm = &pchg->pdata->ac;
++			devid = ID_DEDICATED_CHG;
++		} else if (lp8727_is_usb_charger(pchg)) {
++			pchg->chg_parm = &pchg->pdata->usb;
++			devid = ID_USB_CHG;
++			swctrl = SW_DM1_DM | SW_DP2_DP;
++		} else if (vbusin) {
++			devid = ID_USB_DS;
++			swctrl = SW_DM1_DM | SW_DP2_DP;
++		}
++		break;
++	default:
++		devid = ID_NONE;
++		pchg->chg_parm = NULL;
++		break;
++	}
++
++	pchg->devid = devid;
++	lp8727_ctrl_switch(pchg, swctrl);
++}
++
++static void lp8727_enable_chgdet(struct lp8727_chg *pchg)
++{
++	u8 val;
++
++	(void)lp8727_i2c_read_byte(pchg, CTRL2, &val);
++	val |= CHGDET_EN;
++	(void)lp8727_i2c_write_byte(pchg, CTRL2, &val);
++}
++
++static void lp8727_delayed_func(struct work_struct *_work)
++{
++	u8 intstat[2], idno, vbus;
++	struct lp8727_chg *pchg =
++	    container_of(_work, struct lp8727_chg, work.work);
++
++	if (lp8727_i2c_read(pchg, INT1, intstat, 2)) {
++		dev_err(pchg->dev, "can not read INT registers\n");
++		return;
++	}
++
++	idno = intstat[0] & IDNO;
++	vbus = intstat[0] & VBUS;
++
++	lp8727_id_detection(pchg, idno, vbus);
++	lp8727_enable_chgdet(pchg);
++
++	power_supply_changed(&pchg->psy->ac);
++	power_supply_changed(&pchg->psy->usb);
++	power_supply_changed(&pchg->psy->batt);
++}
++
++static irqreturn_t lp8727_isr_func(int irq, void *ptr)
++{
++	struct lp8727_chg *pchg = ptr;
++	unsigned long delay = msecs_to_jiffies(DEBOUNCE_MSEC);
++
++	queue_delayed_work(pchg->irqthread, &pchg->work, delay);
++
++	return IRQ_HANDLED;
++}
++
++static void lp8727_intr_config(struct lp8727_chg *pchg)
++{
++	INIT_DELAYED_WORK(&pchg->work, lp8727_delayed_func);
++
++	pchg->irqthread = create_singlethread_workqueue("lp8727-irqthd");
++	if (!pchg->irqthread)
++		dev_err(pchg->dev, "can not create thread for lp8727\n");
++
++	if (request_threaded_irq(pchg->client->irq,
++				 NULL,
++				 lp8727_isr_func,
++				 IRQF_TRIGGER_FALLING, "lp8727_irq", pchg)) {
++		dev_err(pchg->dev, "lp8727 irq can not be registered\n");
++	}
++}
++
++static enum power_supply_property lp8727_charger_prop[] = {
++	POWER_SUPPLY_PROP_ONLINE,
++};
++
++static enum power_supply_property lp8727_battery_prop[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_TEMP,
++};
++
++static char *battery_supplied_to[] = {
++	"main_batt",
++};
++
++static int lp8727_charger_get_property(struct power_supply *psy,
++				       enum power_supply_property psp,
++				       union power_supply_propval *val)
++{
++	struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
++
++	if (psp == POWER_SUPPLY_PROP_ONLINE) {
++		val->intval = lp8727_is_charger_attached(psy->name,
++							 pchg->devid);
++	}
++
++	return 0;
++}
++
++static int lp8727_battery_get_property(struct power_supply *psy,
++				       enum power_supply_property psp,
++				       union power_supply_propval *val)
++{
++	struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
++	u8 read;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		if (lp8727_is_charger_attached(psy->name, pchg->devid)) {
++			(void)lp8727_i2c_read_byte(pchg, STATUS1, &read);
++			if (((read & CHGSTAT) >> 4) == EOC)
++				val->intval = POWER_SUPPLY_STATUS_FULL;
++			else
++				val->intval = POWER_SUPPLY_STATUS_CHARGING;
++		} else {
++			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++		}
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		(void)lp8727_i2c_read_byte(pchg, STATUS2, &read);
++		read = (read & TEMP_STAT) >> 5;
++		if (read >= 0x1 && read <= 0x3)
++			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
++		else
++			val->intval = POWER_SUPPLY_HEALTH_GOOD;
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		if (pchg->pdata->get_batt_present)
++			val->intval = pchg->pdata->get_batt_present();
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		if (pchg->pdata->get_batt_level)
++			val->intval = pchg->pdata->get_batt_level();
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		if (pchg->pdata->get_batt_capacity)
++			val->intval = pchg->pdata->get_batt_capacity();
++		break;
++	case POWER_SUPPLY_PROP_TEMP:
++		if (pchg->pdata->get_batt_temp)
++			val->intval = pchg->pdata->get_batt_temp();
++		break;
++	default:
++		break;
++	}
++
++	return 0;
++}
++
++static void lp8727_charger_changed(struct power_supply *psy)
++{
++	struct lp8727_chg *pchg = dev_get_drvdata(psy->dev->parent);
++	u8 val;
++	u8 eoc_level, ichg;
++
++	if (lp8727_is_charger_attached(psy->name, pchg->devid)) {
++		if (pchg->chg_parm) {
++			eoc_level = pchg->chg_parm->eoc_level;
++			ichg = pchg->chg_parm->ichg;
++			val = (ichg << 4) | eoc_level;
++			(void)lp8727_i2c_write_byte(pchg, CHGCTRL2, &val);
++		}
++	}
++}
++
++static int lp8727_register_psy(struct lp8727_chg *pchg)
++{
++	struct lp8727_psy *psy;
++
++	psy = kzalloc(sizeof(*psy), GFP_KERNEL);
++	if (!psy)
++		goto err_mem;
++
++	pchg->psy = psy;
++
++	psy->ac.name = "ac";
++	psy->ac.type = POWER_SUPPLY_TYPE_MAINS;
++	psy->ac.properties = lp8727_charger_prop;
++	psy->ac.num_properties = ARRAY_SIZE(lp8727_charger_prop);
++	psy->ac.get_property = lp8727_charger_get_property;
++	psy->ac.supplied_to = battery_supplied_to;
++	psy->ac.num_supplicants = ARRAY_SIZE(battery_supplied_to);
++
++	if (power_supply_register(pchg->dev, &psy->ac))
++		goto err_psy;
++
++	psy->usb.name = "usb";
++	psy->usb.type = POWER_SUPPLY_TYPE_USB;
++	psy->usb.properties = lp8727_charger_prop;
++	psy->usb.num_properties = ARRAY_SIZE(lp8727_charger_prop);
++	psy->usb.get_property = lp8727_charger_get_property;
++	psy->usb.supplied_to = battery_supplied_to;
++	psy->usb.num_supplicants = ARRAY_SIZE(battery_supplied_to);
++
++	if (power_supply_register(pchg->dev, &psy->usb))
++		goto err_psy;
++
++	psy->batt.name = "main_batt";
++	psy->batt.type = POWER_SUPPLY_TYPE_BATTERY;
++	psy->batt.properties = lp8727_battery_prop;
++	psy->batt.num_properties = ARRAY_SIZE(lp8727_battery_prop);
++	psy->batt.get_property = lp8727_battery_get_property;
++	psy->batt.external_power_changed = lp8727_charger_changed;
++
++	if (power_supply_register(pchg->dev, &psy->batt))
++		goto err_psy;
++
++	return 0;
++
++err_mem:
++	return -ENOMEM;
++err_psy:
++	kfree(psy);
++	return -EPERM;
++}
++
++static void lp8727_unregister_psy(struct lp8727_chg *pchg)
++{
++	struct lp8727_psy *psy = pchg->psy;
++
++	if (psy) {
++		power_supply_unregister(&psy->ac);
++		power_supply_unregister(&psy->usb);
++		power_supply_unregister(&psy->batt);
++		kfree(psy);
++	}
++}
++
++static int lp8727_probe(struct i2c_client *cl, const struct i2c_device_id *id)
++{
++	struct lp8727_chg *pchg;
++	int ret;
++
++	pchg = kzalloc(sizeof(*pchg), GFP_KERNEL);
++	if (!pchg)
++		return -ENOMEM;
++
++	pchg->client = cl;
++	pchg->dev = &cl->dev;
++	pchg->pdata = cl->dev.platform_data;
++	i2c_set_clientdata(cl, pchg);
++
++	mutex_init(&pchg->xfer_lock);
++
++	lp8727_init_device(pchg);
++	lp8727_intr_config(pchg);
++
++	ret = lp8727_register_psy(pchg);
++	if (ret) {
++		dev_err(pchg->dev,
++			"can not register power supplies. err=%d", ret);
++	}
++
++	return 0;
++}
++
++static int __devexit lp8727_remove(struct i2c_client *cl)
++{
++	struct lp8727_chg *pchg = i2c_get_clientdata(cl);
++
++	lp8727_unregister_psy(pchg);
++	free_irq(pchg->client->irq, pchg);
++	flush_workqueue(pchg->irqthread);
++	destroy_workqueue(pchg->irqthread);
++	kfree(pchg);
++	return 0;
++}
++
++static const struct i2c_device_id lp8727_ids[] = {
++	{"lp8727", 0},
++};
++
++static struct i2c_driver lp8727_driver = {
++	.driver = {
++		   .name = "lp8727",
++		   },
++	.probe = lp8727_probe,
++	.remove = __devexit_p(lp8727_remove),
++	.id_table = lp8727_ids,
++};
++
++static int __init lp8727_init(void)
++{
++	return i2c_add_driver(&lp8727_driver);
++}
++
++static void __exit lp8727_chg_exit(void)
++{
++	i2c_del_driver(&lp8727_driver);
++}
++
++module_init(lp8727_init);
++module_exit(lp8727_chg_exit);
++
++MODULE_DESCRIPTION("National Semiconductor LP8727 charger driver");
++MODULE_AUTHOR("Woogyom Kim <milo.kim@nsc.com>");
++MODULE_LICENSE("GPL");
 
-    J
