@@ -1,45 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab1IGTGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 15:06:25 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:53901 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab1IGTGY (ORCPT
+	id S1756733Ab1IGTHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 15:07:47 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:13059 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab1IGTHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 15:06:24 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E67C29F.8060909@cam.ac.uk>
-Date: Wed, 07 Sep 2011 20:14:39 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 2/6] regmap: Add a magic bus type to handle quirks of
- analog devices ADIS sensors.
-References: <4E679770.4090008@cam.ac.uk> <1315412387-5765-3-git-send-email-jic23@cam.ac.uk> <20110907174713.GG2906@opensource.wolfsonmicro.com> <4E67B742.6030302@cam.ac.uk> <20110907183230.GA4423@opensource.wolfsonmicro.com> <4E67BCDF.3020108@cam.ac.uk> <20110907184457.GC4423@opensource.wolfsonmicro.com>
-In-Reply-To: <20110907184457.GC4423@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Sep 2011 15:07:45 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Wed, 07 Sep 2011 15:07:42 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Kbuild: allow code re-use across different directories
+In-reply-to: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+Message-id: <alpine.LFD.2.00.1109071437400.20358@xanadu.home>
+References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/11 19:44, Mark Brown wrote:
-> On Wed, Sep 07, 2011 at 07:50:07PM +0100, Jonathan Cameron wrote:
->> On 09/07/11 19:32, Mark Brown wrote:
+On Fri, 19 Aug 2011, Arnaud Lacombe wrote:
+
+> Hi folks,
 > 
->>> Either.  Or either expose marshalling or add configuration for the
->>> marshalling depending on what's being done, I'm not convinced you need
->>> to be working at SPI level at all.
+> The attached patch modify Kbuild to allow to directly re-use code in multiple
+> directory without having to go through a copy. Technically, it changes Kbuild to
+> use by default the VPATH feature of GNU make and provides accessors for Makefile
+> to change it indirectly.
 > 
->> I'm a little unclear what you mean by 'marshalling'.  Could you expand
->> on how that might work?
+> Considering:
 > 
-> Marshalling is the process of formatting data for transmit and parsing
-> it once it's been read in.
-Ah, got you now.  Yes, something in there might work or as you say add some
-hooks to do it outside.
+> arch/foo/lib:
+> fancy.c
+> 
+> We want to be able to build it with -DPANTS=32 in the kernel, but the
+> bootloader requires -DPANTS_SIZE=30.
+> 
+> Currently we would do, either:
+> 
+> arch/foo/lib/Makefile
+> LDFLAGS_fancy.o := -DPANTS=32
+> obj-y += fancy.o
+> 
+> and, either:
+> 
+> arch/foo/boot/Makefile:
+> LDFLAGS_fancy.o := -DPANTS=30
+> obj-y += fancy.o
+> $(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
+> 	$(call cmd,shipped)
+> 
+> or
+> 
+> arch/foo/boot/Makefile:
+> LDFLAGS_fancy.o := -DPANTS=30
+> obj-y += fancy.o
+> $(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
+> 	$(call cmd,cc_c_o)
+> 
+> The former implies an extra copy of the source file, the latter expose Kbuild
+> internal function.
+> 
+> With the attached patch, we would do:
+> 
+> arch/foo/boot/Makefile:
+> LDFLAGS_fancy.o := -DPANTS=30
+> obj-y += fancy.o
+> vpath-y += $(srctree)/arch/foo/lib
+> 
+> and let GNU make do the job.
+> 
+> Comments welcome,
+
+It doesn't work.  Whatever I do to arch/arm/boot/compressed/Makefile 
+(which admittedly looks a bit hairy and could benefit from a shave) in 
+order to remove the $(call cmd,shipped) used with lib1funcs.S, I always 
+end up with:
+
+make[2]: *** No rule to make target `arch/arm/boot/compressed/lib1funcs.S', needed by `arch/arm/boot/compressed/lib1funcs.o'.  Stop.
+
+Obviously, restoring the explicit dependency with a $(call cmd,as_o_S) 
+does make it work, but this is rather against the point of your patch.
+
+Do you have an example of how arch/arm/boot/compressed/Makefile should 
+be changed to benefit from your patch?
+
+
+Nicolas
