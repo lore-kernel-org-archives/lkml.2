@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab1IGQHM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:07:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39961 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756056Ab1IGQHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:07:03 -0400
-Date: Wed, 7 Sep 2011 15:40:16 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: John Ogness <john.ogness@linutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Dave Martin <dave.martin@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: alignment: setup alignment handler earlier
-Message-ID: <20110907144016.GA30719@e102109-lin.cambridge.arm.com>
-References: <87ehzstr07.fsf@vostro.fn.ogness.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ehzstr07.fsf@vostro.fn.ogness.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756165Ab1IGQIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:08:07 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:52662 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756478Ab1IGQH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:07:58 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: gregkh@suse.de
+Cc: dan.magenheimer@oracle.com, ngupta@vflare.org, cascardo@holoscopio.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        rdunlap@xenotime.net, linux-mm@kvack.org, rcj@linux.vnet.ibm.com,
+        dave@linux.vnet.ibm.com, brking@linux.vnet.ibm.com,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: [PATCH v2 3/3] staging: zcache: add zv_page_count and zv_desc_count
+Date: Wed,  7 Sep 2011 09:09:07 -0500
+Message-Id: <1315404547-20075-4-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 02:35:04PM +0100, John Ogness wrote:
-> From 6f3f381800367127dc6430d9b9fa9bd6fc6d8ed0 Mon Sep 17 00:00:00 2001
-> From: John Ogness <john.ogness@linutronix.de>
-> 
-> The alignment exception handler is setup fairly late in
-> the boot process (fs_initcall). However, with newer gcc
-> versions and the compiler option -fconserve-stack, code
-> accessing unaligned data is generated in functions that
-> are called earlier, for example pcpu_dump_alloc_info().
-> This results in unhandled alignment exceptions during
-> boot. By setting up the exception handler sooner, we
-> reduce the window where a compiler may generate code
-> accessing unaligned data.
+This patch adds the zv_page_count and zv_desc_count attributes
+to the zcache sysfs.  They are read-only attributes and return
+the number of pages and the number of block descriptors in use
+by the pool respectively.
 
-While this reduces the window and fixes this particular case, it still
-doesn't solve the problem. We never know when some unaligned access
-would be generated for some earlier code.
+These statistics can be used to calculate effective compression
+and block descriptor overhead for the xcfmalloc allocator.
 
-I would just make sure that SCTLR.A bit is always cleared on ARMv6+,
-independent of CONFIG_ALIGNMENT_TRAP.
+Using the frontswap curr_pages attribute, effective compression
+is: zv_page_count / curr_pages
 
+Using /proc/slabinfo to get the objsize for a xcf_desc_cache
+object, descriptor overhead is: zv_desc_count * objsize
+
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index b07377b..6adbbbe 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -789,6 +789,24 @@ static int zv_cumul_dist_counts_show(char *buf)
+ 	return p - buf;
+ }
+ 
++static int zv_page_count_show(char *buf)
++{
++	char *p = buf;
++	unsigned long count;
++	count = xcf_get_total_size_bytes(zcache_host.xcfmpool) >> PAGE_SHIFT;
++	p += sprintf(p, "%lu\n", count);
++	return p - buf;
++}
++
++static int zv_desc_count_show(char *buf)
++{
++	char *p = buf;
++	unsigned long count;
++	count = xcf_get_desc_count(zcache_host.xcfmpool);
++	p += sprintf(p, "%lu\n", count);
++	return p - buf;
++}
++
+ /*
+  * setting zv_max_zsize via sysfs causes all persistent (e.g. swap)
+  * pages that don't compress to less than this value (including metadata
+@@ -1477,6 +1495,10 @@ ZCACHE_SYSFS_RO_CUSTOM(zv_curr_dist_counts,
+ 			zv_curr_dist_counts_show);
+ ZCACHE_SYSFS_RO_CUSTOM(zv_cumul_dist_counts,
+ 			zv_cumul_dist_counts_show);
++ZCACHE_SYSFS_RO_CUSTOM(zv_page_count,
++			zv_page_count_show);
++ZCACHE_SYSFS_RO_CUSTOM(zv_desc_count,
++			zv_desc_count_show);
+ 
+ static struct attribute *zcache_attrs[] = {
+ 	&zcache_curr_obj_count_attr.attr,
+@@ -1513,6 +1535,8 @@ static struct attribute *zcache_attrs[] = {
+ 	&zcache_zv_max_zsize_attr.attr,
+ 	&zcache_zv_max_mean_zsize_attr.attr,
+ 	&zcache_zv_page_count_policy_percent_attr.attr,
++	&zcache_zv_page_count_attr.attr,
++	&zcache_zv_desc_count_attr.attr,
+ 	NULL,
+ };
+ 
 -- 
-Catalin
+1.7.4.1
+
