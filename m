@@ -1,110 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1IGRAi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:00:38 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51129 "EHLO gate.crashing.org"
+	id S1754668Ab1IGRAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:00:37 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:52608 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754536Ab1IGRAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:00:01 -0400
-Subject: Re: [PATCH tip/core/rcu 55/55] powerpc: Work around tracing from
- dyntick-idle mode
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org, anton@samba.org,
-        paulus@samba.org
-In-Reply-To: <1315332049-2604-55-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
-	 <1315332049-2604-55-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Sep 2011 07:00:22 -0300
-Message-ID: <1315389622.26118.17.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754594Ab1IGRAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:00:12 -0400
+In-Reply-To: <4E5EB608.3000905@systemfabricworks.com>
+References: <20110831213729.395283830@systemfabricworks.com> <4E5EB608.3000905@systemfabricworks.com>
+Subject: Re: [PATCH v6 08/10] crc32-add-slicing-by-8.diff
+X-KeepSent: 3D37A60B:7A33B855-C1257904:00276B5B;
+ type=4; name=$KeepSent
+To: Bob Pearson <rpearson@systemfabricworks.com>
+Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com,
+        George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OF3D37A60B.7A33B855-ONC1257904.00276B5B-C1257904.002951AF@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Wed, 7 Sep 2011 09:31:18 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 09/07/2011 09:31:19
+MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-09-06 at 11:00 -0700, Paul E. McKenney wrote:
-> PowerPC LPAR's __trace_hcall_exit() can invoke event tracing at a
-> point where RCU has been told that the CPU is in dyntick-idle mode.
-> Because event tracing uses RCU, this can result in failures.
-> 
-> A correct fix would arrange for RCU to be told about dyntick-idle
-> mode after tracing had completed, however, this will require some care
-> because it appears that __trace_hcall_exit() can also be called from
-> non-dyntick-idle mode.
-
-This obviously needs to be fixed properly. hcall tracing is very useful
-and if I understand your patch properly, it just comments it out :-)
-
-I'm not sure what the best approach is, maybe have the hcall tracing
-test for the dyntick-idle mode and skip tracing in that case ?
-
-Cheers,
-Ben.
-
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: anton@samba.org
-> Cc: benh@kernel.crashing.org
-> Cc: paulus@samba.org
+Bob Pearson <rpearson@systemfabricworks.com> wrote on 2011/09/01 00:30:32:
+>
+> add slicing-by-8 algorithm to the existing
+> slicing-by-4 algorithm. This consists of:
+>    - extend largest BITS size from 32 to 64
+>    - extend tables from tab[4][256] to up to tab[8][256]
+>    - Add code for inner loop.
+>
+> Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
+>
 > ---
->  arch/powerpc/platforms/pseries/lpar.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
-> index 39e6e0a..668f300 100644
-> --- a/arch/powerpc/platforms/pseries/lpar.c
-> +++ b/arch/powerpc/platforms/pseries/lpar.c
-> @@ -715,12 +715,14 @@ EXPORT_SYMBOL(arch_free_page);
->  /* NB: reg/unreg are called while guarded with the tracepoints_mutex */
->  extern long hcall_tracepoint_refcount;
->  
-> +#if 0 /* work around buggy use of RCU from dyntick-idle mode */
->  /* 
->   * Since the tracing code might execute hcalls we need to guard against
->   * recursion. One example of this are spinlocks calling H_YIELD on
->   * shared processor partitions.
->   */
->  static DEFINE_PER_CPU(unsigned int, hcall_trace_depth);
-> +#endif /* #if 0 work around buggy use of RCU from dyntick-idle mode */
->  
->  void hcall_tracepoint_regfunc(void)
+>  lib/crc32.c          |   40 ++++++++++++++++++++++++++++------------
+>  lib/crc32defs.h      |   29 +++++++++++++++++++++--------
+>  lib/gen_crc32table.c |   43 +++++++++++++++++++++++++++----------------
+>  3 files changed, 76 insertions(+), 36 deletions(-)
+>
+> Index: for-next/lib/crc32.c
+> ===================================================================
+> --- for-next.orig/lib/crc32.c
+> +++ for-next/lib/crc32.c
+> @@ -47,25 +47,28 @@ MODULE_LICENSE("GPL");
+>
+>  #if CRC_LE_BITS > 8 || CRC_BE_BITS > 8
+>
+> +/* implements slicing-by-4 or slicing-by-8 algorithm */
+>  static inline u32
+>  crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
 >  {
-> @@ -734,6 +736,7 @@ void hcall_tracepoint_unregfunc(void)
->  
->  void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
->  {
-> +#if 0 /* work around buggy use of RCU from dyntick-idle mode */
->  	unsigned long flags;
->  	unsigned int *depth;
->  
-> @@ -750,11 +753,13 @@ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
->  
->  out:
->  	local_irq_restore(flags);
-> +#endif /* #if 0 work around buggy use of RCU from dyntick-idle mode */
->  }
->  
->  void __trace_hcall_exit(long opcode, unsigned long retval,
->  			unsigned long *retbuf)
->  {
-> +#if 0 /* work around buggy use of RCU from dyntick-idle mode */
->  	unsigned long flags;
->  	unsigned int *depth;
->  
-> @@ -771,6 +776,7 @@ void __trace_hcall_exit(long opcode, unsigned long retval,
->  
->  out:
->  	local_irq_restore(flags);
-> +#endif /* #if 0 work around buggy use of RCU from dyntick-idle mode */
->  }
->  #endif
->  
+>  # ifdef __LITTLE_ENDIAN
+>  #  define DO_CRC(x) (crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8))
+> -#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
+> -         t2[(crc >> 8) & 255] ^ \
+> -         t1[(crc >> 16) & 255] ^ \
+> -         t0[(crc >> 24) & 255]
+> +#  define DO_CRC4 (t3[(q) & 255] ^ t2[(q >> 8) & 255] ^ \
+> +         t1[(q >> 16) & 255] ^ t0[(q >> 24) & 255])
+> +#  define DO_CRC8 (t7[(q) & 255] ^ t6[(q >> 8) & 255] ^ \
+> +         t5[(q >> 16) & 255] ^ t4[(q >> 24) & 255])
+>  # else
+>  #  define DO_CRC(x) (crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8))
+> -#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
+> -         t1[(crc >> 8) & 255] ^ \
+> -         t2[(crc >> 16) & 255] ^ \
+> -         t3[(crc >> 24) & 255]
+> +#  define DO_CRC4 (t0[(q) & 255] ^ t1[(q >> 8) & 255] ^ \
+> +         t2[(q >> 16) & 255] ^ t3[(q >> 24) & 255])
+> +#  define DO_CRC8 (t4[(q) & 255] ^ t5[(q >> 8) & 255] ^ \
+> +         t6[(q >> 16) & 255] ^ t7[(q >> 24) & 255])
+
+Don't like the new DO_CRC8 macro. You could get by with my earlier
+suggestion:
+#  define DO_CRC4(crc, x0, x1, x2, x3) \
+		x3[(crc) & 255] ^		\
+		x2[(crc >> 8) & 255] ^	\
+		x1[(crc >> 16) & 255] ^ \
+		x0[(crc >> 24) & 255]
+
+Then the code becomes something like
+if (bits == 64) {
+		crc = DO_CRC4(crc, t4, t5, t6, t7);
+		++b;
+		crc ^= DO_CRC4(*b, t0, t1, t2, t3);
+} else
+		crc = DO_CRC4(crc, t0, t1, t2, t3);
+
+>  # endif
+>     const u32 *b;
+> -   size_t    rem_len;
+> +   size_t rem_len;
+>     const u32 *t0 = tab[0], *t1 = tab[1], *t2 = tab[2], *t3 = tab[3];
+> +   const u32 *t4 = tab[4], *t5 = tab[5], *t6 = tab[6], *t7 = tab[7];
+
+t4 to t7 is only used in 64 bit mode.
+
+BTW, it the 64 CRC bits on 32 bits BE arch bug fixed?
+
+> +   u32 q;
+>
+>     /* Align it */
+>     if (unlikely((long)buf & 3 && len)) {
+> @@ -73,13 +76,25 @@ crc32_body(u32 crc, unsigned char const
+>           DO_CRC(*buf++);
+>        } while ((--len) && ((long)buf)&3);
+>     }
+> +
+> +# if CRC_LE_BITS == 32
+>     rem_len = len & 3;
+> -   /* load data 32 bits wide, xor data 32 bits wide. */
+>     len = len >> 2;
+> +# else
+> +   rem_len = len & 7;
+> +   len = len >> 3;
+
+I still fail to see why this is needed. You still do 32 bit loads so this
+only makes the code uglier, harder to maintain and makes small unaligned crc bufs
+slower.
+
+....
+
+> Index: for-next/lib/gen_crc32table.c
+> ===================================================================
+> --- for-next.orig/lib/gen_crc32table.c
+> +++ for-next/lib/gen_crc32table.c
+> @@ -1,23 +1,28 @@
+..
+>
+> -static void output_table(uint32_t (*table)[256], int len, char *trans)
+> +static void output_table(uint32_t (*table)[256], int rows, int len, char *trans)
+
+This table is not always 256 entries. I suggested a cleaner impl. earlier.
+Something like this:
+
+-static void output_table(uint32_t table[4][256], int len, char *trans)
++static void output_table(uint32_t table[], int len, char *trans)
+ {
+-	int i, j;
+-
+-	for (j = 0 ; j < 4; j++) {
+-		printf("{");
+-		for (i = 0; i < len - 1; i++) {
+-			if (i % ENTRIES_PER_LINE == 0)
+-				printf("\n");
+-			printf("%s(0x%8.8xL), ", trans, table[j][i]);
+-		}
+-		printf("%s(0x%8.8xL)},\n", trans, table[j][len - 1]);
++	int i;
++
++	printf("{");
++	for (i = 0; i < len - 1; i++) {
++		if (i % ENTRIES_PER_LINE == 0)
++			printf("\n");
++		printf("%s(0x%8.8xL), ", trans, table[i]);
+ 	}
++	printf("%s(0x%8.8xL)},\n", trans, table[len - 1]);
+ }
+
+ int main(int argc, char** argv)
+ {
++	int i;
++
+ 	printf("/* this file is generated - do not edit */\n\n");
+
+ 	if (CRC_LE_BITS > 1) {
+ 		crc32init_le();
+-		printf("static const u32 crc32table_le[4][256] = {");
+-		output_table(crc32table_le, LE_TABLE_SIZE, "tole");
++		printf("static const u32 crc32table_le[%d][%d] = {",
++		       LE_TABLE_ROWS, LE_TABLE_SIZE);
++		for (i = 0 ; i < LE_TABLE_ROWS; i++)
++			output_table(crc32table_le[i], LE_TABLE_SIZE, "tole");
+ 		printf("};\n");
+ 	}
+
+ 	if (CRC_BE_BITS > 1) {
+ 		crc32init_be();
+-		printf("static const u32 crc32table_be[4][256] = {");
+-		output_table(crc32table_be, BE_TABLE_SIZE, "tobe");
++		printf("static const u32 crc32table_be[%d][%d] = {",
++		       BE_TABLE_ROWS, BE_TABLE_SIZE);
++		for (i = 0 ; i < BE_TABLE_ROWS; i++)
++			output_table(crc32table_be[i], BE_TABLE_SIZE, "tobe");
+ 		printf("};\n");
+ 	}
 
 
