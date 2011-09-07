@@ -1,83 +1,586 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab1IGQMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:12:30 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46765 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab1IGQM0 (ORCPT
+	id S1756224Ab1IGQMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:12:55 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:48726 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab1IGQLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:12:26 -0400
-Date: Wed, 7 Sep 2011 08:48:00 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Jackson <Ian.Jackson@eu.citrix.com>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jens Axboe <jaxboe@fusionio.com>, Marsden <greg.marsden@oracle.com>,
-        Joe Jin <joe.jin@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>, Greg@acsinet13.oracle.com,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>
-Subject: Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend
- disconnected
-Message-ID: <20110907124800.GC32190@dumpdata.com>
-References: <4E48A6A6.4040706@oracle.com>
- <20110815144610.GA3707@infradead.org>
- <m2n.s.1QsyrJ-132485@chiark.greenend.org.uk>
- <20054.29964.556177.999449@mariner.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20054.29964.556177.999449@mariner.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E6797E9.0009:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Wed, 7 Sep 2011 12:11:45 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+From: Jonathan Cameron <jic23@cam.ac.uk>
+To: broonie@opensource.wolfsonmicro.com
+Cc: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
+        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH 3/6] staging:iio:imu: adis16400 partial conversion to regmap.
+Date: Wed,  7 Sep 2011 17:19:44 +0100
+Message-Id: <1315412387-5765-4-git-send-email-jic23@cam.ac.uk>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <4E679770.4090008@cam.ac.uk>
+References: <4E679770.4090008@cam.ac.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 25, 2011 at 05:15:08PM +0100, Ian Jackson wrote:
-> Konrad Rzeszutek Wilk writes ("Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend disconnected"):
-> > And the guest would normally issues a FLUSH when unmounting the
-> > disk. Hm, I wonder what the conditions are when we forcibly kill the
-> > guest - there might be outstanding I/Os in the disk's cache -
-> > at which point we should probably sync the write cache, no?
-> 
-> If we forcibly kill the guest we don't care about its IO in flight.
+This requires the regmap-spi-adi regmap bus to deal with
+complex read / write combinations.
 
-Why don't we care about it? It might have become wedged but that does
-not mean we don't want to preserve as much as possible.
+Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+---
+ drivers/staging/iio/imu/Kconfig          |    1 +
+ drivers/staging/iio/imu/adis16400.h      |    2 +
+ drivers/staging/iio/imu/adis16400_core.c |  300 ++++++++++++++++++-----------
+ drivers/staging/iio/imu/adis16400_ring.c |    2 +-
+ 4 files changed, 190 insertions(+), 115 deletions(-)
 
-> After all we are throwing away everything that the guest has in its
-> queue.
+diff --git a/drivers/staging/iio/imu/Kconfig b/drivers/staging/iio/imu/Kconfig
+index e0e0144..7dfaa43 100644
+--- a/drivers/staging/iio/imu/Kconfig
++++ b/drivers/staging/iio/imu/Kconfig
+@@ -6,6 +6,7 @@ comment "Inertial measurement units"
+ config ADIS16400
+ 	tristate "Analog Devices ADIS16400 and similar IMU SPI driver"
+ 	depends on SPI
++	select REGMAP_SPI_ADI
+ 	select IIO_SW_RING if IIO_RING_BUFFER
+ 	select IIO_TRIGGER if IIO_RING_BUFFER
+ 	help
+diff --git a/drivers/staging/iio/imu/adis16400.h b/drivers/staging/iio/imu/adis16400.h
+index 1f8f0c6..0bf1fd9 100644
+--- a/drivers/staging/iio/imu/adis16400.h
++++ b/drivers/staging/iio/imu/adis16400.h
+@@ -141,6 +141,7 @@ struct adis16400_chip_info {
+ 	unsigned long default_scan_mask;
+ };
+ 
++struct regmap;
+ /**
+  * struct adis16400_state - device instance specific data
+  * @us:			actual spi_device
+@@ -150,6 +151,7 @@ struct adis16400_chip_info {
+  * @buf_lock:		mutex to protect tx and rx
+  **/
+ struct adis16400_state {
++	struct regmap *regmap;
+ 	struct spi_device		*us;
+ 	struct iio_trigger		*trig;
+ 	struct mutex			buf_lock;
+diff --git a/drivers/staging/iio/imu/adis16400_core.c b/drivers/staging/iio/imu/adis16400_core.c
+index b6d824f..b4be380 100644
+--- a/drivers/staging/iio/imu/adis16400_core.c
++++ b/drivers/staging/iio/imu/adis16400_core.c
+@@ -25,6 +25,8 @@
+ #include <linux/sysfs.h>
+ #include <linux/list.h>
+ #include <linux/module.h>
++#include <linux/regmap.h>
++#include <linux/err.h>
+ 
+ #include "../iio.h"
+ #include "../sysfs.h"
+@@ -42,28 +44,6 @@ enum adis16400_chip_variant {
+ 	ADIS16400,
+ };
+ 
+-/**
+- * adis16400_spi_write_reg_8() - write single byte to a register
+- * @dev: device associated with child of actual device (iio_dev or iio_trig)
+- * @reg_address: the address of the register to be written
+- * @val: the value to write
+- */
+-static int adis16400_spi_write_reg_8(struct iio_dev *indio_dev,
+-				     u8 reg_address,
+-				     u8 val)
+-{
+-	int ret;
+-	struct adis16400_state *st = iio_priv(indio_dev);
+-
+-	mutex_lock(&st->buf_lock);
+-	st->tx[0] = ADIS16400_WRITE_REG(reg_address);
+-	st->tx[1] = val;
+-
+-	ret = spi_write(st->us, st->tx, 2);
+-	mutex_unlock(&st->buf_lock);
+-
+-	return ret;
+-}
+ 
+ /**
+  * adis16400_spi_write_reg_16() - write 2 bytes to a pair of registers
+@@ -71,43 +51,14 @@ static int adis16400_spi_write_reg_8(struct iio_dev *indio_dev,
+  * @reg_address: the address of the lower of the two registers. Second register
+  *               is assumed to have address one greater.
+  * @val: value to be written
+- *
+- * At the moment the spi framework doesn't allow global setting of cs_change.
+- * This means that use cannot be made of spi_write.
+  */
+ static int adis16400_spi_write_reg_16(struct iio_dev *indio_dev,
+-		u8 lower_reg_address,
+-		u16 value)
++				      u8 lower_reg_address,
++				      u16 value)
+ {
+-	int ret;
+-	struct spi_message msg;
+ 	struct adis16400_state *st = iio_priv(indio_dev);
+-	struct spi_transfer xfers[] = {
+-		{
+-			.tx_buf = st->tx,
+-			.bits_per_word = 8,
+-			.len = 2,
+-			.cs_change = 1,
+-		}, {
+-			.tx_buf = st->tx + 2,
+-			.bits_per_word = 8,
+-			.len = 2,
+-		},
+-	};
+-
+-	mutex_lock(&st->buf_lock);
+-	st->tx[0] = ADIS16400_WRITE_REG(lower_reg_address);
+-	st->tx[1] = value & 0xFF;
+-	st->tx[2] = ADIS16400_WRITE_REG(lower_reg_address + 1);
+-	st->tx[3] = (value >> 8) & 0xFF;
+ 
+-	spi_message_init(&msg);
+-	spi_message_add_tail(&xfers[0], &msg);
+-	spi_message_add_tail(&xfers[1], &msg);
+-	ret = spi_sync(st->us, &msg);
+-	mutex_unlock(&st->buf_lock);
+-
+-	return ret;
++	return regmap_write(st->regmap, lower_reg_address, value);
+ }
+ 
+ /**
+@@ -116,49 +67,22 @@ static int adis16400_spi_write_reg_16(struct iio_dev *indio_dev,
+  * @reg_address: the address of the lower of the two registers. Second register
+  *               is assumed to have address one greater.
+  * @val: somewhere to pass back the value read
+- *
+- * At the moment the spi framework doesn't allow global setting of cs_change.
+- * This means that use cannot be made of spi_read.
+  **/
+ static int adis16400_spi_read_reg_16(struct iio_dev *indio_dev,
+-		u8 lower_reg_address,
+-		u16 *val)
++				     u8 lower_reg_address,
++				     u16 *val)
+ {
+-	struct spi_message msg;
+ 	struct adis16400_state *st = iio_priv(indio_dev);
+ 	int ret;
+-	struct spi_transfer xfers[] = {
+-		{
+-			.tx_buf = st->tx,
+-			.bits_per_word = 8,
+-			.len = 2,
+-			.cs_change = 1,
+-		}, {
+-			.rx_buf = st->rx,
+-			.bits_per_word = 8,
+-			.len = 2,
+-		},
+-	};
++	unsigned int value;
+ 
+-	mutex_lock(&st->buf_lock);
+-	st->tx[0] = ADIS16400_READ_REG(lower_reg_address);
+-	st->tx[1] = 0;
+-
+-	spi_message_init(&msg);
+-	spi_message_add_tail(&xfers[0], &msg);
+-	spi_message_add_tail(&xfers[1], &msg);
+-	ret = spi_sync(st->us, &msg);
+-	if (ret) {
+-		dev_err(&st->us->dev,
+-			"problem when reading 16 bit register 0x%02X",
+-			lower_reg_address);
+-		goto error_ret;
+-	}
+-	*val = (st->rx[0] << 8) | st->rx[1];
++	ret = regmap_read(st->regmap, lower_reg_address, &value);
++	if (ret < 0)
++		return ret;
+ 
+-error_ret:
+-	mutex_unlock(&st->buf_lock);
+-	return ret;
++	*val = value;
++
++	return 0;
+ }
+ 
+ static ssize_t adis16400_read_frequency(struct device *dev,
+@@ -172,7 +96,7 @@ static ssize_t adis16400_read_frequency(struct device *dev,
+ 	ret = adis16400_spi_read_reg_16(indio_dev,
+ 			ADIS16400_SMPL_PRD,
+ 			&t);
+-	if (ret)
++	if (ret < 0)
+ 		return ret;
+ 	sps =  (t & ADIS16400_SMPL_PRD_TIME_BASE) ? 53 : 1638;
+ 	sps /= (t & ADIS16400_SMPL_PRD_DIV_MASK) + 1;
+@@ -192,7 +116,7 @@ static ssize_t adis16400_write_frequency(struct device *dev,
+ 	u8 t;
+ 
+ 	ret = strict_strtol(buf, 10, &val);
+-	if (ret)
++	if (ret < 0)
+ 		return ret;
+ 
+ 	mutex_lock(&indio_dev->mlock);
+@@ -206,22 +130,22 @@ static ssize_t adis16400_write_frequency(struct device *dev,
+ 	else
+ 		st->us->max_speed_hz = ADIS16400_SPI_FAST;
+ 
+-	ret = adis16400_spi_write_reg_8(indio_dev,
++	ret = adis16400_spi_write_reg_16(indio_dev,
+ 			ADIS16400_SMPL_PRD,
+ 			t);
+ 
+ 	mutex_unlock(&indio_dev->mlock);
+ 
+-	return ret ? ret : len;
++	return ret < 0 ? ret : len;
+ }
+ 
+ static int adis16400_reset(struct iio_dev *indio_dev)
+ {
+ 	int ret;
+-	ret = adis16400_spi_write_reg_8(indio_dev,
++	ret = adis16400_spi_write_reg_16(indio_dev,
+ 			ADIS16400_GLOB_CMD,
+ 			ADIS16400_GLOB_CMD_SW_RESET);
+-	if (ret)
++	if (ret < 0)
+ 		dev_err(&indio_dev->dev, "problem resetting device");
+ 
+ 	return ret;
+@@ -252,7 +176,7 @@ int adis16400_set_irq(struct iio_dev *indio_dev, bool enable)
+ 	u16 msc;
+ 
+ 	ret = adis16400_spi_read_reg_16(indio_dev, ADIS16400_MSC_CTRL, &msc);
+-	if (ret)
++	if (ret < 0)
+ 		goto error_ret;
+ 
+ 	msc |= ADIS16400_MSC_CTRL_DATA_RDY_POL_HIGH;
+@@ -262,8 +186,6 @@ int adis16400_set_irq(struct iio_dev *indio_dev, bool enable)
+ 		msc &= ~ADIS16400_MSC_CTRL_DATA_RDY_EN;
+ 
+ 	ret = adis16400_spi_write_reg_16(indio_dev, ADIS16400_MSC_CTRL, msc);
+-	if (ret)
+-		goto error_ret;
+ 
+ error_ret:
+ 	return ret;
+@@ -338,7 +260,7 @@ static int adis16400_self_test(struct iio_dev *indio_dev)
+ 	ret = adis16400_spi_write_reg_16(indio_dev,
+ 			ADIS16400_MSC_CTRL,
+ 			ADIS16400_MSC_CTRL_MEM_TEST);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&indio_dev->dev, "problem starting self test");
+ 		goto err_ret;
+ 	}
+@@ -362,24 +284,24 @@ static int adis16400_initial_setup(struct iio_dev *indio_dev)
+ 	spi_setup(st->us);
+ 
+ 	ret = adis16400_set_irq(indio_dev, false);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&indio_dev->dev, "disable irq failed");
+ 		goto err_ret;
+ 	}
+ 
+ 	ret = adis16400_self_test(indio_dev);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&indio_dev->dev, "self test failure");
+ 		goto err_ret;
+ 	}
+ 
+ 	ret = adis16400_check_status(indio_dev);
+-	if (ret) {
++	if (ret < 0) {
+ 		adis16400_reset(indio_dev);
+ 		dev_err(&indio_dev->dev, "device not playing ball -> reset");
+ 		msleep(ADIS16400_STARTUP_DELAY);
+ 		ret = adis16400_check_status(indio_dev);
+-		if (ret) {
++		if (ret < 0) {
+ 			dev_err(&indio_dev->dev, "giving up");
+ 			goto err_ret;
+ 		}
+@@ -387,7 +309,7 @@ static int adis16400_initial_setup(struct iio_dev *indio_dev)
+ 	if (st->variant->flags & ADIS16400_HAS_PROD_ID) {
+ 		ret = adis16400_spi_read_reg_16(indio_dev,
+ 						ADIS16400_PRODUCT_ID, &prod_id);
+-		if (ret)
++		if (ret < 0)
+ 			goto err_ret;
+ 
+ 		if ((prod_id & 0xF000) != st->variant->product_id)
+@@ -492,7 +414,7 @@ static int adis16400_read_raw(struct iio_dev *indio_dev,
+ 		ret = adis16400_spi_read_reg_16(indio_dev,
+ 				adis16400_addresses[chan->address][0],
+ 				&val16);
+-		if (ret) {
++		if (ret < 0) {
+ 			mutex_unlock(&indio_dev->mlock);
+ 			return ret;
+ 		}
+@@ -539,7 +461,7 @@ static int adis16400_read_raw(struct iio_dev *indio_dev,
+ 				adis16400_addresses[chan->address][1],
+ 				&val16);
+ 		mutex_unlock(&indio_dev->mlock);
+-		if (ret)
++		if (ret < 0)
+ 			return ret;
+ 		val16 = ((val16 & 0xFFF) << 4) >> 4;
+ 		*val = val16;
+@@ -1016,6 +938,146 @@ static const struct iio_info adis16400_info = {
+ 	.attrs = &adis16400_attribute_group,
+ };
+ 
++/* This may technically result in read attempts to undefined registers */
++static bool adis16400_reg_readable(struct device *dev,
++				   unsigned int reg)
++{
++	switch (reg) {
++	case ADIS16400_FLASH_CNT:
++	case ADIS16400_SUPPLY_OUT:
++	case ADIS16400_XGYRO_OUT:
++	case ADIS16400_YGYRO_OUT:
++	case ADIS16400_ZGYRO_OUT:
++	case ADIS16400_XACCL_OUT:
++	case ADIS16400_YACCL_OUT:
++	case ADIS16400_ZACCL_OUT:
++	case ADIS16400_XMAGN_OUT:
++	case ADIS16400_YMAGN_OUT:
++	case ADIS16400_ZMAGN_OUT:
++	case ADIS16400_TEMP_OUT:
++	case ADIS16400_AUX_ADC:
++	case ADIS16400_XGYRO_OFF:
++	case ADIS16400_YGYRO_OFF:
++	case ADIS16400_ZGYRO_OFF:
++	case ADIS16400_XACCL_OFF:
++	case ADIS16400_YACCL_OFF:
++	case ADIS16400_ZACCL_OFF:
++	case ADIS16400_XMAGN_HIF:
++	case ADIS16400_YMAGN_HIF:
++	case ADIS16400_ZMAGN_HIF:
++	case ADIS16400_XMAGN_SIF:
++	case ADIS16400_YMAGN_SIF:
++	case ADIS16400_ZMAGN_SIF:
++	case ADIS16400_GPIO_CTRL:
++	case ADIS16400_MSC_CTRL:
++	case ADIS16400_SMPL_PRD:
++	case ADIS16400_SENS_AVG:
++	case ADIS16400_DIAG_STAT:
++	case ADIS16400_ALM_MAG1:
++	case ADIS16400_ALM_MAG2:
++	case ADIS16400_ALM_SMPL1:
++	case ADIS16400_ALM_SMPL2:
++	case ADIS16400_ALM_CTRL:
++	case ADIS16400_AUX_DAC:
++	case ADIS16400_PRODUCT_ID:
++		return true;
++	default:
++		return false;
++	};
++}
++
++static bool adis16400_reg_precious(struct device *dev,
++				   unsigned int reg)
++{
++	switch (reg) {
++	case ADIS16400_SUPPLY_OUT:
++	case ADIS16400_XGYRO_OUT:
++	case ADIS16400_YGYRO_OUT:
++	case ADIS16400_ZGYRO_OUT:
++	case ADIS16400_XACCL_OUT:
++	case ADIS16400_YACCL_OUT:
++	case ADIS16400_ZACCL_OUT:
++	case ADIS16400_XMAGN_OUT:
++	case ADIS16400_YMAGN_OUT:
++	case ADIS16400_ZMAGN_OUT:
++	case ADIS16400_TEMP_OUT:
++	case ADIS16400_AUX_ADC:
++	case ADIS16400_DIAG_STAT:
++		return true;
++	default:
++		return 0;
++	}
++}
++
++static bool adis16400_reg_volatile(struct device *dev,
++				   unsigned int reg)
++{
++	switch (reg) {
++	case ADIS16400_FLASH_CNT:
++	case ADIS16400_SUPPLY_OUT:
++	case ADIS16400_XGYRO_OUT:
++	case ADIS16400_YGYRO_OUT:
++	case ADIS16400_ZGYRO_OUT:
++	case ADIS16400_XACCL_OUT:
++	case ADIS16400_YACCL_OUT:
++	case ADIS16400_ZACCL_OUT:
++	case ADIS16400_XMAGN_OUT:
++	case ADIS16400_YMAGN_OUT:
++	case ADIS16400_ZMAGN_OUT:
++	case ADIS16400_TEMP_OUT:
++	case ADIS16400_AUX_ADC:
++	case ADIS16400_DIAG_STAT:
++
++		return true;
++	default:
++		return 0;
++	}
++}
++static bool adis16400_reg_writeable(struct device *dev,
++				    unsigned int reg)
++{
++	switch (reg) {
++	case ADIS16400_XGYRO_OFF:
++	case ADIS16400_YGYRO_OFF:
++	case ADIS16400_ZGYRO_OFF:
++	case ADIS16400_XACCL_OFF:
++	case ADIS16400_YACCL_OFF:
++	case ADIS16400_ZACCL_OFF:
++	case ADIS16400_XMAGN_HIF:
++	case ADIS16400_YMAGN_HIF:
++	case ADIS16400_ZMAGN_HIF:
++	case ADIS16400_XMAGN_SIF:
++	case ADIS16400_YMAGN_SIF:
++	case ADIS16400_ZMAGN_SIF:
++	case ADIS16400_GPIO_CTRL:
++	case ADIS16400_MSC_CTRL:
++	case ADIS16400_SMPL_PRD:
++	case ADIS16400_SENS_AVG:
++	case ADIS16400_SLP_CNT:
++	case ADIS16400_GLOB_CMD:
++	case ADIS16400_ALM_MAG1:
++	case ADIS16400_ALM_MAG2:
++	case ADIS16400_ALM_SMPL1:
++	case ADIS16400_ALM_SMPL2:
++	case ADIS16400_ALM_CTRL:
++	case ADIS16400_AUX_DAC:
++		return true;
++	default:
++		return false;
++	};
++}
++static struct regmap_config adis16400_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 16,
++	.writeable_reg = &adis16400_reg_writeable,
++	.readable_reg = &adis16400_reg_readable,
++	.precious_reg = &adis16400_reg_precious,
++	.volatile_reg = &adis16400_reg_volatile,
++	.max_register = 0x56,
++	.write_flag_mask = 0x80,
++	.read_flag_mask = 0,
++};
++
+ static int __devinit adis16400_probe(struct spi_device *spi)
+ {
+ 	int ret;
+@@ -1026,8 +1088,14 @@ static int __devinit adis16400_probe(struct spi_device *spi)
+ 		goto error_ret;
+ 	}
+ 	st = iio_priv(indio_dev);
++	st->regmap = regmap_init_spi_adi(spi, &adis16400_regmap_config);
++	if (IS_ERR(st->regmap)) {
++		ret = PTR_ERR(st->regmap);
++		goto error_free_dev;
++	}
+ 	/* this is only used for removal purposes */
+ 	spi_set_drvdata(spi, indio_dev);
++	spi->cs_between_transfers = 1;
+ 
+ 	st->us = spi;
+ 	mutex_init(&st->buf_lock);
+@@ -1042,29 +1110,29 @@ static int __devinit adis16400_probe(struct spi_device *spi)
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 
+ 	ret = adis16400_configure_ring(indio_dev);
+-	if (ret)
+-		goto error_free_dev;
++	if (ret < 0)
++		goto error_free_regmap;
+ 
+ 	ret = iio_ring_buffer_register(indio_dev,
+ 				       st->variant->channels,
+ 				       st->variant->num_channels);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&spi->dev, "failed to initialize the ring\n");
+ 		goto error_unreg_ring_funcs;
+ 	}
+ 
+ 	if (spi->irq) {
+ 		ret = adis16400_probe_trigger(indio_dev);
+-		if (ret)
++		if (ret < 0)
+ 			goto error_uninitialize_ring;
+ 	}
+ 
+ 	/* Get the device into a sane initial state */
+ 	ret = adis16400_initial_setup(indio_dev);
+-	if (ret)
++	if (ret < 0)
+ 		goto error_remove_trigger;
+ 	ret = iio_device_register(indio_dev);
+-	if (ret)
++	if (ret < 0)
+ 		goto error_remove_trigger;
+ 
+ 	return 0;
+@@ -1076,6 +1144,8 @@ error_uninitialize_ring:
+ 	iio_ring_buffer_unregister(indio_dev);
+ error_unreg_ring_funcs:
+ 	adis16400_unconfigure_ring(indio_dev);
++error_free_regmap:
++	regmap_exit(st->regmap);
+ error_free_dev:
+ 	iio_free_device(indio_dev);
+ error_ret:
+@@ -1087,14 +1157,16 @@ static int adis16400_remove(struct spi_device *spi)
+ {
+ 	int ret;
+ 	struct iio_dev *indio_dev =  spi_get_drvdata(spi);
++	struct adis16400_state *st = iio_priv(indio_dev);
+ 
+ 	ret = adis16400_stop_device(indio_dev);
+-	if (ret)
++	if (ret < 0)
+ 		goto err_ret;
+ 
+ 	adis16400_remove_trigger(indio_dev);
+ 	iio_ring_buffer_unregister(indio_dev);
+ 	adis16400_unconfigure_ring(indio_dev);
++	regmap_exit(st->regmap);
+ 	iio_device_unregister(indio_dev);
+ 
+ 	return 0;
+diff --git a/drivers/staging/iio/imu/adis16400_ring.c b/drivers/staging/iio/imu/adis16400_ring.c
+index af25697..8345d4e 100644
+--- a/drivers/staging/iio/imu/adis16400_ring.c
++++ b/drivers/staging/iio/imu/adis16400_ring.c
+@@ -47,7 +47,7 @@ static int adis16400_spi_read_burst(struct device *dev, u8 *rx)
+ 	spi_setup(st->us);
+ 
+ 	ret = spi_sync(st->us, &msg);
+-	if (ret)
++	if (ret < 0)
+ 		dev_err(&st->us->dev, "problem when burst reading");
+ 
+ 	st->us->max_speed_hz = old_speed_hz;
+-- 
+1.7.3.4
 
-We end up finishing all of the outstanding I/Os that guest has sent.
-When all of the bio_submit callbacks have finished then we release
-the guest backend. So adding in a 'SYNC' to the queue would force
-the disk cache to flush all the writes at least.
-
-> 
-> Bear in mind that the reason for forcibly killing (or perhaps forcibly
-> detaching) might be that the underlying device has wedged somehow.  It
-> would be annoying if that prevented even a force detach.
-> 
-> Or to put it in other words: force detach and force kill should be
-> lossy.  Their whole point is to be the lossy version.
-
-Hm, I think you still end up holding on the request queue and not
-freeing the blkback thread and all of its goodies until the bio callbacks
-have completed. When the device gets wedged they become wedged too.
-You have to wait for the error handler to give up and then the avalanche
-of 'write page lost' and 'error secxtor XX' along with the -ENXIO being
-returned ends up in the bio callbacks.
-
-What I am saying is that the force detach is still stuck waiting
-if the device has wedged - irregardless of this patch.
-
-> 
-> Ian.
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
