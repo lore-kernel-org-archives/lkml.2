@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab1IGQqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:46:01 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:48570 "EHLO
+	id S1753542Ab1IGQqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:46:06 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:48579 "EHLO
 	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab1IGQp5 (ORCPT
+	with ESMTP id S1753458Ab1IGQqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:45:57 -0400
+	Wed, 7 Sep 2011 12:46:01 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 10/14] drbd: _drbd_send_bitmap(): Use the pre-allocated send buffer
-Date: Wed,  7 Sep 2011 16:17:37 +0200
-Message-Id: <1315405061-1473-11-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 05/14] drbd: Rename the DCBP_* functions to dcbp_* and move them to where they are used
+Date: Wed,  7 Sep 2011 16:17:32 +0200
+Message-Id: <1315405061-1473-6-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
 References: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
@@ -25,92 +25,171 @@ From: Andreas Gruenbacher <agruen@linbit.com>
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_main.c |   26 +++++++-------------------
- 1 files changed, 7 insertions(+), 19 deletions(-)
+ drivers/block/drbd/drbd_int.h      |   39 ------------------------------------
+ drivers/block/drbd/drbd_main.c     |   25 +++++++++++++++++++---
+ drivers/block/drbd/drbd_receiver.c |   21 ++++++++++++++++--
+ 3 files changed, 39 insertions(+), 46 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index 077aa0c..04716df 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -541,45 +541,6 @@ struct p_delay_probe93 {
+ 	u32     offset;  /* usecs the probe got sent after the reference time point */
+ } __packed;
+ 
+-/* DCBP: Drbd Compressed Bitmap Packet ... */
+-static inline enum drbd_bitmap_code
+-DCBP_get_code(struct p_compressed_bm *p)
+-{
+-	return (enum drbd_bitmap_code)(p->encoding & 0x0f);
+-}
+-
+-static inline void
+-DCBP_set_code(struct p_compressed_bm *p, enum drbd_bitmap_code code)
+-{
+-	BUG_ON(code & ~0xf);
+-	p->encoding = (p->encoding & ~0xf) | code;
+-}
+-
+-static inline int
+-DCBP_get_start(struct p_compressed_bm *p)
+-{
+-	return (p->encoding & 0x80) != 0;
+-}
+-
+-static inline void
+-DCBP_set_start(struct p_compressed_bm *p, int set)
+-{
+-	p->encoding = (p->encoding & ~0x80) | (set ? 0x80 : 0);
+-}
+-
+-static inline int
+-DCBP_get_pad_bits(struct p_compressed_bm *p)
+-{
+-	return (p->encoding >> 4) & 0x7;
+-}
+-
+-static inline void
+-DCBP_set_pad_bits(struct p_compressed_bm *p, int n)
+-{
+-	BUG_ON(n & ~0x7);
+-	p->encoding = (p->encoding & (~0x7 << 4)) | (n << 4);
+-}
+-
+ /* one bitmap packet, including the p_header,
+  * should fit within one _architecture independend_ page.
+  * so we need to use the fixed size 4KiB page size
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 6c2a51f..36b2b56 100644
+index 53e887d..54778e9 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -790,9 +790,6 @@ int drbd_send_sync_param(struct drbd_conf *mdev)
- 		: apv <= 94 ? sizeof(struct p_rs_param_89)
- 		: /* apv >= 95 */ sizeof(struct p_rs_param_95);
- 
--	/* used from admin command context and receiver/worker context.
--	 * to avoid kmalloc, grab the socket right here,
--	 * then use the pre-allocated sbuf there */
- 	mutex_lock(&mdev->tconn->data.mutex);
- 	sock = mdev->tconn->data.socket;
- 
-@@ -1147,10 +1144,9 @@ int fill_bitmap_rle_bits(struct drbd_conf *mdev,
-  * code upon failure.
-  */
- static int
--send_bitmap_rle_or_plain(struct drbd_conf *mdev,
--			 struct p_header *h, struct bm_xfer_ctx *c)
-+send_bitmap_rle_or_plain(struct drbd_conf *mdev, struct bm_xfer_ctx *c)
- {
--	struct p_compressed_bm *p = (void*)h;
-+	struct p_compressed_bm *p = mdev->tconn->data.sbuf;
- 	unsigned long num_words;
- 	int len, err;
- 
-@@ -1162,7 +1158,7 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
- 	if (len) {
- 		dcbp_set_code(p, RLE_VLI_Bits);
- 		err = _drbd_send_cmd(mdev, mdev->tconn->data.socket,
--				     P_COMPRESSED_BITMAP, h,
-+				     P_COMPRESSED_BITMAP, &p->head,
- 				     sizeof(*p) + len, 0);
- 
- 		c->packets[0]++;
-@@ -1173,10 +1169,12 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
- 	} else {
- 		/* was not compressible.
- 		 * send a buffer full of plain text bits instead. */
-+		struct p_header *h = mdev->tconn->data.sbuf;
- 		num_words = min_t(size_t, BM_PACKET_WORDS, c->bm_words - c->word_offset);
- 		len = num_words * sizeof(long);
- 		if (len)
--			drbd_bm_get_lel(mdev, c->word_offset, num_words, (unsigned long*)h->payload);
-+			drbd_bm_get_lel(mdev, c->word_offset, num_words,
-+					(unsigned long *)h->payload);
- 		err = _drbd_send_cmd(mdev, mdev->tconn->data.socket, P_BITMAP,
- 				     h, sizeof(struct p_header80) + len, 0);
- 		c->word_offset += num_words;
-@@ -1202,20 +1200,11 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
- static int _drbd_send_bitmap(struct drbd_conf *mdev)
- {
- 	struct bm_xfer_ctx c;
--	struct p_header *p;
- 	int err;
- 
- 	if (!expect(mdev->bitmap))
- 		return false;
- 
--	/* maybe we should use some per thread scratch page,
--	 * and allocate that during initial device creation? */
--	p = (struct p_header *) __get_free_page(GFP_NOIO);
--	if (!p) {
--		dev_err(DEV, "failed to allocate one page buffer in %s\n", __func__);
--		return false;
--	}
--
- 	if (get_ldev(mdev)) {
- 		if (drbd_md_test_flag(mdev->ldev, MDF_FULL_SYNC)) {
- 			dev_info(DEV, "Writing the whole bitmap, MDF_FullSync was set.\n");
-@@ -1239,10 +1228,9 @@ static int _drbd_send_bitmap(struct drbd_conf *mdev)
- 	};
- 
- 	do {
--		err = send_bitmap_rle_or_plain(mdev, p, &c);
-+		err = send_bitmap_rle_or_plain(mdev, &c);
- 	} while (err > 0);
- 
--	free_page((unsigned long) p);
- 	return err == 0;
+@@ -1029,6 +1029,23 @@ int conn_send_sr_reply(struct drbd_tconn *tconn, enum drbd_state_rv retcode)
+ 	return !conn_send_cmd(tconn, 0, &tconn->meta, cmd, &p.head, sizeof(p));
  }
  
++static void dcbp_set_code(struct p_compressed_bm *p, enum drbd_bitmap_code code)
++{
++	BUG_ON(code & ~0xf);
++	p->encoding = (p->encoding & ~0xf) | code;
++}
++
++static void dcbp_set_start(struct p_compressed_bm *p, int set)
++{
++	p->encoding = (p->encoding & ~0x80) | (set ? 0x80 : 0);
++}
++
++static void dcbp_set_pad_bits(struct p_compressed_bm *p, int n)
++{
++	BUG_ON(n & ~0x7);
++	p->encoding = (p->encoding & (~0x7 << 4)) | (n << 4);
++}
++
+ int fill_bitmap_rle_bits(struct drbd_conf *mdev,
+ 	struct p_compressed_bm *p,
+ 	struct bm_xfer_ctx *c)
+@@ -1073,12 +1090,12 @@ int fill_bitmap_rle_bits(struct drbd_conf *mdev,
+ 			if (rl == 0) {
+ 				/* the first checked bit was set,
+ 				 * store start value, */
+-				DCBP_set_start(p, 1);
++				dcbp_set_start(p, 1);
+ 				/* but skip encoding of zero run length */
+ 				toggle = !toggle;
+ 				continue;
+ 			}
+-			DCBP_set_start(p, 0);
++			dcbp_set_start(p, 0);
+ 		}
+ 
+ 		/* paranoia: catch zero runlength.
+@@ -1118,7 +1135,7 @@ int fill_bitmap_rle_bits(struct drbd_conf *mdev,
+ 	bm_xfer_ctx_bit_to_word_offset(c);
+ 
+ 	/* store pad_bits */
+-	DCBP_set_pad_bits(p, (8 - bs.cur.bit) & 0x7);
++	dcbp_set_pad_bits(p, (8 - bs.cur.bit) & 0x7);
+ 
+ 	return len;
+ }
+@@ -1143,7 +1160,7 @@ send_bitmap_rle_or_plain(struct drbd_conf *mdev,
+ 		return -EIO;
+ 
+ 	if (len) {
+-		DCBP_set_code(p, RLE_VLI_Bits);
++		dcbp_set_code(p, RLE_VLI_Bits);
+ 		err = _drbd_send_cmd(mdev, mdev->tconn->data.socket,
+ 				     P_COMPRESSED_BITMAP, h,
+ 				     sizeof(*p) + len, 0);
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 48e073a..449637f 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -3598,6 +3598,21 @@ receive_bitmap_plain(struct drbd_conf *mdev, unsigned int data_size,
+ 	return 1;
+ }
+ 
++static enum drbd_bitmap_code dcbp_get_code(struct p_compressed_bm *p)
++{
++	return (enum drbd_bitmap_code)(p->encoding & 0x0f);
++}
++
++static int dcbp_get_start(struct p_compressed_bm *p)
++{
++	return (p->encoding & 0x80) != 0;
++}
++
++static int dcbp_get_pad_bits(struct p_compressed_bm *p)
++{
++	return (p->encoding >> 4) & 0x7;
++}
++
+ /**
+  * recv_bm_rle_bits
+  *
+@@ -3616,11 +3631,11 @@ recv_bm_rle_bits(struct drbd_conf *mdev,
+ 	u64 tmp;
+ 	unsigned long s = c->bit_offset;
+ 	unsigned long e;
+-	int toggle = DCBP_get_start(p);
++	int toggle = dcbp_get_start(p);
+ 	int have;
+ 	int bits;
+ 
+-	bitstream_init(&bs, p->code, len, DCBP_get_pad_bits(p));
++	bitstream_init(&bs, p->code, len, dcbp_get_pad_bits(p));
+ 
+ 	bits = bitstream_get_bits(&bs, &look_ahead, 64);
+ 	if (bits < 0)
+@@ -3675,7 +3690,7 @@ decode_bitmap_c(struct drbd_conf *mdev,
+ 		struct bm_xfer_ctx *c,
+ 		unsigned int len)
+ {
+-	if (DCBP_get_code(p) == RLE_VLI_Bits)
++	if (dcbp_get_code(p) == RLE_VLI_Bits)
+ 		return recv_bm_rle_bits(mdev, p, c, len);
+ 
+ 	/* other variants had been implemented for evaluation,
 -- 
 1.7.4.1
 
