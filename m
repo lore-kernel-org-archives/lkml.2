@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab1IGEZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 00:25:45 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:16393 "EHLO relay.sw.ru"
+	id S1755476Ab1IGE0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 00:26:39 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:22408 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752438Ab1IGEZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 00:25:29 -0400
+	id S1755334Ab1IGE0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 00:26:03 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, containers@lists.osdl.org, netdev@vger.kernel.org,
         xemul@parallels.com, Glauber Costa <glommer@parallels.com>,
         "David S. Miller" <davem@davemloft.net>,
         Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH v2 3/9] socket: initial cgroup code.
-Date: Wed,  7 Sep 2011 01:23:13 -0300
-Message-Id: <1315369399-3073-4-git-send-email-glommer@parallels.com>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH v2 9/9] Add documentation about kmem_cgroup
+Date: Wed,  7 Sep 2011 01:23:19 -0300
+Message-Id: <1315369399-3073-10-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1315369399-3073-1-git-send-email-glommer@parallels.com>
 References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
@@ -23,110 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We aim to control the amount of kernel memory pinned at any
-time by tcp sockets. To lay the foundations for this work,
-this patch adds a pointer to the kmem_cgroup to the socket
-structure.
-
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: David S. Miller <davem@davemloft.net>
 CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Eric W. Biederman <ebiederm@xmission.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>
 ---
- include/linux/kmem_cgroup.h |   29 +++++++++++++++++++++++++++++
- include/net/sock.h          |    2 ++
- net/core/sock.c             |    5 ++---
- 3 files changed, 33 insertions(+), 3 deletions(-)
+ Documentation/cgroups/kmem_cgroups.txt |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/cgroups/kmem_cgroups.txt
 
-diff --git a/include/linux/kmem_cgroup.h b/include/linux/kmem_cgroup.h
-index 0e4a74b..77076d8 100644
---- a/include/linux/kmem_cgroup.h
-+++ b/include/linux/kmem_cgroup.h
-@@ -49,5 +49,34 @@ static inline struct kmem_cgroup *kcg_from_task(struct task_struct *tsk)
- 	return NULL;
- }
- #endif /* CONFIG_CGROUP_KMEM */
+diff --git a/Documentation/cgroups/kmem_cgroups.txt b/Documentation/cgroups/kmem_cgroups.txt
+new file mode 100644
+index 0000000..930e069
+--- /dev/null
++++ b/Documentation/cgroups/kmem_cgroups.txt
+@@ -0,0 +1,27 @@
++Kernel Memory Cgroup
++====================
 +
-+#ifdef CONFIG_INET
-+#include <net/sock.h>
-+static inline void sock_update_kmem_cgrp(struct sock *sk)
-+{
-+#ifdef CONFIG_CGROUP_KMEM
-+	sk->sk_cgrp = kcg_from_task(current);
++This document briefly describes the kernel memory cgroup, or "kmem cgroup".
++Unlike user memory, kernel memory cannot be swapped. This effectively means
++that rogue processes can start operations that pin kernel objects permanently
++into memory, exhausting resources of all other processes in the system.
 +
-+	/*
-+	 * We don't need to protect against anything task-related, because
-+	 * we are basically stuck with the sock pointer that won't change,
-+	 * even if the task that originated the socket changes cgroups.
-+	 *
-+	 * What we do have to guarantee, is that the chain leading us to
-+	 * the top level won't change under our noses. Incrementing the
-+	 * reference count via cgroup_exclude_rmdir guarantees that.
-+	 */
-+	cgroup_exclude_rmdir(&sk->sk_cgrp->css);
-+#endif
-+}
++kmem_cgroup main goal is to control the amount of memory a group of processes
++can pin at any given point in time. Other uses of this infrastructure are
++expected to come up with time. Right now, the only resource effectively limited
++are tcp send and receive buffers.
 +
-+static inline void sock_release_kmem_cgrp(struct sock *sk)
-+{
-+#ifdef CONFIG_CGROUP_KMEM
-+	cgroup_release_and_wakeup_rmdir(&sk->sk_cgrp->css);
-+#endif
-+}
++TCP network buffers
++===================
 +
-+#endif /* CONFIG_INET */
- #endif /* _LINUX_KMEM_CGROUP_H */
- 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 8e4062f..709382f 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -228,6 +228,7 @@ struct sock_common {
-   *	@sk_security: used by security modules
-   *	@sk_mark: generic packet mark
-   *	@sk_classid: this socket's cgroup classid
-+  *	@sk_cgrp: this socket's kernel memory (kmem) cgroup 
-   *	@sk_write_pending: a write to stream socket waits to start
-   *	@sk_state_change: callback to indicate change in the state of the sock
-   *	@sk_data_ready: callback to indicate there is data to be processed
-@@ -339,6 +340,7 @@ struct sock {
- #endif
- 	__u32			sk_mark;
- 	u32			sk_classid;
-+	struct kmem_cgroup	*sk_cgrp;
- 	void			(*sk_state_change)(struct sock *sk);
- 	void			(*sk_data_ready)(struct sock *sk, int bytes);
- 	void			(*sk_write_space)(struct sock *sk);
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 3449df8..7109864 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1139,6 +1139,7 @@ struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
- 		atomic_set(&sk->sk_wmem_alloc, 1);
- 
- 		sock_update_classid(sk);
-+		sock_update_kmem_cgrp(sk);
- 	}
- 
- 	return sk;
-@@ -1170,6 +1171,7 @@ static void __sk_free(struct sock *sk)
- 		put_cred(sk->sk_peer_cred);
- 	put_pid(sk->sk_peer_pid);
- 	put_net(sock_net(sk));
-+	sock_release_kmem_cgrp(sk);
- 	sk_prot_free(sk->sk_prot_creator, sk);
- }
- 
-@@ -2252,9 +2254,6 @@ void sk_common_release(struct sock *sk)
- }
- EXPORT_SYMBOL(sk_common_release);
- 
--static DEFINE_RWLOCK(proto_list_lock);
--static LIST_HEAD(proto_list);
--
- #ifdef CONFIG_PROC_FS
- #define PROTO_INUSE_NR	64	/* should be enough for the first time */
- struct prot_inuse {
++TCP network buffers, both on the send and receive sides, can be controlled
++by the kmem cgroup. Once a socket is created, it is attached to the cgroup of
++the controller process, where it stays until the end of its lifetime.
++
++Files
++=====
++	kmem.tcp_maxmem: control the maximum amount in bytes that can be used by
++	tcp sockets inside the cgroup. 
++
++	kmem.tcp_current_memory: current amount in bytes used by all sockets in
++	this cgroup
 -- 
 1.7.6
 
