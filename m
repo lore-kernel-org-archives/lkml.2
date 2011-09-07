@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab1IGGFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:05:35 -0400
+	id S1755627Ab1IGGFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:05:42 -0400
 Received: from mga01.intel.com ([192.55.52.88]:6183 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755555Ab1IGGFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 02:05:14 -0400
+	id S1755550Ab1IGGFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 02:05:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,343,1312182000"; 
-   d="scan'208";a="48789721"
+   d="scan'208";a="48789709"
 From: Oren Weil <oren.jer.weil@intel.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
         tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
-Subject: [PATCH 10/12 v2] staging: mei: removing wd module parameters
-Date: Wed,  7 Sep 2011 09:03:16 +0300
-Message-Id: <1315375398-29529-11-git-send-email-oren.jer.weil@intel.com>
+Subject: [PATCH 09/12 v2] stagign: mei: client init code cleanup
+Date: Wed,  7 Sep 2011 09:03:15 +0300
+Message-Id: <1315375398-29529-10-git-send-email-oren.jer.weil@intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315375398-29529-1-git-send-email-oren.jer.weil@intel.com>
 References: <1315375398-29529-1-git-send-email-oren.jer.weil@intel.com>
@@ -24,35 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wd module parameter is not needed now that driver is using watchdog core.
+starting removing the dependency from the module parameters.
+setting the default timeout on init so don't need to check if it is bigger
+then zero.
 
 Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
 Acked-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/staging/mei/wd.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ drivers/staging/mei/wd.c |   33 +++++++++++++--------------------
+ 1 files changed, 13 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/staging/mei/wd.c b/drivers/staging/mei/wd.c
-index fd67952..b56b1cc 100644
+index 68c177b..fd67952 100644
 --- a/drivers/staging/mei/wd.c
 +++ b/drivers/staging/mei/wd.c
-@@ -26,16 +26,6 @@
- #include "interface.h"
- #include "mei.h"
+@@ -72,32 +72,25 @@ bool mei_wd_host_init(struct mei_device *dev)
  
--/*
-- * MEI Watchdog Module Parameters
-- */
--static u16 watchdog_timeout = AMT_WD_DEFAULT_TIMEOUT;
--module_param(watchdog_timeout, ushort, 0);
--MODULE_PARM_DESC(watchdog_timeout,
--		"Intel(R) AMT Watchdog timeout value in seconds. (default="
--					__MODULE_STRING(AMT_WD_DEFAULT_TIMEOUT)
--					", disable=0)");
+ 	/* look for WD client and connect to it */
+ 	dev->wd_cl.state = MEI_FILE_DISCONNECTED;
+-	dev->wd_timeout = watchdog_timeout;
 -
- static const u8 mei_start_wd_params[] = { 0x02, 0x12, 0x13, 0x10 };
- static const u8 mei_stop_wd_params[] = { 0x02, 0x02, 0x14, 0x10 };
- 
+-	if (dev->wd_timeout > 0) {
+-		/* find ME WD client */
+-		mei_find_me_client_update_filext(dev, &dev->wd_cl,
+-					&mei_wd_guid, MEI_WD_HOST_CLIENT_ID);
+-
+-		dev_dbg(&dev->pdev->dev, "check wd_cl\n");
+-		if (MEI_FILE_CONNECTING == dev->wd_cl.state) {
+-			if (!mei_connect(dev, &dev->wd_cl)) {
+-				dev_dbg(&dev->pdev->dev, "Failed to connect to WD client\n");
+-				dev->wd_cl.state = MEI_FILE_DISCONNECTED;
+-				dev->wd_cl.host_client_id = 0;
+-				ret = false;
+-				goto end;
+-			} else {
+-				dev->wd_cl.timer_count = CONNECT_TIMEOUT;
+-			}
+-		} else {
+-			dev_dbg(&dev->pdev->dev, "Failed to find WD client\n");
++	dev->wd_timeout = AMT_WD_DEFAULT_TIMEOUT;
++
++	/* find ME WD client */
++	mei_find_me_client_update_filext(dev, &dev->wd_cl,
++				&mei_wd_guid, MEI_WD_HOST_CLIENT_ID);
++
++	dev_dbg(&dev->pdev->dev, "check wd_cl\n");
++	if (MEI_FILE_CONNECTING == dev->wd_cl.state) {
++		if (!mei_connect(dev, &dev->wd_cl)) {
++			dev_dbg(&dev->pdev->dev, "Failed to connect to WD client\n");
++			dev->wd_cl.state = MEI_FILE_DISCONNECTED;
++			dev->wd_cl.host_client_id = 0;
+ 			ret = false;
+ 			goto end;
++		} else {
++			dev->wd_cl.timer_count = CONNECT_TIMEOUT;
+ 		}
+ 	} else {
+-		dev->wd_bypass = true;
+-		dev_dbg(&dev->pdev->dev, "WD requested to be disabled\n");
++		dev_dbg(&dev->pdev->dev, "Failed to find WD client\n");
+ 		ret = false;
+ 		goto end;
+ 	}
 -- 
 1.7.4.1
 
