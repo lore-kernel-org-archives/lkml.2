@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1IGQsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:48:16 -0400
-Received: from smtp.duncanthrax.net ([89.31.1.170]:39805 "EHLO
-	smtp.duncanthrax.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753569Ab1IGQsF (ORCPT
+	id S1753816Ab1IGQsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:48:24 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46460 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab1IGQsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:48:05 -0400
-X-Greylist: delayed 1512 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 12:48:05 EDT
-From: Sven Schnelle <svens@stackframe.org>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-kernel@vger.kernel.org, Jon Mason <mason@myri.com>,
-        Jordan_Hargrave@dell.com
-Subject: Re: [3.1-rc4] Bus Fatal Error caused by "PCI: Set PCI-E Max Payload Size on fabric"
-Organization: private
-In-Reply-To: <20110906173605.GA12577@hostway.ca> (Simon Kirby's message of "Tue\, 6 Sep 2011 10\:36\:05 -0700")
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
-References: <20110906173605.GA12577@hostway.ca>
-Date: Wed, 07 Sep 2011 18:22:19 +0200
-Message-ID: <87aaag9vb8.fsf@begreifnix.stackframe.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 7 Sep 2011 12:48:21 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@elte.hu, Michal Simek <monstr@monstr.eu>,
+        Joe Perches <joe@perches.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        John Stultz <johnstul@us.ibm.com>, microblaze-uclinux@itee.uq.edu.au
+Subject: [PATCH 13/62] microblaze: irq: Remove IRQF_DISABLED
+Date: Wed,  7 Sep 2011 16:10:10 +0800
+Message-Id: <1315383059-3673-14-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simon Kirby <sim@hostway.ca> writes:
+This flag is a NOOP and can be removed now.
 
-> Hello!
->
-> Since trying 3.1-rc4 on a few Dell servers, all of them have booted up
-> with the amber error LED lit. "ipmitool sel list" shows:
->
->    1 | 09/06/2011 | 17:21:56 | Event Logging Disabled #0x72 | Log area reset/cleared | Asserted
->    2 | 09/06/2011 | 17:25:38 | Critical Interrupt #0x18 | Bus Fatal Error | Asserted
->    3 | 09/06/2011 | 17:25:38 | Unknown #0x1a | 
->    4 | 09/06/2011 | 17:25:38 | Unknown #0x1a | 
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+ arch/microblaze/kernel/timer.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I'm seeing exact the same issue on a Dell 1950 Server. If anyone wants
-me to try additional debugging/patches, feel free to do
-so. Unfortunately i don't have the time/knowledge to debug that by myself.
+diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+index e5550ce..bb86351 100644
+--- a/arch/microblaze/kernel/timer.c
++++ b/arch/microblaze/kernel/timer.c
+@@ -163,7 +163,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 
+ static struct irqaction timer_irqaction = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED | IRQF_TIMER,
++	.flags = IRQF_TIMER,
+ 	.name = "timer",
+ 	.dev_id = &clockevent_microblaze_timer,
+ };
+-- 
+1.7.4.1
 
-Sven    
