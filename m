@@ -1,268 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab1IGQW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:22:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4776 "EHLO mga01.intel.com"
+	id S932080Ab1IGQWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:22:41 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37577 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756335Ab1IGQVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:21:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,345,1312182000"; 
-   d="scan'208";a="48892369"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: alan@linux.intel.com, sameo@linux.intel.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, feng.tang@intel.com,
-        jacob.jun.pan@linux.intel.com,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 3/3] x86, mrst: add platform support for MSIC MFD driver
-Date: Wed,  7 Sep 2011 16:06:52 +0300
-Message-Id: <dfe26ef675afbc2ce21b54f5c23b94cb00fc4032.1315399396.git.mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+	id S1756382Ab1IGQWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:22:38 -0400
+Date: Wed, 7 Sep 2011 16:30:47 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Paul Turner <pjt@google.com>
+Cc: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned
+ vs unpinned
+Message-ID: <20110907110046.GC7768@linux.vnet.ibm.com>
+Reply-To: vatsa@linux.vnet.ibm.com
+References: <20110503092846.022272244@google.com>
+ <20110607154542.GA2991@linux.vnet.ibm.com>
+ <1307529966.4928.8.camel@dhcp-10-30-22-158.sw.ru>
+ <20110608163234.GA23031@linux.vnet.ibm.com>
+ <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com>
+ <20110610181719.GA30330@linux.vnet.ibm.com>
+ <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
+ <20110615053716.GA390@linux.vnet.ibm.com>
+ <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSIC MFD driver creates platform devices for MSIC device drivers so we
-don't need to create them in platform code anymore.
+On Tue, Jun 21, 2011 at 12:48:17PM -0700, Paul Turner wrote:
+> Hi Kamalesh,
+> 
+> Can you see what things look like under v7?
+> 
+> There's been a few improvements to quota re-distribution that should
+> hopefully help your test case.
+> 
+> The remaining idle% I see on my machines appear to be a product of
+> load-balancer inefficiency.
 
-This patch adds a new runtime check which determines whether we are running
-on a Medfield platform and enables the MSIC MFD driver accordingly.
+which is quite a complex problem to solve! I am still surprised that
+we can't handle 32 cpuhogs on a 16-cpu system very easily. The tasks seem to
+hop around madly rather than settle down as 2 tasks/cpu. Kamalesh, can you post
+the exact count of migrations we saw on latest tip over a 20-sec window?
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- arch/x86/platform/mrst/mrst.c |  167 +++++++++++++++++++++++++++++++++++++----
- 1 files changed, 153 insertions(+), 14 deletions(-)
+Anyway, here's a "hack" to minimize the idle time induced due to load-balance 
+issues. It brings down idle time from 7+% to ~0% ..I am not too happy about
+this, but I don't see any other simpler solutions to solve the idle time issue
+completely (other than making load-balancer completely fair!).
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 97138a3..2a89f70 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -25,6 +25,7 @@
- #include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/notifier.h>
-+#include <linux/mfd/intel_msic.h>
+--
+
+Fix excessive idle time reported when cgroups are capped.  The patch
+introduces the notion of "steal" (or "grace") time which is the surplus
+time/bandwidth each cgroup is allowed to consume, subject to a maximum
+steal time (sched_cfs_max_steal_time_us). Cgroups are allowed this "steal"
+or "grace" time when the lone task running on a cpu is about to be throttled.
+
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+
+Index: linux-3.1-rc4/include/linux/sched.h
+===================================================================
+--- linux-3.1-rc4.orig/include/linux/sched.h	2011-09-07 14:57:49.529602231 +0800
++++ linux-3.1-rc4/include/linux/sched.h	2011-09-07 14:58:49.952418107 +0800
+@@ -2042,6 +2042,7 @@
  
- #include <asm/setup.h>
- #include <asm/mpspec_def.h>
-@@ -504,6 +505,128 @@ static void __init *no_platform_data(void *info)
- 	return NULL;
- }
+ #ifdef CONFIG_CFS_BANDWIDTH
+ extern unsigned int sysctl_sched_cfs_bandwidth_slice;
++extern unsigned int sysctl_sched_cfs_max_steal_time;
+ #endif
  
-+static struct resource msic_resources[] = {
-+	{
-+		.start	= INTEL_MSIC_IRQ_PHYS_BASE,
-+		.end	= INTEL_MSIC_IRQ_PHYS_BASE + 64 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct intel_msic_platform_data msic_pdata;
-+
-+static struct platform_device msic_device = {
-+	.name		= "intel_msic",
-+	.id		= -1,
-+	.dev		= {
-+		.platform_data	= &msic_pdata,
-+	},
-+	.num_resources	= ARRAY_SIZE(msic_resources),
-+	.resource	= msic_resources,
-+};
-+
-+static inline bool mrst_has_msic(void)
-+{
-+	return mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL;
-+}
-+
-+static int msic_scu_status_change(struct notifier_block *nb,
-+				  unsigned long code, void *data)
-+{
-+	if (code == SCU_DOWN) {
-+		platform_device_unregister(&msic_device);
-+		return 0;
-+	}
-+
-+	return platform_device_register(&msic_device);
-+}
-+
-+static int __init msic_init(void)
-+{
-+	static struct notifier_block msic_scu_notifier = {
-+		.notifier_call	= msic_scu_status_change,
-+	};
-+
-+	/*
-+	 * We need to be sure that the SCU IPC is ready before MSIC device
-+	 * can be registered.
-+	 */
-+	if (mrst_has_msic())
-+		intel_scu_notifier_add(&msic_scu_notifier);
-+
-+	return 0;
-+}
-+arch_initcall(msic_init);
+ #ifdef CONFIG_RT_MUTEXES
+Index: linux-3.1-rc4/kernel/sched.c
+===================================================================
+--- linux-3.1-rc4.orig/kernel/sched.c	2011-09-07 14:57:49.532854588 +0800
++++ linux-3.1-rc4/kernel/sched.c	2011-09-07 14:58:49.955453578 +0800
+@@ -254,7 +254,7 @@
+ #ifdef CONFIG_CFS_BANDWIDTH
+ 	raw_spinlock_t lock;
+ 	ktime_t period;
+-	u64 quota, runtime;
++	u64 quota, runtime, steal_time;
+ 	s64 hierarchal_quota;
+ 	u64 runtime_expires;
+ 
+Index: linux-3.1-rc4/kernel/sched_fair.c
+===================================================================
+--- linux-3.1-rc4.orig/kernel/sched_fair.c	2011-09-07 14:57:49.533644483 +0800
++++ linux-3.1-rc4/kernel/sched_fair.c	2011-09-07 15:16:09.338824132 +0800
+@@ -101,6 +101,18 @@
+  * default: 5 msec, units: microseconds
+   */
+ unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
 +
 +/*
-+ * msic_generic_platform_data - sets generic platform data for the block
-+ * @info: pointer to the SFI device table entry for this block
-+ * @block: MSIC block
++ * "Surplus" quota given to a cgroup to prevent a CPU from becoming idle.
 + *
-+ * Function sets IRQ number from the SFI table entry for given device to
-+ * the MSIC platform data.
++ * This would have been unnecessary had the load-balancer been "ideal" in
++ * loading tasks uniformly across all CPUs, which would have allowed
++ * all cgroups to claim their "quota" completely. In the absence of an
++ * "ideal" load-balancer, cgroups are unable to utilize their quota, leading
++ * to unexpected idle time. This knob allows a CPU to keep running a
++ * task beyond its throttled point before becoming idle.
 + */
-+static void *msic_generic_platform_data(void *info, enum intel_msic_block block)
-+{
-+	struct sfi_device_table_entry *entry = info;
-+
-+	BUG_ON(block < 0 || block >= INTEL_MSIC_BLOCK_LAST);
-+	msic_pdata.irq[block] = entry->irq;
-+
-+	return no_platform_data(info);
-+}
-+
-+static void *msic_battery_platform_data(void *info)
-+{
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_BATTERY);
-+}
-+
-+static void *msic_gpio_platform_data(void *info)
-+{
-+	static struct intel_msic_gpio_pdata pdata;
-+	int gpio = get_gpio_by_name("msic_gpio_base");
-+
-+	if (gpio < 0)
-+		return NULL;
-+
-+	pdata.gpio_base = gpio;
-+	msic_pdata.gpio = &pdata;
-+
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_GPIO);
-+}
-+
-+static void *msic_audio_platform_data(void *info)
-+{
-+	struct platform_device *pdev;
-+
-+	pdev = platform_device_register_simple("sst-platform", -1, NULL, 0);
-+	if (IS_ERR(pdev)) {
-+		pr_err("failed to create audio platform device\n");
-+		return NULL;
-+	}
-+
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_AUDIO);
-+}
-+
-+static void *msic_power_btn_platform_data(void *info)
-+{
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_POWER_BTN);
-+}
-+
-+static void *msic_ocd_platform_data(void *info)
-+{
-+	static struct intel_msic_ocd_pdata pdata;
-+	int gpio = get_gpio_by_name("ocd_gpio");
-+
-+	if (gpio < 0)
-+		return NULL;
-+
-+	pdata.gpio = gpio;
-+	msic_pdata.ocd = &pdata;
-+
-+	return msic_generic_platform_data(info, INTEL_MSIC_BLOCK_OCD);
-+}
-+
- static const struct devs_id __initconst device_ids[] = {
- 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
- 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
-@@ -512,7 +635,14 @@ static const struct devs_id __initconst device_ids[] = {
- 	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data},
- 	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
- 	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
--	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
-+
-+	/* MSIC subdevices */
-+	{"msic_battery", SFI_DEV_TYPE_IPC, 1, &msic_battery_platform_data},
-+	{"msic_gpio", SFI_DEV_TYPE_IPC, 1, &msic_gpio_platform_data},
-+	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &msic_audio_platform_data},
-+	{"msic_power_btn", SFI_DEV_TYPE_IPC, 1, &msic_power_btn_platform_data},
-+	{"msic_ocd", SFI_DEV_TYPE_IPC, 1, &msic_ocd_platform_data},
-+
- 	{},
- };
++unsigned int sysctl_sched_cfs_max_steal_time = 100000UL;
+ #endif
  
-@@ -633,19 +763,37 @@ static void __init install_irq_resource(struct platform_device *pdev, int irq)
- 	platform_device_add_resources(pdev, &res, 1);
+ static const struct sched_class fair_sched_class;
+@@ -1288,6 +1300,11 @@
+ 	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
  }
  
--static void __init sfi_handle_ipc_dev(struct platform_device *pdev)
-+static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
- {
- 	const struct devs_id *dev = device_ids;
-+	struct platform_device *pdev;
- 	void *pdata = NULL;
++static inline u64 sched_cfs_max_steal_time(void)
++{
++	return (u64)sysctl_sched_cfs_max_steal_time * NSEC_PER_USEC;
++}
++
+ /*
+  * Replenish runtime according to assigned quota and update expiration time.
+  * We use sched_clock_cpu directly instead of rq->clock to avoid adding
+@@ -1303,6 +1320,7 @@
+ 		return;
  
- 	while (dev->name[0]) {
- 		if (dev->type == SFI_DEV_TYPE_IPC &&
--			!strncmp(dev->name, pdev->name, SFI_NAME_LEN)) {
--			pdata = dev->get_platform_data(pdev);
-+			!strncmp(dev->name, entry->name, SFI_NAME_LEN)) {
-+			pdata = dev->get_platform_data(entry);
- 			break;
+ 	now = sched_clock_cpu(smp_processor_id());
++	cfs_b->steal_time = 0;
+ 	cfs_b->runtime = cfs_b->quota;
+ 	cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
+ }
+@@ -1337,6 +1355,12 @@
+ 			cfs_b->runtime -= amount;
+ 			cfs_b->idle = 0;
  		}
- 		dev++;
++
++		if (!amount && rq_of(cfs_rq)->nr_running == 1 &&
++				cfs_b->steal_time < sched_cfs_max_steal_time()) {
++			amount = min_amount;
++			cfs_b->steal_time += amount;
++		}
  	}
-+
-+	/*
-+	 * On Medfield the platform device creation is handled by the MSIC
-+	 * MFD driver so we don't need to do it here.
-+	 */
-+	if (mrst_has_msic())
-+		return;
-+
-+	/* ID as IRQ is a hack that will go away */
-+	pdev = platform_device_alloc(entry->name, entry->irq);
-+	if (pdev == NULL) {
-+		pr_err("out of memory for SFI platform device '%s'.\n",
-+			entry->name);
-+		return;
-+	}
-+	install_irq_resource(pdev, entry->irq);
-+
- 	pdev->dev.platform_data = pdata;
- 	intel_scu_device_register(pdev);
- }
-@@ -698,7 +846,6 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
- 	struct sfi_device_table_entry *pentry;
- 	struct spi_board_info spi_info;
- 	struct i2c_board_info i2c_info;
--	struct platform_device *pdev;
- 	int num, i, bus;
- 	int ioapic;
- 	struct io_apic_irq_attr irq_attr;
-@@ -724,17 +871,9 @@ static int __init sfi_parse_devs(struct sfi_table_header *table)
+ 	expires = cfs_b->runtime_expires;
+ 	raw_spin_unlock(&cfs_b->lock);
+@@ -1378,7 +1402,8 @@
+ 	 * whether the global deadline has advanced.
+ 	 */
  
- 		switch (pentry->type) {
- 		case SFI_DEV_TYPE_IPC:
--			/* ID as IRQ is a hack that will go away */
--			pdev = platform_device_alloc(pentry->name, pentry->irq);
--			if (pdev == NULL) {
--				pr_err("out of memory for SFI platform device '%s'.\n",
--							pentry->name);
--				continue;
--			}
--			install_irq_resource(pdev, pentry->irq);
- 			pr_debug("info[%2d]: IPC bus, name = %16.16s, "
- 				"irq = 0x%2x\n", i, pentry->name, pentry->irq);
--			sfi_handle_ipc_dev(pdev);
-+			sfi_handle_ipc_dev(pentry);
- 			break;
- 		case SFI_DEV_TYPE_SPI:
- 			memset(&spi_info, 0, sizeof(spi_info));
--- 
-1.7.5.4
+-	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0) {
++	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0 ||
++		(rq_of(cfs_rq)->nr_running == 1 && cfs_b->steal_time < sched_cfs_max_steal_time())) {
+ 		/* extend local deadline, drift is bounded above by 2 ticks */
+ 		cfs_rq->runtime_expires += TICK_NSEC;
+ 	} else {
+Index: linux-3.1-rc4/kernel/sysctl.c
+===================================================================
+--- linux-3.1-rc4.orig/kernel/sysctl.c	2011-09-07 14:57:49.534454409 +0800
++++ linux-3.1-rc4/kernel/sysctl.c	2011-09-07 14:58:49.958452846 +0800
+@@ -388,6 +388,14 @@
+ 		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &one,
+ 	},
++	{
++		.procname	= "sched_cfs_max_steal_time_us",
++		.data		= &sysctl_sched_cfs_max_steal_time,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
++	},
+ #endif
+ #ifdef CONFIG_PROVE_LOCKING
+ 	{
 
