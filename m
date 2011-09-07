@@ -1,124 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab1IGVfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:35:46 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45690 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757197Ab1IGVfn convert rfc822-to-8bit (ORCPT
+	id S1757239Ab1IGVgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:36:43 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58787 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757176Ab1IGVgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:35:43 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=J/GHm+Kycrzdle/B/7hnXX+L6mc+uZg8OtaFESfYEHPzY2GKMqHoO/Ymnra5RCYSq
-	K9DamnF6Hx4CttD1E1BXg==
+	Wed, 7 Sep 2011 17:36:41 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] Simplify PTRACE_foo constants and PTRACE_SETOPTIONS code
+Date: Wed, 7 Sep 2011 23:36:37 +0200
+User-Agent: KMail/1.8.2
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Denys Vlasenko <vda.linux@googlemail.com>
 MIME-Version: 1.0
-In-Reply-To: <4E66A0A9.3060403@parallels.com>
-References: <1315276556-10970-1-git-send-email-glommer@parallels.com>
- <CAHH2K0aJxjinSu0Ek6jzsZ5dBmm5mEU-typuwYWYWEudF2F3Qg@mail.gmail.com>
- <4E664766.40200@parallels.com> <CAHH2K0YJA7vZZ3QNAf63TZOnWhsRUwfuZYfntBL4muZ0G_Vt2w@mail.gmail.com>
- <4E66A0A9.3060403@parallels.com>
-From: Greg Thelen <gthelen@google.com>
-Date: Wed, 7 Sep 2011 14:35:17 -0700
-Message-ID: <CAHH2K0aq4s1_H-yY0kA3LhM00CCNNbJZyvyBoDD6rHC+qo_gNg@mail.gmail.com>
-Subject: Re: [PATCH] per-cgroup tcp buffer limitation
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, netdev@vger.kernel.org, xemul@parallels.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201109072336.37300.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 3:37 PM, Glauber Costa <glommer@parallels.com> wrote:
-> I think memcg's usage is really all you need here. In the end of the day, it
-> tells you how many pages your container has available. The whole
-> point of kmem cgroup is not any kind of reservation or accounting.
+Simplify PTRACE_foo constants and PTRACE_SETOPTIONS code
+    
+Exchange PT_TRACESYSGOOD and PT_PTRACE_CAP bit positions, which makes
+PT_option bits contiguous and therefore makes code in ptrace_setoptions()
+much simpler.
+    
+Every PTRACE_O_TRACEevent is defined to (1 << PTRACE_EVENT_event)
+instead of using explicit numeric constants, to ensure we don't
+mess up relationship between bit positions and event ids.
+    
+PT_EVENT_FLAG_SHIFT was not particularly useful, PT_OPT_FLAG_SHIFT with
+value of PT_EVENT_FLAG_SHIFT-1 is easier to use.
+    
+PT_TRACE_MASK constant is nuked, the only its use is replaced by
+(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT).
+    
+Clearly buggy behavior of PTRACE_SETOPTIONS with unknown bits in flags
+is preseved. The comment about bug is added.
+    
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 
-The memcg does not reserve memory.  It provides upper bound limits on
-memory usage.  A careful admin can configure soft_limit_in_bytes as an
-approximation of a memory reservation.  But the soft limit is really
-more like a reclaim target when there is global memory pressure.
-
-> Once a container (or cgroup) reaches a number of objects *pinned* in memory
-> (therefore, non-reclaimable), you won't be able to grab anything from it.
->
->> So
->> far my use cases involve a single memory limit which includes both
->> kernel and user memory.  So I would need a user space agent to poll
->> {memcg,kmem}.usage_in_bytes to apply pressure to memcg if kmem grows
->> and visa versa.
->
-> Maybe not.
-> If userspace memory works for you today (supposing it does), why change?
-
-Good question.  Current upstream memcg user space memory limit does
-not work for me today.  I should have made that more obvious (sorry).
-See below for details.
-
-> Right now you assign X bytes of user memory to a container, and the kernel
-> memory is shared among all of them. If this works for you, kmem_cgroup won't
-> change that. It just will impose limits over which
-> your kernel objects can't grow.
->
-> So you don't *need* a userspace agent doing this calculation, because
-> fundamentally, nothing changed: I am not unbilling memory in memcg to bill
-> it back in kmem_cg. Of course, once it is in, you will be able to do it in
-> such a fine grained fashion if you decide to do so.
->
->> Do you foresee instantiation of multiple kmem cgroups, so that a
->> process could be added into kmem/K1 or kmem/K2?  If so do you plan on
->> supporting migration between cgroups and/or migration of kmem charge
->> between K1 to K2?
->
-> Yes, each container should have its own cgroup, so at least in the use
-> cases I am concerned, we will have a lot of them. But the usual lifecycle,
-> is create, execute and die. Mobility between them
-> is not something I am overly concerned right now.
->
->
->>>> Do you foresee the kmem cgroup growing to include reclaimable slab,
->>>> where freeing one type of memory allows for reclaim of the other?
->>>
->>> Yes, absolutely.
-
-Now I see that you're using kmem to limit the amount of unreclaimable
-kernel memory.
-
-We have a work-in-progress patch series that adds kernel memory accounting to
-memcg.  These patches allow an admin to specify a single memory limit
-for a cgroup which encompasses both user memory (as upstream memcg
-does) and also includes many kernel memory allocations (especially
-slab, page-tables).  When kernel memory grows it puts pressure on user
-memory; when user memory grows it puts pressure on reclaimable kernel
-memory using registered shrinkers.  We are in the process of cleaning
-up these memcg slab accounting patches.
-
-In my uses cases there is a single memory limit that applies to both
-kernel and user memory.  If a separate kmem cgroup is introduced to
-manage kernel memory outside of memcg with a distinct limit, then I
-would need a user space daemon which balances memory between the kmem
-and memcg subsystems.  As kmem grows, this daemon would apply pressure
-to memcg, and as memcg grows pressure would be applied to kmem.  As
-you stated kernel memory is not necessarily reclaimable.  So such
-reclaim may fail.  My resistance to this approach is that with a
-single memory cgroup admins can do a better job packing a machine.  If
-balancing daemons are employed then more memory would need to be
-reserved and more user space cpu time would be needed to apply VM
-pressure between the types of memory.
-
-While there are people (like me) who want a combined memory usage
-limit there are also people (like you) who want separate user and
-kernel limiting.  I have toyed with the idea of having a per cgroup
-flag that determines if kernel and user memory should be combined
-charged against a single limit or if they should have separate limits.
- I have also wondered if there was a way to wire the usage of two
-subsystems together, then it would also meet meet my needs.  But I am
-not sure how to do that.
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 800f113..0911100 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -54,17 +54,6 @@
+ /* flags in @data for PTRACE_SEIZE */
+ #define PTRACE_SEIZE_DEVEL	0x80000000 /* temp flag for development */
+ 
+-/* options set using PTRACE_SETOPTIONS */
+-#define PTRACE_O_TRACESYSGOOD	0x00000001
+-#define PTRACE_O_TRACEFORK	0x00000002
+-#define PTRACE_O_TRACEVFORK	0x00000004
+-#define PTRACE_O_TRACECLONE	0x00000008
+-#define PTRACE_O_TRACEEXEC	0x00000010
+-#define PTRACE_O_TRACEVFORKDONE	0x00000020
+-#define PTRACE_O_TRACEEXIT	0x00000040
+-
+-#define PTRACE_O_MASK		0x0000007f
+-
+ /* Wait extended result codes for the above trace options.  */
+ #define PTRACE_EVENT_FORK	1
+ #define PTRACE_EVENT_VFORK	2
+@@ -74,6 +63,17 @@
+ #define PTRACE_EVENT_EXIT	6
+ #define PTRACE_EVENT_STOP	7
+ 
++/* options set using PTRACE_SETOPTIONS */
++#define PTRACE_O_TRACESYSGOOD	1
++#define PTRACE_O_TRACEFORK	(1 << PTRACE_EVENT_FORK)
++#define PTRACE_O_TRACEVFORK	(1 << PTRACE_EVENT_VFORK)
++#define PTRACE_O_TRACECLONE	(1 << PTRACE_EVENT_CLONE)
++#define PTRACE_O_TRACEEXEC	(1 << PTRACE_EVENT_EXEC)
++#define PTRACE_O_TRACEVFORKDONE	(1 << PTRACE_EVENT_VFORK_DONE)
++#define PTRACE_O_TRACEEXIT	(1 << PTRACE_EVENT_EXIT)
++
++#define PTRACE_O_MASK		0x0000007f
++
+ #include <asm/ptrace.h>
+ 
+ #ifdef __KERNEL__
+@@ -88,13 +88,12 @@
+ #define PT_SEIZED	0x00010000	/* SEIZE used, enable new behavior */
+ #define PT_PTRACED	0x00000001
+ #define PT_DTRACE	0x00000002	/* delayed trace (used on m68k, i386) */
+-#define PT_TRACESYSGOOD	0x00000004
+-#define PT_PTRACE_CAP	0x00000008	/* ptracer can follow suid-exec */
++#define PT_PTRACE_CAP	0x00000004	/* ptracer can follow suid-exec */
+ 
++#define PT_OPT_FLAG_SHIFT	3
+ /* PT_TRACE_* event enable flags */
+-#define PT_EVENT_FLAG_SHIFT	4
+-#define PT_EVENT_FLAG(event)	(1 << (PT_EVENT_FLAG_SHIFT + (event) - 1))
+-
++#define PT_EVENT_FLAG(event)	(1 << (PT_OPT_FLAG_SHIFT + (event)))
++#define PT_TRACESYSGOOD		PT_EVENT_FLAG(0)
+ #define PT_TRACE_FORK		PT_EVENT_FLAG(PTRACE_EVENT_FORK)
+ #define PT_TRACE_VFORK		PT_EVENT_FLAG(PTRACE_EVENT_VFORK)
+ #define PT_TRACE_CLONE		PT_EVENT_FLAG(PTRACE_EVENT_CLONE)
+@@ -102,8 +101,6 @@
+ #define PT_TRACE_VFORK_DONE	PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
+ #define PT_TRACE_EXIT		PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
+ 
+-#define PT_TRACE_MASK	0x000003f4
+-
+ /* single stepping state bits (used on ARM and PA-RISC) */
+ #define PT_SINGLESTEP_BIT	31
+ #define PT_SINGLESTEP		(1<<PT_SINGLESTEP_BIT)
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 9de3ecf..0316200 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -243,7 +243,7 @@ static int ptrace_attach(struct task_struct *task, long request,
+ 
+ 	/*
+ 	 * Protect exec's credential calculations against our interference;
+-	 * interference; SUID, SGID and LSM creds get determined differently
++	 * SUID, SGID and LSM creds get determined differently
+ 	 * under ptrace.
+ 	 */
+ 	retval = -ERESTARTNOINTR;
+@@ -509,30 +509,20 @@ int ptrace_writedata(struct task_struct *tsk, char __user *src, unsigned long ds
+ 
+ static int ptrace_setoptions(struct task_struct *child, unsigned long data)
+ {
+-	child->ptrace &= ~PT_TRACE_MASK;
++	unsigned flags;
+ 
+-	if (data & PTRACE_O_TRACESYSGOOD)
+-		child->ptrace |= PT_TRACESYSGOOD;
+-
+-	if (data & PTRACE_O_TRACEFORK)
+-		child->ptrace |= PT_TRACE_FORK;
+-
+-	if (data & PTRACE_O_TRACEVFORK)
+-		child->ptrace |= PT_TRACE_VFORK;
+-
+-	if (data & PTRACE_O_TRACECLONE)
+-		child->ptrace |= PT_TRACE_CLONE;
+-
+-	if (data & PTRACE_O_TRACEEXEC)
+-		child->ptrace |= PT_TRACE_EXEC;
+-
+-	if (data & PTRACE_O_TRACEVFORKDONE)
+-		child->ptrace |= PT_TRACE_VFORK_DONE;
++	if (data & ~(long)PTRACE_O_MASK) {
++		child->ptrace &= ~PT_TRACE_MASK; /* historical bug */
++		return -EINVAL;
++	}
+ 
+-	if (data & PTRACE_O_TRACEEXIT)
+-		child->ptrace |= PT_TRACE_EXIT;
++	/* Avoid intermediate state when all opts are cleared */
++	flags = child->ptrace;
++	flags &= ~(PTRACE_O_MASK << PT_OPT_FLAG_SHIFT);
++	flags |= (data << PT_OPT_FLAG_SHIFT);
++	child->ptrace = flags;
+ 
+-	return (data & ~PTRACE_O_MASK) ? -EINVAL : 0;
++	return 0;
+ }
+ 
+ static int ptrace_getsiginfo(struct task_struct *child, siginfo_t *info)
