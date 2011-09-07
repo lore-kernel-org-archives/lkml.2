@@ -1,192 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab1IGUzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 16:55:13 -0400
-Received: from fieldses.org ([174.143.236.118]:43908 "EHLO fieldses.org"
+	id S1756947Ab1IGU5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 16:57:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42354 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756856Ab1IGUzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 16:55:11 -0400
-Date: Wed, 7 Sep 2011 16:55:03 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 11/26] vfs: Add permission flags for setting file
- attributes
-Message-ID: <20110907205503.GG8074@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1315243548-18664-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1756903Ab1IGU5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 16:57:05 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+Organization: Red Hat
+To: Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH] random: add blocking facility to urandom
+Date: Wed, 7 Sep 2011 16:56:49 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.35.14-96.fc14.x86_64; KDE/4.6.5; x86_64; ; )
+Cc: "Ted Ts'o" <tytso@mit.edu>, Jarod Wilson <jarod@redhat.com>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com> <201109071630.15261.sgrubb@redhat.com> <1315427877.3576.46.camel@lappy>
+In-Reply-To: <1315427877.3576.46.camel@lappy>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315243548-18664-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109071656.49758.sgrubb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 05, 2011 at 10:55:33PM +0530, Aneesh Kumar K.V wrote:
-> From: Andreas Gruenbacher <agruen@kernel.org>
+On Wednesday, September 07, 2011 04:37:57 PM Sasha Levin wrote:
+> On Wed, 2011-09-07 at 16:30 -0400, Steve Grubb wrote:
+> > On Wednesday, September 07, 2011 04:23:13 PM Sasha Levin wrote:
+> > > On Wed, 2011-09-07 at 16:02 -0400, Steve Grubb wrote:
+> > > > On Wednesday, September 07, 2011 03:27:37 PM Ted Ts'o wrote:
+> > > > > On Wed, Sep 07, 2011 at 02:26:35PM -0400, Jarod Wilson wrote:
+> > > > > > We're looking for a generic solution here that doesn't require
+> > > > > > re-educating every single piece of userspace. And anything done
+> > > > > > in userspace is going to be full of possible holes -- there
+> > > > > > needs to be something in place that actually *enforces* the
+> > > > > > policy, and centralized accounting/tracking, lest you wind up
+> > > > > > with multiple processes racing to grab the entropy.
+> > > > > 
+> > > > > Yeah, but there are userspace programs that depend on urandom not
+> > > > > blocking... so your proposed change would break them.
+> > > > 
+> > > > The only time this kicks in is when a system is under attack. If you
+> > > > have set this and the system is running as normal, you will never
+> > > > notice it even there. Almost all uses of urandom grab 4 bytes and
+> > > > seed openssl or libgcrypt or nss. It then uses those libraries.
+> > > > There are the odd cases where something uses urandom to generate a
+> > > > key or otherwise grab a chunk of bytes, but these are still small
+> > > > reads in the scheme of things. Can you think of any legitimate use
+> > > > of urandom that grabs 100K or 1M from urandom? Even those numbers
+> > > > still won't hit the sysctl on a normally function system.
+> > > 
+> > > As far as I remember, several wipe utilities are using /dev/urandom to
+> > > overwrite disks (possibly several times).
+> > 
+> > Which should generate disk activity and feed entropy to urandom.
 > 
-> Some permission models can allow processes to take ownership of a file,
-> change the file permissions, and set the file timestamps.  Introduce new
-> permission mask flags and check for those permissions in
-> inode_change_ok().
+> I thought you need to feed random, not urandom.
 
-These little helper functions seem like they might be reasonable cleanup
-even without the richacl_change_ok() piece; wonder if it'd be worth
-splitting out the cleanup and applying it now?
+I think they draw from the same pool.
 
-Not that it's necessary--seems like a straightforward enough patch as
-is.
-
---b.
-
+ 
+> Anyway, it won't happen fast enough to actually not block.
 > 
-> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  fs/attr.c          |   70 +++++++++++++++++++++++++++++++++++++++++++--------
->  fs/namei.c         |    2 +-
->  include/linux/fs.h |    4 +++
->  3 files changed, 64 insertions(+), 12 deletions(-)
+> Writing 1TB of urandom into a disk won't generate 1TB (or anything close
+> to that) of randomness to cover for itself.
+
+We don't need a 1:1 mapping of RNG used to entropy acquired. Its more on the scale of 
+8,000,000:1 or higher.
+
+
+> > > Something similar probably happens for getting junk on disks before
+> > > creating an encrypted filesystem on top of them.
+> > 
+> > During system install, this sysctl is not likely to be applied.
 > 
-> diff --git a/fs/attr.c b/fs/attr.c
-> index f15e9e3..00578b9 100644
-> --- a/fs/attr.c
-> +++ b/fs/attr.c
-> @@ -14,6 +14,55 @@
->  #include <linux/fcntl.h>
->  #include <linux/security.h>
->  
-> +static int richacl_change_ok(struct inode *inode, int mask)
-> +{
-> +	if (!IS_RICHACL(inode))
-> +		return -EPERM;
-> +
-> +	if (inode->i_op->permission)
-> +		return inode->i_op->permission(inode, mask);
-> +
-> +	return check_acl(inode, mask);
-> +}
-> +
-> +static bool inode_uid_change_ok(struct inode *inode, uid_t ia_uid)
-> +{
-> +	if (current_fsuid() == inode->i_uid && ia_uid == inode->i_uid)
-> +		return true;
-> +	if (current_fsuid() == ia_uid &&
-> +	    richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-> +		return true;
-> +	if (capable(CAP_CHOWN))
-> +		return true;
-> +	return false;
-> +}
-> +
-> +static bool inode_gid_change_ok(struct inode *inode, gid_t ia_gid)
-> +{
-> +	int in_group = in_group_p(ia_gid);
-> +	if (current_fsuid() == inode->i_uid &&
-> +	    (in_group || ia_gid == inode->i_gid))
-> +		return true;
-> +	if (in_group && richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-> +		return true;
-> +	if (capable(CAP_CHOWN))
-> +		return true;
-> +	return false;
-> +}
-> +
-> +static bool inode_owner_permitted_or_capable(struct inode *inode, int mask)
-> +{
-> +	struct user_namespace *ns = inode_userns(inode);
-> +
-> +	if (current_user_ns() == ns && current_fsuid() == inode->i_uid)
-> +		return true;
-> +	if (richacl_change_ok(inode, mask) == 0)
-> +		return true;
-> +	if (ns_capable(ns, CAP_FOWNER))
-> +		return true;
-> +	return false;
-> +}
-> +
->  /**
->   * inode_change_ok - check if attribute changes to an inode are allowed
->   * @inode:	inode to check
-> @@ -45,21 +94,20 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
->  		return 0;
->  
->  	/* Make sure a caller can chown. */
-> -	if ((ia_valid & ATTR_UID) &&
-> -	    (current_fsuid() != inode->i_uid ||
-> -	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
-> -		return -EPERM;
-> +	if (ia_valid & ATTR_UID) {
-> +		if (!inode_uid_change_ok(inode, attr->ia_uid))
-> +			return -EPERM;
-> +	}
->  
->  	/* Make sure caller can chgrp. */
-> -	if ((ia_valid & ATTR_GID) &&
-> -	    (current_fsuid() != inode->i_uid ||
-> -	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
-> -	    !capable(CAP_CHOWN))
-> -		return -EPERM;
-> +	if (ia_valid & ATTR_GID) {
-> +		if (!inode_gid_change_ok(inode, attr->ia_gid))
-> +			return -EPERM;
-> +	}
->  
->  	/* Make sure a caller can chmod. */
->  	if (ia_valid & ATTR_MODE) {
-> -		if (!inode_owner_or_capable(inode))
-> +		if (!inode_owner_permitted_or_capable(inode, MAY_CHMOD))
->  			return -EPERM;
->  		/* Also check the setgid bit! */
->  		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
-> @@ -69,7 +117,7 @@ int inode_change_ok(struct inode *inode, struct iattr *attr)
->  
->  	/* Check for setting the inode time. */
->  	if (ia_valid & (ATTR_MTIME_SET | ATTR_ATIME_SET | ATTR_TIMES_SET)) {
-> -		if (!inode_owner_or_capable(inode))
-> +		if (!inode_owner_permitted_or_capable(inode, MAY_SET_TIMES))
->  			return -EPERM;
->  	}
->  
-> diff --git a/fs/namei.c b/fs/namei.c
-> index eacb530..a4d61d1 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -174,7 +174,7 @@ void putname(const char *name)
->  EXPORT_SYMBOL(putname);
->  #endif
->  
-> -static int check_acl(struct inode *inode, int mask)
-> +int check_acl(struct inode *inode, int mask)
->  {
->  #ifdef CONFIG_FS_POSIX_ACL
->  	struct posix_acl *acl;
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 8afb054..8d5d6e4 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -71,6 +71,9 @@ struct inodes_stat_t {
->  #define MAY_CREATE_DIR		0x00000200
->  #define MAY_DELETE_CHILD	0x00000400
->  #define MAY_DELETE_SELF		0x00000800
-> +#define MAY_TAKE_OWNERSHIP	0x00001000
-> +#define MAY_CHMOD		0x00002000
-> +#define MAY_SET_TIMES		0x00004000
->  
->  /*
->   * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
-> @@ -2234,6 +2237,7 @@ extern sector_t bmap(struct inode *, sector_t);
->  extern int notify_change(struct dentry *, struct iattr *);
->  extern int inode_permission(struct inode *, int);
->  extern int generic_permission(struct inode *, int);
-> +extern int check_acl(struct inode *, int);
->  
->  static inline bool execute_ok(struct inode *inode)
->  {
-> -- 
-> 1.7.4.1
+> It may happen at any time you need to create a new filesystem, which
+> won't necessarily happen during system install.
 > 
+> See for example the instructions on how to set up a LUKS filesystem:
+> https://wiki.archlinux.org/index.php/System_Encryption_with_LUKS#Preparatio
+> n_and_mapping
+
+Those instructions might need to be changed. That is one way of many to get random 
+numbers on the disk. Anyone really needing the security to have the sysctl on will 
+also probably accept that its doing its job and keeping the numbers random. Again, no 
+effect unless you turn it on.
+
+-Steve
