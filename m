@@ -1,114 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab1IGCq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 22:46:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:37914 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530Ab1IGCqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 22:46:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,342,1312182000"; 
-   d="scan'208";a="46215424"
-Date: Wed, 7 Sep 2011 10:46:18 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/18] writeback: IO-less balance_dirty_pages()
-Message-ID: <20110907024618.GD13755@localhost>
-References: <20110904015305.367445271@intel.com>
- <20110904020915.383842632@intel.com>
- <1315311233.12533.3.camel@twins>
+	id S1754900Ab1IGCrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 22:47:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48913 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab1IGCrs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 22:47:48 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: "Indan Zupancic" <indan@nul.nu>
+Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
+Date: Wed, 7 Sep 2011 04:47:45 +0200
+User-Agent: KMail/1.8.2
+Cc: "Denys Vlasenko" <dvlasenk@redhat.com>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+References: <201109042311.18793.vda.linux@googlemail.com> <201109060305.19607.vda.linux@googlemail.com> <400150a2d773c6b7dd8f88e1b74c883d.squirrel@webmail.greenhost.nl>
+In-Reply-To: <400150a2d773c6b7dd8f88e1b74c883d.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1315311233.12533.3.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201109070447.45193.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 06, 2011 at 08:13:53PM +0800, Peter Zijlstra wrote:
-> On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> > -static inline void task_dirties_fraction(struct task_struct *tsk,
-> > -               long *numerator, long *denominator)
-> > -{
-> > -       prop_fraction_single(&vm_dirties, &tsk->dirties,
-> > -                               numerator, denominator);
-> > -} 
+On Tuesday 06 September 2011 19:19, Indan Zupancic wrote:
+> >> > In case you meant that "if we request group-stop notifications by using
+> >> > __WALL | WSTOPPED, and we get group-stop notification, and we do
+> >> > PTRACE_CONT, then task does not run (it sits in group-stop until SIGCONT
+> >> > or death)", then we have a problem: gdb can't use this interface, it
+> >> > needs to be able to restart the thread (only one thread, not all of
+> >> > them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
+> >> > weird, but it's the real requirement from gdb users.
+> >> [...]
+> >> > SIGCONT's side effect of waking up from group-stop can't be blocked.
+> >> > SIGCONT always wakes up all threads in thread group.
+> >> > Using SIGCONT to control tracee will race with SIGCONTs from other
+> >> > sources.
+> >> >
+> >> > This makes SIGCONT a too coarse instrument for the job.
+> >> [...]
+> >> > Yes... until gdb will want to give user a choice after SIGSTOP: continue
+> >> > to sit in group-stop until SIGCONT (wasn't possible until
+> >> > PTRACE_LISTEN), or continue executing (gdb's current behavior if user
+> >> > uses "continue" command). Therefore, gdb needs a way to do both.
+> >>
+> >> Having thought a bit more about this, I think this is less of a problem
+> >> than it seems, because for a group stop we get a ptrace event for each
+> >> task, and this should be true for SIGCONT as well. So gdb could also
+> >> always let the group stop happen, and only when prompted to do so by
+> >> a user, continue one thread by sending SIGCONT and letting all the other
+> >> threads hang in trapped state.
+> >
+> > Won't work. SIGCONT unpauses all threads in the thread group,
+> > and _then_ it is delivered to one of the threads.
 > 
-> it looks like this patch removes all users of tsk->dirties, but doesn't
-> in fact remove the data member from task_struct.
+> No, it is delivered to _all_ threads.
 
-Good catch! This incremental patch will remove all references to
-vm_dirties and tsk->dirties. Hmm, it may look more clean to make it a
-standalone patch together with the chunk to remove
-task_dirty_limit()/task_dirties_fraction().
+Wrong.
 
-Thanks,
-Fengguang
----
- include/linux/sched.h |    1 -
- mm/page-writeback.c   |    9 ---------
- 2 files changed, 10 deletions(-)
+> With current ptrace you never see a SIGCONT
 
---- linux-next.orig/include/linux/sched.h	2011-09-07 10:42:55.000000000 +0800
-+++ linux-next/include/linux/sched.h	2011-09-07 10:43:06.000000000 +0800
-@@ -1520,7 +1520,6 @@ struct task_struct {
- #ifdef CONFIG_FAULT_INJECTION
- 	int make_it_fail;
- #endif
--	struct prop_local_single dirties;
- 	/*
- 	 * when (nr_dirtied >= nr_dirtied_pause), it's time to call
- 	 * balance_dirty_pages() for some dirty throttling pause
---- linux-next.orig/mm/page-writeback.c	2011-09-07 10:43:04.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-09-07 10:43:06.000000000 +0800
-@@ -128,7 +128,6 @@ unsigned long global_dirty_limit;
-  *
-  */
- static struct prop_descriptor vm_completions;
--static struct prop_descriptor vm_dirties;
- 
- /*
-  * Work out the current dirty-memory clamping and background writeout
-@@ -214,7 +213,6 @@ static void update_completion_period(voi
- {
- 	int shift = calc_period_shift();
- 	prop_change_shift(&vm_completions, shift);
--	prop_change_shift(&vm_dirties, shift);
- 
- 	writeback_set_ratelimit();
- }
-@@ -294,11 +292,6 @@ void bdi_writeout_inc(struct backing_dev
- }
- EXPORT_SYMBOL_GPL(bdi_writeout_inc);
- 
--void task_dirty_inc(struct task_struct *tsk)
--{
--	prop_inc_single(&vm_dirties, &tsk->dirties);
--}
--
- /*
-  * Obtain an accurate fraction of the BDI's portion.
-  */
-@@ -1286,7 +1279,6 @@ void __init page_writeback_init(void)
- 
- 	shift = calc_period_shift();
- 	prop_descriptor_init(&vm_completions, shift);
--	prop_descriptor_init(&vm_dirties, shift);
- }
- 
- /**
-@@ -1615,7 +1607,6 @@ void account_page_dirtied(struct page *p
- 		__inc_zone_page_state(page, NR_DIRTIED);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
--		task_dirty_inc(current);
- 		task_io_account_write(PAGE_CACHE_SIZE);
- 	}
- }
+Wrong. Even rather old strace 4.5.9 does show it.
+
+
+
+#include <stdlib.h>
+#include <pthread.h>
+static void *threadfunc(void *p)
+{
+        sleep(10);
+        exit(0);
+}
+int main()
+{
+        printf("%d\n", getpid());
+        pthread_t thread;
+        pthread_create(&thread, NULL, threadfunc, NULL);
+        sleep(10);
+        exit(0);
+}
+
+
+$ gcc -Os -lpthread t.c -ot
+$ strace -V
+strace -- version 4.5.9
+$ strace -oLOG -s999 -tt -f ./t
+umovestr: Input/output error
+9590
+umovestr: Input/output error
+ptrace: umoven: Input/output error
+
+In other terminal: "kill -CONT 9590"
+
+LOG:
+
+9590  04:41:13.984640 clone(...) = 9591
+9590  04:41:13.984712 rt_sigprocmask(SIG_BLOCK, [CHLD],  <unfinished ...>
+...
+9591  04:41:13.984972 <... rt_sigaction resumed> {SIG_DFL}, 8) = 0
+9590  04:41:13.984993 nanosleep({10, 0},  <unfinished ...>
+9591  04:41:13.985015 rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+9591  04:41:13.985056 nanosleep({10, 0},  <unfinished ...>
+9590  04:41:19.969687 <... nanosleep resumed> 0xff9e6fa4) = ? ERESTART_RESTARTBLOCK (To be restarted)
+9590  04:41:19.969762 --- SIGCONT (Continued) @ 0 (0) ---
+9590  04:41:19.969791 setup()           = 0
+9591  04:41:23.985155 <... nanosleep resumed> {10, 0}) = 0
+9590  04:41:23.985201 exit_group(0)     = ?
+9591  04:41:23.985231 exit_group(0)     = ?
+
+
+Take a good look. There was no SIGCONT delivery to thread 9591.
+
+
+> > You can block
+> > or ignore it, yes, but it is too late: the unpausing already happened,
+> > and blocking/ignoring will only affect SIGCONT handler execution,
+> > if the program has one.
+> 
+> Not doing PTRACE_CONT will keep the thread hanging in trapped state.
+> All threads get a SIGCONT, not only one, so you can pause all threads
+> this way.
+
+As I said, you are wrong about SIGCONT.
+
+-- 
+vda
