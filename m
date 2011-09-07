@@ -1,90 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab1IGQTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:19:38 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56233 "EHLO mga14.intel.com"
+	id S932110Ab1IGQUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:20:45 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:57424 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756364Ab1IGQT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:19:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,345,1312182000"; 
-   d="scan'208";a="46370749"
-Date: Wed, 7 Sep 2011 21:32:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [PATCH 00/18] IO-less dirty throttling v11
-Message-ID: <20110907133211.GA28442@localhost>
-References: <20110904015305.367445271@intel.com>
+	id S932077Ab1IGQUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:20:19 -0400
+Message-ID: <4E6775AF.40606@linux.vnet.ibm.com>
+Date: Wed, 07 Sep 2011 08:46:23 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110904015305.367445271@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [RFC] pci: Rework config space blocking services
+References: <20110829150552.GA6851@redhat.com> <4E5BB358.3060705@siemens.com> <4E5BDEAB.5000405@siemens.com> <20110829191858.GA9415@redhat.com> <4E608A51.70509@siemens.com>
+In-Reply-To: <4E608A51.70509@siemens.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Finally, the complete IO-less balance_dirty_pages(). NFS is observed to perform
-> better or worse depending on the memory size. Otherwise the added patches can
-> address all known regressions.
-
-I find that the NFS performance regressions on large memory system can
-be fixed by this patch. It tries to make the progress more smooth by
-reasonably reducing the commit size.
+Here is how I would prefer to rework ipr. 
 
 Thanks,
-Fengguang
+
+Brian
+
+-- 
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
+
+
+
+The PCI config space blocking API has changed to better
+allow for multiple users. Update ipr to use the new API.
+
+Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
 ---
-Subject: nfs: limit the commit size to reduce fluctuations
-Date: Thu Dec 16 13:22:43 CST 2010
 
-Limit the commit size to half the dirty control scope, so that the
-arrival of one commit will not knock the overall dirty pages off the
-scope.
+ drivers/scsi/ipr.c |   66 +++++++++++++++++++++++++++++++++++++++++++++++------
+ drivers/scsi/ipr.h |    1 
+ 2 files changed, 60 insertions(+), 7 deletions(-)
 
-Also limit the commit size to one second worth of data. This will
-obviously help make the pipeline run more smoothly.
-
-Also change "<=" to "<": if an inode has only one dirty page in the end,
-it should be committed. I wonder why the "<=" didn't cause a bug...
-
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/nfs/write.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-After patch, there are still drop offs from the control scope,
-
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/NFS/nfs-1dd-1M-8p-2945M-20%25-2.6.38-rc6-dt6+-2011-02-22-21-09/balance_dirty_pages-pages.png
-
-due to bursty arrival of commits:
-
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/NFS/nfs-1dd-1M-8p-2945M-20%25-2.6.38-rc6-dt6+-2011-02-22-21-09/nfs-commit.png
-
---- linux-next.orig/fs/nfs/write.c	2011-09-07 21:29:15.000000000 +0800
-+++ linux-next/fs/nfs/write.c	2011-09-07 21:29:32.000000000 +0800
-@@ -1543,10 +1543,14 @@ static int nfs_commit_unstable_pages(str
- 	int ret = 0;
- 
- 	if (wbc->sync_mode == WB_SYNC_NONE) {
-+		unsigned long bw = MIN_WRITEBACK_PAGES +
-+			NFS_SERVER(inode)->backing_dev_info.avg_write_bandwidth;
+diff -puN drivers/scsi/ipr.c~ipr_new_pci_block drivers/scsi/ipr.c
+--- linux-2.6/drivers/scsi/ipr.c~ipr_new_pci_block	2011-09-06 16:52:47.000000000 -0500
++++ linux-2.6-bjking1/drivers/scsi/ipr.c	2011-09-07 08:34:54.000000000 -0500
+@@ -7639,8 +7639,12 @@ static int ipr_reset_restore_cfg_space(s
+  **/
+ static int ipr_reset_bist_done(struct ipr_cmnd *ipr_cmd)
+ {
++	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
 +
- 		/* Don't commit yet if this is a non-blocking flush and there
--		 * are a lot of outstanding writes for this mapping.
-+		 * are a lot of outstanding writes for this mapping, until
-+		 * collected enough pages to commit.
- 		 */
--		if (nfsi->ncommit <= (nfsi->npages >> 1))
-+		if (nfsi->ncommit < min(nfsi->npages / DIRTY_SCOPE, bw))
- 			goto out_mark_dirty;
+ 	ENTER;
+-	pci_unblock_user_cfg_access(ipr_cmd->ioa_cfg->pdev);
++	if (ioa_cfg->ucfg_blocked)
++		pci_unblock_cfg_access(ioa_cfg->pdev);
++	ioa_cfg->ucfg_blocked = 0;
+ 	ipr_cmd->job_step = ipr_reset_restore_cfg_space;
+ 	LEAVE;
+ 	return IPR_RC_JOB_CONTINUE;
+@@ -7661,8 +7665,6 @@ static int ipr_reset_start_bist(struct i
+ 	int rc = PCIBIOS_SUCCESSFUL;
  
- 		/* don't wait for the COMMIT response */
+ 	ENTER;
+-	pci_block_user_cfg_access(ioa_cfg->pdev);
+-
+ 	if (ioa_cfg->ipr_chip->bist_method == IPR_MMIO)
+ 		writel(IPR_UPROCI_SIS64_START_BIST,
+ 		       ioa_cfg->regs.set_uproc_interrupt_reg32);
+@@ -7674,7 +7676,9 @@ static int ipr_reset_start_bist(struct i
+ 		ipr_reset_start_timer(ipr_cmd, IPR_WAIT_FOR_BIST_TIMEOUT);
+ 		rc = IPR_RC_JOB_RETURN;
+ 	} else {
+-		pci_unblock_user_cfg_access(ipr_cmd->ioa_cfg->pdev);
++		if (ioa_cfg->ucfg_blocked)
++			pci_unblock_cfg_access(ipr_cmd->ioa_cfg->pdev);
++		ioa_cfg->ucfg_blocked = 0;
+ 		ipr_cmd->s.ioasa.hdr.ioasc = cpu_to_be32(IPR_IOASC_PCI_ACCESS_ERROR);
+ 		rc = IPR_RC_JOB_CONTINUE;
+ 	}
+@@ -7717,7 +7721,6 @@ static int ipr_reset_slot_reset(struct i
+ 	struct pci_dev *pdev = ioa_cfg->pdev;
+ 
+ 	ENTER;
+-	pci_block_user_cfg_access(pdev);
+ 	pci_set_pcie_reset_state(pdev, pcie_warm_reset);
+ 	ipr_cmd->job_step = ipr_reset_slot_reset_done;
+ 	ipr_reset_start_timer(ipr_cmd, IPR_PCI_RESET_TIMEOUT);
+@@ -7726,6 +7729,55 @@ static int ipr_reset_slot_reset(struct i
+ }
+ 
+ /**
++ * ipr_reset_block_config_access_wait - Wait for permission to block config access
++ * @ipr_cmd:	ipr command struct
++ *
++ * Description: This attempts to block config access to the IOA.
++ *
++ * Return value:
++ * 	IPR_RC_JOB_CONTINUE / IPR_RC_JOB_RETURN
++ **/
++static int ipr_reset_block_config_access_wait(struct ipr_cmnd *ipr_cmd)
++{
++	struct ipr_ioa_cfg *ioa_cfg = ipr_cmd->ioa_cfg;
++	int rc = IPR_RC_JOB_CONTINUE;
++
++	if (pci_block_cfg_access_in_atomic(ioa_cfg->pdev)) {
++		if (ipr_cmd->u.time_left) {
++			rc = IPR_RC_JOB_RETURN;
++			ipr_cmd->u.time_left -= IPR_CHECK_FOR_RESET_TIMEOUT;
++			ipr_reset_start_timer(ipr_cmd, IPR_CHECK_FOR_RESET_TIMEOUT);
++		} else {
++			ipr_cmd->job_step = ioa_cfg->reset;
++			dev_err(&ioa_cfg->pdev->dev,
++				"Timed out waiting to block config access. Resetting anyway.\n");
++		}
++	} else {
++		ioa_cfg->ucfg_blocked = 1;
++		ipr_cmd->job_step = ioa_cfg->reset;
++	}
++
++	return rc;
++}
++
++/**
++ * ipr_reset_block_config_access - Block config access to the IOA
++ * @ipr_cmd:	ipr command struct
++ *
++ * Description: This attempts to block config access to the IOA
++ *
++ * Return value:
++ * 	IPR_RC_JOB_CONTINUE
++ **/
++static int ipr_reset_block_config_access(struct ipr_cmnd *ipr_cmd)
++{
++	ipr_cmd->ioa_cfg->ucfg_blocked = 0;
++	ipr_cmd->job_step = ipr_reset_block_config_access_wait;
++	ipr_cmd->u.time_left = IPR_WAIT_FOR_RESET_TIMEOUT;
++	return IPR_RC_JOB_CONTINUE;
++}
++
++/**
+  * ipr_reset_allowed - Query whether or not IOA can be reset
+  * @ioa_cfg:	ioa config struct
+  *
+@@ -7764,7 +7816,7 @@ static int ipr_reset_wait_to_start_bist(
+ 		ipr_cmd->u.time_left -= IPR_CHECK_FOR_RESET_TIMEOUT;
+ 		ipr_reset_start_timer(ipr_cmd, IPR_CHECK_FOR_RESET_TIMEOUT);
+ 	} else {
+-		ipr_cmd->job_step = ioa_cfg->reset;
++		ipr_cmd->job_step = ipr_reset_block_config_access;
+ 		rc = IPR_RC_JOB_CONTINUE;
+ 	}
+ 
+@@ -7797,7 +7849,7 @@ static int ipr_reset_alert(struct ipr_cm
+ 		writel(IPR_UPROCI_RESET_ALERT, ioa_cfg->regs.set_uproc_interrupt_reg32);
+ 		ipr_cmd->job_step = ipr_reset_wait_to_start_bist;
+ 	} else {
+-		ipr_cmd->job_step = ioa_cfg->reset;
++		ipr_cmd->job_step = ipr_reset_block_config_access;
+ 	}
+ 
+ 	ipr_cmd->u.time_left = IPR_WAIT_FOR_RESET_TIMEOUT;
+diff -puN drivers/scsi/ipr.h~ipr_new_pci_block drivers/scsi/ipr.h
+--- linux-2.6/drivers/scsi/ipr.h~ipr_new_pci_block	2011-09-07 07:29:20.000000000 -0500
++++ linux-2.6-bjking1/drivers/scsi/ipr.h	2011-09-07 08:10:29.000000000 -0500
+@@ -1384,6 +1384,7 @@ struct ipr_ioa_cfg {
+ 	u8 needs_warm_reset:1;
+ 	u8 msi_received:1;
+ 	u8 sis64:1;
++	u8 ucfg_blocked:1;
+ 
+ 	u8 revid;
+ 
+_
