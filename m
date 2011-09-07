@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1IGRJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:09:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14777 "EHLO mga02.intel.com"
+	id S1754646Ab1IGRJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:09:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9086 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754195Ab1IGQ7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:59:44 -0400
+	id S1754171Ab1IGQ7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:59:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="45953760"
+   d="scan'208";a="45953754"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: [PATCHv4 06/19] usb: otg: gpio_vbus: Start using struct usb_otg
-Date: Wed,  7 Sep 2011 10:15:59 +0300
-Message-Id: <1315379772-8830-7-git-send-email-heikki.krogerus@linux.intel.com>
+        Li Yang <leoli@freescale.com>
+Subject: [PATCHv4 05/19] usb: otg: fsl: Start using struct usb_otg
+Date: Wed,  7 Sep 2011 10:15:58 +0300
+Message-Id: <1315379772-8830-6-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -30,197 +30,443 @@ Use struct usb_otg members with OTG specific functions instead
 of usb_phy members.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>
+Cc: Li Yang <leoli@freescale.com>
 ---
- drivers/usb/otg/gpio_vbus.c |   61 +++++++++++++++++++++++++-----------------
- 1 files changed, 36 insertions(+), 25 deletions(-)
+ drivers/usb/otg/fsl_otg.c |  118 +++++++++++++++++++++++++-------------------
+ drivers/usb/otg/fsl_otg.h |    2 +-
+ drivers/usb/otg/otg_fsm.c |   22 ++++----
+ drivers/usb/otg/otg_fsm.h |    2 +-
+ 4 files changed, 80 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/usb/otg/gpio_vbus.c b/drivers/usb/otg/gpio_vbus.c
-index 14f48e8..548720c 100644
---- a/drivers/usb/otg/gpio_vbus.c
-+++ b/drivers/usb/otg/gpio_vbus.c
-@@ -31,7 +31,7 @@
-  * Needs to be loaded before the UDC driver that will use it.
+diff --git a/drivers/usb/otg/fsl_otg.c b/drivers/usb/otg/fsl_otg.c
+index 76125f7..70bb428 100644
+--- a/drivers/usb/otg/fsl_otg.c
++++ b/drivers/usb/otg/fsl_otg.c
+@@ -275,7 +275,7 @@ void b_srp_end(unsigned long foo)
+ 	fsl_otg_dischrg_vbus(0);
+ 	srp_wait_done = 1;
+ 
+-	if ((fsl_otg_dev->otg.state == USB_PHY_STATE_B_SRP_INIT) &&
++	if ((fsl_otg_dev->xceiv.state == USB_PHY_STATE_B_SRP_INIT) &&
+ 	    fsl_otg_dev->fsm.b_sess_vld)
+ 		fsl_otg_dev->fsm.b_srp_done = 1;
+ }
+@@ -288,7 +288,7 @@ void b_srp_end(unsigned long foo)
+ void a_wait_enum(unsigned long foo)
+ {
+ 	VDBG("a_wait_enum timeout\n");
+-	if (!fsl_otg_dev->otg.host->b_hnp_enable)
++	if (!fsl_otg_dev->xceiv.otg->host->b_hnp_enable)
+ 		fsl_otg_add_timer(a_wait_enum_tmr);
+ 	else
+ 		otg_statemachine(&fsl_otg_dev->fsm);
+@@ -452,14 +452,15 @@ void otg_reset_controller(void)
+ /* Call suspend/resume routines in host driver */
+ int fsl_otg_start_host(struct otg_fsm *fsm, int on)
+ {
+-	struct usb_phy *xceiv = fsm->transceiver;
++	struct usb_otg *otg = fsm->otg;
+ 	struct device *dev;
+-	struct fsl_otg *otg_dev = container_of(xceiv, struct fsl_otg, otg);
++	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
++						xceiv);
+ 	u32 retval = 0;
+ 
+-	if (!xceiv->host)
++	if (!otg->host)
+ 		return -ENODEV;
+-	dev = xceiv->host->controller;
++	dev = otg->host->controller;
+ 
+ 	/*
+ 	 * Update a_vbus_vld state as a_vbus_vld int is disabled
+@@ -518,14 +519,14 @@ end:
   */
- struct gpio_vbus_data {
--	struct usb_phy		otg;
-+	struct usb_phy		xceiv;
- 	struct device          *dev;
- 	struct regulator       *vbus_draw;
- 	int			vbus_draw_enabled;
-@@ -97,7 +97,7 @@ static void gpio_vbus_work(struct work_struct *work)
- 	struct gpio_vbus_mach_info *pdata = gpio_vbus->dev->platform_data;
- 	int gpio;
+ int fsl_otg_start_gadget(struct otg_fsm *fsm, int on)
+ {
+-	struct usb_phy *xceiv = fsm->transceiver;
++	struct usb_otg *otg = fsm->otg;
+ 	struct device *dev;
  
--	if (!gpio_vbus->otg.gadget)
-+	if (!gpio_vbus->xceiv.otg->gadget)
- 		return;
+-	if (!xceiv->gadget || !xceiv->gadget->dev.parent)
++	if (!otg->gadget || !otg->gadget->dev.parent)
+ 		return -ENODEV;
  
- 	/* Peripheral controllers which manage the pullup themselves won't have
-@@ -107,8 +107,8 @@ static void gpio_vbus_work(struct work_struct *work)
- 	 */
- 	gpio = pdata->gpio_pullup;
- 	if (is_vbus_powered(pdata)) {
--		gpio_vbus->otg.state = USB_PHY_STATE_B_PERIPHERAL;
--		usb_gadget_vbus_connect(gpio_vbus->otg.gadget);
-+		gpio_vbus->xceiv.state = USB_PHY_STATE_B_PERIPHERAL;
-+		usb_gadget_vbus_connect(gpio_vbus->xceiv.otg->gadget);
+ 	VDBG("gadget %s\n", on ? "on" : "off");
+-	dev = xceiv->gadget->dev.parent;
++	dev = otg->gadget->dev.parent;
  
- 		/* drawing a "unit load" is *always* OK, except for OTG */
- 		set_vbus_draw(gpio_vbus, 100);
-@@ -123,8 +123,8 @@ static void gpio_vbus_work(struct work_struct *work)
+ 	if (on) {
+ 		if (dev->driver->resume)
+@@ -542,14 +543,15 @@ int fsl_otg_start_gadget(struct otg_fsm *fsm, int on)
+  * Called by initialization code of host driver.  Register host controller
+  * to the OTG.  Suspend host for OTG role detection.
+  */
+-static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
++static int fsl_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+ {
+-	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
++	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
++						xceiv);
  
- 		set_vbus_draw(gpio_vbus, 0);
+-	if (!otg_p || otg_dev != fsl_otg_dev)
++	if (!otg || otg_dev != fsl_otg_dev)
+ 		return -ENODEV;
  
--		usb_gadget_vbus_disconnect(gpio_vbus->otg.gadget);
--		gpio_vbus->otg.state = USB_PHY_STATE_B_IDLE;
-+		usb_gadget_vbus_disconnect(gpio_vbus->xceiv.otg->gadget);
-+		gpio_vbus->xceiv.state = USB_PHY_STATE_B_IDLE;
+-	otg_p->host = host;
++	otg->host = host;
+ 
+ 	otg_dev->fsm.a_bus_drop = 0;
+ 	otg_dev->fsm.a_bus_req = 1;
+@@ -557,8 +559,8 @@ static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
+ 	if (host) {
+ 		VDBG("host off......\n");
+ 
+-		otg_p->host->otg_port = fsl_otg_initdata.otg_port;
+-		otg_p->host->is_b_host = otg_dev->fsm.id;
++		otg->host->otg_port = fsl_otg_initdata.otg_port;
++		otg->host->is_b_host = otg_dev->fsm.id;
+ 		/*
+ 		 * must leave time for khubd to finish its thing
+ 		 * before yanking the host driver out from under it,
+@@ -574,7 +576,7 @@ static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
+ 			/* Mini-A cable connected */
+ 			struct otg_fsm *fsm = &otg_dev->fsm;
+ 
+-			otg_p->state = USB_PHY_STATE_UNDEFINED;
++			otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
+ 			fsm->protocol = PROTO_UNDEF;
+ 		}
  	}
+@@ -587,29 +589,30 @@ static int fsl_otg_set_host(struct usb_phy *otg_p, struct usb_bus *host)
  }
  
-@@ -134,12 +134,13 @@ static irqreturn_t gpio_vbus_irq(int irq, void *data)
- 	struct platform_device *pdev = data;
- 	struct gpio_vbus_mach_info *pdata = pdev->dev.platform_data;
- 	struct gpio_vbus_data *gpio_vbus = platform_get_drvdata(pdev);
-+	struct usb_otg *otg = gpio_vbus->xceiv.otg;
- 
- 	dev_dbg(&pdev->dev, "VBUS %s (gadget: %s)\n",
- 		is_vbus_powered(pdata) ? "supplied" : "inactive",
--		gpio_vbus->otg.gadget ? gpio_vbus->otg.gadget->name : "none");
-+		otg->gadget ? otg->gadget->name : "none");
- 
--	if (gpio_vbus->otg.gadget)
-+	if (otg->gadget)
- 		schedule_work(&gpio_vbus->work);
- 
- 	return IRQ_HANDLED;
-@@ -148,15 +149,15 @@ static irqreturn_t gpio_vbus_irq(int irq, void *data)
- /* OTG transceiver interface */
- 
- /* bind/unbind the peripheral controller */
--static int gpio_vbus_set_peripheral(struct usb_phy *otg,
--				struct usb_gadget *gadget)
-+static int gpio_vbus_set_peripheral(struct usb_otg *otg,
+ /* Called by initialization code of udc.  Register udc to OTG. */
+-static int fsl_otg_set_peripheral(struct usb_phy *otg_p,
+-				  struct usb_gadget *gadget)
++static int fsl_otg_set_peripheral(struct usb_otg *otg,
 +					struct usb_gadget *gadget)
  {
- 	struct gpio_vbus_data *gpio_vbus;
- 	struct gpio_vbus_mach_info *pdata;
- 	struct platform_device *pdev;
- 	int gpio, irq;
+-	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
++	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
++						xceiv);
  
--	gpio_vbus = container_of(otg, struct gpio_vbus_data, otg);
-+	gpio_vbus = container_of(otg->xceiv, struct gpio_vbus_data, xceiv);
- 	pdev = to_platform_device(gpio_vbus->dev);
- 	pdata = gpio_vbus->dev->platform_data;
- 	irq = gpio_to_irq(pdata->gpio_vbus);
-@@ -173,7 +174,7 @@ static int gpio_vbus_set_peripheral(struct usb_phy *otg,
- 		set_vbus_draw(gpio_vbus, 0);
+ 	VDBG("otg_dev 0x%x\n", (int)otg_dev);
+ 	VDBG("fsl_otg_dev 0x%x\n", (int)fsl_otg_dev);
  
- 		usb_gadget_vbus_disconnect(otg->gadget);
--		otg->state = USB_PHY_STATE_UNDEFINED;
-+		otg->xceiv->state = USB_PHY_STATE_UNDEFINED;
+-	if (!otg_p || otg_dev != fsl_otg_dev)
++	if (!otg || otg_dev != fsl_otg_dev)
+ 		return -ENODEV;
  
- 		otg->gadget = NULL;
+ 	if (!gadget) {
+-		if (!otg_dev->otg.default_a)
+-			otg_p->gadget->ops->vbus_draw(otg_p->gadget, 0);
+-		usb_gadget_vbus_disconnect(otg_dev->otg.gadget);
+-		otg_dev->otg.gadget = 0;
++		if (!otg->default_a)
++			otg->gadget->ops->vbus_draw(otg->gadget, 0);
++		usb_gadget_vbus_disconnect(otg->gadget);
++		otg->gadget = 0;
+ 		otg_dev->fsm.b_bus_req = 0;
+ 		otg_statemachine(&otg_dev->fsm);
  		return 0;
-@@ -188,23 +189,23 @@ static int gpio_vbus_set_peripheral(struct usb_phy *otg,
+ 	}
+ 
+-	otg_p->gadget = gadget;
+-	otg_p->gadget->is_a_peripheral = !otg_dev->fsm.id;
++	otg->gadget = gadget;
++	otg->gadget->is_a_peripheral = !otg_dev->fsm.id;
+ 
+ 	otg_dev->fsm.b_bus_req = 1;
+ 
+@@ -625,11 +628,11 @@ static int fsl_otg_set_peripheral(struct usb_phy *otg_p,
  }
  
- /* effective for B devices, ignored for A-peripheral */
--static int gpio_vbus_set_power(struct usb_phy *otg, unsigned mA)
-+static int gpio_vbus_set_power(struct usb_phy *xceiv, unsigned mA)
+ /* Set OTG port power, only for B-device */
+-static int fsl_otg_set_power(struct usb_phy *otg_p, unsigned mA)
++static int fsl_otg_set_power(struct usb_phy *xceiv, unsigned mA)
  {
- 	struct gpio_vbus_data *gpio_vbus;
- 
--	gpio_vbus = container_of(otg, struct gpio_vbus_data, otg);
-+	gpio_vbus = container_of(xceiv, struct gpio_vbus_data, xceiv);
- 
--	if (otg->state == USB_PHY_STATE_B_PERIPHERAL)
+ 	if (!fsl_otg_dev)
+ 		return -ENODEV;
+-	if (otg_p->state == USB_PHY_STATE_B_PERIPHERAL)
 +	if (xceiv->state == USB_PHY_STATE_B_PERIPHERAL)
- 		set_vbus_draw(gpio_vbus, mA);
+ 		pr_info("FSL OTG: Draw %d mA\n", mA);
+ 
  	return 0;
+@@ -658,12 +661,13 @@ static void fsl_otg_event(struct work_struct *work)
  }
  
- /* for non-OTG B devices: set/clear transceiver suspend mode */
--static int gpio_vbus_set_suspend(struct usb_phy *otg, int suspend)
-+static int gpio_vbus_set_suspend(struct usb_phy *xceiv, int suspend)
+ /* B-device start SRP */
+-static int fsl_otg_start_srp(struct usb_phy *otg_p)
++static int fsl_otg_start_srp(struct usb_otg *otg)
  {
- 	struct gpio_vbus_data *gpio_vbus;
+-	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
++	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
++						xceiv);
  
--	gpio_vbus = container_of(otg, struct gpio_vbus_data, otg);
-+	gpio_vbus = container_of(xceiv, struct gpio_vbus_data, xceiv);
+-	if (!otg_p || otg_dev != fsl_otg_dev
+-	    || otg_p->state != USB_PHY_STATE_B_IDLE)
++	if (!otg || otg_dev != fsl_otg_dev
++	    || otg->xceiv->state != USB_PHY_STATE_B_IDLE)
+ 		return -ENODEV;
  
- 	/* draw max 0 mA from vbus in suspend mode; or the previously
- 	 * recorded amount of current if not suspended
-@@ -212,7 +213,7 @@ static int gpio_vbus_set_suspend(struct usb_phy *otg, int suspend)
- 	 * NOTE: high powered configs (mA > 100) may draw up to 2.5 mA
- 	 * if they're wake-enabled ... we don't handle that yet.
- 	 */
--	return gpio_vbus_set_power(otg, suspend ? 0 : gpio_vbus->mA);
-+	return gpio_vbus_set_power(xceiv, suspend ? 0 : gpio_vbus->mA);
+ 	otg_dev->fsm.b_bus_req = 1;
+@@ -673,11 +677,12 @@ static int fsl_otg_start_srp(struct usb_phy *otg_p)
  }
  
- /* platform driver interface */
-@@ -232,13 +233,21 @@ static int __init gpio_vbus_probe(struct platform_device *pdev)
- 	if (!gpio_vbus)
+ /* A_host suspend will call this function to start hnp */
+-static int fsl_otg_start_hnp(struct usb_phy *otg_p)
++static int fsl_otg_start_hnp(struct usb_otg *otg)
+ {
+-	struct fsl_otg *otg_dev = container_of(otg_p, struct fsl_otg, otg);
++	struct fsl_otg *otg_dev = container_of(otg->xceiv, struct fsl_otg,
++						xceiv);
+ 
+-	if (!otg_p || otg_dev != fsl_otg_dev)
++	if (!otg || otg_dev != fsl_otg_dev)
+ 		return -ENODEV;
+ 
+ 	DBG("start_hnp...n");
+@@ -698,7 +703,7 @@ static int fsl_otg_start_hnp(struct usb_phy *otg_p)
+ irqreturn_t fsl_otg_isr(int irq, void *dev_id)
+ {
+ 	struct otg_fsm *fsm = &((struct fsl_otg *)dev_id)->fsm;
+-	struct usb_phy *otg = &((struct fsl_otg *)dev_id)->otg;
++	struct usb_otg *otg = ((struct fsl_otg *)dev_id)->xceiv.otg;
+ 	u32 otg_int_src, otg_sc;
+ 
+ 	otg_sc = fsl_readl(&usb_dr_regs->otgsc);
+@@ -774,6 +779,12 @@ static int fsl_otg_conf(struct platform_device *pdev)
+ 	if (!fsl_otg_tc)
  		return -ENOMEM;
  
-+	gpio_vbus->xceiv.otg = kzalloc(sizeof(struct usb_otg), GFP_KERNEL);
-+	if (!gpio_vbus->xceiv.otg) {
-+		kfree(gpio_vbus);
++	fsl_otg_tc->xceiv.otg = kzalloc(sizeof(struct usb_otg), GFP_KERNEL);
++	if (!fsl_otg_tc->xceiv.otg) {
++		kfree(fsl_otg_tc);
 +		return -ENOMEM;
 +	}
 +
- 	platform_set_drvdata(pdev, gpio_vbus);
- 	gpio_vbus->dev = &pdev->dev;
--	gpio_vbus->otg.label = "gpio-vbus";
--	gpio_vbus->otg.state = USB_PHY_STATE_UNDEFINED;
--	gpio_vbus->otg.set_peripheral = gpio_vbus_set_peripheral;
--	gpio_vbus->otg.set_power = gpio_vbus_set_power;
--	gpio_vbus->otg.set_suspend = gpio_vbus_set_suspend;
-+	gpio_vbus->xceiv.label = "gpio-vbus";
-+	gpio_vbus->xceiv.set_power = gpio_vbus_set_power;
-+	gpio_vbus->xceiv.set_suspend = gpio_vbus_set_suspend;
-+	gpio_vbus->xceiv.state = USB_PHY_STATE_UNDEFINED;
-+
-+	gpio_vbus->xceiv.otg->xceiv = &gpio_vbus->xceiv;
-+	gpio_vbus->xceiv.otg->set_peripheral = gpio_vbus_set_peripheral;
+ 	INIT_DELAYED_WORK(&fsl_otg_tc->otg_event, fsl_otg_event);
  
- 	err = gpio_request(gpio, "vbus_detect");
- 	if (err) {
-@@ -287,7 +296,7 @@ static int __init gpio_vbus_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&active_timers);
+@@ -788,17 +799,19 @@ static int fsl_otg_conf(struct platform_device *pdev)
+ 	fsl_otg_tc->fsm.ops = &fsl_otg_ops;
+ 
+ 	/* initialize the otg structure */
+-	fsl_otg_tc->otg.label = DRIVER_DESC;
+-	fsl_otg_tc->otg.set_host = fsl_otg_set_host;
+-	fsl_otg_tc->otg.set_peripheral = fsl_otg_set_peripheral;
+-	fsl_otg_tc->otg.set_power = fsl_otg_set_power;
+-	fsl_otg_tc->otg.start_hnp = fsl_otg_start_hnp;
+-	fsl_otg_tc->otg.start_srp = fsl_otg_start_srp;
++	fsl_otg_tc->xceiv.label = DRIVER_DESC;
++	fsl_otg_tc->xceiv.set_power = fsl_otg_set_power;
++
++	fsl_otg_tc->xceiv.otg->xceiv = &fsl_otg_tc->xceiv;
++	fsl_otg_tc->xceiv.otg->set_host = fsl_otg_set_host;
++	fsl_otg_tc->xceiv.otg->set_peripheral = fsl_otg_set_peripheral;
++	fsl_otg_tc->xceiv.otg->start_hnp = fsl_otg_start_hnp;
++	fsl_otg_tc->xceiv.otg->start_srp = fsl_otg_start_srp;
+ 
+ 	fsl_otg_dev = fsl_otg_tc;
+ 
+ 	/* Store the otg transceiver */
+-	status = otg_set_transceiver(&fsl_otg_tc->otg);
++	status = usb_set_transceiver(&fsl_otg_tc->xceiv);
+ 	if (status) {
+ 		pr_warn(FSL_OTG_NAME ": unable to register OTG transceiver.\n");
+ 		goto err;
+@@ -807,6 +820,7 @@ static int fsl_otg_conf(struct platform_device *pdev)
+ 	return 0;
+ err:
+ 	fsl_otg_uninit_timers();
++	kfree(fsl_otg_tc->xceiv.otg);
+ 	kfree(fsl_otg_tc);
+ 	return status;
+ }
+@@ -815,19 +829,19 @@ err:
+ int usb_otg_start(struct platform_device *pdev)
+ {
+ 	struct fsl_otg *p_otg;
+-	struct usb_phy *otg_trans = otg_get_transceiver();
++	struct usb_phy *otg_trans = usb_get_transceiver();
+ 	struct otg_fsm *fsm;
+ 	int status;
+ 	struct resource *res;
+ 	u32 temp;
+ 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
+ 
+-	p_otg = container_of(otg_trans, struct fsl_otg, otg);
++	p_otg = container_of(otg_trans, struct fsl_otg, xceiv);
+ 	fsm = &p_otg->fsm;
+ 
+ 	/* Initialize the state machine structure with default values */
+ 	SET_OTG_STATE(otg_trans, USB_PHY_STATE_UNDEFINED);
+-	fsm->transceiver = &p_otg->otg;
++	fsm->otg = p_otg->xceiv.otg;
+ 
+ 	/* We don't require predefined MEM/IRQ resource index */
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -857,9 +871,10 @@ int usb_otg_start(struct platform_device *pdev)
+ 	status = request_irq(p_otg->irq, fsl_otg_isr,
+ 				IRQF_SHARED, driver_name, p_otg);
+ 	if (status) {
+-		dev_dbg(p_otg->otg.dev, "can't get IRQ %d, error %d\n",
++		dev_dbg(p_otg->xceiv.dev, "can't get IRQ %d, error %d\n",
+ 			p_otg->irq, status);
+ 		iounmap(p_otg->dr_mem_map);
++		kfree(p_otg->xceiv.otg);
+ 		kfree(p_otg);
+ 		return status;
+ 	}
+@@ -919,10 +934,10 @@ int usb_otg_start(struct platform_device *pdev)
+ 	 * Also: record initial state of ID pin
+ 	 */
+ 	if (fsl_readl(&p_otg->dr_mem_map->otgsc) & OTGSC_STS_USB_ID) {
+-		p_otg->otg.state = USB_PHY_STATE_UNDEFINED;
++		p_otg->xceiv.state = USB_PHY_STATE_UNDEFINED;
+ 		p_otg->fsm.id = 1;
+ 	} else {
+-		p_otg->otg.state = USB_PHY_STATE_A_IDLE;
++		p_otg->xceiv.state = USB_PHY_STATE_A_IDLE;
+ 		p_otg->fsm.id = 0;
  	}
  
- 	/* only active when a gadget is registered */
--	err = otg_set_transceiver(&gpio_vbus->otg);
-+	err = usb_set_transceiver(&gpio_vbus->xceiv);
- 	if (err) {
- 		dev_err(&pdev->dev, "can't register transceiver, err: %d\n",
- 			err);
-@@ -303,6 +312,7 @@ err_irq:
- 	gpio_free(pdata->gpio_vbus);
- err_gpio:
- 	platform_set_drvdata(pdev, NULL);
-+	kfree(gpio_vbus->xceiv.otg);
- 	kfree(gpio_vbus);
- 	return err;
- }
-@@ -315,13 +325,14 @@ static int __exit gpio_vbus_remove(struct platform_device *pdev)
+@@ -978,7 +993,7 @@ static int show_fsl_usb2_otg_state(struct device *dev,
+ 	/* State */
+ 	t = scnprintf(next, size,
+ 		      "OTG state: %s\n\n",
+-		      usb_phy_state_string(fsl_otg_dev->otg.state));
++		      usb_phy_state_string(fsl_otg_dev->xceiv.state));
+ 	size -= t;
+ 	next += t;
  
- 	regulator_put(gpio_vbus->vbus_draw);
+@@ -1124,12 +1139,13 @@ static int __devexit fsl_otg_remove(struct platform_device *pdev)
+ {
+ 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
  
 -	otg_set_transceiver(NULL);
 +	usb_set_transceiver(NULL);
+ 	free_irq(fsl_otg_dev->irq, fsl_otg_dev);
  
- 	free_irq(gpio_to_irq(gpio), &pdev->dev);
- 	if (gpio_is_valid(pdata->gpio_pullup))
- 		gpio_free(pdata->gpio_pullup);
- 	gpio_free(gpio);
- 	platform_set_drvdata(pdev, NULL);
-+	kfree(gpio_vbus->xceiv.otg);
- 	kfree(gpio_vbus);
+ 	iounmap((void *)usb_dr_regs);
  
+ 	fsl_otg_uninit_timers();
++	kfree(fsl_otg_dev->xceiv.otg);
+ 	kfree(fsl_otg_dev);
+ 
+ 	device_remove_file(&pdev->dev, &dev_attr_fsl_usb2_otg_state);
+diff --git a/drivers/usb/otg/fsl_otg.h b/drivers/usb/otg/fsl_otg.h
+index 33f3997..a474ae2 100644
+--- a/drivers/usb/otg/fsl_otg.h
++++ b/drivers/usb/otg/fsl_otg.h
+@@ -369,7 +369,7 @@ inline struct fsl_otg_timer *otg_timer_initializer
+ }
+ 
+ struct fsl_otg {
+-	struct usb_phy otg;
++	struct usb_phy xceiv;
+ 	struct otg_fsm fsm;
+ 	struct usb_dr_mmap *dr_mem_map;
+ 	struct delayed_work otg_event;
+diff --git a/drivers/usb/otg/otg_fsm.c b/drivers/usb/otg/otg_fsm.c
+index b2feb07..7d94871 100644
+--- a/drivers/usb/otg/otg_fsm.c
++++ b/drivers/usb/otg/otg_fsm.c
+@@ -117,10 +117,10 @@ void otg_leave_state(struct otg_fsm *fsm, enum usb_phy_state old_state)
+ int otg_set_state(struct otg_fsm *fsm, enum usb_phy_state new_state)
+ {
+ 	state_changed = 1;
+-	if (fsm->transceiver->state == new_state)
++	if (fsm->otg->xceiv->state == new_state)
+ 		return 0;
+ 	VDBG("Set state: %s\n", usb_phy_state_string(new_state));
+-	otg_leave_state(fsm, fsm->transceiver->state);
++	otg_leave_state(fsm, fsm->otg->xceiv->state);
+ 	switch (new_state) {
+ 	case USB_PHY_STATE_B_IDLE:
+ 		otg_drv_vbus(fsm, 0);
+@@ -155,8 +155,8 @@ int otg_set_state(struct otg_fsm *fsm, enum usb_phy_state new_state)
+ 		otg_loc_conn(fsm, 0);
+ 		otg_loc_sof(fsm, 1);
+ 		otg_set_protocol(fsm, PROTO_HOST);
+-		usb_bus_start_enum(fsm->transceiver->host,
+-				fsm->transceiver->host->otg_port);
++		usb_bus_start_enum(fsm->otg->host,
++				fsm->otg->host->otg_port);
+ 		break;
+ 	case USB_PHY_STATE_A_IDLE:
+ 		otg_drv_vbus(fsm, 0);
+@@ -221,7 +221,7 @@ int otg_set_state(struct otg_fsm *fsm, enum usb_phy_state new_state)
+ 		break;
+ 	}
+ 
+-	fsm->transceiver->state = new_state;
++	fsm->otg->xceiv->state = new_state;
  	return 0;
+ }
+ 
+@@ -233,7 +233,7 @@ int otg_statemachine(struct otg_fsm *fsm)
+ 
+ 	spin_lock_irqsave(&fsm->lock, flags);
+ 
+-	state = fsm->transceiver->state;
++	state = fsm->otg->xceiv->state;
+ 	state_changed = 0;
+ 	/* State machine state change judgement */
+ 
+@@ -248,7 +248,7 @@ int otg_statemachine(struct otg_fsm *fsm)
+ 	case USB_PHY_STATE_B_IDLE:
+ 		if (!fsm->id)
+ 			otg_set_state(fsm, USB_PHY_STATE_A_IDLE);
+-		else if (fsm->b_sess_vld && fsm->transceiver->gadget)
++		else if (fsm->b_sess_vld && fsm->otg->gadget)
+ 			otg_set_state(fsm, USB_PHY_STATE_B_PERIPHERAL);
+ 		else if (fsm->b_bus_req && fsm->b_sess_end && fsm->b_se0_srp)
+ 			otg_set_state(fsm, USB_PHY_STATE_B_SRP_INIT);
+@@ -260,7 +260,7 @@ int otg_statemachine(struct otg_fsm *fsm)
+ 	case USB_PHY_STATE_B_PERIPHERAL:
+ 		if (!fsm->id || !fsm->b_sess_vld)
+ 			otg_set_state(fsm, USB_PHY_STATE_B_IDLE);
+-		else if (fsm->b_bus_req && fsm->transceiver->
++		else if (fsm->b_bus_req && fsm->otg->
+ 				gadget->b_hnp_enable && fsm->a_bus_suspend)
+ 			otg_set_state(fsm, USB_PHY_STATE_B_WAIT_ACON);
+ 		break;
+@@ -302,7 +302,7 @@ int otg_statemachine(struct otg_fsm *fsm)
+ 		break;
+ 	case USB_PHY_STATE_A_HOST:
+ 		if ((!fsm->a_bus_req || fsm->a_suspend_req) &&
+-				fsm->transceiver->host->b_hnp_enable)
++				fsm->otg->host->b_hnp_enable)
+ 			otg_set_state(fsm, USB_PHY_STATE_A_SUSPEND);
+ 		else if (fsm->id || !fsm->b_conn || fsm->a_bus_drop)
+ 			otg_set_state(fsm, USB_PHY_STATE_A_WAIT_BCON);
+@@ -310,9 +310,9 @@ int otg_statemachine(struct otg_fsm *fsm)
+ 			otg_set_state(fsm, USB_PHY_STATE_A_VBUS_ERR);
+ 		break;
+ 	case USB_PHY_STATE_A_SUSPEND:
+-		if (!fsm->b_conn && fsm->transceiver->host->b_hnp_enable)
++		if (!fsm->b_conn && fsm->otg->host->b_hnp_enable)
+ 			otg_set_state(fsm, USB_PHY_STATE_A_PERIPHERAL);
+-		else if (!fsm->b_conn && !fsm->transceiver->host->b_hnp_enable)
++		else if (!fsm->b_conn && !fsm->otg->host->b_hnp_enable)
+ 			otg_set_state(fsm, USB_PHY_STATE_A_WAIT_BCON);
+ 		else if (fsm->a_bus_req || fsm->b_bus_resume)
+ 			otg_set_state(fsm, USB_PHY_STATE_A_HOST);
+diff --git a/drivers/usb/otg/otg_fsm.h b/drivers/usb/otg/otg_fsm.h
+index 5e589ae..c30a2e1 100644
+--- a/drivers/usb/otg/otg_fsm.h
++++ b/drivers/usb/otg/otg_fsm.h
+@@ -82,7 +82,7 @@ struct otg_fsm {
+ 	int loc_sof;
+ 
+ 	struct otg_fsm_ops *ops;
+-	struct usb_phy *transceiver;
++	struct usb_otg *otg;
+ 
+ 	/* Current usb protocol used: 0:undefine; 1:host; 2:client */
+ 	int protocol;
 -- 
 1.7.4.1
 
