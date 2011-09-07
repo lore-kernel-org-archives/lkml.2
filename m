@@ -1,183 +1,603 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab1IGVvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:51:09 -0400
-Received: from fieldses.org ([174.143.236.118]:44902 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757170Ab1IGVvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:51:07 -0400
-Date: Wed, 7 Sep 2011 17:50:22 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 17/26] richacl: Permission check algorithm
-Message-ID: <20110907215022.GI8074@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1315243548-18664-18-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1757297Ab1IGVxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:53:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42015 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757170Ab1IGVxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 17:53:36 -0400
+Date: Thu, 8 Sep 2011 01:53:29 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        containers@lists.osdl.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Nathan Lynch <ntl@pobox.com>,
+        kernel-hardening@lists.openwall.com,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-ID: <20110907215329.GB28162@sun>
+References: <20110902163711.GA3124@albatros>
+ <20110905185358.GA2103@albatros>
+ <20110905192009.GJ761@sun>
+ <20110905194908.GA2690@albatros>
+ <20110905203627.GL761@sun>
+ <20110906101518.GA4799@albatros>
+ <20110906165144.GJ18425@mtj.dyndns.org>
+ <20110906172952.GA28055@albatros>
+ <20110906173341.GM18425@mtj.dyndns.org>
+ <20110907112301.GA12157@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315243548-18664-18-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110907112301.GA12157@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 05, 2011 at 10:55:39PM +0530, Aneesh Kumar K.V wrote:
-> From: Andreas Gruenbacher <agruen@kernel.org>
+On Wed, Sep 07, 2011 at 03:23:01PM +0400, Vasiliy Kulikov wrote:
+> Hi,
 > 
-> As in the standard POSIX file permission model, each process is the
-> owner, group, or other file class.  A process is
+> On Wed, Sep 07, 2011 at 02:33 +0900, Tejun Heo wrote:
+> > On Tue, Sep 06, 2011 at 09:29:52PM +0400, Vasiliy Kulikov wrote:
+> > > I agree with you.  I don't think that showing system-global debug
+> > > information to all users by default is the right thing.  But some people
+> > > doesn't agree with this point of view:
+> > > 
+> > > http://thread.gmane.org/gmane.linux.kernel/1108378
+> > 
+> > Yeap, I know there are two sides of the discussion but if one takes
+> > the position that hiding such global debug info is more harmful, it's
+> > only crazier to hide such information from each individual users of
+> > the said global facility.  So, let's just forget about information
+> > leak via freeing or not freeing here.  It's the wrong battle field.
 > 
->   - in the owner file class if it owns the file,
->   - in the group file class if it is in the file's owning group or it
->     matches any of the user or group entries, and
->   - in the other file class otherwise.
+> Andrew, are you OK with closing the hole with pid_no_revalidate()
+> and 0600 /proc/slabinfo?  If so, I feel I have to start this discussion
+> with people participating in the discussion above: Theodore, Dan, Linus, etc.
 > 
-> Each file class is associated with a file mask.
-> 
-> A richacl grants a requested access if the NFSv4 acl in the richacl
-> grants the requested permissions (according to the NFSv4 permission
-> check algorithm) and the file mask that applies to the process includes
-> the requested permissions.
+> Thanks,
 
-I assume that by default any ui normally recalculates an upper-bound
-mask automatically when you add an ace, as the posix setfacl does, so
-the user doesn't have to think about masks too much?
+Since kernel.org is still down (and Andrew, I can't download -mm bundle
+as well for this very reason), here is an updated version for review.
+I've updated map_files_d_revalidate to include ptrace hook, and switched
+to flex_array. So while there is uncertainty in would we use pid_no_revalidate
+or we wouldn't (seems calling ptrace hook there instead would help) i remain
+the get/setattr untouched for a while. Also I hope an updated changelog
+would make it more clear why we need this feature.
 
-Patch looks right.
+> By Andrew Morton
+>
+> But do we *really* need to do it in two passes?  Avoiding the temporary
+> storage would involve doing more work under mmap_sem, and a put_filp()
+> under mmap_sem might be problematic.
 
---b.
+I fear we still need to use two passes in proc_map_files_readdir, I found no way
+to escape lockdep complains when doing all work in one pass with mmap_sem taken.
+The /maps does the same thing -- ie it fills maps file with mmap_sem taken to produce
+robust data. And I'm not really sure what you mean with problematic put_filp?
 
-> 
-> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  fs/richacl_base.c       |   99 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/richacl.h |    2 +
->  2 files changed, 101 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/richacl_base.c b/fs/richacl_base.c
-> index 60a65d7..1f885ad 100644
-> --- a/fs/richacl_base.c
-> +++ b/fs/richacl_base.c
-> @@ -393,3 +393,102 @@ richacl_chmod(struct richacl *acl, mode_t mode)
->  	return clone;
->  }
->  EXPORT_SYMBOL_GPL(richacl_chmod);
-> +
-> +/**
-> + * richacl_permission  -  richacl permission check algorithm
-> + * @inode:	inode to check
-> + * @acl:	rich acl of the inode
-> + * @mask:	requested access (ACE4_* bitmask)
-> + *
-> + * Checks if the current process is granted @mask flags in @acl.
-> + */
-> +int
-> +richacl_permission(struct inode *inode, const struct richacl *acl,
-> +		   unsigned int mask)
-> +{
-> +	const struct richace *ace;
-> +	unsigned int requested = mask, denied = 0;
-> +	int in_owning_group = in_group_p(inode->i_gid);
-> +	int in_owner_or_group_class = in_owning_group;
-> +
-> +	/*
-> +	 * We don't need to know which class the process is in when the acl is
-> +	 * not masked.
-> +	 */
-> +	if (!(acl->a_flags & ACL4_MASKED))
-> +		in_owner_or_group_class = 1;
-> +
-> +	/*
-> +	 * A process is
-> +	 *   - in the owner file class if it owns the file,
-> +	 *   - in the group file class if it is in the file's owning group or
-> +	 *     it matches any of the user or group entries, and
-> +	 *   - in the other file class otherwise.
-> +	 */
-> +
-> +	/*
-> +	 * Check if the acl grants the requested access and determine which
-> +	 * file class the process is in.
-> +	 */
-> +	richacl_for_each_entry(ace, acl) {
-> +		unsigned int ace_mask = ace->e_mask;
-> +
-> +		if (richace_is_inherit_only(ace))
-> +			continue;
-> +		if (richace_is_owner(ace)) {
-> +			if (current_fsuid() != inode->i_uid)
-> +				continue;
-> +			goto is_owner;
-> +		} else if (richace_is_group(ace)) {
-> +			if (!in_owning_group)
-> +				continue;
-> +		} else if (richace_is_unix_id(ace)) {
-> +			if (ace->e_flags & ACE4_IDENTIFIER_GROUP) {
-> +				if (!in_group_p(ace->u.e_id))
-> +					continue;
-> +			} else {
-> +				if (current_fsuid() != ace->u.e_id)
-> +					continue;
-> +			}
-> +		} else
-> +			goto is_everyone;
-> +
-> +is_owner:
-> +		/* The process is in the owner or group file class. */
-> +		in_owner_or_group_class = 1;
-> +
-> +is_everyone:
-> +		/* Check which mask flags the ACE allows or denies. */
-> +		if (richace_is_deny(ace))
-> +			denied |= ace_mask & mask;
-> +		mask &= ~ace_mask;
-> +
-> +		/*
-> +		 * Keep going until we know which file class
-> +		 * the process is in.
-> +		 */
-> +		if (!mask && in_owner_or_group_class)
-> +			break;
-> +	}
-> +	denied |= mask;
-> +
-> +	if (acl->a_flags & ACL4_MASKED) {
-> +		unsigned int file_mask;
-> +
-> +		/*
-> +		 * The file class a process is in determines which file mask
-> +		 * applies.  Check if that file mask also grants the requested
-> +		 * access.
-> +		 */
-> +		if (current_fsuid() == inode->i_uid)
-> +			file_mask = acl->a_owner_mask;
-> +		else if (in_owner_or_group_class)
-> +			file_mask = acl->a_group_mask;
-> +		else
-> +			file_mask = acl->a_other_mask;
-> +		denied |= requested & ~file_mask;
-> +	}
-> +
-> +	return denied ? -EACCES : 0;
-> +}
-> +EXPORT_SYMBOL_GPL(richacl_permission);
-> diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-> index 6dd8eb2..f46e797 100644
-> --- a/include/linux/richacl.h
-> +++ b/include/linux/richacl.h
-> @@ -289,5 +289,7 @@ extern unsigned int richacl_mode_to_mask(mode_t);
->  extern unsigned int richacl_want_to_mask(int);
->  extern void richacl_compute_max_masks(struct richacl *);
->  extern struct richacl *richacl_chmod(struct richacl *, mode_t);
-> +extern int richacl_permission(struct inode *, const struct richacl *,
-> +			      unsigned int);
->  
->  #endif /* __RICHACL_H */
-> -- 
-> 1.7.4.1
-> 
+	Cyrill
+---
+fs, proc: Introduce the /proc/<pid>/map_files/ directory v10
+
+From: Pavel Emelyanov <xemul@parallels.com>
+
+This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
+one for each mapping with file, the name of a symlink is "vma->vm_start-vma->vm_end",
+the target is the file. Opening a symlink results in a file that point exactly
+to the same inode as them vma's one.
+
+For example the ls -l of some arbitrary /proc/<pid>/map_files/
+
+ | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
+ | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
+ | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
+ | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
+ | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
+
+This *helps* checkpointing process in three ways:
+
+1. When dumping a task mappings we do know exact file that is mapped by particular
+   region. We do this by opening /proc/$pid/map_files/address symlink the way we do
+   with file descriptors.
+
+2. This also helps in determining which anonymous shared mappings are shared with
+   each other by comparing the inodes of them.
+
+3. When restoring a set of process in case two of them has a mapping shared, we map
+   the memory by the 1st one and then open its /proc/$pid/map_files/address file and
+   map it by the 2nd task.
+
+Using /proc/$pid/maps for this is quite inconvenient since it brings repeatable
+re-reading and reparsing for this text file which slows down restore procesure
+significantly. Also as being pointed in (3) it is a way easier to use top level
+shared mapping in children as /proc/$pid/map_files/address when needed.
+
+v2: (spotted by Tejun Heo)
+ - /proc/<pid>/mfd changed to /proc/<pid>/map_files
+ - find_vma helper is used instead of linear search
+ - routines are re-grouped
+ - d_revalidate is set now
+
+v3:
+ - d_revalidate reworked, now it should drops no longer valid dentries (Tejun Heo)
+ - ptrace_may_access added into proc_map_files_lookup (Vasiliy Kulikov)
+ - because of filldir (which eventually might need to lock mmap_sem)
+   the proc_map_files_readdir() was reworked to call proc_fill_cache()
+   with unlocked mmap_sem
+
+v4: (feedback by Tejun Heo and Vasiliy Kulikov)
+ - instead of saving data in proc_inode we rather make a dentry name
+   to keep both vm_start and vm_end accordingly
+ - d_revalidate now honor task credentials
+
+v5: (feedback by Kirill A. Shutemov)
+ - don't forget to release mmap_sem on error path
+
+v6:
+ - sizeof get used in map_files_info which shrink member a bit on
+   x86-32 (by Kirill A. Shutemov)
+ - map_name_to_addr returns -EINVAL instead of -1
+   which is more appropriate (by Tejun Heo)
+
+v7:
+ - add [get/set]attr handlers for
+   proc_map_files_inode_operations (by Vasiliy Kulikov)
+
+v8:
+ - Kirill A. Shutemov spotted a parasite semicolon
+   which ruined the ptrace_check call, fixed.
+
+v9: (feedback by Andrew Morton)
+ - find_exact_vma moved into include/linux/mm.h as an inline helper
+ - proc_map_files_setattr uses either kmalloc or vmalloc depending
+   on how many ojects are to be allocated
+ - no more map_name_to_addr but dname_to_vma_addr introduced instead
+   and it uses sscanf because in one case the find_exact_vma() is used
+   only to confirm existence of vma area the boolean flag is used
+ - fancy justification dropped
+ - still the proc_map_files_get/setattr leaved untouched
+   until additional fd/ patches applied first.
+
+v10: (feedback by Andrew Morton)
+ - flex_arrays are used instead of kmalloc/vmalloc calls
+ - map_files_d_revalidate use ptrace_may_access for
+   security reason (by Vasiliy Kulikov)
+
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Vasiliy Kulikov <segoon@openwall.com>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ fs/proc/base.c     |  366 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mm.h |   12 +
+ 2 files changed, 378 insertions(+)
+
+Index: linux-2.6.git/fs/proc/base.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/base.c
++++ linux-2.6.git/fs/proc/base.c
+@@ -83,6 +83,7 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
++#include <linux/flex_array.h>
+ #ifdef CONFIG_HARDWALL
+ #include <asm/hardwall.h>
+ #endif
+@@ -2171,6 +2172,370 @@ static const struct file_operations proc
+ };
+ 
+ /*
++ * dname_to_vma_addr - maps a dentry name into two unsigned longs
++ * which represent vma start and end addresses.
++ */
++static int dname_to_vma_addr(struct dentry *dentry,
++			     unsigned long *start, unsigned long *end)
++{
++	if (sscanf(dentry->d_name.name, "%lx-%lx", start, end) != 2)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int map_files_d_revalidate(struct dentry *dentry, struct nameidata *nd)
++{
++	unsigned long vm_start, vm_end;
++	bool exact_vma_exists = false;
++	struct task_struct *task;
++	const struct cred *cred;
++	struct mm_struct *mm;
++	struct inode *inode;
++
++	if (nd && nd->flags & LOOKUP_RCU)
++		return -ECHILD;
++
++	inode = dentry->d_inode;
++	task = get_proc_task(inode);
++	if (!task)
++		goto out;
++
++	if (!ptrace_may_access(task, PTRACE_MODE_READ))
++		goto out;
++
++	mm = get_task_mm(task);
++	put_task_struct(task);
++	if (!mm)
++		goto out;
++
++	if (!dname_to_vma_addr(dentry, &vm_start, &vm_end)) {
++		down_read(&mm->mmap_sem);
++		exact_vma_exists = !!find_exact_vma(mm, vm_start, vm_end);
++		up_read(&mm->mmap_sem);
++	}
++
++	mmput(mm);
++
++	if (exact_vma_exists) {
++		if (task_dumpable(task)) {
++			rcu_read_lock();
++			cred = __task_cred(task);
++			inode->i_uid = cred->euid;
++			inode->i_gid = cred->egid;
++			rcu_read_unlock();
++		} else {
++			inode->i_uid = 0;
++			inode->i_gid = 0;
++		}
++		security_task_to_inode(task, inode);
++		return 1;
++	}
++out:
++	d_drop(dentry);
++	return 0;
++}
++
++static const struct dentry_operations tid_map_files_dentry_operations = {
++	.d_revalidate	= map_files_d_revalidate,
++	.d_delete	= pid_delete_dentry,
++};
++
++static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
++{
++	unsigned long vm_start, vm_end;
++	struct vm_area_struct *vma;
++	struct task_struct *task;
++	struct mm_struct *mm;
++	int rc = -ENOENT;
++
++	task = get_proc_task(dentry->d_inode);
++	if (!task)
++		goto out;
++
++	mm = get_task_mm(task);
++	put_task_struct(task);
++	if (!mm)
++		goto out;
++
++	rc = dname_to_vma_addr(dentry, &vm_start, &vm_end);
++	if (rc)
++		goto out_mmput;
++
++	down_read(&mm->mmap_sem);
++	vma = find_exact_vma(mm, vm_start, vm_end);
++	if (vma && vma->vm_file) {
++		*path = vma->vm_file->f_path;
++		path_get(path);
++		rc = 0;
++	}
++	up_read(&mm->mmap_sem);
++
++out_mmput:
++	mmput(mm);
++out:
++	return rc;
++}
++
++struct map_files_info {
++	struct file	*file;
++	unsigned long	len;
++	unsigned char	name[4*sizeof(long)+2]; /* max: %lx-%lx\0 */
++};
++
++static struct dentry *
++proc_map_files_instantiate(struct inode *dir, struct dentry *dentry,
++			   struct task_struct *task, const void *ptr)
++{
++	const struct file *file = ptr;
++	struct proc_inode *ei;
++	struct inode *inode;
++
++	if (!file)
++		return ERR_PTR(-ENOENT);
++
++	inode = proc_pid_make_inode(dir->i_sb, task);
++	if (!inode)
++		return ERR_PTR(-ENOENT);
++
++	ei = PROC_I(inode);
++	ei->op.proc_get_link = proc_map_files_get_link;
++
++	inode->i_op = &proc_pid_link_inode_operations;
++	inode->i_size = 64;
++	inode->i_mode = S_IFLNK;
++
++	if (file->f_mode & FMODE_READ)
++		inode->i_mode |= S_IRUSR | S_IXUSR;
++	if (file->f_mode & FMODE_WRITE)
++		inode->i_mode |= S_IWUSR | S_IXUSR;
++
++	d_set_d_op(dentry, &tid_map_files_dentry_operations);
++	d_add(dentry, inode);
++
++	return NULL;
++}
++
++static struct dentry *proc_map_files_lookup(struct inode *dir,
++		struct dentry *dentry, struct nameidata *nd)
++{
++	unsigned long vm_start, vm_end;
++	struct task_struct *task;
++	struct vm_area_struct *vma;
++	struct mm_struct *mm;
++	struct dentry *result;
++
++	result = ERR_PTR(-ENOENT);
++	task = get_proc_task(dir);
++	if (!task)
++		goto out_no_task;
++
++	result = ERR_PTR(-EPERM);
++	if (!ptrace_may_access(task, PTRACE_MODE_READ))
++		goto out_no_mm;
++
++	result = ERR_PTR(-ENOENT);
++	if (dname_to_vma_addr(dentry, &vm_start, &vm_end))
++		goto out_no_mm;
++
++	mm = get_task_mm(task);
++	if (!mm)
++		goto out_no_mm;
++
++	down_read(&mm->mmap_sem);
++	vma = find_exact_vma(mm, vm_start, vm_end);
++	if (!vma)
++		goto out_no_vma;
++
++	result = proc_map_files_instantiate(dir, dentry, task, vma->vm_file);
++
++out_no_vma:
++	up_read(&mm->mmap_sem);
++	mmput(mm);
++out_no_mm:
++	put_task_struct(task);
++out_no_task:
++	return result;
++}
++
++static int proc_map_files_setattr(struct dentry *dentry, struct iattr *attr)
++{
++	struct inode *inode = dentry->d_inode;
++	struct task_struct *task;
++	int ret = -EACCES;
++
++	task = get_proc_task(inode);
++	if (!task)
++		return -ESRCH;
++
++	if (!lock_trace(task)) {
++		ret = proc_setattr(dentry, attr);
++		unlock_trace(task);
++	}
++
++	put_task_struct(task);
++	return ret;
++}
++
++static int proc_map_files_getattr(struct vfsmount *mnt, struct dentry *dentry,
++				  struct kstat *stat)
++{
++	struct inode *inode = dentry->d_inode;
++	struct task_struct *task;
++	int ret = -EACCES;
++
++	task = get_proc_task(inode);
++	if (!task)
++		return -ESRCH;
++
++	if (!lock_trace(task)) {
++		generic_fillattr(inode, stat);
++		unlock_trace(task);
++		ret = 0;
++	}
++
++	put_task_struct(task);
++	return ret;
++}
++
++static const struct inode_operations proc_map_files_inode_operations = {
++	.lookup		= proc_map_files_lookup,
++	.setattr	= proc_map_files_setattr,
++	.getattr	= proc_map_files_getattr,
++};
++
++static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
++{
++	struct dentry *dentry = filp->f_path.dentry;
++	struct inode *inode = dentry->d_inode;
++	struct vm_area_struct *vma;
++	struct task_struct *task;
++	struct mm_struct *mm;
++	ino_t ino;
++	int ret;
++
++	ret = -ENOENT;
++	task = get_proc_task(inode);
++	if (!task)
++		goto out_no_task;
++
++	ret = -EPERM;
++	if (!ptrace_may_access(task, PTRACE_MODE_READ))
++		goto out;
++
++	ret = 0;
++	switch (filp->f_pos) {
++	case 0:
++		ino = inode->i_ino;
++		if (filldir(dirent, ".", 1, 0, ino, DT_DIR) < 0)
++			goto out;
++		filp->f_pos++;
++	case 1:
++		ino = parent_ino(dentry);
++		if (filldir(dirent, "..", 2, 1, ino, DT_DIR) < 0)
++			goto out;
++		filp->f_pos++;
++	default:
++	{
++		unsigned long nr_files, used, pos, i;
++		struct flex_array *fa = NULL;
++		struct map_files_info info;
++		struct map_files_info *p;
++
++		mm = get_task_mm(task);
++		if (!mm)
++			goto out;
++		down_read(&mm->mmap_sem);
++
++		nr_files = 0;
++		used = 0;
++
++		/*
++		 * We need two passes here:
++		 *
++		 *  1) Collect vmas of mapped files with mmap_sem taken
++		 *  2) Release mmap_sem and instantiate entries
++		 *
++		 * otherwise we get lockdep complained, since filldir()
++		 * routine might require mmap_sem taken in might_fault().
++		 */
++
++		for (vma = mm->mmap; vma; vma = vma->vm_next) {
++			if (vma->vm_file)
++				nr_files++;
++		}
++
++		if (nr_files) {
++			ret = -ENOMEM;
++			fa = flex_array_alloc(sizeof(info), nr_files, GFP_KERNEL);
++			if (!fa)
++				goto err;
++			if (flex_array_prealloc(fa, 0, nr_files, GFP_KERNEL))
++				goto err;
++			for (vma = mm->mmap, pos = 2; vma; vma = vma->vm_next) {
++				if (!vma->vm_file)
++					continue;
++				if (++pos <= filp->f_pos)
++					continue;
++
++				get_file(vma->vm_file);
++				info.file = vma->vm_file;
++				info.len = snprintf(info.name, sizeof(info.name),
++						    "%lx-%lx", vma->vm_start,
++						    vma->vm_end);
++				if (flex_array_put(fa, used, &info, GFP_KERNEL)) {
++					/*
++					 * This must never happen on preallocated array,
++					 * but just to be sure.
++					 */
++					WARN_ON_ONCE(1);
++					put_filp(vma->vm_file);
++					goto err;
++				}
++				used++;
++			}
++			ret = 0;
++		}
++err:
++		up_read(&mm->mmap_sem);
++
++		for (i = 0; i < used && !ret; i++) {
++			p = flex_array_get(fa, i);
++			ret = proc_fill_cache(filp, dirent, filldir,
++					      p->name, p->len,
++					      proc_map_files_instantiate,
++					      task, p->file);
++			if (ret)
++				break;
++			filp->f_pos++;
++			put_filp(p->file);
++		}
++
++		for (; i < used; i++) {
++			p = flex_array_get(fa, i);
++			put_filp(p->file);
++		}
++
++		if (fa)
++			flex_array_free(fa);
++
++		mmput(mm);
++	}
++	}
++
++out:
++	put_task_struct(task);
++out_no_task:
++	return ret;
++}
++
++static const struct file_operations proc_map_files_operations = {
++	.read		= generic_read_dir,
++	.readdir	= proc_map_files_readdir,
++	.llseek		= default_llseek,
++};
++
++/*
+  * /proc/pid/fd needs a special permission handler so that a process can still
+  * access /proc/self/fd after it has executed a setuid().
+  */
+@@ -2785,6 +3150,7 @@ static const struct inode_operations pro
+ static const struct pid_entry tgid_base_stuff[] = {
+ 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
+ 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
++	DIR("map_files",  S_IRUSR|S_IXUSR, proc_map_files_inode_operations, proc_map_files_operations),
+ 	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+ 	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
+ #ifdef CONFIG_NET
+Index: linux-2.6.git/include/linux/mm.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/mm.h
++++ linux-2.6.git/include/linux/mm.h
+@@ -1491,6 +1491,18 @@ static inline unsigned long vma_pages(st
+ 	return (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ }
+ 
++/* Look up the first VMA which exactly match the interval vm_start ... vm_end */
++static inline struct vm_area_struct *
++find_exact_vma(struct mm_struct *mm, unsigned long vm_start, unsigned long vm_end)
++{
++	struct vm_area_struct *vma = find_vma(mm, vm_start);
++
++	if (vma && (vma->vm_start != vm_start || vma->vm_end != vm_end))
++		vma = NULL;
++
++	return vma;
++}
++
+ #ifdef CONFIG_MMU
+ pgprot_t vm_get_page_prot(unsigned long vm_flags);
+ #else
