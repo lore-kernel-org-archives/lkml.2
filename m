@@ -1,148 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1IGNfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 09:35:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56751 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab1IGNfI (ORCPT
+	id S1754976Ab1IGOCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 10:02:10 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59012 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab1IGOCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 09:35:08 -0400
-From: John Ogness <john.ogness@linutronix.de>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Dave Martin <dave.martin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: alignment: setup alignment handler earlier
-Date: Wed, 07 Sep 2011 15:35:04 +0200
-Message-ID: <87ehzstr07.fsf@vostro.fn.ogness.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 7 Sep 2011 10:02:07 -0400
+Date: Wed, 7 Sep 2011 15:01:30 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frank Rowand <frank.rowand@am.sony.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@tglx.de>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+Message-ID: <20110907140130.GT6619@n2100.arm.linux.org.uk>
+References: <1313232790.25267.7.camel@twins> <4E559039.8060209@am.sony.com> <20110826235507.GJ2342@linux.vnet.ibm.com> <4E66DCAB.8090801@am.sony.com> <alpine.LFD.2.02.1109071115410.2723@ionos> <20110907104633.GR6619@n2100.arm.linux.org.uk> <20110907104747.GA29282@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1109071254010.2723@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1109071254010.2723@ionos>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 6f3f381800367127dc6430d9b9fa9bd6fc6d8ed0 Mon Sep 17 00:00:00 2001
-From: John Ogness <john.ogness@linutronix.de>
+On Wed, Sep 07, 2011 at 12:57:44PM +0200, Thomas Gleixner wrote:
+> The problem is that if you enable interrupts on the CPU _BEFORE_ it is
+> set online AND active, then you can end up waking up kernel threads
+> which are bound to that CPU and the scheduler will happily schedule
+> them on an online CPU. That makes them lose the cpu affinity to the
+> CPU as well and hell breaks lose.
 
-The alignment exception handler is setup fairly late in
-the boot process (fs_initcall). However, with newer gcc
-versions and the compiler option -fconserve-stack, code
-accessing unaligned data is generated in functions that
-are called earlier, for example pcpu_dump_alloc_info().
-This results in unhandled alignment exceptions during
-boot. By setting up the exception handler sooner, we
-reduce the window where a compiler may generate code
-accessing unaligned data.
+How can that happen?
 
-Here is a minimal example that shows the issue seen with
-pcpu_dump_alloc_info():
+1. The only interrupts we're likely to receive are the local timer
+   interrupts - we have not routed any other interrupts to this CPU.
 
-=========== begin align_test.c ==========
-extern void exfunc(char *str);
-void somefunc(void)
-{
-        char mystr[] = "--------";  /* 9 bytes */
-        exfunc(mystr);
-}
-============ end align_test.c ===========
+2. We will not schedule on this CPU except at explicit scheduling
+   points (such as contended mutexes or explicit calls to schedule)
+   as we have a call to preempt_disable().
 
-Using the cross toolchain:
-arm-none-linux-gnueabi-gcc (Sourcery G++ Lite 2011.03-41) 4.5.2
+> Frank has observed this with softirq threads, but the same thing is
+> true for any other CPU bound thread like the worker stuff.
 
-$ arm-none-linux-gnueabi-gcc \
-     -march=armv6 \
-     -mtune=arm1136j-s \
-     -marm \
-     -Os \
-     -fconserve-stack \
-     -c align_test.c
+So who is scheduling a workqueue from the local timer?
 
-The object dump of align_test.o shows:
+> So moving the online, active thing BEFORE enabling interrupt is the
+> only sensible solution.
 
-00000000 <somefunc>:
-   0:   e92d401f        push    {r0, r1, r2, r3, r4, lr}
-   4:   e28d0007        add     r0, sp, #7
-   8:   e59f3020        ldr     r3, [pc, #32]   ; 30 <somefunc+0x30>
-   c:   e5932000        ldr     r2, [r3]
-  10:   e58d2007        str     r2, [sp, #7]
-  ...
-  ...
-
-At address 0x10 there is unaligned access.
-
-Signed-off-by: John Ogness <john.ogness@linutronix.de>
----
-Patch against linux-next-20110831.
- arch/arm/include/asm/setup.h |    1 +
- arch/arm/kernel/setup.c      |    2 ++
- arch/arm/mm/alignment.c      |   10 +++++++---
- 3 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index a3ca303..b3e18f8 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -232,6 +232,7 @@ extern struct meminfo meminfo;
- extern int arm_add_memory(phys_addr_t start, unsigned long size);
- extern void early_print(const char *str, ...);
- extern void dump_machine_table(void);
-+extern int __init alignment_init(void);
- 
- #endif  /*  __KERNEL__  */
- 
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 0ca06f7..0f1b2b5 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -950,6 +950,8 @@ void __init setup_arch(char **cmdline_p)
- #endif
- 	early_trap_init();
- 
-+	alignment_init();
-+
- 	if (mdesc->init_early)
- 		mdesc->init_early();
- }
-diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index 715eb1d..5f013cb 100644
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -950,7 +950,7 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
-  * it isn't a sysctl, and it doesn't contain sysctl information.
-  * We now locate it in /proc/cpu/alignment instead.
-  */
--static int __init alignment_init(void)
-+static int __init alignment_sysfs_init(void)
- {
- #ifdef CONFIG_PROC_FS
- 	struct proc_dir_entry *res;
-@@ -960,7 +960,13 @@ static int __init alignment_init(void)
- 	if (!res)
- 		return -ENOMEM;
- #endif
-+	return 0;
-+}
-+
-+fs_initcall(alignment_sysfs_init);
- 
-+int __init alignment_init(void)
-+{
- 	if (cpu_is_v6_unaligned()) {
- 		cr_alignment &= ~CR_A;
- 		cr_no_alignment &= ~CR_A;
-@@ -985,5 +991,3 @@ static int __init alignment_init(void)
- 
- 	return 0;
- }
--
--fs_initcall(alignment_init);
--- 
-1.7.2.5
+Yes, that'll be why even x86 enables interrupts before setting the CPU
+online for the delay calibration.
