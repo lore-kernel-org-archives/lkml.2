@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab1IGXOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 19:14:42 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42737 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757443Ab1IGXO1 (ORCPT
+	id S1757452Ab1IGXRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 19:17:48 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:10780 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab1IGXRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 19:14:27 -0400
-From: Jim Cromie <jim.cromie@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 3/5] perf stat: suppress printing std-dev when its 0
-Date: Wed,  7 Sep 2011 17:14:02 -0600
-Message-Id: <1315437244-3788-4-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1315437244-3788-1-git-send-email-jim.cromie@gmail.com>
-References: <20110902185857.GE17970@ghostprotocols.net>
- <1315437244-3788-1-git-send-email-jim.cromie@gmail.com>
+	Wed, 7 Sep 2011 19:17:47 -0400
+Message-ID: <4E67FB8E.5030009@cavium.com>
+Date: Wed, 07 Sep 2011 16:17:34 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Someone Something <fordhaivat@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Epoll as kernel module?
+References: <CAG11QsKymopV9bcUFBgDCEYdJ3Wwa0gCAov3gkXqYFXL22OxCw@mail.gmail.com>
+In-Reply-To: <CAG11QsKymopV9bcUFBgDCEYdJ3Wwa0gCAov3gkXqYFXL22OxCw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Sep 2011 23:17:46.0705 (UTC) FILETIME=[5A841C10:01CC6DB4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For pretty output only (preserve column for cvs output), dont print
-std-deviation when its 0.00.  Do this based upon value, instead of
-checking for --no-aggr, since the stats could conceivably be computed
-over the runs on each CPU, and theres no reason to preclude that.
+On 09/07/2011 03:45 PM, Someone Something wrote:
+> There are lots of old deployments that don't have epoll, and its a
+> real pain writing code for these systems. Is it a good idea to write a
+> module for epoll since it is basically poll running in the kernel
+> space?I think it would be an excellent idea, and if there is approval
+> in the community, I would be glad to start working on it, I just
+> wanted your opinions before I do that.
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- tools/perf/builtin-stat.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Normally only bug fixes are applied to older kernel versions.  So as I 
+see it, there are two real problems you would have:
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index c6e47d2..660bed1 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -528,7 +528,7 @@ static void print_noise_pct(double total, double avg)
- 
- 	if (csv_output)
- 		fprintf(output, "%s%.2f%%", csv_sep, pct);
--	else
-+	else if (pct)
- 		fprintf(output, "  ( +-%6.2f%% )", pct);
- }
- 
--- 
-1.7.4.4
+1)  Since lack of epoll is unlikely to be viewed as a bug, I doubt any 
+such patch would ever be applied to the kernels hosted on kernel.org.
 
+2) Most of the kernels hosted on kernel.org already have working epoll, 
+so no patch is needed.
+
+But if you want to do something to the kernels you maintain, nobody 
+would object.
+
+David Daney
