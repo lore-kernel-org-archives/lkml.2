@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab1IGSPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 14:15:43 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38436 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab1IGSPl (ORCPT
+	id S1756250Ab1IGSRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 14:17:21 -0400
+Received: from unicorn.mansr.com ([78.86.181.103]:42988 "EHLO
+	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850Ab1IGSRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 14:15:41 -0400
-Date: Wed, 07 Sep 2011 14:14:24 -0400 (EDT)
-Message-Id: <20110907.141424.1469075127690660949.davem@davemloft.net>
-To: tglx@linutronix.de
-Cc: yong.zhang0@gmail.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        joe@perches.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 20/62] sparc: irq: Remove IRQF_DISABLED
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LFD.2.02.1109071954200.2723@ionos>
-References: <alpine.LFD.2.02.1109071933080.2723@ionos>
-	<20110907.135110.2069876782156753239.davem@davemloft.net>
-	<alpine.LFD.2.02.1109071954200.2723@ionos>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Sep 2011 11:14:27 -0700 (PDT)
+	Wed, 7 Sep 2011 14:17:20 -0400
+X-Greylist: delayed 4206 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 14:17:20 EDT
+From: Mans Rullgard <mans.rullgard@linaro.org>
+To: linux-omap@vger.kernel.org
+Cc: linaro-dev@lists.linaro.org, Jarkko Nikula <jhnikula@gmail.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ASoC: omap: add MODULE_ALIAS to mcbsp and pcm drivers
+Date: Wed,  7 Sep 2011 12:07:21 +0100
+Message-Id: <1315393641-21261-1-git-send-email-mans.rullgard@linaro.org>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 7 Sep 2011 19:57:21 +0200 (CEST)
+This adds MODULE_ALIAS directives to the omap-mcbsp-dai and
+omap-pcm-audio drivers so they can be auto-loaded when platform
+devices are scanned.
 
-> On Wed, 7 Sep 2011, David Miller wrote:
->> From: Thomas Gleixner <tglx@linutronix.de>
->> Date: Wed, 7 Sep 2011 19:33:52 +0200 (CEST)
->> 
->> We had big problems when openning thousands of virtual network
->> devices, each with their own unique IRQ, and pointed all at the same
->> cpu, and we'd get IRQ stack overflows.
->> 
->> See commit c58543c869606532c2382f027d6466f4672ea756
->> 
->> So this change to make IRQF_DISABLED a nop has reintroduced this bug.
-> 
-> See commit e58aa3d2d0cc01ad8d6f7f640a0670433f794922
-> 
-> We run ALL interrupt handlers with interrupts disabled for that reason
-> and we even check and yell when an interrupt handler returns with
-> interrupts enabled. That's why IRQF_DISABLED became meaningless.
+Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
+---
+ sound/soc/omap/omap-mcbsp.c |    1 +
+ sound/soc/omap/omap-pcm.c   |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-Awesome.
+diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
+index 07b7723..5ddfadd 100644
+--- a/sound/soc/omap/omap-mcbsp.c
++++ b/sound/soc/omap/omap-mcbsp.c
+@@ -783,3 +783,4 @@ module_exit(snd_omap_mcbsp_exit);
+ MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
+ MODULE_DESCRIPTION("OMAP I2S SoC Interface");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:omap-mcbsp-dai");
+diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
+index e6a6b99..f19ccc1 100644
+--- a/sound/soc/omap/omap-pcm.c
++++ b/sound/soc/omap/omap-pcm.c
+@@ -437,3 +437,4 @@ module_exit(snd_omap_pcm_exit);
+ MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
+ MODULE_DESCRIPTION("OMAP PCM DMA module");
+ MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:omap-pcm-audio");
+-- 
+1.7.6.1
 
-Can I politely ask that a reference to that commit and something like
-your paragraph here explaining things is added to these IRQF_DISABLED
-removal patches?
-
-Thanks!
