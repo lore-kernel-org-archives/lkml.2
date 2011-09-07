@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab1IGMUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 08:20:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49405 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab1IGMUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 08:20:31 -0400
-Date: Wed, 7 Sep 2011 12:57:44 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Frank Rowand <frank.rowand@am.sony.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@tglx.de>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [ANNOUNCE] 3.0.1-rt11
-In-Reply-To: <20110907104747.GA29282@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1109071254010.2723@ionos>
-References: <1313232790.25267.7.camel@twins> <4E559039.8060209@am.sony.com> <20110826235507.GJ2342@linux.vnet.ibm.com> <4E66DCAB.8090801@am.sony.com> <alpine.LFD.2.02.1109071115410.2723@ionos> <20110907104633.GR6619@n2100.arm.linux.org.uk>
- <20110907104747.GA29282@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754584Ab1IGMzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 08:55:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49176 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754273Ab1IGMy4 (ORCPT <rfc822;linux-kernel@[209.132.180.67]>);
+	Wed, 7 Sep 2011 08:54:56 -0400
+Message-ID: <4E67699E.80208@suse.cz>
+Date: Wed, 07 Sep 2011 14:54:54 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Shakthi Kannan <shakthimaan@gmail.com>
+Cc: linux-kernel@[209.132.180.67]
+Subject: Re: CRC calculation in Module.symvers
+References: <CABG-yt0t0sgAvcDDLhjyNFGpY22tL0CtDvXV9+CxYJMf0MdVfA@mail.gmail.com>
+In-Reply-To: <CABG-yt0t0sgAvcDDLhjyNFGpY22tL0CtDvXV9+CxYJMf0MdVfA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011, Russell King - ARM Linux wrote:
+On 7.9.2011 07:58, Shakthi Kannan wrote:
+> 1. How the CRC is computed for an exported symbol present in
+> Module.symvers file, and
 
-> On Wed, Sep 07, 2011 at 11:46:33AM +0100, Russell King - ARM Linux wrote:
-> > I think we had this reported before and I got to the bottom of it - the
-> > platform was doing something it shouldn't.  I don't remember the details,
-> > maybe when all the emails come through I can see the original bug report
-> > I'll remember.
+The symbol type is recursively expanded and a checksum is computed from
+the expanded
+
+
+> 2. Given a kernel .c file, how can I obtain the CRC checksums for a symbol.
 > 
-> Or maybe I won't because it was never posted to an ARM mailing list.
-> So I've no idea what the real bug report is about or what has already
-> been discussed.
+> For linux-3.0.2 (example), I compiled with CONFIG_MODVERSIONS=y, and
+> running 'make' built vmlinux, and generated the Module.symvers file. I
+> believe genksyms is used to create the Module.symvers file?
+> 
+> I had referred the "Kernel Symbols and CONFIG_MODVERSIONS"
+> documentation [1] written by Mark McLoughlin. I tried the following in
+> the top-level kernel sources:
+> 
+>  $ gcc -E -D__GENKSYMS__ -DCONFIG_MODVERSIONS -DEXPORT_SYMTAB
+> crypto/api.c -I/tmp/linux-3.0.2/include
+> -I/tmp/linux-3.0.2/arch/x86/include | ./scripts/genksyms/genksyms
 
-The problem is that if you enable interrupts on the CPU _BEFORE_ it is
-set online AND active, then you can end up waking up kernel threads
-which are bound to that CPU and the scheduler will happily schedule
-them on an online CPU. That makes them lose the cpu affinity to the
-CPU as well and hell breaks lose.
+You need at least -include include/generated/autoconf.h, but the easies
+would be
 
-Frank has observed this with softirq threads, but the same thing is
-true for any other CPU bound thread like the worker stuff.
+$ make V=1 crypto/api.symtypes
 
-So moving the online, active thing BEFORE enabling interrupt is the
-only sensible solution.
+this will generate a file with the symbol expansions. And if you copy
+the commandline without the >/dev/null redirection, you'll see the
+calculated checksums on standard output.
 
-Thanks,
-
-	tglx
-
-
-
+Michal
