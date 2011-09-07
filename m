@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab1IGAWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 20:22:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45222 "EHLO mx2.suse.de"
+	id S1752611Ab1IGAzP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 20:55:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40401 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab1IGAWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 20:22:23 -0400
-Date: Wed, 7 Sep 2011 02:22:22 +0200
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/18] writeback: fix dirtied pages accounting on
- redirty
-Message-ID: <20110907002222.GF31945@quack.suse.cz>
-References: <20110904015305.367445271@intel.com>
- <20110904020916.841463184@intel.com>
- <1315325936.14232.22.camel@twins>
+	id S1751999Ab1IGAzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 20:55:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="45864818"
+Message-ID: <4E66C0EA.6010302@intel.com>
+Date: Wed, 07 Sep 2011 08:55:06 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110820 Iceowl/1.0b2 Icedove/3.1.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315325936.14232.22.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -mm 4/4] irq_work, Use llist in irq_work
+References: <1315290307-25145-1-git-send-email-ying.huang@intel.com> <1315290307-25145-4-git-send-email-ying.huang@intel.com> <20110906105750.GD21602@Krystal>
+In-Reply-To: <20110906105750.GD21602@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06-09-11 18:18:56, Peter Zijlstra wrote:
-> On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> > De-account the accumulative dirty counters on page redirty.
-> > 
-> > Page redirties (very common in ext4) will introduce mismatch between
-> > counters (a) and (b)
-> > 
-> > a) NR_DIRTIED, BDI_DIRTIED, tsk->nr_dirtied
-> > b) NR_WRITTEN, BDI_WRITTEN
-> > 
-> > This will introduce systematic errors in balanced_rate and result in
-> > dirty page position errors (ie. the dirty pages are no longer balanced
-> > around the global/bdi setpoints).
-> > 
+On 09/06/2011 06:57 PM, Mathieu Desnoyers wrote:
+> * Huang Ying (ying.huang@intel.com) wrote:
+>> Use llist in irq_work instead of the lock-less linked list
+>> implementation in irq_work to avoid the code duplication.
+>>
+>> Signed-off-by: Huang Ying <ying.huang@intel.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>  include/linux/irq_work.h |   15 ++++---
+>>  kernel/irq_work.c        |   92 ++++++++++++++++-------------------------------
+>>  2 files changed, 41 insertions(+), 66 deletions(-)
+>>
+> [...]
+>> -static void __irq_work_queue(struct irq_work *entry)
+>> +static void __irq_work_queue(struct irq_work *work)
+>>  {
+>> -	struct irq_work *next;
+>> -
+>>  	preempt_disable();
+>>  
+>> -	do {
+>> -		next = __this_cpu_read(irq_work_list);
+>> -		/* Can assign non-atomic because we keep the flags set. */
+>> -		entry->next = next_flags(next, IRQ_WORK_FLAGS);
+>> -	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
+>> -
+>> +	llist_add(&work->llnode, &__get_cpu_var(irq_work_list));
+>>  	/* The list was empty, raise self-interrupt to start processing. */
+>> -	if (!irq_work_next(entry))
+>> +	if (!work->llnode.next)
 > 
-> So wtf is ext4 doing? Shouldn't a page stay dirty until its written out?
 > 
-> That is, should we really frob around this behaviour or fix ext4 because
-> its on crack?
-  Fengguang, could you please verify your findings with recent kernel? I
-believe ext4 got fixed in this regard some time ago already (and yes, old
-delalloc writeback code in ext4 was terrible).
+> Hrm. What happens if this function gets delayed between llist_add and
+> "if (!work->llnode.next)" ? It seems like the threads performing
+> llist_del_all would be within its right to free the memory pointed to by
+> work in the meantime.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Yes.  This is an issue.  This can be fixed in several way
+
+1) use another flag to indicate whether list is empty
+2) make llist_add return whether list is empty before adding
+3) request irq_work users to free the memory with call_rcu() or after
+synchronize_rcu().
+
+Personally I prefer 1), which will not expose llist implementation
+details too.
+
+Best Regards,
+Huang Ying
