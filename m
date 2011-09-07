@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab1IGTHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 15:07:47 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:13059 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab1IGTHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 15:07:45 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 07 Sep 2011 15:07:42 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Kbuild: allow code re-use across different directories
-In-reply-to: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-Message-id: <alpine.LFD.2.00.1109071437400.20358@xanadu.home>
-References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756758Ab1IGTJW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 15:09:22 -0400
+Received: from claw.goop.org ([74.207.240.146]:53178 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752812Ab1IGTJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 15:09:21 -0400
+Message-ID: <4E67C15B.3000408@goop.org>
+Date: Wed, 07 Sep 2011 12:09:15 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+References: <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <4E67A71A.5070903@goop.org> <4E67ACB6.40107@redhat.com>
+In-Reply-To: <4E67ACB6.40107@redhat.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Aug 2011, Arnaud Lacombe wrote:
+On 09/07/2011 10:41 AM, Avi Kivity wrote:
+>> Hm, I'm interested to know what you're thinking in more detail.  Can you
+>> leave an NMI pending before you block in the same way you can with
+>> "sti;halt" with normal interrupts?
+>
+>
+> Nope.  But you can do
+>
+>    if (regs->rip in critical section)
+>            regs->rip = after_halt;
+>
+> and effectively emulate it.  The critical section is something like
+>
+>     critical_section_start:
+>         if (woken_up)
+>             goto critical_section_end;
+>         hlt
+>     critical_section_end:
 
-> Hi folks,
-> 
-> The attached patch modify Kbuild to allow to directly re-use code in multiple
-> directory without having to go through a copy. Technically, it changes Kbuild to
-> use by default the VPATH feature of GNU make and provides accessors for Makefile
-> to change it indirectly.
-> 
-> Considering:
-> 
-> arch/foo/lib:
-> fancy.c
-> 
-> We want to be able to build it with -DPANTS=32 in the kernel, but the
-> bootloader requires -DPANTS_SIZE=30.
-> 
-> Currently we would do, either:
-> 
-> arch/foo/lib/Makefile
-> LDFLAGS_fancy.o := -DPANTS=32
-> obj-y += fancy.o
-> 
-> and, either:
-> 
-> arch/foo/boot/Makefile:
-> LDFLAGS_fancy.o := -DPANTS=30
-> obj-y += fancy.o
-> $(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
-> 	$(call cmd,shipped)
-> 
-> or
-> 
-> arch/foo/boot/Makefile:
-> LDFLAGS_fancy.o := -DPANTS=30
-> obj-y += fancy.o
-> $(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
-> 	$(call cmd,cc_c_o)
-> 
-> The former implies an extra copy of the source file, the latter expose Kbuild
-> internal function.
-> 
-> With the attached patch, we would do:
-> 
-> arch/foo/boot/Makefile:
-> LDFLAGS_fancy.o := -DPANTS=30
-> obj-y += fancy.o
-> vpath-y += $(srctree)/arch/foo/lib
-> 
-> and let GNU make do the job.
-> 
-> Comments welcome,
+Hm.  It's a pity you have to deliver an actual interrupt to implement
+the kick though.
 
-It doesn't work.  Whatever I do to arch/arm/boot/compressed/Makefile 
-(which admittedly looks a bit hairy and could benefit from a shave) in 
-order to remove the $(call cmd,shipped) used with lib1funcs.S, I always 
-end up with:
+>>
+>> I was thinking you might want to do something with monitor/mwait to
+>> implement the blocking/kick ops. (Handwave)
+>>
+>
+> monitor/mwait are incredibly expensive to virtualize since they
+> require write-protecting a page, IPIs flying everywhere and flushing
+> tlbs, not to mention my lovely hugepages being broken up mercilessly.
 
-make[2]: *** No rule to make target `arch/arm/boot/compressed/lib1funcs.S', needed by `arch/arm/boot/compressed/lib1funcs.o'.  Stop.
+Or what about a futex-like hypercall?
 
-Obviously, restoring the explicit dependency with a $(call cmd,as_o_S) 
-does make it work, but this is rather against the point of your patch.
+    J
 
-Do you have an example of how arch/arm/boot/compressed/Makefile should 
-be changed to benefit from your patch?
-
-
-Nicolas
