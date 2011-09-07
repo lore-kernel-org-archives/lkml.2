@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab1IGRGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:06:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30955 "EHLO mga02.intel.com"
+	id S1755362Ab1IGRGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:06:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14777 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342Ab1IGQ7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754327Ab1IGQ7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Sep 2011 12:59:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="45953929"
+   d="scan'208";a="45953908"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Peter Chen <peter.chen@freescale.com>,
         Lin Tony-B19295 <B19295@freescale.com>,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Li Yang <leoli@freescale.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCHv4 17/19] usb: Convert all users to new usb_phy
-Date: Wed,  7 Sep 2011 10:16:10 +0300
-Message-Id: <1315379772-8830-18-git-send-email-heikki.krogerus@linux.intel.com>
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Grazvydas Ignotas <notasas@gmail.com>
+Subject: [PATCHv4 16/19] power_supply: Convert all users to new usb_phy
+Date: Wed,  7 Sep 2011 10:16:09 +0300
+Message-Id: <1315379772-8830-17-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1315379772-8830-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -28,780 +27,402 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new usb_phy_* functions with transceiver
-operations instead of the old otg functions.
+Use the new usb_phy_* functions instead of the old
+otg_* ones.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Pavankumar Kondeti <pkondeti@codeaurora.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Grazvydas Ignotas <notasas@gmail.com>
 ---
- drivers/usb/gadget/ci13xxx_msm.c  |    4 ++--
- drivers/usb/gadget/ci13xxx_udc.c  |   10 +++++-----
- drivers/usb/gadget/fsl_udc_core.c |    4 ++--
- drivers/usb/gadget/langwell_udc.c |    8 ++++----
- drivers/usb/gadget/omap_udc.c     |   14 ++++++++------
- drivers/usb/gadget/pxa25x_udc.c   |    8 ++++----
- drivers/usb/gadget/pxa27x_udc.c   |    6 +++---
- drivers/usb/host/ehci-fsl.c       |    2 +-
- drivers/usb/host/ehci-msm.c       |   14 +++++++-------
- drivers/usb/host/ehci-mxc.c       |   20 +++++++++++---------
- drivers/usb/host/ehci-tegra.c     |    6 +++---
- drivers/usb/host/ohci-omap.c      |    2 +-
- drivers/usb/musb/am35x.c          |    4 ++--
- drivers/usb/musb/blackfin.c       |    4 ++--
- drivers/usb/musb/da8xx.c          |    4 ++--
- drivers/usb/musb/davinci.c        |    6 +++---
- drivers/usb/musb/musb_core.c      |   10 +++++-----
- drivers/usb/musb/musb_gadget.c    |    2 +-
- drivers/usb/musb/omap2430.c       |   24 ++++++++++++------------
- drivers/usb/musb/tusb6010.c       |    6 +++---
- drivers/usb/musb/ux500.c          |    8 ++++----
- 21 files changed, 85 insertions(+), 81 deletions(-)
+ drivers/power/isp1704_charger.c |  108 +++++++++++++++++++++-----------------
+ drivers/power/pda_power.c       |    6 +-
+ drivers/power/twl4030_charger.c |   18 +++---
+ 3 files changed, 72 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/usb/gadget/ci13xxx_msm.c b/drivers/usb/gadget/ci13xxx_msm.c
-index 470981a..737fe42 100644
---- a/drivers/usb/gadget/ci13xxx_msm.c
-+++ b/drivers/usb/gadget/ci13xxx_msm.c
-@@ -48,10 +48,10 @@ static void ci13xxx_msm_notify_event(struct ci13xxx *udc, unsigned event)
- 		 * Put the transceiver in non-driving mode. Otherwise host
- 		 * may not detect soft-disconnection.
- 		 */
--		val = otg_io_read(udc->transceiver, ULPI_FUNC_CTRL);
-+		val = usb_phy_io_read(udc->transceiver, ULPI_FUNC_CTRL);
- 		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
- 		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
--		otg_io_write(udc->transceiver, val, ULPI_FUNC_CTRL);
-+		usb_phy_io_write(udc->transceiver, val, ULPI_FUNC_CTRL);
- 		break;
- 	default:
- 		dev_dbg(dev, "unknown ci13xxx_udc event\n");
-diff --git a/drivers/usb/gadget/ci13xxx_udc.c b/drivers/usb/gadget/ci13xxx_udc.c
-index 1265a85..677e448 100644
---- a/drivers/usb/gadget/ci13xxx_udc.c
-+++ b/drivers/usb/gadget/ci13xxx_udc.c
-@@ -2519,7 +2519,7 @@ static int ci13xxx_vbus_draw(struct usb_gadget *_gadget, unsigned mA)
- 	struct ci13xxx *udc = container_of(_gadget, struct ci13xxx, gadget);
- 
- 	if (udc->transceiver)
--		return otg_set_power(udc->transceiver, mA);
-+		return usb_phy_set_power(udc->transceiver, mA);
- 	return -ENOTSUPP;
- }
- 
-@@ -2883,7 +2883,7 @@ static int udc_probe(struct ci13xxx_udc_driver *driver, struct device *dev,
- 	if (retval < 0)
- 		goto free_udc;
- 
--	udc->transceiver = otg_get_transceiver();
-+	udc->transceiver = usb_get_transceiver();
- 
- 	if (udc->udc_driver->flags & CI13XXX_REQUIRE_TRANSCEIVER) {
- 		if (udc->transceiver == NULL) {
-@@ -2929,7 +2929,7 @@ static int udc_probe(struct ci13xxx_udc_driver *driver, struct device *dev,
- remove_trans:
- 	if (udc->transceiver) {
- 		otg_set_peripheral(udc->transceiver, &udc->gadget);
--		otg_put_transceiver(udc->transceiver);
-+		usb_put_transceiver(udc->transceiver);
- 	}
- 
- 	err("error = %i", retval);
-@@ -2941,7 +2941,7 @@ unreg_device:
- 	device_unregister(&udc->gadget.dev);
- put_transceiver:
- 	if (udc->transceiver)
--		otg_put_transceiver(udc->transceiver);
-+		usb_put_transceiver(udc->transceiver);
- free_udc:
- 	kfree(udc);
- 	_udc = NULL;
-@@ -2965,7 +2965,7 @@ static void udc_remove(void)
- 
- 	if (udc->transceiver) {
- 		otg_set_peripheral(udc->transceiver, &udc->gadget);
--		otg_put_transceiver(udc->transceiver);
-+		usb_put_transceiver(udc->transceiver);
- 	}
- #ifdef CONFIG_USB_GADGET_DEBUG_FILES
- 	dbg_remove_files(&udc->gadget.dev);
-diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
-index de24a42..8775867 100644
---- a/drivers/usb/gadget/fsl_udc_core.c
-+++ b/drivers/usb/gadget/fsl_udc_core.c
-@@ -1221,7 +1221,7 @@ static int fsl_vbus_draw(struct usb_gadget *gadget, unsigned mA)
- 
- 	udc = container_of(gadget, struct fsl_udc, gadget);
- 	if (udc->transceiver)
--		return otg_set_power(udc->transceiver, mA);
-+		return usb_phy_set_power(udc->transceiver, mA);
- 	return -ENOTSUPP;
- }
- 
-@@ -2450,7 +2450,7 @@ static int __init fsl_udc_probe(struct platform_device *pdev)
- 
- #ifdef CONFIG_USB_OTG
- 	if (pdata->operating_mode == FSL_USB2_DR_OTG) {
--		udc_controller->transceiver = otg_get_transceiver();
-+		udc_controller->transceiver = usb_get_transceiver();
- 		if (!udc_controller->transceiver) {
- 			ERR("Can't find OTG driver!\n");
- 			ret = -ENODEV;
-diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
-index 00ddf29..64f98ff 100644
---- a/drivers/usb/gadget/langwell_udc.c
-+++ b/drivers/usb/gadget/langwell_udc.c
-@@ -1279,9 +1279,9 @@ static int langwell_vbus_draw(struct usb_gadget *_gadget, unsigned mA)
- 	dev_vdbg(&dev->pdev->dev, "---> %s()\n", __func__);
- 
- 	if (dev->transceiver) {
--		dev_vdbg(&dev->pdev->dev, "otg_set_power\n");
-+		dev_vdbg(&dev->pdev->dev, "usb_phy_set_power\n");
- 		dev_vdbg(&dev->pdev->dev, "<--- %s()\n", __func__);
--		return otg_set_power(dev->transceiver, mA);
-+		return usb_phy_set_power(dev->transceiver, mA);
- 	}
- 
- 	dev_vdbg(&dev->pdev->dev, "<--- %s()\n", __func__);
-@@ -3103,7 +3103,7 @@ static void langwell_udc_remove(struct pci_dev *pdev)
- 		pci_disable_device(pdev);
- #else
- 	if (dev->transceiver) {
--		otg_put_transceiver(dev->transceiver);
-+		usb_put_transceiver(dev->transceiver);
- 		dev->transceiver = NULL;
- 		dev->lotg = NULL;
- 	}
-@@ -3168,7 +3168,7 @@ static int langwell_udc_probe(struct pci_dev *pdev,
- 
- 	/* mem region and register base */
- 	dev->region = 1;
--	dev->transceiver = otg_get_transceiver();
-+	dev->transceiver = usb_get_transceiver();
- 	dev->lotg = otg_to_langwell(dev->transceiver);
- 	base = dev->lotg->regs;
- #else
-diff --git a/drivers/usb/gadget/omap_udc.c b/drivers/usb/gadget/omap_udc.c
-index 56d4f47..21828ab 100644
---- a/drivers/usb/gadget/omap_udc.c
-+++ b/drivers/usb/gadget/omap_udc.c
-@@ -1355,7 +1355,7 @@ static int omap_vbus_draw(struct usb_gadget *gadget, unsigned mA)
- 
- 	udc = container_of(gadget, struct omap_udc, gadget);
- 	if (udc->transceiver)
--		return otg_set_power(udc->transceiver, mA);
-+		return usb_phy_set_power(udc->transceiver, mA);
- 	return -EOPNOTSUPP;
- }
- 
-@@ -1849,11 +1849,13 @@ static void devstate_irq(struct omap_udc *udc, u16 irq_src)
- 					spin_lock(&udc->lock);
- 				}
- 				if (udc->transceiver)
--					otg_set_suspend(udc->transceiver, 1);
-+					usb_phy_set_suspend(
-+							udc->transceiver, 1);
- 			} else {
- 				VDBG("resume\n");
- 				if (udc->transceiver)
--					otg_set_suspend(udc->transceiver, 0);
-+					usb_phy_set_suspend(
-+							udc->transceiver, 0);
- 				if (udc->gadget.speed == USB_SPEED_FULL
- 						&& udc->driver->resume) {
- 					spin_unlock(&udc->lock);
-@@ -2872,7 +2874,7 @@ static int __init omap_udc_probe(struct platform_device *pdev)
- 		 * use it.  Except for OTG, we don't _need_ to talk to one;
- 		 * but not having one probably means no VBUS detection.
- 		 */
--		xceiv = otg_get_transceiver();
-+		xceiv = usb_get_transceiver();
- 		if (xceiv)
- 			type = xceiv->label;
- 		else if (config->otg) {
-@@ -3018,7 +3020,7 @@ cleanup1:
- 
- cleanup0:
- 	if (xceiv)
--		otg_put_transceiver(xceiv);
-+		usb_put_transceiver(xceiv);
- 
- 	if (cpu_is_omap16xx() || cpu_is_omap24xx() || cpu_is_omap7xx()) {
- 		clk_disable(hhc_clk);
-@@ -3048,7 +3050,7 @@ static int __exit omap_udc_remove(struct platform_device *pdev)
- 
- 	pullup_disable(udc);
- 	if (udc->transceiver) {
--		otg_put_transceiver(udc->transceiver);
-+		usb_put_transceiver(udc->transceiver);
- 		udc->transceiver = NULL;
- 	}
- 	omap_writew(0, UDC_SYSCON1);
-diff --git a/drivers/usb/gadget/pxa25x_udc.c b/drivers/usb/gadget/pxa25x_udc.c
-index e4e59b4..57133a0 100644
---- a/drivers/usb/gadget/pxa25x_udc.c
-+++ b/drivers/usb/gadget/pxa25x_udc.c
-@@ -1007,7 +1007,7 @@ static int pxa25x_udc_vbus_draw(struct usb_gadget *_gadget, unsigned mA)
- 	udc = container_of(_gadget, struct pxa25x_udc, gadget);
- 
- 	if (udc->transceiver)
--		return otg_set_power(udc->transceiver, mA);
-+		return usb_phy_set_power(udc->transceiver, mA);
- 	return -EOPNOTSUPP;
- }
- 
-@@ -2171,7 +2171,7 @@ static int __init pxa25x_udc_probe(struct platform_device *pdev)
- 	dev->dev = &pdev->dev;
- 	dev->mach = pdev->dev.platform_data;
- 
--	dev->transceiver = otg_get_transceiver();
-+	dev->transceiver = usb_get_transceiver();
- 
- 	if (gpio_is_valid(dev->mach->gpio_pullup)) {
- 		if ((retval = gpio_request(dev->mach->gpio_pullup,
-@@ -2250,7 +2250,7 @@ lubbock_fail0:
- 		gpio_free(dev->mach->gpio_pullup);
-  err_gpio_pullup:
- 	if (dev->transceiver) {
--		otg_put_transceiver(dev->transceiver);
-+		usb_put_transceiver(dev->transceiver);
- 		dev->transceiver = NULL;
- 	}
- 	clk_put(dev->clk);
-@@ -2292,7 +2292,7 @@ static int __exit pxa25x_udc_remove(struct platform_device *pdev)
- 	clk_put(dev->clk);
- 
- 	if (dev->transceiver) {
--		otg_put_transceiver(dev->transceiver);
-+		usb_put_transceiver(dev->transceiver);
- 		dev->transceiver = NULL;
- 	}
- 
-diff --git a/drivers/usb/gadget/pxa27x_udc.c b/drivers/usb/gadget/pxa27x_udc.c
-index 85b68c7..57ac8c5 100644
---- a/drivers/usb/gadget/pxa27x_udc.c
-+++ b/drivers/usb/gadget/pxa27x_udc.c
-@@ -1676,7 +1676,7 @@ static int pxa_udc_vbus_draw(struct usb_gadget *_gadget, unsigned mA)
- 
- 	udc = to_gadget_udc(_gadget);
- 	if (udc->transceiver)
--		return otg_set_power(udc->transceiver, mA);
-+		return usb_phy_set_power(udc->transceiver, mA);
- 	return -EOPNOTSUPP;
- }
- 
-@@ -2473,7 +2473,7 @@ static int __init pxa_udc_probe(struct platform_device *pdev)
- 
- 	udc->dev = &pdev->dev;
- 	udc->mach = pdev->dev.platform_data;
--	udc->transceiver = otg_get_transceiver();
-+	udc->transceiver = usb_get_transceiver();
- 
- 	gpio = udc->mach->gpio_pullup;
- 	if (gpio_is_valid(gpio)) {
-@@ -2552,7 +2552,7 @@ static int __exit pxa_udc_remove(struct platform_device *_dev)
- 	if (gpio_is_valid(gpio))
- 		gpio_free(gpio);
- 
--	otg_put_transceiver(udc->transceiver);
-+	usb_put_transceiver(udc->transceiver);
- 
- 	udc->transceiver = NULL;
- 	platform_set_drvdata(_dev, NULL);
-diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
-index 34a3140..2026c0c 100644
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -142,7 +142,7 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
- 	if (pdata->operating_mode == FSL_USB2_DR_OTG) {
- 		struct ehci_hcd *ehci = hcd_to_ehci(hcd);
- 
--		ehci->transceiver = otg_get_transceiver();
-+		ehci->transceiver = usb_get_transceiver();
- 		dev_dbg(&pdev->dev, "hcd=0x%p  ehci=0x%p, transceiver=0x%p\n",
- 			hcd, ehci, ehci->transceiver);
- 
-diff --git a/drivers/usb/host/ehci-msm.c b/drivers/usb/host/ehci-msm.c
-index ef7c431..bb97dc3 100644
---- a/drivers/usb/host/ehci-msm.c
-+++ b/drivers/usb/host/ehci-msm.c
-@@ -32,7 +32,7 @@
- 
- #define MSM_USB_BASE (hcd->regs)
- 
--static struct usb_phy *otg;
-+static struct usb_phy *xceiv;
- 
- static int ehci_msm_reset(struct usb_hcd *hcd)
- {
-@@ -145,14 +145,14 @@ static int ehci_msm_probe(struct platform_device *pdev)
- 	 * powering up VBUS, mapping of registers address space and power
- 	 * management.
- 	 */
--	otg = otg_get_transceiver();
--	if (!otg) {
-+	xceiv = usb_get_transceiver();
-+	if (!xceiv) {
- 		dev_err(&pdev->dev, "unable to find transceiver\n");
- 		ret = -ENODEV;
- 		goto unmap;
- 	}
- 
--	ret = otg_set_host(otg, &hcd->self);
-+	ret = otg_set_host(xceiv, &hcd->self);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "unable to register with transceiver\n");
- 		goto put_transceiver;
-@@ -169,7 +169,7 @@ static int ehci_msm_probe(struct platform_device *pdev)
- 	return 0;
- 
- put_transceiver:
--	otg_put_transceiver(otg);
-+	usb_put_transceiver(xceiv);
- unmap:
- 	iounmap(hcd->regs);
- put_hcd:
-@@ -186,8 +186,8 @@ static int __devexit ehci_msm_remove(struct platform_device *pdev)
- 	pm_runtime_disable(&pdev->dev);
- 	pm_runtime_set_suspended(&pdev->dev);
- 
--	otg_set_host(otg, NULL);
--	otg_put_transceiver(otg);
-+	otg_set_host(xceiv, NULL);
-+	usb_put_transceiver(xceiv);
- 
- 	usb_put_hcd(hcd);
- 
-diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
-index 555a73c..6d2f763 100644
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -218,15 +218,15 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 	msleep(10);
- 
- 	/* Initialize the transceiver */
--	if (pdata->otg) {
--		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
--		ret = otg_init(pdata->otg);
-+	if (pdata->xceiv) {
-+		pdata->xceiv->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
-+		ret = usb_phy_init(pdata->xceiv);
- 		if (ret) {
- 			dev_err(dev, "unable to init transceiver, probably missing\n");
- 			ret = -ENODEV;
- 			goto err_add;
- 		}
--		ret = otg_set_vbus(pdata->otg, 1);
-+		ret = otg_set_vbus(pdata->xceiv, 1);
- 		if (ret) {
- 			dev_err(dev, "unable to enable vbus on transceiver\n");
- 			goto err_add;
-@@ -240,16 +240,18 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto err_add;
- 
--	if (pdata->otg) {
-+	if (pdata->xceiv) {
- 		/*
- 		 * efikamx and efikasb have some hardware bug which is
- 		 * preventing usb to work unless CHRGVBUS is set.
- 		 * It's in violation of USB specs
- 		 */
- 		if (machine_is_mx51_efikamx() || machine_is_mx51_efikasb()) {
--			flags = otg_io_read(pdata->otg, ULPI_OTG_CTRL);
-+			flags = usb_phy_io_read(pdata->xceiv,
-+							ULPI_OTG_CTRL);
- 			flags |= ULPI_OTG_CTRL_CHRGVBUS;
--			ret = otg_io_write(pdata->otg, flags, ULPI_OTG_CTRL);
-+			ret = usb_phy_io_write(pdata->xceiv, flags,
-+							ULPI_OTG_CTRL);
- 			if (ret) {
- 				dev_err(dev, "unable to set CHRVBUS\n");
- 				goto err_add;
-@@ -296,8 +298,8 @@ static int __exit ehci_mxc_drv_remove(struct platform_device *pdev)
- 	if (pdata && pdata->exit)
- 		pdata->exit(pdev);
- 
--	if (pdata->otg)
--		otg_shutdown(pdata->otg);
-+	if (pdata->xceiv)
-+		usb_phy_shutdown(pdata->xceiv);
- 
- 	usb_remove_hcd(hcd);
- 	iounmap(hcd->regs);
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index 4637a29..8fc0214 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -668,7 +668,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
- 
- #ifdef CONFIG_USB_OTG_UTILS
- 	if (pdata->operating_mode == TEGRA_USB_OTG) {
--		tegra->transceiver = otg_get_transceiver();
-+		tegra->transceiver = usb_get_transceiver();
- 		if (tegra->transceiver)
- 			otg_set_host(tegra->transceiver, &hcd->self);
- 	}
-@@ -686,7 +686,7 @@ fail:
- #ifdef CONFIG_USB_OTG_UTILS
- 	if (tegra->transceiver) {
- 		otg_set_host(tegra->transceiver, NULL);
--		otg_put_transceiver(tegra->transceiver);
-+		usb_put_transceiver(tegra->transceiver);
- 	}
- #endif
- 	tegra_usb_phy_close(tegra->phy);
-@@ -744,7 +744,7 @@ static int tegra_ehci_remove(struct platform_device *pdev)
- #ifdef CONFIG_USB_OTG_UTILS
- 	if (tegra->transceiver) {
- 		otg_set_host(tegra->transceiver, NULL);
--		otg_put_transceiver(tegra->transceiver);
-+		usb_put_transceiver(tegra->transceiver);
- 	}
- #endif
- 
-diff --git a/drivers/usb/host/ohci-omap.c b/drivers/usb/host/ohci-omap.c
-index bc45648..b3ff4c3 100644
---- a/drivers/usb/host/ohci-omap.c
-+++ b/drivers/usb/host/ohci-omap.c
-@@ -210,7 +210,7 @@ static int ohci_omap_init(struct usb_hcd *hcd)
- 
- #ifdef	CONFIG_USB_OTG
- 	if (need_transceiver) {
--		ohci->transceiver = otg_get_transceiver();
-+		ohci->transceiver = usb_get_transceiver();
- 		if (ohci->transceiver) {
- 			int	status = otg_set_host(ohci->transceiver,
- 						&ohci_to_hcd(ohci)->self);
-diff --git a/drivers/usb/musb/am35x.c b/drivers/usb/musb/am35x.c
-index 8325ecf..37530f2 100644
---- a/drivers/usb/musb/am35x.c
-+++ b/drivers/usb/musb/am35x.c
-@@ -364,7 +364,7 @@ static int am35x_musb_init(struct musb *musb)
- 		return -ENODEV;
- 
- 	usb_nop_xceiv_register();
--	musb->xceiv = otg_get_transceiver();
-+	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv)
- 		return -ENODEV;
- 
-@@ -406,7 +406,7 @@ static int am35x_musb_exit(struct musb *musb)
- 	if (data->set_phy_power)
- 		data->set_phy_power(0);
- 
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 
- 	return 0;
-diff --git a/drivers/usb/musb/blackfin.c b/drivers/usb/musb/blackfin.c
-index 2f3e0b0..1ba9e0b 100644
---- a/drivers/usb/musb/blackfin.c
-+++ b/drivers/usb/musb/blackfin.c
-@@ -415,7 +415,7 @@ static int bfin_musb_init(struct musb *musb)
- 	gpio_direction_output(musb->config->gpio_vrsel, 0);
- 
- 	usb_nop_xceiv_register();
--	musb->xceiv = otg_get_transceiver();
-+	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv) {
- 		gpio_free(musb->config->gpio_vrsel);
- 		return -ENODEV;
-@@ -440,7 +440,7 @@ static int bfin_musb_exit(struct musb *musb)
- {
- 	gpio_free(musb->config->gpio_vrsel);
- 
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 	return 0;
- }
-diff --git a/drivers/usb/musb/da8xx.c b/drivers/usb/musb/da8xx.c
-index 61813b5..92e093d 100644
---- a/drivers/usb/musb/da8xx.c
-+++ b/drivers/usb/musb/da8xx.c
-@@ -425,7 +425,7 @@ static int da8xx_musb_init(struct musb *musb)
- 		goto fail;
- 
- 	usb_nop_xceiv_register();
--	musb->xceiv = otg_get_transceiver();
-+	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv)
- 		goto fail;
- 
-@@ -458,7 +458,7 @@ static int da8xx_musb_exit(struct musb *musb)
- 
- 	phy_off();
- 
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 
- 	return 0;
-diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-index b2daf1c..e36af9a 100644
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -387,7 +387,7 @@ static int davinci_musb_init(struct musb *musb)
- 	u32		revision;
- 
- 	usb_nop_xceiv_register();
--	musb->xceiv = otg_get_transceiver();
-+	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv)
- 		return -ENODEV;
- 
-@@ -446,7 +446,7 @@ static int davinci_musb_init(struct musb *musb)
- 	return 0;
- 
- fail:
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 	return -ENODEV;
- }
-@@ -495,7 +495,7 @@ static int davinci_musb_exit(struct musb *musb)
- 
- 	phy_off();
- 
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 
- 	return 0;
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index f9edf2c..dd918f0 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -131,9 +131,9 @@ static inline struct musb *dev_to_musb(struct device *dev)
- /*-------------------------------------------------------------------------*/
- 
- #ifndef CONFIG_BLACKFIN
--static int musb_ulpi_read(struct usb_phy *otg, u32 offset)
-+static int musb_ulpi_read(struct usb_phy *phy, u32 offset)
- {
--	void __iomem *addr = otg->io_priv;
-+	void __iomem *addr = phy->io_priv;
- 	int	i = 0;
- 	u8	r;
- 	u8	power;
-@@ -165,10 +165,10 @@ static int musb_ulpi_read(struct usb_phy *otg, u32 offset)
- 	return musb_readb(addr, MUSB_ULPI_REG_DATA);
- }
- 
--static int musb_ulpi_write(struct usb_phy *otg,
-+static int musb_ulpi_write(struct usb_phy *phy,
- 		u32 offset, u32 data)
- {
--	void __iomem *addr = otg->io_priv;
-+	void __iomem *addr = phy->io_priv;
- 	int	i = 0;
- 	u8	r = 0;
- 	u8	power;
-@@ -200,7 +200,7 @@ static int musb_ulpi_write(struct usb_phy *otg,
- #define musb_ulpi_write		NULL
- #endif
- 
--static struct otg_io_access_ops musb_ulpi_access = {
-+static struct usb_phy_io_ops musb_ulpi_access = {
- 	.read = musb_ulpi_read,
- 	.write = musb_ulpi_write,
+diff --git a/drivers/power/isp1704_charger.c b/drivers/power/isp1704_charger.c
+index 9230bdd..ba2a647 100644
+--- a/drivers/power/isp1704_charger.c
++++ b/drivers/power/isp1704_charger.c
+@@ -56,7 +56,7 @@ static u16 isp170x_id[] = {
+ struct isp1704_charger {
+ 	struct device		*dev;
+ 	struct power_supply	psy;
+-	struct usb_phy		*otg;
++	struct usb_phy		*xceiv;
+ 	struct notifier_block	nb;
+ 	struct work_struct	work;
+ 
+@@ -71,6 +71,18 @@ struct isp1704_charger {
+ 	unsigned		max_power;
  };
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index d931058..a811fd8 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1688,7 +1688,7 @@ static int musb_gadget_vbus_draw(struct usb_gadget *gadget, unsigned mA)
  
- 	if (!musb->xceiv->set_power)
- 		return -EOPNOTSUPP;
--	return otg_set_power(musb->xceiv, mA);
-+	return usb_phy_set_power(musb->xceiv, mA);
++static inline int
++isp1704_read(struct isp1704_charger *isp, u32 reg)
++{
++	return usb_phy_io_read(isp->xceiv, reg);
++}
++
++static inline int
++isp1704_write(struct isp1704_charger *isp, u32 val, u32 reg)
++{
++	return usb_phy_io_read(isp->xceiv, val, reg);
++}
++
+ /*
+  * Disable/enable the power from the isp1704 if a function for it
+  * has been provided with platform data.
+@@ -97,31 +109,31 @@ static inline int isp1704_charger_type(struct isp1704_charger *isp)
+ 	u8 otg_ctrl;
+ 	int type = POWER_SUPPLY_TYPE_USB_DCP;
+ 
+-	func_ctrl = otg_io_read(isp->otg, ULPI_FUNC_CTRL);
+-	otg_ctrl = otg_io_read(isp->otg, ULPI_OTG_CTRL);
++	func_ctrl = isp1704_read(isp, ULPI_FUNC_CTRL);
++	otg_ctrl = isp1704_read(isp, ULPI_OTG_CTRL);
+ 
+ 	/* disable pulldowns */
+ 	reg = ULPI_OTG_CTRL_DM_PULLDOWN | ULPI_OTG_CTRL_DP_PULLDOWN;
+-	otg_io_write(isp->otg, ULPI_CLR(ULPI_OTG_CTRL), reg);
++	isp1704_write(isp, ULPI_CLR(ULPI_OTG_CTRL), reg);
+ 
+ 	/* full speed */
+-	otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
++	isp1704_write(isp, ULPI_CLR(ULPI_FUNC_CTRL),
+ 			ULPI_FUNC_CTRL_XCVRSEL_MASK);
+-	otg_io_write(isp->otg, ULPI_SET(ULPI_FUNC_CTRL),
++	isp1704_write(isp, ULPI_SET(ULPI_FUNC_CTRL),
+ 			ULPI_FUNC_CTRL_FULL_SPEED);
+ 
+ 	/* Enable strong pull-up on DP (1.5K) and reset */
+ 	reg = ULPI_FUNC_CTRL_TERMSELECT | ULPI_FUNC_CTRL_RESET;
+-	otg_io_write(isp->otg, ULPI_SET(ULPI_FUNC_CTRL), reg);
++	isp1704_write(isp, ULPI_SET(ULPI_FUNC_CTRL), reg);
+ 	usleep_range(1000, 2000);
+ 
+-	reg = otg_io_read(isp->otg, ULPI_DEBUG);
++	reg = isp1704_read(isp, ULPI_DEBUG);
+ 	if ((reg & 3) != 3)
+ 		type = POWER_SUPPLY_TYPE_USB_CDP;
+ 
+ 	/* recover original state */
+-	otg_io_write(isp->otg, ULPI_FUNC_CTRL, func_ctrl);
+-	otg_io_write(isp->otg, ULPI_OTG_CTRL, otg_ctrl);
++	isp1704_write(isp, ULPI_FUNC_CTRL, func_ctrl);
++	isp1704_write(isp, ULPI_OTG_CTRL, otg_ctrl);
+ 
+ 	return type;
  }
+@@ -136,28 +148,28 @@ static inline int isp1704_charger_verify(struct isp1704_charger *isp)
+ 	u8	r;
  
- static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 0879a2b..f61afc9 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -240,12 +240,12 @@ static int musb_otg_notifications(struct notifier_block *nb,
- 		if (is_otg_enabled(musb)) {
- 			if (musb->gadget_driver) {
- 				pm_runtime_get_sync(musb->controller);
--				otg_init(musb->xceiv);
-+				usb_phy_init(musb->xceiv);
- 				omap2430_musb_set_vbus(musb, 1);
- 			}
- 		} else {
- 			pm_runtime_get_sync(musb->controller);
--			otg_init(musb->xceiv);
-+			usb_phy_init(musb->xceiv);
- 			omap2430_musb_set_vbus(musb, 1);
- 		}
- 		break;
-@@ -255,7 +255,7 @@ static int musb_otg_notifications(struct notifier_block *nb,
+ 	/* Reset the transceiver */
+-	r = otg_io_read(isp->otg, ULPI_FUNC_CTRL);
++	r = isp1704_read(isp, ULPI_FUNC_CTRL);
+ 	r |= ULPI_FUNC_CTRL_RESET;
+-	otg_io_write(isp->otg, ULPI_FUNC_CTRL, r);
++	isp1704_write(isp, ULPI_FUNC_CTRL, r);
+ 	usleep_range(1000, 2000);
  
- 		if (musb->gadget_driver)
- 			pm_runtime_get_sync(musb->controller);
--		otg_init(musb->xceiv);
-+		usb_phy_init(musb->xceiv);
- 		break;
+ 	/* Set normal mode */
+ 	r &= ~(ULPI_FUNC_CTRL_RESET | ULPI_FUNC_CTRL_OPMODE_MASK);
+-	otg_io_write(isp->otg, ULPI_FUNC_CTRL, r);
++	isp1704_write(isp, ULPI_FUNC_CTRL, r);
  
- 	case USB_EVENT_NONE:
-@@ -271,7 +271,7 @@ static int musb_otg_notifications(struct notifier_block *nb,
- 			if (musb->xceiv->set_vbus)
- 				otg_set_vbus(musb->xceiv, 0);
- 		}
--		otg_shutdown(musb->xceiv);
-+		usb_phy_shutdown(musb->xceiv);
- 		break;
- 	default:
- 		dev_dbg(musb->controller, "ID float\n");
-@@ -292,7 +292,7 @@ static int omap2430_musb_init(struct musb *musb)
- 	 * up through ULPI.  TWL4030-family PMICs include one,
- 	 * which needs a driver, drivers aren't always needed.
- 	 */
--	musb->xceiv = otg_get_transceiver();
-+	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv) {
- 		pr_err("HS USB OTG: no transceiver configured\n");
- 		return -ENODEV;
-@@ -325,7 +325,7 @@ static int omap2430_musb_init(struct musb *musb)
- 			musb_readl(musb->mregs, OTG_SIMENABLE));
+ 	/* Clear the DP and DM pull-down bits */
+ 	r = ULPI_OTG_CTRL_DP_PULLDOWN | ULPI_OTG_CTRL_DM_PULLDOWN;
+-	otg_io_write(isp->otg, ULPI_CLR(ULPI_OTG_CTRL), r);
++	isp1704_write(isp, ULPI_CLR(ULPI_OTG_CTRL), r);
  
- 	musb->nb.notifier_call = musb_otg_notifications;
--	status = otg_register_notifier(musb->xceiv, &musb->nb);
-+	status = usb_register_notifier(musb->xceiv, &musb->nb);
+ 	/* Enable strong pull-up on DP (1.5K) and reset */
+ 	r = ULPI_FUNC_CTRL_TERMSELECT | ULPI_FUNC_CTRL_RESET;
+-	otg_io_write(isp->otg, ULPI_SET(ULPI_FUNC_CTRL), r);
++	isp1704_write(isp, ULPI_SET(ULPI_FUNC_CTRL), r);
+ 	usleep_range(1000, 2000);
  
- 	if (status)
- 		dev_dbg(musb->controller, "notification register failed\n");
-@@ -350,7 +350,7 @@ static void omap2430_musb_enable(struct musb *musb)
- 	switch (musb->xceiv->last_event) {
- 
- 	case USB_EVENT_ID:
--		otg_init(musb->xceiv);
-+		usb_phy_init(musb->xceiv);
- 		if (data->interface_type == MUSB_INTERFACE_UTMI) {
- 			devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
- 			/* start the session */
-@@ -370,7 +370,7 @@ static void omap2430_musb_enable(struct musb *musb)
- 		break;
- 
- 	case USB_EVENT_VBUS:
--		otg_init(musb->xceiv);
-+		usb_phy_init(musb->xceiv);
- 		break;
- 
- 	default:
-@@ -381,7 +381,7 @@ static void omap2430_musb_enable(struct musb *musb)
- static void omap2430_musb_disable(struct musb *musb)
- {
- 	if (musb->xceiv->last_event)
--		otg_shutdown(musb->xceiv);
-+		usb_phy_shutdown(musb->xceiv);
- }
- 
- static int omap2430_musb_exit(struct musb *musb)
-@@ -389,7 +389,7 @@ static int omap2430_musb_exit(struct musb *musb)
- 	del_timer_sync(&musb_idle_timer);
- 
- 	omap2430_low_level_exit(musb);
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 
- 	return 0;
- }
-@@ -493,7 +493,7 @@ static int omap2430_runtime_suspend(struct device *dev)
- 	struct musb			*musb = glue_to_musb(glue);
- 
- 	omap2430_low_level_exit(musb);
--	otg_set_suspend(musb->xceiv, 1);
-+	usb_phy_set_suspend(musb->xceiv, 1);
- 
- 	return 0;
- }
-@@ -504,7 +504,7 @@ static int omap2430_runtime_resume(struct device *dev)
- 	struct musb			*musb = glue_to_musb(glue);
- 
- 	omap2430_low_level_init(musb);
--	otg_set_suspend(musb->xceiv, 0);
-+	usb_phy_set_suspend(musb->xceiv, 0);
- 
- 	return 0;
- }
-diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
-index 3c7dd53..e5402d7 100644
---- a/drivers/usb/musb/tusb6010.c
-+++ b/drivers/usb/musb/tusb6010.c
-@@ -1081,7 +1081,7 @@ static int tusb_musb_init(struct musb *musb)
- 	int			ret;
- 
- 	usb_nop_xceiv_register();
--	musb->xceiv = otg_get_transceiver();
-+	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv)
- 		return -ENODEV;
- 
-@@ -1133,7 +1133,7 @@ done:
- 		if (sync)
- 			iounmap(sync);
- 
--		otg_put_transceiver(musb->xceiv);
-+		usb_put_transceiver(musb->xceiv);
- 		usb_nop_xceiv_unregister();
+ 	/* Read the line state */
+-	if (!otg_io_read(isp->otg, ULPI_DEBUG)) {
++	if (!isp1704_read(isp, ULPI_DEBUG)) {
+ 		/* Disable strong pull-up on DP (1.5K) */
+-		otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
++		isp1704_write(isp, ULPI_CLR(ULPI_FUNC_CTRL),
+ 				ULPI_FUNC_CTRL_TERMSELECT);
+ 		return 1;
  	}
+@@ -165,23 +177,23 @@ static inline int isp1704_charger_verify(struct isp1704_charger *isp)
+ 	/* Is it a charger or PS/2 connection */
+ 
+ 	/* Enable weak pull-up resistor on DP */
+-	otg_io_write(isp->otg, ULPI_SET(ISP1704_PWR_CTRL),
++	isp1704_write(isp, ULPI_SET(ISP1704_PWR_CTRL),
+ 			ISP1704_PWR_CTRL_DP_WKPU_EN);
+ 
+ 	/* Disable strong pull-up on DP (1.5K) */
+-	otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
++	isp1704_write(isp, ULPI_CLR(ULPI_FUNC_CTRL),
+ 			ULPI_FUNC_CTRL_TERMSELECT);
+ 
+ 	/* Enable weak pull-down resistor on DM */
+-	otg_io_write(isp->otg, ULPI_SET(ULPI_OTG_CTRL),
++	isp1704_write(isp, ULPI_SET(ULPI_OTG_CTRL),
+ 			ULPI_OTG_CTRL_DM_PULLDOWN);
+ 
+ 	/* It's a charger if the line states are clear */
+-	if (!(otg_io_read(isp->otg, ULPI_DEBUG)))
++	if (!(isp1704_read(isp, ULPI_DEBUG)))
+ 		ret = 1;
+ 
+ 	/* Disable weak pull-up resistor on DP */
+-	otg_io_write(isp->otg, ULPI_CLR(ISP1704_PWR_CTRL),
++	isp1704_write(isp, ULPI_CLR(ISP1704_PWR_CTRL),
+ 			ISP1704_PWR_CTRL_DP_WKPU_EN);
+ 
  	return ret;
-@@ -1149,7 +1149,7 @@ static int tusb_musb_exit(struct musb *musb)
+@@ -193,14 +205,14 @@ static inline int isp1704_charger_detect(struct isp1704_charger *isp)
+ 	u8		pwr_ctrl;
+ 	int		ret = 0;
  
- 	iounmap(musb->sync_va);
+-	pwr_ctrl = otg_io_read(isp->otg, ISP1704_PWR_CTRL);
++	pwr_ctrl = isp1704_read(isp, ISP1704_PWR_CTRL);
  
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 	return 0;
+ 	/* set SW control bit in PWR_CTRL register */
+-	otg_io_write(isp->otg, ISP1704_PWR_CTRL,
++	isp1704_write(isp, ISP1704_PWR_CTRL,
+ 			ISP1704_PWR_CTRL_SWCTRL);
+ 
+ 	/* enable manual charger detection */
+-	otg_io_write(isp->otg, ULPI_SET(ISP1704_PWR_CTRL),
++	isp1704_write(isp, ULPI_SET(ISP1704_PWR_CTRL),
+ 			ISP1704_PWR_CTRL_SWCTRL
+ 			| ISP1704_PWR_CTRL_DPVSRC_EN);
+ 	usleep_range(1000, 2000);
+@@ -208,7 +220,7 @@ static inline int isp1704_charger_detect(struct isp1704_charger *isp)
+ 	timeout = jiffies + msecs_to_jiffies(300);
+ 	do {
+ 		/* Check if there is a charger */
+-		if (otg_io_read(isp->otg, ISP1704_PWR_CTRL)
++		if (isp1704_read(isp, ISP1704_PWR_CTRL)
+ 				& ISP1704_PWR_CTRL_VDAT_DET) {
+ 			ret = isp1704_charger_verify(isp);
+ 			break;
+@@ -216,7 +228,7 @@ static inline int isp1704_charger_detect(struct isp1704_charger *isp)
+ 	} while (!time_after(jiffies, timeout) && isp->online);
+ 
+ 	/* recover original state */
+-	otg_io_write(isp->otg, ISP1704_PWR_CTRL, pwr_ctrl);
++	isp1704_write(isp, ISP1704_PWR_CTRL, pwr_ctrl);
+ 
+ 	return ret;
  }
-diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
-index f7e04bf..0f56674 100644
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -37,7 +37,7 @@ struct ux500_glue {
+@@ -264,8 +276,8 @@ static void isp1704_charger_work(struct work_struct *data)
+ 		case POWER_SUPPLY_TYPE_USB:
+ 		default:
+ 			/* enable data pullups */
+-			if (isp->otg->gadget)
+-				usb_gadget_connect(isp->otg->gadget);
++			if (isp->xceiv->gadget)
++				usb_gadget_connect(isp->xceiv->gadget);
+ 		}
+ 		break;
+ 	case USB_EVENT_NONE:
+@@ -283,8 +295,8 @@ static void isp1704_charger_work(struct work_struct *data)
+ 		 * chargers. The pullups may be enabled elsewhere, so this can
+ 		 * not be the final solution.
+ 		 */
+-		if (isp->otg->gadget)
+-			usb_gadget_disconnect(isp->otg->gadget);
++		if (isp->xceiv->gadget)
++			usb_gadget_disconnect(isp->xceiv->gadget);
  
- static int ux500_musb_init(struct musb *musb)
- {
--	musb->xceiv = otg_get_transceiver();
-+	musb->xceiv = usb_get_transceiver();
- 	if (!musb->xceiv) {
- 		pr_err("HS USB OTG: no transceiver configured\n");
- 		return -ENODEV;
-@@ -48,7 +48,7 @@ static int ux500_musb_init(struct musb *musb)
+ 		isp1704_charger_set_power(isp, 0);
+ 		break;
+@@ -364,11 +376,11 @@ static inline int isp1704_test_ulpi(struct isp1704_charger *isp)
+ 	int ret = -ENODEV;
  
- static int ux500_musb_exit(struct musb *musb)
- {
--	otg_put_transceiver(musb->xceiv);
-+	usb_put_transceiver(musb->xceiv);
- 
- 	return 0;
- }
-@@ -160,7 +160,7 @@ static int ux500_suspend(struct device *dev)
- 	struct ux500_glue	*glue = dev_get_drvdata(dev);
- 	struct musb		*musb = glue_to_musb(glue);
- 
--	otg_set_suspend(musb->xceiv, 1);
-+	usb_phy_set_suspend(musb->xceiv, 1);
- 	clk_disable(glue->clk);
- 
- 	return 0;
-@@ -178,7 +178,7 @@ static int ux500_resume(struct device *dev)
+ 	/* Test ULPI interface */
+-	ret = otg_io_write(isp->otg, ULPI_SCRATCH, 0xaa);
++	ret = isp1704_write(isp, ULPI_SCRATCH, 0xaa);
+ 	if (ret < 0)
  		return ret;
+ 
+-	ret = otg_io_read(isp->otg, ULPI_SCRATCH);
++	ret = isp1704_read(isp, ULPI_SCRATCH);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -376,13 +388,13 @@ static inline int isp1704_test_ulpi(struct isp1704_charger *isp)
+ 		return -ENODEV;
+ 
+ 	/* Verify the product and vendor id matches */
+-	vendor = otg_io_read(isp->otg, ULPI_VENDOR_ID_LOW);
+-	vendor |= otg_io_read(isp->otg, ULPI_VENDOR_ID_HIGH) << 8;
++	vendor = isp1704_read(isp, ULPI_VENDOR_ID_LOW);
++	vendor |= isp1704_read(isp, ULPI_VENDOR_ID_HIGH) << 8;
+ 	if (vendor != NXP_VENDOR_ID)
+ 		return -ENODEV;
+ 
+-	product = otg_io_read(isp->otg, ULPI_PRODUCT_ID_LOW);
+-	product |= otg_io_read(isp->otg, ULPI_PRODUCT_ID_HIGH) << 8;
++	product = isp1704_read(isp, ULPI_PRODUCT_ID_LOW);
++	product |= isp1704_read(isp, ULPI_PRODUCT_ID_HIGH) << 8;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(isp170x_id); i++) {
+ 		if (product == isp170x_id[i]) {
+@@ -405,8 +417,8 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
+ 	if (!isp)
+ 		return -ENOMEM;
+ 
+-	isp->otg = otg_get_transceiver();
+-	if (!isp->otg)
++	isp->xceiv = usb_get_transceiver();
++	if (!isp->xceiv)
+ 		goto fail0;
+ 
+ 	isp->dev = &pdev->dev;
+@@ -429,14 +441,14 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
+ 		goto fail1;
+ 
+ 	/*
+-	 * REVISIT: using work in order to allow the otg notifications to be
++	 * REVISIT: using work in order to allow the usb notifications to be
+ 	 * made atomically in the future.
+ 	 */
+ 	INIT_WORK(&isp->work, isp1704_charger_work);
+ 
+ 	isp->nb.notifier_call = isp1704_notifier_call;
+ 
+-	ret = otg_register_notifier(isp->otg, &isp->nb);
++	ret = usb_register_notifier(isp->xceiv, &isp->nb);
+ 	if (ret)
+ 		goto fail2;
+ 
+@@ -449,13 +461,13 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
+ 	 * enumerated. The charger driver should be always loaded before any
+ 	 * gadget is loaded.
+ 	 */
+-	if (isp->otg->gadget)
+-		usb_gadget_disconnect(isp->otg->gadget);
++	if (isp->xceiv->gadget)
++		usb_gadget_disconnect(isp->xceiv->gadget);
+ 
+ 	/* Detect charger if VBUS is valid (the cable was already plugged). */
+-	ret = otg_io_read(isp->otg, ULPI_USB_INT_STS);
++	ret = isp1704_read(isp, ULPI_USB_INT_STS);
+ 	isp1704_charger_set_power(isp, 0);
+-	if ((ret & ULPI_INT_VBUS_VALID) && !isp->otg->default_a) {
++	if ((ret & ULPI_INT_VBUS_VALID) && !isp->xceiv->otg->default_a) {
+ 		isp->event = USB_EVENT_VBUS;
+ 		schedule_work(&isp->work);
+ 	}
+@@ -464,7 +476,7 @@ static int __devinit isp1704_charger_probe(struct platform_device *pdev)
+ fail2:
+ 	power_supply_unregister(&isp->psy);
+ fail1:
+-	otg_put_transceiver(isp->otg);
++	usb_put_transceiver(isp->xceiv);
+ fail0:
+ 	kfree(isp);
+ 
+@@ -477,9 +489,9 @@ static int __devexit isp1704_charger_remove(struct platform_device *pdev)
+ {
+ 	struct isp1704_charger *isp = platform_get_drvdata(pdev);
+ 
+-	otg_unregister_notifier(isp->otg, &isp->nb);
++	usb_unregister_notifier(isp->xceiv, &isp->nb);
+ 	power_supply_unregister(&isp->psy);
+-	otg_put_transceiver(isp->otg);
++	usb_put_transceiver(isp->xceiv);
+ 	isp1704_charger_set_power(isp, 0);
+ 	kfree(isp);
+ 
+diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+index 60433b7..69e3a86 100644
+--- a/drivers/power/pda_power.c
++++ b/drivers/power/pda_power.c
+@@ -304,7 +304,7 @@ static int pda_power_probe(struct platform_device *pdev)
  	}
  
--	otg_set_suspend(musb->xceiv, 0);
-+	usb_phy_set_suspend(musb->xceiv, 0);
+ #ifdef CONFIG_USB_OTG_UTILS
+-	transceiver = otg_get_transceiver();
++	transceiver = usb_get_transceiver();
+ 	if (transceiver && !pdata->is_usb_online) {
+ 		pdata->is_usb_online = otg_is_usb_online;
+ 	}
+@@ -351,7 +351,7 @@ usb_supply_failed:
+ 		free_irq(ac_irq->start, &pda_psy_ac);
+ #ifdef CONFIG_USB_OTG_UTILS
+ 	if (transceiver)
+-		otg_put_transceiver(transceiver);
++		usb_put_transceiver(transceiver);
+ #endif
+ ac_irq_failed:
+ 	if (pdata->is_ac_online)
+@@ -386,7 +386,7 @@ static int pda_power_remove(struct platform_device *pdev)
+ 		power_supply_unregister(&pda_psy_ac);
+ #ifdef CONFIG_USB_OTG_UTILS
+ 	if (transceiver)
+-		otg_put_transceiver(transceiver);
++		usb_put_transceiver(transceiver);
+ #endif
+ 	if (ac_draw) {
+ 		regulator_put(ac_draw);
+diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
+index b3ead23..fdad850 100644
+--- a/drivers/power/twl4030_charger.c
++++ b/drivers/power/twl4030_charger.c
+@@ -70,7 +70,7 @@ struct twl4030_bci {
+ 	struct power_supply	ac;
+ 	struct power_supply	usb;
+ 	struct usb_phy		*transceiver;
+-	struct notifier_block	otg_nb;
++	struct notifier_block	usb_nb;
+ 	struct work_struct	work;
+ 	int			irq_chg;
+ 	int			irq_bci;
+@@ -279,7 +279,7 @@ static void twl4030_bci_usb_work(struct work_struct *data)
+ static int twl4030_bci_usb_ncb(struct notifier_block *nb, unsigned long val,
+ 			       void *priv)
+ {
+-	struct twl4030_bci *bci = container_of(nb, struct twl4030_bci, otg_nb);
++	struct twl4030_bci *bci = container_of(nb, struct twl4030_bci, usb_nb);
  
- 	return 0;
- }
+ 	dev_dbg(bci->dev, "OTG notify %lu\n", val);
+ 
+@@ -479,10 +479,10 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
+ 
+ 	INIT_WORK(&bci->work, twl4030_bci_usb_work);
+ 
+-	bci->transceiver = otg_get_transceiver();
++	bci->transceiver = usb_get_transceiver();
+ 	if (bci->transceiver != NULL) {
+-		bci->otg_nb.notifier_call = twl4030_bci_usb_ncb;
+-		otg_register_notifier(bci->transceiver, &bci->otg_nb);
++		bci->usb_nb.notifier_call = twl4030_bci_usb_ncb;
++		usb_register_notifier(bci->transceiver, &bci->usb_nb);
+ 	}
+ 
+ 	/* Enable interrupts now. */
+@@ -508,8 +508,8 @@ static int __init twl4030_bci_probe(struct platform_device *pdev)
+ 
+ fail_unmask_interrupts:
+ 	if (bci->transceiver != NULL) {
+-		otg_unregister_notifier(bci->transceiver, &bci->otg_nb);
+-		otg_put_transceiver(bci->transceiver);
++		usb_unregister_notifier(bci->transceiver, &bci->usb_nb);
++		usb_put_transceiver(bci->transceiver);
+ 	}
+ 	free_irq(bci->irq_bci, bci);
+ fail_bci_irq:
+@@ -539,8 +539,8 @@ static int __exit twl4030_bci_remove(struct platform_device *pdev)
+ 			 TWL4030_INTERRUPTS_BCIIMR2A);
+ 
+ 	if (bci->transceiver != NULL) {
+-		otg_unregister_notifier(bci->transceiver, &bci->otg_nb);
+-		otg_put_transceiver(bci->transceiver);
++		usb_unregister_notifier(bci->transceiver, &bci->usb_nb);
++		usb_put_transceiver(bci->transceiver);
+ 	}
+ 	free_irq(bci->irq_bci, bci);
+ 	free_irq(bci->irq_chg, bci);
 -- 
 1.7.4.1
 
