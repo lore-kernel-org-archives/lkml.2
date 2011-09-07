@@ -1,156 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1IGCeK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 22:34:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:22494 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab1IGCeE convert rfc822-to-8bit (ORCPT
+	id S1754780Ab1IGCew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 22:34:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55677 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab1IGCeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 22:34:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=BF0hvQJSgOsjH/PuK/51Rur4eV6v3J1NhqoTGRJSAwldnrzTBFn9W48HfJWUk7YGQ
-	8oy/2kJnY4UC+mXHhu3hw==
+	Tue, 6 Sep 2011 22:34:46 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: "Indan Zupancic" <indan@nul.nu>
+Subject: Re: RFC: PTRACE_SEIZE needs API cleanup?
+Date: Wed, 7 Sep 2011 04:34:32 +0200
+User-Agent: KMail/1.8.2
+Cc: "Denys Vlasenko" <dvlasenk@redhat.com>, "Oleg Nesterov" <oleg@redhat.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+References: <201109042311.18793.vda.linux@googlemail.com> <201109060259.58820.vda.linux@googlemail.com> <f7d410e3306c6b13dbee153d2eb3cbd1.squirrel@webmail.greenhost.nl>
+In-Reply-To: <f7d410e3306c6b13dbee153d2eb3cbd1.squirrel@webmail.greenhost.nl>
 MIME-Version: 1.0
-In-Reply-To: <4E66749A.10009@canonical.com>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
- <1313632629-23603-3-git-send-email-jj_ding@emc.com.tw> <20110818074756.GE10093@core.coreip.homeip.net>
- <4E5FCE58.9060906@canonical.com> <87sjobk711.fsf@emc.com.tw>
- <4E665249.2040602@canonical.com> <20110906173649.GA7419@core.coreip.homeip.net>
- <4E6660D7.9040800@canonical.com> <20110906182016.GB7419@core.coreip.homeip.net>
- <4E66749A.10009@canonical.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 7 Sep 2011 10:33:40 +0800
-X-Google-Sender-Auth: YIo2e0Hz6l77x7W_-JpX8Vk4mq8
-Message-ID: <CAGS+omCWQk+mTXnYZRCWhH2wWrn5PfhEv414isN_r=NKAdcs1g@mail.gmail.com>
-Subject: Re: [PATCH 2/6] Input: elantech - use firmware provided x, y ranges
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, JJ Ding <jj_ding@emc.com.tw>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201109070434.32143.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Sep 7, 2011 at 3:29 AM, Chase Douglas
-<chase.douglas@canonical.com> wrote:
->
-> On 09/06/2011 11:20 AM, Dmitry Torokhov wrote:
-> > On Tue, Sep 06, 2011 at 11:05:11AM -0700, Chase Douglas wrote:
-> >> On 09/06/2011 10:36 AM, Dmitry Torokhov wrote:
-> >>> On Tue, Sep 06, 2011 at 10:03:05AM -0700, Chase Douglas wrote:
-> >>>> On 09/04/2011 08:22 PM, JJ Ding wrote:
-> >>>>> Hi Chase,
-> >>>>>
-> >>>>> On Thu, 01 Sep 2011 11:26:32 -0700, Chase Douglas <chase.douglas@canonical.com> wrote:
-> >>>>>> On 08/18/2011 12:47 AM, Dmitry Torokhov wrote:
-> >>>>>>> On Thu, Aug 18, 2011 at 09:57:05AM +0800, JJ Ding wrote:
-> >>>>>>>> +
-> >>>>>>>> +              i = (etd->fw_version > 0x020800 &&
-> >>>>>>>> +                   etd->fw_version < 0x020900) ? 1 : 2;
-> >>>>>>>> +              *x_max = (etd->capabilities[1] - i) * 64;
-> >>>>>>>> +              *y_max = (etd->capabilities[2] - i) * 64;
-> >>>>>>>> +              *y_2ft_max = (*y_max - i) * 64 / 4;
-> >>>>>>>
-> >>>>>>> Hmm, we should have the same range for ST and MT data and scale MT data
-> >>>>>>> if it has lower resolution to match ST.
-> >>>>>>
-> >>>>>> I saw this go by a while back and it made sense to me at the time.
-> >>>>>> However, I've had some thoughts that give me pause.
-> >>>>>>
-> >>>>>> Seth Forshee has been working on getting a semi-mt driver for ALPS
-> >>>>>> devices. The ALPS devices have an interesting mechanism for providing
-> >>>>>> multitouch data, but it boils down to having a resolution of only 15
-> >>>>>> values in the X axis and 11 in the Y axis (it looks possible to
-> >>>>>> extrapolate and get double the resolution, but my point will remain).
-> >>>>>>
-> >>>>>> Let's take the X synaptics module as an example of the repercussions of
-> >>>>>> in-kernel axis scaling. The X synaptics module translates two touch
-> >>>>>> drags into scroll events. Synaptics will want to use the highest
-> >>>>>> resolution axis for generating scroll events. If both the MT and ST axes
-> >>>>>> have the same resolution, it might pick the MT axes for scrolling. On
-> >>>>>> ALPS devices with in-kernel axis scaling that would be a bad choice.
-> >>>>> I don't know about the ALPS devices, but since we already report
-> >>>>> ABS_MT_POSITION_{X,Y} with elantech v2, we have to do the scaling in
-> >>>>> kernel anyway to adhere to multitouch protocol. So I would say it is
-> >>>>> still more appropriate to have the same resolution for ST and MT with
-> >>>>> respect to elantech v2. Maybe ALPS should be considered an exception to this?
-> >>>>
-> >>>> The multitouch protocol doesn't require scaling of axes to match, at
-> >>>> least not according to the protocol documentation.
-> >>>>
-> >>>> I see that the current code scales the coordinates for v2, but it's only
-> >>>> half-resolution. That's not a huge deal since the resolution of modern
-> >>>> touchpads is very high. We could leave it scaled to not break abi, if
-> >>>> that was a concern. However, with new devices it makes sense to state
-> >>>> the ranges in terms of what the device actually supports. Otherwise,
-> >>>> we're just masking out useful data that userspace could be using.
-> >>>>
-> >>>
-> >>> I disagree. I believe that ST and MT ranges reported for the same
-> >>> working surface should match, especially since many devices derive ST
-> >>> data from MT.
-> >>>
-> >>> As far as devices that have ranges 0-15 in MT mode - I am not sure how
-> >>> useful such MT steam anyway and if we are better of just ignore them
-> >>> (maybe just use the data to report number of fingers on the surface but
-> >>> otherwise use standard ST protocol).
+On Tuesday 06 September 2011 19:08, Indan Zupancic wrote:
+> >> > Problem. Now we interfere with SIGSTRAPs. Yes, there are users who want
+> >> > to be able to see real SIGTRAPs they send to the program,
+> >> > or ones generated by, say, int3 instruction on x86.
 > >>
-> >> The MT data could still be useful for pinch to zoom or potentially
-> >> rotate (though most low res devices probably are only semi-mt). I don't
-> >> want to forsake pinch to zoom just because we can't pass on the
-> >> resolution of MT data properly.
+> >> But SIGTRAP is ours, ptrace already sends SIGTRAPS at execve.
 > >
-> > How would userspace know that MT data should only be used for gestures
-> > but nothign else? By examining range? What is the "too small range"
-> > then? It would be different for different devices. I do not want
-> > userspace portions of the drivers to turn into unmanageble collection of
-> > quirks.
->
-> I wasn't suggesting that it have a big switch that enables or disables
-> gestures. I just want userspace to be able to figure out whether ST or
-> MT data would be better for a given task. If the range of the ST and MT
-> axes could provide this data, then it makes sense to do so. The test
-> wouldn't be like "is MT range big enough", it would be "is MT range
-> better than ST or vice versa".
->
-> However, Henrik pointed out that some devices report ranges that aren't
-> representative of how accurate or precise they really are. That
-> invalidates this approach.
->
-> > Some hardware is just hopeless... And pinch to zoom is cute but hardly
-> > most used function on a laptop (as opposed to phone/tablet), I'd just
-> > leave it be.
->
-> Just because a piece of hardware is imprecise does not mean it is
-> useless for gestures. Sure, it may not work that great for precision
-> zooming, but it would be good enough for threshold matching. The Unity
-> window manager uses these thresholds to fire actions like spread (or
-> "expose" in OS X terms).
->
-> -- Chase
+> > ...whcih causes problems, and therefore we have PTRACE_O_TRACEEXEC to suppress
+> > this idiotic post-execve SIGTRAP.
+> 
+> The SIGTRAP is still there, there is just an extra bit to distinguish
+> it from normal SIGTRAPs.
 
-As far as I can tell, when the pad reports exactly 2 fingers, it
-reports them both with half the resolution with which it would report
-a single finger (in the 1 finger or 3 fingers cases).
+No. SIGTRAP is no longer 'there'. The PTRACE_EVENT_EXEC happens in a different
+place: after syscall-entry, but before syscall-exit. Also, it can't be blocked
+by signal mask. Old-style post-execve SIGTRAP happens after syscall exit,
+and can be blocked by signal mask.
 
-It sounded like Chase was recommending to report "ST" at full
-resolution and "MT" at half resolution.  Thus, if there is 1 finger,
-we would throw away 1 bit for the MT report.  If there were 2 fingers,
-we would inflate the ST reported finger by one bit.
+IOW: PTRACE_EVENT_EXEC is not a signal at all. It just happens to have 
+WSTOPSIG(status) == SIGTRAP.
 
-I prefer the original behavior of this patch, which just always
-reports ST and MT using the ST scale.
+> Sending another SIGTRAP with another bit set, 
+> just as with PTRACE_O_TRACEEXEC, solves this issue.
 
--Daniel
+
+> >> Only change is
+> >> that it also sends one for new childs instead of SIGSTOP.
+> >
+> > Racing with user's SIGTRAP does not fix the problem, it merely moves it
+> > to a different signal. PTRACE_EVENT_STOP thingy fixes the problem once
+> > and for all.
+> 
+> It doesn't really matter if it's SIGSTOP with an extra flag, or SIGTRAP
+> with an extra flag set. But SIGTRAP is already used this way for fork
+> and exec,
+
+SIGTRAP is used for fork? I don't think so.
+
+> so using it always instead of sometimes SIGSTOP would be more 
+> consistent. It's also clearer what to do with the SIGTRAP as tracer: Block
+> it so the tracee doesn't see it. With SIGSTOP it's less clear what to do.
+> In current trace it doesn't matter what you do, in practice, and that's also
+> what the manpage says. So using SIGTRAP with an extra bit set is cleaner.
+
+
+
+> >> Tracers that want to get group stop notifications will set WSTOPPED and get
+> >> that information that way. But as ptrace won't generate any SIGSTOPs, they
+> >> don't have to use GETSIGINFO to know if it came from ptrace or not: It never
+> >> does.
+> >
+> > Drats. In your proposal, if I'd set WSTOPPED, I will get group-stops, right?
+> 
+> Group stop notifications, yes, that was the idea.
+> 
+> > How in your proposed solution can I "restart and cancel group-stop" after
+> > group-stop? And how can I "restart and wait for a SIGCONT"?
+> 
+> Not sure what you mean with restart, just send another SIGSTOP?
+> 
+> Blocking a group stop happens by blocking the SIGSTOP delivery to the tracee.
+
+Here we go again.
+
+I will write it in bold.
+
+YOU MUST NOT BLOCK DELIVERY OF STOPPING SIGNALS! IT'S ***WRONG***!
+
+I already told you numerous times that SIGTSTP, SISTTIN and SIGTTOU
+can have non-default handlers. Do you understand what this means?
+I guess you don't, since you never replied with the explanation how you
+propose to with this problem.
+
+I also told you that SIGSTOP/SIGCONT are *process-wide*. Meaning
+that if you stop on SIGSTOP delivery to one thread of a multithreaded process
+and will not restart it via PTRACE_CONT, then THIS PARTICULAL THREAD
+will stop running, yes, but all other threads WILL NOT STOP.
+
+> Each tracee gets a SIGSTOP ptrace event, it's not like only one gets it and
+> that controls the state of the whole group.
+
+It's exactly the opposite. SIGSTOP signal-delivery-stop happens on *one* thread,
+and if tracer does not suppress it, then all threads go into group-stop.
+
+> Same for SIGCONT. I'll have to 
+> double check this, but I think this is how it works.
+
+Please do double-check.
+
+
+> >> A group-stop notification is not really a ptrace event (maybe it is now),
+> >> so PTRACE_CONT wouldn't be needed. It's just a group stop notification,
+> >> not a freeze, report and wait event, like signals.
+> >
+> > Yes, this would be a reasonable API model. PTRACE_CONT cancels group-stop,
+> > and *doing nothing* leaves task in the group-stop. One problem with this:
+> > many ptrace ops (such as GETREGS) are only allowed in ptrace stops.
+> > If you don't consider group-stop to be a ptrace-stop, then no such
+> > ops are allowed. In fact, even restart ops need stopped tracee, so PTRACE_CONT
+> > is illegal too. IOW: in this model, kernel doesn't know when we decided
+> > to go down *do nothing* route. From kernel POW, it is confused. Maybe we do
+> > want to PTRACE_CONT, but just didn't get around to it?
+> 
+> It's probably best to not change the current model for group stop notifications
+> (when requested via WSTOPPED), as that is confusing, even if the new behaviour
+> is better (which it probably isn't).
+> 
+> You're right that if a tracee requests group stop notifications, it probably
+> wants to be able to poke around too sometimes, and then a ptrace slightly
+> entwined with group stops is preferred. But it's not elegant. :-/
+
+How kernel knows that tracer is done with poking around, and now it's ok to
+wake up on SIGCONT?
+
+
+> >> > then we have a problem: gdb can't use this interface, it
+> >> > needs to be able to restart the thread (only one thread, not all of
+> >> > them, so sending SIGCONT is not ok!) from the group-stop. Yes, it's
+> >> > weird, but it's the real requirement from gdb users.
+> >>
+> >> Is that true? Isn't a SIGCONT sent to the TID only for that thread instead
+> >> of the whole group? That's slightly inconvenient indeed. Perhaps this
+> >> limitation can be fixed? Might be troublesome for the main thread.
+> >
+> > This is how stopping/starting works. It's per-process, not per-thread.
+> > Regardless of the thread it is sent to, stop signals stop all threads,
+> > and SIGCONT restarts all of them.
+> 
+> Yes, but every thread gets a SIGCONT
+
+No, not every thread. Only one thread gets it.
+
+> and the tracee will get a ptrace 
+> event for each thread. It can let the threads it doesn't want to continue
+> hang in the ptrace handling, and continue only one with PTRACE_CONT.
+> 
+> Any reason why this can't work?
+
+Gosh......... I already told you why it won't work.
+
+
+> >> > In short, you propose to make it possible to switch off group-stop
+> >> > notification.
+> >>
+> >> That is just part of the proposal, the main this is to not let PTRACE_CONT
+> >> continue a stopped task.
+> >
+> > This will break gdb. I told this several times already. Not acceptable.
+> 
+> It probably can use SIGCONT to achieve what it wants.
+
+SIGCONT is magic. It wakes all group-stopped threads, and this effect
+can't be blocked *even via ptrace*. This means that restarting only one
+thread via SIGCONT is impossible.
+
+
+> Letting PTRACE_CONT 
+> not resume stopped tasks would fix normal group stops without any changes.
+
+Exactly our line of thought before gdb people shot down our idea.
+
+> Only programs that want to resume single threads while holding the rest
+> need to change their code slightly to let the tasks hang in SIGCONT instead
+> of group stop notification.
+
+> >> Switching off group-stop notifications makes it
+> >> only easier to use ptrace when not specifically interested in group stops.
+> >
+> > Solution in the search of a problem.
+> 
+> You're probably right that it's not worth the trouble. I'm fine if tracers
+> always get a group stop notification, but if so, there should be an option
+> that makes PTRACE_CONT not continue group stopped tasks.
+
+Yes. Exactly. That "option" is called PTRACE_LISTEN.
+
+
+> What I want to avoid is adding extra specific code in the tracer when all
+> it wants is to be transparent to group stops.
+
+You mean, you want to avoid this atrocious bloat? -
+
+-	ptrace(PTRACE_CONT, pid, 0, sig);
++	int is_stopped = .... determine whether it's a group_stop...
++	if (is_stopped) ptrace(PTRACE_LISTEN, pid, 0, 0);
++	else            ptrace(PTRACE_CONT, pid, 0, sig);
+
+Somehow this doesn't look like big problem to me.
+
+
+> One way is to not get the group stop notifications, so the tracer doesn't
+> accidentally continues the stopped tasks. To me this seems the simplest
+> solution, but it has the problem that it only works for tracers not
+> interested in group stop. To also make it work with group stops, my idea
+> was to let PTRACE_CONT not continue stopped tasks. Instead of trapping
+> tasks at the beginning of group stop, they can trap the tasks at group
+> stop exit time, which is much more natural anyway (because it is group
+> continuation that gdb wants to prevent, not group stop).
+> 
+> With PTRACE_LISTEN the tracee has to handle group stops specially, then,
+> instead of doing nothing for group stop notifications, it has to use
+> PTRACE_LISTEN to emulate group stop and continuation for the tracee. No
+> one is going to bother to add code for this when they're not interested
+> in group stops, especially not if the code is portable at all.
+
+Portable code using ptrace? I pity those who need to maintain that...
+
+
+> It's just not worth the trouble. The behaviour is too strange and different with
+> PTRACE_LISTEN.
+
+I disagree. See code fragment above. It's simple.
+
+
+> Compare that to:
+> 
+>  "PTRACE_O_FOO makes PTRACE_CONT/PTRACE_SYSCALL/etc. not automatically
+>   continue a group stopped process, so that SIGSTOP and SIGCONT work for
+>   ptraced processes. Tracers that want to control thread continuation
+>   can do that at SIGCONT time."
+
+This doesn't allow to make a decision whether to honor or ignore group-stop
+*after* it happened. 
+
+
+-- 
+vda
