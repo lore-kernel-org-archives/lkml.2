@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab1IGQIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:08:25 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:52663 "EHLO e4.ny.us.ibm.com"
+	id S1755887Ab1IGQIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:08:32 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:52664 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756482Ab1IGQH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756484Ab1IGQH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Sep 2011 12:07:59 -0400
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: gregkh@suse.de
@@ -13,105 +13,309 @@ Cc: dan.magenheimer@oracle.com, ngupta@vflare.org, cascardo@holoscopio.com,
         rdunlap@xenotime.net, linux-mm@kvack.org, rcj@linux.vnet.ibm.com,
         dave@linux.vnet.ibm.com, brking@linux.vnet.ibm.com,
         Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-Date: Wed,  7 Sep 2011 09:09:04 -0500
-Message-Id: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCH v2 2/3] staging: zcache: replace xvmalloc with xcfmalloc
+Date: Wed,  7 Sep 2011 09:09:06 -0500
+Message-Id: <1315404547-20075-3-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
-v2: fix bug in find_remove_block()
-    fix whitespace warning at EOF
+This patch replaces xvmalloc with xcfmalloc as the persistent page
+allocator for zcache.
 
-This patchset introduces a new memory allocator for persistent
-pages for zcache.  The current allocator is xvmalloc.  xvmalloc
-has two notable limitations:
-* High (up to 50%) external fragmentation on allocation sets > PAGE_SIZE/2
-* No compaction support which reduces page reclaimation
+Because the API is not the same between xvmalloc and xcfmalloc, the
+changes are not a simple find/replace on the function names.
 
-xcfmalloc seeks to fix these issues by using scatter-gather model that
-allows for cross-page allocations and relocatable data blocks.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |  130 ++++++++++++++++++++++------------
+ 1 files changed, 84 insertions(+), 46 deletions(-)
 
-In tests, with pages that only compress to 75% of their original
-size, xvmalloc had an effective compression (pages stored / pages used by the
-compressed memory pool) of ~95% (~20% lost to fragmentation). Almost nothing
-was gained by the compression in this case. xcfmalloc had an effective
-compression of ~77% (about ~2% lost to fragmentation and metadata overhead).
-
-xcfmalloc uses the same locking scheme as xvmalloc; a single pool-level
-spinlock.  This can lead to some contention.  However, in my tests on a 4
-way SMP system, the contention was minimal (200 contentions out of 600k
-aquisitions).  The locking scheme may be able to be improved in the future.
-In tests, xcfmalloc and xvmalloc had identical throughputs.
-
-While the xcfmalloc design lends itself to compaction, this is not yet
-implemented.  Support will be added in a follow-on patch.
-
-Based on 3.1-rc4.
-
-=== xvmalloc vs xcfmalloc ===
-Here are some comparison metrics vs xvmalloc.  The tests were done on
-a 32-bit system in a a cgroup with a memory.limit_in_bytes of 256MB.
-I ran a program that allocates 512MB, one 4k page a time.  The pages
-can be filled with zeros or text depending on the command arguments.
-The text is english text that has an average compression ratio, using 
-lzo1x, of 75% with little deviation.  zv_max_mean_zsize and zv_max_zsize are
-both set to 3584 (7 * PAGE_SIZE / 8).
-
-xvmalloc
-		curr_pages	zv_page_count	effective compression
-zero filled	65859		1269		1.93%
-text (75%)	65925		65892		99.95%
-
-xcfmalloc (descriptors are 24 bytes, 170 per 4k page)
-		curr_pages	zv_page_count	zv_desc_count	effective compression
-zero filled	65845		2068		65858		3.72% (+1.79)
-text (75%)	65965		50848		114980		78.11% (-21.84)
-
-This shows that xvmalloc is 1.79 points better on zero filled pages.
-This is because xcfmalloc has higher internal fragmentation because
-the block sizes aren't as granular as xvmalloc.  This contributes
-to 1.21 points of the delta. xcfmalloc also has block descriptors,
-which contributes to the remaining 0.58 points.
-
-It also shows that xcfmalloc is 21.84 points better on text filled 
-pages. This is because of xcfmalloc allocations can span different
-pages which greatly reduces external fragmentation compared to xvmalloc.
-
-I did some quick tests with "time" using the same program and the
-timings are very close (3 run average, little deviation):
-
-xvmalloc:
-zero filled	0m0.852s
-text (75%)	0m14.415s
-
-xcfmalloc:
-zero filled	0m0.870s
-text (75%)	0m15.089s
-
-I suspect that the small decrease in throughput is due to the
-extra memcpy in xcfmalloc.  However, these timing, more than 
-anything, demonstrate that the throughput is GREATLY effected
-by the compressibility of the data.
-
-In all cases, all swapped pages where captured by frontswap with
-no put failures.
-
-Seth Jennings (3):
-  staging: zcache: xcfmalloc memory allocator for zcache
-  staging: zcache: replace xvmalloc with xcfmalloc
-  staging: zcache: add zv_page_count and zv_desc_count
-
- drivers/staging/zcache/Makefile      |    2 +-
- drivers/staging/zcache/xcfmalloc.c   |  652 ++++++++++++++++++++++++++++++++++
- drivers/staging/zcache/xcfmalloc.h   |   28 ++
- drivers/staging/zcache/zcache-main.c |  154 ++++++---
- 4 files changed, 789 insertions(+), 47 deletions(-)
- create mode 100644 drivers/staging/zcache/xcfmalloc.c
- create mode 100644 drivers/staging/zcache/xcfmalloc.h
-
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index a3f5162..b07377b 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -8,7 +8,7 @@
+  * and, thus indirectly, for cleancache and frontswap.  Zcache includes two
+  * page-accessible memory [1] interfaces, both utilizing lzo1x compression:
+  * 1) "compression buddies" ("zbud") is used for ephemeral pages
+- * 2) xvmalloc is used for persistent pages.
++ * 2) xcfmalloc is used for persistent pages.
+  * Xvmalloc (based on the TLSF allocator) has very low fragmentation
+  * so maximizes space efficiency, while zbud allows pairs (and potentially,
+  * in the future, more than a pair of) compressed pages to be closely linked
+@@ -31,7 +31,7 @@
+ #include <linux/math64.h>
+ #include "tmem.h"
+ 
+-#include "../zram/xvmalloc.h" /* if built in drivers/staging */
++#include "xcfmalloc.h"
+ 
+ #if (!defined(CONFIG_CLEANCACHE) && !defined(CONFIG_FRONTSWAP))
+ #error "zcache is useless without CONFIG_CLEANCACHE or CONFIG_FRONTSWAP"
+@@ -60,7 +60,7 @@ MODULE_LICENSE("GPL");
+ 
+ struct zcache_client {
+ 	struct tmem_pool *tmem_pools[MAX_POOLS_PER_CLIENT];
+-	struct xv_pool *xvpool;
++	struct xcf_pool *xcfmpool;
+ 	bool allocated;
+ 	atomic_t refcount;
+ };
+@@ -623,9 +623,8 @@ static int zbud_show_cumul_chunk_counts(char *buf)
+ #endif
+ 
+ /**********
+- * This "zv" PAM implementation combines the TLSF-based xvMalloc
+- * with lzo1x compression to maximize the amount of data that can
+- * be packed into a physical page.
++ * This "zv" PAM implementation combines xcfmalloc with lzo1x compression
++ * to maximize the amount of data that can be packed into a physical page.
+  *
+  * Zv represents a PAM page with the index and object (plus a "size" value
+  * necessary for decompression) immediately preceding the compressed data.
+@@ -658,71 +657,97 @@ static unsigned int zv_max_mean_zsize = (PAGE_SIZE / 8) * 5;
+ static unsigned long zv_curr_dist_counts[NCHUNKS];
+ static unsigned long zv_cumul_dist_counts[NCHUNKS];
+ 
+-static struct zv_hdr *zv_create(struct xv_pool *xvpool, uint32_t pool_id,
++static DEFINE_PER_CPU(unsigned char *, zv_cbuf); /* zv create buffer */
++static DEFINE_PER_CPU(unsigned char *, zv_dbuf); /* zv decompress buffer */
++
++static int zv_cpu_notifier(struct notifier_block *nb,
++				unsigned long action, void *pcpu)
++{
++	int cpu = (long)pcpu;
++
++	switch (action) {
++	case CPU_UP_PREPARE:
++		per_cpu(zv_cbuf, cpu) = (void *)__get_free_page(
++			GFP_KERNEL | __GFP_REPEAT);
++		per_cpu(zv_dbuf, cpu) = (void *)__get_free_page(
++			GFP_KERNEL | __GFP_REPEAT);
++		break;
++	case CPU_DEAD:
++	case CPU_UP_CANCELED:
++		free_page((unsigned long)per_cpu(zv_cbuf, cpu));
++		per_cpu(zv_cbuf, cpu) = NULL;
++		free_page((unsigned long)per_cpu(zv_dbuf, cpu));
++		per_cpu(zv_dbuf, cpu) = NULL;
++		break;
++	default:
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++
++static void **zv_create(struct xcf_pool *xcfmpool, uint32_t pool_id,
+ 				struct tmem_oid *oid, uint32_t index,
+ 				void *cdata, unsigned clen)
+ {
+-	struct page *page;
+-	struct zv_hdr *zv = NULL;
+-	uint32_t offset;
+-	int alloc_size = clen + sizeof(struct zv_hdr);
+-	int chunks = (alloc_size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
+-	int ret;
++	struct zv_hdr *zv;
++	u32 size = clen + sizeof(struct zv_hdr);
++	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
++	void *handle;
+ 
+ 	BUG_ON(!irqs_disabled());
+ 	BUG_ON(chunks >= NCHUNKS);
+-	ret = xv_malloc(xvpool, alloc_size,
+-			&page, &offset, ZCACHE_GFP_MASK);
+-	if (unlikely(ret))
+-		goto out;
++
++	handle = xcf_malloc(xcfmpool, size, ZCACHE_GFP_MASK);
++	if (!handle)
++		return NULL;
++
+ 	zv_curr_dist_counts[chunks]++;
+ 	zv_cumul_dist_counts[chunks]++;
+-	zv = kmap_atomic(page, KM_USER0) + offset;
++
++	zv = (struct zv_hdr *)((char *)cdata - sizeof(*zv));
+ 	zv->index = index;
+ 	zv->oid = *oid;
+ 	zv->pool_id = pool_id;
+ 	SET_SENTINEL(zv, ZVH);
+-	memcpy((char *)zv + sizeof(struct zv_hdr), cdata, clen);
+-	kunmap_atomic(zv, KM_USER0);
+-out:
+-	return zv;
++	xcf_write(handle, zv);
++
++	return handle;
+ }
+ 
+-static void zv_free(struct xv_pool *xvpool, struct zv_hdr *zv)
++static void zv_free(struct xcf_pool *xcfmpool, void *handle)
+ {
+ 	unsigned long flags;
+-	struct page *page;
+-	uint32_t offset;
+-	uint16_t size = xv_get_object_size(zv);
++	u32 size = xcf_get_alloc_size(handle);
+ 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
+ 
+-	ASSERT_SENTINEL(zv, ZVH);
+ 	BUG_ON(chunks >= NCHUNKS);
+ 	zv_curr_dist_counts[chunks]--;
+-	size -= sizeof(*zv);
+-	BUG_ON(size == 0);
+-	INVERT_SENTINEL(zv, ZVH);
+-	page = virt_to_page(zv);
+-	offset = (unsigned long)zv & ~PAGE_MASK;
++
+ 	local_irq_save(flags);
+-	xv_free(xvpool, page, offset);
++	xcf_free(xcfmpool, handle);
+ 	local_irq_restore(flags);
+ }
+ 
+-static void zv_decompress(struct page *page, struct zv_hdr *zv)
++static void zv_decompress(struct page *page, void *handle)
+ {
+ 	size_t clen = PAGE_SIZE;
+ 	char *to_va;
+ 	unsigned size;
+ 	int ret;
++	struct zv_hdr *zv;
+ 
+-	ASSERT_SENTINEL(zv, ZVH);
+-	size = xv_get_object_size(zv) - sizeof(*zv);
++	size = xcf_get_alloc_size(handle) - sizeof(*zv);
+ 	BUG_ON(size == 0);
++	zv = (struct zv_hdr *)(get_cpu_var(zv_dbuf));
++	xcf_read(handle, zv);
++	ASSERT_SENTINEL(zv, ZVH);
+ 	to_va = kmap_atomic(page, KM_USER0);
+ 	ret = lzo1x_decompress_safe((char *)zv + sizeof(*zv),
+ 					size, to_va, &clen);
+ 	kunmap_atomic(to_va, KM_USER0);
++	put_cpu_var(zv_dbuf);
+ 	BUG_ON(ret != LZO_E_OK);
+ 	BUG_ON(clen != PAGE_SIZE);
+ }
+@@ -949,8 +974,9 @@ int zcache_new_client(uint16_t cli_id)
+ 		goto out;
+ 	cli->allocated = 1;
+ #ifdef CONFIG_FRONTSWAP
+-	cli->xvpool = xv_create_pool();
+-	if (cli->xvpool == NULL)
++	cli->xcfmpool =
++		xcf_create_pool(ZCACHE_GFP_MASK);
++	if (cli->xcfmpool == NULL)
+ 		goto out;
+ #endif
+ 	ret = 0;
+@@ -1154,7 +1180,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
+ 				struct tmem_pool *pool, struct tmem_oid *oid,
+ 				 uint32_t index)
+ {
+-	void *pampd = NULL, *cdata;
++	void *pampd = NULL, *cdata = NULL;
+ 	size_t clen;
+ 	int ret;
+ 	unsigned long count;
+@@ -1186,26 +1212,30 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
+ 		if (curr_pers_pampd_count >
+ 		    (zv_page_count_policy_percent * totalram_pages) / 100)
+ 			goto out;
++		cdata = get_cpu_var(zv_cbuf) + sizeof(struct zv_hdr);
+ 		ret = zcache_compress(page, &cdata, &clen);
+ 		if (ret == 0)
+ 			goto out;
+ 		/* reject if compression is too poor */
+ 		if (clen > zv_max_zsize) {
+ 			zcache_compress_poor++;
++			put_cpu_var(zv_cbuf);
+ 			goto out;
+ 		}
+ 		/* reject if mean compression is too poor */
+ 		if ((clen > zv_max_mean_zsize) && (curr_pers_pampd_count > 0)) {
+-			total_zsize = xv_get_total_size_bytes(cli->xvpool);
++			total_zsize = xcf_get_total_size_bytes(cli->xcfmpool);
+ 			zv_mean_zsize = div_u64(total_zsize,
+ 						curr_pers_pampd_count);
+ 			if (zv_mean_zsize > zv_max_mean_zsize) {
+ 				zcache_mean_compress_poor++;
++				put_cpu_var(zv_cbuf);
+ 				goto out;
+ 			}
+ 		}
+-		pampd = (void *)zv_create(cli->xvpool, pool->pool_id,
++		pampd = (void *)zv_create(cli->xcfmpool, pool->pool_id,
+ 						oid, index, cdata, clen);
++		put_cpu_var(zv_cbuf);
+ 		if (pampd == NULL)
+ 			goto out;
+ 		count = atomic_inc_return(&zcache_curr_pers_pampd_count);
+@@ -1262,7 +1292,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+ 		atomic_dec(&zcache_curr_eph_pampd_count);
+ 		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
+ 	} else {
+-		zv_free(cli->xvpool, (struct zv_hdr *)pampd);
++		zv_free(cli->xcfmpool, pampd);
+ 		atomic_dec(&zcache_curr_pers_pampd_count);
+ 		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
+ 	}
+@@ -1309,11 +1339,16 @@ static DEFINE_PER_CPU(unsigned char *, zcache_dstmem);
+ static int zcache_compress(struct page *from, void **out_va, size_t *out_len)
+ {
+ 	int ret = 0;
+-	unsigned char *dmem = __get_cpu_var(zcache_dstmem);
++	unsigned char *dmem;
+ 	unsigned char *wmem = __get_cpu_var(zcache_workmem);
+ 	char *from_va;
+ 
+ 	BUG_ON(!irqs_disabled());
++	if (out_va && *out_va)
++		dmem = *out_va;
++	else
++		dmem = __get_cpu_var(zcache_dstmem);
++
+ 	if (unlikely(dmem == NULL || wmem == NULL))
+ 		goto out;  /* no buffer, so can't compress */
+ 	from_va = kmap_atomic(from, KM_USER0);
+@@ -1331,7 +1366,7 @@ out:
+ static int zcache_cpu_notifier(struct notifier_block *nb,
+ 				unsigned long action, void *pcpu)
+ {
+-	int cpu = (long)pcpu;
++	int ret, cpu = (long)pcpu;
+ 	struct zcache_preload *kp;
+ 
+ 	switch (action) {
+@@ -1363,7 +1398,10 @@ static int zcache_cpu_notifier(struct notifier_block *nb,
+ 	default:
+ 		break;
+ 	}
+-	return NOTIFY_OK;
++
++	ret = zv_cpu_notifier(nb, action, pcpu);
++
++	return ret;
+ }
+ 
+ static struct notifier_block zcache_cpu_notifier_block = {
+@@ -1991,7 +2029,7 @@ static int __init zcache_init(void)
+ 
+ 		old_ops = zcache_frontswap_register_ops();
+ 		pr_info("zcache: frontswap enabled using kernel "
+-			"transcendent memory and xvmalloc\n");
++			"transcendent memory and xcfmalloc\n");
+ 		if (old_ops.init != NULL)
+ 			pr_warning("ktmem: frontswap_ops overridden");
+ 	}
 -- 
 1.7.4.1
 
