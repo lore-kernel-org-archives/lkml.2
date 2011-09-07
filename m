@@ -1,154 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab1IGGbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:31:00 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:37603 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755551Ab1IGGUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 02:20:39 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 47/55] rcu: Move propagation of ->completed from rcu_start_gp() to rcu_report_qs_rsp()
-Date: Tue,  6 Sep 2011 11:00:41 -0700
-Message-Id: <1315332049-2604-47-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20110906180015.GA2560@linux.vnet.ibm.com>
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
-x-cbid: 11090706-6078-0000-0000-000000711758
+	id S1753365Ab1IGGhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:37:17 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44323 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab1IGGhL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 02:37:11 -0400
+MIME-Version: 1.0
+Date: Wed, 7 Sep 2011 08:37:10 +0200
+Message-ID: <CAC9WiBiNj-NS2mb8SaR1pK2JQdJOAbnN_rCXk1ZEMNaWQWZwxQ@mail.gmail.com>
+Subject: Re: v3.1-rc5: Weird kernel log message when resuming avout NMI received
+From: Francis Moreau <francis.moro@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible for the CPU that noted the end of the prior grace period
-to not need a new one, and therefore to decide to propagate ->completed
-throughout the rcu_node tree without starting another grace period.
-However, in so doing, it releases the root rcu_node structure's lock,
-which can allow some other CPU to start another grace period.  The first
-CPU will be propagating ->completed in parallel with the second CPU
-initializing the rcu_node tree for the new grace period.  In theory
-this is harmless, but in practice we need to keep things simple.
+Guys,
 
-This commit therefore moves the propagation of ->completed to
-rcu_report_qs_rsp(), and refrains from marking the old grace period
-as having been completed until it has finished doing this.  This
-prevents anyone from starting a new grace period concurrently with
-marking the old grace period as having been completed.
+Just to let you know that I'm still getting this warning with 3.1-rc5
 
-Of course, the optimization where a CPU needing a new grace period
-doesn't bother marking the old one completed is still in effect:
-In that case, the marking happens implicitly as part of initializing
-the new grace period.
+On Tue, Aug 16, 2011 at 5:07 PM, Francis Moreau <francis.moro@gmail.com> wrote:
+> Peter,
+>
+> On Mon, Aug 15, 2011 at 10:37 AM, Francis Moreau <francis.moro@gmail.com> wrote:
+>> Hello Peter,
+>>
+>> Sorry for the loooonnng delay but summer rest :)
+>>
+>> On Mon, Aug 1, 2011 at 1:05 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>>> On Sun, 2011-07-31 at 19:32 +0400, Cyrill Gorcunov wrote:
+>>>
+>>>> > >> I'm seeing those kernel message when resuming:
+>>>> > >>
+>>>> > >> [  524.973283] Uhhuh. NMI received for unknown reason 3d on CPU 0.
+>>>> > >> [  524.973288] Do you have a strange power saving mode enabled?
+>>>> > >> [  524.973289] Dazed and confused, but trying to continue
+>>>> > >>
+>>>> > >> I don't know if it's important or not because the system seems to work
+>>>> > >> after but maybe it worths to report
+>>>
+>>> So I guess the problem is the NMI watchdog and suspend stuff not
+>>> shutting things down properly..
+>>>
+>>> Argh, the PM notifier muck runs before the hotplug notifiers and it
+>>> doesn't avoid hotplug races on its own.. what crap.
+>>>
+>>> something like the below perhaps, compile tested only.. does it work?
+>>
+>> Thanks for the fix, I'm going to give it a test and report in 2 days.
+>>
+>
+> I'm trying to test the fix but have to stick with the 3.0 kernel and
+> your patch seems to be based on 3.1.
+>
+> So I had to backport a couple of patches otherwise I'm getting the
+> following error:
+>
+>  CC      kernel/events/core.o
+> kernel/events/core.c: In function ‘perf_pm_resume_cpu’:
+> kernel/events/core.c:7342: error: implicit declaration of function
+> ‘perf_ctx_lock’
+> kernel/events/core.c:7350: error: implicit declaration of function
+> ‘perf_ctx_unlock’
+> kernel/events/core.c: In function ‘perf_pm_suspend_cpu’:
+> kernel/events/core.c:7370: error: implicit declaration of function
+> ‘perf_event_sched_in’
+>
+> Here are the patches that I backported on top of 3.0:
+>
+>  perf: Collect the schedule-in rules in one function
+>  perf: Change and simplify ctx::is_active semantics
+>  perf: Simplify and fix __perf_install_in_context()
+>  perf: Remove task_ctx_sched_in()
+>  perf: Optimize event scheduling locking
+>  perf: Clean up 'ctx' reference counting
+>  perf: Optimize ctx_sched_out()
+>
+> After the second suspend/resume sequence I still have the same warning
+> except that the reason has changed to '2d':
+>
+>  kernel:[  404.091393] Uhhuh. NMI received for unknown reason 2d on CPU 0.
+>  kernel:[  404.091394] Do you have a strange power saving mode enabled?
+>  kernel:[  404.091396] Dazed and confused, but trying to continue
+>
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree.c |   71 ++++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 51 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index ab37c19..f0a9432 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -842,28 +842,24 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
- 	if (!rcu_scheduler_fully_active ||
--	    !cpu_needs_another_gp(rsp, rdp) ||
--	    rsp->fqs_active) {
--		if (rcu_scheduler_fully_active &&
--		    cpu_needs_another_gp(rsp, rdp))
--			rsp->fqs_need_gp = 1;
--		if (rnp->completed == rsp->completed) {
--			raw_spin_unlock_irqrestore(&rnp->lock, flags);
--			return;
--		}
--		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
-+	    !cpu_needs_another_gp(rsp, rdp)) {
-+		/*
-+		 * Either the scheduler hasn't yet spawned the first
-+		 * non-idle task or this CPU does not need another
-+		 * grace period.  Either way, don't start a new grace
-+		 * period.
-+		 */
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-+		return;
-+	}
- 
-+	if (rsp->fqs_active) {
- 		/*
--		 * Propagate new ->completed value to rcu_node structures
--		 * so that other CPUs don't have to wait until the start
--		 * of the next grace period to process their callbacks.
-+		 * This CPU needs a grace period, but force_quiescent_state()
-+		 * is running.  Tell it to start one on this CPU's behalf.
- 		 */
--		rcu_for_each_node_breadth_first(rsp, rnp) {
--			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
--			rnp->completed = rsp->completed;
--			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
--		}
--		local_irq_restore(flags);
-+		rsp->fqs_need_gp = 1;
-+		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		return;
- 	}
- 
-@@ -947,6 +943,8 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
- 	__releases(rcu_get_root(rsp)->lock)
- {
- 	unsigned long gp_duration;
-+	struct rcu_node *rnp = rcu_get_root(rsp);
-+	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
- 
- 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
- 
-@@ -958,7 +956,40 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
- 	gp_duration = jiffies - rsp->gp_start;
- 	if (gp_duration > rsp->gp_max)
- 		rsp->gp_max = gp_duration;
--	rsp->completed = rsp->gpnum;
-+
-+	/*
-+	 * We know the grace period is complete, but to everyone else
-+	 * it appears to still be ongoing.  But it is also the case
-+	 * that to everyone else it looks like there is nothing that
-+	 * they can do to advance the grace period.  It is therefore
-+	 * safe for us to drop the lock in order to mark the grace
-+	 * period as completed in all of the rcu_node structures.
-+	 *
-+	 * But if this CPU needs another grace period, it will take
-+	 * care of this while initializing the next grace period.
-+	 * We use RCU_WAIT_TAIL instead of the usual RCU_DONE_TAIL
-+	 * because the callbacks have not yet been advanced: Those
-+	 * callbacks are waiting on the grace period that just now
-+	 * completed.
-+	 */
-+	if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
-+		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
-+
-+		/*
-+		 * Propagate new ->completed value to rcu_node structures
-+		 * so that other CPUs don't have to wait until the start
-+		 * of the next grace period to process their callbacks.
-+		 */
-+		rcu_for_each_node_breadth_first(rsp, rnp) {
-+			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-+			rnp->completed = rsp->gpnum;
-+			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+		}
-+		rnp = rcu_get_root(rsp);
-+		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
-+	}
-+
-+	rsp->completed = rsp->gpnum;  /* Declare the grace period complete. */
- 	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
- 	rsp->signaled = RCU_GP_IDLE;
- 	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
 -- 
-1.7.3.2
-
+Francis
