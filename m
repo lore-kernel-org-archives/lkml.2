@@ -1,119 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab1IGQrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:47:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49338 "EHLO mga09.intel.com"
+	id S1753928Ab1IGQro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:47:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24151 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753610Ab1IGQrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753852Ab1IGQrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Sep 2011 12:47:40 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="46053000"
-Message-ID: <4E6776BD.4040402@linux.intel.com>
-Date: Wed, 07 Sep 2011 21:50:53 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 5/5] mce: recover from "action required" errors reported
- in data path in usermode
-References: <4e5eb50721061dbb1b@agluck-desktop.sc.intel.com> <4E6709B2.7020401@linux.intel.com> <20110907132500.GA8928@aftab>
-In-Reply-To: <20110907132500.GA8928@aftab>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="45870149"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: alan@linux.intel.com, sameo@linux.intel.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, feng.tang@intel.com,
+        jacob.jun.pan@linux.intel.com,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH 2/3] x86, mrst: Some drivers need to known when an SCU is available
+Date: Wed,  7 Sep 2011 16:06:51 +0300
+Message-Id: <618af614e18f9a6a13de09834805f5ef18773b33.1315399396.git.mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 9/7/2011 9:25 PM, Borislav Petkov 写道:
-> On Wed, Sep 07, 2011 at 02:05:38AM -0400, Chen Gong wrote:
->
-> [..]
->
->>> +	/* known AR MCACODs: */
->>> +	MCESEV(
->>> +		KEEP, "HT thread notices Action required: data load error",
->>> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
->>> +		MCGMASK(MCG_STATUS_EIPV, 0)
->>> +		),
->>> +	MCESEV(
->>> +		AR, "Action required: data load error",
->>> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
->>> +		USER
->>> +		),
->>
->> I don't think *AR* makes sense here because the following codes have a
->> assumption that it means *user space* condition. If so, in the future a
->> new *AR* severity for kernel usage is created, we can't distinguish
->> which one can call "memory_failure" as below. At least, it should have a
->> suffix such as AR_USER/AR_KERN:
->>
->> enum severity_level {
->>           MCE_NO_SEVERITY,
->>           MCE_KEEP_SEVERITY,
->>           MCE_SOME_SEVERITY,
->>           MCE_AO_SEVERITY,
->>           MCE_UC_SEVERITY,
->>           MCE_AR_USER_SEVERITY,
->> 	MCE_AR_KERN_SEVERITY,
->>           MCE_PANIC_SEVERITY,
->> };
->
-> Are you saying you need action required handling for when the data load
-> error happens in kernel space? If so, I don't see how you can replay the
-> data load (assuming this is a data load from DRAM). In that case, we're
-> fatal and need to panic. If it is a different type of data load coming
-> from a lower cache level, then we could be able to recover...?
->
-> [..]
->
+From: Alan Cox <alan@linux.intel.com>
 
-Yep, what I talk is data load error in kenel space. In fact, I'm not 
-sure what we can do except panic :-), IIRC, Tony ever said in some 
-situations kernel can be recovered. If it is true, we must distinguish
-these two different scenarios. In *user space* case, memory_failure can
-be called, but on the contrary, it can't.
+Add a notifier so that drivers can hook into SCU availability in order to
+take actions post initialisation when/if the SCU becomes available.
 
->>> +	if (worst == MCE_AR_SEVERITY) {
->>> +		unsigned long pfn = m.addr>>   PAGE_SHIFT;
->>> +
->>> +		pr_err("Uncorrected hardware memory error in user-access at %llx",
->>> +			m.addr);
->>
->> print in the MCE handler maybe makes a deadlock ? say, when other CPUs
->> are printing something, suddently they received MCE broadcast from
->> Monarch CPU, when Monarch CPU runs above codes, a deadlock happens ?
->> Please fix me if I miss something :-)
->
-> sounds like it can happen if the other CPUs have grabbed some console
-> semaphore/mutex (I don't know what exactly we're using there) and the
-> monarch tries to grab it.
->
->>> +		if (__memory_failure(pfn, MCE_VECTOR, 0)<   0) {
->>> +			pr_err("Memory error not recovered");
->>> +			force_sig(SIGBUS, current);
->>> +		} else
->>> +			pr_err("Memory error recovered");
->>> +	}
->>
->> as you mentioned in the comment, the biggest concern is that when
->> __memory_failure runs too long, if another MCE happens at the same
->> time, (assuming this MCE is happened on its sibling CPU which has the
->> same banks), the 2nd MCE will crash the system. Why not delaying the
->> process in a safer context, such as using user_return_notifer ?
->
-> The user_return_notifier won't work, as we concluded in the last
-> discussion round: http://marc.info/?l=linux-kernel&m=130765542330349
->
-> AFAIR, we want to have a realtime thread dealing with that recovery
-> so that we exit #MC context as fast as possible. The code then should
-> be able to deal with a follow-up #MC. Tony, whatever happened to that
-> approach?
->
-> Thanks.
->
+In the ideal world we wouldn't need this and we could avoid any init
+dependancies of this form, but in practice we can't do it for some cases.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+ arch/x86/include/asm/intel_scu_ipc.h |   22 ++++++++++++++++++++++
+ arch/x86/platform/mrst/mrst.c        |    7 +++++++
+ 2 files changed, 29 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/intel_scu_ipc.h b/arch/x86/include/asm/intel_scu_ipc.h
+index 29f6679..4420993 100644
+--- a/arch/x86/include/asm/intel_scu_ipc.h
++++ b/arch/x86/include/asm/intel_scu_ipc.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_X86_INTEL_SCU_IPC_H_
+ #define  _ASM_X86_INTEL_SCU_IPC_H_
+ 
++#include <linux/notifier.h>
++
+ #define IPCMSG_VRTC	0xFA	 /* Set vRTC device */
+ 
+ /* Command id associated with message IPCMSG_VRTC */
+@@ -44,4 +46,24 @@ int intel_scu_ipc_i2c_cntrl(u32 addr, u32 *data);
+ /* Update FW version */
+ int intel_scu_ipc_fw_update(u8 *buffer, u32 length);
+ 
++extern struct blocking_notifier_head intel_scu_notifier;
++
++static inline void intel_scu_notifier_add(struct notifier_block *nb)
++{
++	blocking_notifier_chain_register(&intel_scu_notifier, nb);
++}
++
++static inline void intel_scu_notifier_remove(struct notifier_block *nb)
++{
++	blocking_notifier_chain_unregister(&intel_scu_notifier, nb);
++}
++
++static inline int intel_scu_notifier_post(unsigned long v, void *p)
++{
++	return blocking_notifier_call_chain(&intel_scu_notifier, v, p);
++}
++
++#define		SCU_AVAILABLE		1
++#define		SCU_DOWN		2
++
+ #endif
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 745db49..97138a3 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -24,6 +24,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/irq.h>
+ #include <linux/module.h>
++#include <linux/notifier.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/mpspec_def.h>
+@@ -578,6 +579,9 @@ static void __init intel_scu_i2c_device_register(int bus,
+ 	i2c_devs[i2c_next_dev++] = new_dev;
+ }
+ 
++BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
++EXPORT_SYMBOL_GPL(intel_scu_notifier);
++
+ /* Called by IPC driver */
+ void intel_scu_devices_create(void)
+ {
+@@ -602,6 +606,7 @@ void intel_scu_devices_create(void)
+ 		} else
+ 			i2c_register_board_info(i2c_bus[i], i2c_devs[i], 1);
+ 	}
++	intel_scu_notifier_post(SCU_AVAILABLE, 0L);
+ }
+ EXPORT_SYMBOL_GPL(intel_scu_devices_create);
+ 
+@@ -610,6 +615,8 @@ void intel_scu_devices_destroy(void)
+ {
+ 	int i;
+ 
++	intel_scu_notifier_post(SCU_DOWN, 0L);
++
+ 	for (i = 0; i < ipc_next_dev; i++)
+ 		platform_device_del(ipc_devs[i]);
+ }
+-- 
+1.7.5.4
 
