@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab1IGGBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 02:01:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63863 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab1IGGBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 02:01:47 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.113.217]
-In-Reply-To: <CAHQjnOMT3UOFMi=JbSXf4-s_BbZ+fSGbOEjxwT7t7N-zd+9-zg@mail.gmail.com>
-References: <1314984756-4400-1-git-send-email-ohad@wizery.com>
- <1314984756-4400-8-git-send-email-ohad@wizery.com> <CAHQjnOMT3UOFMi=JbSXf4-s_BbZ+fSGbOEjxwT7t7N-zd+9-zg@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 7 Sep 2011 09:01:26 +0300
-Message-ID: <CAK=WgbZPFryzCFLa5AhAYDmH1S8c3x-OsSTyxYeq0WLAe8VyTg@mail.gmail.com>
-Subject: Re: [RFC 7/7] iommu/core: split mapping to page sizes as supported by
- the hardware
-To: KyongHo Cho <pullip.cho@samsung.com>
-Cc: iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755487Ab1IGGEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 02:04:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39453 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754594Ab1IGGEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 02:04:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,343,1312182000"; 
+   d="scan'208";a="48789588"
+From: Oren Weil <oren.jer.weil@intel.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, alan@linux.intel.com, wim@iguana.be,
+        tomas.winkler@intel.com, Oren Weil <oren.jer.weil@intel.com>
+Subject: [PATCH 00/12 v2] staging: mei: adding new watchdog core support
+Date: Wed,  7 Sep 2011 09:03:06 +0300
+Message-Id: <1315375398-29529-1-git-send-email-oren.jer.weil@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cho,
+In this patches set we are adding the new watchdog core to the mei driver.
+Until now the mei driver manage by itself the Intel(R) Active Management Technology 
+(Intel(R) AMT) watchdog, the driver send the heartbeat by a 
+internal timer and the internal was defined by module parameter.
 
-On Wed, Sep 7, 2011 at 4:30 AM, KyongHo Cho <pullip.cho@samsung.com> wrote:
-> Please find the following link that I submitted for our IOMMU.
-> https://lkml.org/lkml/2011/7/3/152
->
-> s5p_iommu_map/unmap accepts any order of physical address and iova
-> without support of your suggestion if the order is not less than PAGE_SHIFT
+for more information about the Intel(R) AMT watchdog read
+drivers/staging/mei/mei.txt
 
-That's exactly what I'm trying to prevent; there's no reason to
-duplicate the exact same logic in every iommu driver.
+Version 2 - Removed two tab indent in patch 05
 
-As a result, your map function is quite big (it even duplicates the
-same logic for every page size it tries).
+Oren Weil (12):
+  staging: mei: removing dependency between WD and AMTHI init function.
+  staging: mei: fix register access function comments
+  staging: mei: registering the MEI driver with the kernel watchdog
+    core interface
+  staging: mei: adding watchdog ops
+  staging: mei: adding watchdog ping
+  staging: mei: adding set_timeout watchdog function
+  staging: mei: renaming delayed work field and function to a
+    meaningful name.
+  staging: mei: resuming timer regardless of the watchdog timeout
+    value.
+  stagign: mei: client init code cleanup
+  staging: mei: removing wd module parameters
+  staging: mei: adding mei_wd_stop function comment
+  staging: mei: adding watchdog core dependency to kconfig
 
-Try to rebase your patch on the "iommu/core: split mapping to page
-sizes as supported by the hardware" patch I've just sent, and see how
-significantly simpler your code becomes.
+ drivers/staging/mei/Kconfig     |    2 +-
+ drivers/staging/mei/init.c      |    9 ++-
+ drivers/staging/mei/interface.h |    8 +-
+ drivers/staging/mei/interrupt.c |   45 +++-----
+ drivers/staging/mei/main.c      |   19 ++--
+ drivers/staging/mei/mei_dev.h   |   22 +++-
+ drivers/staging/mei/wd.c        |  242 +++++++++++++++++++++++++++++++++------
+ 7 files changed, 261 insertions(+), 86 deletions(-)
 
-Relying on a single implementation, provided by the IOMMU core, means
-less code to maintain (and debug) and a consistent behavior (across
-all supported hardware) exposed to users of the IOMMU API.
+-- 
+1.7.4.1
 
-> But I think IOMMU API must not expect that the caller of iommu_map() knows
-> about the restriction of IOMMU API implementation.
-
-Right. But I don't think there's any disagreement here ?
-
-If any, then I think that s5p_iommu_map() is more limited than what I
-propose: if it is given a 64KB region aligned only to a 4KB address,
-it will BUG_ON() it. While not ideal, I don't think there's any reason
-not to map it using 4KB pages (which is exactly what the new
-iommu_map() I propose will do).
-
-Thanks,
-Ohad.
