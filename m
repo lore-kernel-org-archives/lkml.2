@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab1IGViy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 17:38:54 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:50791 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757136Ab1IGViv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 17:38:51 -0400
-Date: Wed, 7 Sep 2011 17:38:42 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Stephan Mueller <stephan.mueller@atsec.com>
-Cc: Steve Grubb <sgrubb@redhat.com>, Jarod Wilson <jarod@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-crypto@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>, Neil Horman <nhorman@redhat.com>,
-        Herbert Xu <herbert.xu@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: add blocking facility to urandom
-Message-ID: <20110907213842.GF20571@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Stephan Mueller <stephan.mueller@atsec.com>,
-	Steve Grubb <sgrubb@redhat.com>, Jarod Wilson <jarod@redhat.com>,
-	Sasha Levin <levinsasha928@gmail.com>, linux-crypto@vger.kernel.org,
-	Matt Mackall <mpm@selenic.com>, Neil Horman <nhorman@redhat.com>,
-	Herbert Xu <herbert.xu@redhat.com>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
- <4E67B75B.8010500@redhat.com>
- <20110907192737.GD20571@thunk.org>
- <201109071602.24519.sgrubb@redhat.com>
- <20110907211858.GE20571@thunk.org>
- <4E67E1B0.2040309@atsec.com>
+	id S1757259Ab1IGVjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 17:39:45 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:3669 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757179Ab1IGVjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 17:39:44 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-2.tower-209.messagelabs.com!1315425280!15802307!616
+X-Originating-IP: [216.166.12.69]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: dt3155v4l: remove irq_handler from struct dt3155_priv
+Date: Wed, 7 Sep 2011 14:37:59 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <gregkh@suse.de>, <mchehab@redhat.com>,
+        <hverkuil@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4E67E1B0.2040309@atsec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+Message-ID: <201109071438.00719.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 11:27:12PM +0200, Stephan Mueller wrote:
-> 
-> And exactly that is the concern from organizations like BSI. Their
-> cryptographer's concern is that due to the volume of data that you can
-> extract from /dev/urandom, you may find cycles or patterns that increase
-> the probability to guess the next random value compared to brute force
-> attack. Note, it is all about probabilities.
+There is no reason to cache the irq_handler in struct dt3155_priv.  Just pass
+the function directly in request_irq.
 
-The internal state of urandom is huge, and it does automatically
-reseed.  If you can find cycles that are significantly smaller than
-what would be expected by the size of the internal state, (or any kind
-of pattern at all) then there would be significant flaws in the crypto
-algorithm used.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>
 
-If the BSI folks think otherwise, then they're peddling snake oil FUD
-(which is not unusual for security companies).
+---
 
-						- Ted
+diff --git a/drivers/staging/dt3155v4l/dt3155v4l.c b/drivers/staging/dt3155v4l/dt3155v4l.c
+index 4059ea6..693b3d3 100644
+--- a/drivers/staging/dt3155v4l/dt3155v4l.c
++++ b/drivers/staging/dt3155v4l/dt3155v4l.c
+@@ -428,8 +428,7 @@ dt3155_open(struct file *filp)
+ 		/* disable all irqs, clear all irq flags */
+ 		iowrite32(FLD_START | FLD_END_EVEN | FLD_END_ODD,
+ 						pd->regs + INT_CSR);
+-		pd->irq_handler = dt3155_irq_handler_even;
+-		ret = request_irq(pd->pdev->irq, pd->irq_handler,
++		ret = request_irq(pd->pdev->irq, dt3155_irq_handler_even,
+ 						IRQF_SHARED, DT3155_NAME, pd);
+ 		if (ret) {
+ 			printk(KERN_ERR "dt3155: error: request_irq\n");
+diff --git a/drivers/staging/dt3155v4l/dt3155v4l.h b/drivers/staging/dt3155v4l/dt3155v4l.h
+index b0792b3..fea333c 100644
+--- a/drivers/staging/dt3155v4l/dt3155v4l.h
++++ b/drivers/staging/dt3155v4l/dt3155v4l.h
+@@ -183,7 +183,6 @@ struct dt3155_stats {
+  * @q			pointer to vb2_queue structure
+  * @curr_buf:		pointer to curren buffer
+  * @mux:		mutex to protect the instance
+- * @irq_handler:	irq handler for the driver
+  * @dmaq		queue for dma buffers
+  * @lock		spinlock for dma queue
+  * @field_count		fields counter
+@@ -199,7 +198,6 @@ struct dt3155_priv {
+ 	struct vb2_queue *q;
+ 	struct vb2_buffer *curr_buf;
+ 	struct mutex mux;
+-	irq_handler_t irq_handler;
+ 	struct list_head dmaq;
+ 	spinlock_t lock;
+ 	unsigned int field_count;
