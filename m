@@ -1,99 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab1IGQct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:32:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42928 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab1IGQcr (ORCPT
+	id S1752711Ab1IGQc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:32:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38245 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab1IGQcx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:32:47 -0400
-Date: Wed, 7 Sep 2011 18:32:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Frank Rowand <frank.rowand@am.sony.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@tglx.de>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [ANNOUNCE] 3.0.1-rt11
-In-Reply-To: <20110907140130.GT6619@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.02.1109071818350.2723@ionos>
-References: <1313232790.25267.7.camel@twins> <4E559039.8060209@am.sony.com> <20110826235507.GJ2342@linux.vnet.ibm.com> <4E66DCAB.8090801@am.sony.com> <alpine.LFD.2.02.1109071115410.2723@ionos> <20110907104633.GR6619@n2100.arm.linux.org.uk>
- <20110907104747.GA29282@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1109071254010.2723@ionos> <20110907140130.GT6619@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 7 Sep 2011 12:32:53 -0400
+Subject: Re: v3.1-rc5: Weird kernel log message when resuming avout NMI
+ received
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Wed, 07 Sep 2011 10:00:51 +0200
+In-Reply-To: <CAC9WiBiNj-NS2mb8SaR1pK2JQdJOAbnN_rCXk1ZEMNaWQWZwxQ@mail.gmail.com>
+References: <CAC9WiBiNj-NS2mb8SaR1pK2JQdJOAbnN_rCXk1ZEMNaWQWZwxQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1315382451.11101.12.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011, Russell King - ARM Linux wrote:
-
-> On Wed, Sep 07, 2011 at 12:57:44PM +0200, Thomas Gleixner wrote:
-> > The problem is that if you enable interrupts on the CPU _BEFORE_ it is
-> > set online AND active, then you can end up waking up kernel threads
-> > which are bound to that CPU and the scheduler will happily schedule
-> > them on an online CPU. That makes them lose the cpu affinity to the
-> > CPU as well and hell breaks lose.
+On Wed, 2011-09-07 at 08:37 +0200, Francis Moreau wrote:
 > 
-> How can that happen?
-> 
-> 1. The only interrupts we're likely to receive are the local timer
->    interrupts - we have not routed any other interrupts to this CPU.
+> > After the second suspend/resume sequence I still have the same warning
+> > except that the reason has changed to '2d':
+> >
+> >  kernel:[  404.091393] Uhhuh. NMI received for unknown reason 2d on CPU 0.
+> >  kernel:[  404.091394] Do you have a strange power saving mode enabled?
+> >  kernel:[  404.091396] Dazed and confused, but trying to continue
 
-Fair enough, on x86 this can happen when we enable interrupts.
+I'm somewhat out of ideas there..  I guess I'll have to go debug on my
+laptop which hasn't got a serial port :-(
+
+Rafael, can you see anything obviously broken in the below patch from a
+s2r pov?
+
+---
+>From 144060fee07e9c22e179d00819c83c86fbcbf82c Mon Sep 17 00:00:00 2001
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon, 1 Aug 2011 12:49:14 +0200
+Subject: [PATCH] perf: Add PM notifiers to fix CPU hotplug races
+
+Francis reports that s2r gets him spurious NMIs, this is because the
+suspend code leaves the boot cpu up and running.
+
+Cure this by adding a suspend notifier. The problem is that hotplug
+and suspend are completely un-serialized and the PM notifiers run
+before the suspend cpu unplug of all but the boot cpu.
+
+This leaves a window where the user can initialize another hotplug
+operation (either remove or add a cpu) resulting in either one too
+many or one too few hotplug ops. Thus we cannot use the hotplug code
+for the suspend case.
+
+There's another reason to not use the hotplug code, which is that the
+hotplug code totally destroys the perf state, we can do better for
+suspend and simply remove all counters from the PMU so that we can
+re-instate them on resume.
+
+Reported-by: Francis Moreau <francis.moro@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-1cvevybkgmv4s6v5y37t4847@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b8785e2..d4c8542 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -29,6 +29,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/rculist.h>
+ #include <linux/uaccess.h>
++#include <linux/suspend.h>
+ #include <linux/syscalls.h>
+ #include <linux/anon_inodes.h>
+ #include <linux/kernel_stat.h>
+@@ -6809,7 +6810,7 @@ static void __cpuinit perf_event_init_cpu(int cpu)
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
  
-> 2. We will not schedule on this CPU except at explicit scheduling
->    points (such as contended mutexes or explicit calls to schedule)
->    as we have a call to preempt_disable().
-
-Right, you don't schedule. But a wakeup of a thread which has its
-affinity set to the new online CPU runs (as Frank pointed out)
-through:
-
-   wake_up_process()
-      try_to_wake_up()
-         select_task_rq()
-            if (... || !cpu_online(cpu))
-               select_fallback_rq(task_cpu(p), p)
-                  ...
-                  /* No more Mr. Nice Guy. */
-                  dest_cpu = cpuset_cpus_allowed_fallback(p)
-                     do_set_cpus_allowed(p, cpu_possible_mask)
-                        #  Thus ksoftirqd can now run on any cpu...
-
-So the problem is not scheduling, it's the wakeup code. Sorry for
-being imprecise.
-
-We can't do anything about it in the scheduler code, so we have to
-make sure that the cpu startup code enables interrupts after the
-online AND active bits have been set.
+ 	mutex_lock(&swhash->hlist_mutex);
+-	if (swhash->hlist_refcount > 0) {
++	if (swhash->hlist_refcount > 0 && !swhash->swevent_hlist) {
+ 		struct swevent_hlist *hlist;
  
-> > Frank has observed this with softirq threads, but the same thing is
-> > true for any other CPU bound thread like the worker stuff.
-> 
-> So who is scheduling a workqueue from the local timer?
+ 		hlist = kzalloc_node(sizeof(*hlist), GFP_KERNEL, cpu_to_node(cpu));
+@@ -6898,7 +6899,14 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
+ {
+ 	unsigned int cpu = (long)hcpu;
+ 
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	/*
++	 * Ignore suspend/resume action, the perf_pm_notifier will
++	 * take care of that.
++	 */
++	if (action & CPU_TASKS_FROZEN)
++		return NOTIFY_OK;
++
++	switch (action) {
+ 
+ 	case CPU_UP_PREPARE:
+ 	case CPU_DOWN_FAILED:
+@@ -6917,6 +6925,90 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
+ 	return NOTIFY_OK;
+ }
+ 
++static void perf_pm_resume_cpu(void *unused)
++{
++	struct perf_cpu_context *cpuctx;
++	struct perf_event_context *ctx;
++	struct pmu *pmu;
++	int idx;
++
++	idx = srcu_read_lock(&pmus_srcu);
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		ctx = cpuctx->task_ctx;
++
++		perf_ctx_lock(cpuctx, ctx);
++		perf_pmu_disable(cpuctx->ctx.pmu);
++
++		cpu_ctx_sched_out(cpuctx, EVENT_ALL);
++		if (ctx)
++			ctx_sched_out(ctx, cpuctx, EVENT_ALL);
++
++		perf_pmu_enable(cpuctx->ctx.pmu);
++		perf_ctx_unlock(cpuctx, ctx);
++	}
++	srcu_read_unlock(&pmus_srcu, idx);
++}
++
++static void perf_pm_suspend_cpu(void *unused)
++{
++	struct perf_cpu_context *cpuctx;
++	struct perf_event_context *ctx;
++	struct pmu *pmu;
++	int idx;
++
++	idx = srcu_read_lock(&pmus_srcu);
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		ctx = cpuctx->task_ctx;
++
++		perf_ctx_lock(cpuctx, ctx);
++		perf_pmu_disable(cpuctx->ctx.pmu);
++
++		perf_event_sched_in(cpuctx, ctx, current);
++
++		perf_pmu_enable(cpuctx->ctx.pmu);
++		perf_ctx_unlock(cpuctx, ctx);
++	}
++	srcu_read_unlock(&pmus_srcu, idx);
++}
++
++static int perf_resume(void)
++{
++	get_online_cpus();
++	smp_call_function(perf_pm_resume_cpu, NULL, 1);
++	put_online_cpus();
++
++	return NOTIFY_OK;
++}
++
++static int perf_suspend(void)
++{
++	get_online_cpus();
++	smp_call_function(perf_pm_suspend_cpu, NULL, 1);
++	put_online_cpus();
++
++	return NOTIFY_OK;
++}
++
++static int perf_pm(struct notifier_block *self, unsigned long action, void *ptr)
++{
++	switch (action) {
++	case PM_POST_HIBERNATION:
++	case PM_POST_SUSPEND:
++		return perf_resume();
++	case PM_HIBERNATION_PREPARE:
++	case PM_SUSPEND_PREPARE:
++		return perf_suspend();
++	default:
++		return NOTIFY_DONE;
++	}
++}
++
++static struct notifier_block perf_pm_notifier = {
++	.notifier_call = perf_pm,
++};
++
+ void __init perf_event_init(void)
+ {
+ 	int ret;
+@@ -6931,6 +7023,7 @@ void __init perf_event_init(void)
+ 	perf_tp_register();
+ 	perf_cpu_notifier(perf_cpu_notify);
+ 	register_reboot_notifier(&perf_reboot_notifier);
++	register_pm_notifier(&perf_pm_notifier);
+ 
+ 	ret = init_hw_breakpoint();
+ 	WARN(ret, "hw_breakpoint initialization failed with: %d", ret);
 
-The problem are timer callbacks which might be executed in the softirq
-code on return from interrupt. We had one case observed on x86 where
-an expired timer was queued on the about to go online cpu and the
-callback scheduled work on that CPU which then caused the cpu affine
-worker thread to move away :(
-
-> > So moving the online, active thing BEFORE enabling interrupt is the
-> > only sensible solution.
-> 
-> Yes, that'll be why even x86 enables interrupts before setting the CPU
-> online for the delay calibration.
-
-Correct.
-
-Thanks,
-
-	tglx
