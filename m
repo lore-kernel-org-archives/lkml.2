@@ -1,59 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1IGQdI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:33:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38261 "EHLO
+	id S1751626Ab1IGQdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:33:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38274 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab1IGQdE convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752795Ab1IGQdO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:33:04 -0400
-Subject: Re: [PATCH 05/18] writeback: per task dirty rate limit
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jan Kara <jack@suse.cz>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
+	Wed, 7 Sep 2011 12:33:14 -0400
+Subject: Re: [PATCH -mm 4/4] irq_work, Use llist in irq_work
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 07 Sep 2011 09:27:50 +0200
-In-Reply-To: <20110906232738.GC31945@quack.suse.cz>
-References: <20110904015305.367445271@intel.com>
-	 <20110904020915.240747479@intel.com> <1315324030.14232.14.camel@twins>
-	 <20110906232738.GC31945@quack.suse.cz>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Date: Wed, 07 Sep 2011 09:52:22 +0200
+In-Reply-To: <4E66C0EA.6010302@intel.com>
+References: <1315290307-25145-1-git-send-email-ying.huang@intel.com>
+	 <1315290307-25145-4-git-send-email-ying.huang@intel.com>
+	 <20110906105750.GD21602@Krystal> <4E66C0EA.6010302@intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.0.2- 
-Message-ID: <1315380470.11101.1.camel@twins>
+Message-ID: <1315381942.11101.6.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-07 at 01:27 +0200, Jan Kara wrote:
-> On Tue 06-09-11 17:47:10, Peter Zijlstra wrote:
-> > On Sun, 2011-09-04 at 09:53 +0800, Wu Fengguang wrote:
-> > >  /*
-> > > + * After a task dirtied this many pages, balance_dirty_pages_ratelimited_nr()
-> > > + * will look to see if it needs to start dirty throttling.
-> > > + *
-> > > + * If dirty_poll_interval is too low, big NUMA machines will call the expensive
-> > > + * global_page_state() too often. So scale it near-sqrt to the safety margin
-> > > + * (the number of pages we may dirty without exceeding the dirty limits).
-> > > + */
-> > > +static unsigned long dirty_poll_interval(unsigned long dirty,
-> > > +                                        unsigned long thresh)
-> > > +{
-> > > +       if (thresh > dirty)
-> > > +               return 1UL << (ilog2(thresh - dirty) >> 1);
-> > > +
-> > > +       return 1;
-> > > +}
-> > 
-> > Where does that sqrt come from? 
->   He does 2^{log_2(x)/2} which, if done in real numbers arithmetics, would
-> result in x^{1/2}. Given the integer arithmetics, it might be twice as
-> small but still it's some approximation...
+On Wed, 2011-09-07 at 08:55 +0800, Huang Ying wrote:
+> 2) make llist_add return whether list is empty before adding
 
-Right, and I guess with a cpu that can do the fls its slightly faster
-than our int_sqrt().
+That seems the sanest approach, it needs to set entry->next anyway, so
+it might as well return the last known state.
