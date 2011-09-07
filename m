@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab1IGFsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 01:48:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3472 "EHLO mga01.intel.com"
+	id S1754679Ab1IGF4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 01:56:38 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33820 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab1IGFr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 01:47:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,343,1312182000"; 
-   d="scan'208";a="49840378"
-Message-ID: <4E670586.7020701@linux.intel.com>
-Date: Wed, 07 Sep 2011 13:47:50 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.1) Gecko/20110830 Thunderbird/6.0.1
+	id S1754196Ab1IGF4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 01:56:31 -0400
+Message-ID: <4E670764.1040805@parallels.com>
+Date: Wed, 7 Sep 2011 02:55:48 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH 3/5] HWPOISON: Handle hwpoison in current process
-References: <4e5eb4f3210531eb0c@agluck-desktop.sc.intel.com>
-In-Reply-To: <4e5eb4f3210531eb0c@agluck-desktop.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Paul Menage <paul@paulmenage.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <containers@lists.osdl.org>, <netdev@vger.kernel.org>,
+        <xemul@parallels.com>, "David S. Miller" <davem@davemloft.net>,
+        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v2 2/9] Kernel Memory cgroup
+References: <1315369399-3073-1-git-send-email-glommer@parallels.com> <1315369399-3073-3-git-send-email-glommer@parallels.com> <CALdu-PCosvJ-SfVROLLM29RoMfxxRyW9E-_Za9A7LTAZwmkPeg@mail.gmail.com>
+In-Reply-To: <CALdu-PCosvJ-SfVROLLM29RoMfxxRyW9E-_Za9A7LTAZwmkPeg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.132.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011/9/1 6:25, Luck, Tony 写道:
-> From: Andi Kleen<andi@firstfloor.org>
+On 09/07/2011 02:24 AM, Paul Menage wrote:
+> On Tue, Sep 6, 2011 at 9:23 PM, Glauber Costa<glommer@parallels.com>  wrote:
+>> +
+>> +struct kmem_cgroup {
+>> +       struct cgroup_subsys_state css;
+>> +       struct kmem_cgroup *parent;
+>> +};
 >
-> When hardware poison handles the current process use
-> a forced signal with _AR severity.
->
-> [Tony: changed some function names .. the "_ao" suffix was no longer meaningful]
->
-> Signed-off-by: Andi Kleen<ak@linux.intel.com>
-> Signed-off-by: Tony Luck<tony.luck@intel.com>
-> ---
->   mm/memory-failure.c |   39 ++++++++++++++++++++++-----------------
->   1 files changed, 22 insertions(+), 17 deletions(-)
->
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index 2b43ba0..6ccb8a6 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -186,33 +186,38 @@ int hwpoison_filter(struct page *p)
->   EXPORT_SYMBOL_GPL(hwpoison_filter);
->
->   /*
-> - * Send all the processes who have the page mapped an ``action optional''
-> - * signal.
-> + * Send one process who has the page mapped a SIGBUS. It might
-> + * be able to catch it and initiate its own task level recovery.
->    */
-> -static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
-> +static int user_recovery(struct task_struct *t, unsigned long addr, int trapno,
->   			unsigned long pfn, struct page *page)
->   {
->   	struct siginfo si;
->   	int ret;
->
->   	printk(KERN_ERR
-> -		"MCE %#lx: Killing %s:%d early due to hardware memory corruption\n",
-> -		pfn, t->comm, t->pid);
-> +		"MCE %#lx: Killing %s:%d due to hardware memory corruption\n",
-> +	       pfn, t->comm, t->pid);
->   	si.si_signo = SIGBUS;
->   	si.si_errno = 0;
-> -	si.si_code = BUS_MCEERR_AO;
->   	si.si_addr = (void *)addr;
->   #ifdef __ARCH_SI_TRAPNO
->   	si.si_trapno = trapno;
->   #endif
->   	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
-> -	/*
-> -	 * Don't use force here, it's convenient if the signal
-> -	 * can be temporarily blocked.
-> -	 * This could cause a loop when the user sets SIGBUS
-> -	 * to SIG_IGN, but hopefully no one will do that?
-> -	 */
-> -	ret = send_sig_info(SIGBUS,&si, t);  /* synchronous? */
-> +	if (t == current) {
-> +		si.si_code = BUS_MCEERR_AR;
-> +		ret = force_sig_info(SIGBUS,&si, t);
-> +	} else {
-> +		/*
-> +		 * Don't use force here, it's convenient if the signal
-> +		 * can be temporarily blocked.
-> +		 * This could cause a loop when the user sets SIGBUS
-> +		 * to SIG_IGN, but hopefully noone will do that?
-                                              ^^^^^
-spelling error
+> There's a parent pointer in css.cgroup, so you shouldn't need a
+> separate one here.
 
+Ok, I missed that. Thanks
+
+> Most cgroup subsystems define this structure (and the below accessor
+> functions) in their .c file rather than exposing it to the world? Does
+> this subsystem particularly need it exposed?
+
+Originally I was using it in sock.c and friends. Now, from the last 
+submission to this one, most of those uses were substituted. The 
+acessors, however, are in kmem_cgroup.h. Reason being I want most of 
+them to be inline.
+
+>> +
+>> +static struct cgroup_subsys_state *kmem_create(
+>> +       struct cgroup_subsys *ss, struct cgroup *cgrp)
+>> +{
+>> +       struct kmem_cgroup *sk = kzalloc(sizeof(*sk), GFP_KERNEL);
+>
+> kcg or just cg would be a better name?
+
+I'll go with kcg.
