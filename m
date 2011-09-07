@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1IGBT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 21:19:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61773 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab1IGBTt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 21:19:49 -0400
+	id S1753574Ab1IGBZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 21:25:39 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3829 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752758Ab1IGBZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Sep 2011 21:25:34 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Date: Tue, 6 Sep 2011 18:25:15 -0700
+From: "Matt Carlson" <mcarlson@broadcom.com>
+To: "Florian Mickler" <florian@mickler.org>
+cc: "Matthew Carlson" <mcarlson@broadcom.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Benjamin Li" <benli@broadcom.com>,
+        "Michael Chan" <mchan@broadcom.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "Francesco Piccinno" <stack.box@gmail.com>
+Subject: Re: re add support for bcm5750
+Message-ID: <20110907012515.GA9038@mcarlson.broadcom.com>
+References: <1280784368-4226-8-git-send-email-mcarlson@broadcom.com>
+ <20110906170343.09252578@schatten.dmk.lab>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw+EJr9FhZZnj0re8hyH5+gFesDso2mX+PWck31ivnWYQ@mail.gmail.com>
-References: <4E649986.5060606@redhat.com>
-	<CA+55aFw+EJr9FhZZnj0re8hyH5+gFesDso2mX+PWck31ivnWYQ@mail.gmail.com>
-Date: Tue, 6 Sep 2011 21:19:48 -0400
-Message-ID: <CA+5PVA4qTNpHOpr0nC9VyGGg8hCT8OS6F35m_+s=C7QSYLVnMg@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM fix for 3.1-rc5
-From: Josh Boyer <jwboyer@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110906170343.09252578@schatten.dmk.lab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 627816E25IS2840089-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 6, 2011 at 7:20 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Sep 5, 2011 at 2:42 AM, Avi Kivity <avi@redhat.com> wrote:
->> Linus, please pull from
->>
->>  git://github.com/avikivity/kvm.git kvm-updates/3.1
->>
->> to receive a fix for a build failure due to a missing instruction size
->> suffix in inline assembly.
->
-> Again, please give me a warm and fuzzy feeling that this is really
-> Avi, and the right thing to do, rather than just a "please pull from
-> this random tree".
->
-> It's not that I don't think you are you, but I want people to actually
-> *think* about what they are doing and sending me. When you give me a
-> kernel.org address, I know you have access to kernel.org, and that
-> makes me believe you are you. When you give me a github address, that
-> doesn't really mean anything.
+On Tue, Sep 06, 2011 at 08:03:43AM -0700, Florian Mickler wrote:
+> Hi,
+> 
+> in https://bugzilla.kernel.org/show_bug.cgi?id=42132 Francesco wrote: 
+> 
+> > I have a notebook (HP TC4400) which has a BCM5750 ethernet card inside. The
+> > ouput of lspci is:
+> > 
+> > 08:00.0 Ethernet controller [0200]: Broadcom Corporation NetXtreme BCM5750M
+> > Gigabit Ethernet [14e4:167c]
+> > 
+> > Commit 67b284d476bcb3d100e946da23d6cf9acfd0465c removed the support for this
+> > device. I wish to have the support for this network card back again. Thanks!
 
-To your point, I would think you want that regardless.  I certainly
-don't mean to pile on the kernel.org guys, but it was compromised and
-likely through a user account.  I'm confident that this is a very rare
-occurrence, but it can happen again.  There was another somewhat high
-profile hack earlier in the year against vendor-sec as well.
+Hi Florian.  Are you experiencing the same problem?  We found that
+Francesco's problem was that the firmware of his device was missing.  Do
+you see :
 
-Maybe asking for some extra warm fuzzies from now on wouldn't be a
-horrible idea as general practice.
+eth0: No firmware running
 
-I will now await a reply full of the cold pricklies.
+messages?
 
-josh
