@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab1IGX34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 19:29:56 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:46798 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab1IGX3y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 19:29:54 -0400
-Date: Wed, 7 Sep 2011 16:29:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: John Sung <penmount.touch@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] Input: penmount - add PenMount 6000 support
-Message-ID: <20110907232947.GB32566@core.coreip.homeip.net>
-References: <1315290961-23570-1-git-send-email-penmount.touch@gmail.com>
+	id S1757513Ab1IGXpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 19:45:07 -0400
+Received: from fieldses.org ([174.143.236.118]:43116 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757461Ab1IGXpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 19:45:05 -0400
+Date: Wed, 7 Sep 2011 19:44:08 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Allison <jra@samba.org>
+Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20110907234408.GA10982@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1315290961-23570-1-git-send-email-penmount.touch@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
-
-On Tue, Sep 06, 2011 at 02:36:01PM +0800, John Sung wrote:
-> Add support for PenMount 6000 touch controller.
+On Mon, Sep 05, 2011 at 10:55:22PM +0530, Aneesh Kumar K.V wrote:
+> Hi,
 > 
-> Signed-off-by: John Sung <penmount.touch@gmail.com>
-> ---
->  drivers/input/touchscreen/penmount.c |   58 +++++++++++++++++++++++++++++-----
->  1 files changed, 50 insertions(+), 8 deletions(-)
+> The following set of patches implements VFS and ext4 changes needed to implement
+> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> extended by file masks to fit into the standard POSIX file permission model.
+> They are designed to work seamlessly locally as well as across the NFSv4 and
+> CIFS/SMB2 network file system protocols.
+
+The posix acl mapping that samba and nfsd currently have to do is
+painful for everyone and I'm delighted to get away from it.
+
+My main remaining worry (besides the fact that cifs/v4 acls are too
+complicated--but what can we do about that?)--is about how exactly the
+(acl, mask)->acl mapping is going to work for nfsd and samba.
+
+If we assume that filesystems are going to mostly use acls or mostly
+mode bits, then maybe that part doesn't matter a whole lot.  I don't
+know.
+
+--b.
+
 > 
-> diff --git a/drivers/input/touchscreen/penmount.c b/drivers/input/touchscreen/penmount.c
-> index 3342c6d..b60796b 100644
-> --- a/drivers/input/touchscreen/penmount.c
-> +++ b/drivers/input/touchscreen/penmount.c
-> @@ -33,7 +33,7 @@ MODULE_LICENSE("GPL");
->   * Definitions & global arrays.
->   */
->  
-> -#define	PM_MAX_LENGTH	5
-> +#define	PM_MAX_LENGTH	6
->  
->  /*
->   * Per-touchscreen data.
-> @@ -45,6 +45,7 @@ struct pm {
->  	int idx;
->  	unsigned char data[PM_MAX_LENGTH];
->  	char phys[32];
-> +	unsigned char packetsize;
->  };
->  
->  static irqreturn_t pm_interrupt(struct serio *serio,
-> @@ -55,20 +56,48 @@ static irqreturn_t pm_interrupt(struct serio *serio,
->  
->  	pm->data[pm->idx] = data;
->  
-> -	if (pm->data[0] & 0x80) {
-> -		if (PM_MAX_LENGTH == ++pm->idx) {
-> -			input_report_abs(dev, ABS_X, pm->data[1] * 128 + pm->data[2]);
-> -			input_report_abs(dev, ABS_Y, pm->data[3] * 128 + pm->data[4]);
-> -			input_report_key(dev, BTN_TOUCH, !!(pm->data[0] & 0x40));
-> -			input_sync(dev);
-> -			pm->idx = 0;
-> +	switch (pm->dev->id.product) {
-> +	case 0x9000:
-> +		if (pm->data[0] & 0x80) {
-> +			if (pm->packetsize == ++pm->idx) {
-> +				input_report_abs(dev, ABS_X, pm->data[1] * 128 + pm->data[2]);
-> +				input_report_abs(dev, ABS_Y, pm->data[3] * 128 + pm->data[4]);
-> +				input_report_key(dev, BTN_TOUCH, !!(pm->data[0] & 0x40));
-> +				input_sync(dev);
-> +				pm->idx = 0;
-> +			}
->  		}
-> +		break;
-> +	case 0x6000:
-> +		if ((pm->data[0] == 0x70) || (pm->data[0] == 0x30)) {
-
-Should it be:
-
-		if ((pm->data[0] & 0xbf) == 0x30)
-
-to avoid 2 comparisons and branches?
-
-> +			if (pm->packetsize == ++pm->idx) {
-> +				input_report_abs(dev, ABS_X, pm->data[2] * 256 + pm->data[1]);
-> +				input_report_abs(dev, ABS_Y, pm->data[4] * 256 + pm->data[3]);
-> +				input_report_key(dev, BTN_TOUCH, (pm->data[0] == 0x70));
-> +				input_sync(dev);
-> +				pm->idx = 0;
-> +			}
-> +		}
-> +		break;
->  	}
->  
->  	return IRQ_HANDLED;
->  }
->  
->  /*
-> + * pm_enable() sends command that can enable the PenMount 6000 controller
-> + */
-> +
-> +static void pm_enable(struct serio *serio)
-> +{
-> +	int i = 0;
-> +	unsigned char command[6] = { 0xF1, 0x00, 0x00, 0x00, 0x00, 0x0E };
-> +
-> +	for (i = 0; i < 6; i++)
-> +		serio_write(serio, command[i]);
-> +}
-
-Initializing a device connected to a serport serio port is actually task
-of inputattach utility.
-
-Thanks.
-
--- 
-Dmitry
+> A user-space utility for displaying and changing richacls is available at [4]
+> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+> 
+> [4] git://git.kernel.org/pub/scm/fs/acl/kvaneesh/richacl.git master
+> 
+> To test richacl on ext4 use -o richacl mount option. This mount option may later be
+> dropped in favour of a feature flag.
+> 
+> More details regarding richacl can be found at
+> http://acl.bestbits.at/richacl/
+> 
+> Changes from v5:
+> a) rebase to v3.1-rc4-131-g9e79e3e
+> 
+> NOTE: The kernel changes will be pushed to
+> git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richacl
+> when kernel.org is back
+> 
+> -aneesh
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
