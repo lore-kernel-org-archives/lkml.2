@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab1IHAxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:53:41 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47681 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab1IHAxj (ORCPT
+	id S1757694Ab1IHAyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:54:00 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:28010 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757660Ab1IHAx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:53:39 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
-        bfields@fieldses.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        LSM <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH -V6 00/26] New ACL format for better NFSv4 acl interoperability
-In-Reply-To: Your message of "Mon, 05 Sep 2011 15:42:17 PDT."
-             <4E655049.6060507@schaufler-ca.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-            <4E655049.6060507@schaufler-ca.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1315442770_5805P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 07 Sep 2011 20:46:11 -0400
-Message-ID: <108028.1315442771@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.4E681057.0037,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 7 Sep 2011 20:53:58 -0400
+Message-ID: <4E680036.8000106@blueyonder.co.uk>
+Date: Thu, 08 Sep 2011 00:37:26 +0100
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+CC: LKML Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 3.x memleaks
+References: <4E66414E.8060100@blueyonder.co.uk> <CAM_iQpX4tWS7VbPvrFTqEGv0GzfTm+sygPhqDz+yHVUGSEGhXA@mail.gmail.com>
+In-Reply-To: <CAM_iQpX4tWS7VbPvrFTqEGv0GzfTm+sygPhqDz+yHVUGSEGhXA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=TwUyvNu_jswA:10 a=3NElcqgl2aoA:10 a=k1j_C7plYBUA:10 a=8nJEP1OIZ-IA:10 a=a5Gf7U6LAAAA:8 a=D19gQVrFAAAA:8 a=bgUkVmbCD3rZoZhqrOMA:9 a=H7ef0AUhDHS4QfnJdc4A:7 a=wPNLvfGTeEIA:10 a=yHIqe9kG5mgA:10 a=H8twRXSqR9_13TLB:21 a=am6pqy2MG2WeHlqw:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1315442770_5805P
-Content-Type: text/plain; charset=us-ascii
-
-On Mon, 05 Sep 2011 15:42:17 PDT, Casey Schaufler said:
-> On 9/5/2011 10:25 AM, Aneesh Kumar K.V wrote:
-> > The following set of patches implements VFS and ext4 changes needed to implement
-> > a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> > extended by file masks to fit into the standard POSIX file permission model.
-> > They are designed to work seamlessly locally as well as across the NFSv4 and
-> > CIFS/SMB2 network file system protocols.
+On 07/09/11 11:58, Américo Wang wrote:
+> On Tue, Sep 6, 2011 at 11:50 PM, Sid Boyce<sboyce@blueyonder.co.uk>  wrote:
+>> Since 3.0 I have been seeing memleaks, right up to 3.1.0-rc5. This is
+>> typical.
+>> AMD x86_64, X2, X4's and openSUSE 12.1 Milestones.
+>> unreferenced object 0xffff88022f007000 (size 512):
+>> Â comm "swapper", pid 1, jiffies 4294667649 (age 17727.056s)
+>> Â hex dump (first 32 bytes):
+>> Â  Â 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 Â ................
+>> Â  Â 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 Â ................
+>> Â backtrace:
+>> Â  Â [<ffffffff81490ba6>] kmemleak_alloc+0x56/0xb0
+>> Â  Â [<ffffffff8113ca4c>] kmem_cache_alloc_node_trace+0x9c/0x1d0
+>> Â  Â [<ffffffff81041ea7>] __sdt_alloc+0xa7/0x1e0
+>> Â  Â [<ffffffff81042014>] __visit_domain_allocation_hell+0x34/0xc0
+>> Â  Â [<ffffffff8104d489>] build_sched_domains+0x29/0x2e0
+>> Â  Â [<ffffffff81c4c5de>] sched_init_smp+0x7d/0x168
+>> Â  Â [<ffffffff81c36cca>] kernel_init+0xb8/0x159
+>> Â  Â [<ffffffff814bfbb4>] kernel_thread_helper+0x4/0x10
+>> Â  Â [<ffffffffffffffff>] 0xffffffffffffffff
+> Hello,
 >
-> POSIX ACLs predate the LSM and can't be done as an LSM due to
-> the interactions between mode bits and ACLs as defined by the
-> POSIX DRAFT specification. Is there a reason that "rich" ACLs
-> can not be done as an LSM?
+> This should be fixed by: https://lkml.org/lkml/2011/8/29/218
+>
+> Thanks!
+>
+I applied the patch to 3.1-rc5 and it's still the same.
+Regards
+Sid.
 
-Well, if it was done as an LSM, it would mean that if I wanted to build a
-system where I have a few hundred terabytes of disk exported via Samba, and I
-wanted Samba to save the CIFS permission ACL, I couldn't also run Selinux or
-SMACK or anything like that - unless somebody actually snuck in the "LSMs are
-stackable" patch while I wasn't looking?
-
-
---==_Exmh_1315442770_5805P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOaBBScC3lWbTT17ARAiknAJ9BidK9ESj7Gg5fL0HGU9EmbWYaEwCgtr+i
-Fo7Zv7VVnLAYeXHB39NivRM=
-=g+Ps
------END PGP SIGNATURE-----
-
---==_Exmh_1315442770_5805P--
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Senior Staff Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
