@@ -1,1048 +1,487 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1IGQtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:49:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24151 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab1IGQri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:47:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="46039267"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: alan@linux.intel.com, sameo@linux.intel.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, feng.tang@intel.com,
-        jacob.jun.pan@linux.intel.com,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 1/3] mfd: add Intel MSIC driver
-Date: Wed,  7 Sep 2011 16:06:50 +0300
-Message-Id: <dfff721c25a64c9fe77d3b14772e0b3325f47ff9.1315399396.git.mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+	id S1754556Ab1IGQtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:49:23 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:48575 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab1IGQp7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:45:59 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 14/14] drbd: Map from (connection, volume number) to device in the receive handlers
+Date: Wed,  7 Sep 2011 16:17:41 +0200
+Message-Id: <1315405061-1473-15-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
+References: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Intel MSIC chip found on Intel Medfield platforms. This
-chip embeds several subdevices: audio, ADC, GPIO, power button, etc. The
-driver creates platform device for each subdevice.
+From: Andreas Gruenbacher <agruen@linbit.com>
 
-We also provide an MSIC register access API which should replace the more
-generic SCU IPC interface currently used. Existing drivers can choose
-whether they convert to this new API or stick with the SCU IPC interface.
+The receive handlers do not all handle unknown volume numbers the same
+way.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/mfd/Kconfig            |    9 +
- drivers/mfd/Makefile           |    1 +
- drivers/mfd/intel_msic.c       |  501 ++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/intel_msic.h |  456 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 967 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/intel_msic.c
- create mode 100644 include/linux/mfd/intel_msic.h
+ drivers/block/drbd/drbd_receiver.c |  262 ++++++++++++++++++++++--------------
+ 1 files changed, 164 insertions(+), 98 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 21574bd..3f02265 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -770,6 +770,15 @@ config MFD_AAT2870_CORE
- 	  additional drivers must be enabled in order to use the
- 	  functionality of the device.
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 856ac23..218d97d7 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -1235,13 +1235,17 @@ static void drbd_remove_epoch_entry_interval(struct drbd_conf *mdev,
+ 		wake_up(&mdev->misc_wait);
+ }
  
-+config MFD_INTEL_MSIC
-+	bool "Support for Intel MSIC"
-+	depends on INTEL_SCU_IPC
-+	select MFD_CORE
-+	help
-+	  Select this option to enable access to Intel MSIC (Avatele
-+	  Passage) chip. This chip embeds audio, battery, GPIO, etc.
-+	  devices used in Intel Medfield platforms.
-+
- endif # MFD_SUPPORT
+-static int receive_Barrier(struct drbd_conf *mdev, enum drbd_packet cmd,
+-			   unsigned int data_size)
++static int receive_Barrier(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
++	struct drbd_conf *mdev;
+ 	int rv;
+-	struct p_barrier *p = mdev->tconn->data.rbuf;
++	struct p_barrier *p = tconn->data.rbuf;
+ 	struct drbd_epoch *epoch;
  
- menu "Multimedia Capabilities Port drivers"
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index c580203..7d53a7c 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -102,3 +102,4 @@ obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o
- obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
- obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
-+obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
-diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
-new file mode 100644
-index 0000000..bd086b9
---- /dev/null
-+++ b/drivers/mfd/intel_msic.c
-@@ -0,0 +1,501 @@
-+/*
-+ * Driver for Intel MSIC
-+ *
-+ * Copyright (C) 2011, Intel Corporation
-+ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
 +
-+#include <linux/gpio.h>
-+#include <linux/module.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/intel_msic.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
+ 	inc_unacked(mdev);
+ 
+ 	mdev->current_epoch->barrier_nr = p->barrier;
+@@ -1543,12 +1547,17 @@ find_request(struct drbd_conf *mdev, struct rb_root *root, u64 id,
+ 	return NULL;
+ }
+ 
+-static int receive_DataReply(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_DataReply(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
++	struct drbd_conf *mdev;
+ 	struct drbd_request *req;
+ 	sector_t sector;
+ 	int err;
+-	struct p_data *p = mdev->tconn->data.rbuf;
++	struct p_data *p = tconn->data.rbuf;
 +
-+#include <asm/intel_scu_ipc.h>
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
+ 
+ 	sector = be64_to_cpu(p->sector);
+ 
+@@ -1571,11 +1580,16 @@ static int receive_DataReply(struct drbd_conf *mdev, struct packet_info *pi)
+ 	return err;
+ }
+ 
+-static int receive_RSDataReply(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_RSDataReply(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
++	struct drbd_conf *mdev;
+ 	sector_t sector;
+ 	int err;
+-	struct p_data *p = mdev->tconn->data.rbuf;
++	struct p_data *p = tconn->data.rbuf;
 +
-+#define MSIC_VENDOR(id)		((id >> 6) & 3)
-+#define MSIC_VERSION(id)	(id & 0x3f)
-+#define MSIC_MAJOR(id)		('A' + ((id >> 3) & 7))
-+#define MSIC_MINOR(id)		(id & 7)
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
+ 
+ 	sector = be64_to_cpu(p->sector);
+ 	D_ASSERT(p->block_id == ID_SYNCER);
+@@ -1959,16 +1973,21 @@ static int handle_write_conflicts(struct drbd_conf *mdev,
+ }
+ 
+ /* mirrored write */
+-static int receive_Data(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_Data(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
++	struct drbd_conf *mdev;
+ 	sector_t sector;
+ 	struct drbd_peer_request *peer_req;
+-	struct p_data *p = mdev->tconn->data.rbuf;
++	struct p_data *p = tconn->data.rbuf;
+ 	u32 peer_seq = be32_to_cpu(p->seq_num);
+ 	int rw = WRITE;
+ 	u32 dp_flags;
+ 	int err;
+ 
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
 +
-+/*
-+ * MSIC interrupt tree is readable from SRAM at INTEL_MSIC_IRQ_PHYS_BASE.
-+ * Since IRQ block starts from address 0x002 we need to substract that from
-+ * the actual IRQ status register address.
-+ */
-+#define MSIC_IRQ_STATUS(x)	(INTEL_MSIC_IRQ_PHYS_BASE + ((x) - 2))
-+#define MSIC_IRQ_STATUS_ACCDET	MSIC_IRQ_STATUS(INTEL_MSIC_ACCDET)
+ 	if (!get_ldev(mdev)) {
+ 		int err2;
+ 
+@@ -2138,15 +2157,21 @@ int drbd_rs_should_slow_down(struct drbd_conf *mdev, sector_t sector)
+ }
+ 
+ 
+-static int receive_DataRequest(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_DataRequest(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
++	struct drbd_conf *mdev;
+ 	sector_t sector;
+-	const sector_t capacity = drbd_get_capacity(mdev->this_bdev);
++	sector_t capacity;
+ 	struct drbd_peer_request *peer_req;
+ 	struct digest_info *di = NULL;
+ 	int size, verb;
+ 	unsigned int fault_type;
+-	struct p_block_req *p =	mdev->tconn->data.rbuf;
++	struct p_block_req *p =	tconn->data.rbuf;
 +
-+/*
-+ * The SCU hardware has limitation of 16 bytes per read/write buffer on
-+ * Medfield.
-+ */
-+#define SCU_IPC_RWBUF_LIMIT	16
-+
-+/**
-+ * struct intel_msic - an MSIC MFD instance
-+ * @pdev: pointer to the platform device
-+ * @vendor: vendor ID
-+ * @version: chip version
-+ * @irq_base: base address of the mapped MSIC SRAM interrupt tree
-+ */
-+struct intel_msic {
-+	struct platform_device		*pdev;
-+	unsigned			vendor;
-+	unsigned			version;
-+	void __iomem			*irq_base;
-+};
-+
-+static struct resource msic_touch_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource msic_adc_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource msic_battery_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource msic_gpio_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource msic_audio_resources[] = {
-+	{
-+		.name		= "IRQ",
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+	/*
-+	 * We will pass IRQ_BASE to the driver now but this can be removed
-+	 * when/if the driver starts to use intel_msic_irq_read().
-+	 */
-+	{
-+		.name		= "IRQ_BASE",
-+		.flags		= IORESOURCE_MEM,
-+		.start		= MSIC_IRQ_STATUS_ACCDET,
-+		.end		= MSIC_IRQ_STATUS_ACCDET,
-+	},
-+};
-+
-+static struct resource msic_hdmi_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource msic_thermal_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource msic_power_btn_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource msic_ocd_resources[] = {
-+	{
-+		.flags		= IORESOURCE_IRQ,
-+	},
-+};
-+
-+/*
-+ * Devices that are part of the MSIC and are available via firmware
-+ * populated SFI DEVS table.
-+ */
-+static struct mfd_cell msic_devs[] = {
-+	[INTEL_MSIC_BLOCK_TOUCH]	= {
-+		.name			= "msic_touch",
-+		.num_resources		= ARRAY_SIZE(msic_touch_resources),
-+		.resources		= msic_touch_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_ADC]		= {
-+		.name			= "msic_adc",
-+		.num_resources		= ARRAY_SIZE(msic_adc_resources),
-+		.resources		= msic_adc_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_BATTERY]	= {
-+		.name			= "msic_battery",
-+		.num_resources		= ARRAY_SIZE(msic_battery_resources),
-+		.resources		= msic_battery_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_GPIO]		= {
-+		.name			= "msic_gpio",
-+		.num_resources		= ARRAY_SIZE(msic_gpio_resources),
-+		.resources		= msic_gpio_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_AUDIO]	= {
-+		.name			= "msic_audio",
-+		.num_resources		= ARRAY_SIZE(msic_audio_resources),
-+		.resources		= msic_audio_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_HDMI]		= {
-+		.name			= "msic_hdmi",
-+		.num_resources		= ARRAY_SIZE(msic_hdmi_resources),
-+		.resources		= msic_hdmi_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_THERMAL]	= {
-+		.name			= "msic_thermal",
-+		.num_resources		= ARRAY_SIZE(msic_thermal_resources),
-+		.resources		= msic_thermal_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_POWER_BTN]	= {
-+		.name			= "msic_power_btn",
-+		.num_resources		= ARRAY_SIZE(msic_power_btn_resources),
-+		.resources		= msic_power_btn_resources,
-+	},
-+	[INTEL_MSIC_BLOCK_OCD]		= {
-+		.name			= "msic_ocd",
-+		.num_resources		= ARRAY_SIZE(msic_ocd_resources),
-+		.resources		= msic_ocd_resources,
-+	},
-+};
-+
-+/*
-+ * Other MSIC related devices which are not directly available via SFI DEVS
-+ * table. These can be pseudo devices, regulators etc. which are needed for
-+ * different purposes.
-+ *
-+ * These devices appear only after the MSIC driver itself is initialized so
-+ * we can guarantee that the SCU IPC interface is ready.
-+ */
-+static struct mfd_cell msic_other_devs[] = {
-+	/* Audio codec in the MSIC */
-+	{
-+		.id			= -1,
-+		.name			= "sn95031",
-+	},
-+};
-+
-+/**
-+ * intel_msic_reg_read - read a single MSIC register
-+ * @reg: register to read
-+ * @val: register value is placed here
-+ *
-+ * Read a single register from MSIC. Returns %0 on success and negative
-+ * errno in case of failure.
-+ *
-+ * Function may sleep.
-+ */
-+int intel_msic_reg_read(unsigned short reg, u8 *val)
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
++	capacity = drbd_get_capacity(mdev->this_bdev);
+ 
+ 	sector = be64_to_cpu(p->sector);
+ 	size   = be32_to_cpu(p->blksize);
+@@ -2960,17 +2985,60 @@ struct crypto_hash *drbd_crypto_alloc_digest_safe(const struct drbd_conf *mdev,
+ 	return tfm;
+ }
+ 
+-static int receive_SyncParam(struct drbd_conf *mdev, struct packet_info *pi)
++static int ignore_remaining_packet(struct drbd_tconn *tconn, struct packet_info *pi)
 +{
-+	return intel_scu_ipc_ioread8(reg, val);
-+}
-+EXPORT_SYMBOL_GPL(intel_msic_reg_read);
++	void *buffer = tconn->data.rbuf;
++	int size = pi->size;
 +
-+/**
-+ * intel_msic_reg_write - write a single MSIC register
-+ * @reg: register to write
-+ * @val: value to write to that register
-+ *
-+ * Write a single MSIC register. Returns 0 on success and negative
-+ * errno in case of failure.
-+ *
-+ * Function may sleep.
-+ */
-+int intel_msic_reg_write(unsigned short reg, u8 val)
-+{
-+	return intel_scu_ipc_iowrite8(reg, val);
-+}
-+EXPORT_SYMBOL_GPL(intel_msic_reg_write);
-+
-+/**
-+ * intel_msic_reg_update - update a single MSIC register
-+ * @reg: register to update
-+ * @val: value to write to the register
-+ * @mask: specifies which of the bits are updated (%0 = don't update,
-+ *        %1 = update)
-+ *
-+ * Perform an update to a register @reg. @mask is used to specify which
-+ * bits are updated. Returns %0 in case of success and negative errno in
-+ * case of failure.
-+ *
-+ * Function may sleep.
-+ */
-+int intel_msic_reg_update(unsigned short reg, u8 val, u8 mask)
-+{
-+	return intel_scu_ipc_update_register(reg, val, mask);
-+}
-+EXPORT_SYMBOL_GPL(intel_msic_reg_update);
-+
-+/**
-+ * intel_msic_bulk_read - read an array of registers
-+ * @reg: array of register addresses to read
-+ * @buf: array where the read values are placed
-+ * @count: number of registers to read
-+ *
-+ * Function reads @count registers from the MSIC using addresses passed in
-+ * @reg. Read values are placed in @buf. Reads are performed atomically
-+ * wrt. MSIC.
-+ *
-+ * Returns %0 in case of success and negative errno in case of failure.
-+ *
-+ * Function may sleep.
-+ */
-+int intel_msic_bulk_read(unsigned short *reg, u8 *buf, size_t count)
-+{
-+	if (WARN_ON(count > SCU_IPC_RWBUF_LIMIT))
-+		return -EINVAL;
-+
-+	return intel_scu_ipc_readv(reg, buf, count);
-+}
-+EXPORT_SYMBOL_GPL(intel_msic_bulk_read);
-+
-+/**
-+ * intel_msic_bulk_write - write an array of values to the MSIC registers
-+ * @reg: array of registers to write
-+ * @buf: values to write to each register
-+ * @count: number of registers to write
-+ *
-+ * Function writes @count registers in @buf to MSIC. Writes are performed
-+ * atomically wrt MSIC. Returns %0 in case of success and negative errno in
-+ * case of failure.
-+ *
-+ * Function may sleep.
-+ */
-+int intel_msic_bulk_write(unsigned short *reg, u8 *buf, size_t count)
-+{
-+	if (WARN_ON(count > SCU_IPC_RWBUF_LIMIT))
-+		return -EINVAL;
-+
-+	return intel_scu_ipc_writev(reg, buf, count);
-+}
-+EXPORT_SYMBOL_GPL(intel_msic_bulk_write);
-+
-+/**
-+ * intel_msic_irq_read - read a register from an MSIC interrupt tree
-+ * @msic: MSIC instance
-+ * @reg: interrupt register (between %INTEL_MSIC_IRQLVL1 and
-+ *	 %INTEL_MSIC_RESETIRQ2)
-+ * @val: value of the register is placed here
-+ *
-+ * This function can be used by an MSIC subdevice interrupt handler to read
-+ * a register value from the MSIC interrupt tree. In this way subdevice
-+ * drivers don't have to map in the interrupt tree themselves but can just
-+ * call this function instead.
-+ *
-+ * Function doesn't sleep and is callable from interrupt context.
-+ *
-+ * Returns %-EINVAL if @reg is outside of the allowed register region.
-+ */
-+int intel_msic_irq_read(struct intel_msic *msic, unsigned short reg, u8 *val)
-+{
-+	if (WARN_ON(reg < INTEL_MSIC_IRQLVL1 || reg > INTEL_MSIC_RESETIRQ2))
-+		return -EINVAL;
-+
-+	*val = readb(msic->irq_base + (reg - INTEL_MSIC_IRQLVL1));
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(intel_msic_irq_read);
-+
-+static int __devinit intel_msic_init_devices(struct intel_msic *msic)
-+{
-+	struct platform_device *pdev = msic->pdev;
-+	struct intel_msic_platform_data *pdata = pdev->dev.platform_data;
-+	int ret, i;
-+
-+	if (pdata->gpio) {
-+		struct mfd_cell *cell = &msic_devs[INTEL_MSIC_BLOCK_GPIO];
-+
-+		cell->platform_data = pdata->gpio;
-+		cell->pdata_size = sizeof(*pdata->gpio);
-+	}
-+
-+	if (pdata->ocd) {
-+		unsigned gpio = pdata->ocd->gpio;
-+
-+		ret = gpio_request_one(gpio, GPIOF_IN, "ocd_gpio");
-+		if (ret) {
-+			dev_err(&pdev->dev, "failed to register OCD GPIO\n");
-+			return ret;
++	while (size) {
++		int s = min_t(int, size, DRBD_SOCKET_BUFFER_SIZE);
++		s = drbd_recv(tconn, buffer, s);
++		if (s <= 0) {
++			if (s < 0)
++				return s;
++			break;
 +		}
-+
-+		ret = gpio_to_irq(gpio);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "no IRQ number for OCD GPIO\n");
-+			gpio_free(gpio);
-+			return ret;
-+		}
-+
-+		/* Update the IRQ number for the OCD */
-+		pdata->irq[INTEL_MSIC_BLOCK_OCD] = ret;
++		size -= s;
 +	}
-+
-+	for (i = 0; i < ARRAY_SIZE(msic_devs); i++) {
-+		if (!pdata->irq[i])
-+			continue;
-+
-+		ret = mfd_add_devices(&pdev->dev, -1, &msic_devs[i], 1, NULL,
-+				      pdata->irq[i]);
-+		if (ret)
-+			goto fail;
-+	}
-+
-+	ret = mfd_add_devices(&pdev->dev, 0, msic_other_devs,
-+			      ARRAY_SIZE(msic_other_devs), NULL, 0);
-+	if (ret)
-+		goto fail;
-+
-+	return 0;
-+
-+fail:
-+	mfd_remove_devices(&pdev->dev);
-+	if (pdata->ocd)
-+		gpio_free(pdata->ocd->gpio);
-+
-+	return ret;
-+}
-+
-+static void __devexit intel_msic_remove_devices(struct intel_msic *msic)
-+{
-+	struct platform_device *pdev = msic->pdev;
-+	struct intel_msic_platform_data *pdata = pdev->dev.platform_data;
-+
-+	mfd_remove_devices(&pdev->dev);
-+
-+	if (pdata->ocd)
-+		gpio_free(pdata->ocd->gpio);
-+}
-+
-+static int __devinit intel_msic_probe(struct platform_device *pdev)
-+{
-+	struct intel_msic_platform_data *pdata = pdev->dev.platform_data;
-+	struct intel_msic *msic;
-+	struct resource *res;
-+	u8 id0, id1;
-+	int ret;
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "no platform data passed\n");
-+		return -EINVAL;
-+	}
-+
-+	/* First validate that we have an MSIC in place */
-+	ret = intel_scu_ipc_ioread8(INTEL_MSIC_ID0, &id0);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to identify the MSIC chip (ID0)\n");
-+		return -ENXIO;
-+	}
-+
-+	ret = intel_scu_ipc_ioread8(INTEL_MSIC_ID1, &id1);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to identify the MSIC chip (ID1)\n");
-+		return -ENXIO;
-+	}
-+
-+	if (MSIC_VENDOR(id0) != MSIC_VENDOR(id1)) {
-+		dev_err(&pdev->dev, "invalid vendor ID: %x, %x\n", id0, id1);
-+		return -ENXIO;
-+	}
-+
-+	msic = kzalloc(sizeof(*msic), GFP_KERNEL);
-+	if (!msic)
-+		return -ENOMEM;
-+
-+	msic->vendor = MSIC_VENDOR(id0);
-+	msic->version = MSIC_VERSION(id0);
-+	msic->pdev = pdev;
-+
-+	/*
-+	 * Map in the MSIC interrupt tree area in SRAM. This is exposed to
-+	 * the clients via intel_msic_irq_read().
-+	 */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "failed to get SRAM iomem resource\n");
-+		ret = -ENODEV;
-+		goto fail_free_msic;
-+	}
-+
-+	res = request_mem_region(res->start, resource_size(res), pdev->name);
-+	if (!res) {
-+		ret = -EBUSY;
-+		goto fail_free_msic;
-+	}
-+
-+	msic->irq_base = ioremap_nocache(res->start, resource_size(res));
-+	if (!msic->irq_base) {
-+		dev_err(&pdev->dev, "failed to map SRAM memory\n");
-+		ret = -ENOMEM;
-+		goto fail_release_region;
-+	}
-+
-+	platform_set_drvdata(pdev, msic);
-+
-+	ret = intel_msic_init_devices(msic);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to initialize MSIC devices\n");
-+		goto fail_unmap_mem;
-+	}
-+
-+	dev_info(&pdev->dev, "Intel MSIC version %c%d (vendor %#x)\n",
-+		 MSIC_MAJOR(msic->version), MSIC_MINOR(msic->version),
-+		 msic->vendor);
-+
-+	return 0;
-+
-+fail_unmap_mem:
-+	iounmap(msic->irq_base);
-+fail_release_region:
-+	release_mem_region(res->start, resource_size(res));
-+fail_free_msic:
-+	kfree(msic);
-+
-+	return ret;
-+}
-+
-+static int __devexit intel_msic_remove(struct platform_device *pdev)
-+{
-+	struct intel_msic *msic = platform_get_drvdata(pdev);
-+	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
-+	intel_msic_remove_devices(msic);
-+	platform_set_drvdata(pdev, NULL);
-+	iounmap(msic->irq_base);
-+	release_mem_region(res->start, resource_size(res));
-+	kfree(msic);
-+
++	if (size)
++		return -EIO;
 +	return 0;
 +}
-+
-+static struct platform_driver intel_msic_driver = {
-+	.probe		= intel_msic_probe,
-+	.remove		= __devexit_p(intel_msic_remove),
-+	.driver		= {
-+		.name	= "intel_msic",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init intel_msic_init(void)
-+{
-+	return platform_driver_register(&intel_msic_driver);
-+}
-+module_init(intel_msic_init);
-+
-+static void __exit intel_msic_exit(void)
-+{
-+	platform_driver_unregister(&intel_msic_driver);
-+}
-+module_exit(intel_msic_exit);
-+
-+MODULE_DESCRIPTION("Driver for Intel MSIC");
-+MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/intel_msic.h b/include/linux/mfd/intel_msic.h
-new file mode 100644
-index 0000000..439a7a6
---- /dev/null
-+++ b/include/linux/mfd/intel_msic.h
-@@ -0,0 +1,456 @@
-+/*
-+ * include/linux/mfd/intel_msic.h - Core interface for Intel MSIC
-+ *
-+ * Copyright (C) 2011, Intel Corporation
-+ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __LINUX_MFD_INTEL_MSIC_H__
-+#define __LINUX_MFD_INTEL_MSIC_H__
-+
-+/* ID */
-+#define INTEL_MSIC_ID0			0x000	/* RO */
-+#define INTEL_MSIC_ID1			0x001	/* RO */
-+
-+/* IRQ */
-+#define INTEL_MSIC_IRQLVL1		0x002
-+#define INTEL_MSIC_ADC1INT		0x003
-+#define INTEL_MSIC_CCINT		0x004
-+#define INTEL_MSIC_PWRSRCINT		0x005
-+#define INTEL_MSIC_PWRSRCINT1		0x006
-+#define INTEL_MSIC_CHRINT		0x007
-+#define INTEL_MSIC_CHRINT1		0x008
-+#define INTEL_MSIC_RTCIRQ		0x009
-+#define INTEL_MSIC_GPIO0LVIRQ		0x00a
-+#define INTEL_MSIC_GPIO1LVIRQ		0x00b
-+#define INTEL_MSIC_GPIOHVIRQ		0x00c
-+#define INTEL_MSIC_VRINT		0x00d
-+#define INTEL_MSIC_OCAUDIO		0x00e
-+#define INTEL_MSIC_ACCDET		0x00f
-+#define INTEL_MSIC_RESETIRQ1		0x010
-+#define INTEL_MSIC_RESETIRQ2		0x011
-+#define INTEL_MSIC_MADC1INT		0x012
-+#define INTEL_MSIC_MCCINT		0x013
-+#define INTEL_MSIC_MPWRSRCINT		0x014
-+#define INTEL_MSIC_MPWRSRCINT1		0x015
-+#define INTEL_MSIC_MCHRINT		0x016
-+#define INTEL_MSIC_MCHRINT1		0x017
-+#define INTEL_MSIC_RTCIRQMASK		0x018
-+#define INTEL_MSIC_GPIO0LVIRQMASK	0x019
-+#define INTEL_MSIC_GPIO1LVIRQMASK	0x01a
-+#define INTEL_MSIC_GPIOHVIRQMASK	0x01b
-+#define INTEL_MSIC_VRINTMASK		0x01c
-+#define INTEL_MSIC_OCAUDIOMASK		0x01d
-+#define INTEL_MSIC_ACCDETMASK		0x01e
-+#define INTEL_MSIC_RESETIRQ1MASK	0x01f
-+#define INTEL_MSIC_RESETIRQ2MASK	0x020
-+#define INTEL_MSIC_IRQLVL1MSK		0x021
-+#define INTEL_MSIC_PBCONFIG		0x03e
-+#define INTEL_MSIC_PBSTATUS		0x03f	/* RO */
-+
-+/* GPIO */
-+#define INTEL_MSIC_GPIO0LV7CTLO		0x040
-+#define INTEL_MSIC_GPIO0LV6CTLO		0x041
-+#define INTEL_MSIC_GPIO0LV5CTLO		0x042
-+#define INTEL_MSIC_GPIO0LV4CTLO		0x043
-+#define INTEL_MSIC_GPIO0LV3CTLO		0x044
-+#define INTEL_MSIC_GPIO0LV2CTLO		0x045
-+#define INTEL_MSIC_GPIO0LV1CTLO		0x046
-+#define INTEL_MSIC_GPIO0LV0CTLO		0x047
-+#define INTEL_MSIC_GPIO1LV7CTLOS	0x048
-+#define INTEL_MSIC_GPIO1LV6CTLO		0x049
-+#define INTEL_MSIC_GPIO1LV5CTLO		0x04a
-+#define INTEL_MSIC_GPIO1LV4CTLO		0x04b
-+#define INTEL_MSIC_GPIO1LV3CTLO		0x04c
-+#define INTEL_MSIC_GPIO1LV2CTLO		0x04d
-+#define INTEL_MSIC_GPIO1LV1CTLO		0x04e
-+#define INTEL_MSIC_GPIO1LV0CTLO		0x04f
-+#define INTEL_MSIC_GPIO0LV7CTLI		0x050
-+#define INTEL_MSIC_GPIO0LV6CTLI		0x051
-+#define INTEL_MSIC_GPIO0LV5CTLI		0x052
-+#define INTEL_MSIC_GPIO0LV4CTLI		0x053
-+#define INTEL_MSIC_GPIO0LV3CTLI		0x054
-+#define INTEL_MSIC_GPIO0LV2CTLI		0x055
-+#define INTEL_MSIC_GPIO0LV1CTLI		0x056
-+#define INTEL_MSIC_GPIO0LV0CTLI		0x057
-+#define INTEL_MSIC_GPIO1LV7CTLIS	0x058
-+#define INTEL_MSIC_GPIO1LV6CTLI		0x059
-+#define INTEL_MSIC_GPIO1LV5CTLI		0x05a
-+#define INTEL_MSIC_GPIO1LV4CTLI		0x05b
-+#define INTEL_MSIC_GPIO1LV3CTLI		0x05c
-+#define INTEL_MSIC_GPIO1LV2CTLI		0x05d
-+#define INTEL_MSIC_GPIO1LV1CTLI		0x05e
-+#define INTEL_MSIC_GPIO1LV0CTLI		0x05f
-+#define INTEL_MSIC_PWM0CLKDIV1		0x061
-+#define INTEL_MSIC_PWM0CLKDIV0		0x062
-+#define INTEL_MSIC_PWM1CLKDIV1		0x063
-+#define INTEL_MSIC_PWM1CLKDIV0		0x064
-+#define INTEL_MSIC_PWM2CLKDIV1		0x065
-+#define INTEL_MSIC_PWM2CLKDIV0		0x066
-+#define INTEL_MSIC_PWM0DUTYCYCLE	0x067
-+#define INTEL_MSIC_PWM1DUTYCYCLE	0x068
-+#define INTEL_MSIC_PWM2DUTYCYCLE	0x069
-+#define INTEL_MSIC_GPIO0HV3CTLO		0x06d
-+#define INTEL_MSIC_GPIO0HV2CTLO		0x06e
-+#define INTEL_MSIC_GPIO0HV1CTLO		0x06f
-+#define INTEL_MSIC_GPIO0HV0CTLO		0x070
-+#define INTEL_MSIC_GPIO1HV3CTLO		0x071
-+#define INTEL_MSIC_GPIO1HV2CTLO		0x072
-+#define INTEL_MSIC_GPIO1HV1CTLO		0x073
-+#define INTEL_MSIC_GPIO1HV0CTLO		0x074
-+#define INTEL_MSIC_GPIO0HV3CTLI		0x075
-+#define INTEL_MSIC_GPIO0HV2CTLI		0x076
-+#define INTEL_MSIC_GPIO0HV1CTLI		0x077
-+#define INTEL_MSIC_GPIO0HV0CTLI		0x078
-+#define INTEL_MSIC_GPIO1HV3CTLI		0x079
-+#define INTEL_MSIC_GPIO1HV2CTLI		0x07a
-+#define INTEL_MSIC_GPIO1HV1CTLI		0x07b
-+#define INTEL_MSIC_GPIO1HV0CTLI		0x07c
-+
-+/* SVID */
-+#define INTEL_MSIC_SVIDCTRL0		0x080
-+#define INTEL_MSIC_SVIDCTRL1		0x081
-+#define INTEL_MSIC_SVIDCTRL2		0x082
-+#define INTEL_MSIC_SVIDTXLASTPKT3	0x083	/* RO */
-+#define INTEL_MSIC_SVIDTXLASTPKT2	0x084	/* RO */
-+#define INTEL_MSIC_SVIDTXLASTPKT1	0x085	/* RO */
-+#define INTEL_MSIC_SVIDTXLASTPKT0	0x086	/* RO */
-+#define INTEL_MSIC_SVIDPKTOUTBYTE3	0x087
-+#define INTEL_MSIC_SVIDPKTOUTBYTE2	0x088
-+#define INTEL_MSIC_SVIDPKTOUTBYTE1	0x089
-+#define INTEL_MSIC_SVIDPKTOUTBYTE0	0x08a
-+#define INTEL_MSIC_SVIDRXVPDEBUG1	0x08b
-+#define INTEL_MSIC_SVIDRXVPDEBUG0	0x08c
-+#define INTEL_MSIC_SVIDRXLASTPKT3	0x08d	/* RO */
-+#define INTEL_MSIC_SVIDRXLASTPKT2	0x08e	/* RO */
-+#define INTEL_MSIC_SVIDRXLASTPKT1	0x08f	/* RO */
-+#define INTEL_MSIC_SVIDRXLASTPKT0	0x090	/* RO */
-+#define INTEL_MSIC_SVIDRXCHKSTATUS3	0x091	/* RO */
-+#define INTEL_MSIC_SVIDRXCHKSTATUS2	0x092	/* RO */
-+#define INTEL_MSIC_SVIDRXCHKSTATUS1	0x093	/* RO */
-+#define INTEL_MSIC_SVIDRXCHKSTATUS0	0x094	/* RO */
-+
-+/* VREG */
-+#define INTEL_MSIC_VCCLATCH		0x0c0
-+#define INTEL_MSIC_VNNLATCH		0x0c1
-+#define INTEL_MSIC_VCCCNT		0x0c2
-+#define INTEL_MSIC_SMPSRAMP		0x0c3
-+#define INTEL_MSIC_VNNCNT		0x0c4
-+#define INTEL_MSIC_VNNAONCNT		0x0c5
-+#define INTEL_MSIC_VCC122AONCNT		0x0c6
-+#define INTEL_MSIC_V180AONCNT		0x0c7
-+#define INTEL_MSIC_V500CNT		0x0c8
-+#define INTEL_MSIC_VIHFCNT		0x0c9
-+#define INTEL_MSIC_LDORAMP1		0x0ca
-+#define INTEL_MSIC_LDORAMP2		0x0cb
-+#define INTEL_MSIC_VCC108AONCNT		0x0cc
-+#define INTEL_MSIC_VCC108ASCNT		0x0cd
-+#define INTEL_MSIC_VCC108CNT		0x0ce
-+#define INTEL_MSIC_VCCA100ASCNT		0x0cf
-+#define INTEL_MSIC_VCCA100CNT		0x0d0
-+#define INTEL_MSIC_VCC180AONCNT		0x0d1
-+#define INTEL_MSIC_VCC180CNT		0x0d2
-+#define INTEL_MSIC_VCC330CNT		0x0d3
-+#define INTEL_MSIC_VUSB330CNT		0x0d4
-+#define INTEL_MSIC_VCCSDIOCNT		0x0d5
-+#define INTEL_MSIC_VPROG1CNT		0x0d6
-+#define INTEL_MSIC_VPROG2CNT		0x0d7
-+#define INTEL_MSIC_VEMMCSCNT		0x0d8
-+#define INTEL_MSIC_VEMMC1CNT		0x0d9
-+#define INTEL_MSIC_VEMMC2CNT		0x0da
-+#define INTEL_MSIC_VAUDACNT		0x0db
-+#define INTEL_MSIC_VHSPCNT		0x0dc
-+#define INTEL_MSIC_VHSNCNT		0x0dd
-+#define INTEL_MSIC_VHDMICNT		0x0de
-+#define INTEL_MSIC_VOTGCNT		0x0df
-+#define INTEL_MSIC_V1P35CNT		0x0e0
-+#define INTEL_MSIC_V330AONCNT		0x0e1
-+
-+/* RESET */
-+#define INTEL_MSIC_CHIPCNTRL		0x100	/* WO */
-+#define INTEL_MSIC_ERCONFIG		0x101
-+
-+/* BURST */
-+#define INTEL_MSIC_BATCURRENTLIMIT12	0x102
-+#define INTEL_MSIC_BATTIMELIMIT12	0x103
-+#define INTEL_MSIC_BATTIMELIMIT3	0x104
-+#define INTEL_MSIC_BATTIMEDB		0x105
-+#define INTEL_MSIC_BRSTCONFIGOUTPUTS	0x106
-+#define INTEL_MSIC_BRSTCONFIGACTIONS	0x107
-+#define INTEL_MSIC_BURSTCONTROLSTATUS	0x108
-+
-+/* RTC */
-+#define INTEL_MSIC_RTCB1		0x140	/* RO */
-+#define INTEL_MSIC_RTCB2		0x141	/* RO */
-+#define INTEL_MSIC_RTCB3		0x142	/* RO */
-+#define INTEL_MSIC_RTCB4		0x143	/* RO */
-+#define INTEL_MSIC_RTCOB1		0x144
-+#define INTEL_MSIC_RTCOB2		0x145
-+#define INTEL_MSIC_RTCOB3		0x146
-+#define INTEL_MSIC_RTCOB4		0x147
-+#define INTEL_MSIC_RTCAB1		0x148
-+#define INTEL_MSIC_RTCAB2		0x149
-+#define INTEL_MSIC_RTCAB3		0x14a
-+#define INTEL_MSIC_RTCAB4		0x14b
-+#define INTEL_MSIC_RTCWAB1		0x14c
-+#define INTEL_MSIC_RTCWAB2		0x14d
-+#define INTEL_MSIC_RTCWAB3		0x14e
-+#define INTEL_MSIC_RTCWAB4		0x14f
-+#define INTEL_MSIC_RTCSC1		0x150
-+#define INTEL_MSIC_RTCSC2		0x151
-+#define INTEL_MSIC_RTCSC3		0x152
-+#define INTEL_MSIC_RTCSC4		0x153
-+#define INTEL_MSIC_RTCSTATUS		0x154	/* RO */
-+#define INTEL_MSIC_RTCCONFIG1		0x155
-+#define INTEL_MSIC_RTCCONFIG2		0x156
-+
-+/* CHARGER */
-+#define INTEL_MSIC_BDTIMER		0x180
-+#define INTEL_MSIC_BATTRMV		0x181
-+#define INTEL_MSIC_VBUSDET		0x182
-+#define INTEL_MSIC_VBUSDET1		0x183
-+#define INTEL_MSIC_ADPHVDET		0x184
-+#define INTEL_MSIC_ADPLVDET		0x185
-+#define INTEL_MSIC_ADPDETDBDM		0x186
-+#define INTEL_MSIC_LOWBATTDET		0x187
-+#define INTEL_MSIC_CHRCTRL		0x188
-+#define INTEL_MSIC_CHRCVOLTAGE		0x189
-+#define INTEL_MSIC_CHRCCURRENT		0x18a
-+#define INTEL_MSIC_SPCHARGER		0x18b
-+#define INTEL_MSIC_CHRTTIME		0x18c
-+#define INTEL_MSIC_CHRCTRL1		0x18d
-+#define INTEL_MSIC_PWRSRCLMT		0x18e
-+#define INTEL_MSIC_CHRSTWDT		0x18f
-+#define INTEL_MSIC_WDTWRITE		0x190	/* WO */
-+#define INTEL_MSIC_CHRSAFELMT		0x191
-+#define INTEL_MSIC_SPWRSRCINT		0x192	/* RO */
-+#define INTEL_MSIC_SPWRSRCINT1		0x193	/* RO */
-+#define INTEL_MSIC_CHRLEDPWM		0x194
-+#define INTEL_MSIC_CHRLEDCTRL		0x195
-+
-+/* ADC */
-+#define INTEL_MSIC_ADC1CNTL1		0x1c0
-+#define INTEL_MSIC_ADC1CNTL2		0x1c1
-+#define INTEL_MSIC_ADC1CNTL3		0x1c2
-+#define INTEL_MSIC_ADC1OFFSETH		0x1c3	/* RO */
-+#define INTEL_MSIC_ADC1OFFSETL		0x1c4	/* RO */
-+#define INTEL_MSIC_ADC1ADDR0		0x1c5
-+#define INTEL_MSIC_ADC1ADDR1		0x1c6
-+#define INTEL_MSIC_ADC1ADDR2		0x1c7
-+#define INTEL_MSIC_ADC1ADDR3		0x1c8
-+#define INTEL_MSIC_ADC1ADDR4		0x1c9
-+#define INTEL_MSIC_ADC1ADDR5		0x1ca
-+#define INTEL_MSIC_ADC1ADDR6		0x1cb
-+#define INTEL_MSIC_ADC1ADDR7		0x1cc
-+#define INTEL_MSIC_ADC1ADDR8		0x1cd
-+#define INTEL_MSIC_ADC1ADDR9		0x1ce
-+#define INTEL_MSIC_ADC1ADDR10		0x1cf
-+#define INTEL_MSIC_ADC1ADDR11		0x1d0
-+#define INTEL_MSIC_ADC1ADDR12		0x1d1
-+#define INTEL_MSIC_ADC1ADDR13		0x1d2
-+#define INTEL_MSIC_ADC1ADDR14		0x1d3
-+#define INTEL_MSIC_ADC1SNS0H		0x1d4	/* RO */
-+#define INTEL_MSIC_ADC1SNS0L		0x1d5	/* RO */
-+#define INTEL_MSIC_ADC1SNS1H		0x1d6	/* RO */
-+#define INTEL_MSIC_ADC1SNS1L		0x1d7	/* RO */
-+#define INTEL_MSIC_ADC1SNS2H		0x1d8	/* RO */
-+#define INTEL_MSIC_ADC1SNS2L		0x1d9	/* RO */
-+#define INTEL_MSIC_ADC1SNS3H		0x1da	/* RO */
-+#define INTEL_MSIC_ADC1SNS3L		0x1db	/* RO */
-+#define INTEL_MSIC_ADC1SNS4H		0x1dc	/* RO */
-+#define INTEL_MSIC_ADC1SNS4L		0x1dd	/* RO */
-+#define INTEL_MSIC_ADC1SNS5H		0x1de	/* RO */
-+#define INTEL_MSIC_ADC1SNS5L		0x1df	/* RO */
-+#define INTEL_MSIC_ADC1SNS6H		0x1e0	/* RO */
-+#define INTEL_MSIC_ADC1SNS6L		0x1e1	/* RO */
-+#define INTEL_MSIC_ADC1SNS7H		0x1e2	/* RO */
-+#define INTEL_MSIC_ADC1SNS7L		0x1e3	/* RO */
-+#define INTEL_MSIC_ADC1SNS8H		0x1e4	/* RO */
-+#define INTEL_MSIC_ADC1SNS8L		0x1e5	/* RO */
-+#define INTEL_MSIC_ADC1SNS9H		0x1e6	/* RO */
-+#define INTEL_MSIC_ADC1SNS9L		0x1e7	/* RO */
-+#define INTEL_MSIC_ADC1SNS10H		0x1e8	/* RO */
-+#define INTEL_MSIC_ADC1SNS10L		0x1e9	/* RO */
-+#define INTEL_MSIC_ADC1SNS11H		0x1ea	/* RO */
-+#define INTEL_MSIC_ADC1SNS11L		0x1eb	/* RO */
-+#define INTEL_MSIC_ADC1SNS12H		0x1ec	/* RO */
-+#define INTEL_MSIC_ADC1SNS12L		0x1ed	/* RO */
-+#define INTEL_MSIC_ADC1SNS13H		0x1ee	/* RO */
-+#define INTEL_MSIC_ADC1SNS13L		0x1ef	/* RO */
-+#define INTEL_MSIC_ADC1SNS14H		0x1f0	/* RO */
-+#define INTEL_MSIC_ADC1SNS14L		0x1f1	/* RO */
-+#define INTEL_MSIC_ADC1BV0H		0x1f2	/* RO */
-+#define INTEL_MSIC_ADC1BV0L		0x1f3	/* RO */
-+#define INTEL_MSIC_ADC1BV1H		0x1f4	/* RO */
-+#define INTEL_MSIC_ADC1BV1L		0x1f5	/* RO */
-+#define INTEL_MSIC_ADC1BV2H		0x1f6	/* RO */
-+#define INTEL_MSIC_ADC1BV2L		0x1f7	/* RO */
-+#define INTEL_MSIC_ADC1BV3H		0x1f8	/* RO */
-+#define INTEL_MSIC_ADC1BV3L		0x1f9	/* RO */
-+#define INTEL_MSIC_ADC1BI0H		0x1fa	/* RO */
-+#define INTEL_MSIC_ADC1BI0L		0x1fb	/* RO */
-+#define INTEL_MSIC_ADC1BI1H		0x1fc	/* RO */
-+#define INTEL_MSIC_ADC1BI1L		0x1fd	/* RO */
-+#define INTEL_MSIC_ADC1BI2H		0x1fe	/* RO */
-+#define INTEL_MSIC_ADC1BI2L		0x1ff	/* RO */
-+#define INTEL_MSIC_ADC1BI3H		0x200	/* RO */
-+#define INTEL_MSIC_ADC1BI3L		0x201	/* RO */
-+#define INTEL_MSIC_CCCNTL		0x202
-+#define INTEL_MSIC_CCOFFSETH		0x203	/* RO */
-+#define INTEL_MSIC_CCOFFSETL		0x204	/* RO */
-+#define INTEL_MSIC_CCADCHA		0x205	/* RO */
-+#define INTEL_MSIC_CCADCLA		0x206	/* RO */
-+
-+/* AUDIO */
-+#define INTEL_MSIC_AUDPLLCTRL		0x240
-+#define INTEL_MSIC_DMICBUF0123		0x241
-+#define INTEL_MSIC_DMICBUF45		0x242
-+#define INTEL_MSIC_DMICGPO		0x244
-+#define INTEL_MSIC_DMICMUX		0x245
-+#define INTEL_MSIC_DMICCLK		0x246
-+#define INTEL_MSIC_MICBIAS		0x247
-+#define INTEL_MSIC_ADCCONFIG		0x248
-+#define INTEL_MSIC_MICAMP1		0x249
-+#define INTEL_MSIC_MICAMP2		0x24a
-+#define INTEL_MSIC_NOISEMUX		0x24b
-+#define INTEL_MSIC_AUDIOMUX12		0x24c
-+#define INTEL_MSIC_AUDIOMUX34		0x24d
-+#define INTEL_MSIC_AUDIOSINC		0x24e
-+#define INTEL_MSIC_AUDIOTXEN		0x24f
-+#define INTEL_MSIC_HSEPRXCTRL		0x250
-+#define INTEL_MSIC_IHFRXCTRL		0x251
-+#define INTEL_MSIC_VOICETXVOL		0x252
-+#define INTEL_MSIC_SIDETONEVOL		0x253
-+#define INTEL_MSIC_MUSICSHARVOL		0x254
-+#define INTEL_MSIC_VOICETXCTRL		0x255
-+#define INTEL_MSIC_HSMIXER		0x256
-+#define INTEL_MSIC_DACCONFIG		0x257
-+#define INTEL_MSIC_SOFTMUTE		0x258
-+#define INTEL_MSIC_HSLVOLCTRL		0x259
-+#define INTEL_MSIC_HSRVOLCTRL		0x25a
-+#define INTEL_MSIC_IHFLVOLCTRL		0x25b
-+#define INTEL_MSIC_IHFRVOLCTRL		0x25c
-+#define INTEL_MSIC_DRIVEREN		0x25d
-+#define INTEL_MSIC_LINEOUTCTRL		0x25e
-+#define INTEL_MSIC_VIB1CTRL1		0x25f
-+#define INTEL_MSIC_VIB1CTRL2		0x260
-+#define INTEL_MSIC_VIB1CTRL3		0x261
-+#define INTEL_MSIC_VIB1SPIPCM_1		0x262
-+#define INTEL_MSIC_VIB1SPIPCM_2		0x263
-+#define INTEL_MSIC_VIB1CTRL5		0x264
-+#define INTEL_MSIC_VIB2CTRL1		0x265
-+#define INTEL_MSIC_VIB2CTRL2		0x266
-+#define INTEL_MSIC_VIB2CTRL3		0x267
-+#define INTEL_MSIC_VIB2SPIPCM_1		0x268
-+#define INTEL_MSIC_VIB2SPIPCM_2		0x269
-+#define INTEL_MSIC_VIB2CTRL5		0x26a
-+#define INTEL_MSIC_BTNCTRL1		0x26b
-+#define INTEL_MSIC_BTNCTRL2		0x26c
-+#define INTEL_MSIC_PCM1TXSLOT01		0x26d
-+#define INTEL_MSIC_PCM1TXSLOT23		0x26e
-+#define INTEL_MSIC_PCM1TXSLOT45		0x26f
-+#define INTEL_MSIC_PCM1RXSLOT0123	0x270
-+#define INTEL_MSIC_PCM1RXSLOT045	0x271
-+#define INTEL_MSIC_PCM2TXSLOT01		0x272
-+#define INTEL_MSIC_PCM2TXSLOT23		0x273
-+#define INTEL_MSIC_PCM2TXSLOT45		0x274
-+#define INTEL_MSIC_PCM2RXSLOT01		0x275
-+#define INTEL_MSIC_PCM2RXSLOT23		0x276
-+#define INTEL_MSIC_PCM2RXSLOT45		0x277
-+#define INTEL_MSIC_PCM1CTRL1		0x278
-+#define INTEL_MSIC_PCM1CTRL2		0x279
-+#define INTEL_MSIC_PCM1CTRL3		0x27a
-+#define INTEL_MSIC_PCM2CTRL1		0x27b
-+#define INTEL_MSIC_PCM2CTRL2		0x27c
-+
-+/* HDMI */
-+#define INTEL_MSIC_HDMIPUEN		0x280
-+#define INTEL_MSIC_HDMISTATUS		0x281	/* RO */
-+
-+/* Physical address of the start of the MSIC interrupt tree in SRAM */
-+#define INTEL_MSIC_IRQ_PHYS_BASE	0xffff7fc0
-+
-+/**
-+ * struct intel_msic_gpio_pdata - platform data for the MSIC GPIO driver
-+ * @gpio_base: base number for the GPIOs
-+ */
-+struct intel_msic_gpio_pdata {
-+	unsigned	gpio_base;
-+};
-+
-+/**
-+ * struct intel_msic_ocd_pdata - platform data for the MSIC OCD driver
-+ * @gpio: GPIO number used for OCD interrupts
-+ *
-+ * The MSIC MFD driver converts @gpio into an IRQ number and passes it to
-+ * the OCD driver as %IORESOURCE_IRQ.
-+ */
-+struct intel_msic_ocd_pdata {
-+	unsigned	gpio;
-+};
-+
-+/* MSIC embedded blocks (subdevices) */
-+enum intel_msic_block {
-+	INTEL_MSIC_BLOCK_TOUCH,
-+	INTEL_MSIC_BLOCK_ADC,
-+	INTEL_MSIC_BLOCK_BATTERY,
-+	INTEL_MSIC_BLOCK_GPIO,
-+	INTEL_MSIC_BLOCK_AUDIO,
-+	INTEL_MSIC_BLOCK_HDMI,
-+	INTEL_MSIC_BLOCK_THERMAL,
-+	INTEL_MSIC_BLOCK_POWER_BTN,
-+	INTEL_MSIC_BLOCK_OCD,
-+
-+	INTEL_MSIC_BLOCK_LAST,
-+};
-+
-+/**
-+ * struct intel_msic_platform_data - platform data for the MSIC driver
-+ * @irq: array of interrupt numbers, one per device. If @irq is set to %0
-+ *	 for a given block, the corresponding platform device is not
-+ *	 created. For devices which don't have an interrupt, use %0xff
-+ *	 (this is same as in SFI spec).
-+ * @gpio: platform data for the MSIC GPIO driver
-+ * @ocd: platform data for the MSIC OCD driver
-+ *
-+ * Once the MSIC driver is initialized, the register interface is ready to
-+ * use. All the platform devices for subdevices are created after the
-+ * register interface is ready so that we can guarantee its availability to
-+ * the subdevice drivers.
-+ *
-+ * Interrupt numbers are passed to the subdevices via %IORESOURCE_IRQ
-+ * resources of the created platform device.
-+ */
-+struct intel_msic_platform_data {
-+	int				irq[INTEL_MSIC_BLOCK_LAST];
-+	struct intel_msic_gpio_pdata	*gpio;
-+	struct intel_msic_ocd_pdata	*ocd;
-+};
-+
-+struct intel_msic;
-+
-+extern int intel_msic_reg_read(unsigned short reg, u8 *val);
-+extern int intel_msic_reg_write(unsigned short reg, u8 val);
-+extern int intel_msic_reg_update(unsigned short reg, u8 val, u8 mask);
-+extern int intel_msic_bulk_read(unsigned short *reg, u8 *buf, size_t count);
-+extern int intel_msic_bulk_write(unsigned short *reg, u8 *buf, size_t count);
 +
 +/*
-+ * pdev_to_intel_msic - gets an MSIC instance from the platform device
-+ * @pdev: platform device pointer
++ * config_unknown_volume  -  device configuration command for unknown volume
 + *
-+ * The client drivers need to have pointer to the MSIC instance if they
-+ * want to call intel_msic_irq_read(). This macro can be used for
-+ * convenience to get the MSIC pointer from @pdev where needed. This is
-+ * _only_ valid for devices which are managed by the MSIC.
++ * When a device is added to an existing connection, the node on which the
++ * device is added first will send configuration commands to its peer but the
++ * peer will not know about the device yet.  It will warn and ignore these
++ * commands.  Once the device is added on the second node, the second node will
++ * send the same device configuration commands, but in the other direction.
++ *
++ * (We can also end up here if drbd is misconfigured.)
 + */
-+#define pdev_to_intel_msic(pdev)	(dev_get_drvdata(pdev->dev.parent))
++static int config_unknown_volume(struct drbd_tconn *tconn, struct packet_info *pi)
++{
++	conn_warn(tconn, "Volume %u unknown; ignoring %s packet\n",
++		  pi->vnr, cmdname(pi->cmd));
++	return ignore_remaining_packet(tconn, pi);
++}
 +
-+extern int intel_msic_irq_read(struct intel_msic *msic, unsigned short reg,
-+			       u8 *val);
++static int receive_SyncParam(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_rs_param_95 *p = mdev->tconn->data.rbuf;
++	struct drbd_conf *mdev;
++	struct p_rs_param_95 *p = tconn->data.rbuf;
+ 	unsigned int header_size, data_size, exp_max_sz;
+ 	struct crypto_hash *verify_tfm = NULL;
+ 	struct crypto_hash *csums_tfm = NULL;
+-	const int apv = mdev->tconn->agreed_pro_version;
++	const int apv = tconn->agreed_pro_version;
+ 	int *rs_plan_s = NULL;
+ 	int fifo_size = 0;
+ 	int err;
+ 
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return config_unknown_volume(tconn, pi);
 +
-+#endif /* __LINUX_MFD_INTEL_MSIC_H__ */
+ 	exp_max_sz  = apv <= 87 ? sizeof(struct p_rs_param)
+ 		    : apv == 88 ? sizeof(struct p_rs_param)
+ 					+ SHARED_SECRET_MAX
+@@ -3126,14 +3194,19 @@ static void warn_if_differ_considerably(struct drbd_conf *mdev,
+ 		     (unsigned long long)a, (unsigned long long)b);
+ }
+ 
+-static int receive_sizes(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_sizes(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_sizes *p = mdev->tconn->data.rbuf;
++	struct drbd_conf *mdev;
++	struct p_sizes *p = tconn->data.rbuf;
+ 	enum determine_dev_size dd = unchanged;
+ 	sector_t p_size, p_usize, my_usize;
+ 	int ldsc = 0; /* local disk size changed */
+ 	enum dds_flags ddsf;
+ 
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return config_unknown_volume(tconn, pi);
++
+ 	p_size = be64_to_cpu(p->d_size);
+ 	p_usize = be64_to_cpu(p->u_size);
+ 
+@@ -3223,12 +3296,17 @@ static int receive_sizes(struct drbd_conf *mdev, struct packet_info *pi)
+ 	return 0;
+ }
+ 
+-static int receive_uuids(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_uuids(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_uuids *p = mdev->tconn->data.rbuf;
++	struct drbd_conf *mdev;
++	struct p_uuids *p = tconn->data.rbuf;
+ 	u64 *p_uuid;
+ 	int i, updated_uuids = 0;
+ 
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return config_unknown_volume(tconn, pi);
++
+ 	p_uuid = kmalloc(sizeof(u64)*UI_EXTENDED_SIZE, GFP_NOIO);
+ 
+ 	for (i = UI_CURRENT; i < UI_EXTENDED_SIZE; i++)
+@@ -3318,12 +3396,17 @@ static union drbd_state convert_state(union drbd_state ps)
+ 	return ms;
+ }
+ 
+-static int receive_req_state(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_req_state(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_req_state *p = mdev->tconn->data.rbuf;
++	struct drbd_conf *mdev;
++	struct p_req_state *p = tconn->data.rbuf;
+ 	union drbd_state mask, val;
+ 	enum drbd_state_rv rv;
+ 
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
++
+ 	mask.i = be32_to_cpu(p->mask);
+ 	val.i = be32_to_cpu(p->val);
+ 
+@@ -3368,14 +3451,19 @@ static int receive_req_conn_state(struct drbd_tconn *tconn, struct packet_info *
+ 	return 0;
+ }
+ 
+-static int receive_state(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_state(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_state *p = mdev->tconn->data.rbuf;
++	struct drbd_conf *mdev;
++	struct p_state *p = tconn->data.rbuf;
+ 	union drbd_state os, ns, peer_state;
+ 	enum drbd_disk_state real_peer_disk;
+ 	enum chg_state_flags cs_flags;
+ 	int rv;
+ 
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return config_unknown_volume(tconn, pi);
++
+ 	peer_state.i = be32_to_cpu(p->state);
+ 
+ 	real_peer_disk = peer_state.disk;
+@@ -3520,9 +3608,14 @@ static int receive_state(struct drbd_conf *mdev, struct packet_info *pi)
+ 	return 0;
+ }
+ 
+-static int receive_sync_uuid(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_sync_uuid(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_rs_uuid *p = mdev->tconn->data.rbuf;
++	struct drbd_conf *mdev;
++	struct p_rs_uuid *p = tconn->data.rbuf;
++
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
+ 
+ 	wait_event(mdev->misc_wait,
+ 		   mdev->state.conn == C_WF_SYNC_UUID ||
+@@ -3729,11 +3822,16 @@ void INFO_bm_xfer_stats(struct drbd_conf *mdev,
+    in order to be agnostic to the 32 vs 64 bits issue.
+ 
+    returns 0 on failure, 1 if we successfully received it. */
+-static int receive_bitmap(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_bitmap(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
++	struct drbd_conf *mdev;
+ 	struct bm_xfer_ctx c;
+ 	int err;
+-	struct p_header *h = mdev->tconn->data.rbuf;
++	struct p_header *h = tconn->data.rbuf;
++
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
+ 
+ 	drbd_bm_lock(mdev, "receive bitmap", BM_LOCKED_SET_ALLOWED);
+ 	/* you are supposed to send additional out-of-sync information
+@@ -3813,51 +3911,31 @@ static int receive_bitmap(struct drbd_conf *mdev, struct packet_info *pi)
+ 	return err;
+ }
+ 
+-static int _tconn_receive_skip(struct drbd_tconn *tconn, unsigned int data_size)
+-{
+-	/* TODO zero copy sink :) */
+-	static char sink[128];
+-	int size, want, r;
+-
+-	size = data_size;
+-	while (size > 0) {
+-		want = min_t(int, size, sizeof(sink));
+-		r = drbd_recv(tconn, sink, want);
+-		if (r <= 0)
+-			break;
+-		size -= r;
+-	}
+-	return size ? -EIO : 0;
+-}
+-
+-static int receive_skip(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_skip(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	dev_warn(DEV, "skipping unknown optional packet type %d, l: %d!\n",
++	conn_warn(tconn, "skipping unknown optional packet type %d, l: %d!\n",
+ 		 pi->cmd, pi->size);
+ 
+-	return _tconn_receive_skip(mdev->tconn, pi->size);
++	return ignore_remaining_packet(tconn, pi);
+ }
+ 
+-static int tconn_receive_skip(struct drbd_tconn *tconn, struct packet_info *pi)
+-{
+-	conn_warn(tconn, "skipping packet for non existing volume type %d, l: %d!\n",
+-		  pi->cmd, pi->size);
+-
+-	return _tconn_receive_skip(tconn, pi->size);
+-}
+-
+-static int receive_UnplugRemote(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_UnplugRemote(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+ 	/* Make sure we've acked all the TCP data associated
+ 	 * with the data requests being unplugged */
+-	drbd_tcp_quickack(mdev->tconn->data.socket);
++	drbd_tcp_quickack(tconn->data.socket);
+ 
+ 	return 0;
+ }
+ 
+-static int receive_out_of_sync(struct drbd_conf *mdev, struct packet_info *pi)
++static int receive_out_of_sync(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+-	struct p_block_desc *p = mdev->tconn->data.rbuf;
++	struct drbd_conf *mdev;
++	struct p_block_desc *p = tconn->data.rbuf;
++
++	mdev = vnr_to_mdev(tconn, pi->vnr);
++	if (!mdev)
++		return -EIO;
+ 
+ 	switch (mdev->state.conn) {
+ 	case C_WF_SYNC_UUID:
+@@ -3877,37 +3955,33 @@ static int receive_out_of_sync(struct drbd_conf *mdev, struct packet_info *pi)
+ struct data_cmd {
+ 	int expect_payload;
+ 	size_t pkt_size;
+-	enum mdev_or_conn fa_type; /* first argument's type */
+-	union {
+-		int (*mdev_fn)(struct drbd_conf *, struct packet_info *);
+-		int (*conn_fn)(struct drbd_tconn *, struct packet_info *);
+-	};
++	int (*fn)(struct drbd_tconn *, struct packet_info *);
+ };
+ 
+ static struct data_cmd drbd_cmd_handler[] = {
+-	[P_DATA]	    = { 1, sizeof(struct p_data), MDEV, { receive_Data } },
+-	[P_DATA_REPLY]	    = { 1, sizeof(struct p_data), MDEV, { receive_DataReply } },
+-	[P_RS_DATA_REPLY]   = { 1, sizeof(struct p_data), MDEV, { receive_RSDataReply } } ,
+-	[P_BARRIER]	    = { 0, sizeof(struct p_barrier), MDEV, { receive_Barrier } } ,
+-	[P_BITMAP]	    = { 1, sizeof(struct p_header), MDEV, { receive_bitmap } } ,
+-	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header), MDEV, { receive_bitmap } } ,
+-	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header), MDEV, { receive_UnplugRemote } },
+-	[P_DATA_REQUEST]    = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
+-	[P_RS_DATA_REQUEST] = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
+-	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header), MDEV, { receive_SyncParam } },
+-	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header), MDEV, { receive_SyncParam } },
+-	[P_PROTOCOL]        = { 1, sizeof(struct p_protocol), CONN, { .conn_fn = receive_protocol } },
+-	[P_UUIDS]	    = { 0, sizeof(struct p_uuids), MDEV, { receive_uuids } },
+-	[P_SIZES]	    = { 0, sizeof(struct p_sizes), MDEV, { receive_sizes } },
+-	[P_STATE]	    = { 0, sizeof(struct p_state), MDEV, { receive_state } },
+-	[P_STATE_CHG_REQ]   = { 0, sizeof(struct p_req_state), MDEV, { receive_req_state } },
+-	[P_SYNC_UUID]       = { 0, sizeof(struct p_rs_uuid), MDEV, { receive_sync_uuid } },
+-	[P_OV_REQUEST]      = { 0, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
+-	[P_OV_REPLY]        = { 1, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
+-	[P_CSUM_RS_REQUEST] = { 1, sizeof(struct p_block_req), MDEV, { receive_DataRequest } },
+-	[P_DELAY_PROBE]     = { 0, sizeof(struct p_delay_probe93), MDEV, { receive_skip } },
+-	[P_OUT_OF_SYNC]     = { 0, sizeof(struct p_block_desc), MDEV, { receive_out_of_sync } },
+-	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), CONN, { .conn_fn = receive_req_conn_state } },
++	[P_DATA]	    = { 1, sizeof(struct p_data), receive_Data },
++	[P_DATA_REPLY]	    = { 1, sizeof(struct p_data), receive_DataReply },
++	[P_RS_DATA_REPLY]   = { 1, sizeof(struct p_data), receive_RSDataReply } ,
++	[P_BARRIER]	    = { 0, sizeof(struct p_barrier), receive_Barrier } ,
++	[P_BITMAP]	    = { 1, sizeof(struct p_header), receive_bitmap } ,
++	[P_COMPRESSED_BITMAP] = { 1, sizeof(struct p_header), receive_bitmap } ,
++	[P_UNPLUG_REMOTE]   = { 0, sizeof(struct p_header), receive_UnplugRemote },
++	[P_DATA_REQUEST]    = { 0, sizeof(struct p_block_req), receive_DataRequest },
++	[P_RS_DATA_REQUEST] = { 0, sizeof(struct p_block_req), receive_DataRequest },
++	[P_SYNC_PARAM]	    = { 1, sizeof(struct p_header), receive_SyncParam },
++	[P_SYNC_PARAM89]    = { 1, sizeof(struct p_header), receive_SyncParam },
++	[P_PROTOCOL]        = { 1, sizeof(struct p_protocol), receive_protocol },
++	[P_UUIDS]	    = { 0, sizeof(struct p_uuids), receive_uuids },
++	[P_SIZES]	    = { 0, sizeof(struct p_sizes), receive_sizes },
++	[P_STATE]	    = { 0, sizeof(struct p_state), receive_state },
++	[P_STATE_CHG_REQ]   = { 0, sizeof(struct p_req_state), receive_req_state },
++	[P_SYNC_UUID]       = { 0, sizeof(struct p_rs_uuid), receive_sync_uuid },
++	[P_OV_REQUEST]      = { 0, sizeof(struct p_block_req), receive_DataRequest },
++	[P_OV_REPLY]        = { 1, sizeof(struct p_block_req), receive_DataRequest },
++	[P_CSUM_RS_REQUEST] = { 1, sizeof(struct p_block_req), receive_DataRequest },
++	[P_DELAY_PROBE]     = { 0, sizeof(struct p_delay_probe93), receive_skip },
++	[P_OUT_OF_SYNC]     = { 0, sizeof(struct p_block_desc), receive_out_of_sync },
++	[P_CONN_ST_CHG_REQ] = { 0, sizeof(struct p_req_state), receive_req_conn_state },
+ };
+ 
+ static void drbdd(struct drbd_tconn *tconn)
+@@ -3925,7 +3999,7 @@ static void drbdd(struct drbd_tconn *tconn)
+ 			goto err_out;
+ 
+ 		cmd = &drbd_cmd_handler[pi.cmd];
+-		if (unlikely(pi.cmd >= ARRAY_SIZE(drbd_cmd_handler) || !cmd->mdev_fn)) {
++		if (unlikely(pi.cmd >= ARRAY_SIZE(drbd_cmd_handler) || !cmd->fn)) {
+ 			conn_err(tconn, "unknown packet type %d, l: %d!\n", pi.cmd, pi.size);
+ 			goto err_out;
+ 		}
+@@ -3943,16 +4017,8 @@ static void drbdd(struct drbd_tconn *tconn)
+ 			pi.size -= shs;
+ 		}
+ 
+-		if (cmd->fa_type == CONN)
+-			err = cmd->conn_fn(tconn, &pi);
+-		else {
+-			struct drbd_conf *mdev = vnr_to_mdev(tconn, pi.vnr);
+-			err = mdev ?
+-				cmd->mdev_fn(mdev, &pi) :
+-				tconn_receive_skip(tconn, &pi);
+-		}
+-
+-		if (unlikely(err)) {
++		err = cmd->fn(tconn, &pi);
++		if (err) {
+ 			conn_err(tconn, "error receiving %s, l: %d!\n",
+ 			    cmdname(pi.cmd), pi.size);
+ 			goto err_out;
 -- 
-1.7.5.4
+1.7.4.1
 
