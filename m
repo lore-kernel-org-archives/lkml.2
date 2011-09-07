@@ -1,101 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab1IGQrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:47:25 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:48577 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab1IGQqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:46:00 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 08/14] drbd: receive_bitmap(): Use the pre-allocated receive buffer
-Date: Wed,  7 Sep 2011 16:17:35 +0200
-Message-Id: <1315405061-1473-9-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
-References: <1315405061-1473-1-git-send-email-philipp.reisner@linbit.com>
+	id S1753893Ab1IGQrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:47:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49338 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753610Ab1IGQrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:47:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="46053000"
+Message-ID: <4E6776BD.4040402@linux.intel.com>
+Date: Wed, 07 Sep 2011 21:50:53 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH 5/5] mce: recover from "action required" errors reported
+ in data path in usermode
+References: <4e5eb50721061dbb1b@agluck-desktop.sc.intel.com> <4E6709B2.7020401@linux.intel.com> <20110907132500.GA8928@aftab>
+In-Reply-To: <20110907132500.GA8928@aftab>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+于 9/7/2011 9:25 PM, Borislav Petkov 写道:
+> On Wed, Sep 07, 2011 at 02:05:38AM -0400, Chen Gong wrote:
+>
+> [..]
+>
+>>> +	/* known AR MCACODs: */
+>>> +	MCESEV(
+>>> +		KEEP, "HT thread notices Action required: data load error",
+>>> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
+>>> +		MCGMASK(MCG_STATUS_EIPV, 0)
+>>> +		),
+>>> +	MCESEV(
+>>> +		AR, "Action required: data load error",
+>>> +		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
+>>> +		USER
+>>> +		),
+>>
+>> I don't think *AR* makes sense here because the following codes have a
+>> assumption that it means *user space* condition. If so, in the future a
+>> new *AR* severity for kernel usage is created, we can't distinguish
+>> which one can call "memory_failure" as below. At least, it should have a
+>> suffix such as AR_USER/AR_KERN:
+>>
+>> enum severity_level {
+>>           MCE_NO_SEVERITY,
+>>           MCE_KEEP_SEVERITY,
+>>           MCE_SOME_SEVERITY,
+>>           MCE_AO_SEVERITY,
+>>           MCE_UC_SEVERITY,
+>>           MCE_AR_USER_SEVERITY,
+>> 	MCE_AR_KERN_SEVERITY,
+>>           MCE_PANIC_SEVERITY,
+>> };
+>
+> Are you saying you need action required handling for when the data load
+> error happens in kernel space? If so, I don't see how you can replay the
+> data load (assuming this is a data load from DRAM). In that case, we're
+> fatal and need to panic. If it is a different type of data load coming
+> from a lower cache level, then we could be able to recover...?
+>
+> [..]
+>
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_receiver.c |   21 +++++----------------
- 1 files changed, 5 insertions(+), 16 deletions(-)
+Yep, what I talk is data load error in kenel space. In fact, I'm not 
+sure what we can do except panic :-), IIRC, Tony ever said in some 
+situations kernel can be recovered. If it is true, we must distinguish
+these two different scenarios. In *user space* case, memory_failure can
+be called, but on the contrary, it can't.
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 3738d56..e5099db 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -3572,8 +3572,9 @@ static int receive_sync_uuid(struct drbd_conf *mdev, enum drbd_packet cmd,
-  */
- static int
- receive_bitmap_plain(struct drbd_conf *mdev, unsigned int data_size,
--		     unsigned long *buffer, struct bm_xfer_ctx *c)
-+		     struct p_header *h, struct bm_xfer_ctx *c)
- {
-+	unsigned long *buffer = (unsigned long *)h->payload;
- 	unsigned num_words = min_t(size_t, BM_PACKET_WORDS, c->bm_words - c->word_offset);
- 	unsigned want = num_words * sizeof(long);
- 	int err;
-@@ -3748,7 +3749,6 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packet cmd,
- 			  unsigned int data_size)
- {
- 	struct bm_xfer_ctx c;
--	void *buffer;
- 	int err;
- 	struct p_header *h = mdev->tconn->data.rbuf;
- 	struct packet_info pi;
-@@ -3757,15 +3757,6 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packet cmd,
- 	/* you are supposed to send additional out-of-sync information
- 	 * if you actually set bits during this phase */
- 
--	/* maybe we should use some per thread scratch page,
--	 * and allocate that during initial device creation? */
--	buffer	 = (unsigned long *) __get_free_page(GFP_NOIO);
--	if (!buffer) {
--		dev_err(DEV, "failed to allocate one page buffer in %s\n", __func__);
--		err = -ENOMEM;
--		goto out;
--	}
--
- 	c = (struct bm_xfer_ctx) {
- 		.bm_bits = drbd_bm_bits(mdev),
- 		.bm_words = drbd_bm_words(mdev),
-@@ -3773,7 +3764,7 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packet cmd,
- 
- 	for(;;) {
- 		if (cmd == P_BITMAP) {
--			err = receive_bitmap_plain(mdev, data_size, buffer, &c);
-+			err = receive_bitmap_plain(mdev, data_size, h, &c);
- 		} else if (cmd == P_COMPRESSED_BITMAP) {
- 			/* MAYBE: sanity check that we speak proto >= 90,
- 			 * and the feature is enabled! */
-@@ -3784,9 +3775,8 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packet cmd,
- 				err = -EIO;
- 				goto out;
- 			}
--			/* use the page buff */
--			p = buffer;
--			memcpy(p, h, sizeof(*h));
-+
-+			p = mdev->tconn->data.rbuf;
- 			err = drbd_recv_all(mdev->tconn, p->head.payload, data_size);
- 			if (err)
- 			       goto out;
-@@ -3840,7 +3830,6 @@ static int receive_bitmap(struct drbd_conf *mdev, enum drbd_packet cmd,
- 	drbd_bm_unlock(mdev);
- 	if (!err && mdev->state.conn == C_WF_BITMAP_S)
- 		drbd_start_resync(mdev, C_SYNC_SOURCE);
--	free_page((unsigned long) buffer);
- 	return err;
- }
- 
--- 
-1.7.4.1
+>>> +	if (worst == MCE_AR_SEVERITY) {
+>>> +		unsigned long pfn = m.addr>>   PAGE_SHIFT;
+>>> +
+>>> +		pr_err("Uncorrected hardware memory error in user-access at %llx",
+>>> +			m.addr);
+>>
+>> print in the MCE handler maybe makes a deadlock ? say, when other CPUs
+>> are printing something, suddently they received MCE broadcast from
+>> Monarch CPU, when Monarch CPU runs above codes, a deadlock happens ?
+>> Please fix me if I miss something :-)
+>
+> sounds like it can happen if the other CPUs have grabbed some console
+> semaphore/mutex (I don't know what exactly we're using there) and the
+> monarch tries to grab it.
+>
+>>> +		if (__memory_failure(pfn, MCE_VECTOR, 0)<   0) {
+>>> +			pr_err("Memory error not recovered");
+>>> +			force_sig(SIGBUS, current);
+>>> +		} else
+>>> +			pr_err("Memory error recovered");
+>>> +	}
+>>
+>> as you mentioned in the comment, the biggest concern is that when
+>> __memory_failure runs too long, if another MCE happens at the same
+>> time, (assuming this MCE is happened on its sibling CPU which has the
+>> same banks), the 2nd MCE will crash the system. Why not delaying the
+>> process in a safer context, such as using user_return_notifer ?
+>
+> The user_return_notifier won't work, as we concluded in the last
+> discussion round: http://marc.info/?l=linux-kernel&m=130765542330349
+>
+> AFAIR, we want to have a realtime thread dealing with that recovery
+> so that we exit #MC context as fast as possible. The code then should
+> be able to deal with a follow-up #MC. Tony, whatever happened to that
+> approach?
+>
+> Thanks.
+>
 
