@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab1IGRFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 13:05:25 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51078 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851Ab1IGRFT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 13:05:19 -0400
-Date: Wed, 7 Sep 2011 18:04:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        John Ogness <john.ogness@linutronix.de>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: alignment: setup alignment handler earlier
-Message-ID: <20110907170452.GC2327@n2100.arm.linux.org.uk>
-References: <87ehzstr07.fsf@vostro.fn.ogness.net> <20110907144016.GA30719@e102109-lin.cambridge.arm.com> <20110907162857.GB2327@n2100.arm.linux.org.uk> <yw1xipp4cnis.fsf@unicorn.mansr.com>
+	id S1754898Ab1IGRF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 13:05:58 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:54735 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754917Ab1IGRFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 13:05:10 -0400
+In-Reply-To: <02a401cc6cd2$28ee4e60$7acaeb20$@systemfabricworks.com>
+References: <20110831213729.395283830@systemfabricworks.com>	<4E5EB5F4.6010105@systemfabricworks.com>
+	<20110902165047.6aaec238.akpm@linux-foundation.org>	<20110903114403.027a9563c86eeaf1c0e4e80b@canb.auug.org.au>
+	<OF0B1D5F8A.D8D66C8A-ONC1257903.004A257F-C1257903.004B1700@transmode.se>	<20110907005013.e96fb5acd9f4b7c06ee70972@canb.auug.org.au> <20110906123851.dc4de9f5.akpm@linux-foundation.org> <02a401cc6cd2$28ee4e60$7acaeb20$@systemfabricworks.com>
+Subject: RE: [PATCH v6 05/10] crc32-misc-cleanup.diff
+X-KeepSent: 2CB0F7C7:DAD4E211-C1257904:00299258;
+ type=4; name=$KeepSent
+To: "Bob Pearson" <rpearson@systemfabricworks.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>, fzago@systemfabricworks.com,
+        "'George Spelvin'" <linux@horizon.com>, linux-kernel@vger.kernel.org,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OF2CB0F7C7.DAD4E211-ONC1257904.00299258-C1257904.002A1865@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Wed, 7 Sep 2011 09:39:47 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 09/07/2011 09:39:48
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <yw1xipp4cnis.fsf@unicorn.mansr.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 05:42:19PM +0100, Måns Rullgård wrote:
-> There are such instructions (ldrd, ldm), but gcc will not emit those
-> unless the address is known to be aligned.  For ARMv6 and later, gcc 4.6
-> *will* emit potentially unaligned ldr and ldrh since these very clearly
-> allow an unaligned address and are faster than the alternatives in all
-> implementations to date.  This is unless strict alignment checking is
-> explicitly enabled, which unfortunately the Linux kernel does for no
-> apparent reason at all.
+"Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/09/06 22:18:35:
+>
+> >
+> > Yup.  lib-crc-add-slice-by-8-algorithm-to-crc32c.patch is dead meat.  I
+> > sometimes keep things like that around to get them a bit of testing
+> > while reminding myself that there's an open issue to track.
+>
+> I thought I was getting close until recently someone sent out a patch set
+> for crc32c.c, the other 32 bit CRC in common use, based on an earlier
+> version of the changes we have been working on for crc32.c. This has brought
+> in other interested parties and created a bit of duplicated code. I am at a
+> loss as to the best way to proceed. Personally I would like to see this
+> change go upstream and then let the rest of the world figure out how to best
+> merge things.
 
-"no apparant reason at all" heh.  The reason is to keep the code
-simple and free from bugs.  To do otherwise means that each of the
-CPU files needs to be littered with ifdefs to deal with the alignment
-fault configuration, of which there are 16 of them (ignoring v6 and v7.)
+The crc32c code should be moved to lib and integrated into crc32.c. Then you get
+all the optimizations for free. It think the new crypto crc32c code should just
+be nacked.
 
-If you think code maintanence of the same thing in 16 places is efficient
-then I guess there is "no apparant reason".  I beg to differ, being one
-of those folk who have had to edit 18 different places several times.
+ Jocke
 
-So no, I do not intend to move this:
-
-#ifdef CONFIG_ALIGNMENT_TRAP
-        orr     r0, r0, #CR_A
-#else
-        bic     r0, r0, #CR_A
-#endif
-
-into 16 separate places in the kernel.
