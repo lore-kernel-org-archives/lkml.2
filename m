@@ -1,155 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1IGE1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 00:27:22 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:38066 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473Ab1IGEZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 00:25:39 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, containers@lists.osdl.org, netdev@vger.kernel.org,
-        xemul@parallels.com, Glauber Costa <glommer@parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH v2 4/9] function wrappers for upcoming socket
-Date: Wed,  7 Sep 2011 01:23:14 -0300
-Message-Id: <1315369399-3073-5-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1315369399-3073-1-git-send-email-glommer@parallels.com>
-References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
+	id S1755334Ab1IGEoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 00:44:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36734 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab1IGEoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 00:44:39 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v2] Fix clearing of task->ptrace if PTRACE_SETOPTIONS fails
+Date: Wed, 7 Sep 2011 06:44:35 +0200
+User-Agent: KMail/1.8.2
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+References: <201109042311.18793.vda.linux@googlemail.com> <1315327963.29637.1.camel@dhcp-25-63.brq.redhat.com> <20110906184346.GA25904@redhat.com>
+In-Reply-To: <20110906184346.GA25904@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201109070644.35382.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of dealing with global values for memory pressure scenarios,
-per-cgroup values will be needed. This patch just writes down the
-acessor functions to be used later.
+On Tuesday 06 September 2011 20:43, Oleg Nesterov wrote:
+> > +#define PT_OPT_FLAG_SHIFT	3
+> > +/* must be directly before PT_TRACE_event bits */
+> > +#define PT_TRACESYSGOOD	0x00000008
+> 
+> This probably means PT_TRACESYSGOOD should be also defined as PT_EVENT_FLAG(0)
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Eric W. Biederman <ebiederm@xmission.com>
----
- include/linux/kmem_cgroup.h |  104 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 104 insertions(+), 0 deletions(-)
+Good idea.
 
-diff --git a/include/linux/kmem_cgroup.h b/include/linux/kmem_cgroup.h
-index 77076d8..d983ba8 100644
---- a/include/linux/kmem_cgroup.h
-+++ b/include/linux/kmem_cgroup.h
-@@ -52,6 +52,110 @@ static inline struct kmem_cgroup *kcg_from_task(struct task_struct *tsk)
+> >  /* PT_TRACE_* event enable flags */
+> > -#define PT_EVENT_FLAG_SHIFT	4
+> > -#define PT_EVENT_FLAG(event)	(1 << (PT_EVENT_FLAG_SHIFT + (event) - 1))
+> > -
+> > +#define PT_EVENT_FLAG(event)	(1 << (PT_OPT_FLAG_SHIFT + (event)))
+> 
+> And ptrace_setoptions() does
+> 
+> 	child->ptrace |= (data << PT_OPT_FLAG_SHIFT);
+> 
+> Now we should verify that
+> 
+> 	PTRACE_O_XXX == 1 << PTRACE_EVENT_XXX;
+> 
+> for every XXX... Looks correct. But perhaps it makes sense to do this
+> explicitely and redefine PTRACE_O_* via PTRACE_EVENT_*.
+
+Also good idea.
  
- #ifdef CONFIG_INET
- #include <net/sock.h>
-+static inline int *sk_memory_pressure(struct sock *sk)
-+{
-+	int *ret = NULL;
-+	if (sk->sk_prot->memory_pressure)
-+		ret = sk->sk_prot->memory_pressure(sk->sk_cgrp);
-+	return ret;
-+}
-+
-+static inline long sk_prot_mem(struct sock *sk, int index)
-+{
-+	long *prot = sk->sk_prot->prot_mem(sk->sk_cgrp);
-+	return prot[index];
-+}
-+
-+static inline long
-+sk_memory_allocated(struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	struct kmem_cgroup *cg = sk->sk_cgrp;
-+
-+	return atomic_long_read(prot->memory_allocated(cg));
-+}
-+
-+static inline long
-+sk_memory_allocated_add(struct sock *sk, int amt, int *parent_failure)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	struct kmem_cgroup *cg = sk->sk_cgrp;
-+	long allocated = atomic_long_add_return(amt, prot->memory_allocated(cg));
-+
-+#ifdef CONFIG_CGROUP_KMEM
-+	for (cg = cg->parent; cg != NULL; cg = cg->parent) {
-+		long alloc;
-+		/*
-+		 * Large nestings are not the common case, and stopping in the
-+		 * middle would be complicated enough, that we bill it all the
-+		 * way through the root, and if needed, unbill everything later
-+		 */
-+		alloc = atomic_long_add_return(amt, prot->memory_allocated(cg));
-+		*parent_failure |= (alloc > sk_prot_mem(sk, 2));
-+	}
-+#endif
-+	return allocated;
-+}
-+
-+static inline void
-+sk_memory_allocated_sub(struct sock *sk, int amt)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	struct kmem_cgroup *cg = sk->sk_cgrp;
-+
-+	atomic_long_sub(amt, prot->memory_allocated(cg));
-+
-+#ifdef CONFIG_CGROUP_KMEM
-+	for (cg = sk->sk_cgrp->parent; cg != NULL; cg = cg->parent)
-+		atomic_long_sub(amt, prot->memory_allocated(cg));
-+#endif
-+}
-+
-+static inline void sk_sockets_allocated_dec(struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	struct kmem_cgroup *cg = sk->sk_cgrp;
-+
-+	percpu_counter_dec(prot->sockets_allocated(cg));
-+#ifdef CONFIG_CGROUP_KMEM
-+	for (cg = sk->sk_cgrp->parent; cg; cg = cg->parent)
-+		percpu_counter_dec(prot->sockets_allocated(cg));
-+#endif
-+}
-+
-+static inline void sk_sockets_allocated_inc(struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	struct kmem_cgroup *cg = sk->sk_cgrp;
-+
-+	percpu_counter_inc(prot->sockets_allocated(cg));
-+#ifdef CONFIG_CGROUP_KMEM
-+	for (cg = sk->sk_cgrp->parent; cg; cg = cg->parent)
-+		percpu_counter_inc(prot->sockets_allocated(cg));
-+#endif
-+}
-+
-+static inline int
-+sk_sockets_allocated_read_positive(struct sock *sk)
-+{
-+	struct proto *prot = sk->sk_prot;
-+	struct kmem_cgroup *cg = sk->sk_cgrp;
-+
-+	return percpu_counter_sum_positive(prot->sockets_allocated(cg));
-+}
-+
-+static inline int
-+kcg_sockets_allocated_sum_positive(struct proto *prot, struct kmem_cgroup *cg)
-+{
-+	return percpu_counter_sum_positive(prot->sockets_allocated(cg));
-+}
-+
-+static inline long
-+kcg_memory_allocated(struct proto *prot, struct kmem_cgroup *cg)
-+{
-+	return atomic_long_read(prot->memory_allocated(cg));
-+}
-+
- static inline void sock_update_kmem_cgrp(struct sock *sk)
- {
- #ifdef CONFIG_CGROUP_KMEM
--- 
-1.7.6
+> > -	if (seize && !(flags & PTRACE_SEIZE_DEVEL))
+> > -		goto out;
+> > +	if (seize) {
+> > +		if ((flags & ~(long)PTRACE_O_MASK) != PTRACE_SEIZE_DEVEL)
+> > +			goto out;
+> > +		flags &= ~PTRACE_SEIZE_DEVEL;
+> > +	} else
+> > +		flags = 0;
+> >  
+> >  	audit_ptrace(task);
+> 
+> This chunk looks completely off-topic, why it is needed in this patch?
 
+It isn't, it wasn't supposed to be there :(
+
+
+> >  static int ptrace_setoptions(struct task_struct *child, unsigned long data)
+> >  {
+> > -	child->ptrace &= ~PT_TRACE_MASK;
+> > -
+> > -	if (data & PTRACE_O_TRACESYSGOOD)
+> > -		child->ptrace |= PT_TRACESYSGOOD;
+> > -
+> > -	if (data & PTRACE_O_TRACEFORK)
+> > -		child->ptrace |= PT_TRACE_FORK;
+> > -
+> > -	if (data & PTRACE_O_TRACEVFORK)
+> > -		child->ptrace |= PT_TRACE_VFORK;
+> > -
+> > -	if (data & PTRACE_O_TRACECLONE)
+> > -		child->ptrace |= PT_TRACE_CLONE;
+> > -
+> > -	if (data & PTRACE_O_TRACEEXEC)
+> > -		child->ptrace |= PT_TRACE_EXEC;
+> > -
+> > -	if (data & PTRACE_O_TRACEVFORKDONE)
+> > -		child->ptrace |= PT_TRACE_VFORK_DONE;
+> > +	if (data & ~(long)PTRACE_O_MASK)
+> > +		return -EINVAL;
+> 
+> Oh, yes, I always hated this logic. We change ->ptrace first, then
+> return -EINVAL if data is wrong.
+> 
+> But. Denys, I think this needs a separate patch. And of course, of
+> course this can break things. Say, a poor application passes the
+> unsupported bit along with the valid bits, and doesn't check the result.
+> This works before this patch.
+
+This is really a gross bug, I think we should just bite the bullet
+and fix it.
+
+I have hard time imagining how application managed to *inadvertently*
+invent a non-existing PTRACE_O_BOGUSFLAG and pass it
+to PTRACE_SETOPTIONS call. In what header did they fing PTRACE_O_BOGUSFLAG?
+
+I think this can only happen if they do this on purpose,
+but *what* purpose? To get options cleared? Can't imagine anyone doing that,
+option clearing can be done without resort to undocumented kernel bugs -
+ptrace(PTRACE_SETOPTIONS, pid, 0, 0) does it, rigth?
+
+Sending patch v3 in separate mail.
+
+-- 
+vda
