@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab1IGQX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:23:28 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45674 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131Ab1IGQX0 (ORCPT
+	id S1756344Ab1IGQWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:22:33 -0400
+Received: from frankvm.xs4all.nl ([83.163.148.79]:38974 "EHLO
+	janus.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756387Ab1IGQWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:23:26 -0400
-From: Dan McGee <dpmcgee@gmail.com>
-To: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Subject: [PATCH 0/5 v2] pata_sis fixes and driver cleanup
-Date: Wed,  7 Sep 2011 11:23:17 -0500
-Message-Id: <1315412602-6560-1-git-send-email-dpmcgee@gmail.com>
-X-Mailer: git-send-email 1.7.6.1
+	Wed, 7 Sep 2011 12:22:31 -0400
+Date: Wed, 7 Sep 2011 12:24:25 +0200
+From: Frank van Maarseveen <frankvm@frankvm.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.0.3 kernel BUG at kernel/timer.c:1035
+Message-ID: <20110907102425.GA3423@janus>
+References: <20110824130238.GA24543@janus>
+ <20110902011058.c5bad476.akpm@linux-foundation.org>
+ <20110905123813.GA29763@janus>
+ <CAF1ivSYui_=tHbxHiy15a9wfiphHcpoY+J1MmAJ=dMQsAfEVLw@mail.gmail.com>
+ <1315320518.4235.3.camel@hp6530s>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315320518.4235.3.camel@hp6530s>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This started as just two patches to use the correct UDMA 100 timings on
-chipsets not supporting UDMA 133 but has grown a bit. This resubmit fixes the
-following issues, much of them pointed out by Sergei Shtylyov:
+On Tue, Sep 06, 2011 at 10:48:38PM +0800, Lin Ming wrote:
+> Does below patch help?
+> 
+> >From a98b874437f871d5ecc3f6fe409b2b474b1f2731 Mon Sep 17 00:00:00 2001
+> From: Lin Ming <ming.m.lin@intel.com>
+> Date: Tue, 6 Sep 2011 22:45:43 +0800
+> Subject: [PATCH] block: delete bdi writeback wakup_timer in blk_cleanup_queue()
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  block/blk-core.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 90e1ffd..22529a3 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -363,6 +363,7 @@ void blk_cleanup_queue(struct request_queue *q)
+>  	blk_sync_queue(q);
+>  
+>  	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+> +	del_timer_sync(&q->backing_dev_info.wb.wakeup_timer);
+>  	mutex_lock(&q->sysfs_lock);
+>  	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+>  	mutex_unlock(&q->sysfs_lock);
+> -- 
+> 1.7.2.3
+> 
 
-* Ensure 0xC0 is used to mask, not 0xE0
-* Move all 'static const' changes to separate patch
-* Formatting cleanups- don't introduce new formatting issues, and add a patch
-  to fix existing ones
-* Comment referred to bit 14, but it is bit 30 as we grab a word, not two bytes
-* Use dev_info(), not printk() directly
-* Adjust commit message to include old commit summary
-
-The first two patches are the critical ones that fix a regression between the
-old IDE stack and the new (P)ATA one.
-
-Dan McGee (5):
-  pata_sis: extract a sis_port_base() method
-  pata_sis: add mode_filter method for certain sis5513 chipsets
-  pata_sis: enable MWDMA for UDMA 133 chipset
-  pata_sis: mark most const data static as well
-  pata_sis: code style cleanups for consistency
-
- drivers/ata/pata_sis.c |  154 +++++++++++++++++++++++++++++++-----------------
- 1 files changed, 99 insertions(+), 55 deletions(-)
-
-$ python2 scripts/bloat-o-meter pata_sis.ko.old drivers/ata/pata_sis.ko
-add/remove: 8/0 grow/shrink: 5/6 up/down: 313/-251 (62)
-function                                     old     new   delta
-static.sis_port_base                           -      83     +83
-sis_133_mode_filter                            -      82     +82
-static.udma_bits                               7      31     +24
-sis_init_one                                 695     719     +24
-static.timing133                               -      20     +20
-static.timing100                               -      20     +20
-static.timing_u133                            28      40     +12
-static.timing_u100                            28      40     +12
-static.mwdma_bits                              -      12     +12
-sis_133_set_dmamode                          195     204      +9
-static.recovery                                -       5      +5
-static.actrec                                  -       5      +5
-static.active                                  -       5      +5
-sis_100_set_piomode                          129     111     -18
-sis_old_set_dmamode                          192     171     -21
-sis_100_set_dmamode                          156     134     -22
-sis_old_set_piomode                          229     193     -36
-sis_66_set_dmamode                           216     171     -45
-sis_133_set_piomode                          265     156    -109
-
-$ size pata_sis.ko.old drivers/ata/pata_sis.ko
-   text    data     bss     dec     hex filename
-   4524    2724       4    7252    1c54 pata_sis.ko.old
-   4649    2724       4    7377    1cd1 drivers/ata/pata_sis.ko
+No, bug still present. Stack trace is the same and I double checked that
+it was the new kernel (this time with a lot more debug enabled).
 
 -- 
-1.7.6.1
-
+Frank
