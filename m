@@ -1,123 +1,600 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1IGQro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:47:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24151 "EHLO mga09.intel.com"
+	id S1753589Ab1IGQsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:48:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44456 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753852Ab1IGQrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:47:40 -0400
+	id S1752454Ab1IGQrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:47:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="45870149"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: alan@linux.intel.com, sameo@linux.intel.com, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, feng.tang@intel.com,
-        jacob.jun.pan@linux.intel.com,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 2/3] x86, mrst: Some drivers need to known when an SCU is available
-Date: Wed,  7 Sep 2011 16:06:51 +0300
-Message-Id: <618af614e18f9a6a13de09834805f5ef18773b33.1315399396.git.mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-In-Reply-To: <cover.1315399396.git.mika.westerberg@linux.intel.com>
-References: <cover.1315399396.git.mika.westerberg@linux.intel.com>
+   d="scan'208";a="45936718"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: "Baohua.Song@csr.com" <Baohua.Song@csr.com>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>
+Date: Wed, 7 Sep 2011 21:44:29 +0530
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Topic: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Index: AcxteTlMdt5jaCkKQQGh3XnCerjLww==
+Message-ID: <438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+In-Reply-To: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p87GmaWt021128
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, 2011-09-06 at 22:41 -0700, Barry Song wrote:
+> From: Rongjun Ying <rongjun.ying@csr.com>
 
-Add a notifier so that drivers can hook into SCU availability in order to
-take actions post initialisation when/if the SCU becomes available.
+> +config SIRF_DMA
+> +     tristate "CSR SiRFprimaII DMA support"
+> +     depends on ARCH_PRIMA2
+> +     select DMA_ENGINE
+> +     help
+> +       Enable support for the CSR SiRFprimaII DMA engine.
+How different is it from the other primacell based DMA drivers, and why
+wouldn't it make sense to use/modify one of them?
 
-In the ideal world we wouldn't need this and we could avoid any init
-dependancies of this form, but in practice we can't do it for some cases.
+> +/*
+> + * Execute all queued DMA descriptors.
+> + *
+> + * Following requirements must be met while calling sirfsoc_dma_execute():
+> + * a) schan->lock is acquired,
+> + * b) schan->active list is empty,
+> + * c) schan->queued list contains at least one entry.
+> + */
+Please use kernel-doc format...
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
- arch/x86/include/asm/intel_scu_ipc.h |   22 ++++++++++++++++++++++
- arch/x86/platform/mrst/mrst.c        |    7 +++++++
- 2 files changed, 29 insertions(+), 0 deletions(-)
+> +static void sirfsoc_dma_execute(struct sirfsoc_dma_chan *schan)
+> +{
+> +     struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(&schan->chan);
+> +     int cid = schan->chan.chan_id;
+> +
+> +     /* Move the first queued descriptor to active list */
+> +     list_move_tail(&schan->queued, &schan->active);
+> +
+> +     writel_relaxed(schan->width, sdma->regs + SIRFSOC_DMA_WIDTH_0 + cid * 4);
+> +     writel_relaxed(cid | (schan->mode << SIRFSOC_DMA_MODE_CTRL_BIT) |
+> +             (schan->direction << SIRFSOC_DMA_DIR_CTRL_BIT),
+> +             sdma->regs + cid * 0x10 + SIRFSOC_DMA_CH_CTRL);
+> +     writel_relaxed(schan->xlen, sdma->regs + cid * 0x10 + SIRFSOC_DMA_CH_XLEN);
+> +     writel_relaxed(schan->ylen, sdma->regs + cid * 0x10 + SIRFSOC_DMA_CH_YLEN);
+> +     writel_relaxed(readl_relaxed(sdma->regs + SIRFSOC_DMA_INT_EN) | (1 << cid),
+> +             sdma->regs + SIRFSOC_DMA_INT_EN);
+> +     writel_relaxed(schan->addr >> 2, sdma->regs + cid * 0x10 + SIRFSOC_DMA_CH_ADDR);
+> +}
+> +
+> +/* Interrupt handler */
+> +static irqreturn_t sirfsoc_dma_irq(int irq, void *data)
+> +{
+> +     struct sirfsoc_dma *sdma = data;
+> +     struct sirfsoc_dma_chan *schan;
+> +     u32 is;
+> +     int ch;
+> +
+> +     is = readl_relaxed(sdma->regs + SIRFSOC_DMA_CH_INT);
+> +     while ((ch = fls(is) - 1) >= 0) {
+> +             is &= ~(1 << ch);
+> +             writel_relaxed(1 << ch, sdma->regs + SIRFSOC_DMA_CH_INT);
+> +             schan = &sdma->channels[ch];
+> +
+> +             spin_lock(&schan->lock);
+> +
+> +             /* Execute queued descriptors */
+> +             list_splice_tail_init(&schan->active, &schan->completed);
+> +             if (!list_empty(&schan->queued))
+> +                     sirfsoc_dma_execute(schan);
+> +
+> +             spin_unlock(&schan->lock);
+> +     }
+Here you know which channel has triggered interrupt and you may pass
+this info to your tasklet and avoid scanning again there
 
-diff --git a/arch/x86/include/asm/intel_scu_ipc.h b/arch/x86/include/asm/intel_scu_ipc.h
-index 29f6679..4420993 100644
---- a/arch/x86/include/asm/intel_scu_ipc.h
-+++ b/arch/x86/include/asm/intel_scu_ipc.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_INTEL_SCU_IPC_H_
- #define  _ASM_X86_INTEL_SCU_IPC_H_
- 
-+#include <linux/notifier.h>
-+
- #define IPCMSG_VRTC	0xFA	 /* Set vRTC device */
- 
- /* Command id associated with message IPCMSG_VRTC */
-@@ -44,4 +46,24 @@ int intel_scu_ipc_i2c_cntrl(u32 addr, u32 *data);
- /* Update FW version */
- int intel_scu_ipc_fw_update(u8 *buffer, u32 length);
- 
-+extern struct blocking_notifier_head intel_scu_notifier;
-+
-+static inline void intel_scu_notifier_add(struct notifier_block *nb)
-+{
-+	blocking_notifier_chain_register(&intel_scu_notifier, nb);
-+}
-+
-+static inline void intel_scu_notifier_remove(struct notifier_block *nb)
-+{
-+	blocking_notifier_chain_unregister(&intel_scu_notifier, nb);
-+}
-+
-+static inline int intel_scu_notifier_post(unsigned long v, void *p)
-+{
-+	return blocking_notifier_call_chain(&intel_scu_notifier, v, p);
-+}
-+
-+#define		SCU_AVAILABLE		1
-+#define		SCU_DOWN		2
-+
- #endif
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index 745db49..97138a3 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -24,6 +24,7 @@
- #include <linux/platform_device.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-+#include <linux/notifier.h>
- 
- #include <asm/setup.h>
- #include <asm/mpspec_def.h>
-@@ -578,6 +579,9 @@ static void __init intel_scu_i2c_device_register(int bus,
- 	i2c_devs[i2c_next_dev++] = new_dev;
- }
- 
-+BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
-+EXPORT_SYMBOL_GPL(intel_scu_notifier);
-+
- /* Called by IPC driver */
- void intel_scu_devices_create(void)
- {
-@@ -602,6 +606,7 @@ void intel_scu_devices_create(void)
- 		} else
- 			i2c_register_board_info(i2c_bus[i], i2c_devs[i], 1);
- 	}
-+	intel_scu_notifier_post(SCU_AVAILABLE, 0L);
- }
- EXPORT_SYMBOL_GPL(intel_scu_devices_create);
- 
-@@ -610,6 +615,8 @@ void intel_scu_devices_destroy(void)
- {
- 	int i;
- 
-+	intel_scu_notifier_post(SCU_DOWN, 0L);
-+
- 	for (i = 0; i < ipc_next_dev; i++)
- 		platform_device_del(ipc_devs[i]);
- }
--- 
-1.7.5.4
+> +
+> +     /* Schedule tasklet */
+> +     tasklet_schedule(&sdma->tasklet);
+> +
+> +     return IRQ_HANDLED;
+> +}
+> +
+> +/* process completed descriptors */
+> +static void sirfsoc_dma_process_completed(struct sirfsoc_dma *sdma)
+> +{
+> +     dma_cookie_t last_cookie = 0;
+> +     struct sirfsoc_dma_chan *schan;
+> +     struct sirfsoc_dma_desc *mdesc;
+> +     struct dma_async_tx_descriptor *desc;
+> +     unsigned long flags;
+> +     LIST_HEAD(list);
+> +     int i;
+> +
+> +     for (i = 0; i < sdma->dma.chancnt; i++) {
+> +             schan = &sdma->channels[i];
+> +
+> +             /* Get all completed descriptors */
+> +             spin_lock_irqsave(&schan->lock, flags);
+this will block interrupts, i dont see a reason why this should be used
+here??
 
+> +             if (!list_empty(&schan->completed))
+> +                     list_splice_tail_init(&schan->completed, &list);
+> +             spin_unlock_irqrestore(&schan->lock, flags);
+> +
+> +             if (list_empty(&list))
+> +                     continue;
+> +
+> +             /* Execute callbacks and run dependencies */
+> +             list_for_each_entry(mdesc, &list, node) {
+> +                     desc = &mdesc->desc;
+> +
+> +                     if (desc->callback)
+> +                             desc->callback(desc->callback_param);
+> +
+> +                     last_cookie = desc->cookie;
+> +                     dma_run_dependencies(desc);
+> +             }
+> +
+> +             /* Free descriptors */
+> +             spin_lock_irqsave(&schan->lock, flags);
+> +             list_splice_tail_init(&list, &schan->free);
+> +             schan->completed_cookie = last_cookie;
+> +             spin_unlock_irqrestore(&schan->lock, flags);
+> +     }
+> +}
+> +
+> +/* DMA Tasklet */
+> +static void sirfsoc_dma_tasklet(unsigned long data)
+> +{
+> +     struct sirfsoc_dma *sdma = (void *)data;
+> +
+> +     sirfsoc_dma_process_completed(sdma);
+> +}
+> +
+> +/* Submit descriptor to hardware */
+> +static dma_cookie_t sirfsoc_dma_tx_submit(struct dma_async_tx_descriptor *txd)
+> +{
+> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(txd->chan);
+> +     struct sirfsoc_dma_desc *mdesc;
+> +     unsigned long flags;
+> +     dma_cookie_t cookie;
+> +
+> +     mdesc = container_of(txd, struct sirfsoc_dma_desc, desc);
+> +
+> +     spin_lock_irqsave(&schan->lock, flags);
+> +
+> +     /* Move descriptor to queue */
+> +     list_move_tail(&mdesc->node, &schan->queued);
+> +
+> +     /* If channel is idle, execute all queued descriptors */
+> +     if (list_empty(&schan->active))
+> +             sirfsoc_dma_execute(schan);
+this is wrong, this should be done in .issue_pending
+
+> +
+> +     /* Update cookie */
+> +     cookie = schan->chan.cookie + 1;
+> +     if (cookie <= 0)
+> +             cookie = 1;
+> +
+> +     schan->chan.cookie = cookie;
+> +     mdesc->desc.cookie = cookie;
+> +
+> +     spin_unlock_irqrestore(&schan->lock, flags);
+> +
+> +     return cookie;
+> +}
+> +
+> +static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
+> +     struct sirfsoc_dma_slave_config *config)
+> +{
+> +     u32 addr, direction;
+> +     unsigned long flags;
+> +
+> +     switch (config->generic_config.direction) {
+> +     case DMA_FROM_DEVICE:
+> +             direction = 0;
+> +             addr = config->generic_config.dst_addr;
+> +             break;
+> +
+> +     case DMA_TO_DEVICE:
+> +             direction = 1;
+> +             addr = config->generic_config.src_addr;
+> +             break;
+> +
+> +     default:
+> +             return -EINVAL;
+> +     }
+> +
+> +     if ((config->generic_config.src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
+> +             (config->generic_config.dst_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES))
+> +             return -EINVAL;
+> +
+> +     spin_lock_irqsave(&schan->lock, flags);
+> +     schan->addr = addr;
+> +     schan->direction = direction;
+> +     schan->xlen = config->xlen;
+> +     schan->ylen = config->ylen;
+> +     schan->width = config->width;
+what do these parameters mean, is width the dma fifo width, if so use
+existing members for that
+
+> +     schan->mode = (config->generic_config.src_maxburst == 4 ? 1 : 0);
+> +     spin_unlock_irqrestore(&schan->lock, flags);
+> +
+> +     return 0;
+> +}
+> +
+> +static int sirfsoc_dma_terminate_all(struct sirfsoc_dma_chan *schan)
+> +{
+> +     struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(&schan->chan);
+> +     int cid = schan->chan.chan_id;
+> +     unsigned long flags;
+> +
+> +     writel_relaxed(readl_relaxed(sdma->regs + SIRFSOC_DMA_INT_EN) & ~(1 << cid),
+> +             sdma->regs + SIRFSOC_DMA_INT_EN);
+> +     writel_relaxed(1 << cid, sdma->regs + SIRFSOC_DMA_CH_VALID);
+> +
+> +     spin_lock_irqsave(&schan->lock, flags);
+> +
+> +     list_splice_tail_init(&schan->queued, &schan->free);
+what about active list
+> +     spin_unlock_irqrestore(&schan->lock, flags);
+> +
+> +     return 0;
+> +}
+> +
+> +static int sirfsoc_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> +     unsigned long arg)
+> +{
+> +     struct sirfsoc_dma_slave_config *config;
+> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+> +
+> +     switch (cmd) {
+> +     case DMA_TERMINATE_ALL:
+> +             return sirfsoc_dma_terminate_all(schan);
+> +     case DMA_SLAVE_CONFIG:
+> +             config = (struct sirfsoc_dma_slave_config *)arg;
+> +             return sirfsoc_dma_slave_config(schan, config);
+> +
+> +     default:
+> +             break;
+> +     }
+> +
+> +     return -ENOSYS;
+> +}
+> +
+> +/* Alloc channel resources */
+> +static int sirfsoc_dma_alloc_chan_resources(struct dma_chan *chan)
+> +{
+> +     struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
+> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+> +     struct sirfsoc_dma_desc *mdesc;
+> +     unsigned long flags;
+> +     LIST_HEAD(descs);
+> +     int i;
+> +
+> +     /* Alloc descriptors for this channel */
+> +     for (i = 0; i < SIRFSOC_DMA_DESCRIPTORS; i++) {
+> +             mdesc = kzalloc(sizeof(struct sirfsoc_dma_desc), GFP_KERNEL);
+> +             if (!mdesc) {
+> +                     dev_notice(sdma->dma.dev, "Memory allocation error. "
+> +                             "Allocated only %u descriptors\n", i);
+> +                     break;
+> +             }
+> +
+> +             dma_async_tx_descriptor_init(&mdesc->desc, chan);
+> +             mdesc->desc.flags = DMA_CTRL_ACK;
+> +             mdesc->desc.tx_submit = sirfsoc_dma_tx_submit;
+> +
+> +             list_add_tail(&mdesc->node, &descs);
+> +     }
+> +
+> +     /* Return error only if no descriptors were allocated */
+> +     if (i == 0)
+> +             return -ENOMEM;
+> +
+> +     spin_lock_irqsave(&schan->lock, flags);
+> +
+> +     list_splice_tail_init(&descs, &schan->free);
+> +     spin_unlock_irqrestore(&schan->lock, flags);
+> +
+> +     return 0;
+> +}
+> +
+> +/* Free channel resources */
+> +static void sirfsoc_dma_free_chan_resources(struct dma_chan *chan)
+> +{
+> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+> +     struct sirfsoc_dma_desc *mdesc, *tmp;
+> +     unsigned long flags;
+> +     LIST_HEAD(descs);
+> +
+> +     spin_lock_irqsave(&schan->lock, flags);
+> +
+> +     /* Channel must be idle */
+> +     BUG_ON(!list_empty(&schan->prepared));
+> +     BUG_ON(!list_empty(&schan->queued));
+> +     BUG_ON(!list_empty(&schan->active));
+> +     BUG_ON(!list_empty(&schan->completed));
+> +
+> +     /* Move data */
+> +     list_splice_tail_init(&schan->free, &descs);
+> +
+> +     spin_unlock_irqrestore(&schan->lock, flags);
+> +
+> +     /* Free descriptors */
+> +     list_for_each_entry_safe(mdesc, tmp, &descs, node)
+> +             kfree(mdesc);
+> +}
+> +
+> +/* Send pending descriptor to hardware */
+> +static void sirfsoc_dma_issue_pending(struct dma_chan *chan)
+> +{
+> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+> +     unsigned long flags;
+> +
+> +     spin_lock_irqsave(&schan->lock, flags);
+> +
+> +     if (list_empty(&schan->active) && !list_empty(&schan->queued))
+> +             sirfsoc_dma_execute(schan);
+> +
+> +     spin_unlock_irqrestore(&schan->lock, flags);
+> +}
+> +
+> +/* Check request completion status */
+> +static enum dma_status
+> +sirfsoc_dma_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
+> +     struct dma_tx_state *txstate)
+> +{
+> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+> +     unsigned long flags;
+> +     dma_cookie_t last_used;
+> +     dma_cookie_t last_complete;
+> +
+> +     spin_lock_irqsave(&schan->lock, flags);
+> +     last_used = schan->chan.cookie;
+> +     last_complete = schan->completed_cookie;
+> +     spin_unlock_irqrestore(&schan->lock, flags);
+> +
+> +     dma_set_tx_state(txstate, last_complete, last_used, 0);
+> +     return dma_async_is_complete(cookie, last_complete, last_used);
+> +}
+> +
+> +/* Prepare descriptor for memory to memory copy */
+> +static struct dma_async_tx_descriptor *
+> +sirfsoc_dma_prep_memcpy(struct dma_chan *chan, dma_addr_t dst, dma_addr_t src,
+> +     size_t len, unsigned long flags)
+> +{
+> +     struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(chan);
+> +     struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+> +     struct sirfsoc_dma_desc *mdesc = NULL;
+> +     unsigned long iflags;
+> +
+> +     /* Get free descriptor */
+> +     spin_lock_irqsave(&schan->lock, iflags);
+> +     if (!list_empty(&schan->free)) {
+> +             mdesc = list_first_entry(&schan->free, struct sirfsoc_dma_desc,
+> +                     node);
+> +             list_del(&mdesc->node);
+> +     }
+> +     spin_unlock_irqrestore(&schan->lock, iflags);
+> +
+> +     if (!mdesc) {
+> +             /* try to free completed descriptors */
+> +             sirfsoc_dma_process_completed(sdma);
+> +             return NULL;
+> +     }
+> +
+> +     /* Place descriptor in prepared list */
+> +     spin_lock_irqsave(&schan->lock, iflags);
+> +     list_add_tail(&mdesc->node, &schan->prepared);
+> +     spin_unlock_irqrestore(&schan->lock, iflags);
+> +
+> +     return &mdesc->desc;
+> +}
+> +
+> +/*
+> + * The DMA controller consists of 16 independent DMA channels.
+> + * Each channel is allocated to a different function
+> + */
+> +bool sirfsoc_dma_filter_id(struct dma_chan *chan, void *chan_id)
+> +{
+> +     unsigned int ch_nr = (unsigned int) chan_id;
+> +
+> +     if (ch_nr == chan->chan_id)
+> +             return true;
+> +
+> +     return false;
+> +}
+> +EXPORT_SYMBOL(sirfsoc_dma_filter_id);
+> +
+> +static int __devinit sirfsoc_dma_probe(struct platform_device *op)
+> +{
+> +     struct device_node *dn = op->dev.of_node;
+> +     struct device *dev = &op->dev;
+> +     struct dma_device *dma;
+> +     struct sirfsoc_dma *sdma;
+> +     struct sirfsoc_dma_chan *schan;
+> +     struct resource res;
+> +     ulong regs_start, regs_size;
+> +     u32 id;
+> +     int retval, i;
+> +
+> +     sdma = devm_kzalloc(dev, sizeof(struct sirfsoc_dma), GFP_KERNEL);
+> +     if (!sdma) {
+> +             dev_err(dev, "Memory exhausted!\n");
+> +             return -ENOMEM;
+> +     }
+> +
+> +     if (of_property_read_u32(dn, "cell-index", &id)) {
+> +             dev_err(dev, "Fail to get DMAC index\n");
+> +             return -ENODEV;
+> +     }
+> +
+> +     sdma->irq = irq_of_parse_and_map(dn, 0);
+> +     if (sdma->irq == NO_IRQ) {
+> +             dev_err(dev, "Error mapping IRQ!\n");
+> +             return -EINVAL;
+> +     }
+> +
+> +     retval = of_address_to_resource(dn, 0, &res);
+> +     if (retval) {
+> +             dev_err(dev, "Error parsing memory region!\n");
+> +             return retval;
+> +     }
+> +
+> +     regs_start = res.start;
+> +     regs_size = resource_size(&res);
+> +
+> +     if (!devm_request_mem_region(dev, regs_start, regs_size, DRV_NAME)) {
+> +             dev_err(dev, "Error requesting memory region!\n");
+> +             return -EBUSY;
+> +     }
+> +
+> +     sdma->regs = devm_ioremap(dev, regs_start, regs_size);
+> +     if (!sdma->regs) {
+> +             dev_err(dev, "Error mapping memory region!\n");
+> +             return -ENOMEM;
+> +     }
+> +
+> +     retval = devm_request_irq(dev, sdma->irq, &sirfsoc_dma_irq, 0, DRV_NAME,
+> +             sdma);
+> +     if (retval) {
+> +             dev_err(dev, "Error requesting IRQ!\n");
+> +             return -EINVAL;
+> +     }
+> +
+> +     dma = &sdma->dma;
+> +     dma->dev = dev;
+> +     dma->chancnt = SIRFSOC_DMA_CHANNELS;
+> +
+> +     dma->device_alloc_chan_resources = sirfsoc_dma_alloc_chan_resources;
+> +     dma->device_free_chan_resources = sirfsoc_dma_free_chan_resources;
+> +     dma->device_issue_pending = sirfsoc_dma_issue_pending;
+> +     dma->device_control = sirfsoc_dma_control;
+> +     dma->device_tx_status = sirfsoc_dma_tx_status;
+> +     dma->device_prep_dma_memcpy = sirfsoc_dma_prep_memcpy;
+> +
+> +     INIT_LIST_HEAD(&dma->channels);
+> +     dma_cap_set(DMA_MEMCPY, dma->cap_mask);
+DMA_SLAVE as well..
+
+> +
+> +     for (i = 0; i < dma->chancnt; i++) {
+> +             schan = &sdma->channels[i];
+> +
+> +             schan->chan.device = dma;
+> +             schan->chan.chan_id = dma->chancnt * id + i;
+> +             schan->chan.cookie = 1;
+> +             schan->completed_cookie = schan->chan.cookie;
+> +
+> +             INIT_LIST_HEAD(&schan->free);
+> +             INIT_LIST_HEAD(&schan->prepared);
+> +             INIT_LIST_HEAD(&schan->queued);
+> +             INIT_LIST_HEAD(&schan->active);
+> +             INIT_LIST_HEAD(&schan->completed);
+> +
+> +             spin_lock_init(&schan->lock);
+> +             list_add_tail(&schan->chan.device_node, &dma->channels);
+> +     }
+> +
+> +     tasklet_init(&sdma->tasklet, sirfsoc_dma_tasklet, (unsigned long)sdma);
+> +
+> +     /* Register DMA engine */
+> +     dev_set_drvdata(dev, sdma);
+> +     retval = dma_async_device_register(dma);
+> +     if (retval) {
+> +             devm_free_irq(dev, sdma->irq, sdma);
+> +             irq_dispose_mapping(sdma->irq);
+> +     }
+> +
+> +     return retval;
+> +}
+> +
+> +static int __devexit sirfsoc_dma_remove(struct platform_device *op)
+> +{
+> +     struct device *dev = &op->dev;
+> +     struct sirfsoc_dma *sdma = dev_get_drvdata(dev);
+> +
+> +     dma_async_device_unregister(&sdma->dma);
+> +     devm_free_irq(dev, sdma->irq, sdma);
+> +     irq_dispose_mapping(sdma->irq);
+> +
+> +     return 0;
+> +}
+> +
+> +static struct of_device_id sirfsoc_dma_match[] = {
+> +     { .compatible = "sirf,prima2-dmac", },
+> +     {},
+> +};
+> +
+> +static struct platform_driver sirfsoc_dma_driver = {
+> +     .probe          = sirfsoc_dma_probe,
+> +     .remove         = __devexit_p(sirfsoc_dma_remove),
+> +     .driver = {
+> +             .name = DRV_NAME,
+> +             .owner = THIS_MODULE,
+> +             .of_match_table = sirfsoc_dma_match,
+> +     },
+> +};
+> +
+> +static int __init sirfsoc_dma_init(void)
+> +{
+> +     return platform_driver_register(&sirfsoc_dma_driver);
+> +}
+> +module_init(sirfsoc_dma_init);
+> +
+> +static void __exit sirfsoc_dma_exit(void)
+> +{
+> +     platform_driver_unregister(&sirfsoc_dma_driver);
+> +}
+> +module_exit(sirfsoc_dma_exit);
+> +
+> +MODULE_AUTHOR("Rongjun Ying <rongjun.ying@csr.com>, "
+> +     "Barry Song <baohua.song@csr.com>");
+> +MODULE_DESCRIPTION("SIRFSOC DMA control driver");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/sirfsoc_dma.h b/include/linux/sirfsoc_dma.h
+> new file mode 100644
+> index 0000000..75d2d86
+> --- /dev/null
+> +++ b/include/linux/sirfsoc_dma.h
+> @@ -0,0 +1,18 @@
+> +#ifndef _SIRFSOC_DMA_H_
+> +#define _SIRFSOC_DMA_H_
+> +/*
+> + * create a custom slave config struct for CSR SiRFprimaII and pass that,
+> + * and make dma_slave_config a member of that struct
+> + */
+> +struct sirfsoc_dma_slave_config {
+> +     struct dma_slave_config generic_config;
+> +
+> +     /* CSR SiRFprimaII 2D-DMA config */
+> +     int             xlen;           /* DMA xlen */
+> +     int             ylen;           /* DMA ylen */
+what lengths?
+
+> +     int             width;          /* DMA width */
+> +};
+> +
+> +bool sirfsoc_dma_filter_id(struct dma_chan *chan, void *chan_id);
+> +
+> +#endif
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
