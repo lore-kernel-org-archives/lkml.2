@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1IGTJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 15:09:22 -0400
-Received: from claw.goop.org ([74.207.240.146]:53178 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812Ab1IGTJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 15:09:21 -0400
-Message-ID: <4E67C15B.3000408@goop.org>
-Date: Wed, 07 Sep 2011 12:09:15 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1756782Ab1IGTJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 15:09:48 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50073 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756649Ab1IGTJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 15:09:46 -0400
+Date: Wed, 7 Sep 2011 20:07:52 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Warren <swarren@nvidia.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jean Delvare <khali@linux-fr.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        Andrew Chew <AChew@nvidia.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V2 1/4] i2c: Add irq_gpio field to struct i2c_client.
+Message-ID: <20110907190752.GB24703@sirena.org.uk>
+References: <1314895964-15964-1-git-send-email-swarren@nvidia.com>
+ <4E60985B.6010901@cam.ac.uk>
+ <74CDBE0F657A3D45AFBB94109FB122FF04B327A55D@HQMAIL01.nvidia.com>
+ <201109021805.27569.arnd@arndb.de>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
-References: <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <4E67A71A.5070903@goop.org> <4E67ACB6.40107@redhat.com>
-In-Reply-To: <4E67ACB6.40107@redhat.com>
-X-Enigmail-Version: 1.3.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109021805.27569.arnd@arndb.de>
+X-Cookie: Doing gets it done.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2011 10:41 AM, Avi Kivity wrote:
->> Hm, I'm interested to know what you're thinking in more detail.  Can you
->> leave an NMI pending before you block in the same way you can with
->> "sti;halt" with normal interrupts?
->
->
-> Nope.  But you can do
->
->    if (regs->rip in critical section)
->            regs->rip = after_halt;
->
-> and effectively emulate it.  The critical section is something like
->
->     critical_section_start:
->         if (woken_up)
->             goto critical_section_end;
->         hlt
->     critical_section_end:
+On Fri, Sep 02, 2011 at 06:05:27PM +0200, Arnd Bergmann wrote:
 
-Hm.  It's a pity you have to deliver an actual interrupt to implement
-the kick though.
+> It would not fit well if we expect gpio numbers to be local to
+> a gpio controller, with no unique global identifier for them, similar
+> to how dma channels in the dma-engine subsystem are handled.
 
->>
->> I was thinking you might want to do something with monitor/mwait to
->> implement the blocking/kick ops. (Handwave)
->>
->
-> monitor/mwait are incredibly expensive to virtualize since they
-> require write-protecting a page, IPIs flying everywhere and flushing
-> tlbs, not to mention my lovely hugepages being broken up mercilessly.
-
-Or what about a futex-like hypercall?
-
-    J
-
+Or perhaps moving to a clk API style lookup?
