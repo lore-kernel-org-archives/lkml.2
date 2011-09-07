@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab1IHAVW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:21:22 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:61728 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab1IHAVV (ORCPT
+	id S1757535Ab1IHAWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:22:16 -0400
+Received: from gretna.indigovision.com ([62.7.85.227]:39320 "EHLO
+	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab1IHAWN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:21:21 -0400
-Date: Thu, 08 Sep 2011 08:21:09 +0800
-From: "canquan.shen" <shencanquan@huawei.com>
-Subject: Re: Re : [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
-In-reply-to: <CAErSpo7Rf+X3MVgmdYvbEXw-UAU7sEEMq5upBkhEn9Eu0zD-zw@mail.gmail.com>
-X-Originating-IP: [10.166.80.171]
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: len.brown@intel.com, "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
-        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
-        hanweidong <hanweidong@huawei.com>,
+	Wed, 7 Sep 2011 20:22:13 -0400
+From: Bruce Stenning <b.stenning@indigovision.com>
+To: Tejun Heo <htejun@gmail.com>
+CC: Mark Lord <kernel@teksavvy.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linqiangmin@huawei.com, james.chenjiabo@huawei.com
-Message-id: <4E680A75.3000600@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0.1) Gecko/20110830
- Thunderbird/6.0.1
-X-CFilter-Loop: Reflected
-References: <F1F5DF04259F1B4A82BD6BDE1C479F74098285B0@szxeml527-mbx.china.huawei.com>
- <CAErSpo4JsyHag24SH=zSRHt4c8kYwdcXEnCConGEi2u6dN-pnw@mail.gmail.com>
- <4E65C254.8090107@huawei.com>
- <CAErSpo5owGuYLP2-JR6uJsM+Pqwna+FUB--p4OhjLVAETqYpcw@mail.gmail.com>
- <4E66D988.9070505@huawei.com>
- <CAErSpo7Rf+X3MVgmdYvbEXw-UAU7sEEMq5upBkhEn9Eu0zD-zw@mail.gmail.com>
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Date: Wed, 7 Sep 2011 13:09:10 +0100
+Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Thread-Index: Acxst728k3UUYXA1TRyldt4Qu/pBogAnmOzg
+Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32D8DA54C99@gretna.indigovision.com>
+References: <4DF25526.9010800@teksavvy.com>
+ <20110611121957.GA7980@mtj.dyndns.org> <4DF4F30B.70702@teksavvy.com>
+ <20110613104856.GC16021@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
+ <20110902011305.GE2752@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+ <20110906034544.GB18425@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8DA54B00@gretna.indigovision.com>
+ <20110906163355.GG18425@mtj.dyndns.org>
+ <20110906164221.GH18425@mtj.dyndns.org>
+In-Reply-To: <20110906164221.GH18425@mtj.dyndns.org>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011/9/7 14:57, Bjorn Helgaas wrote:
-> On Tue, Sep 6, 2011 at 7:40 PM, canquan.shen<shencanquan@huawei.com>  wrote:
->> On 2011/9/7 2:38, Bjorn Helgaas wrote:
+Hi Tejun,
+
+Sorry for sending so many emails yesterday; I blame the dental anaesthetic
+I received in the morning for being so jumpy on the send button ;-)
+
+> Can you please instrument the followings?
 >
->>> Is acpi_processor_remove() called when you remove a processor?  I see
->>> a path where it will be called via acpi_eject_store():
->>>
->>>      acpi_eject_store
->>>        acpi_os_hotplug_execute(acpi_bus_hot_remove_device)
->>>        acpi_bus_hot_remove_device
->>>          acpi_bus_trim
->>>            acpi_bus_remove
->>>              device_release_driver
->>>                dev->driver->remove (acpi_processor_remove())
->>>              acpi_device_unregister
->>>                device_unregister
->>>                  device_del
->>>                    kobject_uevent(KOBJ_REMOVE)
->>>
->>> but as far as I can tell, this path is only used when we write
->>> something to the "eject" sysfs file.  I would think we'd want to use
->>> most of this same path when we hot remove a CPU via the ACPI SCI
->>> mechanism.
->>>
->>
->> Because in my patch will send the KOBJ_REMOVE event to udev module. and I
->> write a udev rule like the following:
->> ACTION=="remove",DRIVER=="processor",SUBSYSTEM=="acpi",RUN+="/bin/bash -c
->> 'echo 1>  /sys%p/eject'"
->> This rule will write "1" to the "eject" sysfs file. and then call
->> acpi_eject_store function.
+> * print the caller of scsi_eh_wakeup().  "%pF" w/ (void *)_RET_IP_
+>   should do it.
 >
-> Hmmm.  I think I understand your proposal, but it seems like a
-> convoluted path to me.
->
-> I guess the real question is whether we must give userspace a chance
-> to decide whether to actually do the remove or not.  Is there a
-> requirement to do that?  Neither the dynamic device removal flow (ACPI
-> spec 4.0a, sec 6.3) nor the ejection flow example (fig 6-5) mentions
-> doing that.
->
-    I think we should give userspace a chance to decide whether do  the 
-remove or not. About the cpu remove, it has two part, one in the linux 
-kernel which mainly online/offline cpu, another is acpi core driver, 
-which mainly add and remove the device of processor.
-    giving userspace a chance is not acpi spec requirement. but it is 
-flexible for linux kernel. many driver use the udev mechanism to has a 
-chance for user to decide how to handle the event of kernel.
+> * print why scsi_eh is going back to sleep immediately.
+>   ie. shost->host_failed, host_eh_scheduled, host_busy in
+>   scsi_error_handler().  It would also be nice to add some printks
+>   around schedule() and enable PRINTK_TIME.
 
-> I mentioned before that I think the ACPI hotplug code should be ripped
-> out of the drivers and consolidated in the ACPI core.  I think it's
-> pretty clear from the spec that the 0-0x7f notifications (Bus Check,
-> Device Check, Eject Request, etc.) are designed to be handled by the
-> core, not by individual drivers.  We handle hotplug in the drivers
-> today, but I think that's mainly because we never implemented support
-> in the Linux ACPI core.  There are comments in acpi_bus_check_device()
-> and acpi_bus_check_scope() about what we *should* be doing there.
->
-> I am opposed to adding more hotplug support to individual drivers
-> because I still hope that someday we'll support it in the ACPI core.
-> Many ACPI drivers don't support hotplug at all, and the ones that do
-> support hotplug do it in a variety of ways.  It's all quite a mess.
->
-> Bjorn
->
-> .
->
+I can certainly try this.  Could you confirm whether my thoughts about a race
+between the scsi_eh thread and the wake-up are plausible?  I backtracked
+yesterday because I thought the scsi_eh thread would get rescheduled naturally,
+not realising that when the task state is TASK_INTERRUPTIBLE schedule() takes
+the task off the run queue (so it needs to be explicitly woken.)
 
-I admit it is convoluted path for hot cpu remove. and the acpi processor 
-driver will be consolidated in the acip core. but how to do in the acpi 
-core ? I think it maybe directly call acpi_bus_hot_remove_device or send 
-KOBJ_OFFLINE event to linux kernel.
+Here is my thinking again:
 
-I will modify the processor driver by add the acpi_bus_trim function in 
-acpi_processor_hotplug_notify. and create the patch for fix this problem.
-Could you help me to merge to latest linux kernel? Thanks for your 
-answer again.
+shost->host_eh_scheduled is read here in scsi_error_handler:
 
----
-canquan.shen
+        set_current_state(TASK_INTERRUPTIBLE);
+        while (!kthread_should_stop()) {
+                if ((shost->host_failed == 0 && shost->host_eh_scheduled == 0) ||
+
+There's no locking in scsi_error_handler (though functions it calls probably
+claim locks.)
+
+When scheduling an EH, scsi_schedule_eh takes the shost->host_lock, increments
+shost->host_eh_scheduled, and then wakes the EH thread.  If this happens
+between the scsi_eh thread reading host_eh_scheduled and sending itself back
+to sleep (when the scsi_eh thread's state is TASK_INTERRUPTIBLE) nothing will
+wake up the thread again and host_eh_scheduled will not get inspected.
+host_eh_scheduled is stuck at 1 with the scsi_eh thread asleep, and it won't
+get woken again because the ata port has been frozen and irqs are masked off.
+
+Bruce.
 
 
-
-
-
+Latest News at: http://www.indigovision.com/index.php/en/news.html
