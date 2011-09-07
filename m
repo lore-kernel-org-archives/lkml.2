@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751323Ab1IGQ0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:26:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab1IGQ0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:26:48 -0400
-Message-ID: <4E679AF4.50209@redhat.com>
-Date: Wed, 07 Sep 2011 19:25:24 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1751420Ab1IGQ1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:27:18 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37556 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750859Ab1IGQ1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:27:16 -0400
+X-Sasl-enc: eNex+BM8/Z1jGoF0j/5YisPeBelojDHNgcM/qvB3J82o 1315408225
+Date: Wed, 7 Sep 2011 08:10:17 -0700
+From: Greg KH <greg@kroah.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "hverkuil@xs4all.nl" <hverkuil@xs4all.nl>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "mchehab@redhat.com" <mchehab@redhat.com>
+Subject: Re: [PATCH] Staging: dt3155v4l: Convert printk's to pr_<level>
+Message-ID: <20110907151017.GB30361@kroah.com>
+References: <201109011653.56089.hartleys@visionengravers.com>
+ <20110906235253.GC26281@kroah.com>
+ <ADE657CA350FB648AAC2C43247A983F001F39D748D0C@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
-References: <1314974826.1861.1.camel@twins> <4E612EA1.20007@goop.org> <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com>
-In-Reply-To: <20110907155657.GX5795@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F39D748D0C@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2011 06:56 PM, Don Zickus wrote:
+On Tue, Sep 06, 2011 at 07:15:38PM -0500, H Hartley Sweeten wrote:
+> On Tuesday, September 06, 2011 4:53 PM, Greg KH wrote:
+> > On Thu, Sep 01, 2011 at 04:53:55PM -0700, H Hartley Sweeten wrote:
+> >> Convert all the printk(KERN_<level>) messages in the driver to pr_<level>()
+> >> and use pr_fmt to provide the module name.
 > >
-> >  And hope that no other NMI was generated while we're handling this
-> >  one.  It's a little... fragile?
->
-> No.  If another NMI is generated while we are processing the current one
-> it should get latched.  Upon completion of the current one, the cpu should
-> jump right back into the nmi exception routine again.  The only downside
-> is when multiple NMIs come in during the processing of the current one.
-> Only one can be latched, so the others get dropped.
+> > What's wrong with using dev_* instead of pr_*?  Lots of these should be
+> > converted to that format instead, right?
+> 
+> Nothing... dev_* should be used when possible.
+> 
+> Actually all of the messages look like they are just plain noise and should
+> be removed.  Especially the ones in dt3155_{init,exit}_module.  A lot of the
+> ones in dt3155_probe look like noise also.
+> 
+> The ones in {read,write,wait}_i2c_reg just look messy.  Those functions also
+> don't have a device pointer to use the dev_* functions.
 
-Ah, yes, I remember now.
+Really?  It should have an i2c device somewhere.
 
-> But we are addressing
-> that.
->
+> The ones in dt3155_irq_handler seem troublesome.  Isn't it a bad idea to output
+> a kernel message in an interrupt handler?
 
-May I ask how?  Detecting a back-to-back NMI?
+Yes, don't do that.
 
--- 
-error compiling committee.c: too many arguments to function
+> dt3155_{open,close} also look like noise.  Same with dt3155_init_board.
+> 
+> Maybe I should just submit a patch removing all of them?
 
+Please do :)
+
+thanks,
+
+greg k-h
