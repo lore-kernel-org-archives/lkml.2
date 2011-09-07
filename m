@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab1IGDC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Sep 2011 23:02:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49660 "EHLO
+	id S1755194Ab1IGDET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Sep 2011 23:04:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49691 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab1IGDCy (ORCPT
+	with ESMTP id S1755020Ab1IGDEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Sep 2011 23:02:54 -0400
-Date: Tue, 6 Sep 2011 20:06:14 -0700
+	Tue, 6 Sep 2011 23:04:14 -0400
+Date: Tue, 6 Sep 2011 20:07:36 -0700
 From: Arjan van de Ven <arjan@infradead.org>
-To: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
-Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Player Thread is not woken after period elapsed
-Message-ID: <20110906200614.57a99d3d@infradead.org>
-In-Reply-To: <3CA6C6D9F70D314CA34352990B57DA1507C4275D58@bgsmsx502.gar.corp.intel.com>
-References: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
-	<20110905105253.2787b91f@infradead.org>
-	<3CA6C6D9F70D314CA34352990B57DA1507C420F15C@bgsmsx502.gar.corp.intel.com>
-	<20110905112225.72b46ac9@infradead.org>
-	<3CA6C6D9F70D314CA34352990B57DA1507C4275D58@bgsmsx502.gar.corp.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org, perex@perex.cz,
+        tiwai@suse.de
+Subject: Re: [PATCH] sound: Fix race condition in the pcm_lib "wait for
+ space loop
+Message-ID: <20110906200736.785edef3@infradead.org>
+In-Reply-To: <20110906155954.bb9c42eb.akpm@linux-foundation.org>
+References: <20110905094947.6ece87c2@infradead.org>
+	<20110906155954.bb9c42eb.akpm@linux-foundation.org>
 Organization: Intel
 X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
 Mime-Version: 1.0
@@ -31,19 +29,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > Please always test bugs like this with a recent kernel. 2.6.35 is
-> > pretty much 6 versions (and 18 months) behind and at that point you
-> > really have to test with something newer first before asking others
-> > to help you and spend their time on your problem.
-> > 
-> Unfortunately, I am stuck with that version as the product that I
-> work on is on that version. 
+On Tue, 6 Sep 2011 15:59:54 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-and that is everyone elses problem ... how?
+> > --- a/sound/core/pcm_lib.c
+> > +++ b/sound/core/pcm_lib.c
+> > @@ -1761,6 +1761,10 @@ static int wait_for_avail(struct
+> > snd_pcm_substream *substream, snd_pcm_uframes_t avail = 0;
+> >  	long wait_time, tout;
+> >  
+> > +	init_waitqueue_entry(&wait, current);
+> > +	add_wait_queue(&runtime->tsleep, &wait);
+> > +	set_current_state(TASK_INTERRUPTIBLE);
+> 
+> Well, this isn't very good either.  if a wakeup gets delivered to
+> runtime->tsleep before the set_current_state(), this process will go
+> ahead and incorrectly set itself into TASK_INTERRUPTIBLE state.
 
-if you can't be bothered to try at least a recent kernel, why would
-anyone else be bothered to help you on their own time?????
+... and then check the condition for exit, and then set it to
+TASK_RUNABLE a the end...
+
+> 
+> That looks like it will be dont-care/cant-happen in this case, but
+> it's setting a bad example.
+
+agreed that your ordering is more clean/better.....
+
 
 
 -- 
