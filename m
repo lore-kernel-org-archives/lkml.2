@@ -1,172 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1IGQCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 12:02:33 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:49398 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab1IGQCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 12:02:10 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E679770.4090008@cam.ac.uk>
-Date: Wed, 07 Sep 2011 17:10:24 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110901 Thunderbird/6.0
+	id S1751712Ab1IGQGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 12:06:16 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:45545 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753920Ab1IGQGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 12:06:06 -0400
+Date: Wed, 7 Sep 2011 20:50:09 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Paul Turner <pjt@google.com>
+Cc: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelianov <xemul@parallels.com>
+Subject: Re: CFS Bandwidth Control - Test results of cgroups tasks pinned vs
+ unpinnede
+Message-ID: <20110907152009.GA3868@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <20110503092846.022272244@google.com>
+ <20110607154542.GA2991@linux.vnet.ibm.com>
+ <1307529966.4928.8.camel@dhcp-10-30-22-158.sw.ru>
+ <20110608163234.GA23031@linux.vnet.ibm.com>
+ <BANLkTim7a9uhH_K6sw4YdqWB6frT+HUqqQ@mail.gmail.com>
+ <20110610181719.GA30330@linux.vnet.ibm.com>
+ <BANLkTimE1b8HP-q4jgsv5jPD5S-dRoUi_g@mail.gmail.com>
+ <20110615053716.GA390@linux.vnet.ibm.com>
+ <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: Blockers on IIO usage of regmap.
-References: <4E6600A8.4020101@cam.ac.uk> <20110906175435.GA2924@opensource.wolfsonmicro.com> <Prayer.1.3.4.1109062213100.4243@hermes-2.csi.cam.ac.uk>
-In-Reply-To: <Prayer.1.3.4.1109062213100.4243@hermes-2.csi.cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=7S2qdVjbJkDja+GAoD=pNo2gPsTFZMFkB8NWWkO1JVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/11 22:13, J.I. Cameron wrote:
-> On Sep 6 2011, Mark Brown wrote:
+[Apologies if you get this email multiple times - there is some email
+client config issue that I am fixing up]
+
+* Paul Turner <pjt@google.com> [2011-06-21 12:48:17]:
+
+> Hi Kamalesh,
 > 
->> On Tue, Sep 06, 2011 at 12:14:48PM +0100, Jonathan Cameron wrote:
->>
->>> Just a quick heads up that the big blocker for
->>> us making more use of regmap is lack of default
->>> control of cs_change for spi buses.  That leads to
->>
->> Looking at what you've got here there's nothing interesting with /CS
->> here, it's all about the data formatting.  Certainly you've not
->> mentioned anything odd with /CS in any of the code.
-> Sorry, email got somewhat mashed up in editing (pesky
-> dentist appointment in the middle!).
+> Can you see what things look like under v7?
 > 
-> you are quite correct. Two completely different issues.
-> The spi one needs addressing in the spi core, so is a
-> topic for another thread entirely (I have proposal but
-> need to test that thoroughly before sending out). Here
-> I was simply going to say there are issues with lack of
-> control of that except on a individual transfer basis.
+> There's been a few improvements to quota re-distribution that should
+> hopefully help your test case.
 > 
-> Anyhow, on to the actual email topic...
->>
->>> TX  Add0...Add7 XXXXXXXXXXX  XXXXXXXXXXX  XXXXXXXX
->>> RX  XXXXXXXXXXX Da0.....Da7  Db0.....Db7  etc
->>
->> This is the standard one that most things do so is already supported.
->>
->>> TX  Add0...Add7 XXXXXXXXXXX  XXXXXXXXXXX  XXXXXXXXXX
->>> RX  XXXXXXXXXXX XXXXXXXXXXX  Da0.....Da7  Db0....Db7
->>
->> This is just inserting a delay so should be trivial to implement and
->> doesn't even look terribly SPI specific, just set a flag and it should
->> be fine.  All we need here is someone to actually implement it.  I guess
->> the delay will be OK for any read?
-> 
-> Yup. It tends to be required for all reads on a given device. Note it
-> isn't typically required for writes on the devices I have but I can
-> see some devices may need a 'gap' for that as well.  There is a slight
-> kicker which is 'magic' address values that trigger a read of all
-> registers whilst other addresses don't work for burst reads.
+> The remaining idle% I see on my machines appear to be a product of
+> load-balancer inefficiency.
 
-Hohum. Every time I look at these devices things turn out to be more
-complex.  Given we have a whole heap of similar devices would it be valid
-to define our own local regmap-spi-adis.c file to handle the variant?
+which is quite a complex problem to solve! I am still surprised that
+we can't handle 32 cpuhogs on a 16-cpu system very easily. The tasks seem to
+hop around madly rather than settle down as 2 tasks/cpu. Kamalesh, can you post
+the exact count of migrations we saw on latest tip over a 20-sec window?
 
-To explain what we actually have (with all the cs line changes as well)
+Anyway, here's a "hack" to minimize the idle time induced due to load-balance
+issues. It brings down idle time from 7+% to ~0% ..I am not too happy about
+this, but I don't see any other simpler solutions to solve the idle time issue
+completely (other than making load-balancer completely fair!).
 
-Writes are all 8 bit 
+--
 
-CS -_______________________-
-TX  Ada0...Ada7  Da0....Da7
-RX XXXXXXXXXXXXXXXXXXXXXXXXX
+Fix excessive idle time reported when cgroups are capped.  The patch
+introduces the notion of "steal" (or "grace") time which is the surplus
+time/bandwidth each cgroup is allowed to consume, subject to a maximum
+steal time (sched_cfs_max_steal_time_us). Cgroups are allowed this "steal"
+or "grace" time when the lone task running on a cpu is about to be throttled.
 
-Reads are 16 bit with either of the two 8 bit register addresses given the same value
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 
-CS -______________________-_____________________-
-TX  Ada0....Ada7 XXXXXXXX
-RX  XXXXXXXXXXXXXXXXXXXXX  Da0...Da7  Db0....Db7  
-
-Can interpret Da0...Da7 and Db0....Db7 as single 16 bit register and consider this device
-to just have a weird write method and normal read.  Might be easier.  I'll define Ax<n> as
-16 bit address for the burst read.
-
-Bursts are mostly
-
-CS -_________________________________________________________________________________________-
-TX  Magic_address (3e) 000000000   XXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXX  ~~ XXXXXXXXXXXX
-RX  XXXXXXXXXXXXXXXXXXXXXXXXXXXX   Axa0....Axa15 Axb0....Axb15 Axc0...Axc15  ~~ Axz0...Axz15
-
-There is a tedious set of variant (old) where burst mode isn't supported and the duplex method
-given below is needed.  Note burst reading only applies to a particular set of registers and
-crucially can run at a higher spi rate than normal reading (sometimes - depends on sampling
-rate).
-
-I would just ignore regmap for these devices, except they otherwise fit well (lots of static
-registers)
-
-Perhaps the burst mode thing is better handled by just providing a hook to allow data to be pushed
-into regmap (from 'magic' sources), but the weird write read combination looks to me like something
-that makes sense to have in regmap (be it as another bus variant).
-
-
-Just for reference, this setup applies to
-
-iio/imu/adis16400 (my test part is a adis16350)
-iio/accel/adis16201 (no burst mode).
-iio/accel/adis16203 (no burst mode).
-iio/accel/adis16204 (no burst mode).
-iio/accel/adis16209 (no burst mode).
-iio/accel/adis16220 (no burst mode - weird device ;)
-iio/accel/adis16240 (no burst mode)
-iio/gyro/adis16260 (no burst mode)
-
-It's rather hacky and VERY restricted, but the series that follows this illustrates what I mean.
-It's a fun one to actually apply though as you'll need my iio-blue.git tree, Mark's regmap
-tree and the additional write mask patches.   Oh and it includes a first pass at adding cs_change
-global control to spi devices. Patches should be as replies to this and are definitely an RFC
-where we can pick and choose what we want... 
-
+Index: linux-3.1-rc4/include/linux/sched.h
+===================================================================
+--- linux-3.1-rc4.orig/include/linux/sched.h	2011-09-07 14:57:49.529602231 +0800
++++ linux-3.1-rc4/include/linux/sched.h	2011-09-07 14:58:49.952418107 +0800
+@@ -2042,6 +2042,7 @@ static inline void sched_autogroup_exit(
  
->>
->>> TX  Ada0...Ada7  Adb1...Adb7 Adc1...Adc7  etc
->>> RX  XXXXXXXXXXX  Da0.....Da7 Db0.....Db7  etc
->>
->> This one is much more of a contortion to implement - it's pretty SPI
->> specific to stream the register addresses and it's really not what the
->> system is set up for.  On the other hand if you can come up with a
->> taseful way to implement it then I don't see a problem.
-> I'll have a play and get back to you. Another option might be a hook
-> into regmap to push in register values from reads that regmap itself
-> doesn't know how to do.  That way the debugfs stuff is useful and things
-> aren't 'too' clunky + caching etc will work.  This sort of interleaved
-> read write is vital for performance on some devices that otherwise fit
-> perfectly into regmap so may be worth the effort!
-> 
-> It may seem odd, but it might also be handy to have a regmap_get_bus
-> hook in regmap for these odd cases as it saves on carrying a bonus
-> pointer to the underlying bus around the code (often also needed to
-> get you access to stuff that isn't really part of the bus at all
-> such as auxiliary irq numbers).
->>
->>> So basically we need some bus specific 'mode' hook somewhere.
->>> Given we have separate init functions for the buses could we
->>> add a struct regmap_spi_config to the parameter list?
->>
->> Or just embed stuff into the main config structure at least for the
->> delay.  Nothing there seems too outrageous, and the delay sounds like
->> something someone might do on other buses (the delay will be to allow
->> time for the ADCs or whatever to set up).
-> Delay indeed is general enough for this.  Might need to think a bit
-> on the naming so it's clear it isn't a time value, but rather a
-> case of 'don't care' data sitting before what you actually requested.
-> 
-> I'll bash out a patch once I've sorted the CS stuff (as my test part
-> adis16350 needs that before I can use regmap for it at all).
-> 
-> Thanks
-> 
-> Jonathan
-
+ #ifdef CONFIG_CFS_BANDWIDTH
+ extern unsigned int sysctl_sched_cfs_bandwidth_slice;
++extern unsigned int sysctl_sched_cfs_max_steal_time;
+ #endif
+ 
+ #ifdef CONFIG_RT_MUTEXES
+Index: linux-3.1-rc4/kernel/sched.c
+===================================================================
+--- linux-3.1-rc4.orig/kernel/sched.c	2011-09-07 14:57:49.532854588 +0800
++++ linux-3.1-rc4/kernel/sched.c	2011-09-07 14:58:49.955453578 +0800
+@@ -254,7 +254,7 @@ struct cfs_bandwidth {
+ #ifdef CONFIG_CFS_BANDWIDTH
+ 	raw_spinlock_t lock;
+ 	ktime_t period;
+-	u64 quota, runtime;
++	u64 quota, runtime, steal_time;
+ 	s64 hierarchal_quota;
+ 	u64 runtime_expires;
+ 
+Index: linux-3.1-rc4/kernel/sched_fair.c
+===================================================================
+--- linux-3.1-rc4.orig/kernel/sched_fair.c	2011-09-07 14:57:49.533644483 +0800
++++ linux-3.1-rc4/kernel/sched_fair.c	2011-09-07 15:16:09.338824132 +0800
+@@ -101,6 +101,18 @@ unsigned int __read_mostly sysctl_sched_
+  * default: 5 msec, units: microseconds
+   */
+ unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
++
++/*
++ * "Surplus" quota given to a cgroup to prevent a CPU from becoming idle.
++ *
++ * This would have been unnecessary had the load-balancer been "ideal" in
++ * loading tasks uniformly across all CPUs, which would have allowed
++ * all cgroups to claim their "quota" completely. In the absence of an
++ * "ideal" load-balancer, cgroups are unable to utilize their quota, leading
++ * to unexpected idle time. This knob allows a CPU to keep running a
++ * task beyond its throttled point before becoming idle.
++ */
++unsigned int sysctl_sched_cfs_max_steal_time = 100000UL;
+ #endif
+ 
+ static const struct sched_class fair_sched_class;
+@@ -1288,6 +1300,11 @@ static inline u64 sched_cfs_bandwidth_sl
+ 	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
+ }
+ 
++static inline u64 sched_cfs_max_steal_time(void)
++{
++	return (u64)sysctl_sched_cfs_max_steal_time * NSEC_PER_USEC;
++}
++
+ /*
+  * Replenish runtime according to assigned quota and update expiration time.
+  * We use sched_clock_cpu directly instead of rq->clock to avoid adding
+@@ -1303,6 +1320,7 @@ static void __refill_cfs_bandwidth_runti
+ 		return;
+ 
+ 	now = sched_clock_cpu(smp_processor_id());
++	cfs_b->steal_time = 0;
+ 	cfs_b->runtime = cfs_b->quota;
+ 	cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
+ }
+@@ -1337,6 +1355,12 @@ static int assign_cfs_rq_runtime(struct 
+ 			cfs_b->runtime -= amount;
+ 			cfs_b->idle = 0;
+ 		}
++
++		if (!amount && rq_of(cfs_rq)->nr_running == 1 &&
++				cfs_b->steal_time < sched_cfs_max_steal_time()) {
++			amount = min_amount;
++			cfs_b->steal_time += amount;
++		}
+ 	}
+ 	expires = cfs_b->runtime_expires;
+ 	raw_spin_unlock(&cfs_b->lock);
+@@ -1378,7 +1402,8 @@ static void expire_cfs_rq_runtime(struct
+ 	 * whether the global deadline has advanced.
+ 	 */
+ 
+-	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0) {
++	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0 ||
++		(rq_of(cfs_rq)->nr_running == 1 && cfs_b->steal_time < sched_cfs_max_steal_time())) {
+ 		/* extend local deadline, drift is bounded above by 2 ticks */
+ 		cfs_rq->runtime_expires += TICK_NSEC;
+ 	} else {
+Index: linux-3.1-rc4/kernel/sysctl.c
+===================================================================
+--- linux-3.1-rc4.orig/kernel/sysctl.c	2011-09-07 14:57:49.534454409 +0800
++++ linux-3.1-rc4/kernel/sysctl.c	2011-09-07 14:58:49.958452846 +0800
+@@ -388,6 +388,14 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec_minmax,
+ 		.extra1		= &one,
+ 	},
++	{
++		.procname	= "sched_cfs_max_steal_time_us",
++		.data		= &sysctl_sched_cfs_max_steal_time,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &one,
++	},
+ #endif
+ #ifdef CONFIG_PROVE_LOCKING
+ 	{
