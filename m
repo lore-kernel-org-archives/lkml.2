@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab1IHXiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:38:52 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:65073 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab1IHXiu convert rfc822-to-8bit (ORCPT
+	id S1756064Ab1IHXj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:39:56 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54013 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315Ab1IHXjy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:38:50 -0400
+	Thu, 8 Sep 2011 19:39:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=A1yF/5ES5aqwBLpwWNkpAleHLbwWwid5wylhtQeZdJjLPTfipf0R7eid5ft49u9FG
+	OHXFVZ0YXvlMWYBo1mI0g==
 MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhdGaKFU9kVii83KX+TmN9_edcfCU8TohEzJ4oKaQTEgHw@mail.gmail.com>
-References: <1315503297-8365-1-git-send-email-mans.rullgard@linaro.org>
-	<CABb+yY0b607kDSGU+trycqQuvGMhC-zpHcv20wjgmEcaK7dz8Q@mail.gmail.com>
-	<CAG5Tg6UOuztenNid1=YbH9a4ZH5MqV4YhohG+r9R+7F=zXs=CQ@mail.gmail.com>
-	<CAJe_ZhdGaKFU9kVii83KX+TmN9_edcfCU8TohEzJ4oKaQTEgHw@mail.gmail.com>
-Date: Thu, 8 Sep 2011 20:26:34 +0100
-Message-ID: <CAG5Tg6WjGk71QPOQHoLiMhsUo=49yhyeao_B3aQ+BScJA2xPPw@mail.gmail.com>
-Subject: Re: [PATCH v2] ASoC: omap: convert per-board modules to platform drivers
-From: Mans Rullgard <mans.rullgard@linaro.org>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Jassi Brar <jassisinghbrar@gmail.com>, alsa-devel@alsa-project.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Jarkko Nikula <jhnikula@gmail.com>,
-        linaro-dev@lists.linaro.org, linux-omap@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <87wrdjku9h.fsf@ti.com>
+References: <1315060755-4613-1-git-send-email-santosh.shilimkar@ti.com>
+	<1315060755-4613-3-git-send-email-santosh.shilimkar@ti.com>
+	<87k49knmrw.fsf@ti.com>
+	<4E684F90.7010809@ti.com>
+	<87wrdjku9h.fsf@ti.com>
+Date: Thu, 8 Sep 2011 11:04:26 -0700
+X-Google-Sender-Auth: 9xOVIxOe8qx_ipdaIrSsGG1ZAaU
+Message-ID: <CAMbhsRQvft4dqhAc4j_bXDR8018zeoSRXuWC6bS-d8rA0PgOyA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/5] cpu_pm: call notifiers during suspend
+From: Colin Cross <ccross@android.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: Santosh <santosh.shilimkar@ti.com>, rjw@sisk.pl, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 September 2011 20:17, Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> On 9 September 2011 00:35, Mans Rullgard <mans.rullgard@linaro.org> wrote:
->> On 8 September 2011 19:17, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>> On Thu, Sep 8, 2011 at 11:04 PM, Mans Rullgard <mans.rullgard@linaro.org> wrote:
->>>> This converts the per-board modules to platform drivers for a
->>>> device created by in main platform setup.  These drivers call
->>>> snd_soc_register_card() directly instead of going via a "soc-audio"
->>>> device and the corresponding driver in soc-core.
->>>>
->>>> Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
->>>> ---
->>>> Platform device names fixed.
->>>> N8x0 changed to get clocks before registering card.
->>>> ---
->>>>  arch/arm/mach-omap2/board-3430sdp.c          |    6 ++
->>>>  arch/arm/mach-omap2/board-4430sdp.c          |    6 ++
->>>>  arch/arm/mach-omap2/board-am3517evm.c        |    7 +++
->>>>  arch/arm/mach-omap2/board-devkit8000.c       |    6 ++
->>>>  arch/arm/mach-omap2/board-igep0020.c         |    6 ++
->>>>  arch/arm/mach-omap2/board-n8x0.c             |    6 ++
->>>>  arch/arm/mach-omap2/board-omap3beagle.c      |    6 ++
->>>>  arch/arm/mach-omap2/board-omap3evm.c         |    7 +++
->>>>  arch/arm/mach-omap2/board-omap3pandora.c     |    6 ++
->>>>  arch/arm/mach-omap2/board-overo.c            |   17 ++++++
->>>>  arch/arm/mach-omap2/board-rx51.c             |    6 ++
->>>>  arch/arm/mach-omap2/board-zoom-peripherals.c |    6 ++
+On Thu, Sep 8, 2011 at 7:01 AM, Kevin Hilman <khilman@ti.com> wrote:
+> Santosh <santosh.shilimkar@ti.com> writes:
+>
+>> On Thursday 08 September 2011 01:32 AM, Kevin Hilman wrote:
+>>> Santosh Shilimkar<santosh.shilimkar@ti.com>  writes:
 >>>
->>> Can't we do by having omap_init_audio() in arch/arm/mach-omap2/devices.c
->>> generate a platform device of name depending upon machine_is_* ?
+>>>> From: Colin Cross<ccross@android.com>
+>>>>
+>>>> Implements syscore_ops in cpu_pm to call the cpu and
+>>>> cpu cluster notifiers during suspend and resume,
+>>>> allowing drivers receiving the notifications to
+>>>> avoid implementing syscore_ops.
+>>>>
+>>>> Signed-off-by: Colin Cross<ccross@android.com>
+>>>> [santosh.shilimkar@ti.com: Rebased against 3.1-rc4]
+>>>> Signed-off-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>>
+>>> I don't think using syscore_ops is right here.  The platform code should
+>>> decide where in its own suspend path the notifiers should be triggered.
+>>>
+>>> The reason is because while the syscore_ops run late in the suspend
+>>> path, they still run before some platform-specific decisions about the
+>>> low-power states are made.  That means that any notifiers that need to
+>>> use information about the target low-power state (e.g. whether context
+>>> will be lost or not) cannot do so since that information has not yet
+>>> been decided until the platform_suspend_ops->enter() runs.
+>>>
+>> Initially I thought the same but in general S2R, platform doesn't
+>> support multiple states like CPUIDLE. On OMAP, we do have a debug
+>> option to choose the state but on real product, it's always the
+>> deepest supported state is used. So the driver saving the
+>> full context for S2R, should be fine.
 >>
->> I had the same thought, but I couldn't find a suitable string anywhere.
->> Are you suggesting an if(machine_is_foo()) cascade in omap_init_audio()?
-> Yes. And you could assign same names as you do now in board init files.
+>> Ofcourse for CPUIDLE, the notifier call chain decisions are left
+>> with platform CPUIDLE drivers since there can be multiple low
+>> power states and the context save/restore has to be done based
+>> on low power states.
+>>
+>> The advantage with this is, the platform code is clean from the
+>> notfiers calls. CPUIDLE driver needs to call the different notifier
+>> events based on C-states and that perfectly works.
+>>
+>> I liked this simplification for the S2R. Down side is in S2R if you
+>> don't plan to hit deepest state, drivers end up saving full context
+>> which is fine I guess.
+>
+> That's not the downside I'm worried about.
+>
+> If you have a driver that has a notifier, presumably it has something it
+> wants to do to prepare for suspend *and* for idle, and you'd only want a
+> single notifier callback in the driver to be used for both.  That
+> callback would look something like:
+>
+>   start_preparing_for_suspend();
+>
+>   if (next_state == OFF)
+>      save_context();
+>
+>   finish_preparing_for_suspend();
+>
+>
+> The problem with the current cpu_*_pm_enter() calls in syscore_ops is
+> that they happen before the next states are programmed, so during
+> suspend the 'if (next_state == off)' above would never be true, but
+> during idle it might be.
 
-This would still be omap-specific though, but perhaps that can be
-acceptable for now.  Longer term, I guess this is a candidate for
-device tree.
+These notifiers are designed for drivers that are tightly coupled to
+the cpu, and shared across multiple architectures (mostly GIC and
+VFP).  In practice, all of these devices are off in every suspend
+state, because nobody leaves the CPU on in suspend.
 
--- 
-Mans Rullgard
-Multimedia
-mans.rullgard@linaro.org
+The (next_state == OFF) api you refer to would have to be something
+architecture specific, since the power state handling is very
+different on every platform, so it's not something that would ever be
+included in drivers that I imagined would be using these notifiers.
