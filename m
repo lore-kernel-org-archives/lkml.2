@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab1IHOj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 10:39:59 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:40725
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1751987Ab1IHOjt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 10:39:49 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:51285
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751771Ab1IHOjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 10:39:43 -0400
+	id S1751630Ab1IHOjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 10:39:40 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 19/25] Staging: hv: netvsc: Get rid of the usage of the ext field in struct hv_device
-Date: Thu,  8 Sep 2011 07:24:30 -0700
-Message-Id: <1315491876-9554-19-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/25] Staging: hv: util: Properly handle util services in the util driver
+Date: Thu,  8 Sep 2011 07:24:22 -0700
+Message-Id: <1315491876-9554-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1315491876-9554-1-git-send-email-kys@microsoft.com>
 References: <1315491843-9513-1-git-send-email-kys@microsoft.com>
@@ -23,461 +23,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, eliminate the usage of ext field in struct  hv_device for netvsc driver.
-We do this by registering pointer to struct netvsc_device as the driver
-specific data and eliminating the current usage of driver specific data
-to save and retrieve the pointer to struct net_device.
-Additionally, all access to the driver specific data is through
-the vmbus wrapper functions. As part of this cleanup, we also get rid
-of some unnecessary debug print statements.
+Now properly handle util services in the util driver and eliminate code
+that will not be necessary. In the current code, util services were
+all handled not as other vmbus devices (net, block) but rather through
+special handling (channel setup etc.). In this patch we handle all
+services using the standard Linux driver Model.
+
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/hyperv_net.h   |    2 +
- drivers/staging/hv/netvsc.c       |   90 +++++++++++++++++++-----------------
- drivers/staging/hv/netvsc_drv.c   |   29 ++++++++++--
- drivers/staging/hv/rndis_filter.c |   36 +++++++++++----
- 4 files changed, 100 insertions(+), 57 deletions(-)
+ drivers/staging/hv/channel_mgmt.c |   39 +----------------------
+ drivers/staging/hv/hv_kvp.c       |    7 ++++
+ drivers/staging/hv/hv_util.c      |   63 ++++++++++++++++--------------------
+ 3 files changed, 36 insertions(+), 73 deletions(-)
 
-diff --git a/drivers/staging/hv/hyperv_net.h b/drivers/staging/hv/hyperv_net.h
-index af8a37f..366dd2b 100644
---- a/drivers/staging/hv/hyperv_net.h
-+++ b/drivers/staging/hv/hyperv_net.h
-@@ -392,6 +392,8 @@ struct netvsc_device {
- 	struct nvsp_message revoke_packet;
- 	/* unsigned char HwMacAddr[HW_MACADDR_LEN]; */
+diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
+index c68e5fa..3c67e4c 100644
+--- a/drivers/staging/hv/channel_mgmt.c
++++ b/drivers/staging/hv/channel_mgmt.c
+@@ -181,24 +181,6 @@ void chn_cb_negotiate(void *context)
+ 	struct icmsg_hdr *icmsghdrp;
+ 	struct icmsg_negotiate *negop = NULL;
  
-+	struct net_device *ndev;
-+
- 	/* Holds rndis device info */
- 	void *extension;
- };
-diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 115629f..b046873 100644
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -35,6 +35,8 @@
- static struct netvsc_device *alloc_net_device(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
-+	struct net_device *ndev =
-+		(struct net_device *)hv_get_drvdata(device);
- 
- 	net_device = kzalloc(sizeof(struct netvsc_device), GFP_KERNEL);
- 	if (!net_device)
-@@ -43,8 +45,9 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
- 
- 	net_device->destroy = false;
- 	net_device->dev = device;
--	device->ext = net_device;
-+	net_device->ndev = ndev;
- 
-+	hv_set_drvdata(device, net_device);
- 	return net_device;
- }
- 
-@@ -52,7 +55,8 @@ static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
--	net_device = device->ext;
-+	net_device =
-+		(struct netvsc_device *)hv_get_drvdata(device);
- 	if (net_device && net_device->destroy)
- 		net_device = NULL;
- 
-@@ -63,7 +67,8 @@ static struct netvsc_device *get_inbound_net_device(struct hv_device *device)
- {
- 	struct netvsc_device *net_device;
- 
--	net_device = device->ext;
-+	net_device =
-+		(struct netvsc_device *)hv_get_drvdata(device);
- 
- 	if (!net_device)
- 		goto get_in_err;
-@@ -81,7 +86,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- {
- 	struct nvsp_message *revoke_packet;
- 	int ret = 0;
--	struct net_device *ndev = dev_get_drvdata(&net_device->dev->device);
-+	struct net_device *ndev = net_device->ndev;
- 
- 	/*
- 	 * If we got a section count, it means we received a
-@@ -153,14 +158,12 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 	int t;
- 	struct netvsc_device *net_device;
- 	struct nvsp_message *init_packet;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
- 
- 	net_device = get_outbound_net_device(device);
--	if (!net_device) {
--		netdev_err(ndev, "unable to get net device..."
--			   "device being destroyed?\n");
-+	if (!net_device)
- 		return -ENODEV;
+-	if (channel->util_index >= 0) {
+-		/*
+-		 * This is a properly initialized util channel.
+-		 * Route this callback appropriately and setup state
+-		 * so that we don't need to reroute again.
+-		 */
+-		if (hv_cb_utils[channel->util_index].callback != NULL) {
+-			/*
+-			 * The util driver has established a handler for
+-			 * this service; do the magic.
+-			 */
+-			channel->onchannel_callback =
+-			hv_cb_utils[channel->util_index].callback;
+-			(hv_cb_utils[channel->util_index].callback)(channel);
+-			return;
+-		}
 -	}
-+	ndev = net_device->ndev;
+-
+ 	buflen = PAGE_SIZE;
+ 	buf = kmalloc(buflen, GFP_ATOMIC);
  
- 	net_device->recv_buf =
- 		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
-@@ -269,14 +272,12 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 	struct netvsc_device *net_device;
- 	struct nvsp_message *init_packet;
- 	int ndis_version;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
- 
- 	net_device = get_outbound_net_device(device);
--	if (!net_device) {
--		netdev_err(ndev, "unable to get net device..."
--			   "device being destroyed?\n");
-+	if (!net_device)
- 		return -ENODEV;
--	}
-+	ndev = net_device->ndev;
- 
- 	init_packet = &net_device->channel_init_pkt;
- 
-@@ -357,7 +358,7 @@ int netvsc_device_remove(struct hv_device *device)
- 	struct hv_netvsc_packet *netvsc_packet, *pos;
- 	unsigned long flags;
- 
--	net_device = (struct netvsc_device *)device->ext;
-+	net_device = (struct netvsc_device *)hv_get_drvdata(device);
- 	spin_lock_irqsave(&device->channel->inbound_lock, flags);
- 	net_device->destroy = true;
- 	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
-@@ -381,7 +382,7 @@ int netvsc_device_remove(struct hv_device *device)
- 	 */
- 
- 	spin_lock_irqsave(&device->channel->inbound_lock, flags);
--	device->ext = NULL;
-+	hv_set_drvdata(device, NULL);
- 	spin_unlock_irqrestore(&device->channel->inbound_lock, flags);
- 
- 	/* At this point, no one should be accessing netDevice except in here */
-@@ -407,14 +408,12 @@ static void netvsc_send_completion(struct hv_device *device,
- 	struct netvsc_device *net_device;
- 	struct nvsp_message *nvsp_packet;
- 	struct hv_netvsc_packet *nvsc_packet;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
- 
- 	net_device = get_inbound_net_device(device);
--	if (!net_device) {
--		netdev_err(ndev, "unable to get net device..."
--			   "device being destroyed?\n");
-+	if (!net_device)
- 		return;
--	}
-+	ndev = net_device->ndev;
- 
- 	nvsp_packet = (struct nvsp_message *)((unsigned long)packet +
- 			(packet->offset8 << 3));
-@@ -452,14 +451,12 @@ int netvsc_send(struct hv_device *device,
- 	struct netvsc_device *net_device;
- 	int ret = 0;
- 	struct nvsp_message sendMessage;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
- 
- 	net_device = get_outbound_net_device(device);
--	if (!net_device) {
--		netdev_err(ndev, "net device (%p) shutting down..."
--			   "ignoring outbound packets\n", net_device);
-+	if (!net_device)
- 		return -ENODEV;
--	}
-+	ndev = net_device->ndev;
- 
- 	sendMessage.hdr.msg_type = NVSP_MSG1_TYPE_SEND_RNDIS_PKT;
- 	if (packet->is_data_pkt) {
-@@ -506,7 +503,11 @@ static void netvsc_send_recv_completion(struct hv_device *device,
- 	struct nvsp_message recvcompMessage;
- 	int retries = 0;
+@@ -348,7 +330,6 @@ static void vmbus_process_offer(struct work_struct *work)
+ 	struct vmbus_channel *channel;
+ 	bool fnew = true;
  	int ret;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
-+	struct netvsc_device *net_device =
-+		(struct netvsc_device *)hv_get_drvdata(device);
-+
-+	ndev = net_device->ndev;
- 
- 	recvcompMessage.hdr.msg_type =
- 				NVSP_MSG1_TYPE_SEND_RNDIS_PKT_COMPLETE;
-@@ -552,7 +553,7 @@ static void netvsc_receive_completion(void *context)
- 	u64 transaction_id = 0;
- 	bool fsend_receive_comp = false;
+-	int cnt;
  	unsigned long flags;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
  
- 	/*
- 	 * Even though it seems logical to do a GetOutboundNetDevice() here to
-@@ -560,11 +561,9 @@ static void netvsc_receive_completion(void *context)
- 	 * since we may have disable outbound traffic already.
- 	 */
- 	net_device = get_inbound_net_device(device);
--	if (!net_device) {
--		netdev_err(ndev, "unable to get net device..."
--			   "device being destroyed?\n");
-+	if (!net_device)
- 		return;
+ 	/* The next possible work is rescind handling */
+@@ -403,31 +384,13 @@ static void vmbus_process_offer(struct work_struct *work)
+ 		spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
+ 
+ 		free_channel(newchannel);
+-	} else {
++	} else
+ 		/*
+ 		 * This state is used to indicate a successful open
+ 		 * so that when we do close the channel normally, we
+ 		 * can cleanup properly
+ 		 */
+ 		newchannel->state = CHANNEL_OPEN_STATE;
+-		newchannel->util_index = -1; /* Invalid index */
+-
+-		/* Open IC channels */
+-		for (cnt = 0; cnt < MAX_MSG_TYPES; cnt++) {
+-			if (!uuid_le_cmp(newchannel->offermsg.offer.if_type,
+-				   hv_cb_utils[cnt].data) &&
+-				vmbus_open(newchannel, 2 * PAGE_SIZE,
+-						 2 * PAGE_SIZE, NULL, 0,
+-						 chn_cb_negotiate,
+-						 newchannel) == 0) {
+-				hv_cb_utils[cnt].channel = newchannel;
+-				newchannel->util_index = cnt;
+-
+-				pr_info("%s\n", hv_cb_utils[cnt].log_msg);
+-
+-			}
+-		}
 -	}
-+	ndev = net_device->ndev;
- 
- 	/* Overloading use of the lock. */
- 	spin_lock_irqsave(&net_device->recv_pkt_list_lock, flags);
-@@ -607,16 +606,14 @@ static void netvsc_receive(struct hv_device *device,
- 	int i, j;
- 	int count = 0, bytes_remain = 0;
- 	unsigned long flags;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
- 
- 	LIST_HEAD(listHead);
- 
- 	net_device = get_inbound_net_device(device);
--	if (!net_device) {
--		netdev_err(ndev, "unable to get net device..."
--			   "device being destroyed?\n");
-+	if (!net_device)
- 		return;
--	}
-+	ndev = net_device->ndev;
- 
- 	/*
- 	 * All inbound packets other than send completion should be xfer page
-@@ -784,7 +781,7 @@ static void netvsc_channel_cb(void *context)
- 	struct vmpacket_descriptor *desc;
- 	unsigned char *buffer;
- 	int bufferlen = NETVSC_PACKET_SIZE;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
- 
- 	packet = kzalloc(NETVSC_PACKET_SIZE * sizeof(unsigned char),
- 			 GFP_ATOMIC);
-@@ -793,11 +790,9 @@ static void netvsc_channel_cb(void *context)
- 	buffer = packet;
- 
- 	net_device = get_inbound_net_device(device);
--	if (!net_device) {
--		netdev_err(ndev, "net device (%p) shutting down..."
--			   "ignoring inbound packets\n", net_device);
-+	if (!net_device)
- 		goto out;
--	}
-+	ndev = net_device->ndev;
- 
- 	do {
- 		ret = vmbus_recvpacket_raw(device->channel, buffer, bufferlen,
-@@ -871,7 +866,7 @@ int netvsc_device_add(struct hv_device *device, void *additional_info)
- 	((struct netvsc_device_info *)additional_info)->ring_size;
- 	struct netvsc_device *net_device;
- 	struct hv_netvsc_packet *packet, *pos;
--	struct net_device *ndev = dev_get_drvdata(&device->device);
-+	struct net_device *ndev;
- 
- 	net_device = alloc_net_device(device);
- 	if (!net_device) {
-@@ -879,6 +874,15 @@ int netvsc_device_add(struct hv_device *device, void *additional_info)
- 		goto cleanup;
- 	}
- 
-+	/*
-+	 * Coming into this function, struct net_device * is
-+	 * registered as the driver private data.
-+	 * In alloc_net_device(), we register struct netvsc_device *
-+	 * as the driver private data and stash away struct net_device *
-+	 * in struct netvsc_device *.
-+	 */
-+	ndev = net_device->ndev;
-+
- 	/* Initialize the NetVSC channel extension */
- 	net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE;
- 	spin_lock_init(&net_device->recv_pkt_list_lock);
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index d0189a3..917bae5 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -203,8 +203,13 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- void netvsc_linkstatus_callback(struct hv_device *device_obj,
- 				       unsigned int status)
- {
--	struct net_device *net = dev_get_drvdata(&device_obj->device);
-+	struct net_device *net;
- 	struct net_device_context *ndev_ctx;
-+	struct netvsc_device *net_device;
-+
-+	net_device =
-+		(struct netvsc_device *)hv_get_drvdata(device_obj);
-+	net = net_device->ndev;
- 
- 	if (!net) {
- 		netdev_err(net, "got link status but net device "
-@@ -236,6 +241,11 @@ int netvsc_recv_callback(struct hv_device *device_obj,
- 	void *data;
- 	int i;
- 	unsigned long flags;
-+	struct netvsc_device *net_device;
-+
-+	net_device =
-+		(struct netvsc_device *)hv_get_drvdata(device_obj);
-+	net = net_device->ndev;
- 
- 	if (!net) {
- 		netdev_err(net, "got receive callback but net device"
-@@ -322,9 +332,13 @@ static void netvsc_send_garp(struct work_struct *w)
- {
- 	struct net_device_context *ndev_ctx;
- 	struct net_device *net;
-+	struct netvsc_device *net_device;
- 
- 	ndev_ctx = container_of(w, struct net_device_context, dwork.work);
--	net = dev_get_drvdata(&ndev_ctx->device_ctx->device);
-+	net_device =
-+		(struct netvsc_device *)
-+		hv_get_drvdata(ndev_ctx->device_ctx);
-+	net = net_device->ndev;
- 	netif_notify_peers(net);
  }
  
-@@ -347,7 +361,7 @@ static int netvsc_probe(struct hv_device *dev,
- 	net_device_ctx = netdev_priv(net);
- 	net_device_ctx->device_ctx = dev;
- 	atomic_set(&net_device_ctx->avail, ring_size);
--	dev_set_drvdata(&dev->device, net);
-+	hv_set_drvdata(dev, net);
- 	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
+ /*
+diff --git a/drivers/staging/hv/hv_kvp.c b/drivers/staging/hv/hv_kvp.c
+index 13b0ecf..844c429 100644
+--- a/drivers/staging/hv/hv_kvp.c
++++ b/drivers/staging/hv/hv_kvp.c
+@@ -177,6 +177,13 @@ kvp_respond_to_host(char *key, char *value, int error)
+ 	channel = kvp_transaction.recv_channel;
+ 	req_id = kvp_transaction.recv_req_id;
  
- 	net->netdev_ops = &device_ops;
-@@ -373,7 +387,7 @@ static int netvsc_probe(struct hv_device *dev,
- 		netdev_err(net, "unable to add netvsc device (ret %d)\n", ret);
- 		unregister_netdev(net);
- 		free_netdev(net);
--		dev_set_drvdata(&dev->device, NULL);
-+		hv_set_drvdata(dev, NULL);
- 		return ret;
++	if (channel->onchannel_callback == NULL)
++		/*
++		 * We have raced with util driver being unloaded;
++		 * silently return.
++		 */
++		return;
++
+ 	icmsghdrp = (struct icmsg_hdr *)
+ 			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
+ 	kvp_msg = (struct hv_kvp_msg *)
+diff --git a/drivers/staging/hv/hv_util.c b/drivers/staging/hv/hv_util.c
+index 2475ab2..e2f1632 100644
+--- a/drivers/staging/hv/hv_util.c
++++ b/drivers/staging/hv/hv_util.c
+@@ -251,29 +251,40 @@ static int util_probe(struct hv_device *dev,
+ {
+ 	void *buf = NULL;
+ 	int service = dev_id->driver_data;
++	void (*util_cb)(void *);
++	int ret = -ENOMEM;
++	char *msg = "Util: unknown service\n";
+ 
+ 	switch (service) {
+ 	case HV_SHUTDOWN:
+ 		buf = shut_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 		if (!shut_txf_buf)
+ 			goto error;
++		util_cb = shutdown_onchannelcallback;
++		msg = "Shutdown channel functionality initialized\n";
+ 		break;
+ 
+ 	case HV_TIMESYNC:
+ 		buf = time_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 		if (!time_txf_buf)
+ 			goto error;
++		util_cb = timesync_onchannelcallback;
++		msg = "Timesync channel functionality initialized\n";
+ 		break;
+ 
+ 	case HV_HEARTBEAT:
+ 		buf = hbeat_txf_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 		if (!hbeat_txf_buf)
+ 			goto error;
++		util_cb = heartbeat_onchannelcallback;
++		msg = "Heartbeat channel functionality initialized\n";
+ 		break;
+ 
+ 	case HV_KVP:
+ 		if (hv_kvp_init())
+ 			return -ENODEV;
++		util_cb = hv_kvp_onchannelcallback;
++		msg = "KVP channel functionality initialized\n";
+ 		break;
+ 
+ 	default:
+@@ -281,8 +292,22 @@ static int util_probe(struct hv_device *dev,
+ 		return -ENODEV;
  	}
- 	memcpy(net->dev_addr, device_info.mac_adr, ETH_ALEN);
-@@ -387,8 +401,13 @@ out:
- static int netvsc_remove(struct hv_device *dev,
- 			const struct hv_vmbus_device_id *dev_id)
- {
--	struct net_device *net = dev_get_drvdata(&dev->device);
-+	struct net_device *net;
- 	struct net_device_context *ndev_ctx;
-+	struct netvsc_device *net_device;
+ 
++	ret = vmbus_open(dev->channel, 2 * PAGE_SIZE, 2 * PAGE_SIZE, NULL, 0,
++		util_cb, dev->channel);
 +
-+	net_device =
-+		(struct netvsc_device *)hv_get_drvdata(dev);
-+	net = net_device->ndev;
- 
- 	if (net == NULL) {
- 		dev_err(&dev->device, "No net device to remove\n");
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index b325345..79948be 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -141,7 +141,12 @@ static void put_rndis_request(struct rndis_device *dev,
- static void dump_rndis_message(struct hv_device *hv_dev,
- 			struct rndis_message *rndis_msg)
- {
--	struct net_device *netdev = dev_get_drvdata(&hv_dev->device);
-+	struct net_device *netdev;
-+	struct netvsc_device *net_device;
++	if (ret)
++		goto error1;
 +
-+	net_device =
-+		(struct netvsc_device *)hv_get_drvdata(hv_dev);
-+	netdev = net_device->ndev;
- 
- 	switch (rndis_msg->ndis_msg_type) {
- 	case REMOTE_NDIS_PACKET_MSG:
-@@ -249,7 +254,9 @@ static void rndis_filter_receive_response(struct rndis_device *dev,
- 	struct rndis_request *request = NULL;
- 	bool found = false;
- 	unsigned long flags;
--	struct net_device *ndev = dev_get_drvdata(&dev->net_dev->dev->device);
-+	struct net_device *ndev;
++	pr_info("%s", msg);
 +
-+	ndev = dev->net_dev->ndev;
+ 	return 0;
  
- 	spin_lock_irqsave(&dev->request_lock, flags);
- 	list_for_each_entry(request, &dev->req_list, list_ent) {
-@@ -356,11 +363,17 @@ static void rndis_filter_receive_data(struct rndis_device *dev,
- int rndis_filter_receive(struct hv_device *dev,
- 				struct hv_netvsc_packet	*pkt)
- {
--	struct netvsc_device *net_dev = dev->ext;
-+	struct netvsc_device *net_dev =
-+		(struct netvsc_device *)hv_get_drvdata(dev);
- 	struct rndis_device *rndis_dev;
- 	struct rndis_message rndis_msg;
- 	struct rndis_message *rndis_hdr;
--	struct net_device *ndev = dev_get_drvdata(&dev->device);
-+	struct net_device *ndev;
-+	struct netvsc_device *net_device;
++error1:
++	if (service == HV_KVP)
++		hv_kvp_deinit();
++	else
++		kfree(buf);
 +
-+	net_device =
-+		(struct netvsc_device *)hv_get_drvdata(dev);
-+	ndev = net_device->ndev;
+ error:
+ 	return -ENOMEM;
  
- 	if (!net_dev)
- 		return -EINVAL;
-@@ -517,7 +530,9 @@ static int rndis_filter_set_packet_filter(struct rndis_device *dev,
- 	struct rndis_set_complete *set_complete;
- 	u32 status;
- 	int ret, t;
--	struct net_device *ndev = dev_get_drvdata(&dev->net_dev->dev->device);
-+	struct net_device *ndev;
+@@ -293,6 +318,8 @@ static int util_remove(struct hv_device *dev,
+ {
+ 	int service = dev_id->driver_data;
+ 
++	vmbus_close(dev->channel);
 +
-+	ndev = dev->net_dev->ndev;
+ 	switch (service) {
+ 	case HV_SHUTDOWN:
+ 		kfree(shut_txf_buf);
+@@ -350,23 +377,9 @@ static  struct hv_driver util_drv = {
  
- 	request = get_rndis_request(dev, REMOTE_NDIS_SET_MSG,
- 			RNDIS_MESSAGE_SIZE(struct rndis_set_request) +
-@@ -700,7 +715,7 @@ int rndis_filter_device_add(struct hv_device *dev,
- 
- 
- 	/* Initialize the rndis device */
--	netDevice = dev->ext;
-+	netDevice = (struct netvsc_device *)hv_get_drvdata(dev);
- 
- 	netDevice->extension = rndisDevice;
- 	rndisDevice->net_dev = netDevice;
-@@ -737,7 +752,8 @@ int rndis_filter_device_add(struct hv_device *dev,
- 
- void rndis_filter_device_remove(struct hv_device *dev)
+ static int __init init_hyperv_utils(void)
  {
--	struct netvsc_device *net_dev = dev->ext;
-+	struct netvsc_device *net_dev =
-+		(struct netvsc_device *)hv_get_drvdata(dev);
- 	struct rndis_device *rndis_dev = net_dev->extension;
+-	int ret;
+ 	pr_info("Registering HyperV Utility Driver\n");
  
- 	/* Halt and release the rndis device */
-@@ -752,7 +768,8 @@ void rndis_filter_device_remove(struct hv_device *dev)
+-	ret = vmbus_driver_register(&util_drv);
+-
+-	if (ret != 0)
+-		return ret;
+-
+-	hv_cb_utils[HV_SHUTDOWN_MSG].callback = &shutdown_onchannelcallback;
+-
+-	hv_cb_utils[HV_TIMESYNC_MSG].callback = &timesync_onchannelcallback;
+-
+-	hv_cb_utils[HV_HEARTBEAT_MSG].callback = &heartbeat_onchannelcallback;
+-
+-	hv_cb_utils[HV_KVP_MSG].callback = &hv_kvp_onchannelcallback;
+-
+-	return 0;
++	return vmbus_driver_register(&util_drv);
  
- int rndis_filter_open(struct hv_device *dev)
+ }
+ 
+@@ -374,26 +387,6 @@ static void exit_hyperv_utils(void)
  {
--	struct netvsc_device *netDevice = dev->ext;
-+	struct netvsc_device *netDevice =
-+		(struct netvsc_device *)hv_get_drvdata(dev);
+ 	pr_info("De-Registered HyperV Utility Driver\n");
  
- 	if (!netDevice)
- 		return -EINVAL;
-@@ -762,7 +779,8 @@ int rndis_filter_open(struct hv_device *dev)
+-	if (hv_cb_utils[HV_SHUTDOWN_MSG].channel != NULL)
+-		hv_cb_utils[HV_SHUTDOWN_MSG].channel->onchannel_callback =
+-			&chn_cb_negotiate;
+-	hv_cb_utils[HV_SHUTDOWN_MSG].callback = NULL;
+-
+-	if (hv_cb_utils[HV_TIMESYNC_MSG].channel != NULL)
+-		hv_cb_utils[HV_TIMESYNC_MSG].channel->onchannel_callback =
+-			&chn_cb_negotiate;
+-	hv_cb_utils[HV_TIMESYNC_MSG].callback = NULL;
+-
+-	if (hv_cb_utils[HV_HEARTBEAT_MSG].channel != NULL)
+-		hv_cb_utils[HV_HEARTBEAT_MSG].channel->onchannel_callback =
+-			&chn_cb_negotiate;
+-	hv_cb_utils[HV_HEARTBEAT_MSG].callback = NULL;
+-
+-	if (hv_cb_utils[HV_KVP_MSG].channel != NULL)
+-		hv_cb_utils[HV_KVP_MSG].channel->onchannel_callback =
+-			&chn_cb_negotiate;
+-	hv_cb_utils[HV_KVP_MSG].callback = NULL;
+-
+ 	vmbus_driver_unregister(&util_drv);
+ }
  
- int rndis_filter_close(struct hv_device *dev)
- {
--	struct netvsc_device *netDevice = dev->ext;
-+	struct netvsc_device *netDevice =
-+		(struct netvsc_device *)hv_get_drvdata(dev);
- 
- 	if (!netDevice)
- 		return -EINVAL;
 -- 
 1.7.4.1
 
