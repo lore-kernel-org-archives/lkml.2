@@ -1,299 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab1IHHMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 03:12:32 -0400
-Received: from mga12.intel.com ([143.182.124.36]:21278 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755856Ab1IHHMa (ORCPT
+	id S1758108Ab1IHHVr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 03:21:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41647 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758050Ab1IHHVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 03:12:30 -0400
-From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: [PATCH] Smack: check permissions from user space (v2)
-Date: Thu,  8 Sep 2011 10:12:01 +0300
-Message-Id: <1315465921-23136-1-git-send-email-jarkko.sakkinen@intel.com>
-X-Mailer: git-send-email 1.7.4.1
-Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
+	Thu, 8 Sep 2011 03:21:45 -0400
+Subject: Re: [PATCH] random: add blocking facility to urandom
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Jarod Wilson <jarod@redhat.com>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <201109071743.16811.sgrubb@redhat.com>
+References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
+	 <1315429827.3576.61.camel@lappy> <4E67E396.702@redhat.com>
+	 <201109071743.16811.sgrubb@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 08 Sep 2011 10:21:23 +0300
+Message-ID: <1315466483.3584.7.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a new file into SmackFS called 'access'. Wanted
-Smack permission is written into /smack/access.
-After that result can be read from the opened file.
-If access applies result contains 1 and otherwise
-0. File access is protected from race conditions
-by using simple_transaction_get()/set() API.
+On Wed, 2011-09-07 at 17:43 -0400, Steve Grubb wrote:
+> On Wednesday, September 07, 2011 05:35:18 PM Jarod Wilson wrote:
+> > Another proposal that has been kicked around: a 3rd random chardev, 
+> > which implements this functionality, leaving urandom unscathed. Some 
+> > udev magic or a driver param could move/disable/whatever urandom and put 
+> > this alternate device in its place. Ultimately, identical behavior, but 
+> > the true urandom doesn't get altered at all.
+> 
+> Right, and that's what I was trying to say is that if we do all that and switch out 
+> urandom with something new that does what we need, what's the difference in just 
+> patching the behavior into urandom and calling it a day? Its simpler, less fragile, 
+> admins won't make mistakes setting up the wrong one in a chroot, already has the 
+> FIPS-140 dressing, and is auditable.
 
-Fixes from the previous version:
-- Removed smack.h changes, refactoring left-over
-from previous version.
-- Removed #include <linux/smack.h>, refactoring
-left-over from previous version.
+Whats the difference between changing the behavior of a well defined
+interface (/dev/urandom) which may cause userspace applications to fail,
+in opposed to a non-intrusive usermode CUSE driver which can do exactly
+what you need (and more - if more is required in the future)? None, none
+at all...
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
----
- security/smack/smackfs.c |  180 ++++++++++++++++++++++++++++++----------------
- 1 files changed, 117 insertions(+), 63 deletions(-)
+CUSE supports kernel auditing, admins making mistakes is hardly the
+kernels' problem (unless it makes it easy for them to do mistakes) and
+code moved into the kernel doesn't suddenly become more stable and
+simpler.
 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index f934601..f4c28ee 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -44,6 +44,7 @@ enum smk_inos {
- 	SMK_ONLYCAP	= 9,	/* the only "capable" label */
- 	SMK_LOGGING	= 10,	/* logging */
- 	SMK_LOAD_SELF	= 11,	/* task specific rules */
-+	SMK_ACCESSES	= 12,	/* access policy */
- };
- 
- /*
-@@ -176,71 +177,19 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
- }
- 
- /**
-- * smk_write_load_list - write() for any /smack/load
-- * @file: file pointer, not actually used
-- * @buf: where to get the data from
-- * @count: bytes sent
-- * @ppos: where to start - must be 0
-- * @rule_list: the list of rules to write to
-- * @rule_lock: lock for the rule list
-- *
-- * Get one smack access rule from above.
-- * The format is exactly:
-- *     char subject[SMK_LABELLEN]
-- *     char object[SMK_LABELLEN]
-- *     char access[SMK_ACCESSLEN]
-- *
-- * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
-+ * smk_parse_rule - parse subject, object and access type
-+ * @data: string to be parsed whose size is SMK_LOADLEN
-+ * @rule: parsed entities are stored in here
-  */
--static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
--				size_t count, loff_t *ppos,
--				struct list_head *rule_list,
--				struct mutex *rule_lock)
-+static int smk_parse_rule(const char *data, struct smack_rule *rule)
- {
--	struct smack_rule *rule;
--	char *data;
--	int rc = -EINVAL;
--
--	/*
--	 * No partial writes.
--	 * Enough data must be present.
--	 */
--	if (*ppos != 0)
--		return -EINVAL;
--	/*
--	 * Minor hack for backward compatibility
--	 */
--	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
--		return -EINVAL;
--
--	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
--	if (data == NULL)
--		return -ENOMEM;
--
--	if (copy_from_user(data, buf, count) != 0) {
--		rc = -EFAULT;
--		goto out;
--	}
--
--	/*
--	 * More on the minor hack for backward compatibility
--	 */
--	if (count == (SMK_OLOADLEN))
--		data[SMK_OLOADLEN] = '-';
--
--	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
--	if (rule == NULL) {
--		rc = -ENOMEM;
--		goto out;
--	}
--
- 	rule->smk_subject = smk_import(data, 0);
- 	if (rule->smk_subject == NULL)
--		goto out_free_rule;
-+		return -1;
- 
- 	rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
- 	if (rule->smk_object == NULL)
--		goto out_free_rule;
-+		return -1;
- 
- 	rule->smk_access = 0;
- 
-@@ -252,7 +201,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
- 		rule->smk_access |= MAY_READ;
- 		break;
- 	default:
--		goto out_free_rule;
-+		return -1;
- 	}
- 
- 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 1]) {
-@@ -263,7 +212,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
- 		rule->smk_access |= MAY_WRITE;
- 		break;
- 	default:
--		goto out_free_rule;
-+		return -1;
- 	}
- 
- 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 2]) {
-@@ -274,7 +223,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
- 		rule->smk_access |= MAY_EXEC;
- 		break;
- 	default:
--		goto out_free_rule;
-+		return -1;
- 	}
- 
- 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 3]) {
-@@ -285,7 +234,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
- 		rule->smk_access |= MAY_APPEND;
- 		break;
- 	default:
--		goto out_free_rule;
-+		return -1;
- 	}
- 
- 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 4]) {
-@@ -296,9 +245,74 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
- 		rule->smk_access |= MAY_TRANSMUTE;
- 		break;
- 	default:
--		goto out_free_rule;
-+		return -1;
- 	}
- 
-+	return 0;
-+}
-+
-+/**
-+ * smk_write_load_list - write() for any /smack/load
-+ * @file: file pointer, not actually used
-+ * @buf: where to get the data from
-+ * @count: bytes sent
-+ * @ppos: where to start - must be 0
-+ * @rule_list: the list of rules to write to
-+ * @rule_lock: lock for the rule list
-+ *
-+ * Get one smack access rule from above.
-+ * The format is exactly:
-+ *     char subject[SMK_LABELLEN]
-+ *     char object[SMK_LABELLEN]
-+ *     char access[SMK_ACCESSLEN]
-+ *
-+ * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
-+ */
-+static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos,
-+				struct list_head *rule_list,
-+				struct mutex *rule_lock)
-+{
-+	struct smack_rule *rule;
-+	char *data;
-+	int rc = -EINVAL;
-+
-+	/*
-+	 * No partial writes.
-+	 * Enough data must be present.
-+	 */
-+	if (*ppos != 0)
-+		return -EINVAL;
-+	/*
-+	 * Minor hack for backward compatibility
-+	 */
-+	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
-+		return -EINVAL;
-+
-+	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
-+	if (data == NULL)
-+		return -ENOMEM;
-+
-+	if (copy_from_user(data, buf, count) != 0) {
-+		rc = -EFAULT;
-+		goto out;
-+	}
-+
-+	/*
-+	 * More on the minor hack for backward compatibility
-+	 */
-+	if (count == (SMK_OLOADLEN))
-+		data[SMK_OLOADLEN] = '-';
-+
-+	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
-+	if (rule == NULL) {
-+		rc = -ENOMEM;
-+		goto out;
-+	}
-+
-+	if (smk_parse_rule(data, rule))
-+		goto out_free_rule;
-+
- 	rc = count;
- 	/*
- 	 * smk_set_access returns true if there was already a rule
-@@ -1425,6 +1439,44 @@ static const struct file_operations smk_load_self_ops = {
- 	.write		= smk_write_load_self,
- 	.release        = seq_release,
- };
-+
-+/**
-+ * smk_write_access - handle access check transaction
-+ * @file: file pointer
-+ * @buf: data from user space
-+ * @count: bytes sent
-+ * @ppos: where to start - must be 0
-+ */
-+static ssize_t smk_write_access(struct file *file, const char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	struct smack_rule rule;
-+	char *data;
-+
-+	if (!capable(CAP_MAC_ADMIN))
-+		return -EPERM;
-+
-+	data = simple_transaction_get(file, buf, count);
-+	if (IS_ERR(data))
-+		return PTR_ERR(data);
-+
-+	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule))
-+		return -EINVAL;
-+
-+	data[0] = smk_access(rule.smk_subject, rule.smk_object,
-+			     rule.smk_access, NULL) == 0;
-+
-+	simple_transaction_set(file, 1);
-+	return SMK_LOADLEN;
-+}
-+
-+static const struct file_operations smk_access_ops = {
-+	.write		= smk_write_access,
-+	.read		= simple_transaction_read,
-+	.release	= simple_transaction_release,
-+	.llseek		= generic_file_llseek,
-+};
-+
- /**
-  * smk_fill_super - fill the /smackfs superblock
-  * @sb: the empty superblock
-@@ -1459,6 +1511,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
- 			"logging", &smk_logging_ops, S_IRUGO|S_IWUSR},
- 		[SMK_LOAD_SELF] = {
- 			"load-self", &smk_load_self_ops, S_IRUGO|S_IWUGO},
-+		[SMK_ACCESSES] = {
-+			"access", &smk_access_ops, S_IRUGO|S_IWUSR},
- 		/* last one */
- 			{""}
- 	};
 -- 
-1.7.4.1
+
+Sasha.
 
