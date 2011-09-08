@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1IHX3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:29:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34460 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755269Ab1IHX3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755252Ab1IHX3p (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 8 Sep 2011 19:29:45 -0400
-Subject: Why I want PTRACE_O_TRACESTOP option
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 08 Sep 2011 18:50:01 +0200
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1315500802.18043.45.camel@dhcp-25-63.brq.redhat.com>
-Mime-Version: 1.0
+Received: from mx1.redhat.com ([209.132.183.28]:36213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755158Ab1IHX3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:29:40 -0400
+Date: Thu, 8 Sep 2011 18:11:30 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Greg Dietsche <gregory.dietsche@cuw.edu>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] iwlegacy: change IWL_WARN to IWL_DEBUG_HT in
+ iwl4965_tx_agg_start
+Message-ID: <20110908161129.GC2195@redhat.com>
+References: <1314537977-20097-1-git-send-email-Gregory.Dietsche@cuw.edu>
+ <20110829122013.GA3597@redhat.com>
+ <4E5B9533.6000109@cuw.edu>
+ <20110829140032.GA1573@redhat.com>
+ <20110906150131.GA7322@redhat.com>
+ <4E683BBE.3060105@cuw.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E683BBE.3060105@cuw.edu>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seeing that rationale behind my proposal to turn PT_SEIZED bit
-into an ordinary ptrace option is not well understood,
-I need to explain it better.
+Hi Greg
 
-A bit of history I gleaned by comparing old kernels.
+On Wed, Sep 07, 2011 at 10:51:26PM -0500, Greg Dietsche wrote:
+> On 09/06/2011 10:01 AM, Stanislaw Gruszka wrote:
+> >I put patches here:
+> >http://people.redhat.com/sgruszka/iwlegacy_cleanup.tar.bz2
+> >
+> >They are on top of wireless-testing tree.
+> <snip>
+> >Series include your 2 patches. You can test this cleanup and
+> >apply your new changes on top. I'll not do any further cleanup
+> >for some time now, perhaps continue when I got public git tree.
+> >
+> Thanks! I've re-worked my patches and you can find them here:
+> http://www.gregd.org/stuff/linux/iwlegacy_cleanup_greg.tar.bz2
+> 
+> I also decided to play with github a little bit:
+> git://github.com/dietsche/linux.git and pushed two branches:
+>   1) wireless-next-iwlegacy-stanislaw - your patch set
+>   2) wireless-next-iwlegacy-stanislaw-greg - a branch that has my
+> additional patches.
+> `git format-patch wireless-next-iwlegacy-stanislaw..wireless-next-iwlegacy-stanislaw-greg`
+> will generate the patches that are in the link i posted above.
 
-In the time immemorial, in pre-2.4.0 days, someone added
-PTRACE_SETOPTIONS, as an architecture-specific ptrace op,
-with a single option bit, PTRACE_O_TRACESYSGOOD == 1 (bit 0).
-In 2.4.0, only i386, mips64, sh supported it.
+Cool!
 
-In other words, someone introduced PTRACE_SETOPTIONS as
-a fix for one of ptrace problems (namely, for the problem
-that syscall stop is not distinguishable from SIGTRAP).
+> The first two patches in my series are the ones that I think folks
+> should take a closer look at. The rest are pretty safe.
 
-In 2.4.x kernels and in 2.5 until 2.5.45 inclusive,
-more architectures copied this code, but no new options
-were introduced.
+The second patch is ok. I'm not sure about first one, but we can get
+rid of "ctx = il_rxon_ctx_from_vif(vif)" at all, because we have
+only one context. Removing il_rxon_context structure from
+iwlegacy driver is my long term plan, you can look at that
+if you wish.
 
-Then Daniel Jacobowitz in 2002 consolidated cut-n-paste
-code - made archtecture-independent PTRACE_SETOPTIONS
-(that's why there is PTRACE_OLDSETOPTIONS - arch-dependent
-ops have different range assigned to them), and added new
-option bits: PTRACE_O_TRACEFORK, PTRACE_O_TRACEVFORK,
-PTRACE_O_TRACECLONE, PTRACE_O_TRACEEXEC. (He did more
-than this, but I track history of ptrace options here).
-https://lkml.org/lkml/2002/9/18/291
-https://lkml.org/lkml/2002/9/18/293
-https://lkml.org/lkml/2002/9/18/294
-These option bits took bit positions 1,2,3,4.
-Corresponding generated PTRACE_EVENTs have values 1,2,3,4.
-These options made it easier to catch children
-of ptraced processes, and to suppress notorious
-post-execve SIGTRAP.
-These changes went into 2.5.46.
-
-In 2003, Daniel added two more options - see
-https://lkml.org/lkml/2003/2/6/160 -
-PTRACE_O_TRACEVFORKDONE and PTRACE_O_TRACEEXIT.
-Naturally, they took bits 5 and 6,
-and corresponding PTRACE_EVENTs have values 5 and 6.
-These options made it possible to examine process state
-at exit, and to know when it's safe to reinsert breakpoints
-into vfork parent.
-These changes went into 2.5.60.
-
-Now we came and decided to tackle next batch of ptrace bugs:
-non-working group-stops and SIGSTOP races on (auto-)attach.
-Second bug can't be fixed by PTRACE_SETOPTIONS, so we had to add
-new attach command, PTRACE_SEIZE. We also added a new event,
-PTRACE_EVENT_STOP, which took on next available value, 7.
-Feeling emboldened, we hooked new group-stop machinery to the same
-internal PT_SEIZE bit which indicates that tracee was seized,
-instead of adding an option, as people before us did.
-
-Consider what will happen when a next ptrace fix will require
-a way to change ptrace API at runtime. A new option will likely
-be introduced, say, PTRACE_O_TRACEPONY, with next available
-bit position 7, and perhaps some new event will be generated,
-PTRACE_EVENT_PONY, with value.... yes, it can't be 7,
-PTRACE_EVENT_STOP took it. So it will probably be 8.
-
-Which will look illogical. Why bit position doesn't match event value?
-Why PTRACE_SEIZE people decided to be special and broke
-established pattern of matching option bits and event values?
-
-Of course, by that time it will be too late to fix it!
-
-
-That's why I propose to not go down that path. Instead, try to match
-the previous pattern of ptrace evolution more closely. Do not introduce
-hidden PT_SEIZE bit. Instead, introduce just another option bit with bit
-position 7. Since setting options on attach is needed anyway
-and we are going to implement it in PTRACE_SEIZE, the "SIGSTOP races on
-(auto-)attach can't be fixed by PTRACE_SETOPTIONS" problem no longer
-exists: we _can_ set this new option on attach now.
-
-That's how I ended up with the proposal to introduce option
-PTRACE_O_TRACESTOP = (1 << 7) which matches PTRACE_EVENT_STOP = 7 we
-already added.
-
-I do not do it specifically in order to make fixed group-stop behavior
-settable by PTRACE_SETOPTIONS too (even though this will be a side
-effect of proposed change). In fact, in light of possible races on API
-switch I think we should recommend to userspace to set all options
-at attach time, via PTRACE_SEIZE. I believe even today there are races
-already: setting PTRACE_O_TRACEEXEC can race with post-execve SIGTRAP
-generation, for example. We won't be introducing a new problem.
-
-
-Is my proposal clearer now? What do you guys think?
-
--- 
-vda
-
-
+Thanks
+Stanislaw
