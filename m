@@ -1,491 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab1IHXTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:19:05 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:39622 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab1IHXSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:18:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Deepthy Ravi <deepthy.ravi@ti.com>
-Subject: Re: [PATCH 3/8] tvp514x: Migrate to media-controller framework
-Date: Thu, 8 Sep 2011 19:20:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
-Cc: linux-media@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mchehab@infradead.org,
-        g.liakhovetski@gmx.de, Vaibhav Hiremath <hvaibhav@ti.com>
-References: <1315488900-16106-1-git-send-email-deepthy.ravi@ti.com>
-In-Reply-To: <1315488900-16106-1-git-send-email-deepthy.ravi@ti.com>
+	id S1754174Ab1IHXUR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:20:17 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19885 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753134Ab1IHXUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:20:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,351,1312182000"; 
+   d="scan'208";a="46859540"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "R, Durgadoss" <durgadoss.r@intel.com>
+Date: Thu, 8 Sep 2011 23:07:03 +0530
+Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
+ max17042 fuel gauge
+Thread-Topic: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
+ max17042 fuel gauge
+Thread-Index: AcxtOsRnz/g5r7rjSFiRud9kKwPRzgBEs2mQ
+Message-ID: <12D0C12AF19E15409D57F22566E88EF50975BF58AE@bgsmsx501.gar.corp.intel.com>
+References: <14735031.596001315385240106.JavaMail.weblogic@epml15>
+In-Reply-To: <14735031.596001315385240106.JavaMail.weblogic@epml15>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="ks_c_5601-1987"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109081920.38758.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p88NKLYn027777
 
-Hi,
+Hi Anton,
 
-On Thursday 08 September 2011 15:35:00 Deepthy Ravi wrote:
-> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> -----Original Message-----
+> From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
+> Sent: Wednesday, September 07, 2011 2:17 PM
+> To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
+> Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> Subject: Re: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
 > 
-> Migrate tvp5146 driver to media controller framework. The
-> driver registers as a sub-device entity to MC framwork
-> and sub-device to V4L2 layer. The default format code was
-> V4L2_MBUS_FMT_YUYV10_2X10. Changed it to V4L2_MBUS_FMT_UYVY8_2X8
-> and hence added the new format code to ccdc and isp format
-> arrays.
+> Sender : Pallala, Ramakrishna<ramakrishna.pallala@intel.com> Date : 2011-09-07 17:30
+> (GMT+09:00)
+> > Hi MyungJoo,
+> >
+> > > -----Original Message-----
+> > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
+> > > Sent: Monday, September 05, 2011 6:55 AM
+> > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
+> > > Cc: Anton Vorontsov; dwmw2@infradead.org; ¹Ú°æ¹Î; Wolfram Sang; R, Durgadoss
+> > > Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
+> > >
+> > > Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02 15:45
+> > > (GMT+09:00)
+> > > >
+> > > > In max17042_get_property(...), the values returned by
+> > > > max17042_read_reg are directly assigned to the variables,
+> > > > even if the read results in an error.
+> > > >
+> > > > This patch checks for the return code from max17042_read_reg and
+> > > > exits the function if there is any error.
+> > > >
+> > > > Signed-off-by: Ramakrishna Pallala
+> > > > ---
+> > > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
+> > > > 1 files changed, 58 insertions(+), 27 deletions(-)
+> > > >
+> > >
+> > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> >
+> > Thanks for the Ack.
+> > When can I expect the patch to be merged ?
+> >
+> > Thanks,
+> > Ram
+> >
+> 
+> Hello Ram,
+> 
+> Although I'd be so glad to be able to merge patches of MAX17042 (and
+> MAX8997/8998/8952/8903/...?) by myself; however, I'm not a maintainer of MAX17042.
+> 
+> I guess you need to wait for Anton.
+> 
+> Cheers,
+> MyungJoo
 
-Thanks for the patch.
+When can I expect the patch to be merged ?
 
-> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
-> ---
->  drivers/media/video/omap3isp/ispccdc.c  |    1 +
->  drivers/media/video/omap3isp/ispvideo.c |    3 +
->  drivers/media/video/tvp514x.c           |  241 +++++++++++++++++++++++++---
->  include/media/v4l2-subdev.h             |    7 +-
-
-This should be split in 3 patches.
-
-I've already posted patches to support UYVY8_2X8 in the OMAP3 ISP driver to 
-the linux-media mailing list. Can you reuse them ?
-
->  4 files changed, 222 insertions(+), 30 deletions(-)
-> 
-> diff --git a/drivers/media/video/omap3isp/ispccdc.c
-> b/drivers/media/video/omap3isp/ispccdc.c index 9d3459d..d58fe45 100644
-> --- a/drivers/media/video/omap3isp/ispccdc.c
-> +++ b/drivers/media/video/omap3isp/ispccdc.c
-> @@ -57,6 +57,7 @@ static const unsigned int ccdc_fmts[] = {
->  	V4L2_MBUS_FMT_SRGGB12_1X12,
->  	V4L2_MBUS_FMT_SBGGR12_1X12,
->  	V4L2_MBUS_FMT_SGBRG12_1X12,
-> +	V4L2_MBUS_FMT_UYVY8_2X8,
->  };
-> 
->  /*
-> diff --git a/drivers/media/video/omap3isp/ispvideo.c
-> b/drivers/media/video/omap3isp/ispvideo.c index fd965ad..d5b8236 100644
-> --- a/drivers/media/video/omap3isp/ispvideo.c
-> +++ b/drivers/media/video/omap3isp/ispvideo.c
-> @@ -100,6 +100,9 @@ static struct isp_format_info formats[] = {
->  	{ V4L2_MBUS_FMT_YUYV8_1X16, V4L2_MBUS_FMT_YUYV8_1X16,
->  	  V4L2_MBUS_FMT_YUYV8_1X16, 0,
->  	  V4L2_PIX_FMT_YUYV, 16, },
-> +	{ V4L2_MBUS_FMT_UYVY8_2X8, V4L2_MBUS_FMT_UYVY8_2X8,
-> +	  V4L2_MBUS_FMT_UYVY8_2X8, 0,
-> +	  V4L2_PIX_FMT_UYVY, 16, },
->  };
-> 
->  const struct isp_format_info *
-> diff --git a/drivers/media/video/tvp514x.c b/drivers/media/video/tvp514x.c
-> index 9b3e828..10f3e87 100644
-> --- a/drivers/media/video/tvp514x.c
-> +++ b/drivers/media/video/tvp514x.c
-> @@ -32,11 +32,14 @@
->  #include <linux/slab.h>
->  #include <linux/delay.h>
->  #include <linux/videodev2.h>
-> +#include <linux/v4l2-mediabus.h>
-> 
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-common.h>
-> -#include <media/v4l2-mediabus.h>
->  #include <media/v4l2-chip-ident.h>
-> +#include <media/v4l2-subdev.h>
-> +#include <media/v4l2-ctrls.h>
-> +
->  #include <media/v4l2-ctrls.h>
->  #include <media/tvp514x.h>
-> 
-> @@ -78,6 +81,8 @@ struct tvp514x_std_info {
->  	unsigned long height;
->  	u8 video_std;
->  	struct v4l2_standard standard;
-> +	unsigned int mbus_code;
-> +	struct v4l2_mbus_framefmt format;
->  };
-> 
->  static struct tvp514x_reg tvp514x_reg_list_default[0x40];
-> @@ -101,6 +106,7 @@ struct tvp514x_decoder {
->  	struct v4l2_ctrl_handler hdl;
->  	struct tvp514x_reg tvp514x_regs[ARRAY_SIZE(tvp514x_reg_list_default)];
->  	const struct tvp514x_platform_data *pdata;
-> +	struct media_pad pad;
-> 
->  	int ver;
->  	int streaming;
-> @@ -207,29 +213,46 @@ static struct tvp514x_reg tvp514x_reg_list_default[]
-> = { static const struct tvp514x_std_info tvp514x_std_list[] = {
->  	/* Standard: STD_NTSC_MJ */
->  	[STD_NTSC_MJ] = {
-> -	 .width = NTSC_NUM_ACTIVE_PIXELS,
-> -	 .height = NTSC_NUM_ACTIVE_LINES,
-> -	 .video_std = VIDEO_STD_NTSC_MJ_BIT,
-> -	 .standard = {
-> -		      .index = 0,
-> -		      .id = V4L2_STD_NTSC,
-> -		      .name = "NTSC",
-> -		      .frameperiod = {1001, 30000},
-> -		      .framelines = 525
-> -		     },
-> -	/* Standard: STD_PAL_BDGHIN */
-> +		.width = NTSC_NUM_ACTIVE_PIXELS,
-> +		.height = NTSC_NUM_ACTIVE_LINES,
-> +		.video_std = VIDEO_STD_NTSC_MJ_BIT,
-> +		.mbus_code = V4L2_MBUS_FMT_UYVY8_2X8,
-> +		.standard = {
-> +			.index = 0,
-> +			.id = V4L2_STD_NTSC,
-> +			.name = "NTSC",
-> +			.frameperiod = {1001, 30000},
-> +			.framelines = 525
-> +		},
-> +		.format = {
-> +			.width = NTSC_NUM_ACTIVE_PIXELS,
-> +			.height = NTSC_NUM_ACTIVE_LINES,
-> +			.code = V4L2_MBUS_FMT_UYVY8_2X8,
-> +			.field = V4L2_FIELD_INTERLACED,
-> +			.colorspace = V4L2_COLORSPACE_SMPTE170M,
-> +		}
-> +
->  	},
-> +	/* Standard: STD_PAL_BDGHIN */
->  	[STD_PAL_BDGHIN] = {
-> -	 .width = PAL_NUM_ACTIVE_PIXELS,
-> -	 .height = PAL_NUM_ACTIVE_LINES,
-> -	 .video_std = VIDEO_STD_PAL_BDGHIN_BIT,
-> -	 .standard = {
-> -		      .index = 1,
-> -		      .id = V4L2_STD_PAL,
-> -		      .name = "PAL",
-> -		      .frameperiod = {1, 25},
-> -		      .framelines = 625
-> -		     },
-> +		.width = PAL_NUM_ACTIVE_PIXELS,
-> +		.height = PAL_NUM_ACTIVE_LINES,
-> +		.video_std = VIDEO_STD_PAL_BDGHIN_BIT,
-> +		.mbus_code = V4L2_MBUS_FMT_UYVY8_2X8,
-> +		.standard = {
-> +			.index = 1,
-> +			.id = V4L2_STD_PAL,
-> +			.name = "PAL",
-> +			.frameperiod = {1, 25},
-> +			.framelines = 625
-> +		},
-> +		.format = {
-> +			.width = PAL_NUM_ACTIVE_PIXELS,
-> +			.height = PAL_NUM_ACTIVE_LINES,
-> +			.code = V4L2_MBUS_FMT_UYVY8_2X8,
-> +			.field = V4L2_FIELD_INTERLACED,
-> +			.colorspace = V4L2_COLORSPACE_SMPTE170M,
-> +		},
->  	},
->  	/* Standard: need to add for additional standard */
->  };
-> @@ -792,7 +815,7 @@ tvp514x_enum_mbus_fmt(struct v4l2_subdev *sd, unsigned
-> index, if (index)
->  		return -EINVAL;
-> 
-> -	*code = V4L2_MBUS_FMT_YUYV10_2X10;
-> +	*code = V4L2_MBUS_FMT_UYVY8_2X8;
->  	return 0;
->  }
-> 
-> @@ -815,7 +838,7 @@ tvp514x_mbus_fmt(struct v4l2_subdev *sd, struct
-> v4l2_mbus_framefmt *f) /* Calculate height and width based on current
-> standard */
->  	current_std = decoder->current_std;
-> 
-> -	f->code = V4L2_MBUS_FMT_YUYV10_2X10;
-> +	f->code = V4L2_MBUS_FMT_UYVY8_2X8;
->  	f->width = decoder->std_list[current_std].width;
->  	f->height = decoder->std_list[current_std].height;
->  	f->field = V4L2_FIELD_INTERLACED;
-> @@ -952,11 +975,154 @@ static int tvp514x_s_stream(struct v4l2_subdev *sd,
-> int enable) return err;
->  }
-> 
-> +static int tvp514x_s_power(struct v4l2_subdev *sd, int on)
-> +{
-> +	struct tvp514x_decoder *decoder = to_decoder(sd);
-> +
-> +	if (decoder->pdata && decoder->pdata->s_power)
-
-The probe() method will fail if pdata is NULL, so you can check decoder-
->pdata->s_power only.
-
-> +		return decoder->pdata->s_power(sd, on);
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> +* tvp514x_enum_mbus_code - V4L2 sensor interface handler for pad_ops
-> +* @subdev: pointer to standard V4L2 sub-device structure
-> +* @fh: pointer to standard V4L2 sub-device file handle
-> +* @code: pointer to v4l2_subdev_pad_mbus_code_enum structure
-> +*/
-> +static int tvp514x_enum_mbus_code(struct v4l2_subdev *subdev,
-> +		struct v4l2_subdev_fh *fh,
-> +		struct v4l2_subdev_mbus_code_enum *code)
-> +{
-> +	if (code->index >= ARRAY_SIZE(tvp514x_std_list))
-> +		return -EINVAL;
-> +	code->code = V4L2_MBUS_FMT_UYVY8_2X8;
-> +
-> +	return 0;
-> +}
-> +
-> +static int tvp514x_get_pad_format(struct v4l2_subdev *subdev,
-> +		struct v4l2_subdev_fh *fh,
-> +		struct v4l2_subdev_format *fmt)
-> +{
-> +	struct tvp514x_decoder *decoder = to_decoder(subdev);
-> +	enum tvp514x_std current_std;
-> +
-> +	/* query the current standard */
-> +	current_std = tvp514x_query_current_std(subdev);
-> +	if (current_std == STD_INVALID) {
-> +		v4l2_err(subdev, "Unable to query std\n");
-> +		return -EINVAL;
-> +	}
-
-Hmmmm... I'm not sure if I really like this. I have little experience with 
-analog video sources, so this code could be required, but having the format 
-changing dynamically out of the driver's control depending on the video source 
-looks to me like it will bring a whole new share of issues. I'd appreciate 
-comments and advises from developers used to the analog world on this.
-
-> +
-> +	fmt->format = decoder->std_list[current_std].format;
-> +
-> +	return 0;
-> +}
-> +
-> +static int tvp514x_set_pad_format(struct v4l2_subdev *subdev,
-> +		struct v4l2_subdev_fh *fh,
-> +		struct v4l2_subdev_format *fmt)
-> +{
-> +	struct tvp514x_decoder *decoder = to_decoder(subdev);
-> +	enum tvp514x_std current_std;
-> +
-> +	/* query the current standard */
-> +	current_std = tvp514x_query_current_std(subdev);
-> +	if (current_std == STD_INVALID) {
-> +		v4l2_err(subdev, "Unable to query std\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	fmt->format.width = decoder->std_list[current_std].width;
-> +	fmt->format.height = decoder->std_list[current_std].height;
-> +	fmt->format.code = V4L2_MBUS_FMT_UYVY8_2X8;
-> +	fmt->format.field = V4L2_FIELD_INTERLACED;
-> +	fmt->format.colorspace = V4L2_COLORSPACE_SMPTE170M;
-> +
-> +	return 0;
-> +}
-> +
-> +static int tvp514x_enum_frame_size(struct v4l2_subdev *subdev,
-> +		struct v4l2_subdev_fh *fh,
-> +		struct v4l2_subdev_frame_size_enum *fse)
-> +{
-> +	struct tvp514x_decoder *decoder = to_decoder(subdev);
-> +	enum tvp514x_std current_std;
-> +
-> +	if (fse->code != V4L2_MBUS_FMT_UYVY8_2X8)
-> +		return -EINVAL;
-> +
-> +	/* query the current standard */
-> +	current_std = tvp514x_query_current_std(subdev);
-> +	if (current_std == STD_INVALID) {
-> +		v4l2_err(subdev, "Unable to query std\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	fse->min_width = decoder->std_list[current_std].width;
-> +	fse->min_height = decoder->std_list[current_std].height;
-> +	fse->max_width = fse->min_width;
-> +	fse->max_height = fse->min_height;
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> +* V4L2 subdev internal operations
-> +*/
-> +static int tvp514x_registered(struct v4l2_subdev *subdev)
-> +{
-> +	enum tvp514x_std current_std;
-> +
-> +	tvp514x_s_stream(subdev, 1);
-> +	/* query the current standard */
-> +	current_std = tvp514x_query_current_std(subdev);
-> +	if (current_std == STD_INVALID) {
-> +		v4l2_err(subdev, "Unable to query std\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	tvp514x_s_stream(subdev, 0);
-> +
-> +	return 0;
-> +}
-> +
-> +static int tvp514x_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh
-> *fh) +{
-> +	enum tvp514x_std current_std;
-> +
-> +	tvp514x_s_stream(subdev, 1);
-> +	/* query the current standard */
-> +	current_std = tvp514x_query_current_std(subdev);
-> +	if (current_std == STD_INVALID) {
-> +		v4l2_err(subdev, "Unable to query std\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	tvp514x_s_stream(subdev, 0);
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> +* V4L2 subdev core operations
-> +*/
-> +static int tvp514x_g_chip_ident(struct v4l2_subdev *subdev,
-> +				struct v4l2_dbg_chip_ident *chip)
-> +{
-> +	struct i2c_client *client = v4l2_get_subdevdata(subdev);
-> +
-> +	return v4l2_chip_ident_i2c_client(client, chip, V4L2_IDENT_TVP5146, 0);
-> +}
-> +
-
-g_chip_ident isn't mandatory for MC-enabled subdev drivers, I'm not sure if 
-you should add it.
-
->  static const struct v4l2_ctrl_ops tvp514x_ctrl_ops = {
->  	.s_ctrl = tvp514x_s_ctrl,
->  };
-> 
->  static const struct v4l2_subdev_core_ops tvp514x_core_ops = {
-> +	.g_chip_ident = tvp514x_g_chip_ident,
->  	.g_ext_ctrls = v4l2_subdev_g_ext_ctrls,
->  	.try_ext_ctrls = v4l2_subdev_try_ext_ctrls,
->  	.s_ext_ctrls = v4l2_subdev_s_ext_ctrls,
-> @@ -965,6 +1131,12 @@ static const struct v4l2_subdev_core_ops
-> tvp514x_core_ops = { .queryctrl = v4l2_subdev_queryctrl,
->  	.querymenu = v4l2_subdev_querymenu,
->  	.s_std = tvp514x_s_std,
-> +	.s_power = tvp514x_s_power,
-> +};
-> +
-> +static struct v4l2_subdev_internal_ops tvp514x_subdev_internal_ops = {
-> +	.registered	= tvp514x_registered,
-> +	.open		= tvp514x_open,
->  };
-> 
->  static const struct v4l2_subdev_video_ops tvp514x_video_ops = {
-> @@ -979,9 +1151,17 @@ static const struct v4l2_subdev_video_ops
-> tvp514x_video_ops = { .s_stream = tvp514x_s_stream,
->  };
-> 
-> +static const struct v4l2_subdev_pad_ops tvp514x_pad_ops = {
-> +	.enum_mbus_code = tvp514x_enum_mbus_code,
-> +	.enum_frame_size = tvp514x_enum_frame_size,
-> +	.get_fmt = tvp514x_get_pad_format,
-> +	.set_fmt = tvp514x_set_pad_format,
-> +};
-> +
->  static const struct v4l2_subdev_ops tvp514x_ops = {
->  	.core = &tvp514x_core_ops,
->  	.video = &tvp514x_video_ops,
-> +	.pad = &tvp514x_pad_ops,
->  };
-> 
->  static struct tvp514x_decoder tvp514x_dev = {
-> @@ -1005,6 +1185,7 @@ tvp514x_probe(struct i2c_client *client, const struct
-> i2c_device_id *id) {
->  	struct tvp514x_decoder *decoder;
->  	struct v4l2_subdev *sd;
-> +	int ret;
-> 
->  	/* Check if the adapter supports the needed features */
->  	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-> @@ -1046,6 +1227,17 @@ tvp514x_probe(struct i2c_client *client, const
-> struct i2c_device_id *id) sd = &decoder->sd;
->  	v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
-> 
-> +	decoder->sd.internal_ops = &tvp514x_subdev_internal_ops;
-> +	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-
-To be consistent you should probably use decoder->sd.flags here (or use sd-> 
-directly on the other lines).
-
-> +	decoder->pad.flags = MEDIA_PAD_FL_SOURCE;
-> +	decoder->sd.entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
-> +	ret = media_entity_init(&decoder->sd.entity, 1, &decoder->pad, 0);
-> +	if (ret < 0) {
-> +		v4l2_err(client, "failed to register as a media entity!!\n");
-> +		kfree(decoder);
-> +		return ret;
-> +	}
-> +
->  	v4l2_ctrl_handler_init(&decoder->hdl, 5);
->  	v4l2_ctrl_new_std(&decoder->hdl, &tvp514x_ctrl_ops,
->  		V4L2_CID_BRIGHTNESS, 0, 255, 1, 128);
-> @@ -1087,6 +1279,7 @@ static int tvp514x_remove(struct i2c_client *client)
-> 
->  	v4l2_device_unregister_subdev(sd);
->  	v4l2_ctrl_handler_free(&decoder->hdl);
-> +	media_entity_cleanup(&decoder->sd.entity);
->  	kfree(decoder);
->  	return 0;
->  }
-> diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
-> index 257da1a..0e9aa30 100644
-> --- a/include/media/v4l2-subdev.h
-> +++ b/include/media/v4l2-subdev.h
-> @@ -514,9 +514,8 @@ struct v4l2_subdev_internal_ops {
->     stand-alone or embedded in a larger struct.
->   */
->  struct v4l2_subdev {
-> -#if defined(CONFIG_MEDIA_CONTROLLER)
->  	struct media_entity entity;
-> -#endif
-> +
->  	struct list_head list;
->  	struct module *owner;
->  	u32 flags;
-> @@ -547,16 +546,13 @@ struct v4l2_subdev {
->   */
->  struct v4l2_subdev_fh {
->  	struct v4l2_fh vfh;
-> -#if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
->  	struct v4l2_mbus_framefmt *try_fmt;
->  	struct v4l2_rect *try_crop;
-> -#endif
->  };
-> 
->  #define to_v4l2_subdev_fh(fh)	\
->  	container_of(fh, struct v4l2_subdev_fh, vfh)
-> 
-> -#if defined(CONFIG_VIDEO_V4L2_SUBDEV_API)
->  static inline struct v4l2_mbus_framefmt *
->  v4l2_subdev_get_try_format(struct v4l2_subdev_fh *fh, unsigned int pad)
->  {
-> @@ -568,7 +564,6 @@ v4l2_subdev_get_try_crop(struct v4l2_subdev_fh *fh,
-> unsigned int pad) {
->  	return &fh->try_crop[pad];
->  }
-> -#endif
-> 
->  extern const struct v4l2_file_operations v4l2_subdev_fops;
-
--- 
-Regards,
-
-Laurent Pinchart
+Thanks,
+Ram
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
