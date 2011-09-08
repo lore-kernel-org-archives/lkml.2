@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab1IHXb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:31:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46129 "EHLO mx1.redhat.com"
+	id S1755487Ab1IHXcF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:32:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49185 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab1IHXbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:31:53 -0400
-Date: Thu, 8 Sep 2011 19:35:59 +0200
+	id S1755166Ab1IHXb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:31:59 -0400
+Date: Thu, 8 Sep 2011 19:59:26 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, neilb@suse.de, paul@paulmenage.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: +
-	cgroups-more-safe-tasklist-locking-in-cgroup_attach_proc.patch
-	added to -mm tree
-Message-ID: <20110908173559.GA26492@redhat.com>
-References: <201109012108.p81L8X0b029484@imap1.linux-foundation.org> <20110902123706.GB26764@redhat.com> <20110902140015.GA31530@redhat.com> <20110902141550.GA24012@unix33.andrew.cmu.edu> <20110902155534.GA4595@redhat.com> <20110907235931.GA22545@unix33.andrew.cmu.edu>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, matthltc@us.ibm.com,
+        paul@paulmenage.org, containers@lists.linux-foundation.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] freezer: fix wait_event_freezable/__thaw_task races
+Message-ID: <20110908175926.GA26986@redhat.com>
+References: <20110904184626.GA30101@redhat.com> <20110905023315.GB9807@htj.dyndns.org> <20110905162012.GA4445@redhat.com> <20110906032846.GA18425@mtj.dyndns.org> <20110906151836.GA15568@redhat.com> <20110906152539.GA16899@redhat.com> <20110906155332.GF18425@mtj.dyndns.org> <20110907182156.GA13909@redhat.com> <20110907182217.GB13909@redhat.com> <20110908010530.GD3987@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110907235931.GA22545@unix33.andrew.cmu.edu>
+In-Reply-To: <20110908010530.GD3987@mtj.dyndns.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07, Ben Blum wrote:
+Hi,
+
+On 09/08, Tejun Heo wrote:
 >
-> On Fri, Sep 02, 2011 at 05:55:34PM +0200, Oleg Nesterov wrote:
-> > On 09/02, Ben Blum wrote:
-> > >
-> > > But I don't think the check becomes pointless? If a sub-thread execs
-> > > right before read_lock(&tasklist_lock) (but after the find_task_by_vpid
-> > > in attach_task_by_pid), that causes the case that the comment refers to.
-> >
-> > How so? The comment says:
-> >
-> > 	* a race with de_thread from another thread's exec() may strip
-> > 	* us of our leadership, making while_each_thread unsafe
-> >
-> > This is not true.
+> Hello,
 >
-> Sorry, the comment is unclear.
+> On Wed, Sep 07, 2011 at 08:22:17PM +0200, Oleg Nesterov wrote:
+> > wait_event_freezable() and wait_event_freezable_timeout() stop
+> > the waiting if try_to_freeze() fails. This is not right, we can
+> > race with __thaw_task() and in this case
+> >
+> > 	- wait_event_freezable() returns the wrong ERESTARTSYS
+> >
+> > 	- wait_event_freezable_timeout() can return the positive
+> > 	  value while condition == F
+>
+> Indeed, nice catch.  This one actually is pretty dangerous.  We
+> probably want to make a separate fix for this and backport it to
+> -stable?
 
-No, the comment is clear. In fact it was me who pointed out we can't
-do while_each_thread() blindly. And now I am tried to confuse you ;)
+And I forgot to mention that wait_event_freezable_timeout() doesn't
+handle -ERESTARTSYS at all.
 
-So, sorry for noise, and thanks for correcting me. Somehow I forgot
-this is not safe even under tasklist.
+But I don't think -stable needs this fix. According to grep, nobody
+check the returned value, and none of the callers plays with signals.
 
-Partly I was confused because I was thinking about the patch I suggested,
-if we use ->siglock we are safe. If lock_task_sighand(task) succeeds,
-this task should be on list.
+> > Change the code to always check __retval/condition before return.
+> >
+> > Note: with or without this patch the timeout logic looks strange,
+> > probably we should recalc timeout if try_to_freeze() returns T.
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> Yeap, with freezable_with_signal gone, this looks correct & simpler to
+> me
 
-Anyway, I was wrong, sorry.
+I don't really understand this... set_freezable_with_signal() has a
+lot of problems, yes... But even if it wasn't removed this fix makes
+sense anyway, afaics.
+
+If freezable_with_signal caller does wait_event_freezable_timeout(),
+__retval becomes -ERESTARTSYS after freeze_task(). The next iteration
+will return 0 with the KERN_ERR message from schedule_timeout().
+
+> but it would be nice if you can sprinkle some documentation while
+> at it. :)
+
+But they already have the comment ;) What can I add?
 
 Oleg.
-
---- x/kernel/cgroup.c
-+++ x/kernel/cgroup.c
-@@ -2000,6 +2000,7 @@ int cgroup_attach_proc(struct cgroup *cg
- 	/* threadgroup list cursor and array */
- 	struct task_struct *tsk;
- 	struct flex_array *group;
-+	unsigned long flags;
- 	/*
- 	 * we need to make sure we have css_sets for all the tasks we're
- 	 * going to move -before- we actually start moving them, so that in
-@@ -2027,19 +2028,10 @@ int cgroup_attach_proc(struct cgroup *cg
- 		goto out_free_group_list;
- 
- 	/* prevent changes to the threadgroup list while we take a snapshot. */
--	rcu_read_lock();
--	if (!thread_group_leader(leader)) {
--		/*
--		 * a race with de_thread from another thread's exec() may strip
--		 * us of our leadership, making while_each_thread unsafe to use
--		 * on this task. if this happens, there is no choice but to
--		 * throw this task away and try again (from cgroup_procs_write);
--		 * this is "double-double-toil-and-trouble-check locking".
--		 */
--		rcu_read_unlock();
--		retval = -EAGAIN;
-+	retval = -EAGAIN;
-+	if (!lock_task_sighand(leader, &flags))
- 		goto out_free_group_list;
--	}
-+
- 	/* take a reference on each task in the group to go in the array. */
- 	tsk = leader;
- 	i = 0;
-@@ -2055,9 +2047,9 @@ int cgroup_attach_proc(struct cgroup *cg
- 		BUG_ON(retval != 0);
- 		i++;
- 	} while_each_thread(leader, tsk);
-+	unlock_task_sighand(leader, &flags);
- 	/* remember the number of threads in the array for later. */
- 	group_size = i;
--	rcu_read_unlock();
- 
- 	/*
- 	 * step 1: check that we can legitimately attach to the cgroup.
 
