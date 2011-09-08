@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab1IHKcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:32:42 -0400
-Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:32907
-	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab1IHKcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:32:41 -0400
-Message-ID: <4E6899C7.20105@kernel.dk>
-Date: Thu, 08 Sep 2011 12:32:39 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1758225Ab1IHKgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 06:36:19 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:51938 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758153Ab1IHKgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 06:36:17 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 17/26] richacl: Permission check algorithm
+In-Reply-To: <20110907215022.GI8074@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-18-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907215022.GI8074@fieldses.org>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Thu, 08 Sep 2011 16:04:44 +0530
+Message-ID: <877h5j5nln.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] elevator.c: use ELV_NAME_MAX instead of magic number
- 16 for chosen_elevator
-References: <4E637BA8.6030300@gmail.com> <4E684331.501@gmail.com>
-In-Reply-To: <4E684331.501@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 11090810-6078-0000-0000-0000007B592B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-09-08 06:23, Wang Sheng-Hui wrote:
-> On 2011年09月04日 21:22, Wang Sheng-Hui wrote:
->> We have ELV_NAME_MAX defined to 16, and hence we should use it
->> instead of the magic nubmer 16 for elevator's name string.
->>
->> The patch is against 3.1-rc3.
->>
->> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
->> ---
->>  block/elevator.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/block/elevator.c b/block/elevator.c
->> index a3b64bc..cb332cb 100644
->> --- a/block/elevator.c
->> +++ b/block/elevator.c
->> @@ -182,7 +182,7 @@ static void elevator_attach(struct request_queue *q, struct elevator_queue *eq,
->>  	eq->elevator_data = data;
->>  }
->>  
->> -static char chosen_elevator[16];
->> +static char chosen_elevator[ELV_NAME_MAX];
->>  
->>  static int __init elevator_setup(char *str)
->>  {
+On Wed, 7 Sep 2011 17:50:22 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Mon, Sep 05, 2011 at 10:55:39PM +0530, Aneesh Kumar K.V wrote:
+> > From: Andreas Gruenbacher <agruen@kernel.org>
+> > 
+> > As in the standard POSIX file permission model, each process is the
+> > owner, group, or other file class.  A process is
+> > 
+> >   - in the owner file class if it owns the file,
+> >   - in the group file class if it is in the file's owning group or it
+> >     matches any of the user or group entries, and
+> >   - in the other file class otherwise.
+> > 
+> > Each file class is associated with a file mask.
+> > 
+> > A richacl grants a requested access if the NFSv4 acl in the richacl
+> > grants the requested permissions (according to the NFSv4 permission
+> > check algorithm) and the file mask that applies to the process includes
+> > the requested permissions.
 > 
-> Any comment?
+> I assume that by default any ui normally recalculates an upper-bound
+> mask automatically when you add an ace, as the posix setfacl does, so
+> the user doesn't have to think about masks too much?
+> 
 
-Looks fine, applied.
+yes. richacl userspace command does this.
 
--- 
-Jens Axboe
+-aneesh
 
