@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab1IHX0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:26:42 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:44989 "EHLO e5.ny.us.ibm.com"
+	id S1754884Ab1IHX12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:27:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:55996 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913Ab1IHX0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:26:37 -0400
-Date: Thu, 8 Sep 2011 10:41:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lin Ming <mlin@ss.pku.edu.cn>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/55] Preview of RCU changes for 3.2
-Message-ID: <20110908174139.GL2671@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110906180015.GA2560@linux.vnet.ibm.com>
- <CAF1ivSZ_THTHMPhXcPSJovxoi1WBvpr07ktMuYL39oode8kz0w@mail.gmail.com>
+	id S1752620Ab1IHX11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:27:27 -0400
+Message-ID: <4E68FB64.9080308@goop.org>
+Date: Thu, 08 Sep 2011 10:29:08 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF1ivSZ_THTHMPhXcPSJovxoi1WBvpr07ktMuYL39oode8kz0w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+References: <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <4E67A71A.5070903@goop.org> <4E67ACB6.40107@redhat.com> <4E67C15B.3000408@goop.org> <4E6873FE.3040603@redhat.com>
+In-Reply-To: <4E6873FE.3040603@redhat.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 10:39:57PM +0800, Lin Ming wrote:
-> On Wed, Sep 7, 2011 at 2:00 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> >
-> > For a testing-only version of this patchset from git, please see the
-> > following subject-to-rebase (and subject-to-Hera-availability) branch:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
-> 
-> kernel.org is still down.
-> Would you put the tree somewhere else(maybe github.com)?
+On 09/08/2011 12:51 AM, Avi Kivity wrote:
+> On 09/07/2011 10:09 PM, Jeremy Fitzhardinge wrote:
+>> On 09/07/2011 10:41 AM, Avi Kivity wrote:
+>> >>  Hm, I'm interested to know what you're thinking in more detail. 
+>> Can you
+>> >>  leave an NMI pending before you block in the same way you can with
+>> >>  "sti;halt" with normal interrupts?
+>> >
+>> >
+>> >  Nope.  But you can do
+>> >
+>> >     if (regs->rip in critical section)
+>> >             regs->rip = after_halt;
+>> >
+>> >  and effectively emulate it.  The critical section is something like
+>> >
+>> >      critical_section_start:
+>> >          if (woken_up)
+>> >              goto critical_section_end;
+>> >          hlt
+>> >      critical_section_end:
+>>
+>> Hm.  It's a pity you have to deliver an actual interrupt to implement
+>> the kick though.
+>
+> I don't think it's that expensive, especially compared to the
+> double-context-switch and vmexit of the spinner going to sleep.  On
+> AMD we do have to take an extra vmexit (on IRET) though.
 
-Hello, Lin,
+Fair enough - so if the vcpu blocks itself, it ends up being rescheduled
+in the NMI handler, which then returns to the lock slowpath.  And if its
+a normal hlt, then you can also take interrupts if they're enabled while
+spinning.
 
-I am unlikely to figure out why github doesn't like me by the end of
-the week, so please feel free to post the patches somewhere.  If you
-have a -tip tree handy, you could apply them on top of tip/master.
-If you don't have a -tip tree handy, they should also apply cleanly
-onto v3.0.
+And if you get nested NMIs (since you can get multiple spurious kicks,
+or from other NMI sources), then one NMI will get latched and any others
+will get dropped?
 
-							Thanx, Paul
+> Well we could have a specialized sleep/wakeup hypercall pair like Xen,
+> but I'd like to avoid it if at all possible.
+
+Yeah, that's something that just falls out of the existing event channel
+machinery, so it isn't something that I specifically added.  But it does
+mean that you simply end up with a hypercall returning on kick, with no
+real complexities.
+
+    J
