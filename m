@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab1IICPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 22:15:40 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43527 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486Ab1IICPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 22:15:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Sep 2011 11:14:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, jeremy@goop.org, hughd@google.com,
-        ngupta@vflare.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@kernel.dk, riel@redhat.com, hannes@cmpxchg.org, matthew@wil.cx,
-        Chris Mason <chris.mason@oracle.com>, sjenning@linux.vnet.ibm.com,
-        jackdachef@gmail.com, cyclonusj@gmail.com, levinsasha928@gmail.com
-Subject: Re: [PATCH V8 3/4] mm: frontswap: add swap hooks and extend
- try_to_unuse
-Message-Id: <20110909111445.4821d326.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <52b5aee3-f424-42ae-830f-d1cf64fa49ef@default>
-References: <20110829164929.GA27216@ca-server1.us.oracle.com
- 20110907162703.7f8116b9.akpm@linux-foundation.org>
-	<52b5aee3-f424-42ae-830f-d1cf64fa49ef@default>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932661Ab1IICPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 22:15:55 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:45547 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932610Ab1IICPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 22:15:50 -0400
+Date: Thu, 8 Sep 2011 11:01:59 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, matthltc@us.ibm.com, rjw@sisk.pl,
+        paul@paulmenage.org, containers@lists.linux-foundation.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] freezer: kill unused set_freezable_with_signal()
+Message-ID: <20110908180159.GA4197@count0.beaverton.ibm.com>
+References: <1314988070-12244-1-git-send-email-tj@kernel.org>
+ <1314988070-12244-7-git-send-email-tj@kernel.org>
+ <20110904184626.GA30101@redhat.com>
+ <20110905023315.GB9807@htj.dyndns.org>
+ <20110905162012.GA4445@redhat.com>
+ <20110906032846.GA18425@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110906032846.GA18425@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11090902-5112-0000-0000-000000353FD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011 08:50:11 -0700 (PDT)
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-
-> > From: Andrew Morton [mailto:akpm@linux-foundation.org]
-> > Sent: Wednesday, September 07, 2011 5:27 PM
-> > To: Dan Magenheimer
-> > Subject: Re: [PATCH V8 3/4] mm: frontswap: add swap hooks and extend try_to_unuse
-> > 
-> > On Mon, 29 Aug 2011 09:49:29 -0700
-> > Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-> > 
-> > > -static int try_to_unuse(unsigned int type)
-> > > +int try_to_unuse(unsigned int type, bool frontswap,
-> > 
-> > Are patches 2 and 3 in the wrong order?
+On Tue, Sep 06, 2011 at 12:28:55PM +0900, Tejun Heo wrote:
+> Hello,
 > 
-> No, they've applied in that order and built after each patch
-> properly for well over a year.  At a minimum, frontswap.h must
-> be created before patch 3of4, though I suppose the introduction
-> of frontswap.c could be after patch 3of4... Note that frontswap.c
-> (which calls try_to_unuse()) is non-functional (and isn't even built)
-> until after patch 4of4 is applied.
-> 
-> There is enough interdependency between the four parts
-> that perhaps it should all be a single commit.  I split
-> it up for reviewer's convenience but apparently different
-> reviewers use different review processes than I anticipated. :-}
-> 
-
-IIRC, I said 'please move this change of line to patch 1'.
-
-Thanks,
--Kame
-
-This was my 1st reply.
-
-> > From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Subject: [PATCH V7 1/4] mm: frontswap: swap data structure changes
+> On Mon, Sep 05, 2011 at 06:20:12PM +0200, Oleg Nesterov wrote:
+> > Perhaps it is correct... Just I do not understand what it should do.
+> > I thought it is "wait_for_event && do_not_block_freezer". And at first
+> > glance the code looks as if it tries to do this. Say, in the "likely"
+> > case we restart wait_event_interruptible() after refrigerator().
 > > 
-> > This first patch of four in the frontswap series makes available core
-> > swap data structures (swap_lock, swap_list and swap_info) that are
-> > needed by frontswap.c but we don't need to expose them to the dozens
-> > of files that include swap.h so we create a new swapfile.h just to
-> > extern-ify these.
-> > 
-> > Also add frontswap-related elements to swap_info_struct.  Frontswap_map
-> > points to vzalloc'ed one-bit-per-swap-page metadata that indicates
-> > whether the swap page is in frontswap or in the device and frontswap_pages
-> > counts how many pages are in frontswap.
-> > 
-> > [v7: rebase to 3.0-rc3]
-> > [v7: JBeulich@novell.com: add new swap struct elements only if config'd]
-> > [v6: rebase to 3.0-rc1]
-> > [v5: no change from v4]
-> > [v4: rebase to 2.6.39]
-> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
-> > Acked-by: Jan Beulich <JBeulich@novell.com>
-> > Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> > Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> > Cc: Hugh Dickins <hughd@google.com>
-> > Cc: Johannes Weiner <hannes@cmpxchg.org>
-> > Cc: Nitin Gupta <ngupta@vflare.org>
-> > Cc: Matthew Wilcox <matthew@wil.cx>
-> > Cc: Chris Mason <chris.mason@oracle.com>
-> > Cc: Rik Riel <riel@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > But this looks racy. Suppose that freezing() is already false when
+> > try_to_freeze() or __refrigerator() is called. Say, cgroup_freezer does
+> > freeze_task() + __thaw_task(). Why it returns -ERESTARTSYS in this case?
 > 
-> Hmm....could you modify mm/swapfile.c and remove 'static' in the same patch ?
-> 
+> It may return -ERESTARTSYS when not strictly necessary but given that
+> it's supposed to trigger restart anyway I don't think it's actually
+> broken (it doesn't break the contract of the wait).  Another thing to
+> note is that kthread freezing via cgroup is almost fundamentally
+> broken.  With the removal of freezable_with_signal, this shouldn't be
+> an issue anymore although cgroup_freezer still needs to be fixed to
+> account for kthreads for xstate transitions (it currently triggers
+> BUG_ON).
+
+Looking at the code and docs I realize I didn't explicitly mention that
+kthreads could not be frozen by the cgroup freezer. However, the code did
+not allow it. When freezing tasks the cgroup freezer always did:
+
+	freeze_task(task, true)
+
+which would only freeze tasks without PF_FREEZER_NOSIG due to the second
+"sig_only" parameter. I believe this means it could not be used to
+freeze kthreads.
+
+My feeling is kthreads should not be "managed" directly by userspace.
+Especially if that includes the ability to arbitrarily stop or freeze them.
+So it seems more appropriate to explicitly disallow freezing of kthreads
+via the cgroup freezer.
+
+Cheers,
+	-Matt Helsley
 
