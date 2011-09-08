@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab1IHApL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:45:11 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63262 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757621Ab1IHApI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:45:08 -0400
-Message-ID: <4E680EBC.4000804@gmail.com>
-Date: Thu, 08 Sep 2011 10:39:24 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
+	id S1757683Ab1IHAtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:49:12 -0400
+Received: from shutemov.name ([188.40.19.243]:38260 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757597Ab1IHAtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 20:49:11 -0400
+Date: Thu, 8 Sep 2011 03:49:07 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: drain all stocks for the cgroup before read usage
+Message-ID: <20110908004906.GA8499@shutemov.name>
+References: <1315098933-29464-1-git-send-email-kirill@shutemov.name>
+ <20110905085913.8f84278e.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110905101607.cd946a46.nishimura@mxp.nes.nec.co.jp>
+ <20110907213340.GA7690@shutemov.name>
+ <20110908091914.6daeab1e.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Mark Salter <msalter@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Pass correct length to strnlen_user in fs/exec.c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110908091914.6daeab1e.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mail client was still mis-behaving. Should be fixed now.
+On Thu, Sep 08, 2011 at 09:19:14AM +0900, KAMEZAWA Hiroyuki wrote:
+> > Should we have field 'ram' (or 'memory') for rss+cache in memory.stat?
+> > 
+> 
+> Why do you think so ?
 
----
-Replace valid_arg_len function in fs/exec.c with max_arg_len function
-and pass the correct length to strnlen_user.
+It may be useful for scripting purpose. Just an idea.
 
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
----
-
-diff --git a/fs/exec.c b/fs/exec.c
-index e19588c..12d2f7f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -296,9 +296,9 @@ err:
- 	return err;
- }
- 
--static bool valid_arg_len(struct linux_binprm *bprm, long len)
-+static long max_arg_len(struct linux_binprm *bprm)
- {
--	return len <= MAX_ARG_STRLEN;
-+	return MAX_ARG_STRLEN;
- }
- 
- #else
-@@ -354,9 +354,9 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
- 	return 0;
- }
- 
--static bool valid_arg_len(struct linux_binprm *bprm, long len)
-+static long max_arg_len(struct linux_binprm *bprm)
- {
--	return len <= bprm->p;
-+	return bprm->p;
- }
- 
- #endif /* CONFIG_MMU */
-@@ -474,18 +474,19 @@ static int copy_strings(int argc, struct user_arg_ptr argv,
- 		const char __user *str;
- 		int len;
- 		unsigned long pos;
-+		long max_len = max_arg_len(bprm);
- 
- 		ret = -EFAULT;
- 		str = get_user_arg_ptr(argv, argc);
- 		if (IS_ERR(str))
- 			goto out;
- 
--		len = strnlen_user(str, MAX_ARG_STRLEN);
--		if (!len || len > MAX_ARG_STRLEN)
-+		len = strnlen_user(str, max_len);
-+		if (!len)
- 			goto out;
- 
- 		ret = -E2BIG;
--		if (!valid_arg_len(bprm, len))
-+		if (len > max_len)
- 			goto out;
- 
- 		/* We're going to work our way backwords. */
-
+-- 
+ Kirill A. Shutemov
