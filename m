@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab1IHIyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 04:54:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37144 "EHLO mx1.redhat.com"
+	id S932461Ab1IHI6p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 04:58:45 -0400
+Received: from 8bytes.org ([88.198.83.132]:45248 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932384Ab1IHIyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 04:54:24 -0400
-Date: Thu, 8 Sep 2011 10:54:04 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: close race between charge and putback
-Message-ID: <20110908085404.GA1316@redhat.com>
-References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
- <20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
+	id S932402Ab1IHI6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 04:58:44 -0400
+Date: Thu, 8 Sep 2011 10:58:42 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Don Dutile <ddutile@redhat.com>
+Cc: Greg KH <gregkh@suse.de>, Ohad Ben-Cohen <ohad@wizery.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, David Brown <davidb@codeaurora.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 02/10] Driver core: Add iommu_ops to bus_type
+Message-ID: <20110908085842.GD31674@8bytes.org>
+References: <1315410113-26608-1-git-send-email-joerg.roedel@amd.com> <1315410113-26608-3-git-send-email-joerg.roedel@amd.com> <20110907184750.GA920@suse.de> <20110907191919.GA31674@8bytes.org> <20110907194445.GA2526@suse.de> <4E67D5F7.6070103@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4E67D5F7.6070103@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu,  8 Sep 2011 09:40:22 +0200
-> Johannes Weiner <jweiner@redhat.com> wrote:
-> 
-> > There is a potential race between a thread charging a page and another
-> > thread putting it back to the LRU list:
-> > 
-> > charge:                         putback:
-> > SetPageCgroupUsed               SetPageLRU
-> > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
-> > 
-> 
-> I assumed that all pages are charged before added to LRU.
-> (i.e. event happens in charge->lru_lock->putback order.)
-> 
-> But hmm, this assumption may be bad for maintainance.
-> Do you find a code which adds pages to LRU before charge ?
-> 
-> Hmm, if there are codes which recharge the page to other memcg,
-> it will cause bug and my assumption may be harmful.
+On Wed, Sep 07, 2011 at 04:37:11PM -0400, Don Dutile wrote:
+> On 09/07/2011 03:44 PM, Greg KH wrote:
 
-Swap slots are read optimistically into swapcache and put to the LRU,
-then charged upon fault.  Fuse apparently recharges uncharged LRU
-pages.  That's why we have the lrucare stuff in the first place, no?
-Or did I misunderstand your question?
+>> Why are you pushing this down into the driver core?  What other busses
+>> becides PCI use/need this?
+>>
+>> If you can have a different IOMMU driver on the same bus, then wouldn't
+>> this be a per-device thing instead of a per-bus thing?
+>>
+> And given the dma api takes a struct device *, it'd be more efficient
+> to be tied into the device structure.
+
+More efficient in what way? Currently no dma-api implementation uses the
+iommu-api directly. It is planned to change that, of course. But the
+dma-api implementation will use the iommu_map/iommu_unmap functions which
+get an iommu_domain parameter and no device structure. Thats why the
+domain structure keeps an iommu_ops pointer too.
+
+> Device structure would get iommu ops set by parent(bus);
+> if a bus (segment) doesn't provide a unique/different/layered IOMMU
+> then the parent bus, it inherits the parent's iommu-ops.
+> setting the iommu-ops in the root bus struct, seeds the iommu-ops
+> for the (PCI) tree.
+>
+> For intel & amd IOMMUs, in early pci (bios,root?) init, you would
+> seed the pci root busses with appropriate IOMMU support (based on
+> dmar/drhd & ivrs/ivhd data structures, respectively), and
+> then modify the PCI code to do the inheritence (PPB code inherits
+> unless specific device driver for a given PPB vid-did loads a
+> different iommu-ops for that segment/branch).
+>
+> This would enable different types of IOMMUs for different devices
+> (or PCI segments, or branches of PCI trees) that are designed for
+> different tasks -- simple IOMMUs for legacy devices; complicated, io-page-faulting
+> IOMMUs for plug-in, high-end devices on virtualizing servers for PCI (SRIOV) endpoints.
+
+This only works for pci, but the iommu-api is not pci-only.
+
+> and as Greg indicates, is only relevant to PCI.
+
+We already have non-pci iommu drivers implementing the iommu-api. So
+this is certainly relevant outside pci too.
+
+	Joerg
+
