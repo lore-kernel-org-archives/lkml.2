@@ -1,321 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1IHXO6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:14:58 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:46291 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab1IHXOO (ORCPT
+	id S1753518Ab1IHXPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:15:34 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:64386 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab1IHXP2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:14:14 -0400
-X-IronPort-AV: E=Sophos;i="4.68,351,1312156800"; 
-   d="scan'208";a="7684330"
-Date: Thu, 8 Sep 2011 19:45:29 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>
-Subject: [PATCH v4 2/2] xen: modify kernel mappings corresponding to granted
- pages
-Message-ID: <alpine.DEB.2.00.1109081944150.12963@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 8 Sep 2011 19:15:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Message-ID: <52b5aee3-f424-42ae-830f-d1cf64fa49ef@default>
+Date: Thu, 8 Sep 2011 08:50:11 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        riel@redhat.com, hannes@cmpxchg.org, matthew@wil.cx,
+        Chris Mason <chris.mason@oracle.com>, sjenning@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
+        cyclonusj@gmail.com, levinsasha928@gmail.com
+Subject: RE: [PATCH V8 3/4] mm: frontswap: add swap hooks and extend
+ try_to_unuse
+References: <20110829164929.GA27216@ca-server1.us.oracle.com
+ 20110907162703.7f8116b9.akpm@linux-foundation.org>
+In-Reply-To: <20110907162703.7f8116b9.akpm@linux-foundation.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A020207.4E694C8F.0157,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we want to use granted pages for AIO, changing the mappings of a user
-vma and the corresponding p2m is not enough, we also need to update the
-kernel mappings accordingly.
-In order to avoid the complexity of dealing with highmem, we allocated
-the pages lowmem.
-We issue a HYPERVISOR_grant_table_op right away in
-m2p_add_override and we remove the mappings using another
-HYPERVISOR_grant_table_op in m2p_remove_override.
-Considering that m2p_add_override and m2p_remove_override are called
-once per page we use multicalls and hypercall batching.
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Sent: Wednesday, September 07, 2011 5:27 PM
+> To: Dan Magenheimer
+> Subject: Re: [PATCH V8 3/4] mm: frontswap: add swap hooks and extend try_to_unuse
+> 
+> On Mon, 29 Aug 2011 09:49:29 -0700
+> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> 
+> > -static int try_to_unuse(unsigned int type)
+> > +int try_to_unuse(unsigned int type, bool frontswap,
+> 
+> Are patches 2 and 3 in the wrong order?
 
-Use the kmap_op pointer directly as argument to do the mapping as it is
-guaranteed to be present up until the unmapping is done.
-Before issuing any unmapping multicalls, we need to make sure that the
-mapping has already being done, because we need the kmap->handle to be
-set correctly.
+No, they've applied in that order and built after each patch
+properly for well over a year.  At a minimum, frontswap.h must
+be created before patch 3of4, though I suppose the introduction
+of frontswap.c could be after patch 3of4... Note that frontswap.c
+(which calls try_to_unuse()) is non-functional (and isn't even built)
+until after patch 4of4 is applied.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/include/asm/xen/page.h     |    5 ++-
- arch/x86/xen/p2m.c                  |   68 +++++++++++++++++++++++++++++------
- drivers/block/xen-blkback/blkback.c |    2 +-
- drivers/xen/gntdev.c                |   27 +++++++++++++-
- drivers/xen/grant-table.c           |    6 ++--
- include/xen/grant_table.h           |    1 +
- 6 files changed, 92 insertions(+), 17 deletions(-)
+There is enough interdependency between the four parts
+that perhaps it should all be a single commit.  I split
+it up for reviewer's convenience but apparently different
+reviewers use different review processes than I anticipated. :-}
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 7ff4669..0ce1884 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -12,6 +12,7 @@
- #include <asm/pgtable.h>
- 
- #include <xen/interface/xen.h>
-+#include <xen/grant_table.h>
- #include <xen/features.h>
- 
- /* Xen machine address */
-@@ -31,8 +32,10 @@ typedef struct xpaddr {
- #define INVALID_P2M_ENTRY	(~0UL)
- #define FOREIGN_FRAME_BIT	(1UL<<(BITS_PER_LONG-1))
- #define IDENTITY_FRAME_BIT	(1UL<<(BITS_PER_LONG-2))
-+#define GRANT_FRAME_BIT	(1UL<<(BITS_PER_LONG-3))
- #define FOREIGN_FRAME(m)	((m) | FOREIGN_FRAME_BIT)
- #define IDENTITY_FRAME(m)	((m) | IDENTITY_FRAME_BIT)
-+#define GRANT_FRAME(m)	((m) | GRANT_FRAME_BIT)
- 
- /* Maximum amount of memory we can handle in a domain in pages */
- #define MAX_DOMAIN_PAGES						\
-@@ -48,7 +51,7 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
- 					     unsigned long pfn_e);
- 
- extern int m2p_add_override(unsigned long mfn, struct page *page,
--			    bool clear_pte);
-+			    struct gnttab_map_grant_ref *kmap_op);
- extern int m2p_remove_override(struct page *page, bool clear_pte);
- extern struct page *m2p_find_override(unsigned long mfn);
- extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 58efeb9..23f8465 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -161,7 +161,9 @@
- #include <asm/xen/page.h>
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
-+#include <xen/grant_table.h>
- 
-+#include "multicalls.h"
- #include "xen-ops.h"
- 
- static void __init m2p_override_init(void);
-@@ -676,7 +678,8 @@ static unsigned long mfn_hash(unsigned long mfn)
- }
- 
- /* Add an MFN override for a particular page */
--int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
-+int m2p_add_override(unsigned long mfn, struct page *page,
-+		struct gnttab_map_grant_ref *kmap_op)
- {
- 	unsigned long flags;
- 	unsigned long pfn;
-@@ -699,9 +702,20 @@ int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
- 	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
- 		return -ENOMEM;
- 
--	if (clear_pte && !PageHighMem(page))
--		/* Just zap old mapping for now */
--		pte_clear(&init_mm, address, ptep);
-+	if (kmap_op != NULL) {
-+		if (!PageHighMem(page)) {
-+			struct multicall_space mcs = xen_mc_entry(sizeof(*kmap_op));
-+
-+			MULTI_grant_table_op(mcs.mc,
-+					GNTTABOP_map_grant_ref, kmap_op, 1);
-+
-+			xen_mc_issue(PARAVIRT_LAZY_MMU);
-+		}
-+		page->private |= GRANT_FRAME_BIT;
-+		/* let's use dev_bus_addr to record the old mfn instead */
-+		kmap_op->dev_bus_addr = page->index;
-+		page->index = (unsigned long) kmap_op;
-+	}
- 	spin_lock_irqsave(&m2p_override_lock, flags);
- 	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
- 	spin_unlock_irqrestore(&m2p_override_lock, flags);
-@@ -735,13 +749,45 @@ int m2p_remove_override(struct page *page, bool clear_pte)
- 	spin_lock_irqsave(&m2p_override_lock, flags);
- 	list_del(&page->lru);
- 	spin_unlock_irqrestore(&m2p_override_lock, flags);
--	set_phys_to_machine(pfn, page->index);
- 
--	if (clear_pte && !PageHighMem(page))
--		set_pte_at(&init_mm, address, ptep,
--				pfn_pte(pfn, PAGE_KERNEL));
--		/* No tlb flush necessary because the caller already
--		 * left the pte unmapped. */
-+	if (clear_pte) {
-+		struct gnttab_map_grant_ref *map_op =
-+			(struct gnttab_map_grant_ref *) page->index;
-+		set_phys_to_machine(pfn, map_op->dev_bus_addr);
-+		if (!PageHighMem(page)) {
-+			struct multicall_space mcs;
-+			struct gnttab_unmap_grant_ref *unmap_op;
-+
-+			/*
-+			 * Has the grant_op mapping multicall being issued? If not,
-+			 * make sure it is called now.
-+			 */
-+			if (map_op->handle == -1)
-+				xen_mc_flush();
-+			if (map_op->handle == -1) {
-+				printk(KERN_WARNING "m2p_remove_override: pfn %lx mfn %lx, "
-+						"failed to modify kernel mappings", pfn, mfn);
-+				return -1;
-+			}
-+
-+			mcs = xen_mc_entry(sizeof(struct gnttab_unmap_grant_ref));
-+			unmap_op = mcs.args;
-+			unmap_op->host_addr = map_op->host_addr;
-+			unmap_op->handle = map_op->handle;
-+			unmap_op->dev_bus_addr = 0;
-+
-+			MULTI_grant_table_op(mcs.mc,
-+					GNTTABOP_unmap_grant_ref, unmap_op, 1);
-+
-+			xen_mc_issue(PARAVIRT_LAZY_MMU);
-+
-+			set_pte_at(&init_mm, address, ptep,
-+					pfn_pte(pfn, PAGE_KERNEL));
-+			__flush_tlb_single(address);
-+			map_op->host_addr = 0;
-+		}
-+	} else
-+		set_phys_to_machine(pfn, page->index);
- 
- 	return 0;
- }
-@@ -758,7 +804,7 @@ struct page *m2p_find_override(unsigned long mfn)
- 	spin_lock_irqsave(&m2p_override_lock, flags);
- 
- 	list_for_each_entry(p, bucket, lru) {
--		if (p->private == mfn) {
-+		if ((p->private & (~GRANT_FRAME_BIT)) == mfn) {
- 			ret = p;
- 			break;
- 		}
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 2330a9a..1540792 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -396,7 +396,7 @@ static int xen_blkbk_map(struct blkif_request *req,
- 			continue;
- 
- 		ret = m2p_add_override(PFN_DOWN(map[i].dev_bus_addr),
--			blkbk->pending_page(pending_req, i), false);
-+			blkbk->pending_page(pending_req, i), NULL);
- 		if (ret) {
- 			pr_alert(DRV_PFX "Failed to install M2P override for %lx (ret: %d)\n",
- 				 (unsigned long)map[i].dev_bus_addr, ret);
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index 7b9b1d1..bfe1271 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -83,6 +83,7 @@ struct grant_map {
- 	struct ioctl_gntdev_grant_ref *grants;
- 	struct gnttab_map_grant_ref   *map_ops;
- 	struct gnttab_unmap_grant_ref *unmap_ops;
-+	struct gnttab_map_grant_ref   *kmap_ops;
- 	struct page **pages;
- };
- 
-@@ -116,10 +117,12 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
- 	add->grants    = kzalloc(sizeof(add->grants[0])    * count, GFP_KERNEL);
- 	add->map_ops   = kzalloc(sizeof(add->map_ops[0])   * count, GFP_KERNEL);
- 	add->unmap_ops = kzalloc(sizeof(add->unmap_ops[0]) * count, GFP_KERNEL);
-+	add->kmap_ops  = kzalloc(sizeof(add->kmap_ops[0])  * count, GFP_KERNEL);
- 	add->pages     = kzalloc(sizeof(add->pages[0])     * count, GFP_KERNEL);
- 	if (NULL == add->grants    ||
- 	    NULL == add->map_ops   ||
- 	    NULL == add->unmap_ops ||
-+	    NULL == add->kmap_ops  ||
- 	    NULL == add->pages)
- 		goto err;
- 
-@@ -129,6 +132,7 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
- 	for (i = 0; i < count; i++) {
- 		add->map_ops[i].handle = -1;
- 		add->unmap_ops[i].handle = -1;
-+		add->kmap_ops[i].handle = -1;
- 	}
- 
- 	add->index = 0;
-@@ -142,6 +146,7 @@ err:
- 	kfree(add->grants);
- 	kfree(add->map_ops);
- 	kfree(add->unmap_ops);
-+	kfree(add->kmap_ops);
- 	kfree(add);
- 	return NULL;
- }
-@@ -243,10 +248,30 @@ static int map_grant_pages(struct grant_map *map)
- 			gnttab_set_unmap_op(&map->unmap_ops[i], addr,
- 				map->flags, -1 /* handle */);
- 		}
-+	} else {
-+		for (i = 0; i < map->count; i++) {
-+			unsigned level;
-+			unsigned long address = (unsigned long)
-+				pfn_to_kaddr(page_to_pfn(map->pages[i]));
-+			pte_t *ptep;
-+			u64 pte_maddr = 0;
-+			if (!PageHighMem(map->pages[i])) {
-+				ptep = lookup_address(address, &level);
-+				pte_maddr =
-+					arbitrary_virt_to_machine(ptep).maddr;
-+			}
-+			gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
-+				map->flags |
-+				GNTMAP_host_map |
-+				GNTMAP_contains_pte,
-+				map->grants[i].ref,
-+				map->grants[i].domid);
-+		}
- 	}
- 
- 	pr_debug("map %d+%d\n", map->index, map->count);
--	err = gnttab_map_refs(map->map_ops, map->pages, map->count);
-+	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
-+			map->pages, map->count);
- 	if (err)
- 		return err;
- 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 4f44b34..8c71ab8 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -448,7 +448,8 @@ unsigned int gnttab_max_grant_frames(void)
- EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
- 
- int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
--		    struct page **pages, unsigned int count)
-+			struct gnttab_map_grant_ref *kmap_ops,
-+			struct page **pages, unsigned int count)
- {
- 	int i, ret;
- 	pte_t *pte;
-@@ -488,8 +489,7 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
- 			 */
- 			return -EOPNOTSUPP;
- 		}
--		ret = m2p_add_override(mfn, pages[i],
--				       map_ops[i].flags & GNTMAP_contains_pte);
-+		ret = m2p_add_override(mfn, pages[i], &kmap_ops[i]);
- 		if (ret)
- 			return ret;
- 	}
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index b1fab6b..6b99bfb 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -156,6 +156,7 @@ unsigned int gnttab_max_grant_frames(void);
- #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
- 
- int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
-+			struct gnttab_map_grant_ref *kmap_ops,
- 		    struct page **pages, unsigned int count);
- int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
- 		      struct page **pages, unsigned int count);
--- 
-1.7.2.3
+Bottom line though: yes, bisecting at any point in the
+patchset does work properly.
 
+Dan
