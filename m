@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216Ab1IHK3F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:29:05 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37224 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab1IHK3D (ORCPT
+	id S1758214Ab1IHKcm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 06:32:42 -0400
+Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:32907
+	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab1IHKcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:29:03 -0400
+	Thu, 8 Sep 2011 06:32:41 -0400
+Message-ID: <4E6899C7.20105@kernel.dk>
+Date: Thu, 08 Sep 2011 12:32:39 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <4E683B74.5000701@st.com>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	<5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com>
-	<20110814083618.GE4986@n2100.arm.linux.org.uk>
-	<4E4CCF7B.8060704@st.com>
-	<20110821083306.GA12028@n2100.arm.linux.org.uk>
-	<4E532B19.6000103@st.com>
-	<4E5715CE.2070806@st.com>
-	<CACRpkdapSvW=eMSoXTOOA2GyhfBLzq2OuyQcDctPxsnVzvr-4g@mail.gmail.com>
-	<4E575E75.40603@st.com>
-	<4E5F594D.10203@st.com>
-	<438BB0150E931F4B9CE701519A4463010871804A4C@bgsmsx502.gar.corp.intel.com>
-	<CAKnu2Mp3Ui7jZS2kjJykjuzcTzJhiAkoaVxZ2+tQX0banGh6mw@mail.gmail.com>
-	<4E683B74.5000701@st.com>
-Date: Thu, 8 Sep 2011 12:29:01 +0200
-Message-ID: <CACRpkdaqTYK5TJL2u+aeOfnzhdtdjxZhyu661eGKrNBOXTUTeA@mail.gmail.com>
-Subject: Re: [PATCH 16/18] dmaengine/amba-pl08x: Add support for sg len
- greater than one for slave transfers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] elevator.c: use ELV_NAME_MAX instead of magic number
+ 16 for chosen_elevator
+References: <4E637BA8.6030300@gmail.com> <4E684331.501@gmail.com>
+In-Reply-To: <4E684331.501@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 8, 2011 at 5:50 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
+On 2011-09-08 06:23, Wang Sheng-Hui wrote:
+> On 2011年09月04日 21:22, Wang Sheng-Hui wrote:
+>> We have ELV_NAME_MAX defined to 16, and hence we should use it
+>> instead of the magic nubmer 16 for elevator's name string.
+>>
+>> The patch is against 3.1-rc3.
+>>
+>> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+>> ---
+>>  block/elevator.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/block/elevator.c b/block/elevator.c
+>> index a3b64bc..cb332cb 100644
+>> --- a/block/elevator.c
+>> +++ b/block/elevator.c
+>> @@ -182,7 +182,7 @@ static void elevator_attach(struct request_queue *q, struct elevator_queue *eq,
+>>  	eq->elevator_data = data;
+>>  }
+>>  
+>> -static char chosen_elevator[16];
+>> +static char chosen_elevator[ELV_NAME_MAX];
+>>  
+>>  static int __init elevator_setup(char *str)
+>>  {
+> 
+> Any comment?
 
-> If i am getting this clearly, the concern is "why to queue separate transfers for
-> individual sg's? Better would be to prepare the complete list at once and
-> start the transfer, so that DMA stops only after finishing all sg's
-> passed from user." Is this what you are pointing at?
+Looks fine, applied.
 
-Yes.
+-- 
+Jens Axboe
 
-> If yes, then the same is done in this patch too. An array for llis is allocated at
-> the start, then for each sg i prepare lli list from this array. Last lli from one sg
-> is followed by first lli from next sg. And so i get a continuous chain of llis.
-
-OK so I guess I was lost in the code ...
-
-So this is mainy cached as txd->dsg_list so you can quickly retrieve the
-number of bytes pending in the LLI by traversing that sglist.
-
-This is better than what the coh901318 does, because that driver
-resorts to going into the physical LLIs themselves to retrieve this
-info.
-
-It also seems like this will play nice with Per Forlin's MMC
-speed-up patches, so that will become effective for your MMC
-usecases.
-
-Now I really like this patch.
-
-Sorry for being such a slow learner!
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
