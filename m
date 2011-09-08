@@ -1,84 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1IHOw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 10:52:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46917 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab1IHOwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 10:52:55 -0400
-Date: Thu, 8 Sep 2011 07:52:10 -0700
-From: Greg KH <gregkh@suse.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Marc Dietich <marvin24@gmx.de>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, Jarod Wilson <jarod@wilsonet.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Joe Perches <joe@perches.com>, Ruslan Pisarev <ruslan@rpisarev.org.ua>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Hans Verkuil <hverkuil@xs4all.nl>,
-        Bob Beers <bbeers@gmail.com>, Ralph Loader <suckfish@ihug.co.nz>,
-        Tejun Heo <tj@kernel.org>, Greg Dietsche <gregory.dietsche@cuw.edu>,
-        Jiri Kosina <jkosina@suse.cz>, Vitaliy Ivanov <vitalivanov@gmail.com>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 25/62] staging: irq: Remove IRQF_DISABLED
-Message-ID: <20110908145210.GB5793@suse.de>
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
- <1315383059-3673-26-git-send-email-yong.zhang0@gmail.com>
- <201109081240.51212.marvin24@gmx.de>
- <20110908135854.GA3069@zhy>
+	id S1752662Ab1IHPBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 11:01:49 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35806 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab1IHPBs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 11:01:48 -0400
 MIME-Version: 1.0
+Message-ID: <896345e2-ded0-404a-8e64-490584ec2b4e@default>
+Date: Thu, 8 Sep 2011 08:00:36 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+        hughd@google.com, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, JBeulich@novell.com,
+        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
+        riel@redhat.com, hannes@cmpxchg.org, matthew@wil.cx,
+        Chris Mason <chris.mason@oracle.com>, sjenning@linux.vnet.ibm.com,
+        kamezawa.hiroyu@jp.fujitsu.com, jackdachef@gmail.com,
+        cyclonusj@gmail.com, levinsasha928@gmail.com
+Subject: RE: [PATCH V8 2/4] mm: frontswap: core code
+References: <20110829164908.GA27200@ca-server1.us.oracle.com
+ 20110907162510.3547d67a.akpm@linux-foundation.org>
+In-Reply-To: <20110907162510.3547d67a.akpm@linux-foundation.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908135854.GA3069@zhy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E68D8AC.00E5:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 09:58:54PM +0800, Yong Zhang wrote:
-> On Thu, Sep 08, 2011 at 12:40:48PM +0200, Marc Dietich wrote:
-> > > This flag is a NOOP and can be removed now.
-> > > 
-> > > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> > > ---
-> > >  drivers/staging/cx25821/cx25821-alsa.c             |    2 +-
-> > >  drivers/staging/cx25821/cx25821-audio-upstream.c   |    2 +-
-> > >  drivers/staging/cx25821/cx25821-core.c             |    2 +-
-> > >  .../staging/cx25821/cx25821-video-upstream-ch2.c   |    2 +-
-> > >  drivers/staging/cx25821/cx25821-video-upstream.c   |    2 +-
-> > >  drivers/staging/cxt1e1/linux.c                     |    6 ------
-> > >  drivers/staging/lirc/lirc_serial.c                 |    2 +-
-> > >  drivers/staging/lirc/lirc_sir.c                    |    2 +-
-> > >  drivers/staging/nvec/nvec.c                        |    2 +-
-> > >  9 files changed, 8 insertions(+), 14 deletions(-)
-> > > 
-> > > [...]
-> > >
-> > > diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-> > > index 72258e8..6210c95 100644
-> > > --- a/drivers/staging/nvec/nvec.c
-> > > +++ b/drivers/staging/nvec/nvec.c
-> > > @@ -339,7 +339,7 @@ static int __devinit tegra_nvec_probe(struct
-> > > platform_device *pdev)
-> > > 
-> > >  	tegra_init_i2c_slave(pdata, i2c_regs, i2c_clk);
-> > > 
-> > > -	err = request_irq(nvec->irq, i2c_interrupt, IRQF_DISABLED, "nvec", nvec);
-> > > +	err = request_irq(nvec->irq, i2c_interrupt, 0, "nvec", nvec);
-> > >  	if(err) {
-> > >  		dev_err(nvec->dev, "couldn't request irq");
-> > >  		goto failed;
-> > 
-> > This is already fixed in 
-> > http://driverdev.linuxdriverproject.org/pipermail/devel/2011-August/018960.html
-> > which went into the staging tree (which is currently not available).
-> 
-> Thanks for pointing it out.
-> 
-> IMHO, the conflict is easy to fix. And if necessary, I could send a new
-> version :)
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Subject: Re: [PATCH V8 2/4] mm: frontswap: core code
 
-I'll try to work it out, and if I have problems, I'll ask for a new
-version once linux-next gets back up and running.
+Thanks very much for taking the time for this feedback!
 
-greg k-h
+Please correct me if I am presumptuous or misreading
+SubmittingPatches, but after making the changes below,
+I am thinking this constitutes a "Reviewed-by"?
+
+> > From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> > Subject: [PATCH V8 2/4] mm: frontswap: core code
+> >
+> > This second patch of four in this frontswap series provides the core code
+> > for frontswap that interfaces between the hooks in the swap subsystem and
+> > +
+> > +struct frontswap_ops {
+> > +	void (*init)(unsigned);
+> > +	int (*put_page)(unsigned, pgoff_t, struct page *);
+> > +	int (*get_page)(unsigned, pgoff_t, struct page *);
+> > +	void (*flush_page)(unsigned, pgoff_t);
+> > +	void (*flush_area)(unsigned);
+> > +};
+> 
+> Please don't use the term "flush".  In both the pagecache code and the
+> pte code it is interchangably used to refer to both writeback and
+> invalidation.  The way to avoid this ambiguity and confusion is to use
+> the terms "writeback" and "invalidate" instead.
+> 
+> Here, you're referring to invalidation.
+
+While the different name is OK, changing this consistently would now
+require simultaneous patches in cleancache, zcache, and xen (not
+to mention lots of docs inside and outside the kernel).  I suspect
+it would be cleaner to do this later across all affected code
+with a single commit.  Hope that's OK.
+
+(Personally, I find "invalidate" to be inaccurate because common
+usage of the term doesn't imply that the space used in the cache
+is recovered, i.e. garbage collection, which is the case here.
+To me, "flush" implies invalidate PLUS recover space.)
+
+> > +static struct frontswap_ops frontswap_ops;
+> 
+> __read_mostly?
+
+Yep.  Will fix.
+ 
+> > +/*
+> > + * This global enablement flag reduces overhead on systems where frontswap_ops
+> > + * has not been registered, so is preferred to the slower alternative: a
+> > + * function call that checks a non-global.
+> > + */
+> > +int frontswap_enabled;
+> 
+> __read_mostly?
+
+Yep.  Will fix.
+
+> > +/*
+> > + * Useful stats available in /sys/kernel/mm/frontswap.  These are for
+> > + * information only so are not protected against increment/decrement races.
+> > + */
+> > +static unsigned long frontswap_gets;
+> > +static unsigned long frontswap_succ_puts;
+> > +static unsigned long frontswap_failed_puts;
+> > +static unsigned long frontswap_flushes;
+> 
+> If they're in /sys/kernel/mm then they rather become permanent parts of
+> the exported kernel interface.  We're stuck with them.  Plus they're
+> inaccurate and updating them might be inefficient, so we don't want to
+> be stuck with them.
+> 
+> I suggest moving these to debugfs from where we can remove them if we
+> feel like doing so.
+
+The style (and code) for this was mimicked from ksm and hugepages, which
+expose the stats the same way... as does cleancache now.  slub is also
+similar.  I'm OK with using a different approach (e.g. debugfs), but
+think it would be inconsistent and confusing to expose these stats
+differently than cleancache (or ksm and hugepages).  I'd support
+and help with a massive cleanup commit across all of mm later though.
+Hope that's OK for now.
+
+> > +/*
+> > + * Frontswap, like a true swap device, may unnecessarily retain pages
+> > + * under certain circumstances; "shrink" frontswap is essentially a
+> > + * "partial swapoff" and works by calling try_to_unuse to attempt to
+> > + * unuse enough frontswap pages to attempt to -- subject to memory
+> > + * constraints -- reduce the number of pages in frontswap
+> > + */
+> > +void frontswap_shrink(unsigned long target_pages)
+> 
+> It's unclear whether `target_pages' refers to the number of pages to
+> remove or to the number of pages to retain.  A comment is needed.
+
+OK.  Will fix.
+
+> > +{
+> > +	int wrapped = 0;
+> > +	bool locked = false;
+> > +
+> > +	/* try a few times to maximize chance of try_to_unuse success */
+> 
+> Why?  Is this necessary?  How often does try_to_unuse fail?
+> 
+> > +	for (wrapped = 0; wrapped < 3; wrapped++) {
+> 
+> `wrapped' seems an inappropriate identifier.
+
+Hmmm... this loop was mimicking some swap code that now
+seems to be long gone.  I agree it's not really necessary
+and will remove the loop (which also removes the identifier).
+
+> > +
+> 
+> unneeded newline
+
+Doh!  Will fix.
+
+> > +			if (security_vm_enough_memory_kern(pages))
+> 
+> What's this doing here? Needs a comment please.
+> 
+> > +				continue;
+> > +			vm_unacct_memory(pages);
+> 
+> hm, is that accurate?  Or should we account for the pages which
+> try_to_unuse() actually unused?
+
+These are mimicking code in swapoff.  I think the code is
+correct but agree a clarifying comment or two is in order.
+
+> > +/*
+> > + * Count and return the number of pages frontswap pages across all
+> 
+> s/pages//
+
+Doh!  Will fix.
+
+> > + * swap devices.  This is exported so that a kernel module can
+> > + * determine current usage without reading sysfs.
+> 
+> Which kernel module might want to do this?
+
+The tmem backends (currently zcache and xen tmem).  I'll change
+the wording in the comment to clarify.
+
+> > +#ifdef CONFIG_SYSFS
+> 
+> Has the code been tested with CONFIG_SYSFS=n?
+
+Yes, in a previous version.  I'll doublecheck though.
+
+Thanks again for the feedback!  I'll publish a V9 with
+the corrections no later than early next week.
+
+Dan
