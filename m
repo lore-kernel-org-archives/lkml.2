@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab1IHXM2 (ORCPT <rfc822;w@1wt.eu>);
+	id S1753405Ab1IHXMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:12:38 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:56375 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753329Ab1IHXM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Sep 2011 19:12:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63229 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab1IHXMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:12:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [PATCH 31/62] driver/char: irq: Remove IRQF_DISABLED
-Date: Thu, 8 Sep 2011 18:04:05 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        Clemens Ladisch <clemens@ladisch.de>, Corey Minyard <minyard@acm.org>,
-        Mark Gross <mark.gross@intel.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        openipmi-developer@lists.sourceforge.net
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com> <1315383059-3673-32-git-send-email-yong.zhang0@gmail.com>
-In-Reply-To: <1315383059-3673-32-git-send-email-yong.zhang0@gmail.com>
+Date: Thu, 8 Sep 2011 13:48:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lin Ming <mlin@ss.pku.edu.cn>, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 0/55] Preview of RCU changes for 3.2
+Message-ID: <20110908204848.GA2701@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110906180015.GA2560@linux.vnet.ibm.com>
+ <CAF1ivSZ_THTHMPhXcPSJovxoi1WBvpr07ktMuYL39oode8kz0w@mail.gmail.com>
+ <20110908174139.GL2671@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1109082122230.2723@ionos>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109081804.06083.arnd@arndb.de>
-X-Provags-ID: V02:K0:+JGvvvAWleZ0lcJQEAy9hVSo83+S/8/Sm/BScanStRx
- losJ2XZ/xuqql+3xl368qkI/c7zao4+PKAkTGHOLsHVlNuLpT4
- EN5iIEhHvaBI6B7mGzHG79dgI0JNp+Z4mLlovkJBAXtpm2q+fg
- UqfwIjmVW9exKzKfBZfzPJzpsi9SLXZ+gfijw8CXzzhKwn7yLU
- wLtg0bd+G0Cev7zeWc3QOebXBzHNKY/4VGEVnGfKS3Qmgihk3A
- ezNa5a8G0gv+h9BTP182KPSs0/cRDTpRXrAfTETKmuMYUUTUVP
- Gdbz8jw5EMEv0jDvkY68JZnlCf61LA9yB5MceX1999GvN1UJbB
- W1nMhLIPY+V1JfD829rk=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1109082122230.2723@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 September 2011, Yong Zhang wrote:
-> This flag is a NOOP and can be removed now.
+On Thu, Sep 08, 2011 at 09:23:05PM +0200, Thomas Gleixner wrote:
+> On Thu, 8 Sep 2011, Paul E. McKenney wrote:
 > 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> > On Wed, Sep 07, 2011 at 10:39:57PM +0800, Lin Ming wrote:
+> > > On Wed, Sep 7, 2011 at 2:00 AM, Paul E. McKenney
+> > > <paulmck@linux.vnet.ibm.com> wrote:
+> > > >
+> > > > For a testing-only version of this patchset from git, please see the
+> > > > following subject-to-rebase (and subject-to-Hera-availability) branch:
+> > > >
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
+> > > 
+> > > kernel.org is still down.
+> > > Would you put the tree somewhere else(maybe github.com)?
+> > 
+> > Hello, Lin,
+> > 
+> > I am unlikely to figure out why github doesn't like me by the end of
+> > the week, so please feel free to post the patches somewhere.  If you
+> > have a -tip tree handy, you could apply them on top of tip/master.
+> > If you don't have a -tip tree handy, they should also apply cleanly
+> > onto v3.0.
+> 
+>   git://tesla.tglx.de/git/linux-2.6-tip
+> 
+> Just in case.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thank you very much, Thomas!!!
+
+							Thanx, Paul
