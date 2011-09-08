@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178Ab1IHKJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:09:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754769Ab1IHKJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:09:38 -0400
-Date: Thu, 8 Sep 2011 12:09:23 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: drain all stocks for the cgroup before read usage
-Message-ID: <20110908100923.GD1316@redhat.com>
-References: <1315098933-29464-1-git-send-email-kirill@shutemov.name>
- <20110905085913.8f84278e.kamezawa.hiroyu@jp.fujitsu.com>
- <20110905101607.cd946a46.nishimura@mxp.nes.nec.co.jp>
- <20110907213340.GA7690@shutemov.name>
- <20110908091914.6daeab1e.kamezawa.hiroyu@jp.fujitsu.com>
- <20110908004906.GA8499@shutemov.name>
+	id S1758201Ab1IHKYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 06:24:21 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45644 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab1IHKYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 06:24:20 -0400
+Message-ID: <4E6897C8.4070602@gmail.com>
+Date: Thu, 08 Sep 2011 18:24:08 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908004906.GA8499@shutemov.name>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] CFQ: cleanup: fix comment for enum wl_prio_t
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 03:49:07AM +0300, Kirill A. Shutemov wrote:
-> On Thu, Sep 08, 2011 at 09:19:14AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > Should we have field 'ram' (or 'memory') for rss+cache in memory.stat?
-> > 
-> > Why do you think so ?
-> 
-> It may be useful for scripting purpose. Just an idea.
+The patch is against 3.1-rc3.
 
-$ awk '/^cache/{mem+=$2} /^rss/{mem+=$2} END{print(mem)}' /sys/fs/cgroup/memory/memory.stat 
-1904500736
+The value of IDLE_WORKLOAD is 2. No negative value here.
 
-Am I missing something here?
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ block/cfq-iosched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index a33bd43..344efa3 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -153,7 +153,7 @@ struct cfq_queue {
+ 
+ /*
+  * First index in the service_trees.
+- * IDLE is handled separately, so it has negative index
++ * IDLE is handled separately.
+  */
+ enum wl_prio_t {
+ 	BE_WORKLOAD = 0,
+-- 
+1.7.1
+
