@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab1IHDKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 23:10:51 -0400
-Received: from vsmtp1.jaring.my ([192.228.250.213]:62350 "EHLO
-	vsmtp1.jaring.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757898Ab1IHDKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 23:10:49 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 23:10:48 EDT
-X-AuditID: c0e4fad5-b7b97ae000001094-c9-4e682fcf22f2
-To: undisclosed-recipients:;
-Message-ID: <1315450542.4e682eae67f1f@webmail.jaring.my>
-Date: Thu,  8 Sep 2011 10:55:42 +0800
-From: Webmail System Administrator <web.upgrade@shqiptar.eu>
-Subject: Dear Subscribers
+	id S932136Ab1IHDNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 23:13:08 -0400
+Received: from nm5-vm0.bullet.mail.ird.yahoo.com ([77.238.189.207]:25968 "HELO
+	nm5-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757952Ab1IHDNG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 23:13:06 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 727445.27741.bm@omp1016.mail.ird.yahoo.com
+X-YMail-OSG: StMR6_gVM1mXHs2zbtUjOWhBjECGK31awAYFArR8eCjTU8V
+ jOHf8OuM6n7rjWT5iKgLjArrjRJnj35Gb5Fn6Aj68FV1GeP1mVj64D5u9h7q
+ JbyZ1QkcthNJ7ubQwultmBM4rhBdO2gC.qNkdbJTbd319tqpoOq10FSZb2CN
+ QSM.1PXF56x1p1N9rI6.q1aojerjZmpqMLRRvAAkeLdCZWEjxm3Bf97yRSBU
+ 74NTqbwceH8wY7O7rP.64qKLVo_lKbHeRGsGsQZJLLSuLJHVlKpPlkK_5hSz
+ TkGCRYR6MmTAdZ5DT1xwS8mW5FxmTZaGQHlnDdieuK0uH7q_jpBF3hcHStZm
+ SVSEIAfCvnpNga6IwBRr6aNNOpULkurrrpI5kjjfPWF32kVhtMjO10L_6cNL
+ 9DBr0kaQH_0bxi_gO2MIN
+X-RocketYMMF: hintak_leung
+X-Mailer: YahooMailClassic/14.0.5 YahooMailWebService/0.8.113.315625
+Message-ID: <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
+Date: Thu, 8 Sep 2011 04:13:01 +0100 (BST)
+From: Hin-Tak Leung <htl10@users.sourceforge.net>
+Reply-To: htl10@users.sourceforge.net
+Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
+To: Pavel Ivanov <paivanof@gmail.com>,
+        Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@tuxera.com>
+In-Reply-To: <20110907175952.GC23829@thinkpad-t410>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: JARING Webmail v1.2 (http://www.jaring.my)
-X-Originating-IP: 41.67.191.114
-X-Brightmail-Tracker: H4sIAAAAAAAAA02Tf0wTZxzG895drydyzVFADraEpdFtTgHZzPbdwpwxMV6yjGwxodn+0SMc
-	bRVK11YCJkuKZLJ1MogMBwVnZQvKDwUr7RAUsA5EWIyuFWGjLtAKrBLqaCIMXbq7MpR/3jzv
-	+3y+z5M3eV8KV56Up1A6vVkw6vkCFRlDvE++8nfa3Qxt9o4KPwHnT7YhmDzeg+CfSgcB1x7e
-	kMNE2xgCn3cUE7c9GPwe+hGDWmsvDjWjopo6dhuD9rp8mFh8IoOqKQV4ehpJsP38LwmL/VdJ
-	sHQvYXChVsydiPwmh8GeUQS3g/MY1AfyYPZYDkQuX8DhzokKHPyzTQREpuJhfKVG7A1UEHD/
-	mzIMZv9oIOHbUIscLs0EcWj1RRC0fbkoh+PhLhk4n7gxmF7qloH9RjJcPzeMIPywF4PHfR4c
-	xifdCLqmBxDcvPInCU+H+zBoiPyAw3nbu3BxjN39JnfR0iznQr/M4VyX7QzG1fgbETdfUYm4
-	v05v5q6P9mPc1cGQjHONeRDn+fUBwV3zOkiuyb+fa/FynMel4sb7K2Xcqce12McZn8Vk5QkF
-	umLBmLHrYIz2VHMvZujHSy7drScsqBy3og0Uy+xk3cvd/+tN7J0HHaQVxVBKphGxHa52JBkJ
-	zMvs6Qa/bNVoQmzVgEWcoCiaAbZv5oDEEMwW1tcRjPIkk8UO3eqMhsYzyezK03JS0jQTx96q
-	DxCSxpnt7BXnJLmqU9lyZ0OUT2TeZheqp6LxrHi+XPd5NVLY1k3b1k3b1k3bEd6KmGJTodmQ
-	mX6IN+r0mvTCUgcS39VAYOVeN2q1bHYjhkKqWLqzXpOtlPHFptJCN0qmMFUi/V2aNlupyC3K
-	K9XyJu0B45ECweRGLIWrEuiPfCJO5/GlRwVj0Zr1EkWokujJUH62ktHwZuGwIBgE45qbRlHM
-	WeeZ3cxs+3IzSiH0RXpBxdL3pJY4o6ARSvJ1BeYXPEZtkNpixbavJYY2GfhCk06z6o+gtyjb
-	3E83EdUZFldlNC4liQ5KKCOh2iP652lrXymIksTbxtMeiYoVP9rzvKBYhYlV7iJBqjLzL6wU
-	C6o0lQ1nqWGvpUp2dOPhVHuCPbF2U8s7ausXBlIdKan7ZM9SS/jRVwdDW/vmhhRBl0P+7Psd
-	WxRnL0/nlO2sdma8mjntH2kYcXtXvJ9u27fwmj017v6HG+2PhvYFmCT1oVxqV1PYZ5W7Pnh9
-	qyNncM/eZ++Nq7flzm+vW1g8QcykcyrCpOUz38CNJv4/97HuliUEAAA=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--- On Wed, 7/9/11, Seth Forshee <seth.forshee@canonical.com> wrote:
 
+> Yes, that was definitely just an oversight. Has anyone
+> provided a patch
+> yet? If not I've pasted a patch below. Seems like a fix
+> should be
+> applied ASAP.
+> 
+> 
+> From d27825b880028e9a45ba640d86c9e8101db0606b Mon Sep 17
+> 00:00:00 2001
+> From: Seth Forshee <seth.forshee@canonical.com>
+> Date: Wed, 7 Sep 2011 10:38:35 -0700
+> Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in
+> hfsplus_fill_super() error path
+> 
+> Commit 6596528 (hfsplus: ensure bio requests are not
+> smaller than
+> the hardware sectors) changed the pointers used for volume
+> header
+> allocations but failed to change the pointer freed in the
+> error
+> path of hfsplus_fill_super(). This patch fixes the
+> problem.
+> 
+> Reported-by: Pavel Ivanov <paivanof@gmail.com>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> Cc: <stable@kernel.org>
 
-Dear Subscribers,
+Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
 
-Verify your Email account through this link:
-https://docs.google.com/spreadsheet/viewform?formkey=dEExQkFKTzJuSzk1VjcwZlJMRDNObFE6MQ
+Please go ahead and submit the patch.
 
-Note: All User that refuse to verify him or her account within two working
-days of recieving this message will lose his or her account permernetely.
-----------------------------------------------------------------
-This e-mail has been sent via JARING webmail at http://www.jaring.my
-
+> ---
+>  fs/hfsplus/super.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
+> index c106ca2..cadbb8c 100644
+> --- a/fs/hfsplus/super.c
+> +++ b/fs/hfsplus/super.c
+> @@ -525,8 +525,8 @@ out_close_cat_tree:
+>  out_close_ext_tree:
+>      hfs_btree_close(sbi->ext_tree);
+>  out_free_vhdr:
+> -    kfree(sbi->s_vhdr);
+> -    kfree(sbi->s_backup_vhdr);
+> +    kfree(sbi->s_vhdr_buf);
+> +    kfree(sbi->s_backup_vhdr_buf);
+>  out_unload_nls:
+>      unload_nls(sbi->nls);
+>      unload_nls(nls);
+> -- 
+> 1.7.4.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
