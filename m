@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab1IIADR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:03:17 -0400
-Received: from void.printf.net ([89.145.121.20]:41704 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756522Ab1IIADO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:03:14 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: [GIT PULL] MMC fixes for 3.1-rc6
-Date: Thu, 08 Sep 2011 20:03:04 -0400
-Message-ID: <m27h5i4m6f.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1756742Ab1IIAEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:04:39 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:47555 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756511Ab1IIAEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 20:04:37 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ddUy7goVM1mvqMTzS1Nmlsxh5WDTYcS1c2PFJxs0xSo2eEl
+ LwMcgZaN9_BL8.Cvkcv0aWHTCt5cI1kjNiuHP_5ebN0N_EB2rNBS1ahvHGAE
+ 4Lp0BsPOMzyIxcZVb.72UlaB3yQh0BCcFqNiuiBe4XrScmb6EGY.PQ_udfzA
+ Jy3q1lXNwOH.tVSjVOtxSG8UYTnZiN0iaf.VcARn7fJTZyMTKU8emxUIzwIF
+ BZ1M.1_rXGUd5gs0fVsCy54esrfhEzbR13cFq5eUCE9we0MV1EFN345KSodK
+ bnzCJusG621lwBEExmbXh_eLGQ0atLB91XDS_YlxSsBD0pbUxsXYWM_2b5Xz
+ Fvw_bCEyICVQy8Z4RX.FXCBvojAlSyQqBgJfIkKWFzYnsoObftkwlAMunDHW
+ pMrYj.zTxgd_7qH.DzpUo4A--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 8 Sep 2011 13:37:52 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Alex,Shi" <alex.shi@intel.com>
+cc: "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH] slub Discard slab page only when node partials > minimum
+ setting
+In-Reply-To: <1315442639.31737.224.camel@debian>
+Message-ID: <alpine.DEB.2.00.1109081336320.14787@router.home>
+References: <1315188460.31737.5.camel@debian>  <alpine.DEB.2.00.1109061914440.18646@router.home>  <1315357399.31737.49.camel@debian>  <alpine.DEB.2.00.1109062022100.20474@router.home>  <4E671E5C.7010405@cs.helsinki.fi> 
+ <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>  <alpine.DEB.2.00.1109071003240.9406@router.home> <1315442639.31737.224.camel@debian>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 8 Sep 2011, Alex,Shi wrote:
 
-Please pull from:
+> BTW, some testing results for your PCP SLUB:
+>
+> for hackbench process testing:
+> on WSM-EP, inc ~60%, NHM-EP inc ~25%
+> on NHM-EX, inc ~200%, core2-EP, inc ~250%.
+> on Tigerton-EX, inc 1900%, :)
 
-  git://dev.laptop.org/users/cjb/mmc for-linus
+There is no minus on tigerton. I hope that is not a regression?
+>
+> for hackbench thread testing:
+> on WSM-EP, no clear inc, NHM-EP no clear inc
+> on NHM-EX, inc 10%, core2-EP, inc ~20%.
+> on Tigertion-EX, inc 100%,
 
-to receive small regression fixes for MMC.  These have been tested in
-linux-next, and there are no merge conflicts.  Thanks.
+> for  netperf loopback testing, no clear performance change.
 
+Hmmm... The sizes of the per cpu partial objects could be varied a bit to
+see if more would make an impact.
 
-The following changes since commit fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c:
-
-  Linux 3.1-rc3 (2011-08-22 11:42:53 -0700)
-
-are available in the git repository at:
-  git://dev.laptop.org/users/cjb/mmc for-linus
-
-Girish K S (1):
-      mmc: sdhci-s3c: Fix mmc card I/O problem
-
-Mika Westerberg (3):
-      mmc: rename mmc_host_clk_{ungate|gate} to mmc_host_clk_{hold|release}
-      mmc: core: prevent aggressive clock gating racing with ios updates
-      mmc: core: use non-reentrant workqueue for clock gating
-
-Shawn Guo (1):
-      mmc: sdhci-esdhc-imx: add missing inclusion of linux/module.h
-
-Simon Horman (1):
-      mmc: sdhi: initialise mmc_data->flags before use
-
-Subhash Jadavani (1):
-      mmc: sd: UHS-I bus speed should be set last in UHS initialization
-
- drivers/mmc/core/core.c            |   35 ++++++++++++++--
- drivers/mmc/core/host.c            |   12 +++---
- drivers/mmc/core/host.h            |    8 ++--
- drivers/mmc/core/sd.c              |   81 +++++++++++++++++++++++------------
- drivers/mmc/host/sdhci-esdhc-imx.c |    1 +
- drivers/mmc/host/sdhci-s3c.c       |    2 +
- drivers/mmc/host/sh_mobile_sdhi.c  |    4 +-
- 7 files changed, 99 insertions(+), 44 deletions(-)
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
