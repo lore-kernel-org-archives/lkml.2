@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab1IHP0P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 11:26:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64999 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347Ab1IHP0O (ORCPT
+	id S1754414Ab1IHP1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 11:27:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63198 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab1IHP1x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 11:26:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: dedekind1@gmail.com
-Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
-Date: Thu, 8 Sep 2011 17:26:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: david.wagner@free-electrons.com,
-        "linux-mtd" <linux-mtd@lists.infradead.org>,
-        "linux-embedded" <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com> <1315280704.19067.14.camel@sauron> <1315282208.19067.24.camel@sauron>
-In-Reply-To: <1315282208.19067.24.camel@sauron>
+	Thu, 8 Sep 2011 11:27:53 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201109081726.00769.arnd@arndb.de>
-X-Provags-ID: V02:K0:8dZxGp2zrSbJ0WEtOLIXElXnLme7G3isLHs2sXiE6Nu
- YpO9MSmG1mfIFRQKyZuYZmNfwyUZ9DQoL19PdqDT+3sOhU8Wca
- mRnCVi6n5pDw3I7pJv5a88ZKLGMv6X5QL6dviCve9QR4/F0tNY
- 97Fes4JdSP0q6jsRVDftdr6ysxNRSQCW71C14mT0r97AO6tGkX
- 4SPFmAzUkJOTXZjGHjBGusIOZZG6x5h0tJGnMx2tqWAUxbHz0u
- 0o/8ZecdJQ2wK66xV3837ESq6GN4ZWIE3/zBNKHoXfSrOFXAaW
- 4EbcjR4YM1I47OXuG5yQvB7v95bYaQsRSGIFSrVQAbCb/CumyI
- a/Ab1XNQYcKF0kNgraa8=
+In-Reply-To: <201109081652.20552.arnd@arndb.de>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com> <201109081652.20552.arnd@arndb.de>
+From: Barry Song <21cnbao@gmail.com>
+Date: Thu, 8 Sep 2011 23:27:32 +0800
+Message-ID: <CAGsJ_4wOQddus_Vz5zUjy-4ETOeaiZ+STRD22SwRy+yr4YLaRA@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Barry Song <Baohua.Song@csr.com>, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        Rongjun Ying <rongjun.ying@csr.com>, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 September 2011, Artem Bityutskiy wrote:
-> Not sure about the bus approach - David, could you take a look at it
-> please? If we can handle errors there - then we could indeed re-use the
-> UBI control device. We could even re-use the ioctl data structures for
-> UBI volumes creation/removal - we have plenty of space there reserved
-> for future extensions.
+Hi Arnd,
+Thanks!
 
-I would generally recommend using new ioctl commands. ioctl numbers
-are cheap, but complexity in data structures is not, because every
-user who wants to deal with the data structures has to understand
-them. Also, changing the ABI is always tricky since you have to
-provide backward and forwards compatibility with existing kernels
-and with existing user space.
+2011/9/8 Arnd Bergmann <arnd@arndb.de>
+>
+> On Wednesday 07 September 2011, Barry Song wrote:
+> > +/*
+> > + * The DMA controller consists of 16 independent DMA channels.
+> > + * Each channel is allocated to a different function
+> > + */
+> > +bool sirfsoc_dma_filter_id(struct dma_chan *chan, void *chan_id)
+> > +{
+> > +       unsigned int ch_nr = (unsigned int) chan_id;
+> > +
+> > +       if (ch_nr == chan->chan_id)
+> > +               return true;
+> > +
+> > +       return false;
+> > +}
+> > +EXPORT_SYMBOL(sirfsoc_dma_filter_id);
+> > +
+>
+> Hi Barry,
+>
+> It seems wrong that you have to export this function. The dmaengine API
+> should be able to work without this, and when you have drivers using the
+> interface, those should not rely on a specific implementation as the
+> purpose of the API is specifically to hide that.
+>
+> Am I missing something?
 
-	Arnd
+i am not sure whether i have other way to require a special channel
+for a special device. it seems dma_request_channel only gives me a
+chance to use a filter function since my all channels have same DMA
+cap masks.
+
+this filter is used by all drivers with DMA since every dma channel is
+fixed to be assigned to one device.
+
+i did do some copy from coh901318.c:
+bool coh901318_filter_id(struct dma_chan *chan, void *chan_id)
+{
+    unsigned int ch_nr = (unsigned int) chan_id;
+
+    if (ch_nr == to_coh901318_chan(chan)->id)
+        return true;
+
+    return false;
+}
+EXPORT_SYMBOL(coh901318_filter_id);
+
+if it does become a common filter,  we might have a function like:
+
+bool dmaengine_filter_match_channel_id(struct dma_chan *chan, void *chan_id)
+{
+    if (ch_nr == chan->chan_id)
+        return true;
+
+    return false;
+}
+EXPORT_SYMBOL(dmaengine_filter_match_channel_id);
+
+Another filter is in amba-pl08x.c, it is filtering channel by name:
+bool pl08x_filter_id(struct dma_chan *chan, void *chan_id)
+{
+    struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
+    char *name = chan_id;
+
+    /* Check that the channel is not taken! */
+    if (!strcmp(plchan->name, name))
+        return true;
+
+    return false;
+}
+
+>
+>        Arnd
+>
+
+-barry
