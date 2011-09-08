@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab1IHFgC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 01:36:02 -0400
-Received: from shutemov.name ([188.40.19.243]:50610 "EHLO shutemov.name"
+	id S1757979Ab1IHFqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 01:46:24 -0400
+Received: from mail.x-arc.de ([217.6.246.34]:44618 "EHLO root.phytec.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab1IHFgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 01:36:00 -0400
-Date: Thu, 8 Sep 2011 08:35:58 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, xemul@parallels.com, netdev@vger.kernel.org,
-        linux-mm@kvack.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        containers@lists.osdl.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH v2 3/9] socket: initial cgroup code.
-Message-ID: <20110908053558.GA9464@shutemov.name>
-References: <1315369399-3073-1-git-send-email-glommer@parallels.com>
- <1315369399-3073-4-git-send-email-glommer@parallels.com>
- <20110907221710.GA7845@shutemov.name>
- <4E684A6B.6030205@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E684A6B.6030205@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757898Ab1IHFqX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 01:46:23 -0400
+Subject: Re: [RFC] w1: Disable irqs in critical section
+From: Jan Weitzel <J.Weitzel@phytec.de>
+Reply-To: J.Weitzel@phytec.de
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20110907175059.GA12074@ioremap.net>
+References: <1315385312-1176-1-git-send-email-j.weitzel@phytec.de>
+	 <20110907175059.GA12074@ioremap.net>
+Organization: PHYTEC Messtechnik GmbH
+Date: Thu, 08 Sep 2011 07:46:21 +0200
+Message-ID: <1315460781.4396.10.camel@lws-weitzel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+X-MIMETrack: Itemize by SMTP Server on Idefix/Phytec(Release 8.5.2FP2|March 22, 2011) at
+ 08.09.2011 07:46:22,
+	Serialize by Router on Idefix/Phytec(Release 8.5.2FP2|March 22, 2011) at
+ 08.09.2011 07:46:22,
+	Serialize complete at 08.09.2011 07:46:22
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 01:54:03AM -0300, Glauber Costa wrote:
-> On 09/07/2011 07:17 PM, Kirill A. Shutemov wrote:
-> > On Wed, Sep 07, 2011 at 01:23:13AM -0300, Glauber Costa wrote:
-> >> We aim to control the amount of kernel memory pinned at any
-> >> time by tcp sockets. To lay the foundations for this work,
-> >> this patch adds a pointer to the kmem_cgroup to the socket
-> >> structure.
-> >>
-> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >> CC: David S. Miller<davem@davemloft.net>
-> >> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >> CC: Eric W. Biederman<ebiederm@xmission.com>
-> >> ---
-> >>   include/linux/kmem_cgroup.h |   29 +++++++++++++++++++++++++++++
-> >>   include/net/sock.h          |    2 ++
-> >>   net/core/sock.c             |    5 ++---
-> >>   3 files changed, 33 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/include/linux/kmem_cgroup.h b/include/linux/kmem_cgroup.h
-> >> index 0e4a74b..77076d8 100644
-> >> --- a/include/linux/kmem_cgroup.h
-> >> +++ b/include/linux/kmem_cgroup.h
-> >> @@ -49,5 +49,34 @@ static inline struct kmem_cgroup *kcg_from_task(struct task_struct *tsk)
-> >>   	return NULL;
-> >>   }
-> >>   #endif /* CONFIG_CGROUP_KMEM */
-> >> +
-> >> +#ifdef CONFIG_INET
-> >
-> > Will it break something if you define the helpers even if CONFIG_INET
-> > is not defined?
-> > It will be much cleaner. You can reuse ifdef CONFIG_CGROUP_KMEM in this
-> > case.
+Am Mittwoch, den 07.09.2011, 21:50 +0400 schrieb Evgeniy Polyakov:
+> On Wed, Sep 07, 2011 at 10:48:32AM +0200, Jan Weitzel (j.weitzel@phytec.de) wrote:
+> > Interrupting w1_delay in w1_read_bit results in missing the low level
+> > on the w1 line and receiving "1" instead of "0".
+> > Adding local_irq_save / local_irq_restore around the critical section
 > 
-> The helpers inside CONFIG_INET are needed for the network code, 
-> regardless of kmem cgroup is defined or not, not the other way around.
+> This means that CPU will be essentially stuck for 15 useconds for every
+> bit transferred, doesn't really look like a good idea.
 > 
-> So I could remove CONFIG_INET, but I can't possibly move it inside
-> CONFIG_CGROUP_KMEM. So this buy us nothing.
+> Are you absolutely sure that missing bit is because of timings and not
+> some other bug?
+> 
 
-You can define empty under CONFIG_CGROUP_KMEM's #else, can't you?
-Like with kcg_from_cgroup()/kcg_from_task().
+I trigger a gpio line after the samplepoint. I case of a wrong bit the
+sample is taken after the "0 gap". The cycle time (samplt to sample)is
+increased form about 80µs to 95µs. 
+I did the measurement with the w1-gpio driver on a OMAP4 board.
 
--- 
- Kirill A. Shutemov
+Jan
+
+
