@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab1IHAEG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:04:06 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:37278 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757509Ab1IHAEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:04:04 -0400
-Message-ID: <4E6805BA.9040402@ce.jp.nec.com>
-Date: Thu, 08 Sep 2011 09:00:58 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	id S1757558Ab1IHAF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:05:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756742Ab1IHAF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 20:05:27 -0400
+Date: Wed, 7 Sep 2011 20:04:29 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Nelson Elhage <nelhage@nelhage.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
+        stable@kernel.org
+Subject: Re: [PATCH] epoll: Fix spurious lockdep warnings
+Message-ID: <20110908000429.GK10700@zod.bos.redhat.com>
+References: <1312913515-432-1-git-send-email-nelhage@nelhage.com>
 MIME-Version: 1.0
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        jaxboe@fusionio.com, roland@purestorage.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.ne>
-Subject: Re: [BUG] Oops when SCSI device under multipath is removed
-References: <Pine.LNX.4.44L0.1108111112280.1958-100000@iolanthe.rowland.org> <4E4A53F0.9040104@ce.jp.nec.com> <4E4CD737.4020402@ce.jp.nec.com> <20110831195022.GE4004@oc1711230544.ibm.com>
-In-Reply-To: <20110831195022.GE4004@oc1711230544.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312913515-432-1-git-send-email-nelhage@nelhage.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 09/01/11 04:50, Thadeu Lima de Souza Cascardo wrote:
-> On Thu, Aug 18, 2011 at 06:11:19PM +0900, Jun'ichi Nomura wrote:
->> Actually, Tejun has posted a patch to replace
->> execute_in_process_context() with queue_work()
->> and asking your review:
->>
->>   [PATCH RESEND] scsi: don't use execute_in_process_context()
->>   https://lkml.org/lkml/2011/4/30/87
->>
->> Do you think you can take the patch and revert the move
->> of scsi_free_queue()?
+On Tue, Aug 09, 2011 at 02:11:55PM -0400, Nelson Elhage wrote:
+> epoll can acquire recursively acquire ep->mtx on multiple "struct
+> eventpoll"s at once in the case where one epoll fd is monitoring
+> another epoll fd. This is perfectly OK, since we're careful about the
+> lock ordering, but it causes spurious lockdep warnings. Annotate the
+> recursion using mutex_lock_nested, and add a comment explaining the
+> nesting rules for good measure.
 > 
-> I've tested with your suggestion (reverting the move of scsi_free_queue)
-> and it works like a charm. I did not get any oops after that. I tested
-> with a multipath setup on top of two iscsi targets. Using dd after
-> logging out of some of one of the iscsi targets would trigger the oops.
-> With this patch, it could not be triggered anymore.
+> Recent versions of systemd are triggering this, and it can also be
+> demonstrated with the following trivial test program:
+> 
+> --------------------8<--------------------
+> 
+> int main(void) {
+>    int e1, e2;
+>    struct epoll_event evt = {
+>        .events = EPOLLIN
+>    };
+> 
+>    e1 = epoll_create1(0);
+>    e2 = epoll_create1(0);
+>    epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
+>    return 0;
+> }
+> --------------------8<--------------------
+> 
+> Cc: stable@kernel.org
+> Reported-by: Paul Bolle <pebolle@tiscali.nl>
+> Tested-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
 
-Thank you for testing and the report.
+Any progress on this heading upstream?
 
-Since scsi_free_queue() frees elevator, calling it while there
-still is a user of the elevator has no way to work.
-Either we should call it later (like the above suggestion)
-or change scsi_free_queue not to free the elevator
-(James posted a patch early in this thread).
-
-I think the latter approach could be nice if it worked.
-But if not, the former approach should be taken.
-Without fix, a path failure can cause a panic. This is bad...
-
-Best regards,
--- 
-Jun'ichi Nomura, NEC Corporation
+josh
