@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab1IHAWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:22:16 -0400
-Received: from gretna.indigovision.com ([62.7.85.227]:39320 "EHLO
-	gretna.indigovision.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab1IHAWN convert rfc822-to-8bit (ORCPT
+	id S1757533Ab1IHA0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:26:39 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60336 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756158Ab1IHA0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:22:13 -0400
-From: Bruce Stenning <b.stenning@indigovision.com>
-To: Tejun Heo <htejun@gmail.com>
-CC: Mark Lord <kernel@teksavvy.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Date: Wed, 7 Sep 2011 13:09:10 +0100
-Subject: RE: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Topic: sata_mv port lockup on hotplug (kernel 2.6.38.2)
-Thread-Index: Acxst728k3UUYXA1TRyldt4Qu/pBogAnmOzg
-Message-ID: <C1438B59050E1B4C9482FF3266AD6BA32D8DA54C99@gretna.indigovision.com>
-References: <4DF25526.9010800@teksavvy.com>
- <20110611121957.GA7980@mtj.dyndns.org> <4DF4F30B.70702@teksavvy.com>
- <20110613104856.GC16021@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
- <20110902011305.GE2752@htj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
- <20110906034544.GB18425@mtj.dyndns.org>
- <C1438B59050E1B4C9482FF3266AD6BA32D8DA54B00@gretna.indigovision.com>
- <20110906163355.GG18425@mtj.dyndns.org>
- <20110906164221.GH18425@mtj.dyndns.org>
-In-Reply-To: <20110906164221.GH18425@mtj.dyndns.org>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Wed, 7 Sep 2011 20:26:38 -0400
 MIME-Version: 1.0
+Date: Thu, 8 Sep 2011 09:26:37 +0900
+Message-ID: <CAKYAXd9m_n8SV9Ei=jA9-aZ3G9JtB8WFAjs7XteJn5jc0ems5A@mail.gmail.com>
+Subject: RFC : squashfs : devblksize set to 4KB instread of BLK_SIZE(1KB).
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: phillip@lougher.demon.co.uk, squashfs-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Currently, devblksize is set to 1KB in squashfs like below code.
 
-Sorry for sending so many emails yesterday; I blame the dental anaesthetic
-I received in the morning for being so jumpy on the send button ;-)
+#define BLOCK_SIZE_BITS 10
+#define BLOCK_SIZE (1<<BLOCK_SIZE_BITS)
 
-> Can you please instrument the followings?
->
-> * print the caller of scsi_eh_wakeup().  "%pF" w/ (void *)_RET_IP_
->   should do it.
->
-> * print why scsi_eh is going back to sleep immediately.
->   ie. shost->host_failed, host_eh_scheduled, host_busy in
->   scsi_error_handler().  It would also be nice to add some printks
->   around schedule() and enable PRINTK_TIME.
+msblk->devblksize = sb_min_blocksize(sb, BLOCK_SIZE);
+-> msblk->devblksize = sb_min_blocksize(sb, PAGE_SIZE); or
+->#define SQUASHFS_DEVBLK_SIZE 4096
+-> msblk->devblksize = sb_min_blocksize(sb, SQUASHFS_DEVBLK_SIZE);
 
-I can certainly try this.  Could you confirm whether my thoughts about a race
-between the scsi_eh thread and the wake-up are plausible?  I backtracked
-yesterday because I thought the scsi_eh thread would get rescheduled naturally,
-not realising that when the task state is TASK_INTERRUPTIBLE schedule() takes
-the task off the run queue (so it needs to be explicitly woken.)
+If devblksize is set by NAND page size before, I think that it is
+changed to optimal vaule with increasing physical page size of NAND.
 
-Here is my thinking again:
+So I suggest that devblksize is set to 4KB, it is suitable for
+physical page size of NAND(Onenand,flexOnenand 4KB) and minimal
+compressed size.
 
-shost->host_eh_scheduled is read here in scsi_error_handler:
+We will gain improved performance(~20%) and stop reading inefficiently
+several time by page alignment.
 
-        set_current_state(TASK_INTERRUPTIBLE);
-        while (!kthread_should_stop()) {
-                if ((shost->host_failed == 0 && shost->host_eh_scheduled == 0) ||
-
-There's no locking in scsi_error_handler (though functions it calls probably
-claim locks.)
-
-When scheduling an EH, scsi_schedule_eh takes the shost->host_lock, increments
-shost->host_eh_scheduled, and then wakes the EH thread.  If this happens
-between the scsi_eh thread reading host_eh_scheduled and sending itself back
-to sleep (when the scsi_eh thread's state is TASK_INTERRUPTIBLE) nothing will
-wake up the thread again and host_eh_scheduled will not get inspected.
-host_eh_scheduled is stuck at 1 with the scsi_eh thread asleep, and it won't
-get woken again because the ata port has been frozen and irqs are masked off.
-
-Bruce.
-
-
-Latest News at: http://www.indigovision.com/index.php/en/news.html
+Thanks.
