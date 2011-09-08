@@ -1,73 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab1IHCNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 22:13:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64477 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab1IHCNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 22:13:38 -0400
-Date: Thu, 8 Sep 2011 10:13:27 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
-Cc: Arjan van de Ven <arjan@infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Player Thread is not woken after period elapsed
-Message-ID: <20110908021327.GA8890@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
- <20110905105253.2787b91f@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C420F15C@bgsmsx502.gar.corp.intel.com>
- <20110905112225.72b46ac9@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C4275D58@bgsmsx502.gar.corp.intel.com>
- <20110906200614.57a99d3d@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C42767FA@bgsmsx502.gar.corp.intel.com>
+	id S1757891Ab1IHCSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 22:18:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:34110 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753223Ab1IHCSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 22:18:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,348,1312182000"; 
+   d="scan'208";a="46616490"
+Message-ID: <4E6825DC.9070309@linux.intel.com>
+Date: Thu, 08 Sep 2011 10:18:04 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.1) Gecko/20110830 Thunderbird/6.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3CA6C6D9F70D314CA34352990B57DA1507C42767FA@bgsmsx502.gar.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Huang Ying <ying.huang@intel.com>
+CC: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC 1/2] ACPI, APEI, EINJ, Fix resource conflict on some machine
+References: <1314685709-7280-1-git-send-email-ying.huang@intel.com> <1314685709-7280-2-git-send-email-ying.huang@intel.com>
+In-Reply-To: <1314685709-7280-2-git-send-email-ying.huang@intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 07, 2011 at 05:32:10PM +0530, Nallasellan, Singaravelan wrote:
-> 
-> > 
-> > > >
-> > > > Please always test bugs like this with a recent kernel. 2.6.35 is
-> > > > pretty much 6 versions (and 18 months) behind and at that point you
-> > > > really have to test with something newer first before asking others
-> > > > to help you and spend their time on your problem.
-> > > >
-> > > Unfortunately, I am stuck with that version as the product that I work
-> > > on is on that version.
-> > 
-> > and that is everyone elses problem ... how?
-> > 
-> > if you can't be bothered to try at least a recent kernel, why would anyone else
-> > be bothered to help you on their own time?????
-> > 
-> I completely agree with you. Sorry for the inconvenience. But I have no choice. 
-> Further investigation of this issue shows that the thread is in running state and it is not scheduled. I am not sure how I will go about debugging this issue. Any pointer would help. 
+于 2011/8/30 14:28, Huang Ying 写道:
+> Some APEI firmware implementaiton will access injected address
+> specified in param1 to trigger the error when injecting memory error.
+> This will cause resource conflict with RAM.  So remove it from trigger
+> table resources to avoid conflict.
+>
+> Signed-off-by: Huang Ying<ying.huang@intel.com>
+> Cc: Tony Luck<tony.luck@intel.com>
+> ---
+>   drivers/acpi/apei/apei-base.c     |   11 +++++++++++
+>   drivers/acpi/apei/apei-internal.h |    3 +++
+>   drivers/acpi/apei/einj.c          |   24 ++++++++++++++++++++++--
+>   3 files changed, 36 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+> index ac11aff..35a7a3a 100644
+> --- a/drivers/acpi/apei/apei-base.c
+> +++ b/drivers/acpi/apei/apei-base.c
+> @@ -421,6 +421,17 @@ static int apei_resources_merge(struct apei_resources *resources1,
+>   	return 0;
+>   }
+>
+> +int apei_resources_add(struct apei_resources *resources,
+> +		       unsigned long start, unsigned long size,
+> +		       bool iomem)
+> +{
+> +	if (iomem)
+> +		return apei_res_add(&resources->iomem, start, size);
+> +	else
+> +		return apei_res_add(&resources->ioport, start, size);
+> +}
+> +EXPORT_SYMBOL_GPL(apei_resources_add);
+> +
+>   /*
+>    * EINJ has two groups of GARs (EINJ table entry and trigger table
+>    * entry), so common resources are subtracted from the trigger table
+> diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
+> index f57050e..d778edd 100644
+> --- a/drivers/acpi/apei/apei-internal.h
+> +++ b/drivers/acpi/apei/apei-internal.h
+> @@ -95,6 +95,9 @@ static inline void apei_resources_init(struct apei_resources *resources)
+>   }
+>
+>   void apei_resources_fini(struct apei_resources *resources);
+> +int apei_resources_add(struct apei_resources *resources,
+> +		       unsigned long start, unsigned long size,
+> +		       bool iomem);
+>   int apei_resources_sub(struct apei_resources *resources1,
+>   		       struct apei_resources *resources2);
+>   int apei_resources_request(struct apei_resources *resources,
+> diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
+> index 3178521..a126c67 100644
+> --- a/drivers/acpi/apei/einj.c
+> +++ b/drivers/acpi/apei/einj.c
+> @@ -195,7 +195,8 @@ static int einj_check_trigger_header(struct acpi_einj_trigger *trigger_tab)
+>   }
+>
+>   /* Execute instructions in trigger error action table */
+> -static int __einj_error_trigger(u64 trigger_paddr)
+> +static int __einj_error_trigger(u64 trigger_paddr, u32 type,
+> +				u64 param1, u64 param2)
+>   {
+>   	struct acpi_einj_trigger *trigger_tab = NULL;
+>   	struct apei_exec_context trigger_ctx;
+> @@ -255,6 +256,25 @@ static int __einj_error_trigger(u64 trigger_paddr)
+>   	rc = apei_resources_sub(&trigger_resources,&einj_resources);
+>   	if (rc)
+>   		goto out_fini;
+> +	/*
+> +	 * Some firmware will access target address specified in
+> +	 * param1 to trigger the error when injecting memory error.
+> +	 * This will cause resource conflict with regular memory.  So
+> +	 * remove it from trigger table resources.
+> +	 */
+> +	if (param_extension&&  (type&  0x0038)&&  param2) {
+> +		struct apei_resources addr_resources;
+> +		apei_resources_init(&addr_resources);
+> +		rc = apei_resources_add(&addr_resources,
+> +					param1&  param2,
+> +					~param2 + 1, true);
 
-Could you confirm if [commit f26f9af Sched: fix skip_clock_update optimization]
-residents in your kernel?
+assuming following scenario:
+param1: 0x827809000
+param2: 0xffffffffffffffff
+after above operation, only 1 byte will be added and be subtracted by
+apei_resources_sub below, which means if 8 bytes are necessary to be
+excluded from ioremap, finally only 1 byte is excluded, left 7 bytes
+still be mapped via ioremap. The same thing will happen:
 
-BTW, I'm refering mainline commit here, I think it also has been backported
-to -statbe.
+APEI: Can not request iomem region <00000000bf7b522a-00000000bf7b522c> 
+for GARs
 
-Thanks,
-Yong
+We can't control the value of param2 here because 1) it is read from
+the user; 2) the param1 is already aligned, the value of param2 is not
+important under this kind of situation.
 
-> > 
-> > --
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+We have hit above error in our tests.
 
--- 
-Only stand for myself
+> +		if (rc)
+> +			goto out_fini;
+> +		rc = apei_resources_sub(&trigger_resources,&addr_resources);
+> +		apei_resources_fini(&addr_resources);
+> +		if (rc)
+> +			goto out_fini;
+> +	}
+>   	rc = apei_resources_request(&trigger_resources, "APEI EINJ Trigger");
+>   	if (rc)
+>   		goto out_fini;
+> @@ -324,7 +344,7 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
+>   	if (rc)
+>   		return rc;
+>   	trigger_paddr = apei_exec_ctx_get_output(&ctx);
+> -	rc = __einj_error_trigger(trigger_paddr);
+> +	rc = __einj_error_trigger(trigger_paddr, type, param1, param2);
+>   	if (rc)
+>   		return rc;
+>   	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_END_OPERATION);
+
