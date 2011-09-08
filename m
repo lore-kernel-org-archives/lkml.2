@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab1IHG55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 02:57:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43844 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209Ab1IHG54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 02:57:56 -0400
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Jiri Kosina <trivial@kernel.org>
-Subject: [PATCH Resend][Trivial] Match on_each_cpu behaviour on UP to SMP
-Date: Thu,  8 Sep 2011 09:57:09 +0300
-Message-Id: <1315465029-4203-1-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932221Ab1IHHAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 03:00:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758050Ab1IHHAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 03:00:47 -0400
+Message-ID: <4E686815.9060901@redhat.com>
+Date: Thu, 08 Sep 2011 09:00:37 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Paul Clements <paul.clements@us.sios.com>
+CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        nbd-general@lists.sourceforge.net
+Subject: Re: [PATCH 2/3] nbd: add support for feature negotiation
+References: <1315406503-7883-1-git-send-email-pbonzini@redhat.com> <1315406503-7883-3-git-send-email-pbonzini@redhat.com> <CAECXXi4YW++_302mcSTX=cPjbguSqcw3Weec85VrLFv1qNHXug@mail.gmail.com> <4E67AF6A.9090400@redhat.com> <CAECXXi6NO1gvmREr_31ve-k67fsirqerdm7=ZX0tYqx+Yj52Sw@mail.gmail.com>
+In-Reply-To: <CAECXXi6NO1gvmREr_31ve-k67fsirqerdm7=ZX0tYqx+Yj52Sw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment in the SMP implementation of on_each_cpu says:
- "May be used during early boot while
-  early_boot_irqs_disabled is set.  Use local_irq_save/restore() instead
-  of local_irq_disable/enable()."
+On 09/07/2011 11:54 PM, Paul Clements wrote:
+>> >  I named it differently intentionally, actually, because it should not use
+>> >  the flags field from the network protocol as is.  Also, "features" sounds
+>> >  more like something that is optional, while unrecognized "flags" should
+>> >  probably cause a failure.
+> Alright, I can buy that argument -- I don't feel that strongly about it...
+>
+> This looks good to me, then.
 
-but the existing UP macro version uses local_irq_disable/enable().
+Actually no, I can do better. :)
 
-Do the safe thing - make the UP version match the SMP one.
-
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Jiri Kosina <trivial@kernel.org>
----
- include/linux/smp.h |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 8cc38d3..7c9b9d4 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -127,9 +127,10 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
- 			(up_smp_call_function(func, info))
- #define on_each_cpu(func,info,wait)		\
- 	({					\
--		local_irq_disable();		\
-+		unsigned long __flags;		\
-+		local_irq_save(__flags);	\
- 		func(info);			\
--		local_irq_enable();		\
-+		local_irq_retore(__flags);	\
- 		0;				\
- 	})
- static inline void smp_send_reschedule(int cpu) { }
--- 
-1.7.0.4
-
+Paolo
