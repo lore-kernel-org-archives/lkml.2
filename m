@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153Ab1IHOHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 10:07:45 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:40538
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S933076Ab1IHODO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 10:03:14 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 14/25] Staging: hv: vmbus: Introduce functions for setting and getting driver data
-Date: Thu,  8 Sep 2011 07:24:25 -0700
-Message-Id: <1315491876-9554-14-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315491876-9554-1-git-send-email-kys@microsoft.com>
-References: <1315491843-9513-1-git-send-email-kys@microsoft.com>
- <1315491876-9554-1-git-send-email-kys@microsoft.com>
+	id S933102Ab1IHOJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 10:09:04 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64522 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933041Ab1IHOJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 10:09:01 -0400
+Date: Thu, 8 Sep 2011 16:08:54 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 08/32] nohz: Move nohz load balancer selection into idle
+ logic
+Message-ID: <20110908140851.GC6222@somewhere>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-9-git-send-email-fweisbec@gmail.com>
+ <1314629117.2816.79.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314629117.2816.79.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for getting rid of the ext field in the struct hv_device,
-introduce vmbus specific wrapper functions to set/get driver specific data.
+On Mon, Aug 29, 2011 at 04:45:17PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-08-15 at 17:52 +0200, Frederic Weisbecker wrote:
+> > We want the nohz load balancer to be an idle CPU, thus
+> > move that selection to strict dyntick idle logic.
+> 
+> Again, the important part is missing, why is this correct?
+> 
+> I'm not at all convinced this is correct, suppose all your cpus (except
+> the system CPU, which we'll assume has many tasks) are busy running 1
+> task. Then two of them get an extra task, now if those two happen to be
+> SMT siblings you want the load-balancer to pull on task out from the SMT
+> pair, however nobody is pulling since nobody is idle.
+> 
+> AFAICT this breaks stuff and the ILB needs some serious attention in
+> order to fix this.
 
+Right, we have the support for trigger_load_balance() in scheduler_tick()
+that is still missing.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/hyperv.h |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/hv/hyperv.h b/drivers/staging/hv/hyperv.h
-index 685a132..2879750 100644
---- a/drivers/staging/hv/hyperv.h
-+++ b/drivers/staging/hv/hyperv.h
-@@ -843,6 +843,15 @@ static inline struct hv_driver *drv_to_hv_drv(struct device_driver *d)
- 	return container_of(d, struct hv_driver, driver);
- }
- 
-+static inline void hv_set_drvdata(struct hv_device *dev, void *data)
-+{
-+	dev_set_drvdata(&dev->device, data);
-+}
-+
-+static inline void *hv_get_drvdata(struct hv_device *dev)
-+{
-+	return dev_get_drvdata(&dev->device);
-+}
- 
- /* Vmbus interface */
- #define vmbus_driver_register(driver)	\
--- 
-1.7.4.1
-
+What about using that CPU that has to stay awake with a periodic tick
+to handle jiffies? We could force that CPU to be the idle load balancer.
+The problem is perhaps to find the right frequency for doing that because
+we have all the rq to handle.
