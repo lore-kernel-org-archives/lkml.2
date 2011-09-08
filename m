@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab1IHKgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:36:19 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:51938 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758153Ab1IHKgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:36:17 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 17/26] richacl: Permission check algorithm
-In-Reply-To: <20110907215022.GI8074@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-18-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907215022.GI8074@fieldses.org>
-User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Thu, 08 Sep 2011 16:04:44 +0530
-Message-ID: <877h5j5nln.fsf@skywalker.in.ibm.com>
+	id S1758232Ab1IHKhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 06:37:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52947 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758153Ab1IHKhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 06:37:39 -0400
+Message-ID: <4E689AC5.7020802@ru.mvista.com>
+Date: Thu, 08 Sep 2011 14:36:53 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11090810-6078-0000-0000-0000007B592B
+To: Keng-Yu Lin <kengyu@canonical.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] achi, ata_generic: Add ASMedia ASM1061 support
+References: <1315453426-8796-1-git-send-email-kengyu@canonical.com>
+In-Reply-To: <1315453426-8796-1-git-send-email-kengyu@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011 17:50:22 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> On Mon, Sep 05, 2011 at 10:55:39PM +0530, Aneesh Kumar K.V wrote:
-> > From: Andreas Gruenbacher <agruen@kernel.org>
-> > 
-> > As in the standard POSIX file permission model, each process is the
-> > owner, group, or other file class.  A process is
-> > 
-> >   - in the owner file class if it owns the file,
-> >   - in the group file class if it is in the file's owning group or it
-> >     matches any of the user or group entries, and
-> >   - in the other file class otherwise.
-> > 
-> > Each file class is associated with a file mask.
-> > 
-> > A richacl grants a requested access if the NFSv4 acl in the richacl
-> > grants the requested permissions (according to the NFSv4 permission
-> > check algorithm) and the file mask that applies to the process includes
-> > the requested permissions.
-> 
-> I assume that by default any ui normally recalculates an upper-bound
-> mask automatically when you add an ace, as the posix setfacl does, so
-> the user doesn't have to think about masks too much?
-> 
+Hello.
 
-yes. richacl userspace command does this.
+On 08-09-2011 7:43, Keng-Yu Lin wrote:
 
--aneesh
+> ASM1061 PCI-E to SATA bridge controller has two variants.
+> One works under AHCI and the other works with ata_generic.
 
+> Add the PCI vendor ID and product IDs accordingly.
+
+> Signed-off-by: Keng-Yu Lin<kengyu@canonical.com>
+[...]
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index f8910e1..87182b8 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2844,3 +2844,7 @@
+>
+>   #define PCI_VENDOR_ID_XEN		0x5853
+>   #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
+> +
+> +#define PCI_VENDOR_ID_ASMEDIA		0x1b21
+> +#define PCI_DEVICE_ID_ASM1061_IDE	0x0611
+> +#define PCI_DEVICE_ID_ASM1061_AHCI	0x0612
+
+    Adding new device IDs to that file is frowned upon. Define the device ID 
+locally in the driver file, if you must. You don't even use the second one.
+
+WBR, Sergei
