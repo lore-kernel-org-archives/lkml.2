@@ -1,59 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab1IHXSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:18:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49404 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab1IHXSl (ORCPT
+	id S1754120Ab1IHXTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:19:00 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:39621 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab1IHXSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Sep 2011 19:18:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-dev@lists.linaro.org
-Cc: Mans Rullgard <mans.rullgard@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>, alsa-devel@alsa-project.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Jarkko Nikula <jhnikula@gmail.com>,
-        linux-omap@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] ASoC: omap: convert per-board modules to platform drivers
-Date: Thu, 08 Sep 2011 22:28:50 +0200
-Message-ID: <3110288.bQbb0H2ME1@wuerfel>
-User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <CAG5Tg6UOuztenNid1=YbH9a4ZH5MqV4YhohG+r9R+7F=zXs=CQ@mail.gmail.com>
-References: <1315503297-8365-1-git-send-email-mans.rullgard@linaro.org> <CABb+yY0b607kDSGU+trycqQuvGMhC-zpHcv20wjgmEcaK7dz8Q@mail.gmail.com> <CAG5Tg6UOuztenNid1=YbH9a4ZH5MqV4YhohG+r9R+7F=zXs=CQ@mail.gmail.com>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Deepthy Ravi <deepthy.ravi@ti.com>
+Subject: Re: [PATCH 4/8] ispvideo: Add support for G/S/ENUM_STD ioctl
+Date: Thu, 8 Sep 2011 19:21:27 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
+Cc: linux-media@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mchehab@infradead.org,
+        g.liakhovetski@gmx.de, Vaibhav Hiremath <hvaibhav@ti.com>
+References: <1315488922-16152-1-git-send-email-deepthy.ravi@ti.com>
+In-Reply-To: <1315488922-16152-1-git-send-email-deepthy.ravi@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:slPjOmPqXeLPhF/IS1B7PzPMpILItZPKx2bu+ATjDf1
- c84QL6ThuyWl6McVjnoVoyExZjRG/1IDa/H+Nt2ifqvctRJrko
- FGcwhQNyKFKdxB8at2GZpx3lBg/Zfny6Cj4j/u6KqpLuahHHuX
- AKtiHlpMf7fdWpHuGAMA+I4oIDXuJYdt8Q28ttq2dlOqrcFnPq
- Cao9jpFW90a+BvzOPDW8SjcZfHkdTMPZSzw7MtEQpXzSZeLR7W
- fwXJ3wN9sfUq6H0y6hs/NMVSMG9w+zVDbMInhBHBCPrCM2dLiC
- zI8c1MXWXkDGPx0c7UyQijGOzSSL17Tljc1ieuBzG+9ufhNtnF
- 2MJANZHTQx5YnnuJZoxI=
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109081921.28051.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 September 2011 20:05:48 Mans Rullgard wrote:
-> >
-> > Can't we do by having omap_init_audio() in arch/arm/mach-omap2/devices.c
-> > generate a platform device of name depending upon machine_is_* ?
-> 
-> I had the same thought, but I couldn't find a suitable string anywhere.
-> Are you suggesting an if(machine_is_foo()) cascade in omap_init_audio()?
-> 
-> I'll be the first to agree this patch is not particularly pretty.
+Hi,
 
-My general feeling is that practically every time someone writes
-machine_is_*(), they are doing it wrong. There are of course exceptions,
-but I would strongly recommend to have the initialization calling up
-from the board file into more general functions instead of having all
-boards calling the same function which then goes to board specific
-code again.
+Thanks for the patch.
 
-	Arnd
+On Thursday 08 September 2011 15:35:22 Deepthy Ravi wrote:
+> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> 
+> In order to support TVP5146 (for that matter any video decoder),
+> it is important to support G/S/ENUM_STD ioctl on /dev/videoX
+> device node.
+
+Why so ? Shouldn't it be queried on the subdev output pad directly ?
+
+> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
+> ---
+>  drivers/media/video/omap3isp/ispvideo.c |   98
+> ++++++++++++++++++++++++++++++- drivers/media/video/omap3isp/ispvideo.h | 
+>   1 +
+>  2 files changed, 98 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/omap3isp/ispvideo.c
+> b/drivers/media/video/omap3isp/ispvideo.c index d5b8236..ff0ffed 100644
+> --- a/drivers/media/video/omap3isp/ispvideo.c
+> +++ b/drivers/media/video/omap3isp/ispvideo.c
+> @@ -37,6 +37,7 @@
+>  #include <plat/iovmm.h>
+>  #include <plat/omap-pm.h>
+> 
+> +#include <media/tvp514x.h>
+>  #include "ispvideo.h"
+>  #include "isp.h"
+> 
+> @@ -1136,7 +1137,97 @@ isp_video_g_input(struct file *file, void *fh,
+> unsigned int *input) static int
+>  isp_video_s_input(struct file *file, void *fh, unsigned int input)
+>  {
+> -	return input == 0 ? 0 : -EINVAL;
+> +	struct isp_video *video = video_drvdata(file);
+> +	struct media_entity *entity = &video->video.entity;
+> +	struct media_entity_graph graph;
+> +	struct v4l2_subdev *subdev;
+> +	struct v4l2_routing route;
+> +	int ret = 0;
+> +
+> +	media_entity_graph_walk_start(&graph, entity);
+> +	while ((entity = media_entity_graph_walk_next(&graph))) {
+> +		if (media_entity_type(entity) ==
+> +				MEDIA_ENT_T_V4L2_SUBDEV) {
+> +			subdev = media_entity_to_v4l2_subdev(entity);
+> +			if (subdev != NULL) {
+> +				if (input == 0)
+> +					route.input = INPUT_CVBS_VI4A;
+> +				else
+> +					route.input = INPUT_SVIDEO_VI2C_VI1C;
+> +				route.output = 0;
+> +				ret = v4l2_subdev_call(subdev, video, s_routing,
+> +						route.input, route.output, 0);
+> +				if (ret < 0 && ret != -ENOIOCTLCMD)
+> +					return ret;
+> +			}
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int isp_video_querystd(struct file *file, void *fh, v4l2_std_id *a)
+> +{
+> +	struct isp_video_fh *vfh = to_isp_video_fh(fh);
+> +	struct isp_video *video = video_drvdata(file);
+> +	struct media_entity *entity = &video->video.entity;
+> +	struct media_entity_graph graph;
+> +	struct v4l2_subdev *subdev;
+> +	int ret = 0;
+> +
+> +	media_entity_graph_walk_start(&graph, entity);
+> +	while ((entity = media_entity_graph_walk_next(&graph))) {
+> +		if (media_entity_type(entity) ==
+> +				MEDIA_ENT_T_V4L2_SUBDEV) {
+> +			subdev = media_entity_to_v4l2_subdev(entity);
+> +			if (subdev != NULL) {
+> +				ret = v4l2_subdev_call(subdev, video, querystd,
+> +						a);
+> +				if (ret < 0 && ret != -ENOIOCTLCMD)
+> +					return ret;
+> +			}
+> +		}
+> +	}
+> +
+> +	vfh->standard.id = *a;
+> +	return 0;
+> +}
+> +
+> +static int isp_video_g_std(struct file *file, void *fh, v4l2_std_id *norm)
+> +{
+> +	struct isp_video_fh *vfh = to_isp_video_fh(fh);
+> +	struct isp_video *video = video_drvdata(file);
+> +
+> +	mutex_lock(&video->mutex);
+> +	*norm = vfh->standard.id;
+> +	mutex_unlock(&video->mutex);
+> +
+> +	return 0;
+> +}
+> +
+> +static int isp_video_s_std(struct file *file, void *fh, v4l2_std_id *norm)
+> +{
+> +	struct isp_video *video = video_drvdata(file);
+> +	struct media_entity *entity = &video->video.entity;
+> +	struct media_entity_graph graph;
+> +	struct v4l2_subdev *subdev;
+> +	int ret = 0;
+> +
+> +	media_entity_graph_walk_start(&graph, entity);
+> +	while ((entity = media_entity_graph_walk_next(&graph))) {
+> +		if (media_entity_type(entity) ==
+> +				MEDIA_ENT_T_V4L2_SUBDEV) {
+> +			subdev = media_entity_to_v4l2_subdev(entity);
+> +			if (subdev != NULL) {
+> +				ret = v4l2_subdev_call(subdev, core, s_std,
+> +						*norm);
+> +				if (ret < 0 && ret != -ENOIOCTLCMD)
+> +					return ret;
+> +			}
+> +		}
+> +	}
+> +
+> +	return 0;
+>  }
+> 
+>  static const struct v4l2_ioctl_ops isp_video_ioctl_ops = {
+> @@ -1161,6 +1252,9 @@ static const struct v4l2_ioctl_ops
+> isp_video_ioctl_ops = { .vidioc_enum_input		= isp_video_enum_input,
+>  	.vidioc_g_input			= isp_video_g_input,
+>  	.vidioc_s_input			= isp_video_s_input,
+> +	.vidioc_querystd		= isp_video_querystd,
+> +	.vidioc_g_std			= isp_video_g_std,
+> +	.vidioc_s_std			= isp_video_s_std,
+>  };
+> 
+>  /*
+> --------------------------------------------------------------------------
+> --- @@ -1325,6 +1419,8 @@ int omap3isp_video_register(struct isp_video
+> *video, struct v4l2_device *vdev) printk(KERN_ERR "%s: could not register
+> video device (%d)\n",
+>  			__func__, ret);
+> 
+> +	video->video.tvnorms		= V4L2_STD_NTSC | V4L2_STD_PAL;
+> +	video->video.current_norm	= V4L2_STD_NTSC;
+>  	return ret;
+>  }
+> 
+> diff --git a/drivers/media/video/omap3isp/ispvideo.h
+> b/drivers/media/video/omap3isp/ispvideo.h index 53160aa..bb8feb6 100644
+> --- a/drivers/media/video/omap3isp/ispvideo.h
+> +++ b/drivers/media/video/omap3isp/ispvideo.h
+> @@ -182,6 +182,7 @@ struct isp_video_fh {
+>  	struct isp_video *video;
+>  	struct isp_video_queue queue;
+>  	struct v4l2_format format;
+> +	struct v4l2_standard standard;
+>  	struct v4l2_fract timeperframe;
+>  };
+
+-- 
+Regards,
+
+Laurent Pinchart
