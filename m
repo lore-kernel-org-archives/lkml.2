@@ -1,114 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab1IHNuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 09:50:18 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48011 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932789Ab1IHNuQ (ORCPT
+	id S933016Ab1IHNvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 09:51:18 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:51093 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932789Ab1IHNvQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 09:50:16 -0400
-Date: Thu, 8 Sep 2011 09:49:51 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Neil Horman <nhorman@redhat.com>, Tomas Mraz <tmraz@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Jarod Wilson <jarod@redhat.com>, linux-crypto@vger.kernel.org,
-        Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] random: add blocking facility to urandom
-Message-ID: <20110908134951.GA13633@hmsreliant.think-freely.org>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
- <1315464117.11199.51.camel@vespa.frost.loc>
- <20110908125234.GD13657@hmsreliant.think-freely.org>
- <201109080911.12921.sgrubb@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201109080911.12921.sgrubb@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: 0.2 (/)
+	Thu, 8 Sep 2011 09:51:16 -0400
+Subject: Re: [PATCH 2.6.38-10-generic] device driver: fix oops in radeon
+ driver due to incorrect value from hardware
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: "A.R Karthick" <a.r.karthick@gmail.com>, Mayank Rungta <mr.mynk@gmail.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        karthick.linuxdreamer@gmail.com
+Date: Thu, 08 Sep 2011 15:50:54 +0200
+In-Reply-To: <CADnq5_Mk3oUHU+iABeFiGz=FaPnLVbtyYCA_6KnWA_QTfigfew@mail.gmail.com>
+References: <4E417AF8.7090202@gmail.com>
+	 <1312968271.14630.189.camel@thor.local>
+	 <CADnq5_Mk3oUHU+iABeFiGz=FaPnLVbtyYCA_6KnWA_QTfigfew@mail.gmail.com>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA
+	R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1315489854.25712.60.camel@thor.local>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 09:11:12AM -0400, Steve Grubb wrote:
-> On Thursday, September 08, 2011 08:52:34 AM Neil Horman wrote:
-> > > to disk device - of course only if the device adds entropy into the
-> > > primary pool when there are writes on the device.
-> > 
-> > Yes, and thats a problem.  We're assuming in the above case that writes to
-> > disk generate interrupts which in turn generate entropy in the pool.  If
-> > that happens, then yes, it can be difficult (though far from impossible)
-> > to block on urandom with this patch and a sufficiently high blocking
-> > threshold.  But interrupt randomness is only added for interrupts flagged
-> > with
-> > IRQF_SAMPLE_RANDOM, and if you look, almost no hard irqs add that flag.  So
-> > its possible (and even likely) that writing to disk will not generate
-> > additional entropy.
+On Mit, 2011-08-10 at 09:27 -0400, Alex Deucher wrote: 
+> 2011/8/10 Michel Dänzer <michel@daenzer.net>:
+> > On Die, 2011-08-09 at 23:52 +0530, Mayank Rungta wrote:
+> >> Added a check for the radeon ring buffer write index in r600.c which
+> >> reads 0xffffffff on resume. This results in an Oops during
+> >> radeon_ring_write. Masking the value averts this.
+> >>
+> >> This problem is not seen to be fixed in 3.0 r600.c as well.
+> >>
+> >> Detailed analysis of the problem can be found at -
+> >>
+> >> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/820746/
+> >>
+> >> ---
+> >>
+> >> BUG: unable to handle kernel paging request at fa501ffc - Oops at
+> >> r600_cp_start+0x48/0x380 in r600_cp_resume+0x345/0x580 [radeon]
+> >>
+> >> drivers/gpu/drm/radeon/r600.c
+> >>
+> >>
+> >>
+> >> --- linux-2.6.38/drivers/gpu/drm/radeon/r600.c.orig    2011-08-05
+> >> 15:39:40.824612700 +0530
+> >> +++ linux-2.6.38/drivers/gpu/drm/radeon/r600.c    2011-08-08
+> >> 05:29:21.744417857 +0530
+> >> @@ -2218,6 +2218,8 @@ int r600_cp_resume(struct radeon_device
+> >>
+> >>       rdev->cp.rptr = RREG32(CP_RB_RPTR);
+> >>       rdev->cp.wptr = RREG32(CP_RB_WPTR);
+> >> +    /* protect against crazy HW on resume */
+> >> +    rdev->cp.wptr &= rdev->cp.ptr_mask;
+> >
+> > Although the same workaround is already in r100.c, I wonder if we
+> > shouldn't rather try and eliminate all reads from the CP_RB_WPTR
+> > register, at least other than for debugging purposes. Alex, what do you
+> > think?
 > 
-> The system being low on entropy is another problem that should be addressed. For our 
-> purposes, we cannot say take it from TPM or RDRND or any plugin board. We have to have 
-> the mathematical analysis that goes with it, we need to know where the entropy comes 
-> from, and a worst case entropy estimation. It has to be documented in detail. The only 
-> way we can be certain is if its based on system events. Linux systems are constantly 
-> low on entropy and this really needs addressing. But that is a separate issue. For 
-> real world use, I'd recommend everyone use a TPM chip + rngd and you'll never be short 
-> on random numbers. But in the case where we are certifying the OS, we need the 
-> mathematical argument to prove that unaided, things are correct.
-> 
-I agree, it would be great if we had more entropy as a rule, but thats not
-really what this patch is about.  Its about how we behave in our various
-interfaces when we don't have entropy.
+> Either this or reset the registers to 0 or a saved value on resume
+> rather than reading from them.
 
->  
-> > > Of course you can still easily make the /dev/urandom to occasionally
-> > > block with this patch, just read the data and drop it.
-> > > 
-> > > But you have to understand that the value that will be set with the
-> > > sysctl added by this patch will be large in the order of millions of
-> > > bits.
-> > 
-> > You can guarantee that?  
-> 
-> One proposal I made to Jarod was to add some minimum threshold that would prevent 
-> people from setting a value of 2, for example. Maybe the threshold could be set at 64K 
-> or higher depending on what number we get back from BSI.
-> 
-> > This sysctl allows for a setting of 2 just as  easily as it allows for a setting of
-> > 8,000,000.  And the former is sure to break or otherwise adversely affect
-> > applications that expect urandom to never block. Thats what Sasha was referring to,
-> > saying that patch makes it easy for admins to make serious mistakes.
-> 
-> Would a sufficiently high threshold make this easier to accept?
-> 
+The patch below is what I had in mind. Does this fix the problem above?
 
-I don't know, but IMO, no.  The problems with this implementation go beyond just
-picking the appropriate threshold.  As several others have commented, theres
-problems:
 
-1) With having a threshold at all - I still don't think its clear what a 'good'
-theshold is and why.  I've seen 8,000,000 bytes beyond zero entropy tossed
-about.  I presume thats used because its been shown that after 8,000,000 bytes
-read beyond zero entropy, the internal state of the urandom device can be
-guessed?  If so, how?  If not, what the magic number?
+>From c564bc8e6d449216d74ee134d5bf470221f79e8d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>
+Date: Thu, 8 Sep 2011 11:09:39 +0200
+Subject: [PATCH] drm/radeon: Don't read from CP ring write pointer registers.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-2) With the implementation.  There are still unaddressed concerns about
-applications which expect urandom to never block living in conjunction with
-applications that can tolerate it.  As you noted above entropy is in short
-supply in Linux systems.  Regardless of what threshold you set, its possible
-that it will not be high enough to prevent urandom blocking for indefinate
-periods of time.  Not addressing this I think is a complete show stopper.  The
-CUSE driver has been proposed as a solution here and I think its a good one.  It
-lets those that are worried about this sort of attack mitigate it and leaves the
-rest of the world alone (and ostensibly is auditable)
+Apparently this doesn't always work reliably, e.g. at resume time.
 
-Neil
+Just initialize to 0, so the ring is considered empty.
 
-> -Steve
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Tested with hibernation on Sumo and Cayman cards.
+
+Should fix https://bugs.launchpad.net/ubuntu/+source/linux/+bug/820746/ .
+
+Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
+---
+ drivers/gpu/drm/radeon/evergreen.c |    4 ++--
+ drivers/gpu/drm/radeon/ni.c        |   12 ++++++------
+ drivers/gpu/drm/radeon/r100.c      |    6 ++----
+ drivers/gpu/drm/radeon/r600.c      |    4 ++--
+ 4 files changed, 12 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 15bd047..f2bd90a 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1378,7 +1378,8 @@ int evergreen_cp_resume(struct radeon_device *rdev)
+ 	/* Initialize the ring buffer's read and write pointers */
+ 	WREG32(CP_RB_CNTL, tmp | RB_RPTR_WR_ENA);
+ 	WREG32(CP_RB_RPTR_WR, 0);
+-	WREG32(CP_RB_WPTR, 0);
++	rdev->cp.wptr = 0;
++	WREG32(CP_RB_WPTR, rdev->cp.wptr);
+ 
+ 	/* set the wb address wether it's enabled or not */
+ 	WREG32(CP_RB_RPTR_ADDR,
+@@ -1403,7 +1404,6 @@ int evergreen_cp_resume(struct radeon_device *rdev)
+ 	WREG32(CP_DEBUG, (1 << 27) | (1 << 28));
+ 
+ 	rdev->cp.rptr = RREG32(CP_RB_RPTR);
+-	rdev->cp.wptr = RREG32(CP_RB_WPTR);
+ 
+ 	evergreen_cp_start(rdev);
+ 	rdev->cp.ready = true;
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index 559dbd4..e3489ee 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1182,7 +1182,8 @@ int cayman_cp_resume(struct radeon_device *rdev)
+ 
+ 	/* Initialize the ring buffer's read and write pointers */
+ 	WREG32(CP_RB0_CNTL, tmp | RB_RPTR_WR_ENA);
+-	WREG32(CP_RB0_WPTR, 0);
++	rdev->cp.wptr = 0;
++	WREG32(CP_RB0_WPTR, rdev->cp.wptr);
+ 
+ 	/* set the wb address wether it's enabled or not */
+ 	WREG32(CP_RB0_RPTR_ADDR, (rdev->wb.gpu_addr + RADEON_WB_CP_RPTR_OFFSET) & 0xFFFFFFFC);
+@@ -1202,7 +1203,6 @@ int cayman_cp_resume(struct radeon_device *rdev)
+ 	WREG32(CP_RB0_BASE, rdev->cp.gpu_addr >> 8);
+ 
+ 	rdev->cp.rptr = RREG32(CP_RB0_RPTR);
+-	rdev->cp.wptr = RREG32(CP_RB0_WPTR);
+ 
+ 	/* ring1  - compute only */
+ 	/* Set ring buffer size */
+@@ -1215,7 +1215,8 @@ int cayman_cp_resume(struct radeon_device *rdev)
+ 
+ 	/* Initialize the ring buffer's read and write pointers */
+ 	WREG32(CP_RB1_CNTL, tmp | RB_RPTR_WR_ENA);
+-	WREG32(CP_RB1_WPTR, 0);
++	rdev->cp1.wptr = 0;
++	WREG32(CP_RB1_WPTR, rdev->cp1.wptr);
+ 
+ 	/* set the wb address wether it's enabled or not */
+ 	WREG32(CP_RB1_RPTR_ADDR, (rdev->wb.gpu_addr + RADEON_WB_CP1_RPTR_OFFSET) & 0xFFFFFFFC);
+@@ -1227,7 +1228,6 @@ int cayman_cp_resume(struct radeon_device *rdev)
+ 	WREG32(CP_RB1_BASE, rdev->cp1.gpu_addr >> 8);
+ 
+ 	rdev->cp1.rptr = RREG32(CP_RB1_RPTR);
+-	rdev->cp1.wptr = RREG32(CP_RB1_WPTR);
+ 
+ 	/* ring2 - compute only */
+ 	/* Set ring buffer size */
+@@ -1240,7 +1240,8 @@ int cayman_cp_resume(struct radeon_device *rdev)
+ 
+ 	/* Initialize the ring buffer's read and write pointers */
+ 	WREG32(CP_RB2_CNTL, tmp | RB_RPTR_WR_ENA);
+-	WREG32(CP_RB2_WPTR, 0);
++	rdev->cp2.wptr = 0;
++	WREG32(CP_RB2_WPTR, rdev->cp2.wptr);
+ 
+ 	/* set the wb address wether it's enabled or not */
+ 	WREG32(CP_RB2_RPTR_ADDR, (rdev->wb.gpu_addr + RADEON_WB_CP2_RPTR_OFFSET) & 0xFFFFFFFC);
+@@ -1252,7 +1253,6 @@ int cayman_cp_resume(struct radeon_device *rdev)
+ 	WREG32(CP_RB2_BASE, rdev->cp2.gpu_addr >> 8);
+ 
+ 	rdev->cp2.rptr = RREG32(CP_RB2_RPTR);
+-	rdev->cp2.wptr = RREG32(CP_RB2_WPTR);
+ 
+ 	/* start the rings */
+ 	cayman_cp_start(rdev);
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index f2204cb..11e44a3 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -990,7 +990,8 @@ int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
+ 	/* Force read & write ptr to 0 */
+ 	WREG32(RADEON_CP_RB_CNTL, tmp | RADEON_RB_RPTR_WR_ENA | RADEON_RB_NO_UPDATE);
+ 	WREG32(RADEON_CP_RB_RPTR_WR, 0);
+-	WREG32(RADEON_CP_RB_WPTR, 0);
++	rdev->cp.wptr = 0;
++	WREG32(RADEON_CP_RB_WPTR, rdev->cp.wptr);
+ 
+ 	/* set the wb address whether it's enabled or not */
+ 	WREG32(R_00070C_CP_RB_RPTR_ADDR,
+@@ -1007,9 +1008,6 @@ int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
+ 	WREG32(RADEON_CP_RB_CNTL, tmp);
+ 	udelay(10);
+ 	rdev->cp.rptr = RREG32(RADEON_CP_RB_RPTR);
+-	rdev->cp.wptr = RREG32(RADEON_CP_RB_WPTR);
+-	/* protect against crazy HW on resume */
+-	rdev->cp.wptr &= rdev->cp.ptr_mask;
+ 	/* Set cp mode to bus mastering & enable cp*/
+ 	WREG32(RADEON_CP_CSQ_MODE,
+ 	       REG_SET(RADEON_INDIRECT2_START, indirect2_start) |
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index bc54b26..8ca098d 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2208,7 +2208,8 @@ int r600_cp_resume(struct radeon_device *rdev)
+ 	/* Initialize the ring buffer's read and write pointers */
+ 	WREG32(CP_RB_CNTL, tmp | RB_RPTR_WR_ENA);
+ 	WREG32(CP_RB_RPTR_WR, 0);
+-	WREG32(CP_RB_WPTR, 0);
++	rdev->cp.wptr = 0;
++	WREG32(CP_RB_WPTR, rdev->cp.wptr);
+ 
+ 	/* set the wb address whether it's enabled or not */
+ 	WREG32(CP_RB_RPTR_ADDR,
+@@ -2233,7 +2234,6 @@ int r600_cp_resume(struct radeon_device *rdev)
+ 	WREG32(CP_DEBUG, (1 << 27) | (1 << 28));
+ 
+ 	rdev->cp.rptr = RREG32(CP_RB_RPTR);
+-	rdev->cp.wptr = RREG32(CP_RB_WPTR);
+ 
+ 	r600_cp_start(rdev);
+ 	rdev->cp.ready = true;
+-- 
+1.7.5.4
+
+-- 
+Earthling Michel Dänzer           |                   http://www.amd.com
+Libre software enthusiast         |          Debian, X and DRI developer
