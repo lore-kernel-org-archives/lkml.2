@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808Ab1IHMrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 08:47:21 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55986 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932734Ab1IHMrR (ORCPT
+	id S932760Ab1IHMrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 08:47:52 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:37535 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932704Ab1IHMpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 08:47:17 -0400
-From: Abhilash K V <abhilash.kv@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <khilman@ti.com>,
-        <sameo@linux.intel.com>, <santosh.shilimkar@ti.com>, <premi@ti.com>,
-        <david.woodhouse@intel.com>, Abhilash K V <abhilash.kv@ti.com>
-Subject: [PATCH v2 0/3] AM35x: Adding PM init
-Date: Thu, 8 Sep 2011 18:16:47 +0530
-Message-ID: <1315486007-452-1-git-send-email-abhilash.kv@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 8 Sep 2011 08:45:44 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 12/16] drbd: introduce the "initialized" activity log transaction type
+Date: Thu,  8 Sep 2011 14:45:33 +0200
+Message-Id: <1315485937-18989-13-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315485937-18989-1-git-send-email-philipp.reisner@linbit.com>
+References: <1315485937-18989-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set fixes the power and voltage management initialization sequence
-for AM35x.
-These patches are dependent on the following patch-set
-	[PATCH v3 0/2] AM3517: Booting up
-at http://marc.info/?l=linux-kernel&m=131548351225196&w=2
-which gets the AM3517 EVM booting.
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-The patches are tested on master of tmlind/linux-omap-2.6.git.
-Kernel version is 3.1-rc3 and last commit on top of which these patches
-were added is:
-	b148d763841161894ed6629794064065a834aa2b: Linux-omap rebuilt: Updated to
-	use omap_sdrc_init
+So we can initialize a clean on disk activity log area,
+without the module complaining with loud assert messages
+because of checksum or magic value mismatches.
 
-with the folowing commit reverted:
-	f3637a5f2e2eb391ff5757bc83fb5de8f9726464: irq: Always set IRQF_ONESHOT
-	if no primary handler is specified
-
-Cc: Sanjeev Premi <premi@ti.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
-Changes in v2:
-  * TWL4030 CORE and POWER drivers are no longer built only for ARM and OMAP
-  * changed comments to mark AM35x voltgate-scaling code as ad hoc
+ drivers/block/drbd/drbd_actlog.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-Abhilash K V (1):
-  OMAP3: Remove auto-selection of PMICs
-
-Sanjeev Premi (2):
-  AM35x: voltage: Basic initialization
-  OMAP3: Add support for TPS65023 (AM35x only)
-
- arch/arm/configs/omap2plus_defconfig          |    3 +
- arch/arm/mach-omap2/Kconfig                   |    3 -
- arch/arm/mach-omap2/Makefile                  |    3 +-
- arch/arm/mach-omap2/omap_opp_data.h           |    1 +
- arch/arm/mach-omap2/opp3xxx_data.c            |   10 +++
- arch/arm/mach-omap2/pm.c                      |    4 +-
- arch/arm/mach-omap2/pm.h                      |    9 +++
- arch/arm/mach-omap2/pmic_tps65023.c           |   84 +++++++++++++++++++++++++
- arch/arm/mach-omap2/voltage.c                 |   18 +++++
- arch/arm/mach-omap2/voltagedomains3xxx_data.c |   41 ++++++++++++-
- drivers/mfd/Kconfig                           |    2 +-
- 11 files changed, 171 insertions(+), 7 deletions(-)
- create mode 100644 arch/arm/mach-omap2/pmic_tps65023.c
+diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
+index 9c9929a..643a7bd 100644
+--- a/drivers/block/drbd/drbd_actlog.c
++++ b/drivers/block/drbd/drbd_actlog.c
+@@ -31,6 +31,11 @@
+ #include "drbd_int.h"
+ #include "drbd_wrappers.h"
+ 
++
++enum al_transaction_types {
++	AL_TR_UPDATE = 0,
++	AL_TR_INITIALIZED = 0xffff
++};
+ /* all fields on disc in big endian */
+ struct __packed al_transaction_on_disk {
+ 	/* don't we all like magic */
+@@ -44,7 +49,8 @@ struct __packed al_transaction_on_disk {
+ 	__be32	crc32c;
+ 
+ 	/* type of transaction, special transaction types like:
+-	 * purge-all, set-all-idle, set-all-active, ... to-be-defined */
++	 * purge-all, set-all-idle, set-all-active, ... to-be-defined
++	 * see also enum al_transaction_types */
+ 	__be16	transaction_type;
+ 
+ 	/* we currently allow only a few thousand extents,
+@@ -466,6 +472,7 @@ int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
+ 	int active_extents = 0;
+ 	int transactions = 0;
+ 	int found_valid = 0;
++	int found_initialized = 0;
+ 	int from = 0;
+ 	int to = 0;
+ 	u32 from_tnr = 0;
+@@ -494,6 +501,10 @@ int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
+ 		/* invalid data in that block */
+ 		if (rv == 0)
+ 			continue;
++		if (be16_to_cpu(b->transaction_type) == AL_TR_INITIALIZED) {
++			++found_initialized;
++			continue;
++		}
+ 
+ 		/* IO error */
+ 		if (rv == -1) {
+@@ -525,7 +536,8 @@ int drbd_al_read_log(struct drbd_conf *mdev, struct drbd_backing_dev *bdev)
+ 	}
+ 
+ 	if (!found_valid) {
+-		dev_warn(DEV, "No usable activity log found.\n");
++		if (found_initialized != mx)
++			dev_warn(DEV, "No usable activity log found.\n");
+ 		mutex_unlock(&mdev->md_io_mutex);
+ 		return 1;
+ 	}
+-- 
+1.7.4.1
 
