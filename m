@@ -1,44 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab1IHHpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 03:45:12 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:65133 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140Ab1IHHpK (ORCPT
+	id S932263Ab1IHHpR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 03:45:17 -0400
+Received: from mail-vw0-f43.google.com ([209.85.212.43]:50614 "EHLO
+	mail-vw0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932140Ab1IHHpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 03:45:10 -0400
+	Thu, 8 Sep 2011 03:45:14 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Paul Clements <Paul.Clements@steeleye.com>, <nbd-general@lists.sf.net>
-Subject: [PATCH v2 0/2] nbd: add support for DISCARD
-Date: Thu,  8 Sep 2011 09:44:56 +0200
-Message-Id: <1315467898-23984-1-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v2 2/2] nbd: map DISCARD requests to a new nbd request type
+Date: Thu,  8 Sep 2011 09:44:58 +0200
+Message-Id: <1315467898-23984-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1315467898-23984-1-git-send-email-pbonzini@redhat.com>
+References: <1315467898-23984-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds support for a DISCARD command in the nbd
-protocol.  qemu-nbd will be the first user of the feature.
+When the feature is enabled, set QUEUE_FLAG_DISCARD and transmit those as
+NBD_CMD_TRIM requests.
 
-Thanks!
-
-v1->v2:
-        Change ioctl name to NBD_SET_FLAGS and allow passing all
-        flags in the network protocol.
+I used "trim" instead of "discard" to avoid confusion with the existing
+NBD_CMD_DISC that is used for disconnect.
 
 Cc: Paul Clements <Paul.Clements@steeleye.com>
 Cc: <nbd-general@lists.sf.net>
+Reviewed-by: Paul Clements <Paul.Clements@steeleye.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+        This patch is the same as in v1.
 
-Paolo Bonzini (2):
-  nbd: add support for feature negotiation
-  nbd: map DISCARD requests to a new nbd request type
+ drivers/block/nbd.c |   14 +++++++++++++-
+ include/linux/nbd.h |    4 +++-
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
- drivers/block/nbd.c |   10 ++++++++++++++++++++++--
- include/linux/nbd.h |   28 +++++++++++++++++---------------
- 2 files changed, 39 insertions(+), 17 deletions(-)
-
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index c4fe9c8..71ebaab 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -98,6 +98,7 @@ static const char *nbdcmd_to_ascii(int cmd)
+ 	case  NBD_CMD_READ: return "read";
+ 	case NBD_CMD_WRITE: return "write";
+ 	case  NBD_CMD_DISC: return "disconnect";
++	case  NBD_CMD_TRIM: return "trim (discard)";
+ 	}
+ 	return "invalid";
+ }
+@@ -453,12 +453,16 @@ static void nbd_handle_req(struct nbd_device *lo, struct request *req)
+ 
+ 	nbd_cmd(req) = NBD_CMD_READ;
+ 	if (rq_data_dir(req) == WRITE) {
+-		nbd_cmd(req) = NBD_CMD_WRITE;
+ 		if (lo->flags & NBD_FLAG_READ_ONLY) {
+ 			printk(KERN_ERR "%s: Write on read-only\n",
+ 					lo->disk->disk_name);
+ 			goto error_out;
+ 		}
++		if ((req->cmd_flags & REQ_DISCARD)) {
++			WARN_ON(!(lo->flags & NBD_FLAG_HAS_TRIM));
++			nbd_cmd(req) = NBD_CMD_TRIM;
++		} else
++			nbd_cmd(req) = NBD_CMD_WRITE;
+ 	}
+ 
+ 	req->errors = 0;
+@@ -659,6 +664,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+ 			return -EINVAL;
+ 
+ 		mutex_unlock(&lo->tx_lock);
++		if (lo->flags & NBD_FLAG_HAS_TRIM)
++			queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
++						lo->disk->queue);
+ 
+ 		thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+@@ -677,6 +685,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+ 		lo->file = NULL;
+ 		nbd_clear_que(lo);
+ 		printk(KERN_WARNING "%s: queue cleared\n", lo->disk->disk_name);
++		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, lo->disk->queue);
+ 		if (file)
+ 			fput(file);
+ 		lo->flags = 0;
+@@ -796,6 +805,9 @@ static int __init nbd_init(void)
+ 		 * Tell the block layer that we are not a rotational device
+ 		 */
+ 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
++		disk->queue->limits.discard_granularity = 512;
++		disk->queue->limits.max_discard_sectors = UINT_MAX;
++		disk->queue->limits.discard_zeroes_data = 0;
+ 	}
+ 
+ 	if (register_blkdev(NBD_MAJOR, "nbd")) {
+diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+index 926f19d..7048463 100644
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -33,11 +33,13 @@
+ 
+ /* values for flags field */
+ #define NBD_FLAG_READ_ONLY	(1 << 1)
++#define NBD_FLAG_HAS_TRIM	(1 << 2)
+ 
+ enum {
+ 	NBD_CMD_READ = 0,
+ 	NBD_CMD_WRITE = 1,
+-	NBD_CMD_DISC = 2
++	NBD_CMD_DISC = 2,
++	NBD_CMD_TRIM = 3
+ };
+ 
+ #define nbd_cmd(req) ((req)->cmd[0])
 -- 
 1.7.6
 
