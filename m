@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab1IHTX0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 15:23:26 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35990 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab1IHTXX (ORCPT
+	id S1751737Ab1IHWyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 18:54:11 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:35134 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750902Ab1IHWyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 15:23:23 -0400
-Date: Thu, 8 Sep 2011 21:23:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Lin Ming <mlin@ss.pku.edu.cn>, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/55] Preview of RCU changes for 3.2
-In-Reply-To: <20110908174139.GL2671@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.02.1109082122230.2723@ionos>
-References: <20110906180015.GA2560@linux.vnet.ibm.com> <CAF1ivSZ_THTHMPhXcPSJovxoi1WBvpr07ktMuYL39oode8kz0w@mail.gmail.com> <20110908174139.GL2671@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 8 Sep 2011 18:54:05 -0400
+Message-ID: <4E68FAD5.9060608@xenotime.net>
+Date: Thu, 08 Sep 2011 10:26:45 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] switching-sched.txt: remove 'as' for as is no longer
+ supported
+References: <4E64E172.7000506@gmail.com>
+In-Reply-To: <4E64E172.7000506@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011, Paul E. McKenney wrote:
-
-> On Wed, Sep 07, 2011 at 10:39:57PM +0800, Lin Ming wrote:
-> > On Wed, Sep 7, 2011 at 2:00 AM, Paul E. McKenney
-> > <paulmck@linux.vnet.ibm.com> wrote:
-> > >
-> > > For a testing-only version of this patchset from git, please see the
-> > > following subject-to-rebase (and subject-to-Hera-availability) branch:
-> > >
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
-> > 
-> > kernel.org is still down.
-> > Would you put the tree somewhere else(maybe github.com)?
+On 09/05/11 07:49, Wang Sheng-Hui wrote:
+> The patch is against 3.1-rc3.
 > 
-> Hello, Lin,
+> as is no longer supported and we can not use 'elevator=as' any
+> more.
 > 
-> I am unlikely to figure out why github doesn't like me by the end of
-> the week, so please feel free to post the patches somewhere.  If you
-> have a -tip tree handy, you could apply them on top of tip/master.
-> If you don't have a -tip tree handy, they should also apply cleanly
-> onto v3.0.
+> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
 
-  git://tesla.tglx.de/git/linux-2.6-tip
+Applied, thanks.
 
-Just in case.
+> ---
+>  Documentation/block/switching-sched.txt |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/block/switching-sched.txt b/Documentation/block/switching-sched.txt
+> index 71cfbdc..3b2612e 100644
+> --- a/Documentation/block/switching-sched.txt
+> +++ b/Documentation/block/switching-sched.txt
+> @@ -1,6 +1,6 @@
+>  To choose IO schedulers at boot time, use the argument 'elevator=deadline'.
+> -'noop', 'as' and 'cfq' (the default) are also available. IO schedulers are
+> -assigned globally at boot time only presently.
+> +'noop' and 'cfq' (the default) are also available. IO schedulers are assigned
+> +globally at boot time only presently.
+>  
+>  Each io queue has a set of io scheduler tunables associated with it. These
+>  tunables control how the io scheduler works. You can find these entries
 
-     tglx
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
