@@ -1,116 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab1IHJbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 05:31:09 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42726 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932493Ab1IHJbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 05:31:08 -0400
+	id S932561Ab1IHJcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 05:32:32 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38760 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932537Ab1IHJcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 05:32:31 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: "J. Bruce Fields" <bfields@fieldses.org>
 Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
         linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 09/26] vfs: Add delete child and delete self permission flags
-In-Reply-To: <20110907203916.GE8074@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907203916.GE8074@fieldses.org>
+Subject: Re: [PATCH -V6 10/26] vfs: Make the inode passed to inode_change_ok non-const
+In-Reply-To: <20110907204321.GF8074@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907204321.GF8074@fieldses.org>
 User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Thu, 08 Sep 2011 15:00:58 +0530
-Message-ID: <87ipp35qjx.fsf@skywalker.in.ibm.com>
+Date: Thu, 08 Sep 2011 15:02:15 +0530
+Message-ID: <87fwk75qhs.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+x-cbid: 11090809-7282-0000-0000-000001417977
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011 16:39:16 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> On Mon, Sep 05, 2011 at 10:55:31PM +0530, Aneesh Kumar K.V wrote:
+On Wed, 7 Sep 2011 16:43:22 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Mon, Sep 05, 2011 at 10:55:32PM +0530, Aneesh Kumar K.V wrote:
 > > From: Andreas Gruenbacher <agruen@kernel.org>
 > > 
-> > Normally, deleting a file requires write access to the parent directory.
-> > Some permission models use a different permission on the parent
-> > directory to indicate delete access.  In addition, a process can have
-> > per-file delete access even without delete access on the parent
-> > directory.
-> > 
-> > Introduce two new inode_permission() mask flags and use them in
-> > may_delete()
-> > 
-> > Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > ---
-> >  fs/namei.c         |   41 +++++++++++++++++++++++++++--------------
-> >  include/linux/fs.h |    2 ++
-> >  2 files changed, 29 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/fs/namei.c b/fs/namei.c
-> > index d52a4cd..eacb530 100644
-> > --- a/fs/namei.c
-> > +++ b/fs/namei.c
-> > @@ -337,7 +337,7 @@ static inline int do_inode_permission(struct inode *inode, int mask)
-> >   * are used for other things.
-> >   *
-> >   * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
-> > - * MAY_WRITE must also be set in @mask.
-> > + * MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_WRITE must also be set in @mask.
-> >   */
-> >  int inode_permission(struct inode *inode, int mask)
-> >  {
-> > @@ -1862,7 +1862,7 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
-> >  		return 0;
-> >  
-> >  other_userns:
-> > -	return !ns_capable(inode_userns(inode), CAP_FOWNER);
-> > +	return 1;
-> >  }
-> >  
-> >  /*
-> > @@ -1884,30 +1884,43 @@ other_userns:
-> >   * 10. We don't allow removal of NFS sillyrenamed files; it's handled by
-> >   *     nfs_async_unlink().
-> >   */
-> > -static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
-> > +static int may_delete(struct inode *dir, struct dentry *victim,
-> > +		      int isdir, int replace)
-> >  {
-> > -	int error;
-> > +	int mask, error, is_sticky;
-> > +	struct inode *inode = victim->d_inode;
-> >  
-> > -	if (!victim->d_inode)
-> > +	if (!inode)
-> >  		return -ENOENT;
-> >  
-> >  	BUG_ON(victim->d_parent->d_inode != dir);
-> >  	audit_inode_child(victim, dir);
-> >  
-> > -	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
-> > +	mask = MAY_WRITE | MAY_EXEC | MAY_DELETE_CHILD;
-> > +	if (replace)
-> > +		mask |= S_ISDIR(inode->i_mode) ?
-> > +			MAY_CREATE_DIR : MAY_CREATE_FILE;
+> > We will need to call iop->permission and iop->get_acl from
+> > inode_change_ok() for additional permission checks, and both take a
+> > non-const inode.
 > 
-> I'm having trouble understanding this next bit:
+> OK, the essential difference being that richacls have a say in whether
+> we can change attributes or not, which posix acls (for example) don't?
 > 
-> > +	is_sticky = check_sticky(dir, inode);
-> > +	error = inode_permission(dir, mask);
-> > +	if ((error || is_sticky) && IS_RICHACL(inode) &&
-> > +	    !inode_permission(dir, mask & ~(MAY_WRITE | MAY_DELETE_CHILD)) &&
-> > +	    !inode_permission(inode, MAY_DELETE_SELF))
-> > +		error = 0;
-> 
-> OK, so we can ignore the lack of write or delete permissions on the
-> parent if we have delete_self permissions on the child.  I guess that's
-> right.
-> 
-> Why the "|| is_sticky" above?
-> 
-> Is there some less complicated why to write this?
 
-we removed the ns_capable check out of check_sticky, because we don't
-want to do capability check when richacl allows access. We also want to
-make sure that even if mode bits allow access (inode_permission(dir, mask))
-if sticky bit is set we do additional check.
-
+yes, next patch explain the details of the check
 
 -aneesh
+
