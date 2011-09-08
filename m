@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab1IHJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 05:34:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6033 "EHLO mx1.redhat.com"
+	id S1758148Ab1IHJgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 05:36:16 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:44839 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932534Ab1IHJeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 05:34:07 -0400
-Date: Thu, 8 Sep 2011 11:33:16 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: close race between charge and putback
-Message-ID: <20110908093316.GB1316@redhat.com>
-References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
- <20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
- <20110908085404.GA1316@redhat.com>
- <20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1758128Ab1IHJgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 05:36:14 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V6 11/26] vfs: Add permission flags for setting file attributes
+In-Reply-To: <20110907205503.GG8074@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907205503.GG8074@fieldses.org>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Thu, 08 Sep 2011 15:06:03 +0530
+Message-ID: <87d3fb5qbg.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
+x-cbid: 11090809-6078-0000-0000-0000007B0152
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 06:19:01PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 8 Sep 2011 10:54:04 +0200
-> Johannes Weiner <jweiner@redhat.com> wrote:
-> 
-> > On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > On Thu,  8 Sep 2011 09:40:22 +0200
-> > > Johannes Weiner <jweiner@redhat.com> wrote:
-> > > 
-> > > > There is a potential race between a thread charging a page and another
-> > > > thread putting it back to the LRU list:
-> > > > 
-> > > > charge:                         putback:
-> > > > SetPageCgroupUsed               SetPageLRU
-> > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
-> > > > 
-> > > 
-> > > I assumed that all pages are charged before added to LRU.
-> > > (i.e. event happens in charge->lru_lock->putback order.)
-> > > 
-> > > But hmm, this assumption may be bad for maintainance.
-> > > Do you find a code which adds pages to LRU before charge ?
-> > > 
-> > > Hmm, if there are codes which recharge the page to other memcg,
-> > > it will cause bug and my assumption may be harmful.
+On Wed, 7 Sep 2011 16:55:03 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Mon, Sep 05, 2011 at 10:55:33PM +0530, Aneesh Kumar K.V wrote:
+> > From: Andreas Gruenbacher <agruen@kernel.org>
 > > 
-> > Swap slots are read optimistically into swapcache and put to the LRU,
-> > then charged upon fault.  
+> > Some permission models can allow processes to take ownership of a file,
+> > change the file permissions, and set the file timestamps.  Introduce new
+> > permission mask flags and check for those permissions in
+> > inode_change_ok().
 > 
-> Yes, then swap charge removes page from LRU before charge.
-> IIUC, it needed to do so because page->mem_cgroup may be replaced.
+> These little helper functions seem like they might be reasonable cleanup
+> even without the richacl_change_ok() piece; wonder if it'd be worth
+> splitting out the cleanup and applying it now?
+> 
+> Not that it's necessary--seems like a straightforward enough patch as
+> is.
 
-But only from the memcg LRU.  It's still on the global per-zone LRU,
-so reclaim could isolate/putback it during the charge.  And then
+Those helpers also have richacl_chage_ok(..) done as a part of the call. So
+they cannot directly be applied to upstream. But we can do similar
+helpers for upstream and add richacl changes as a separate patch ? Is
+that what you are suggesting. I can split this patch to two in that case
 
-> > > > charge:                         putback:
-> > > > SetPageCgroupUsed               SetPageLRU
-> > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+-aneesh
 
-applies.
-
-And yes, it needs to fix up *pc->mem_cgroup's LRU statistics before
-the pointer get's overwritten.
