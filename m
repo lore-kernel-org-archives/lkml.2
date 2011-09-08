@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757841Ab1IHBag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 21:30:36 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:54420 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757748Ab1IHB3Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 21:29:25 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/5] Fix sparse warnings
-Date: Thu,  8 Sep 2011 08:29:13 +0700
-Message-Id: <1315445357-14338-2-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1315445357-14338-1-git-send-email-ngupta@vflare.org>
-References: <1315445357-14338-1-git-send-email-ngupta@vflare.org>
+	id S1757798Ab1IHBbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 21:31:37 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59699 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757748Ab1IHBbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 21:31:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,348,1312182000"; 
+   d="scan'208";a="15036999"
+Subject: RE: [PATCH] slub Discard slab page only when node partials >
+ minimum setting
+From: Shaohua Li <shaohua.li@intel.com>
+To: "Shi, Alex" <alex.shi@intel.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <1315442639.31737.224.camel@debian>
+References: <1315188460.31737.5.camel@debian>
+	 <alpine.DEB.2.00.1109061914440.18646@router.home>
+	 <1315357399.31737.49.camel@debian>
+	 <alpine.DEB.2.00.1109062022100.20474@router.home>
+	 <4E671E5C.7010405@cs.helsinki.fi>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>
+	 <alpine.DEB.2.00.1109071003240.9406@router.home>
+	 <1315442639.31737.224.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Sep 2011 09:34:34 +0800
+Message-ID: <1315445674.29510.74.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/zram/zram_drv.c |    3 ++-
- drivers/staging/zram/zram_drv.h |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index d70ec1a..03ec5a2 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -684,7 +684,8 @@ fail:
- 	return ret;
- }
- 
--void zram_slot_free_notify(struct block_device *bdev, unsigned long index)
-+static void zram_slot_free_notify(struct block_device *bdev,
-+				unsigned long index)
- {
- 	struct zram *zram;
- 
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index abe5221..70ce886 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -47,7 +47,7 @@ static const unsigned default_disksize_perc_ram = 25;
-  * Pages that compress to size greater than this are stored
-  * uncompressed in memory.
-  */
--static const unsigned max_zpage_size = PAGE_SIZE / 4 * 3;
-+static const size_t max_zpage_size = PAGE_SIZE / 4 * 3;
- 
- /*
-  * NOTE: max_zpage_size must be less than or equal to:
--- 
-1.7.6
+On Thu, 2011-09-08 at 08:43 +0800, Shi, Alex wrote:
+> On Wed, 2011-09-07 at 23:05 +0800, Christoph Lameter wrote:
+> > On Wed, 7 Sep 2011, Shi, Alex wrote:
+> > 
+> > > Oh, seems the deactivate_slab() corrected at linus' tree already, but
+> > > the unfreeze_partials() just copied from the old version
+> > > deactivate_slab().
+> > 
+> > Ok then the patch is ok.
+> > 
+> > Do you also have performance measurements? I am a bit hesitant to merge
+> > the per cpu partials patchset if there are regressions in the low
+> > concurrency tests as seem to be indicated by intels latest tests.
+> > 
+> 
+> My LKP testing system most focus on server platforms. I tested your per
+> cpu partial set on hackbench and netperf loopback benchmark. hackbench
+> improve much.
+> 
+> Maybe some IO testing is low concurrency for SLUB, maybe a few jobs
+> kbuild? or low swap press testing.  I may try them for your patchset in
+> the near days. 
+> 
+> BTW, some testing results for your PCP SLUB:
+> 
+> for hackbench process testing: 
+> on WSM-EP, inc ~60%, NHM-EP inc ~25%
+> on NHM-EX, inc ~200%, core2-EP, inc ~250%. 
+> on Tigerton-EX, inc 1900%, :) 
+> 
+> for hackbench thread testing: 
+> on WSM-EP, no clear inc, NHM-EP no clear inc
+> on NHM-EX, inc 10%, core2-EP, inc ~20%. 
+> on Tigertion-EX, inc 100%, 
+> 
+> for  netperf loopback testing, no clear performance change. 
+did you add my patch to add page to partial list tail in the test?
+Without it the per-cpu partial list can have more significant impact to
+reduce lock contention, so the result isn't precise.
 
