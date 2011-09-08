@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab1IHIvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 04:51:25 -0400
-Received: from mail.avalus.com ([89.16.176.221]:39746 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932457Ab1IHIvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 04:51:24 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Sep 2011 04:51:24 EDT
-Date: Thu, 08 Sep 2011 09:42:12 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
-cc: nbd-general@lists.sf.net, Paul Clements <Paul.Clements@steeleye.com>,
-        Alex Bligh <alex@alex.org.uk>
-Subject: Re: [Nbd] [PATCH v2 2/2] nbd: map DISCARD requests to a new nbd
- request	type
-Message-ID: <0049F93FE7CC864CB1D8147A@nimrod.local>
-In-Reply-To: <1315467898-23984-3-git-send-email-pbonzini@redhat.com>
-References: <1315467898-23984-1-git-send-email-pbonzini@redhat.com>
- <1315467898-23984-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
+	id S932497Ab1IHIyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 04:54:32 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58141 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384Ab1IHIya convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 04:54:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+In-Reply-To: <1315382451.11101.12.camel@twins>
+References: <CAC9WiBiNj-NS2mb8SaR1pK2JQdJOAbnN_rCXk1ZEMNaWQWZwxQ@mail.gmail.com>
+	<1315382451.11101.12.camel@twins>
+Date: Thu, 8 Sep 2011 10:54:29 +0200
+Message-ID: <CAC9WiBj0D7-yG8DADRVAphhuCPHbxfh8Cp6Adh-G90gOt_h-RA@mail.gmail.com>
+Subject: Re: v3.1-rc5: Weird kernel log message when resuming avout NMI received
+From: Francis Moreau <francis.moro@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo,
-
---On 8 September 2011 09:44:58 +0200 Paolo Bonzini <pbonzini@redhat.com> 
-wrote:
-
-> When the feature is enabled, set QUEUE_FLAG_DISCARD and transmit those as
-> NBD_CMD_TRIM requests.
+On Wed, Sep 7, 2011 at 10:00 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2011-09-07 at 08:37 +0200, Francis Moreau wrote:
+>>
+>> > After the second suspend/resume sequence I still have the same warning
+>> > except that the reason has changed to '2d':
+>> >
+>> >  kernel:[  404.091393] Uhhuh. NMI received for unknown reason 2d on CPU 0.
+>> >  kernel:[  404.091394] Do you have a strange power saving mode enabled?
+>> >  kernel:[  404.091396] Dazed and confused, but trying to continue
 >
-> I used "trim" instead of "discard" to avoid confusion with the existing
-> NBD_CMD_DISC that is used for disconnect.
->
-> Cc: Paul Clements <Paul.Clements@steeleye.com>
-> Cc: <nbd-general@lists.sf.net>
-> Reviewed-by: Paul Clements <Paul.Clements@steeleye.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> I'm somewhat out of ideas there..  I guess I'll have to go debug on my
+> laptop which hasn't got a serial port :-(
 
-Do you have a patch for doc/proto.txt in the NBD protocol, or indeed
-a patch for the server to implement this?
+Do you hit the same issue ?
+
+If I can help in anything just tell me :)
 
 -- 
-Alex Bligh
+Francis
