@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1IHPNT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 11:13:19 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:8110 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab1IHPNK (ORCPT
+	id S1753638Ab1IHPNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 11:13:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40078 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab1IHPNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 11:13:10 -0400
-X-IronPort-AV: E=Sophos;i="4.68,351,1312156800"; 
-   d="scan'208";a="7680104"
-Date: Thu, 8 Sep 2011 16:21:14 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Stephen Wilson <wilsons@start.ca>
-Subject: Re: [PATCH x86,mm]  fix pgt_buf_end when memory hotplug
-In-Reply-To: <4E688C03.7080608@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1109081616450.12963@kaball-desktop>
-References: <4E688C03.7080608@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 8 Sep 2011 11:13:45 -0400
+Message-ID: <4E68DBA5.6010307@vflare.org>
+Date: Thu, 08 Sep 2011 11:13:41 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Jerome Marchand <jmarchan@redhat.com>
+CC: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] Fix sparse warnings
+References: <1315445357-14338-1-git-send-email-ngupta@vflare.org> <1315445357-14338-2-git-send-email-ngupta@vflare.org> <4E687A33.1080401@redhat.com>
+In-Reply-To: <4E687A33.1080401@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011, Lai Jiangshan wrote:
-> 
-> When I test memory hotplug, such message is always outputted when hot-adding
-> a memory block:
-> 
-> initial kernel pagetable allocation wasted ffffffffffffffff pages
+On 09/08/2011 04:17 AM, Jerome Marchand wrote:
+> On 09/08/2011 03:29 AM, Nitin Gupta wrote:
+>> ---
+>
+> I'm afraid this patch is missing a description.
+>
 
-I take you are using tip/x86/mm, because that is the only branch that
-contains that warning.
+Since it just fixes couple of trivial sparse warnings,
+I though no description is necessary? Anyways, here is
+the description if needed for patch process:
 
+Fixed some sparse warnings by making zram_slot_free_notify()
+static and max_zpage_size as size_t.
 
-> This message comes from init_memory_mapping(), it shows "pgt_buf_end" is
-> incorrect here, and I found it was caused by alloc_low_page().
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index bbaaa00..e138e0a 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -317,7 +317,7 @@ void __init cleanup_highmap(void)
->  
->  static __ref void *alloc_low_page(unsigned long *phys)
->  {
-> -	unsigned long pfn = pgt_buf_end++;
-> +	unsigned long pfn;
->  	void *adr;
->  
->  	if (after_bootmem) {
-> @@ -327,6 +327,7 @@ static __ref void *alloc_low_page(unsigned long *phys)
->  		return adr;
->  	}
->  
-> +	pfn = pgt_buf_end++;
->  	if (pfn >= pgt_buf_top)
->  		panic("alloc_low_page: ran out of memory");
+---
+Thanks,
+Nitin
 
-
-This patch makes sense to me. It would also make sense to print the
-"allocation wasted" warning only if (!after_bootmem).
