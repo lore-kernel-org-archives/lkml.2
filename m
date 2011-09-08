@@ -1,187 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab1IHMsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 08:48:06 -0400
-Received: from mail09.linbit.com ([212.69.161.110]:37569 "EHLO
-	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701Ab1IHMpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 08:45:44 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 11/16] drbd: Change how the "handshake" packets are called
-Date: Thu,  8 Sep 2011 14:45:32 +0200
-Message-Id: <1315485937-18989-12-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315485937-18989-1-git-send-email-philipp.reisner@linbit.com>
-References: <1315485937-18989-1-git-send-email-philipp.reisner@linbit.com>
+	id S932837Ab1IHMsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 08:48:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56141 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932701Ab1IHMsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 08:48:15 -0400
+From: Abhilash K V <abhilash.kv@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <khilman@ti.com>,
+        <sameo@linux.intel.com>, <santosh.shilimkar@ti.com>, <premi@ti.com>,
+        <david.woodhouse@intel.com>, Abhilash K V <abhilash.kv@ti.com>
+Subject: [PATCH v2 2/3] OMAP3: Add support for TPS65023 (AM35x only)
+Date: Thu, 8 Sep 2011 18:18:04 +0530
+Message-ID: <1315486084-795-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@linbit.com>
+From: Sanjeev Premi <premi@ti.com>
 
-Packets of type P_HAND_SHAKE define which protocol versions and features
-a node supports.  For clarity, call those packets P_CONNECTION_FEATURES
-instead.
+This patch adds support for TPS65023 used with
+OMAP3 devices. The PMIC is currently hooked to
+AM35x devices, but can easily be extended for
+other OMAP3 devices.
 
-(This does not determine the features that a specific drbd device
-supports, such as drbd protocol A, B, C.)
-
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
 ---
- drivers/block/drbd/drbd_int.h      |    6 +++---
- drivers/block/drbd/drbd_main.c     |    6 +++---
- drivers/block/drbd/drbd_receiver.c |   26 +++++++++++++-------------
- 3 files changed, 19 insertions(+), 19 deletions(-)
+ arch/arm/mach-omap2/Makefile        |    3 +-
+ arch/arm/mach-omap2/pm.c            |    1 +
+ arch/arm/mach-omap2/pm.h            |    9 ++++
+ arch/arm/mach-omap2/pmic_tps65023.c |   84 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 96 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/pmic_tps65023.c
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 33cc132..7b4203c 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -235,7 +235,7 @@ enum drbd_packet {
- 	P_INITIAL_META	      = 0xfff1, /* First Packet on the MetaSock */
- 	P_INITIAL_DATA	      = 0xfff2, /* First Packet on the Socket */
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index e43d94b..590e797 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -18,7 +18,8 @@ obj-$(CONFIG_ARCH_OMAP4) += prm44xx.o $(hwmod-common)
  
--	P_HAND_SHAKE	      = 0xfffe	/* FIXED for the next century! */
-+	P_CONNECTION_FEATURES = 0xfffe	/* FIXED for the next century! */
- };
+ obj-$(CONFIG_OMAP_MCBSP) += mcbsp.o
  
- extern const char *cmdname(enum drbd_packet cmd);
-@@ -374,14 +374,14 @@ struct p_block_req {
+-obj-$(CONFIG_TWL4030_CORE) += omap_twl.o
++obj-$(CONFIG_TWL4030_CORE)		+= omap_twl.o
++obj-$(CONFIG_REGULATOR_TPS65023)	+= pmic_tps65023.o
  
- /*
-  * commands with their own struct for additional fields:
-- *   P_HAND_SHAKE
-+ *   P_CONNECTION_FEATURES
-  *   P_BARRIER
-  *   P_BARRIER_ACK
-  *   P_SYNC_PARAM
-  *   ReportParams
-  */
+ # SMP support ONLY available for OMAP4
+ obj-$(CONFIG_SMP)			+= omap-smp.o omap-headsmp.o
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 863b384..f8338a8 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -258,6 +258,7 @@ static int __init omap2_common_pm_late_init(void)
+ 	if (omap3_has_sr())
+ 		omap3_twl_init();
+ 	omap4_twl_init();
++	omap3_tps65023_init();
  
--struct p_handshake {
-+struct p_connection_features {
- 	struct p_header head;   /* Note: vnr will be ignored */
- 	u32 protocol_min;
- 	u32 feature_flags;
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 3df84ad..a773d73 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2499,7 +2499,7 @@ int __init drbd_init(void)
- 	int err;
+ 	/* Init the voltage layer */
+ 	omap_voltage_late_init();
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index 4e166ad..ce028f6 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -133,5 +133,14 @@ static inline int omap4_twl_init(void)
+ 	return -EINVAL;
+ }
+ #endif
++#ifdef CONFIG_REGULATOR_TPS65023
++extern int omap3_tps65023_init(void);
++#else
++static inline int omap3_tps65023_init(void)
++{
++	return -EINVAL;
++}
++#endif
++
  
- 	BUILD_BUG_ON(sizeof(struct p_header80) != sizeof(struct p_header95));
--	BUILD_BUG_ON(sizeof(struct p_handshake) != 80);
-+	BUILD_BUG_ON(sizeof(struct p_connection_features) != 80);
- 
- 	if (minor_count < DRBD_MINOR_COUNT_MIN || minor_count > DRBD_MINOR_COUNT_MAX) {
- 		printk(KERN_ERR
-@@ -3151,8 +3151,8 @@ const char *cmdname(enum drbd_packet cmd)
- 		return "InitialMeta";
- 	if (cmd == P_INITIAL_DATA)
- 		return "InitialData";
--	if (cmd == P_HAND_SHAKE)
--		return "HandShake";
-+	if (cmd == P_CONNECTION_FEATURES)
-+		return "ConnectionFeatures";
- 	if (cmd >= ARRAY_SIZE(cmdnames))
- 		return "Unknown";
- 	return cmdnames[cmd];
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 865c6e9..619a172 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -60,7 +60,7 @@ enum finish_epoch {
- 	FE_RECYCLED,
- };
- 
--static int drbd_do_handshake(struct drbd_tconn *tconn);
-+static int drbd_do_features(struct drbd_tconn *tconn);
- static int drbd_do_auth(struct drbd_tconn *tconn);
- static int drbd_disconnected(int vnr, void *p, void *data);
- 
-@@ -913,7 +913,7 @@ retry:
- 	/* NOT YET ...
- 	 * sock->sk->sk_sndtimeo = tconn->net_conf->timeout*HZ/10;
- 	 * sock->sk->sk_rcvtimeo = MAX_SCHEDULE_TIMEOUT;
--	 * first set it to the P_HAND_SHAKE timeout,
-+	 * first set it to the P_CONNECTION_FEATURES timeout,
- 	 * which we set to 4x the configured ping_timeout. */
- 	sock->sk->sk_sndtimeo =
- 	sock->sk->sk_rcvtimeo = tconn->net_conf->ping_timeo*4*HZ/10;
-@@ -928,7 +928,7 @@ retry:
- 
- 	tconn->last_received = jiffies;
- 
--	h = drbd_do_handshake(tconn);
-+	h = drbd_do_features(tconn);
- 	if (h <= 0)
- 		return h;
- 
-@@ -4179,10 +4179,10 @@ static int drbd_disconnected(int vnr, void *p, void *data)
-  *
-  * for now, they are expected to be zero, but ignored.
-  */
--static int drbd_send_handshake(struct drbd_tconn *tconn)
-+static int drbd_send_features(struct drbd_tconn *tconn)
- {
- 	/* ASSERT current == mdev->tconn->receiver ... */
--	struct p_handshake *p = tconn->data.sbuf;
-+	struct p_connection_features *p = tconn->data.sbuf;
- 	int err;
- 
- 	if (mutex_lock_interruptible(&tconn->data.mutex)) {
-@@ -4198,7 +4198,7 @@ static int drbd_send_handshake(struct drbd_tconn *tconn)
- 	memset(p, 0, sizeof(*p));
- 	p->protocol_min = cpu_to_be32(PRO_VERSION_MIN);
- 	p->protocol_max = cpu_to_be32(PRO_VERSION_MAX);
--	err = _conn_send_cmd(tconn, 0, &tconn->data, P_HAND_SHAKE,
-+	err = _conn_send_cmd(tconn, 0, &tconn->data, P_CONNECTION_FEATURES,
- 			     &p->head, sizeof(*p), 0);
- 	mutex_unlock(&tconn->data.mutex);
- 	return err;
-@@ -4211,15 +4211,15 @@ static int drbd_send_handshake(struct drbd_tconn *tconn)
-  *  -1 peer talks different language,
-  *     no point in trying again, please go standalone.
-  */
--static int drbd_do_handshake(struct drbd_tconn *tconn)
-+static int drbd_do_features(struct drbd_tconn *tconn)
- {
- 	/* ASSERT current == tconn->receiver ... */
--	struct p_handshake *p = tconn->data.rbuf;
--	const int expect = sizeof(struct p_handshake) - sizeof(struct p_header80);
-+	struct p_connection_features *p = tconn->data.rbuf;
-+	const int expect = sizeof(struct p_connection_features) - sizeof(struct p_header80);
- 	struct packet_info pi;
- 	int err;
- 
--	err = drbd_send_handshake(tconn);
-+	err = drbd_send_features(tconn);
- 	if (err)
- 		return 0;
- 
-@@ -4227,14 +4227,14 @@ static int drbd_do_handshake(struct drbd_tconn *tconn)
- 	if (err)
- 		return 0;
- 
--	if (pi.cmd != P_HAND_SHAKE) {
--		conn_err(tconn, "expected HandShake packet, received: %s (0x%04x)\n",
-+	if (pi.cmd != P_CONNECTION_FEATURES) {
-+		conn_err(tconn, "expected ConnectionFeatures packet, received: %s (0x%04x)\n",
- 		     cmdname(pi.cmd), pi.cmd);
- 		return -1;
- 	}
- 
- 	if (pi.size != expect) {
--		conn_err(tconn, "expected HandShake length: %u, received: %u\n",
-+		conn_err(tconn, "expected ConnectionFeatures length: %u, received: %u\n",
- 		     expect, pi.size);
- 		return -1;
- 	}
+ #endif
+diff --git a/arch/arm/mach-omap2/pmic_tps65023.c b/arch/arm/mach-omap2/pmic_tps65023.c
+new file mode 100644
+index 0000000..3245929
+--- /dev/null
++++ b/arch/arm/mach-omap2/pmic_tps65023.c
+@@ -0,0 +1,84 @@
++/**
++ * Implements support for TPS65023
++ *
++ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/i2c/twl.h>
++
++#include "voltage.h"
++
++#include "pm.h"
++
++#define	TPS65023_VDCDC1_MIN		800000	/* 0.8V		*/
++#define	TPS65023_VDCDC1_STEP		25000	/* 0.025V	*/
++
++
++/*
++ * Get voltage corresponding to specified vsel value using this formula:
++ *	Vout = 0.8V + (25mV x Vsel)
++ */
++static unsigned long tps65023_vsel_to_uv(const u8 vsel)
++{
++	return TPS65023_VDCDC1_MIN + (TPS65023_VDCDC1_STEP * vsel);
++}
++
++/*
++ * Get vsel value corresponding to specified voltage using this formula:
++ *	Vsel = (Vout - 0.8V)/ 25mV
++ */
++static u8 tps65023_uv_to_vsel(unsigned long uv)
++{
++	return DIV_ROUND_UP(uv - TPS65023_VDCDC1_MIN, TPS65023_VDCDC1_STEP);
++}
++
++/*
++ * TPS65023 is currently supported only for AM35x devices.
++ * Therefore, implementation below is specific to this device pair.
++ */
++
++/**
++ * Voltage information related to the MPU voltage domain of the
++ * AM35x processors - in relation to the TPS65023.
++ */
++static struct omap_volt_pmic_info tps65023_am35xx_mpu_volt_info = {
++	.step_size		= 25000,
++	.on_volt                = 1200000,
++	.vsel_to_uv		= tps65023_vsel_to_uv,
++	.uv_to_vsel		= tps65023_uv_to_vsel,
++};
++
++int __init omap3_tps65023_init(void)
++{
++	struct voltagedomain *voltdm;
++
++	if (!cpu_is_omap34xx())
++		return -ENODEV;
++
++	if (cpu_is_omap3505() || cpu_is_omap3517()) {
++		voltdm = omap_voltage_domain_lookup("mpu");
++		omap_voltage_register_pmic(voltdm,
++					&tps65023_am35xx_mpu_volt_info);
++		voltdm = omap_voltage_domain_lookup("core");
++		omap_voltage_register_pmic(voltdm,
++					&tps65023_am35xx_mpu_volt_info);
++	} else {
++		/* TODO:
++		 * Support for other devices that support TPS65023
++		 */
++	}
++
++	return 0;
++}
 -- 
-1.7.4.1
+1.7.1
 
