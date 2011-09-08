@@ -1,98 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab1IHCCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 22:02:40 -0400
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:55919 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757835Ab1IHCCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 22:02:38 -0400
-X-Greylist: delayed 688 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Sep 2011 22:02:38 EDT
-Date: Wed, 7 Sep 2011 22:02:35 -0400
-From: Wakko Warner <wakko@animx.eu.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: radeon KMS (R100) on dell inspiron 5100 blank screen
-Message-ID: <20110908020235.GA582@animx.eu.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <20110908015105.GA31062@animx.eu.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110908015105.GA31062@animx.eu.org>
-User-Agent: Mutt/1.5.6+20040907i
+	id S1754629Ab1IHCLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 22:11:35 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44387 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab1IHCLe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 22:11:34 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20110218145502.GA7138@localhost>
+References: <20110218145502.GA7138@localhost>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Thu, 8 Sep 2011 04:05:34 +0200
+Message-ID: <CAKgNAkgi6Xd7DPjg-YqkkNs8nzPpbOnXqDWUu6DKxvUJ1=NojA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Update manpages with CAP_SYSLOG info
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: Kees Cook <kees@ubuntu.com>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My previous message, I stated in the subject line that this was a 5150. 
-This is an inspiron 5100.
+Hi Serge,
 
-Wakko Warner wrote:
-> I have fbcon compiled into the kernel, radeon as a module.  I have no
-> framebuffer modules compiled.  The KMS has never worked on this system with
-> any kernel I've compiled (2.6.33 and up).
-> 
-> Here's the relevent dmesg:
-> 
-> [drm] radeon defaulting to kernel modesetting.
-> [drm] radeon kernel modesetting enabled.
-> [drm] initializing kernel modesetting (RV200 0x1002:0x4C57).
-> [drm] register mmio base: 0xFCFF0000
-> [drm] register mmio size: 65536
-> radeon 0000:01:00.0: Invalid ROM contents
-> radeon 0000:01:00.0: Invalid ROM contents
-> [drm:radeon_get_bios] *ERROR* Unable to locate a BIOS ROM
-> [drm] Using generic clock info
-> agpgart-intel 0000:00:00.0: AGP 2.0 bridge
-> agpgart-intel 0000:00:00.0: putting AGP V2 device into 4x mode
-> radeon 0000:01:00.0: putting AGP V2 device into 4x mode
-> radeon 0000:01:00.0: GTT: 128M 0xE0000000 - 0xE7FFFFFF
-> radeon 0000:01:00.0: VRAM: 128M 0x00000000E8000000 - 0x00000000EFFFFFFF (32M used)
-> [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-> [drm] Driver supports precise vblank timestamp query.
-> [drm] radeon: irq initialized.
-> [drm] Detected VRAM RAM=128M, BAR=128M
-> [drm] RAM width 64bits DDR
-> [TTM] Zone  kernel: Available graphics memory: 443880 kiB.
-> [TTM] Zone highmem: Available graphics memory: 1037694 kiB.
-> [TTM] Initializing pool allocator.
-> [drm] radeon: 32M of VRAM memory ready
-> [drm] radeon: 128M of GTT memory ready.
-> radeon 0000:01:00.0: WB disabled
-> [drm] Loading R100 Microcode
-> [drm] radeon: ring at 0x00000000E0001000
-> [drm] ring test succeeded in 1 usecs
-> [drm] radeon: ib pool ready.
-> [drm] ib test succeeded in 0 usecs
-> [drm] Connector Table: 1 (generic)
-> [drm] No panel info found in BIOS
-> [drm] Panel info derived from registers
-> [drm] Panel Size 1400x1050
-> [drm] radeon legacy LVDS backlight initialized
-> [drm] No TV DAC info found in BIOS
-> [drm] Radeon Display Connectors
-> [drm] Connector 0:
-> [drm]   LVDS
-> [drm]   Encoders:
-> [drm]     LCD1: INTERNAL_LVDS
-> [drm] Connector 1:
-> [drm]   VGA
-> [drm]   DDC: 0x60 0x60 0x60 0x60 0x60 0x60 0x60 0x60
-> [drm]   Encoders:
-> [drm]     CRT1: INTERNAL_DAC1
-> [drm] Connector 2:
-> [drm]   S-video
-> [drm]   Encoders:
-> [drm]     TV1: INTERNAL_DAC2
-> [drm] fb mappable at 0xE8040000
-> [drm] vram apper at 0xE8000000
-> [drm] size 1478656
-> [drm] fb depth is 8
-> [drm]    pitch is 1408
-> [drm:drm_calc_timestamping_constants] *ERROR* crtc 10: Can't calculate constants, dotclock = 0!
-> Console: switching to colour frame buffer device 175x65
-> fb0: radeondrmfb frame buffer device
-> drm: registered panic notifier
-> [drm] Initialized radeon 2.10.0 20080528 for 0000:01:00.0 on minor 0
+On Fri, Feb 18, 2011 at 3:55 PM, Serge E. Hallyn
+<serge.hallyn@canonical.com> wrote:
+> Hi Michael,
+>
+> Here my attempt at a man-pages update to specify CAP_SYSLOG.
+>
+> thanks,
+> -serge
+>
+> Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+> ---
+>  man2/syslog.2       |    4 +++-
+>  man7/capabilities.7 |    9 +++++++++
+>  2 files changed, 12 insertions(+), 1 deletions(-)
+>
+> diff --git a/man2/syslog.2 b/man2/syslog.2
+> index fb018a6..7383e2f 100644
+> --- a/man2/syslog.2
+> +++ b/man2/syslog.2
+> @@ -237,7 +237,9 @@ An attempt was made to change console_loglevel or clear the kernel
+>  message ring buffer by a process without sufficient privilege
+>  (more precisely: without the
+>  .B CAP_SYS_ADMIN
+> -capability).
+> +or
+> +.B CAP_SYSLOG
+> +(since 2.6.38) capability).
+>  .TP
+>  .B ERESTARTSYS
+>  System call was interrupted by a signal; nothing was read.
+> diff --git a/man7/capabilities.7 b/man7/capabilities.7
+> index a751b21..55177dc 100644
+> --- a/man7/capabilities.7
+> +++ b/man7/capabilities.7
+> @@ -236,6 +236,9 @@ Perform a range of system administration operations including:
+>  .BR umount (2),
+>  .BR swapon (2),
+>  .BR swapoff (2),
+> +privileged
+> +.BR syslog(2)
+> +operations (see CAP_SYSLOG),
+>  .BR sethostname (2),
+>  and
+>  .BR setdomainname (2);
+> @@ -421,6 +424,12 @@ set real-time (hardware) clock.
+>  .B CAP_SYS_TTY_CONFIG
+>  Use
+>  .BR vhangup (2).
+> +.TP
+> +.B CAP_SYSLOG
+> +Since 2.6.38, this capability can be substituted for CAP_SYS_ADMIN for
+> +privileged syslog(2) actions.  When dmesg_restrict is set, that means
+> +any call to syslog.  Otherwise, it means any action other than reading
+> +the last kernel messages or getting the size of the log buffer.
+>  .\"
+>  .SS Past and Current Implementation
+>  A full implementation of capabilities requires that:
+> --
+> 1.7.2.3
+>
+
+Thanks. I used that as the basis to add the changes below, for man-pages-2.33.
+
+Cheers,
+
+Michael
+
+--- a/man2/syslog.2
++++ b/man2/syslog.2
+@@ -72,7 +72,21 @@ as follows:
+
+ Type 9 was added in Linux 2.4.10; type 10 in Linux 2.6.6.
+
+-Only command types 3 and 10 are allowed to unprivileged processes.
++In Linux kernels before 2.6.37,
++only command types 3 and 10 are allowed to unprivileged processes.
++Since Linux 2.6.37,
++command types 3 and 10 are only allowed to unprivileged processes if
++.IR /proc/sys/kernel/dmesg_restrict
++has the value 0.
++Before Linux 2.6.37, "privileged" means that the caller has the
++.BR CAP_SYS_ADMIN
++capability.
++Since Linux 2.6.37,
++"privileged" means that the caller has either the
++.BR CAP_SYS_ADMIN
++capability (now deprecated for this purpose) or the (new)
++.BR CAP_SYSLOG
++capability.
+ .SS The kernel log buffer
+ The kernel has a cyclic buffer of length
+ .B LOG_BUF_LEN
+@@ -233,6 +247,8 @@ An attempt was made to change console_loglevel or
+clear the kernel
+ message ring buffer by a process without sufficient privilege
+ (more precisely: without the
+ .B CAP_SYS_ADMIN
++or
++.BR CAP_SYSLOG
+ capability).
+ .TP
+ .B ERESTARTSYS
+@@ -250,4 +266,5 @@ In libc4 and libc5 the number of this call was defined by
+ In glibc 2.0 the syscall is baptized
+ .BR klogctl ().
+ .SH "SEE ALSO"
+-.BR syslog (3)
++.BR syslog (3),
++.BR capabilities (7)
+
+--- a/man7/capabilities.7
++++ b/man7/capabilities.7
+@@ -41,10 +41,10 @@
+ .\"     Add text noting that if we set the effective flag for one file
+ .\"     capability, then we must also set the effective flag for all
+ .\"     other capabilities where the permitted or inheritable bit is set.
+-.\" FIXME: Linux 2.6.38 added CAP_SYSLOG
++.\" 2011-09-07, mtk/Serge hallyn: Add CAP_SYSLOG
+ .\" FIXME: Linux 3.0 added CAP_WAKE_ALARM
+ .\"
+-.TH CAPABILITIES 7 2010-06-19 "Linux" "Linux Programmer's Manual"
++.TH CAPABILITIES 7 2011-09-07 "Linux" "Linux Programmer's Manual"
+ .SH NAME
+ capabilities \- overview of Linux capabilities
+ .SH DESCRIPTION
+@@ -242,6 +242,12 @@ Perform a range of system administration operations includi
+ng:
+ and
+ .BR setdomainname (2);
+ .IP *
++perform privileged
++.BR syslog (2)
++operations (since Linux 2.6.37,
++.BR CAP_SYSLOG
++should be used to permit such operations);
++.IP *
+ perform
+ .B IPC_SET
+ and
+@@ -423,6 +429,14 @@ set real-time (hardware) clock.
+ .B CAP_SYS_TTY_CONFIG
+ Use
+ .BR vhangup (2).
++.TP
++.BR CAP_SYSLOG " (since Linux 2.6.37)"
++Perform privileged
++.BR syslog (2)
++operations.
++See
++.BR syslog (2)
++for information on which operations require privilege.
+ .\"
+ .SS Past and Current Implementation
+ A full implementation of capabilities requires that:
+
+
+
+
+
 -- 
- Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
- million bugs.
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
