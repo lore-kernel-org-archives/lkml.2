@@ -1,194 +1,629 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab1IHK6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:58:20 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36642 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758223Ab1IHK6S (ORCPT
+	id S1758295Ab1IHLBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 07:01:44 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:40458 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758262Ab1IHLBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:58:18 -0400
-Message-ID: <4E689FC5.8010005@gmail.com>
-Date: Thu, 08 Sep 2011 12:58:13 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@amd64.org>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: x86 memcpy performance
-References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com> <20110812195220.GA29051@elte.hu> <20110814095910.GA18809@liondog.tnic> <6296.1313462075@turing-police.cc.vt.edu> <20110816121604.GA29251@aftab> <4E5FA18A.7010205@gmail.com> <CA+55aFz1RRY6KcqVVZ9tBH7PDXfBwkZ1AhJcSHPABLXMkNJCOA@mail.gmail.com> <20110908083551.GA5646@liondog.tnic>
-In-Reply-To: <20110908083551.GA5646@liondog.tnic>
-Content-Type: multipart/mixed;
- boundary="------------070301090508010508020007"
+	Thu, 8 Sep 2011 07:01:41 -0400
+X-AuditID: cbfee61b-b7b7fae000005864-fb-4e68a093cb20
+From: Donggeun Kim <dg77.kim@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-doc@vger.kernel.org, akpm@linux-foundation.org, gregkh@suse.de,
+        jic23@cam.ac.uk, kyungmin.park@samsung.com, dg77.kim@samsung.com
+Subject: [PATCH] misc: Add driver for GP2AP002 proximity/ambient light sensor
+Date: Thu, 08 Sep 2011 20:00:54 +0900
+Message-id: <1315479654-19836-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+X-OriginalArrivalTime: 08 Sep 2011 11:02:13.0118 (UTC)
+ FILETIME=[C342E9E0:01CC6E16]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070301090508010508020007
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+SHARP GP2AP002 is proximity and ambient light sensor.
+This patch supports it.
 
-On 09/08/2011 10:35 AM, Borislav Petkov wrote:
-> On Thu, Sep 01, 2011 at 09:18:32AM -0700, Linus Torvalds wrote:
->> On Thu, Sep 1, 2011 at 8:15 AM, Maarten Lankhorst
->> <m.b.lankhorst@gmail.com> wrote:
->>> This work intrigued me, in some cases kernel memcpy was a lot faster than sse memcpy,
->>> and I finally figured out why. I also extended the test to an optimized avx memcpy,
->>> but I think the kernel memcpy will always win in the aligned case.
->> "rep movs" is generally optimized in microcode on most modern Intel
->> CPU's for some easyish cases, and it will outperform just about
->> anything.
->>
->> Atom is a notable exception, but if you expect performance on any
->> general loads from Atom, you need to get your head examined. Atom is a
->> disaster for anything but tuned loops.
->>
->> The "easyish cases" depend on microarchitecture. They are improving,
->> so long-term "rep movs" is the best way regardless, but for most
->> current ones it's something like "source aligned to 8 bytes *and*
->> source and destination are equal "mod 64"".
->>
->> And that's true in a lot of common situations. It's true for the page
->> copy, for example, and it's often true for big user "read()/write()"
->> calls (but "often" may not be "often enough" - high-performance
->> userland should strive to align read/write buffers to 64 bytes, for
->> example).
->>
->> Many other cases of "memcpy()" are the fairly small, constant-sized
->> ones, where the optimal strategy tends to be "move words by hand".
-> Yeah,
->
-> this probably makes enabling SSE memcpy in the kernel a task
-> with diminishing returns. There are also the additional costs of
-> saving/restoring FPU context in the kernel which eat off from any SSE
-> speedup.
->
-> And then there's the additional I$ pressure because "rep movs" is
-> much smaller than all those mov[au]ps stanzas. Btw, mov[au]ps are the
-> smallest (two-byte) instructions I could use - in the AVX case they can
-> get up to 4 Bytes of length with the VEX prefix and the additional SIB,
-> size override, etc. fields.
->
-> Oh, and then there's copy_*_user which also does fault handling and
-> replacing that with a SSE version of memcpy could get quite hairy quite
-> fast.
->
-> Anyway, I'll try to benchmark an asm version of SSE memcpy in the kernel
-> when I get the time to see whether it still makes sense, at all.
->
-I have changed your sse memcpy to test various alignments with
-source/destination offsets instead of random, from that you can
-see that you don't really get a speedup at all. It seems to be more
-a case of 'kernel memcpy is significantly slower with some alignments',
-than 'avx memcpy is just that much faster'.
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ Documentation/misc-devices/gp2ap002    |   47 ++++
+ drivers/misc/Kconfig                   |   10 +
+ drivers/misc/Makefile                  |    1 +
+ drivers/misc/gp2ap002.c                |  419 ++++++++++++++++++++++++++++++++
+ include/linux/platform_data/gp2ap002.h |   71 ++++++
+ 5 files changed, 548 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/misc-devices/gp2ap002
+ create mode 100644 drivers/misc/gp2ap002.c
+ create mode 100644 include/linux/platform_data/gp2ap002.h
 
-For example 3754 with src misalignment 4 and target misalignment 20
-takes 1185 units on avx memcpy, but 1480 units with kernel memcpy
+diff --git a/Documentation/misc-devices/gp2ap002 b/Documentation/misc-devices/gp2ap002
+new file mode 100644
+index 0000000..c227d19
+--- /dev/null
++++ b/Documentation/misc-devices/gp2ap002
+@@ -0,0 +1,47 @@
++Kernel driver gp2ap002
++=================
++
++Supported chips:
++* Sharp GP2AP002A00F proximity and ambient light sensor
++  Datasheet: Not publicly available
++
++Authors: Donggeun Kim <dg77.kim@samsung.com>
++	 Minkyu Kang <mk7.kang@samsung.com>
++
++Description
++-----------
++GP2AP002A00F is a proximity and ambient light sensor.
++The proximity value can be obtained one of the following modes.
++1. Normal mode: get the value of Vout gpio pin
++	High = object is not detected
++	Low  = object is detected
++2. Interrupt mode: the chip generates interrupts
++	whenever object is detected or not detected
++	The proximity state can be obtained
++	from VO field of PROX register
++	1 = object is detected (value of VO field)
++	0 = object is not detected (value of VO field)
++
++This chip only exports current as the result of ambient light sensor.
++To get illuminance, CPU measures the current exported
++from the sensor through ADC.
++The relationship between current and illuminance is as follows:
++	illuminance = 10^(current/10)  - (1)
++This driver only exposes the measured current.
++Illuminance should be calculated at the user space by (1) formula.
++
++Sysfs Interface
++---------------
++prox0_input	proximity sensor result
++		0: object is not detected
++		1: object is detected
++		RO
++
++adc0_input	ADC result for ambient light sensor
++		current [unit: uA]
++		RO
++
++enable		enable/disable the sensor
++		1: enable
++		0: disable
++		RW
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 2d6423c..493373f 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -499,6 +499,16 @@ config USB_SWITCH_FSA9480
+ 	  stereo and mono audio, video, microphone and UART data to use
+ 	  a common connector port.
+ 
++config GP2AP002
++	tristate "Sharp GP2AP002 proximity/ambient light sensor"
++	depends on I2C
++	help
++	 Say Y here if you want to support Sharp GP2AP002
++	 proximity/ambient light sensor.
++
++	 To compile this driver as a module, choose M here: the
++	 module will be called GP2AP002.
++
+ source "drivers/misc/c2port/Kconfig"
+ source "drivers/misc/eeprom/Kconfig"
+ source "drivers/misc/cb710/Kconfig"
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 8f3efb6..7929c26 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -47,3 +47,4 @@ obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
+ obj-y				+= lis3lv02d/
+ obj-y				+= carma/
+ obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
++obj-$(CONFIG_GP2AP002)		+= gp2ap002.o
+diff --git a/drivers/misc/gp2ap002.c b/drivers/misc/gp2ap002.c
+new file mode 100644
+index 0000000..924f9d7
+--- /dev/null
++++ b/drivers/misc/gp2ap002.c
+@@ -0,0 +1,419 @@
++/*
++ *  gp2ap002.c - Sharp GP2AP002 proximity/ambient light sensor
++ *
++ *  Copyright (C) 2010 Samsung Electronics
++ *  Minkyu Kang <mk7.kang@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/workqueue.h>
++#include <linux/mutex.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/kobject.h>
++
++#include <linux/platform_data/gp2ap002.h>
++
++#define GP2AP002_PROX		0x00
++#define GP2AP002_GAIN		0x01
++#define GP2AP002_HYS		0x02
++#define GP2AP002_CYCLE		0x03
++#define GP2AP002_OPMOD		0x04
++#define GP2AP002_CON		0x06
++
++#define PROX_VO_NO_DETECT	(0 << 0)
++#define PROX_VO_DETECT		(1 << 0)
++
++#define GAIN_LED_SHIFT		(3)
++#define GAIN_LED_MASK		(0x1 << GAIN_LED_SHIFT)
++
++#define HYS_HYSD_SHIFT		(7)
++#define HYS_HYSD_MASK		(0x1 << HYS_HYSD_SHIFT)
++#define HYS_HYSC_SHIFT		(5)
++#define HYS_HYSC_MASK		(0x3 << HYS_HYSC_SHIFT)
++#define HYS_HYSF_SHIFT		(0)
++#define HYS_HYSF_MASK		(0xf << HYS_HYSF_SHIFT)
++
++#define CYCLE_CYCL_SHIFT	(3)
++#define CYCLE_CYCL_MASK		(0x7 << CYCLE_CYCL_SHIFT)
++#define CYCLE_OSC_SHIFT		(2)
++#define CYCLE_OSC_MASK		(0x1 << CYCLE_OSC_SHIFT)
++
++#define OPMOD_ASD_SHIFT		(4)
++#define OPMOD_ASD_MASK		(0x1 << OPMOD_ASD_SHIFT)
++#define OPMOD_SSD_SHUTDOWN	(0)
++#define OPMOD_SSD_OPERATING	(1)
++#define OPMOD_VCON_SHIFT	(1)
++#define OPMOD_VCON_MASK		(0x1 << OPMOD_VCON_SHIFT)
++#define OPMOD_VCON_NORMAL	(0 << 1)
++#define OPMOD_VCON_IRQ		(1 << 1)
++
++#define CON_OCON_SHIFT		(3)
++#define CON_OCON_MASK		(0x3 << CON_OCON_SHIFT)
++
++struct gp2ap002_chip {
++	struct i2c_client	*client;
++	struct work_struct	work;
++	struct mutex		lock;
++
++	struct gp2ap002_platform_data *pdata;
++
++	bool enabled;
++
++	/* Proximity */
++	int mode;
++	int proximity;
++
++	/* Ambient Light */
++	int adc;
++};
++
++static void gp2ap002_get_proximity(struct gp2ap002_chip *chip)
++{
++	struct gp2ap002_platform_data *pdata = chip->pdata;
++	int prox_mode;
++
++	prox_mode = pdata->prox_mode << OPMOD_VCON_SHIFT;
++	/* interrupt output mode */
++	if ((prox_mode & OPMOD_VCON_MASK) == OPMOD_VCON_IRQ) {
++		/* Determine whether the object is detected
++		   by reading proximity output register */
++		chip->proximity = i2c_smbus_read_byte_data(chip->client,
++					GP2AP002_PROX) & PROX_VO_DETECT;
++	} else { /* normal output mode */
++		/* vo_gpio is changed from high to low
++		   when the object is detected */
++		chip->proximity = !gpio_get_value(pdata->vout_gpio);
++	}
++}
++
++static int gp2ap002_chip_enable(struct gp2ap002_chip *chip, bool enable)
++{
++	struct gp2ap002_platform_data *pdata = chip->pdata;
++	int ret;
++	u8 value;
++
++	if (enable == chip->enabled)
++		return 0;
++
++	value = (pdata->analog_sleep << OPMOD_ASD_SHIFT) |
++		(pdata->prox_mode << OPMOD_VCON_SHIFT);
++	/* software shutdown mode */
++	if (enable)
++		value |= OPMOD_SSD_OPERATING;
++	else /* operating mode */
++		value |= OPMOD_SSD_SHUTDOWN;
++
++	ret = i2c_smbus_write_byte_data(chip->client, GP2AP002_OPMOD, value);
++	if (ret < 0)
++		goto out;
++
++	chip->enabled = enable;
++out:
++	return ret;
++}
++
++static void gp2ap002_work(struct work_struct *work)
++{
++	struct gp2ap002_chip *chip = container_of(work,
++			struct gp2ap002_chip, work);
++
++	mutex_lock(&chip->lock);
++	gp2ap002_get_proximity(chip);
++
++	kobject_uevent(&chip->client->dev.kobj, KOBJ_CHANGE);
++	mutex_unlock(&chip->lock);
++
++	enable_irq(chip->client->irq);
++}
++
++static irqreturn_t gp2ap002_irq(int irq, void *data)
++{
++	struct gp2ap002_chip *chip = data;
++
++	disable_irq_nosync(irq);
++	schedule_work(&chip->work);
++
++	return IRQ_HANDLED;
++}
++
++static ssize_t gp2ap002_show_proximity(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct gp2ap002_chip *chip = dev_get_drvdata(dev);
++
++	mutex_lock(&chip->lock);
++	gp2ap002_get_proximity(chip);
++	mutex_unlock(&chip->lock);
++
++	if (chip->proximity < 0)
++		return chip->proximity;
++	return sprintf(buf, "%d\n", chip->proximity);
++}
++static DEVICE_ATTR(prox0_input, S_IRUGO, gp2ap002_show_proximity, NULL);
++
++static ssize_t gp2ap002_show_light_adc(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct gp2ap002_chip *chip = dev_get_drvdata(dev);
++	struct gp2ap002_platform_data *pdata = chip->pdata;
++
++	if (pdata->get_adc) {
++		mutex_lock(&chip->lock);
++		chip->adc = pdata->get_adc();
++		mutex_unlock(&chip->lock);
++	}
++	if (chip->adc < 0)
++		return chip->adc;
++	return sprintf(buf, "%d\n", chip->adc);
++}
++static DEVICE_ATTR(adc0_input, S_IRUGO, gp2ap002_show_light_adc, NULL);
++
++static ssize_t gp2ap002_store_enable(struct device *dev,
++	struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct gp2ap002_chip *chip = dev_get_drvdata(dev);
++	unsigned long value;
++	int ret;
++
++	if (strict_strtoul(buf, 0, &value))
++		return -EINVAL;
++
++	ret = gp2ap002_chip_enable(chip, !!value);
++	if (ret < 0)
++		return ret;
++
++	return count;
++}
++static ssize_t gp2ap002_show_enable(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct gp2ap002_chip *chip = dev_get_drvdata(dev);
++	return sprintf(buf, "%d\n", chip->enabled);
++}
++static DEVICE_ATTR(enable, S_IRUGO | S_IWUSR,
++		gp2ap002_show_enable, gp2ap002_store_enable);
++
++static struct attribute *gp2ap002_attributes[] = {
++	&dev_attr_prox0_input.attr,
++	&dev_attr_adc0_input.attr,
++	&dev_attr_enable.attr,
++	NULL
++};
++
++static const struct attribute_group gp2ap002_attribute_group = {
++	.attrs = gp2ap002_attributes,
++};
++
++static int gp2ap002_initialize(struct gp2ap002_chip *chip)
++{
++	struct gp2ap002_platform_data *pdata = chip->pdata;
++	int ret;
++	u8 value;
++
++	/* GAIN register */
++	value = (pdata->led_mode << GAIN_LED_SHIFT) & GAIN_LED_MASK;
++	ret = i2c_smbus_write_byte_data(chip->client, GP2AP002_GAIN, value);
++	if (ret < 0)
++		goto out;
++
++	/* HYS register */
++	value = (pdata->hysd << HYS_HYSD_SHIFT) & HYS_HYSD_MASK;
++	value |= (pdata->hysc << HYS_HYSC_SHIFT) & HYS_HYSC_MASK;
++	value |= (pdata->hysf << HYS_HYSF_SHIFT) & HYS_HYSF_MASK;
++	ret = i2c_smbus_write_byte_data(chip->client, GP2AP002_HYS, value);
++	if (ret < 0)
++		goto out;
++
++	/* CYCLE register */
++	value = (pdata->cycle << CYCLE_CYCL_SHIFT) & CYCLE_CYCL_MASK;
++	value |= (pdata->oscillator << CYCLE_OSC_SHIFT) & CYCLE_OSC_MASK;
++	ret = i2c_smbus_write_byte_data(chip->client, GP2AP002_CYCLE, value);
++	if (ret < 0)
++		goto out;
++
++	/* CON register */
++	value = (pdata->vout_control << CON_OCON_SHIFT) & CON_OCON_MASK;
++	ret = i2c_smbus_write_byte_data(chip->client, GP2AP002_CYCLE, value);
++out:
++	return ret;
++}
++
++static int __devinit gp2ap002_probe(struct i2c_client *client,
++			  const struct i2c_device_id *id)
++{
++	struct gp2ap002_chip *chip;
++	struct gp2ap002_platform_data *pdata;
++	int ret;
++
++	pdata = client->dev.platform_data;
++	if (!pdata) {
++		dev_err(&client->dev, "No platform init data supplied\n");
++		return -ENODEV;
++	}
++
++	chip = kzalloc(sizeof(struct gp2ap002_chip), GFP_KERNEL);
++	if (!chip) {
++		dev_err(&client->dev, "Failed to allocate driver structure\n");
++		return -ENOMEM;
++	}
++
++	if (client->irq > 0) {
++		unsigned long irq_flag = IRQF_DISABLED;
++
++		if (chip->mode == OPMOD_VCON_IRQ)
++			irq_flag |= IRQF_TRIGGER_FALLING;
++		else
++			irq_flag |= IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING;
++
++		ret = request_irq(client->irq, gp2ap002_irq, irq_flag,
++				"GP2AP002 sensor", chip);
++		if (ret) {
++			dev_err(&client->dev, "Failed to request irq: %d\n",
++				client->irq);
++			goto error_irq;
++		}
++	}
++
++	chip->client = client;
++	i2c_set_clientdata(client, chip);
++	INIT_WORK(&chip->work, gp2ap002_work);
++	mutex_init(&chip->lock);
++	chip->pdata = pdata;
++
++	ret = sysfs_create_group(&client->dev.kobj, &gp2ap002_attribute_group);
++	if (ret) {
++		dev_err(&client->dev,
++			"Failed to create attribute group\n");
++		goto error_sysfs_group;
++	}
++
++	if (pdata->power_enable)
++		pdata->power_enable(true);
++
++	ret = gp2ap002_initialize(chip);
++	if (ret) {
++		dev_err(&client->dev, "Failed to initialize chip\n");
++		goto error_chip_initialize;
++	}
++
++	ret = gp2ap002_chip_enable(chip, pdata->chip_enable);
++	if (ret) {
++		dev_err(&client->dev, "Failed to enable chip\n");
++		goto error_chip_enable;
++	}
++
++	dev_info(&client->dev, "%s registered\n", id->name);
++	return 0;
++
++error_chip_enable:
++error_chip_initialize:
++	sysfs_remove_group(&client->dev.kobj, &gp2ap002_attribute_group);
++error_sysfs_group:
++	if (client->irq > 0)
++		free_irq(client->irq, chip);
++error_irq:
++	kfree(chip);
++	return ret;
++}
++
++static int __devexit gp2ap002_remove(struct i2c_client *client)
++{
++	struct gp2ap002_chip *chip = i2c_get_clientdata(client);
++
++	disable_irq_nosync(client->irq);
++	cancel_work_sync(&chip->work);
++
++	if (client->irq > 0)
++		free_irq(client->irq, chip);
++
++	sysfs_remove_group(&client->dev.kobj, &gp2ap002_attribute_group);
++
++	gp2ap002_chip_enable(chip, false);
++
++	if (chip->pdata->power_enable)
++		chip->pdata->power_enable(false);
++
++	kfree(chip);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int gp2ap002_suspend(struct device *dev)
++{
++	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
++	struct gp2ap002_chip *chip = i2c_get_clientdata(client);
++
++	cancel_work_sync(&chip->work);
++	gp2ap002_chip_enable(chip, false);
++
++	if (chip->pdata->power_enable)
++		chip->pdata->power_enable(false);
++
++	return 0;
++}
++
++static int gp2ap002_resume(struct device *dev)
++{
++	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
++	struct gp2ap002_chip *chip = i2c_get_clientdata(client);
++
++	if (chip->pdata->power_enable)
++		chip->pdata->power_enable(true);
++
++	gp2ap002_chip_enable(chip, true);
++
++	return 0;
++}
++#else
++#define gp2ap002_suspend NULL
++#define gp2ap002_resume NULL
++#endif
++
++static const struct i2c_device_id gp2ap002_id[] = {
++	{ "GP2AP002", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, gp2ap002_id);
++
++static const struct dev_pm_ops gp2ap002_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(gp2ap002_suspend, gp2ap002_resume)
++};
++
++static struct i2c_driver gp2ap002_i2c_driver = {
++	.driver = {
++		.name	= "GP2AP002",
++		.owner	= THIS_MODULE,
++		.pm	= &gp2ap002_pm_ops,
++	},
++	.probe		= gp2ap002_probe,
++	.remove		= __devexit_p(gp2ap002_remove),
++	.id_table	= gp2ap002_id,
++};
++
++static int __init gp2ap002_init(void)
++{
++	return i2c_add_driver(&gp2ap002_i2c_driver);
++}
++module_init(gp2ap002_init);
++
++static void __exit gp2ap002_exit(void)
++{
++	i2c_del_driver(&gp2ap002_i2c_driver);
++}
++module_exit(gp2ap002_exit);
++
++MODULE_AUTHOR("Minkyu Kang <mk7.kang@samsung.com>");
++MODULE_DESCRIPTION("GP2AP002 Proximity/Ambient Light Sensor driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/platform_data/gp2ap002.h b/include/linux/platform_data/gp2ap002.h
+new file mode 100644
+index 0000000..134e7ef
+--- /dev/null
++++ b/include/linux/platform_data/gp2ap002.h
+@@ -0,0 +1,71 @@
++/*
++ *  Copyright (C) 2010 Samsung Electronics
++ *  Minkyu Kang <mk7.kang@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __GP2AP002_H_
++#define __GP2AP002_H_
++
++/**
++ * struct gp2ap002_platform_data
++ * @get_adc: call back function to get adc value for ambient light sensor
++ * @power_enable: call back function to control voltage supply for chip
++ * @vout_gpio: gpio number for Vout pin
++ * @led_mode: select switch for LED's resistance
++ *	0: 2x higher setting,
++ *	1: normal setting
++ * @hysd, hysc, hysf: a set of these bits adjusts the sensitivity,
++ *	determining characteristics of the detection distance and
++ *	its hysteresis
++ *	0 <= hysd <= 1
++ *	0 <= hysc <= 3
++ *	0 <= hysf <= 15
++ * @cycle: determine the detection cycle
++ *	0: 8ms (response time)
++ *	1: 16ms (response time)
++ *	2: 32ms (response time)
++ *	3: 64ms (response time)
++ *	4: 128ms (response time)
++ *	5: 256ms (response time)
++ *	6: 512ms (response time)
++ *	7: 1024ms (response time)
++ * @oscillator: select switch for internal clock frequency hopping
++ *	0: effective,
++ *	1: ineffective
++ * @analog_sleep: select switch for analog sleep function
++ *	0: ineffective
++ *	1: effective
++ * @prox_mode: determine output method control for Vout pin
++ *	0: normal mode
++ *	1: interrupt_mode
++ * @vout_control: select switch for enabling/disabling Vout pin
++ *	0: enable
++ *	2: force to go Low
++ *	3: force to go High
++ * @chip_enable: determine enabling/disabling software shutdown function
++ *	0: shutdown mode
++ *	1: operating mode
++ */
++struct gp2ap002_platform_data {
++	int (*get_adc)(void);
++	void (*power_enable)(bool);
++	int vout_gpio;
++
++	int led_mode;
++	int hysd;
++	int hysc;
++	int hysf;
++	int cycle;
++	int oscillator;
++	int analog_sleep;
++	int prox_mode;
++	int vout_control;
++
++	bool chip_enable;
++};
++
++#endif
+-- 
+1.7.4.1
 
-The modified testcase is attached, I did some optimizations in avx memcpy,
-but I fear I may be missing something, when I tried to put it in the kernel, it
-complained about sata errors I never had before, so I immediately went for
-the power button to prevent more errors, fortunately it only corrupted some
-kernel object files, and btrfs threw checksum errors. :)
-
-All in all I think testing in userspace is safer, you might want to run it on an
-idle cpu with schedtool, with a high fifo priority, and set cpufreq governor to
-performance.
-
-~Maarten
-
---------------070301090508010508020007
-Content-Type: application/x-gzip;
- name="memcpy.tar.gz"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="memcpy.tar.gz"
-
-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
---------------070301090508010508020007--
