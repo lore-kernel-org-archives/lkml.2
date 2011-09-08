@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab1IHBN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 21:13:26 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:34750 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab1IHBNZ (ORCPT
+	id S1757737Ab1IHBNu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 21:13:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38696 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757670Ab1IHBNs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 21:13:25 -0400
-Date: Thu, 8 Sep 2011 10:05:30 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, matthltc@us.ibm.com,
-        paul@paulmenage.org, containers@lists.linux-foundation.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] freezer: fix wait_event_freezable/__thaw_task races
-Message-ID: <20110908010530.GD3987@mtj.dyndns.org>
-References: <1314988070-12244-7-git-send-email-tj@kernel.org>
- <20110904184626.GA30101@redhat.com>
- <20110905023315.GB9807@htj.dyndns.org>
- <20110905162012.GA4445@redhat.com>
- <20110906032846.GA18425@mtj.dyndns.org>
- <20110906151836.GA15568@redhat.com>
- <20110906152539.GA16899@redhat.com>
- <20110906155332.GF18425@mtj.dyndns.org>
- <20110907182156.GA13909@redhat.com>
- <20110907182217.GB13909@redhat.com>
+	Wed, 7 Sep 2011 21:13:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110907182217.GB13909@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1315406503-7883-4-git-send-email-pbonzini@redhat.com>
+References: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
+	<1315406503-7883-4-git-send-email-pbonzini@redhat.com>
+Date: Wed, 7 Sep 2011 21:13:47 -0400
+Message-ID: <CAECXXi5Wj=y8KPYr570N2Smtrj7u-jr5u-zdE=euDiL6Ka=a8g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] nbd: map DISCARD requests to a new nbd request type
+From: Paul Clements <paul.clements@us.sios.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Sep 7, 2011 at 10:41 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> When the feature is enabled, set QUEUE_FLAG_DISCARD and transmit those as
+> NBD_CMD_TRIM requests.
+>
+> I used "trim" instead of "discard" to avoid confusion with the existing
+> NBD_CMD_DISC that is used for disconnect.
 
-On Wed, Sep 07, 2011 at 08:22:17PM +0200, Oleg Nesterov wrote:
-> wait_event_freezable() and wait_event_freezable_timeout() stop
-> the waiting if try_to_freeze() fails. This is not right, we can
-> race with __thaw_task() and in this case
-> 
-> 	- wait_event_freezable() returns the wrong ERESTARTSYS
-> 
-> 	- wait_event_freezable_timeout() can return the positive
-> 	  value while condition == F
+This patchset looks good to me.
 
-Indeed, nice catch.  This one actually is pretty dangerous.  We
-probably want to make a separate fix for this and backport it to
--stable?
+--
+Paul
 
-> Change the code to always check __retval/condition before return.
-> 
-> Note: with or without this patch the timeout logic looks strange,
-> probably we should recalc timeout if try_to_freeze() returns T.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Yeap, with freezable_with_signal gone, this looks correct & simpler to
-me but it would be nice if you can sprinkle some documentation while
-at it. :)
-
-Thanks.
-
--- 
-tejun
+> Cc: Paul Clements <Paul.Clements@steeleye.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  drivers/block/nbd.c |   15 ++++++++++++---
+>  include/linux/nbd.h |    4 +++-
+>  2 files changed, 15 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+> index c4fe9c8..71ebaab 100644
+> --- a/drivers/block/nbd.c
+> +++ b/drivers/block/nbd.c
+> @@ -98,6 +98,7 @@ static const char *nbdcmd_to_ascii(int cmd)
+>        case  NBD_CMD_READ: return "read";
+>        case NBD_CMD_WRITE: return "write";
+>        case  NBD_CMD_DISC: return "disconnect";
+> +       case  NBD_CMD_TRIM: return "trim (discard)";
+>        }
+>        return "invalid";
+>  }
+> @@ -454,9 +455,13 @@ static void nbd_handle_req(struct nbd_device *lo, struct request *req)
+>        if (req->cmd_type != REQ_TYPE_FS)
+>                goto error_out;
+>
+> -       if (rq_data_dir(req) == WRITE)
+> -               nbd_cmd(req) = NBD_CMD_WRITE;
+> -       else
+> +       if (rq_data_dir(req) == WRITE) {
+> +               if ((req->cmd_flags & REQ_DISCARD)) {
+> +                       WARN_ON(!(lo->flags & NBD_FEATURE_TRIM));
+> +                       nbd_cmd(req) = NBD_CMD_TRIM;
+> +               } else
+> +                       nbd_cmd(req) = NBD_CMD_WRITE;
+> +       } else
+>                nbd_cmd(req) = NBD_CMD_READ;
+>
+>        req->errors = 0;
+> @@ -659,6 +664,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+>                        return -EINVAL;
+>
+>                mutex_unlock(&lo->tx_lock);
+> +               if (lo->flags & NBD_FEATURE_TRIM)
+> +                       queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
+> +                                               lo->disk->queue);
+>
+>                thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
+>                if (IS_ERR(thread)) {
+> @@ -677,6 +685,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
+>                lo->file = NULL;
+>                nbd_clear_que(lo);
+>                printk(KERN_WARNING "%s: queue cleared\n", lo->disk->disk_name);
+> +               queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, lo->disk->queue);
+>                if (file)
+>                        fput(file);
+>                lo->flags = 0;
+> @@ -796,6 +805,9 @@ static int __init nbd_init(void)
+>                 * Tell the block layer that we are not a rotational device
+>                 */
+>                queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
+> +               disk->queue->limits.discard_granularity = 512;
+> +               disk->queue->limits.max_discard_sectors = UINT_MAX;
+> +               disk->queue->limits.discard_zeroes_data = 0;
+>        }
+>
+>        if (register_blkdev(NBD_MAJOR, "nbd")) {
+> diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+> index 926f19d..7048463 100644
+> --- a/include/linux/nbd.h
+> +++ b/include/linux/nbd.h
+> @@ -33,11 +33,13 @@
+>  * not want any overlap.  Bits 32-63 are reserved because they
+>  * are inaccessible on 32-bit platforms.  */
+>  #define NBD_FEATURE_RESERVED   0xFFFFFFFF00000003LL
+> +#define NBD_FEATURE_TRIM       (1 << 2)
+>
+>  enum {
+>        NBD_CMD_READ = 0,
+>        NBD_CMD_WRITE = 1,
+> -       NBD_CMD_DISC = 2
+> +       NBD_CMD_DISC = 2,
+> +       NBD_CMD_TRIM = 3
+>  };
+>
+>  #define nbd_cmd(req) ((req)->cmd[0])
+> --
+> 1.7.6
+>
+>
