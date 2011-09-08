@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab1IHAiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:38:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42077 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755015Ab1IHAiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:38:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,348,1312182000"; 
-   d="scan'208";a="15024964"
-Subject: RE: [PATCH] slub Discard slab page only when node partials >
- minimum setting
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1109071003240.9406@router.home>
-References: <1315188460.31737.5.camel@debian>
-	 <alpine.DEB.2.00.1109061914440.18646@router.home>
-	 <1315357399.31737.49.camel@debian>
-	 <alpine.DEB.2.00.1109062022100.20474@router.home>
-	 <4E671E5C.7010405@cs.helsinki.fi>
-	 <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>
-	 <alpine.DEB.2.00.1109071003240.9406@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Sep 2011 08:43:59 +0800
-Message-ID: <1315442639.31737.224.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1757618Ab1IHAov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:44:51 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58779 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757565Ab1IHAou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 20:44:50 -0400
+Date: Thu, 8 Sep 2011 09:44:38 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        dvlasenk@redhat.com
+Subject: Re: [PATCH v2] Make PTRACE_SEIZE set ptrace options specified in
+ 'data' parameter
+Message-ID: <20110908004438.GC3987@mtj.dyndns.org>
+References: <201109072340.31460.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201109072340.31460.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-09-07 at 23:05 +0800, Christoph Lameter wrote:
-> On Wed, 7 Sep 2011, Shi, Alex wrote:
-> 
-> > Oh, seems the deactivate_slab() corrected at linus' tree already, but
-> > the unfreeze_partials() just copied from the old version
-> > deactivate_slab().
-> 
-> Ok then the patch is ok.
-> 
-> Do you also have performance measurements? I am a bit hesitant to merge
-> the per cpu partials patchset if there are regressions in the low
-> concurrency tests as seem to be indicated by intels latest tests.
-> 
+Hello,
 
-My LKP testing system most focus on server platforms. I tested your per
-cpu partial set on hackbench and netperf loopback benchmark. hackbench
-improve much.
+On Wed, Sep 07, 2011 at 11:40:31PM +0200, Denys Vlasenko wrote:
+> +	if (seize) {
+> +		if (addr != 0)
+> +			goto out;
+> +		if ((flags & ~(long)PTRACE_O_MASK) != PTRACE_SEIZE_DEVEL)
 
-Maybe some IO testing is low concurrency for SLUB, maybe a few jobs
-kbuild? or low swap press testing.  I may try them for your patchset in
-the near days. 
+Please use (unsigned long).  Also, wouldn't it be better to do the
+following instead?
 
-BTW, some testing results for your PCP SLUB:
+	if (!(flags & PTRACE_SEIZE_DEVEL))
+		goto out;
+	flags &= ~PTRACE_SEIZE_DEVEL;
 
-for hackbench process testing: 
-on WSM-EP, inc ~60%, NHM-EP inc ~25%
-on NHM-EX, inc ~200%, core2-EP, inc ~250%. 
-on Tigerton-EX, inc 1900%, :) 
+	if ((flags & ~(unsigned long(PTRACE_O_MASK))))
+		goto out;
 
-for hackbench thread testing: 
-on WSM-EP, no clear inc, NHM-EP no clear inc
-on NHM-EX, inc 10%, core2-EP, inc ~20%. 
-on Tigertion-EX, inc 100%, 
+Then, we can later just delete the first three lines when removing
+SEIZE_DEVEL.
 
-for  netperf loopback testing, no clear performance change. 
+> @@ -263,11 +272,9 @@ static int ptrace_attach(struct task_struct *task, long request,
+>  	if (task->ptrace)
+>  		goto unlock_tasklist;
+>  
+> -	task->ptrace = PT_PTRACED;
+> -	if (seize)
+> -		task->ptrace |= PT_SEIZED;
+>  	if (task_ns_capable(task, CAP_SYS_PTRACE))
+> -		task->ptrace |= PT_PTRACE_CAP;
+> +		flags |= PT_PTRACE_CAP;
+> +	task->ptrace = flags;
 
+Can you please put this in a separate patch?  Hmm... also I think we
+probably want to set ->ptrace while holding siglock too.  There are
+places which assume ->ptrace is protected by siglock.  We can move
+siglock locking above so that both ->ptrace setting and linking are
+protected by siglock and use send_signal() instead of send_sig_info()
+for the implied SIGSTOP.  Note that __ptrace_unlink() would need
+similar update too.
 
+Thank you.
 
+-- 
+tejun
