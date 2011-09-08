@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab1IHNrU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 09:47:20 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:45028 "EHLO minas.ics.muni.cz"
+	id S932991Ab1IHNty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 09:49:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38562 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932789Ab1IHNrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 09:47:19 -0400
-X-Greylist: delayed 1079 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Sep 2011 09:47:18 EDT
-Date: Thu, 8 Sep 2011 15:27:56 +0200
-From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, agk@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: request baset device mapper in Linux
-Message-ID: <20110908132756.GT31717@ics.muni.cz>
-References: <20110720082640.GZ7561@ics.muni.cz>
- <4E280964.6070000@ct.jp.nec.com>
- <20110721132627.GY7561@ics.muni.cz>
- <4E291F28.2040609@ct.jp.nec.com>
- <20110722081903.GB7561@ics.muni.cz>
- <4E2A7806.1060601@ce.jp.nec.com>
- <20110724221619.GM16487@ics.muni.cz>
- <4E367256.8020206@ct.jp.nec.com>
+	id S932789Ab1IHNtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 09:49:53 -0400
+Date: Thu, 8 Sep 2011 09:49:45 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org, kvm@vger.kernel.org,
+        axboe@kernel.dk, takuya.yoshikawa@gmail.com
+Subject: Re: CFQ I/O starvation problem triggered by RHEL6.0 KVM guests
+Message-ID: <20110908134945.GA7024@redhat.com>
+References: <20110908181353.8b3eb66d.yoshikawa.takuya@oss.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E367256.8020206@ct.jp.nec.com>
-X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+In-Reply-To: <20110908181353.8b3eb66d.yoshikawa.takuya@oss.ntt.co.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Muni-Spam-TestIP: 147.251.17.147
-X-Muni-Envelope-From: xhejtman@anubis.ics.muni.cz
-X-Muni-Virus-Test: Clean
-X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Thu, 08 Sep 2011 15:29:04 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 06:31:02PM +0900, Kiyoshi Ueda wrote:
-> Hi Lukas,
+On Thu, Sep 08, 2011 at 06:13:53PM +0900, Takuya Yoshikawa wrote:
+> This is a report of strange cfq behaviour which seems to be triggered by
+> QEMU posix aio threads.
 > 
-> Lukas Hejtmanek wrote:
-> > On Sat, Jul 23, 2011 at 04:28:06PM +0900, Jun'ichi Nomura wrote:
-> >> As Kiyoshi suggested, it is important to know whether this
-> >> problem occurs with the latest kernel.
-> >> So if you could try 3.0, it would be very helpful.
-> > 
-> > so, do I need to check recent kernel as the patch works for me?
+> Host environment:
+>   OS: RHEL6.0 KVM/qemu-kvm (with no patch applied)
+>   IO scheduler: cfq (with the default parameters)
+
+So you are using both RHEL 6.0 in both host and guest kernel? Can you
+reproduce the same issue with upstream kernels? How easily/frequently
+you can reproduce this with RHEL6.0 host.
+
 > 
-> Yes, please.
-> (Unfortunately my storage has been broken today :-<)
+> On the host, we were running 3 linux guests to see if I/O from these guests
+> would be handled fairly by host; each guest did dd write with oflag=direct.
 > 
-> CPU usage seems to be one of the reasons for your case, but I
-> still cannot understand why memory pressure is needed.
-> I want to know your problem also occurs on 3.0 without the patch.
+> Guest virtual disk:
+>   We used a host local disk which had 3 partitions, and each guest was
+>   allocated one of these as dd write target.
+> 
+> So our test was for checking if cfq could keep fairness for the 3 guests
+> who shared the same disk.
+> 
+> The result (strage starvation):
+>   Sometimes, one guest dominated cfq for more than 10sec and requests from
+>   other guests were not handled at all during that time.
+> 
+> Below is the blktrace log which shows that a request to (8,27) in cfq2068S (*1)
+> is not handled at all during cfq2095S and cfq2067S which hold requests to
+> (8,26) are being handled alternately.
+> 
+> *1) WS 104920578 + 64
+> 
+> Question:
+>   I guess that cfq_close_cooperator() was being called in an unusual manner.
+>   If so, do you think that cfq is responsible for keeping fairness for this
+>   kind of unusual write requests?
 
-Well, I tried 3.0.3 kernel. It is not so bad as 2.6.32.36, but it is not as
-good as the same kernel with your patch.
+- If two guests are doing IO to separate partitions, they should really
+  not be very close (until and unless partitions are really small).
 
-CPU load is caused by ksoftirqd (30-40%) and kworker (30%).
+- Even if there are close cooperators, these queues are merged and they
+  are treated as single queue from slice point of view. So cooperating
+  queues should be merged and get a single slice instead of starving
+  other queues in the system.
 
-Overal speed is about 2.5GB/s. With your patch I can reach 2.8-2.9GB/s.
+Can you upload the blktrace logs somewhere which shows what happened 
+during that 10 seconds.
 
--- 
-Luká¹ Hejtmánek
+> 
+> Note:
+>   With RHEL6.1, this problem could not triggered. But I guess that was due to
+>   QEMU's block layer updates.
+
+You can try reproducing this with fio.
+
+Thanks
+Vivek
