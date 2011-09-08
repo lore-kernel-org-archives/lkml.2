@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab1IHXUR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:20:17 -0400
+	id S1754262Ab1IHXUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:20:23 -0400
 Received: from mga14.intel.com ([143.182.124.37]:19885 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134Ab1IHXUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:20:10 -0400
+	id S1753852Ab1IHXUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:20:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,351,1312182000"; 
-   d="scan'208";a="46859540"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        =?ks_c_5601-1987?B?udqw5rnO?= <kyungmin.park@samsung.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        "R, Durgadoss" <durgadoss.r@intel.com>
-Date: Thu, 8 Sep 2011 23:07:03 +0530
-Subject: RE: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
- max17042 fuel gauge
-Thread-Topic: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in
- max17042 fuel gauge
-Thread-Index: AcxtOsRnz/g5r7rjSFiRud9kKwPRzgBEs2mQ
-Message-ID: <12D0C12AF19E15409D57F22566E88EF50975BF58AE@bgsmsx501.gar.corp.intel.com>
-References: <14735031.596001315385240106.JavaMail.weblogic@epml15>
-In-Reply-To: <14735031.596001315385240106.JavaMail.weblogic@epml15>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="ks_c_5601-1987"
-MIME-Version: 1.0
+   d="scan'208";a="15335459"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf: add support for disabling -Werror via WERROR=0
+Date: Thu,  8 Sep 2011 13:42:39 -0700
+Message-Id: <eac06c7cc4920e5d4830417d466161fb26c7359c.1315514559.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p88NKLYn027777
 
-Hi Anton,
+GCC often introduces new warnings with lots of false positives - breaking
+-Werror builds. WERROR=0 allows one to build perf without much fuss - while
+still encouraging people to send patches to avoid the fuss of having to type
+WERROR=0.
 
-> -----Original Message-----
-> From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
-> Sent: Wednesday, September 07, 2011 2:17 PM
-> To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
-> Cc: Anton Vorontsov; dwmw2@infradead.org; π⁄∞ÊπŒ; Wolfram Sang; R, Durgadoss
-> Subject: Re: RE: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
-> 
-> Sender : Pallala, Ramakrishna<ramakrishna.pallala@intel.com> Date : 2011-09-07 17:30
-> (GMT+09:00)
-> > Hi MyungJoo,
-> >
-> > > -----Original Message-----
-> > > From: MyungJoo Ham [mailto:myungjoo.ham@samsung.com]
-> > > Sent: Monday, September 05, 2011 6:55 AM
-> > > To: Pallala, Ramakrishna; linux-kernel@vger.kernel.org
-> > > Cc: Anton Vorontsov; dwmw2@infradead.org; π⁄∞ÊπŒ; Wolfram Sang; R, Durgadoss
-> > > Subject: Re: [PATCHv1 1/1] [Power Supply]: Fix error handling in max17042 fuel gauge
-> > >
-> > > Sender : Ramakrishna Pallala<ramakrishna.pallala@intel.com> Date : 2011-09-02 15:45
-> > > (GMT+09:00)
-> > > >
-> > > > In max17042_get_property(...), the values returned by
-> > > > max17042_read_reg are directly assigned to the variables,
-> > > > even if the read results in an error.
-> > > >
-> > > > This patch checks for the return code from max17042_read_reg and
-> > > > exits the function if there is any error.
-> > > >
-> > > > Signed-off-by: Ramakrishna Pallala
-> > > > ---
-> > > > drivers/power/max17042_battery.c |   85 ++++++++++++++++++++++++++------------
-> > > > 1 files changed, 58 insertions(+), 27 deletions(-)
-> > > >
-> > >
-> > > Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> >
-> > Thanks for the Ack.
-> > When can I expect the patch to be merged ?
-> >
-> > Thanks,
-> > Ram
-> >
-> 
-> Hello Ram,
-> 
-> Although I'd be so glad to be able to merge patches of MAX17042 (and
-> MAX8997/8998/8952/8903/...?) by myself; however, I'm not a maintainer of MAX17042.
-> 
-> I guess you need to wait for Anton.
-> 
-> Cheers,
-> MyungJoo
+Bisecting back to commits that produce a (mostly harmless) warning on some
+compilers is more difficult. With WERROR=0 one could bisect without worrying
+about harmless warnings.
 
-When can I expect the patch to be merged ?
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-Thanks,
-Ram
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3b8f7b8..e9d5c27 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -30,6 +30,8 @@ endif
+ # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
+ #
+ # Define NO_DWARF if you do not want debug-info analysis feature at all.
++#
++# Define WERROR=0 to disable treating any warnings as errors.
+ 
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -63,6 +65,11 @@ ifeq ($(ARCH),x86_64)
+ 	endif
+ endif
+ 
++# Treat warnings as errors unless directed not to
++ifneq ($(WERROR),0)
++	CFLAGS_WERROR := -Werror
++endif
++
+ #
+ # Include saner warnings here, which can catch bugs:
+ #
+@@ -95,7 +102,7 @@ ifndef PERF_DEBUG
+   CFLAGS_OPTIMIZE = -O6
+ endif
+ 
+-CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
++CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+ ALL_LDFLAGS = $(LDFLAGS)
+-- 
+1.7.6
+
