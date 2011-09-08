@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab1IHA0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:26:39 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:60336 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756158Ab1IHA0i (ORCPT
+	id S1757591Ab1IHA1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:27:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37518 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756832Ab1IHA1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:26:38 -0400
-MIME-Version: 1.0
-Date: Thu, 8 Sep 2011 09:26:37 +0900
-Message-ID: <CAKYAXd9m_n8SV9Ei=jA9-aZ3G9JtB8WFAjs7XteJn5jc0ems5A@mail.gmail.com>
-Subject: RFC : squashfs : devblksize set to 4KB instread of BLK_SIZE(1KB).
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: phillip@lougher.demon.co.uk, squashfs-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 Sep 2011 20:27:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 8 Sep 2011 09:26:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "kautuk.c @samsung.com" <consul.kautuk@gmail.com>
+Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-fsdev@vger.rutgers.edu, linux-kernel@vger.kernel.org
+Subject: Re: Is there any way to stop reclamation of file cache pages ?
+Message-Id: <20110908092633.2fcc01d7.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <CAFPAmTTaq2Lz=eGgfG2-5U0M9aS_aZLNAANAVPZj6TEo9EdjGg@mail.gmail.com>
+References: <CAFPAmTTaq2Lz=eGgfG2-5U0M9aS_aZLNAANAVPZj6TEo9EdjGg@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, devblksize is set to 1KB in squashfs like below code.
+On Mon, 5 Sep 2011 14:44:43 +0530
+"kautuk.c @samsung.com" <consul.kautuk@gmail.com> wrote:
 
-#define BLOCK_SIZE_BITS 10
-#define BLOCK_SIZE (1<<BLOCK_SIZE_BITS)
+> Hi,
+> 
+> I am aware that mlocked pages can be stopped from being reclaimed
+> through the PFRA.
+> 
+> However, is there any method to stop reclamation of the page-cache
+> pages pertaining to
+> a single file's inode without mlocking ?
+> 
+> If I want to only use the open, read and write system calls and I want
+> to set specific file cache
+> pages to "non-reclaimable", how can I do so ?
+> 
 
-msblk->devblksize = sb_min_blocksize(sb, BLOCK_SIZE);
--> msblk->devblksize = sb_min_blocksize(sb, PAGE_SIZE); or
-->#define SQUASHFS_DEVBLK_SIZE 4096
--> msblk->devblksize = sb_min_blocksize(sb, SQUASHFS_DEVBLK_SIZE);
+For this kind of question, you should explain why you can't use mlock.
 
-If devblksize is set by NAND page size before, I think that it is
-changed to optimal vaule with increasing physical page size of NAND.
+> Will the POSIX_FADV_WILLNEED option to the fadvise() system call solve
+> this problem ?
+> 
 
-So I suggest that devblksize is set to 4KB, it is suitable for
-physical page size of NAND(Onenand,flexOnenand 4KB) and minimal
-compressed size.
+I think no.
 
-We will gain improved performance(~20%) and stop reading inefficiently
-several time by page alignment.
+Thanks,
+-Kame
 
-Thanks.
