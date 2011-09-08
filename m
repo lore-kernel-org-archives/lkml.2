@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab1IHIbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 04:31:33 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35603 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268Ab1IHIba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 04:31:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 8 Sep 2011 17:30:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: close race between charge and putback
-Message-Id: <20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
-References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932381Ab1IHIgB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 04:36:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45360 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932365Ab1IHIf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 04:35:57 -0400
+Date: Thu, 8 Sep 2011 10:35:51 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Borislav Petkov <bp@amd64.org>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: x86 memcpy performance
+Message-ID: <20110908083551.GA5646@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+	Borislav Petkov <bp@amd64.org>,
+	"Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+	Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>
+References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com>
+ <20110812195220.GA29051@elte.hu>
+ <20110814095910.GA18809@liondog.tnic>
+ <6296.1313462075@turing-police.cc.vt.edu>
+ <20110816121604.GA29251@aftab>
+ <4E5FA18A.7010205@gmail.com>
+ <CA+55aFz1RRY6KcqVVZ9tBH7PDXfBwkZ1AhJcSHPABLXMkNJCOA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz1RRY6KcqVVZ9tBH7PDXfBwkZ1AhJcSHPABLXMkNJCOA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 Sep 2011 09:40:22 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
-
-> There is a potential race between a thread charging a page and another
-> thread putting it back to the LRU list:
+On Thu, Sep 01, 2011 at 09:18:32AM -0700, Linus Torvalds wrote:
+> On Thu, Sep 1, 2011 at 8:15 AM, Maarten Lankhorst
+> <m.b.lankhorst@gmail.com> wrote:
+> >
+> > This work intrigued me, in some cases kernel memcpy was a lot faster than sse memcpy,
+> > and I finally figured out why. I also extended the test to an optimized avx memcpy,
+> > but I think the kernel memcpy will always win in the aligned case.
 > 
-> charge:                         putback:
-> SetPageCgroupUsed               SetPageLRU
-> PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> "rep movs" is generally optimized in microcode on most modern Intel
+> CPU's for some easyish cases, and it will outperform just about
+> anything.
 > 
-
-I assumed that all pages are charged before added to LRU.
-(i.e. event happens in charge->lru_lock->putback order.)
-
-But hmm, this assumption may be bad for maintainance.
-Do you find a code which adds pages to LRU before charge ?
-
-Hmm, if there are codes which recharge the page to other memcg,
-it will cause bug and my assumption may be harmful.
-
-> The order of setting one flag and checking the other is crucial,
-> otherwise the charge may observe !PageLRU while the putback observes
-> !PageCgroupUsed and the page is not linked to the memcg LRU at all.
+> Atom is a notable exception, but if you expect performance on any
+> general loads from Atom, you need to get your head examined. Atom is a
+> disaster for anything but tuned loops.
 > 
-> Global memory pressure may fix this by trying to isolate and putback
-> the page for reclaim, where that putback would link it to the memcg
-> LRU again.  Without that, the memory cgroup is undeletable due to a
-> charge whose physical page can not be found and moved out.
+> The "easyish cases" depend on microarchitecture. They are improving,
+> so long-term "rep movs" is the best way regardless, but for most
+> current ones it's something like "source aligned to 8 bytes *and*
+> source and destination are equal "mod 64"".
 > 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
-> ---
->  mm/memcontrol.c |   21 ++++++++++++++++++++-
->  1 files changed, 20 insertions(+), 1 deletions(-)
+> And that's true in a lot of common situations. It's true for the page
+> copy, for example, and it's often true for big user "read()/write()"
+> calls (but "often" may not be "often enough" - high-performance
+> userland should strive to align read/write buffers to 64 bytes, for
+> example).
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d63dfb2..17708e1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -990,6 +990,16 @@ void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru)
->  		return;
->  	pc = lookup_page_cgroup(page);
->  	VM_BUG_ON(PageCgroupAcctLRU(pc));
-> +	/*
-> +	 * putback:				charge:
-> +	 * SetPageLRU				SetPageCgroupUsed
-> +	 * smp_mb				smp_mb
-> +	 * PageCgroupUsed && add to memcg LRU	PageLRU && add to memcg LRU
-> +	 *
-> +	 * Ensure that one of the two sides adds the page to the memcg
-> +	 * LRU during a race.
-> +	 */
-> +	smp_mb();
->  	if (!PageCgroupUsed(pc))
->  		return;
->  	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-> @@ -1041,7 +1051,16 @@ static void mem_cgroup_lru_add_after_commit(struct page *page)
->  	unsigned long flags;
->  	struct zone *zone = page_zone(page);
->  	struct page_cgroup *pc = lookup_page_cgroup(page);
-> -
-> +	/*
-> +	 * putback:				charge:
-> +	 * SetPageLRU				SetPageCgroupUsed
-> +	 * smp_mb				smp_mb
-> +	 * PageCgroupUsed && add to memcg LRU	PageLRU && add to memcg LRU
-> +	 *
-> +	 * Ensure that one of the two sides adds the page to the memcg
-> +	 * LRU during a race.
-> +	 */
-> +	smp_mb();
->  	/* taking care of that the page is added to LRU while we commit it */
->  	if (likely(!PageLRU(page)))
->  		return;
-> -- 
-> 1.7.6
-> 
-> 
+> Many other cases of "memcpy()" are the fairly small, constant-sized
+> ones, where the optimal strategy tends to be "move words by hand".
 
+Yeah,
+
+this probably makes enabling SSE memcpy in the kernel a task
+with diminishing returns. There are also the additional costs of
+saving/restoring FPU context in the kernel which eat off from any SSE
+speedup.
+
+And then there's the additional I$ pressure because "rep movs" is
+much smaller than all those mov[au]ps stanzas. Btw, mov[au]ps are the
+smallest (two-byte) instructions I could use - in the AVX case they can
+get up to 4 Bytes of length with the VEX prefix and the additional SIB,
+size override, etc. fields.
+
+Oh, and then there's copy_*_user which also does fault handling and
+replacing that with a SSE version of memcpy could get quite hairy quite
+fast.
+
+Anyway, I'll try to benchmark an asm version of SSE memcpy in the kernel
+when I get the time to see whether it still makes sense, at all.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
