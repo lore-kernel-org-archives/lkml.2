@@ -1,150 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab1IHHKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 03:10:30 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:60868 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856Ab1IHHK3 (ORCPT
+	id S932226Ab1IHHMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 03:12:32 -0400
+Received: from mga12.intel.com ([143.182.124.36]:21278 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755856Ab1IHHMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 03:10:29 -0400
-Message-ID: <4E686A48.2020004@oracle.com>
-Date: Thu, 08 Sep 2011 15:10:00 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Eric Moore <Eric.Moore@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org, DL-MPTFusionLinux@lsi.com,
-        Greg Marsden <greg.marsden@oracle.com>, linux-kernel@vger.kernel.org,
-        Joe Jin <joe.jin@oracle.com>
-Subject: [PATCH] [SCSI] mptsas: enable driver multi-threaded probe
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4E686A60.0016,ss=1,re=0.000,fgs=0
+	Thu, 8 Sep 2011 03:12:30 -0400
+From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: [PATCH] Smack: check permissions from user space (v2)
+Date: Thu,  8 Sep 2011 10:12:01 +0300
+Message-Id: <1315465921-23136-1-git-send-email-jarkko.sakkinen@intel.com>
+X-Mailer: git-send-email 1.7.4.1
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When server installed some mptsas controller, kernel took long time to
-initialized and probe the disks. This patch will create a probe thread for
-each device.
+Adds a new file into SmackFS called 'access'. Wanted
+Smack permission is written into /smack/access.
+After that result can be read from the opened file.
+If access applies result contains 1 and otherwise
+0. File access is protected from race conditions
+by using simple_transaction_get()/set() API.
 
-By our test, server with 4 LSI controllers, after applied this patch, saved
-40s(60 vs 20) for boot time.
+Fixes from the previous version:
+- Removed smack.h changes, refactoring left-over
+from previous version.
+- Removed #include <linux/smack.h>, refactoring
+left-over from previous version.
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Cc: Eric Moore <Eric.Moore@lsi.com>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 ---
- drivers/message/fusion/mptsas.c |   52 +++++++++++++++++++++++++++++++++++---
- 1 files changed, 47 insertions(+), 5 deletions(-)
+ security/smack/smackfs.c |  180 ++++++++++++++++++++++++++++++----------------
+ 1 files changed, 117 insertions(+), 63 deletions(-)
 
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 7596aec..6c29efc 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -51,6 +51,7 @@
- #include <linux/jiffies.h>
- #include <linux/workqueue.h>
- #include <linux/delay.h>	/* for mdelay */
-+#include <linux/kthread.h>
+diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+index f934601..f4c28ee 100644
+--- a/security/smack/smackfs.c
++++ b/security/smack/smackfs.c
+@@ -44,6 +44,7 @@ enum smk_inos {
+ 	SMK_ONLYCAP	= 9,	/* the only "capable" label */
+ 	SMK_LOGGING	= 10,	/* logging */
+ 	SMK_LOAD_SELF	= 11,	/* task specific rules */
++	SMK_ACCESSES	= 12,	/* access policy */
+ };
  
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
-@@ -85,6 +86,10 @@ module_param(mpt_pt_clear, int, 0);
- MODULE_PARM_DESC(mpt_pt_clear,
- 		" Clear persistency table: enable=1  "
- 		"(default=MPTSCSIH_PT_CLEAR=0)");
-+static bool mptsas_multiprobe = 1;
-+module_param(mptsas_multiprobe, bool, 0);
-+MODULE_PARM_DESC(mptsas_multiprobe, " Probe disks by per-device, "
-+		"default enabled");
- 
- /* scsi-mid layer global parmeter is max_report_luns, which is 511 */
- #define MPTSAS_MAX_LUN (16895)
-@@ -5118,9 +5123,17 @@ static void mptsas_volume_delete(MPT_ADAPTER *ioc, u8 id)
- 	scsi_device_put(sdev);
+ /*
+@@ -176,71 +177,19 @@ static int smk_set_access(struct smack_rule *srp, struct list_head *rule_list,
  }
  
-+struct mptsas_mtprobe_structure {
-+	struct pci_dev *pdev;
-+	struct pci_device_id *id;
-+};
-+
- static int
--mptsas_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+__mptsas_probe(void *void_data)
+ /**
+- * smk_write_load_list - write() for any /smack/load
+- * @file: file pointer, not actually used
+- * @buf: where to get the data from
+- * @count: bytes sent
+- * @ppos: where to start - must be 0
+- * @rule_list: the list of rules to write to
+- * @rule_lock: lock for the rule list
+- *
+- * Get one smack access rule from above.
+- * The format is exactly:
+- *     char subject[SMK_LABELLEN]
+- *     char object[SMK_LABELLEN]
+- *     char access[SMK_ACCESSLEN]
+- *
+- * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
++ * smk_parse_rule - parse subject, object and access type
++ * @data: string to be parsed whose size is SMK_LOADLEN
++ * @rule: parsed entities are stored in here
+  */
+-static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+-				size_t count, loff_t *ppos,
+-				struct list_head *rule_list,
+-				struct mutex *rule_lock)
++static int smk_parse_rule(const char *data, struct smack_rule *rule)
  {
-+	struct mptsas_mtprobe_structure *data = void_data;
-+	struct pci_dev		*pdev = data->pdev;
-+	struct pci_device_id	*id = data->id;
- 	struct Scsi_Host	*sh;
- 	MPT_SCSI_HOST		*hd;
- 	MPT_ADAPTER 		*ioc;
-@@ -5134,7 +5147,7 @@ mptsas_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+-	struct smack_rule *rule;
+-	char *data;
+-	int rc = -EINVAL;
+-
+-	/*
+-	 * No partial writes.
+-	 * Enough data must be present.
+-	 */
+-	if (*ppos != 0)
+-		return -EINVAL;
+-	/*
+-	 * Minor hack for backward compatibility
+-	 */
+-	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
+-		return -EINVAL;
+-
+-	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
+-	if (data == NULL)
+-		return -ENOMEM;
+-
+-	if (copy_from_user(data, buf, count) != 0) {
+-		rc = -EFAULT;
+-		goto out;
+-	}
+-
+-	/*
+-	 * More on the minor hack for backward compatibility
+-	 */
+-	if (count == (SMK_OLOADLEN))
+-		data[SMK_OLOADLEN] = '-';
+-
+-	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
+-	if (rule == NULL) {
+-		rc = -ENOMEM;
+-		goto out;
+-	}
+-
+ 	rule->smk_subject = smk_import(data, 0);
+ 	if (rule->smk_subject == NULL)
+-		goto out_free_rule;
++		return -1;
  
- 	r = mpt_attach(pdev,id);
- 	if (r)
--		return r;
-+		goto done;
+ 	rule->smk_object = smk_import(data + SMK_LABELLEN, 0);
+ 	if (rule->smk_object == NULL)
+-		goto out_free_rule;
++		return -1;
  
- 	ioc = pci_get_drvdata(pdev);
- 	mptsas_fw_event_off(ioc);
-@@ -5172,7 +5185,8 @@ mptsas_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		printk(MYIOC_s_WARN_FMT
- 			"Skipping ioc=%p because SCSI Initiator mode "
- 			"is NOT enabled!\n", ioc->name, ioc);
--		return 0;
-+		r = 0;
-+		goto done;
+ 	rule->smk_access = 0;
+ 
+@@ -252,7 +201,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_READ;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
  	}
  
- 	sh = scsi_host_alloc(&mptsas_driver_template, sizeof(MPT_SCSI_HOST));
-@@ -5282,14 +5296,42 @@ mptsas_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		ioc->old_sas_discovery_protocal = 1;
- 	mptsas_scan_sas_topology(ioc);
- 	mptsas_fw_event_on(ioc);
--	return 0;
-+	r = 0;
-+ done:
-+	kfree(void_data);
-+	return r;
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 1]) {
+@@ -263,7 +212,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_WRITE;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
  
-  out_mptsas_probe:
--
-+	kfree(void_data);
- 	mptscsih_remove(pdev);
- 	return error;
- }
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 2]) {
+@@ -274,7 +223,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_EXEC;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
  
-+static int
-+mptsas_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	struct mptsas_mtprobe_structure	*data;
-+	struct task_struct		*t;
-+	int ret = 0;
-+
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->pdev = pdev;
-+	data->id = id;
-+
-+	if (mptsas_multiprobe) {
-+		t = kthread_run(__mptsas_probe, data,
-+				"mptsas_probe-%d", pci_name(pdev));
-+		if (IS_ERR(t))
-+			ret = __mptsas_probe(data);
-+	} else
-+		ret = __mptsas_probe(data);
-+
-+	return ret;
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 3]) {
+@@ -285,7 +234,7 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_APPEND;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
+ 
+ 	switch (data[SMK_LABELLEN + SMK_LABELLEN + 4]) {
+@@ -296,9 +245,74 @@ static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
+ 		rule->smk_access |= MAY_TRANSMUTE;
+ 		break;
+ 	default:
+-		goto out_free_rule;
++		return -1;
+ 	}
+ 
++	return 0;
 +}
 +
- void
- mptsas_shutdown(struct pci_dev *pdev)
- {
++/**
++ * smk_write_load_list - write() for any /smack/load
++ * @file: file pointer, not actually used
++ * @buf: where to get the data from
++ * @count: bytes sent
++ * @ppos: where to start - must be 0
++ * @rule_list: the list of rules to write to
++ * @rule_lock: lock for the rule list
++ *
++ * Get one smack access rule from above.
++ * The format is exactly:
++ *     char subject[SMK_LABELLEN]
++ *     char object[SMK_LABELLEN]
++ *     char access[SMK_ACCESSLEN]
++ *
++ * writes must be SMK_LABELLEN+SMK_LABELLEN+SMK_ACCESSLEN bytes.
++ */
++static ssize_t smk_write_load_list(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos,
++				struct list_head *rule_list,
++				struct mutex *rule_lock)
++{
++	struct smack_rule *rule;
++	char *data;
++	int rc = -EINVAL;
++
++	/*
++	 * No partial writes.
++	 * Enough data must be present.
++	 */
++	if (*ppos != 0)
++		return -EINVAL;
++	/*
++	 * Minor hack for backward compatibility
++	 */
++	if (count < (SMK_OLOADLEN) || count > SMK_LOADLEN)
++		return -EINVAL;
++
++	data = kzalloc(SMK_LOADLEN, GFP_KERNEL);
++	if (data == NULL)
++		return -ENOMEM;
++
++	if (copy_from_user(data, buf, count) != 0) {
++		rc = -EFAULT;
++		goto out;
++	}
++
++	/*
++	 * More on the minor hack for backward compatibility
++	 */
++	if (count == (SMK_OLOADLEN))
++		data[SMK_OLOADLEN] = '-';
++
++	rule = kzalloc(sizeof(*rule), GFP_KERNEL);
++	if (rule == NULL) {
++		rc = -ENOMEM;
++		goto out;
++	}
++
++	if (smk_parse_rule(data, rule))
++		goto out_free_rule;
++
+ 	rc = count;
+ 	/*
+ 	 * smk_set_access returns true if there was already a rule
+@@ -1425,6 +1439,44 @@ static const struct file_operations smk_load_self_ops = {
+ 	.write		= smk_write_load_self,
+ 	.release        = seq_release,
+ };
++
++/**
++ * smk_write_access - handle access check transaction
++ * @file: file pointer
++ * @buf: data from user space
++ * @count: bytes sent
++ * @ppos: where to start - must be 0
++ */
++static ssize_t smk_write_access(struct file *file, const char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	struct smack_rule rule;
++	char *data;
++
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	data = simple_transaction_get(file, buf, count);
++	if (IS_ERR(data))
++		return PTR_ERR(data);
++
++	if (count < SMK_LOADLEN || smk_parse_rule(data, &rule))
++		return -EINVAL;
++
++	data[0] = smk_access(rule.smk_subject, rule.smk_object,
++			     rule.smk_access, NULL) == 0;
++
++	simple_transaction_set(file, 1);
++	return SMK_LOADLEN;
++}
++
++static const struct file_operations smk_access_ops = {
++	.write		= smk_write_access,
++	.read		= simple_transaction_read,
++	.release	= simple_transaction_release,
++	.llseek		= generic_file_llseek,
++};
++
+ /**
+  * smk_fill_super - fill the /smackfs superblock
+  * @sb: the empty superblock
+@@ -1459,6 +1511,8 @@ static int smk_fill_super(struct super_block *sb, void *data, int silent)
+ 			"logging", &smk_logging_ops, S_IRUGO|S_IWUSR},
+ 		[SMK_LOAD_SELF] = {
+ 			"load-self", &smk_load_self_ops, S_IRUGO|S_IWUGO},
++		[SMK_ACCESSES] = {
++			"access", &smk_access_ops, S_IRUGO|S_IWUSR},
+ 		/* last one */
+ 			{""}
+ 	};
 -- 
-1.7.6
+1.7.4.1
 
