@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955Ab1IHNhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 09:37:22 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:40238 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932878Ab1IHNhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 09:37:20 -0400
-Date: Thu, 8 Sep 2011 21:37:00 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jiri Kosina <jkosina@suse.cz>, Andreas Mohr <andi@lisas.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Julia Lawall <julia@diku.dk>, Ondrej Zary <linux@rainbow-software.org>,
-        Dan Carpenter <error27@gmail.com>, Joe Perches <joe@perches.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [RFC] [PATCH 02/62] mpu401:snd_mpu401_uart_new(): split
- semantic of irq_flags
-Message-ID: <20110908133700.GB2310@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com>
- <1315383059-3673-3-git-send-email-yong.zhang0@gmail.com>
- <4E689E9A.8000407@ladisch.de>
+	id S932944Ab1IHNiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 09:38:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40589 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932789Ab1IHNiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 09:38:22 -0400
+From: Deepthy Ravi <deepthy.ravi@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <mchehab@infradead.org>, <linux-media@vger.kernel.org>,
+        <laurent.pinchart@ideasonboard.com>, <g.liakhovetski@gmx.de>,
+        Deepthy Ravi <deepthy.ravi@ti.com>
+Subject: [PATCH 8/8] omap2plus_defconfig: Enable tvp514x video decoder support
+Date: Thu, 8 Sep 2011 19:08:06 +0530
+Message-ID: <1315489086-16413-1-git-send-email-deepthy.ravi@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4E689E9A.8000407@ladisch.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 12:53:14PM +0200, Clemens Ladisch wrote:
-> Yong Zhang wrote:
-> > Now snd_mpu401_uart_new() parameter 'irq_flags' take two role
-> > in it: one is the condition to request_irq and the other is
-> > the real irq_flags which will be transfered to request_irq().
-> > 
-> > So add another parameter 'want_irq' to take the role of the
-> > first one, this will make it easy to remove IRQF_DISABLED.
-> 
-> Please note that the irq number is also intended to pass this
-> information:
+Enables multimedia driver, media controller api,
+v4l2-subdev-api, and tvp514x video decoder support
+in omap2plus_defconfig.
 
-Yes.
+Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
+---
+ arch/arm/configs/omap2plus_defconfig |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-this is a bit subtle:
- * @irq: the irq number, -1 if no interrupt for mpu
-    
-This semantic of 'irq' is kept by the callers IMHO.
+diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+index d5f00d7..10474d4 100644
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -133,6 +133,16 @@ CONFIG_TWL4030_WATCHDOG=y
+ CONFIG_REGULATOR_TWL4030=y
+ CONFIG_REGULATOR_TPS65023=y
+ CONFIG_REGULATOR_TPS6507X=y
++CONFIG_MEDIA_SUPPORT=y
++CONFIG_MEDIA_CONTROLLER=y
++CONFIG_VIDEO_DEV=y
++CONFIG_VIDEO_V4L2_COMMON=y
++CONFIG_VIDEO_ALLOW_V4L1=y
++CONFIG_VIDEO_V4L1_COMPAT=y
++CONFIG_VIDEO_V4L2_SUBDEV_API=y
++CONFIG_VIDEO_MEDIA=y
++CONFIG_VIDEO_TVP514X=y
++CONFIG_VIDEO_OMAP3=y
+ CONFIG_FB=y
+ CONFIG_FIRMWARE_EDID=y
+ CONFIG_FB_MODE_HELPERS=y
+-- 
+1.7.0.4
 
- * @irq_flags: the irq request flags (SA_XXX), 0 if irq was already reserved.
-
-So irq_flags has other meaning--if the irq is already reserved.
-Maybe my imprecise description make some kind of misunderstanding.
-
-Seems 'irq_reserved' is more meaningful than 'want_irq', yes?
-
-> 
-> >   * @irq: the irq number, -1 if no interrupt for mpu
-> > ...
-> > -	if (irq >= 0 && irq_flags) {
-> >  		if (request_irq(irq, snd_mpu401_uart_interrupt, irq_flags,
-> 
-> Of course, most of snd_mpu401_uart_new()'s users get this wrong and use
-> 0 instead of -1, relying on the irq_flags parameter only.  But if these
-> are fixed to use irq == -1, we get the same effect without having to
-> introduce another parameter.
-
-Hmm, precisely IRQF_DISABLED imply irq is not reserved in some caller.
-
-BTW, I'm not familiar with mpu401, so maybe I'm missing something here.
-
-Thanks,
-Yong
