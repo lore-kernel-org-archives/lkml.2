@@ -1,66 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab1IHFQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 01:16:11 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8642 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752190Ab1IHFQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 01:16:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,349,1312182000"; 
-   d="scan'208";a="49154142"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Minskey Guo <chaohong_guo@linux.intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Date: Wed, 7 Sep 2011 22:16:04 -0700
-Subject: RE: [PATCH 5/5] mce: recover from "action required" errors reported
- in data path in usermode
-Thread-Topic: [PATCH 5/5] mce: recover from "action required" errors
- reported in data path in usermode
-Thread-Index: Acxt1HpgAYxti2IxQ1KZ9BIUFi/J9gAEO/Pg
-Message-ID: <987664A83D2D224EAE907B061CE93D5301EA9704CD@orsmsx505.amr.corp.intel.com>
-References: <4e5eb50721061dbb1b@agluck-desktop.sc.intel.com>
- <4E6709B2.7020401@linux.intel.com> <4E683108.8020000@linux.intel.com>
-In-Reply-To: <4E683108.8020000@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1756572Ab1IHFZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 01:25:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45599 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756476Ab1IHFZZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 01:25:25 -0400
 MIME-Version: 1.0
+In-Reply-To: <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+	<438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
+	<CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
+	<438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
+	<CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
+	<CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
+Date: Thu, 8 Sep 2011 10:55:24 +0530
+Message-ID: <CABb+yY3F+DMn2SxeO0chjpiMBkgLvSK5EVYMdhQsfQoZNZ4_7Q@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Barry Song <21cnbao@gmail.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
+        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p885Gv6Y023868
 
->    __memory_failure() handling calls  some routines, such
-> as  is_free_buddy_page(),  which needs to acquire the spin
-> lock,  zone->lock. How can we guarantee that other CPUs
-> haven't acquired the lock when receiving #mc broadcast
-> and entering #mc handlers ?
+On Thu, Sep 8, 2011 at 8:47 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> On Thu, Sep 8, 2011 at 7:42 AM, Barry Song <21cnbao@gmail.com> wrote:
+>
+>>>> it is much different with primacell based DMA like pl080, pl330.
+>>>> prima2 has a self-defined DMAC IP. basically it is a 2D mode dma with
+>>>> two scales X and Y and direct way to start and stop DMA.
+>>>> every channel has fixed function to serve only one perpheral. so you
+>>>> find we have a filter id.
+>>> okay, what do you mean by 2D mode? Is it similar to what TI folks, Linus
+>>> W and Jassi Brar posted RFC's on?
+>>
+>> In SiRFprimaII 2-D DMA, the system memory space is interpreted
+>> as a 2-D layout instead of a linear 1-D layout. More specifically, the
+>> system memory can be considered as
+>> multiple data lines. The length of the data line is determined by the
+>> user-selected DMA_WIDTH register.
+>> The user can specify a data window that the user wants to access using
+>> four parameters:
+>> â–  Start address
+>> â–  X length
+>> â–  Y length
+>> â–  Width
+>>
+>> The idea of a 2-D DMA is shown in figure 2d-dma.png attached.
+>>
+>> If you specifies the Y length as 0 or the X length equals to the DMA
+>> width, then this 2-D DMA reduces to
+>> 1-D. If the user configures the X length greater than the DMA width,
+>> then the extra data is wrapped around
+>> to the next data line, this may corrupt the DMA transfer for
+>> multiple-line 2-D DMA. If this is a 1-D DMA, then
+>> there is no issue. The attached diagram 2d-dma2.png shows the
+>> wrap-around of the extra data in case the X length
+>> greater than DMA width.
+>
+> Sorry, the role of DMA_WIDTH is not clear to me yet.
+> In which case the user _must_ set {xlen > width} ?
+>
+Perhaps 2d-dma.PNG is inaccurate - it shouldn't depict any deltaX.
+Doesn't xlen and width always start together ? If no, please don't read ahead.
 
-By the time I call __memory_failure() - the other cpus have
-been released from mce handler - so they are back executing
-normal code.
+According to figures, {xlen > width} is to be set _only_ when a transfer
+is divided into _exactly_ two chunks separated by gap _exactly_
+equal to length of the second chunk (an extremely rare case).
 
-But Chen Gong's earlier comments made me look again at entry_64.S
-code - ane I realized that I missed seeing code in the return
-path from do_machine_check() that switched from MCE stack to
-regular kernel stack before processing TIF_MCE_NOTIFY.
+Anyways, every case can be easily expressed using the generic api
+I proposed. See 'struct xfer_template' in https://lkml.org/lkml/2011/8/12/128
 
-I may go back and re-visit a path that I looked at to change
-do_machine_check from "void" return to "unsigned long" and have
-it return the address for the "AR" case and "0" otherwise.
-Then we could switch out of machine check stack to non-mce
-context to call __memory_failure().  When I looked at this
-before the entry_64.S path looked plausible. The 32-bit
-path looked to be painful (too many macros in entry_32.S)
+Roughly speaking, the following should be done...
+Client driver :-
+**************
+For a 'Rectangular' transfer (2d-dma.PNG) :-
+      xfer_template.numf = Ylen;  /* height of rectangle */
+      xfer_template.frame_size = 1;
+      xfer_template.sgl[0].size = Xlen; /* width of rectangle */
+      xfer_template.sgl[0].icg = start_addr_Y(n) - end_addr_Y(n-1);
 
+For the "A Line and some" transfer (2d-dma2.PNG) :-
+      xfer_template.numf = 1;
+      xfer_template.frame_size = 2;
+      xfer_template.sgl[0].size = xlen1; /* a line */
+      xfer_template.sgl[1].size = xlen2;  /* and some */
+      xfer_template.sgl[0].icg = start_addr_Y(n) - end_addr_Y(n-1);
+      xfer_template.sgl[1].icg = 0; /* doesn't matter */
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+DMAC driver :-
+***************
+      if (xfer_template.frame_size == 1) {
+           /* rectangle */
+           schan->xlen = xfer_template.sgl[0].size;
+           schan->width = schan->xlen + xfer_template.sgl[0].icg;
+      } else if (xfer_template.frame_size == 2 &&
+                  xfer_template.numf == 1 &&
+                  xfer_template.sgl[1].size == xfer_template.sgl[0].icg){
+           /* a line and some */
+           schan->xlen = xfer_template.sgl[0].size +  xfer_template.sgl[1].size.
+           schan->width = xfer_template.sgl[0].size;
+      } else {
+           /* _Hardware_ doesn't support the transfer as such. *
+           return -EINVAL;
+      }
+      schan->ylen = xfer_template.numf /* -1? */;
