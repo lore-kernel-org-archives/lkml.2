@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab1IHCnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 22:43:41 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:47177 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab1IHCnj (ORCPT
+	id S932114Ab1IHCvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 22:51:46 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:52753 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab1IHCvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 22:43:39 -0400
+	Wed, 7 Sep 2011 22:51:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E67C7AD.9050903@redhat.com>
-References: <1314974248-1511-1-git-send-email-jarod@redhat.com>
-	<1315417137-12093-1-git-send-email-jarod@redhat.com>
-	<1315419179.3576.6.camel@lappy>
-	<4E67B75B.8010500@redhat.com>
-	<20110907192737.GD20571@thunk.org>
-	<4E67C7AD.9050903@redhat.com>
-Date: Thu, 8 Sep 2011 10:43:38 +0800
-Message-ID: <CACXcFmk5M2DeO6RKL2pbmBLsLqvSCaqO5aUaFiU1eYA1fGozhQ@mail.gmail.com>
-Subject: Re: [PATCH] random: add blocking facility to urandom
-From: Sandy Harris <sandyinchina@gmail.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-        Neil Horman <nhorman@redhat.com>, Herbert Xu <herbert.xu@redhat.com>,
-        Steve Grubb <sgrubb@redhat.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110905153758.GJ5466@quack.suse.cz>
+References: <20110830071407.GA8165@albatross.gern.madduck.net>
+	<20110905153758.GJ5466@quack.suse.cz>
+Date: Wed, 7 Sep 2011 22:51:43 -0400
+Message-ID: <CAPL5yKcRbYEsiZwyiT5aMfcmNUi_gam5Pj_ks_Apj-fE=Lc4KA@mail.gmail.com>
+Subject: Re: Abysmal I/O scheduling with dm-crypt
+From: Dan Merillat <dan.merillat@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: martin f krafft <madduck@madduck.net>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jarod Wilson <jarod@redhat.com> wrote:
+> On Tue 30-08-11 09:14:07, martin f krafft wrote:
+>> People not running dm-crypt seem unable to reproduce this problem,
+>> making me think that it must be due to dm-crypt, and I wouldn't find
+>> it hard to imagine, because dm-crypt basically shields the
+>> I/O-scheduler of the kernel, doesn't it? Worse, it probably doesn't
+>> make any effort of scheduling I/O itself. Note: I know very little
+>> about the internals, so please correct me if I am wrong.
 
-> Ted Ts'o wrote:
+No, it's not specific to dm-crypt, these kinds of annoying IO hangs happen
+on bare drives, MD arrays or DM-* setups.
 
->> Yeah, but there are userspace programs that depend on urandom not
->> blocking... so your proposed change would break them.
->> ...
+There's a number of causes - including firefox history updates and the
+abuse of create/sync/rename due to metadata hitting disk before data.
 
-> But only if you've set the sysctl to a non-zero value, ...
->
-> But again, I want to stress that out of the box, there's absolutely no
-> change to the way urandom behaves, no blocking, this *only* kicks in if you
-> twiddle the sysctl because you have some sort of security requirement that
-> mandates it.
+There's not going to be any movement on that front, I'm afraid, see
+"Don't fear the fsync" (reproduced at
+http://www.linuxfoundation.org/news-media/blogs/browse/2009/03/don%E2%80%99t-fear-fsync
+ , the original site couldn't be reached while I'm writing this).
 
-So it only breaks things on systems with high security requirements?
+You can either throw more hardware at it, or use libeatmydata to
+disable fsync across the board.  Maybe, eventually, a filesystem will
+be written that can manage an atomic replace without fsync().  Don't
+hold your breath.
