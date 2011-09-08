@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab1IIAfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:35:21 -0400
-Received: from lunge.queued.net ([173.255.254.236]:46404 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756821Ab1IIAfT (ORCPT
+	id S1757146Ab1IIAmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:42:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36533 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771Ab1IIAmH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:35:19 -0400
-Date: Thu, 8 Sep 2011 17:35:17 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Dan Williams <dcbw@redhat.com>
-Cc: linville@tuxdriver.com, libertas-dev@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dsd@laptop.org, cjb@laptop.org
-Subject: [PATCH v3] libertas: prioritize usb8388_olpc.bin firmware on OLPC
- machines
-Message-ID: <20110908173517.5b8c90be@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Sep 2011 20:42:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110908163742.GD3098@opensource.wolfsonmicro.com>
+References: <1315494354-17597-1-git-send-email-mans.rullgard@linaro.org>
+	<4E68DBF7.1030009@metafoo.de>
+	<CAG5Tg6XxGP1YhQ0zW3f=1EkZfAmb9vj3pBemeSazpH1_CZ3OzQ@mail.gmail.com>
+	<20110908163742.GD3098@opensource.wolfsonmicro.com>
+Date: Thu, 8 Sep 2011 18:36:43 +0100
+Message-ID: <CAG5Tg6XC8Kaw3iOH9GpTOpLH4qHWihC86gj2_f-W_+LgkeweBg@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: omap: convert per-board modules to
+ platform drivers
+From: Mans Rullgard <mans.rullgard@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, linaro-dev@lists.linaro.org,
+        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8 September 2011 17:37, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Sep 08, 2011 at 04:41:30PM +0100, Mans Rullgard wrote:
+>> On 8 September 2011 16:15, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>
+>> > Use different device driver names for different drivers.
+>
+>> I guess this worked by accident on my system.
+>
+>> Are there any other changes needed?
+>
+> Check the N810 code - it looks like that driver should be taking
+> platform data to distinguish between the two models.  Possibly also rx51
+> though I only looked at the diff.  Also it should probably be grabbing
+> the clocks before it registers the card.
 
-Normally, the v9 firmware will be loaded if it's available.  However, on
-OLPC XO-1 machines, the olpc-specific firmware supports extra functionality.
-This makes the libertas driver attempt to load the custom firmware first
-if the machine is an OLPC machine; if that fails (or it's not an OLPC
-machine), fall back to attempting to load the other firmwares.
+I don't see any what would need to distinguish models.  The current code
+is not doing anything like that.  If it should, that's a separate issue.
+Agree on the clocks for N810.
 
-usb8388_olpc.bin is currently found in the linux-firmware repository.
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
-v3: changed firmware path to include libertas/ subdirectory.
-
-Since the last submission (v2), usb8388_olpc.bin has found its way into
-wireless-firmware.  It'd be nice to get this into the next merge window.
-
- drivers/net/wireless/libertas/if_usb.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
-index b5acc39..94f8f3e 100644
---- a/drivers/net/wireless/libertas/if_usb.c
-+++ b/drivers/net/wireless/libertas/if_usb.c
-@@ -973,6 +973,23 @@ static const struct {
- 	{ MODEL_8682, "libertas/usb8682.bin" }
- };
- 
-+#ifdef CONFIG_OLPC
-+
-+static int try_olpc_fw(struct if_usb_card *cardp)
-+{
-+	int retval = -ENOENT;
-+
-+	/* try the OLPC firmware first; fall back to fw_table list */
-+	if (machine_is_olpc() && cardp->model == MODEL_8388)
-+		retval = request_firmware(&cardp->fw,
-+				"libertas/usb8388_olpc.bin", &cardp->udev->dev);
-+	return retval;
-+}
-+
-+#else
-+static int try_olpc_fw(struct if_usb_card *cardp) { return -ENOENT; }
-+#endif /* !CONFIG_OLPC */
-+
- static int get_fw(struct if_usb_card *cardp, const char *fwname)
- {
- 	int i;
-@@ -981,6 +998,10 @@ static int get_fw(struct if_usb_card *cardp, const char *fwname)
- 	if (fwname)
- 		return request_firmware(&cardp->fw, fwname, &cardp->udev->dev);
- 
-+	/* Handle OLPC firmware */
-+	if (try_olpc_fw(cardp) == 0)
-+		return 0;
-+
- 	/* Otherwise search for firmware to use */
- 	for (i = 0; i < ARRAY_SIZE(fw_table); i++) {
- 		if (fw_table[i].model != cardp->model)
 -- 
-1.7.2.5
-
+Mans Rullgard
+Multimedia
+mans.rullgard@linaro.org
