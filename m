@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab1IHJTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 05:19:47 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46671 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932351Ab1IHJTq (ORCPT
+	id S932516Ab1IHJWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 05:22:38 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36552 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932351Ab1IHJWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 05:19:46 -0400
+	Thu, 8 Sep 2011 05:22:37 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 8 Sep 2011 18:19:01 +0900
+Date: Thu, 8 Sep 2011 18:21:55 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: close race between charge and putback
-Message-Id: <20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110908085404.GA1316@redhat.com>
-References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
-	<20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110908085404.GA1316@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <bsingharora@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: drain all stocks for the cgroup before read
+ usage
+Message-Id: <20110908182155.f4701bbf.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110908004906.GA8499@shutemov.name>
+References: <1315098933-29464-1-git-send-email-kirill@shutemov.name>
+	<20110905085913.8f84278e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110905101607.cd946a46.nishimura@mxp.nes.nec.co.jp>
+	<20110907213340.GA7690@shutemov.name>
+	<20110908091914.6daeab1e.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110908004906.GA8499@shutemov.name>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -30,49 +34,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011 10:54:04 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+On Thu, 8 Sep 2011 03:49:07 +0300
+"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-> On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Thu,  8 Sep 2011 09:40:22 +0200
-> > Johannes Weiner <jweiner@redhat.com> wrote:
-> > 
-> > > There is a potential race between a thread charging a page and another
-> > > thread putting it back to the LRU list:
-> > > 
-> > > charge:                         putback:
-> > > SetPageCgroupUsed               SetPageLRU
-> > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> On Thu, Sep 08, 2011 at 09:19:14AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > Should we have field 'ram' (or 'memory') for rss+cache in memory.stat?
 > > > 
 > > 
-> > I assumed that all pages are charged before added to LRU.
-> > (i.e. event happens in charge->lru_lock->putback order.)
-> > 
-> > But hmm, this assumption may be bad for maintainance.
-> > Do you find a code which adds pages to LRU before charge ?
-> > 
-> > Hmm, if there are codes which recharge the page to other memcg,
-> > it will cause bug and my assumption may be harmful.
+> > Why do you think so ?
 > 
-> Swap slots are read optimistically into swapcache and put to the LRU,
-> then charged upon fault.  
-
-Yes, then swap charge removes page from LRU before charge.
-IIUC, it needed to do so because page->mem_cgroup may be replaced.
-
-> Fuse apparently recharges uncharged LRU pages.
-Yes and No. IIUC, it was like page migraion and remove old page 
-and add new page to radix-tree.
-
-> That's why we have the lrucare stuff in the first place, no?
-You're right.
-
-> Or did I misunderstand your question?
+> It may be useful for scripting purpose. Just an idea.
 > 
 
-I just wondered whether you find a new one or possible user.
+Hmm, if you really want, please post a patch.
+(in other thread)
+I have no strong objection.
 
 Thanks,
 -Kame
-
 
