@@ -1,44 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab1IHXWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:22:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49815 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753892Ab1IHXWJ (ORCPT
+	id S1754532Ab1IHXXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:23:50 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:44153 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab1IHXXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:22:09 -0400
-Date: Thu, 8 Sep 2011 09:13:42 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mans Rullgard <mans.rullgard@linaro.org>
-Cc: linux-omap@vger.kernel.org, linaro-dev@lists.linaro.org,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jarkko Nikula <jhnikula@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: omap: convert per-board modules to platform drivers
-Message-ID: <20110908161341.GA3098@opensource.wolfsonmicro.com>
-References: <1315494354-17597-1-git-send-email-mans.rullgard@linaro.org>
+	Thu, 8 Sep 2011 19:23:41 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Deepthy Ravi <deepthy.ravi@ti.com>
+Subject: Re: [PATCH 5/8] ispccdc: Configure CCDC registers
+Date: Thu, 8 Sep 2011 19:23:54 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
+Cc: linux-media@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mchehab@infradead.org,
+        g.liakhovetski@gmx.de, "Vaibhav Hiremath" <hvaibhav@ti.com>
+References: <1315488944-16190-1-git-send-email-deepthy.ravi@ti.com>
+In-Reply-To: <1315488944-16190-1-git-send-email-deepthy.ravi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315494354-17597-1-git-send-email-mans.rullgard@linaro.org>
-X-Cookie: Avoid reality at all costs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201109081923.55365.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 04:05:53PM +0100, Mans Rullgard wrote:
+Hi,
 
-> +static struct platform_device omap_soc_audio = {
-> +	.name	= "omap-soc-audio",
-> +	.id	= -1,
-> +};
+Thanks for the patch.
+
+On Thursday 08 September 2011 15:35:44 Deepthy Ravi wrote:
+> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> 
+> Configure the CCDC registers for YUV and non YUV
+> data. Also some code clean-up for making it compact.
+
+I've already posted patches to the linux-media mailing list for this. Can you 
+rebase this patch on top of them ?
+
+> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
+> ---
+>  drivers/media/video/omap3isp/ispccdc.c  |   65
+> +++++++++++++++++++++---------- drivers/media/video/omap3isp/ispreg.h   | 
+>   1 +
+>  drivers/media/video/omap3isp/ispvideo.c |    3 +
+>  3 files changed, 48 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/media/video/omap3isp/ispccdc.c
+> b/drivers/media/video/omap3isp/ispccdc.c index d58fe45..c583384 100644
+> --- a/drivers/media/video/omap3isp/ispccdc.c
+> +++ b/drivers/media/video/omap3isp/ispccdc.c
+> @@ -58,6 +58,7 @@ static const unsigned int ccdc_fmts[] = {
+>  	V4L2_MBUS_FMT_SBGGR12_1X12,
+>  	V4L2_MBUS_FMT_SGBRG12_1X12,
+>  	V4L2_MBUS_FMT_UYVY8_2X8,
+> +	V4L2_MBUS_FMT_YUYV8_2X8,
+>  };
+> 
+>  /*
+> @@ -788,11 +789,16 @@ static void ccdc_apply_controls(struct
+> isp_ccdc_device *ccdc) void omap3isp_ccdc_restore_context(struct
+> isp_device *isp)
+>  {
+>  	struct isp_ccdc_device *ccdc = &isp->isp_ccdc;
+> +	struct v4l2_mbus_framefmt *format;
+> 
+>  	isp_reg_set(isp, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_CFG, ISPCCDC_CFG_VDLC);
+> 
+> -	ccdc->update = OMAP3ISP_CCDC_ALAW | OMAP3ISP_CCDC_LPF
+> -		     | OMAP3ISP_CCDC_BLCLAMP | OMAP3ISP_CCDC_BCOMP;
+> +	/* CCDC_PAD_SINK */
+> +	format = &ccdc->formats[CCDC_PAD_SINK];
+> +	if ((format->code != V4L2_MBUS_FMT_UYVY8_2X8) &&
+> +			(format->code != V4L2_MBUS_FMT_UYVY8_2X8))
+> +		ccdc->update = OMAP3ISP_CCDC_ALAW | OMAP3ISP_CCDC_LPF
+> +				| OMAP3ISP_CCDC_BLCLAMP | OMAP3ISP_CCDC_BCOMP;
+>  	ccdc_apply_controls(ccdc);
+>  	ccdc_configure_fpc(ccdc);
+>  }
+> @@ -966,14 +972,22 @@ static void ccdc_config_sync_if(struct
+> isp_ccdc_device *ccdc, u32 syn_mode = isp_reg_readl(isp,
+> OMAP3_ISP_IOMEM_CCDC,
+>  				     ISPCCDC_SYN_MODE);
+> 
+> +	syn_mode &= ~(ISPCCDC_SYN_MODE_VDHDOUT |
+> +			ISPCCDC_SYN_MODE_FLDOUT |
+> +			ISPCCDC_SYN_MODE_VDPOL |
+> +			ISPCCDC_SYN_MODE_HDPOL |
+> +			ISPCCDC_SYN_MODE_FLDPOL |
+> +			ISPCCDC_SYN_MODE_FLDMODE |
+> +			ISPCCDC_SYN_MODE_DATAPOL |
+> +			ISPCCDC_SYN_MODE_DATSIZ_MASK |
+> +			ISPCCDC_SYN_MODE_PACK8 |
+> +			ISPCCDC_SYN_MODE_INPMOD_MASK);
+> +
+>  	syn_mode |= ISPCCDC_SYN_MODE_VDHDEN;
+> 
+>  	if (syncif->fldstat)
+>  		syn_mode |= ISPCCDC_SYN_MODE_FLDSTAT;
+> -	else
+> -		syn_mode &= ~ISPCCDC_SYN_MODE_FLDSTAT;
+> 
+> -	syn_mode &= ~ISPCCDC_SYN_MODE_DATSIZ_MASK;
+>  	switch (syncif->datsz) {
+>  	case 8:
+>  		syn_mode |= ISPCCDC_SYN_MODE_DATSIZ_8;
+> @@ -991,28 +1005,18 @@ static void ccdc_config_sync_if(struct
+> isp_ccdc_device *ccdc,
+> 
+>  	if (syncif->fldmode)
+>  		syn_mode |= ISPCCDC_SYN_MODE_FLDMODE;
+> -	else
+> -		syn_mode &= ~ISPCCDC_SYN_MODE_FLDMODE;
+> 
+>  	if (syncif->datapol)
+>  		syn_mode |= ISPCCDC_SYN_MODE_DATAPOL;
+> -	else
+> -		syn_mode &= ~ISPCCDC_SYN_MODE_DATAPOL;
+> 
+>  	if (syncif->fldpol)
+>  		syn_mode |= ISPCCDC_SYN_MODE_FLDPOL;
+> -	else
+> -		syn_mode &= ~ISPCCDC_SYN_MODE_FLDPOL;
+> 
+>  	if (syncif->hdpol)
+>  		syn_mode |= ISPCCDC_SYN_MODE_HDPOL;
+> -	else
+> -		syn_mode &= ~ISPCCDC_SYN_MODE_HDPOL;
+> 
+>  	if (syncif->vdpol)
+>  		syn_mode |= ISPCCDC_SYN_MODE_VDPOL;
+> -	else
+> -		syn_mode &= ~ISPCCDC_SYN_MODE_VDPOL;
+> 
+>  	if (syncif->ccdc_mastermode) {
+>  		syn_mode |= ISPCCDC_SYN_MODE_FLDOUT | ISPCCDC_SYN_MODE_VDHDOUT;
+> @@ -1027,9 +1031,7 @@ static void ccdc_config_sync_if(struct
+> isp_ccdc_device *ccdc,
+> 
+>  			     | syncif->hlprf << ISPCCDC_PIX_LINES_HLPRF_SHIFT,
+> 
+>  			       OMAP3_ISP_IOMEM_CCDC,
+>  			       ISPCCDC_PIX_LINES);
+> -	} else
+> -		syn_mode &= ~(ISPCCDC_SYN_MODE_FLDOUT |
+> -			      ISPCCDC_SYN_MODE_VDHDOUT);
+> +	}
+> 
+>  	isp_reg_writel(isp, syn_mode, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_SYN_MODE);
+> 
+> @@ -1181,6 +1183,9 @@ static void ccdc_configure(struct isp_ccdc_device
+> *ccdc)
+> 
+>  	isp_reg_writel(isp, syn_mode, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_SYN_MODE);
+> 
+> +	if (format->code == V4L2_MBUS_FMT_UYVY8_2X8)
+> +		isp_reg_set(isp, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_CFG,
+> +			    ISPCCDC_CFG_Y8POS);
+>  	/* Mosaic filter */
+>  	switch (format->code) {
+>  	case V4L2_MBUS_FMT_SRGGB10_1X10:
+> @@ -1200,7 +1205,10 @@ static void ccdc_configure(struct isp_ccdc_device
+> *ccdc) ccdc_pattern = ccdc_sgrbg_pattern;
+>  		break;
+>  	}
+> -	ccdc_config_imgattr(ccdc, ccdc_pattern);
+> +
+> +	if ((format->code != V4L2_MBUS_FMT_YUYV8_2X8) &&
+> +			(format->code != V4L2_MBUS_FMT_UYVY8_2X8))
+> +		ccdc_config_imgattr(ccdc, ccdc_pattern);
+> 
+>  	/* Generate VD0 on the last line of the image and VD1 on the
+>  	 * 2/3 height line.
+> @@ -1221,6 +1229,15 @@ static void ccdc_configure(struct isp_ccdc_device
+> *ccdc) << ISPCCDC_VERT_LINES_NLV_SHIFT,
+>  		       OMAP3_ISP_IOMEM_CCDC, ISPCCDC_VERT_LINES);
+> 
+> +	isp_reg_clr(isp, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_SDOFST,
+> +		    ISPCCDC_SDOFST_LOFST_MASK << ISPCCDC_SDOFST_LOFST0_SHIFT);
+> +	isp_reg_clr(isp, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_SDOFST,
+> +		    ISPCCDC_SDOFST_LOFST_MASK << ISPCCDC_SDOFST_LOFST1_SHIFT);
+> +	isp_reg_clr(isp, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_SDOFST,
+> +		    ISPCCDC_SDOFST_LOFST_MASK << ISPCCDC_SDOFST_LOFST2_SHIFT);
+> +	isp_reg_clr(isp, OMAP3_ISP_IOMEM_CCDC, ISPCCDC_SDOFST,
+> +		    ISPCCDC_SDOFST_LOFST_MASK << ISPCCDC_SDOFST_LOFST3_SHIFT);
+> +
+>  	ccdc_config_outlineoffset(ccdc, ccdc->video_out.bpl_value, 0, 0);
+> 
+>  	/* CCDC_PAD_SOURCE_VP */
+> @@ -1270,6 +1287,7 @@ static void __ccdc_enable(struct isp_ccdc_device
+> *ccdc, int enable) ISPCCDC_PCR_EN, enable ? ISPCCDC_PCR_EN : 0);
+>  }
+> 
+> +static int __ccdc_handle_stopping(struct isp_ccdc_device *ccdc, u32
+> event); static int ccdc_disable(struct isp_ccdc_device *ccdc)
+>  {
+>  	unsigned long flags;
+> @@ -1280,6 +1298,11 @@ static int ccdc_disable(struct isp_ccdc_device
+> *ccdc) ccdc->stopping = CCDC_STOP_REQUEST;
+>  	spin_unlock_irqrestore(&ccdc->lock, flags);
+> 
+> +	__ccdc_lsc_enable(ccdc, 0);
+> +	__ccdc_enable(ccdc, 0);
+> +	ccdc->stopping = CCDC_STOP_EXECUTED;
+> +	__ccdc_handle_stopping(ccdc, CCDC_STOP_FINISHED);
 > +
 
-This isn't really accomplishing anything as you're using the same device
-name for all boards, it's essentially the same thing as soc-audio just
-an OMAP version of that device.  Each machine driver should be a
-separate platform driver.
+This looks a bit unrelated. Could you please explain why that's needed ?
+
+>  	ret = wait_event_timeout(ccdc->wait,
+>  				 ccdc->stopping == CCDC_STOP_FINISHED,
+>  				 msecs_to_jiffies(2000));
+> @@ -1735,7 +1758,7 @@ static int ccdc_set_stream(struct v4l2_subdev *sd,
+> int enable) * links are inactive.
+>  		 */
+>  		ccdc_config_vp(ccdc);
+> -		ccdc_enable_vp(ccdc, 1);
+> +		ccdc_enable_vp(ccdc, 0);
+
+Are you sure about this ?
+
+>  		ccdc->error = 0;
+>  		ccdc_print_status(ccdc);
+>  	}
+> @@ -2265,7 +2288,7 @@ int omap3isp_ccdc_init(struct isp_device *isp)
+> 
+>  	ccdc->vpcfg.pixelclk = 0;
+> 
+> -	ccdc->update = OMAP3ISP_CCDC_BLCLAMP;
+> +	ccdc->update = 0;
+>  	ccdc_apply_controls(ccdc);
+> 
+>  	return ccdc_init_entities(ccdc);
+> diff --git a/drivers/media/video/omap3isp/ispreg.h
+> b/drivers/media/video/omap3isp/ispreg.h index 69f6af6..ada39c6 100644
+> --- a/drivers/media/video/omap3isp/ispreg.h
+> +++ b/drivers/media/video/omap3isp/ispreg.h
+> @@ -827,6 +827,7 @@
+>  #define ISPCCDC_SDOFST_LOFST2_SHIFT		3
+>  #define ISPCCDC_SDOFST_LOFST1_SHIFT		6
+>  #define ISPCCDC_SDOFST_LOFST0_SHIFT		9
+> +#define ISPCCDC_SDOFST_LOFST_MASK              0x7
+>  #define EVENEVEN				1
+>  #define ODDEVEN					2
+>  #define EVENODD					3
+> diff --git a/drivers/media/video/omap3isp/ispvideo.c
+> b/drivers/media/video/omap3isp/ispvideo.c index ff0ffed..d595d01 100644
+> --- a/drivers/media/video/omap3isp/ispvideo.c
+> +++ b/drivers/media/video/omap3isp/ispvideo.c
+> @@ -104,6 +104,9 @@ static struct isp_format_info formats[] = {
+>  	{ V4L2_MBUS_FMT_UYVY8_2X8, V4L2_MBUS_FMT_UYVY8_2X8,
+>  	  V4L2_MBUS_FMT_UYVY8_2X8, 0,
+>  	  V4L2_PIX_FMT_UYVY, 16, },
+> +	{ V4L2_MBUS_FMT_YUYV8_2X8, V4L2_MBUS_FMT_YUYV8_2X8,
+> +	  V4L2_MBUS_FMT_YUYV8_2X8, 0,
+> +	  V4L2_PIX_FMT_YUYV, 16, },
+>  };
+> 
+>  const struct isp_format_info *
+
+-- 
+Regards,
+
+Laurent Pinchart
