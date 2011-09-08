@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab1IHA3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:29:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13332 "EHLO mga03.intel.com"
+	id S1757604Ab1IHAiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:38:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42077 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991Ab1IHA3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:29:51 -0400
+	id S1755015Ab1IHAiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 20:38:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,348,1312182000"; 
-   d="scan'208";a="46593110"
-Date: Thu, 8 Sep 2011 08:29:47 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Jens Axboe <jaxboe@fusionio.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] mm: Add comment explaining task state setting in
- bdi_forker_thread()
-Message-ID: <20110908002947.GA9477@localhost>
-References: <1315004059-9844-1-git-send-email-jack@suse.cz>
- <1315004059-9844-3-git-send-email-jack@suse.cz>
- <20110904030551.GB16361@localhost>
- <20110905100141.GA5466@quack.suse.cz>
- <20110905124411.GA794@localhost>
- <20110905155347.GA17354@quack.suse.cz>
- <20110907151936.1d67c706.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110907151936.1d67c706.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="15024964"
+Subject: RE: [PATCH] slub Discard slab page only when node partials >
+ minimum setting
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <alpine.DEB.2.00.1109071003240.9406@router.home>
+References: <1315188460.31737.5.camel@debian>
+	 <alpine.DEB.2.00.1109061914440.18646@router.home>
+	 <1315357399.31737.49.camel@debian>
+	 <alpine.DEB.2.00.1109062022100.20474@router.home>
+	 <4E671E5C.7010405@cs.helsinki.fi>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>
+	 <alpine.DEB.2.00.1109071003240.9406@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Sep 2011 08:43:59 +0800
+Message-ID: <1315442639.31737.224.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> grammar can often be fixed/improved by deleting stuff ;)
+On Wed, 2011-09-07 at 23:05 +0800, Christoph Lameter wrote:
+> On Wed, 7 Sep 2011, Shi, Alex wrote:
 > 
-> --- a/mm/backing-dev.c~mm-add-comment-explaining-task-state-setting-in-bdi_forker_thread-fix
-> +++ a/mm/backing-dev.c
-> @@ -404,9 +404,8 @@ static int bdi_forker_thread(void *ptr)
->  		/*
->  		 * In the following loop we are going to check whether we have
->  		 * some work to do without any synchronization with tasks
-> -		 * waking us up to do work for them. So we have to set task
-> -		 * state already here so that we don't miss wakeups coming
-> -		 * after we verify some condition.
-> +		 * waking us up to do work for them. Set the task state here
-> +		 * so that we don't miss wakeups after verifying conditions.
->  		 */
->  		set_current_state(TASK_INTERRUPTIBLE);
+> > Oh, seems the deactivate_slab() corrected at linus' tree already, but
+> > the unfreeze_partials() just copied from the old version
+> > deactivate_slab().
+> 
+> Ok then the patch is ok.
+> 
+> Do you also have performance measurements? I am a bit hesitant to merge
+> the per cpu partials patchset if there are regressions in the low
+> concurrency tests as seem to be indicated by intels latest tests.
+> 
 
-That's nice and readable, thanks!
+My LKP testing system most focus on server platforms. I tested your per
+cpu partial set on hackbench and netperf loopback benchmark. hackbench
+improve much.
 
-Regards,
-Fengguang
+Maybe some IO testing is low concurrency for SLUB, maybe a few jobs
+kbuild? or low swap press testing.  I may try them for your patchset in
+the near days. 
+
+BTW, some testing results for your PCP SLUB:
+
+for hackbench process testing: 
+on WSM-EP, inc ~60%, NHM-EP inc ~25%
+on NHM-EX, inc ~200%, core2-EP, inc ~250%. 
+on Tigerton-EX, inc 1900%, :) 
+
+for hackbench thread testing: 
+on WSM-EP, no clear inc, NHM-EP no clear inc
+on NHM-EX, inc 10%, core2-EP, inc ~20%. 
+on Tigertion-EX, inc 100%, 
+
+for  netperf loopback testing, no clear performance change. 
+
+
+
