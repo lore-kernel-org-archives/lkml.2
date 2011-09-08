@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab1IHB05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 21:26:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17654 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757760Ab1IHB04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 21:26:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,348,1312182000"; 
-   d="scan'208";a="49111941"
-Subject: [RFC]block: don't mark flush request as SOFTBARRIER
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <htejun@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Sep 2011 09:29:54 +0800
-Message-ID: <1315445394.29510.71.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932093Ab1IHB31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 21:29:27 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:54420 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757704Ab1IHB30 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 21:29:26 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <greg@kroah.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/5] Kernel config option for number of devices
+Date: Thu,  8 Sep 2011 08:29:14 +0700
+Message-Id: <1315445357-14338-3-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1315445357-14338-1-git-send-email-ngupta@vflare.org>
+References: <1315445357-14338-1-git-send-email-ngupta@vflare.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm wondering why flush request should be marked as SOFTBARRIER. Current flush
-sequence guarantees the correctness of flush even the request is reordered by
-ioscheduler.
+Allows configuring default number of zram devices
+as kernel config option. User can override this
+value using 'num_devices' module parameter.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+---
+ drivers/staging/zram/Kconfig    |    9 +++++++++
+ drivers/staging/zram/zram_drv.c |   13 ++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/block/elevator.c b/block/elevator.c
-index a3b64bc..e589b76 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -715,7 +715,6 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- 		break;
+diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
+index 3bec4db..ca31cb3 100644
+--- a/drivers/staging/zram/Kconfig
++++ b/drivers/staging/zram/Kconfig
+@@ -21,6 +21,15 @@ config ZRAM
+ 	  See zram.txt for more information.
+ 	  Project home: http://compcache.googlecode.com/
  
- 	case ELEVATOR_INSERT_FLUSH:
--		rq->cmd_flags |= REQ_SOFTBARRIER;
- 		blk_insert_flush(rq);
- 		break;
- 	default:
-
++config ZRAM_NUM_DEVICES
++	int "Default number of zram devices"
++	depends on ZRAM
++	range 1 32
++	default 1
++	help
++	  Select default number of zram devices. You can override this value
++	  using 'num_devices' module parameter.
++
+ config ZRAM_DEBUG
+ 	bool "Compressed RAM block device debug support"
+ 	depends on ZRAM
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 03ec5a2..55f2c0e 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -781,6 +781,14 @@ static int __init zram_init(void)
+ {
+ 	int ret, dev_id;
+ 
++	/*
++	 * Module parameter not specified by user. Use default
++	 * value as defined during kernel config.
++	 */
++	if (num_devices == 0) {
++		num_devices = CONFIG_ZRAM_NUM_DEVICES;
++	}
++
+ 	if (num_devices > max_num_devices) {
+ 		pr_warning("Invalid value for num_devices: %u\n",
+ 				num_devices);
+@@ -795,11 +803,6 @@ static int __init zram_init(void)
+ 		goto out;
+ 	}
+ 
+-	if (!num_devices) {
+-		pr_info("num_devices not specified. Using default: 1\n");
+-		num_devices = 1;
+-	}
+-
+ 	/* Allocate the device array and initialize each one */
+ 	pr_info("Creating %u devices ...\n", num_devices);
+ 	devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
+-- 
+1.7.6
 
