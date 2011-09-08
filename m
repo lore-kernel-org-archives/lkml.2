@@ -1,76 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab1IHDRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 23:17:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49308 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab1IHDRE convert rfc822-to-8bit (ORCPT
+	id S932172Ab1IHDR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 23:17:56 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:28084 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080Ab1IHDRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 23:17:04 -0400
+	Wed, 7 Sep 2011 23:17:54 -0400
+Message-ID: <4E683413.6010009@snapgear.com>
+Date: Thu, 8 Sep 2011 13:18:43 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
-References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
-	<438BB0150E931F4B9CE701519A4463010871804A46@bgsmsx502.gar.corp.intel.com>
-	<CAGsJ_4x4S+8d3xS+QTrjDpoxcHo3p7qArd7yFr=+h1vxSRvEpA@mail.gmail.com>
-	<438BB0150E931F4B9CE701519A4463010871804A48@bgsmsx502.gar.corp.intel.com>
-	<CAGsJ_4yeovNP=6CKTafbxrBTrYQ42B9yvAOM8gM_bYqD6mTnUw@mail.gmail.com>
-Date: Thu, 8 Sep 2011 08:47:02 +0530
-Message-ID: <CABb+yY1=P=D3GFFxMOUM0a2yWCiAHNqwVU0a--t+pJnUhqKHKA@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Barry Song <21cnbao@gmail.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "rongjun.ying@csr.com" <rongjun.ying@csr.com>,
-        "Baohua.Song@csr.com" <Baohua.Song@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <tglx@linutronix.de>, <mingo@elte.hu>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Sam Creasey <sammy@sammy.net>, Greg Ungerer <gerg@uclinux.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        <linux-m68k@vger.kernel.org>
+Subject: Re: [PATCH 12/62] m64k: irq: Remove IRQF_DISABLED
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com> <1315383059-3673-13-git-send-email-yong.zhang0@gmail.com>
+In-Reply-To: <1315383059-3673-13-git-send-email-yong.zhang0@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 8, 2011 at 7:42 AM, Barry Song <21cnbao@gmail.com> wrote:
-
->>> it is much different with primacell based DMA like pl080, pl330.
->>> prima2 has a self-defined DMAC IP. basically it is a 2D mode dma with
->>> two scales X and Y and direct way to start and stop DMA.
->>> every channel has fixed function to serve only one perpheral. so you
->>> find we have a filter id.
->> okay, what do you mean by 2D mode? Is it similar to what TI folks, Linus
->> W and Jassi Brar posted RFC's on?
+On 07/09/11 18:10, Yong Zhang wrote:
+> This flag is a NOOP and can be removed now.
 >
-> In SiRFprimaII 2-D DMA, the system memory space is interpreted
-> as a 2-D layout instead of a linear 1-D layout. More specifically, the
-> system memory can be considered as
-> multiple data lines. The length of the data line is determined by the
-> user-selected DMA_WIDTH register.
-> The user can specify a data window that the user wants to access using
-> four parameters:
-> ■ Start address
-> ■ X length
-> ■ Y length
-> ■ Width
->
-> The idea of a 2-D DMA is shown in figure 2d-dma.png attached.
->
-> If you specifies the Y length as 0 or the X length equals to the DMA
-> width, then this 2-D DMA reduces to
-> 1-D. If the user configures the X length greater than the DMA width,
-> then the extra data is wrapped around
-> to the next data line, this may corrupt the DMA transfer for
-> multiple-line 2-D DMA. If this is a 1-D DMA, then
-> there is no issue. The attached diagram 2d-dma2.png shows the
-> wrap-around of the extra data in case the X length
-> greater than DMA width.
+> Signed-off-by: Yong Zhang<yong.zhang0@gmail.com>
 
-Sorry, the role of DMA_WIDTH is not clear to me yet.
-In which case the user _must_ set {xlen > width} ?
+Looks ok to me:
 
-thanks
--jassi
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+
+Regards
+Greg
+
+
+> ---
+>   arch/m68k/include/asm/floppy.h         |    2 +-
+>   arch/m68k/include/asm/irq.h            |    4 ++--
+>   arch/m68k/include/asm/sun3xflop.h      |    2 +-
+>   arch/m68k/platform/68328/timers.c      |    2 +-
+>   arch/m68k/platform/68360/config.c      |    2 +-
+>   arch/m68k/platform/coldfire/pit.c      |    2 +-
+>   arch/m68k/platform/coldfire/sltimers.c |    4 ++--
+>   arch/m68k/platform/coldfire/timers.c   |    4 ++--
+>   8 files changed, 11 insertions(+), 11 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/floppy.h b/arch/m68k/include/asm/floppy.h
+> index 697d503..47365b1 100644
+> --- a/arch/m68k/include/asm/floppy.h
+> +++ b/arch/m68k/include/asm/floppy.h
+> @@ -85,7 +85,7 @@ static int fd_request_irq(void)
+>   {
+>   	if(MACH_IS_Q40)
+>   		return request_irq(FLOPPY_IRQ, floppy_hardint,
+> -				   IRQF_DISABLED, "floppy", floppy_hardint);
+> +				   0, "floppy", floppy_hardint);
+>   	else if(MACH_IS_SUN3X)
+>   		return sun3xflop_request_irq();
+>   	return -ENXIO;
+> diff --git a/arch/m68k/include/asm/irq.h b/arch/m68k/include/asm/irq.h
+> index 69ed0d74..35de598 100644
+> --- a/arch/m68k/include/asm/irq.h
+> +++ b/arch/m68k/include/asm/irq.h
+> @@ -60,8 +60,8 @@ struct pt_regs;
+>
+>   /*
+>    * various flags for request_irq() - the Amiga now uses the standard
+> - * mechanism like all other architectures - IRQF_DISABLED and
+> - * IRQF_SHARED are your friends.
+> + * mechanism like all other architectures - IRQF_SHARED etc.
+> + * are your friends.
+>    */
+>   #ifndef MACH_AMIGA_ONLY
+>   #define IRQ_FLG_LOCK	(0x0001)	/* handler is not replaceable	*/
+> diff --git a/arch/m68k/include/asm/sun3xflop.h b/arch/m68k/include/asm/sun3xflop.h
+> index 32c45f8..80f8f9f 100644
+> --- a/arch/m68k/include/asm/sun3xflop.h
+> +++ b/arch/m68k/include/asm/sun3xflop.h
+> @@ -208,7 +208,7 @@ static int sun3xflop_request_irq(void)
+>   	if(!once) {
+>   		once = 1;
+>   		error = request_irq(FLOPPY_IRQ, sun3xflop_hardint,
+> -				    IRQF_DISABLED, "floppy", NULL);
+> +				    0, "floppy", NULL);
+>   		return ((error == 0) ? 0 : -1);
+>   	} else return 0;
+>   }
+> diff --git a/arch/m68k/platform/68328/timers.c b/arch/m68k/platform/68328/timers.c
+> index 309f725..d135b26 100644
+> --- a/arch/m68k/platform/68328/timers.c
+> +++ b/arch/m68k/platform/68328/timers.c
+> @@ -69,7 +69,7 @@ static irqreturn_t hw_tick(int irq, void *dummy)
+>
+>   static struct irqaction m68328_timer_irq = {
+>   	.name	 = "timer",
+> -	.flags	 = IRQF_DISABLED | IRQF_TIMER,
+> +	.flags	 = IRQF_TIMER,
+>   	.handler = hw_tick,
+>   };
+>
+> diff --git a/arch/m68k/platform/68360/config.c b/arch/m68k/platform/68360/config.c
+> index 9dd5bca..c67f1c3 100644
+> --- a/arch/m68k/platform/68360/config.c
+> +++ b/arch/m68k/platform/68360/config.c
+> @@ -58,7 +58,7 @@ static irqreturn_t hw_tick(int irq, void *dummy)
+>
+>   static struct irqaction m68360_timer_irq = {
+>   	.name	 = "timer",
+> -	.flags	 = IRQF_DISABLED | IRQF_TIMER,
+> +	.flags	 = IRQF_TIMER,
+>   	.handler = hw_tick,
+>   };
+>
+> diff --git a/arch/m68k/platform/coldfire/pit.c b/arch/m68k/platform/coldfire/pit.c
+> index c2b9809..c69b71a 100644
+> --- a/arch/m68k/platform/coldfire/pit.c
+> +++ b/arch/m68k/platform/coldfire/pit.c
+> @@ -118,7 +118,7 @@ static irqreturn_t pit_tick(int irq, void *dummy)
+>
+>   static struct irqaction pit_irq = {
+>   	.name	 = "timer",
+> -	.flags	 = IRQF_DISABLED | IRQF_TIMER,
+> +	.flags	 = IRQF_TIMER,
+>   	.handler = pit_tick,
+>   };
+>
+> diff --git a/arch/m68k/platform/coldfire/sltimers.c b/arch/m68k/platform/coldfire/sltimers.c
+> index 6a85daf..2168dda 100644
+> --- a/arch/m68k/platform/coldfire/sltimers.c
+> +++ b/arch/m68k/platform/coldfire/sltimers.c
+> @@ -51,7 +51,7 @@ irqreturn_t mcfslt_profile_tick(int irq, void *dummy)
+>
+>   static struct irqaction mcfslt_profile_irq = {
+>   	.name	 = "profile timer",
+> -	.flags	 = IRQF_DISABLED | IRQF_TIMER,
+> +	.flags	 = IRQF_TIMER,
+>   	.handler = mcfslt_profile_tick,
+>   };
+>
+> @@ -91,7 +91,7 @@ static irqreturn_t mcfslt_tick(int irq, void *dummy)
+>
+>   static struct irqaction mcfslt_timer_irq = {
+>   	.name	 = "timer",
+> -	.flags	 = IRQF_DISABLED | IRQF_TIMER,
+> +	.flags	 = IRQF_TIMER,
+>   	.handler = mcfslt_tick,
+>   };
+>
+> diff --git a/arch/m68k/platform/coldfire/timers.c b/arch/m68k/platform/coldfire/timers.c
+> index 60242f6..687a38f 100644
+> --- a/arch/m68k/platform/coldfire/timers.c
+> +++ b/arch/m68k/platform/coldfire/timers.c
+> @@ -62,7 +62,7 @@ static irqreturn_t mcftmr_tick(int irq, void *dummy)
+>
+>   static struct irqaction mcftmr_timer_irq = {
+>   	.name	 = "timer",
+> -	.flags	 = IRQF_DISABLED | IRQF_TIMER,
+> +	.flags	 = IRQF_TIMER,
+>   	.handler = mcftmr_tick,
+>   };
+>
+> @@ -150,7 +150,7 @@ irqreturn_t coldfire_profile_tick(int irq, void *dummy)
+>
+>   static struct irqaction coldfire_profile_irq = {
+>   	.name	 = "profile timer",
+> -	.flags	 = IRQF_DISABLED | IRQF_TIMER,
+> +	.flags	 = IRQF_TIMER,
+>   	.handler = coldfire_profile_tick,
+>   };
+>
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
