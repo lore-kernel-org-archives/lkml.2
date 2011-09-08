@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab1IHXdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:33:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55603 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab1IHXdM (ORCPT
+	id S1755670Ab1IHXcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:32:46 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:55213 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754596Ab1IHXcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:33:12 -0400
-Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
- channel ID
-From: Vinod Koul <vkoul@infradead.org>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: vinod.koul@intel.com, "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>
-In-Reply-To: <20110908012119.GJ22142@linux-sh.org>
-References: <Pine.LNX.4.64.1109051002400.1112@axis700.grange>
-	 <1315228408.26251.75.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1109051532220.1112@axis700.grange>
-	 <1315233788.26251.163.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1109051700030.1112@axis700.grange>
-	 <1315235335.26251.194.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1109051716530.1112@axis700.grange>
-	 <438BB0150E931F4B9CE701519A4463010871804A4B@bgsmsx502.gar.corp.intel.com>
-	 <alpine.DEB.2.00.1109072048310.30407@axis700.grange>
-	 <438BB0150E931F4B9CE701519A4463010871804A4F@bgsmsx502.gar.corp.intel.com>
-	 <20110908012119.GJ22142@linux-sh.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Sep 2011 01:01:03 +0530
-Message-ID: <1315510263.26251.296.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 8 Sep 2011 19:32:41 -0400
+X-Sasl-enc: TZrjivTtowLg3w7FJjztErLYH2hbUv0hL9ZdriV4EPWg 1315513688
+Message-ID: <4E69253F.3090705@ladisch.de>
+Date: Thu, 08 Sep 2011 22:27:43 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090820)
+MIME-Version: 1.0
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jiri Kosina <jkosina@suse.cz>, Andreas Mohr <andi@lisas.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Julia Lawall <julia@diku.dk>, Ondrej Zary <linux@rainbow-software.org>,
+        Dan Carpenter <error27@gmail.com>, Joe Perches <joe@perches.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [RFC] [PATCH 02/62] mpu401:snd_mpu401_uart_new(): split semantic
+ of irq_flags
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com> <1315383059-3673-3-git-send-email-yong.zhang0@gmail.com> <4E689E9A.8000407@ladisch.de> <20110908133700.GB2310@zhy> <4E68CA15.8000504@ladisch.de> <20110908144519.GB3069@zhy>
+In-Reply-To: <20110908144519.GB3069@zhy>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-09-08 at 10:21 +0900, Paul Mundt wrote:
-> On Thu, Sep 08, 2011 at 03:07:53AM +0530, Koul, Vinod wrote:
-> > On Wed, 2011-09-07 at 22:01 +0200, Guennadi Liakhovetski wrote:
-> > > On Thu, 8 Sep 2011, Koul, Vinod wrote:
-> > > You're seriously suggesting to export and use an additional shdma private 
-> > > function, bypassing the dmaengine API?... That really doesn't sound like a 
-> > > good idea to me, sorry. How about using .device_control(DMA_SLAVE_CONFIG) 
-> > > from the filter function directly to verify channel suitability?
-> > Yes see stedma40, coh90138 drivers
-> > .device_control is not right place as channel is already allocated.
-> > 
-> 
-> No, that's not going to happen either. Many of these drivers are used in
-> different CPUs with different DMACs. The dmaengine driver in question
-> only applies to a subset, so the driver bits need to be wholly generic.
-> In short, if the dmaengine API can't handle this sort of stuff then it's
-> the dmaengine API that needs to be extended, we won't be working around
-> dmaengine shortcomings in drivers that simply want a sensible DMA API to
-> plug in to.The only thing lacking in dmaengine API is proper filtering for slave
-usages where channel/controller is matches to specfic dmac slave.
+Yong Zhang wrote:
+> On Thu, Sep 08, 2011 at 03:58:45PM +0200, Clemens Ladisch wrote:
+> > ...
+> > Here, "no interrupt" and "already reserved" actually mean the same thing,
+> > i.e., that the interrupt handling is the responsibility of some other
+> > driver.
 
-There was a proposal by Linux W, and Jassi Brar for solving this
-problem, and I think that should solve above problem.
+Sorry, after checking the code, I've realized that my description was
+wrong.  irq_flags==0 ("already reserved") means that snd_mpu401_uart_new
+should not try to allocate the interrupt, while irq==-1 ("no interrupt")
+means that the device never issues mpu401 interrupts, so that the mpu401
+code must use a timer to poll the device.
 
-I relooked at the patch, since the filtering is already done in
-your .alloc_chan_resources, (which should be fixed when we fix
-filtering), I am going to apply this patch
+I'll write a patch that changes this function so that irq<0 means
+"already reserved", and that "no interrupt" gets another bit in the
+info_flags parameter.
 
 
+Regards,
+Clemens
