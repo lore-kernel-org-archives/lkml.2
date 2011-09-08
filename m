@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab1IHXhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:37:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47540 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754596Ab1IHXhJ (ORCPT
+	id S1756196Ab1IHXh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:37:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35993 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab1IHXhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:37:09 -0400
-Date: Thu, 8 Sep 2011 09:30:18 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org, Michael.Hennerich@analog.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging:iio:imu:adis16400 regmap introduction.
-Message-ID: <20110908163017.GC3098@opensource.wolfsonmicro.com>
-References: <1315490964-25718-1-git-send-email-jic23@cam.ac.uk>
- <1315490964-25718-3-git-send-email-jic23@cam.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315490964-25718-3-git-send-email-jic23@cam.ac.uk>
-X-Cookie: Avoid reality at all costs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Sep 2011 19:37:55 -0400
+Subject: Re: [PATCH] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Vinod Koul <vkoul@infradead.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: vinod.koul@intel.com, Linus Walleij <linus.walleij@linaro.org>,
+        Barry Song <21cnbao@gmail.com>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
+        Barry Song <Baohua.Song@csr.com>, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <2264116.VTHb2BIH5a@wuerfel>
+References: <1315374075-15479-1-git-send-email-Baohua.Song@csr.com>
+	 <201109081819.30035.arnd@arndb.de>
+	 <CAKnu2Mpnjec-hvfbT0zH1P2mGZKNwTQYgDLGHWUXLmGGQB0_ow@mail.gmail.com>
+	 <2264116.VTHb2BIH5a@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corp
+Date: Fri, 09 Sep 2011 03:08:03 +0530
+Message-ID: <1315517883.6638.1.camel@vkoul-mobl4>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 03:09:24PM +0100, Jonathan Cameron wrote:
-> Apply regmap for the basic register reads and writes.
-> Note not currently used at all for the mass reads
-> that occur in the buffer code.
+On Thu, 2011-09-08 at 22:11 +0200, Arnd Bergmann wrote:
+> On Thursday 08 September 2011 20:48:26 Linus Walleij wrote:
+> > 2011/9/8 Arnd Bergmann <arnd@arndb.de>:
+> > > On Thursday 08 September 2011, Barry Song wrote:
+> > >>
+> > >> this filter is used by all drivers with DMA since every dma channel is
+> > >> fixed to be assigned to one device.
+> > >
+> > > Ok, I see now. I think it would be best to introduce a generic
+> > > 'filter by device tree property' function or alternatively an
+> > > dma_of_request_channel function like this:
+> > 
+> > You'd have to discuss that with Vinod, the thing is that x86 Atom
+> > systems are using dmaengine for device slave transfers too, and
+> > IIRC these things don't use devicetrees. I may be wrong...
+> 
+> Some of them use device tree, some don't.
+> 
+> I'm not saying that we have to convert all drivers to use this, but
+> for platforms that always have device tree available, it seems by far
+> the cleanest solution.
+We don't have a very clean solution for filter function in case of slave
+dmaengine. How should the client specify which channel it wants is not
+really clear.
 
-Looks good, shame adding the register access lists makes the diffstat
-grow rather than shrink - a separate patch adding the access maps would
-be good for showing the benefits :)
+We can look at device tree but that's something which wont work in case
+of non device tree platforms (atom x86).
+What we need is this information of channel mapping, which IMO is
+platform specific and needs to come from platform data, we can abstract
+it actually from the device tree data/PCI/firmware etc but essentially a
+mechanism to publish channels and slaves uniquely and match them in this
+kind of data
 
-> +	case ADIS16400_DIAG_STAT:
-> +		return true;
-> +	default:
-> +		return 0;
+Linus W, any progress on that patches you posted??
+ 
+-- 
+~Vinod Koul
+Intel Corp.
 
-Should use either 1/0 or true/false consistently (probably the latter).
 
-> +static const struct regmap_config adis16400_regmap_config = {
-> +	.reg_bits = 8,
-> +	.reg_pad_bits = 8,
-> +	.val_bits = 16,
-> +	.half_write = true,
-> +	.writeable_reg = &adis16400_reg_writeable,
-> +	.readable_reg = &adis16400_reg_readable,
-> +	.precious_reg = &adis16400_reg_precious,
-> +	.volatile_reg = &adis16400_reg_volatile,
-> +	.max_register = 0x56,
-> +	.write_flag_mask = 0x80,
-> +	.read_flag_mask = 0,
 
-No need to set things to zero explicitly.
-
-> -
-> +	spi->cs_between_transfers = 1;
-
-Guess we need that change to go in first...
