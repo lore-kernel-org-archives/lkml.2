@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758232Ab1IHKhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:37:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52947 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758153Ab1IHKhj (ORCPT
+	id S1758241Ab1IHKlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 06:41:21 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54921 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758153Ab1IHKlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:37:39 -0400
-Message-ID: <4E689AC5.7020802@ru.mvista.com>
-Date: Thu, 08 Sep 2011 14:36:53 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
+	Thu, 8 Sep 2011 06:41:20 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Allison <jra@samba.org>
+Subject: Re: [PATCH -V6 00/26]  New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <20110907234408.GA10982@fieldses.org>
+References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907234408.GA10982@fieldses.org>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Thu, 08 Sep 2011 16:10:59 +0530
+Message-ID: <874o0n5nb8.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-To: Keng-Yu Lin <kengyu@canonical.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] achi, ata_generic: Add ASMedia ASM1061 support
-References: <1315453426-8796-1-git-send-email-kengyu@canonical.com>
-In-Reply-To: <1315453426-8796-1-git-send-email-kengyu@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 7 Sep 2011 19:44:08 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Mon, Sep 05, 2011 at 10:55:22PM +0530, Aneesh Kumar K.V wrote:
+> > Hi,
+> > 
+> > The following set of patches implements VFS and ext4 changes needed to implement
+> > a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> > extended by file masks to fit into the standard POSIX file permission model.
+> > They are designed to work seamlessly locally as well as across the NFSv4 and
+> > CIFS/SMB2 network file system protocols.
+> 
+> The posix acl mapping that samba and nfsd currently have to do is
+> painful for everyone and I'm delighted to get away from it.
+> 
+> My main remaining worry (besides the fact that cifs/v4 acls are too
+> complicated--but what can we do about that?)--is about how exactly the
+> (acl, mask)->acl mapping is going to work for nfsd and samba.
 
-On 08-09-2011 7:43, Keng-Yu Lin wrote:
+I already have changes to nfsd that maps NFSv4 ACL to the richacl. You
+will find that in richaclv23 branch
 
-> ASM1061 PCI-E to SATA bridge controller has two variants.
-> One works under AHCI and the other works with ata_generic.
+git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-richacl.git richaclv23
 
-> Add the PCI vendor ID and product IDs accordingly.
+> 
+> If we assume that filesystems are going to mostly use acls or mostly
+> mode bits, then maybe that part doesn't matter a whole lot.  I don't
+> know.
+> 
 
-> Signed-off-by: Keng-Yu Lin<kengyu@canonical.com>
-[...]
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index f8910e1..87182b8 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2844,3 +2844,7 @@
->
->   #define PCI_VENDOR_ID_XEN		0x5853
->   #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
-> +
-> +#define PCI_VENDOR_ID_ASMEDIA		0x1b21
-> +#define PCI_DEVICE_ID_ASM1061_IDE	0x0611
-> +#define PCI_DEVICE_ID_ASM1061_AHCI	0x0612
-
-    Adding new device IDs to that file is frowned upon. Define the device ID 
-locally in the driver file, if you must. You don't even use the second one.
-
-WBR, Sergei
+-aneesh
