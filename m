@@ -1,48 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab1IHCvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 22:51:46 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52753 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab1IHCvp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 22:51:45 -0400
+	id S1757949Ab1IHCxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 22:53:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:54090 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755954Ab1IHCxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 22:53:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,348,1312182000"; 
+   d="scan'208";a="46623649"
+Date: Thu, 8 Sep 2011 10:53:12 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/18] writeback: dirty position control
+Message-ID: <20110908025312.GA23199@localhost>
+References: <20110904015305.367445271@intel.com>
+ <20110904020914.848566742@intel.com>
+ <20110906182034.GA30513@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110905153758.GJ5466@quack.suse.cz>
-References: <20110830071407.GA8165@albatross.gern.madduck.net>
-	<20110905153758.GJ5466@quack.suse.cz>
-Date: Wed, 7 Sep 2011 22:51:43 -0400
-Message-ID: <CAPL5yKcRbYEsiZwyiT5aMfcmNUi_gam5Pj_ks_Apj-fE=Lc4KA@mail.gmail.com>
-Subject: Re: Abysmal I/O scheduling with dm-crypt
-From: Dan Merillat <dan.merillat@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: martin f krafft <madduck@madduck.net>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110906182034.GA30513@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue 30-08-11 09:14:07, martin f krafft wrote:
->> People not running dm-crypt seem unable to reproduce this problem,
->> making me think that it must be due to dm-crypt, and I wouldn't find
->> it hard to imagine, because dm-crypt basically shields the
->> I/O-scheduler of the kernel, doesn't it? Worse, it probably doesn't
->> make any effort of scheduling I/O itself. Note: I know very little
->> about the internals, so please correct me if I am wrong.
+On Wed, Sep 07, 2011 at 02:20:34AM +0800, Vivek Goyal wrote:
+> On Sun, Sep 04, 2011 at 09:53:07AM +0800, Wu Fengguang wrote:
+> 
+> [..]
+> > - in memory tight systems, (1) becomes strong enough to squeeze dirty
+> >   pages inside the control scope
+> > 
+> > - in large memory systems where the "gravity" of (1) for pulling the
+> >   dirty pages to setpoint is too weak, (2) can back (1) up and drive
+> >   dirty pages to bdi_setpoint ~= setpoint reasonably fast.
+> > 
+> > Unfortunately in JBOD setups, the fluctuation range of bdi threshold
+> > is related to memory size due to the interferences between disks.  In
+> > this case, the bdi slope will be weighted sum of write_bw and bdi_thresh.
+> 
+> Can you please elaborate a little more that what changes in JBOD setup.
+> 
+> > 
+> > Given equations
+> > 
+> >         span = x_intercept - bdi_setpoint
+> >         k = df/dx = - 1 / span
+> > 
+> > and the extremum values
+> > 
+> >         span = bdi_thresh
+> >         dx = bdi_thresh
+> > 
+> > we get
+> > 
+> >         df = - dx / span = - 1.0
+> > 
+> > That means, when bdi_dirty deviates bdi_thresh up, pos_ratio and hence
+> > task ratelimit will fluctuate by -100%.
+> 
+> I am not sure I understand above calculation. I understood the part that
+> for single bdi case, you want 12.5% varation of bdi_setpoint over a
+> range of write_bw [SP-write_bw/2, SP+write_bw/2]. This requirement will
+> lead to.
+> 
+> k = -1/8*write_bw
+> 
+> OR span = 8*write_bw, hence
+> k= -1/span
 
-No, it's not specific to dm-crypt, these kinds of annoying IO hangs happen
-on bare drives, MD arrays or DM-* setups.
+That's right.
 
-There's a number of causes - including firefox history updates and the
-abuse of create/sync/rename due to metadata hitting disk before data.
+> Now I missed the part that what is different in case of JBOD setup and
+> how do you come up with values for that setup so that slope of bdi
+> setpoint is sharper.
+> 
+> IIUC, in case of single bdi case you want to use k=-1/(8*write_bw) and in
+> case of JBOD you want to use k=-1/(bdi_thresh)?
 
-There's not going to be any movement on that front, I'm afraid, see
-"Don't fear the fsync" (reproduced at
-http://www.linuxfoundation.org/news-media/blogs/browse/2009/03/don%E2%80%99t-fear-fsync
- , the original site couldn't be reached while I'm writing this).
+Yeah.
 
-You can either throw more hardware at it, or use libeatmydata to
-disable fsync across the board.  Maybe, eventually, a filesystem will
-be written that can manage an atomic replace without fsync().  Don't
-hold your breath.
+> That means for single bdi case you want to trust bdi, write_bw but in
+> case of JBOD you stop trusting that and just switch to bdi_thresh. Not
+> sure what does it mean.
+
+The main differences are,
+
+1) in JBOD setup, bdi_thresh is fluctuating; in single bdi case,
+   bdi_thresh is pretty stable. The fluctuating bdi_thresh means
+   even if bdi_dirty is stable, dx=(bdi_dirty-bdi_setpoint) will be
+   fluctuating a lot. And the dx range is no long bounded by the
+   bdi write bandwidth, but proportional to bdi_thresh.
+
+2) for single bdi case, bdi_dirty=nr_dirty is controlled by both
+   the memory based global control line and the bandwidth based bdi
+   control line. However for JBOD, we want to keep bdi_dirty reasonably
+   close to bdi_setpoint, however the global control line is not going
+   to help us directly. The bdi_thresh based slope can better serve
+   this purpose than the write bandwidth.
+
+Thanks,
+Fengguang
