@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab1IHX6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:58:46 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:53268 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876Ab1IHX6l (ORCPT
+	id S1756720Ab1IHX7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:59:23 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58924 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756522Ab1IHX7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:58:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Deepthy Ravi <deepthy.ravi@ti.com>
-Subject: Re: [PATCH 1/8] omap3evm: Enable regulators for camera interface
-Date: Thu, 8 Sep 2011 18:51:52 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.0; x86_64; ; )
-Cc: linux-omap@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mchehab@infradead.org, linux-media@vger.kernel.org,
-        g.liakhovetski@gmx.de, Vaibhav Hiremath <hvaibhav@ti.com>
-References: <1315488831-15998-1-git-send-email-deepthy.ravi@ti.com>
-In-Reply-To: <1315488831-15998-1-git-send-email-deepthy.ravi@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Thu, 8 Sep 2011 19:59:20 -0400
+Date: Thu, 08 Sep 2011 12:13:47 -0400 (EDT)
+Message-Id: <20110908.121347.1753630996526838840.davem@davemloft.net>
+To: sgrubb@redhat.com
+Cc: hch@infradead.org, stephan.mueller@atsec.com, tytso@mit.edu,
+        jarod@redhat.com, levinsasha928@gmail.com,
+        linux-crypto@vger.kernel.org, mpm@selenic.com, nhorman@redhat.com,
+        herbert.xu@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] random: add blocking facility to urandom
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201109080748.27750.sgrubb@redhat.com>
+References: <4E67E1B0.2040309@atsec.com>
+	<20110908084420.GC4032@infradead.org>
+	<201109080748.27750.sgrubb@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201109081851.53078.laurent.pinchart@ideasonboard.com>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 08 Sep 2011 09:16:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Steve Grubb <sgrubb@redhat.com>
+Date: Thu, 8 Sep 2011 07:48:27 -0400
 
-On Thursday 08 September 2011 15:33:51 Deepthy Ravi wrote:
-> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> On Thursday, September 08, 2011 04:44:20 AM Christoph Hellwig wrote:
+>> On Wed, Sep 07, 2011 at 11:27:12PM +0200, Stephan Mueller wrote:
+>> > And exactly that is the concern from organizations like BSI. Their
+>> > cryptographer's concern is that due to the volume of data that you can
+>> > extract from /dev/urandom, you may find cycles or patterns that increase
+>> > the probability to guess the next random value compared to brute force
+>> > attack. Note, it is all about probabilities.
+>> 
+>> So don't use /dev/urandom if you don't like the behaviour.  Breaking all
+>> existing application because of a certification is simply not an option.
 > 
-> Enabled 1v8 and 2v8 regulator output, which is being used by
-> camera module.
+> This patch does not _break_ all existing applications. If a system were under attack, 
+> they might pause momentarily, but they do not break. Please, try the patch and use a 
+> nice large number like 2000000 and see for yourself. Right now, everyone arguing about 
+> this breaking things have not tried it to see if in fact things do break and how they 
+> break if they do.
 
-Thanks for the patch. Just one minor comment below.
+If the application holds a critical resource other threads want when it
+blocks on /dev/urandom, then your change breaks things.  I can come up
+with more examples if you like.
 
-> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
-> ---
->  arch/arm/mach-omap2/board-omap3evm.c |   40
-> ++++++++++++++++++++++++++++++++++ 1 files changed, 40 insertions(+), 0
-> deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/board-omap3evm.c
-> b/arch/arm/mach-omap2/board-omap3evm.c index a1184b3..8333ee4 100644
-> --- a/arch/arm/mach-omap2/board-omap3evm.c
-> +++ b/arch/arm/mach-omap2/board-omap3evm.c
-> @@ -273,6 +273,44 @@ static struct omap_dss_board_info omap3_evm_dss_data =
-> { .default_device	= &omap3_evm_lcd_device,
->  };
-> 
-> +static struct regulator_consumer_supply omap3evm_vaux3_supply = {
-> +	.supply         = "cam_1v8",
-> +};
-> +
-> +static struct regulator_consumer_supply omap3evm_vaux4_supply = {
-> +	.supply         = "cam_2v8",
-> +};
-> +
-> +/* VAUX3 for CAM_1V8 */
-> +static struct regulator_init_data omap3evm_vaux3 = {
-> +	.constraints = {
-> +		.min_uV                 = 1800000,
-> +		.max_uV                 = 1800000,
-> +		.apply_uV               = true,
-> +		.valid_modes_mask       = REGULATOR_MODE_NORMAL
-> +					| REGULATOR_MODE_STANDBY,
-> +		.valid_ops_mask         = REGULATOR_CHANGE_MODE
-> +					| REGULATOR_CHANGE_STATUS,
-> +		},
-> +	.num_consumer_supplies  = 1,
-> +	.consumer_supplies      = &omap3evm_vaux3_supply,
+Please get off this idea that you can just change the blocking behavior
+for a file descriptor and nothing of consequence will happen.
 
-I might be wrong, but I think we're standardizing on using REGULATOR_SUPPLY 
-arrays as described in commit 786b01a8c1db0c0decca55d660a2a3ebd7cfb26b 
-("cleanup regulator supply definitions in mach-omap2").
-
-> +};
-> +
-> +/* VAUX4 for CAM_2V8 */
-> +static struct regulator_init_data omap3evm_vaux4 = {
-> +	.constraints = {
-> +		.min_uV                 = 1800000,
-> +		.max_uV                 = 1800000,
-> +		.apply_uV               = true,
-> +		.valid_modes_mask       = REGULATOR_MODE_NORMAL
-> +			| REGULATOR_MODE_STANDBY,
-> +		.valid_ops_mask         = REGULATOR_CHANGE_MODE
-> +			| REGULATOR_CHANGE_STATUS,
-> +	},
-> +	.num_consumer_supplies  = 1,
-> +	.consumer_supplies      = &omap3evm_vaux4_supply,
-> +};
-> +
->  static struct regulator_consumer_supply omap3evm_vmmc1_supply[] = {
->  	REGULATOR_SUPPLY("vmmc", "omap_hsmmc.0"),
->  };
-> @@ -499,6 +537,8 @@ static struct twl4030_platform_data omap3evm_twldata =
-> { .vio		= &omap3evm_vio,
->  	.vmmc1		= &omap3evm_vmmc1,
->  	.vsim		= &omap3evm_vsim,
-> +	.vaux3          = &omap3evm_vaux3,
-> +	.vaux4          = &omap3evm_vaux4,
->  };
-> 
->  static int __init omap3_evm_i2c_init(void)
-
--- 
-Regards,
-
-Laurent Pinchart
+When this happens in the networking due to a bug or similar, we know
+it does break things.
