@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249Ab1IHKpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:45:10 -0400
-Received: from lo.gmane.org ([80.91.229.12]:38677 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758153Ab1IHKpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:45:08 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Kristoff Bonne <kristoff.bonne@skypro.be>
-Subject: [Question]  FastFPE math emulation
-Date: Thu, 08 Sep 2011 12:42:07 +0200
-Message-ID: <j4a65v$75v$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758267Ab1IHKww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 06:52:52 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:36975 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758223Ab1IHKwu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 06:52:50 -0400
+X-Sasl-enc: nK1LlMYYRtIazjtA7S4XSBbH+qPY7psgmWFuQUs6HHww 1315479169
+Message-ID: <4E689E9A.8000407@ladisch.de>
+Date: Thu, 08 Sep 2011 12:53:14 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jiri Kosina <jkosina@suse.cz>, Andreas Mohr <andi@lisas.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Julia Lawall <julia@diku.dk>, Ondrej Zary <linux@rainbow-software.org>,
+        Dan Carpenter <error27@gmail.com>, Joe Perches <joe@perches.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [RFC] [PATCH 02/62] mpu401:snd_mpu401_uart_new(): split semantic
+ of irq_flags
+References: <1315383059-3673-1-git-send-email-yong.zhang0@gmail.com> <1315383059-3673-3-git-send-email-yong.zhang0@gmail.com>
+In-Reply-To: <1315383059-3673-3-git-send-email-yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 91.181.69.100
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Yong Zhang wrote:
+> Now snd_mpu401_uart_new() parameter 'irq_flags' take two role
+> in it: one is the condition to request_irq and the other is
+> the real irq_flags which will be transfered to request_irq().
+> 
+> So add another parameter 'want_irq' to take the role of the
+> first one, this will make it easy to remove IRQF_DISABLED.
 
-I am playing around with a "friendlyarm mini2440" development board.
-It's a system based on a 400 Mhz samsung s3c2440 CPU, which is itself
-based on a ARM920T core.
-This system does not have a FPU. (nor integer DSP instruction-set).
+Please note that the irq number is also intended to pass this
+information:
 
+>   * @irq: the irq number, -1 if no interrupt for mpu
+> ...
+> -	if (irq >= 0 && irq_flags) {
+>  		if (request_irq(irq, snd_mpu401_uart_interrupt, irq_flags,
 
-I want to experiment to use this board for audio-related application,
-e.g. the codec2 vocoder.
-The implementation of that codec is now based on floating-point math.
-
-First tests indicate that, using default settings, the board is not fast
-enough to do realtime encoding or decoding of codec2 . (encoding a 34
-second audio-sample takes 42 seconds).
-
-
-Yesterday, I noticed the kernel has an option "FastFPE math emulation"
-but when I install a kernel with that option enabled, I see no
-difference at all.
-
-- does FastFPE work on this kind of CPU.
-- Is there something that needs to be done to activate it? (setting,
-option during compiling, ...?)
+Of course, most of snd_mpu401_uart_new()'s users get this wrong and use
+0 instead of -1, relying on the irq_flags parameter only.  But if these
+are fixed to use irq == -1, we get the same effect without having to
+introduce another parameter.
 
 
-Info:
-# uname -a
-Linux FriendlyARM 2.6.32.2-FriendlyARM #9 Wed Sep 7 21:38:49 CEST 2011
-armv4tl unknown
-
-$ grep -i fpe .config
-CONFIG_FPE_NWFPE=y
-# CONFIG_FPE_NWFPE_XP is not set
-CONFIG_FPE_FASTFPE=y
-
-
-# cat /proc/cpuinfo
-Processor	: ARM920T rev 0 (v4l)
-BogoMIPS	: 201.93
-Features	: swp half
-CPU implementer	: 0x41
-CPU architecture: 4T
-CPU variant	: 0x1
-CPU part	: 0x920
-CPU revision	: 0
-
-Hardware	: FriendlyARM Mini2440 development board
-Revision	: 0000
-Serial		: 0000000000000000
-
-
-
-http://friendlyarm.net/products/mini2440?lang=en
-http://codec2.org/
-
-
-Cheerio!
-Kr. Bonne.
-
+Regards,
+Clemens
