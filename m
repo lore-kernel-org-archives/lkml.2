@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab1IHDo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 23:44:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54241 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932186Ab1IHDoz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 23:44:55 -0400
+	id S932206Ab1IHDuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 23:50:24 -0400
+Received: from home.keithp.com ([63.227.221.253]:54050 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932163Ab1IHDuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Sep 2011 23:50:23 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx@lists.freedesktop.org
+Subject: Re: [Intel-gfx] kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3459
+In-Reply-To: <CAJJYPd=g9LYqH3OCVA674=aTF2qJSZHzgqBck1nJ_WpqVV4iAw@mail.gmail.com>
+References: <CAJJYPd=g9LYqH3OCVA674=aTF2qJSZHzgqBck1nJ_WpqVV4iAw@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 07 Sep 2011 20:50:18 -0700
+Message-ID: <yunfwk7d75x.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <web-603103654@zbackend1.aha.ru>
-References: <web-603103654@zbackend1.aha.ru>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 7 Sep 2011 20:44:29 -0700
-Message-ID: <CA+55aFyzsMg6rVay64SAAekGj7Eu+wcWkZ+TdycT7q=GBmuu+A@mail.gmail.com>
-Subject: Re: 3.1-rc5 dont boot
-To: werner <w.landgraf@ru.ru>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=KOI8-R
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 7, 2011 at 8:06 PM, werner <w.landgraf@ru.ru> wrote:
->
-> I recompiled 3.1-rc1 for see the problem again, with loglevel=8
-> I get the following messages:
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-This looks like the CONFIG_X86_INVD_BUG problem. But that is fixed by
-commit b4ca46e4e82a ("x86-32: Fix boot with CONFIG_X86_INVD_BUG"), so
-it doesn't explain -rc5 not booting.
+On Wed, 7 Sep 2011 22:50:02 +0200, Zdenek Kabelac <zdenek.kabelac@gmail.com=
+> wrote:
+> Hi
+>=20
+> This happened to today probably in the moment, LCD was turned off by
+> Xserver as a screenblank
+> My hw is Lenovo T61  4GB, intel driver.
 
-So try to apply that commit ("git cherry-pick b4ca46e4e82a") and try
-booting -rc1 again.
+Can you describe what your desktop software environment looks like? Are
+you running mutter, or compiz or some other compositing window manager?
+Were you running a full-screen game? In other words, could you have been
+hitting the page-flipping paths with a full-screen 3D application?
 
-                            Linus
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOaDt6Qp8BWwlsTdMRAuCSAJ9Q62MiDAbF99pq0Pp021o6lrZfzACeJtJi
+tHQNK7Z9Y1m/Dmg4HyffRaQ=
+=UEl4
+-----END PGP SIGNATURE-----
+--=-=-=--
