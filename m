@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab1IHHtv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 03:49:51 -0400
-Received: from smtp-vbr16.xs4all.nl ([194.109.24.36]:4639 "EHLO
-	smtp-vbr16.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932218Ab1IHHtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 03:49:49 -0400
-Date: Thu, 08 Sep 2011 09:49:14 +0200
-Subject: Re: Can you review or ack this patch?
-Message-ID: <mb4qm7m8fdvcxgd7l5278ckf.1315468154963@email.android.com>
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: viro@zeniv.linux.org.uk, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-media <linux-media@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
+	id S932298Ab1IHHxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 03:53:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41071 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932243Ab1IHHxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 03:53:34 -0400
+Message-ID: <4E6873FE.3040603@redhat.com>
+Date: Thu, 08 Sep 2011 10:51:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Xen Devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
+References: <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <4E67A71A.5070903@goop.org> <4E67ACB6.40107@redhat.com> <4E67C15B.3000408@goop.org>
+In-Reply-To: <4E67C15B.3000408@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p887oFVX024326
 
-Hi Andrew,
-
-Sorry for top-posting, I only have a crappy Android mailer at the moment.
-
-Thank you for looking at this. Unfortunately I am dealing with a family emergency at the moment (and for the next 1-2 weeks), so I don't have the time or motivation to follow up on this. So if you or Mauro (or someone else for that matter) can fix the two issues you found, then that would be helpful.
-
-Alternatively, I can also make a follow-on patch later once things have settled down for me.
-
-I guess that multiple-assignment thing is something that anyone can correct of course.
-
-Regards,
-
-     Hans
-
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
->On Tue, 23 Aug 2011 08:33:25 +0200
->Hans Verkuil <hverkuil@xs4all.nl> wrote:
+On 09/07/2011 10:09 PM, Jeremy Fitzhardinge wrote:
+> On 09/07/2011 10:41 AM, Avi Kivity wrote:
+> >>  Hm, I'm interested to know what you're thinking in more detail.  Can you
+> >>  leave an NMI pending before you block in the same way you can with
+> >>  "sti;halt" with normal interrupts?
+> >
+> >
+> >  Nope.  But you can do
+> >
+> >     if (regs->rip in critical section)
+> >             regs->rip = after_halt;
+> >
+> >  and effectively emulate it.  The critical section is something like
+> >
+> >      critical_section_start:
+> >          if (woken_up)
+> >              goto critical_section_end;
+> >          hlt
+> >      critical_section_end:
 >
->> (and resent again, this time with the correct linux-fsdevel mail address)
->> (Resent as requested by Andrew Morton since this is still stuck)
->> 
->> Hi Al, Andrew,
->> 
->> Can you take a look at this patch and send an Ack or review comments?
->> 
->> It's already been reviewed by Jon Corbet and we really need this functionality
->> for v3.1. You were in the CC list in earlier postings:
->> 
->> Here: http://www.spinics.net/lists/linux-fsdevel/msg46753.html
->> and here: http://www.mail-archive.com/linux-media@vger.kernel.org/msg34546.html
->> 
->> The patch also featured on LWN: http://lwn.net/Articles/450658/
->> 
->> Without your ack Mauro can't upstream this and we have a number of other
->> patches that depend on this and are currently blocked.
->> 
->> We would prefer to upstream this patch through the linux-media git tree
->> due to these dependencies.
->> 
->> My git branch containing this and the dependent patches is here:
->> 
->> http://git.linuxtv.org/hverkuil/media_tree.git/shortlog/refs/heads/poll
->> 
->> Your help would be greatly appreciated (and your ack even more :-) )!
+> Hm.  It's a pity you have to deliver an actual interrupt to implement
+> the kick though.
+
+I don't think it's that expensive, especially compared to the 
+double-context-switch and vmexit of the spinner going to sleep.  On AMD 
+we do have to take an extra vmexit (on IRET) though.
+
+> >>
+> >>  I was thinking you might want to do something with monitor/mwait to
+> >>  implement the blocking/kick ops. (Handwave)
+> >>
+> >
+> >  monitor/mwait are incredibly expensive to virtualize since they
+> >  require write-protecting a page, IPIs flying everywhere and flushing
+> >  tlbs, not to mention my lovely hugepages being broken up mercilessly.
 >
->I'll grab the patch to get it a bit of testing while Al cogitates.
+> Or what about a futex-like hypercall?
 >
->> 
->> 
->> [PATCH] poll: add poll_requested_events() function
->> 
->> In some cases the poll() implementation in a driver has to do different
->> things depending on the events the caller wants to poll for. An example is
->> when a driver needs to start a DMA engine if the caller polls for POLLIN,
->> but doesn't want to do that if POLLIN is not requested but instead only
->> POLLOUT or POLLPRI is requested. This is something that can happen in the
->> video4linux subsystem.
->> 
->> Unfortunately, the current epoll/poll/select implementation doesn't provide
->> that information reliably. The poll_table_struct does have it: it has a key
->> field with the event mask. But once a poll() call matches one or more bits
->> of that mask any following poll() calls are passed a NULL poll_table_struct
->> pointer.
->> 
->> The solution is to set the qproc field to NULL in poll_table_struct once
->> poll() matches the events, not the poll_table_struct pointer itself. That
->> way drivers can obtain the mask through a new poll_requested_events inline.
->> 
->> The poll_table_struct can still be NULL since some kernel code calls it
->> internally (netfs_state_poll() in ./drivers/staging/pohmelfs/netfs.h). In
->> that case poll_requested_events() returns ~0 (i.e. all events).
->> 
->> Since eventpoll always leaves the key field at ~0 instead of using the
->> requested events mask, that source was changed as well to properly fill in
->> the key field.
->
->It would be nice to find some suitable place in the code where we can
->explain all this to other potential users of the capability.  Perhaps
->the implementation site for the currently undocumented
->poll_requested_events() would be a suitable place.
->
->>
->> ...
->>
->> -	epi->event.events = event->events;
->> +	epi->event.events = pt.key = event->events;
->
->coding style nit: we generally try to avoid multiple assignemnts like this.
->
->>
->> ...
->>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Well we could have a specialized sleep/wakeup hypercall pair like Xen, 
+but I'd like to avoid it if at all possible.
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
