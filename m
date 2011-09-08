@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab1IIAEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:04:39 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:47555 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756511Ab1IIAEh (ORCPT
+	id S1756760Ab1IIARz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:17:55 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:60649 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756429Ab1IIARx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:04:37 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: ddUy7goVM1mvqMTzS1Nmlsxh5WDTYcS1c2PFJxs0xSo2eEl
- LwMcgZaN9_BL8.Cvkcv0aWHTCt5cI1kjNiuHP_5ebN0N_EB2rNBS1ahvHGAE
- 4Lp0BsPOMzyIxcZVb.72UlaB3yQh0BCcFqNiuiBe4XrScmb6EGY.PQ_udfzA
- Jy3q1lXNwOH.tVSjVOtxSG8UYTnZiN0iaf.VcARn7fJTZyMTKU8emxUIzwIF
- BZ1M.1_rXGUd5gs0fVsCy54esrfhEzbR13cFq5eUCE9we0MV1EFN345KSodK
- bnzCJusG621lwBEExmbXh_eLGQ0atLB91XDS_YlxSsBD0pbUxsXYWM_2b5Xz
- Fvw_bCEyICVQy8Z4RX.FXCBvojAlSyQqBgJfIkKWFzYnsoObftkwlAMunDHW
- pMrYj.zTxgd_7qH.DzpUo4A--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 8 Sep 2011 13:37:52 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Alex,Shi" <alex.shi@intel.com>
-cc: "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: RE: [PATCH] slub Discard slab page only when node partials > minimum
- setting
-In-Reply-To: <1315442639.31737.224.camel@debian>
-Message-ID: <alpine.DEB.2.00.1109081336320.14787@router.home>
-References: <1315188460.31737.5.camel@debian>  <alpine.DEB.2.00.1109061914440.18646@router.home>  <1315357399.31737.49.camel@debian>  <alpine.DEB.2.00.1109062022100.20474@router.home>  <4E671E5C.7010405@cs.helsinki.fi> 
- <6E3BC7F7C9A4BF4286DD4C043110F30B5D00DA333C@shsmsx502.ccr.corp.intel.com>  <alpine.DEB.2.00.1109071003240.9406@router.home> <1315442639.31737.224.camel@debian>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 8 Sep 2011 20:17:53 -0400
+Message-ID: <4E68F72F.70305@xenotime.net>
+Date: Thu, 08 Sep 2011 10:11:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Richard Purdie <richard.purdie@linuxfoundation.org>
+CC: Bryan Wu <bryan.wu@canonical.com>, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] Documentation: leds-class: fix a typo
+References: <1315249786-15387-1-git-send-email-bryan.wu@canonical.com>	 <1315249786-15387-2-git-send-email-bryan.wu@canonical.com> <1315252366.1243.22.camel@ted>
+In-Reply-To: <1315252366.1243.22.camel@ted>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011, Alex,Shi wrote:
+On 09/05/11 12:52, Richard Purdie wrote:
+> On Tue, 2011-09-06 at 03:09 +0800, Bryan Wu wrote:
+>> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> 
+> Acked-by: Richard Purdie <rchard.purdie@linuxfoundation.org>
 
-> BTW, some testing results for your PCP SLUB:
->
-> for hackbench process testing:
-> on WSM-EP, inc ~60%, NHM-EP inc ~25%
-> on NHM-EX, inc ~200%, core2-EP, inc ~250%.
-> on Tigerton-EX, inc 1900%, :)
+Applied, thanks.
 
-There is no minus on tigerton. I hope that is not a regression?
->
-> for hackbench thread testing:
-> on WSM-EP, no clear inc, NHM-EP no clear inc
-> on NHM-EX, inc 10%, core2-EP, inc ~20%.
-> on Tigertion-EX, inc 100%,
+>> ---
+>>  Documentation/leds/leds-class.txt |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/leds/leds-class.txt b/Documentation/leds/leds-class.txt
+>> index 4996586..79699c2 100644
+>> --- a/Documentation/leds/leds-class.txt
+>> +++ b/Documentation/leds/leds-class.txt
+>> @@ -61,8 +61,8 @@ Hardware accelerated blink of LEDs
+>>  Some LEDs can be programmed to blink without any CPU interaction. To
+>>  support this feature, a LED driver can optionally implement the
+>>  blink_set() function (see <linux/leds.h>). To set an LED to blinking,
+>> -however, it is better to use use the API function led_blink_set(),
+>> -as it will check and implement software fallback if necessary.
+>> +however, it is better to use the API function led_blink_set(), as it
+>> +will check and implement software fallback if necessary.
+>>  
+>>  To turn off blinking again, use the API function led_brightness_set()
+>>  as that will not just set the LED brightness but also stop any software
 
-> for  netperf loopback testing, no clear performance change.
 
-Hmmm... The sizes of the per cpu partial objects could be varied a bit to
-see if more would make an impact.
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
