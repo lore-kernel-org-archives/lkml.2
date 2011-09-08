@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab1IHXef (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:34:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754831Ab1IHXec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:34:32 -0400
-Date: Thu, 8 Sep 2011 20:42:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Subject: Re: [PATCH v3] Simplify PTRACE_foo constants and PTRACE_SETOPTIONS
-	code
-Message-ID: <20110908184215.GA29439@redhat.com>
-References: <1315495101.18043.1.camel@dhcp-25-63.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315495101.18043.1.camel@dhcp-25-63.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756137Ab1IHXfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:35:01 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:49605 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab1IHXe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:34:56 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 08 Sep 2011 16:33:00 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Kbuild: allow code re-use across different directories
+In-reply-to: <CACqU3MXcksYxdV_=OR40fPeZzu1ygr-Qs79TV6kfn0DpbXhjuA@mail.gmail.com>
+Message-id: <alpine.LFD.2.00.1109081617440.20358@xanadu.home>
+References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
+ <alpine.LFD.2.00.1109071437400.20358@xanadu.home>
+ <CACqU3MVF8XSdKi0PeZF5SFaH9i2HPqCjkMqccyb83x4V_1Vs1g@mail.gmail.com>
+ <alpine.LFD.2.00.1109071554480.20358@xanadu.home>
+ <CACqU3MXcksYxdV_=OR40fPeZzu1ygr-Qs79TV6kfn0DpbXhjuA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08, Denys Vlasenko wrote:
->
->  static int ptrace_setoptions(struct task_struct *child, unsigned long data)
->  {
-> ...
-> +       if (data & ~(unsigned long)PTRACE_O_MASK) {
-> +               child->ptrace &= ~PT_TRACE_MASK; /* historical bug */
-> +               return -EINVAL;
-> +       }
+On Thu, 8 Sep 2011, Arnaud Lacombe wrote:
 
-This is not right. You shouldn't simply return with -EINVAL, this change
-adds another bug.  Note that the cuurrent code sets the new bits even if
-it returns -EINVAL.
+> you missed:
+> 
+>  # Make sure files are removed during clean
+> -extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
+> +extra-y       += piggy.gzip piggy.lzo piggy.lzma
+> 
+> This confused make.
 
-Oleg.
+Well... that was suttle.
 
+So yes, your patch may certainly be useful to a couple cases, and it 
+works fine for this lib1func.S.
+
+It doesn't help me much in the following situation though.  What I 
+actually want to achieve is to compile arch/arm/boot/compressed/fdt_rw.o 
+from scripts/dtc/libfdt/fdt_rw.c, however I want it to include my local 
+version of libfdt_env.h rather than scripts/dtc/libfdt/libfdt_env.h.  I 
+still haven't found a way to convince gcc to do that.
+
+
+Nicolas
