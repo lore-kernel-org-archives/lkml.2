@@ -1,23 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab1IHXwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:52:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52312 "EHLO
+	id S1755932Ab1IHXwn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:52:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42424 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756301Ab1IHXwa (ORCPT
+	by vger.kernel.org with ESMTP id S1756375Ab1IHXwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:52:30 -0400
-Date: Thu, 8 Sep 2011 16:52:22 -0700
+	Thu, 8 Sep 2011 19:52:36 -0400
+Date: Thu, 8 Sep 2011 16:52:01 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>, minchan.kim@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] mm: add replace_page_cache_page() function
-Message-Id: <20110908165222.18875260.akpm@linux-foundation.org>
-In-Reply-To: <20110118152844.88cfdc2c.akpm@linux-foundation.org>
-References: <E1Pf9Zj-0002td-Ct@pomaz-ex.szeredi.hu>
-	<20110118152844.88cfdc2c.akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Tejun Heo <tj@kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Nathan Lynch <ntl@pobox.com>, kernel-hardening@lists.openwall.com,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Glauber Costa <glommer@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [patch 2/2] fs, proc: Introduce the /proc/<pid>/map_files/
+ directory v6
+Message-Id: <20110908165201.59e82c71.akpm@linux-foundation.org>
+In-Reply-To: <20110908060405.GH28162@sun>
+References: <20110906165144.GJ18425@mtj.dyndns.org>
+	<20110906172952.GA28055@albatros>
+	<20110906173341.GM18425@mtj.dyndns.org>
+	<20110907112301.GA12157@albatros>
+	<20110907215329.GB28162@sun>
+	<20110907151323.613e62e7.akpm@linux-foundation.org>
+	<20110907224234.GD28162@sun>
+	<20110907155332.beda7d3d.akpm@linux-foundation.org>
+	<20110908054826.GF28162@sun>
+	<20110908055025.GG28162@sun>
+	<20110908060405.GH28162@sun>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,76 +44,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Jan 2011 15:28:44 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Thu, 8 Sep 2011 10:04:05 +0400
+Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-> On Tue, 18 Jan 2011 12:18:11 +0100
-> Miklos Szeredi <miklos@szeredi.hu> wrote:
-> 
-> > +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
-> > +{
-> > +	int error;
-> > +	struct mem_cgroup *memcg = NULL;
-> 
-> I'm suspecting that the unneeded initialisation was added to suppress a
-> warning?
-> 
-> I removed it, and didn't get a warning.  I expected to.
-> 
-> Really, uninitialized_var() is better.  It avoids adding extra code
-> and, unlike "= 0" it is self-documenting.
-> 
-> > +	VM_BUG_ON(!PageLocked(old));
-> > +	VM_BUG_ON(!PageLocked(new));
-> > +	VM_BUG_ON(new->mapping);
-> > +
-> > +	/*
-> > +	 * This is not page migration, but prepare_migration and
-> > +	 * end_migration does enough work for charge replacement.
-> > +	 *
-> > +	 * In the longer term we probably want a specialized function
-> > +	 * for moving the charge from old to new in a more efficient
-> > +	 * manner.
-> > +	 */
-> > +	error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
-> > +	if (error)
-> > +		return error;
-> > +
-> > +	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
-> > +	if (!error) {
-> > +		struct address_space *mapping = old->mapping;
-> > +		pgoff_t offset = old->index;
-> > +
-> > +		page_cache_get(new);
-> > +		new->mapping = mapping;
-> > +		new->index = offset;
-> > +
-> > +		spin_lock_irq(&mapping->tree_lock);
-> > +		__remove_from_page_cache(old);
-> > +		error = radix_tree_insert(&mapping->page_tree, offset, new);
-> > +		BUG_ON(error);
-> > +		mapping->nrpages++;
-> > +		__inc_zone_page_state(new, NR_FILE_PAGES);
-> > +		if (PageSwapBacked(new))
-> > +			__inc_zone_page_state(new, NR_SHMEM);
-> > +		spin_unlock_irq(&mapping->tree_lock);
-> > +		radix_tree_preload_end();
-> > +		page_cache_release(old);
-> > +		mem_cgroup_end_migration(memcg, old, new, true);
-> 
-> This is all pretty ugly and inefficient.
-> 
-> We call __remove_from_page_cache() which does a radix-tree lookup and
-> then fiddles a bunch of accounting things.
-> 
-> Then we immediately do the same radix-tree lookup and then undo the
-> accounting changes which we just did.  And we do it in an open-coded
-> fashion, thus giving the kernel yet another code site where various
-> operations need to be kept in sync.
-> 
-> Would it not be better to do a single radix_tree_lookup_slot(),
-> overwrite the pointer therein and just leave all the ancilliary
-> accounting unaltered?
-> 
+> fs, proc: Introduce the /proc/<pid>/map_files/ directory v11
 
-Poke?
+Ho hum, I've pretty much run out of excuses to avoid merging this.
+
+except...
+
+We don't really want to bloat fs/proc/base.o by 4k until all the other
+things which support c/r are mergeable and we know that the whole
+project is actually useful.  When will we be at this stage?
+
+<looks at the warning>
+
+fs/proc/base.c: In function 'proc_map_files_instantiate':
+fs/proc/base.c:2348: warning: assignment from incompatible pointer type
+
+err, that code will crash at runtime and it isn't trivial to fix. 
+How could this happen?
+
+>
+> ...
+>
+> +				if (fa)
+> +					flex_array_free(fa);
+>
+> ...
+>
+> +		if (fa)
+> +			flex_array_free(fa);
+
+I think I'll do this:
+
+From: Andrew Morton <akpm@linux-foundation.org>
+
+Lots of callers are avoiding passing NULL into flex_array_free().  Move
+the check into flex_array_free() in the usual fashion.
+
+Cc: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: James Morris <jmorris@namei.org>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/proc/base.c                 |    6 ++----
+ lib/flex_array.c               |    2 ++
+ security/selinux/ss/policydb.c |    9 +++------
+ 3 files changed, 7 insertions(+), 10 deletions(-)
+
+diff -puN lib/flex_array.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free lib/flex_array.c
+--- a/lib/flex_array.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free
++++ a/lib/flex_array.c
+@@ -142,6 +142,8 @@ EXPORT_SYMBOL(flex_array_free_parts);
+ 
+ void flex_array_free(struct flex_array *fa)
+ {
++	if (!fa)
++		return;
+ 	flex_array_free_parts(fa);
+ 	kfree(fa);
+ }
+diff -puN fs/proc/base.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free fs/proc/base.c
+--- a/fs/proc/base.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free
++++ a/fs/proc/base.c
+@@ -2514,8 +2514,7 @@ static int proc_map_files_readdir(struct
+ 			fa = flex_array_alloc(sizeof(info), nr_files, GFP_KERNEL);
+ 			if (!fa || flex_array_prealloc(fa, 0, nr_files, GFP_KERNEL)) {
+ 				ret = -ENOMEM;
+-				if (fa)
+-					flex_array_free(fa);
++				flex_array_free(fa);
+ 				up_read(&mm->mmap_sem);
+ 				mmput(mm);
+ 				goto out;
+@@ -2556,8 +2555,7 @@ static int proc_map_files_readdir(struct
+ 			p = flex_array_get(fa, i);
+ 			fput(p->file);
+ 		}
+-		if (fa)
+-			flex_array_free(fa);
++		flex_array_free(fa);
+ 		mmput(mm);
+ 	}
+ 	}
+diff -puN security/selinux/ss/policydb.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free security/selinux/ss/policydb.c
+--- a/security/selinux/ss/policydb.c~lib-flex_arrayc-accept-null-arg-to-flex_array_free
++++ a/security/selinux/ss/policydb.c
+@@ -769,16 +769,13 @@ void policydb_destroy(struct policydb *p
+ 		hashtab_destroy(p->symtab[i].table);
+ 	}
+ 
+-	for (i = 0; i < SYM_NUM; i++) {
+-		if (p->sym_val_to_name[i])
+-			flex_array_free(p->sym_val_to_name[i]);
+-	}
++	for (i = 0; i < SYM_NUM; i++)
++		flex_array_free(p->sym_val_to_name[i]);
+ 
+ 	kfree(p->class_val_to_struct);
+ 	kfree(p->role_val_to_struct);
+ 	kfree(p->user_val_to_struct);
+-	if (p->type_val_to_struct_array)
+-		flex_array_free(p->type_val_to_struct_array);
++	flex_array_free(p->type_val_to_struct_array);
+ 
+ 	avtab_destroy(&p->te_avtab);
+ 
+_
+
