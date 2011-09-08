@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab1IHNjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 09:39:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61163 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932789Ab1IHNjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 09:39:02 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Ian Kent <raven@themaw.net>
-Cc: David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Leonardo Chiquitto <leonardo.lists@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        autofs@linux.kernel.org
-Subject: Re: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
-References: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
-	<17416.1315240659@redhat.com> <87hb4q9b3r.fsf@tucsk.pomaz.szeredi.hu>
-	<1315281208.3210.26.camel@perseus.themaw.net>
-	<87mxeixfaq.fsf@tucsk.pomaz.szeredi.hu>
-	<1315319903.3210.51.camel@perseus.themaw.net>
-	<87ipp5y912.fsf@tucsk.pomaz.szeredi.hu>
-	<1315485406.3476.9.camel@perseus.themaw.net>
-Date: Thu, 08 Sep 2011 15:38:55 +0200
-In-Reply-To: <1315485406.3476.9.camel@perseus.themaw.net> (Ian Kent's message
-	of "Thu, 08 Sep 2011 20:36:46 +0800")
-Message-ID: <87bouv17dc.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S932975Ab1IHNrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 09:47:20 -0400
+Received: from minas.ics.muni.cz ([147.251.4.40]:45028 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932789Ab1IHNrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 09:47:19 -0400
+X-Greylist: delayed 1079 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Sep 2011 09:47:18 EDT
+Date: Thu, 8 Sep 2011 15:27:56 +0200
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, agk@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: request baset device mapper in Linux
+Message-ID: <20110908132756.GT31717@ics.muni.cz>
+References: <20110720082640.GZ7561@ics.muni.cz>
+ <4E280964.6070000@ct.jp.nec.com>
+ <20110721132627.GY7561@ics.muni.cz>
+ <4E291F28.2040609@ct.jp.nec.com>
+ <20110722081903.GB7561@ics.muni.cz>
+ <4E2A7806.1060601@ce.jp.nec.com>
+ <20110724221619.GM16487@ics.muni.cz>
+ <4E367256.8020206@ct.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E367256.8020206@ct.jp.nec.com>
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Muni-Spam-TestIP: 147.251.17.147
+X-Muni-Envelope-From: xhejtman@anubis.ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Thu, 08 Sep 2011 15:29:04 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Kent <raven@themaw.net> writes:
+On Mon, Aug 01, 2011 at 06:31:02PM +0900, Kiyoshi Ueda wrote:
+> Hi Lukas,
+> 
+> Lukas Hejtmanek wrote:
+> > On Sat, Jul 23, 2011 at 04:28:06PM +0900, Jun'ichi Nomura wrote:
+> >> As Kiyoshi suggested, it is important to know whether this
+> >> problem occurs with the latest kernel.
+> >> So if you could try 3.0, it would be very helpful.
+> > 
+> > so, do I need to check recent kernel as the patch works for me?
+> 
+> Yes, please.
+> (Unfortunately my storage has been broken today :-<)
+> 
+> CPU usage seems to be one of the reasons for your case, but I
+> still cannot understand why memory pressure is needed.
+> I want to know your problem also occurs on 3.0 without the patch.
 
-> On Tue, 2011-09-06 at 17:39 +0200, Miklos Szeredi wrote:
->> Ian Kent <raven@themaw.net> writes:
->> 
->> > On Tue, 2011-09-06 at 10:09 +0200, Miklos Szeredi wrote:
->> >> Ian Kent <raven@themaw.net> writes:
->> >> 
->> >> > On Mon, 2011-09-05 at 19:02 +0200, Miklos Szeredi wrote:
->> >> >> 
->> >> >> If automounting on lstat(2) is the correct behavior (is it?  why?)  then at
->> >> >> least it should be enabled by a global switch or mount option, IMO.
->> >> >
->> >> > Ideally we wouldn't need to take special precautions for these
->> >> > operations at all but we can't, especially for GUI environments that
->> >> > constantly scan file systems on mount/umount activity.
->> >> >
->> >> > Historically for autofs, neither stat(2) or lstat(2) would trigger a
->> >> > mount. With the current implementation stat(2) now does but lstat(2)
->> >> > doesn't which is a step in the right direction IMHO. So, I recommend we
->> >> > continue to encourage user space to make the needed changes so we
->> >> > continue to move in the right direction, and yes, I acknowledge it is a
->> >> > pain but it'll never get done otherwise.
->> >> 
->> >> I'm not quite convinced.  What's the advantage of triggering automount
->> >> on stat(2)?
->> >
->> > You get the information of the directory of the mounted fs and for many
->> > peoples purposes automounting should be transparent so that would be
->> > best.
->> 
->> The same is true for lstat(2).
->> 
->> >  
->> >> 
->> >> Has anybody complained that stat(2) on the mountpoint doesn't cause an
->> >> automount?
->> >
->> > Yes, based on the reasoning above.
->> 
->> Would any of those complaints go away if stat(2) did cause an
->> automount and lstat(2) didn't?
->
-> Ummm .... please forgive me, I'm confused over which of these cause an
-> automount to occur, again.
->
-> Much of what I've said previously is wrong because stat(2) does cause
-> the automount and lstat(2) doesn't, which is, I think, the way it should
-> be, semantically (see bug
-> https://bugzilla.redhat.com/show_bug.cgi?id=692823 for example).
->
-> I'll go back and check the code "again", just to be doubly sure, which I
-> need to do given my constant confusion on this, oops!
+Well, I tried 3.0.3 kernel. It is not so bad as 2.6.32.36, but it is not as
+good as the same kernel with your patch.
 
-Sloppy wording on my part is probably responsible for some of the
-confusion.
+CPU load is caused by ksoftirqd (30-40%) and kworker (30%).
 
-Yes, 2.6.38 and later kernels do trigger on stat(2) but not on lstat(2).
+Overal speed is about 2.5GB/s. With your patch I can reach 2.8-2.9GB/s.
 
-My question is this:  does this behavior improve anything compared to
-kernels before 2.6.38?  Because I don't see that it does, in fact it's
-just causing regressions.
-
-You say it's a step in the right direction but I don't see why.  Either
-we want stat *and* lstat to both be correct and trigger the automount or
-we are satisfied with the incorrect but well established practice of not
-triggering on (l)stat.
-
-The middle ground makes no sense IMO, there's nothing gained by the
-differentiated behavior based on LOOKUP_FOLLOW.
-
-Can you explain why it's better if stat() tiggers automounts and gives a
-correct result but lstat() doesn't?
-
-Thanks,
-Miklos
+-- 
+Luká¹ Hejtmánek
