@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab1IIAqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 20:46:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35311 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756514Ab1IIAqW (ORCPT
+	id S1757522Ab1IIAsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 20:48:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36977 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757143Ab1IIAsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 20:46:22 -0400
-Date: Thu, 8 Sep 2011 17:50:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jack Steiner <steiner@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] UV2 - Bug fix for GRU global addresses
-Message-Id: <20110908175044.3d3ee451.akpm@linux-foundation.org>
-In-Reply-To: <20110909002916.GC11894@sgi.com>
-References: <20110908182413.GA10782@sgi.com>
-	<20110908165139.caa9ddef.akpm@linux-foundation.org>
-	<20110909002916.GC11894@sgi.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Sep 2011 20:48:00 -0400
+Date: Thu, 8 Sep 2011 09:23:04 -0700
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Christoph Hellwig <hch@tuxera.com>
+Cc: Pavel Ivanov <paivanof@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 3.1.0-rc4 oops when connecting iPod
+Message-ID: <20110908162303.GA18435@ubuntu-NB505>
+Mail-Followup-To: Hin-Tak Leung <htl10@users.sourceforge.net>,
+	Christoph Hellwig <hch@tuxera.com>,
+	Pavel Ivanov <paivanof@gmail.com>, linux-fsdevel@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20110907175952.GC23829@thinkpad-t410>
+ <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1315451581.92826.YahooMailClassic@web29509.mail.ird.yahoo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Sep 2011 19:29:16 -0500 Jack Steiner <steiner@sgi.com> wrote:
-
-> On Thu, Sep 08, 2011 at 04:51:39PM -0700, Andrew Morton wrote:
-> > (cc x86 maintainers)
-> > 
-> > On Thu, 8 Sep 2011 13:24:13 -0500
-> > Jack Steiner <steiner@sgi.com> wrote:
-> > 
-> > > This patch is a workaround for a UV2 hub bug that affects the format
-> > > of system global addresses.
-> > > 
-> > > The GRU API for UV2 was inadvertently broken by a hardware change. The
-> > > format of the physical address used for TLB dropins and for addresses used
-> > > with instructions running in unmapped mode has changed. This change was not
-> > > documented and became apparent only when diags failed running on system simulators.
-> > > 
-> > > For UV1, TLB and GRU instruction physical addresses are identical to socket
-> > > physical addresses (although high NASID bits must be OR'ed into the
-> > > address).
-> > > 
-> > > For UV2, socket physical addresses need to be converted. The NODE portion of
-> > > the physical address needs to be shifted so that the low bit is in bit 39 or
-> > > bit 40, depending on an MMR value.
-> > > 
-> > > It is not yet clear if this bug will be fixed in a silicon respin. If it
-> > > is fixed, the hub revision will be incremented & the workaround disabled.
-> > 
-> > It's unclear to me whether this patch should be merged into 3.1 and/or
-> > into 3.0.x and earlier?
+On Thu, Sep 08, 2011 at 04:13:01AM +0100, Hin-Tak Leung wrote:
+> --- On Wed, 7/9/11, Seth Forshee <seth.forshee@canonical.com> wrote:
 > 
-> 3.1 is fine. I can push directly to the distros.
+> > Yes, that was definitely just an oversight. Has anyone
+> > provided a patch
+> > yet? If not I've pasted a patch below. Seems like a fix
+> > should be
+> > applied ASAP.
+> > 
+> > 
+> > From d27825b880028e9a45ba640d86c9e8101db0606b Mon Sep 17
+> > 00:00:00 2001
+> > From: Seth Forshee <seth.forshee@canonical.com>
+> > Date: Wed, 7 Sep 2011 10:38:35 -0700
+> > Subject: [PATCH] hfsplus: Fix kfree of wrong pointers in
+> > hfsplus_fill_super() error path
+> > 
+> > Commit 6596528 (hfsplus: ensure bio requests are not
+> > smaller than
+> > the hardware sectors) changed the pointers used for volume
+> > header
+> > allocations but failed to change the pointer freed in the
+> > error
+> > path of hfsplus_fill_super(). This patch fixes the
+> > problem.
+> > 
+> > Reported-by: Pavel Ivanov <paivanof@gmail.com>
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> > Cc: <stable@kernel.org>
+> 
+> Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+> 
+> Please go ahead and submit the patch.
 
-Don't do that.  It's better for a pile of reasons for this to come via
-kernel.org.
+That was my patch submission :)
 
-Again, what is the case for backporting?
+Christoph, does that work for you, or would you like me to send the
+patch in a separate email?
