@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab1IHOEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 10:04:09 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:44669
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S933088Ab1IHODQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 10:03:16 -0400
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 04/25] Staging: hv: vmbus: Cleanup dated comments in channel_mgmt.c
-Date: Thu,  8 Sep 2011 07:24:15 -0700
-Message-Id: <1315491876-9554-4-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1315491876-9554-1-git-send-email-kys@microsoft.com>
-References: <1315491843-9513-1-git-send-email-kys@microsoft.com>
- <1315491876-9554-1-git-send-email-kys@microsoft.com>
+	id S933094Ab1IHOET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 10:04:19 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:46010 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933088Ab1IHOEL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 10:04:11 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.113.217]
+In-Reply-To: <CAHQjnONUvBtKSMxiDf5Mk+DLqfrTr09Us11rWoaR1mVZeiAmnA@mail.gmail.com>
+References: <1314984756-4400-1-git-send-email-ohad@wizery.com>
+ <1314984756-4400-8-git-send-email-ohad@wizery.com> <CAHQjnOMT3UOFMi=JbSXf4-s_BbZ+fSGbOEjxwT7t7N-zd+9-zg@mail.gmail.com>
+ <CAK=WgbZPFryzCFLa5AhAYDmH1S8c3x-OsSTyxYeq0WLAe8VyTg@mail.gmail.com>
+ <CAHQjnOMnOjAJ6QuuLmLa1UKvTRHfyyjiUYrfvzLx8FSsCixxng@mail.gmail.com>
+ <CAK=WgbbFhmiC=PJfmyPOhbHGtiPFOcmqBx7nSpkuDX36hPYgbA@mail.gmail.com> <CAHQjnONUvBtKSMxiDf5Mk+DLqfrTr09Us11rWoaR1mVZeiAmnA@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 8 Sep 2011 17:03:50 +0300
+Message-ID: <CAK=WgbZoF-F_hXHT1i=cAh8QJb+aFSjjubdy_YkHQ97acRvorA@mail.gmail.com>
+Subject: Re: [RFC 7/7] iommu/core: split mapping to page sizes as supported by
+ the hardware
+To: KyongHo Cho <pullip.cho@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Joerg Roedel <Joerg.Roedel@amd.com>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Brown <davidb@codeaurora.org>, linux-omap@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup dated comments in channel_mgmt.c.
+Hi KyongHo,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/channel_mgmt.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+On Thu, Sep 8, 2011 at 3:51 PM, KyongHo Cho <pullip.cho@samsung.com> wrote:
+> 16MB page is less practical in Linux because Linux kernel is unable
+> to allocated larger physically contiguous memory than 4MB by default.
+> But I also think that it is needed to support 16MB mapping for IO
+> virtualization someday
 
-diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
-index 60ce1d1..c68e5fa 100644
---- a/drivers/staging/hv/channel_mgmt.c
-+++ b/drivers/staging/hv/channel_mgmt.c
-@@ -433,9 +433,6 @@ static void vmbus_process_offer(struct work_struct *work)
- /*
-  * vmbus_onoffer - Handler for channel offers from vmbus in parent partition.
-  *
-- * We ignore all offers except network and storage offers. For each network and
-- * storage offers, we create a channel object and queue a work item to the
-- * channel object to process the offer synchronously
-  */
- static void vmbus_onoffer(struct vmbus_channel_message_header *hdr)
- {
--- 
-1.7.4.1
+Actually we need physically contiguous memory regions that are much
+bigger (in the tens of megs), so we do utilize 16MB pages. Today we
+reserve that memory on boot, but the plan is to move to CMA.
 
+> Actually, I think your idea is good and does not cause performance degradation.
+> But I wondered if it is really useful.
+
+Well, the alternative is to duplicate this logic in every IOMMU driver.
+
+Go ahead and try to rebase your driver on my recent patch set and see
+if you like it; the result should significantly simplify your
+map/unmap functions.
+
+You only need to add this line:
+static unsigned long s5p_iommu_pgsizes = SZ_4K | SZ_64K | SZ_1M | SZ_16M;
+
+and then advertise it with iommu_register, and you're done. The IOMMU
+core will only ask you to handle a single page from now on, and will
+take care of the rest.
+
+> The caller of iommu_map() gives gfp_order that is the size of the physical
+> memory to map.
+
+I've changed it in the patch :)
+
+This way users are not bound to rigid mapping sizes (this allows us to
+better utilize the physically-contiguous memory region we reserve on
+boot).
+
+Thanks,
+Ohad.
