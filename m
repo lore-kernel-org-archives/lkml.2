@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab1IHXxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:53:51 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:37128 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756475Ab1IHXxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:53:46 -0400
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 3.1-rc1] ARM: entry: fix wrong parameter used in do_thumb_abort
-Date: Thu, 8 Sep 2011 20:02:11 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <201108241307.21056.jkrzyszt@tis.icnet.pl> <20110907114740.GS6619@n2100.arm.linux.org.uk> <201109071958.47945.jkrzyszt@tis.icnet.pl>
-In-Reply-To: <201109071958.47945.jkrzyszt@tis.icnet.pl>
-MIME-Version: 1.0
-Message-Id: <201109082002.11635.jkrzyszt@tis.icnet.pl>
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1756048Ab1IHXxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:53:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44227 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756399Ab1IHXwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:52:41 -0400
+Date: Thu, 8 Sep 2011 16:52:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: gregkh@suse.de, joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] dynamic_debug: consolidate repetitive struct
+ _ddebug descriptor definitions
+Message-Id: <20110908165230.a7505321.akpm@linux-foundation.org>
+In-Reply-To: <94c0e3275b0bf7d2cad8e7909da1482a867e7bc6.1314725877.git.jbaron@redhat.com>
+References: <cover.1314725877.git.jbaron@redhat.com>
+	<94c0e3275b0bf7d2cad8e7909da1482a867e7bc6.1314725877.git.jbaron@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011 at 19:58:47 Janusz Krzysztofik wrote:
-> On Wed, 7 Sep 2011 at 13:47:40 Russell King - ARM Linux wrote:
-> > On Wed, Sep 07, 2011 at 01:10:08PM +0200, Janusz Krzysztofik wrote:
-> > > Any special requirements as to the process of submitting bug
-> > > fixes against arch/arm common bits?
-> > 
-> > It needs to go into the patch system for merging so that it doesn't
-> > get buried and forgotten - as already demonstrated.
+On Tue, 30 Aug 2011 14:28:41 -0400
+Jason Baron <jbaron@redhat.com> wrote:
+
+> Replace the repetitive struct _ddebug descriptor definitions with
+> a new DECLARE_DYNAMIC_DEBUG_META_DATA(name, fmt) macro.
 > 
-> Still not sure: am I suppposed to do something for the patch to go to
-> the patch system? Or do you take care of this?
+> ...
+>
+> +#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
+> +	static struct _ddebug __used __aligned(8)		\
+> +	__attribute__((section("__verbose"))) name = {		\
+> +		.modname = KBUILD_MODNAME,			\
+> +		.function = __func__,				\
+> +		.filename = __FILE__,				\
+> +		.format = (fmt),				\
+> +		.lineno = __LINE__,				\
+> +		.flags =  _DPRINTK_FLAGS_DEFAULT,		\
+> +		.enabled = false,				\
+> +	}
 
-OK, instead of waiting for your answer, I've found an interface to your 
-patch system myself and submitted the patch.
+<anal>That macro implements a definition, not a declaration</anal>
 
-Next time, for how long after posting a patch to the linux-arm-kernel 
-lists should I wait for comments before I can submit it to the patch 
-system even if there are no signs of the patch being reviewed? IOW, can 
-I assume you accept a patch if you don't comment it for a certain period 
-of time?
+--- a/include/linux/dynamic_debug.h~dynamic_debug-consolidate-repetitive-struct-_ddebug-descriptor-definitions-fix
++++ a/include/linux/dynamic_debug.h
+@@ -54,7 +54,7 @@ extern int __dynamic_netdev_dbg(struct _
+ 			     const char *fmt, ...)
+ 	__attribute__ ((format (printf, 3, 4)));
+ 
+-#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
++#define DEFINE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
+ 	static struct _ddebug __used __aligned(8)		\
+ 	__attribute__((section("__verbose"))) name = {		\
+ 		.modname = KBUILD_MODNAME,			\
+@@ -68,7 +68,7 @@ extern int __dynamic_netdev_dbg(struct _
+ 
+ #define dynamic_pr_debug(fmt, ...)				\
+ do {								\
+-	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
++	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		\
+ 	if (unlikely(descriptor.enabled))			\
+ 		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),	\
+ 				   ##__VA_ARGS__);		\
+@@ -76,7 +76,7 @@ do {								\
+ 
+ #define dynamic_dev_dbg(dev, fmt, ...)				\
+ do {								\
+-	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
++	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
+ 	if (unlikely(descriptor.enabled))			\
+ 		__dynamic_dev_dbg(&descriptor, dev, fmt,	\
+ 				  ##__VA_ARGS__);		\
+@@ -84,7 +84,7 @@ do {								\
+ 
+ #define dynamic_netdev_dbg(dev, fmt, ...)			\
+ do {								\
+-	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);	\
++	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		\
+ 	if (unlikely(descriptor.enabled))			\
+ 		__dynamic_netdev_dbg(&descriptor, dev, fmt,	\
+ 				     ##__VA_ARGS__);		\
+_
 
-Thanks,
-Janusz
