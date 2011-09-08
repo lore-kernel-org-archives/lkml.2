@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414Ab1IHWhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 18:37:55 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54367 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab1IHWhx (ORCPT
+	id S1751297Ab1IHTX0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 15:23:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35990 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab1IHTXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 18:37:53 -0400
-Date: Thu, 8 Sep 2011 23:37:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, alsa-devel@alsa-project.org,
-        Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jarkko Nikula <jhnikula@gmail.com>, linaro-dev@lists.linaro.org,
-        linux-omap@vger.kernel.org, Mans Rullgard <mans.rullgard@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] ASoC: omap: convert per-board modules to platform
-	drivers
-Message-ID: <20110908223720.GA21469@n2100.arm.linux.org.uk>
-References: <1315503297-8365-1-git-send-email-mans.rullgard@linaro.org> <CABb+yY0b607kDSGU+trycqQuvGMhC-zpHcv20wjgmEcaK7dz8Q@mail.gmail.com> <CAG5Tg6UOuztenNid1=YbH9a4ZH5MqV4YhohG+r9R+7F=zXs=CQ@mail.gmail.com> <3110288.bQbb0H2ME1@wuerfel> <1315520956.4126.3.camel@finisterre.wolfsonmicro.main>
+	Thu, 8 Sep 2011 15:23:23 -0400
+Date: Thu, 8 Sep 2011 21:23:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Lin Ming <mlin@ss.pku.edu.cn>, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 0/55] Preview of RCU changes for 3.2
+In-Reply-To: <20110908174139.GL2671@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1109082122230.2723@ionos>
+References: <20110906180015.GA2560@linux.vnet.ibm.com> <CAF1ivSZ_THTHMPhXcPSJovxoi1WBvpr07ktMuYL39oode8kz0w@mail.gmail.com> <20110908174139.GL2671@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1315520956.4126.3.camel@finisterre.wolfsonmicro.main>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 03:29:11PM -0700, Mark Brown wrote:
-> On Thu, 2011-09-08 at 22:28 +0200, Arnd Bergmann wrote:
-> > On Thursday 08 September 2011 20:05:48 Mans Rullgard wrote:
-> 
-> > > I had the same thought, but I couldn't find a suitable string anywhere.
-> > > Are you suggesting an if(machine_is_foo()) cascade in omap_init_audio()?
-> 
-> > > I'll be the first to agree this patch is not particularly pretty.
-> 
-> > My general feeling is that practically every time someone writes
-> > machine_is_*(), they are doing it wrong. There are of course exceptions,
-> > but I would strongly recommend to have the initialization calling up
-> > from the board file into more general functions instead of having all
-> > boards calling the same function which then goes to board specific
-> > code again.
-> 
-> I have to agree, that seems tasteless. I'd expect something like
-> triggering registration of devices based off walking down a table of
-> machine IDs or something. One other issue to consider here is that we
-> don't want to discourage people from sharing machine drivers while we
-> can so it can't be completely automatic, it 
+On Thu, 8 Sep 2011, Paul E. McKenney wrote:
 
-This problem has been solved (before DT) for _ages_ through the use
-of platform devices in the platform support files, registered by the
-.init_machine callback.
+> On Wed, Sep 07, 2011 at 10:39:57PM +0800, Lin Ming wrote:
+> > On Wed, Sep 7, 2011 at 2:00 AM, Paul E. McKenney
+> > <paulmck@linux.vnet.ibm.com> wrote:
+> > >
+> > > For a testing-only version of this patchset from git, please see the
+> > > following subject-to-rebase (and subject-to-Hera-availability) branch:
+> > >
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
+> > 
+> > kernel.org is still down.
+> > Would you put the tree somewhere else(maybe github.com)?
+> 
+> Hello, Lin,
+> 
+> I am unlikely to figure out why github doesn't like me by the end of
+> the week, so please feel free to post the patches somewhere.  If you
+> have a -tip tree handy, you could apply them on top of tip/master.
+> If you don't have a -tip tree handy, they should also apply cleanly
+> onto v3.0.
 
-Where it went wrong is when ASOC and PCMCIA became rather complicated
-that you could no longer just pass a platform data structure, but
-instead needed some complex platform specific code - which started the
-demand to have mini platform specific chunks of code in drivers/pcmcia/
-and sound/.
+  git://tesla.tglx.de/git/linux-2.6-tip
 
-With DT of course, all devices get instantiated from the device tree,
-so there should not be any more platform specific chunks of code in
-these locations (ha, it couldn't be solved with platform data so I
-suspect it will continue to persist, forever unsolved.)
+Just in case.
+
+     tglx
