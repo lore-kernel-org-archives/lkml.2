@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab1IHJct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 05:32:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65259 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932535Ab1IHJcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 05:32:47 -0400
-Message-ID: <4E688C03.7080608@cn.fujitsu.com>
-Date: Thu, 08 Sep 2011 17:33:55 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S932554Ab1IHJeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 05:34:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932534Ab1IHJeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 05:34:07 -0400
+Date: Thu, 8 Sep 2011 11:33:16 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: close race between charge and putback
+Message-ID: <20110908093316.GB1316@redhat.com>
+References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
+ <20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110908085404.GA1316@redhat.com>
+ <20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH x86,mm]  fix pgt_buf_end when memory hotplug
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-08 17:31:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-09-08 17:31:19,
-	Serialize complete at 2011-09-08 17:31:19
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 08, 2011 at 06:19:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 8 Sep 2011 10:54:04 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
+> 
+> > On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Thu,  8 Sep 2011 09:40:22 +0200
+> > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > 
+> > > > There is a potential race between a thread charging a page and another
+> > > > thread putting it back to the LRU list:
+> > > > 
+> > > > charge:                         putback:
+> > > > SetPageCgroupUsed               SetPageLRU
+> > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > > 
+> > > 
+> > > I assumed that all pages are charged before added to LRU.
+> > > (i.e. event happens in charge->lru_lock->putback order.)
+> > > 
+> > > But hmm, this assumption may be bad for maintainance.
+> > > Do you find a code which adds pages to LRU before charge ?
+> > > 
+> > > Hmm, if there are codes which recharge the page to other memcg,
+> > > it will cause bug and my assumption may be harmful.
+> > 
+> > Swap slots are read optimistically into swapcache and put to the LRU,
+> > then charged upon fault.  
+> 
+> Yes, then swap charge removes page from LRU before charge.
+> IIUC, it needed to do so because page->mem_cgroup may be replaced.
 
-When I test memory hotplug, such message is always outputted when hot-adding
-a memory block:
+But only from the memcg LRU.  It's still on the global per-zone LRU,
+so reclaim could isolate/putback it during the charge.  And then
 
-initial kernel pagetable allocation wasted ffffffffffffffff pages
+> > > > charge:                         putback:
+> > > > SetPageCgroupUsed               SetPageLRU
+> > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
 
-This message comes from init_memory_mapping(), it shows "pgt_buf_end" is
-incorrect here, and I found it was caused by alloc_low_page().
+applies.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index bbaaa00..e138e0a 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -317,7 +317,7 @@ void __init cleanup_highmap(void)
- 
- static __ref void *alloc_low_page(unsigned long *phys)
- {
--	unsigned long pfn = pgt_buf_end++;
-+	unsigned long pfn;
- 	void *adr;
- 
- 	if (after_bootmem) {
-@@ -327,6 +327,7 @@ static __ref void *alloc_low_page(unsigned long *phys)
- 		return adr;
- 	}
- 
-+	pfn = pgt_buf_end++;
- 	if (pfn >= pgt_buf_top)
- 		panic("alloc_low_page: ran out of memory");
- 
+And yes, it needs to fix up *pc->mem_cgroup's LRU statistics before
+the pointer get's overwritten.
