@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab1IHXvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:51:43 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47104 "EHLO
+	id S1756262Ab1IHXwT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:52:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46632 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754847Ab1IHXvl (ORCPT
+	by vger.kernel.org with ESMTP id S1754031Ab1IHXwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:51:41 -0400
-Date: Thu, 8 Sep 2011 16:51:39 -0700
+	Thu, 8 Sep 2011 19:52:17 -0400
+Date: Thu, 8 Sep 2011 16:52:13 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Jack Steiner <steiner@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] UV2 - Bug fix for GRU global addresses
-Message-Id: <20110908165139.caa9ddef.akpm@linux-foundation.org>
-In-Reply-To: <20110908182413.GA10782@sgi.com>
-References: <20110908182413.GA10782@sgi.com>
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: Mark Salter <msalter@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Pass correct length to strnlen_user in fs/exec.c
+Message-Id: <20110908165213.6ebd844f.akpm@linux-foundation.org>
+In-Reply-To: <4E680EBC.4000804@gmail.com>
+References: <4E680EBC.4000804@gmail.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,29 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc x86 maintainers)
+On Thu, 08 Sep 2011 10:39:24 +1000
+Ryan Mallon <rmallon@gmail.com> wrote:
 
-On Thu, 8 Sep 2011 13:24:13 -0500
-Jack Steiner <steiner@sgi.com> wrote:
+> Replace valid_arg_len function in fs/exec.c with max_arg_len function
+> and pass the correct length to strnlen_user.
+> 
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -296,9 +296,9 @@ err:
+>  	return err;
+>  }
+>  
+> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
+> +static long max_arg_len(struct linux_binprm *bprm)
+>  {
+> -	return len <= MAX_ARG_STRLEN;
+> +	return MAX_ARG_STRLEN;
+>  }
+>  
+>  #else
+> @@ -354,9 +354,9 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
+>  	return 0;
+>  }
+>  
+> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
+> +static long max_arg_len(struct linux_binprm *bprm)
+>  {
+> -	return len <= bprm->p;
+> +	return bprm->p;
+>  }
+>  
+>  #endif /* CONFIG_MMU */
+> @@ -474,18 +474,19 @@ static int copy_strings(int argc, struct user_arg_ptr argv,
+>  		const char __user *str;
+>  		int len;
+>  		unsigned long pos;
+> +		long max_len = max_arg_len(bprm);
+>  
+>  		ret = -EFAULT;
+>  		str = get_user_arg_ptr(argv, argc);
+>  		if (IS_ERR(str))
+>  			goto out;
+>  
+> -		len = strnlen_user(str, MAX_ARG_STRLEN);
+> -		if (!len || len > MAX_ARG_STRLEN)
+> +		len = strnlen_user(str, max_len);
+> +		if (!len)
+>  			goto out;
+>  
+>  		ret = -E2BIG;
+> -		if (!valid_arg_len(bprm, len))
+> +		if (len > max_len)
+>  			goto out;
+>  
+>  		/* We're going to work our way backwords. */
 
-> This patch is a workaround for a UV2 hub bug that affects the format
-> of system global addresses.
-> 
-> The GRU API for UV2 was inadvertently broken by a hardware change. The
-> format of the physical address used for TLB dropins and for addresses used
-> with instructions running in unmapped mode has changed. This change was not
-> documented and became apparent only when diags failed running on system simulators.
-> 
-> For UV1, TLB and GRU instruction physical addresses are identical to socket
-> physical addresses (although high NASID bits must be OR'ed into the
-> address).
-> 
-> For UV2, socket physical addresses need to be converted. The NODE portion of
-> the physical address needs to be shifted so that the low bit is in bit 39 or
-> bit 40, depending on an MMR value.
-> 
-> It is not yet clear if this bug will be fixed in a silicon respin. If it
-> is fixed, the hub revision will be incremented & the workaround disabled.
+I'm struggling to find a reason to merge this - it churns code around
+rather pointlessly?
 
-It's unclear to me whether this patch should be merged into 3.1 and/or
-into 3.0.x and earlier?
