@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab1IHHxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 03:53:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932243Ab1IHHxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 03:53:34 -0400
-Message-ID: <4E6873FE.3040603@redhat.com>
-Date: Thu, 08 Sep 2011 10:51:26 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [PATCH 08/13] xen/pvticketlock: disable interrupts while blocking
-References: <1314996468.8255.0.camel@twins> <4E614FBD.2030509@goop.org> <20110906151408.GA7459@redhat.com> <4E66615E.8070806@goop.org> <20110906182758.GR5795@redhat.com> <4E66EF86.9070200@redhat.com> <20110907134411.GV5795@redhat.com> <4E678992.5050709@redhat.com> <20110907155657.GX5795@redhat.com> <4E679AF4.50209@redhat.com> <20110907165203.GQ6838@redhat.com> <4E67A551.4000502@redhat.com> <4E67A71A.5070903@goop.org> <4E67ACB6.40107@redhat.com> <4E67C15B.3000408@goop.org>
-In-Reply-To: <4E67C15B.3000408@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932311Ab1IHICM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 04:02:12 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:17961 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932243Ab1IHICK convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:5:1>);
+	Thu, 8 Sep 2011 04:02:10 -0400
+Message-Id: <4E6892B4020000780005536B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 08 Sep 2011 09:02:28 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <hch@infradead.org>
+Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Vivek Goyal" <vgoyal@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: Help with implementing some form of barriers in 3.0
+	 kernels.
+References: <20110907174832.GN32190@dumpdata.com>
+ <20110907181740.GG31726@redhat.com> <20110907201620.GB26548@infradead.org>
+In-Reply-To: <20110907201620.GB26548@infradead.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2011 10:09 PM, Jeremy Fitzhardinge wrote:
-> On 09/07/2011 10:41 AM, Avi Kivity wrote:
-> >>  Hm, I'm interested to know what you're thinking in more detail.  Can you
-> >>  leave an NMI pending before you block in the same way you can with
-> >>  "sti;halt" with normal interrupts?
-> >
-> >
-> >  Nope.  But you can do
-> >
-> >     if (regs->rip in critical section)
-> >             regs->rip = after_halt;
-> >
-> >  and effectively emulate it.  The critical section is something like
-> >
-> >      critical_section_start:
-> >          if (woken_up)
-> >              goto critical_section_end;
-> >          hlt
-> >      critical_section_end:
->
-> Hm.  It's a pity you have to deliver an actual interrupt to implement
-> the kick though.
+>>> On 07.09.11 at 22:16, Christoph Hellwig <hch@infradead.org> wrote:
+> [Hmm, for some reason I never manage to receive Konrads mails directly,
+>  but only get the replies, or copies via the list]
+> 
+> On Wed, Sep 07, 2011 at 02:17:40PM -0400, Vivek Goyal wrote:
+>> On Wed, Sep 07, 2011 at 01:48:32PM -0400, Konrad Rzeszutek Wilk wrote:
+>> > Hey Christoph,
+>> > 
+>> > I was wondering what you think is the proper way of implementing a
+>> > backend to support the 'barrier' type requests? We have this issue were
+>> > there are 2.6.36 type guests that still use barriers and we would like
+>> > to support them properly. But in 3.0 there are no barriers - hence
+>> > the question whether WRITE_fLUSH_FUA would be equal to WRITE_BARRIER?
+>> 
+>> I think WRITE_FLUSH_FUA is not same as WRITE_BARRIER. Because it does
+>> not ensure request ordering. A request rq2 which is issued after rq1 (with
+>> WRITE_flush_FUA), can still finish before rq1. In the past WRITE_BARRIER
+>> would not allow that.
+>> 
+>> So AFAIK, WRITE_flush_fua is not WRITE_BARRIER.
+> 
+> Indeed.  And while most guests won't care some will.  E.g. reiserfs
+> which is the standard filesystem in most SuSE guests, which happen to
+> be fairly popular with Xen.
+> 
+> I'd suggest you look at the pre-2.6.36 barrier implementation and see
+> if you can move that into xen-blkfront.
 
-I don't think it's that expensive, especially compared to the 
-double-context-switch and vmexit of the spinner going to sleep.  On AMD 
-we do have to take an extra vmexit (on IRET) though.
+That would need to be done in the backend, as the expectation cannot
+be to patch old frontends to deal with new backends.
 
-> >>
-> >>  I was thinking you might want to do something with monitor/mwait to
-> >>  implement the blocking/kick ops. (Handwave)
-> >>
-> >
-> >  monitor/mwait are incredibly expensive to virtualize since they
-> >  require write-protecting a page, IPIs flying everywhere and flushing
-> >  tlbs, not to mention my lovely hugepages being broken up mercilessly.
->
-> Or what about a futex-like hypercall?
->
+Jan
 
-Well we could have a specialized sleep/wakeup hypercall pair like Xen, 
-but I'd like to avoid it if at all possible.
+> For the qemu side doing this is a bit easier as you'll just have to wait
+> for all pending aio requests to complete.  The current qemu xen disk
+> code gets thus horribly wrong, though.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+
 
