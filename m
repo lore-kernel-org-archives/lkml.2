@@ -1,65 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab1IHXqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:46:52 -0400
-Received: from www.tvnetwork.hu ([109.61.0.42]:54712 "EHLO www.tvnetwork.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752963Ab1IHXqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:46:50 -0400
-Message-ID: <11459.41.218.232.229.1315515702.squirrel@www.tvnetwork.hu>
-Date: Thu, 8 Sep 2011 23:01:42 +0200 (CEST)
-Subject: =?iso-8859-2?Q?administrativn=ED_zpr=E1vy?=
-From: "univerzita Karlova" <cuni.cz@tvnetwork.hu>
-Reply-To: seds@ml.lt
-User-Agent: SquirrelMail/1.4.9a
+	id S1755242Ab1IHXto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:49:44 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:33640 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753921Ab1IHXtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:49:41 -0400
+Date: Thu, 8 Sep 2011 13:24:13 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] UV2 - Bug fix for GRU global addresses
+Message-ID: <20110908182413.GA10782@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-2
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vá¾ení cuni.cz úèastníka,
+This patch is a workaround for a UV2 hub bug that affects the format
+of system global addresses.
 
-Ukonèení va¹eho cuni.cz a související po¹tovním
-úètem probíhá, jsme v souèasné dobì provádí
-upgrade na ná¹ systém vzhledem k tomu, ¾e to
-pøi¹lo na na¹e upozornìní, ¾e jedna nebo více z
-na¹ich pøedplatitelù zavádìjí velmi silný virus
-do na¹eho systému a to je vliv na¹í sítì.
+The GRU API for UV2 was inadvertently broken by a hardware change. The
+format of the physical address used for TLB dropins and for addresses used
+with instructions running in unmapped mode has changed. This change was not
+documented and became apparent only when diags failed running on system simulators.
 
-Sna¾íme se zjistit konkrétní osobu. Z tohoto
-dùvodu se v¹ichni úèastníci jsou povinni
-poskytnout své u¾ivatelské jméno a heslo pro nás
-pro ovìøení a je zúètováno proti tomuto viru.
-Nedodr¾ení povede k ukonèení va¹eho úètu v
-pøí¹tích 48 hodin.
+For UV1, TLB and GRU instruction physical addresses are identical to socket
+physical addresses (although high NASID bits must be OR'ed into the
+address).
 
-Informace k odeslání;
+For UV2, socket physical addresses need to be converted. The NODE portion of
+the physical address needs to be shifted so that the low bit is in bit 39 or
+bit 40, depending on an MMR value.
 
-* U¾ivatelské jméno E-mail} {:
-(.................) (povinné)
-* Heslo :(..........................)( povinné)
-* Datum narození: (...........................)(
-nepovinné)
-* Zemì nebo území: (...................)(
-nepovinné)
+It is not yet clear if this bug will be fixed in a silicon respin. If it
+is fixed, the hub revision will be incremented & the workaround disabled.
 
-Doufat, aby vám lépe slou¾ily ..
 
-S pozdravem,
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
-univerzita Karlova
-**************************************************
-******************************************
-Jedná se o administrativní zprávy ze serveru
-cuni.cz. To není spam. Èas od èasu se
-cuni.czserver posílat takové zprávy, aby mohla
-komunikovat dùle¾ité informace o va¹em
-pøedplatném.
-**************************************************
-******************************************
+---
+ arch/x86/include/asm/uv/uv_bau.h   |    1 +
+ arch/x86/include/asm/uv/uv_hub.h   |   37 ++++++++++++++++++++++++++++++++++---
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 +++++--
+ arch/x86/platform/uv/tlb_uv.c      |   17 ++++++-----------
+ 4 files changed, 46 insertions(+), 16 deletions(-)
 
+Index: linux/arch/x86/include/asm/uv/uv_bau.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_bau.h	2011-09-08 09:04:56.988623066 -0500
++++ linux/arch/x86/include/asm/uv/uv_bau.h	2011-09-08 09:05:12.779715482 -0500
+@@ -55,6 +55,7 @@
+ #define UV_BAU_TUNABLES_DIR		"sgi_uv"
+ #define UV_BAU_TUNABLES_FILE		"bau_tunables"
+ #define WHITESPACE			" \t\n"
++#define uv_mmask			((1UL << uv_hub_info->m_val) - 1)
+ #define uv_physnodeaddr(x)		((__pa((unsigned long)(x)) & uv_mmask))
+ #define cpubit_isset(cpu, bau_local_cpumask) \
+ 	test_bit((cpu), (bau_local_cpumask).bits)
+Index: linux/arch/x86/include/asm/uv/uv_hub.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2011-09-08 09:04:56.988623066 -0500
++++ linux/arch/x86/include/asm/uv/uv_hub.h	2011-09-08 10:24:06.429086134 -0500
+@@ -46,6 +46,13 @@
+  *	PNODE   - the low N bits of the GNODE. The PNODE is the most useful variant
+  *		  of the nasid for socket usage.
+  *
++ *	GPA	- (global physical address) a socket physical address converted
++ *		  so that it can be used by the GRU as a global address. Socket
++ *		  physical addresses 1) need additional NASID (node) bits added
++ *		  to the high end of the address, and 2) unaliased if the
++ *		  partition does not have a physical address 0. In addition, on
++ *		  UV2 rev 1, GPAs need the gnode left shifted to bits 39 or 40.
++ *
+  *
+  *  NumaLink Global Physical Address Format:
+  *  +--------------------------------+---------------------+
+@@ -141,6 +148,8 @@ struct uv_hub_info_s {
+ 	unsigned int		gnode_extra;
+ 	unsigned char		hub_revision;
+ 	unsigned char		apic_pnode_shift;
++	unsigned char		m_shift;
++	unsigned char		n_lshift;
+ 	unsigned long		gnode_upper;
+ 	unsigned long		lowmem_remap_top;
+ 	unsigned long		lowmem_remap_base;
+@@ -177,6 +186,16 @@ static inline int is_uv2_hub(void)
+ 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
+ }
+ 
++static inline int is_uv2_1_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE;
++}
++
++static inline int is_uv2_2_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE + 1;
++}
++
+ union uvh_apicid {
+     unsigned long       v;
+     struct uvh_apicid_s {
+@@ -276,7 +295,10 @@ static inline unsigned long uv_soc_phys_
+ {
+ 	if (paddr < uv_hub_info->lowmem_remap_top)
+ 		paddr |= uv_hub_info->lowmem_remap_base;
+-	return paddr | uv_hub_info->gnode_upper;
++	paddr |= uv_hub_info->gnode_upper;
++	paddr = ((paddr << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((paddr >> uv_hub_info->m_val) << uv_hub_info->n_lshift);
++	return paddr;
+ }
+ 
+ 
+@@ -300,16 +322,19 @@ static inline unsigned long uv_gpa_to_so
+ 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
+ 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
+ 
++	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
++	gpa = gpa & uv_hub_info->gpa_mask;
+ 	if (paddr >= remap_base && paddr < remap_base + remap_top)
+ 		paddr -= remap_base;
+ 	return paddr;
+ }
+ 
+ 
+-/* gnode -> pnode */
++/* gpa -> pnode */
+ static inline unsigned long uv_gpa_to_gnode(unsigned long gpa)
+ {
+-	return gpa >> uv_hub_info->m_val;
++	return gpa >> uv_hub_info->n_lshift;
+ }
+ 
+ /* gpa -> pnode */
+@@ -320,6 +345,12 @@ static inline int uv_gpa_to_pnode(unsign
+ 	return uv_gpa_to_gnode(gpa) & n_mask;
+ }
+ 
++/* gpa -> node offset*/
++static inline unsigned long uv_gpa_to_offset(unsigned long gpa)
++{
++	return (gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift;
++}
++
+ /* pnode, offset --> socket virtual */
+ static inline void *uv_pnode_offset_to_vaddr(int pnode, unsigned long offset)
+ {
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2011-09-08 09:04:56.988623066 -0500
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2011-09-08 10:20:14.483508707 -0500
+@@ -832,6 +832,10 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->apic_pnode_shift = uvh_apicid.s.pnode_shift;
+ 		uv_cpu_hub_info(cpu)->hub_revision = uv_hub_info->hub_revision;
+ 
++		uv_cpu_hub_info(cpu)->m_shift = 64 - m_val;
++		uv_cpu_hub_info(cpu)->n_lshift = is_uv2_1_hub() ?
++				(m_val == 40 ? 40 : 39) : m_val;
++
+ 		pnode = uv_apicid_to_pnode(apicid);
+ 		blade = boot_pnode_to_blade(pnode);
+ 		lcpu = uv_blade_info[blade].nr_possible_cpus;
+@@ -862,8 +866,7 @@ void __init uv_system_init(void)
+ 		if (uv_node_to_blade[nid] >= 0)
+ 			continue;
+ 		paddr = node_start_pfn(nid) << PAGE_SHIFT;
+-		paddr = uv_soc_phys_ram_to_gpa(paddr);
+-		pnode = (paddr >> m_val) & pnode_mask;
++		pnode = uv_gpa_to_pnode(uv_soc_phys_ram_to_gpa(paddr));
+ 		blade = boot_pnode_to_blade(pnode);
+ 		uv_node_to_blade[nid] = blade;
+ 	}
+Index: linux/arch/x86/platform/uv/tlb_uv.c
+===================================================================
+--- linux.orig/arch/x86/platform/uv/tlb_uv.c	2011-09-08 09:04:56.992611310 -0500
++++ linux/arch/x86/platform/uv/tlb_uv.c	2011-09-08 09:05:12.915338461 -0500
+@@ -115,9 +115,6 @@ early_param("nobau", setup_nobau);
+ 
+ /* base pnode in this partition */
+ static int uv_base_pnode __read_mostly;
+-/* position of pnode (which is nasid>>1): */
+-static int uv_nshift __read_mostly;
+-static unsigned long uv_mmask __read_mostly;
+ 
+ static DEFINE_PER_CPU(struct ptc_stats, ptcstats);
+ static DEFINE_PER_CPU(struct bau_control, bau_control);
+@@ -1435,7 +1432,7 @@ static void activation_descriptor_init(i
+ {
+ 	int i;
+ 	int cpu;
+-	unsigned long pa;
++	unsigned long gpa;
+ 	unsigned long m;
+ 	unsigned long n;
+ 	size_t dsize;
+@@ -1451,9 +1448,9 @@ static void activation_descriptor_init(i
+ 	bau_desc = kmalloc_node(dsize, GFP_KERNEL, node);
+ 	BUG_ON(!bau_desc);
+ 
+-	pa = uv_gpa(bau_desc); /* need the real nasid*/
+-	n = pa >> uv_nshift;
+-	m = pa & uv_mmask;
++	gpa = uv_gpa(bau_desc);
++	n = uv_gpa_to_gnode(gpa);
++	m = uv_gpa_to_offset(gpa);
+ 
+ 	/* the 14-bit pnode */
+ 	write_mmr_descriptor_base(pnode, (n << UV_DESC_PSHIFT | m));
+@@ -1525,9 +1522,9 @@ static void pq_init(int node, int pnode)
+ 		bcp->queue_last		= pqp + (DEST_Q_SIZE - 1);
+ 	}
+ 	/*
+-	 * need the pnode of where the memory was really allocated
++	 * need the gnode of where the memory was really allocated
+ 	 */
+-	pn = uv_gpa(pqp) >> uv_nshift;
++	pn = uv_gpa_to_gnode(uv_gpa(pqp));
+ 	first = uv_physnodeaddr(pqp);
+ 	pn_first = ((unsigned long)pn << UV_PAYLOADQ_PNODE_SHIFT) | first;
+ 	last = uv_physnodeaddr(pqp + (DEST_Q_SIZE - 1));
+@@ -1837,8 +1834,6 @@ static int __init uv_bau_init(void)
+ 		zalloc_cpumask_var_node(mask, GFP_KERNEL, cpu_to_node(cur_cpu));
+ 	}
+ 
+-	uv_nshift = uv_hub_info->m_val;
+-	uv_mmask = (1UL << uv_hub_info->m_val) - 1;
+ 	nuvhubs = uv_num_possible_blades();
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = usec_2_cycles(congested_respns_us);
