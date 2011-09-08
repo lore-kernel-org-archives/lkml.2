@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab1IHXzQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:55:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42693 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab1IHXzA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:55:00 -0400
-Date: Thu, 8 Sep 2011 20:50:43 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Ian Kent <raven@themaw.net>,
-        David Howells <dhowells@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Leonardo Chiquitto <leonardo.lists@gmail.com>, autofs@linux.kernel.org
-Subject: Re: [PATCH] vfs: automount should ignore LOOKUP_FOLLOW
-Message-ID: <20110908195043.GV2203@ZenIV.linux.org.uk>
-References: <87liu37z3x.fsf@tucsk.pomaz.szeredi.hu>
- <17416.1315240659@redhat.com>
- <87hb4q9b3r.fsf@tucsk.pomaz.szeredi.hu>
- <1315281208.3210.26.camel@perseus.themaw.net>
- <87mxeixfaq.fsf@tucsk.pomaz.szeredi.hu>
- <1315319903.3210.51.camel@perseus.themaw.net>
- <87ipp5y912.fsf@tucsk.pomaz.szeredi.hu>
- <1315485406.3476.9.camel@perseus.themaw.net>
- <87bouv17dc.fsf@tucsk.pomaz.szeredi.hu>
- <CA+55aFy3VN2Y-oadFUMdCaBVQtPT9Ae3fDQCw5vHfA6UvH8GiA@mail.gmail.com>
+	id S1756545Ab1IHX62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:58:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45948 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755876Ab1IHX60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:58:26 -0400
+Date: Thu, 8 Sep 2011 12:11:46 -0700
+From: Greg KH <gregkh@suse.de>
+To: Klaus Schwarzkopf <schwarzkopf@sensortherm.de>
+Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: add new usb gadget for ACM and mass storage
+Message-ID: <20110908191146.GA8552@suse.de>
+References: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFy3VN2Y-oadFUMdCaBVQtPT9Ae3fDQCw5vHfA6UvH8GiA@mail.gmail.com>
+In-Reply-To: <1315506287-31368-1-git-send-email-schwarzkopf@sensortherm.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 08, 2011 at 10:42:28AM -0700, Linus Torvalds wrote:
+On Thu, Sep 08, 2011 at 08:24:47PM +0200, Klaus Schwarzkopf wrote:
+> This driver provides two functions in one configuration:
+> a mass storage, and a CDC ACM (serial port) link.
+> Heavily based on multi.c and cdc2.c
 
-> > You say it's a step in the right direction but I don't see why. ?Either
-> > we want stat *and* lstat to both be correct and trigger the automount or
-> > we are satisfied with the incorrect but well established practice of not
-> > triggering on (l)stat.
-> >
-> > The middle ground makes no sense IMO, there's nothing gained by the
-> > differentiated behavior based on LOOKUP_FOLLOW.
-> >
-> > Can you explain why it's better if stat() tiggers automounts and gives a
-> > correct result but lstat() doesn't?
-> 
-> I have to say that this is a very cogent question.
-> 
-> The one thing I've not seen in the thread yet is a description of the
-> failure. What does the regression look like? Just "very slow 'ls' with
-> some versions of 'ls'" or what?
-> 
-> I'm inclined to apply the patch as a regression fix, but I'll let this
-> thread try to convince me for another day..
+I thought the "composite" framework make it so that drivers like this
+were no longer needed.  Or am I mistaken somehow?
 
-IIRC, that matches traditional SunOS behaviour and it actually does make
-sense; you want wildcard expansion and ls -l to be doable even when there's
-a stuck NFS server.  IOW, non-triggering lstat(2) is a matter of usability...
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+
+Do you really mean "any later version"?
+
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+These two paragraphs are not needed, and the address is a very bad idea
+to include in any file as it changes over time and I don't think you
+want to keep up with the address location of the FSF for the next 40+
+years.
+
+As an example of this, I am starting to get patches from the FSF to fix
+up old addresses, 10 years after moving their office...
+
+thanks,
+
+greg k-h
