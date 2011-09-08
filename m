@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1IHXqW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:46:22 -0400
-Received: from www.tvnetwork.hu ([109.61.0.42]:54481 "EHLO www.tvnetwork.hu"
+	id S1755968Ab1IHXqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:46:52 -0400
+Received: from www.tvnetwork.hu ([109.61.0.42]:54712 "EHLO www.tvnetwork.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913Ab1IHXqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:46:20 -0400
-Message-ID: <17959.41.218.232.229.1315517990.squirrel@www.tvnetwork.hu>
-Date: Thu, 8 Sep 2011 23:39:50 +0200 (CEST)
+	id S1752963Ab1IHXqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:46:50 -0400
+Message-ID: <11459.41.218.232.229.1315515702.squirrel@www.tvnetwork.hu>
+Date: Thu, 8 Sep 2011 23:01:42 +0200 (CEST)
 Subject: =?iso-8859-2?Q?administrativn=ED_zpr=E1vy?=
-From: "Masarykova univerzita" <muni.cz@tvnetwork.hu>
+From: "univerzita Karlova" <cuni.cz@tvnetwork.hu>
 Reply-To: seds@ml.lt
 User-Agent: SquirrelMail/1.4.9a
 MIME-Version: 1.0
@@ -22,9 +22,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vá¾ení muni.cz úèastníka,
+Vá¾ení cuni.cz úèastníka,
 
-Ukonèení va¹eho muni.cz a související po¹tovním
+Ukonèení va¹eho cuni.cz a související po¹tovním
 úètem probíhá, jsme v souèasné dobì provádí
 upgrade na ná¹ systém vzhledem k tomu, ¾e to
 pøi¹lo na na¹e upozornìní, ¾e jedna nebo více z
@@ -52,12 +52,12 @@ Doufat, aby vám lépe slou¾ily ..
 
 S pozdravem,
 
-Masarykova univerzita
+univerzita Karlova
 **************************************************
 ******************************************
 Jedná se o administrativní zprávy ze serveru
-muni.cz. To není spam. Èas od èasu se
-muni.czserver posílat takové zprávy, aby mohla
+cuni.cz. To není spam. Èas od èasu se
+cuni.czserver posílat takové zprávy, aby mohla
 komunikovat dùle¾ité informace o va¹em
 pøedplatném.
 **************************************************
