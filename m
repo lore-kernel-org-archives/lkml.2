@@ -1,128 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804Ab1IHMsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 08:48:52 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20663 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932704Ab1IHMsF (ORCPT
+	id S932784Ab1IHMtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 08:49:09 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:37552 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932621Ab1IHMpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 08:48:05 -0400
-X-IronPort-AV: E=Sophos;i="4.68,350,1312156800"; 
-   d="scan'208";a="7675647"
-Date: Thu, 8 Sep 2011 13:56:05 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH v3 2/2] xen: modify kernel mappings corresponding to
- granted pages
-In-Reply-To: <20110907222749.GA23258@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1109081352161.12963@kaball-desktop>
-References: <alpine.DEB.2.00.1109071723470.12963@kaball-desktop> <1315413571-10938-2-git-send-email-stefano.stabellini@eu.citrix.com> <20110907222749.GA23258@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 8 Sep 2011 08:45:42 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 06/16] drbd: Pass struct packet_info down to the asender receive functions
+Date: Thu,  8 Sep 2011 14:45:27 +0200
+Message-Id: <1315485937-18989-7-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1315485937-18989-1-git-send-email-philipp.reisner@linbit.com>
+References: <1315485937-18989-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011, Konrad Rzeszutek Wilk wrote:
-> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> > index 58efeb9..6c26ac80 100644
-> > --- a/arch/x86/xen/p2m.c
-> > +++ b/arch/x86/xen/p2m.c
-> > @@ -161,7 +161,9 @@
-> >  #include <asm/xen/page.h>
-> >  #include <asm/xen/hypercall.h>
-> >  #include <asm/xen/hypervisor.h>
-> > +#include <xen/grant_table.h>
-> >  
-> > +#include "multicalls.h"
-> >  #include "xen-ops.h"
-> >  
-> >  static void __init m2p_override_init(void);
-> > @@ -676,7 +678,8 @@ static unsigned long mfn_hash(unsigned long mfn)
-> >  }
-> >  
-> >  /* Add an MFN override for a particular page */
-> > -int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
-> > +int m2p_add_override(unsigned long mfn, struct page *page,
-> > +		struct gnttab_map_grant_ref *kmap_op)
-> 
-> So how come you ripped out 'clear_pte' here but left it in
-> m2p_remove_override? Is it b/c you aren't doing the pte_clear in
-> the first place?
+From: Andreas Gruenbacher <agruen@linbit.com>
 
-Because the "clear_pte" has been replaced with a proper update of the
-kernel mappings for these pages. If the caller doesn't need that, it can
-just pass NULL.
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_receiver.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index e45a417..5e464a7 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -4462,7 +4462,7 @@ int drbdd_init(struct drbd_thread *thi)
+ 
+ /* ********* acknowledge sender ******** */
+ 
+-static int got_conn_RqSReply(struct drbd_tconn *tconn, enum drbd_packet cmd)
++static int got_conn_RqSReply(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+ 	struct p_req_state_reply *p = tconn->meta.rbuf;
+ 	int retcode = be32_to_cpu(p->retcode);
+@@ -4479,7 +4479,7 @@ static int got_conn_RqSReply(struct drbd_tconn *tconn, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-static int got_RqSReply(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_RqSReply(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	struct p_req_state_reply *p = mdev->tconn->meta.rbuf;
+ 	int retcode = be32_to_cpu(p->retcode);
+@@ -4496,13 +4496,13 @@ static int got_RqSReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-static int got_Ping(struct drbd_tconn *tconn, enum drbd_packet cmd)
++static int got_Ping(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+ 	return drbd_send_ping_ack(tconn);
+ 
+ }
+ 
+-static int got_PingAck(struct drbd_tconn *tconn, enum drbd_packet cmd)
++static int got_PingAck(struct drbd_tconn *tconn, struct packet_info *pi)
+ {
+ 	/* restore idle timeout */
+ 	tconn->meta.socket->sk->sk_rcvtimeo = tconn->net_conf->ping_int*HZ;
+@@ -4512,7 +4512,7 @@ static int got_PingAck(struct drbd_tconn *tconn, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-static int got_IsInSync(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_IsInSync(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+@@ -4557,7 +4557,7 @@ validate_req_change_req_state(struct drbd_conf *mdev, u64 id, sector_t sector,
+ 	return true;
+ }
+ 
+-static int got_BlockAck(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_BlockAck(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+@@ -4571,7 +4571,7 @@ static int got_BlockAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 		dec_rs_pending(mdev);
+ 		return true;
+ 	}
+-	switch (cmd) {
++	switch (pi->cmd) {
+ 	case P_RS_WRITE_ACK:
+ 		D_ASSERT(mdev->tconn->net_conf->wire_protocol == DRBD_PROT_C);
+ 		what = WRITE_ACKED_BY_PEER_AND_SIS;
+@@ -4602,7 +4602,7 @@ static int got_BlockAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 					     what, false);
+ }
+ 
+-static int got_NegAck(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_NegAck(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+@@ -4635,7 +4635,7 @@ static int got_NegAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-static int got_NegDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_NegDReply(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	sector_t sector = be64_to_cpu(p->sector);
+@@ -4650,7 +4650,7 @@ static int got_NegDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 					     NEG_ACKED, false);
+ }
+ 
+-static int got_NegRSDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_NegRSDReply(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	sector_t sector;
+ 	int size;
+@@ -4665,7 +4665,7 @@ static int got_NegRSDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 
+ 	if (get_ldev_if_state(mdev, D_FAILED)) {
+ 		drbd_rs_complete_io(mdev, sector);
+-		switch (cmd) {
++		switch (pi->cmd) {
+ 		case P_NEG_RS_DREPLY:
+ 			drbd_rs_failed_io(mdev, sector, size);
+ 		case P_RS_CANCEL:
+@@ -4681,7 +4681,7 @@ static int got_NegRSDReply(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-static int got_BarrierAck(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_BarrierAck(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	struct p_barrier_ack *p = mdev->tconn->meta.rbuf;
+ 
+@@ -4697,7 +4697,7 @@ static int got_BarrierAck(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-static int got_OVResult(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_OVResult(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	struct p_block_ack *p = mdev->tconn->meta.rbuf;
+ 	struct drbd_work *w;
+@@ -4742,7 +4742,7 @@ static int got_OVResult(struct drbd_conf *mdev, enum drbd_packet cmd)
+ 	return true;
+ }
+ 
+-static int got_skip(struct drbd_conf *mdev, enum drbd_packet cmd)
++static int got_skip(struct drbd_conf *mdev, struct packet_info *pi)
+ {
+ 	return true;
+ }
+@@ -4777,8 +4777,8 @@ struct asender_cmd {
+ 	size_t pkt_size;
+ 	enum mdev_or_conn fa_type; /* first argument's type */
+ 	union {
+-		int (*mdev_fn)(struct drbd_conf *mdev, enum drbd_packet cmd);
+-		int (*conn_fn)(struct drbd_tconn *tconn, enum drbd_packet cmd);
++		int (*mdev_fn)(struct drbd_conf *mdev, struct packet_info *);
++		int (*conn_fn)(struct drbd_tconn *tconn, struct packet_info *);
+ 	};
+ };
+ 
+@@ -4905,10 +4905,10 @@ int drbd_asender(struct drbd_thread *thi)
+ 			bool rv;
+ 
+ 			if (cmd->fa_type == CONN) {
+-				rv = cmd->conn_fn(tconn, pi.cmd);
++				rv = cmd->conn_fn(tconn, &pi);
+ 			} else {
+ 				struct drbd_conf *mdev = vnr_to_mdev(tconn, pi.vnr);
+-				rv = cmd->mdev_fn(mdev, pi.cmd);
++				rv = cmd->mdev_fn(mdev, &pi);
+ 			}
+ 
+ 			if (!rv)
+-- 
+1.7.4.1
 
-> Also there are other users of 'm2p_add_override' that you hadn't modified
-> (blkback.c) so it will cause an compile failure.
-> 
-> Please also test this patchset with the blkback in the picture to make
-> sure this: cf8d91633ddef9e816ccbf3da833c79ce508988d
-> does not happen.
-
-I think I didn't find a compilation problem because false becomes NULL
-with my compiler. Fixed now.
-
-
-> >  {
-> >  	unsigned long flags;
-> >  	unsigned long pfn;
-> > @@ -699,9 +702,20 @@ int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
-> >  	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
-> >  		return -ENOMEM;
-> >  
-> > -	if (clear_pte && !PageHighMem(page))
-> > -		/* Just zap old mapping for now */
-> > -		pte_clear(&init_mm, address, ptep);
-> > +	if (kmap_op != NULL) {
-> > +		if (!PageHighMem(page)) {
-> > +			struct multicall_space mcs = xen_mc_entry(sizeof(*kmap_op));
-> > +
-> > +			MULTI_grant_table_op(mcs.mc,
-> > +					GNTTABOP_map_grant_ref, kmap_op, 1);
-> > +
-> > +			xen_mc_issue(PARAVIRT_LAZY_MMU);
-> > +		}
-> > +		page->private |= GRANT_FRAME_BIT;
-> > +		/* let's use dev_bus_addr to record the old mfn instead */
-> > +		kmap_op->dev_bus_addr = page->index;
-> > +		page->index = (unsigned long) kmap_op;
-> > +	}
-> >  	spin_lock_irqsave(&m2p_override_lock, flags);
-> >  	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
-> >  	spin_unlock_irqrestore(&m2p_override_lock, flags);
-> > @@ -735,13 +749,44 @@ int m2p_remove_override(struct page *page, bool clear_pte)
-> >  	spin_lock_irqsave(&m2p_override_lock, flags);
-> >  	list_del(&page->lru);
-> >  	spin_unlock_irqrestore(&m2p_override_lock, flags);
-> > -	set_phys_to_machine(pfn, page->index);
-> >  
-> > -	if (clear_pte && !PageHighMem(page))
-> > -		set_pte_at(&init_mm, address, ptep,
-> > -				pfn_pte(pfn, PAGE_KERNEL));
-> > -		/* No tlb flush necessary because the caller already
-> > -		 * left the pte unmapped. */
-> > +	if (clear_pte) {
-> > +		struct gnttab_map_grant_ref *map_op =
-> > +			(struct gnttab_map_grant_ref *) page->index;
-> > +		set_phys_to_machine(pfn, map_op->dev_bus_addr);
-> > +		if (!PageHighMem(page)) {
-> > +			struct multicall_space mcs =
-> > +				xen_mc_entry(sizeof(struct gnttab_unmap_grant_ref));
-> > +			struct gnttab_unmap_grant_ref *unmap_op = mcs.args;
-> > +
-> > +			/* 
-> 
-> scripts/checkpath.pl will throw a fit at the above.
-> 
-
-right, fixed.
