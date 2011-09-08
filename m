@@ -1,124 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757737Ab1IHBNu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 21:13:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38696 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670Ab1IHBNs convert rfc822-to-8bit (ORCPT
+	id S1757731Ab1IHBQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 21:16:53 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:65105 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757688Ab1IHBQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 21:13:48 -0400
+	Wed, 7 Sep 2011 21:16:50 -0400
+Date: Thu, 8 Sep 2011 10:16:40 +0900
+From: Tejun Heo <htejun@gmail.com>
+To: Bruce Stenning <b.stenning@indigovision.com>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: sata_mv port lockup on hotplug (kernel 2.6.38.2)
+Message-ID: <20110908011640.GA5381@mtj.dyndns.org>
+References: <4DF4F30B.70702@teksavvy.com>
+ <20110613104856.GC16021@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D984D03@gretna.indigovision.com>
+ <20110902011305.GE2752@htj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8D9854F7@gretna.indigovision.com>
+ <20110906034544.GB18425@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8DA54B00@gretna.indigovision.com>
+ <20110906163355.GG18425@mtj.dyndns.org>
+ <20110906164221.GH18425@mtj.dyndns.org>
+ <C1438B59050E1B4C9482FF3266AD6BA32D8DA54C99@gretna.indigovision.com>
 MIME-Version: 1.0
-In-Reply-To: <1315406503-7883-4-git-send-email-pbonzini@redhat.com>
-References: <1315406503-7883-1-git-send-email-pbonzini@redhat.com>
-	<1315406503-7883-4-git-send-email-pbonzini@redhat.com>
-Date: Wed, 7 Sep 2011 21:13:47 -0400
-Message-ID: <CAECXXi5Wj=y8KPYr570N2Smtrj7u-jr5u-zdE=euDiL6Ka=a8g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] nbd: map DISCARD requests to a new nbd request type
-From: Paul Clements <paul.clements@us.sios.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C1438B59050E1B4C9482FF3266AD6BA32D8DA54C99@gretna.indigovision.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 7, 2011 at 10:41 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> When the feature is enabled, set QUEUE_FLAG_DISCARD and transmit those as
-> NBD_CMD_TRIM requests.
->
-> I used "trim" instead of "discard" to avoid confusion with the existing
-> NBD_CMD_DISC that is used for disconnect.
+Hello,
 
-This patchset looks good to me.
+On Wed, Sep 07, 2011 at 01:09:10PM +0100, Bruce Stenning wrote:
+> Sorry for sending so many emails yesterday; I blame the dental anaesthetic
+> I received in the morning for being so jumpy on the send button ;-)
 
---
-Paul
+Oh the fun. :)
 
-> Cc: Paul Clements <Paul.Clements@steeleye.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/block/nbd.c |   15 ++++++++++++---
->  include/linux/nbd.h |    4 +++-
->  2 files changed, 15 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-> index c4fe9c8..71ebaab 100644
-> --- a/drivers/block/nbd.c
-> +++ b/drivers/block/nbd.c
-> @@ -98,6 +98,7 @@ static const char *nbdcmd_to_ascii(int cmd)
->        case  NBD_CMD_READ: return "read";
->        case NBD_CMD_WRITE: return "write";
->        case  NBD_CMD_DISC: return "disconnect";
-> +       case  NBD_CMD_TRIM: return "trim (discard)";
->        }
->        return "invalid";
->  }
-> @@ -454,9 +455,13 @@ static void nbd_handle_req(struct nbd_device *lo, struct request *req)
->        if (req->cmd_type != REQ_TYPE_FS)
->                goto error_out;
->
-> -       if (rq_data_dir(req) == WRITE)
-> -               nbd_cmd(req) = NBD_CMD_WRITE;
-> -       else
-> +       if (rq_data_dir(req) == WRITE) {
-> +               if ((req->cmd_flags & REQ_DISCARD)) {
-> +                       WARN_ON(!(lo->flags & NBD_FEATURE_TRIM));
-> +                       nbd_cmd(req) = NBD_CMD_TRIM;
-> +               } else
-> +                       nbd_cmd(req) = NBD_CMD_WRITE;
-> +       } else
->                nbd_cmd(req) = NBD_CMD_READ;
->
->        req->errors = 0;
-> @@ -659,6 +664,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
->                        return -EINVAL;
->
->                mutex_unlock(&lo->tx_lock);
-> +               if (lo->flags & NBD_FEATURE_TRIM)
-> +                       queue_flag_set_unlocked(QUEUE_FLAG_DISCARD,
-> +                                               lo->disk->queue);
->
->                thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
->                if (IS_ERR(thread)) {
-> @@ -677,6 +685,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
->                lo->file = NULL;
->                nbd_clear_que(lo);
->                printk(KERN_WARNING "%s: queue cleared\n", lo->disk->disk_name);
-> +               queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, lo->disk->queue);
->                if (file)
->                        fput(file);
->                lo->flags = 0;
-> @@ -796,6 +805,9 @@ static int __init nbd_init(void)
->                 * Tell the block layer that we are not a rotational device
->                 */
->                queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
-> +               disk->queue->limits.discard_granularity = 512;
-> +               disk->queue->limits.max_discard_sectors = UINT_MAX;
-> +               disk->queue->limits.discard_zeroes_data = 0;
->        }
->
->        if (register_blkdev(NBD_MAJOR, "nbd")) {
-> diff --git a/include/linux/nbd.h b/include/linux/nbd.h
-> index 926f19d..7048463 100644
-> --- a/include/linux/nbd.h
-> +++ b/include/linux/nbd.h
-> @@ -33,11 +33,13 @@
->  * not want any overlap.  Bits 32-63 are reserved because they
->  * are inaccessible on 32-bit platforms.  */
->  #define NBD_FEATURE_RESERVED   0xFFFFFFFF00000003LL
-> +#define NBD_FEATURE_TRIM       (1 << 2)
->
->  enum {
->        NBD_CMD_READ = 0,
->        NBD_CMD_WRITE = 1,
-> -       NBD_CMD_DISC = 2
-> +       NBD_CMD_DISC = 2,
-> +       NBD_CMD_TRIM = 3
->  };
->
->  #define nbd_cmd(req) ((req)->cmd[0])
-> --
-> 1.7.6
->
->
+> I can certainly try this.  Could you confirm whether my thoughts about a race
+> between the scsi_eh thread and the wake-up are plausible?  I backtracked
+> yesterday because I thought the scsi_eh thread would get rescheduled naturally,
+> not realising that when the task state is TASK_INTERRUPTIBLE schedule() takes
+> the task off the run queue (so it needs to be explicitly woken.)
+> 
+> Here is my thinking again:
+> 
+> shost->host_eh_scheduled is read here in scsi_error_handler:
+> 
+>         set_current_state(TASK_INTERRUPTIBLE);
+>         while (!kthread_should_stop()) {
+>                 if ((shost->host_failed == 0 && shost->host_eh_scheduled == 0) ||
+> 
+> There's no locking in scsi_error_handler (though functions it calls probably
+> claim locks.)
+> 
+> When scheduling an EH, scsi_schedule_eh takes the shost->host_lock, increments
+> shost->host_eh_scheduled, and then wakes the EH thread.  If this happens
+> between the scsi_eh thread reading host_eh_scheduled and sending itself back
+> to sleep (when the scsi_eh thread's state is TASK_INTERRUPTIBLE) nothing will
+> wake up the thread again and host_eh_scheduled will not get inspected.
+> host_eh_scheduled is stuck at 1 with the scsi_eh thread asleep, and it won't
+> get woken again because the ata port has been frozen and irqs are masked off.
+
+I don't think there's a race condition there.  set_current_state()
+implies memory barrier and wake_up_process() implies wmb().  host_eh
+either sees the inrecremented eh_scheduled count or TASK_RUNNING set
+by wake_up_process(), so it can't miss an event.
+
+Thanks.
+
+-- 
+tejun
