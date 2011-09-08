@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab1IHJps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 05:45:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14192 "EHLO mga01.intel.com"
+	id S1756533Ab1IHJyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 05:54:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26136 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758112Ab1IHJpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 05:45:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,349,1312182000"; 
-   d="scan'208";a="49221165"
-From: "Nallasellan, Singaravelan" <singaravelan.nallasellan@intel.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: Arjan van de Ven <arjan@infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 8 Sep 2011 15:15:38 +0530
-Subject: RE: Player Thread is not woken after period elapsed
-Thread-Topic: Player Thread is not woken after period elapsed
-Thread-Index: Acxt+SgsISm0VVLbQEyeekx+YIYpYwAEsP7g
-Message-ID: <3CA6C6D9F70D314CA34352990B57DA1507C42C3CA5@bgsmsx502.gar.corp.intel.com>
-References: <3CA6C6D9F70D314CA34352990B57DA1507C420F147@bgsmsx502.gar.corp.intel.com>
- <20110905105253.2787b91f@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C420F15C@bgsmsx502.gar.corp.intel.com>
- <20110905112225.72b46ac9@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C4275D58@bgsmsx502.gar.corp.intel.com>
- <20110906200614.57a99d3d@infradead.org>
- <3CA6C6D9F70D314CA34352990B57DA1507C42767FA@bgsmsx502.gar.corp.intel.com>
- <20110908021327.GA8890@zhy> <20110908072948.GB11124@zhy>
-In-Reply-To: <20110908072948.GB11124@zhy>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1751498Ab1IHJyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 05:54:11 -0400
+Date: Thu, 8 Sep 2011 11:53:49 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ying Han <yinghan@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: close race between charge and putback
+Message-ID: <20110908095349.GC1316@redhat.com>
+References: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
+ <20110908173042.4a6f8ac0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110908085404.GA1316@redhat.com>
+ <20110908181901.1d488d73.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110908093316.GB1316@redhat.com>
+ <20110908184221.feb2dab6.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110908184221.feb2dab6.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p889jtYZ025041
 
-> > > Further investigation of this issue shows that the thread is in running state
-> and it is not scheduled. I am not sure how I will go about debugging this issue.
-> Any pointer would help.
-> >
-> > Could you confirm if [commit f26f9af Sched: fix skip_clock_update
-> > optimization] residents in your kernel?
-I applied this patch manually. I still see the issue.
+On Thu, Sep 08, 2011 at 06:42:21PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 8 Sep 2011 11:33:16 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
 > 
-> And commit da7a735e51f9622eb3e1672594d4a41da01d7e4f
-> http://marc.info/?l=linux-kernel&m=129527509622696&w=2
-This is already applied.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> > On Thu, Sep 08, 2011 at 06:19:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 8 Sep 2011 10:54:04 +0200
+> > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > 
+> > > > On Thu, Sep 08, 2011 at 05:30:42PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > On Thu,  8 Sep 2011 09:40:22 +0200
+> > > > > Johannes Weiner <jweiner@redhat.com> wrote:
+> > > > > 
+> > > > > > There is a potential race between a thread charging a page and another
+> > > > > > thread putting it back to the LRU list:
+> > > > > > 
+> > > > > > charge:                         putback:
+> > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > > > > > 
+> > > > > 
+> > > > > I assumed that all pages are charged before added to LRU.
+> > > > > (i.e. event happens in charge->lru_lock->putback order.)
+> > > > > 
+> > > > > But hmm, this assumption may be bad for maintainance.
+> > > > > Do you find a code which adds pages to LRU before charge ?
+> > > > > 
+> > > > > Hmm, if there are codes which recharge the page to other memcg,
+> > > > > it will cause bug and my assumption may be harmful.
+> > > > 
+> > > > Swap slots are read optimistically into swapcache and put to the LRU,
+> > > > then charged upon fault.  
+> > > 
+> > > Yes, then swap charge removes page from LRU before charge.
+> > > IIUC, it needed to do so because page->mem_cgroup may be replaced.
+> > 
+> > But only from the memcg LRU.  It's still on the global per-zone LRU,
+> > so reclaim could isolate/putback it during the charge.  And then
+> > 
+> > > > > > charge:                         putback:
+> > > > > > SetPageCgroupUsed               SetPageLRU
+> > > > > > PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+> > 
+> > applies.
+> 
+> Hmm, in this case, I thought memcg puts back the page to its LRU by itself
+> under lru_loc after charge and the race was hidden.
+
+But it locklessly checks PageLRU and bails if it's cleared and that is
+the problem: it's not guaranteed that PageLRU is observed on the
+charging CPU when the putback side bailed because of PageCgroupUsed.
+
+My barrier puts this in order and makes sure one of the two succeeds.
