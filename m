@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab1IHXxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:53:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56905 "EHLO
+	id S1756607Ab1IHXxS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:53:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42513 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756399Ab1IHXxJ (ORCPT
+	by vger.kernel.org with ESMTP id S1756556Ab1IHXxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:53:09 -0400
-Date: Thu, 8 Sep 2011 16:52:57 -0700
+	Thu, 8 Sep 2011 19:53:12 -0400
+Date: Thu, 8 Sep 2011 16:52:47 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-Cc: davej@codemonkey.org.uk, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] cpufreq: pcc-cpufreq: sanity check to prevent a NULL
- pointer dereference
-Message-Id: <20110908165257.7b613baf.akpm@linux-foundation.org>
-In-Reply-To: <20110831200910.27633.20372.sendpatchset@nchumbalkar.americas.cpqcorp.net>
-References: <20110831200910.27633.20372.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+To: Donggeun Kim <dg77.kim@samsung.com>
+Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com
+Subject: Re: [PATCH] rtc: rtc-s3c: fix no occurrence of alarm interrupt
+Message-Id: <20110908165247.32902b28.akpm@linux-foundation.org>
+In-Reply-To: <1314786110-1297-1-git-send-email-dg77.kim@samsung.com>
+References: <1314786110-1297-1-git-send-email-dg77.kim@samsung.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,40 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Aug 2011 20:08:45 +0000 (UTC)
-Naga Chumbalkar <nagananda.chumbalkar@hp.com> wrote:
+On Wed, 31 Aug 2011 19:21:50 +0900
+Donggeun Kim <dg77.kim@samsung.com> wrote:
 
-> If, for whatever reason, "pr" ends up being NULL we would end up in a PANIC 
-> as seen below:
+> The driver does not generate alarm interrupt
+> even though time for alarm is set.
+> This results from disabling rtc_clk after setting time for alarm.
+> To generate alarm interrupt,
+> the driver should maintain enabled state for rtc_clk
+> until alarm interrupt occurs.
+> This patch allows to generate alarm interrupt.
 > 
-> Loading CPUFreq modules[  437.661360] BUG: unable to handle kernel NULL pointer
-> dereference at (null)
-> IP: [<ffffffffa0434314>] pcc_cpufreq_cpu_init+0x74/0x220 [pcc_cpufreq]
-> 
-> It's better to prevent the PANIC by failing the driver, and allowing the system to boot.
-> 
-> Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-> Cc: stable@kernel.org
-> 
-> diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
-> index 7b0603e..cdc02ac 100644
-> --- a/drivers/cpufreq/pcc-cpufreq.c
-> +++ b/drivers/cpufreq/pcc-cpufreq.c
-> @@ -261,6 +261,9 @@ static int pcc_get_offset(int cpu)
->  	pr = per_cpu(processors, cpu);
->  	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
->  
-> +	if (!pr)
-> +		return -ENODEV;
+> ...
+>
+> +static DEFINE_SPINLOCK(s3c_rtc_alarm_clk_lock);
 > +
->  	status = acpi_evaluate_object(pr->handle, "PCCP", NULL, &buffer);
->  	if (ACPI_FAILURE(status))
->  		return -ENODEV;
+> +static void s3c_rtc_alarm_clk_enable(bool enable)
+> +{
+> +	static bool alarm_clk_enabled;
+> +	unsigned long irq_flags;
+> +
+> +	spin_lock_irqsave(&s3c_rtc_alarm_clk_lock, irq_flags);
+> +	if (enable) {
+> +		if (!alarm_clk_enabled) {
+> +			clk_enable(rtc_clk);
+> +			alarm_clk_enabled = true;
+> +		}
+> +	} else {
+> +		if (alarm_clk_enabled) {
+> +			clk_disable(rtc_clk);
+> +			alarm_clk_enabled = false;
+> +		}
+> +	}
+> +	spin_unlock_irqrestore(&s3c_rtc_alarm_clk_lock, irq_flags);
+> +}
 
-hm, from reading drivers/acpi/processor_driver.c it appears that
-per_cpu(processors, n)==NULL is an expected and valid state.  Heaven
-knows what that state actually *means* - apparently this is a secret.
+s3c_rtc_alarm_clk_lock is only used within s3c_rtc_alarm_clk_enable(),
+so we can reduce its scope:
 
-I assume that you've hit this crash in real live code, hence your
-suggestion of a -stable backport?
+--- a/drivers/rtc/rtc-s3c.c~rtc-rtc-s3c-fix-no-occurrence-of-alarm-interrupt-fix
++++ a/drivers/rtc/rtc-s3c.c
+@@ -50,10 +50,10 @@ static bool wake_en;
+ static enum s3c_cpu_type s3c_rtc_cpu_type;
+ 
+ static DEFINE_SPINLOCK(s3c_rtc_pie_lock);
+-static DEFINE_SPINLOCK(s3c_rtc_alarm_clk_lock);
+ 
+ static void s3c_rtc_alarm_clk_enable(bool enable)
+ {
++	static DEFINE_SPINLOCK(s3c_rtc_alarm_clk_lock);
+ 	static bool alarm_clk_enabled;
+ 	unsigned long irq_flags;
+ 
+_
 
