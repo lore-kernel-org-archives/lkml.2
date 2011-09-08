@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab1IHHkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 03:40:47 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:37667 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209Ab1IHHkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 03:40:45 -0400
-From: Johannes Weiner <jweiner@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ying Han <yinghan@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcg: close race between charge and putback
-Date: Thu,  8 Sep 2011 09:40:22 +0200
-Message-Id: <1315467622-9520-1-git-send-email-jweiner@redhat.com>
+	id S932248Ab1IHHpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 03:45:12 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65133 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932140Ab1IHHpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 03:45:10 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paul Clements <Paul.Clements@steeleye.com>, <nbd-general@lists.sf.net>
+Subject: [PATCH v2 0/2] nbd: add support for DISCARD
+Date: Thu,  8 Sep 2011 09:44:56 +0200
+Message-Id: <1315467898-23984-1-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a potential race between a thread charging a page and another
-thread putting it back to the LRU list:
+This patch series adds support for a DISCARD command in the nbd
+protocol.  qemu-nbd will be the first user of the feature.
 
-charge:                         putback:
-SetPageCgroupUsed               SetPageLRU
-PageLRU && add to memcg LRU     PageCgroupUsed && add to memcg LRU
+Thanks!
 
-The order of setting one flag and checking the other is crucial,
-otherwise the charge may observe !PageLRU while the putback observes
-!PageCgroupUsed and the page is not linked to the memcg LRU at all.
+v1->v2:
+        Change ioctl name to NBD_SET_FLAGS and allow passing all
+        flags in the network protocol.
 
-Global memory pressure may fix this by trying to isolate and putback
-the page for reclaim, where that putback would link it to the memcg
-LRU again.  Without that, the memory cgroup is undeletable due to a
-charge whose physical page can not be found and moved out.
+Cc: Paul Clements <Paul.Clements@steeleye.com>
+Cc: <nbd-general@lists.sf.net>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
----
- mm/memcontrol.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
+Paolo Bonzini (2):
+  nbd: add support for feature negotiation
+  nbd: map DISCARD requests to a new nbd request type
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index d63dfb2..17708e1 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -990,6 +990,16 @@ void mem_cgroup_add_lru_list(struct page *page, enum lru_list lru)
- 		return;
- 	pc = lookup_page_cgroup(page);
- 	VM_BUG_ON(PageCgroupAcctLRU(pc));
-+	/*
-+	 * putback:				charge:
-+	 * SetPageLRU				SetPageCgroupUsed
-+	 * smp_mb				smp_mb
-+	 * PageCgroupUsed && add to memcg LRU	PageLRU && add to memcg LRU
-+	 *
-+	 * Ensure that one of the two sides adds the page to the memcg
-+	 * LRU during a race.
-+	 */
-+	smp_mb();
- 	if (!PageCgroupUsed(pc))
- 		return;
- 	/* Ensure pc->mem_cgroup is visible after reading PCG_USED. */
-@@ -1041,7 +1051,16 @@ static void mem_cgroup_lru_add_after_commit(struct page *page)
- 	unsigned long flags;
- 	struct zone *zone = page_zone(page);
- 	struct page_cgroup *pc = lookup_page_cgroup(page);
--
-+	/*
-+	 * putback:				charge:
-+	 * SetPageLRU				SetPageCgroupUsed
-+	 * smp_mb				smp_mb
-+	 * PageCgroupUsed && add to memcg LRU	PageLRU && add to memcg LRU
-+	 *
-+	 * Ensure that one of the two sides adds the page to the memcg
-+	 * LRU during a race.
-+	 */
-+	smp_mb();
- 	/* taking care of that the page is added to LRU while we commit it */
- 	if (likely(!PageLRU(page)))
- 		return;
+ drivers/block/nbd.c |   10 ++++++++++++++++++++++--
+ include/linux/nbd.h |   28 +++++++++++++++++---------------
+ 2 files changed, 39 insertions(+), 17 deletions(-)
+
 -- 
 1.7.6
 
