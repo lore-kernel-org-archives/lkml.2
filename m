@@ -1,219 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab1IHK14 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 06:27:56 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55302 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769Ab1IHK1z (ORCPT
+	id S1758216Ab1IHK3F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 06:29:05 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37224 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769Ab1IHK3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 06:27:55 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>, agruen@linbit.com
-Cc: agruen@kernel.org, akpm@linux-foundation.org, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V6 14/26] richacl: Permission mapping functions
-In-Reply-To: <20110907212400.GH8074@fieldses.org>
-References: <1315243548-18664-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1315243548-18664-15-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110907212400.GH8074@fieldses.org>
-User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Thu, 08 Sep 2011 15:57:37 +0530
-Message-ID: <87aaaf5nxi.fsf@skywalker.in.ibm.com>
+	Thu, 8 Sep 2011 06:29:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <4E683B74.5000701@st.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com>
+	<20110814083618.GE4986@n2100.arm.linux.org.uk>
+	<4E4CCF7B.8060704@st.com>
+	<20110821083306.GA12028@n2100.arm.linux.org.uk>
+	<4E532B19.6000103@st.com>
+	<4E5715CE.2070806@st.com>
+	<CACRpkdapSvW=eMSoXTOOA2GyhfBLzq2OuyQcDctPxsnVzvr-4g@mail.gmail.com>
+	<4E575E75.40603@st.com>
+	<4E5F594D.10203@st.com>
+	<438BB0150E931F4B9CE701519A4463010871804A4C@bgsmsx502.gar.corp.intel.com>
+	<CAKnu2Mp3Ui7jZS2kjJykjuzcTzJhiAkoaVxZ2+tQX0banGh6mw@mail.gmail.com>
+	<4E683B74.5000701@st.com>
+Date: Thu, 8 Sep 2011 12:29:01 +0200
+Message-ID: <CACRpkdaqTYK5TJL2u+aeOfnzhdtdjxZhyu661eGKrNBOXTUTeA@mail.gmail.com>
+Subject: Re: [PATCH 16/18] dmaengine/amba-pl08x: Add support for sg len
+ greater than one for slave transfers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Sep 2011 17:24:00 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> On Mon, Sep 05, 2011 at 10:55:36PM +0530, Aneesh Kumar K.V wrote:
-> > From: Andreas Gruenbacher <agruen@kernel.org>
-> > 
-> > We need to map from POSIX permissions to NFSv4 permissions when a
-> > chmod() is done, from NFSv4 permissions to POSIX permissions when an acl
-> > is set (which implicitly sets the file permission bits), and from the
-> > MAY_READ/MAY_WRITE/MAY_EXEC/MAY_APPEND flags to NFSv4 permissions when
-> > doing an access check in a richacl.
-> > 
-> > Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > ---
-> >  fs/richacl_base.c       |  118 +++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/richacl.h |   46 ++++++++++++++++++
-> >  2 files changed, 164 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/richacl_base.c b/fs/richacl_base.c
-> > index 3536626..d55b436 100644
-> > --- a/fs/richacl_base.c
-> > +++ b/fs/richacl_base.c
-> > @@ -69,6 +69,124 @@ richacl_clone(const struct richacl *acl)
-> >  }
-> >  
-> >  /**
-> > + * richacl_mask_to_mode  -  compute the file permission bits which correspond to @mask
-> > + * @mask:	%ACE4_* permission mask
-> > + *
-> > + * See richacl_masks_to_mode().
-> > + */
-> > +static int
-> > +richacl_mask_to_mode(unsigned int mask)
-> > +{
-> > +	int mode = 0;
-> > +
-> > +	if (mask & ACE4_POSIX_MODE_READ)
-> > +		mode |= MAY_READ;
-> > +	if (mask & ACE4_POSIX_MODE_WRITE)
-> > +		mode |= MAY_WRITE;
-> > +	if (mask & ACE4_POSIX_MODE_EXEC)
-> > +		mode |= MAY_EXEC;
-> > +
-> > +	return mode;
-> > +}
-> > +
-> > +/**
-> > + * richacl_masks_to_mode  -  compute the file permission bits from the file masks
-> > + *
-> > + * When setting a richacl, we set the file permission bits to indicate maximum
-> > + * permissions: for example, we set the Write permission when a mask contains
-> > + * ACE4_APPEND_DATA even if it does not also contain ACE4_WRITE_DATA.
-> > + *
-> > + * Permissions which are not in ACE4_POSIX_MODE_READ, ACE4_POSIX_MODE_WRITE, or
-> > + * ACE4_POSIX_MODE_EXEC cannot be represented in the file permission bits.
-> > + * Such permissions can still be effective, but not for new files or after a
-> > + * chmod(), and only if they were set explicitly, for example, by setting a
-> > + * richacl.
-> > + */
-> > +int
-> > +richacl_masks_to_mode(const struct richacl *acl)
-> > +{
-> > +	return richacl_mask_to_mode(acl->a_owner_mask) << 6 |
-> > +	       richacl_mask_to_mode(acl->a_group_mask) << 3 |
-> > +	       richacl_mask_to_mode(acl->a_other_mask);
-> > +}
-> > +EXPORT_SYMBOL_GPL(richacl_masks_to_mode);
-> > +
-> > +/**
-> > + * richacl_mode_to_mask  - compute a file mask from the lowest three mode bits
-> > + *
-> > + * When the file permission bits of a file are set with chmod(), this specifies
-> > + * the maximum permissions that processes will get.  All permissions beyond
-> > + * that will be removed from the file masks, and become ineffective.
-> > + *
-> > + * We also add in the permissions which are always allowed no matter what the
-> > + * acl says.
-> > + */
-> > +unsigned int
-> > +richacl_mode_to_mask(mode_t mode)
-> > +{
-> > +	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
-> > +
-> > +	if (mode & MAY_READ)
-> > +		mask |= ACE4_POSIX_MODE_READ;
-> > +	if (mode & MAY_WRITE)
-> > +		mask |= ACE4_POSIX_MODE_WRITE;
-> > +	if (mode & MAY_EXEC)
-> > +		mask |= ACE4_POSIX_MODE_EXEC;
-> > +
-> > +	return mask;
-> > +}
-> > +
-> > +/**
-> > + * richacl_want_to_mask  - convert the iop->permission want argument to a mask
-> > + * @want:	@want argument of the permission inode operation
-> > + *
-> > + * When checking for append, @want is (MAY_WRITE | MAY_APPEND).
-> > + *
-> > + * Richacls use the iop->may_create and iop->may_delete hooks which are
-> > + * used for checking if creating and deleting files is allowed.  These hooks do
-> > + * not use richacl_want_to_mask(), so we do not have to deal with mapping
-> > + * MAY_WRITE to ACE4_ADD_FILE, ACE4_ADD_SUBDIRECTORY, and ACE4_DELETE_CHILD
-> > + * here.
-> > + */
-> > +unsigned int
-> > +richacl_want_to_mask(int want)
-> > +{
-> > +	unsigned int mask = 0;
-> > +
-> > +	if (want & MAY_READ)
-> > +		mask |= ACE4_READ_DATA;
-> > +	if (want & (MAY_APPEND |
-> > +		    MAY_CREATE_FILE | MAY_CREATE_DIR |
-> > +		    MAY_DELETE_CHILD | MAY_DELETE_SELF |
-> > +		    MAY_TAKE_OWNERSHIP | MAY_CHMOD | MAY_SET_TIMES)) {
-> > +		if (want & MAY_APPEND)
-> > +			mask |= ACE4_APPEND_DATA;
-> > +		else if (want & MAY_DELETE_SELF)
-> > +			mask |= ACE4_DELETE;
-> > +		else if (want & MAY_TAKE_OWNERSHIP)
-> > +			mask |= ACE4_WRITE_OWNER;
-> > +		else if (want & MAY_CHMOD)
-> > +			mask |= ACE4_WRITE_ACL;
-> > +		else if (want & MAY_SET_TIMES)
-> > +			mask |= ACE4_WRITE_ATTRIBUTES;
-> > +		else {
-> > +			if (want & MAY_CREATE_FILE)
-> > +				mask |= ACE4_ADD_FILE;
-> > +			if (want & MAY_CREATE_DIR)
-> > +				mask |= ACE4_ADD_SUBDIRECTORY;
-> > +			if (want & MAY_DELETE_CHILD)
-> > +				mask |= ACE4_DELETE_CHILD;
-> > +		}
-> 
-> Possibly dumb question: why isn't this whole function a simple series of
-> if's, one for each MAY_ bit?
-> 
-> I guess you're using knowledge about the callers to know that, for
-> example, no one will ask for MAY_APPEND and MAY_TAKE_OWNERSHIP at the
-> same time?
-> 
-> And adding that big "if (want & (MAY_APPEND | .. | MAY_SET_TIMES))" to
-> let you skip over a bunch of checks in the common case?
-> 
-> Does this help measurably?  It seems complicated and, to the extent it
-> makes assumptions about the callers, possibly fragile with respect to
-> future changes.
-> 
+On Thu, Sep 8, 2011 at 5:50 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
 
-Not the complete function. But I guess we can do the below change. 
-We still want to keep  MAY_WRITE check separate, because VFS do add
-MAY_WRITE request to different type of request other than write.
+> If i am getting this clearly, the concern is "why to queue separate transfers for
+> individual sg's? Better would be to prepare the complete list at once and
+> start the transfer, so that DMA stops only after finishing all sg's
+> passed from user." Is this what you are pointing at?
 
-Andreas,
+Yes.
 
-Do you see any issue in doing below ?
+> If yes, then the same is done in this patch too. An array for llis is allocated at
+> the start, then for each sg i prepare lli list from this array. Last lli from one sg
+> is followed by first lli from next sg. And so i get a continuous chain of llis.
 
-richacl_want_to_mask(int want)
-{
-	unsigned int mask = 0;
+OK so I guess I was lost in the code ...
 
-	if (want & MAY_READ)
-		mask |= ACE4_READ_DATA;
-	if (want & MAY_DELETE_SELF)
-		mask |= ACE4_DELETE;
-	if (want & MAY_TAKE_OWNERSHIP)
-		mask |= ACE4_WRITE_OWNER;
-	if (want & MAY_CHMOD)
-		mask |= ACE4_WRITE_ACL;
-	if (want & MAY_SET_TIMES)
-		mask |= ACE4_WRITE_ATTRIBUTES;
-	if (want & MAY_EXEC)
-		mask |= ACE4_EXECUTE;
-	/*
-	 * differentiate MAY_WRITE from these request
-	 */
-	if (want & (MAY_APPEND |
-		    MAY_CREATE_FILE | MAY_CREATE_DIR |
-		    MAY_DELETE_CHILD)) {
-		if (want & MAY_APPEND)
-			mask |= ACE4_APPEND_DATA;
-		if (want & MAY_CREATE_FILE)
-			mask |= ACE4_ADD_FILE;
-		if (want & MAY_CREATE_DIR)
-			mask |= ACE4_ADD_SUBDIRECTORY;
-		if (want & MAY_DELETE_CHILD)
-			mask |= ACE4_DELETE_CHILD;
-	} else if (want & MAY_WRITE)
-		mask |= ACE4_WRITE_DATA;
-	return mask;
-}
+So this is mainy cached as txd->dsg_list so you can quickly retrieve the
+number of bytes pending in the LLI by traversing that sglist.
 
--aneesh
+This is better than what the coh901318 does, because that driver
+resorts to going into the physical LLIs themselves to retrieve this
+info.
+
+It also seems like this will play nice with Per Forlin's MMC
+speed-up patches, so that will become effective for your MMC
+usecases.
+
+Now I really like this patch.
+
+Sorry for being such a slow learner!
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
