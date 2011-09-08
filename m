@@ -1,173 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab1IHEu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 00:50:26 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:37114 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab1IHEuX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 00:50:23 -0400
+	id S1752887Ab1IHEzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 00:55:04 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:41000 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752190Ab1IHEzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 00:55:02 -0400
+Message-ID: <4E684A6B.6030205@parallels.com>
+Date: Thu, 8 Sep 2011 01:54:03 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1109071554480.20358@xanadu.home>
-References: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-	<alpine.LFD.2.00.1109071437400.20358@xanadu.home>
-	<CACqU3MVF8XSdKi0PeZF5SFaH9i2HPqCjkMqccyb83x4V_1Vs1g@mail.gmail.com>
-	<alpine.LFD.2.00.1109071554480.20358@xanadu.home>
-Date: Thu, 8 Sep 2011 00:50:22 -0400
-Message-ID: <CACqU3MXcksYxdV_=OR40fPeZzu1ygr-Qs79TV6kfn0DpbXhjuA@mail.gmail.com>
-Subject: Re: [RFC] Kbuild: allow code re-use across different directories
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: <linux-kernel@vger.kernel.org>, <xemul@parallels.com>,
+        <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        <containers@lists.osdl.org>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v2 3/9] socket: initial cgroup code.
+References: <1315369399-3073-1-git-send-email-glommer@parallels.com> <1315369399-3073-4-git-send-email-glommer@parallels.com> <20110907221710.GA7845@shutemov.name>
+In-Reply-To: <20110907221710.GA7845@shutemov.name>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [189.121.42.206]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Sep 7, 2011 at 3:59 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> On Wed, 7 Sep 2011, Arnaud Lacombe wrote:
->
->> Hi,
+On 09/07/2011 07:17 PM, Kirill A. Shutemov wrote:
+> On Wed, Sep 07, 2011 at 01:23:13AM -0300, Glauber Costa wrote:
+>> We aim to control the amount of kernel memory pinned at any
+>> time by tcp sockets. To lay the foundations for this work,
+>> this patch adds a pointer to the kmem_cgroup to the socket
+>> structure.
 >>
->> On Wed, Sep 7, 2011 at 3:07 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
->> > On Fri, 19 Aug 2011, Arnaud Lacombe wrote:
->> >
->> >> Hi folks,
->> >>
->> >> The attached patch modify Kbuild to allow to directly re-use code in multiple
->> >> directory without having to go through a copy. Technically, it changes Kbuild to
->> >> use by default the VPATH feature of GNU make and provides accessors for Makefile
->> >> to change it indirectly.
->> >>
->> >> Considering:
->> >>
->> >> arch/foo/lib:
->> >> fancy.c
->> >>
->> >> We want to be able to build it with -DPANTS=32 in the kernel, but the
->> >> bootloader requires -DPANTS_SIZE=30.
->> >>
->> >> Currently we would do, either:
->> >>
->> >> arch/foo/lib/Makefile
->> >> LDFLAGS_fancy.o := -DPANTS=32
->> >> obj-y += fancy.o
->> >>
->> >> and, either:
->> >>
->> >> arch/foo/boot/Makefile:
->> >> LDFLAGS_fancy.o := -DPANTS=30
->> >> obj-y += fancy.o
->> >> $(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
->> >>       $(call cmd,shipped)
->> >>
->> >> or
->> >>
->> >> arch/foo/boot/Makefile:
->> >> LDFLAGS_fancy.o := -DPANTS=30
->> >> obj-y += fancy.o
->> >> $(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
->> >>       $(call cmd,cc_c_o)
->> >>
->> >> The former implies an extra copy of the source file, the latter expose Kbuild
->> >> internal function.
->> >>
->> >> With the attached patch, we would do:
->> >>
->> >> arch/foo/boot/Makefile:
->> >> LDFLAGS_fancy.o := -DPANTS=30
->> >> obj-y += fancy.o
->> >> vpath-y += $(srctree)/arch/foo/lib
->> >>
->> >> and let GNU make do the job.
->> >>
->> >> Comments welcome,
->> >
->> > It doesn't work.  Whatever I do to arch/arm/boot/compressed/Makefile
->> > (which admittedly looks a bit hairy and could benefit from a shave) in
->> > order to remove the $(call cmd,shipped) used with lib1funcs.S, I always
->> > end up with:
->> >
->> > make[2]: *** No rule to make target `arch/arm/boot/compressed/lib1funcs.S', needed by `arch/arm/boot/compressed/lib1funcs.o'.  Stop.
->> >
->> What was the exact change you made which triggered this ?
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: David S. Miller<davem@davemloft.net>
+>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+>> CC: Eric W. Biederman<ebiederm@xmission.com>
+>> ---
+>>   include/linux/kmem_cgroup.h |   29 +++++++++++++++++++++++++++++
+>>   include/net/sock.h          |    2 ++
+>>   net/core/sock.c             |    5 ++---
+>>   3 files changed, 33 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/include/linux/kmem_cgroup.h b/include/linux/kmem_cgroup.h
+>> index 0e4a74b..77076d8 100644
+>> --- a/include/linux/kmem_cgroup.h
+>> +++ b/include/linux/kmem_cgroup.h
+>> @@ -49,5 +49,34 @@ static inline struct kmem_cgroup *kcg_from_task(struct task_struct *tsk)
+>>   	return NULL;
+>>   }
+>>   #endif /* CONFIG_CGROUP_KMEM */
+>> +
+>> +#ifdef CONFIG_INET
 >
-> In its simplest expression (not caring about the now undefined lib1funcs
-> variable):
+> Will it break something if you define the helpers even if CONFIG_INET
+> is not defined?
+> It will be much cleaner. You can reuse ifdef CONFIG_CGROUP_KMEM in this
+> case.
+
+The helpers inside CONFIG_INET are needed for the network code, 
+regardless of kmem cgroup is defined or not, not the other way around.
+
+So I could remove CONFIG_INET, but I can't possibly move it inside
+CONFIG_CGROUP_KMEM. So this buy us nothing.
+
+>> +#include<net/sock.h>
+>> +static inline void sock_update_kmem_cgrp(struct sock *sk)
+>> +{
+>> +#ifdef CONFIG_CGROUP_KMEM
+>> +	sk->sk_cgrp = kcg_from_task(current);
+>> +
+>> +	/*
+>> +	 * We don't need to protect against anything task-related, because
+>> +	 * we are basically stuck with the sock pointer that won't change,
+>> +	 * even if the task that originated the socket changes cgroups.
+>> +	 *
+>> +	 * What we do have to guarantee, is that the chain leading us to
+>> +	 * the top level won't change under our noses. Incrementing the
+>> +	 * reference count via cgroup_exclude_rmdir guarantees that.
+>> +	 */
+>> +	cgroup_exclude_rmdir(&sk->sk_cgrp->css);
+>> +#endif
+>> +}
+>> +
+>> +static inline void sock_release_kmem_cgrp(struct sock *sk)
+>> +{
+>> +#ifdef CONFIG_CGROUP_KMEM
+>> +	cgroup_release_and_wakeup_rmdir(&sk->sk_cgrp->css);
+>> +#endif
+>> +}
+>> +
+>> +#endif /* CONFIG_INET */
+>>   #endif /* _LINUX_KMEM_CGROUP_H */
 >
-> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-> index 0c74a6fab9..b34ed80977 100644
-> --- a/arch/arm/boot/compressed/Makefile
-> +++ b/arch/arm/boot/compressed/Makefile
-> @@ -70,6 +70,10 @@ ifeq ($(CONFIG_ARCH_SHMOBILE),y)
->  OBJS           += head-shmobile.o
->  endif
+>> @@ -2252,9 +2254,6 @@ void sk_common_release(struct sock *sk)
+>>   }
+>>   EXPORT_SYMBOL(sk_common_release);
+>>
+>> -static DEFINE_RWLOCK(proto_list_lock);
+>> -static LIST_HEAD(proto_list);
+>> -
 >
-> +# For __aeabi_uidivmod
-> +OBJS           += lib1funcs.o
-> +vpath-y                += $(srctree)/arch/arm/lib
-> +
->  #
->  # We now have a PIC decompressor implementation.  Decompressors running
->  # from RAM should not define ZTEXTADDR.  Decompressors running directly
-> @@ -120,12 +124,6 @@ LDFLAGS_vmlinux += -X
->  # Next argument is a linker script
->  LDFLAGS_vmlinux += -T
->
-> -# For __aeabi_uidivmod
-> -lib1funcs = $(obj)/lib1funcs.o
-> -
-> -$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S FORCE
-> -       $(call cmd,shipped)
-> -
->  # We need to prevent any GOTOFF relocs being used with references
->  # to symbols in the .bss section since we cannot relocate them
->  # independently from the rest at run time.  This can be achieved by
->
-you missed:
+> Wrong patch?
+Yes, it is. Thanks for noticing.
 
- # Make sure files are removed during clean
--extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
-+extra-y       += piggy.gzip piggy.lzo piggy.lzma
 
-This confused make.
-
-before:
-
-% rm -rf /linux/obj/vpath-arm/arch/arm/boot/compressed/
-% make ARCH=arm V=2                       \
-    CROSS_COMPILE=arm-none-linux-gnueabi- \
-    O=/linux/obj/vpath-arm
-[...]
-  CC      arch/arm/boot/compressed/decompress.o - due to target missing
-make[3]: *** No rule to make target
-`arch/arm/boot/compressed/lib1funcs.S', needed by
-`arch/arm/boot/compressed/lib1funcs.o'.  Stop.
-make[2]: *** [arch/arm/boot/compressed/vmlinux] Error 2
-make[1]: *** [zImage] Error 2
-make: *** [sub-make] Error 2
-
-after:
-
-% rm -rf /linux/obj/vpath-arm/arch/arm/boot/compressed/
-% make ARCH=arm V=2                       \
-    CROSS_COMPILE=arm-none-linux-gnueabi- \
-    O=/linux/obj/vpath-arm
-[...]
-  CC      arch/arm/boot/compressed/decompress.o - due to target missing
-  AS      arch/arm/boot/compressed/lib1funcs.o - due to target missing
-  LD      arch/arm/boot/compressed/vmlinux - due to target missing
-  OBJCOPY arch/arm/boot/zImage - due to: arch/arm/boot/compressed/vmlinux
-  Kernel: arch/arm/boot/zImage is ready
-  Building modules, stage 2.
-  MODPOST 33 modules - due to target is PHONY
-
- - Arnaud
-
->
-> Nicolas
->
