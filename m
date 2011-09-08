@@ -1,120 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab1IHAUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Sep 2011 20:20:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52289 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756373Ab1IHAUw (ORCPT
+	id S1757543Ab1IHAVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Sep 2011 20:21:22 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:61728 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab1IHAVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Sep 2011 20:20:52 -0400
-Message-ID: <4E680A5D.7050903@gmail.com>
-Date: Thu, 08 Sep 2011 10:20:45 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mark Salter <msalter@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
+	Wed, 7 Sep 2011 20:21:21 -0400
+Date: Thu, 08 Sep 2011 08:21:09 +0800
+From: "canquan.shen" <shencanquan@huawei.com>
+Subject: Re: Re : [PATCH] acpi: Fix hot cpu remove problem on acpi subsystem
+In-reply-to: <CAErSpo7Rf+X3MVgmdYvbEXw-UAU7sEEMq5upBkhEn9Eu0zD-zw@mail.gmail.com>
+X-Originating-IP: [10.166.80.171]
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: len.brown@intel.com, "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "yakui.zhao@intel.com" <yakui.zhao@intel.com>,
+        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
+        hanweidong <hanweidong@huawei.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>
-Subject: Re: [PATCH][REPOST] Check maxlen on strnlen_user usage
-References: <4E68042A.1050406@gmail.com> <20110907170621.389b1314.akpm@linux-foundation.org>
-In-Reply-To: <20110907170621.389b1314.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        linqiangmin@huawei.com, james.chenjiabo@huawei.com
+Message-id: <4E680A75.3000600@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:6.0.1) Gecko/20110830
+ Thunderbird/6.0.1
+X-CFilter-Loop: Reflected
+References: <F1F5DF04259F1B4A82BD6BDE1C479F74098285B0@szxeml527-mbx.china.huawei.com>
+ <CAErSpo4JsyHag24SH=zSRHt4c8kYwdcXEnCConGEi2u6dN-pnw@mail.gmail.com>
+ <4E65C254.8090107@huawei.com>
+ <CAErSpo5owGuYLP2-JR6uJsM+Pqwna+FUB--p4OhjLVAETqYpcw@mail.gmail.com>
+ <4E66D988.9070505@huawei.com>
+ <CAErSpo7Rf+X3MVgmdYvbEXw-UAU7sEEMq5upBkhEn9Eu0zD-zw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/11 10:06, Andrew Morton wrote:
-> On Thu, 08 Sep 2011 09:54:18 +1000
-> Ryan Mallon<rmallon@gmail.com>  wrote:
+On 2011/9/7 14:57, Bjorn Helgaas wrote:
+> On Tue, Sep 6, 2011 at 7:40 PM, canquan.shen<shencanquan@huawei.com>  wrote:
+>> On 2011/9/7 2:38, Bjorn Helgaas wrote:
 >
->> strnlen_user returns the length of the string including the nul
->> terminator. In the case where maxlen is reached strnlen_user returns
->> maxlen + 1. Most callsites already check for this condition. Fix the
->> call to strnlen_user in fs/exec.c to check for the maxlen case.
+>>> Is acpi_processor_remove() called when you remove a processor?  I see
+>>> a path where it will be called via acpi_eject_store():
+>>>
+>>>      acpi_eject_store
+>>>        acpi_os_hotplug_execute(acpi_bus_hot_remove_device)
+>>>        acpi_bus_hot_remove_device
+>>>          acpi_bus_trim
+>>>            acpi_bus_remove
+>>>              device_release_driver
+>>>                dev->driver->remove (acpi_processor_remove())
+>>>              acpi_device_unregister
+>>>                device_unregister
+>>>                  device_del
+>>>                    kobject_uevent(KOBJ_REMOVE)
+>>>
+>>> but as far as I can tell, this path is only used when we write
+>>> something to the "eject" sysfs file.  I would think we'd want to use
+>>> most of this same path when we hot remove a CPU via the ACPI SCI
+>>> mechanism.
+>>>
 >>
->> diff --git a/fs/exec.c b/fs/exec.c
->> index 25dcbe5..e19588c 100644
->> --- a/fs/exec.c
->> +++ b/fs/exec.c
->> @@ -481,7 +481,7 @@ static int copy_strings(int argc, struct
->> user_arg_ptr argv,
->>    			goto out;
->>
->>    		len = strnlen_user(str, MAX_ARG_STRLEN);
->> -		if (!len)
->> +		if (!len || len>   MAX_ARG_STRLEN)
->>    			goto out;
->>
->>    		ret = -E2BIG;
-> The following call to vald_arg_len() already does this?
+>> Because in my patch will send the KOBJ_REMOVE event to udev module. and I
+>> write a udev rule like the following:
+>> ACTION=="remove",DRIVER=="processor",SUBSYSTEM=="acpi",RUN+="/bin/bash -c
+>> 'echo 1>  /sys%p/eject'"
+>> This rule will write "1" to the "eject" sysfs file. and then call
+>> acpi_eject_store function.
 >
-> This change will cause copy_strings() to incorrectly return -EFAULT,
-> rather than -E2BIG.
-Hmm, missed that. How about the patch below instead which passes the 
-correct length to strnlen_user?
-> Your email client is wordwrapping and space-stuffing the patches, btw.
-I'll try again. Hopefully it works this time.
+> Hmmm.  I think I understand your proposal, but it seems like a
+> convoluted path to me.
+>
+> I guess the real question is whether we must give userspace a chance
+> to decide whether to actually do the remove or not.  Is there a
+> requirement to do that?  Neither the dynamic device removal flow (ACPI
+> spec 4.0a, sec 6.3) nor the ejection flow example (fig 6-5) mentions
+> doing that.
+>
+    I think we should give userspace a chance to decide whether do  the 
+remove or not. About the cpu remove, it has two part, one in the linux 
+kernel which mainly online/offline cpu, another is acpi core driver, 
+which mainly add and remove the device of processor.
+    giving userspace a chance is not acpi spec requirement. but it is 
+flexible for linux kernel. many driver use the udev mechanism to has a 
+chance for user to decide how to handle the event of kernel.
+
+> I mentioned before that I think the ACPI hotplug code should be ripped
+> out of the drivers and consolidated in the ACPI core.  I think it's
+> pretty clear from the spec that the 0-0x7f notifications (Bus Check,
+> Device Check, Eject Request, etc.) are designed to be handled by the
+> core, not by individual drivers.  We handle hotplug in the drivers
+> today, but I think that's mainly because we never implemented support
+> in the Linux ACPI core.  There are comments in acpi_bus_check_device()
+> and acpi_bus_check_scope() about what we *should* be doing there.
+>
+> I am opposed to adding more hotplug support to individual drivers
+> because I still hope that someday we'll support it in the ACPI core.
+> Many ACPI drivers don't support hotplug at all, and the ones that do
+> support hotplug do it in a variety of ways.  It's all quite a mess.
+>
+> Bjorn
+>
+> .
+>
+
+I admit it is convoluted path for hot cpu remove. and the acpi processor 
+driver will be consolidated in the acip core. but how to do in the acpi 
+core ? I think it maybe directly call acpi_bus_hot_remove_device or send 
+KOBJ_OFFLINE event to linux kernel.
+
+I will modify the processor driver by add the acpi_bus_trim function in 
+acpi_processor_hotplug_notify. and create the patch for fix this problem.
+Could you help me to merge to latest linux kernel? Thanks for your 
+answer again.
 
 ---
-Replace valid_arg_len function in fs/exec.c with max_arg_len function 
-and pass the correct length to strnlen_user.
+canquan.shen
 
-Signed-off-by: Ryan Mallon <rmallon@gmail.com>
----
 
-diff --git a/fs/exec.c b/fs/exec.c
-index e19588c..12d2f7f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -296,9 +296,9 @@ err:
-  	return err;
-  }
 
--static bool valid_arg_len(struct linux_binprm *bprm, long len)
-+static long max_arg_len(struct linux_binprm *bprm)
-  {
--	return len<= MAX_ARG_STRLEN;
-+	return MAX_ARG_STRLEN;
-  }
-
-  #else
-@@ -354,9 +354,9 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
-  	return 0;
-  }
-
--static bool valid_arg_len(struct linux_binprm *bprm, long len)
-+static long max_arg_len(struct linux_binprm *bprm)
-  {
--	return len<= bprm->p;
-+	return bprm->p;
-  }
-
-  #endif /* CONFIG_MMU */
-@@ -474,18 +474,19 @@ static int copy_strings(int argc, struct user_arg_ptr argv,
-  		const char __user *str;
-  		int len;
-  		unsigned long pos;
-+		long max_len = max_arg_len(bprm);
-
-  		ret = -EFAULT;
-  		str = get_user_arg_ptr(argv, argc);
-  		if (IS_ERR(str))
-  			goto out;
-
--		len = strnlen_user(str, MAX_ARG_STRLEN);
--		if (!len || len>  MAX_ARG_STRLEN)
-+		len = strnlen_user(str, max_len);
-+		if (!len)
-  			goto out;
-
-  		ret = -E2BIG;
--		if (!valid_arg_len(bprm, len))
-+		if (len>  max_len)
-  			goto out;
-
-  		/* We're going to work our way backwords. */
 
 
