@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab1IHXwT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:52:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46632 "EHLO
+	id S1756362Ab1IHXwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:52:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52312 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754031Ab1IHXwR (ORCPT
+	by vger.kernel.org with ESMTP id S1756301Ab1IHXwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:52:17 -0400
-Date: Thu, 8 Sep 2011 16:52:13 -0700
+	Thu, 8 Sep 2011 19:52:30 -0400
+Date: Thu, 8 Sep 2011 16:52:22 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Mark Salter <msalter@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Pass correct length to strnlen_user in fs/exec.c
-Message-Id: <20110908165213.6ebd844f.akpm@linux-foundation.org>
-In-Reply-To: <4E680EBC.4000804@gmail.com>
-References: <4E680EBC.4000804@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, minchan.kim@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] mm: add replace_page_cache_page() function
+Message-Id: <20110908165222.18875260.akpm@linux-foundation.org>
+In-Reply-To: <20110118152844.88cfdc2c.akpm@linux-foundation.org>
+References: <E1Pf9Zj-0002td-Ct@pomaz-ex.szeredi.hu>
+	<20110118152844.88cfdc2c.akpm@linux-foundation.org>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,62 +26,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Sep 2011 10:39:24 +1000
-Ryan Mallon <rmallon@gmail.com> wrote:
+On Tue, 18 Jan 2011 15:28:44 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> Replace valid_arg_len function in fs/exec.c with max_arg_len function
-> and pass the correct length to strnlen_user.
+> On Tue, 18 Jan 2011 12:18:11 +0100
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
 > 
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -296,9 +296,9 @@ err:
->  	return err;
->  }
->  
-> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
-> +static long max_arg_len(struct linux_binprm *bprm)
->  {
-> -	return len <= MAX_ARG_STRLEN;
-> +	return MAX_ARG_STRLEN;
->  }
->  
->  #else
-> @@ -354,9 +354,9 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
->  	return 0;
->  }
->  
-> -static bool valid_arg_len(struct linux_binprm *bprm, long len)
-> +static long max_arg_len(struct linux_binprm *bprm)
->  {
-> -	return len <= bprm->p;
-> +	return bprm->p;
->  }
->  
->  #endif /* CONFIG_MMU */
-> @@ -474,18 +474,19 @@ static int copy_strings(int argc, struct user_arg_ptr argv,
->  		const char __user *str;
->  		int len;
->  		unsigned long pos;
-> +		long max_len = max_arg_len(bprm);
->  
->  		ret = -EFAULT;
->  		str = get_user_arg_ptr(argv, argc);
->  		if (IS_ERR(str))
->  			goto out;
->  
-> -		len = strnlen_user(str, MAX_ARG_STRLEN);
-> -		if (!len || len > MAX_ARG_STRLEN)
-> +		len = strnlen_user(str, max_len);
-> +		if (!len)
->  			goto out;
->  
->  		ret = -E2BIG;
-> -		if (!valid_arg_len(bprm, len))
-> +		if (len > max_len)
->  			goto out;
->  
->  		/* We're going to work our way backwords. */
+> > +int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+> > +{
+> > +	int error;
+> > +	struct mem_cgroup *memcg = NULL;
+> 
+> I'm suspecting that the unneeded initialisation was added to suppress a
+> warning?
+> 
+> I removed it, and didn't get a warning.  I expected to.
+> 
+> Really, uninitialized_var() is better.  It avoids adding extra code
+> and, unlike "= 0" it is self-documenting.
+> 
+> > +	VM_BUG_ON(!PageLocked(old));
+> > +	VM_BUG_ON(!PageLocked(new));
+> > +	VM_BUG_ON(new->mapping);
+> > +
+> > +	/*
+> > +	 * This is not page migration, but prepare_migration and
+> > +	 * end_migration does enough work for charge replacement.
+> > +	 *
+> > +	 * In the longer term we probably want a specialized function
+> > +	 * for moving the charge from old to new in a more efficient
+> > +	 * manner.
+> > +	 */
+> > +	error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
+> > +	if (error)
+> > +		return error;
+> > +
+> > +	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+> > +	if (!error) {
+> > +		struct address_space *mapping = old->mapping;
+> > +		pgoff_t offset = old->index;
+> > +
+> > +		page_cache_get(new);
+> > +		new->mapping = mapping;
+> > +		new->index = offset;
+> > +
+> > +		spin_lock_irq(&mapping->tree_lock);
+> > +		__remove_from_page_cache(old);
+> > +		error = radix_tree_insert(&mapping->page_tree, offset, new);
+> > +		BUG_ON(error);
+> > +		mapping->nrpages++;
+> > +		__inc_zone_page_state(new, NR_FILE_PAGES);
+> > +		if (PageSwapBacked(new))
+> > +			__inc_zone_page_state(new, NR_SHMEM);
+> > +		spin_unlock_irq(&mapping->tree_lock);
+> > +		radix_tree_preload_end();
+> > +		page_cache_release(old);
+> > +		mem_cgroup_end_migration(memcg, old, new, true);
+> 
+> This is all pretty ugly and inefficient.
+> 
+> We call __remove_from_page_cache() which does a radix-tree lookup and
+> then fiddles a bunch of accounting things.
+> 
+> Then we immediately do the same radix-tree lookup and then undo the
+> accounting changes which we just did.  And we do it in an open-coded
+> fashion, thus giving the kernel yet another code site where various
+> operations need to be kept in sync.
+> 
+> Would it not be better to do a single radix_tree_lookup_slot(),
+> overwrite the pointer therein and just leave all the ancilliary
+> accounting unaltered?
+> 
 
-I'm struggling to find a reason to merge this - it churns code around
-rather pointlessly?
-
+Poke?
