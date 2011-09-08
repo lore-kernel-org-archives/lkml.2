@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab1IHIFu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 04:05:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9855 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932243Ab1IHIFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 04:05:45 -0400
-Message-ID: <4E687754.1040005@redhat.com>
-Date: Thu, 08 Sep 2011 10:05:40 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S932339Ab1IHII4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 04:08:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51101
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932306Ab1IHIIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 04:08:53 -0400
+Date: Thu, 8 Sep 2011 04:08:43 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: hch@infradead.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Help with implementing some form of barriers in 3.0 kernels.
+Message-ID: <20110908080843.GA14549@infradead.org>
+References: <20110907174832.GN32190@dumpdata.com>
+ <20110907181740.GG31726@redhat.com>
+ <20110907201620.GB26548@infradead.org>
+ <4E6892B4020000780005536B@nat28.tlf.novell.com>
 MIME-Version: 1.0
-To: Nitin Gupta <ngupta@vflare.org>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH 1/2] staging: zram: fix zram locking
-References: <1315314132-8436-1-git-send-email-jmarchan@redhat.com> <4E681BC9.4010901@vflare.org>
-In-Reply-To: <4E681BC9.4010901@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E6892B4020000780005536B@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2011 03:35 AM, Nitin Gupta wrote:
-> On 09/06/2011 09:02 AM, Jerome Marchand wrote:
->> Currently init_lock only prevents concurrent execution of zram_init_device()
->> and zram_reset_device() but not zram_make_request() nor sysfs store functions.
->>
-> 
-> zram_make_request() initializes the device first time it is used and 
-> from then on no sysfs config writes are allowed till the device is reset 
-> -- for example, you cannot change disksize while a disk is in 
-> initialized state. So, I could not understand why we need to protect 
-> zram_make_request vs sysfs stores.
+On Thu, Sep 08, 2011 at 09:02:28AM +0100, Jan Beulich wrote:
+> That would need to be done in the backend, as the expectation cannot
+> be to patch old frontends to deal with new backends.
 
-This is true for disksize_store() (which can race with zram_init_device(), thus
-the write lock in it), not for reset_store(), which obviously can happen in
-initialized state. I have actually hit those races with the following
-reproducer:
-
----
-#! /bin/sh
-
-while true; do
-    for i in `seq 0 9`; do
-	echo 1 > /sys/block/zram0/reset&
-	echo $((1024*1024*500)) > /sys/block/zram0/disksize&
-	for i in `seq 1 10`; do
-	    dd if=/dev/zero of=/dev/zram0 bs=4k count=1 2>/dev/null;
-	done
-    done;
-    wait;
-done
-
-
-> 
-> Thanks,
-> Nitin
-> 
-> 
-> 
+Sorry, I meant blkback above.
 
