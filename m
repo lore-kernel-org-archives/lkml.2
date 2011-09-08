@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab1IHX3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Sep 2011 19:29:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36213 "EHLO mx1.redhat.com"
+	id S1755382Ab1IHXaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Sep 2011 19:30:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43885 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab1IHX3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Sep 2011 19:29:40 -0400
-Date: Thu, 8 Sep 2011 18:11:30 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Greg Dietsche <gregory.dietsche@cuw.edu>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] iwlegacy: change IWL_WARN to IWL_DEBUG_HT in
- iwl4965_tx_agg_start
-Message-ID: <20110908161129.GC2195@redhat.com>
-References: <1314537977-20097-1-git-send-email-Gregory.Dietsche@cuw.edu>
- <20110829122013.GA3597@redhat.com>
- <4E5B9533.6000109@cuw.edu>
- <20110829140032.GA1573@redhat.com>
- <20110906150131.GA7322@redhat.com>
- <4E683BBE.3060105@cuw.edu>
+	id S1755233Ab1IHX3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Sep 2011 19:29:44 -0400
+Date: Thu, 8 Sep 2011 20:17:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org,
+        dvlasenk@redhat.com
+Subject: Re: [PATCH v2] Make PTRACE_SEIZE set ptrace options specified in
+	'data' parameter
+Message-ID: <20110908181747.GA28120@redhat.com>
+References: <201109072340.31460.vda.linux@googlemail.com> <20110908004438.GC3987@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E683BBE.3060105@cuw.edu>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20110908004438.GC3987@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg
-
-On Wed, Sep 07, 2011 at 10:51:26PM -0500, Greg Dietsche wrote:
-> On 09/06/2011 10:01 AM, Stanislaw Gruszka wrote:
-> >I put patches here:
-> >http://people.redhat.com/sgruszka/iwlegacy_cleanup.tar.bz2
+On 09/08, Tejun Heo wrote:
+>
+> On Wed, Sep 07, 2011 at 11:40:31PM +0200, Denys Vlasenko wrote:
+> > +	if (seize) {
+> > +		if (addr != 0)
+> > +			goto out;
+> > +		if ((flags & ~(long)PTRACE_O_MASK) != PTRACE_SEIZE_DEVEL)
+>
+> Please use (unsigned long).  Also, wouldn't it be better to do the
+> following instead?
+>
+> 	if (!(flags & PTRACE_SEIZE_DEVEL))
+> 		goto out;
+> 	flags &= ~PTRACE_SEIZE_DEVEL;
+>
+> 	if ((flags & ~(unsigned long(PTRACE_O_MASK))))
+> 		goto out;
+>
+> Then, we can later just delete the first three lines when removing
+> SEIZE_DEVEL.
+>
+> > @@ -263,11 +272,9 @@ static int ptrace_attach(struct task_struct *task, long request,
+> >  	if (task->ptrace)
+> >  		goto unlock_tasklist;
 > >
-> >They are on top of wireless-testing tree.
-> <snip>
-> >Series include your 2 patches. You can test this cleanup and
-> >apply your new changes on top. I'll not do any further cleanup
-> >for some time now, perhaps continue when I got public git tree.
-> >
-> Thanks! I've re-worked my patches and you can find them here:
-> http://www.gregd.org/stuff/linux/iwlegacy_cleanup_greg.tar.bz2
-> 
-> I also decided to play with github a little bit:
-> git://github.com/dietsche/linux.git and pushed two branches:
->   1) wireless-next-iwlegacy-stanislaw - your patch set
->   2) wireless-next-iwlegacy-stanislaw-greg - a branch that has my
-> additional patches.
-> `git format-patch wireless-next-iwlegacy-stanislaw..wireless-next-iwlegacy-stanislaw-greg`
-> will generate the patches that are in the link i posted above.
+> > -	task->ptrace = PT_PTRACED;
+> > -	if (seize)
+> > -		task->ptrace |= PT_SEIZED;
+> >  	if (task_ns_capable(task, CAP_SYS_PTRACE))
+> > -		task->ptrace |= PT_PTRACE_CAP;
+> > +		flags |= PT_PTRACE_CAP;
+> > +	task->ptrace = flags;
+>
+> Can you please put this in a separate patch?
 
-Cool!
+Yes.
 
-> The first two patches in my series are the ones that I think folks
-> should take a closer look at. The rest are pretty safe.
+> Hmm... also I think we
+> probably want to set ->ptrace while holding siglock too.
 
-The second patch is ok. I'm not sure about first one, but we can get
-rid of "ctx = il_rxon_ctx_from_vif(vif)" at all, because we have
-only one context. Removing il_rxon_context structure from
-iwlegacy driver is my long term plan, you can look at that
-if you wish.
+I thought about this too, and I agree this makes sense
 
-Thanks
-Stanislaw
+> There are
+> places which assume ->ptrace is protected by siglock.
+
+Really? Once again, I agree. But _afaics_ currently this is not strictly
+needed. PT_PTRACED/PT_SEIZED should not go away under ->siglock, yes, but
+it seems that it is fine to set them.
+
+> and linking are
+> protected by siglock
+
+Hmm. Could you explain this? Why do want __ptrace_link under ->siglock ?
+
+Oleg.
+
